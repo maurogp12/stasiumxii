@@ -95,6 +95,8 @@ func _test_outdoor_grade_and_rim() -> void:
 	HUD.set_pc_chrome_override(1)
 	light.sync(tree["board"], false)
 	eq(LIGHT.OUTDOOR_STRENGTH, 0.0, "the outdoor grade ships at strength 0")
+	eq(LIGHT.SHIPPED_OUTDOOR_PRESET, LIGHT.PRESET_OFF, "Luca's light pick stays off until Mauro confirms")
+	eq(LIGHT.outdoor_preset, LIGHT.SHIPPED_OUTDOOR_PRESET, "the shipped preset is the one-line switch")
 	eq(light.wash_visible(), false, "the outdoor grade is off")
 	eq(is_equal_approx(light.grade_saturation(), 1.0), true, "outdoor saturation matches base")
 	eq(is_equal_approx(light.grade_contrast(), 1.0), true, "outdoor contrast matches base")

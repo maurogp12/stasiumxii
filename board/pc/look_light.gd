@@ -3,8 +3,9 @@ extends Node2D
 ## L7 view light. PC only. The phone path stays flat: no grade shader, no rim,
 ## no cast shafts, no vignette, and the small damage number. The HUD layer
 ## is never changed.
-## The outdoor grade ships off (strength 0). Light and medium stay in code
-## for L9 and are not applied. Thunderwell takes none of the grade: no
+## The outdoor grade ships off (strength 0) until Mauro confirms. Luca picked
+## light: flip SHIPPED_OUTDOOR_PRESET to PRESET_LIGHT. Off and medium stay.
+## Thunderwell takes none of the grade: no
 ## grade, no vignette, no cast shafts, and no floor pool, so the board
 ## matches the base branch. Fighters still take a warm rim that follows the
 ## sprite and every animation strip, and PC damage numbers stay at 68 px.
@@ -15,12 +16,14 @@ const SORT := preload("res://board/visual_sort.gd")
 const HUD := preload("res://ui/hud.gd")
 const PALETTE := preload("res://vfx/vfx_palette.gd")
 
-## Shipped outdoor grade. 0 leaves the base paint. L9 chooses light or medium.
+## Shipped outdoor grade. 0 leaves the base paint.
 const OUTDOOR_STRENGTH := 0.0
 const PRESET_OFF := "off"
 const PRESET_LIGHT := "light"
 const PRESET_MEDIUM := "medium"
-## Light grade for L9. About +10% saturation. Not applied.
+## One line. Luca picked light. It stays off until Mauro says yes.
+const SHIPPED_OUTDOOR_PRESET := PRESET_OFF
+## Light grade for L9. About +10% saturation. Applied only when the preset is light.
 const LIGHT_SAT := 1.10
 const LIGHT_CONTRAST := 1.04
 const LIGHT_GAIN := 1.01
@@ -103,8 +106,8 @@ void fragment() {
 static var active := false
 static var _dungeon_rim := false
 ## True only when a named outdoor preset is on. Thunderwell never sets it.
-## The shipped preset is off, which is strength 0.
-static var outdoor_preset := PRESET_OFF
+## The shipped preset is SHIPPED_OUTDOOR_PRESET (off until Mauro confirms).
+static var outdoor_preset := SHIPPED_OUTDOOR_PRESET
 static var _paint_grade := false
 ## Bench switch. The phone path is already off. This turns the light off
 ## while the PC HUD and the jungle stay up.
@@ -135,7 +138,7 @@ static func set_outdoor_preset(name: String) -> void:
 	if name == PRESET_OFF or name == PRESET_LIGHT or name == PRESET_MEDIUM:
 		outdoor_preset = name
 	else:
-		outdoor_preset = PRESET_OFF
+		outdoor_preset = SHIPPED_OUTDOOR_PRESET
 
 
 static func font_size(kind: String, base: int) -> int:
@@ -464,6 +467,11 @@ func _grade_board() -> void:
 		for child in tiles.get_children():
 			if child is CanvasItem:
 				_attach_grade(child, _paint_grade)
+				# The Crosshaven dress paints in _draw, like a tile. The grade
+				# stays off until a named preset is on. Strength 0 is the default.
+				var dress := child.get_node_or_null("CrosshavenDress") as CanvasItem
+				if dress != null:
+					_attach_grade(dress, _paint_grade)
 	var units := _board.get_node_or_null("Units") as CanvasItem
 	if units != null:
 		units.modulate = Color.WHITE

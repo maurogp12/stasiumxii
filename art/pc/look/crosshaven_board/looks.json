@@ -1,0 +1,3314 @@
+{
+ "map_id": "crosshaven_15",
+ "package": "l9_outdoor_board",
+ "version": 1,
+ "date": "2026-10-03",
+ "source_layout": "art/maps/arena_colosseum_v2/tiled/crosshaven_15x15_tags.json @ origin/pc/combat-look 7997915 (UNCHANGED: terrain, heights and prop cells are read from the map; this file only chooses how each cell LOOKS)",
+ "coords": "x right-down (screen E), y left-down (screen S); cell centre at 2x = ((x-y)*64, (x+y)*32 - height*20); at 1x = ((x-y)*32, (x+y)*16 - height*10); sort z = (x+y)*10 + height*8 (fighters +4)",
+ "look_counts": {
+  "grass": 112,
+  "sand": 53,
+  "stone": 12,
+  "wet_earth": 30,
+  "water": 18
+ },
+ "draw_order_per_cell": [
+  "terrace cliff faces (cliff_left_h*, cliff_right_h*) - canvas top-left at centre+(-64,0) / centre+(0,0) at 2x",
+  "tile (128x64 at 2x, top-left = centre+(-64,-32))",
+  "overlays in listed order (same placement as the tile)",
+  "grass_overhang_left/right (top-left = centre+(-64,-8) / centre+(0,-8))",
+  "overhang corners (40x40, vertex at canvas (20,12): left = west vertex centre+(-64,0), right = east vertex centre+(64,0), front = south vertex centre+(0,32))",
+  "props / decor at the same z after the tile layer of that z (anchor = canvas bottom-centre on the south tip centre+(0,32))"
+ ],
+ "rules": {
+  "grass_fringe_<side>": "on a sand / stone / wet_earth cell whose <side> neighbour is grass at the same height",
+  "grass_fringe_corner_<c>": "diagonal neighbour grass while neither adjacent side is",
+  "wet_earth_fringe_<side>": "on sand or stone next to wet earth",
+  "water_edge_<side>": "on a water cell whose <side> neighbour is not water (board edge: none)",
+  "water_edge_corner_<c>": "diagonal non-water neighbour only",
+  "foot_ao_ne/nw": "cell directly in front of a higher cell (the cliff foot)",
+  "raised_rim_ne/nw": "raised cell whose back neighbour is lower (lit edge + thin dark silhouette line)",
+  "sides": "ne=(x,y-1) nw=(x-1,y) se=(x+1,y) sw=(x,y+1); corners n=(x-1,y-1) e=(x+1,y-1) s=(x+1,y+1) w=(x-1,y+1)"
+ },
+ "cells": [
+  {
+   "x": 0,
+   "y": 0,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "b",
+   "tile": "grass_top_b",
+   "overlays": [],
+   "terrace": []
+  },
+  {
+   "x": 1,
+   "y": 0,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "a",
+   "tile": "grass_top_a",
+   "overlays": [],
+   "terrace": []
+  },
+  {
+   "x": 2,
+   "y": 0,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "c",
+   "tile": "grass_top_c",
+   "overlays": [],
+   "terrace": []
+  },
+  {
+   "x": 3,
+   "y": 0,
+   "terrain": "ground",
+   "height": 0,
+   "look": "sand",
+   "variant": "b",
+   "tile": "sand_b",
+   "overlays": [
+    "grass_fringe_nw",
+    "grass_fringe_corner_s"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 4,
+   "y": 0,
+   "terrain": "ground",
+   "height": 0,
+   "look": "sand",
+   "variant": "a",
+   "tile": "sand_a",
+   "overlays": [
+    "grass_fringe_sw"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 5,
+   "y": 0,
+   "terrain": "ground",
+   "height": 0,
+   "look": "sand",
+   "variant": "c",
+   "tile": "sand_c",
+   "overlays": [
+    "grass_fringe_se",
+    "grass_fringe_sw"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 6,
+   "y": 0,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "c",
+   "tile": "grass_top_c",
+   "overlays": [],
+   "terrace": []
+  },
+  {
+   "x": 7,
+   "y": 0,
+   "terrain": "ground",
+   "height": 0,
+   "look": "sand",
+   "variant": "b",
+   "tile": "sand_b",
+   "overlays": [
+    "grass_fringe_nw",
+    "grass_fringe_sw"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 8,
+   "y": 0,
+   "terrain": "ground",
+   "height": 0,
+   "look": "sand",
+   "variant": "a",
+   "tile": "sand_a",
+   "overlays": [
+    "grass_fringe_se",
+    "grass_fringe_corner_w"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 9,
+   "y": 0,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "a",
+   "tile": "grass_top_a",
+   "overlays": [],
+   "terrace": []
+  },
+  {
+   "x": 10,
+   "y": 0,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "d",
+   "tile": "grass_top_d",
+   "overlays": [],
+   "terrace": []
+  },
+  {
+   "x": 11,
+   "y": 0,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "c",
+   "tile": "grass_top_c",
+   "overlays": [],
+   "terrace": []
+  },
+  {
+   "x": 12,
+   "y": 0,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "b",
+   "tile": "grass_top_b",
+   "overlays": [],
+   "terrace": []
+  },
+  {
+   "x": 13,
+   "y": 0,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "d",
+   "tile": "grass_top_d",
+   "overlays": [],
+   "terrace": []
+  },
+  {
+   "x": 14,
+   "y": 0,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "b",
+   "tile": "grass_top_b",
+   "overlays": [],
+   "terrace": []
+  },
+  {
+   "x": 0,
+   "y": 1,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "d",
+   "tile": "grass_top_d",
+   "overlays": [],
+   "terrace": []
+  },
+  {
+   "x": 1,
+   "y": 1,
+   "terrain": "mud",
+   "height": 0,
+   "look": "wet_earth",
+   "variant": "a",
+   "tile": "wet_earth_a",
+   "overlays": [
+    "grass_fringe_ne",
+    "grass_fringe_nw"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 2,
+   "y": 1,
+   "terrain": "mud",
+   "height": 0,
+   "look": "wet_earth",
+   "variant": "b",
+   "tile": "wet_earth_b",
+   "overlays": [
+    "grass_fringe_ne"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 3,
+   "y": 1,
+   "terrain": "ground",
+   "height": 0,
+   "look": "sand",
+   "variant": "a",
+   "tile": "sand_a",
+   "overlays": [
+    "wet_earth_fringe_nw",
+    "grass_fringe_se",
+    "wet_earth_fringe_sw",
+    "grass_fringe_corner_n"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 4,
+   "y": 1,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "b",
+   "tile": "grass_top_b",
+   "overlays": [],
+   "terrace": []
+  },
+  {
+   "x": 5,
+   "y": 1,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "d",
+   "tile": "grass_top_d",
+   "overlays": [],
+   "terrace": []
+  },
+  {
+   "x": 6,
+   "y": 1,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "b",
+   "tile": "grass_top_b",
+   "overlays": [],
+   "terrace": []
+  },
+  {
+   "x": 7,
+   "y": 1,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "c",
+   "tile": "grass_top_c",
+   "overlays": [],
+   "terrace": []
+  },
+  {
+   "x": 8,
+   "y": 1,
+   "terrain": "ground",
+   "height": 0,
+   "look": "sand",
+   "variant": "b",
+   "tile": "sand_b",
+   "overlays": [
+    "grass_fringe_nw",
+    "grass_fringe_se"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 9,
+   "y": 1,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "b",
+   "tile": "grass_top_b",
+   "overlays": [],
+   "terrace": []
+  },
+  {
+   "x": 10,
+   "y": 1,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "a",
+   "tile": "grass_top_a",
+   "overlays": [],
+   "terrace": []
+  },
+  {
+   "x": 11,
+   "y": 1,
+   "terrain": "mud",
+   "height": 0,
+   "look": "wet_earth",
+   "variant": "a",
+   "tile": "wet_earth_a",
+   "overlays": [
+    "grass_fringe_ne",
+    "grass_fringe_nw"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 12,
+   "y": 1,
+   "terrain": "mud",
+   "height": 0,
+   "look": "wet_earth",
+   "variant": "a",
+   "tile": "wet_earth_a",
+   "overlays": [
+    "grass_fringe_ne",
+    "grass_fringe_se"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 13,
+   "y": 1,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "a",
+   "tile": "grass_top_a",
+   "overlays": [],
+   "terrace": []
+  },
+  {
+   "x": 14,
+   "y": 1,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "c",
+   "tile": "grass_top_c",
+   "overlays": [],
+   "terrace": []
+  },
+  {
+   "x": 0,
+   "y": 2,
+   "terrain": "ground",
+   "height": 0,
+   "look": "sand",
+   "variant": "c",
+   "tile": "sand_c",
+   "overlays": [
+    "grass_fringe_ne",
+    "wet_earth_fringe_se"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 1,
+   "y": 2,
+   "terrain": "mud",
+   "height": 0,
+   "look": "wet_earth",
+   "variant": "a",
+   "tile": "wet_earth_a",
+   "overlays": [
+    "grass_fringe_corner_n"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 2,
+   "y": 2,
+   "terrain": "mud",
+   "height": 0,
+   "look": "wet_earth",
+   "variant": "a",
+   "tile": "wet_earth_a",
+   "overlays": [
+    "grass_fringe_corner_s"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 3,
+   "y": 2,
+   "terrain": "mud",
+   "height": 0,
+   "look": "wet_earth",
+   "variant": "a",
+   "tile": "wet_earth_a",
+   "overlays": [
+    "grass_fringe_se",
+    "grass_fringe_sw"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 4,
+   "y": 2,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "c",
+   "tile": "grass_top_c",
+   "overlays": [],
+   "terrace": []
+  },
+  {
+   "x": 5,
+   "y": 2,
+   "terrain": "mud",
+   "height": 0,
+   "look": "wet_earth",
+   "variant": "a",
+   "tile": "wet_earth_a",
+   "overlays": [
+    "grass_fringe_ne",
+    "grass_fringe_nw"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 6,
+   "y": 2,
+   "terrain": "mud",
+   "height": 0,
+   "look": "wet_earth",
+   "variant": "a",
+   "tile": "wet_earth_a",
+   "overlays": [
+    "grass_fringe_ne",
+    "grass_fringe_se"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 7,
+   "y": 2,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "d",
+   "tile": "grass_top_d",
+   "overlays": [],
+   "terrace": []
+  },
+  {
+   "x": 8,
+   "y": 2,
+   "terrain": "ground",
+   "height": 0,
+   "look": "sand",
+   "variant": "a",
+   "tile": "sand_a",
+   "overlays": [
+    "grass_fringe_nw",
+    "grass_fringe_corner_e",
+    "grass_fringe_corner_s"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 9,
+   "y": 2,
+   "terrain": "ground",
+   "height": 0,
+   "look": "sand",
+   "variant": "b",
+   "tile": "sand_b",
+   "overlays": [
+    "grass_fringe_ne",
+    "grass_fringe_sw"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 10,
+   "y": 2,
+   "terrain": "ground",
+   "height": 0,
+   "look": "sand",
+   "variant": "a",
+   "tile": "sand_a",
+   "overlays": [
+    "grass_fringe_ne",
+    "grass_fringe_corner_s",
+    "grass_fringe_corner_w"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 11,
+   "y": 2,
+   "terrain": "ground",
+   "height": 0,
+   "look": "sand",
+   "variant": "c",
+   "tile": "sand_c",
+   "overlays": [
+    "wet_earth_fringe_ne",
+    "wet_earth_fringe_se",
+    "grass_fringe_sw",
+    "grass_fringe_corner_n"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 12,
+   "y": 2,
+   "terrain": "mud",
+   "height": 0,
+   "look": "wet_earth",
+   "variant": "a",
+   "tile": "wet_earth_a",
+   "overlays": [
+    "grass_fringe_se",
+    "grass_fringe_corner_w"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 13,
+   "y": 2,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "c",
+   "tile": "grass_top_c",
+   "overlays": [],
+   "terrace": []
+  },
+  {
+   "x": 14,
+   "y": 2,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "a",
+   "tile": "grass_top_a",
+   "overlays": [],
+   "terrace": []
+  },
+  {
+   "x": 0,
+   "y": 3,
+   "terrain": "ground",
+   "height": 0,
+   "look": "sand",
+   "variant": "a",
+   "tile": "sand_a",
+   "overlays": [],
+   "terrace": []
+  },
+  {
+   "x": 1,
+   "y": 3,
+   "terrain": "ground",
+   "height": 0,
+   "look": "sand",
+   "variant": "b",
+   "tile": "sand_b",
+   "overlays": [
+    "wet_earth_fringe_ne"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 2,
+   "y": 3,
+   "terrain": "ground",
+   "height": 0,
+   "look": "sand",
+   "variant": "c",
+   "tile": "sand_c",
+   "overlays": [
+    "wet_earth_fringe_ne",
+    "grass_fringe_se"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 3,
+   "y": 3,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "d",
+   "tile": "grass_top_d",
+   "overlays": [],
+   "terrace": []
+  },
+  {
+   "x": 4,
+   "y": 3,
+   "terrain": "ground",
+   "height": 1,
+   "look": "grass",
+   "variant": "b",
+   "tile": "grass_top_b",
+   "overlays": [
+    "raised_rim_ne",
+    "raised_rim_nw"
+   ],
+   "terrace": [
+    "cliff_left_h1",
+    "grass_overhang_left",
+    "grass_overhang_corner_left",
+    "cliff_right_h1",
+    "grass_overhang_right",
+    "grass_overhang_corner_right",
+    "grass_overhang_corner_front"
+   ]
+  },
+  {
+   "x": 5,
+   "y": 3,
+   "terrain": "mud",
+   "height": 0,
+   "look": "wet_earth",
+   "variant": "a",
+   "tile": "wet_earth_a",
+   "overlays": [
+    "grass_fringe_sw",
+    "grass_fringe_corner_n",
+    "foot_ao_nw"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 6,
+   "y": 3,
+   "terrain": "mud",
+   "height": 0,
+   "look": "wet_earth",
+   "variant": "a",
+   "tile": "wet_earth_a",
+   "overlays": [
+    "grass_fringe_corner_e",
+    "grass_fringe_corner_w"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 7,
+   "y": 3,
+   "terrain": "ground",
+   "height": 1,
+   "look": "grass",
+   "variant": "c",
+   "tile": "grass_top_c",
+   "overlays": [
+    "raised_rim_ne",
+    "raised_rim_nw"
+   ],
+   "terrace": [
+    "cliff_right_h1",
+    "grass_overhang_right",
+    "grass_overhang_corner_right"
+   ]
+  },
+  {
+   "x": 8,
+   "y": 3,
+   "terrain": "ground",
+   "height": 0,
+   "look": "sand",
+   "variant": "b",
+   "tile": "sand_b",
+   "overlays": [
+    "grass_fringe_se",
+    "grass_fringe_corner_n",
+    "foot_ao_nw"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 9,
+   "y": 3,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "c",
+   "tile": "grass_top_c",
+   "overlays": [],
+   "terrace": []
+  },
+  {
+   "x": 10,
+   "y": 3,
+   "terrain": "ground",
+   "height": 1,
+   "look": "grass",
+   "variant": "b",
+   "tile": "grass_top_b",
+   "overlays": [
+    "raised_rim_ne",
+    "raised_rim_nw"
+   ],
+   "terrace": [
+    "cliff_left_h1",
+    "grass_overhang_left",
+    "grass_overhang_corner_left",
+    "cliff_right_h1",
+    "grass_overhang_right",
+    "grass_overhang_corner_right",
+    "grass_overhang_corner_front"
+   ]
+  },
+  {
+   "x": 11,
+   "y": 3,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "a",
+   "tile": "grass_top_a",
+   "overlays": [
+    "foot_ao_nw"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 12,
+   "y": 3,
+   "terrain": "ground",
+   "height": 0,
+   "look": "sand",
+   "variant": "a",
+   "tile": "sand_a",
+   "overlays": [
+    "wet_earth_fringe_ne",
+    "grass_fringe_nw",
+    "grass_fringe_sw",
+    "grass_fringe_corner_e"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 13,
+   "y": 3,
+   "terrain": "ground",
+   "height": 0,
+   "look": "sand",
+   "variant": "c",
+   "tile": "sand_c",
+   "overlays": [
+    "grass_fringe_ne",
+    "grass_fringe_se",
+    "grass_fringe_sw"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 14,
+   "y": 3,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "c",
+   "tile": "grass_top_c",
+   "overlays": [],
+   "terrace": []
+  },
+  {
+   "x": 0,
+   "y": 4,
+   "terrain": "water",
+   "height": 0,
+   "look": "water",
+   "variant": "b",
+   "tile": "water_b",
+   "overlays": [
+    "water_edge_ne",
+    "water_edge_se"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 1,
+   "y": 4,
+   "terrain": "ground",
+   "height": 0,
+   "look": "sand",
+   "variant": "a",
+   "tile": "sand_a",
+   "overlays": [],
+   "terrace": []
+  },
+  {
+   "x": 2,
+   "y": 4,
+   "terrain": "ground",
+   "height": 0,
+   "look": "sand",
+   "variant": "b",
+   "tile": "sand_b",
+   "overlays": [
+    "wet_earth_fringe_sw",
+    "grass_fringe_corner_e"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 3,
+   "y": 4,
+   "terrain": "ground",
+   "height": 0,
+   "look": "sand",
+   "variant": "a",
+   "tile": "sand_a",
+   "overlays": [
+    "grass_fringe_ne",
+    "wet_earth_fringe_sw"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 4,
+   "y": 4,
+   "terrain": "ground",
+   "height": 0,
+   "look": "sand",
+   "variant": "b",
+   "tile": "sand_b",
+   "overlays": [
+    "grass_fringe_se",
+    "grass_fringe_corner_n",
+    "foot_ao_ne"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 5,
+   "y": 4,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "c",
+   "tile": "grass_top_c",
+   "overlays": [],
+   "terrace": []
+  },
+  {
+   "x": 6,
+   "y": 4,
+   "terrain": "ground",
+   "height": 0,
+   "look": "stone",
+   "variant": "c",
+   "tile": "stone_flag_c",
+   "overlays": [
+    "wet_earth_fringe_ne",
+    "grass_fringe_nw"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 7,
+   "y": 4,
+   "terrain": "ground",
+   "height": 2,
+   "look": "grass",
+   "variant": "d",
+   "tile": "grass_top_d",
+   "overlays": [
+    "raised_rim_ne",
+    "raised_rim_nw"
+   ],
+   "terrace": [
+    "cliff_left_h2",
+    "grass_overhang_left",
+    "grass_overhang_corner_left",
+    "cliff_right_h2",
+    "grass_overhang_right",
+    "grass_overhang_corner_right",
+    "grass_overhang_corner_front"
+   ]
+  },
+  {
+   "x": 8,
+   "y": 4,
+   "terrain": "ground",
+   "height": 0,
+   "look": "sand",
+   "variant": "a",
+   "tile": "sand_a",
+   "overlays": [
+    "grass_fringe_se",
+    "foot_ao_nw"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 9,
+   "y": 4,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "a",
+   "tile": "grass_top_a",
+   "overlays": [],
+   "terrace": []
+  },
+  {
+   "x": 10,
+   "y": 4,
+   "terrain": "water",
+   "height": 0,
+   "look": "water",
+   "variant": "b",
+   "tile": "water_b",
+   "overlays": [
+    "water_edge_ne",
+    "water_edge_nw",
+    "foot_ao_ne"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 11,
+   "y": 4,
+   "terrain": "water",
+   "height": 0,
+   "look": "water",
+   "variant": "a",
+   "tile": "water_a",
+   "overlays": [
+    "water_edge_ne",
+    "water_edge_se"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 12,
+   "y": 4,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "d",
+   "tile": "grass_top_d",
+   "overlays": [],
+   "terrace": []
+  },
+  {
+   "x": 13,
+   "y": 4,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "b",
+   "tile": "grass_top_b",
+   "overlays": [],
+   "terrace": []
+  },
+  {
+   "x": 14,
+   "y": 4,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "a",
+   "tile": "grass_top_a",
+   "overlays": [],
+   "terrace": []
+  },
+  {
+   "x": 0,
+   "y": 5,
+   "terrain": "water",
+   "height": 0,
+   "look": "water",
+   "variant": "a",
+   "tile": "water_a",
+   "overlays": [
+    "water_edge_se",
+    "water_edge_sw"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 1,
+   "y": 5,
+   "terrain": "ground",
+   "height": 0,
+   "look": "sand",
+   "variant": "c",
+   "tile": "sand_c",
+   "overlays": [
+    "wet_earth_fringe_se",
+    "grass_fringe_corner_w"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 2,
+   "y": 5,
+   "terrain": "mud",
+   "height": 0,
+   "look": "wet_earth",
+   "variant": "a",
+   "tile": "wet_earth_a",
+   "overlays": [],
+   "terrace": []
+  },
+  {
+   "x": 3,
+   "y": 5,
+   "terrain": "mud",
+   "height": 0,
+   "look": "wet_earth",
+   "variant": "a",
+   "tile": "wet_earth_a",
+   "overlays": [],
+   "terrace": []
+  },
+  {
+   "x": 4,
+   "y": 5,
+   "terrain": "ground",
+   "height": 0,
+   "look": "sand",
+   "variant": "c",
+   "tile": "sand_c",
+   "overlays": [
+    "wet_earth_fringe_nw",
+    "grass_fringe_corner_e"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 5,
+   "y": 5,
+   "terrain": "ground",
+   "height": 1,
+   "look": "grass",
+   "variant": "d",
+   "tile": "grass_top_d",
+   "overlays": [
+    "raised_rim_ne",
+    "raised_rim_nw"
+   ],
+   "terrace": [
+    "cliff_left_h1",
+    "grass_overhang_left",
+    "grass_overhang_corner_left",
+    "cliff_right_h1",
+    "grass_overhang_right",
+    "grass_overhang_corner_right",
+    "grass_overhang_corner_front"
+   ]
+  },
+  {
+   "x": 6,
+   "y": 5,
+   "terrain": "ground",
+   "height": 0,
+   "look": "stone",
+   "variant": "a",
+   "tile": "stone_flag_a",
+   "overlays": [
+    "grass_fringe_corner_n",
+    "foot_ao_nw"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 7,
+   "y": 5,
+   "terrain": "ground",
+   "height": 0,
+   "look": "stone",
+   "variant": "c",
+   "tile": "stone_flag_c",
+   "overlays": [
+    "foot_ao_ne"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 8,
+   "y": 5,
+   "terrain": "ground",
+   "height": 0,
+   "look": "stone",
+   "variant": "b",
+   "tile": "stone_flag_b",
+   "overlays": [
+    "grass_fringe_corner_e",
+    "grass_fringe_corner_s"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 9,
+   "y": 5,
+   "terrain": "ground",
+   "height": 1,
+   "look": "grass",
+   "variant": "c",
+   "tile": "grass_top_c",
+   "overlays": [
+    "raised_rim_ne",
+    "raised_rim_nw"
+   ],
+   "terrace": [
+    "cliff_left_h1",
+    "grass_overhang_left",
+    "grass_overhang_corner_left",
+    "cliff_right_h1",
+    "grass_overhang_right",
+    "grass_overhang_corner_right",
+    "grass_overhang_corner_front"
+   ]
+  },
+  {
+   "x": 10,
+   "y": 5,
+   "terrain": "water",
+   "height": 0,
+   "look": "water",
+   "variant": "a",
+   "tile": "water_a",
+   "overlays": [
+    "water_edge_nw",
+    "water_edge_sw",
+    "foot_ao_nw"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 11,
+   "y": 5,
+   "terrain": "water",
+   "height": 0,
+   "look": "water",
+   "variant": "b",
+   "tile": "water_b",
+   "overlays": [
+    "water_edge_se",
+    "water_edge_sw"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 12,
+   "y": 5,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "b",
+   "tile": "grass_top_b",
+   "overlays": [],
+   "terrace": []
+  },
+  {
+   "x": 13,
+   "y": 5,
+   "terrain": "mud",
+   "height": 0,
+   "look": "wet_earth",
+   "variant": "b",
+   "tile": "wet_earth_b",
+   "overlays": [
+    "grass_fringe_ne",
+    "grass_fringe_nw",
+    "grass_fringe_se"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 14,
+   "y": 5,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "d",
+   "tile": "grass_top_d",
+   "overlays": [],
+   "terrace": []
+  },
+  {
+   "x": 0,
+   "y": 6,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "c",
+   "tile": "grass_top_c",
+   "overlays": [],
+   "terrace": []
+  },
+  {
+   "x": 1,
+   "y": 6,
+   "terrain": "ground",
+   "height": 0,
+   "look": "sand",
+   "variant": "a",
+   "tile": "sand_a",
+   "overlays": [
+    "grass_fringe_nw",
+    "wet_earth_fringe_se",
+    "grass_fringe_sw"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 2,
+   "y": 6,
+   "terrain": "mud",
+   "height": 0,
+   "look": "wet_earth",
+   "variant": "a",
+   "tile": "wet_earth_a",
+   "overlays": [
+    "grass_fringe_sw"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 3,
+   "y": 6,
+   "terrain": "mud",
+   "height": 0,
+   "look": "wet_earth",
+   "variant": "a",
+   "tile": "wet_earth_a",
+   "overlays": [
+    "grass_fringe_corner_w"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 4,
+   "y": 6,
+   "terrain": "ground",
+   "height": 0,
+   "look": "sand",
+   "variant": "b",
+   "tile": "sand_b",
+   "overlays": [
+    "seal_slab",
+    "wet_earth_fringe_nw"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 5,
+   "y": 6,
+   "terrain": "ground",
+   "height": 0,
+   "look": "sand",
+   "variant": "a",
+   "tile": "sand_a",
+   "overlays": [
+    "foot_ao_ne"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 6,
+   "y": 6,
+   "terrain": "ground",
+   "height": 0,
+   "look": "stone",
+   "variant": "b",
+   "tile": "stone_flag_b",
+   "overlays": [],
+   "terrace": []
+  },
+  {
+   "x": 7,
+   "y": 6,
+   "terrain": "ground",
+   "height": 0,
+   "look": "stone",
+   "variant": "c",
+   "tile": "stone_flag_c",
+   "overlays": [],
+   "terrace": []
+  },
+  {
+   "x": 8,
+   "y": 6,
+   "terrain": "ground",
+   "height": 0,
+   "look": "stone",
+   "variant": "a",
+   "tile": "stone_flag_a",
+   "overlays": [
+    "seal_slab",
+    "grass_fringe_se"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 9,
+   "y": 6,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "a",
+   "tile": "grass_top_a",
+   "overlays": [
+    "foot_ao_ne"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 10,
+   "y": 6,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "c",
+   "tile": "grass_top_c",
+   "overlays": [],
+   "terrace": []
+  },
+  {
+   "x": 11,
+   "y": 6,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "a",
+   "tile": "grass_top_a",
+   "overlays": [],
+   "terrace": []
+  },
+  {
+   "x": 12,
+   "y": 6,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "d",
+   "tile": "grass_top_d",
+   "overlays": [],
+   "terrace": []
+  },
+  {
+   "x": 13,
+   "y": 6,
+   "terrain": "mud",
+   "height": 0,
+   "look": "wet_earth",
+   "variant": "a",
+   "tile": "wet_earth_a",
+   "overlays": [
+    "grass_fringe_nw",
+    "grass_fringe_se"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 14,
+   "y": 6,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "b",
+   "tile": "grass_top_b",
+   "overlays": [],
+   "terrace": []
+  },
+  {
+   "x": 0,
+   "y": 7,
+   "terrain": "ground",
+   "height": 0,
+   "look": "sand",
+   "variant": "a",
+   "tile": "sand_a",
+   "overlays": [
+    "grass_fringe_ne",
+    "grass_fringe_se",
+    "grass_fringe_sw"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 1,
+   "y": 7,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "c",
+   "tile": "grass_top_c",
+   "overlays": [],
+   "terrace": []
+  },
+  {
+   "x": 2,
+   "y": 7,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "b",
+   "tile": "grass_top_b",
+   "overlays": [],
+   "terrace": []
+  },
+  {
+   "x": 3,
+   "y": 7,
+   "terrain": "ground",
+   "height": 1,
+   "look": "grass",
+   "variant": "a",
+   "tile": "grass_top_a",
+   "overlays": [
+    "raised_rim_ne",
+    "raised_rim_nw"
+   ],
+   "terrace": [
+    "cliff_left_h1",
+    "grass_overhang_left",
+    "grass_overhang_corner_left",
+    "cliff_right_h1",
+    "grass_overhang_right",
+    "grass_overhang_corner_right",
+    "grass_overhang_corner_front"
+   ]
+  },
+  {
+   "x": 4,
+   "y": 7,
+   "terrain": "water",
+   "height": 0,
+   "look": "water",
+   "variant": "b",
+   "tile": "water_b",
+   "overlays": [
+    "water_edge_ne",
+    "water_edge_nw",
+    "water_edge_corner_s",
+    "foot_ao_nw"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 5,
+   "y": 7,
+   "terrain": "water",
+   "height": 0,
+   "look": "water",
+   "variant": "a",
+   "tile": "water_a",
+   "overlays": [
+    "water_edge_ne",
+    "water_edge_se",
+    "water_edge_sw"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 6,
+   "y": 7,
+   "terrain": "ground",
+   "height": 0,
+   "look": "stone",
+   "variant": "c",
+   "tile": "stone_flag_c",
+   "overlays": [
+    "grass_fringe_corner_w"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 7,
+   "y": 7,
+   "terrain": "ground",
+   "height": 1,
+   "look": "grass",
+   "variant": "d",
+   "tile": "grass_top_d",
+   "overlays": [
+    "raised_rim_ne",
+    "raised_rim_nw"
+   ],
+   "terrace": [
+    "cliff_left_h1",
+    "grass_overhang_left",
+    "grass_overhang_corner_left",
+    "cliff_right_h1",
+    "grass_overhang_right",
+    "grass_overhang_corner_right",
+    "grass_overhang_corner_front"
+   ]
+  },
+  {
+   "x": 8,
+   "y": 7,
+   "terrain": "ground",
+   "height": 0,
+   "look": "stone",
+   "variant": "c",
+   "tile": "stone_flag_c",
+   "overlays": [
+    "grass_fringe_se",
+    "foot_ao_nw"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 9,
+   "y": 7,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "d",
+   "tile": "grass_top_d",
+   "overlays": [],
+   "terrace": []
+  },
+  {
+   "x": 10,
+   "y": 7,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "b",
+   "tile": "grass_top_b",
+   "overlays": [],
+   "terrace": []
+  },
+  {
+   "x": 11,
+   "y": 7,
+   "terrain": "ground",
+   "height": 1,
+   "look": "grass",
+   "variant": "d",
+   "tile": "grass_top_d",
+   "overlays": [
+    "raised_rim_ne",
+    "raised_rim_nw"
+   ],
+   "terrace": [
+    "cliff_left_h1",
+    "grass_overhang_left",
+    "grass_overhang_corner_left",
+    "cliff_right_h1",
+    "grass_overhang_right",
+    "grass_overhang_corner_right",
+    "grass_overhang_corner_front"
+   ]
+  },
+  {
+   "x": 12,
+   "y": 7,
+   "terrain": "water",
+   "height": 0,
+   "look": "water",
+   "variant": "a",
+   "tile": "water_a",
+   "overlays": [
+    "water_edge_ne",
+    "water_edge_nw",
+    "water_edge_corner_s",
+    "foot_ao_nw"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 13,
+   "y": 7,
+   "terrain": "water",
+   "height": 0,
+   "look": "water",
+   "variant": "b",
+   "tile": "water_b",
+   "overlays": [
+    "water_edge_ne",
+    "water_edge_se",
+    "water_edge_sw"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 14,
+   "y": 7,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "a",
+   "tile": "grass_top_a",
+   "overlays": [],
+   "terrace": []
+  },
+  {
+   "x": 0,
+   "y": 8,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "d",
+   "tile": "grass_top_d",
+   "overlays": [],
+   "terrace": []
+  },
+  {
+   "x": 1,
+   "y": 8,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "a",
+   "tile": "grass_top_a",
+   "overlays": [],
+   "terrace": []
+  },
+  {
+   "x": 2,
+   "y": 8,
+   "terrain": "ground",
+   "height": 1,
+   "look": "grass",
+   "variant": "c",
+   "tile": "grass_top_c",
+   "overlays": [
+    "raised_rim_ne",
+    "raised_rim_nw"
+   ],
+   "terrace": [
+    "cliff_left_h1",
+    "grass_overhang_left",
+    "grass_overhang_corner_left",
+    "cliff_right_h1",
+    "grass_overhang_right",
+    "grass_overhang_corner_right",
+    "grass_overhang_corner_front"
+   ]
+  },
+  {
+   "x": 3,
+   "y": 8,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "d",
+   "tile": "grass_top_d",
+   "overlays": [
+    "foot_ao_ne",
+    "foot_ao_nw"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 4,
+   "y": 8,
+   "terrain": "water",
+   "height": 0,
+   "look": "water",
+   "variant": "a",
+   "tile": "water_a",
+   "overlays": [
+    "water_edge_nw",
+    "water_edge_se",
+    "water_edge_sw"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 5,
+   "y": 8,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "d",
+   "tile": "grass_top_d",
+   "overlays": [],
+   "terrace": []
+  },
+  {
+   "x": 6,
+   "y": 8,
+   "terrain": "ground",
+   "height": 0,
+   "look": "stone",
+   "variant": "c",
+   "tile": "stone_flag_c",
+   "overlays": [
+    "seal_slab",
+    "grass_fringe_nw"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 7,
+   "y": 8,
+   "terrain": "ground",
+   "height": 0,
+   "look": "stone",
+   "variant": "c",
+   "tile": "stone_flag_c",
+   "overlays": [
+    "foot_ao_ne"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 8,
+   "y": 8,
+   "terrain": "ground",
+   "height": 0,
+   "look": "stone",
+   "variant": "b",
+   "tile": "stone_flag_b",
+   "overlays": [
+    "grass_fringe_corner_e"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 9,
+   "y": 8,
+   "terrain": "ground",
+   "height": 0,
+   "look": "sand",
+   "variant": "c",
+   "tile": "sand_c",
+   "overlays": [
+    "grass_fringe_ne"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 10,
+   "y": 8,
+   "terrain": "ground",
+   "height": 0,
+   "look": "sand",
+   "variant": "b",
+   "tile": "sand_b",
+   "overlays": [
+    "seal_slab",
+    "grass_fringe_ne",
+    "grass_fringe_se"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 11,
+   "y": 8,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "c",
+   "tile": "grass_top_c",
+   "overlays": [
+    "foot_ao_ne"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 12,
+   "y": 8,
+   "terrain": "water",
+   "height": 0,
+   "look": "water",
+   "variant": "b",
+   "tile": "water_b",
+   "overlays": [
+    "water_edge_nw",
+    "water_edge_se",
+    "water_edge_sw"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 13,
+   "y": 8,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "a",
+   "tile": "grass_top_a",
+   "overlays": [],
+   "terrace": []
+  },
+  {
+   "x": 14,
+   "y": 8,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "d",
+   "tile": "grass_top_d",
+   "overlays": [],
+   "terrace": []
+  },
+  {
+   "x": 0,
+   "y": 9,
+   "terrain": "mud",
+   "height": 0,
+   "look": "wet_earth",
+   "variant": "a",
+   "tile": "wet_earth_a",
+   "overlays": [
+    "grass_fringe_ne",
+    "grass_fringe_se",
+    "grass_fringe_sw"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 1,
+   "y": 9,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "c",
+   "tile": "grass_top_c",
+   "overlays": [],
+   "terrace": []
+  },
+  {
+   "x": 2,
+   "y": 9,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "d",
+   "tile": "grass_top_d",
+   "overlays": [
+    "foot_ao_ne"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 3,
+   "y": 9,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "a",
+   "tile": "grass_top_a",
+   "overlays": [],
+   "terrace": []
+  },
+  {
+   "x": 4,
+   "y": 9,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "d",
+   "tile": "grass_top_d",
+   "overlays": [],
+   "terrace": []
+  },
+  {
+   "x": 5,
+   "y": 9,
+   "terrain": "ground",
+   "height": 1,
+   "look": "grass",
+   "variant": "a",
+   "tile": "grass_top_a",
+   "overlays": [
+    "raised_rim_ne",
+    "raised_rim_nw"
+   ],
+   "terrace": [
+    "cliff_left_h1",
+    "grass_overhang_left",
+    "grass_overhang_corner_left",
+    "cliff_right_h1",
+    "grass_overhang_right",
+    "grass_overhang_corner_right",
+    "grass_overhang_corner_front"
+   ]
+  },
+  {
+   "x": 6,
+   "y": 9,
+   "terrain": "ground",
+   "height": 0,
+   "look": "sand",
+   "variant": "c",
+   "tile": "sand_c",
+   "overlays": [
+    "wet_earth_fringe_sw",
+    "grass_fringe_corner_n",
+    "foot_ao_nw"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 7,
+   "y": 9,
+   "terrain": "ground",
+   "height": 1,
+   "look": "grass",
+   "variant": "b",
+   "tile": "grass_top_b",
+   "overlays": [
+    "raised_rim_ne",
+    "raised_rim_nw"
+   ],
+   "terrace": [
+    "cliff_right_h1",
+    "grass_overhang_right",
+    "grass_overhang_corner_right"
+   ]
+  },
+  {
+   "x": 8,
+   "y": 9,
+   "terrain": "ground",
+   "height": 0,
+   "look": "sand",
+   "variant": "c",
+   "tile": "sand_c",
+   "overlays": [
+    "grass_fringe_corner_s",
+    "foot_ao_nw"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 9,
+   "y": 9,
+   "terrain": "ground",
+   "height": 1,
+   "look": "grass",
+   "variant": "b",
+   "tile": "grass_top_b",
+   "overlays": [
+    "raised_rim_ne",
+    "raised_rim_nw"
+   ],
+   "terrace": [
+    "cliff_left_h1",
+    "grass_overhang_left",
+    "grass_overhang_corner_left",
+    "cliff_right_h1",
+    "grass_overhang_right",
+    "grass_overhang_corner_right",
+    "grass_overhang_corner_front"
+   ]
+  },
+  {
+   "x": 10,
+   "y": 9,
+   "terrain": "ground",
+   "height": 0,
+   "look": "sand",
+   "variant": "d",
+   "tile": "sand_d",
+   "overlays": [
+    "grass_fringe_se",
+    "grass_fringe_corner_w",
+    "foot_ao_nw"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 11,
+   "y": 9,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "b",
+   "tile": "grass_top_b",
+   "overlays": [],
+   "terrace": []
+  },
+  {
+   "x": 12,
+   "y": 9,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "a",
+   "tile": "grass_top_a",
+   "overlays": [],
+   "terrace": []
+  },
+  {
+   "x": 13,
+   "y": 9,
+   "terrain": "ground",
+   "height": 0,
+   "look": "sand",
+   "variant": "a",
+   "tile": "sand_a",
+   "overlays": [
+    "grass_fringe_ne",
+    "grass_fringe_nw",
+    "grass_fringe_se"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 14,
+   "y": 9,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "c",
+   "tile": "grass_top_c",
+   "overlays": [],
+   "terrace": []
+  },
+  {
+   "x": 0,
+   "y": 10,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "b",
+   "tile": "grass_top_b",
+   "overlays": [],
+   "terrace": []
+  },
+  {
+   "x": 1,
+   "y": 10,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "d",
+   "tile": "grass_top_d",
+   "overlays": [],
+   "terrace": []
+  },
+  {
+   "x": 2,
+   "y": 10,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "c",
+   "tile": "grass_top_c",
+   "overlays": [],
+   "terrace": []
+  },
+  {
+   "x": 3,
+   "y": 10,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "b",
+   "tile": "grass_top_b",
+   "overlays": [],
+   "terrace": []
+  },
+  {
+   "x": 4,
+   "y": 10,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "c",
+   "tile": "grass_top_c",
+   "overlays": [],
+   "terrace": []
+  },
+  {
+   "x": 5,
+   "y": 10,
+   "terrain": "mud",
+   "height": 0,
+   "look": "wet_earth",
+   "variant": "b",
+   "tile": "wet_earth_b",
+   "overlays": [
+    "grass_fringe_nw",
+    "foot_ao_ne"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 6,
+   "y": 10,
+   "terrain": "mud",
+   "height": 0,
+   "look": "wet_earth",
+   "variant": "a",
+   "tile": "wet_earth_a",
+   "overlays": [],
+   "terrace": []
+  },
+  {
+   "x": 7,
+   "y": 10,
+   "terrain": "ground",
+   "height": 2,
+   "look": "grass",
+   "variant": "a",
+   "tile": "grass_top_a",
+   "overlays": [
+    "raised_rim_ne",
+    "raised_rim_nw"
+   ],
+   "terrace": [
+    "cliff_left_h1",
+    "grass_overhang_left",
+    "grass_overhang_corner_left",
+    "cliff_right_h2",
+    "grass_overhang_right",
+    "grass_overhang_corner_right",
+    "grass_overhang_corner_front"
+   ]
+  },
+  {
+   "x": 8,
+   "y": 10,
+   "terrain": "ground",
+   "height": 0,
+   "look": "sand",
+   "variant": "a",
+   "tile": "sand_a",
+   "overlays": [
+    "grass_fringe_se",
+    "foot_ao_nw"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 9,
+   "y": 10,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "d",
+   "tile": "grass_top_d",
+   "overlays": [
+    "foot_ao_ne"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 10,
+   "y": 10,
+   "terrain": "ground",
+   "height": 0,
+   "look": "sand",
+   "variant": "a",
+   "tile": "sand_a",
+   "overlays": [
+    "grass_fringe_nw",
+    "grass_fringe_corner_e"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 11,
+   "y": 10,
+   "terrain": "ground",
+   "height": 0,
+   "look": "sand",
+   "variant": "b",
+   "tile": "sand_b",
+   "overlays": [
+    "grass_fringe_ne",
+    "grass_fringe_se"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 12,
+   "y": 10,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "c",
+   "tile": "grass_top_c",
+   "overlays": [],
+   "terrace": []
+  },
+  {
+   "x": 13,
+   "y": 10,
+   "terrain": "water",
+   "height": 0,
+   "look": "water",
+   "variant": "a",
+   "tile": "water_a",
+   "overlays": [
+    "water_edge_ne",
+    "water_edge_nw",
+    "water_edge_sw"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 14,
+   "y": 10,
+   "terrain": "water",
+   "height": 0,
+   "look": "water",
+   "variant": "b",
+   "tile": "water_b",
+   "overlays": [
+    "water_edge_ne",
+    "water_edge_sw"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 0,
+   "y": 11,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "a",
+   "tile": "grass_top_a",
+   "overlays": [],
+   "terrace": []
+  },
+  {
+   "x": 1,
+   "y": 11,
+   "terrain": "ground",
+   "height": 0,
+   "look": "sand",
+   "variant": "b",
+   "tile": "sand_b",
+   "overlays": [
+    "grass_fringe_ne",
+    "grass_fringe_nw",
+    "wet_earth_fringe_sw"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 2,
+   "y": 11,
+   "terrain": "ground",
+   "height": 0,
+   "look": "sand",
+   "variant": "a",
+   "tile": "sand_a",
+   "overlays": [
+    "grass_fringe_ne",
+    "wet_earth_fringe_sw",
+    "grass_fringe_corner_s"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 3,
+   "y": 11,
+   "terrain": "ground",
+   "height": 0,
+   "look": "sand",
+   "variant": "b",
+   "tile": "sand_b",
+   "overlays": [
+    "grass_fringe_ne",
+    "grass_fringe_sw"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 4,
+   "y": 11,
+   "terrain": "ground",
+   "height": 1,
+   "look": "grass",
+   "variant": "a",
+   "tile": "grass_top_a",
+   "overlays": [
+    "raised_rim_ne",
+    "raised_rim_nw"
+   ],
+   "terrace": [
+    "cliff_left_h1",
+    "grass_overhang_left",
+    "grass_overhang_corner_left",
+    "cliff_right_h1",
+    "grass_overhang_right",
+    "grass_overhang_corner_right",
+    "grass_overhang_corner_front"
+   ]
+  },
+  {
+   "x": 5,
+   "y": 11,
+   "terrain": "mud",
+   "height": 0,
+   "look": "wet_earth",
+   "variant": "a",
+   "tile": "wet_earth_a",
+   "overlays": [
+    "grass_fringe_corner_n",
+    "foot_ao_nw"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 6,
+   "y": 11,
+   "terrain": "mud",
+   "height": 0,
+   "look": "wet_earth",
+   "variant": "a",
+   "tile": "wet_earth_a",
+   "overlays": [
+    "grass_fringe_corner_s"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 7,
+   "y": 11,
+   "terrain": "ground",
+   "height": 1,
+   "look": "grass",
+   "variant": "b",
+   "tile": "grass_top_b",
+   "overlays": [
+    "foot_ao_ne",
+    "raised_rim_nw"
+   ],
+   "terrace": [
+    "cliff_left_h1",
+    "grass_overhang_left",
+    "grass_overhang_corner_left"
+   ]
+  },
+  {
+   "x": 8,
+   "y": 11,
+   "terrain": "ground",
+   "height": 1,
+   "look": "grass",
+   "variant": "a",
+   "tile": "grass_top_a",
+   "overlays": [
+    "raised_rim_ne"
+   ],
+   "terrace": [
+    "cliff_left_h1",
+    "grass_overhang_left",
+    "grass_overhang_corner_left",
+    "cliff_right_h1",
+    "grass_overhang_right",
+    "grass_overhang_corner_right",
+    "grass_overhang_corner_front"
+   ]
+  },
+  {
+   "x": 9,
+   "y": 11,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "c",
+   "tile": "grass_top_c",
+   "overlays": [
+    "foot_ao_nw"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 10,
+   "y": 11,
+   "terrain": "ground",
+   "height": 1,
+   "look": "grass",
+   "variant": "d",
+   "tile": "grass_top_d",
+   "overlays": [
+    "raised_rim_ne",
+    "raised_rim_nw"
+   ],
+   "terrace": [
+    "cliff_left_h1",
+    "grass_overhang_left",
+    "grass_overhang_corner_left",
+    "cliff_right_h1",
+    "grass_overhang_right",
+    "grass_overhang_corner_right",
+    "grass_overhang_corner_front"
+   ]
+  },
+  {
+   "x": 11,
+   "y": 11,
+   "terrain": "ground",
+   "height": 0,
+   "look": "sand",
+   "variant": "a",
+   "tile": "sand_a",
+   "overlays": [
+    "wet_earth_fringe_sw",
+    "grass_fringe_corner_e",
+    "grass_fringe_corner_w",
+    "foot_ao_nw"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 12,
+   "y": 11,
+   "terrain": "ground",
+   "height": 0,
+   "look": "sand",
+   "variant": "b",
+   "tile": "sand_b",
+   "overlays": [
+    "grass_fringe_ne",
+    "wet_earth_fringe_sw",
+    "grass_fringe_corner_s"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 13,
+   "y": 11,
+   "terrain": "ground",
+   "height": 0,
+   "look": "sand",
+   "variant": "a",
+   "tile": "sand_a",
+   "overlays": [
+    "grass_fringe_sw",
+    "grass_fringe_corner_n"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 14,
+   "y": 11,
+   "terrain": "ground",
+   "height": 0,
+   "look": "sand",
+   "variant": "b",
+   "tile": "sand_b",
+   "overlays": [
+    "grass_fringe_corner_w"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 0,
+   "y": 12,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "d",
+   "tile": "grass_top_d",
+   "overlays": [],
+   "terrace": []
+  },
+  {
+   "x": 1,
+   "y": 12,
+   "terrain": "mud",
+   "height": 0,
+   "look": "wet_earth",
+   "variant": "a",
+   "tile": "wet_earth_a",
+   "overlays": [
+    "grass_fringe_nw",
+    "grass_fringe_corner_s"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 2,
+   "y": 12,
+   "terrain": "mud",
+   "height": 0,
+   "look": "wet_earth",
+   "variant": "a",
+   "tile": "wet_earth_a",
+   "overlays": [
+    "grass_fringe_se",
+    "grass_fringe_sw"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 3,
+   "y": 12,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "b",
+   "tile": "grass_top_b",
+   "overlays": [],
+   "terrace": []
+  },
+  {
+   "x": 4,
+   "y": 12,
+   "terrain": "ground",
+   "height": 0,
+   "look": "sand",
+   "variant": "b",
+   "tile": "sand_b",
+   "overlays": [
+    "grass_fringe_nw",
+    "grass_fringe_sw",
+    "foot_ao_ne"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 5,
+   "y": 12,
+   "terrain": "ground",
+   "height": 0,
+   "look": "sand",
+   "variant": "a",
+   "tile": "sand_a",
+   "overlays": [
+    "wet_earth_fringe_ne",
+    "grass_fringe_sw"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 6,
+   "y": 12,
+   "terrain": "ground",
+   "height": 0,
+   "look": "sand",
+   "variant": "b",
+   "tile": "sand_b",
+   "overlays": [
+    "wet_earth_fringe_ne",
+    "grass_fringe_se",
+    "grass_fringe_sw"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 7,
+   "y": 12,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "a",
+   "tile": "grass_top_a",
+   "overlays": [
+    "foot_ao_ne"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 8,
+   "y": 12,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "b",
+   "tile": "grass_top_b",
+   "overlays": [
+    "foot_ao_ne"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 9,
+   "y": 12,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "d",
+   "tile": "grass_top_d",
+   "overlays": [],
+   "terrace": []
+  },
+  {
+   "x": 10,
+   "y": 12,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "c",
+   "tile": "grass_top_c",
+   "overlays": [
+    "foot_ao_ne"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 11,
+   "y": 12,
+   "terrain": "mud",
+   "height": 0,
+   "look": "wet_earth",
+   "variant": "a",
+   "tile": "wet_earth_a",
+   "overlays": [
+    "grass_fringe_nw"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 12,
+   "y": 12,
+   "terrain": "mud",
+   "height": 0,
+   "look": "wet_earth",
+   "variant": "a",
+   "tile": "wet_earth_a",
+   "overlays": [
+    "grass_fringe_se"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 13,
+   "y": 12,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "a",
+   "tile": "grass_top_a",
+   "overlays": [],
+   "terrace": []
+  },
+  {
+   "x": 14,
+   "y": 12,
+   "terrain": "ground",
+   "height": 0,
+   "look": "sand",
+   "variant": "a",
+   "tile": "sand_a",
+   "overlays": [
+    "grass_fringe_nw",
+    "grass_fringe_sw"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 0,
+   "y": 13,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "c",
+   "tile": "grass_top_c",
+   "overlays": [],
+   "terrace": []
+  },
+  {
+   "x": 1,
+   "y": 13,
+   "terrain": "mud",
+   "height": 0,
+   "look": "wet_earth",
+   "variant": "b",
+   "tile": "wet_earth_b",
+   "overlays": [
+    "grass_fringe_nw",
+    "grass_fringe_se",
+    "grass_fringe_sw"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 2,
+   "y": 13,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "d",
+   "tile": "grass_top_d",
+   "overlays": [],
+   "terrace": []
+  },
+  {
+   "x": 3,
+   "y": 13,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "c",
+   "tile": "grass_top_c",
+   "overlays": [],
+   "terrace": []
+  },
+  {
+   "x": 4,
+   "y": 13,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "b",
+   "tile": "grass_top_b",
+   "overlays": [],
+   "terrace": []
+  },
+  {
+   "x": 5,
+   "y": 13,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "a",
+   "tile": "grass_top_a",
+   "overlays": [],
+   "terrace": []
+  },
+  {
+   "x": 6,
+   "y": 13,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "b",
+   "tile": "grass_top_b",
+   "overlays": [],
+   "terrace": []
+  },
+  {
+   "x": 7,
+   "y": 13,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "d",
+   "tile": "grass_top_d",
+   "overlays": [],
+   "terrace": []
+  },
+  {
+   "x": 8,
+   "y": 13,
+   "terrain": "water",
+   "height": 0,
+   "look": "water",
+   "variant": "a",
+   "tile": "water_a",
+   "overlays": [
+    "water_edge_ne",
+    "water_edge_nw"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 9,
+   "y": 13,
+   "terrain": "water",
+   "height": 0,
+   "look": "water",
+   "variant": "b",
+   "tile": "water_b",
+   "overlays": [
+    "water_edge_ne",
+    "water_edge_se"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 10,
+   "y": 13,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "a",
+   "tile": "grass_top_a",
+   "overlays": [],
+   "terrace": []
+  },
+  {
+   "x": 11,
+   "y": 13,
+   "terrain": "mud",
+   "height": 0,
+   "look": "wet_earth",
+   "variant": "a",
+   "tile": "wet_earth_a",
+   "overlays": [
+    "grass_fringe_nw",
+    "grass_fringe_corner_s"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 12,
+   "y": 13,
+   "terrain": "mud",
+   "height": 0,
+   "look": "wet_earth",
+   "variant": "b",
+   "tile": "wet_earth_b",
+   "overlays": [
+    "grass_fringe_se",
+    "grass_fringe_sw"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 13,
+   "y": 13,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "d",
+   "tile": "grass_top_d",
+   "overlays": [],
+   "terrace": []
+  },
+  {
+   "x": 14,
+   "y": 13,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "c",
+   "tile": "grass_top_c",
+   "overlays": [],
+   "terrace": []
+  },
+  {
+   "x": 0,
+   "y": 14,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "b",
+   "tile": "grass_top_b",
+   "overlays": [],
+   "terrace": []
+  },
+  {
+   "x": 1,
+   "y": 14,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "d",
+   "tile": "grass_top_d",
+   "overlays": [],
+   "terrace": []
+  },
+  {
+   "x": 2,
+   "y": 14,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "c",
+   "tile": "grass_top_c",
+   "overlays": [],
+   "terrace": []
+  },
+  {
+   "x": 3,
+   "y": 14,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "d",
+   "tile": "grass_top_d",
+   "overlays": [],
+   "terrace": []
+  },
+  {
+   "x": 4,
+   "y": 14,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "c",
+   "tile": "grass_top_c",
+   "overlays": [],
+   "terrace": []
+  },
+  {
+   "x": 5,
+   "y": 14,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "d",
+   "tile": "grass_top_d",
+   "overlays": [],
+   "terrace": []
+  },
+  {
+   "x": 6,
+   "y": 14,
+   "terrain": "ground",
+   "height": 0,
+   "look": "sand",
+   "variant": "b",
+   "tile": "sand_b",
+   "overlays": [
+    "grass_fringe_ne",
+    "grass_fringe_nw"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 7,
+   "y": 14,
+   "terrain": "ground",
+   "height": 0,
+   "look": "sand",
+   "variant": "a",
+   "tile": "sand_a",
+   "overlays": [
+    "grass_fringe_ne"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 8,
+   "y": 14,
+   "terrain": "water",
+   "height": 0,
+   "look": "water",
+   "variant": "b",
+   "tile": "water_b",
+   "overlays": [
+    "water_edge_nw"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 9,
+   "y": 14,
+   "terrain": "water",
+   "height": 0,
+   "look": "water",
+   "variant": "a",
+   "tile": "water_a",
+   "overlays": [
+    "water_edge_se"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 10,
+   "y": 14,
+   "terrain": "ground",
+   "height": 0,
+   "look": "sand",
+   "variant": "b",
+   "tile": "sand_b",
+   "overlays": [
+    "grass_fringe_ne"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 11,
+   "y": 14,
+   "terrain": "ground",
+   "height": 0,
+   "look": "sand",
+   "variant": "c",
+   "tile": "sand_c",
+   "overlays": [
+    "wet_earth_fringe_ne",
+    "grass_fringe_se",
+    "grass_fringe_corner_n"
+   ],
+   "terrace": []
+  },
+  {
+   "x": 12,
+   "y": 14,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "c",
+   "tile": "grass_top_c",
+   "overlays": [],
+   "terrace": []
+  },
+  {
+   "x": 13,
+   "y": 14,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "a",
+   "tile": "grass_top_a",
+   "overlays": [],
+   "terrace": []
+  },
+  {
+   "x": 14,
+   "y": 14,
+   "terrain": "ground",
+   "height": 0,
+   "look": "grass",
+   "variant": "b",
+   "tile": "grass_top_b",
+   "overlays": [],
+   "terrace": []
+  }
+ ],
+ "props": [
+  {
+   "x": -1,
+   "y": 1,
+   "old_kind": "ruins",
+   "new_id": "standing_stone",
+   "height": 0,
+   "layer": "prop",
+   "note": "northwest rim cluster. off the walkable grid, along the rim. Tall props do not sit on a cell a fighter can enter."
+  },
+  {
+   "x": -1,
+   "y": 2,
+   "old_kind": "rock_pillar",
+   "new_id": "boulder_cluster",
+   "height": 0,
+   "layer": "prop",
+   "note": "northwest rim cluster. off the walkable grid, along the rim. Tall props do not sit on a cell a fighter can enter."
+  },
+  {
+   "x": -1,
+   "y": 6,
+   "old_kind": "hay",
+   "new_id": "lilac_shrub",
+   "height": 0,
+   "layer": "prop",
+   "note": "northwest rim cluster. off the walkable grid, along the rim. Tall props do not sit on a cell a fighter can enter."
+  },
+  {
+   "x": -1,
+   "y": 8,
+   "old_kind": "fence",
+   "new_id": "fallen_log_2c",
+   "height": 0,
+   "layer": "prop",
+   "note": "northwest rim cluster. Anchor (-1, 8), back cell (-2, 8), both off the board. off the walkable grid, along the rim. Tall props do not sit on a cell a fighter can enter."
+  },
+  {
+   "x": -1,
+   "y": 10,
+   "old_kind": "hay",
+   "new_id": "lilac_bush",
+   "height": 0,
+   "layer": "prop",
+   "note": "northwest rim cluster. Taller than a tuft, so it leaves the walkable cells. off the walkable grid, along the rim. Tall props do not sit on a cell a fighter can enter."
+  },
+  {
+   "x": 3,
+   "y": -1,
+   "old_kind": "well",
+   "new_id": "stone_well",
+   "height": 0,
+   "layer": "prop",
+   "note": "northeast rim cluster. off the walkable grid, along the rim. Tall props do not sit on a cell a fighter can enter."
+  },
+  {
+   "x": 4,
+   "y": -1,
+   "old_kind": "ruins",
+   "new_id": "standing_stone",
+   "height": 0,
+   "layer": "prop",
+   "note": "northeast rim cluster. off the walkable grid, along the rim. Tall props do not sit on a cell a fighter can enter."
+  },
+  {
+   "x": 5,
+   "y": -1,
+   "old_kind": "fence",
+   "new_id": "ruined_wall_short",
+   "height": 0,
+   "layer": "prop",
+   "note": "northeast rim cluster. off the walkable grid, along the rim. Tall props do not sit on a cell a fighter can enter."
+  },
+  {
+   "x": 7,
+   "y": -1,
+   "old_kind": "fence",
+   "new_id": "ruined_wall_2c",
+   "height": 0,
+   "layer": "prop",
+   "note": "northeast rim cluster. Anchor (7, -1), back cell (6, -1), both off the board. off the walkable grid, along the rim. Tall props do not sit on a cell a fighter can enter."
+  },
+  {
+   "x": 9,
+   "y": -1,
+   "old_kind": "rock_pillar",
+   "new_id": "boulder_cluster",
+   "height": 0,
+   "layer": "prop",
+   "note": "northeast rim cluster. off the walkable grid, along the rim. Tall props do not sit on a cell a fighter can enter."
+  },
+  {
+   "x": 10,
+   "y": -1,
+   "old_kind": "fence",
+   "new_id": "fallen_log_short",
+   "height": 0,
+   "layer": "prop",
+   "note": "northeast rim cluster. off the walkable grid, along the rim. Tall props do not sit on a cell a fighter can enter."
+  },
+  {
+   "x": 4,
+   "y": 4,
+   "old_kind": "rubble",
+   "new_id": "boulder_small",
+   "height": 0,
+   "layer": "prop",
+   "note": "path cluster, with the flowers on (2, 4) and (3, 4). Under a tuft, so it stays walkable."
+  },
+  {
+   "x": 2,
+   "y": 3,
+   "old_kind": "rubble",
+   "new_id": "boulder_small",
+   "height": 0,
+   "layer": "prop",
+   "note": "path cluster, beside (2, 4). Under a tuft, so it stays walkable."
+  },
+  {
+   "x": 4,
+   "y": 6,
+   "old_kind": "floor_seal",
+   "new_id": "seal_slab",
+   "height": 0,
+   "cell_look": "sand",
+   "layer": "tile_overlay",
+   "note": "flat: drawn as an overlay, not a prop"
+  },
+  {
+   "x": 8,
+   "y": 6,
+   "old_kind": "floor_seal",
+   "new_id": "seal_slab",
+   "height": 0,
+   "cell_look": "stone",
+   "layer": "tile_overlay",
+   "note": "flat: drawn as an overlay, not a prop"
+  },
+  {
+   "x": 6,
+   "y": 8,
+   "old_kind": "floor_seal",
+   "new_id": "seal_slab",
+   "height": 0,
+   "cell_look": "stone",
+   "layer": "tile_overlay",
+   "note": "flat: drawn as an overlay, not a prop"
+  },
+  {
+   "x": 10,
+   "y": 8,
+   "old_kind": "floor_seal",
+   "new_id": "seal_slab",
+   "height": 0,
+   "cell_look": "sand",
+   "layer": "tile_overlay",
+   "note": "flat: drawn as an overlay, not a prop"
+  }
+ ],
+ "decor": [
+  {
+   "x": 12,
+   "y": 4,
+   "id": "clover_patch",
+   "height": 0,
+   "where": "water_cluster"
+  },
+  {
+   "x": 12,
+   "y": 5,
+   "id": "fern",
+   "height": 0,
+   "where": "water_cluster"
+  },
+  {
+   "x": 12,
+   "y": 6,
+   "id": "pebbles_moss",
+   "height": 0,
+   "where": "water_cluster"
+  },
+  {
+   "x": 2,
+   "y": 4,
+   "id": "flower_tuft",
+   "height": 0,
+   "where": "path_cluster"
+  },
+  {
+   "x": 3,
+   "y": 4,
+   "id": "lilac_tuft",
+   "height": 0,
+   "where": "path_cluster"
+  },
+  {
+   "x": 5,
+   "y": 2,
+   "id": "clover_patch",
+   "height": 0,
+   "where": "mud_cluster"
+  },
+  {
+   "x": 6,
+   "y": 2,
+   "id": "fern",
+   "height": 0,
+   "where": "mud_cluster"
+  },
+  {
+   "x": 5,
+   "y": 3,
+   "id": "flower_tuft",
+   "height": 0,
+   "where": "mud_cluster"
+  }
+ ],
+ "thunderwell_pattern": "Like Thunderwell (board/tile.gd:175-177 hides the stock paint_only props when the theme is active, then the theme places its own art from its props.json), the new loader should hide the stock crosshaven prop nodes and place props[] above from props.json; the map data (tags json) is untouched.",
+ "grounds": {
+  "grass": {
+   "look": "grass",
+   "tiles": [
+    "grass_top_a",
+    "grass_top_b",
+    "grass_top_c"
+   ]
+  },
+  "sand": {
+   "look": "sand",
+   "tiles": [
+    "sand_a",
+    "sand_b",
+    "sand_c",
+    "sand_d"
+   ],
+   "stand_in": "sandstone"
+  },
+  "stone": {
+   "look": "stone",
+   "tiles": [
+    "stone_flag_a",
+    "stone_flag_b",
+    "stone_flag_c"
+   ],
+   "stand_in": "cool_grey"
+  },
+  "water": {
+   "look": "water",
+   "tiles": [
+    "water_a",
+    "water_b"
+   ]
+  },
+  "mud": {
+   "look": "wet_earth",
+   "tiles": [
+    "wet_earth_a",
+    "wet_earth_b"
+   ]
+  }
+ }
+}

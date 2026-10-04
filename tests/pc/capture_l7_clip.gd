@@ -7,6 +7,7 @@ extends SceneTree
 
 const HUD := preload("res://ui/hud.gd")
 const LIGHT := preload("res://board/pc/look_light.gd")
+const PAIR := preload("res://tests/pc/pair_match.gd")
 
 var _out := "/tmp/l7_clip"
 var _size := Vector2i(1280, 720)
@@ -66,17 +67,7 @@ func _boot(map_id: String, theme: String) -> Dictionary:
 		await process_frame
 		if bool(board.get("_booted")):
 			break
-	sim.reset_match({
-		"seed": 1,
-		"map_id": map_id,
-		"skip_deploy": true,
-		"classes": ["kestrel", "ironjaw"],
-		"kestrel_pos": Vector2i(7, 7),
-		"ironjaw_pos": _target,
-		"kestrel_facing": "E",
-		"ironjaw_facing": "W",
-		"rolls": [1],
-	})
+	sim.reset_match(PAIR.args(map_id, {"ironjaw_pos": _target, "rolls": [1]}))
 	board._rebuild_pawns()
 	board._refresh()
 	board._fit_board_camera()
