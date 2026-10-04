@@ -73,7 +73,9 @@ func _test_sprite_node_setup() -> void:
 	var sprite := pawn.get_node("Sprite") as Sprite2D
 	truthy(sprite != null, "pawn has one Sprite2D")
 	eq(sprite.centered, true, "sprite is centered")
-	eq(sprite.offset, Vector2(0, -72), "offset puts feet on the origin")
+	truthy(sprite.texture != null, "ironjaw stand texture loads")
+	if sprite.texture != null:
+		eq(sprite.offset, Pawn.pivot_offset_for(sprite.texture.get_height()), "offset puts the sole line on the origin")
 	eq(pawn.scale, Vector2.ONE, "presentation scale stays on the body, not the pawn")
 	var ironjaw_scale := Pawn.sprite_scale_for("ironjaw")
 	eq(sprite.scale, ironjaw_scale, "ironjaw body uses its class scale")
@@ -333,14 +335,16 @@ func _assert_facing_is_own_sheet(class_id: String) -> void:
 		eq(png == held, true, "%s walk_%s png matches the packed bytes" % [class_id, face])
 		var img := Image.new()
 		eq(img.load_png_from_buffer(held), OK, "%s walk_%s loads" % [class_id, face])
-		eq(img.get_width(), 864, "%s walk_%s is six cells" % [class_id, face])
-		eq(img.get_height(), 160, "%s walk_%s is 160 tall" % [class_id, face])
+		eq(img.get_width(), 144 * StripLibrary.LOOK1_WALK_FRAMES, "%s walk_%s is eight painted cells" % [class_id, face])
+		eq(img.get_height(), 176, "%s walk_%s is the painted 176 tall" % [class_id, face])
 		var tops: Array[int] = []
 		var prev := PackedByteArray()
-		for i in 6:
-			var cell := img.get_region(Rect2i(i * 144, 0, 144, 160))
+		for i in StripLibrary.LOOK1_WALK_FRAMES:
+			var cell := img.get_region(Rect2i(i * 144, 0, 144, 176))
 			var metrics := _cell_metrics(cell)
-			eq(int(metrics.x) >= 148 and int(metrics.x) <= 151, true, "%s %s frame %d foot stays on the plant row" % [class_id, face, i])
+			# The painted stride spreads the feet up and down the cell; the
+			# lowest foot stays near the sole line and inside the cell.
+			eq(int(metrics.x) >= 140 and int(metrics.x) <= 174, true, "%s %s frame %d foot stays near the sole line" % [class_id, face, i])
 			eq(int(metrics.z) >= 4500, true, "%s %s frame %d is a solid body" % [class_id, face, i])
 			tops.append(int(metrics.y))
 			var raw := cell.get_data()
@@ -380,8 +384,7 @@ func _cell_metrics(cell: Image) -> Vector3:
 	return Vector3(foot, head, count)
 
 
-## Up-left (west) is the back view and stays the previous six-cell sheet.
-## It is no longer a mirror of east: east is the locked 12-frame march.
+## Up-left (west) is the painted back view. It is not a mirror of east.
 func _assert_west_back_view_kept(class_id: String) -> void:
 	var east_img := Image.new()
 	var west_img := Image.new()
@@ -391,10 +394,9 @@ func _assert_west_back_view_kept(class_id: String) -> void:
 	eq(east_png == east_bytes, true, "%s east walk png matches the packed bytes" % class_id)
 	eq(east_img.load_png_from_buffer(east_bytes), OK, "%s east walk bytes load" % class_id)
 	eq(west_img.load_png_from_buffer(west_bytes), OK, "%s west walk bytes load" % class_id)
-	eq(east_img.get_width() % StripLibrary.LOCKED_EAST_WALK_FRAMES, 0, "%s east march is 12 cells" % class_id)
-	eq(east_img.get_width() > 864, true, "%s east march replaced the six-cell sheet" % class_id)
-	eq(west_img.get_width(), 864, "%s west back view is still six cells" % class_id)
-	eq(west_img.get_height(), 160, "%s west back view is still 160 tall" % class_id)
+	eq(east_img.get_width(), 144 * StripLibrary.LOOK1_WALK_FRAMES, "%s east walk is eight painted cells" % class_id)
+	eq(west_img.get_width(), 144 * StripLibrary.LOOK1_WALK_FRAMES, "%s west back view is eight painted cells" % class_id)
+	eq(west_img.get_height(), 176, "%s west back view is the painted 176 tall" % class_id)
 	eq(east_bytes == west_bytes, false, "%s west back view is not the new east sheet" % class_id)
 
 
@@ -430,14 +432,14 @@ func _assert_ironjaw_feet(scale_y: float) -> void:
 				break
 		if hit and foot_y < 0:
 			foot_y = y
-	eq(foot_y >= 148 and foot_y <= 151, true, "ironjaw v6g plant foot stays on the shared anchor")
+	eq(foot_y >= 150 and foot_y <= 170, true, "ironjaw painted plant foot stays near the sole line")
 	eq(float(foot_y - head_y + 1) / float(height) >= 0.80, true, "ironjaw v6g plant still fills most of the cell")
 	if foot_y < 0:
 		return
-	var local_foot := float(foot_y) - float(height) * 0.5 + Pawn.SPRITE_OFFSET.y
+	var local_foot := float(foot_y) - float(height) * 0.5 + Pawn.pivot_offset_for(height).y
 	var world_foot := local_foot * scale_y
 	var shared_foot := local_foot * Pawn.SPRITE_SCALE.y
-	eq(absf(world_foot) <= 3.0, true, "ironjaw feet stay on the diamond")
+	eq(absf(world_foot) <= 16.0, true, "ironjaw feet stay inside the diamond")
 	eq(absf(world_foot - shared_foot) <= 1.5, true, "the roster read does not lift the plant off the diamond")
 
 

@@ -35,6 +35,8 @@ const POOL_PUFF := 4
 const POOL_MOTE := 2
 const POOL_STATUS := 12
 const POOL_STAMP := 6
+## Painted boss effect strips (cannonball, explosion, eruption).
+const POOL_STRIP := 3
 
 ## Authored overlays, in pixels on the board (before camera zoom).
 ## A phone tile is 64px wide. These stay on the body, not the screen.

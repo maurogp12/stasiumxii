@@ -116,6 +116,8 @@ var _path_walk: bool = false
 var _walk_looping: bool = false
 ## Which half-cycle the driven step is on. The board does not pass this.
 var _driven_step: int = 0
+## Tiles walked on this path (one step per tile: odd tiles lead with the other foot).
+var _stride_tile: int = 0
 var _driven_open: bool = false
 ## The board owns the pose. A free clock would slide the contact frame.
 var _driven_walk: bool = false
@@ -143,6 +145,12 @@ const FACING_ISO := {
 }
 const FACING_ORDER: Array[String] = ["n", "e", "s", "w"]
 const SPRITE_OFFSET := Vector2(0, -72)
+## Sole line inside a hero cell (144x160 and the taller 144x176 painted walk).
+const FOOT_PIVOT_Y := 152.0
+
+
+static func pivot_offset_for(cell_h: float) -> Vector2:
+	return Vector2(0.0, -(FOOT_PIVOT_Y - cell_h * 0.5))
 const SPRITE_SCALE := Vector2(0.5, 0.5)
 ## Body scale per class (Mauro, 29 Sep): the plate fighters, Bastion and
 ## Ironjaw, are the biggest; Kestrel, Gloam and Mender are small. Scale grows
@@ -648,7 +656,7 @@ func _publish_walk_cell() -> void:
 	draw.visible = true
 	draw.flip_h = false
 	draw.centered = true
-	draw.offset = SPRITE_OFFSET
+	draw.offset = pivot_offset_for(float(tex.get_height()))
 	draw.position = strip.position
 	draw.scale = strip.scale
 	draw.rotation = strip.rotation
@@ -724,6 +732,7 @@ func _sync_walk_draw_xform() -> void:
 ## matches the tile instead of sliding under a looping hop.
 func arm_driven_walk() -> void:
 	_driven_step = 0
+	_stride_tile = 0
 	_driven_open = false
 	_driven_walk = true
 	begin_path_walk()
@@ -741,7 +750,7 @@ func walk_contact_frame() -> int:
 
 
 func _sampled_walk_frame(t: float, count: int) -> int:
-	return VIEW_MOTION.walk_cycle_frame(t, count, _driven_step, walk_contact_frame())
+	return VIEW_MOTION.walk_cycle_frame(t, count, _stride_tile, walk_contact_frame())
 
 
 ## Seek the facing's walk clip to the contact frame for this tile.
@@ -757,6 +766,7 @@ func sync_walk_plant() -> void:
 		return
 	if _driven_open:
 		_driven_step += 1
+		_stride_tile += 1
 	_driven_open = true
 	strip.speed_scale = 0.0 if _driven_walk else walk_strip_speed_scale()
 	var frames := strip.sprite_frames
@@ -866,13 +876,14 @@ func bridge_straight_tile() -> void:
 	if strip == null or not is_instance_valid(strip) or (not strip.visible and not _walk_draw_stamp):
 		sync_walk_plant()
 		return
+	_stride_tile += 1
 	if _sprite != null and is_instance_valid(_sprite):
 		_sprite.visible = false
 	var frames := strip.sprite_frames
 	if frames != null and frames.has_animation(strip.animation):
 		var count := frames.get_frame_count(strip.animation)
 		if count > 0:
-			strip.frame = _sampled_walk_frame(1.0, count)
+			strip.frame = _sampled_walk_frame(0.0, count)
 			strip.frame_progress = 0.0
 	strip.speed_scale = 0.0
 	_publish_walk_cell()
@@ -903,6 +914,7 @@ func hold_stop_plant() -> void:
 func end_path_walk() -> void:
 	_path_walk = false
 	_driven_step = 0
+	_stride_tile = 0
 	_driven_open = false
 	_driven_walk = false
 	_boss_tile = 0
@@ -1562,14 +1574,14 @@ static func figure_read_for(class_id: String) -> Dictionary:
 			"rim_ink": Color(0.24, 0.13, 0.05, 1.0),
 			"rim_px": 1.0,
 			"mid_tone": Color(0.58, 0.38, 0.16, 1.0),
-			"mid_mix": 0.45,
+			"mid_mix": 0.0,
 		}
 	if key == SpellKits.CLASS_BASTION:
 		return {
 			"rim_ink": Color(0.30, 0.24, 0.12, 1.0),
 			"rim_px": 1.0,
 			"mid_tone": Color(0.64, 0.54, 0.34, 1.0),
-			"mid_mix": 0.40,
+			"mid_mix": 0.0,
 		}
 	return {
 		"rim_ink": Color(0, 0, 0, 0),
@@ -1762,6 +1774,8 @@ func _sync_sprite() -> void:
 	# The static turnaround stays on this node as the missing-sheet fallback.
 	# It is not the combat idle. A walk sheet plants frame 0 of walk_<facing>.
 	_sprite.texture = sprite_texture(class_id, facing)
+	if _sprite.texture != null:
+		_sprite.offset = pivot_offset_for(float(_sprite.texture.get_height()))
 	if not _flashing:
 		_sprite.modulate = rest_modulate()
 	# A driven step owns the frame. Replanting idle here freezes the cycle on
@@ -2380,6 +2394,7 @@ func _begin_body_strip(kind: String, window_sec: float) -> void:
 	_prepare_strip_pose(strip)
 	strip.visible = true
 	strip.play(anim)
+	_fit_strip_offset(strip)
 	if not strip.is_playing():
 		strip.visible = false
 		_show_rest_or_static()
@@ -2554,6 +2569,16 @@ func _duplicate_kept_clips(src: SpriteFrames, copy: SpriteFrames) -> bool:
 		if src.get_frame_count(anim_name) > 0 and copy.get_frame_count(anim_name) <= 0:
 			return false
 	return true
+
+
+## Taller painted cells (144x176) keep the sole line on the tile.
+func _fit_strip_offset(strip: AnimatedSprite2D) -> void:
+	var frames := strip.sprite_frames
+	if frames == null or not frames.has_animation(strip.animation) or frames.get_frame_count(strip.animation) < 1:
+		return
+	var tex := frames.get_frame_texture(strip.animation, 0)
+	if tex != null:
+		strip.offset = pivot_offset_for(float(tex.get_height()))
 
 
 func _prepare_strip_pose(strip: AnimatedSprite2D) -> void:

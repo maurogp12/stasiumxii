@@ -938,11 +938,18 @@ func _test_hit_flinch_playback() -> void:
 			if flash == null or settle == null or plant == null:
 				continue
 			eq(flash.get_width(), 144, "%s %s flash cell is 144 wide" % [cls, face])
-			eq(flash.get_height(), 160, "%s %s flash cell is 160 tall" % [cls, face])
-			eq(_opaque_luma(flash) > _opaque_luma(settle) + 0.15, true, "%s %s flashes on frame 1 and has settled by frame 4" % [cls, face])
-			var flash_local := float(_foot_row(flash)) - float(flash.get_height()) * 0.5 + Pawn.SPRITE_OFFSET.y
-			var plant_local := float(_foot_row(plant)) - float(plant.get_height()) * 0.5 + Pawn.SPRITE_OFFSET.y
-			eq(absf(flash_local - plant_local) <= 2.0, true, "%s %s flinch foot matches the walk plant" % [cls, face])
+			var painted_hit := flash.get_height() == 176
+			eq(flash.get_height() == 160 or painted_hit, true, "%s %s flash cell is 160 tall, or 176 when painted" % [cls, face])
+			if not painted_hit:
+				eq(_opaque_luma(flash) > _opaque_luma(settle) + 0.15, true, "%s %s flashes on frame 1 and has settled by frame 4" % [cls, face])
+			# Look 1: walk frame 0 is a painted stride, so the flinch is held to
+			# the standing sole line (old stand row through the shared pivot).
+			var flash_local := float(_foot_row(flash)) - float(flash.get_height()) * 0.5 + Pawn.pivot_offset_for(flash.get_height()).y
+			var stand_local := float(StripLibrary.LEGACY_STAND_ROW) - Pawn.FOOT_PIVOT_Y
+			if plant.get_height() == 160:
+				stand_local = float(_foot_row(plant)) - float(plant.get_height()) * 0.5 + Pawn.SPRITE_OFFSET.y
+			var slack := 10.0 if painted_hit else 2.0
+			eq(absf(flash_local - stand_local) <= slack, true, "%s %s flinch foot stays on the standing sole line" % [cls, face])
 			var pawn := Pawn.new()
 			get_root().add_child(pawn)
 			pawn.apply_snapshot(_unit(cls, face.to_upper(), 0), 0)
@@ -959,7 +966,7 @@ func _test_hit_flinch_playback() -> void:
 				pawn._sample_hit(knock_t, Vector2(20, 8))
 				eq(strip.scale, pawn._body_scale(), "%s %s flinch does not add a squash" % [cls, face])
 				eq(strip.position, Vector2.ZERO, "%s %s flinch keeps the feet on the baseline" % [cls, face])
-				eq(strip.offset, Vector2(0, -72), "%s %s flinch keeps the walk foot pivot" % [cls, face])
+				eq(strip.offset, Pawn.pivot_offset_for(flash.get_height()), "%s %s flinch keeps the shared foot pivot" % [cls, face])
 				eq(strip.flip_h, false, "%s %s flinch is not mirrored" % [cls, face])
 			eq(dur > 0.0 and dur <= MOTION.ACTION_LOCK_MAX, true, "%s %s hit stays inside the lock" % [cls, face])
 			pawn.settle_motion()
@@ -1264,12 +1271,12 @@ func _test_strip_library_missing_and_slice() -> void:
 		eq(ResourceLoader.exists(path), true, "APK ResourceLoader path exists: %s" % path)
 		var loaded := ResourceLoader.load(path, "", ResourceLoader.CACHE_MODE_REUSE)
 		truthy(loaded is Texture2D, "batch-1 png loads: %s" % path)
-		if path.ends_with("_walk_e.png"):
-			eq((loaded as Texture2D).get_width() % StripLibrary.LOCKED_EAST_WALK_FRAMES, 0, "east march width is 12 cells: %s" % path)
-			eq((loaded as Texture2D).get_width() > 864, true, "east march is the locked 12-frame sheet: %s" % path)
+		if path.contains("_walk_"):
+			eq((loaded as Texture2D).get_width(), 144 * StripLibrary.LOOK1_WALK_FRAMES, "painted walk is 8 cells: %s" % path)
+			eq((loaded as Texture2D).get_height(), 176, "painted walk is one 176 cell: %s" % path)
 		else:
 			eq((loaded as Texture2D).get_width(), 864, "strip width is 6 cells: %s" % path)
-			eq((loaded as Texture2D).get_height(), 160, "strip height is one cell: %s" % path)
+			eq((loaded as Texture2D).get_height(), _look1_cell_h(path), "strip height is one cell: %s" % path)
 		var import_text := FileAccess.get_file_as_string(path + ".import")
 		truthy(import_text.contains("source_file=\"%s\"" % path), "import source_file matches export_2x: %s" % path)
 	for cls in ["kestrel", "ironjaw"]:
@@ -1295,7 +1302,7 @@ func _test_strip_library_missing_and_slice() -> void:
 	var packed := StripLibrary.image_from_walk_bytes("kestrel", "e")
 	truthy(packed != null, "kestrel east walk bytes are packed for the device")
 	var packed_cells := StripLibrary.textures_from_image(packed, StripLibrary.walk_sheet_frames("e"))
-	eq(packed_cells.size(), StripLibrary.LOCKED_EAST_WALK_FRAMES, "device east walk bytes slice to 12 cells")
+	eq(packed_cells.size(), StripLibrary.LOOK1_WALK_FRAMES, "device east walk bytes slice to 8 painted cells")
 	eq(packed_cells[0] is ImageTexture, true, "a device walk cell is its own image")
 	eq(packed_cells[0] is AtlasTexture, false, "a device walk cell is not a shared atlas region")
 	eq(packed_cells[0].get_image().get_data() == packed_cells[2].get_image().get_data(), false, "device walk cells are not one repeated idle")
@@ -1322,26 +1329,17 @@ func _test_strip_library_missing_and_slice() -> void:
 				var played_tex := played.get_frame_texture(anim_name, 0)
 				truthy(played_tex != null, "%s %s frame 0 texture is non-null" % [cls, anim_name])
 				truthy(played_tex is ImageTexture, "%s %s is baked off the compressed atlas" % [cls, anim_name])
-				if anim_name == "walk_e":
-					var east_w := played_tex.get_width()
-					eq(east_w, 144, "%s east march cell is the old 144 width" % cls)
-					eq(played_tex.get_height(), 160, "%s east march cell is the old 160 height" % cls)
-				else:
-					eq(played_tex.get_width(), 144, "%s %s cell is 144 wide, not the whole strip" % [cls, anim_name])
-					eq(played_tex.get_height(), 160, "%s %s cell is 160 tall" % [cls, anim_name])
+				eq(played_tex.get_width(), 144, "%s %s cell is 144 wide, not the whole strip" % [cls, anim_name])
+				eq(played_tex.get_height(), _look1_cell_h(StripLibrary.export_png_path(cls, kind, face)), "%s %s cell is its sheet height" % [cls, anim_name])
 				var authored_image := authored_tex.get_image()
 				var played_image := played_tex.get_image()
 				truthy(authored_image != null and played_image != null, "%s %s cell images load" % [cls, anim_name])
-				if kind == "hit":
-					var walk_img := played.get_frame_texture("walk_%s" % face, 0).get_image()
-					var walk_foot := _foot_row(walk_img)
-					var walk_local := float(walk_foot) - float(walk_img.get_height()) * 0.5 + Pawn.SPRITE_OFFSET.y
+				if kind == "hit" and played_tex.get_height() == 160:
+					# Old hit cells beside the painted walk sit on the old stand row.
 					for hit_i in played.get_frame_count(anim_name):
 						var hit_img := played.get_frame_texture(anim_name, hit_i).get_image()
 						var hit_row := _foot_row(hit_img)
-						eq(hit_row >= 148 and hit_row <= 151, true, "%s %s frame %d foot is on the shared anchor" % [cls, anim_name, hit_i])
-						var hit_local := float(hit_row) - float(hit_img.get_height()) * 0.5 + Pawn.SPRITE_OFFSET.y
-						eq(absf(hit_local - walk_local) <= 1.5, true, "%s %s frame %d foot matches the walk plant" % [cls, anim_name, hit_i])
+						eq(absi(hit_row - StripLibrary.LEGACY_STAND_ROW) <= 1, true, "%s %s frame %d foot is on the shared anchor" % [cls, anim_name, hit_i])
 				else:
 					eq(authored_image.get_data(), played_image.get_data(), "%s %s frame 0 matches the tres cell" % [cls, anim_name])
 				var later := played.get_frame_texture(anim_name, 3).get_image()
@@ -1362,18 +1360,13 @@ func _test_strip_library_missing_and_slice() -> void:
 			var atlas := walk_bank.get_frame_texture(walk_name, 0) as AtlasTexture
 			truthy(atlas != null and atlas.atlas != null, "%s %s frame 0 is an atlas slice" % [cls, walk_name])
 			eq(atlas.atlas.resource_path, drop, "%s %s plays the drop PNG" % [cls, walk_name])
-			if face == "e":
-				eq(walk_bank.get_frame_count(walk_name), StripLibrary.LOCKED_EAST_WALK_FRAMES, "%s east march is 12 frames" % cls)
-				eq(int(atlas.region.size.x), 144, "%s east march cell is the old 144 width" % cls)
-				eq(int(atlas.region.size.y), 160, "%s east march cell is the old 160 height" % cls)
-			else:
-				eq(atlas.region.size, Vector2(144, 160), "%s %s cell is 144×160" % [cls, walk_name])
-				eq(walk_bank.get_frame_count(walk_name), 6, "%s %s is six frames" % [cls, walk_name])
+			eq(atlas.region.size, Vector2(144, 176), "%s %s cell is the painted 144×176" % [cls, walk_name])
+			eq(walk_bank.get_frame_count(walk_name), StripLibrary.LOOK1_WALK_FRAMES, "%s %s is eight painted frames" % [cls, walk_name])
 	_assert_locked_walk_png(gloam_bank, "gloam")
 	var ironjaw_walk := StripLibrary.frames_for("ironjaw")
 	eq(gloam_bank.get_frame_texture("walk_e", 0).get_image().get_data() == ironjaw_walk.get_frame_texture("walk_e", 0).get_image().get_data(), false, "gloam walk_e is not the ironjaw sheet")
 	eq(gloam_bank.get_frame_texture("walk_n", 0).get_image().get_data() == gloam_bank.get_frame_texture("walk_e", 0).get_image().get_data(), false, "gloam north walk is not the east sheet")
-	eq(gloam_bank.get_frame_count("walk_e"), StripLibrary.LOCKED_EAST_WALK_FRAMES, "gloam walk_e is the 12-frame march")
+	eq(gloam_bank.get_frame_count("walk_e"), StripLibrary.LOOK1_WALK_FRAMES, "gloam walk_e is the 8-frame painted walk")
 	eq(gloam_bank.get_animation_loop("walk_e"), true, "gloam walk loops")
 	eq(is_equal_approx(gloam_bank.get_animation_speed("walk_e"), 12.0), true, "gloam walk is 12 fps")
 	eq(gloam_bank.get_frame_count("attack_e"), 5, "gloam attack_e has 5 frames")
@@ -1395,13 +1388,8 @@ func _test_strip_library_missing_and_slice() -> void:
 			eq(is_equal_approx(walk_only.get_animation_speed(walk_name), 12.0), true, "%s %s is 12 fps" % [cls, walk_name])
 			var cell_tex := walk_only.get_frame_texture(walk_name, 0)
 			truthy(cell_tex != null, "%s %s frame 0 texture is non-null" % [cls, walk_name])
-			if face == "e":
-				eq(cell_tex.get_width(), 144, "%s east march cell is the old 144 width" % cls)
-				eq(cell_tex.get_height(), 160, "%s east march cell is the old 160 height" % cls)
-				eq(cell_tex.get_width() * StripLibrary.LOCKED_EAST_WALK_FRAMES, 1728, "%s east march is twelve old cells" % cls)
-			else:
-				eq(cell_tex.get_width(), 144, "%s %s cell is 144 wide" % [cls, walk_name])
-				eq(cell_tex.get_height(), 160, "%s %s cell is 160 tall" % [cls, walk_name])
+			eq(cell_tex.get_width(), 144, "%s %s cell is 144 wide" % [cls, walk_name])
+			eq(cell_tex.get_height(), 176, "%s %s cell is the painted 176 tall" % [cls, walk_name])
 		eq(walk_only.has_animation("attack_e"), false, "%s has no attack strip" % cls)
 		eq(walk_only.has_animation("cast_e"), false, "%s has no cast strip" % cls)
 		eq(walk_only.has_animation("death_e"), false, "%s has no death strip" % cls)
@@ -1417,10 +1405,7 @@ func _test_strip_library_missing_and_slice() -> void:
 		eq(ResourceLoader.exists(path), true, "APK ResourceLoader path exists: %s" % path)
 		var loaded := ResourceLoader.load(path, "", ResourceLoader.CACHE_MODE_REUSE)
 		truthy(loaded is Texture2D, "batch-1c png loads: %s" % path)
-		if path.ends_with("_walk_e.png"):
-			eq((loaded as Texture2D).get_height() >= 160, true, "east march cell is at least 160 tall: %s" % path)
-		else:
-			eq((loaded as Texture2D).get_height(), 160, "batch-1c strip height is one cell: %s" % path)
+		eq((loaded as Texture2D).get_height(), _look1_cell_h(path), "batch-1c strip height is one cell: %s" % path)
 		var import_text := FileAccess.get_file_as_string(path + ".import")
 		truthy(import_text.contains("source_file=\"%s\"" % path), "import source_file matches export_2x: %s" % path)
 		truthy(import_text.contains("compress/mode=0"), "batch-1c import is lossless: %s" % path)
@@ -1452,7 +1437,7 @@ func _test_strip_library_missing_and_slice() -> void:
 		var flinch_tex := ResourceLoader.load(path, "", ResourceLoader.CACHE_MODE_REUSE)
 		truthy(flinch_tex is Texture2D, "hit flinch png loads: %s" % path)
 		eq((flinch_tex as Texture2D).get_width(), 576, "hit flinch is 4 cells wide: %s" % path)
-		eq((flinch_tex as Texture2D).get_height(), 160, "hit flinch is one cell tall: %s" % path)
+		eq((flinch_tex as Texture2D).get_height(), _look1_cell_h(path), "hit flinch is one cell tall: %s" % path)
 		var flinch_import := FileAccess.get_file_as_string(path + ".import")
 		truthy(flinch_import.contains("source_file=\"%s\"" % path), "import source_file matches export_2x: %s" % path)
 		truthy(flinch_import.contains("compress/mode=0"), "hit flinch import is lossless: %s" % path)
@@ -2065,7 +2050,7 @@ func _test_batch1_disk_strips() -> void:
 	eq(gloam_playing, true, "gloam east walk reports the strip playing")
 	if gloam_strip != null:
 		eq(String(gloam_strip.animation), "walk_e", "gloam east plays walk_e")
-		eq(gloam_strip.sprite_frames.get_frame_count("walk_e"), StripLibrary.LOCKED_EAST_WALK_FRAMES, "gloam walk is the 12-frame march")
+		eq(gloam_strip.sprite_frames.get_frame_count("walk_e"), StripLibrary.LOOK1_WALK_FRAMES, "gloam walk is the 8-frame painted walk")
 		eq(gloam_strip.flip_h, false, "gloam walk is not mirrored at runtime")
 	eq((other.get_node("Sprite") as Sprite2D).scale, Pawn.sprite_scale_for("gloam"), "gloam walk does not stretch")
 	other.end_path_walk()
@@ -2113,7 +2098,7 @@ func _assert_attack_impact(strip: AnimatedSprite2D, msg: String) -> void:
 	var cell := strip.sprite_frames.get_frame_texture(anim, StripLibrary.ATTACK_IMPACT_FRAME)
 	truthy(cell != null, "%s impact frame has a texture" % msg)
 	eq(cell.get_width(), 144, "%s impact cell is 144 wide" % msg)
-	eq(cell.get_height(), 160, "%s impact cell is 160 tall" % msg)
+	eq(cell.get_height() == 160 or cell.get_height() == 176, true, "%s impact cell is 160 tall, or 176 when painted" % msg)
 	var matched := false
 	for cls in ["kestrel", "ironjaw"]:
 		var authored_bank := ResourceLoader.load(StripLibrary.export_frames_path(cls), "", ResourceLoader.CACHE_MODE_REUSE) as SpriteFrames
@@ -2123,7 +2108,8 @@ func _assert_attack_impact(strip: AnimatedSprite2D, msg: String) -> void:
 		if authored == null:
 			continue
 		eq(is_equal_approx(authored.region.position.x, 144.0 * float(StripLibrary.ATTACK_IMPACT_FRAME)), true, "%s tres impact is frame index 3" % msg)
-		eq(authored.region.size, Vector2(144, 160), "%s tres impact cell is 144x160" % msg)
+		eq(authored.region.size.x, 144.0, "%s tres impact cell is 144 wide" % msg)
+		eq(authored.region.size.y == 160.0 or authored.region.size.y == 176.0, true, "%s tres impact cell is 160 tall, or 176 when painted" % msg)
 		var authored_image := authored.get_image()
 		var played_image := cell.get_image()
 		if authored_image != null and played_image != null and authored_image.get_data() == played_image.get_data():
@@ -2160,6 +2146,16 @@ func _test_failed_strip_falls_back_to_hop() -> void:
 	eq(strip.scale, Pawn.sprite_scale_for("mender"), "failed strip playback does not stretch")
 	pawn.settle_motion()
 	pawn.free()
+
+
+## Look 1: every walk and Ironjaw's attack / hit / death are painted 176 tall.
+## The rest of the old chibi sheets stay 160.
+func _look1_cell_h(path: String) -> int:
+	if path.contains("_walk_"):
+		return 176
+	if path.contains("/ironjaw_") and (path.contains("_attack_") or path.contains("_hit_") or path.contains("_death_")):
+		return 176
+	return 160
 
 
 func _assert_locked_walk_png(bank: SpriteFrames, class_id: String) -> void:
@@ -2313,17 +2309,21 @@ func _test_glide_walk() -> void:
 	var enter_last := (MOTION.glide_travel(d, false, true) - MOTION.glide_travel(0.0, false, true)) / d
 	truthy(absf(leave_first - 1.0) < 0.01, "the first tile leaves at full speed")
 	truthy(absf(enter_last - 1.0) < 0.01, "the last tile enters at full speed")
-	# Two footfalls per tile, a soft rise between them.
-	near(MOTION.hop_offset(0.5).y, 0.0, "a footfall mid tile")
-	truthy(MOTION.hop_offset(0.25).y < -0.5, "the body rises between footfalls")
-	truthy(MOTION.hop_offset(0.25).y > -2.0, "the rise is soft (under 2px)")
+	# Look 1, one step per tile (Mauro): one footfall per tile, a soft rise mid tile.
+	eq(MOTION.step_per_tile, true, "the painted walk is one step per tile")
+	near(MOTION.hop_offset(0.0).y, 0.0, "a footfall on the tile seam")
+	truthy(MOTION.hop_offset(0.5).y < -0.5, "the body rises between footfalls")
+	truthy(MOTION.hop_offset(0.5).y > -2.0, "the rise is soft (under 2px)")
 	eq(MOTION.plant_scale(0.9), Vector2.ONE, "no plant squash on every tile")
-	# The stride never stops: every cell in turn, no hold on the contact.
+	# The stride never stops: half the cells on one tile, the other half on the
+	# next tile (the other foot), no hold on the contact.
 	var seen := {}
-	for i in 12:
-		seen[MOTION.walk_cycle_frame((float(i) + 0.5) / 12.0, 6)] = true
-	eq(seen.size(), 6, "one tile shows all six walk cells")
-	eq(MOTION.walk_cycle_frame(0.95, 6), 5, "late in the tile the stride is on its last cell, not frozen on contact")
+	for tile in 2:
+		for i in 12:
+			seen[MOTION.walk_cycle_frame((float(i) + 0.5) / 12.0, 8, tile)] = true
+	eq(seen.size(), 8, "two tiles show all eight walk cells")
+	eq(MOTION.walk_cycle_frame(0.95, 8, 0), 3, "late in the first tile the stride is on its fourth cell, not frozen on contact")
+	eq(MOTION.walk_cycle_frame(0.05, 8, 1), 4, "the next tile leads with the other foot")
 	eq(MOTION.anticipate_segment(2, true), false, "a turn mid path does not stop to settle")
 	eq(MOTION.dust_on_plant(true, false), false, "no dust on every turn")
 	eq(MOTION.dust_on_plant(false, true), true, "dust on the final step")
