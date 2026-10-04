@@ -62,6 +62,44 @@ func _run() -> void:
 	quit(1 if failed > 0 else 0)
 
 
+## Hero pace on PC: about 55 px/s walking and 110 px/s running, south strip.
+## Walk playback is capped at 1.8x; the rest is a longer stride.
+func _test_hero_pace(w: Node2D) -> void:
+	var walker: Node2D = w.walker
+	var art_walk: float = walker._strips.speed_of("walk", "s")
+	var art_run: float = walker._strips.speed_of("run", "s")
+	check(absf(art_walk - 25.047) < 0.01, "art walk cadence is still 25.05 px/s (%.3f)" % art_walk)
+	check(absf(art_run - 54.7965) < 0.01, "art run cadence is still 54.80 px/s (%.3f)" % art_run)
+	check(is_equal_approx(walker.HERO_WALK_PACE, 2.2), "hero walk pace is 2.2x")
+	check(is_equal_approx(walker.HERO_RUN_PACE, 2.0), "hero run pace is 2.0x")
+	check(absf(walker.speed_of("walk") - 55.1034) < 0.01, "hero walks at 55.10 px/s (%.3f)" % walker.speed_of("walk"))
+	check(absf(walker.speed_of("run") - 109.593) < 0.01, "hero runs at 109.59 px/s (%.3f)" % walker.speed_of("run"))
+	check(is_equal_approx(walker.anim_scale("walk"), 1.8), "walk playback is capped at 1.8x")
+	check(is_equal_approx(walker.anim_scale("run"), 2.0), "run playback is 2.0x")
+	check(is_equal_approx(walker.stride_scale("walk"), 2.2 / 1.8), "walk stride grows by 2.2/1.8")
+	check(is_equal_approx(walker.stride_scale("run"), 1.0), "run keeps the painted stride")
+	check(is_equal_approx(walker.shown_fps_of("walk"), 21.6), "walk shows 21.6 fps")
+	check(is_equal_approx(walker.shown_fps_of("run"), 30.0), "run shows 30 fps")
+	for gait in ["walk", "run"]:
+		var count := float(walker.frame_count(gait, "s"))
+		var travel: float = walker.speed_of(gait) * count / walker.shown_fps_of(gait)
+		check(is_equal_approx(travel, walker.shown_stride_of(gait)), "%s cycle covers one shown stride, no skate" % gait)
+	# The live walker uses the scaled stride and cruise.
+	var zone: WorldZone = w.zone
+	walker.place(zone, zone.spawn)
+	walker.facing = "s"
+	walker._shown_pace = "walk"
+	walker._apply_strip_speed()
+	check(absf(walker._cruise - walker.speed_of("walk")) < 0.001, "live walk cruise is the hero pace")
+	check(absf(walker._stride - walker.shown_stride_of("walk")) < 0.001, "live walk stride is the scaled stride")
+	walker._shown_pace = "run"
+	walker._apply_strip_speed()
+	check(absf(walker._cruise - walker.speed_of("run")) < 0.001, "live run cruise is the hero pace")
+	walker._shown_pace = "walk"
+	walker._apply_strip_speed()
+	walker.place(zone, zone.spawn)
+
+
 func _test_strips(w: Node2D) -> void:
 	for dir in ["n", "s"]:
 		check(w.walker.frame_count("walk", dir) == 8, "walk %s is the 8-frame strip" % dir)
@@ -83,9 +121,12 @@ func _test_strips(w: Node2D) -> void:
 	check(w.walker._strips.pivot == Vector2(0, -104), "sole pivot sits on the ground point")
 	check(w.walker._sprite.texture_filter == CanvasItem.TEXTURE_FILTER_LINEAR, "hero filters linear")
 	var count := float(w.walker.frame_count("walk", "s"))
-	var expected: float = w.walker.stride_of("walk") * w.walker.fps_of("walk") / count
-	check(is_equal_approx(w.walker.speed_of("walk"), expected), "walk speed is stride times fps over frame count")
-	check(w.walker.speed_of("run") > w.walker.speed_of("walk") * 2.0, "run is more than twice the walk")
+	var expected: float = w.walker.shown_stride_of("walk") * w.walker.shown_fps_of("walk") / count
+	check(is_equal_approx(w.walker.speed_of("walk"), expected), "walk speed is shown stride times shown fps over frame count")
+	_test_hero_pace(w)
+	# The hero pace scales walk 2.2x and run 2.0x, so run lands at about 2x walk.
+	var run_ratio: float = w.walker.speed_of("run") / w.walker.speed_of("walk")
+	check(run_ratio > 1.9 and run_ratio < 2.1, "run is about twice the walk (%.2fx)" % run_ratio)
 	check(w.walker.base_scale() <= 0.4 and w.walker.base_scale() > 0.2, "hero scale lets a cottage tower over them")
 	var saw_sun := false
 	var saw_flower := false
