@@ -306,7 +306,25 @@ def turn(a_paint, a_b0, a_bi, w):
     rel = wrap(a_bi - a_b0); absl = wrap(a_bi - a_paint)
     return wrap(rel + w * wrap(absl - rel))
 
-def arm_pose(F, act, i, sd, Mu):
+CAST_HOLD = 6
+def cast_p(F, i):
+    """skill progress 0 (rest) .. 1 (the hold) from the blockout staff-arm key."""
+    A = fr(F, 'skill', i)['key']['arms']['R'][0]; Ah = fr(F, 'skill', CAST_HOLD)['key']['arms']['R'][0]
+    return float(ss(A / Ah))
+
+def arm_pose(F, act, i, sd, Mu, _raw=False):
+    if act == 'skill' and sd == 'R' and not _raw:
+        # the heal lifts the staff arm straight from the painting to the hold pose (each bone turns by p x its hold turn,
+        # length by p of its hold factor), out at his side: the blockout path goes forward through the camera line, which
+        # puts the fist and the lantern across the face for three frames
+        h = arm_pose(F, act, CAST_HOLD, sd, Mu, _raw=True); p = cast_p(F, i); s = CFG[F]['s']; J = MJ[F]['arms'][sd]
+        out = dict(sh=apm(Mu, J['shoulder'])); prev = out['sh']; out['w'] = p; out['k'] = []; out['rot'] = []
+        for n_, (ja, jb) in enumerate((('shoulder', 'elbow'), ('elbow', 'hand'))):
+            v0 = s * (np.array(J[jb], float) - np.array(J[ja], float)); a = p * h['rot'][n_]
+            kh = CAST_K[F] if CAST_K[F] is not None else h['k'][n_]; k = 1 + p * (kh - 1)
+            prev = prev + R2(a) @ v0 * k; out[jb] = prev; out['k'].append(k); out['rot'].append(a)
+        out['Mu'] = sim(J['shoulder'], J['elbow'], out['sh'], out['elbow'], s); out['Mf'] = sim(J['elbow'], J['hand'], out['elbow'], out['hand'], s)
+        return out
     c = CFG[F]; s = c['s']; J = MJ[F]['arms'][sd]
     sh = apm(Mu, J['shoulder']); b = lambda a, ii, k: jt(F, a, ii, f'{sd}_{k}')
     out = dict(sh=sh); prev = sh; lens = []; rots = []; w = key_w(F, act, i, sd); out['w'] = w
@@ -314,13 +332,20 @@ def arm_pose(F, act, i, sd, Mu):
         v0 = s * (np.array(J[jb], float) - np.array(J[ja], float))
         b0 = b('idle', 0, jb) - b('idle', 0, ja); bi = b(act, i, jb) - b(act, i, ja)
         k = float(np.clip(np.linalg.norm(bi) / max(np.linalg.norm(b0), 1e-6), *c['len_clamp']))
-        a = turn(ang(v0), ang(b0), ang(bi), w); d = R2(a) @ v0 * k
+        a = turn(ang(v0), ang(b0), ang(bi), w)
+        if act == 'skill' and sd == 'R': a += w * math.radians(CAST_OUT[F][0 if ja == 'shoulder' else 1])
+        d = R2(a) @ v0 * k
         nxt = prev + d; out[jb] = nxt; lens.append(k); rots.append(a); prev = nxt
     out['k'] = lens; out['rot'] = rots
     out['Mu'] = sim(J['shoulder'], J['elbow'], out['sh'], out['elbow'], s)
     out['Mf'] = sim(J['elbow'], J['hand'], out['elbow'], out['hand'], s)
     return out
 
+# skill (heal): the staff arm opens outward on screen (upper, fore, deg; S: his right is screen-left) so the raised fist and
+# the lantern clear the hood; the staff top tips toward the facing (+ = clockwise = screen right for S and E)
+CAST_OUT = {'S': (-55.0, -32.0), 'E': (8.0, 4.0)}
+CAST_K = {'S': 1.0, 'E': None}     # S: the arm opens across the screen, so the painted lengths are kept (no foreshortening)
+CAST_TILT = {'S': 14.0, 'E': 8.0}
 DRAPE_HINGE = {'E': (768, 246)}
 def drape_M(F, arm):
     """E right sleeve bell: hinged on the painted forearm, it turns only (1 - drape_g) of the forearm's turn (it hangs)."""
@@ -339,6 +364,8 @@ def staff_M(F, act, i, arm):
     g = apm(arm['Mf'], g_t); v0 = s * (t_t - g_t)
     b0 = jt(F, 'idle', 0, 'staff_top') - jt(F, 'idle', 0, 'staff_grip'); bi = jt(F, act, i, 'staff_top') - jt(F, act, i, 'staff_grip')
     a = turn(ang(v0), ang(b0), ang(bi), arm['w'])          # screen rotation of the painted staff about the fist
+    if act == 'skill':      # the heal: the staff is lifted near-upright, its top tipped toward the facing (it never sweeps)
+        a = arm['w'] * math.radians(CAST_TILT[F])
     def M_of(a_): L = R2(a_) * s; return np.hstack([L, (g - L @ g_t)[:, None]])
     M = M_of(a); corr = 0.0
     def ok(M_):

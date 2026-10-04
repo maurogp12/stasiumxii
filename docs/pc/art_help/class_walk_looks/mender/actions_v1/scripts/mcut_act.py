@@ -166,6 +166,7 @@ def cut(F, dbg):
     staff = clean(ndi.binary_opening(staff, iterations=1), 150)
     # ---- lantern (+ chain, + S vines): everything of the target inside its polygon that is not the staff
     lant = lant_p & al & ~staff & ~poly(c['crook']); lant = clean(lant, 30)
+    edge = lant & ~biggest(lant); staff |= edge; lant &= ~edge      # S: slivers of the shaft's left edge inside the lantern polygon
     # ---- arms
     pieces = {}
     for sd in 'RL':
