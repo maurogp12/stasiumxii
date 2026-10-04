@@ -62,7 +62,9 @@ func _board_pass(board_name: String, map_id: String, theme: String) -> void:
 		_aim(cam, _pawn(board, _seat_of(class_id)).global_position, 1.12)
 		await _frames(3)
 		_save(board_name, class_id, "idle")
-		if not await _walk_to(board, sim, _seat_of(class_id), Vector2i(10, 7)):
+		# One cell. A three-cell walk from (7, 7) costs more than 3 MP on Stormspire.
+		var walk_to := Vector2i(8, 7) if class_id == "kestrel" else Vector2i(10, 7)
+		if not await _walk_to(board, sim, _seat_of(class_id), walk_to):
 			_failed = true
 		else:
 			await _until_moved(board, _seat_of(class_id), 18.0)
@@ -170,11 +172,14 @@ func _speed_pass() -> void:
 	var pawn_src := FileAccess.get_file_as_string("res://units/pawn.gd")
 	if not pawn_src.contains("func set_pc_walk_tile_sec"):
 		return
+	# Runtime call. The before tree's Pawn has no walk-trial members, and a
+	# direct Pawn.PC_WALK_TILE_SEC reference fails to parse there.
+	var pawn_api: Script = load("res://units/pawn.gd")
 	for seconds in [0.22, 0.42]:
 		var tag := "022" if is_equal_approx(seconds, 0.22) else "042"
 		var dir := _out.path_join("speed_%s" % tag)
 		DirAccess.make_dir_recursive_absolute(dir)
-		Pawn.set_pc_walk_tile_sec(seconds)
+		pawn_api.call("set_pc_walk_tile_sec", seconds)
 		var session := await _boot("crosshaven", "")
 		if session.is_empty():
 			_failed = true
@@ -212,7 +217,8 @@ func _speed_pass() -> void:
 		print("L10_SPEED %s frames=%d" % [tag, index])
 		main.free()
 		await _frames(2)
-	Pawn.set_pc_walk_tile_sec(Pawn.PC_WALK_TILE_SEC)
+	var restore: float = float(pawn_api.get_script_constant_map().get("PC_WALK_TILE_SEC", 0.42))
+	pawn_api.call("set_pc_walk_tile_sec", restore)
 
 
 func _boot(map_id: String, theme: String) -> Dictionary:
