@@ -271,6 +271,15 @@ func _test_mobile_target_pick() -> void:
 	var room := TOUCH.pan_room(960.0, 500.0, phone_view, phone, true)
 	eq(room.x < 1.0, true, "the overview width fits, so there is no side crop to pan")
 	eq(room.y > 30.0 and room.y < 70.0, true, "vertical pan is only the diamond tips")
+	# Mauro 4 Oct 2026: "the map focus whoever turn it is, also move the screen
+	# by touching it in the direction we want". Even the overview can be dragged.
+	var roam := TOUCH.free_room(960.0, 500.0, room)
+	eq(roam.x >= 960.0 * TOUCH.FREE_ROAM - 0.01, true, "the overview can still be dragged sideways")
+	eq(roam.y >= room.y, true, "free roam never shrinks the pan room")
+	var board_src := FileAccess.get_file_as_string("res://board_view.gd")
+	truthy(board_src.contains("TOUCH.free_room("), "the phone camera uses the free roam")
+	truthy(board_src.contains("_fit_board_camera(true)"), "a new turn glides the camera to the active fighter")
+	truthy(board_src.contains("_pan_while_watching(event)"), "the map can be dragged during AI and monster turns")
 	var corner := Vector2(480, 0)
 	var focused := TOUCH.focus_point(Vector2.ZERO, corner, room)
 	eq(focused.x <= room.x + 0.001, true, "focus does not pan past the board edge")
