@@ -14,20 +14,22 @@ PX = W / ORTHO                                   # screen px per world unit
 FRAMES = 12
 
 # ---------------------------------------------------------------- class definitions (fractions of height H)
-BASE = dict(hip=0.50, chest=0.70, shoulder=0.80, neck=0.84, head_c=0.905, head=0.095,
-            hip_w=0.060, sh_w=0.115, thigh=0.225, shin=0.235, ankle=0.045, foot=0.14,
+# v2 proportions (4 Oct): measured from Mauro's approved painted targets, where the hip sits at 0.57-0.61 of the height.
+# v1 had the hip at 0.50, so painted legs came out short and stubby under the target's upper body.
+BASE = dict(hip=0.585, chest=0.745, shoulder=0.825, neck=0.86, head_c=0.918, head=0.082,
+            hip_w=0.070, sh_w=0.115, thigh=0.265, shin=0.275, ankle=0.045, foot=0.14,
             uarm=0.170, farm=0.150, hand=0.060, stride=0.30, drop=0.030, lift=0.07, lean=4.0,
             arm_swing=(18, 18), elbow=(20, 20), abduct=(8, 8), yaw=6.0, sway=0.012,
             limb_w=dict(thigh=0.085, shin=0.065, boot=0.075, uarm=0.060, farm=0.052, hand=0.05),
             torso_w=0.24, torso_d=0.14, pelvis_w=0.20)
 CLASSES = {
  # hooded ranger: longbow low in the right hand, quiver on the back, ragged knee-length cloak, tall boots
- 'kestrel': dict(BASE, H=250, label='Kestrel (ranger)', sh_w=0.105, torso_w=0.21, torso_d=0.12, pelvis_w=0.18,
+ 'kestrel': dict(BASE, H=250, label='Kestrel (ranger)', hip=0.605, thigh=0.275, shin=0.285, stride=0.32, sh_w=0.105, torso_w=0.21, torso_d=0.12, pelvis_w=0.18,
                  arm_swing=(8, 20), elbow=(28, 18), abduct=(10, 7),
                  limb_w=dict(thigh=0.078, shin=0.060, boot=0.072, uarm=0.050, farm=0.046, hand=0.045),
                  extras=['hood', 'cloak', 'quiver', 'bow']),
  # hooded rogue: twin curved daggers held low and out, long ragged cloak, slight crouch and forward lean
- 'gloam': dict(BASE, H=250, label='Gloam (rogue)', hip=0.475, chest=0.675, shoulder=0.775, neck=0.81, head_c=0.88,
+ 'gloam': dict(BASE, H=250, label='Gloam (rogue)', hip=0.56, thigh=0.255, shin=0.265, chest=0.72, shoulder=0.80, neck=0.835, head_c=0.895,
                lean=11.0, stride=0.27, drop=0.025, sh_w=0.11, torso_w=0.215, torso_d=0.13, pelvis_w=0.19,
                arm_swing=(9, 9), elbow=(62, 62), abduct=(16, 16),
                limb_w=dict(thigh=0.080, shin=0.062, boot=0.074, uarm=0.054, farm=0.050, hand=0.048),
@@ -37,11 +39,11 @@ CLASSES = {
  # calm cleric healer (design B): hood and short mantle, long ivory robe to the boots, sage sash,
  # tall crook staff in the right hand with a caged jade lantern hanging from the crook, vial pouches at the hips
  'mender': dict(BASE, H=245, label='Mender (healer)', sh_w=0.105, torso_w=0.22, torso_d=0.13, pelvis_w=0.21,
-                stride=0.25, drop=0.022, lift=0.05, lean=2.0, arm_swing=(6, 14), elbow=(35, 18), abduct=(12, 8),
+                stride=0.28, drop=0.022, lift=0.05, lean=2.0, arm_swing=(6, 14), elbow=(35, 18), abduct=(12, 8),
                 limb_w=dict(thigh=0.080, shin=0.062, boot=0.072, uarm=0.058, farm=0.052, hand=0.046),
-                extras=['hood', 'robe', 'staff', 'pouches']),
+                hip=0.585, extras=['hood', 'robe', 'staff', 'pouches']),
  'bastion': dict(BASE, H=273, label='Bastion (knight)', sh_w=0.145, torso_w=0.30, torso_d=0.17, pelvis_w=0.24,
-                 stride=0.24, drop=0.035, lift=0.055, yaw=4.0, arm_swing=(12, 4), elbow=(30, 85), abduct=(9, 14),
+                 stride=0.28, hip_w=0.085, hip=0.575, drop=0.035, lift=0.055, yaw=4.0, arm_swing=(12, 4), elbow=(30, 85), abduct=(9, 14),
                  limb_w=dict(thigh=0.105, shin=0.085, boot=0.095, uarm=0.085, farm=0.075, hand=0.065),
                  extras=['helm', 'pauldrons', 'tabard', 'cape', 'mace', 'shield']),
 }

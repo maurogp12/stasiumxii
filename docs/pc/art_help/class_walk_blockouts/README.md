@@ -1,5 +1,16 @@
 # Class walk blockouts: Bastion, Kestrel, Gloam, Mender
 
+> **v2 proportions (4 Oct 2026).** Mauro on Bastion v1: "same issue, the legs". Root cause: the v1 blockouts had the hip at about 0.52 of the height, but the approved painted targets have it at 0.57–0.61, so legs painted on v1 joints came out short and stubby under the target's upper body. v2 measures the proportions from the targets:
+>
+> | Class | Hip height | Stride | Stance |
+> |---|---|---|---|
+> | Bastion | 0.60 | 0.28 H | wider |
+> | Kestrel | 0.62 | 0.32 H | |
+> | Gloam | 0.61 | | |
+> | Mender | 0.60 | 0.28 H | |
+>
+> Every folder, `joints_512.json`, clay, ID and action video here is v2. `proportions_v2.png` shows painting | old | new. **Rig all painted parts on these v2 joints.**
+
 These are walk guides in the same format as Technical Artist's Ironjaw guide (`docs/pc/art_help/ironjaw_walk/ta_joints/`). Each class has a clay pass, a part-ID pass and a joints file. They are built from Mauro's new designs in `refs/`, not the current sprites (Mauro, 4 Oct 2026: "Don't use current designs, use these ones").
 
 They are guides for Scenario Art and Technical Artist to paint over or rig from, not game art. Art changes still go through Scenario Art and Technical Artist.
