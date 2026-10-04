@@ -24,6 +24,7 @@ func _finish_live() -> void:
 	await _test_stale_miss_cleared_by_hit()
 	await _test_shade_markers_survive_rebuild()
 	await _test_readable_numbers_and_plates()
+	await _test_boss_fx_strip_plays()
 	print("VFX tests: %d passed, %d failed" % [_passed, _failed])
 	quit(1 if _failed > 0 else 0)
 
@@ -44,6 +45,104 @@ func _run() -> void:
 	_test_class_choreography()
 	_test_scenario_overlays()
 	_test_weather_and_spell_extras()
+	_test_boss_fx_recipes()
+
+
+## Mauro 4 Oct: "hook up the boss effects". Brineclaw Sovereign's cannonball
+## and explosion, Caldera Crown's eruption (Technical Artist, boss round 1).
+func _test_boss_fx_recipes() -> void:
+	for spell in ROUTER.BOSS_FX.keys():
+		var fx: Dictionary = ROUTER.BOSS_FX[spell]
+		for part in ["ball", "burst"]:
+			if not fx.has(part):
+				continue
+			var path := str(fx[part]["path"])
+			eq(ResourceLoader.exists(path), true, "%s %s strip is in the game: %s" % [spell, part, path])
+			var tex := load(path) as Texture2D
+			if tex != null:
+				eq(tex.get_width() % int(fx[part]["frames"]), 0, "%s %s strip is equal cells" % [spell, part])
+	eq(ViewMotion.caster_motion("brine.cannon"), "cast", "the cannon plays the Sovereign's cast strip")
+	eq(ViewMotion.caster_motion("slag.caldera"), "attack", "the punch plays the Crown's attack strip")
+	for d in ["e", "n", "s", "w"]:
+		eq(ResourceLoader.exists("res://art/stasis/bosses/brineclaw_sovereign/brineclaw_sovereign_cast_%s.png" % d), true, "Sovereign cast %s is in the game" % d)
+	near(ViewMotion.boss_fx_fire_sec("brine.cannon"), ViewMotion.cast_sec() * 3.0 / 8.0, "the cannon fires on cast frame 3 of 8")
+	near(ViewMotion.boss_fx_fire_sec("slag.caldera"), ViewMotion.attack_sec() * 2.0 / 6.0, "the eruption starts on attack frame 2 of 6")
+	near(ViewMotion.boss_fx_impact_sec("brine.cannon"), ViewMotion.boss_fx_fire_sec("brine.cannon") + ViewMotion.boss_fx_flight_sec("brine.cannon"), "the explosion waits for the flight")
+	near(ViewMotion.damage_resolve_sec("brine.cannon"), ViewMotion.boss_fx_impact_sec("brine.cannon"), "the flinch waits for the explosion")
+	var area := [Vector2i(5, 6), Vector2i(5, 5), Vector2i(5, 7), Vector2i(4, 6), Vector2i(6, 6)]
+	var hit_a := {"type": "hit", "spell": "brine.cannon", "seat": 1, "target_seat": 0, "caster_cell": Vector2i(5, 2), "to": Vector2i(5, 6), "damage": 20, "foe": true, "boss": true, "area": area}
+	var hit_b := hit_a.duplicate()
+	hit_b["target_seat"] = 2
+	var recipes: Array = ROUTER.recipes_for([hit_a, hit_b])
+	var balls := 0
+	var bursts := 0
+	var impact := ViewMotion.boss_fx_impact_sec("brine.cannon")
+	for r in recipes:
+		if str(r.get("id", "")) == "boss_fx":
+			if r.has("to_cell"):
+				balls += 1
+				eq(r["to_cell"], Vector2i(5, 6), "the ball flies to the impact tile")
+				near(float(r["delay"]), ViewMotion.boss_fx_fire_sec("brine.cannon"), "the ball leaves on the fire frame")
+			else:
+				bursts += 1
+				eq(r["cell"], Vector2i(5, 6), "the explosion is on the impact tile")
+				near(float(r["delay"]), impact, "the explosion plays on landing")
+		if str(r.get("id", "")) == "ring":
+			near(float(r.get("delay_spawn", 0.0)), impact, "the blast tiles flash on landing")
+		if str(r.get("id", "")) == "projectile":
+			truthy(false, "the painted ball replaces the plain shot")
+	eq(balls, 1, "one cannonball for a cast that hits two heroes")
+	eq(bursts, 1, "one explosion for a cast that hits two heroes")
+	var punch := {"type": "hit", "spell": "slag.caldera", "seat": 1, "target_seat": 0, "caster_cell": Vector2i(4, 4), "to": Vector2i(4, 4), "damage": 20, "foe": true, "boss": true, "area": [Vector2i(4, 5)]}
+	var erupt := 0
+	for r in ROUTER.recipes_for([punch]):
+		if str(r.get("id", "")) == "boss_fx":
+			erupt += 1
+			eq(r["cell"], Vector2i(4, 4), "the eruption is at the Crown's feet")
+			eq(bool(r.get("ground", false)), true, "the eruption is on the floor layer")
+			eq(r["anchor"], Vector2(96, 112), "the eruption anchor is the artist's impact point")
+	eq(erupt, 1, "one eruption per punch")
+	var plain := {"type": "hit", "spell": "brine.claw", "seat": 1, "target_seat": 0, "caster_cell": Vector2i(4, 4), "to": Vector2i(4, 5), "damage": 20, "foe": true, "boss": true}
+	for r in ROUTER.recipes_for([plain]):
+		eq(str(r.get("id", "")) == "boss_fx", false, "other boss spells keep their effects")
+
+
+func _test_boss_fx_strip_plays() -> void:
+	var board_script := GDScript.new()
+	board_script.source_code = "extends Node2D\nvar pawns_by_seat: Dictionary = {}\nfunc _cell_to_local(cell: Vector2i) -> Vector2:\n\treturn BoardVisualSort.cell_to_local(cell, 0.0)\nfunc _elev_at(_cell: Vector2i) -> float:\n\treturn 0.0\n"
+	board_script.reload()
+	var board := Node2D.new()
+	board.set_script(board_script)
+	root.add_child(board)
+	var director: Node = DIRECTOR.new()
+	director.allow_headless = true
+	board.add_child(director)
+	director.bind_board(board)
+	await process_frame
+	var hit := {"type": "hit", "spell": "brine.cannon", "seat": 1, "target_seat": 0, "caster_cell": Vector2i(5, 2), "to": Vector2i(5, 6), "damage": 20, "foe": true, "boss": true, "area": [Vector2i(5, 6)]}
+	for r in ROUTER.recipes_for([hit]):
+		if str(r.get("id", "")) == "boss_fx":
+			var spec: Dictionary = r.duplicate()
+			spec["delay"] = 0.0
+			director._spawn(spec, false)
+	var live := 0
+	var flying := 0
+	for node in director._pools["strip"]:
+		if bool(node.in_use):
+			live += 1
+			if bool(node._fly):
+				flying += 1
+				eq(node._to, BoardVisualSort.cell_to_local(Vector2i(5, 6), 0.0), "the ball lands on the impact tile")
+	eq(live, 2, "ball and explosion strips are playing")
+	eq(flying, 1, "one strip flies")
+	var cells: Array = load("res://vfx/vfx_strip.gd").cells_for(str(ROUTER.BOSS_FX["brine.cannon"]["burst"]["path"]), 10)
+	eq(cells.size(), 10, "the explosion slices to ten cells")
+	if not cells.is_empty():
+		eq((cells[0] as Texture2D).get_size(), Vector2(192, 160), "an explosion cell is 192x160")
+	for i in 40:
+		await process_frame
+	board.queue_free()
+	await process_frame
 
 
 ## Mauro 29 Sep: keep improving the look. "+1 Impact" printed over "BACK 19"
@@ -1670,6 +1769,10 @@ func eq(actual: Variant, expected: Variant, msg: String) -> void:
 		print("FAIL %s (got %s expected %s)" % [msg, str(actual), str(expected)])
 	else:
 		_passed += 1
+
+
+func near(actual: float, expected: float, msg: String) -> void:
+	eq(absf(actual - expected) < 0.001, true, "%s (got %s expected %s)" % [msg, actual, expected])
 
 
 func truthy(value: Variant, msg: String) -> void:

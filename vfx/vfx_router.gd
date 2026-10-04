@@ -33,12 +33,20 @@ static func ambush_collapse_specs(event: Dictionary) -> Array:
 
 static func recipes_for(events: Array, snapshot: Dictionary = {}) -> Array:
 	var out: Array = []
+	var boss_fx_seen := {}
 	for event in events:
 		if typeof(event) != TYPE_DICTIONARY:
 			continue
 		var chunk: Array = _recipes_for_event(event)
 		chunk.append_array(_choreography(event, snapshot))
-		out.append_array(chunk)
+		for spec in chunk:
+			# One painted boss effect per cast, however many heroes it hits.
+			if typeof(spec) == TYPE_DICTIONARY and str(spec.get("id", "")) == "boss_fx":
+				var key := "%s|%s|%s" % [spec.get("path", ""), spec.get("cell", ""), spec.get("seat", -1)]
+				if boss_fx_seen.has(key):
+					continue
+				boss_fx_seen[key] = true
+			out.append(spec)
 	return out
 
 
@@ -273,6 +281,8 @@ static func _damage_hit_recipes(event: Dictionary) -> Array:
 			spark["delay"] = STRIPS.release_sec("kestrel", "cast")
 		elif bool(event.get("foe", false)) and _foe_is_bolt(spell_id):
 			spark["delay"] = _foe_bolt_land(event)
+		elif bool(event.get("foe", false)) and BOSS_FX.has(spell_id):
+			spark["delay"] = boss_fx_impact_sec(spell_id)
 		if spell_id == "detonate":
 			var marks := maxi(int(event.get("marks_consumed", 1)), 1)
 			spark["amount"] = clampi(8 + (marks - 1) * 4, 8, VfxBudget.SPARK_CAP)
@@ -1007,15 +1017,26 @@ static func _foe_choreography(event: Dictionary) -> Array:
 	if bool(def.get("aoe", false)):
 		# Area spell: every covered tile flashes, a shock ring at the caster,
 		# the boss sigil flares.
-		if shape == "blast":
+		# A painted boss effect lands later (fire frame, flight): the tiles,
+		# ring and shake wait for that impact.
+		var impact := 0.0
+		if BOSS_FX.has(spell_id):
+			out.append_array(_boss_fx_recipes(spell_id, caster, caster_cell, to_cell))
+			impact = boss_fx_impact_sec(spell_id)
+		elif shape == "blast":
 			# Cannon: a shot to the impact, then the blast tiles flash.
 			out.append(_shot(caster_cell, to_cell, tint, 9.0, 0.22, 6.0))
+		var late: Array = []
 		for raw in event.get("area", []):
-			out.append(_ring(cell_of(raw), tint, false, 0.32, 0.0))
-		out.append(_ring(caster_cell, tint, false, 0.42, 0.0, "crack"))
+			late.append(_ring(cell_of(raw), tint, false, 0.32, 0.0))
+		late.append(_ring(caster_cell, tint, false, 0.42, 0.0, "crack"))
 		if bool(event.get("boss", false)):
 			out.append({"id": "boss_flare", "block": 0.0, "seat": caster})
-			out.append({"id": "shake", "block": 0.0, "amplitude": VfxBudget.SHAKE_PX * 1.4, "duration": VfxBudget.SHAKE_SEC})
+			late.append({"id": "shake", "block": 0.0, "amplitude": VfxBudget.SHAKE_PX * 1.4, "duration": VfxBudget.SHAKE_SEC})
+		for spec in late:
+			if impact > 0.0:
+				spec["delay_spawn"] = impact
+			out.append(spec)
 		return out
 	if event.has("dash_from"):
 		var dash := _shot(cell_of(event["dash_from"]), cell_of(event["dash_to"]), tint, 0.0, 0.12, 4.0, false)
@@ -1024,6 +1045,91 @@ static func _foe_choreography(event: Dictionary) -> Array:
 		out.append(_ring(to_cell, tint, false, 0.22, 0.0, "crack"))
 		if bool(event.get("boss", false)):
 			out.append({"id": "shake", "block": 0.0, "amplitude": VfxBudget.SHAKE_PX, "duration": VfxBudget.SHAKE_SEC})
+	return out
+
+
+## Painted 5-star boss effects (Technical Artist, boss round 1; Mauro: "hook
+## up the boss effects"). Cell pixels, anchors and fire frames are the
+## artist's NOTES. `mul` is the size on the board in boss-cell scale (the
+## artist's preview sizes). Damage and area stay the kit numbers.
+const BOSS_FX_DIR := "res://art/stasis/bosses/"
+const BOSS_FX := {
+	# Ghostfire Cannon: cast strip fires on frame 3 of 8; the ball lobs from
+	# the muzzle and the explosion's bottom centre lands on the impact tile.
+	"brine.cannon": {
+		"ball": {
+			"path": BOSS_FX_DIR + "brineclaw_sovereign/brineclaw_sovereign_fx_cannonball.png",
+			"frames": 4,
+			"anchor": Vector2(40, 32),
+			"fps": 16.0,
+			"mul": 1.0,
+		},
+		# Muzzle on the fire frame, cell px, by the artist's file letter.
+		"muzzle": {
+			"s": Vector2(239.7, 118.1),
+			"w": Vector2(48.3, 118.1),
+			"e": Vector2(51.0, 113.3),
+			"n": Vector2(237.0, 113.3),
+		},
+		"arc_px": 90.0,
+		"burst": {
+			"path": BOSS_FX_DIR + "brineclaw_sovereign/brineclaw_sovereign_fx_explosion.png",
+			"frames": 10,
+			"anchor": Vector2(96, 150),
+			"fps": 16.0,
+			"mul": 1.6,
+			"ground": false,
+		},
+	},
+	# Caldera Punch: the eruption starts on attack frame 2 (fist on the
+	# floor), on the floor layer under the boss, with the camera shake.
+	"slag.caldera": {
+		"burst": {
+			"path": BOSS_FX_DIR + "slagheart_caldera_crown/slagheart_caldera_crown_fx_eruption.png",
+			"frames": 10,
+			"anchor": Vector2(96, 112),
+			"fps": 15.0,
+			"mul": 2.6,
+			"ground": true,
+		},
+	},
+}
+
+
+## Timing lives in ViewMotion (the target flinch waits for the same impact).
+static func boss_fx_fire_sec(spell_id: String) -> float:
+	return ViewMotion.boss_fx_fire_sec(spell_id)
+
+
+static func boss_fx_impact_sec(spell_id: String) -> float:
+	return ViewMotion.boss_fx_impact_sec(spell_id)
+
+
+static func _boss_fx_recipes(spell_id: String, caster: int, caster_cell: Vector2i, to_cell: Vector2i) -> Array:
+	var out: Array = []
+	var fx: Dictionary = BOSS_FX[spell_id]
+	var fire := boss_fx_fire_sec(spell_id)
+	var land := fire
+	if fx.has("ball"):
+		var ball: Dictionary = (fx["ball"] as Dictionary).duplicate()
+		ball["id"] = "boss_fx"
+		ball["block"] = 0.0
+		ball["seat"] = caster
+		ball["cell"] = caster_cell
+		ball["to_cell"] = to_cell
+		ball["muzzle"] = fx.get("muzzle", {})
+		ball["duration"] = ViewMotion.boss_fx_flight_sec(spell_id)
+		ball["arc"] = float(fx.get("arc_px", 0.0))
+		ball["delay"] = fire
+		out.append(ball)
+	land = boss_fx_impact_sec(spell_id)
+	var burst: Dictionary = (fx["burst"] as Dictionary).duplicate()
+	burst["id"] = "boss_fx"
+	burst["block"] = 0.0
+	burst["seat"] = caster
+	burst["cell"] = to_cell if fx.has("ball") else caster_cell
+	burst["delay"] = land
+	out.append(burst)
 	return out
 
 

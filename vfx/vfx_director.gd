@@ -17,6 +17,8 @@ const _Projectile := preload("res://vfx/vfx_projectile.gd")
 const _Ring := preload("res://vfx/vfx_ring.gd")
 const _Status := preload("res://vfx/vfx_status.gd")
 const _Stamp := preload("res://vfx/vfx_stamp.gd")
+const _Strip := preload("res://vfx/vfx_strip.gd")
+const _BossSheets := preload("res://units/boss_sheets.gd")
 
 @export var reduce_shake: bool = false
 
@@ -240,6 +242,8 @@ func _spawn(spec: Dictionary, ghost_motion: bool) -> void:
 			_play_burst("spark", spec, true)
 		"stamp":
 			_play_stamp(spec)
+		"boss_fx":
+			_play_boss_fx(spec)
 		"puff":
 			_play_burst("puff", spec, false)
 		"motes":
@@ -343,6 +347,66 @@ func _play_stamp(spec: Dictionary) -> void:
 		var delta := _pos_cell(aim) - _pos_cell(cell)
 		payload["flip_h"] = delta.x < -0.5
 	node.play(payload)
+
+
+## Air boss effects (cannonball, explosion) draw over the area tile rings in
+## front of the impact, under the floating numbers (900).
+const BOSS_FX_AIR_Z := 880
+
+
+## Painted boss effect strip. One cell pixel is one boss-cell pixel on the
+## board (the boss sprite's scale), times the effect's `mul`.
+func _play_boss_fx(spec: Dictionary) -> void:
+	var seat := int(spec.get("seat", -1))
+	var cell := _Router.cell_of(spec.get("cell", Vector2i.ZERO))
+	var unit := _boss_cell_scale(seat)
+	var payload := {
+		"path": str(spec.get("path", "")),
+		"frames": int(spec.get("frames", 1)),
+		"anchor": spec.get("anchor", Vector2.ZERO),
+		"fps": float(spec.get("fps", 15.0)),
+		"scale": unit * float(spec.get("mul", 1.0)),
+		"delay": float(spec.get("delay", 0.0)),
+	}
+	if spec.has("to_cell"):
+		var to_cell := _Router.cell_of(spec.get("to_cell"))
+		payload["from"] = _boss_muzzle(seat, cell, spec.get("muzzle", {}), unit)
+		payload["to"] = _pos_cell(to_cell)
+		payload["arc"] = float(spec.get("arc", 0.0))
+		payload["duration"] = float(spec.get("duration", 0.4))
+		payload["z"] = BOSS_FX_AIR_Z
+	else:
+		payload["pos"] = _pos_cell(cell)
+		payload["z"] = _z_ground(cell) if bool(spec.get("ground", false)) else BOSS_FX_AIR_Z
+	_acquire("strip").play(payload)
+
+
+## World size of one boss-cell pixel: the boss sprite's own scale.
+func _boss_cell_scale(seat: int) -> float:
+	var pawn := _pawn(seat)
+	if pawn != null:
+		var sprite := pawn.get_node_or_null("Sprite") as Node2D
+		if sprite != null:
+			return absf(sprite.scale.y * pawn.scale.y)
+	return 0.5
+
+
+## The cannon muzzle on the fire frame, from the artist's cell point.
+func _boss_muzzle(seat: int, cell: Vector2i, muzzle: Variant, unit: float) -> Vector2:
+	var at := _pos_cell(cell)
+	var pawn := _pawn(seat)
+	var letter := "s"
+	if pawn != null:
+		if _pawn_stands_on(pawn, cell):
+			at = pawn.position
+		if "facing" in pawn:
+			letter = str(_BossSheets.FILE_LETTER.get(str(pawn.get("facing")).to_lower(), "s"))
+	if typeof(muzzle) != TYPE_DICTIONARY or not (muzzle as Dictionary).has(letter):
+		return at + VfxBudget.HAND_OFFSET
+	var px: Vector2 = (muzzle as Dictionary)[letter]
+	# Cell pixel relative to the feet pivot (cell centre x, FEET_Y).
+	var local := Vector2(px.x - float(_BossSheets.CELL.x) * 0.5, px.y - float(_BossSheets.FEET_Y))
+	return at + local * unit
 
 
 func _play_number(spec: Dictionary) -> void:
@@ -812,6 +876,7 @@ func _build_pools() -> void:
 	_add_pool("ring", _Ring, VfxBudget.POOL_RING)
 	_add_pool("status", _Status, VfxBudget.POOL_STATUS)
 	_add_pool("stamp", _Stamp, VfxBudget.POOL_STAMP)
+	_add_pool("strip", _Strip, VfxBudget.POOL_STRIP)
 
 
 func _add_pool(kind: String, script: Script, count: int) -> void:

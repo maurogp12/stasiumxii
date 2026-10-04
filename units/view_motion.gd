@@ -261,7 +261,7 @@ static func caster_motion(spell_id: String) -> String:
 		var shape := str(_FoeKits.spell(spell_id).get("shape", ""))
 		if shape in ["melee", "dash", "cone", "radius"]:
 			return "attack"
-		if shape in ["shot", "line", "pads"]:
+		if shape in ["shot", "line", "pads", "blast"]:
 			return "cast"
 		return ""
 	var def := SpellKits.spell(spell_id)
@@ -300,6 +300,34 @@ const MARK_WINDUP_SEC := 0.30
 ## Seconds from the caster motion (or the Ambush slash, which is armed on the
 ## back tile) until damage resolves. The victim flinch waits this long.
 ## A miss and a self-cast never reach it.
+## Painted 5-star boss effects: the body frame that fires (artist NOTES) and
+## the cannonball flight. VfxRouter.BOSS_FX draws them.
+const BOSS_FX_TIMING := {
+	"brine.cannon": {"body": "cast", "frames": 8, "fire": 3, "flight": 0.42},
+	"slag.caldera": {"body": "attack", "frames": 6, "fire": 2, "flight": 0.0},
+}
+
+
+## Seconds from the resolve to the boss's fire frame.
+static func boss_fx_fire_sec(spell_id: String) -> float:
+	var fx: Dictionary = BOSS_FX_TIMING.get(spell_id, {})
+	if fx.is_empty():
+		return 0.0
+	var body := cast_sec() if str(fx["body"]) == "cast" else attack_sec()
+	return body * float(int(fx["fire"])) / float(maxi(int(fx["frames"]), 1))
+
+
+static func boss_fx_flight_sec(spell_id: String) -> float:
+	return float((BOSS_FX_TIMING.get(spell_id, {}) as Dictionary).get("flight", 0.0))
+
+
+## Seconds from the resolve to the impact (explosion or eruption start).
+static func boss_fx_impact_sec(spell_id: String) -> float:
+	if not BOSS_FX_TIMING.has(spell_id):
+		return 0.0
+	return boss_fx_fire_sec(spell_id) + boss_fx_flight_sec(spell_id)
+
+
 static func damage_resolve_sec(spell_id: String) -> float:
 	match spell_id:
 		SpellKits.STRIKE, SpellKits.SHOULDER, SpellKits.CRUSH:
@@ -315,6 +343,8 @@ static func damage_resolve_sec(spell_id: String) -> float:
 		_:
 			if bool(_FoeKits.spell(spell_id).get("bolt", false)):
 				return FOE_BOLT_CAST_SEC + foe_bolt_travel_sec(5)
+			if BOSS_FX_TIMING.has(spell_id):
+				return boss_fx_impact_sec(spell_id)
 			if caster_motion(spell_id) == "attack":
 				return ANTICIPATION_SEC + ATTACK_OUT_SEC
 			return 0.0
