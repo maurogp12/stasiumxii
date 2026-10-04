@@ -63,7 +63,7 @@ func _test_schema() -> void:
 
 func _test_roster(rows: Array) -> void:
 	# The 4.5 table names 20 extras on top of 33 core NPCs. The summary line says 51.
-	eq(rows.size(), 53, "the table is 33 core plus 20 named extras")
+	eq(rows.size(), 74, "33 core, 20 outer extras, and the Crosshaven town roster")
 	var roles := {}
 	var ids := {}
 	for row in rows:
@@ -72,12 +72,14 @@ func _test_roster(rows: Array) -> void:
 		roles[role] = int(roles.get(role, 0)) + 1
 		ids[str(record["id"])] = record
 		eq(_home_ok(str(record["zone_id"])), true, "%s stands on a built hub, entry, door, or Crosshaven chunk" % str(record["id"]))
-	eq(int(roles["warden"]), 11, "one warden per level zone")
-	eq(int(roles["trader"]), 11, "one trader per level zone")
-	eq(int(roles["door_keeper"]), 11, "one door keeper per level zone")
+	eq(int(roles["warden"]), 15, "a warden in every section 00 town and every outer zone")
+	eq(int(roles["trader"]), 15, "a trader in every section 00 town and every outer zone")
+	eq(int(roles["door_keeper"]), 14, "a door keeper for every dungeon, and none at the Crossroads")
 	eq(int(roles["elder"]), 5, "one elder per town")
-	for role in ["guide", "herald", "banker", "smith", "fisher", "farmer", "woodcutter", "archivist", "ferry_captain", "forge_master", "fen_guide", "hermit", "seer", "last_watcher", "coil_engineer"]:
+	for role in ["guide", "herald", "banker", "smith", "fisher"]:
 		eq(int(roles.get(role, 0)), 1, "one %s" % role)
+	for role in ["farmer", "woodcutter", "archivist", "ferry_captain", "forge_master", "fen_guide", "hermit", "seer", "last_watcher", "coil_engineer"]:
+		eq(int(roles.get(role, 0)), 2, "one %s in town and one in the outer region" % role)
 	var guide: Dictionary = ids["crossroads_guide"]
 	eq(str(guide["zone_id"]), "crosshaven_crossroads", "the Guide stands at the Crossroads")
 	eq(int(guide["cell"]["x"]), 24, "Guide cell x is the spec example")
@@ -86,8 +88,10 @@ func _test_roster(rows: Array) -> void:
 	eq(str(guide_lines[0]), "Welcome to Crosshaven.", "Guide welcome line")
 	eq(str(guide_lines[1]), "Click the ground to walk. Gold arrows lead on.", "Guide walk line")
 	eq(ids.has("stoneford_elder"), true, "Stoneford has an Elder")
-	eq(str(ids["granary_door_keeper"]["zone_id"]), "crosshaven_crossroads", "the granary keeper stands under the market")
-	eq(str(ids["millrace_door_keeper"]["zone_id"]), "crosshaven_southbridge", "Millrace Vaults is under Southbridge's watermill")
+	eq(str(ids["granary_door_keeper"]["zone_id"]), "crosshaven_stoneford", "the granary keeper stands in Stoneford")
+	eq(int(ids["granary_door_keeper"]["cell"]["x"]), 15, "the granary keeper is beside the cottage row")
+	eq(int(ids["granary_door_keeper"]["cell"]["y"]), 12, "the granary keeper is beside the cottage row")
+	eq(str(ids["drowned_abbey_door_keeper"]["zone_id"]), "crosshaven_southbridge", "the Drowned Abbey keeper stands in Southbridge")
 	var level_doc: Dictionary = Levels.load_default()
 	eq(bool(level_doc.get("ok", false)), true, "level zones load")
 	if not bool(level_doc.get("ok", false)):
@@ -113,8 +117,10 @@ func _test_roster(rows: Array) -> void:
 				saw_d = true
 			elif role == "elder":
 				saw_elder = true
-		if town_ids.has(str(zone["id"])):
-			eq(saw_elder, true, "%s has its elder" % str(zone["id"]))
+		if str(zone["id"]) == "crossroads":
+			eq(saw_w and saw_t and not saw_d, true, "the Crossroads has a warden and a trader, and no door keeper")
+		elif town_ids.has(str(zone["id"])):
+			eq(saw_elder and saw_w and saw_t and saw_d, true, "%s has an elder, a warden, a trader, and a door keeper" % str(zone["id"]))
 		else:
 			eq(saw_w and saw_t and saw_d, true, "%s has a warden, a trader, and a door keeper" % str(zone["id"]))
 
