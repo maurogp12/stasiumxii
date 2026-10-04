@@ -1,4 +1,4 @@
-"""Bastion actions v1 - review clip: the five actions in all four facings (W = mirror of S, N = mirror of E), one facing at a
+"""Gloam actions v1 - review clip: the five actions in all four facings (W = mirror of S, N = mirror of E), one facing at a
 time at 1.2x on the iso ground (as the walk clip), then each action in all four facings side by side. 17.144 fps.
 usage: clip.py OUT.mp4 [work_dir]"""
 import os, sys, shutil, subprocess, numpy as np
@@ -6,7 +6,7 @@ from PIL import Image, ImageDraw, ImageFont, ImageOps
 HERE = os.path.dirname(os.path.abspath(__file__)); FR = os.path.join(HERE, '..', 'frames')
 OUT = sys.argv[1]; WK = sys.argv[2] if len(sys.argv) > 2 else OUT + '_frames'
 W, H = 1280, 720; FPS = 17.144
-ACTS = [('idle', 12, 'Idle'), ('attack', 12, 'Attack: overhead mace smash'), ('skill', 12, 'Skill: shield guard'),
+ACTS = [('idle', 12, 'Idle'), ('attack', 12, 'Attack: cross high, lunge, double slash'), ('skill', 12, 'Skill: shadow step'),
         ('hit', 8, 'Hit'), ('death', 13, 'Death')]
 FAC = [('S', 'front, down-right (S)'), ('E', 'back, up-right (E)'), ('W', 'front, down-left (W, mirror of S)'), ('N', 'back, up-left (N, mirror of E)')]
 FONT = ImageFont.truetype('/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf', 30)
@@ -24,7 +24,7 @@ def ground(S):
         x0 = k * g * 2
         d.line([(x0 - 2000, -1000), (x0 + 2000, 1000)], fill=(170, 180, 160)); d.line([(x0 - 2000, 1000), (x0 + 2000, -1000)], fill=(170, 180, 160))
     return im
-def title(im, t, sub='Bastion actions v1 · 17 fps'):
+def title(im, t, sub='Gloam actions v1 · 17 fps'):
     dr = ImageDraw.Draw(im); dr.rectangle([0, 0, W, 50], fill=(25, 30, 28)); dr.text((16, 9), t, fill=(240, 220, 150), font=FONT)
     dr.text((W - 260, H - 30), sub, fill=(60, 60, 60), font=F2)
 frames = []

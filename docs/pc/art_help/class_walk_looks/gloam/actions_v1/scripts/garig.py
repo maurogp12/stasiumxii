@@ -206,16 +206,17 @@ def cape_floor(F, act, i):
     return FLOOR
 
 KEEP_MAX = 25.0
+KEEP_MAX_DEATH = 40.0       # lying, the lower panel may turn further onto the ground (it is lying still, nothing shears in motion)
 def cape_keep_in(F, act, i, Mt, Mu, Ml, Mh, pu, hinge_t):
     """if the long cloak would leave the cell (or, lying, hang below the ground), the lower panel swings about its hinge
-    by the smallest angle (at most KEEP_MAX) that keeps the painted hem above the floor: the cloak lags the recoil / lies
+    by the smallest angle (at most KEEP_MAX, KEEP_MAX_DEATH lying) that keeps the painted hem above the floor: the cloak lags the recoil / lies
     along the ground. A rotation only (no squash); the upper panel is untouched, so the bend spreads over the whole
     feathered hip band. Returns the panel maps and the extra angle (deg)."""
     V, tris, W, on = body_mesh(F); fl = cape_floor(F, act, i); hc = apm(Mu, hinge_t)
     def low(ml): return float(lbs(V[on], W[on], (Mt, Mu, ml, Mh))[:, 1].max())
     if low(Ml) <= fl: return Mu, Ml, 0.0
     best = (low(Ml), Ml, 0.0)
-    for d in np.arange(1.0, KEEP_MAX + 0.5, 1.0):
+    for d in np.arange(1.0, (KEEP_MAX_DEATH if act == 'death' else KEEP_MAX) + 0.5, 1.0):
         for sg in (1.0, -1.0):
             ml = rot_about(Ml, hc, math.radians(d * sg)); lo = low(ml)
             if lo <= fl: return Mu, ml, d * sg

@@ -1,6 +1,6 @@
-"""Bastion actions v1 - contact sheets: per facing, every frame of every action, painted (top row) over the blockout clay it
+"""Gloam actions v1 - contact sheets: per facing, every frame of every action, painted (top row) over the blockout clay it
 is rigged on (middle row, blockout/clay, aim fix) and the approved blockout clay (bottom row, blockout/approved/clay, the
-poses of bastion_actions.mp4). Red line = pivot row 329; all tiles share one crop and scale.
+poses of gloam_actions.mp4). Red line = pivot row 329; all tiles share one crop and scale.
 usage: asheets.py [out_dir]"""
 import os, sys, json, numpy as np
 from PIL import Image, ImageDraw, ImageFont
@@ -24,10 +24,10 @@ def sheet(F):
     rows = []
     for act, n in ACTS.items():
         rows += [(act, 'painted', [f'{ROOT}/frames/{act}_{F}_f{i:02d}.png' for i in range(n)]),
-                 (act, 'rig clay', [f'{ROOT}/blockout/clay/bastion_{act}_{F}_f{i:02d}.png' for i in range(n)]),
-                 (act, 'approved', [f'{ROOT}/blockout/approved/clay/bastion_{act}_{F}_f{i:02d}.png' for i in range(n)])]
+                 (act, 'rig clay', [f'{ROOT}/blockout/clay/gloam_{act}_{F}_f{i:02d}.png' for i in range(n)]),
+                 (act, 'approved', [f'{ROOT}/blockout/approved/clay/gloam_{act}_{F}_f{i:02d}.png' for i in range(n)])]
     S = Image.new('RGB', (lw + 13 * tw, 40 + len(rows) * (th + 4) + 5 * 10), (235, 235, 230)); d = ImageDraw.Draw(S)
-    d.text((10, 10), f'Bastion actions v1, facing {F}: painted frames over the rig clay (aim fix) and the approved blockout clay. '
+    d.text((10, 10), f'Gloam actions v1, facing {F}: painted frames over the rig clay (aim fix) and the approved blockout clay. '
                      f'Frame numbers on top; red = pivot row.', fill=(20, 20, 20), font=FB)
     y = 40; last = None
     for act, kind, paths in rows:

@@ -40,13 +40,13 @@ CFG = {
      # screen-right arm (blockout L): straight out to the right, dagger edge down
      'L': dict(poly=[(754, 168), (800, 158), (1055, 405), (1055, 452), (895, 452), (790, 276), (756, 248)],
                J=dict(shoulder=(770, 196), elbow=(812, 238), hand=(880, 322), grip=(905, 333), tip=(1033, 427)))},
-   painted='RL', cape_upper=(655, 150), cape_lower_y=(300, 390), neck=(700, 150), hood_c=(712, 92), hood_r=(52, 90)),
+   painted='RL', core=[(560, 130), (790, 130), (790, 430), (560, 430)], cape_upper=(655, 150), cape_lower_y=(300, 390), neck=(700, 150), hood_c=(712, 92), hood_r=(52, 90)),
  'E': dict(
    arms={
      'R': dict(poly=[(672, 158), (700, 148), (770, 150), (985, 330), (985, 425), (760, 425), (727, 282), (712, 264), (698, 246),
                      (686, 226), (676, 200)],
                J=dict(shoulder=(684, 178), elbow=(733, 236), hand=(800, 328), grip=(833, 353), tip=(948, 385)))},
-   painted='R', L_shoulder=(578, 152), cape_upper=(610, 120), cape_lower_y=(300, 390), neck=(640, 112), hood_c=(640, 58), hood_r=(46, 80)),
+   painted='R', core=[(590, 120), (770, 120), (770, 480), (590, 480)], L_shoulder=(578, 152), cape_upper=(610, 120), cape_lower_y=(300, 390), neck=(640, 112), hood_c=(640, 58), hood_r=(46, 80)),
 }
 
 def poly(pts, sh=SH):
@@ -129,6 +129,11 @@ def cut(F, dbg=None):
         m &= ~(pur & (np.hypot(*(np.indices(SH)[::-1] - np.array(A['J']['shoulder'], float)[:, None, None])) < 70))
         arm_all |= poly(A['poly']) & al
         um, fm = split_arm(m, A['J'])
+        # the blade beyond the fist: steel only (cloak strands that cross the blade polygon stay on the body)
+        yy_, xx_ = np.indices(SH); hd = np.array(A['J']['hand'], float)
+        blade = np.hypot(xx_ - hd[0], yy_ - hd[1]) > 28
+        cloth = (lab[..., 1] > 4.0) & (lab[..., 2] < -4.0)
+        fm &= ~(blade & cloth)
         um, fm = biggest(um), biggest(fm)          # no loose specks of cloth fly with a raised arm
         urgb, um = grow_root(rgb, um, A['J'])
         save(f'uarm_{sd}_{F}', urgb, um); save(f'fore_{sd}_{F}', rgb, fm)
@@ -176,10 +181,12 @@ def cut(F, dbg=None):
     covm = ndi.binary_opening(covm, iterations=1)
     save(f'cover_{F}', body_rgb, covm)
     # ---- skin weights: R upper cloak, G lower cloak, B head
-    capem = bodya & purple(rgb2lab(body_rgb))
+    # cloth = loose purple (takes in the dark cloth of the hem tatters); the rigid core is the leather torso only, so every
+    # tatter tip moves with its panel and never shears against the torso
+    blab2 = rgb2lab(body_rgb); capem = bodya & (blab2[..., 1] > 1.0) & (blab2[..., 2] < -1.0)
     capem = cv2.morphologyEx(capem.astype(np.uint8), cv2.MORPH_OPEN, np.ones((5, 5), np.uint8)).astype(bool)
-    core = ndi.binary_erosion(bodya & ~capem, iterations=6)
-    grown = ndi.binary_dilation(capem, iterations=30) & ~core
+    core = ndi.binary_erosion(bodya & ~capem, iterations=6) & poly(c['core'])
+    grown = (ndi.binary_dilation(capem, iterations=30) | ndi.binary_dilation(bodya, iterations=12)) & ~core
     wc = cv2.GaussianBlur(grown.astype(np.float32), (0, 0), 10)
     y0, y1 = c['cape_lower_y']; t = np.clip((yy - y0) / (y1 - y0), 0, 1).astype(np.float32); t = t * t * (3 - 2 * t)
     wl = wc * t; wu = wc * (1 - t) * np.clip((yy - c['cape_upper'][1]) / 60.0, 0, 1)
