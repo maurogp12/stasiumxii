@@ -1,0 +1,115 @@
+{
+ "farmer": {
+  "fail": [],
+  "warn": []
+ },
+ "woodcutter": {
+  "fail": [],
+  "warn": []
+ },
+ "fisher": {
+  "fail": [],
+  "warn": []
+ },
+ "smith": {
+  "fail": [],
+  "warn": []
+ },
+ "hermit": {
+  "fail": [],
+  "warn": [
+   "idle_s.png: contact AO peak alpha 0.41 > 0.3 (spec: soft AO only)",
+   "walk_s.png: contact AO peak alpha 0.49 > 0.3 (spec: soft AO only)"
+  ]
+ },
+ "coil_engineer": {
+  "fail": [],
+  "warn": []
+ },
+ "warden": {
+  "fail": [],
+  "warn": [
+   "idle_n.png: contact AO peak alpha 0.42 > 0.3 (spec: soft AO only)",
+   "walk_n.png: contact AO peak alpha 0.38 > 0.3 (spec: soft AO only)",
+   "walk_s.png: contact AO peak alpha 0.42 > 0.3 (spec: soft AO only)",
+   "talk_n.png: contact AO peak alpha 0.41 > 0.3 (spec: soft AO only)",
+   "patrol_look_n.png: contact AO peak alpha 0.41 > 0.3 (spec: soft AO only)"
+  ]
+ },
+ "guide": {
+  "fail": [],
+  "warn": []
+ },
+ "herald": {
+  "fail": [],
+  "warn": [
+   "idle_n.png: body centre (torso band) -14.4 px from pivot x 128 (frame 9); the W/E mirror flip jumps the body ~29 px@2x sideways",
+   "idle_s.png: body centre (torso band) +11.9 px from pivot x 128 (frame 5); the W/E mirror flip jumps the body ~24 px@2x sideways",
+   "walk_n.png: body centre (torso band) -14.5 px from pivot x 128 (frame 1); the W/E mirror flip jumps the body ~29 px@2x sideways",
+   "walk_s.png: body centre (torso band) +12.5 px from pivot x 128 (frame 5); the W/E mirror flip jumps the body ~25 px@2x sideways",
+   "talk_n.png: body centre (torso band) -13.2 px from pivot x 128 (frame 2); the W/E mirror flip jumps the body ~26 px@2x sideways",
+   "talk_s.png: body centre (torso band) +11.4 px from pivot x 128 (frame 2); the W/E mirror flip jumps the body ~23 px@2x sideways"
+  ]
+ },
+ "banker": {
+  "fail": [],
+  "warn": []
+ },
+ "elder": {
+  "fail": [],
+  "warn": []
+ },
+ "trader": {
+  "fail": [],
+  "warn": [
+   "walk_s.png: body centre (torso band) +10.0 px from pivot x 128 (frame 2); the W/E mirror flip jumps the body ~20 px@2x sideways"
+  ]
+ },
+ "door_keeper": {
+  "fail": [],
+  "warn": [
+   "idle_n.png: contact AO peak alpha 0.37 > 0.3 (spec: soft AO only)"
+  ]
+ },
+ "archivist": {
+  "fail": [],
+  "warn": []
+ },
+ "forge_master": {
+  "fail": [],
+  "warn": [
+   "idle_s.png: stance centre (feet midpoint) -12.7 px from pivot x 128 (frame 2)",
+   "walk_n.png: stance centre (feet midpoint) -12.7 px from pivot x 128 (frame 2)",
+   "talk_s.png: stance centre (feet midpoint) -12.5 px from pivot x 128 (frame 0)",
+   "work_s.png: art reaches below the pivot row 240 by more than 3 px in frame(s) 6 (+6), 7 (+5)"
+  ]
+ },
+ "ferry_captain": {
+  "fail": [],
+  "warn": [
+   "walk_n.png: contact AO peak alpha 0.34 > 0.3 (spec: soft AO only)"
+  ]
+ },
+ "fen_guide": {
+  "fail": [],
+  "warn": []
+ },
+ "last_watcher": {
+  "fail": [],
+  "warn": [
+   "idle_s.png: body centre (torso band) -13.4 px from pivot x 128 (frame 9); the W/E mirror flip jumps the body ~27 px@2x sideways",
+   "walk_n.png: body centre (torso band) +10.4 px from pivot x 128 (frame 5); the W/E mirror flip jumps the body ~21 px@2x sideways",
+   "walk_s.png: stance centre (feet midpoint) -13.2 px from pivot x 128 (frame 0)",
+   "walk_s.png: body centre (torso band) -13.8 px from pivot x 128 (frame 1); the W/E mirror flip jumps the body ~28 px@2x sideways",
+   "talk_s.png: body centre (torso band) -12.3 px from pivot x 128 (frame 0); the W/E mirror flip jumps the body ~25 px@2x sideways"
+  ]
+ },
+ "shard_seer": {
+  "fail": [],
+  "warn": [
+   "idle_n.png: body centre (torso band) +18.6 px from pivot x 128 (frame 4); the W/E mirror flip jumps the body ~37 px@2x sideways",
+   "walk_n.png: body centre (torso band) +18.7 px from pivot x 128 (frame 2); the W/E mirror flip jumps the body ~37 px@2x sideways",
+   "talk_n.png: body centre (torso band) +17.8 px from pivot x 128 (frame 1); the W/E mirror flip jumps the body ~36 px@2x sideways"
+  ]
+ }
+}

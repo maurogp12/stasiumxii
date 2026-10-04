@@ -4,7 +4,7 @@
 
 All times are ET. A path written as a repo path below is on `art/ironjaw-walk-help`. Any path still written as `/workspace/...` is **box-only** (Luca's agent box) and is not in this repo.
 
-Class-walk paint that has landed is under `docs/pc/art_help/class_walk_looks/`. It is not under `docs/pc/art_help/class_walk_blockouts/` on this branch. Blockout v3 stays on `claude/class-walk-blockouts` at `ffbfe3a` (`docs/pc/art_help/class_walk_blockouts/` on that branch). The box tree `/workspace/handoff/class_walk_blockouts/` is box-only. Box copies that were brought across sit at `docs/pc/art_help/handoff_wip/` (was `/workspace/handoff/wip_extra/`). `wip_extra/blockout_v3` was not included. The Technical Artist folder is not in this file.
+Class-walk paint that has landed is under `docs/pc/art_help/class_walk_looks/`. It is not under `docs/pc/art_help/class_walk_blockouts/` on this branch. Blockout v3 stays on `claude/class-walk-blockouts` at `ffbfe3a` (`docs/pc/art_help/class_walk_blockouts/` on that branch). The box tree `/workspace/handoff/class_walk_blockouts/` is box-only. Box copies that were brought across sit at `docs/pc/art_help/handoff_wip/` (was `/workspace/handoff/wip_extra/`). `wip_extra/blockout_v3` was not included. The Technical Artist handoff is [`docs/pc/art_help/HANDOFF_TA.md`](HANDOFF_TA.md), with copies under `docs/pc/art_help/handoff_wip/technical_artist/`.
 
 ---------------------------------------------------------------------------------------------------------------------------
 ## Kestrel walk v2 (ACTIVE, legs only, not accepted)

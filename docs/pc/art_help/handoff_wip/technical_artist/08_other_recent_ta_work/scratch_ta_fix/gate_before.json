@@ -1,0 +1,273 @@
+{
+ "farmer": {
+  "fail": [],
+  "warn": [
+   "farmer.json: contact AO present in some strips/frames but not others (pops on anim switch): partial walk_n.png (6/8 f), partial walk_s.png (1/8 f)",
+   "farmer.json: contact AO size off the agreed ~70x24 px@2x ellipse: idle_n.png 34x11, idle_s.png 17x11, walk_n.png 21x11, walk_s.png 14x11, talk_n.png 17x11, talk_s.png 17x11, work_n.png 34x11, work_s.png 17x11",
+   "walk_n.png: support (lowest) foot above the pivot row 240 by more than 3 px in frame(s) 2 (-5), 6 (-5) - both feet off the ground: the body hops; keep the planted foot on the pivot row and put the bob in the hips",
+   "walk_s.png: support (lowest) foot above the pivot row 240 by more than 3 px in frame(s) 2 (-6), 3 (-4), 6 (-8), 7 (-9) - both feet off the ground: the body hops; keep the planted foot on the pivot row and put the bob in the hips"
+  ]
+ },
+ "woodcutter": {
+  "fail": [],
+  "warn": [
+   "woodcutter.json: contact AO present in some strips/frames but not others (pops on anim switch): partial walk_n.png (7/8 f), partial walk_s.png (3/8 f)",
+   "woodcutter.json: contact AO size off the agreed ~70x24 px@2x ellipse: idle_n.png 25x11, idle_s.png 18x10, walk_n.png 27x12, walk_s.png 19x11, talk_n.png 18x10, talk_s.png 18x10",
+   "walk_n.png: support (lowest) foot above the pivot row 240 by more than 3 px in frame(s) 6 (-5) - both feet off the ground: the body hops; keep the planted foot on the pivot row and put the bob in the hips",
+   "walk_s.png: support (lowest) foot above the pivot row 240 by more than 3 px in frame(s) 1 (-6), 2 (-8), 7 (-6) - both feet off the ground: the body hops; keep the planted foot on the pivot row and put the bob in the hips"
+  ]
+ },
+ "fisher": {
+  "fail": [],
+  "warn": [
+   "fisher.json: contact AO present in some strips/frames but not others (pops on anim switch): partial walk_n.png (4/8 f), partial walk_s.png (2/8 f)",
+   "fisher.json: contact AO size off the agreed ~70x24 px@2x ellipse: idle_n.png 17x11, idle_s.png 17x11, walk_n.png 23x11, walk_s.png 18x11, talk_n.png 17x11, talk_s.png 17x11, work_n.png 17x11, work_s.png 17x11",
+   "walk_n.png: support (lowest) foot above the pivot row 240 by more than 3 px in frame(s) 1 (-5), 6 (-7), 7 (-4) - both feet off the ground: the body hops; keep the planted foot on the pivot row and put the bob in the hips",
+   "walk_s.png: support (lowest) foot above the pivot row 240 by more than 3 px in frame(s) 2 (-5), 3 (-8), 4 (-4), 5 (-7), 6 (-10), 7 (-4) - both feet off the ground: the body hops; keep the planted foot on the pivot row and put the bob in the hips"
+  ]
+ },
+ "smith": {
+  "fail": [],
+  "warn": [
+   "smith.json: contact AO present in some strips/frames but not others (pops on anim switch): partial walk_n.png (3/8 f), partial walk_s.png (2/8 f)",
+   "smith.json: contact AO size off the agreed ~70x24 px@2x ellipse: idle_n.png 21x11, idle_s.png 18x11, walk_n.png 29x10, walk_s.png 19x11, talk_n.png 18x11, talk_s.png 18x11, work_n.png 21x11, work_s.png 18x11",
+   "walk_n.png: support (lowest) foot above the pivot row 240 by more than 3 px in frame(s) 2 (-9), 3 (-7), 4 (-4), 5 (-8), 6 (-5) - both feet off the ground: the body hops; keep the planted foot on the pivot row and put the bob in the hips",
+   "walk_s.png: support (lowest) foot above the pivot row 240 by more than 3 px in frame(s) 0 (-6), 1 (-9), 2 (-10), 3 (-5), 6 (-5), 7 (-8) - both feet off the ground: the body hops; keep the planted foot on the pivot row and put the bob in the hips"
+  ]
+ },
+ "hermit": {
+  "fail": [],
+  "warn": [
+   "hermit.json: contact AO present in some strips/frames but not others (pops on anim switch): partial walk_n.png (4/8 f), partial walk_s.png (2/8 f)",
+   "hermit.json: contact AO size off the agreed ~70x24 px@2x ellipse: idle_n.png 22x24, idle_s.png 19x25, walk_n.png 23x11, walk_s.png 19x11, talk_n.png 19x11, talk_s.png 19x11, work_n.png 19x11, work_s.png 19x11",
+   "idle_s.png: contact AO peak alpha 0.41 > 0.3 (spec: soft AO only)",
+   "walk_n.png: support (lowest) foot above the pivot row 240 by more than 3 px in frame(s) 2 (-7), 3 (-4), 5 (-5), 6 (-4) - both feet off the ground: the body hops; keep the planted foot on the pivot row and put the bob in the hips",
+   "walk_s.png: support (lowest) foot above the pivot row 240 by more than 3 px in frame(s) 2 (-5), 3 (-8), 4 (-6), 5 (-8), 6 (-9), 7 (-5) - both feet off the ground: the body hops; keep the planted foot on the pivot row and put the bob in the hips"
+  ]
+ },
+ "coil_engineer": {
+  "fail": [],
+  "warn": [
+   "coil_engineer.json: contact AO present in some strips/frames but not others (pops on anim switch): partial walk_s.png (2/8 f)",
+   "coil_engineer.json: contact AO size off the agreed ~70x24 px@2x ellipse: idle_s.png 17x11, walk_n.png 34x25, walk_s.png 18x11, talk_n.png 17x11, talk_s.png 17x11, work_s.png 17x11",
+   "walk_n.png: art reaches below the pivot row 240 by more than 3 px in frame(s) 0 (+4), 4 (+5)",
+   "walk_n.png: contact AO peak alpha 0.34 > 0.3 (spec: soft AO only)",
+   "walk_s.png: support (lowest) foot above the pivot row 240 by more than 3 px in frame(s) 2 (-6), 3 (-9), 4 (-6), 5 (-9), 6 (-10), 7 (-5) - both feet off the ground: the body hops; keep the planted foot on the pivot row and put the bob in the hips"
+  ]
+ },
+ "warden": {
+  "fail": [],
+  "warn": [
+   "warden.json: contact AO present in some strips/frames but not others (pops on anim switch): none in walk_s.png, partial walk_n.png (4/8 f)",
+   "warden.json: contact AO size off the agreed ~70x24 px@2x ellipse: idle_s.png 30x22, walk_n.png 21x11, talk_n.png 16x10, talk_s.png 16x10, patrol_look_n.png 26x21, patrol_look_s.png 16x10",
+   "idle_n.png: contact AO peak alpha 0.42 > 0.3 (spec: soft AO only)",
+   "walk_n.png: support (lowest) foot above the pivot row 240 by more than 3 px in frame(s) 1 (-4), 2 (-5), 6 (-5) - both feet off the ground: the body hops; keep the planted foot on the pivot row and put the bob in the hips",
+   "walk_s.png: support (lowest) foot above the pivot row 240 by more than 3 px in frame(s) 1 (-6), 2 (-8), 3 (-8), 4 (-4), 5 (-6), 6 (-9), 7 (-7) - both feet off the ground: the body hops; keep the planted foot on the pivot row and put the bob in the hips",
+   "patrol_look_n.png: contact AO peak alpha 0.41 > 0.3 (spec: soft AO only)"
+  ]
+ },
+ "guide": {
+  "fail": [],
+  "warn": [
+   "guide.json: contact AO present in some strips/frames but not others (pops on anim switch): partial walk_n.png (7/8 f), partial walk_s.png (7/8 f)",
+   "guide.json: contact AO size off the agreed ~70x24 px@2x ellipse: idle_n.png 17x11, idle_s.png 19x11, walk_n.png 17x11, walk_s.png 23x12, talk_n.png 19x11, talk_s.png 19x11, work_n.png 17x11, work_s.png 19x11",
+   "idle_n.png: stance centre (feet midpoint) -13.2 px from pivot x 128 (frame 0)",
+   "walk_n.png: stance centre (feet midpoint) -12.1 px from pivot x 128 (frame 2)",
+   "walk_s.png: support (lowest) foot above the pivot row 240 by more than 3 px in frame(s) 2 (-4) - both feet off the ground: the body hops; keep the planted foot on the pivot row and put the bob in the hips"
+  ]
+ },
+ "herald": {
+  "fail": [],
+  "warn": [
+   "herald.json: contact AO present in some strips/frames but not others (pops on anim switch): partial walk_n.png (7/8 f), partial walk_s.png (2/8 f)",
+   "herald.json: contact AO size off the agreed ~70x24 px@2x ellipse: idle_n.png 16x11, idle_s.png 15x11, walk_n.png 17x11, walk_s.png 14x12, talk_n.png 15x11, talk_s.png 15x11, work_n.png 16x11, work_s.png 15x11",
+   "idle_n.png: stance centre (feet midpoint) -16.0 px from pivot x 128 (frame 0)",
+   "idle_n.png: body centre (torso band) -29.7 px from pivot x 128 (frame 9); the W/E mirror flip jumps the body ~59 px@2x sideways",
+   "idle_s.png: stance centre (feet midpoint) +14.3 px from pivot x 128 (frame 6)",
+   "idle_s.png: body centre (torso band) +25.1 px from pivot x 128 (frame 5); the W/E mirror flip jumps the body ~50 px@2x sideways",
+   "walk_n.png: art reaches below the pivot row 240 by more than 3 px in frame(s) 4 (+4)",
+   "walk_n.png: support (lowest) foot above the pivot row 240 by more than 3 px in frame(s) 2 (-5), 3 (-7), 4 (-4), 5 (-5) - both feet off the ground: the body hops; keep the planted foot on the pivot row and put the bob in the hips",
+   "walk_n.png: stance centre (feet midpoint) -16.7 px from pivot x 128 (frame 5)",
+   "walk_n.png: body centre (torso band) -29.6 px from pivot x 128 (frame 1); the W/E mirror flip jumps the body ~59 px@2x sideways",
+   "walk_s.png: support (lowest) foot above the pivot row 240 by more than 3 px in frame(s) 0 (-15), 1 (-15), 2 (-8), 3 (-15), 4 (-15), 5 (-15), 6 (-15), 7 (-15) - both feet off the ground: the body hops; keep the planted foot on the pivot row and put the bob in the hips",
+   "walk_s.png: stance centre (feet midpoint) +13.5 px from pivot x 128 (frame 2)",
+   "walk_s.png: body centre (torso band) +25.5 px from pivot x 128 (frame 1); the W/E mirror flip jumps the body ~51 px@2x sideways",
+   "talk_n.png: stance centre (feet midpoint) -14.5 px from pivot x 128 (frame 0)",
+   "talk_n.png: body centre (torso band) -25.5 px from pivot x 128 (frame 2); the W/E mirror flip jumps the body ~51 px@2x sideways",
+   "talk_s.png: stance centre (feet midpoint) +13.5 px from pivot x 128 (frame 0)",
+   "talk_s.png: body centre (torso band) +24.5 px from pivot x 128 (frame 2); the W/E mirror flip jumps the body ~49 px@2x sideways"
+  ]
+ },
+ "banker": {
+  "fail": [],
+  "warn": [
+   "banker.json: contact AO present in some strips/frames but not others (pops on anim switch): partial walk_n.png (3/8 f), partial walk_s.png (4/8 f)",
+   "banker.json: contact AO size off the agreed ~70x24 px@2x ellipse: idle_n.png 17x11, idle_s.png 17x11, walk_n.png 18x11, walk_s.png 17x11, talk_n.png 17x11, talk_s.png 17x11, work_n.png 17x11, work_s.png 17x11",
+   "idle_s.png: stance centre (feet midpoint) +13.5 px from pivot x 128 (frame 4)",
+   "idle_s.png: body centre (torso band) +12.1 px from pivot x 128 (frame 3); the W/E mirror flip jumps the body ~24 px@2x sideways",
+   "walk_n.png: support (lowest) foot above the pivot row 240 by more than 3 px in frame(s) 2 (-5), 6 (-5) - both feet off the ground: the body hops; keep the planted foot on the pivot row and put the bob in the hips",
+   "walk_s.png: support (lowest) foot above the pivot row 240 by more than 3 px in frame(s) 0 (-6), 1 (-6), 2 (-4), 7 (-4) - both feet off the ground: the body hops; keep the planted foot on the pivot row and put the bob in the hips",
+   "walk_s.png: stance centre (feet midpoint) +14.3 px from pivot x 128 (frame 6)",
+   "walk_s.png: body centre (torso band) +12.5 px from pivot x 128 (frame 3); the W/E mirror flip jumps the body ~25 px@2x sideways",
+   "talk_n.png: stance centre (feet midpoint) -14.3 px from pivot x 128 (frame 0)",
+   "talk_n.png: body centre (torso band) -12.5 px from pivot x 128 (frame 2); the W/E mirror flip jumps the body ~25 px@2x sideways",
+   "talk_s.png: stance centre (feet midpoint) +13.3 px from pivot x 128 (frame 0)",
+   "talk_s.png: body centre (torso band) +11.5 px from pivot x 128 (frame 2); the W/E mirror flip jumps the body ~23 px@2x sideways"
+  ]
+ },
+ "elder": {
+  "fail": [],
+  "warn": [
+   "elder.json: contact AO present in some strips/frames but not others (pops on anim switch): partial walk_n.png (6/8 f), partial walk_s.png (3/8 f)",
+   "elder.json: contact AO size off the agreed ~70x24 px@2x ellipse: idle_n.png 16x10, idle_s.png 17x10, walk_n.png 20x11, walk_s.png 19x11, talk_n.png 17x10, talk_s.png 17x10, work_n.png 16x10, work_s.png 17x10",
+   "idle_s.png: stance centre (feet midpoint) -13.0 px from pivot x 128 (frame 0)",
+   "idle_s.png: body centre (torso band) -15.5 px from pivot x 128 (frame 9); the W/E mirror flip jumps the body ~31 px@2x sideways",
+   "walk_n.png: support (lowest) foot above the pivot row 240 by more than 3 px in frame(s) 6 (-4) - both feet off the ground: the body hops; keep the planted foot on the pivot row and put the bob in the hips",
+   "walk_s.png: support (lowest) foot above the pivot row 240 by more than 3 px in frame(s) 2 (-4), 3 (-4), 5 (-4), 6 (-6), 7 (-4) - both feet off the ground: the body hops; keep the planted foot on the pivot row and put the bob in the hips",
+   "walk_s.png: stance centre (feet midpoint) -12.6 px from pivot x 128 (frame 6)",
+   "walk_s.png: body centre (torso band) -16.1 px from pivot x 128 (frame 5); the W/E mirror flip jumps the body ~32 px@2x sideways",
+   "talk_n.png: stance centre (feet midpoint) +11.8 px from pivot x 128 (frame 0)",
+   "talk_n.png: body centre (torso band) +13.7 px from pivot x 128 (frame 0); the W/E mirror flip jumps the body ~27 px@2x sideways",
+   "talk_s.png: stance centre (feet midpoint) -12.8 px from pivot x 128 (frame 0)",
+   "talk_s.png: body centre (torso band) -14.7 px from pivot x 128 (frame 0); the W/E mirror flip jumps the body ~29 px@2x sideways"
+  ]
+ },
+ "trader": {
+  "fail": [],
+  "warn": [
+   "trader.json: contact AO present in some strips/frames but not others (pops on anim switch): partial walk_n.png (7/8 f), partial walk_s.png (1/8 f)",
+   "trader.json: contact AO size off the agreed ~70x24 px@2x ellipse: idle_n.png 17x11, idle_s.png 17x11, walk_n.png 17x11, walk_s.png 14x11, talk_n.png 17x11, talk_s.png 17x11, work_n.png 17x11, work_s.png 17x11",
+   "idle_n.png: stance centre (feet midpoint) -13.4 px from pivot x 128 (frame 0)",
+   "idle_n.png: body centre (torso band) -13.3 px from pivot x 128 (frame 9); the W/E mirror flip jumps the body ~27 px@2x sideways",
+   "idle_s.png: stance centre (feet midpoint) -13.5 px from pivot x 128 (frame 0)",
+   "walk_n.png: art reaches below the pivot row 240 by more than 3 px in frame(s) 4 (+4)",
+   "walk_n.png: stance centre (feet midpoint) -11.8 px from pivot x 128 (frame 2)",
+   "walk_n.png: body centre (torso band) -13.8 px from pivot x 128 (frame 1); the W/E mirror flip jumps the body ~28 px@2x sideways",
+   "walk_s.png: support (lowest) foot above the pivot row 240 by more than 3 px in frame(s) 0 (-4), 1 (-16), 2 (-4), 3 (-13), 4 (-10), 5 (-13), 6 (-16), 7 (-16) - both feet off the ground: the body hops; keep the planted foot on the pivot row and put the bob in the hips",
+   "walk_s.png: stance centre (feet midpoint) -18.7 px from pivot x 128 (frame 4)",
+   "talk_n.png: stance centre (feet midpoint) +12.3 px from pivot x 128 (frame 0)",
+   "talk_s.png: stance centre (feet midpoint) -13.3 px from pivot x 128 (frame 0)"
+  ]
+ },
+ "door_keeper": {
+  "fail": [],
+  "warn": [
+   "door_keeper.json: contact AO present in some strips/frames but not others (pops on anim switch): partial walk_n.png (7/8 f), partial walk_s.png (4/8 f)",
+   "door_keeper.json: contact AO size off the agreed ~70x24 px@2x ellipse: idle_n.png 29x25, idle_s.png 19x25, walk_s.png 21x25, talk_n.png 19x25, talk_s.png 19x25, work_n.png 18x16, work_s.png 19x25",
+   "idle_n.png: contact AO peak alpha 0.38 > 0.3 (spec: soft AO only)",
+   "idle_s.png: stance centre (feet midpoint) -14.3 px from pivot x 128 (frame 0)",
+   "idle_s.png: body centre (torso band) -14.9 px from pivot x 128 (frame 9); the W/E mirror flip jumps the body ~30 px@2x sideways",
+   "idle_s.png: contact AO peak alpha 0.36 > 0.3 (spec: soft AO only)",
+   "walk_s.png: support (lowest) foot above the pivot row 240 by more than 3 px in frame(s) 1 (-6), 3 (-6), 4 (-9), 5 (-7), 6 (-6), 7 (-8) - both feet off the ground: the body hops; keep the planted foot on the pivot row and put the bob in the hips",
+   "walk_s.png: stance centre (feet midpoint) -14.2 px from pivot x 128 (frame 5)",
+   "walk_s.png: body centre (torso band) -15.2 px from pivot x 128 (frame 6); the W/E mirror flip jumps the body ~30 px@2x sideways",
+   "walk_s.png: contact AO peak alpha 0.33 > 0.3 (spec: soft AO only)",
+   "talk_n.png: stance centre (feet midpoint) +13.3 px from pivot x 128 (frame 0)",
+   "talk_n.png: body centre (torso band) +13.6 px from pivot x 128 (frame 1); the W/E mirror flip jumps the body ~27 px@2x sideways",
+   "talk_n.png: contact AO peak alpha 0.38 > 0.3 (spec: soft AO only)",
+   "talk_s.png: stance centre (feet midpoint) -14.3 px from pivot x 128 (frame 0)",
+   "talk_s.png: body centre (torso band) -14.6 px from pivot x 128 (frame 1); the W/E mirror flip jumps the body ~29 px@2x sideways",
+   "talk_s.png: contact AO peak alpha 0.38 > 0.3 (spec: soft AO only)",
+   "work_s.png: contact AO peak alpha 0.38 > 0.3 (spec: soft AO only)"
+  ]
+ },
+ "archivist": {
+  "fail": [],
+  "warn": [
+   "archivist.json: contact AO present in some strips/frames but not others (pops on anim switch): partial walk_n.png (3/8 f), partial walk_s.png (1/8 f)",
+   "archivist.json: contact AO size off the agreed ~70x24 px@2x ellipse: idle_n.png 16x19, idle_s.png 15x11, walk_n.png 23x19, walk_s.png 14x12, talk_n.png 15x11, talk_s.png 15x11, work_n.png 16x19, work_s.png 15x11",
+   "idle_n.png: light fringe on 5% of soft edge px",
+   "idle_s.png: stance centre (feet midpoint) +13.5 px from pivot x 128 (frame 4)",
+   "idle_s.png: body centre (torso band) +10.8 px from pivot x 128 (frame 3); the W/E mirror flip jumps the body ~22 px@2x sideways",
+   "walk_n.png: support (lowest) foot above the pivot row 240 by more than 3 px in frame(s) 2 (-7), 3 (-7), 5 (-6) - both feet off the ground: the body hops; keep the planted foot on the pivot row and put the bob in the hips",
+   "walk_s.png: support (lowest) foot above the pivot row 240 by more than 3 px in frame(s) 0 (-14), 1 (-14), 2 (-14), 3 (-15), 4 (-16), 5 (-16), 6 (-14), 7 (-14) - both feet off the ground: the body hops; keep the planted foot on the pivot row and put the bob in the hips",
+   "walk_s.png: stance centre (feet midpoint) +18.5 px from pivot x 128 (frame 0)",
+   "walk_s.png: body centre (torso band) +11.2 px from pivot x 128 (frame 2); the W/E mirror flip jumps the body ~22 px@2x sideways",
+   "talk_n.png: stance centre (feet midpoint) -14.5 px from pivot x 128 (frame 0)",
+   "talk_n.png: body centre (torso band) -11.2 px from pivot x 128 (frame 4); the W/E mirror flip jumps the body ~22 px@2x sideways",
+   "talk_s.png: stance centre (feet midpoint) +13.5 px from pivot x 128 (frame 0)",
+   "talk_s.png: body centre (torso band) +10.2 px from pivot x 128 (frame 4); the W/E mirror flip jumps the body ~20 px@2x sideways",
+   "work_n.png: light fringe on 5% of soft edge px"
+  ]
+ },
+ "forge_master": {
+  "fail": [],
+  "warn": [
+   "forge_master.json: contact AO present in some strips/frames but not others (pops on anim switch): partial walk_n.png (6/8 f), partial walk_s.png (6/8 f)",
+   "forge_master.json: contact AO size off the agreed ~70x24 px@2x ellipse: idle_n.png 19x15, walk_n.png 24x11, work_n.png 18x10",
+   "idle_s.png: body centre (torso band) +18.1 px from pivot x 128 (frame 3); the W/E mirror flip jumps the body ~36 px@2x sideways",
+   "walk_n.png: support (lowest) foot above the pivot row 240 by more than 3 px in frame(s) 6 (-5) - both feet off the ground: the body hops; keep the planted foot on the pivot row and put the bob in the hips",
+   "walk_n.png: stance centre (feet midpoint) -12.7 px from pivot x 128 (frame 2)",
+   "walk_s.png: art reaches below the pivot row 240 by more than 3 px in frame(s) 0 (+4), 4 (+5)",
+   "walk_s.png: stance centre (feet midpoint) +11.0 px from pivot x 128 (frame 5)",
+   "walk_s.png: body centre (torso band) +18.5 px from pivot x 128 (frame 2); the W/E mirror flip jumps the body ~37 px@2x sideways",
+   "talk_n.png: body centre (torso band) -18.6 px from pivot x 128 (frame 2); the W/E mirror flip jumps the body ~37 px@2x sideways",
+   "talk_s.png: body centre (torso band) +17.6 px from pivot x 128 (frame 2); the W/E mirror flip jumps the body ~35 px@2x sideways",
+   "work_s.png: art reaches below the pivot row 240 by more than 3 px in frame(s) 6 (+6), 7 (+4)"
+  ]
+ },
+ "ferry_captain": {
+  "fail": [],
+  "warn": [
+   "ferry_captain.json: contact AO present in some strips/frames but not others (pops on anim switch): partial walk_n.png (7/8 f), partial walk_s.png (3/8 f)",
+   "ferry_captain.json: contact AO size off the agreed ~70x24 px@2x ellipse: idle_n.png 21x11, idle_s.png 16x11, walk_n.png 25x11, walk_s.png 14x12, talk_n.png 16x11, talk_s.png 16x11, work_n.png 21x11, work_s.png 16x11",
+   "idle_n.png: stance centre (feet midpoint) -14.7 px from pivot x 128 (frame 0)",
+   "idle_n.png: body centre (torso band) -10.1 px from pivot x 128 (frame 9); the W/E mirror flip jumps the body ~20 px@2x sideways",
+   "idle_s.png: stance centre (feet midpoint) -14.9 px from pivot x 128 (frame 0)",
+   "idle_s.png: body centre (torso band) -13.6 px from pivot x 128 (frame 9); the W/E mirror flip jumps the body ~27 px@2x sideways",
+   "walk_n.png: art reaches below the pivot row 240 by more than 3 px in frame(s) 4 (+4)",
+   "walk_n.png: stance centre (feet midpoint) -13.2 px from pivot x 128 (frame 2)",
+   "walk_n.png: body centre (torso band) -10.3 px from pivot x 128 (frame 2); the W/E mirror flip jumps the body ~21 px@2x sideways",
+   "walk_n.png: contact AO peak alpha 0.33 > 0.3 (spec: soft AO only)",
+   "walk_s.png: support (lowest) foot above the pivot row 240 by more than 3 px in frame(s) 0 (-12), 1 (-14), 2 (-5), 4 (-9), 6 (-6), 7 (-14) - both feet off the ground: the body hops; keep the planted foot on the pivot row and put the bob in the hips",
+   "walk_s.png: stance centre (feet midpoint) -14.9 px from pivot x 128 (frame 6)",
+   "walk_s.png: body centre (torso band) -13.8 px from pivot x 128 (frame 5); the W/E mirror flip jumps the body ~28 px@2x sideways",
+   "talk_n.png: stance centre (feet midpoint) +13.9 px from pivot x 128 (frame 0)",
+   "talk_n.png: body centre (torso band) +11.5 px from pivot x 128 (frame 0); the W/E mirror flip jumps the body ~23 px@2x sideways",
+   "talk_s.png: stance centre (feet midpoint) -14.9 px from pivot x 128 (frame 0)",
+   "talk_s.png: body centre (torso band) -12.5 px from pivot x 128 (frame 0); the W/E mirror flip jumps the body ~25 px@2x sideways"
+  ]
+ },
+ "fen_guide": {
+  "fail": [],
+  "warn": [
+   "fen_guide.json: contact AO present in some strips/frames but not others (pops on anim switch): partial walk_n.png (5/8 f), partial walk_s.png (2/8 f)",
+   "fen_guide.json: contact AO size off the agreed ~70x24 px@2x ellipse: idle_n.png 20x11, idle_s.png 16x10, walk_n.png 22x11, walk_s.png 14x11, talk_n.png 16x10, talk_s.png 16x10, work_n.png 20x11, work_s.png 16x10",
+   "idle_s.png: stance centre (feet midpoint) -15.2 px from pivot x 128 (frame 0)",
+   "idle_s.png: body centre (torso band) -14.0 px from pivot x 128 (frame 9); the W/E mirror flip jumps the body ~28 px@2x sideways",
+   "walk_n.png: support (lowest) foot above the pivot row 240 by more than 3 px in frame(s) 2 (-4), 6 (-5) - both feet off the ground: the body hops; keep the planted foot on the pivot row and put the bob in the hips",
+   "walk_s.png: support (lowest) foot above the pivot row 240 by more than 3 px in frame(s) 0 (-10), 1 (-16), 2 (-12), 3 (-16), 4 (-13), 5 (-16), 6 (-15), 7 (-16) - both feet off the ground: the body hops; keep the planted foot on the pivot row and put the bob in the hips",
+   "walk_s.png: stance centre (feet midpoint) -22.5 px from pivot x 128 (frame 3)",
+   "walk_s.png: body centre (torso band) -14.5 px from pivot x 128 (frame 5); the W/E mirror flip jumps the body ~29 px@2x sideways",
+   "talk_n.png: stance centre (feet midpoint) +13.8 px from pivot x 128 (frame 0)",
+   "talk_n.png: body centre (torso band) +12.2 px from pivot x 128 (frame 0); the W/E mirror flip jumps the body ~24 px@2x sideways",
+   "talk_s.png: stance centre (feet midpoint) -14.8 px from pivot x 128 (frame 0)",
+   "talk_s.png: body centre (torso band) -13.2 px from pivot x 128 (frame 0); the W/E mirror flip jumps the body ~26 px@2x sideways"
+  ]
+ },
+ "last_watcher": {
+  "fail": [],
+  "warn": [
+   "last_watcher.json: contact AO present in some strips/frames but not others (pops on anim switch): partial walk_n.png (7/8 f), partial walk_s.png (2/8 f)",
+   "last_watcher.json: contact AO size off the agreed ~70x24 px@2x ellipse: idle_n.png 18x10, idle_s.png 16x11, walk_n.png 18x21, walk_s.png 17x12, talk_n.png 15x11, talk_s.png 15x11, work_n.png 18x10, work_s.png 16x12",
+   "idle_n.png: stance centre (feet midpoint) -13.6 px from pivot x 128 (frame 0)",
+   "idle_s.png: body centre (torso band) +13.9 px from pivot x 128 (frame 3); the W/E mirror flip jumps the body ~28 px@2x sideways",
+   "walk_n.png: stance centre (feet midpoint) -12.3 px from pivot x 128 (frame 2)",
+   "walk_n.png: contact AO peak alpha 0.34 > 0.3 (spec: soft AO only)",
+   "walk_s.png: support (lowest) foot above the pivot row 240 by more than 3 px in frame(s) 2 (-5), 3 (-7), 4 (-6), 5 (-8), 6 (-6), 7 (-8) - both feet off the ground: the body hops; keep the planted foot on the pivot row and put the bob in the hips",
+   "walk_s.png: stance centre (feet midpoint) +19.5 px from pivot x 128 (frame 2)",
+   "walk_s.png: body centre (torso band) +14.2 px from pivot x 128 (frame 2); the W/E mirror flip jumps the body ~28 px@2x sideways",
+   "talk_n.png: body centre (torso band) -14.2 px from pivot x 128 (frame 5); the W/E mirror flip jumps the body ~28 px@2x sideways",
+   "talk_s.png: body centre (torso band) +13.2 px from pivot x 128 (frame 5); the W/E mirror flip jumps the body ~26 px@2x sideways"
+  ]
+ },
+ "shard_seer": {
+  "fail": [],
+  "warn": [
+   "shard_seer.json: contact AO present in some strips/frames but not others (pops on anim switch): none in idle_n.png, none in walk_n.png, none in work_n.png",
+   "shard_seer.json: contact AO size off the agreed ~70x24 px@2x ellipse: walk_s.png 29x21",
+   "idle_n.png: body centre (torso band) +15.2 px from pivot x 128 (frame 3); the W/E mirror flip jumps the body ~30 px@2x sideways",
+   "walk_n.png: body centre (torso band) +15.2 px from pivot x 128 (frame 2); the W/E mirror flip jumps the body ~30 px@2x sideways"
+  ]
+ }
+}

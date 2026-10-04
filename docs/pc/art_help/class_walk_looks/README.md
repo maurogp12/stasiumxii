@@ -127,6 +127,7 @@ Cell format, from the v2 blockout README (`b1a1cff9`): 512×360, pivot (256, 329
 | Mender WIP | `docs/pc/art_help/class_walk_looks/mender/wip/v2/`, `mender/wip/targets_work/`, `mender/wip/mender_concepts/`. Approved concepts stay at `mender_concepts/`. |
 | NPC sprite WIP | `docs/pc/art_help/npc_sprites_wip/` (19 roles under `npc_sprites/`, plus `check_report_npc_*.md`) |
 | Scenario handoff (fallback) | [`docs/pc/art_help/HANDOFF_SCENARIO.md`](../HANDOFF_SCENARIO.md). Written before Luca's override ([5981373327](https://github.com/maurogp12/stasiumxii/pull/252#issuecomment-5981373327)). Scenario Art still finishes Kestrel. Extra copies: `docs/pc/art_help/handoff_wip/` (`ironjaw_v8/`, `kestrel_v2/`, `scripts_scratch/`, `wp10a_joins/`). `blockout_v3` is not in this branch. |
+| Technical Artist handoff | [`docs/pc/art_help/HANDOFF_TA.md`](../HANDOFF_TA.md). Copies: `docs/pc/art_help/handoff_wip/technical_artist/`. `l9_v1_decor_check/cap` is box-only. |
 | Ironjaw | `docs/pc/art_help/ironjaw_walk/` (`BRIEF.md`, `v7/`, `v8/`, `ta_joints/`) |
 | Blockouts (other branch) | `origin/claude/class-walk-blockouts`. Bastion v2: `b1a1cff9`. Kestrel, Gloam, and Mender v3: `ffbfe3a9`. Folder `docs/pc/art_help/class_walk_blockouts/` (`README.md`, per-class `joints_512.json`, clay, ID). |
 

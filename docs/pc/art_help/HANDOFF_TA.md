@@ -1,9 +1,26 @@
 # STASIUM XII: Technical Artist hand-off (for Claude)
 
 Written Sun 4 Oct 2026, ~11:10 ET. All times are ET (UTC-4).
-Rules for this hand-off: copy and document only. No art, rig or code was changed. Nothing was committed, pushed or merged; Stasium Bot commits.
-Copies: `/workspace/handoff/wip_extra/technical_artist/` (one subfolder per item). SHA-256 for every copied file: `/workspace/handoff/wip_extra/technical_artist/MANIFEST.txt`.
-The copies are byte-identical to the sources as of this hand-off. The originals are still the working locations. Most scripts below have **hardcoded absolute paths**, so running a copied script still reads and writes the original locations.
+
+> **Repo copy.** On `art/ironjaw-walk-help` the copies are `docs/pc/art_help/handoff_wip/technical_artist/`. This repo copy excludes `l9_v1_decor_check/cap` (verification screenshots, about 101 MB). That folder stays box-only at `/workspace/handoff/wip_extra/technical_artist/04_l9_v1_decor_import_check/l9_v1_decor_check/cap`. Also excluded, and still box-only, are the Ironjaw venv (`/workspace/art_src/blockout/ironjaw_walk/.venv`), the `/workspace/tmp_ij/` backups, and the L9 scratch copies listed in this file (`wt/`, `proj_*`, and `/workspace/scratch/l9_v14/`). Godot for the L9 check was `/tmp/godot/Godot_v4.7-stable_linux.x86_64` under `xvfb-run`. It may not survive a reset.
+>
+> `docs/pc/art_help/handoff_wip/technical_artist/MANIFEST.txt` hashes are for the box layout. `cap/` entries in that manifest will not be found in this repo.
+>
+> A path written below as a repo path is on this branch. Any path still written as `/workspace/...` is **box-only**.
+
+## Flags
+
+For Claude:
+
+1. `ship/l9_outdoor_board` was rewritten to a "v1.4" (sand fringe, new gate report from `/workspace/scratch/l9_v14/`) after the Technical Artist's v1.3 acceptance. The Technical Artist has not checked it. The kit copy on this branch is `docs/pc/art_help/handoff_wip/technical_artist/05_l9_outdoor_board_v1.3_npc_gates/ship_l9_outdoor_board/`. `/workspace/scratch/l9_v14/` was not copied.
+2. `PC_IMPORT_WIRING_NOTE.md` still says Ironjaw v3, but the json is v3.2. Copy: `docs/pc/art_help/handoff_wip/technical_artist/03_char_check_wiring_tools/ship_characters_pc/PC_IMPORT_WIRING_NOTE.md`.
+3. The Ironjaw underlay folder's own `SHA256SUMS` is stale for `README.md` and `src/pad512.py`. Copy: `docs/pc/art_help/handoff_wip/technical_artist/01_ironjaw_walk_underlay/ironjaw_walk/`.
+4. Mauro's leg fix has no written spec on disk. The knee cop and the tassets are not separate parts in the joints yet.
+5. Most scripts use hard-coded paths and write in place, even when run from the copy.
+
+Rules for this hand-off: copy and document only. No art, rig or code was changed. Nothing was committed, pushed or merged by the Technical Artist; Stasium Bot commits.
+Copies: `docs/pc/art_help/handoff_wip/technical_artist/` (one subfolder per item). SHA-256 for the box layout, including `cap/` files that are not here: `docs/pc/art_help/handoff_wip/technical_artist/MANIFEST.txt`.
+The copies that are in this repo are byte-identical to the sources as of this hand-off. The originals are still the working locations. Most scripts below have **hardcoded absolute paths**, so running a copied script still reads and writes the original locations.
 
 ---
 
@@ -22,8 +39,8 @@ The copies are byte-identical to the sources as of this hand-off. The originals 
   - `renders_512/{clay,sides,sil,grid}/`: 512x360 per-frame PNGs (there are no strips at 512), plus `joints_512.json`, `manifest_512.json` and `joints_check.png`.
   - `qa/` (`hold_check.json`, `model_meta.json`, `idpass/`, `look/`) and `ref/luca_hold_reference.png`.
 - venv (not copied, 1.1 GB): `/workspace/art_src/blockout/ironjaw_walk/.venv`. It runs Python 3.13.5 with bpy 5.2.2, numpy 2.5.3 and pillow 12.3.0.
-- Copy (no venv, no `__pycache__`): `/workspace/handoff/wip_extra/technical_artist/01_ironjaw_walk_underlay/ironjaw_walk/`
-- Claude's copy of the joints: `/workspace/handoff/ironjaw_walk_claude/ta_joints/` (`NOTE.md`, `joints_512.json`, `manifest_512.json`, `joints_check.png`).
+- Copy (no venv, no `__pycache__`): `docs/pc/art_help/handoff_wip/technical_artist/01_ironjaw_walk_underlay/ironjaw_walk/`
+- Claude's copy of the joints: `docs/pc/art_help/ironjaw_walk/ta_joints/` (`NOTE.md`, `joints_512.json`, `manifest_512.json`, `joints_check.png`).
 - Preview GIF and contact sheet (written by `post.py`): `/workspace/luca_pics/chars/ironjaw_walk_underlay.gif` and `.jpg`.
 - Backups (not copied, noted only), all in `/workspace/tmp_ij/`:
   - `backup_before_arms/`, `backup_approved_hold/` and `backup_v3_scenario/`: full folder snapshots, ~1.1 GB each because each includes its own `.venv`.
@@ -98,7 +115,7 @@ cd /workspace/art_src/blockout/ironjaw_walk
   - backups in `idle_prev/` and `idlefix/`.
 - Scripts: `/workspace/scratch/ij_v32/`: `build_v32.py`, `qa_v32.py`, `sheet_v32.py`, `m32.py`, `trans.py`, `walkana.py`, `track.py`, `pics_*_v32.py`, and `backup/`.
 - Wiring json: `/workspace/stasium-pc-look/ship/characters_pc/json/ironjaw.json` (v2 kept as `ironjaw_v2.json`).
-- Copy: `/workspace/handoff/wip_extra/technical_artist/02_ironjaw_sprite_v3_v3.1_v3.2/` (`art_ironjaw_full_v3/`, `art_ironjaw_full_v3.2/`, `scratch_ij_v3/`, `scratch_ij_v32/`, `ship_json/`).
+- Copy: `docs/pc/art_help/handoff_wip/technical_artist/02_ironjaw_sprite_v3_v3.1_v3.2/` (`art_ironjaw_full_v3/`, `art_ironjaw_full_v3.2/`, `scratch_ij_v3/`, `scratch_ij_v32/`, `ship_json/`).
 
 **Where you stopped:** v3.2 was built 2026-10-03 20:57–21:08 ET, and the json and check report were regenerated at 21:02 ET. No later work.
 
@@ -136,7 +153,7 @@ cd /workspace/art_src/blockout/ironjaw_walk
 - `/workspace/stasium-pc-look/tools/check_chars.py`, `/workspace/stasium-pc-look/tools/make_char_json.py`, `/workspace/stasium-pc-look/tools/chars_pics.py`
 - `/workspace/stasium-pc-look/ship/characters_pc/`: `PC_IMPORT_WIRING_NOTE.md`, `check_chars_report.json`, and `json/{ironjaw,ironjaw_v2,kestrel,gloam,bastion,mender}.json`.
 - Pictures: `/workspace/luca_pics/chars/`: lineup, lineup_tiers, `<char>_sheet`, `issue_*.jpg`, the Ironjaw v3/v3.2 pictures and the underlay GIF/JPG.
-- Copy: `/workspace/handoff/wip_extra/technical_artist/03_char_check_wiring_tools/` (`tools/`, `ship_characters_pc/`, `luca_pics_chars/`).
+- Copy: `docs/pc/art_help/handoff_wip/technical_artist/03_char_check_wiring_tools/` (`tools/`, `ship_characters_pc/`, `luca_pics_chars/`).
 
 **Where you stopped:** the report and jsons were regenerated for Ironjaw v3.2 at 21:02 ET on Oct 3. Since then nothing has been rerun for Bastion v4, Mender v3, Gloam v4 or Kestrel v3.
 
@@ -215,7 +232,7 @@ python3 tools/chars_pics.py [issues]
 - Worktree (not copied): `/workspace/scratch/l9_v1_decor_check/wt/`, a read-only, detached worktree of `/workspace/stasium-repo` at af040d7.
 - Scratch Godot projects (not copied, 1.4 GB): `/workspace/scratch/l9_v1_decor_check/proj_base/`, `proj_base_patch/`, `proj_patch/`, `proj_props/`, `proj_wired/`. Each has `tests/pc/ta_check_l9.gd` installed.
 - Kit: `/workspace/stasium-pc-look/ship/l9_v1_decor/` (Scenario's, 24 MB; not copied).
-- Copy: `/workspace/handoff/wip_extra/technical_artist/04_l9_v1_decor_import_check/l9_v1_decor_check/` (everything except `wt/` and `proj_*`).
+- Copy: `docs/pc/art_help/handoff_wip/technical_artist/04_l9_v1_decor_import_check/l9_v1_decor_check/`. The box copy had everything except `wt/` and `proj_*`. This repo copy also excludes `cap/` (box-only). `checker/` is included.
 
 **Where you stopped:** the report and fixes were delivered. Fixes 1–3 below are proposals; none is applied on the branch.
 
@@ -273,12 +290,12 @@ python3 tools/chars_pics.py [issues]
 - Kit: `/workspace/stasium-pc-look/ship/l9_outdoor_board/` (README.md v1.3, `looks.json`, `atlas_meta.json`, `props.json`, `tiles/`, `terrace/`, `props/`).
 - Wiring note: `/workspace/stasium-pc-look/ship/l9_outdoor_board_WIRING_NOTE.md`.
 - Gate reports:
-  - `/workspace/stasium-pc-look/ship/check_report_world_l9_outdoor_board.md`
-  - `/workspace/stasium-pc-look/ship/check_report_props_l9_outdoor_board.md`
-  - `/workspace/stasium-pc-look/ship/check_report_npc_<role>.md` (19 files)
+  - `docs/pc/art_help/handoff_wip/technical_artist/05_l9_outdoor_board_v1.3_npc_gates/check_reports/check_report_world_l9_outdoor_board.md`
+  - `docs/pc/art_help/handoff_wip/technical_artist/05_l9_outdoor_board_v1.3_npc_gates/check_reports/check_report_props_l9_outdoor_board.md`
+  - `docs/pc/art_help/npc_sprites_wip/check_report_npc_<role>.md` (19 files)
 - Checker: `/workspace/stasium-pc-look/tools/check_assets.py`. The npc package starts at ~line 1373; foot detector constants `NPC_FEET_BAND`, `NPC_TOOL_MAX_W`, etc.
-- NPC sprites: `/workspace/stasium-pc-look/ship/npc_sprites/<role>/` (28 MB). NPC build pipeline: `/workspace/stasium-pc-look/tools/npc/` (see its README.md). Contact sheets: `/workspace/stasium-pc-look/previews/npc/`.
-- Copy: `/workspace/handoff/wip_extra/technical_artist/05_l9_outdoor_board_v1.3_npc_gates/`:
+- NPC sprites: `docs/pc/art_help/npc_sprites_wip/npc_sprites/<role>/` (28 MB). NPC build pipeline: `/workspace/stasium-pc-look/tools/npc/` (see its README.md). Contact sheets: `/workspace/stasium-pc-look/previews/npc/`.
+- Copy: `docs/pc/art_help/handoff_wip/technical_artist/05_l9_outdoor_board_v1.3_npc_gates/`:
   - `ship_l9_outdoor_board/`, `l9_outdoor_board_WIRING_NOTE.md`, `tools/check_assets.py`, `check_reports/`;
   - `npc_sprites_json/` (the 19 role jsons only);
   - `npc_sprites_forge_master/` (the full role folder).
@@ -293,7 +310,7 @@ python3 tools/check_assets.py ship/l9_outdoor_board/props --package props
 python3 tools/check_assets.py ship/npc_sprites/<role> --package npc [--report <md>] [--previews <dir>] [--no-contact]
 ```
 - The reports go to `ship/check_report_*.md` by default and the NPC contact sheets to `previews/npc/`. Pass `--report` and `--previews` to keep the shipped reports untouched.
-- `--map-tags art/maps/...` is relative, and `/workspace/stasium-pc-look/art/maps` **does not exist**. The file does exist at `/workspace/stasium-repo/art/maps/arena_colosseum_v2/tiled/crosshaven_15x15_tags.json` (and in the item 4 worktree). Pass that absolute path. I did not verify which copy the gate actually used.
+- `--map-tags art/maps/...` is relative, and `/workspace/stasium-pc-look/art/maps` **does not exist**. The file is in this repo at `art/maps/arena_colosseum_v2/tiled/crosshaven_15x15_tags.json`. The box copy is `/workspace/stasium-repo/art/maps/arena_colosseum_v2/tiled/crosshaven_15x15_tags.json` (and in the item 4 worktree). I did not verify which copy the gate actually used.
 
 **Inputs:** ZONES_BUILD_SPEC 4.5a and WP10 NPC bodies (as quoted in check_assets.py), and the Crosshaven map tags json.
 
@@ -325,7 +342,7 @@ python3 tools/check_assets.py ship/npc_sprites/<role> --package npc [--report <m
 **Where (box path):**
 - Art Bot Guide copy: `/workspace/stasium-pc-look/refs/STASIUM_ART_BOT_GUIDE_2026-10-03.md` (file mode 600).
 - Team brief: `/workspace/team_learning/SKILL_REPOS_BRIEF.md`.
-- Pointer file: `/workspace/handoff/wip_extra/technical_artist/06_art_law_standards/REFERENCE.txt`.
+- Pointer file: `docs/pc/art_help/handoff_wip/technical_artist/06_art_law_standards/REFERENCE.txt`.
 
 **Where you stopped:** n/a.
 
@@ -350,8 +367,9 @@ python3 tools/check_assets.py ship/npc_sprites/<role> --package npc [--report <m
 **State:** the **Technical Artist has done no work on these yet.** The TA is only listed as backing Scenario on joints, alpha clips and qa_walk (`PAINT_BRIEF.md`: "Scenario Art paints; Technical Artist rigs; Claude scores and reviews").
 
 **Where (box path):**
-- `/workspace/handoff/class_walk_blockouts/`: `README.md`, `PAINT_BRIEF.md`, `bastion/`, `kestrel/`, `gloam/`, `mender/`, `mender_concepts/`, `refs/`, `repo_targets/`, `scripts/`, `targets/`.
-- Not copied (it is Claude's work and already in handoff). Pointer: `/workspace/handoff/wip_extra/technical_artist/07_class_walk_blockouts/STATE.txt`.
+- Box-only tree: `/workspace/handoff/class_walk_blockouts/` (`README.md`, `PAINT_BRIEF.md`, `bastion/`, `kestrel/`, `gloam/`, `mender/`, `mender_concepts/`, `refs/`, `repo_targets/`, `scripts/`, `targets/`).
+- On this branch: `docs/pc/art_help/class_walk_looks/wip_shared/` (`PAINT_BRIEF.md`, `README.md`, `scripts/`) and the painted packages under `docs/pc/art_help/class_walk_looks/`. Blockout v3 is on `claude/class-walk-blockouts` at `ffbfe3a`, not here.
+- Pointer: `docs/pc/art_help/handoff_wip/technical_artist/07_class_walk_blockouts/STATE.txt`.
 
 **Where you stopped:** not started.
 
@@ -369,17 +387,17 @@ python3 tools/check_assets.py ship/npc_sprites/<role> --package npc [--report <m
 
 The owner of a scratch folder is inferred from its contents. Paths were verified, but who made each one was not.
 
-- `/workspace/scratch/ij_v4hd_check/`: `attack_board_read.png` (21:12 ET) and `hold_now.png` (21:48 ET, Oct 3). A TA board-read/hold check of the v4_hd set. Copied to `08_other_recent_ta_work/scratch_ij_v4hd_check/`.
+- `/workspace/scratch/ij_v4hd_check/` (box-only): `attack_board_read.png` (21:12 ET) and `hold_now.png` (21:48 ET, Oct 3). A TA board-read/hold check of the v4_hd set. Copied to `docs/pc/art_help/handoff_wip/technical_artist/08_other_recent_ta_work/scratch_ij_v4hd_check/`.
 - `/workspace/scratch/ta_fix/` (Oct 3, 20:09–20:56 ET): the NPC "TA fix" round. It contains:
   - gate before/after summaries (`gate_before.json`, `gate_ta3.json`, `gate_after.json`);
   - the foot-detector prototype `find_feet_proto.py`;
   - `build_all.sh` (it rebuilds the NPC roles via `tools/npc/build_npc.py`), `fix_readmes.py`;
   - `legs/`, `noprop/`, `pk/`, `ta1/`, `ta3/` images and logs.
-  Copied to `08_other_recent_ta_work/scratch_ta_fix/`. The matching pre-fix backups are `/workspace/scratch/npc_ship_pre_ta_fix/`, `/workspace/scratch/npc_tools_pre_ta_fix/` and `/workspace/scratch/npc_readme_pre_ta_fix/` (noted, not copied).
+  Copied to `docs/pc/art_help/handoff_wip/technical_artist/08_other_recent_ta_work/scratch_ta_fix/`. The matching pre-fix backups are `/workspace/scratch/npc_ship_pre_ta_fix/`, `/workspace/scratch/npc_tools_pre_ta_fix/` and `/workspace/scratch/npc_readme_pre_ta_fix/` (box-only, not copied).
 - `/workspace/tmp_ij/` loose experiments (Oct 3, 21:49–22:54 ET), from the hold and arm iterations:
   - `export_joints.py`, `pad_ironjaw.py`, `rig_keep.py`, `model_keep.py`, `cmp.py`, `coll*.py`, `compare.py`, `meas.py`, `strip.py`, `render.log`, `post.log`;
   - `r2/`: the per-facing hold optimisation search (`opt*.py`, `scan*.py`, `best*.json`, logs);
   - test render folders (`f1..f3`, `g_*`, `h*`, `q_*`, `t1`, `t2`, `v_*`, `w_*`, `x_*`, `y_*`, `z_*`) and PNGs.
-  Scripts, json and logs are copied to `08_other_recent_ta_work/tmp_ij_loose_scripts/`. The images and test renders are not copied.
+  Scripts, json and logs are copied to `docs/pc/art_help/handoff_wip/technical_artist/08_other_recent_ta_work/tmp_ij_loose_scripts/`. The images and test renders are not copied (box-only, under `/workspace/tmp_ij/`).
 - `/workspace/scratch/l9_v14/` (Oct 3, ~20:55 ET): gate runs (`gate_world.txt`, `gate_props.txt`, `check_report_world_l9_outdoor_board.md`), colour metrics and `looks_v14_log.json` for the v1.4 iteration of the outdoor board that is now in the ship folder (see item 5). Not copied; it is unclear whether this was TA or Scenario.
 - Related, but Scenario's (not copied): `/workspace/stasium-pc-look/ship/l9_v1_decor_v2/` and `/workspace/stasium-pc-look/tools/l9_v1_decor_v2/` (decor v2 placed where mock v1 puts it, per Luca at 07:42 ET on Oct 4).

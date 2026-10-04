@@ -1,0 +1,354 @@
+{
+  "package": "l9_outdoor_board/props",
+  "version": 1,
+  "date": "2026-10-04",
+  "scale": "2:1 iso, cell top face 128x64 at 2x (Crosshaven kit scale); fighter ~124 px tall at 2x",
+  "anchor": "canvas px (x right, y down) of the footprint south tip; for 2x1 props the anchor cell is the FRONT cell and the footprint runs back to (x-1,y)",
+  "placement": "crosshaven_15 board cells from ../looks.json props[] (cells unchanged; stock paint_only props hidden like Thunderwell); decor from ../looks.json decor[]",
+  "contact_shadow": "baked into each PNG: soft cool ellipse under the base, alpha <= 0.30, inside the cell; no cast shadows",
+  "props": [
+    {
+      "id": "standing_stone",
+      "file_2x": "standing_stone@2x.png",
+      "file_1x": "standing_stone.png",
+      "footprint_cells": [
+        1,
+        1
+      ],
+      "anchor_px_2x": [
+        64,
+        224
+      ],
+      "anchor_px_1x": [
+        32,
+        112
+      ],
+      "size_2x": [
+        128,
+        224
+      ],
+      "size_1x": [
+        64,
+        112
+      ],
+      "emissive": "no",
+      "art_height_px_2x": 160,
+      "art_x_from_anchor_2x": [
+        -55,
+        55
+      ],
+      "lowest_opaque_gap_px_2x": 10,
+      "replaces": "ruins",
+      "kind": "tall",
+      "layer": "prop",
+      "anchor_method": "canvas bottom-centre = footprint south tip (anchor cell = the south-most cell)",
+      "edge_rule": "board cells (paint_only, non-blocking), placed per looks.json props[]",
+      "blocks": "none"
+    },
+    {
+      "id": "boulder_cluster",
+      "file_2x": "boulder_cluster@2x.png",
+      "file_1x": "boulder_cluster.png",
+      "footprint_cells": [
+        1,
+        1
+      ],
+      "anchor_px_2x": [
+        64,
+        128
+      ],
+      "anchor_px_1x": [
+        32,
+        64
+      ],
+      "size_2x": [
+        128,
+        128
+      ],
+      "size_1x": [
+        64,
+        64
+      ],
+      "emissive": "no",
+      "art_height_px_2x": 109,
+      "art_x_from_anchor_2x": [
+        -46,
+        46
+      ],
+      "lowest_opaque_gap_px_2x": 10,
+      "replaces": "rock_pillar",
+      "kind": "prop",
+      "layer": "prop",
+      "anchor_method": "canvas bottom-centre = footprint south tip (anchor cell = the south-most cell)",
+      "edge_rule": "board cells (paint_only, non-blocking), placed per looks.json props[]",
+      "blocks": "none"
+    },
+    {
+      "id": "boulder_small",
+      "file_2x": "boulder_small@2x.png",
+      "file_1x": "boulder_small.png",
+      "footprint_cells": [
+        1,
+        1
+      ],
+      "anchor_px_2x": [
+        64,
+        128
+      ],
+      "anchor_px_1x": [
+        32,
+        64
+      ],
+      "size_2x": [
+        128,
+        128
+      ],
+      "size_1x": [
+        64,
+        64
+      ],
+      "emissive": "no",
+      "art_height_px_2x": 56,
+      "art_x_from_anchor_2x": [
+        -47,
+        44
+      ],
+      "lowest_opaque_gap_px_2x": 10,
+      "replaces": "rubble",
+      "kind": "prop",
+      "layer": "prop",
+      "anchor_method": "canvas bottom-centre = footprint south tip (anchor cell = the south-most cell)",
+      "edge_rule": "board cells (paint_only, non-blocking), placed per looks.json props[]",
+      "blocks": "none"
+    },
+    {
+      "id": "stone_well",
+      "file_2x": "stone_well@2x.png",
+      "file_1x": "stone_well.png",
+      "footprint_cells": [
+        1,
+        1
+      ],
+      "anchor_px_2x": [
+        64,
+        224
+      ],
+      "anchor_px_1x": [
+        32,
+        112
+      ],
+      "size_2x": [
+        128,
+        224
+      ],
+      "size_1x": [
+        64,
+        112
+      ],
+      "emissive": "no",
+      "art_height_px_2x": 133,
+      "art_x_from_anchor_2x": [
+        -50,
+        49
+      ],
+      "lowest_opaque_gap_px_2x": 10,
+      "replaces": "well",
+      "kind": "tall",
+      "layer": "prop",
+      "anchor_method": "canvas bottom-centre = footprint south tip (anchor cell = the south-most cell)",
+      "edge_rule": "board cells (paint_only, non-blocking), placed per looks.json props[]",
+      "blocks": "none"
+    },
+    {
+      "id": "lilac_tuft",
+      "file_2x": "lilac_tuft@2x.png",
+      "file_1x": "lilac_tuft.png",
+      "footprint_cells": [
+        1,
+        1
+      ],
+      "anchor_px_2x": [
+        64,
+        128
+      ],
+      "anchor_px_1x": [
+        32,
+        64
+      ],
+      "size_2x": [
+        128,
+        128
+      ],
+      "size_1x": [
+        64,
+        64
+      ],
+      "emissive": "no",
+      "art_height_px_2x": 64,
+      "art_x_from_anchor_2x": [
+        -23,
+        22
+      ],
+      "lowest_opaque_gap_px_2x": 23,
+      "replaces": null,
+      "kind": "decor",
+      "layer": "decor",
+      "anchor_method": "canvas bottom-centre = footprint south tip (anchor cell = the south-most cell)",
+      "edge_rule": "board cells (paint_only, non-blocking), placed per looks.json props[]",
+      "blocks": "none"
+    },
+    {
+      "id": "flower_tuft",
+      "file_2x": "flower_tuft@2x.png",
+      "file_1x": "flower_tuft.png",
+      "footprint_cells": [
+        1,
+        1
+      ],
+      "anchor_px_2x": [
+        64,
+        128
+      ],
+      "anchor_px_1x": [
+        32,
+        64
+      ],
+      "size_2x": [
+        128,
+        128
+      ],
+      "size_1x": [
+        64,
+        64
+      ],
+      "emissive": "no",
+      "art_height_px_2x": 69,
+      "art_x_from_anchor_2x": [
+        -28,
+        27
+      ],
+      "lowest_opaque_gap_px_2x": 23,
+      "replaces": null,
+      "kind": "decor",
+      "layer": "decor",
+      "anchor_method": "canvas bottom-centre = footprint south tip (anchor cell = the south-most cell)",
+      "edge_rule": "board cells (paint_only, non-blocking), placed per looks.json props[]",
+      "blocks": "none"
+    },
+    {
+      "id": "clover_patch",
+      "file_2x": "clover_patch@2x.png",
+      "file_1x": "clover_patch.png",
+      "footprint_cells": [
+        1,
+        1
+      ],
+      "anchor_px_2x": [
+        64,
+        128
+      ],
+      "anchor_px_1x": [
+        32,
+        64
+      ],
+      "size_2x": [
+        128,
+        128
+      ],
+      "size_1x": [
+        64,
+        64
+      ],
+      "emissive": "no",
+      "art_height_px_2x": 52,
+      "art_x_from_anchor_2x": [
+        -26,
+        26
+      ],
+      "lowest_opaque_gap_px_2x": 23,
+      "replaces": null,
+      "kind": "decor",
+      "layer": "decor",
+      "anchor_method": "canvas bottom-centre = footprint south tip (anchor cell = the south-most cell)",
+      "edge_rule": "board cells (paint_only, non-blocking), placed per looks.json props[]",
+      "blocks": "none"
+    },
+    {
+      "id": "pebbles_moss",
+      "file_2x": "pebbles_moss@2x.png",
+      "file_1x": "pebbles_moss.png",
+      "footprint_cells": [
+        1,
+        1
+      ],
+      "anchor_px_2x": [
+        64,
+        128
+      ],
+      "anchor_px_1x": [
+        32,
+        64
+      ],
+      "size_2x": [
+        128,
+        128
+      ],
+      "size_1x": [
+        64,
+        64
+      ],
+      "emissive": "no",
+      "art_height_px_2x": 50,
+      "art_x_from_anchor_2x": [
+        -28,
+        28
+      ],
+      "lowest_opaque_gap_px_2x": 23,
+      "replaces": null,
+      "kind": "decor",
+      "layer": "decor",
+      "anchor_method": "canvas bottom-centre = footprint south tip (anchor cell = the south-most cell)",
+      "edge_rule": "board cells (paint_only, non-blocking), placed per looks.json props[]",
+      "blocks": "none"
+    },
+    {
+      "id": "fern",
+      "file_2x": "fern@2x.png",
+      "file_1x": "fern.png",
+      "footprint_cells": [
+        1,
+        1
+      ],
+      "anchor_px_2x": [
+        64,
+        128
+      ],
+      "anchor_px_1x": [
+        32,
+        64
+      ],
+      "size_2x": [
+        128,
+        128
+      ],
+      "size_1x": [
+        64,
+        64
+      ],
+      "emissive": "no",
+      "art_height_px_2x": 71,
+      "art_x_from_anchor_2x": [
+        -16,
+        35
+      ],
+      "lowest_opaque_gap_px_2x": 23,
+      "replaces": null,
+      "kind": "decor",
+      "layer": "decor",
+      "anchor_method": "canvas bottom-centre = footprint south tip (anchor cell = the south-most cell)",
+      "edge_rule": "board cells (paint_only, non-blocking), placed per looks.json props[]",
+      "blocks": "none"
+    }
+  ],
+  "note_l9_v1_decor": "Subset: v1-mock art (scratch/l9_v1_ship/props, Sat 3 Oct 16:02 ET) on the live ids and canvases. Same anchors and sizes as the live catalog."
+}

@@ -1,0 +1,16 @@
+  legs front_stand: L [520.0, 500.0, 632.0, 632.0] -> [520.0, 500.0, 632.0, 632.0], R [640.0, 500.0, 725.0, 704.0] -> [644, 500, 730, 707] (1 comps)
+  front: head top 8, ground 700.5, soles L[554.2 627.5] R[676.6 700.5], scale raw->2x 0.1829 (1 px@2x = 5.47 raw px)
+  legs back_stand: L [455.0, 520.0, 600.0, 652.0] -> [520, 520, 594, 655], R [600.0, 520.0, 745.0, 702.0] -> [636, 520, 745, 701] (2 comps)
+  back: head top 17, ground 694.5, soles L[547.5 648.5] R[669.5 694.5], scale raw->2x 0.1833 (1 px@2x = 5.45 raw px)
+  front walk: {"mode": "synth", "flat_ground": true, "leg_stretch_2x": {"L": 13.4, "R": 0.0}, "forward_foot_A": "R", "stand_offset_along_walk_2x": 2.4, "step_2x": 26, "stride_px_2x": 52, "dir_raw": [-0.8944271909999159, 0.4472135954999579], "stride_measured_2x": 51.5, "support_foot_track_2x": [[133.4, 239.5], [127.6, 239.5], [122.0, 239.5], [116.1, 239.5]], "stride_template_check_2x": 45.3}
+  back walk: {"mode": "synth", "flat_ground": true, "leg_stretch_2x": {"L": 8.4, "R": 0.0}, "forward_foot_A": "R", "stand_offset_along_walk_2x": 3.1, "step_2x": 26, "stride_px_2x": 52, "dir_raw": [0.8944271909999159, -0.4472135954999579], "stride_measured_2x": 51.7, "support_foot_track_2x": [[110.1, 239.5], [116.1, 239.5], [121.9, 239.5], [127.4, 239.5]], "stride_template_check_2x": 42.7}
+  [talk] legs back_stand: L [455.0, 520.0, 600.0, 652.0] -> [520, 520, 594, 655], R [600.0, 520.0, 745.0, 702.0] -> [636, 520, 745, 701] (2 comps)
+  [talk] back: head top 17, ground 694.5, soles L[547.5 648.5] R[669.5 694.5], scale raw->2x 0.1833 (1 px@2x = 5.45 raw px)
+  back talk (back key): {"arm_chain": [["arm", -9.0]], "side": 1.0}
+  [work] legs front_stand: L [520.0, 500.0, 632.0, 632.0] -> [520.0, 500.0, 632.0, 632.0], R [640.0, 500.0, 725.0, 704.0] -> [644, 500, 730, 707] (1 comps)
+  [work] front: head top 8, ground 700.5, soles L[554.2 627.5] R[676.6 700.5], scale raw->2x 0.1829 (1 px@2x = 5.47 raw px)
+  front work: 10 frames
+  [work] legs back_stand: L [455.0, 520.0, 600.0, 652.0] -> [520, 520, 594, 655], R [600.0, 520.0, 745.0, 702.0] -> [636, 520, 745, 701] (2 comps)
+  [work] back: head top 17, ground 694.5, soles L[547.5 648.5] R[669.5 694.5], scale raw->2x 0.1833 (1 px@2x = 5.45 raw px)
+  back work: 10 frames
+done in 17.1s -> /workspace/stasium-pc-look/ship/npc_sprites/fisher

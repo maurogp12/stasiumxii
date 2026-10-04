@@ -1,0 +1,26 @@
+  register front_stride -> front_stand: shift (+0,+0) px raw, residual 0.0454
+  register front_talk -> front_stand: shift (+5,+1) px raw, residual 0.1969
+  front: head top 26, ground 683.5, soles L[581.8 683.5] R[732.9 635.5], scale raw->2x 0.1894 (1 px@2x = 5.28 raw px)
+  front: stride soles L[563.8 596.5] R[691.4 671.5]
+  register back_stride -> back_stand: shift (+0,+0) px raw, residual 0.0181
+  back: head top 30, ground 657.5, soles L[552.9 653.5] R[643.7 657.5], scale raw->2x 0.1918 (1 px@2x = 5.21 raw px)
+  back: stride soles L[538.2 668.5] R[663.7 621.5]
+  front walk: {"support_pin_corr_2x": [2.27, 2.27, 7.01, 11.74, 2.27, 2.27, 7.01, 11.74], "forward_foot_A": "R", "B_targets": {"L": [552.0, 671.5], "R": [703.0999755859375, 596.5]}, "step_raw": 148.03408813476562, "stride_px_2x": 56.082366943359375}
+  back walk: {"support_pin_corr_2x": [-2.11, -2.11, 3.9, 0.9, -2.11, -2.11, 3.9, 0.9], "forward_foot_A": "R", "B_targets": {"L": [555.5, 621.5], "R": [646.2999877929688, 668.5]}, "step_raw": 133.99400329589844, "stride_px_2x": 51.412567138671875}
+  [talk] legs back_stand: L [528.0, 565.0, 607.0, 660.0] -> [528, 565, 608, 660], R [620.0, 565.0, 707.0, 662.0] -> [617, 565, 710, 664] (2 comps)
+  [talk] register back_stride -> back_stand: shift (+0,+0) px raw, residual 0.0181
+  [talk] back: head top 30, ground 657.5, soles L[552.9 653.5] R[643.7 657.5], scale raw->2x 0.1918 (1 px@2x = 5.21 raw px)
+  [talk] back: stride soles L[538.2 668.5] R[663.7 621.5]
+  back talk (back key): {"arm_chain": [["uarm", -4.0], ["farm", -7.6]], "side": 1.0}
+  [work] legs front_stand: L [550.0, 548.0, 612.0, 688.0] -> [549, 548, 612, 690], R [664.0, 540.0, 764.0, 642.0] -> [679, 540, 766, 642] (2 comps)
+  [work] register front_stride -> front_stand: shift (+0,+0) px raw, residual 0.0454
+  [work] register front_talk -> front_stand: shift (+5,+1) px raw, residual 0.1969
+  [work] front: head top 26, ground 683.5, soles L[581.8 683.5] R[732.9 635.5], scale raw->2x 0.1894 (1 px@2x = 5.28 raw px)
+  [work] front: stride soles L[567.6 592.5] R[691.4 671.5]
+  front work: 12 frames
+  [work] legs back_stand: L [528.0, 565.0, 607.0, 660.0] -> [528, 565, 608, 660], R [620.0, 565.0, 707.0, 662.0] -> [617, 565, 710, 664] (2 comps)
+  [work] register back_stride -> back_stand: shift (+0,+0) px raw, residual 0.0181
+  [work] back: head top 30, ground 657.5, soles L[552.9 653.5] R[643.7 657.5], scale raw->2x 0.1918 (1 px@2x = 5.21 raw px)
+  [work] back: stride soles L[538.2 668.5] R[663.7 621.5]
+  back work: 12 frames
+done in 31.6s -> /workspace/stasium-pc-look/tools/npc/_work/farmer/ta1/ship

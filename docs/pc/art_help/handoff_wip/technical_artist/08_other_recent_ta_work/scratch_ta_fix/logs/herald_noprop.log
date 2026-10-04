@@ -1,0 +1,16 @@
+  legs front_stand (find_legs): L [505, 464, 584, 708], R [610, 464, 726, 628], boots at y 702/622 (ground 702), top 464 (merge 475)
+  front: head top 43, ground 702.5, soles L[534.  702.5] R[693.4 622.5], scale raw->2x 0.1937 (1 px@2x = 5.16 raw px)
+  legs back_stand (find_legs): L [556, 467, 635, 652], R [677, 467, 792, 692], boots at y 686/646 (ground 686), top 467 (merge 519)
+  back: head top 79, ground 686.5, soles L[583.1 646.5] R[723.3 686.5], scale raw->2x 0.2043 (1 px@2x = 4.90 raw px)
+  front walk: {"mode": "synth", "flat_ground": true, "leg_stretch_2x": {"L": 0.0, "R": 15.5}, "forward_foot_A": "L", "stand_offset_along_walk_2x": 0.1, "step_2x": 24, "stride_px_2x": 48, "dir_raw": [0.8944271909999159, 0.4472135954999579], "stride_measured_2x": 47.7, "support_foot_track_2x": [[132.0, 239.5], [126.7, 239.5], [121.4, 239.5], [116.0, 239.5]], "stride_template_check_2x": 42.7}
+  back walk: {"mode": "synth", "flat_ground": true, "leg_stretch_2x": {"L": 8.2, "R": 0.0}, "forward_foot_A": "L", "stand_offset_along_walk_2x": 25.1, "step_2x": 24, "stride_px_2x": 48, "dir_raw": [-0.8944271909999159, -0.4472135954999579], "stride_measured_2x": 47.9, "support_foot_track_2x": [[116.2, 239.5], [121.5, 239.5], [126.9, 239.5], [132.3, 239.5]], "stride_template_check_2x": 22.8}
+  [talk] legs back_stand (find_legs): L [556, 467, 635, 652], R [677, 467, 792, 692], boots at y 686/646 (ground 686), top 467 (merge 519)
+  [talk] back: head top 79, ground 686.5, soles L[583.1 646.5] R[723.3 686.5], scale raw->2x 0.2043 (1 px@2x = 4.90 raw px)
+  back talk (back key): {"arm_chain": [], "side": 1.0}
+  [work] legs front_stand (find_legs): L [505, 464, 584, 708], R [610, 464, 726, 628], boots at y 702/622 (ground 702), top 464 (merge 475)
+  [work] front: head top 43, ground 702.5, soles L[534.  702.5] R[693.4 622.5], scale raw->2x 0.1937 (1 px@2x = 5.16 raw px)
+  front work: 12 frames
+  [work] legs back_stand (find_legs): L [556, 467, 635, 652], R [677, 467, 792, 692], boots at y 686/646 (ground 686), top 467 (merge 519)
+  [work] back: head top 79, ground 686.5, soles L[583.1 646.5] R[723.3 686.5], scale raw->2x 0.2043 (1 px@2x = 4.90 raw px)
+  back work: 12 frames
+done in 14.7s -> /workspace/stasium-pc-look/tools/npc/_work/herald/noprop/ship

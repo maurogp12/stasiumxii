@@ -1,0 +1,16 @@
+  legs front_stand: L [492.0, 520.0, 580.0, 702.0] -> [540, 520, 613.0, 705], R [613.0, 520.0, 770.0, 628.0] -> [613.0, 520.0, 770.0, 628.0] (1 comps)
+  front: head top 17, ground 698.5, soles L[584.  698.5] R[725.4 621.5], scale raw->2x 0.1866 (1 px@2x = 5.36 raw px)
+  legs back_stand: L [505.0, 545.0, 608.0, 662.0] -> [507, 545, 575, 662], R [608.0, 545.0, 730.0, 704.0] -> [580, 545, 700, 711] (2 comps)
+  back: head top 19, ground 704.5, soles L[537.9 655.5] R[612.5 704.5], scale raw->2x 0.1815 (1 px@2x = 5.51 raw px)
+  front walk: {"mode": "synth", "flat_ground": true, "leg_stretch_2x": {"L": 0.0, "R": 14.4}, "forward_foot_A": "L", "stand_offset_along_walk_2x": 1.3, "step_2x": 22, "stride_px_2x": 44, "dir_raw": [0.8944271909999159, 0.4472135954999579], "stride_measured_2x": 44.2, "support_foot_track_2x": [[131.7, 239.5], [126.8, 239.5], [121.9, 239.5], [116.9, 239.5]], "stride_template_check_2x": 37.3}
+  back walk: {"mode": "synth", "flat_ground": true, "leg_stretch_2x": {"L": 8.9, "R": 0.0}, "forward_foot_A": "L", "stand_offset_along_walk_2x": 2.4, "step_2x": 22, "stride_px_2x": 44, "dir_raw": [0.8944271909999159, -0.4472135954999579], "stride_measured_2x": 44.2, "support_foot_track_2x": [[120.5, 239.5], [125.5, 239.5], [130.3, 239.5], [135.3, 239.5]], "stride_template_check_2x": 40.0}
+  [talk] legs back_stand: L [505.0, 545.0, 608.0, 662.0] -> [507, 545, 575, 662], R [608.0, 545.0, 730.0, 704.0] -> [580, 545, 700, 711] (2 comps)
+  [talk] back: head top 19, ground 704.5, soles L[537.9 655.5] R[612.5 704.5], scale raw->2x 0.1815 (1 px@2x = 5.51 raw px)
+  back talk (back key): {"arm_chain": [], "side": 1.0}
+  [work] legs front_stand: L [492.0, 520.0, 580.0, 702.0] -> [540, 520, 613.0, 705], R [613.0, 520.0, 770.0, 628.0] -> [613.0, 520.0, 770.0, 628.0] (1 comps)
+  [work] front: head top 17, ground 698.5, soles L[584.  698.5] R[725.4 621.5], scale raw->2x 0.1866 (1 px@2x = 5.36 raw px)
+  front work: 12 frames
+  [work] legs back_stand: L [505.0, 545.0, 608.0, 662.0] -> [507, 545, 575, 662], R [608.0, 545.0, 730.0, 704.0] -> [580, 545, 700, 711] (2 comps)
+  [work] back: head top 19, ground 704.5, soles L[537.9 655.5] R[612.5 704.5], scale raw->2x 0.1815 (1 px@2x = 5.51 raw px)
+  back work: 12 frames
+done in 16.6s -> /workspace/stasium-pc-look/tools/npc/_work/hermit/ta3/ship

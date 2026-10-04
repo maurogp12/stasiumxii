@@ -1,0 +1,16 @@
+  legs front_stand (find_legs): L [530, 532, 632, 641], R [632, 532, 767, 690], boots at y 684/635 (ground 684), top 532
+  front: head top 17, ground 684.5, soles L[564.2 635.5] R[729.9 684.5], scale raw->2x 0.1866 (1 px@2x = 5.36 raw px)
+  legs back_stand (find_legs): L [500, 580, 602, 677], R [636, 580, 741, 708], boots at y 702/671 (ground 702), top 580
+  back: head top 16, ground 702.5, soles L[560.9 671.5] R[677.5 702.5], scale raw->2x 0.1788 (1 px@2x = 5.59 raw px)
+  front walk: {"mode": "synth", "flat_ground": true, "leg_stretch_2x": {"L": 9.1, "R": 0.0}, "forward_foot_A": "R", "stand_offset_along_walk_2x": 27.5, "step_2x": 24, "stride_px_2x": 48, "dir_raw": [0.8944271909999159, 0.4472135954999579], "stride_measured_2x": 46.9, "support_foot_track_2x": [[139.4, 239.5], [134.3, 239.5], [128.9, 239.5], [123.7, 239.5]], "stride_template_check_2x": 40.0}
+  back walk: {"mode": "synth", "flat_ground": true, "leg_stretch_2x": {"L": 5.5, "R": 0.0}, "forward_foot_A": "L", "stand_offset_along_walk_2x": 17.9, "step_2x": 24, "stride_px_2x": 48, "dir_raw": [-0.8944271909999159, -0.4472135954999579], "stride_measured_2x": 47.7, "support_foot_track_2x": [[115.4, 239.5], [120.7, 239.5], [125.9, 239.5], [131.4, 239.5]], "stride_template_check_2x": 35.1}
+  [talk] legs back_stand (find_legs): L [500, 580, 602, 677], R [636, 580, 741, 708], boots at y 702/671 (ground 702), top 580
+  [talk] back: head top 16, ground 702.5, soles L[560.9 671.5] R[677.5 702.5], scale raw->2x 0.1788 (1 px@2x = 5.59 raw px)
+  back talk (back key): {"arm_chain": [], "side": 1.0}
+  [work] legs front_stand (find_legs): L [530, 532, 632, 641], R [632, 532, 767, 690], boots at y 684/635 (ground 684), top 532
+  [work] front: head top 17, ground 684.5, soles L[564.2 635.5] R[729.9 684.5], scale raw->2x 0.1866 (1 px@2x = 5.36 raw px)
+  front work: 12 frames
+  [work] legs back_stand (find_legs): L [500, 580, 602, 677], R [636, 580, 741, 708], boots at y 702/671 (ground 702), top 580
+  [work] back: head top 16, ground 702.5, soles L[560.9 671.5] R[677.5 702.5], scale raw->2x 0.1788 (1 px@2x = 5.59 raw px)
+  back work: 12 frames
+done in 17.6s -> /workspace/stasium-pc-look/tools/npc/_work/elder/ta1/ship

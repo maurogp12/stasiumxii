@@ -1,0 +1,16 @@
+  legs front_stand (find_legs): L [596, 775, 754, 918], R [775, 775, 915, 1013], boots at y 1007/912 (ground 1007), top 775
+  front: head top 147, ground 1007.5, soles L[636.3 912.5] R[ 831.4 1007.5], scale raw->2x 0.1476 (1 px@2x = 6.78 raw px)
+  legs back_stand (find_legs): L [502, 514, 595, 638], R [600, 514, 726, 697], boots at y 691/632 (ground 691), top 514
+  back: head top 116, ground 691.5, soles L[536.7 632.5] R[646.8 691.5], scale raw->2x 0.2198 (1 px@2x = 4.55 raw px)
+  front walk: {"mode": "synth", "flat_ground": true, "leg_stretch_2x": {"L": 14.0, "R": 0.0}, "forward_foot_A": "R", "stand_offset_along_walk_2x": 31.8, "step_2x": 24, "stride_px_2x": 48, "dir_raw": [0.8944271909999159, 0.4472135954999579], "stride_measured_2x": 47.6, "support_foot_track_2x": [[138.7, 239.5], [133.3, 239.5], [128.1, 239.5], [122.8, 239.5]], "stride_template_check_2x": 40.0}
+  back walk: {"mode": "synth", "flat_ground": true, "leg_stretch_2x": {"L": 13.0, "R": 0.0}, "forward_foot_A": "L", "stand_offset_along_walk_2x": 28.0, "step_2x": 24, "stride_px_2x": 48, "dir_raw": [-0.8944271909999159, -0.4472135954999579], "stride_measured_2x": 47.9, "support_foot_track_2x": [[117.6, 239.5], [123.1, 239.5], [128.5, 239.5], [133.7, 239.5]], "stride_template_check_2x": 14.4}
+  [talk] legs back_stand (find_legs): L [502, 514, 595, 638], R [600, 514, 726, 697], boots at y 691/632 (ground 691), top 514
+  [talk] back: head top 116, ground 691.5, soles L[536.7 632.5] R[646.8 691.5], scale raw->2x 0.2198 (1 px@2x = 4.55 raw px)
+  back talk (back key): {"arm_chain": [["farm", -9.0]], "side": 1.0}
+  [work] legs front_stand (find_legs): L [596, 775, 754, 918], R [775, 775, 915, 1013], boots at y 1007/912 (ground 1007), top 775
+  [work] front: head top 147, ground 1007.5, soles L[636.3 912.5] R[ 831.4 1007.5], scale raw->2x 0.1476 (1 px@2x = 6.78 raw px)
+  front work: 12 frames
+  [work] legs back_stand (find_legs): L [502, 514, 595, 638], R [600, 514, 726, 697], boots at y 691/632 (ground 691), top 514
+  [work] back: head top 116, ground 691.5, soles L[536.7 632.5] R[646.8 691.5], scale raw->2x 0.2198 (1 px@2x = 4.55 raw px)
+  back work: 12 frames
+done in 20.7s -> /workspace/stasium-pc-look/tools/npc/_work/ferry_captain/ta1/ship

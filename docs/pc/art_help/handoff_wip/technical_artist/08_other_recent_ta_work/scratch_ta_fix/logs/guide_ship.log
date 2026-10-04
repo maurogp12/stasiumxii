@@ -1,0 +1,16 @@
+  legs front_stand (find_legs): L [506, 450, 625, 701], R [661, 450, 775, 689], boots at y 695/683 (ground 695), top 450 (merge 541)
+  front: head top 16, ground 695.5, soles L[539.7 695.5] R[741.  683.5], scale raw->2x 0.1782 (1 px@2x = 5.61 raw px)
+  legs back_stand (find_legs): L [493, 455, 573, 654], R [606, 455, 721, 710], boots at y 704/648 (ground 704), top 455 (merge 545)
+  back: head top 15, ground 704.5, soles L[524.6 648.5] R[643.8 704.5], scale raw->2x 0.1814 (1 px@2x = 5.51 raw px)
+  front walk: {"mode": "synth", "flat_ground": true, "leg_stretch_2x": {"L": 0.0, "R": 2.1}, "forward_foot_A": "R", "stand_offset_along_walk_2x": 17.7, "step_2x": 24, "stride_px_2x": 48, "dir_raw": [0.8944271909999159, 0.4472135954999579], "stride_measured_2x": 47.7, "support_foot_track_2x": [[141.4, 239.5], [136.1, 239.5], [130.8, 239.5], [125.4, 239.5]], "stride_template_check_2x": 11.9}
+  back walk: {"mode": "synth", "flat_ground": true, "leg_stretch_2x": {"L": 10.2, "R": 0.0}, "forward_foot_A": "L", "stand_offset_along_walk_2x": 23.4, "step_2x": 24, "stride_px_2x": 48, "dir_raw": [-0.8944271909999159, -0.4472135954999579], "stride_measured_2x": 48.0, "support_foot_track_2x": [[117.2, 239.5], [122.8, 239.5], [128.1, 239.5], [133.3, 239.5]], "stride_template_check_2x": 16.9}
+  [talk] legs back_stand (find_legs): L [493, 455, 573, 654], R [606, 455, 721, 710], boots at y 704/648 (ground 704), top 455 (merge 545)
+  [talk] back: head top 15, ground 704.5, soles L[524.6 648.5] R[643.8 704.5], scale raw->2x 0.1814 (1 px@2x = 5.51 raw px)
+  back talk (back key): {"arm_chain": [], "side": 1.0}
+  [work] legs front_stand (find_legs): L [506, 450, 625, 701], R [661, 450, 775, 689], boots at y 695/683 (ground 695), top 450 (merge 541)
+  [work] front: head top 16, ground 695.5, soles L[539.7 695.5] R[741.  683.5], scale raw->2x 0.1782 (1 px@2x = 5.61 raw px)
+  front work: 12 frames
+  [work] legs back_stand (find_legs): L [493, 455, 573, 654], R [606, 455, 721, 710], boots at y 704/648 (ground 704), top 455 (merge 545)
+  [work] back: head top 15, ground 704.5, soles L[524.6 648.5] R[643.8 704.5], scale raw->2x 0.1814 (1 px@2x = 5.51 raw px)
+  back work: 12 frames
+done in 18.4s -> /workspace/stasium-pc-look/ship/npc_sprites/guide

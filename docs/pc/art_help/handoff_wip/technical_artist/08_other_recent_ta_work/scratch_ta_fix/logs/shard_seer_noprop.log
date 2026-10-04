@@ -1,0 +1,21 @@
+  legs front_stand (find_legs): L [579, 461, 604, 718], R [604, 461, 814, 680], boots at y 712/674 (ground 712), top 461 (merge 667)
+  front: glide hem centre x 639.8 raw (soles midpoint was 622.6)
+  front: head top 17, ground 693.5, soles L[597.2 693.5] R[648.  679.5], scale raw->2x 0.1792 (1 px@2x = 5.58 raw px)
+  legs back_stand (find_legs): L [439, 469, 520, 692], R [520, 469, 628, 709], boots at y 703/686 (ground 708), top 469 (merge 652)
+  back: glide hem centre x 544.3 raw (soles midpoint was 511.9)
+  back: head top 45, ground 700.5, soles L[466.2 691.5] R[557.6 700.5], scale raw->2x 0.1843 (1 px@2x = 5.42 raw px)
+  front walk: {"mode": "glide", "step_2x": 20, "stride_px_2x": 40, "dir_raw": [0.8944271909999159, 0.4472135954999579]}
+  back walk: {"mode": "glide", "step_2x": 20, "stride_px_2x": 40, "dir_raw": [-0.8944271909999159, -0.4472135954999579]}
+  [talk] legs back_stand (find_legs): L [440, 458, 521, 692], R [521, 458, 628, 709], boots at y 703/686 (ground 708), top 458 (merge 652)
+  [talk] back: glide hem centre x 545.5 raw (soles midpoint was 514.4)
+  [talk] back: head top 15, ground 700.5, soles L[469.3 691.5] R[559.5 700.5], scale raw->2x 0.1762 (1 px@2x = 5.68 raw px)
+  back talk (back key): {"arm_chain": [["farmC", 9.0]], "side": 1.0}
+  [work] legs front_stand (find_legs): L [579, 461, 604, 718], R [604, 461, 814, 680], boots at y 712/674 (ground 712), top 461 (merge 667)
+  [work] front: glide hem centre x 652.1 raw (soles midpoint was 629.2)
+  [work] front: head top 17, ground 693.5, soles L[597.2 693.5] R[661.2 679.5], scale raw->2x 0.1792 (1 px@2x = 5.58 raw px)
+  front work: 12 frames
+  [work] legs back_stand (find_legs): L [440, 458, 521, 692], R [521, 458, 628, 709], boots at y 703/686 (ground 708), top 458 (merge 652)
+  [work] back: glide hem centre x 545.5 raw (soles midpoint was 514.4)
+  [work] back: head top 15, ground 700.5, soles L[469.3 691.5] R[559.5 700.5], scale raw->2x 0.1762 (1 px@2x = 5.68 raw px)
+  back work: 12 frames
+done in 12.3s -> /workspace/stasium-pc-look/tools/npc/_work/shard_seer/noprop/ship

@@ -1,0 +1,16 @@
+  legs front_stand: L [470.0, 440.0, 612.0, 652.0] -> [496, 440, 627, 653], R [614.0, 440.0, 745.0, 710.0] -> [681, 440, 771, 712] (2 comps)
+  front: head top 10, ground 705.5, soles L[534.5 646.5] R[729.3 705.5], scale raw->2x 0.1802 (1 px@2x = 5.55 raw px)
+  legs back_stand: L [478.0, 430.0, 612.0, 700.0] -> [475, 430, 588, 696], R [612.0, 430.0, 795.0, 714.0] -> [655, 430, 798, 716] (2 comps)
+  back: head top 11, ground 709.5, soles L[529.9 689.5] R[718.4 709.5], scale raw->2x 0.1743 (1 px@2x = 5.74 raw px)
+  front walk: {"mode": "synth", "flat_ground": true, "leg_stretch_2x": {"L": 10.6, "R": 0.0}, "forward_foot_A": "L", "stand_offset_along_walk_2x": 7.7, "step_2x": 28, "stride_px_2x": 56, "dir_raw": [-0.8944271909999159, 0.4472135954999579], "stride_measured_2x": 56.4, "support_foot_track_2x": [[144.3, 239.5], [137.8, 239.5], [131.5, 239.5], [125.4, 239.5]], "stride_template_check_2x": 40.1}
+  back walk: {"mode": "synth", "flat_ground": true, "leg_stretch_2x": {"L": 3.5, "R": 0.0}, "forward_foot_A": "R", "stand_offset_along_walk_2x": 14.5, "step_2x": 28, "stride_px_2x": 56, "dir_raw": [0.8944271909999159, -0.4472135954999579], "stride_measured_2x": 55.2, "support_foot_track_2x": [[109.1, 239.5], [115.2, 239.5], [121.2, 239.5], [127.6, 239.5]], "stride_template_check_2x": 45.3}
+  [talk] legs back_stand: L [478.0, 430.0, 612.0, 700.0] -> [475, 430, 588, 696], R [612.0, 430.0, 795.0, 714.0] -> [655, 430, 798, 716] (2 comps)
+  [talk] back: head top 11, ground 709.5, soles L[529.9 689.5] R[718.4 709.5], scale raw->2x 0.1743 (1 px@2x = 5.74 raw px)
+  back talk (back key): {"arm_chain": [["farm", -9.0]], "side": -1.0}
+  [work] legs front_stand: L [470.0, 440.0, 612.0, 652.0] -> [496, 440, 627, 653], R [614.0, 440.0, 745.0, 710.0] -> [681, 440, 771, 712] (2 comps)
+  [work] front: head top 10, ground 705.5, soles L[534.5 646.5] R[729.3 705.5], scale raw->2x 0.1802 (1 px@2x = 5.55 raw px)
+  front work: 10 frames
+  [work] legs back_stand: L [478.0, 430.0, 612.0, 700.0] -> [475, 430, 588, 696], R [612.0, 430.0, 795.0, 714.0] -> [655, 430, 798, 716] (2 comps)
+  [work] back: head top 11, ground 709.5, soles L[529.9 689.5] R[718.4 709.5], scale raw->2x 0.1743 (1 px@2x = 5.74 raw px)
+  back work: 10 frames
+done in 15.7s -> /workspace/stasium-pc-look/ship/npc_sprites/woodcutter

@@ -1,0 +1,16 @@
+  legs front_stand: L [518.0, 490.0, 625.0, 618.0] -> [518.0, 490.0, 625.0, 618.0], R [626.0, 490.0, 728.0, 704.0] -> [672, 490, 738, 706] (1 comps)
+  front: head top 44, ground 699.5, soles L[557.3 617.5] R[700.9 699.5], scale raw->2x 0.1953 (1 px@2x = 5.12 raw px)
+  legs back_stand: L [488.0, 490.0, 598.0, 692.0] -> [500, 490, 603, 693], R [598.0, 490.0, 728.0, 694.0] -> [627, 490, 736, 695] (2 comps)
+  back: head top 9, ground 688.5, soles L[549.4 686.5] R[665.2 688.5], scale raw->2x 0.1769 (1 px@2x = 5.65 raw px)
+  front walk: {"mode": "synth", "flat_ground": true, "leg_stretch_2x": {"L": 16.0, "R": 0.0}, "forward_foot_A": "R", "stand_offset_along_walk_2x": 2.2, "step_2x": 28, "stride_px_2x": 56, "dir_raw": [-0.8944271909999159, 0.4472135954999579], "stride_measured_2x": 55.5, "support_foot_track_2x": [[133.3, 239.5], [127.2, 239.5], [120.9, 239.5], [114.7, 239.5]], "stride_template_check_2x": 48.0}
+  back walk: {"mode": "synth", "flat_ground": true, "leg_stretch_2x": {"L": 0.4, "R": 0.0}, "forward_foot_A": "R", "stand_offset_along_walk_2x": 11.1, "step_2x": 28, "stride_px_2x": 56, "dir_raw": [0.8944271909999159, -0.4472135954999579], "stride_measured_2x": 55.3, "support_foot_track_2x": [[111.1, 239.5], [117.2, 239.5], [123.5, 239.5], [129.6, 239.5]], "stride_template_check_2x": 42.7}
+  [talk] legs back_stand: L [488.0, 490.0, 598.0, 692.0] -> [500, 490, 603, 693], R [598.0, 490.0, 728.0, 694.0] -> [627, 490, 736, 695] (2 comps)
+  [talk] back: head top 9, ground 688.5, soles L[549.4 686.5] R[665.2 688.5], scale raw->2x 0.1769 (1 px@2x = 5.65 raw px)
+  back talk (back key): {"arm_chain": [["uarm", -4.0], ["farm", 7.6]], "side": 1.0}
+  [work] legs front_stand: L [518.0, 490.0, 625.0, 618.0] -> [518.0, 490.0, 625.0, 618.0], R [626.0, 490.0, 728.0, 704.0] -> [672, 490, 738, 706] (1 comps)
+  [work] front: head top 44, ground 699.5, soles L[557.3 617.5] R[700.9 699.5], scale raw->2x 0.1953 (1 px@2x = 5.12 raw px)
+  front work: 12 frames
+  [work] legs back_stand: L [488.0, 490.0, 598.0, 692.0] -> [500, 490, 603, 693], R [598.0, 490.0, 728.0, 694.0] -> [627, 490, 736, 695] (2 comps)
+  [work] back: head top 9, ground 688.5, soles L[549.4 686.5] R[665.2 688.5], scale raw->2x 0.1769 (1 px@2x = 5.65 raw px)
+  back work: 12 frames
+done in 20.6s -> /workspace/stasium-pc-look/ship/npc_sprites/coil_engineer

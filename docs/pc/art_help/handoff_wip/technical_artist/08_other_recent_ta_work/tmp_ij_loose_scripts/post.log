@@ -1,0 +1,67 @@
+{
+ "min_margin_px": 29,
+ "min_margin_at": "clay/walk_E_f05",
+ "alpha_values": [
+  0,
+  255
+ ],
+ "planted_world_drift_max_units": 4.2879008219642856e-05,
+ "planted_screen_drift_max_px": 0.0,
+ "contact_lowest_rows": [
+  [
+   "S",
+   "R",
+   "walk_S_f00",
+   329
+  ],
+  [
+   "S",
+   "L",
+   "walk_S_f06",
+   316
+  ],
+  [
+   "E",
+   "R",
+   "walk_E_f11",
+   282
+  ],
+  [
+   "E",
+   "L",
+   "walk_E_f05",
+   276
+  ]
+ ],
+ "travel_per_frame_cell_px": [
+  12,
+  6
+ ],
+ "travel_per_frame_diag_cell_px": 13.4164,
+ "travel_per_cycle_diag_cell_px": 160.997,
+ "travel_per_cycle_diag_final_px": 48.299,
+ "travel_per_cycle_final_px_xy": [
+  43.2,
+  21.6
+ ],
+ "tile_diag_cell_px_at_draw_scale": 119.257,
+ "frames_per_cell": 8.8889,
+ "cells_per_cycle": 1.35,
+ "tile_sec_at_17.144fps": 0.5185,
+ "board_speed_px_per_s_at_17.144fps": 69.003,
+ "idle_helm_top_row": {
+  "S": 35,
+  "E": 49
+ },
+ "idle_lowest_row": {
+  "S": 314,
+  "E": 298
+ },
+ "body_ground_point_px": [
+  230.5,
+  282.899252470384
+ ],
+ "gif_bytes": 301518,
+ "jpg_bytes": 277810,
+ "jpg_quality": 88
+}

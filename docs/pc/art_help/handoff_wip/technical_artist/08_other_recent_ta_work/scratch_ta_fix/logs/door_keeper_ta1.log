@@ -1,0 +1,16 @@
+  legs front_stand (find_legs): L [488, 544, 609, 635], R [649, 544, 762, 716], boots at y 710/629 (ground 710), top 544
+  front: head top 6, ground 710.5, soles L[522.8 629.5] R[693.2 710.5], scale raw->2x 0.1807 (1 px@2x = 5.53 raw px)
+  legs back_stand (find_legs): L [533, 588, 632, 693], R [632, 588, 759, 709], boots at y 703/687 (ground 703), top 588
+  back: head top 7, ground 703.5, soles L[581.  687.5] R[697.5 703.5], scale raw->2x 0.1743 (1 px@2x = 5.74 raw px)
+  front walk: {"mode": "synth", "flat_ground": true, "leg_stretch_2x": {"L": 14.6, "R": 0.0}, "forward_foot_A": "R", "stand_offset_along_walk_2x": 33.6, "step_2x": 24, "stride_px_2x": 48, "dir_raw": [0.8944271909999159, 0.4472135954999579], "stride_measured_2x": 47.7, "support_foot_track_2x": [[139.0, 239.5], [133.8, 239.5], [128.3, 239.5], [123.0, 239.5]], "stride_template_check_2x": 40.0}
+  back walk: {"mode": "synth", "flat_ground": true, "leg_stretch_2x": {"L": 2.8, "R": 0.0}, "forward_foot_A": "L", "stand_offset_along_walk_2x": 14.5, "step_2x": 24, "stride_px_2x": 48, "dir_raw": [-0.8944271909999159, -0.4472135954999579], "stride_measured_2x": 47.7, "support_foot_track_2x": [[115.0, 239.5], [120.6, 239.5], [126.0, 239.5], [131.0, 239.5]], "stride_template_check_2x": 32.1}
+  [talk] legs back_stand (find_legs): L [533, 588, 632, 693], R [632, 588, 759, 709], boots at y 703/687 (ground 703), top 588
+  [talk] back: head top 7, ground 703.5, soles L[581.  687.5] R[697.5 703.5], scale raw->2x 0.1743 (1 px@2x = 5.74 raw px)
+  back talk (back key): {"arm_chain": [["farmK", -9.0]], "side": 1.0}
+  [work] legs front_stand (find_legs): L [488, 544, 609, 635], R [649, 544, 762, 716], boots at y 710/629 (ground 710), top 544
+  [work] front: head top 6, ground 710.5, soles L[522.8 629.5] R[693.2 710.5], scale raw->2x 0.1807 (1 px@2x = 5.53 raw px)
+  front work: 12 frames
+  [work] legs back_stand (find_legs): L [533, 588, 632, 693], R [632, 588, 759, 709], boots at y 703/687 (ground 703), top 588
+  [work] back: head top 7, ground 703.5, soles L[581.  687.5] R[697.5 703.5], scale raw->2x 0.1743 (1 px@2x = 5.74 raw px)
+  back work: 12 frames
+done in 17.8s -> /workspace/stasium-pc-look/tools/npc/_work/door_keeper/ta1/ship

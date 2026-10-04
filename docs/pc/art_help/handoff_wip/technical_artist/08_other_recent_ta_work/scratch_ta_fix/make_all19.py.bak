@@ -1,0 +1,103 @@
+#!/usr/bin/env python3
+"""Final all-roles sheets (zoom 1.0 = 2x frames on 2x grass reduced 0.5; zoom 1.6 = reduced 0.8):
+  previews/npc_sprites/all19_walks.mp4 (+ .gif)   every role's walk S and N, ground scrolling at stride_px
+  previews/npc_sprites/all19_walks_contact.jpg    every walk frame, S and N rows per role
+  previews/npc_sprites/all19_concept_vs_sprite_zoom10.jpg / _zoom16.jpg   concept | idle S / N at that zoom
+usage: make_all19.py"""
+import os, sys, json
+import numpy as np
+from PIL import Image, ImageDraw
+HERE = os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, HERE)
+from make_previews import grass, graded, facing_frames
+from make_action_previews import cell, save_gif, save_mp4, FONT, FONTB, GFPS, NF, ROOT
+ROLES = ['farmer', 'woodcutter', 'fisher', 'smith', 'hermit', 'coil_engineer', 'warden',
+         'guide', 'herald', 'banker', 'elder', 'trader', 'door_keeper', 'archivist',
+         'forge_master', 'ferry_captain', 'fen_guide', 'last_watcher', 'shard_seer']
+OUT = f'{ROOT}/previews/npc_sprites'
+
+
+def load(role):
+    ship = f'{ROOT}/ship/npc_sprites/{role}'
+    meta = json.load(open(f'{ship}/{role}.json'))
+    fr = {(an, f): facing_frames(ship, meta, an, f) for an in ('walk', 'idle') for f in ('S', 'N')}
+    return meta, fr
+
+
+def walks(data):
+    PER = 5; BW = 2 * 128 + 6; BH = 128 + 18
+    rows = (len(ROLES) + PER - 1) // PER
+    W = 8 + PER * (BW + 8); H = 22 + rows * (BH + 6)
+    ims = []
+    for i in range(NF):
+        t = i / GFPS
+        out = Image.new('RGB', (W, H), (24, 24, 30)); d = ImageDraw.Draw(out)
+        d.text((8, 4), f'all {len(ROLES)} NPC walks - zoom 1.0 (S | N), ground scrolls at each stride_px', fill=(235, 225, 200), font=FONTB)
+        for j, r in enumerate(ROLES):
+            meta, fr = data[r]
+            x0 = 8 + (j % PER) * (BW + 8); y0 = 22 + (j // PER) * (BH + 6)
+            d.text((x0 + 2, y0 + 2), f"{r}  stride {meta['anims']['walk']['stride_px']}px@2x", fill=(235, 225, 200), font=FONT)
+            for c, f in enumerate(('S', 'N')):
+                im, k = cell(meta, fr, 'walk', f, t, 3 + j)
+                out.paste(im, (x0 + c * 132, y0 + 16))
+                ImageDraw.Draw(out).text((x0 + c * 132 + 3, y0 + 16 + 115), f'{f} {k}', fill=(255, 255, 255), font=FONT)
+        ims.append(out)
+    p = f'{OUT}/all19_walks.mp4'
+    save_mp4(ims, p)   # gif would be ~50 MB
+    # contact: two roles per row band, S and N rows of 8 walk frames each
+    CW = 100; n = 8; half = (len(ROLES) + 1) // 2
+    BWc = 120 + n * (CW + 2)
+    W = 8 + 2 * (BWc + 12); H = 24 + half * 2 * (CW + 4) + half * 6
+    sh = Image.new('RGB', (W, H), (24, 24, 30)); d = ImageDraw.Draw(sh)
+    d.text((8, 4), f'all {len(ROLES)} NPC walks - zoom 1.0, every frame (8f@10fps), S and N', fill=(235, 225, 200), font=FONTB)
+    for j, r in enumerate(ROLES):
+        meta, fr = data[r]
+        col, row = j // half, j % half
+        x0 = 8 + col * (BWc + 12); y = 24 + row * (2 * (CW + 4) + 6)
+        for f in ('S', 'N'):
+            d.text((x0, y + 30), r, fill=(235, 225, 200), font=FONTB)
+            d.text((x0, y + 46), f"walk {f}  stride {meta['anims']['walk']['stride_px']}", fill=(200, 200, 210), font=FONT)
+            for k, im in enumerate(fr[('walk', f)]):
+                bg = grass(256, 256, 5 + k); bg.alpha_composite(graded(im))
+                c = bg.convert('RGB').resize((128, 128), Image.LANCZOS).crop((14, 10, 14 + CW, 10 + CW + 4))
+                x = x0 + 120 + k * (CW + 2)
+                sh.paste(c, (x, y)); d.text((x + 3, y + 2), str(k), fill=(255, 255, 255), font=FONT)
+            y += CW + 4
+    cp = f'{OUT}/all19_walks_contact.jpg'; sh.save(cp, quality=90)
+    return p, cp
+
+
+def concepts(data, zoom):
+    sc = zoom / 2.0; cs = int(round(256 * sc))           # sprite cell px at this zoom
+    CH = max(cs, 200)                                      # concept thumb height
+    PER = 4
+    tiles = []
+    for r in ROLES:
+        meta, fr = data[r]
+        cfg = json.load(open(f'{HERE}/roles/{r}.json'))
+        con = Image.open(cfg['concept']).convert('RGB')
+        con = con.resize((int(con.width * CH / con.height), CH), Image.LANCZOS)
+        sp = []
+        for f in ('S', 'N'):
+            bg = grass(256, 256, 9); bg.alpha_composite(graded(fr[('idle', f)][0]))
+            sp.append(bg.convert('RGB').resize((cs, cs), Image.LANCZOS))
+        tw = con.width + 2 * cs + 16; th = CH + 18
+        t = Image.new('RGB', (tw, th), (24, 24, 30)); d = ImageDraw.Draw(t)
+        d.text((2, 2), f"{r}   concept | sprite idle S, N @ zoom {zoom}", fill=(235, 225, 200), font=FONT)
+        t.paste(con, (0, 18)); t.paste(sp[0], (con.width + 8, 18 + CH - cs)); t.paste(sp[1], (con.width + 12 + cs, 18 + CH - cs))
+        tiles.append(t)
+    cw = max(t.width for t in tiles); chh = max(t.height for t in tiles)
+    rows = (len(tiles) + PER - 1) // PER
+    S = Image.new('RGB', (8 + PER * (cw + 10), 26 + rows * (chh + 10)), (18, 18, 22)); d = ImageDraw.Draw(S)
+    d.text((8, 6), f'all {len(ROLES)} NPCs - concept vs shipped sprite (idle f0) at camera zoom {zoom}', fill=(235, 225, 200), font=FONTB)
+    for j, t in enumerate(tiles):
+        S.paste(t, (8 + (j % PER) * (cw + 10), 26 + (j // PER) * (chh + 10)))
+    p = f'{OUT}/all19_concept_vs_sprite_zoom{str(zoom).replace(".", "")}.jpg'
+    S.save(p, quality=90)
+    return p, S.size
+
+
+if __name__ == '__main__':
+    data = {r: load(r) for r in ROLES}
+    print(*walks(data))
+    for z in (1.0, 1.6):
+        print(*concepts(data, z))
