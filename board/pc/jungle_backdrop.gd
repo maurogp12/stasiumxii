@@ -111,7 +111,13 @@ uniform float swing = 0.0;
 uniform vec2 sway_dir = vec2(1.0, 0.0);
 uniform float amplitude_px = 16.0;
 uniform float cut_y = 2.0;
+varying vec4 leaf_tint;
 """ + LIGHT.GRADE_GLSL + """
+void vertex() {
+	// Fragment COLOR is already texture * modulate. The painted v1 leaves
+	// are lit, so the tint has to come from here or the leaf is squared.
+	leaf_tint = COLOR;
+}
 void fragment() {
 	if (SCREEN_UV.y > cut_y) {
 		discard;
@@ -125,8 +131,8 @@ void fragment() {
 	}
 	vec4 leaf = textureLod(TEXTURE, UV - off * w, 0.0);
 	leaf.rgb = l7_grade(leaf.rgb);
-	// COLOR is the canvas modulate, including the top-leaf fade.
-	COLOR = leaf * COLOR;
+	// leaf_tint is the canvas modulate, including the top-leaf fade.
+	COLOR = leaf * leaf_tint;
 }
 """
 

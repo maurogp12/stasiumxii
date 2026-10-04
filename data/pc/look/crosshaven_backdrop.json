@@ -69,7 +69,7 @@
       "replaces": "front_leaves",
       "parallax": 0.0,
       "z": 720,
-      "modulate": [1.0, 1.0, 1.0],
+      "modulate": [1.08, 1.08, 1.08],
       "slots": {
         "leaf_frame_left": "left",
         "leaf_frame_right": "right",

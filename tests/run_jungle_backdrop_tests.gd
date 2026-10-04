@@ -121,7 +121,9 @@ func _test_params_and_slots() -> void:
 	eq(src.contains("MOUSE_FILTER_IGNORE"), true, "leaf controls do not pick the mouse")
 	eq(src.contains("0.22, 0.48, 0.28"), true, "leaf shadows take a green tint")
 	eq(src.contains("TIME * 0.012"), true, "leaf shadows scroll for canopy drift")
-	eq(src.contains("leaf * COLOR"), true, "the sway shader keeps modulate and the top-leaf fade")
+	eq(src.contains("leaf_tint = COLOR"), true, "the leaf tint is the vertex modulate, before the texture multiply")
+	eq(src.contains("COLOR = leaf * leaf_tint"), true, "the sway shader keeps modulate and the top-leaf fade")
+	eq(src.contains("leaf * COLOR"), false, "the fragment does not multiply the painted leaf by itself")
 	_test_v1_contract()
 
 
