@@ -251,7 +251,7 @@
       "visible_length_scale": 1.0
      },
      "shield": {
-      "rotation_deg": -176.64,
+      "rotation_deg": 174.93,
       "visible_length_scale": 1.0
      }
     }
@@ -359,8 +359,8 @@
      "R_thigh",
      "L_uarm",
      "L_farm",
-     "cape_u",
      "shield",
+     "cape_u",
      "pelvis",
      "R_shin",
      "L_thigh",
@@ -486,8 +486,8 @@
       "visible_length_scale": 0.998
      },
      "shield": {
-      "rotation_deg": -176.8,
-      "visible_length_scale": 0.998
+      "rotation_deg": 168.57,
+      "visible_length_scale": 1.093
      }
     }
    },
@@ -593,8 +593,8 @@
      "R_thigh",
      "L_farm",
      "cape_u",
-     "pelvis",
      "shield",
+     "pelvis",
      "R_shin",
      "L_thigh",
      "tabard_b",
@@ -719,8 +719,8 @@
       "visible_length_scale": 0.999
      },
      "shield": {
-      "rotation_deg": -176.78,
-      "visible_length_scale": 0.999
+      "rotation_deg": 169.31,
+      "visible_length_scale": 1.081
      }
     }
    },
@@ -826,8 +826,8 @@
      "cape_u",
      "R_thigh",
      "L_farm",
-     "pelvis",
      "shield",
+     "pelvis",
      "L_thigh",
      "R_shin",
      "tabard_b",
@@ -952,8 +952,8 @@
       "visible_length_scale": 0.999
      },
      "shield": {
-      "rotation_deg": -176.72,
-      "visible_length_scale": 0.999
+      "rotation_deg": 171.52,
+      "visible_length_scale": 1.046
      }
     }
    },
@@ -1185,7 +1185,7 @@
       "visible_length_scale": 1.0
      },
      "shield": {
-      "rotation_deg": -176.63,
+      "rotation_deg": 174.93,
       "visible_length_scale": 1.0
      }
     }
@@ -1418,8 +1418,8 @@
       "visible_length_scale": 1.001
      },
      "shield": {
-      "rotation_deg": -176.56,
-      "visible_length_scale": 1.001
+      "rotation_deg": 177.54,
+      "visible_length_scale": 0.972
      }
     }
    },
@@ -1651,8 +1651,8 @@
       "visible_length_scale": 1.001
      },
      "shield": {
-      "rotation_deg": -176.5,
-      "visible_length_scale": 1.001
+      "rotation_deg": 179.61,
+      "visible_length_scale": 0.953
      }
     }
    },
@@ -1759,8 +1759,8 @@
      "R_thigh",
      "pelvis",
      "L_farm",
-     "L_thigh",
      "shield",
+     "L_thigh",
      "tabard_b",
      "L_shin",
      "R_shin",
@@ -1884,8 +1884,8 @@
       "visible_length_scale": 1.002
      },
      "shield": {
-      "rotation_deg": -176.48,
-      "visible_length_scale": 1.002
+      "rotation_deg": -179.59,
+      "visible_length_scale": 0.946
      }
     }
    },
@@ -1992,8 +1992,8 @@
      "R_thigh",
      "pelvis",
      "L_farm",
-     "L_thigh",
      "shield",
+     "L_thigh",
      "tabard_b",
      "R_shin",
      "L_shin",
@@ -2117,8 +2117,8 @@
       "visible_length_scale": 1.001
      },
      "shield": {
-      "rotation_deg": -176.5,
-      "visible_length_scale": 1.001
+      "rotation_deg": 179.61,
+      "visible_length_scale": 0.953
      }
     }
    },
@@ -2350,8 +2350,8 @@
       "visible_length_scale": 1.001
      },
      "shield": {
-      "rotation_deg": -176.56,
-      "visible_length_scale": 1.001
+      "rotation_deg": 177.53,
+      "visible_length_scale": 0.972
      }
     }
    },
@@ -2583,7 +2583,7 @@
       "visible_length_scale": 1.0
      },
      "shield": {
-      "rotation_deg": -176.64,
+      "rotation_deg": 174.93,
       "visible_length_scale": 1.0
      }
     }
@@ -2690,8 +2690,8 @@
      "L_uarm",
      "cape_u",
      "L_farm",
-     "pelvis",
      "shield",
+     "pelvis",
      "R_shin",
      "L_thigh",
      "tabard_b",
@@ -2816,8 +2816,8 @@
       "visible_length_scale": 0.999
      },
      "shield": {
-      "rotation_deg": -176.72,
-      "visible_length_scale": 0.999
+      "rotation_deg": 171.52,
+      "visible_length_scale": 1.046
      }
     }
    },
@@ -2923,8 +2923,8 @@
      "L_uarm",
      "L_farm",
      "cape_u",
-     "pelvis",
      "shield",
+     "pelvis",
      "R_shin",
      "R_bootshaft",
      "L_thigh",
@@ -3049,8 +3049,8 @@
       "visible_length_scale": 0.999
      },
      "shield": {
-      "rotation_deg": -176.78,
-      "visible_length_scale": 0.999
+      "rotation_deg": 169.32,
+      "visible_length_scale": 1.08
      }
     }
    }
@@ -3284,7 +3284,7 @@
       "visible_length_scale": 1.0
      },
      "shield": {
-      "rotation_deg": -176.83,
+      "rotation_deg": -160.72,
       "visible_length_scale": 1.0
      }
     }
@@ -3519,8 +3519,8 @@
       "visible_length_scale": 1.001
      },
      "shield": {
-      "rotation_deg": -176.96,
-      "visible_length_scale": 1.001
+      "rotation_deg": -158.58,
+      "visible_length_scale": 1.038
      }
     }
    },
@@ -3630,8 +3630,8 @@
      "R_bootshaft",
      "L_thigh",
      "R_boot",
-     "shield",
      "tabard_f",
+     "shield",
      "L_hand",
      "mace_head",
      "L_shin",
@@ -3752,8 +3752,8 @@
       "visible_length_scale": 1.001
      },
      "shield": {
-      "rotation_deg": -176.91,
-      "visible_length_scale": 1.001
+      "rotation_deg": -159.43,
+      "visible_length_scale": 1.022
      }
     }
    },
@@ -3985,7 +3985,7 @@
       "visible_length_scale": 1.0
      },
      "shield": {
-      "rotation_deg": -176.83,
+      "rotation_deg": -160.72,
       "visible_length_scale": 1.0
      }
     }
@@ -4218,8 +4218,8 @@
       "visible_length_scale": 0.999
      },
      "shield": {
-      "rotation_deg": -176.74,
-      "visible_length_scale": 0.999
+      "rotation_deg": -163.05,
+      "visible_length_scale": 0.966
      }
     }
    },
@@ -4451,8 +4451,8 @@
       "visible_length_scale": 0.999
      },
      "shield": {
-      "rotation_deg": -176.69,
-      "visible_length_scale": 0.999
+      "rotation_deg": -164.97,
+      "visible_length_scale": 0.941
      }
     }
    },
@@ -4684,8 +4684,8 @@
       "visible_length_scale": 0.999
      },
      "shield": {
-      "rotation_deg": -176.67,
-      "visible_length_scale": 0.999
+      "rotation_deg": -165.72,
+      "visible_length_scale": 0.932
      }
     }
    },
@@ -4917,8 +4917,8 @@
       "visible_length_scale": 0.999
      },
      "shield": {
-      "rotation_deg": -176.69,
-      "visible_length_scale": 0.999
+      "rotation_deg": -164.97,
+      "visible_length_scale": 0.941
      }
     }
    },
@@ -5025,8 +5025,8 @@
      "R_thigh",
      "L_farm",
      "L_thigh",
-     "shield",
      "tabard_f",
+     "shield",
      "mace_head",
      "L_hand",
      "R_shin",
@@ -5150,8 +5150,8 @@
       "visible_length_scale": 0.999
      },
      "shield": {
-      "rotation_deg": -176.74,
-      "visible_length_scale": 0.999
+      "rotation_deg": -163.05,
+      "visible_length_scale": 0.966
      }
     }
    },
@@ -5383,7 +5383,7 @@
       "visible_length_scale": 1.0
      },
      "shield": {
-      "rotation_deg": -176.82,
+      "rotation_deg": -160.72,
       "visible_length_scale": 1.0
      }
     }
@@ -5616,8 +5616,8 @@
       "visible_length_scale": 1.001
      },
      "shield": {
-      "rotation_deg": -176.9,
-      "visible_length_scale": 1.001
+      "rotation_deg": -159.43,
+      "visible_length_scale": 1.022
      }
     }
    },
@@ -5849,8 +5849,8 @@
       "visible_length_scale": 1.001
      },
      "shield": {
-      "rotation_deg": -176.97,
-      "visible_length_scale": 1.001
+      "rotation_deg": -158.58,
+      "visible_length_scale": 1.038
      }
     }
    },
@@ -6082,8 +6082,8 @@
       "visible_length_scale": 1.001
      },
      "shield": {
-      "rotation_deg": -176.99,
-      "visible_length_scale": 1.001
+      "rotation_deg": -158.3,
+      "visible_length_scale": 1.044
      }
     }
    }

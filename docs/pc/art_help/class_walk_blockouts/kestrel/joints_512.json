@@ -226,7 +226,7 @@
       "visible_length_scale": 1.0
      },
      "bow": {
-      "rotation_deg": 141.68,
+      "rotation_deg": 170.43,
       "visible_length_scale": 1.0
      }
     }
@@ -436,8 +436,8 @@
       "visible_length_scale": 1.034
      },
      "bow": {
-      "rotation_deg": 144.61,
-      "visible_length_scale": 0.989
+      "rotation_deg": 171.2,
+      "visible_length_scale": 1.004
      }
     }
    },
@@ -644,8 +644,8 @@
       "visible_length_scale": 1.03
      },
      "bow": {
-      "rotation_deg": 144.21,
-      "visible_length_scale": 0.991
+      "rotation_deg": 171.1,
+      "visible_length_scale": 1.003
      }
     }
    },
@@ -852,8 +852,8 @@
       "visible_length_scale": 1.017
      },
      "bow": {
-      "rotation_deg": 143.12,
-      "visible_length_scale": 0.995
+      "rotation_deg": 170.81,
+      "visible_length_scale": 1.002
      }
     }
    },
@@ -1060,7 +1060,7 @@
       "visible_length_scale": 1.0
      },
      "bow": {
-      "rotation_deg": 141.68,
+      "rotation_deg": 170.44,
       "visible_length_scale": 1.0
      }
     }
@@ -1268,8 +1268,8 @@
       "visible_length_scale": 0.983
      },
      "bow": {
-      "rotation_deg": 140.27,
-      "visible_length_scale": 1.005
+      "rotation_deg": 170.07,
+      "visible_length_scale": 0.998
      }
     }
    },
@@ -1476,8 +1476,8 @@
       "visible_length_scale": 0.971
      },
      "bow": {
-      "rotation_deg": 139.27,
-      "visible_length_scale": 1.009
+      "rotation_deg": 169.8,
+      "visible_length_scale": 0.996
      }
     }
    },
@@ -1684,8 +1684,8 @@
       "visible_length_scale": 0.967
      },
      "bow": {
-      "rotation_deg": 138.91,
-      "visible_length_scale": 1.01
+      "rotation_deg": 169.71,
+      "visible_length_scale": 0.996
      }
     }
    },
@@ -1892,8 +1892,8 @@
       "visible_length_scale": 0.971
      },
      "bow": {
-      "rotation_deg": 139.27,
-      "visible_length_scale": 1.009
+      "rotation_deg": 169.8,
+      "visible_length_scale": 0.996
      }
     }
    },
@@ -2100,8 +2100,8 @@
       "visible_length_scale": 0.983
      },
      "bow": {
-      "rotation_deg": 140.28,
-      "visible_length_scale": 1.005
+      "rotation_deg": 170.07,
+      "visible_length_scale": 0.998
      }
     }
    },
@@ -2308,7 +2308,7 @@
       "visible_length_scale": 1.0
      },
      "bow": {
-      "rotation_deg": 141.68,
+      "rotation_deg": 170.44,
       "visible_length_scale": 1.0
      }
     }
@@ -2516,8 +2516,8 @@
       "visible_length_scale": 1.017
      },
      "bow": {
-      "rotation_deg": 143.13,
-      "visible_length_scale": 0.995
+      "rotation_deg": 170.81,
+      "visible_length_scale": 1.002
      }
     }
    },
@@ -2724,8 +2724,8 @@
       "visible_length_scale": 1.03
      },
      "bow": {
-      "rotation_deg": 144.21,
-      "visible_length_scale": 0.991
+      "rotation_deg": 171.1,
+      "visible_length_scale": 1.003
      }
     }
    }
@@ -2934,7 +2934,7 @@
       "visible_length_scale": 1.0
      },
      "bow": {
-      "rotation_deg": 104.85,
+      "rotation_deg": 168.54,
       "visible_length_scale": 1.0
      }
     }
@@ -3037,8 +3037,8 @@
      "cape_l",
      "L_uarm",
      "R_hand",
-     "bow",
      "pelvis",
+     "bow",
      "L_farm",
      "R_thigh",
      "L_hand",
@@ -3144,8 +3144,8 @@
       "visible_length_scale": 1.027
      },
      "bow": {
-      "rotation_deg": 104.1,
-      "visible_length_scale": 0.931
+      "rotation_deg": 169.21,
+      "visible_length_scale": 0.992
      }
     }
    },
@@ -3352,8 +3352,8 @@
       "visible_length_scale": 1.016
      },
      "bow": {
-      "rotation_deg": 104.41,
-      "visible_length_scale": 0.961
+      "rotation_deg": 168.92,
+      "visible_length_scale": 0.995
      }
     }
    },
@@ -3560,7 +3560,7 @@
       "visible_length_scale": 1.0
      },
      "bow": {
-      "rotation_deg": 104.85,
+      "rotation_deg": 168.54,
       "visible_length_scale": 1.0
      }
     }
@@ -3768,8 +3768,8 @@
       "visible_length_scale": 0.984
      },
      "bow": {
-      "rotation_deg": 105.32,
-      "visible_length_scale": 1.038
+      "rotation_deg": 168.19,
+      "visible_length_scale": 1.005
      }
     }
    },
@@ -3976,8 +3976,8 @@
       "visible_length_scale": 0.973
      },
      "bow": {
-      "rotation_deg": 105.68,
-      "visible_length_scale": 1.066
+      "rotation_deg": 167.94,
+      "visible_length_scale": 1.009
      }
     }
    },
@@ -4184,8 +4184,8 @@
       "visible_length_scale": 0.968
      },
      "bow": {
-      "rotation_deg": 105.82,
-      "visible_length_scale": 1.075
+      "rotation_deg": 167.86,
+      "visible_length_scale": 1.01
      }
     }
    },
@@ -4392,8 +4392,8 @@
       "visible_length_scale": 0.973
      },
      "bow": {
-      "rotation_deg": 105.68,
-      "visible_length_scale": 1.066
+      "rotation_deg": 167.94,
+      "visible_length_scale": 1.009
      }
     }
    },
@@ -4600,8 +4600,8 @@
       "visible_length_scale": 0.984
      },
      "bow": {
-      "rotation_deg": 105.33,
-      "visible_length_scale": 1.038
+      "rotation_deg": 168.19,
+      "visible_length_scale": 1.005
      }
     }
    },
@@ -4808,7 +4808,7 @@
       "visible_length_scale": 1.0
      },
      "bow": {
-      "rotation_deg": 104.86,
+      "rotation_deg": 168.54,
       "visible_length_scale": 1.0
      }
     }
@@ -5016,8 +5016,8 @@
       "visible_length_scale": 1.016
      },
      "bow": {
-      "rotation_deg": 104.41,
-      "visible_length_scale": 0.961
+      "rotation_deg": 168.92,
+      "visible_length_scale": 0.995
      }
     }
    },
@@ -5117,8 +5117,8 @@
      "R_farm",
      "L_uarm",
      "R_hand",
-     "bow",
      "pelvis",
+     "bow",
      "L_farm",
      "R_thigh",
      "L_hand",
@@ -5224,8 +5224,8 @@
       "visible_length_scale": 1.027
      },
      "bow": {
-      "rotation_deg": 104.1,
-      "visible_length_scale": 0.931
+      "rotation_deg": 169.21,
+      "visible_length_scale": 0.992
      }
     }
    },
@@ -5432,8 +5432,8 @@
       "visible_length_scale": 1.031
      },
      "bow": {
-      "rotation_deg": 103.98,
-      "visible_length_scale": 0.92
+      "rotation_deg": 169.32,
+      "visible_length_scale": 0.99
      }
     }
    }

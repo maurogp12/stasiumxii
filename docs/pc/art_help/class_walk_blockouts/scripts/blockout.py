@@ -297,8 +297,8 @@ def place(P, C, J, facing):
     if 'quiver' in P:      # on the back, over the left shoulder, tilted
         M['quiver'] = frame(Rc @ rot(Y, 28), w('chest') + Rc @ np.array([-0.05 * Hh, -C['torso_d'] * Hh * 0.75, 0.05 * Hh]))
     if 'bow' in P:         # held low in the right hand, upper limb back and up, lower limb forward and down
-        Rh = Rf @ J['_RR_farm']
-        M['bow'] = frame(Rc @ rot(X, 62) @ rot(Z, 8), w('R_hand'))
+        up, fw = Rc @ Z, Rc @ Y
+        M['bow'] = bow_frame(w('R_hand'), z=nrm(up - fw * 0.30), y=fw)
     for s in 'RL':
         if f'dagger_{s}' in P:   # blade out of the fist, forward and out, edge down
             Rh = Rf @ J[f'_R{s}_farm']
@@ -310,13 +310,23 @@ def place(P, C, J, facing):
         d = Rf @ J['_Rc'] @ rot(X, J['_AR'] * 0.8) @ nrm(np.array([-0.10, 0.85, -0.42]))
         g = w('R_hand'); Mh = seg_frame(g, g + d, Rc @ X); M['mace_handle'] = Mh
         M["mace_head"] = frame(Rc, g + d * 0.28 * Hh)
-    if 'shield' in P:           # strapped to the left forearm, face out to the left-front
+    if 'shield' in P:           # strapped flat on the OUTSIDE of the left forearm: face out, long axis up
         Rh = Rf @ J['_RL_farm']
-        mid = (w('L_elbow') + w('L_wrist')) / 2
-        M['shield'] = frame(Rc @ rot(Z, -35) , mid + Rc @ np.array([-0.045 * Hh, 0.02 * Hh, -0.03 * Hh]))
+        mid = w('L_elbow') * 0.3 + w('L_wrist') * 0.7          # over the fist, which grips the strap behind it
+        M['shield'] = frame(Rh @ SHIELD_ON_FOREARM, mid + Rh @ np.array([-0.075 * Hh, 0.0, 0.0]))
     for k, o in P.items():
         o.matrix_world = mathutils.Matrix([list(r) for r in M[k]])
     return M
+
+# shield axes in forearm space: width along the forearm, height up (forearm local +Y once the elbow is bent),
+# face (shield local -Y) pointing outward (forearm local -X for the left arm), turned 20 deg toward the front
+SHIELD_ON_FOREARM = np.array([[0.0, -1.0, 0.0], [0.0, 0.0, 1.0], [-1.0, 0.0, 0.0]]).T @ np.eye(3)
+SHIELD_ON_FOREARM = np.column_stack([[0, 0, -1], [-1, 0, 0], [0, 1, 0]]).astype(float) @ rot(Z, 40)
+
+def bow_frame(grip, z, y):
+    """bow mesh frame: limbs along z, belly (+y) toward the target / forward, string (-y) toward the archer."""
+    z = nrm(z); y = nrm(y - z * np.dot(y, z)); x = np.cross(y, z)
+    M = np.eye(4); M[:3, 0], M[:3, 1], M[:3, 2], M[:3, 3] = x, y, z, grip; return M
 
 def project(sc, p):
     v = world_to_camera_view(sc, sc.camera, mathutils.Vector(tuple(p)))

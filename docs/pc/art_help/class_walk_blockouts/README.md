@@ -46,6 +46,13 @@ Each class folder holds:
   - Stride 0.27 H, bob 7 px.
 - **Mender:** waiting on Mauro's new design.
 
+## Actions (Mauro, 4 Oct: "show me how they walk and actions")
+
+`<class>/<class>_actions.mp4` is the model in its design colours: turntable, idle, walk S/E, attack S/E, skill, hit, death (`scripts/actions.py` poses, `scripts/video.py` assembly).
+- **Bastion:** overhead mace smash with a step in; skill = shield guard. The shield is strapped flat on the **outside** of the left forearm, over the fist, facing out and forward (Mauro: it looked inside the arm; fixed).
+- **Kestrel:** the attack raises the bow, draws to the cheek and looses; skill = Mark Shot, aiming high. While walking, the bow **hangs limbs-down**. When she shoots, the bow's belly **faces the aim** with the string toward her (Mauro, 4 Oct).
+- **Gloam:** crossed daggers high, then a lunge with a double slash out and down; skill = a shadow-step crouch.
+
 ## How to re-run or tune
 
 Install Blender as a Python module (`pip install bpy==4.2.0` on Python 3.11, plus `numpy` and `pillow`; it needs libEGL). From this folder:
@@ -53,6 +60,8 @@ Install Blender as a Python module (`pip install bpy==4.2.0` on Python 3.11, plu
 ```
 python scripts/blockout.py bastion bastion   # renders clay/ and id/, and writes joints_512.json
 python scripts/preview.py  bastion bastion   # guide sheet, contact sheet, GIFs
+python scripts/actions.py  bastion bastion   # action renders (bastion/show/)
+python scripts/video.py    bastion bastion "Bastion (knight)"   # bastion_actions.mp4
 ```
 
 All proportions, stride, bob, lean, arm swing, elbow bend and props are fractions of the height `H` in the `CLASSES` table at the top of `blockout.py`. Change a number and re-run; it takes a few seconds per class.
