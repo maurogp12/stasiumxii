@@ -847,51 +847,6 @@
   ],
   "props": [
     {
-      "id": "crosshaven_eastmarch_beach_net_rack_2",
-      "type": "net_rack",
-      "blocks": true,
-      "origin": {
-        "x": 12,
-        "y": 2
-      },
-      "footprint": [
-        {
-          "x": 12,
-          "y": 2
-        }
-      ]
-    },
-    {
-      "id": "crosshaven_eastmarch_beach_net_rack_4_1",
-      "type": "net_rack",
-      "blocks": true,
-      "origin": {
-        "x": 4,
-        "y": 1
-      },
-      "footprint": [
-        {
-          "x": 4,
-          "y": 1
-        }
-      ]
-    },
-    {
-      "id": "crosshaven_eastmarch_beach_net_rack_34_1",
-      "type": "net_rack",
-      "blocks": true,
-      "origin": {
-        "x": 34,
-        "y": 1
-      },
-      "footprint": [
-        {
-          "x": 34,
-          "y": 1
-        }
-      ]
-    },
-    {
       "id": "crosshaven_eastmarch_beach_tree_1_2",
       "type": "tree",
       "blocks": true,

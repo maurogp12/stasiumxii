@@ -1016,10 +1016,12 @@ func _bind_plane_samples(z: WorldZone) -> void:
 		if z != null:
 			z.sample_terrain = Callable()
 			z.sample_height = Callable()
+			z.sample_zone_id = Callable()
 		return
 	var origin := _origin_of(z.zone_id)
 	z.sample_terrain = _sample_terrain.bind(origin)
 	z.sample_height = _sample_height.bind(origin)
+	z.sample_zone_id = _sample_zone_id.bind(origin)
 
 
 func _sample_terrain(cell: Vector2i, origin: Vector2i) -> String:
@@ -1034,6 +1036,13 @@ func _sample_height(cell: Vector2i, origin: Vector2i) -> int:
 	if hit.is_empty():
 		return 0
 	return (hit["zone"] as WorldZone).height_at(hit["cell"])
+
+
+func _sample_zone_id(cell: Vector2i, origin: Vector2i) -> String:
+	var hit := _chunk_at(origin + cell)
+	if hit.is_empty():
+		return ""
+	return (hit["zone"] as WorldZone).zone_id
 
 
 func _chunk_at(world: Vector2i) -> Dictionary:
@@ -1829,6 +1838,8 @@ func _play_movie(mode: String) -> void:
 			await _movie_plane_still()
 		"crag_still":
 			await _movie_crag_still()
+		"water_stills":
+			await _movie_water_stills()
 		_:
 			push_error("unknown movie %s" % mode)
 	get_tree().quit()
@@ -2335,6 +2346,59 @@ func _movie_crag_still() -> void:
 	DirAccess.make_dir_recursive_absolute(folder)
 	await _grab_theme_still("crosshaven_northgate_crags_far", Vector2i(18, 20), folder.path_join("crags_far.png"))
 	await _grab_theme_still("crosshaven_northgate_crags_west", Vector2i(8, 16), folder.path_join("crags_west.png"))
+
+
+## Crosshaven river beside Stoneford, and the open water on the Northgate shore.
+func _movie_water_stills() -> void:
+	settings.apply_preset("Full")
+	_zoom = 1.15
+	if camera != null:
+		camera.zoom = Vector2.ONE * _zoom
+	weather.auto_rotate = false
+	weather.set_weather("clear")
+	weather.time_of_day = 12.0
+	weather.settle()
+	_hide_debug_readout()
+	if tracker != null:
+		tracker.visible = false
+	if _banner != null:
+		_banner.modulate.a = 0.0
+	var folder := ProjectSettings.globalize_path("res://docs/pc/media/water")
+	DirAccess.make_dir_recursive_absolute(folder)
+	await _grab_theme_still("crosshaven_stoneford", Vector2i(10, 16), folder.path_join("crosshaven_river.png"))
+	await _grab_theme_still("crosshaven_northgate", Vector2i(16, 8), folder.path_join("northgate_shore.png"))
+	_zoom = 1.0
+	if camera != null:
+		camera.zoom = Vector2.ONE * _zoom
+	await _grab_theme_still("crosshaven_northgate", Vector2i(16, 8), folder.path_join("northgate_shore_zoom_1.png"))
+	_zoom = 1.6
+	if camera != null:
+		camera.zoom = Vector2.ONE * _zoom
+	await _grab_theme_still("crosshaven_northgate", Vector2i(16, 8), folder.path_join("northgate_shore_zoom_1_6.png"))
+	_zoom = 1.15
+	if camera != null:
+		camera.zoom = Vector2.ONE * _zoom
+	var beach := ProjectSettings.globalize_path("res://docs/pc/media/outskirts")
+	DirAccess.make_dir_recursive_absolute(beach)
+	await _grab_theme_still("crosshaven_eastmarch_coves", Vector2i(22, 6), beach.path_join("eastmarch_beach.png"))
+	await _grab_theme_still("crosshaven_eastmarch_coves", Vector2i(22, 6), folder.path_join("eastmarch_beach.png"))
+	_zoom = 1.0
+	if camera != null:
+		camera.zoom = Vector2.ONE * _zoom
+	await _grab_theme_still("crosshaven_eastmarch_coves", Vector2i(22, 6), folder.path_join("eastmarch_beach_zoom_1.png"))
+	_zoom = 1.6
+	if camera != null:
+		camera.zoom = Vector2.ONE * _zoom
+	await _grab_theme_still("crosshaven_eastmarch_coves", Vector2i(22, 6), folder.path_join("eastmarch_beach_zoom_1_6.png"))
+	# The north-east lip of Northgate, where the sea meets the map fill.
+	_zoom = 1.0
+	if camera != null:
+		camera.zoom = Vector2.ONE * _zoom
+	await _grab_theme_still("crosshaven_northgate", Vector2i(34, 2), folder.path_join("map_edge_zoom_1.png"))
+	_zoom = 1.6
+	if camera != null:
+		camera.zoom = Vector2.ONE * _zoom
+	await _grab_theme_still("crosshaven_northgate", Vector2i(34, 2), folder.path_join("map_edge_zoom_1_6.png"))
 
 
 func _movie_eastmarch_still() -> void:

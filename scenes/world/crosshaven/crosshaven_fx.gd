@@ -9,6 +9,7 @@ const Art := preload("res://scenes/world/crosshaven/crosshaven_art.gd")
 
 var _grade: ColorRect
 var _shadows: Sprite2D
+var _cloud_drift := Vector2.ZERO
 var _contacts: Node2D
 var _critters: Node2D
 var _pollen: CPUParticles2D
@@ -281,7 +282,8 @@ func _exit_tree() -> void:
 func _process(delta: float) -> void:
 	_sync_grade()
 	if _shadows != null and _shadows.visible:
-		_shadows.region_rect.position += Vector2(14.0, 5.0) * delta
+		_cloud_drift += Vector2(14.0, 5.0) * delta
+		_follow_clouds()
 	_follow_air()
 	if _critters == null or not _critters.visible:
 		return
@@ -319,6 +321,23 @@ func _sync_grade() -> void:
 			rain_amt = float((amounts as Dictionary).get("light_rain", 0.0))
 	# Clear stays warm. Rain drops the golden multiply so the tint can cool it.
 	_grade_mat.set_shader_parameter("warmth", clampf(1.0 - rain_amt, 0.0, 1.0))
+
+
+## Keep the cloud sheet around the camera. Its edge used to show past the
+## map corner as a hard darker rectangle on the sea. The sheet moves in whole
+## texture tiles and the region offset follows, so the clouds stay put in the world.
+func _follow_clouds() -> void:
+	var at := Vector2(-800, -400)
+	var cam: Object = _world.get("camera") if _world != null else null
+	if cam != null:
+		var size := _shadows.region_rect.size
+		var tile := Vector2(256, 256)
+		if _shadows.texture != null:
+			tile = _shadows.texture.get_size()
+		var corner := (cam as Node2D).position - size * 0.5
+		at = Vector2(floorf(corner.x / tile.x) * tile.x, floorf(corner.y / tile.y) * tile.y)
+	_shadows.position = at
+	_shadows.region_rect.position = at + _cloud_drift
 
 
 func _follow_air() -> void:
