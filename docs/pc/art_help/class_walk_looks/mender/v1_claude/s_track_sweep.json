@@ -1,0 +1,1153 @@
+{
+ "notes": "Mender S foot-track sweep on the rigged painted legs (s_track.py). hip_w 1.0 unless named. far_boot = boot_vis.measure (near leg + robe/front layer occlude). contact_angle = front heel - back heel on screen at f00/f06 from the blockout heel joints (travel diagonal 26.6 deg).",
+ "options": {
+  "foot_w 0.0": {
+   "frames": {
+    "f00": {
+     "shins_cross": false,
+     "far_boot_pct": 74.5,
+     "far": "L"
+    },
+    "f01": {
+     "shins_cross": false,
+     "far_boot_pct": 55.4,
+     "far": "L"
+    },
+    "f02": {
+     "shins_cross": false,
+     "far_boot_pct": 59.1,
+     "far": "L"
+    },
+    "f03": {
+     "shins_cross": true,
+     "far_boot_pct": 29.7,
+     "far": "L"
+    },
+    "f04": {
+     "shins_cross": false,
+     "far_boot_pct": 68.8,
+     "far": "R"
+    },
+    "f05": {
+     "shins_cross": false,
+     "far_boot_pct": 89.4,
+     "far": "R"
+    },
+    "f06": {
+     "shins_cross": false,
+     "far_boot_pct": 90.8,
+     "far": "R"
+    },
+    "f07": {
+     "shins_cross": false,
+     "far_boot_pct": 74.5,
+     "far": "R"
+    },
+    "f08": {
+     "shins_cross": false,
+     "far_boot_pct": 76.4,
+     "far": "R"
+    },
+    "f09": {
+     "shins_cross": false,
+     "far_boot_pct": 56.4,
+     "far": "R"
+    },
+    "f10": {
+     "shins_cross": false,
+     "far_boot_pct": 36.8,
+     "far": "L"
+    },
+    "f11": {
+     "shins_cross": false,
+     "far_boot_pct": 80.1,
+     "far": "L"
+    }
+   },
+   "cross_frames": [
+    "f03"
+   ],
+   "far_boot_min": 29.7,
+   "far_boot_min_frame": "f03",
+   "contact_angle_f00_f06": [
+    34.4,
+    34.4
+   ]
+  },
+  "foot_w 0.15": {
+   "frames": {
+    "f00": {
+     "shins_cross": false,
+     "far_boot_pct": 73.0,
+     "far": "L"
+    },
+    "f01": {
+     "shins_cross": false,
+     "far_boot_pct": 55.4,
+     "far": "L"
+    },
+    "f02": {
+     "shins_cross": false,
+     "far_boot_pct": 58.1,
+     "far": "L"
+    },
+    "f03": {
+     "shins_cross": true,
+     "far_boot_pct": 23.2,
+     "far": "L"
+    },
+    "f04": {
+     "shins_cross": false,
+     "far_boot_pct": 83.3,
+     "far": "R"
+    },
+    "f05": {
+     "shins_cross": false,
+     "far_boot_pct": 87.8,
+     "far": "R"
+    },
+    "f06": {
+     "shins_cross": false,
+     "far_boot_pct": 86.8,
+     "far": "R"
+    },
+    "f07": {
+     "shins_cross": false,
+     "far_boot_pct": 73.1,
+     "far": "R"
+    },
+    "f08": {
+     "shins_cross": false,
+     "far_boot_pct": 76.6,
+     "far": "R"
+    },
+    "f09": {
+     "shins_cross": false,
+     "far_boot_pct": 69.5,
+     "far": "R"
+    },
+    "f10": {
+     "shins_cross": false,
+     "far_boot_pct": 26.1,
+     "far": "L"
+    },
+    "f11": {
+     "shins_cross": false,
+     "far_boot_pct": 77.7,
+     "far": "L"
+    }
+   },
+   "cross_frames": [
+    "f03"
+   ],
+   "far_boot_min": 23.2,
+   "far_boot_min_frame": "f03",
+   "contact_angle_f00_f06": [
+    38.8,
+    30.3
+   ]
+  },
+  "foot_w 0.3": {
+   "frames": {
+    "f00": {
+     "shins_cross": false,
+     "far_boot_pct": 70.0,
+     "far": "L"
+    },
+    "f01": {
+     "shins_cross": false,
+     "far_boot_pct": 54.5,
+     "far": "L"
+    },
+    "f02": {
+     "shins_cross": false,
+     "far_boot_pct": 54.6,
+     "far": "L"
+    },
+    "f03": {
+     "shins_cross": true,
+     "far_boot_pct": 19.9,
+     "far": "L"
+    },
+    "f04": {
+     "shins_cross": false,
+     "far_boot_pct": 91.4,
+     "far": "R"
+    },
+    "f05": {
+     "shins_cross": false,
+     "far_boot_pct": 85.7,
+     "far": "R"
+    },
+    "f06": {
+     "shins_cross": false,
+     "far_boot_pct": 82.5,
+     "far": "R"
+    },
+    "f07": {
+     "shins_cross": false,
+     "far_boot_pct": 71.0,
+     "far": "R"
+    },
+    "f08": {
+     "shins_cross": false,
+     "far_boot_pct": 73.4,
+     "far": "R"
+    },
+    "f09": {
+     "shins_cross": false,
+     "far_boot_pct": 79.0,
+     "far": "R"
+    },
+    "f10": {
+     "shins_cross": false,
+     "far_boot_pct": 8.9,
+     "far": "L"
+    },
+    "f11": {
+     "shins_cross": false,
+     "far_boot_pct": 71.4,
+     "far": "L"
+    }
+   },
+   "cross_frames": [
+    "f03"
+   ],
+   "far_boot_min": 8.9,
+   "far_boot_min_frame": "f10",
+   "contact_angle_f00_f06": [
+    43.5,
+    26.6
+   ]
+  },
+  "foot_w 0.5": {
+   "frames": {
+    "f00": {
+     "shins_cross": false,
+     "far_boot_pct": 60.1,
+     "far": "L"
+    },
+    "f01": {
+     "shins_cross": false,
+     "far_boot_pct": 47.9,
+     "far": "L"
+    },
+    "f02": {
+     "shins_cross": false,
+     "far_boot_pct": 46.5,
+     "far": "L"
+    },
+    "f03": {
+     "shins_cross": false,
+     "far_boot_pct": 25.5,
+     "far": "L"
+    },
+    "f04": {
+     "shins_cross": false,
+     "far_boot_pct": 95.5,
+     "far": "R"
+    },
+    "f05": {
+     "shins_cross": false,
+     "far_boot_pct": 84.2,
+     "far": "R"
+    },
+    "f06": {
+     "shins_cross": false,
+     "far_boot_pct": 76.4,
+     "far": "R"
+    },
+    "f07": {
+     "shins_cross": false,
+     "far_boot_pct": 69.0,
+     "far": "R"
+    },
+    "f08": {
+     "shins_cross": false,
+     "far_boot_pct": 71.1,
+     "far": "R"
+    },
+    "f09": {
+     "shins_cross": false,
+     "far_boot_pct": 94.8,
+     "far": "L"
+    },
+    "f10": {
+     "shins_cross": false,
+     "far_boot_pct": 14.1,
+     "far": "L"
+    },
+    "f11": {
+     "shins_cross": false,
+     "far_boot_pct": 57.4,
+     "far": "L"
+    }
+   },
+   "cross_frames": [],
+   "far_boot_min": 14.1,
+   "far_boot_min_frame": "f10",
+   "contact_angle_f00_f06": [
+    50.3,
+    22.1
+   ]
+  },
+  "foot_w 0.65": {
+   "frames": {
+    "f00": {
+     "shins_cross": false,
+     "far_boot_pct": 46.7,
+     "far": "L"
+    },
+    "f01": {
+     "shins_cross": false,
+     "far_boot_pct": 37.5,
+     "far": "L"
+    },
+    "f02": {
+     "shins_cross": false,
+     "far_boot_pct": 35.2,
+     "far": "L"
+    },
+    "f03": {
+     "shins_cross": false,
+     "far_boot_pct": 40.6,
+     "far": "L"
+    },
+    "f04": {
+     "shins_cross": false,
+     "far_boot_pct": 93.4,
+     "far": "L"
+    },
+    "f05": {
+     "shins_cross": false,
+     "far_boot_pct": 83.3,
+     "far": "R"
+    },
+    "f06": {
+     "shins_cross": false,
+     "far_boot_pct": 71.7,
+     "far": "R"
+    },
+    "f07": {
+     "shins_cross": false,
+     "far_boot_pct": 67.5,
+     "far": "R"
+    },
+    "f08": {
+     "shins_cross": false,
+     "far_boot_pct": 69.1,
+     "far": "R"
+    },
+    "f09": {
+     "shins_cross": false,
+     "far_boot_pct": 97.7,
+     "far": "L"
+    },
+    "f10": {
+     "shins_cross": false,
+     "far_boot_pct": 29.3,
+     "far": "L"
+    },
+    "f11": {
+     "shins_cross": false,
+     "far_boot_pct": 41.4,
+     "far": "L"
+    }
+   },
+   "cross_frames": [],
+   "far_boot_min": 29.3,
+   "far_boot_min_frame": "f10",
+   "contact_angle_f00_f06": [
+    55.7,
+    19.2
+   ]
+  },
+  "foot_w 0.9": {
+   "frames": {
+    "f00": {
+     "shins_cross": false,
+     "far_boot_pct": 21.6,
+     "far": "L"
+    },
+    "f01": {
+     "shins_cross": false,
+     "far_boot_pct": 20.5,
+     "far": "L"
+    },
+    "f02": {
+     "shins_cross": true,
+     "far_boot_pct": 17.9,
+     "far": "L"
+    },
+    "f03": {
+     "shins_cross": false,
+     "far_boot_pct": 65.3,
+     "far": "L"
+    },
+    "f04": {
+     "shins_cross": false,
+     "far_boot_pct": 89.0,
+     "far": "L"
+    },
+    "f05": {
+     "shins_cross": false,
+     "far_boot_pct": 82.8,
+     "far": "R"
+    },
+    "f06": {
+     "shins_cross": false,
+     "far_boot_pct": 70.2,
+     "far": "R"
+    },
+    "f07": {
+     "shins_cross": false,
+     "far_boot_pct": 63.3,
+     "far": "R"
+    },
+    "f08": {
+     "shins_cross": false,
+     "far_boot_pct": 66.2,
+     "far": "R"
+    },
+    "f09": {
+     "shins_cross": false,
+     "far_boot_pct": 100.0,
+     "far": "L"
+    },
+    "f10": {
+     "shins_cross": false,
+     "far_boot_pct": 52.6,
+     "far": "L"
+    },
+    "f11": {
+     "shins_cross": false,
+     "far_boot_pct": 15.7,
+     "far": "L"
+    }
+   },
+   "cross_frames": [
+    "f02"
+   ],
+   "far_boot_min": 15.7,
+   "far_boot_min_frame": "f11",
+   "contact_angle_f00_f06": [
+    64.9,
+    14.8
+   ]
+  },
+  "foot_w 1.2": {
+   "frames": {
+    "f00": {
+     "shins_cross": false,
+     "far_boot_pct": 10.0,
+     "far": "L"
+    },
+    "f01": {
+     "shins_cross": false,
+     "far_boot_pct": 21.6,
+     "far": "L"
+    },
+    "f02": {
+     "shins_cross": false,
+     "far_boot_pct": 20.3,
+     "far": "L"
+    },
+    "f03": {
+     "shins_cross": false,
+     "far_boot_pct": 86.2,
+     "far": "L"
+    },
+    "f04": {
+     "shins_cross": false,
+     "far_boot_pct": 82.1,
+     "far": "L"
+    },
+    "f05": {
+     "shins_cross": false,
+     "far_boot_pct": 82.1,
+     "far": "R"
+    },
+    "f06": {
+     "shins_cross": false,
+     "far_boot_pct": 69.6,
+     "far": "R"
+    },
+    "f07": {
+     "shins_cross": false,
+     "far_boot_pct": 61.1,
+     "far": "R"
+    },
+    "f08": {
+     "shins_cross": false,
+     "far_boot_pct": 66.7,
+     "far": "R"
+    },
+    "f09": {
+     "shins_cross": false,
+     "far_boot_pct": 99.5,
+     "far": "L"
+    },
+    "f10": {
+     "shins_cross": false,
+     "far_boot_pct": 75.9,
+     "far": "L"
+    },
+    "f11": {
+     "shins_cross": false,
+     "far_boot_pct": 11.9,
+     "far": "L"
+    }
+   },
+   "cross_frames": [],
+   "far_boot_min": 10.0,
+   "far_boot_min_frame": "f00",
+   "contact_angle_f00_f06": [
+    75.8,
+    10.4
+   ]
+  },
+  "foot_w 1.35": {
+   "frames": {
+    "f00": {
+     "shins_cross": false,
+     "far_boot_pct": 13.8,
+     "far": "L"
+    },
+    "f01": {
+     "shins_cross": false,
+     "far_boot_pct": 28.7,
+     "far": "L"
+    },
+    "f02": {
+     "shins_cross": false,
+     "far_boot_pct": 31.2,
+     "far": "L"
+    },
+    "f03": {
+     "shins_cross": false,
+     "far_boot_pct": 91.7,
+     "far": "L"
+    },
+    "f04": {
+     "shins_cross": false,
+     "far_boot_pct": 77.8,
+     "far": "L"
+    },
+    "f05": {
+     "shins_cross": false,
+     "far_boot_pct": 81.2,
+     "far": "R"
+    },
+    "f06": {
+     "shins_cross": false,
+     "far_boot_pct": 68.1,
+     "far": "R"
+    },
+    "f07": {
+     "shins_cross": false,
+     "far_boot_pct": 61.6,
+     "far": "R"
+    },
+    "f08": {
+     "shins_cross": false,
+     "far_boot_pct": 64.7,
+     "far": "R"
+    },
+    "f09": {
+     "shins_cross": false,
+     "far_boot_pct": 98.2,
+     "far": "L"
+    },
+    "f10": {
+     "shins_cross": false,
+     "far_boot_pct": 84.3,
+     "far": "L"
+    },
+    "f11": {
+     "shins_cross": false,
+     "far_boot_pct": 22.6,
+     "far": "L"
+    }
+   },
+   "cross_frames": [],
+   "far_boot_min": 13.8,
+   "far_boot_min_frame": "f00",
+   "contact_angle_f00_f06": [
+    80.9,
+    8.5
+   ]
+  },
+  "foot_w 1.5": {
+   "frames": {
+    "f00": {
+     "shins_cross": false,
+     "far_boot_pct": 31.7,
+     "far": "L"
+    },
+    "f01": {
+     "shins_cross": false,
+     "far_boot_pct": 40.4,
+     "far": "L"
+    },
+    "f02": {
+     "shins_cross": false,
+     "far_boot_pct": 47.5,
+     "far": "L"
+    },
+    "f03": {
+     "shins_cross": false,
+     "far_boot_pct": 91.9,
+     "far": "L"
+    },
+    "f04": {
+     "shins_cross": false,
+     "far_boot_pct": 73.8,
+     "far": "L"
+    },
+    "f05": {
+     "shins_cross": false,
+     "far_boot_pct": 66.9,
+     "far": "L"
+    },
+    "f06": {
+     "shins_cross": false,
+     "far_boot_pct": 67.3,
+     "far": "R"
+    },
+    "f07": {
+     "shins_cross": false,
+     "far_boot_pct": 77.4,
+     "far": "L"
+    },
+    "f08": {
+     "shins_cross": false,
+     "far_boot_pct": 87.4,
+     "far": "L"
+    },
+    "f09": {
+     "shins_cross": false,
+     "far_boot_pct": 95.8,
+     "far": "L"
+    },
+    "f10": {
+     "shins_cross": false,
+     "far_boot_pct": 90.1,
+     "far": "L"
+    },
+    "f11": {
+     "shins_cross": false,
+     "far_boot_pct": 36.9,
+     "far": "L"
+    }
+   },
+   "cross_frames": [],
+   "far_boot_min": 31.7,
+   "far_boot_min_frame": "f00",
+   "contact_angle_f00_f06": [
+    85.8,
+    6.7
+   ]
+  },
+  "foot_w 1.65": {
+   "frames": {
+    "f00": {
+     "shins_cross": false,
+     "far_boot_pct": 52.6,
+     "far": "L"
+    },
+    "f01": {
+     "shins_cross": false,
+     "far_boot_pct": 54.5,
+     "far": "L"
+    },
+    "f02": {
+     "shins_cross": false,
+     "far_boot_pct": 61.7,
+     "far": "L"
+    },
+    "f03": {
+     "shins_cross": false,
+     "far_boot_pct": 89.7,
+     "far": "L"
+    },
+    "f04": {
+     "shins_cross": false,
+     "far_boot_pct": 70.4,
+     "far": "L"
+    },
+    "f05": {
+     "shins_cross": false,
+     "far_boot_pct": 65.2,
+     "far": "L"
+    },
+    "f06": {
+     "shins_cross": false,
+     "far_boot_pct": 69.3,
+     "far": "L"
+    },
+    "f07": {
+     "shins_cross": false,
+     "far_boot_pct": 73.4,
+     "far": "L"
+    },
+    "f08": {
+     "shins_cross": false,
+     "far_boot_pct": 83.9,
+     "far": "L"
+    },
+    "f09": {
+     "shins_cross": false,
+     "far_boot_pct": 93.2,
+     "far": "L"
+    },
+    "f10": {
+     "shins_cross": false,
+     "far_boot_pct": 94.9,
+     "far": "L"
+    },
+    "f11": {
+     "shins_cross": false,
+     "far_boot_pct": 50.3,
+     "far": "L"
+    }
+   },
+   "cross_frames": [],
+   "far_boot_min": 50.3,
+   "far_boot_min_frame": "f11",
+   "contact_angle_f00_f06": [
+    90.4,
+    5.1
+   ]
+  },
+  "foot_w 1.7": {
+   "frames": {
+    "f00": {
+     "shins_cross": false,
+     "far_boot_pct": 58.5,
+     "far": "L"
+    },
+    "f01": {
+     "shins_cross": false,
+     "far_boot_pct": 57.7,
+     "far": "L"
+    },
+    "f02": {
+     "shins_cross": false,
+     "far_boot_pct": 64.9,
+     "far": "L"
+    },
+    "f03": {
+     "shins_cross": false,
+     "far_boot_pct": 88.6,
+     "far": "L"
+    },
+    "f04": {
+     "shins_cross": false,
+     "far_boot_pct": 68.7,
+     "far": "L"
+    },
+    "f05": {
+     "shins_cross": false,
+     "far_boot_pct": 64.6,
+     "far": "L"
+    },
+    "f06": {
+     "shins_cross": false,
+     "far_boot_pct": 68.4,
+     "far": "L"
+    },
+    "f07": {
+     "shins_cross": false,
+     "far_boot_pct": 72.5,
+     "far": "L"
+    },
+    "f08": {
+     "shins_cross": false,
+     "far_boot_pct": 82.6,
+     "far": "L"
+    },
+    "f09": {
+     "shins_cross": false,
+     "far_boot_pct": 92.4,
+     "far": "L"
+    },
+    "f10": {
+     "shins_cross": false,
+     "far_boot_pct": 96.0,
+     "far": "L"
+    },
+    "f11": {
+     "shins_cross": false,
+     "far_boot_pct": 55.2,
+     "far": "L"
+    }
+   },
+   "cross_frames": [],
+   "far_boot_min": 55.2,
+   "far_boot_min_frame": "f11",
+   "contact_angle_f00_f06": [
+    91.9,
+    4.6
+   ]
+  },
+  "foot_w 1.75": {
+   "frames": {
+    "f00": {
+     "shins_cross": false,
+     "far_boot_pct": 63.8,
+     "far": "L"
+    },
+    "f01": {
+     "shins_cross": false,
+     "far_boot_pct": 61.0,
+     "far": "L"
+    },
+    "f02": {
+     "shins_cross": false,
+     "far_boot_pct": 68.4,
+     "far": "L"
+    },
+    "f03": {
+     "shins_cross": false,
+     "far_boot_pct": 87.9,
+     "far": "L"
+    },
+    "f04": {
+     "shins_cross": false,
+     "far_boot_pct": 67.7,
+     "far": "L"
+    },
+    "f05": {
+     "shins_cross": false,
+     "far_boot_pct": 64.3,
+     "far": "L"
+    },
+    "f06": {
+     "shins_cross": false,
+     "far_boot_pct": 68.2,
+     "far": "L"
+    },
+    "f07": {
+     "shins_cross": false,
+     "far_boot_pct": 71.1,
+     "far": "L"
+    },
+    "f08": {
+     "shins_cross": false,
+     "far_boot_pct": 81.4,
+     "far": "L"
+    },
+    "f09": {
+     "shins_cross": false,
+     "far_boot_pct": 91.4,
+     "far": "L"
+    },
+    "f10": {
+     "shins_cross": false,
+     "far_boot_pct": 97.8,
+     "far": "L"
+    },
+    "f11": {
+     "shins_cross": false,
+     "far_boot_pct": 59.1,
+     "far": "L"
+    }
+   },
+   "cross_frames": [],
+   "far_boot_min": 59.1,
+   "far_boot_min_frame": "f11",
+   "contact_angle_f00_f06": [
+    93.3,
+    4.1
+   ]
+  },
+  "foot_w 1.8": {
+   "frames": {
+    "f00": {
+     "shins_cross": false,
+     "far_boot_pct": 67.2,
+     "far": "L"
+    },
+    "f01": {
+     "shins_cross": false,
+     "far_boot_pct": 63.8,
+     "far": "L"
+    },
+    "f02": {
+     "shins_cross": false,
+     "far_boot_pct": 70.7,
+     "far": "L"
+    },
+    "f03": {
+     "shins_cross": false,
+     "far_boot_pct": 87.0,
+     "far": "L"
+    },
+    "f04": {
+     "shins_cross": false,
+     "far_boot_pct": 66.1,
+     "far": "L"
+    },
+    "f05": {
+     "shins_cross": false,
+     "far_boot_pct": 64.4,
+     "far": "L"
+    },
+    "f06": {
+     "shins_cross": false,
+     "far_boot_pct": 67.2,
+     "far": "L"
+    },
+    "f07": {
+     "shins_cross": false,
+     "far_boot_pct": 70.8,
+     "far": "L"
+    },
+    "f08": {
+     "shins_cross": false,
+     "far_boot_pct": 80.4,
+     "far": "L"
+    },
+    "f09": {
+     "shins_cross": false,
+     "far_boot_pct": 90.1,
+     "far": "L"
+    },
+    "f10": {
+     "shins_cross": false,
+     "far_boot_pct": 97.7,
+     "far": "L"
+    },
+    "f11": {
+     "shins_cross": false,
+     "far_boot_pct": 63.7,
+     "far": "L"
+    }
+   },
+   "cross_frames": [],
+   "far_boot_min": 63.7,
+   "far_boot_min_frame": "f11",
+   "contact_angle_f00_f06": [
+    94.6,
+    3.6
+   ]
+  },
+  "foot_w 0.3, hip_w 0.6": {
+   "frames": {
+    "f00": {
+     "shins_cross": false,
+     "far_boot_pct": 78.2,
+     "far": "L"
+    },
+    "f01": {
+     "shins_cross": false,
+     "far_boot_pct": 61.7,
+     "far": "L"
+    },
+    "f02": {
+     "shins_cross": false,
+     "far_boot_pct": 47.4,
+     "far": "L"
+    },
+    "f03": {
+     "shins_cross": false,
+     "far_boot_pct": 22.7,
+     "far": "L"
+    },
+    "f04": {
+     "shins_cross": false,
+     "far_boot_pct": 89.1,
+     "far": "R"
+    },
+    "f05": {
+     "shins_cross": false,
+     "far_boot_pct": 87.8,
+     "far": "R"
+    },
+    "f06": {
+     "shins_cross": false,
+     "far_boot_pct": 77.4,
+     "far": "R"
+    },
+    "f07": {
+     "shins_cross": false,
+     "far_boot_pct": 70.9,
+     "far": "R"
+    },
+    "f08": {
+     "shins_cross": false,
+     "far_boot_pct": 71.5,
+     "far": "R"
+    },
+    "f09": {
+     "shins_cross": false,
+     "far_boot_pct": 76.7,
+     "far": "R"
+    },
+    "f10": {
+     "shins_cross": false,
+     "far_boot_pct": 15.3,
+     "far": "L"
+    },
+    "f11": {
+     "shins_cross": false,
+     "far_boot_pct": 82.6,
+     "far": "L"
+    }
+   },
+   "cross_frames": [],
+   "far_boot_min": 15.3,
+   "far_boot_min_frame": "f10",
+   "contact_angle_f00_f06": [
+    43.5,
+    26.6
+   ]
+  },
+  "foot_w 0.5, hip_w 0.6": {
+   "frames": {
+    "f00": {
+     "shins_cross": false,
+     "far_boot_pct": 69.3,
+     "far": "L"
+    },
+    "f01": {
+     "shins_cross": false,
+     "far_boot_pct": 54.8,
+     "far": "L"
+    },
+    "f02": {
+     "shins_cross": false,
+     "far_boot_pct": 35.9,
+     "far": "L"
+    },
+    "f03": {
+     "shins_cross": false,
+     "far_boot_pct": 35.3,
+     "far": "L"
+    },
+    "f04": {
+     "shins_cross": false,
+     "far_boot_pct": 92.7,
+     "far": "R"
+    },
+    "f05": {
+     "shins_cross": false,
+     "far_boot_pct": 86.0,
+     "far": "R"
+    },
+    "f06": {
+     "shins_cross": false,
+     "far_boot_pct": 73.9,
+     "far": "R"
+    },
+    "f07": {
+     "shins_cross": false,
+     "far_boot_pct": 67.5,
+     "far": "R"
+    },
+    "f08": {
+     "shins_cross": false,
+     "far_boot_pct": 67.4,
+     "far": "R"
+    },
+    "f09": {
+     "shins_cross": false,
+     "far_boot_pct": 91.9,
+     "far": "L"
+    },
+    "f10": {
+     "shins_cross": true,
+     "far_boot_pct": 11.5,
+     "far": "L"
+    },
+    "f11": {
+     "shins_cross": false,
+     "far_boot_pct": 66.2,
+     "far": "L"
+    }
+   },
+   "cross_frames": [
+    "f10"
+   ],
+   "far_boot_min": 11.5,
+   "far_boot_min_frame": "f10",
+   "contact_angle_f00_f06": [
+    50.3,
+    22.1
+   ]
+  },
+  "foot_w 0.9, hip_w 0.6": {
+   "frames": {
+    "f00": {
+     "shins_cross": false,
+     "far_boot_pct": 29.6,
+     "far": "L"
+    },
+    "f01": {
+     "shins_cross": false,
+     "far_boot_pct": 24.0,
+     "far": "L"
+    },
+    "f02": {
+     "shins_cross": true,
+     "far_boot_pct": 21.3,
+     "far": "L"
+    },
+    "f03": {
+     "shins_cross": false,
+     "far_boot_pct": 79.4,
+     "far": "L"
+    },
+    "f04": {
+     "shins_cross": false,
+     "far_boot_pct": 91.5,
+     "far": "L"
+    },
+    "f05": {
+     "shins_cross": false,
+     "far_boot_pct": 82.8,
+     "far": "R"
+    },
+    "f06": {
+     "shins_cross": false,
+     "far_boot_pct": 70.1,
+     "far": "R"
+    },
+    "f07": {
+     "shins_cross": false,
+     "far_boot_pct": 59.1,
+     "far": "R"
+    },
+    "f08": {
+     "shins_cross": false,
+     "far_boot_pct": 65.5,
+     "far": "R"
+    },
+    "f09": {
+     "shins_cross": false,
+     "far_boot_pct": 98.1,
+     "far": "L"
+    },
+    "f10": {
+     "shins_cross": false,
+     "far_boot_pct": 47.8,
+     "far": "L"
+    },
+    "f11": {
+     "shins_cross": false,
+     "far_boot_pct": 23.8,
+     "far": "L"
+    }
+   },
+   "cross_frames": [
+    "f02"
+   ],
+   "far_boot_min": 21.3,
+   "far_boot_min_frame": "f02",
+   "contact_angle_f00_f06": [
+    64.9,
+    14.8
+   ]
+  }
+ }
+}
