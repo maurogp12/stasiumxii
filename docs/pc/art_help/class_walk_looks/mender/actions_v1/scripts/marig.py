@@ -364,6 +364,8 @@ def staff_M(F, act, i, arm):
     g = apm(arm['Mf'], g_t); v0 = s * (t_t - g_t)
     b0 = jt(F, 'idle', 0, 'staff_top') - jt(F, 'idle', 0, 'staff_grip'); bi = jt(F, act, i, 'staff_top') - jt(F, act, i, 'staff_grip')
     a = turn(ang(v0), ang(b0), ang(bi), arm['w'])          # screen rotation of the painted staff about the fist
+    if act == 'hit':        # knocked back, the staff stays in the fist and tilts with the recoil (it does not fly across him)
+        a = HIT_STAFF[F] * math.radians(torso_M(F, act, i)[1]['phi'])
     if act == 'skill':      # the heal: the staff is lifted near-upright, its top tipped toward the facing (it never sweeps)
         a = arm['w'] * math.radians(CAST_TILT[F])
     def M_of(a_): L = R2(a_) * s; return np.hstack([L, (g - L @ g_t)[:, None]])
@@ -371,14 +373,32 @@ def staff_M(F, act, i, arm):
     def ok(M_):
         P = np.array([apm(M_, p) for p in hull(f'staff_{F}')])
         return P[:, 1].min() >= 2 and P[:, 1].max() <= FLOOR and P[:, 0].min() >= 2 and P[:, 0].max() <= CW - 3
+    slide = 0.0
     if not ok(M):
-        # the staff is rigid in the fist: if the crook would leave the cell top it tips toward the facing (screen right for
-        # S and E: + first); if the butt would go through the floor it tips the least way that clears it
+        # the butt would go through the floor: a near-upright staff slides up through the fist (the butt stays on the
+        # ground, the hand slides on the shaft), at most SLIDE_MAX px
+        P = np.array([apm(M, p) for p in hull(f'staff_{F}')]); u = unit(apm(M, t_t) - g)
+        over_ = P[:, 1].max() - FLOOR
+        if over_ > 0 and -u[1] > 0.6:
+            d = min(over_ / -u[1], SLIDE_MAX); M2 = M.copy(); M2[:, 2] += u * d
+            if ok(M2) or d >= SLIDE_MAX: M = M2; slide = d
+    if not ok(M):
+        # otherwise (or still out): the staff is rigid in the fist and tips the least way that keeps it in the cell; if the
+        # crook would leave the cell top it tips toward the facing (screen right for S and E: + first)
+        base = M
         for dd in np.radians(np.arange(1, 121, 1)):
-            hit = next((x for x in (a + dd, a - dd) if ok(M_of(x))), None)
-            if hit is not None: corr = math.degrees(hit - a); a = hit; M = M_of(a); break
-    return M, dict(grip=g.tolist(), top=apm(M, t_t).tolist(), deg=math.degrees(a), top_corr_deg=round(corr, 1))
+            hit = next((x for x in (a + dd, a - dd) if ok(_slid(M_of(x), base, M_of(a)))), None)
+            if hit is not None: corr = math.degrees(hit - a); a = hit; M = _slid(M_of(a), base, M_of(a)); break
+    return M, dict(grip=g.tolist(), top=apm(M, t_t).tolist(), deg=math.degrees(a), top_corr_deg=round(corr, 1), slide_px=round(slide, 1))
 
+def _slid(M, Mslid, Mbase):
+    """carry a slide already applied (Mslid vs Mbase translation) over to a re-rotated staff map M."""
+    M = M.copy(); M[:, 2] += Mslid[:, 2] - Mbase[:, 2]; return M
+
+SLIDE_MAX = 40.0
+# hit: the staff's tilt per degree of torso recoil. S: with the body. E: the fist is pulled back toward the camera ~40 px,
+# so the planted staff leans away (top outward) and the lantern stays clear of his shoulder
+HIT_STAFF = {'S': 0.8, 'E': -0.6}
 FLOOR = 356          # lowest cell row a held staff may reach (the ground under the planted boots is row ~350-358)
 PEND = dict(g=4.9, damp=0.45, sub=4, max=40.0)
 _LA = {}
