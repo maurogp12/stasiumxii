@@ -46,7 +46,11 @@ var _water_rows: Dictionary = {}
 var _void_ranks: Dictionary = {}
 ## Visual family for the Eastmarch beach kit, keyed by local cell.
 var _beach: Dictionary = {}
+## How far a void cell sits past the real shore. Breakers use this.
+var _skirt_dist: Dictionary = {}
 const BEACH_REACH := 4
+## Painted sea past the last water cell, so the view edge is not a flat fill.
+const SEA_SKIRT := 22
 
 
 ## Ground is split into one canvas item per diagonal (x+y), z = diagonal * 10,
@@ -73,7 +77,8 @@ func setup(target: WorldZone) -> void:
 				_exit_dirs[Vector2i(int(frm["x"]), int(frm["y"]))] = dir
 	_cache_void_ranks()
 	_cache_beach()
-	var margin := blend_margin
+	_cache_sea_skirt()
+	var margin := _view_margin()
 	for d in range(-margin * 2, zone.width + zone.height - 1 + margin * 2):
 		var row := Node2D.new()
 		row.name = "Row%d" % d
@@ -226,6 +231,57 @@ func _beach_at(cell: Vector2i) -> String:
 	return ""
 
 
+func _view_margin() -> int:
+	if zone != null and zone.zone_id.begins_with("crosshaven_eastmarch"):
+		return maxi(blend_margin, SEA_SKIRT)
+	return blend_margin
+
+
+## Void cells beyond the Eastmarch shore keep the kit sea and a breaker band.
+## Other chunks stay empty there, so this does not paint over land.
+func _cache_sea_skirt() -> void:
+	_skirt_dist.clear()
+	if zone == null or not zone.zone_id.begins_with("crosshaven_eastmarch"):
+		return
+	if not zone.sample_terrain.is_valid():
+		return
+	var queue: Array[Vector2i] = []
+	var queued := {}
+	for y in zone.height:
+		for x in zone.width:
+			var cell := Vector2i(x, y)
+			if Art.terrain_seen(zone, cell) != "water":
+				continue
+			for dir in _ORTHO:
+				var nb: Vector2i = cell + dir
+				if queued.has(nb):
+					continue
+				if Art.terrain_seen(zone, nb) != "":
+					continue
+				queued[nb] = 1
+				queue.append(nb)
+	var head := 0
+	while head < queue.size():
+		var at: Vector2i = queue[head]
+		head += 1
+		var dist := int(queued[at])
+		# A shallow band every few cells keeps a breaker in the open sea.
+		# The rest stays deep kit water, so the corner is not a flat fill.
+		var surf := (dist % 7) >= 5
+		_beach[at] = "sea_shallow" if surf else "sea_deep"
+		_skirt_dist[at] = dist
+		if dist >= SEA_SKIRT:
+			continue
+		for dir in _ORTHO:
+			var next: Vector2i = at + dir
+			if queued.has(next):
+				continue
+			if Art.terrain_seen(zone, next) != "":
+				continue
+			queued[next] = dist + 1
+			queue.append(next)
+
+
 func _family_seen(cell: Vector2i) -> String:
 	var beach := _beach_at(cell)
 	if beach != "":
@@ -326,7 +382,9 @@ func _draw_beach(ci: Node2D, cell: Vector2i, family: String, steps: int) -> void
 	var center := BoardVisualSort.cell_to_local(cell, float(steps))
 	var south_tip := center + Vector2(0, Pick.HALF_H)
 	var modulate := Color.WHITE
-	if family == "sea_shallow" or family == "sea_deep":
+	# Skirt cells sit past the plane edge. Keep the kit blue; the rim lerp
+	# is only for in-chunk sea meeting the old shelf.
+	if (family == "sea_shallow" or family == "sea_deep") and not _skirt_dist.has(cell):
 		modulate = _kit_sea_modulate(cell)
 	var pick: Dictionary = Kit.pick("eastmarch", family, cell, Callable(self, "_family_seen"))
 	var floor := str(pick.get("floor", ""))
@@ -361,12 +419,12 @@ func _joins_kit_sand(cell: Vector2i) -> bool:
 
 
 func _draw_row(row: Node2D, s: int) -> void:
-	var margin := blend_margin
+	var margin := _view_margin()
 	var x0 := maxi(-margin, s - (zone.height - 1 + margin))
 	var x1 := mini(zone.width - 1 + margin, s + margin)
 	for x in range(x0, x1 + 1):
 		var cell := Vector2i(x, s - x)
-		if not zone.in_bounds(cell) and Art.terrain_seen(zone, cell) == "":
+		if not zone.in_bounds(cell) and Art.terrain_seen(zone, cell) == "" and _beach_at(cell) == "":
 			continue
 		_draw_cell(row, cell)
 		if _exit_dirs.has(cell):
@@ -376,6 +434,9 @@ func _draw_row(row: Node2D, s: int) -> void:
 func _draw_cell(ci: Node2D, cell: Vector2i) -> void:
 	var terrain := Art.terrain_seen(zone, cell)
 	if terrain == "":
+		var skirt := _beach_at(cell)
+		if skirt == "sea_deep" or skirt == "sea_shallow":
+			_draw_beach(ci, cell, skirt, 0)
 		return
 	var steps := Art.height_seen(zone, cell)
 	if _north_crag(cell):

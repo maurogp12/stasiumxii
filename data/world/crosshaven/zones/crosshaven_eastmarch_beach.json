@@ -847,21 +847,6 @@
   ],
   "props": [
     {
-      "id": "crosshaven_eastmarch_beach_rowboat_1",
-      "type": "rowboat",
-      "blocks": true,
-      "origin": {
-        "x": 8,
-        "y": 2
-      },
-      "footprint": [
-        {
-          "x": 8,
-          "y": 2
-        }
-      ]
-    },
-    {
       "id": "crosshaven_eastmarch_beach_net_rack_2",
       "type": "net_rack",
       "blocks": true,
@@ -877,21 +862,6 @@
       ]
     },
     {
-      "id": "crosshaven_eastmarch_beach_fence_1_1",
-      "type": "fence",
-      "blocks": true,
-      "origin": {
-        "x": 1,
-        "y": 1
-      },
-      "footprint": [
-        {
-          "x": 1,
-          "y": 1
-        }
-      ]
-    },
-    {
       "id": "crosshaven_eastmarch_beach_net_rack_4_1",
       "type": "net_rack",
       "blocks": true,
@@ -902,36 +872,6 @@
       "footprint": [
         {
           "x": 4,
-          "y": 1
-        }
-      ]
-    },
-    {
-      "id": "crosshaven_eastmarch_beach_fence_19_1",
-      "type": "fence",
-      "blocks": true,
-      "origin": {
-        "x": 19,
-        "y": 1
-      },
-      "footprint": [
-        {
-          "x": 19,
-          "y": 1
-        }
-      ]
-    },
-    {
-      "id": "crosshaven_eastmarch_beach_fence_21_1",
-      "type": "fence",
-      "blocks": true,
-      "origin": {
-        "x": 21,
-        "y": 1
-      },
-      "footprint": [
-        {
-          "x": 21,
           "y": 1
         }
       ]

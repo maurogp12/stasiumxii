@@ -243,7 +243,9 @@ func _test_all_zones(w: Node2D) -> void:
 		w._load_zone(id, z.spawn)
 		check(w.zone.zone_id == id, "zone %s loads" % id)
 		check(w.props_root.get_child_count() == z.props.size(), "zone %s prop count" % id)
-		var margin := int(w.ground.get("blend_margin"))
+		# Eastmarch draws a sea skirt past the chunk, so the row span follows
+		# that view margin rather than the seam blend alone.
+		var margin := int(w.ground.call("_view_margin"))
 		check(w.ground.get_child_count() == z.width + z.height - 1 + margin * 4, "zone %s ground rows" % id)
 		check(w.walker.cell == z.spawn, "zone %s player at spawn" % id)
 	w._load_zone(w.map.start_zone, w.map.start_cell)

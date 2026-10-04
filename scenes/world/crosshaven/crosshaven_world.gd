@@ -36,7 +36,8 @@ const NpcDialogue := preload("res://scenes/world/ui/npc_dialogue.gd")
 const MissionTracker := preload("res://scenes/world/ui/mission_tracker.gd")
 const MissionLog := preload("res://scenes/world/ui/mission_log.gd")
 
-const SEA := Color("1e6e96")
+## Kit deep sea, so the margin past Eastmarch matches the painted tiles.
+const SEA := Color("246e9e")
 const ZOOM_MIN := 1.0
 const ZOOM_MAX := 2.5
 const FADE_SECONDS := 0.35
