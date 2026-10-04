@@ -4,6 +4,7 @@ PC game only. Never merged into `main` or `mobile` by an agent; only Mauro merge
 
 | Date | What | Why / who asked | Branch | Commit |
 |---|---|---|---|---|
+| 4 Oct 2026 | Class walk index: Kestrel v1 rejected by Mauro. The legs-only sheet and Mauro's eye are the gate; scores alone do not pass. Docs only, no game change. | Claude on #252, [5981174258](https://github.com/maurogp12/stasiumxii/pull/252#issuecomment-5981174258): Mauro rejected Kestrel v1 ("Bad", "the legs") | `art/ironjaw-walk-help` | 4deac400 |
 | 4 Oct 2026 | Kestrel v1 painted walk at `docs/pc/art_help/class_walk_looks/kestrel/v1/`, and the class walk index updated in the same commit. Docs only, no game change. | Scenario Art: Kestrel v1 for Claude to score. Luca: update the class walk index with each package | `art/ironjaw-walk-help` | d0bb88eb |
 | 4 Oct 2026 | Class walk index at `docs/pc/art_help/class_walk_looks/README.md` (docs only, no game change). | Luca: document the class walk work so later changes and other teams can find it | `art/ironjaw-walk-help` | 520fe32f |
 | 4 Oct 2026 | Art help package: Ironjaw walk + look reference for Claude (docs only, no game change). | Luca: Ironjaw walk and look reference for Claude | `art/ironjaw-walk-help` (from `pc/combat-look`) | 655eea3 |
