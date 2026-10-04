@@ -177,7 +177,7 @@ def main():
     tw = 300; th = max(t.height for r in rows for t, _ in r); txt_h = 8 * 18 + 10
     W = 5 * (tw + 10) + 10; Hs = 40 + len(rows) * (th + txt_h + 20)
     sheet = Image.new('RGB', (W, Hs), (255, 255, 255)); d = ImageDraw.Draw(sheet)
-    d.text((10, 10), 'Gloam v1 (Claude) legs on blockout v3 (ffbfe3a9): one continuous painted leg (hip -> sole) per side, mesh-skinned on 3 bones. '
+    d.text((10, 10), 'Gloam v1 (Claude) legs on blockout v3.1 (S, 42d8d7cc) / v3 (E, ffbfe3a9): one continuous painted leg (hip -> sole) per side, mesh-skinned on 3 bones. '
            'Solid = this tile belt / knee (boot top) / sole; dashed = target lines at the same % of height.', fill='black', font=FT)
     y = 40
     for r in rows:
@@ -201,7 +201,7 @@ def main():
     for F, strip in strips.items():
         sw = 380; sh_ = max(t.height for _, t in strip)
         S3 = Image.new('RGB', (len(strip) * (sw + 10) + 10, 40 + sh_ + 32), (255, 255, 255)); d = ImageDraw.Draw(S3)
-        d.text((10, 10), f'Gloam {F} (blockout v3): approved target | walk f00 | f03 | f06 | f09, same figure height (hood -> sole).', fill='black', font=FT)
+        d.text((10, 10), f'Gloam {F} (blockout {"v3.1" if F == "S" else "v3"}): approved target | walk f00 | f03 | f06 | f09, same figure height (hood -> sole).', fill='black', font=FT)
         for c, (lab, t) in enumerate(strip):
             x = 10 + c * (sw + 10); d.text((x, 40), lab, fill='black', font=FB); S3.paste(t, (x, 62))
         S3.save(os.path.join(OUT, f'strip_{F}_target_f00_f03_f06_f09.png'))

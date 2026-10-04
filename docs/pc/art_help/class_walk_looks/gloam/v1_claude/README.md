@@ -8,7 +8,9 @@ The method is the one used for the locked Kestrel walk (`kestrel/v3_claude/`). T
 - **Roots and feet.** The legs hang from the target's belt hips. The boot is pinned to the blockout heel and toe.
 - **Upper body.** The hood, eyes, torso, arms, daggers and cloak are the approved target itself. They are placed with one uniform scale and follow the blockout pelvis and bob.
 
-**Blockout.** Gloam v3, `ffbfe3a9` on `claude/class-walk-blockouts`. Gloam is unchanged at that branch's head. `joints_512.json`, `clay/` and `id/` come from there.
+**Blockout.** On `claude/class-walk-blockouts`:
+- **S** uses Gloam **v3.1** (`42d8d7cc`), the wider S foot track (`foot_w` 1.5) that Mauro picked on 4 Oct.
+- **E** uses Gloam v3 (`ffbfe3a9`), which v3.1 leaves unchanged.
 
 **Targets.** `targets/gloam_rp_{S,E}_f00.jpg` and their alphas (approved, `c9a85564` / `c7a44f40`).
 
@@ -60,7 +62,7 @@ The method is the one used for the locked Kestrel walk (`kestrel/v3_claude/`). T
 
 | | look | ssim upper / lower | iou | palette | height vs idle | bob err | motion | sole_err per frame (px) |
 |---|---|---|---|---|---|---|---|---|
-| S | **88.7** (PASS) | 0.992 / 0.540 | 0.812 | 0.980 | 1.000 | 0 | 83.3 | 0.94 0.28 0.78 0.41 0.23 0.10 1.94 1.02 1.35 0.27 4.72 2.91 |
+| S | **88.6** (PASS) | 0.989 / 0.542 | 0.810 | 0.980 | 1.000 | 0 | 83.3 | 0.42 0.38 0.09 1.04 0.22 0.54 1.72 0.33 0.17 0.45 5.57 10.26 |
 | E | **87.8** (PASS) | 0.975 / 0.574 | 0.775 | 0.979 | 1.000 | 0 | 91.7 | 3.41 1.02 1.77 1.44 1.40 0.86 1.33 1.24 1.36 1.29 1.58 0.10 |
 
 Motion misses:
@@ -76,13 +78,13 @@ The real skate on planted heels and toes is ≤ 0.56 px (`legs_sheet.json` → `
 
   | | thigh/shoulder | boot/shoulder | belt→sole | knee line |
   |---|---|---|---|---|
-  | S | −0.8 to +1.2% | −1.7 to +0.5% | −0.7 to +1.6 pts | −1.7 to +0.9 pts |
+  | S | −0.8 to +0.9% | −1.7 to +0.8% | −0.8 to +2.0 pts | −1.5 to +2.3 pts |
   | E | −0.7 to +0.7% | −0.9 to +1.5% | −1.6 to +1.2 pts | −1.5 to +1.3 pts |
 
 - **Crotch.** 0 background px between the thighs above the knee on every S and E frame.
 - **Swing thigh.** At most 25.0° forward on every frame (S: f02–f04 and f09–f11 are clamped to 25).
 - **Skate.** S 0.56 px max, E 0.53 px max.
-- **Stance.** Planted legs bend 7°, except the late-stance / toe-off frames S f04 (23°), f05 (42°) and f11 (33°), where the clay hip-to-foot distance is below 0.90 of the painted leg.
+- **Stance.** Planted legs bend 7° on every S and E frame, and 9.5° at S f06 (`stance_kmin` 0.82 on S: the late-stance legs foreshorten along the bone, down to k 0.82, instead of bending).
 - **Facing.**
   - S: the hood and the two violet eyes face down-right, toward the travel direction, on every frame.
   - E: the back of the hood faces up-right.
@@ -92,7 +94,24 @@ The real skate on planted heels and toes is ≤ 0.56 px (`legs_sheet.json` → `
 
 | f00 | f01 | f02 | f03 | f04 | f05 | f06 | f07 | f08 | f09 | f10 | f11 |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| **41.4** | **46.5** | **47.0** | 73.5 | 98.9 | 100 | 100 | 99.9 | 100 | 92.9 | 65.3 | **23.0** |
+| 68.9 | 69.3 | 68.6 | 84.2 | 100 | 100 | 100 | 100 | 100 | 99.5 | 88.3 | 67.0 |
+
+## Review round 2: S on blockout v3.1 (Mauro's pick, foot_w 1.5)
+
+- **Blockout.** Gloam v3.1 (`42d8d7cc`) changes S only (clay, ID and the `idle_S` / `walk_S` joints). E stays on v3.
+- **S settings** (`scripts/gcfg.json`):
+  - `stance_kmin` 0.82. Late stance foreshortens along the bone instead of bending, so planted legs sit at 7°, with 9.5° at f06.
+  - Swing clearance keys (swing frames only, so nothing skates):
+    - L f02 (+6, +6): the foot comes through a little early.
+    - R f10 (−3, −3) and f11 (−6, −6): the swing foot trails slightly before heel strike, which uncovers the planted far boot.
+  - `speck_px` 20: cloak specks up to 20 cell px are filled.
+- **Shins.** They no longer cross below the knee on any S frame.
+- **Far boot.** At least 67% visible on every S frame (table above).
+- **Skate.** At most 0.56 px.
+- **Motion cost.** The R keys move the metric's support sole on f10 and f11 (5.6 and 10.3 px), because the metric picks the lower foot (the swing foot) as support there. Motion stays 83.3.
+- **What is left.**
+  - The S track is wider than Kestrel's approved one: at contact the feet sit nearly side by side at f06/f09. This is the option Mauro chose.
+  - One painted cloak hole (about 64 cell px, in the left cloak tatters, also present in the approved target) is kept as part of the design.
 
 ## Review round 1: E specks fixed, the S track is still open
 
@@ -121,7 +140,7 @@ The real skate on planted heels and toes is ≤ 0.56 px (`legs_sheet.json` → `
 
 ## Open issues (honest list)
 
-1. **The far boot is below 60% on S f00, f01, f02 and f11.** The blockout's S plants cause this:
+1. **(Round 1, fixed in round 2 on v3.1.) The far boot was below 60% on S f00, f01, f02 and f11.** The blockout's S plants cause this:
    - The trailing L foot is planted, or has just left the ground, directly behind the near R shin. The L leg crosses behind R below the knee (an X).
    - The clay itself shows only 35%, 36%, 28% and 25% of the L boot on those frames (ID map: L boot pixels against the fully visible L boot at f08).
    - f00 and f01 have both feet planted, so nothing can move without skating.
@@ -130,8 +149,8 @@ The real skate on planted heels and toes is ≤ 0.56 px (`legs_sheet.json` → `
    - The S track is not too wide; the legs do not splay. It is narrow enough that the feet stack. Fixing it needs a blockout change to the S foot plants (the Kestrel v3.2-style track fix), so I have not hacked the foot offsets.
 2. **The painted leg length does not match the clay.** S legs are long and E legs are short against the clay. Scales of 0.362 (S) and 0.354 (E) with a 6 px lower body fit them, but this means:
    - E stance k runs up to 1.10, the stretch limit (f04, and 1.08–1.09 at f02, f03 and f10).
-   - S late-stance frames bend up to 42°.
-3. **Legs cross below the knee in S f00–f03 and f10–f11, as in the clay.** The depth order follows the blockout ID maps.
+   - S late-stance legs are compressed along the bone down to k 0.82 (f06, f11) to stay straight.
+3. **(Fixed in round 2 on v3.1.) Legs crossed below the knee in S f00–f03 and f10–f11 on the v3 track.** The depth order follows the blockout ID maps.
 4. **The upper body is rigid.** The arms, daggers and cloak do not swing or lag. This is the same as Kestrel.
 5. **One source leg per side.** Both legs are the target's one fully visible leg; the far copy is 10% darker. Toe-off and swing boots are the painted contact boot rotated, not separately painted heel-up boots.
 6. **Leg axis against the target's back leg.** The target's back leg is posed far back: −21° in S and −30° in E, with the foot up in toe-off. The walk's back leg sits 12–34° more upright. It follows the clay plants, and no axis rule was set for Gloam.
@@ -150,5 +169,5 @@ python3 boot_vis.py S ../feet_S_far_boot.png
 python3 s_checks.py S ../frames ../s_checks_S.json; python3 s_checks.py E ../frames ../s_checks_E.json
 ```
 
-- **Blockout files.** The blockout is extracted from `ffbfe3a9` with `git archive` into `$GBLOCK` (default `/tmp/gloam_blockout_v3`) on the first run, so fetch `claude/class-walk-blockouts` first.
+- **Blockout files.** The blockouts are extracted with `git archive` on the first run: S from `42d8d7cc` into `$GBLOCK_S` (default `/tmp/gloam_blockout_v31`) and E from `ffbfe3a9` into `$GBLOCK_E` (default `/tmp/gloam_blockout_v3`). Fetch `claude/class-walk-blockouts` first.
 - **Dependencies.** numpy, pillow, opencv-python and scikit-image.
