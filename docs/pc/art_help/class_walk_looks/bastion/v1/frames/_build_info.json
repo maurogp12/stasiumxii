@@ -1,0 +1,1370 @@
+{
+ "S_f00": {
+  "meta": {
+   "belt_swing": 3.63,
+   "L_upper_k": 1.1,
+   "L_fore_k": 1.1,
+   "R_thigh": [
+    "thigh_fwd",
+    1.1
+   ],
+   "R_greave_k": 1.1,
+   "R_boot_anchor": "heel",
+   "L_thigh": [
+    "thigh_down",
+    0.987
+   ],
+   "L_greave_k": 0.921,
+   "L_boot_anchor": "toe",
+   "helm_tilt": 0.0,
+   "cape_deg": [
+    -0.0,
+    -0.0
+   ],
+   "arm": [
+    -0.0,
+    0.0
+   ],
+   "mace_head_xy": [
+    139.12200000000004,
+    319.79800000000006
+   ],
+   "mace_goal_xy": [
+    139.122,
+    319.798
+   ],
+   "order": [
+    "phelm",
+    "R_pauld",
+    "arm",
+    "shield",
+    "trunk",
+    "L_fore",
+    "L_elbowcop",
+    "L_upper",
+    "belt",
+    "R_boot",
+    "R_kneecop",
+    "R_greave",
+    "R_thigh",
+    "L_boot",
+    "L_kneecop",
+    "L_greave",
+    "L_thigh",
+    "cape"
+   ]
+  },
+  "clean": {
+   "dropped_small_px": 40,
+   "edge_fix_px": 260
+  }
+ },
+ "S_f01": {
+  "meta": {
+   "belt_swing": 2.71,
+   "L_upper_k": 1.1,
+   "L_fore_k": 1.1,
+   "R_thigh": [
+    "thigh_fwd",
+    1.1
+   ],
+   "R_greave_k": 1.086,
+   "R_boot_anchor": "heel",
+   "L_thigh": [
+    "thigh_down",
+    0.984
+   ],
+   "L_greave_k": 0.9,
+   "L_boot_anchor": "toe",
+   "helm_tilt": -0.04,
+   "cape_deg": [
+    -0.75,
+    -2.07
+   ],
+   "arm": [
+    4.2,
+    -7.45
+   ],
+   "mace_head_xy": [
+    140.81578229764088,
+    318.68224643765154
+   ],
+   "mace_goal_xy": [
+    140.81578229764088,
+    318.68224643765154
+   ],
+   "order": [
+    "phelm",
+    "R_pauld",
+    "arm",
+    "shield",
+    "trunk",
+    "L_fore",
+    "L_elbowcop",
+    "L_upper",
+    "belt",
+    "R_boot",
+    "R_kneecop",
+    "R_greave",
+    "R_thigh",
+    "L_boot",
+    "L_kneecop",
+    "L_greave",
+    "L_thigh",
+    "cape"
+   ]
+  },
+  "clean": {
+   "dropped_small_px": 40,
+   "edge_fix_px": 215
+  }
+ },
+ "S_f02": {
+  "meta": {
+   "belt_swing": 1.23,
+   "L_upper_k": 1.1,
+   "L_fore_k": 1.1,
+   "R_thigh": [
+    "thigh_down",
+    0.992
+   ],
+   "R_greave_k": 1.066,
+   "R_boot_anchor": "heel",
+   "L_thigh": [
+    "thigh_back",
+    0.967
+   ],
+   "L_greave_k": 0.9,
+   "L_boot_anchor": "heel",
+   "helm_tilt": -0.16,
+   "cape_deg": [
+    -1.73,
+    -4.64
+   ],
+   "arm": [
+    6.72,
+    -14.65
+   ],
+   "mace_head_xy": [
+    148.00217562346333,
+    315.3182927057722
+   ],
+   "mace_goal_xy": [
+    148.0021756234633,
+    315.3182927057722
+   ],
+   "order": [
+    "phelm",
+    "R_pauld",
+    "arm",
+    "shield",
+    "trunk",
+    "L_fore",
+    "L_elbowcop",
+    "L_upper",
+    "belt",
+    "R_boot",
+    "R_kneecop",
+    "R_greave",
+    "R_thigh",
+    "L_boot",
+    "L_kneecop",
+    "L_greave",
+    "L_thigh",
+    "cape"
+   ]
+  },
+  "clean": {
+   "dropped_small_px": 39,
+   "edge_fix_px": 197
+  }
+ },
+ "S_f03": {
+  "meta": {
+   "belt_swing": 0.81,
+   "L_upper_k": 1.1,
+   "L_fore_k": 1.1,
+   "R_thigh": [
+    "thigh_down",
+    0.973
+   ],
+   "R_greave_k": 1.035,
+   "R_boot_anchor": "heel",
+   "L_thigh": [
+    "thigh_down",
+    0.993
+   ],
+   "L_greave_k": 0.9,
+   "L_boot_anchor": "heel",
+   "helm_tilt": -0.31,
+   "cape_deg": [
+    -2.65,
+    -6.96
+   ],
+   "arm": [
+    11.02,
+    -25.9
+   ],
+   "mace_head_xy": [
+    158.55902112758258,
+    312.3634651569978
+   ],
+   "mace_goal_xy": [
+    158.55902112758258,
+    312.3634651569978
+   ],
+   "order": [
+    "phelm",
+    "R_pauld",
+    "arm",
+    "shield",
+    "trunk",
+    "L_fore",
+    "L_elbowcop",
+    "L_upper",
+    "belt",
+    "R_boot",
+    "R_kneecop",
+    "R_greave",
+    "R_thigh",
+    "L_boot",
+    "L_kneecop",
+    "L_greave",
+    "L_thigh",
+    "cape"
+   ]
+  },
+  "clean": {
+   "dropped_small_px": 39,
+   "edge_fix_px": 227
+  }
+ },
+ "S_f04": {
+  "meta": {
+   "belt_swing": 2.41,
+   "L_upper_k": 1.078,
+   "L_fore_k": 1.1,
+   "R_thigh": [
+    "thigh_back",
+    1.002
+   ],
+   "R_greave_k": 0.957,
+   "R_boot_anchor": "heel",
+   "L_thigh": [
+    "thigh_fwd",
+    1.1
+   ],
+   "L_greave_k": 0.908,
+   "L_boot_anchor": "heel",
+   "helm_tilt": -0.45,
+   "cape_deg": [
+    -3.29,
+    -8.51
+   ],
+   "arm": [
+    17.0,
+    -40.27
+   ],
+   "mace_head_xy": [
+    172.0044673439768,
+    311.07733236574745
+   ],
+   "mace_goal_xy": [
+    172.00446734397678,
+    311.07733236574745
+   ],
+   "order": [
+    "phelm",
+    "R_pauld",
+    "arm",
+    "shield",
+    "trunk",
+    "L_fore",
+    "L_elbowcop",
+    "L_upper",
+    "belt",
+    "R_boot",
+    "R_kneecop",
+    "R_greave",
+    "R_thigh",
+    "L_boot",
+    "L_kneecop",
+    "L_greave",
+    "L_thigh",
+    "cape"
+   ]
+  },
+  "clean": {
+   "dropped_small_px": 0,
+   "edge_fix_px": 227
+  }
+ },
+ "S_f05": {
+  "meta": {
+   "belt_swing": 2.92,
+   "L_upper_k": 1.056,
+   "L_fore_k": 1.1,
+   "R_thigh": [
+    "thigh_back",
+    1.007
+   ],
+   "R_greave_k": 0.9,
+   "R_boot_anchor": "heel",
+   "L_thigh": [
+    "thigh_fwd",
+    1.1
+   ],
+   "L_greave_k": 1.009,
+   "L_boot_anchor": "heel",
+   "helm_tilt": -0.56,
+   "cape_deg": [
+    -3.48,
+    -8.98
+   ],
+   "arm": [
+    20.38,
+    -48.99
+   ],
+   "mace_head_xy": [
+    182.31522006284186,
+    311.1194081228907
+   ],
+   "mace_goal_xy": [
+    182.31522006284183,
+    311.1194081228907
+   ],
+   "order": [
+    "phelm",
+    "R_pauld",
+    "arm",
+    "shield",
+    "trunk",
+    "L_fore",
+    "L_elbowcop",
+    "L_upper",
+    "belt",
+    "R_boot",
+    "R_kneecop",
+    "R_greave",
+    "R_thigh",
+    "L_boot",
+    "L_kneecop",
+    "L_greave",
+    "L_thigh",
+    "cape"
+   ]
+  },
+  "clean": {
+   "dropped_small_px": 0,
+   "edge_fix_px": 199
+  }
+ },
+ "S_f06": {
+  "meta": {
+   "belt_swing": 2.42,
+   "L_upper_k": 1.049,
+   "L_fore_k": 1.1,
+   "R_thigh": [
+    "thigh_down",
+    0.993
+   ],
+   "R_greave_k": 0.9,
+   "R_boot_anchor": "toe",
+   "L_thigh": [
+    "thigh_fwd",
+    1.1
+   ],
+   "L_greave_k": 1.082,
+   "L_boot_anchor": "heel",
+   "helm_tilt": -0.6,
+   "cape_deg": [
+    -3.2,
+    -8.3
+   ],
+   "arm": [
+    20.78,
+    -51.38
+   ],
+   "mace_head_xy": [
+    186.96726242290237,
+    310.95828860700567
+   ],
+   "mace_goal_xy": [
+    186.96726242290237,
+    310.9582886070057
+   ],
+   "order": [
+    "phelm",
+    "R_pauld",
+    "arm",
+    "shield",
+    "trunk",
+    "L_fore",
+    "L_elbowcop",
+    "L_upper",
+    "belt",
+    "R_boot",
+    "R_kneecop",
+    "R_greave",
+    "R_thigh",
+    "L_boot",
+    "L_kneecop",
+    "L_greave",
+    "L_thigh",
+    "cape"
+   ]
+  },
+  "clean": {
+   "dropped_small_px": 0,
+   "edge_fix_px": 198
+  }
+ },
+ "S_f07": {
+  "meta": {
+   "belt_swing": 1.76,
+   "L_upper_k": 1.056,
+   "L_fore_k": 1.1,
+   "R_thigh": [
+    "thigh_back",
+    1.023
+   ],
+   "R_greave_k": 0.9,
+   "R_boot_anchor": "toe",
+   "L_thigh": [
+    "thigh_fwd",
+    1.1
+   ],
+   "L_greave_k": 1.09,
+   "L_boot_anchor": "heel",
+   "helm_tilt": -0.56,
+   "cape_deg": [
+    -2.5,
+    -6.59
+   ],
+   "arm": [
+    19.34,
+    -47.79
+   ],
+   "mace_head_xy": [
+    184.70701165501166,
+    309.90034265734266
+   ],
+   "mace_goal_xy": [
+    184.70701165501168,
+    309.90034265734266
+   ],
+   "order": [
+    "phelm",
+    "R_pauld",
+    "arm",
+    "shield",
+    "trunk",
+    "L_fore",
+    "L_elbowcop",
+    "L_upper",
+    "belt",
+    "R_boot",
+    "R_kneecop",
+    "R_greave",
+    "R_thigh",
+    "L_boot",
+    "L_kneecop",
+    "L_greave",
+    "L_thigh",
+    "cape"
+   ]
+  },
+  "clean": {
+   "dropped_small_px": 0,
+   "edge_fix_px": 204
+  }
+ },
+ "S_f08": {
+  "meta": {
+   "belt_swing": 0.78,
+   "L_upper_k": 1.078,
+   "L_fore_k": 1.1,
+   "R_thigh": [
+    "thigh_back",
+    0.98
+   ],
+   "R_greave_k": 0.9,
+   "R_boot_anchor": "heel",
+   "L_thigh": [
+    "thigh_down",
+    1.001
+   ],
+   "L_greave_k": 1.1,
+   "L_boot_anchor": "heel",
+   "helm_tilt": -0.46,
+   "cape_deg": [
+    -1.55,
+    -4.17
+   ],
+   "arm": [
+    15.66,
+    -38.52
+   ],
+   "mace_head_xy": [
+    176.16090841382518,
+    309.02788013499367
+   ],
+   "mace_goal_xy": [
+    176.1609084138252,
+    309.0278801349936
+   ],
+   "order": [
+    "phelm",
+    "R_pauld",
+    "arm",
+    "shield",
+    "trunk",
+    "L_fore",
+    "L_elbowcop",
+    "L_upper",
+    "belt",
+    "R_boot",
+    "R_kneecop",
+    "R_greave",
+    "R_thigh",
+    "L_boot",
+    "L_kneecop",
+    "L_greave",
+    "L_thigh",
+    "cape"
+   ]
+  },
+  "clean": {
+   "dropped_small_px": 0,
+   "edge_fix_px": 222
+  }
+ },
+ "S_f09": {
+  "meta": {
+   "belt_swing": 0.81,
+   "L_upper_k": 1.1,
+   "L_fore_k": 1.1,
+   "R_thigh": [
+    "thigh_down",
+    0.995
+   ],
+   "R_greave_k": 0.9,
+   "R_boot_anchor": "heel",
+   "L_thigh": [
+    "thigh_back",
+    1.014
+   ],
+   "L_greave_k": 1.093,
+   "L_boot_anchor": "heel",
+   "helm_tilt": -0.31,
+   "cape_deg": [
+    -0.6,
+    -1.64
+   ],
+   "arm": [
+    11.76,
+    -26.84
+   ],
+   "mace_head_xy": [
+    163.3791106941839,
+    309.9503287992495
+   ],
+   "mace_goal_xy": [
+    163.37911069418385,
+    309.9503287992495
+   ],
+   "order": [
+    "phelm",
+    "R_pauld",
+    "arm",
+    "shield",
+    "trunk",
+    "L_fore",
+    "L_elbowcop",
+    "L_upper",
+    "belt",
+    "R_boot",
+    "R_kneecop",
+    "R_greave",
+    "R_thigh",
+    "L_boot",
+    "L_kneecop",
+    "L_greave",
+    "L_thigh",
+    "cape"
+   ]
+  },
+  "clean": {
+   "dropped_small_px": 39,
+   "edge_fix_px": 212
+  }
+ },
+ "S_f10": {
+  "meta": {
+   "belt_swing": 2.98,
+   "L_upper_k": 1.1,
+   "L_fore_k": 1.1,
+   "R_thigh": [
+    "thigh_fwd",
+    1.1
+   ],
+   "R_greave_k": 0.964,
+   "R_boot_anchor": "heel",
+   "L_thigh": [
+    "thigh_back",
+    1.009
+   ],
+   "L_greave_k": 1.037,
+   "L_boot_anchor": "heel",
+   "helm_tilt": -0.16,
+   "cape_deg": [
+    0.09,
+    0.26
+   ],
+   "arm": [
+    7.37,
+    -15.57
+   ],
+   "mace_head_xy": [
+    152.0067523466557,
+    313.0683099356515
+   ],
+   "mace_goal_xy": [
+    152.00675234665567,
+    313.0683099356515
+   ],
+   "order": [
+    "phelm",
+    "R_pauld",
+    "arm",
+    "shield",
+    "trunk",
+    "L_fore",
+    "L_elbowcop",
+    "L_upper",
+    "belt",
+    "R_boot",
+    "R_kneecop",
+    "R_greave",
+    "R_thigh",
+    "L_boot",
+    "L_kneecop",
+    "L_greave",
+    "L_thigh",
+    "cape"
+   ]
+  },
+  "clean": {
+   "dropped_small_px": 39,
+   "edge_fix_px": 222
+  }
+ },
+ "S_f11": {
+  "meta": {
+   "belt_swing": 4.01,
+   "L_upper_k": 1.1,
+   "L_fore_k": 1.1,
+   "R_thigh": [
+    "thigh_fwd",
+    1.1
+   ],
+   "R_greave_k": 1.061,
+   "R_boot_anchor": "heel",
+   "L_thigh": [
+    "thigh_back",
+    1.006
+   ],
+   "L_greave_k": 0.974,
+   "L_boot_anchor": "heel",
+   "helm_tilt": -0.04,
+   "cape_deg": [
+    0.31,
+    0.89
+   ],
+   "arm": [
+    0.82,
+    -2.8
+   ],
+   "mace_head_xy": [
+    143.2620467973091,
+    317.56535302720096
+   ],
+   "mace_goal_xy": [
+    143.26204679730915,
+    317.56535302720096
+   ],
+   "order": [
+    "phelm",
+    "R_pauld",
+    "arm",
+    "shield",
+    "trunk",
+    "L_fore",
+    "L_elbowcop",
+    "L_upper",
+    "belt",
+    "R_boot",
+    "R_kneecop",
+    "R_greave",
+    "R_thigh",
+    "L_boot",
+    "L_kneecop",
+    "L_greave",
+    "L_thigh",
+    "cape"
+   ]
+  },
+  "clean": {
+   "dropped_small_px": 39,
+   "edge_fix_px": 230
+  }
+ },
+ "E_f00": {
+  "meta": {
+   "belt_swing": 2.34,
+   "R_thigh": [
+    "thigh_down",
+    0.932
+   ],
+   "R_greave_k": 1.083,
+   "R_boot_anchor": "toe",
+   "L_thigh": [
+    "thigh_fwd",
+    1.039
+   ],
+   "L_greave_k": 1.02,
+   "L_boot_anchor": "heel",
+   "helm_tilt": 0.0,
+   "cape_low_k": 0.864,
+   "cape_deg": [
+    -0.0,
+    -0.0
+   ],
+   "arm": [
+    -0.0,
+    0.0
+   ],
+   "mace_head_xy": [
+    406.0,
+    292.73
+   ],
+   "mace_goal_xy": [
+    406.0,
+    292.73
+   ],
+   "order": [
+    "phelm",
+    "R_pauld",
+    "arm",
+    "cape",
+    "shield",
+    "tasset",
+    "trunk",
+    "R_boot",
+    "R_greave",
+    "R_thigh",
+    "L_boot",
+    "L_greave",
+    "L_thigh"
+   ]
+  },
+  "clean": {
+   "dropped_small_px": 0,
+   "edge_fix_px": 285
+  }
+ },
+ "E_f01": {
+  "meta": {
+   "belt_swing": -0.75,
+   "R_thigh": [
+    "thigh_back",
+    1.1
+   ],
+   "R_greave_k": 1.088,
+   "R_boot_anchor": "heel",
+   "L_thigh": [
+    "thigh_down",
+    0.916
+   ],
+   "L_greave_k": 1.028,
+   "L_boot_anchor": "heel",
+   "helm_tilt": -0.11,
+   "cape_low_k": 0.868,
+   "cape_deg": [
+    -0.97,
+    -2.53
+   ],
+   "arm": [
+    -8.2,
+    14.24
+   ],
+   "mace_head_xy": [
+    399.6175022093855,
+    295.0269742896991
+   ],
+   "mace_goal_xy": [
+    401.00568537815764,
+    296.70648428405127
+   ],
+   "order": [
+    "phelm",
+    "R_pauld",
+    "arm",
+    "cape",
+    "shield",
+    "tasset",
+    "trunk",
+    "R_boot",
+    "R_greave",
+    "R_thigh",
+    "L_boot",
+    "L_greave",
+    "L_thigh"
+   ]
+  },
+  "clean": {
+   "dropped_small_px": 0,
+   "edge_fix_px": 289
+  }
+ },
+ "E_f02": {
+  "meta": {
+   "belt_swing": 1.27,
+   "R_thigh": [
+    "thigh_down",
+    0.9
+   ],
+   "R_greave_k": 1.088,
+   "R_boot_anchor": "heel",
+   "L_thigh": [
+    "thigh_back",
+    1.1
+   ],
+   "L_greave_k": 1.04,
+   "L_boot_anchor": "heel",
+   "helm_tilt": -0.26,
+   "cape_low_k": 0.855,
+   "cape_deg": [
+    -1.93,
+    -5.06
+   ],
+   "arm": [
+    -5.06,
+    14.25
+   ],
+   "mace_head_xy": [
+    389.8638603204106,
+    299.8406804613609
+   ],
+   "mace_goal_xy": [
+    393.66558420974116,
+    304.9913532110092
+   ],
+   "order": [
+    "phelm",
+    "R_pauld",
+    "arm",
+    "cape",
+    "shield",
+    "tasset",
+    "trunk",
+    "R_boot",
+    "R_greave",
+    "R_thigh",
+    "L_boot",
+    "L_greave",
+    "L_thigh"
+   ]
+  },
+  "clean": {
+   "dropped_small_px": 0,
+   "edge_fix_px": 277
+  }
+ },
+ "E_f03": {
+  "meta": {
+   "belt_swing": 0.95,
+   "R_thigh": [
+    "thigh_fwd",
+    0.95
+   ],
+   "R_greave_k": 1.082,
+   "R_boot_anchor": "heel",
+   "L_thigh": [
+    "thigh_back",
+    1.1
+   ],
+   "L_greave_k": 1.067,
+   "L_boot_anchor": "heel",
+   "helm_tilt": -0.41,
+   "cape_low_k": 0.835,
+   "cape_deg": [
+    -2.61,
+    -6.88
+   ],
+   "arm": [
+    -2.61,
+    14.25
+   ],
+   "mace_head_xy": [
+    381.7655204184848,
+    306.8287301092655
+   ],
+   "mace_goal_xy": [
+    387.4049554781262,
+    315.198253968254
+   ],
+   "order": [
+    "phelm",
+    "R_pauld",
+    "arm",
+    "cape",
+    "shield",
+    "tasset",
+    "trunk",
+    "R_boot",
+    "R_greave",
+    "R_thigh",
+    "L_boot",
+    "L_greave",
+    "L_thigh"
+   ]
+  },
+  "clean": {
+   "dropped_small_px": 0,
+   "edge_fix_px": 221
+  }
+ },
+ "E_f04": {
+  "meta": {
+   "belt_swing": 0.94,
+   "R_thigh": [
+    "thigh_fwd",
+    0.901
+   ],
+   "R_greave_k": 1.051,
+   "R_boot_anchor": "heel",
+   "L_thigh": [
+    "thigh_back",
+    1.1
+   ],
+   "L_greave_k": 1.085,
+   "L_boot_anchor": "heel",
+   "helm_tilt": -0.52,
+   "cape_low_k": 0.818,
+   "cape_deg": [
+    -2.83,
+    -7.46
+   ],
+   "arm": [
+    -0.71,
+    14.25
+   ],
+   "mace_head_xy": [
+    377.16078347236385,
+    315.457503686756
+   ],
+   "mace_goal_xy": [
+    383.257792243463,
+    325.18439189189195
+   ],
+   "order": [
+    "phelm",
+    "R_pauld",
+    "arm",
+    "cape",
+    "shield",
+    "tasset",
+    "trunk",
+    "R_boot",
+    "R_greave",
+    "R_thigh",
+    "L_boot",
+    "L_greave",
+    "L_thigh"
+   ]
+  },
+  "clean": {
+   "dropped_small_px": 0,
+   "edge_fix_px": 242
+  }
+ },
+ "E_f05": {
+  "meta": {
+   "belt_swing": 1.94,
+   "R_thigh": [
+    "thigh_fwd",
+    0.9
+   ],
+   "R_greave_k": 1.021,
+   "R_boot_anchor": "heel",
+   "L_thigh": [
+    "thigh_down",
+    0.9
+   ],
+   "L_greave_k": 1.084,
+   "L_boot_anchor": "toe",
+   "helm_tilt": -0.56,
+   "cape_low_k": 0.806,
+   "cape_deg": [
+    -2.52,
+    -6.63
+   ],
+   "arm": [
+    -0.09,
+    14.25
+   ],
+   "mace_head_xy": [
+    376.2970699963707,
+    319.60697812942755
+   ],
+   "mace_goal_xy": [
+    382.5454334520873,
+    329.81943820224717
+   ],
+   "order": [
+    "phelm",
+    "R_pauld",
+    "arm",
+    "cape",
+    "shield",
+    "tasset",
+    "trunk",
+    "R_boot",
+    "R_greave",
+    "R_thigh",
+    "L_boot",
+    "L_greave",
+    "L_thigh"
+   ]
+  },
+  "clean": {
+   "dropped_small_px": 0,
+   "edge_fix_px": 235
+  }
+ },
+ "E_f06": {
+  "meta": {
+   "belt_swing": 1.9,
+   "R_thigh": [
+    "thigh_fwd",
+    0.926
+   ],
+   "R_greave_k": 1.019,
+   "R_boot_anchor": "heel",
+   "L_thigh": [
+    "thigh_down",
+    0.9
+   ],
+   "L_greave_k": 1.078,
+   "L_boot_anchor": "toe",
+   "helm_tilt": -0.52,
+   "cape_low_k": 0.821,
+   "cape_deg": [
+    -1.77,
+    -4.63
+   ],
+   "arm": [
+    -0.86,
+    14.25
+   ],
+   "mace_head_xy": [
+    379.60336868791677,
+    317.18041802226765
+   ],
+   "mace_goal_xy": [
+    385.52387811279687,
+    326.5717322834646
+   ],
+   "order": [
+    "phelm",
+    "R_pauld",
+    "arm",
+    "cape",
+    "shield",
+    "tasset",
+    "trunk",
+    "R_boot",
+    "R_greave",
+    "R_thigh",
+    "L_boot",
+    "L_greave",
+    "L_thigh"
+   ]
+  },
+  "clean": {
+   "dropped_small_px": 0,
+   "edge_fix_px": 243
+  }
+ },
+ "E_f07": {
+  "meta": {
+   "belt_swing": -0.85,
+   "R_thigh": [
+    "thigh_down",
+    0.9
+   ],
+   "R_greave_k": 1.016,
+   "R_boot_anchor": "heel",
+   "L_thigh": [
+    "thigh_back",
+    1.1
+   ],
+   "L_greave_k": 1.087,
+   "L_boot_anchor": "heel",
+   "helm_tilt": -0.41,
+   "cape_low_k": 0.845,
+   "cape_deg": [
+    -0.79,
+    -2.05
+   ],
+   "arm": [
+    -2.48,
+    14.25
+   ],
+   "mace_head_xy": [
+    386.39190228355073,
+    309.07887395008385
+   ],
+   "mace_goal_xy": [
+    391.8557491289199,
+    317.2268253968254
+   ],
+   "order": [
+    "phelm",
+    "R_pauld",
+    "arm",
+    "cape",
+    "shield",
+    "tasset",
+    "trunk",
+    "R_boot",
+    "R_greave",
+    "R_thigh",
+    "L_boot",
+    "L_greave",
+    "L_thigh"
+   ]
+  },
+  "clean": {
+   "dropped_small_px": 0,
+   "edge_fix_px": 289
+  }
+ },
+ "E_f08": {
+  "meta": {
+   "belt_swing": 1.27,
+   "R_thigh": [
+    "thigh_back",
+    1.1
+   ],
+   "R_greave_k": 1.023,
+   "R_boot_anchor": "heel",
+   "L_thigh": [
+    "thigh_down",
+    0.9
+   ],
+   "L_greave_k": 1.087,
+   "L_boot_anchor": "heel",
+   "helm_tilt": -0.26,
+   "cape_low_k": 0.871,
+   "cape_deg": [
+    0.16,
+    0.41
+   ],
+   "arm": [
+    -4.98,
+    14.25
+   ],
+   "mace_head_xy": [
+    394.64284078904814,
+    302.00295375279273
+   ],
+   "mace_goal_xy": [
+    398.5351323696303,
+    307.29132723112133
+   ],
+   "order": [
+    "phelm",
+    "R_pauld",
+    "arm",
+    "cape",
+    "shield",
+    "tasset",
+    "trunk",
+    "R_boot",
+    "R_greave",
+    "R_thigh",
+    "L_boot",
+    "L_greave",
+    "L_thigh"
+   ]
+  },
+  "clean": {
+   "dropped_small_px": 0,
+   "edge_fix_px": 274
+  }
+ },
+ "E_f09": {
+  "meta": {
+   "belt_swing": 1.15,
+   "R_thigh": [
+    "thigh_back",
+    1.1
+   ],
+   "R_greave_k": 1.053,
+   "R_boot_anchor": "heel",
+   "L_thigh": [
+    "thigh_fwd",
+    0.978
+   ],
+   "L_greave_k": 1.077,
+   "L_boot_anchor": "heel",
+   "helm_tilt": -0.11,
+   "cape_low_k": 0.895,
+   "cape_deg": [
+    0.82,
+    2.1
+   ],
+   "arm": [
+    -8.23,
+    14.24
+   ],
+   "mace_head_xy": [
+    403.6862495495351,
+    296.9703425211061
+   ],
+   "mace_goal_xy": [
+    405.1543377825843,
+    298.7449358226371
+   ],
+   "order": [
+    "phelm",
+    "R_pauld",
+    "arm",
+    "cape",
+    "shield",
+    "tasset",
+    "trunk",
+    "R_boot",
+    "R_greave",
+    "R_thigh",
+    "L_boot",
+    "L_greave",
+    "L_thigh"
+   ]
+  },
+  "clean": {
+   "dropped_small_px": 0,
+   "edge_fix_px": 293
+  }
+ },
+ "E_f10": {
+  "meta": {
+   "belt_swing": 1.31,
+   "R_thigh": [
+    "thigh_back",
+    1.1
+   ],
+   "R_greave_k": 1.078,
+   "R_boot_anchor": "heel",
+   "L_thigh": [
+    "thigh_fwd",
+    0.984
+   ],
+   "L_greave_k": 1.039,
+   "L_boot_anchor": "heel",
+   "helm_tilt": 0.0,
+   "cape_low_k": 0.883,
+   "cape_deg": [
+    1.03,
+    2.63
+   ],
+   "arm": [
+    -1.3,
+    1.7
+   ],
+   "mace_head_xy": [
+    408.28023656278236,
+    293.852800925926
+   ],
+   "mace_goal_xy": [
+    408.2802365627823,
+    293.852800925926
+   ],
+   "order": [
+    "phelm",
+    "R_pauld",
+    "arm",
+    "cape",
+    "shield",
+    "tasset",
+    "trunk",
+    "R_boot",
+    "R_greave",
+    "R_thigh",
+    "L_boot",
+    "L_greave",
+    "L_thigh"
+   ]
+  },
+  "clean": {
+   "dropped_small_px": 0,
+   "edge_fix_px": 315
+  }
+ },
+ "E_f11": {
+  "meta": {
+   "belt_swing": 2.46,
+   "R_thigh": [
+    "thigh_down",
+    0.921
+   ],
+   "R_greave_k": 1.087,
+   "R_boot_anchor": "toe",
+   "L_thigh": [
+    "thigh_fwd",
+    1.006
+   ],
+   "L_greave_k": 1.011,
+   "L_boot_anchor": "heel",
+   "helm_tilt": 0.04,
+   "cape_low_k": 0.863,
+   "cape_deg": [
+    0.73,
+    1.87
+   ],
+   "arm": [
+    4.51,
+    -7.31
+   ],
+   "mace_head_xy": [
+    408.31800378968205,
+    292.39762342135475
+   ],
+   "mace_goal_xy": [
+    408.318003789682,
+    292.39762342135475
+   ],
+   "order": [
+    "phelm",
+    "R_pauld",
+    "arm",
+    "cape",
+    "shield",
+    "tasset",
+    "trunk",
+    "R_boot",
+    "R_greave",
+    "R_thigh",
+    "L_boot",
+    "L_greave",
+    "L_thigh"
+   ]
+  },
+  "clean": {
+   "dropped_small_px": 0,
+   "edge_fix_px": 289
+  }
+ }
+}
