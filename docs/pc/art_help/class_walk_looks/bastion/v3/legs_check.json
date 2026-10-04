@@ -1,0 +1,120 @@
+{
+ "S": {
+  "target_len_cell": 158.3,
+  "f00": {
+   "belt_row": 200.4,
+   "sole_row": 359,
+   "len": 158.6,
+   "pct": 100.2,
+   "lowest_leg": "R",
+   "hip_offset": 3.6,
+   "len_from_own_hip_belt": 155.0,
+   "target_len_from_hip_belt": 154.7,
+   "pct_own_hip": 100.2,
+   "leg_visible_px": 4752,
+   "per_leg": {
+    "R": {
+     "sole_row": 359,
+     "len": 155.0,
+     "pct": 100.2,
+     "clay_hip_ankle": 139.8
+    },
+    "L": {
+     "sole_row": 322,
+     "len": 118.0,
+     "pct": 76.3,
+     "clay_hip_ankle": 98.5
+    }
+   },
+   "straight_leg": "R",
+   "pct_straight_leg": 100.2
+  },
+  "f06": {
+   "belt_row": 200.4,
+   "sole_row": 345,
+   "len": 144.6,
+   "pct": 91.3,
+   "lowest_leg": "L",
+   "hip_offset": 3.6,
+   "len_from_own_hip_belt": 141.0,
+   "target_len_from_hip_belt": 154.7,
+   "pct_own_hip": 91.1,
+   "leg_visible_px": 5288,
+   "per_leg": {
+    "R": {
+     "sole_row": 341,
+     "len": 137.0,
+     "pct": 88.6,
+     "clay_hip_ankle": 111.6
+    },
+    "L": {
+     "sole_row": 345,
+     "len": 141.0,
+     "pct": 91.1,
+     "clay_hip_ankle": 122.5
+    }
+   },
+   "straight_leg": "L",
+   "pct_straight_leg": 91.1
+  }
+ },
+ "E": {
+  "target_len_cell": 154.4,
+  "f00": {
+   "belt_row": 189.9,
+   "sole_row": 347,
+   "len": 157.1,
+   "pct": 101.7,
+   "lowest_leg": "R",
+   "hip_offset": -4.2,
+   "len_from_own_hip_belt": 161.3,
+   "target_len_from_hip_belt": 158.6,
+   "pct_own_hip": 101.7,
+   "leg_visible_px": 5369,
+   "per_leg": {
+    "R": {
+     "sole_row": 347,
+     "len": 161.3,
+     "pct": 101.7,
+     "clay_hip_ankle": 135.5
+    },
+    "L": {
+     "sole_row": 319,
+     "len": 133.3,
+     "pct": 84.0,
+     "clay_hip_ankle": 111.5
+    }
+   },
+   "straight_leg": "R",
+   "pct_straight_leg": 101.7
+  },
+  "f06": {
+   "belt_row": 191.9,
+   "sole_row": 336,
+   "len": 144.1,
+   "pct": 93.3,
+   "lowest_leg": "R",
+   "hip_offset": -4.2,
+   "len_from_own_hip_belt": 148.3,
+   "target_len_from_hip_belt": 158.6,
+   "pct_own_hip": 93.5,
+   "leg_visible_px": 4842,
+   "per_leg": {
+    "R": {
+     "sole_row": 336,
+     "len": 148.3,
+     "pct": 93.5,
+     "clay_hip_ankle": 126.1
+    },
+    "L": {
+     "sole_row": 332,
+     "len": 144.3,
+     "pct": 90.9,
+     "clay_hip_ankle": 120.8
+    }
+   },
+   "straight_leg": "R",
+   "pct_straight_leg": 93.5
+  }
+ }
+}

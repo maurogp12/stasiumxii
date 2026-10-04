@@ -1,0 +1,2510 @@
+{
+ "S_f00": {
+  "meta": {
+   "belt_swing": 3.42,
+   "L_upper_k": 1.1,
+   "L_fore_k": 1.1,
+   "R_thigh": [
+    "target_thigh",
+    1.086
+   ],
+   "R_greave_k": 1.086,
+   "R_boot_anchor": "heel",
+   "L_thigh": [
+    "target_thigh",
+    1.0
+   ],
+   "L_greave_k": 1.0,
+   "L_boot_anchor": "toe",
+   "legs_v3": {
+    "R": {
+     "hip": [
+      235.13,
+      200.41
+     ],
+     "knee": [
+      251.72,
+      272.88
+     ],
+     "ankle": [
+      266.31,
+      336.68
+     ],
+     "goal": [
+      266.31,
+      336.68
+     ],
+     "stretch": 1.0862950710325139,
+     "reach_short": 0.0
+    },
+    "L": {
+     "hip": [
+      278.0,
+      200.41
+     ],
+     "knee": [
+      305.46,
+      263.09
+     ],
+     "ankle": [
+      255.16,
+      296.25
+     ],
+     "goal": [
+      255.16,
+      296.25
+     ],
+     "stretch": 1.0,
+     "reach_short": 0.0
+    },
+    "belt_centre": [
+     256.56,
+     200.41
+    ],
+    "hip_mid_off": 0.0
+   },
+   "helm_tilt": 0.0,
+   "cape_deg": [
+    -0.0,
+    -0.0
+   ],
+   "arm": [
+    -0.0,
+    0.0
+   ],
+   "mace_head_xy": [
+    149.80459999999994,
+    298.1014
+   ],
+   "mace_goal_xy": [
+    149.8046,
+    298.1014
+   ],
+   "order": [
+    "phelm",
+    "R_pauld",
+    "arm",
+    "shield",
+    "trunk",
+    "L_fore",
+    "L_elbowcop",
+    "L_upper",
+    "belt",
+    "R_boot",
+    "R_kneecop",
+    "R_greave",
+    "R_thigh",
+    "L_boot",
+    "L_kneecop",
+    "L_greave",
+    "L_thigh",
+    "cape"
+   ]
+  },
+  "clean": {
+   "dropped_small_px": 31,
+   "edge_fix_px": 232
+  }
+ },
+ "S_f01": {
+  "meta": {
+   "belt_swing": 2.56,
+   "L_upper_k": 1.1,
+   "L_fore_k": 1.1,
+   "R_thigh": [
+    "target_thigh",
+    1.082
+   ],
+   "R_greave_k": 1.082,
+   "R_boot_anchor": "heel",
+   "L_thigh": [
+    "target_thigh",
+    1.0
+   ],
+   "L_greave_k": 1.0,
+   "L_boot_anchor": "toe",
+   "legs_v3": {
+    "R": {
+     "hip": [
+      233.93,
+      198.87
+     ],
+     "knee": [
+      248.2,
+      271.53
+     ],
+     "ankle": [
+      260.75,
+      335.5
+     ],
+     "goal": [
+      260.75,
+      335.5
+     ],
+     "stretch": 1.081977139246476,
+     "reach_short": 0.0
+    },
+    "L": {
+     "hip": [
+      276.8,
+      198.87
+     ],
+     "knee": [
+      304.73,
+      261.34
+     ],
+     "ankle": [
+      251.21,
+      289.01
+     ],
+     "goal": [
+      251.21,
+      289.01
+     ],
+     "stretch": 1.0,
+     "reach_short": 0.0
+    },
+    "belt_centre": [
+     255.37,
+     198.87
+    ],
+    "hip_mid_off": 0.0
+   },
+   "helm_tilt": -0.05,
+   "cape_deg": [
+    -0.75,
+    -2.07
+   ],
+   "arm": [
+    5.36,
+    -9.25
+   ],
+   "mace_head_xy": [
+    151.5151114196864,
+    296.76360910568496
+   ],
+   "mace_goal_xy": [
+    151.5151114196864,
+    296.76360910568496
+   ],
+   "order": [
+    "phelm",
+    "R_pauld",
+    "arm",
+    "shield",
+    "trunk",
+    "L_fore",
+    "L_elbowcop",
+    "L_upper",
+    "belt",
+    "R_boot",
+    "R_kneecop",
+    "R_greave",
+    "R_thigh",
+    "L_boot",
+    "L_kneecop",
+    "L_greave",
+    "L_thigh",
+    "cape"
+   ]
+  },
+  "clean": {
+   "dropped_small_px": 29,
+   "edge_fix_px": 179
+  }
+ },
+ "S_f02": {
+  "meta": {
+   "belt_swing": 1.2,
+   "L_upper_k": 1.1,
+   "L_fore_k": 1.1,
+   "R_thigh": [
+    "target_thigh",
+    1.075
+   ],
+   "R_greave_k": 1.075,
+   "R_boot_anchor": "heel",
+   "L_thigh": [
+    "target_thigh",
+    1.0
+   ],
+   "L_greave_k": 1.0,
+   "L_boot_anchor": "heel",
+   "legs_v3": {
+    "R": {
+     "hip": [
+      233.05,
+      195.02
+     ],
+     "knee": [
+      243.75,
+      267.79
+     ],
+     "ankle": [
+      253.15,
+      331.85
+     ],
+     "goal": [
+      253.15,
+      331.85
+     ],
+     "stretch": 1.0746227084429198,
+     "reach_short": 0.0
+    },
+    "L": {
+     "hip": [
+      275.92,
+      195.02
+     ],
+     "knee": [
+      298.47,
+      259.64
+     ],
+     "ankle": [
+      247.46,
+      291.7
+     ],
+     "goal": [
+      247.46,
+      291.7
+     ],
+     "stretch": 1.0,
+     "reach_short": 0.0
+    },
+    "belt_centre": [
+     254.49,
+     195.02
+    ],
+    "hip_mid_off": 0.0
+   },
+   "helm_tilt": -0.17,
+   "cape_deg": [
+    -1.73,
+    -4.64
+   ],
+   "arm": [
+    7.83,
+    -16.61
+   ],
+   "mace_head_xy": [
+    158.51063448679588,
+    293.2906043778187
+   ],
+   "mace_goal_xy": [
+    158.51063448679585,
+    293.2906043778187
+   ],
+   "order": [
+    "phelm",
+    "R_pauld",
+    "arm",
+    "shield",
+    "trunk",
+    "L_fore",
+    "L_elbowcop",
+    "L_upper",
+    "belt",
+    "R_boot",
+    "R_kneecop",
+    "R_greave",
+    "R_thigh",
+    "L_boot",
+    "L_kneecop",
+    "L_greave",
+    "L_thigh",
+    "cape"
+   ]
+  },
+  "clean": {
+   "dropped_small_px": 31,
+   "edge_fix_px": 180
+  }
+ },
+ "S_f03": {
+  "meta": {
+   "belt_swing": 0.6,
+   "L_upper_k": 1.1,
+   "L_fore_k": 1.1,
+   "R_thigh": [
+    "target_thigh",
+    1.053
+   ],
+   "R_greave_k": 1.053,
+   "R_boot_anchor": "heel",
+   "L_thigh": [
+    "target_thigh",
+    1.0
+   ],
+   "L_greave_k": 1.0,
+   "L_boot_anchor": "heel",
+   "legs_v3": {
+    "R": {
+     "hip": [
+      232.73,
+      193.04
+     ],
+     "knee": [
+      239.46,
+      264.79
+     ],
+     "ankle": [
+      245.38,
+      327.96
+     ],
+     "goal": [
+      245.38,
+      327.96
+     ],
+     "stretch": 1.053016156824782,
+     "reach_short": 0.0
+    },
+    "L": {
+     "hip": [
+      275.6,
+      193.04
+     ],
+     "knee": [
+      304.84,
+      254.92
+     ],
+     "ankle": [
+      261.01,
+      296.27
+     ],
+     "goal": [
+      261.01,
+      296.27
+     ],
+     "stretch": 1.0,
+     "reach_short": 0.0
+    },
+    "belt_centre": [
+     254.17,
+     193.04
+    ],
+    "hip_mid_off": 0.0
+   },
+   "helm_tilt": -0.33,
+   "cape_deg": [
+    -2.65,
+    -6.96
+   ],
+   "arm": [
+    11.46,
+    -27.56
+   ],
+   "mace_head_xy": [
+    169.27894479727357,
+    290.53430531057523
+   ],
+   "mace_goal_xy": [
+    169.2789447972735,
+    290.53430531057523
+   ],
+   "order": [
+    "phelm",
+    "R_pauld",
+    "arm",
+    "shield",
+    "trunk",
+    "L_fore",
+    "L_elbowcop",
+    "L_upper",
+    "belt",
+    "R_boot",
+    "R_kneecop",
+    "R_greave",
+    "R_thigh",
+    "L_boot",
+    "L_kneecop",
+    "L_greave",
+    "L_thigh",
+    "cape"
+   ]
+  },
+  "clean": {
+   "dropped_small_px": 30,
+   "edge_fix_px": 167
+  }
+ },
+ "S_f04": {
+  "meta": {
+   "belt_swing": 2.16,
+   "L_upper_k": 1.1,
+   "L_fore_k": 1.1,
+   "R_thigh": [
+    "target_thigh",
+    1.003
+   ],
+   "R_greave_k": 1.003,
+   "R_boot_anchor": "heel",
+   "L_thigh": [
+    "target_thigh",
+    1.0
+   ],
+   "L_greave_k": 1.0,
+   "L_boot_anchor": "heel",
+   "legs_v3": {
+    "R": {
+     "hip": [
+      233.05,
+      195.02
+     ],
+     "knee": [
+      235.48,
+      263.65
+     ],
+     "ankle": [
+      237.6,
+      324.08
+     ],
+     "goal": [
+      237.6,
+      324.08
+     ],
+     "stretch": 1.0034545300443143,
+     "reach_short": 0.0
+    },
+    "L": {
+     "hip": [
+      275.92,
+      195.02
+     ],
+     "knee": [
+      308.04,
+      255.46
+     ],
+     "ankle": [
+      278.21,
+      307.81
+     ],
+     "goal": [
+      278.21,
+      307.81
+     ],
+     "stretch": 1.0,
+     "reach_short": 0.0
+    },
+    "belt_centre": [
+     254.49,
+     195.02
+    ],
+    "hip_mid_off": 0.0
+   },
+   "helm_tilt": -0.49,
+   "cape_deg": [
+    -3.29,
+    -8.51
+   ],
+   "arm": [
+    17.35,
+    -42.34
+   ],
+   "mace_head_xy": [
+    182.5685786068959,
+    289.2130327903847
+   ],
+   "mace_goal_xy": [
+    182.5685786068959,
+    289.2130327903847
+   ],
+   "order": [
+    "phelm",
+    "R_pauld",
+    "arm",
+    "shield",
+    "trunk",
+    "L_fore",
+    "L_elbowcop",
+    "L_upper",
+    "belt",
+    "R_boot",
+    "R_kneecop",
+    "R_greave",
+    "R_thigh",
+    "L_boot",
+    "L_kneecop",
+    "L_greave",
+    "L_thigh",
+    "cape"
+   ]
+  },
+  "clean": {
+   "dropped_small_px": 0,
+   "edge_fix_px": 173
+  }
+ },
+ "S_f05": {
+  "meta": {
+   "belt_swing": 2.69,
+   "L_upper_k": 1.1,
+   "L_fore_k": 1.1,
+   "R_thigh": [
+    "target_thigh",
+    1.0
+   ],
+   "R_greave_k": 1.0,
+   "R_boot_anchor": "heel",
+   "L_thigh": [
+    "target_thigh",
+    1.0
+   ],
+   "L_greave_k": 1.0,
+   "L_boot_anchor": "heel",
+   "legs_v3": {
+    "R": {
+     "hip": [
+      233.93,
+      198.87
+     ],
+     "knee": [
+      253.03,
+      264.59
+     ],
+     "ankle": [
+      229.83,
+      320.19
+     ],
+     "goal": [
+      229.83,
+      320.19
+     ],
+     "stretch": 1.0,
+     "reach_short": 0.0
+    },
+    "L": {
+     "hip": [
+      276.8,
+      198.87
+     ],
+     "knee": [
+      306.13,
+      260.7
+     ],
+     "ankle": [
+      292.99,
+      319.5
+     ],
+     "goal": [
+      292.99,
+      319.5
+     ],
+     "stretch": 1.0,
+     "reach_short": 0.0
+    },
+    "belt_centre": [
+     255.37,
+     198.87
+    ],
+    "hip_mid_off": 0.0
+   },
+   "helm_tilt": -0.6,
+   "cape_deg": [
+    -3.48,
+    -8.98
+   ],
+   "arm": [
+    20.64,
+    -51.37
+   ],
+   "mace_head_xy": [
+    192.864174803533,
+    289.20063917214327
+   ],
+   "mace_goal_xy": [
+    192.86417480353296,
+    289.20063917214327
+   ],
+   "order": [
+    "phelm",
+    "R_pauld",
+    "arm",
+    "shield",
+    "trunk",
+    "L_fore",
+    "L_elbowcop",
+    "L_upper",
+    "belt",
+    "R_boot",
+    "R_kneecop",
+    "R_greave",
+    "R_thigh",
+    "L_boot",
+    "L_kneecop",
+    "L_greave",
+    "L_thigh",
+    "cape"
+   ]
+  },
+  "clean": {
+   "dropped_small_px": 32,
+   "edge_fix_px": 159
+  }
+ },
+ "S_f06": {
+  "meta": {
+   "belt_swing": 2.25,
+   "L_upper_k": 1.1,
+   "L_fore_k": 1.1,
+   "R_thigh": [
+    "target_thigh",
+    1.0
+   ],
+   "R_greave_k": 1.0,
+   "R_boot_anchor": "toe",
+   "L_thigh": [
+    "target_thigh",
+    1.0
+   ],
+   "L_greave_k": 1.0,
+   "L_boot_anchor": "heel",
+   "legs_v3": {
+    "R": {
+     "hip": [
+      235.13,
+      200.41
+     ],
+     "knee": [
+      261.2,
+      263.69
+     ],
+     "ankle": [
+      224.58,
+      311.54
+     ],
+     "goal": [
+      224.58,
+      311.54
+     ],
+     "stretch": 1.0,
+     "reach_short": 0.0
+    },
+    "L": {
+     "hip": [
+      278.0,
+      200.41
+     ],
+     "knee": [
+      307.61,
+      262.11
+     ],
+     "ankle": [
+      296.88,
+      321.4
+     ],
+     "goal": [
+      296.88,
+      321.4
+     ],
+     "stretch": 1.0,
+     "reach_short": 0.0
+    },
+    "belt_centre": [
+     256.56,
+     200.41
+    ],
+    "hip_mid_off": 0.0
+   },
+   "helm_tilt": -0.64,
+   "cape_deg": [
+    -3.2,
+    -8.3
+   ],
+   "arm": [
+    20.83,
+    -53.69
+   ],
+   "mace_head_xy": [
+    197.52160890992627,
+    289.0796994570514
+   ],
+   "mace_goal_xy": [
+    197.52160890992624,
+    289.0796994570514
+   ],
+   "order": [
+    "phelm",
+    "R_pauld",
+    "arm",
+    "shield",
+    "trunk",
+    "L_fore",
+    "L_elbowcop",
+    "L_upper",
+    "belt",
+    "R_boot",
+    "R_kneecop",
+    "R_greave",
+    "R_thigh",
+    "L_boot",
+    "L_kneecop",
+    "L_greave",
+    "L_thigh",
+    "cape"
+   ]
+  },
+  "clean": {
+   "dropped_small_px": 0,
+   "edge_fix_px": 175
+  }
+ },
+ "S_f07": {
+  "meta": {
+   "belt_swing": 1.64,
+   "L_upper_k": 1.1,
+   "L_fore_k": 1.1,
+   "R_thigh": [
+    "target_thigh",
+    1.0
+   ],
+   "R_greave_k": 1.0,
+   "R_boot_anchor": "toe",
+   "L_thigh": [
+    "target_thigh",
+    1.0
+   ],
+   "L_greave_k": 1.0,
+   "L_boot_anchor": "heel",
+   "legs_v3": {
+    "R": {
+     "hip": [
+      236.33,
+      197.67
+     ],
+     "knee": [
+      262.46,
+      260.92
+     ],
+     "ankle": [
+      220.64,
+      304.3
+     ],
+     "goal": [
+      220.64,
+      304.3
+     ],
+     "stretch": 1.0,
+     "reach_short": 0.0
+    },
+    "L": {
+     "hip": [
+      279.2,
+      197.67
+     ],
+     "knee": [
+      304.24,
+      261.36
+     ],
+     "ankle": [
+      291.33,
+      320.21
+     ],
+     "goal": [
+      291.33,
+      320.21
+     ],
+     "stretch": 1.0,
+     "reach_short": 0.0
+    },
+    "belt_centre": [
+     257.76,
+     197.67
+    ],
+    "hip_mid_off": 0.0
+   },
+   "helm_tilt": -0.6,
+   "cape_deg": [
+    -2.5,
+    -6.59
+   ],
+   "arm": [
+    19.42,
+    -49.98
+   ],
+   "mace_head_xy": [
+    195.32621088293433,
+    288.0392545026087
+   ],
+   "mace_goal_xy": [
+    195.32621088293436,
+    288.0392545026087
+   ],
+   "order": [
+    "phelm",
+    "R_pauld",
+    "arm",
+    "shield",
+    "trunk",
+    "L_fore",
+    "L_elbowcop",
+    "L_upper",
+    "belt",
+    "R_boot",
+    "R_kneecop",
+    "R_greave",
+    "R_thigh",
+    "L_boot",
+    "L_kneecop",
+    "L_greave",
+    "L_thigh",
+    "cape"
+   ]
+  },
+  "clean": {
+   "dropped_small_px": 0,
+   "edge_fix_px": 156
+  }
+ },
+ "S_f08": {
+  "meta": {
+   "belt_swing": 0.75,
+   "L_upper_k": 1.1,
+   "L_fore_k": 1.1,
+   "R_thigh": [
+    "target_thigh",
+    1.0
+   ],
+   "R_greave_k": 1.0,
+   "R_boot_anchor": "heel",
+   "L_thigh": [
+    "target_thigh",
+    1.0
+   ],
+   "L_greave_k": 1.0,
+   "L_boot_anchor": "heel",
+   "legs_v3": {
+    "R": {
+     "hip": [
+      237.21,
+      192.95
+     ],
+     "knee": [
+      253.77,
+      259.35
+     ],
+     "ankle": [
+      216.88,
+      306.98
+     ],
+     "goal": [
+      216.88,
+      306.98
+     ],
+     "stretch": 1.0,
+     "reach_short": 0.0
+    },
+    "L": {
+     "hip": [
+      280.08,
+      192.95
+     ],
+     "knee": [
+      299.77,
+      258.49
+     ],
+     "ankle": [
+      283.72,
+      316.56
+     ],
+     "goal": [
+      283.72,
+      316.56
+     ],
+     "stretch": 1.0,
+     "reach_short": 0.0
+    },
+    "belt_centre": [
+     258.64,
+     192.95
+    ],
+    "hip_mid_off": 0.0
+   },
+   "helm_tilt": -0.49,
+   "cape_deg": [
+    -1.55,
+    -4.17
+   ],
+   "arm": [
+    15.94,
+    -40.52
+   ],
+   "mace_head_xy": [
+    186.74421620459233,
+    287.14649295766833
+   ],
+   "mace_goal_xy": [
+    186.74421620459233,
+    287.1464929576684
+   ],
+   "order": [
+    "phelm",
+    "R_pauld",
+    "arm",
+    "shield",
+    "trunk",
+    "L_fore",
+    "L_elbowcop",
+    "L_upper",
+    "belt",
+    "R_boot",
+    "R_kneecop",
+    "R_greave",
+    "R_thigh",
+    "L_boot",
+    "L_kneecop",
+    "L_greave",
+    "L_thigh",
+    "cape"
+   ]
+  },
+  "clean": {
+   "dropped_small_px": 0,
+   "edge_fix_px": 179
+  }
+ },
+ "S_f09": {
+  "meta": {
+   "belt_swing": 0.6,
+   "L_upper_k": 1.1,
+   "L_fore_k": 1.1,
+   "R_thigh": [
+    "target_thigh",
+    1.0
+   ],
+   "R_greave_k": 1.0,
+   "R_boot_anchor": "heel",
+   "L_thigh": [
+    "target_thigh",
+    1.0
+   ],
+   "L_greave_k": 1.0,
+   "L_boot_anchor": "heel",
+   "legs_v3": {
+    "R": {
+     "hip": [
+      237.53,
+      190.65
+     ],
+     "knee": [
+      259.7,
+      255.39
+     ],
+     "ankle": [
+      230.44,
+      308.06
+     ],
+     "goal": [
+      230.44,
+      308.06
+     ],
+     "stretch": 1.0,
+     "reach_short": 0.0
+    },
+    "L": {
+     "hip": [
+      280.4,
+      190.65
+     ],
+     "knee": [
+      298.26,
+      256.71
+     ],
+     "ankle": [
+      275.95,
+      312.68
+     ],
+     "goal": [
+      275.95,
+      312.68
+     ],
+     "stretch": 1.0,
+     "reach_short": 0.0
+    },
+    "belt_centre": [
+     258.96,
+     190.65
+    ],
+    "hip_mid_off": 0.0
+   },
+   "helm_tilt": -0.33,
+   "cape_deg": [
+    -0.6,
+    -1.64
+   ],
+   "arm": [
+    12.27,
+    -28.53
+   ],
+   "mace_head_xy": [
+    173.9936657109165,
+    288.1065699012819
+   ],
+   "mace_goal_xy": [
+    173.99366571091647,
+    288.1065699012819
+   ],
+   "order": [
+    "phelm",
+    "R_pauld",
+    "arm",
+    "shield",
+    "trunk",
+    "L_fore",
+    "L_elbowcop",
+    "L_upper",
+    "belt",
+    "R_boot",
+    "R_kneecop",
+    "R_greave",
+    "R_thigh",
+    "L_boot",
+    "L_kneecop",
+    "L_greave",
+    "L_thigh",
+    "cape"
+   ]
+  },
+  "clean": {
+   "dropped_small_px": 31,
+   "edge_fix_px": 166
+  }
+ },
+ "S_f10": {
+  "meta": {
+   "belt_swing": 2.72,
+   "L_upper_k": 1.1,
+   "L_fore_k": 1.1,
+   "R_thigh": [
+    "target_thigh",
+    1.0
+   ],
+   "R_greave_k": 1.0,
+   "R_boot_anchor": "heel",
+   "L_thigh": [
+    "target_thigh",
+    1.0
+   ],
+   "L_greave_k": 1.0,
+   "L_boot_anchor": "heel",
+   "legs_v3": {
+    "R": {
+     "hip": [
+      237.21,
+      192.95
+     ],
+     "knee": [
+      260.62,
+      257.26
+     ],
+     "ankle": [
+      247.64,
+      316.09
+     ],
+     "goal": [
+      247.64,
+      316.09
+     ],
+     "stretch": 1.0,
+     "reach_short": 0.0
+    },
+    "L": {
+     "hip": [
+      280.08,
+      192.95
+     ],
+     "knee": [
+      300.84,
+      258.16
+     ],
+     "ankle": [
+      268.18,
+      308.79
+     ],
+     "goal": [
+      268.18,
+      308.79
+     ],
+     "stretch": 1.0,
+     "reach_short": 0.0
+    },
+    "belt_centre": [
+     258.64,
+     192.95
+    ],
+    "hip_mid_off": 0.0
+   },
+   "helm_tilt": -0.17,
+   "cape_deg": [
+    0.09,
+    0.26
+   ],
+   "arm": [
+    7.87,
+    -16.81
+   ],
+   "mace_head_xy": [
+    162.73999228496092,
+    291.30589489769636
+   ],
+   "mace_goal_xy": [
+    162.73999228496095,
+    291.30589489769636
+   ],
+   "order": [
+    "phelm",
+    "R_pauld",
+    "arm",
+    "shield",
+    "trunk",
+    "L_fore",
+    "L_elbowcop",
+    "L_upper",
+    "belt",
+    "R_boot",
+    "R_kneecop",
+    "R_greave",
+    "R_thigh",
+    "L_boot",
+    "L_kneecop",
+    "L_greave",
+    "L_thigh",
+    "cape"
+   ]
+  },
+  "clean": {
+   "dropped_small_px": 29,
+   "edge_fix_px": 169
+  }
+ },
+ "S_f11": {
+  "meta": {
+   "belt_swing": 3.75,
+   "L_upper_k": 1.1,
+   "L_fore_k": 1.1,
+   "R_thigh": [
+    "target_thigh",
+    1.035
+   ],
+   "R_greave_k": 1.035,
+   "R_boot_anchor": "heel",
+   "L_thigh": [
+    "target_thigh",
+    1.0
+   ],
+   "L_greave_k": 1.0,
+   "L_boot_anchor": "heel",
+   "legs_v3": {
+    "R": {
+     "hip": [
+      236.33,
+      197.67
+     ],
+     "knee": [
+      250.21,
+      267.13
+     ],
+     "ankle": [
+      262.41,
+      328.29
+     ],
+     "goal": [
+      262.42,
+      328.29
+     ],
+     "stretch": 1.0350439672416225,
+     "reach_short": 0.0
+    },
+    "L": {
+     "hip": [
+      279.2,
+      197.67
+     ],
+     "knee": [
+      302.66,
+      261.96
+     ],
+     "ankle": [
+      260.41,
+      304.9
+     ],
+     "goal": [
+      260.41,
+      304.9
+     ],
+     "stretch": 1.0,
+     "reach_short": 0.0
+    },
+    "belt_centre": [
+     257.76,
+     197.67
+    ],
+    "hip_mid_off": 0.0
+   },
+   "helm_tilt": -0.05,
+   "cape_deg": [
+    0.31,
+    0.89
+   ],
+   "arm": [
+    1.84,
+    -4.41
+   ],
+   "mace_head_xy": [
+    153.88998782571497,
+    295.67375687699143
+   ],
+   "mace_goal_xy": [
+    153.88998782571494,
+    295.6737568769914
+   ],
+   "order": [
+    "phelm",
+    "R_pauld",
+    "arm",
+    "shield",
+    "trunk",
+    "L_fore",
+    "L_elbowcop",
+    "L_upper",
+    "belt",
+    "R_boot",
+    "R_kneecop",
+    "R_greave",
+    "R_thigh",
+    "L_boot",
+    "L_kneecop",
+    "L_greave",
+    "L_thigh",
+    "cape"
+   ]
+  },
+  "clean": {
+   "dropped_small_px": 31,
+   "edge_fix_px": 169
+  }
+ },
+ "E_f00": {
+  "meta": {
+   "belt_swing": 1.48,
+   "R_thigh": [
+    "target_thigh",
+    1.08
+   ],
+   "R_greave_k": 1.08,
+   "R_boot_anchor": "toe",
+   "L_thigh": [
+    "target_thigh",
+    1.0
+   ],
+   "L_greave_k": 1.0,
+   "L_boot_anchor": "heel",
+   "legs_v3": {
+    "R": {
+     "hip": [
+      267.81,
+      189.92
+     ],
+     "knee": [
+      259.06,
+      260.84
+     ],
+     "ankle": [
+      251.21,
+      324.37
+     ],
+     "goal": [
+      251.21,
+      324.37
+     ],
+     "stretch": 1.0797779738179638,
+     "reach_short": 0.0
+    },
+    "L": {
+     "hip": [
+      244.17,
+      189.92
+     ],
+     "knee": [
+      281.43,
+      244.61
+     ],
+     "ankle": [
+      260.75,
+      300.17
+     ],
+     "goal": [
+      260.75,
+      300.17
+     ],
+     "stretch": 1.0,
+     "reach_short": 0.0
+    },
+    "belt_centre": [
+     255.99,
+     189.92
+    ],
+    "hip_mid_off": 0.0
+   },
+   "helm_tilt": 0.0,
+   "cape_deg": [
+    -0.0,
+    -0.0
+   ],
+   "arm": [
+    0.0,
+    -0.0
+   ],
+   "mace_head_xy": [
+    386.79,
+    264.77504999999996
+   ],
+   "mace_goal_xy": [
+    386.79,
+    264.77504999999996
+   ],
+   "order": [
+    "phelm",
+    "R_pauld",
+    "arm",
+    "cape",
+    "shield",
+    "tasset",
+    "trunk",
+    "R_boot",
+    "R_kneecop",
+    "R_greave",
+    "R_thigh",
+    "L_boot",
+    "L_kneecop",
+    "L_greave",
+    "L_thigh"
+   ]
+  },
+  "clean": {
+   "dropped_small_px": 0,
+   "edge_fix_px": 224
+  }
+ },
+ "E_f01": {
+  "meta": {
+   "belt_swing": -1.16,
+   "R_thigh": [
+    "target_thigh",
+    1.1
+   ],
+   "R_greave_k": 1.1,
+   "R_boot_anchor": "heel",
+   "L_thigh": [
+    "target_thigh",
+    1.0
+   ],
+   "L_greave_k": 1.0,
+   "L_boot_anchor": "heel",
+   "legs_v3": {
+    "R": {
+     "hip": [
+      266.93,
+      185.19
+     ],
+     "knee": [
+      257.29,
+      257.35
+     ],
+     "ankle": [
+      248.64,
+      321.99
+     ],
+     "goal": [
+      247.46,
+      330.82
+     ],
+     "stretch": 1.1,
+     "reach_short": 8.91
+    },
+    "L": {
+     "hip": [
+      243.29,
+      185.19
+     ],
+     "knee": [
+      267.78,
+      246.67
+     ],
+     "ankle": [
+      253.15,
+      304.13
+     ],
+     "goal": [
+      253.15,
+      304.13
+     ],
+     "stretch": 1.0,
+     "reach_short": 0.0
+    },
+    "belt_centre": [
+     255.11,
+     185.19
+    ],
+    "hip_mid_off": 0.0
+   },
+   "helm_tilt": -0.12,
+   "cape_deg": [
+    -0.97,
+    -2.53
+   ],
+   "arm": [
+    -6.77,
+    14.22
+   ],
+   "mace_head_xy": [
+    377.73580484603605,
+    268.9557702849439
+   ],
+   "mace_goal_xy": [
+    380.1724384033248,
+    272.05595667937155
+   ],
+   "order": [
+    "phelm",
+    "R_pauld",
+    "arm",
+    "cape",
+    "shield",
+    "tasset",
+    "trunk",
+    "R_boot",
+    "R_kneecop",
+    "R_greave",
+    "R_thigh",
+    "L_boot",
+    "L_kneecop",
+    "L_greave",
+    "L_thigh"
+   ]
+  },
+  "clean": {
+   "dropped_small_px": 0,
+   "edge_fix_px": 268
+  }
+ },
+ "E_f02": {
+  "meta": {
+   "belt_swing": 1.16,
+   "R_thigh": [
+    "target_thigh",
+    1.08
+   ],
+   "R_greave_k": 1.08,
+   "R_boot_anchor": "heel",
+   "L_thigh": [
+    "target_thigh",
+    1.0
+   ],
+   "L_greave_k": 1.0,
+   "L_boot_anchor": "heel",
+   "legs_v3": {
+    "R": {
+     "hip": [
+      266.61,
+      182.89
+     ],
+     "knee": [
+      263.66,
+      254.33
+     ],
+     "ankle": [
+      261.01,
+      318.33
+     ],
+     "goal": [
+      261.01,
+      318.33
+     ],
+     "stretch": 1.08041072151288,
+     "reach_short": 0.0
+    },
+    "L": {
+     "hip": [
+      242.97,
+      182.89
+     ],
+     "knee": [
+      248.72,
+      248.82
+     ],
+     "ankle": [
+      245.38,
+      308.01
+     ],
+     "goal": [
+      245.38,
+      308.01
+     ],
+     "stretch": 1.0,
+     "reach_short": 0.0
+    },
+    "belt_centre": [
+     254.79,
+     182.89
+    ],
+    "hip_mid_off": 0.0
+   },
+   "helm_tilt": -0.28,
+   "cape_deg": [
+    -1.93,
+    -5.06
+   ],
+   "arm": [
+    -1.73,
+    14.22
+   ],
+   "mace_head_xy": [
+    364.186063694043,
+    275.91854162555813
+   ],
+   "mace_goal_xy": [
+    369.9874426281669,
+    284.8082441295788
+   ],
+   "order": [
+    "phelm",
+    "R_pauld",
+    "arm",
+    "cape",
+    "shield",
+    "tasset",
+    "trunk",
+    "R_boot",
+    "R_kneecop",
+    "R_greave",
+    "R_thigh",
+    "L_boot",
+    "L_kneecop",
+    "L_greave",
+    "L_thigh"
+   ]
+  },
+  "clean": {
+   "dropped_small_px": 0,
+   "edge_fix_px": 213
+  }
+ },
+ "E_f03": {
+  "meta": {
+   "belt_swing": 0.74,
+   "R_thigh": [
+    "target_thigh",
+    1.0
+   ],
+   "R_greave_k": 1.0,
+   "R_boot_anchor": "heel",
+   "L_thigh": [
+    "target_thigh",
+    1.011
+   ],
+   "L_greave_k": 1.011,
+   "L_boot_anchor": "heel",
+   "legs_v3": {
+    "R": {
+     "hip": [
+      266.93,
+      185.19
+     ],
+     "knee": [
+      280.68,
+      249.93
+     ],
+     "ankle": [
+      278.21,
+      309.16
+     ],
+     "goal": [
+      278.21,
+      309.16
+     ],
+     "stretch": 1.0,
+     "reach_short": 0.0
+    },
+    "L": {
+     "hip": [
+      243.29,
+      185.19
+     ],
+     "knee": [
+      240.3,
+      252.03
+     ],
+     "ankle": [
+      237.61,
+      311.9
+     ],
+     "goal": [
+      237.6,
+      311.9
+     ],
+     "stretch": 1.0108850079827794,
+     "reach_short": 0.0
+    },
+    "belt_centre": [
+     255.11,
+     185.19
+    ],
+    "hip_mid_off": 0.0
+   },
+   "helm_tilt": -0.44,
+   "cape_deg": [
+    -2.61,
+    -6.88
+   ],
+   "arm": [
+    2.07,
+    14.23
+   ],
+   "mace_head_xy": [
+    353.2101444637589,
+    283.9395070825252
+   ],
+   "mace_goal_xy": [
+    361.40724980462375,
+    298.5332528766145
+   ],
+   "order": [
+    "phelm",
+    "R_pauld",
+    "arm",
+    "cape",
+    "shield",
+    "tasset",
+    "trunk",
+    "R_boot",
+    "R_kneecop",
+    "R_greave",
+    "R_thigh",
+    "L_boot",
+    "L_kneecop",
+    "L_greave",
+    "L_thigh"
+   ]
+  },
+  "clean": {
+   "dropped_small_px": 0,
+   "edge_fix_px": 213
+  }
+ },
+ "E_f04": {
+  "meta": {
+   "belt_swing": 0.6,
+   "R_thigh": [
+    "target_thigh",
+    1.0
+   ],
+   "R_greave_k": 1.0,
+   "R_boot_anchor": "heel",
+   "L_thigh": [
+    "target_thigh",
+    1.01
+   ],
+   "L_greave_k": 1.01,
+   "L_boot_anchor": "heel",
+   "legs_v3": {
+    "R": {
+     "hip": [
+      267.81,
+      189.92
+     ],
+     "knee": [
+      300.03,
+      247.72
+     ],
+     "ankle": [
+      292.99,
+      306.58
+     ],
+     "goal": [
+      292.99,
+      306.58
+     ],
+     "stretch": 1.0,
+     "reach_short": 0.0
+    },
+    "L": {
+     "hip": [
+      244.17,
+      189.92
+     ],
+     "knee": [
+      236.61,
+      256.31
+     ],
+     "ankle": [
+      229.83,
+      315.78
+     ],
+     "goal": [
+      229.83,
+      315.78
+     ],
+     "stretch": 1.0096888609681676,
+     "reach_short": 0.0
+    },
+    "belt_centre": [
+     255.99,
+     189.92
+    ],
+    "hip_mid_off": 0.0
+   },
+   "helm_tilt": -0.55,
+   "cape_deg": [
+    -2.83,
+    -7.45
+   ],
+   "arm": [
+    4.94,
+    14.23
+   ],
+   "mace_head_xy": [
+    346.4236981098331,
+    293.04031304189886
+   ],
+   "mace_goal_xy": [
+    355.2257149992929,
+    310.7343059580571
+   ],
+   "order": [
+    "phelm",
+    "R_pauld",
+    "arm",
+    "cape",
+    "shield",
+    "tasset",
+    "trunk",
+    "R_boot",
+    "R_kneecop",
+    "R_greave",
+    "R_thigh",
+    "L_boot",
+    "L_kneecop",
+    "L_greave",
+    "L_thigh"
+   ]
+  },
+  "clean": {
+   "dropped_small_px": 0,
+   "edge_fix_px": 209
+  }
+ },
+ "E_f05": {
+  "meta": {
+   "belt_swing": 1.32,
+   "R_thigh": [
+    "target_thigh",
+    1.0
+   ],
+   "R_greave_k": 1.0,
+   "R_boot_anchor": "heel",
+   "L_thigh": [
+    "target_thigh",
+    1.0
+   ],
+   "L_greave_k": 1.0,
+   "L_boot_anchor": "toe",
+   "legs_v3": {
+    "R": {
+     "hip": [
+      269.0,
+      192.66
+     ],
+     "knee": [
+      298.64,
+      251.83
+     ],
+     "ankle": [
+      296.88,
+      311.09
+     ],
+     "goal": [
+      296.88,
+      311.09
+     ],
+     "stretch": 1.0,
+     "reach_short": 0.0
+    },
+    "L": {
+     "hip": [
+      245.36,
+      192.66
+     ],
+     "knee": [
+      249.73,
+      258.69
+     ],
+     "ankle": [
+      224.58,
+      312.38
+     ],
+     "goal": [
+      224.58,
+      312.38
+     ],
+     "stretch": 1.0,
+     "reach_short": 0.0
+    },
+    "belt_centre": [
+     257.18,
+     192.66
+    ],
+    "hip_mid_off": 0.0
+   },
+   "helm_tilt": -0.6,
+   "cape_deg": [
+    -2.52,
+    -6.63
+   ],
+   "arm": [
+    5.94,
+    14.23
+   ],
+   "mace_head_xy": [
+    344.6665716884686,
+    297.37536936410635
+   ],
+   "mace_goal_xy": [
+    353.5056223401026,
+    315.9500597839017
+   ],
+   "order": [
+    "phelm",
+    "R_pauld",
+    "arm",
+    "cape",
+    "shield",
+    "tasset",
+    "trunk",
+    "R_boot",
+    "R_kneecop",
+    "R_greave",
+    "R_thigh",
+    "L_boot",
+    "L_kneecop",
+    "L_greave",
+    "L_thigh"
+   ]
+  },
+  "clean": {
+   "dropped_small_px": 0,
+   "edge_fix_px": 210
+  }
+ },
+ "E_f06": {
+  "meta": {
+   "belt_swing": 1.1,
+   "R_thigh": [
+    "target_thigh",
+    1.005
+   ],
+   "R_greave_k": 1.005,
+   "R_boot_anchor": "heel",
+   "L_thigh": [
+    "target_thigh",
+    1.0
+   ],
+   "L_greave_k": 1.0,
+   "L_boot_anchor": "toe",
+   "legs_v3": {
+    "R": {
+     "hip": [
+      270.2,
+      191.12
+     ],
+     "knee": [
+      281.35,
+      256.7
+     ],
+     "ankle": [
+      291.33,
+      315.46
+     ],
+     "goal": [
+      291.33,
+      315.46
+     ],
+     "stretch": 1.0052437197247532,
+     "reach_short": 0.0
+    },
+    "L": {
+     "hip": [
+      246.56,
+      191.12
+     ],
+     "knee": [
+      249.39,
+      257.23
+     ],
+     "ankle": [
+      220.64,
+      309.08
+     ],
+     "goal": [
+      220.64,
+      309.08
+     ],
+     "stretch": 1.0,
+     "reach_short": 0.0
+    },
+    "belt_centre": [
+     258.38,
+     191.12
+    ],
+    "hip_mid_off": 0.0
+   },
+   "helm_tilt": -0.55,
+   "cape_deg": [
+    -1.77,
+    -4.64
+   ],
+   "arm": [
+    4.8,
+    14.23
+   ],
+   "mace_head_xy": [
+    348.8179657073523,
+    294.8445166180632
+   ],
+   "mace_goal_xy": [
+    357.3325766415876,
+    311.85354105367014
+   ],
+   "order": [
+    "phelm",
+    "R_pauld",
+    "arm",
+    "cape",
+    "shield",
+    "tasset",
+    "trunk",
+    "R_boot",
+    "R_kneecop",
+    "R_greave",
+    "R_thigh",
+    "L_boot",
+    "L_kneecop",
+    "L_greave",
+    "L_thigh"
+   ]
+  },
+  "clean": {
+   "dropped_small_px": 0,
+   "edge_fix_px": 201
+  }
+ },
+ "E_f07": {
+  "meta": {
+   "belt_swing": -1.24,
+   "R_thigh": [
+    "target_thigh",
+    1.058
+   ],
+   "R_greave_k": 1.058,
+   "R_boot_anchor": "heel",
+   "L_thigh": [
+    "target_thigh",
+    1.051
+   ],
+   "L_greave_k": 1.051,
+   "L_boot_anchor": "heel",
+   "legs_v3": {
+    "R": {
+     "hip": [
+      271.08,
+      187.27
+     ],
+     "knee": [
+      277.76,
+      256.97
+     ],
+     "ankle": [
+      283.72,
+      319.41
+     ],
+     "goal": [
+      283.72,
+      319.41
+     ],
+     "stretch": 1.0580273003412728,
+     "reach_short": 0.0
+    },
+    "L": {
+     "hip": [
+      247.44,
+      187.27
+     ],
+     "knee": [
+      231.33,
+      254.92
+     ],
+     "ankle": [
+      216.88,
+      315.53
+     ],
+     "goal": [
+      216.88,
+      315.53
+     ],
+     "stretch": 1.0508710820651377,
+     "reach_short": 0.0
+    },
+    "belt_centre": [
+     259.26,
+     187.27
+    ],
+    "hip_mid_off": 0.0
+   },
+   "helm_tilt": -0.44,
+   "cape_deg": [
+    -0.79,
+    -2.05
+   ],
+   "arm": [
+    2.32,
+    14.23
+   ],
+   "mace_head_xy": [
+    357.52509607099614,
+    286.3205268372441
+   ],
+   "mace_goal_xy": [
+    365.4842596042942,
+    300.6400353606601
+   ],
+   "order": [
+    "phelm",
+    "R_pauld",
+    "arm",
+    "cape",
+    "shield",
+    "tasset",
+    "trunk",
+    "R_boot",
+    "R_kneecop",
+    "R_greave",
+    "R_thigh",
+    "L_boot",
+    "L_kneecop",
+    "L_greave",
+    "L_thigh"
+   ]
+  },
+  "clean": {
+   "dropped_small_px": 0,
+   "edge_fix_px": 229
+  }
+ },
+ "E_f08": {
+  "meta": {
+   "belt_swing": 1.16,
+   "R_thigh": [
+    "target_thigh",
+    1.1
+   ],
+   "R_greave_k": 1.1,
+   "R_boot_anchor": "heel",
+   "L_thigh": [
+    "target_thigh",
+    1.0
+   ],
+   "L_greave_k": 1.0,
+   "L_boot_anchor": "heel",
+   "legs_v3": {
+    "R": {
+     "hip": [
+      271.4,
+      185.29
+     ],
+     "knee": [
+      273.81,
+      258.05
+     ],
+     "ankle": [
+      275.95,
+      323.23
+     ],
+     "goal": [
+      275.95,
+      323.3
+     ],
+     "stretch": 1.1,
+     "reach_short": 0.07
+    },
+    "L": {
+     "hip": [
+      247.76,
+      185.29
+     ],
+     "knee": [
+      258.18,
+      250.64
+     ],
+     "ankle": [
+      230.44,
+      303.04
+     ],
+     "goal": [
+      230.44,
+      303.04
+     ],
+     "stretch": 1.0,
+     "reach_short": 0.0
+    },
+    "belt_centre": [
+     259.58,
+     185.29
+    ],
+    "hip_mid_off": 0.0
+   },
+   "helm_tilt": -0.28,
+   "cape_deg": [
+    0.16,
+    0.41
+   ],
+   "arm": [
+    -1.62,
+    14.22
+   ],
+   "mace_head_xy": [
+    368.89184287562557,
+    278.10930668261443
+   ],
+   "mace_goal_xy": [
+    374.8503499359809,
+    287.27978794482715
+   ],
+   "order": [
+    "phelm",
+    "R_pauld",
+    "arm",
+    "cape",
+    "shield",
+    "tasset",
+    "trunk",
+    "R_boot",
+    "R_kneecop",
+    "R_greave",
+    "R_thigh",
+    "L_boot",
+    "L_kneecop",
+    "L_greave",
+    "L_thigh"
+   ]
+  },
+  "clean": {
+   "dropped_small_px": 0,
+   "edge_fix_px": 223
+  }
+ },
+ "E_f09": {
+  "meta": {
+   "belt_swing": 0.94,
+   "R_thigh": [
+    "target_thigh",
+    1.1
+   ],
+   "R_greave_k": 1.1,
+   "R_boot_anchor": "heel",
+   "L_thigh": [
+    "target_thigh",
+    1.0
+   ],
+   "L_greave_k": 1.0,
+   "L_boot_anchor": "heel",
+   "legs_v3": {
+    "R": {
+     "hip": [
+      271.08,
+      187.27
+     ],
+     "knee": [
+      269.58,
+      260.05
+     ],
+     "ankle": [
+      268.22,
+      325.25
+     ],
+     "goal": [
+      268.18,
+      327.18
+     ],
+     "stretch": 1.1,
+     "reach_short": 1.93
+    },
+    "L": {
+     "hip": [
+      247.44,
+      187.27
+     ],
+     "knee": [
+      280.56,
+      244.57
+     ],
+     "ankle": [
+      247.64,
+      293.88
+     ],
+     "goal": [
+      247.64,
+      293.88
+     ],
+     "stretch": 1.0,
+     "reach_short": 0.0
+    },
+    "belt_centre": [
+     259.26,
+     187.27
+    ],
+    "hip_mid_off": 0.0
+   },
+   "helm_tilt": -0.12,
+   "cape_deg": [
+    0.82,
+    2.1
+   ],
+   "arm": [
+    -6.76,
+    14.22
+   ],
+   "mace_head_xy": [
+    381.72399275515914,
+    270.96501582598273
+   ],
+   "mace_goal_xy": [
+    384.23018035021494,
+    274.15426133076835
+   ],
+   "order": [
+    "phelm",
+    "R_pauld",
+    "arm",
+    "cape",
+    "shield",
+    "tasset",
+    "trunk",
+    "R_boot",
+    "R_kneecop",
+    "R_greave",
+    "R_thigh",
+    "L_boot",
+    "L_kneecop",
+    "L_greave",
+    "L_thigh"
+   ]
+  },
+  "clean": {
+   "dropped_small_px": 0,
+   "edge_fix_px": 257
+  }
+ },
+ "E_f10": {
+  "meta": {
+   "belt_swing": 0.94,
+   "R_thigh": [
+    "target_thigh",
+    1.1
+   ],
+   "R_greave_k": 1.1,
+   "R_boot_anchor": "heel",
+   "L_thigh": [
+    "target_thigh",
+    1.0
+   ],
+   "L_greave_k": 1.0,
+   "L_boot_anchor": "heel",
+   "legs_v3": {
+    "R": {
+     "hip": [
+      270.2,
+      191.12
+     ],
+     "knee": [
+      265.13,
+      263.73
+     ],
+     "ankle": [
+      260.57,
+      328.79
+     ],
+     "goal": [
+      260.41,
+      331.07
+     ],
+     "stretch": 1.1,
+     "reach_short": 2.29
+    },
+    "L": {
+     "hip": [
+      246.56,
+      191.12
+     ],
+     "knee": [
+      291.54,
+      239.66
+     ],
+     "ankle": [
+      262.42,
+      291.3
+     ],
+     "goal": [
+      262.42,
+      291.3
+     ],
+     "stretch": 1.0,
+     "reach_short": 0.0
+    },
+    "belt_centre": [
+     258.38,
+     191.12
+    ],
+    "hip_mid_off": 0.0
+   },
+   "helm_tilt": 0.0,
+   "cape_deg": [
+    1.03,
+    2.63
+   ],
+   "arm": [
+    -2.08,
+    2.76
+   ],
+   "mace_head_xy": [
+    389.13092745257495,
+    265.9762323704814
+   ],
+   "mace_goal_xy": [
+    389.13092745257495,
+    265.9762323704814
+   ],
+   "order": [
+    "phelm",
+    "R_pauld",
+    "arm",
+    "cape",
+    "shield",
+    "tasset",
+    "trunk",
+    "R_boot",
+    "R_kneecop",
+    "R_greave",
+    "R_thigh",
+    "L_boot",
+    "L_kneecop",
+    "L_greave",
+    "L_thigh"
+   ]
+  },
+  "clean": {
+   "dropped_small_px": 0,
+   "edge_fix_px": 241
+  }
+ },
+ "E_f11": {
+  "meta": {
+   "belt_swing": 1.8,
+   "R_thigh": [
+    "target_thigh",
+    1.082
+   ],
+   "R_greave_k": 1.082,
+   "R_boot_anchor": "toe",
+   "L_thigh": [
+    "target_thigh",
+    1.0
+   ],
+   "L_greave_k": 1.0,
+   "L_boot_anchor": "heel",
+   "legs_v3": {
+    "R": {
+     "hip": [
+      269.0,
+      192.66
+     ],
+     "knee": [
+      261.71,
+      263.87
+     ],
+     "ankle": [
+      255.16,
+      327.67
+     ],
+     "goal": [
+      255.16,
+      327.67
+     ],
+     "stretch": 1.081740445426823,
+     "reach_short": 0.0
+    },
+    "L": {
+     "hip": [
+      245.36,
+      192.66
+     ],
+     "knee": [
+      290.04,
+      241.48
+     ],
+     "ankle": [
+      266.31,
+      295.8
+     ],
+     "goal": [
+      266.31,
+      295.8
+     ],
+     "stretch": 1.0,
+     "reach_short": 0.0
+    },
+    "belt_centre": [
+     257.18,
+     192.66
+    ],
+    "hip_mid_off": 0.0
+   },
+   "helm_tilt": 0.04,
+   "cape_deg": [
+    0.73,
+    1.88
+   ],
+   "arm": [
+    6.64,
+    -10.97
+   ],
+   "mace_head_xy": [
+    389.65424901854965,
+    262.9953842751023
+   ],
+   "mace_goal_xy": [
+    389.65424901854965,
+    262.9953842751023
+   ],
+   "order": [
+    "phelm",
+    "R_pauld",
+    "arm",
+    "cape",
+    "shield",
+    "tasset",
+    "trunk",
+    "R_boot",
+    "R_kneecop",
+    "R_greave",
+    "R_thigh",
+    "L_boot",
+    "L_kneecop",
+    "L_greave",
+    "L_thigh"
+   ]
+  },
+  "clean": {
+   "dropped_small_px": 0,
+   "edge_fix_px": 234
+  }
+ }
+}
