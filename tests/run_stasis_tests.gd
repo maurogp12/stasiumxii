@@ -34,6 +34,7 @@ func _run() -> void:
 		root.add_child(_sim)
 	_test_package_and_flow()
 	_test_party_engine()
+	_test_hero_ai_roles()
 	_test_ai()
 	_test_boards_and_provisional_hit()
 	_test_threshgate_hazards()
@@ -989,6 +990,87 @@ func _test_party_engine() -> void:
 	# Solo runs are unchanged.
 	_sim.reset_match(StasisCatalog.fight_config())
 	eq(int(_sim.snapshot().get("party_size", 0)), 1, "a solo run keeps party 1")
+
+
+## Mauro 4 Oct 2026: "the healer keeps walking towards enemy, he should stay
+## range and heal, and Kestrel stay away just looking to hit from distance,
+## while Ironjaw and Bastion should focus close combat".
+func _hero_ai_board(brute_at: Vector2i) -> void:
+	var roster := [
+		{"seat": 0, "facing": "N"},
+		{"seat": 1, "facing": "N"},
+		{"seat": 2, "facing": "N"},
+		{"seat": 3, "name": "Brute", "max_hp": 400, "hp": 400, "facing": "S", "foe_kit": ["foe.brute_hit"], "role": "brute", "door": "crosshaven"},
+	]
+	_sim.reset_match({
+		"seed": 5,
+		"flat_board": true,
+		"skip_deploy": true,
+		"party_size": 3,
+		"classes": ["mender", "ironjaw", "kestrel", "ironjaw"],
+		"positions": [Vector2i(7, 7), Vector2i(7, 9), Vector2i(8, 7), brute_at],
+		"stasis_roster": roster,
+	})
+
+
+## Plays one AI turn for `seat`; returns every cell it stood on.
+func _hero_ai_turn(seat: int) -> Array:
+	_sim._active_seat = seat
+	var cells: Array = []
+	var HeroAi := load("res://backend/hero_ai.gd")
+	for _i in 20:
+		var intent: Dictionary = HeroAi.plan(_sim, seat)
+		if str(intent.get("type", "")) == "end_turn":
+			break
+		_sim._last_events = []
+		var res: Dictionary = _sim.submit(intent)
+		if not bool(res.get("ok", true)):
+			break
+		for unit in _sim.snapshot()["units"]:
+			if int(unit["seat"]) == seat:
+				cells.append(unit["pos"])
+	return cells
+
+
+func _test_hero_ai_roles() -> void:
+	var HeroAi := load("res://backend/hero_ai.gd")
+	eq(HeroAi.role_of("mender"), "healer", "Mender plays the healer")
+	eq(HeroAi.role_of("kestrel"), "ranged", "Kestrel plays ranged")
+	eq(HeroAi.role_of("ironjaw"), "melee", "Ironjaw plays close combat")
+	eq(HeroAi.role_of("bastion"), "melee", "Bastion plays close combat")
+	var brute := Vector2i(7, 5)
+	# Mender, nobody hurt, an enemy 2 tiles away: steps back, never walks in.
+	_hero_ai_board(brute)
+	_sim._active_seat = 0
+	var first: Dictionary = HeroAi.plan(_sim, 0)
+	eq(str(first.get("type", "")), "move", "the Mender steps back first when an enemy is 2 tiles away")
+	var mender_cells := _hero_ai_turn(0)
+	var closest := 99
+	for c in mender_cells:
+		closest = mini(closest, chebyshev_of(c, brute))
+	eq(closest >= 3, true, "the Mender stays 3+ tiles from the enemy (closest %d)" % closest)
+	# Mender heals early: an ally at 80% gets a heal, not a hit or a walk.
+	_hero_ai_board(Vector2i(7, 2))
+	for unit in _sim._units:
+		if int(unit["seat"]) == 1:
+			unit["hp"] = int(float(unit["max_hp"]) * 0.8)
+	_sim._active_seat = 0
+	var heal: Dictionary = HeroAi.plan(_sim, 0)
+	eq(str(heal.get("type", "")) == "cast" and int(heal.get("target_seat", -1)) == 1, true, "the Mender heals an ally at 80%")
+	# Kestrel: enemy 2 tiles away, steps back first, then shoots from range.
+	_hero_ai_board(Vector2i(8, 5))
+	_sim._active_seat = 2
+	var kestrel_first: Dictionary = HeroAi.plan(_sim, 2)
+	eq(str(kestrel_first.get("type", "")), "move", "Kestrel steps back before shooting when an enemy is close")
+	var kestrel_cells := _hero_ai_turn(2)
+	var k_end: Vector2i = kestrel_cells[-1] if not kestrel_cells.is_empty() else Vector2i(8, 7)
+	eq(chebyshev_of(k_end, Vector2i(8, 5)) >= 3, true, "Kestrel ends her turn out of melee reach")
+	# Ironjaw closes in on an enemy 4 tiles away.
+	_hero_ai_board(Vector2i(7, 13))
+	var ij_cells := _hero_ai_turn(1)
+	var ij_end: Vector2i = ij_cells[-1] if not ij_cells.is_empty() else Vector2i(7, 9)
+	eq(chebyshev_of(ij_end, Vector2i(7, 13)) < 4, true, "Ironjaw walks into close combat")
+	_sim.reset_match(StasisCatalog.fight_config())
 
 
 func eq(actual: Variant, expected: Variant, msg: String) -> void:
