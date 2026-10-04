@@ -21,6 +21,7 @@
   "cell_centre_2x": "((x-y)*64, (x+y)*32 - h*20)",
   "sort": "(x+y)*10 + h*8, fighters +4"
  },
+ "step_px_2x": 20,
  "files": {
   "tiles": "tiles/<id>.png + tiles/<id>@2x.png",
   "terrace": "terrace/<id>.png + @2x",
@@ -864,201 +865,267 @@
    "id": "cliff_left_h1",
    "file": "terrace/cliff_left_h1.png",
    "file_2x": "terrace/cliff_left_h1@2x.png",
-   "size": [
-    32,
-    26
-   ],
+   "kind": "face",
+   "edge": "SW",
+   "height_steps": 1,
    "size_2x": [
     64,
     52
    ],
-   "kind": "side",
-   "face": "SW (lit by the key)",
-   "steps": 1,
-   "step_px_2x": 20,
-   "step_px_1x": 10,
-   "anchor": "canvas top-left = LIFTED cell centre + (-64,0) at 2x / (-32,0) at 1x; draw before the tile top",
-   "use": "drop of 1 step(s) to the (x,y+1) neighbour; for drops >3 stack h3 + h(n-3) 60 px lower"
+   "offset_2x": [
+    -64,
+    0
+   ],
+   "tile_axis": "x",
+   "foot": "ground",
+   "draw": "before_top"
+  },
+  {
+   "id": "cliff_left_h1_water",
+   "file": "terrace/cliff_left_h1_water.png",
+   "file_2x": "terrace/cliff_left_h1_water@2x.png",
+   "kind": "face",
+   "edge": "SW",
+   "height_steps": 1,
+   "size_2x": [
+    64,
+    52
+   ],
+   "offset_2x": [
+    -64,
+    0
+   ],
+   "tile_axis": "x",
+   "foot": "water",
+   "draw": "before_top",
+   "note": "replaces cliff_left_h1 when the lower neighbour (x,y+1) is water: wet dark waterline + light foam instead of the earth foot. The water cell's water_edge_ne stone lip along this edge is skipped (the face foot is the shore). crosshaven_15: (10,3)"
   },
   {
    "id": "cliff_right_h1",
    "file": "terrace/cliff_right_h1.png",
    "file_2x": "terrace/cliff_right_h1@2x.png",
-   "size": [
-    32,
-    26
-   ],
+   "kind": "face",
+   "edge": "SE",
+   "height_steps": 1,
    "size_2x": [
     64,
     52
    ],
-   "kind": "side",
-   "face": "SE (shade #5a6fa0)",
-   "steps": 1,
-   "step_px_2x": 20,
-   "step_px_1x": 10,
-   "anchor": "canvas top-left = LIFTED cell centre + (0,0) at 2x / (0,0) at 1x; draw before the tile top",
-   "use": "drop of 1 step(s) to the (x+1,y) neighbour; for drops >3 stack h3 + h(n-3) 60 px lower"
+   "offset_2x": [
+    0,
+    0
+   ],
+   "tile_axis": "y",
+   "foot": "ground",
+   "draw": "before_top"
+  },
+  {
+   "id": "cliff_right_h1_water",
+   "file": "terrace/cliff_right_h1_water.png",
+   "file_2x": "terrace/cliff_right_h1_water@2x.png",
+   "kind": "face",
+   "edge": "SE",
+   "height_steps": 1,
+   "size_2x": [
+    64,
+    52
+   ],
+   "offset_2x": [
+    0,
+    0
+   ],
+   "tile_axis": "y",
+   "foot": "water",
+   "draw": "before_top",
+   "note": "replaces cliff_right_h1 when the lower neighbour (x+1,y) is water: wet dark waterline + light foam instead of the earth foot. The water cell's water_edge_nw stone lip along this edge is skipped (the face foot is the shore). crosshaven_15: (9,5), (3,7), (11,7)"
   },
   {
    "id": "cliff_left_h2",
    "file": "terrace/cliff_left_h2.png",
    "file_2x": "terrace/cliff_left_h2@2x.png",
-   "size": [
-    32,
-    36
-   ],
+   "kind": "face",
+   "edge": "SW",
+   "height_steps": 2,
    "size_2x": [
     64,
     72
    ],
-   "kind": "side",
-   "face": "SW (lit by the key)",
-   "steps": 2,
-   "step_px_2x": 20,
-   "step_px_1x": 10,
-   "anchor": "canvas top-left = LIFTED cell centre + (-64,0) at 2x / (-32,0) at 1x; draw before the tile top",
-   "use": "drop of 2 step(s) to the (x,y+1) neighbour; for drops >3 stack h3 + h(n-3) 60 px lower"
+   "offset_2x": [
+    -64,
+    0
+   ],
+   "tile_axis": "x",
+   "foot": "ground",
+   "draw": "before_top"
   },
   {
    "id": "cliff_right_h2",
    "file": "terrace/cliff_right_h2.png",
    "file_2x": "terrace/cliff_right_h2@2x.png",
-   "size": [
-    32,
-    36
-   ],
+   "kind": "face",
+   "edge": "SE",
+   "height_steps": 2,
    "size_2x": [
     64,
     72
    ],
-   "kind": "side",
-   "face": "SE (shade #5a6fa0)",
-   "steps": 2,
-   "step_px_2x": 20,
-   "step_px_1x": 10,
-   "anchor": "canvas top-left = LIFTED cell centre + (0,0) at 2x / (0,0) at 1x; draw before the tile top",
-   "use": "drop of 2 step(s) to the (x+1,y) neighbour; for drops >3 stack h3 + h(n-3) 60 px lower"
+   "offset_2x": [
+    0,
+    0
+   ],
+   "tile_axis": "y",
+   "foot": "ground",
+   "draw": "before_top"
   },
   {
    "id": "cliff_left_h3",
    "file": "terrace/cliff_left_h3.png",
    "file_2x": "terrace/cliff_left_h3@2x.png",
-   "size": [
-    32,
-    46
-   ],
+   "kind": "face",
+   "edge": "SW",
+   "height_steps": 3,
    "size_2x": [
     64,
     92
    ],
-   "kind": "side",
-   "face": "SW (lit by the key)",
-   "steps": 3,
-   "step_px_2x": 20,
-   "step_px_1x": 10,
-   "anchor": "canvas top-left = LIFTED cell centre + (-64,0) at 2x / (-32,0) at 1x; draw before the tile top",
-   "use": "drop of 3 step(s) to the (x,y+1) neighbour; for drops >3 stack h3 + h(n-3) 60 px lower"
+   "offset_2x": [
+    -64,
+    0
+   ],
+   "tile_axis": "x",
+   "foot": "ground",
+   "draw": "before_top"
   },
   {
    "id": "cliff_right_h3",
    "file": "terrace/cliff_right_h3.png",
    "file_2x": "terrace/cliff_right_h3@2x.png",
-   "size": [
-    32,
-    46
-   ],
+   "kind": "face",
+   "edge": "SE",
+   "height_steps": 3,
    "size_2x": [
     64,
     92
    ],
-   "kind": "side",
-   "face": "SE (shade #5a6fa0)",
-   "steps": 3,
-   "step_px_2x": 20,
-   "step_px_1x": 10,
-   "anchor": "canvas top-left = LIFTED cell centre + (0,0) at 2x / (0,0) at 1x; draw before the tile top",
-   "use": "drop of 3 step(s) to the (x+1,y) neighbour; for drops >3 stack h3 + h(n-3) 60 px lower"
+   "offset_2x": [
+    0,
+    0
+   ],
+   "tile_axis": "y",
+   "foot": "ground",
+   "draw": "before_top"
   },
   {
    "id": "grass_overhang_left",
    "file": "terrace/grass_overhang_left.png",
    "file_2x": "terrace/grass_overhang_left@2x.png",
-   "size": [
-    32,
-    26
-   ],
+   "kind": "overhang",
+   "edge": "SW",
+   "height_steps": null,
    "size_2x": [
     64,
     52
    ],
-   "kind": "overhang",
-   "anchor": "canvas top-left = lifted cell centre + (-64,-8) at 2x / (-32,-4) at 1x (the cell's front edge runs through canvas y 8..40); draw after the tile and its overlays",
-   "use": "on every raised grass cell with a left cliff face; lip covers ~6 px of the top face and hangs ~10-12 px over the cliff top"
+   "offset_2x": [
+    -64,
+    -8
+   ],
+   "tile_axis": "x",
+   "foot": null,
+   "draw": "after_top",
+   "note": "one size for every height (not 64 x (32+20n)): the cell front edge runs through canvas y 8..40; height_steps / foot do not apply"
   },
   {
    "id": "grass_overhang_right",
    "file": "terrace/grass_overhang_right.png",
    "file_2x": "terrace/grass_overhang_right@2x.png",
-   "size": [
-    32,
-    26
-   ],
+   "kind": "overhang",
+   "edge": "SE",
+   "height_steps": null,
    "size_2x": [
     64,
     52
    ],
-   "kind": "overhang",
-   "anchor": "canvas top-left = lifted cell centre + (0,-8) at 2x / (0,-4) at 1x (the cell's front edge runs through canvas y 8..40); draw after the tile and its overlays",
-   "use": "on every raised grass cell with a right cliff face; lip covers ~6 px of the top face and hangs ~10-12 px over the cliff top"
+   "offset_2x": [
+    0,
+    -8
+   ],
+   "tile_axis": "y",
+   "foot": null,
+   "draw": "after_top",
+   "note": "one size for every height (not 64 x (32+20n)): the cell front edge runs through canvas y 8..40; height_steps / foot do not apply"
   },
   {
    "id": "grass_overhang_corner_front",
    "file": "terrace/grass_overhang_corner_front.png",
    "file_2x": "terrace/grass_overhang_corner_front@2x.png",
-   "size": [
-    20,
-    20
-   ],
+   "kind": "corner",
+   "vertex": "S",
+   "height_steps": null,
    "size_2x": [
     40,
     40
    ],
-   "kind": "overhang_corner",
-   "anchor": "canvas (20,12) at 2x / (10,6) at 1x = the south vertex = centre+(0,32) of the lifted cell; draw after the overhang strips",
-   "use": "when both faces exist"
+   "offset_2x": [
+    -20,
+    20
+   ],
+   "tile_axis": null,
+   "foot": null,
+   "draw": "after_top",
+   "pivot_px_2x": [
+    20,
+    12
+   ],
+   "note": "40x40 (not 64 x (32+20n)); pivot canvas (20,12) = the S vertex of the lifted cell; draw after the overhang strips; height_steps / tile_axis / foot do not apply"
   },
   {
    "id": "grass_overhang_corner_left",
    "file": "terrace/grass_overhang_corner_left.png",
    "file_2x": "terrace/grass_overhang_corner_left@2x.png",
-   "size": [
-    20,
-    20
-   ],
+   "kind": "corner",
+   "vertex": "W",
+   "height_steps": null,
    "size_2x": [
     40,
     40
    ],
-   "kind": "overhang_corner",
-   "anchor": "canvas (20,12) at 2x / (10,6) at 1x = the west vertex = centre+(-64,0) of the lifted cell; draw after the overhang strips",
-   "use": "when the left face exists"
+   "offset_2x": [
+    -84,
+    -12
+   ],
+   "tile_axis": null,
+   "foot": null,
+   "draw": "after_top",
+   "pivot_px_2x": [
+    20,
+    12
+   ],
+   "note": "40x40 (not 64 x (32+20n)); pivot canvas (20,12) = the W vertex of the lifted cell; draw after the overhang strips; height_steps / tile_axis / foot do not apply"
   },
   {
    "id": "grass_overhang_corner_right",
    "file": "terrace/grass_overhang_corner_right.png",
    "file_2x": "terrace/grass_overhang_corner_right@2x.png",
-   "size": [
-    20,
-    20
-   ],
+   "kind": "corner",
+   "vertex": "E",
+   "height_steps": null,
    "size_2x": [
     40,
     40
    ],
-   "kind": "overhang_corner",
-   "anchor": "canvas (20,12) at 2x / (10,6) at 1x = the east vertex = centre+(64,0) of the lifted cell; draw after the overhang strips",
-   "use": "when the right face exists"
+   "offset_2x": [
+    44,
+    -12
+   ],
+   "tile_axis": null,
+   "foot": null,
+   "draw": "after_top",
+   "pivot_px_2x": [
+    20,
+    12
+   ],
+   "note": "40x40 (not 64 x (32+20n)); pivot canvas (20,12) = the E vertex of the lifted cell; draw after the overhang strips; height_steps / tile_axis / foot do not apply"
   }
  ],
  "props": [
@@ -1142,8 +1209,8 @@
    "layer": "prop",
    "replaces": "hay",
    "art_x_from_anchor_2x": [
-    -38,
-    39
+    -37,
+    34
    ],
    "art_height_px_2x": 86,
    "lowest_opaque_gap_px_2x": 10,
@@ -1292,11 +1359,11 @@
    "layer": "prop",
    "replaces": null,
    "art_x_from_anchor_2x": [
-    -95,
-    30
+    -79,
+    46
    ],
-   "art_height_px_2x": 129,
-   "lowest_opaque_gap_px_2x": 11,
+   "art_height_px_2x": 137,
+   "lowest_opaque_gap_px_2x": 19,
    "anchor": "image bottom-centre = south tip of the anchor cell (same as tile.gd stock props); lifted with the cell by height*20 at 2x",
    "sort": "z = (x+y)*10 + height*8 of the anchor cell (props share their cell z; fighters +4 draw over them)",
    "contact_shadow": "baked: soft cool ellipse, alpha <= 0.30, inside the cell (no cast/long shadow)",
@@ -1333,11 +1400,11 @@
    "layer": "prop",
    "replaces": null,
    "art_x_from_anchor_2x": [
-    -88,
-    24
+    -76,
+    36
    ],
-   "art_height_px_2x": 103,
-   "lowest_opaque_gap_px_2x": 11,
+   "art_height_px_2x": 109,
+   "lowest_opaque_gap_px_2x": 17,
    "anchor": "image bottom-centre = south tip of the anchor cell (same as tile.gd stock props); lifted with the cell by height*20 at 2x",
    "sort": "z = (x+y)*10 + height*8 of the anchor cell (props share their cell z; fighters +4 draw over them)",
    "contact_shadow": "baked: soft cool ellipse, alpha <= 0.30, inside the cell (no cast/long shadow)",

@@ -128,142 +128,71 @@ static func terrace_entries() -> Array:
 
 
 ## Canvas top-left relative to the lifted cell centre, in 1x pixels.
-## v1.3 stores that as offset_2x. v1.2 still writes it in the anchor sentence.
+## offset_2x is that corner in @2x pixels.
 static func terrace_origin(entry: Dictionary) -> Vector2:
 	var offset: Variant = entry.get("offset_2x", null)
 	if offset is Array and (offset as Array).size() >= 2:
 		return Vector2(float(offset[0]), float(offset[1])) * DRAW_SCALE
-	var anchor := str(entry.get("anchor", ""))
-	if anchor.contains("top-left"):
-		var top: Variant = _vec_before(anchor, "at 1x")
-		if top is Vector2:
-			return top
-	var canvas: Variant = _vec_before(anchor, "at 1x")
-	var centre: Variant = _centre_2x(anchor)
-	if canvas is Vector2 and centre is Vector2:
-		return (centre as Vector2) * DRAW_SCALE - (canvas as Vector2)
-	return Vector2(-32, -16)
+	return Vector2.ZERO
 
 
 ## "face" draws under the top, "strip" after the overlays, "corner" last.
 static func terrace_role(entry: Dictionary) -> String:
-	var kind := str(entry.get("kind", "")).to_lower()
-	var draw := str(entry.get("draw", "")).to_lower()
-	var vertex := str(entry.get("vertex", "")).strip_edges()
-	if kind.contains("corner") or vertex != "" or draw == "corner" or draw == "vertex":
-		return "corner"
-	if kind == "overhang" or kind == "lip" or kind == "strip" or draw == "overhang" or draw == "after" or draw == "after_tile":
-		return "strip"
-	return "face"
+	match _field(entry, "kind").to_lower():
+		"corner":
+			return "corner"
+		"overhang":
+			return "strip"
+		_:
+			return "face"
 
 
-## The cell the face drops onto. tile_axis is the v1.3 field; the v1.2
-## "use" sentence names the same neighbour.
+## The cell the face drops onto. In this kit tile_axis x is the SW face,
+## whose lower neighbour is (x, y+1). tile_axis y is the SE face, (x+1, y).
 static func drop_step(entry: Dictionary) -> Vector2i:
-	var axis: Variant = entry.get("tile_axis", null)
-	if axis is Array and (axis as Array).size() >= 2:
-		return Vector2i(int(axis[0]), int(axis[1]))
-	var text := str(axis).strip_edges().to_lower().replace(" ", "")
-	var from_text := _step_named(text)
-	if from_text != Vector2i.ZERO or text in ["0", "none", ""]:
-		if text != "":
-			return from_text
-	var edge := str(entry.get("edge", "")).strip_edges().to_lower()
-	var from_edge := _step_named(edge)
-	if edge != "" and (from_edge != Vector2i.ZERO or edge in ["left", "right", "sw", "se", "west", "east"]):
-		return from_edge
-	var use := str(entry.get("use", "")).replace(" ", "")
-	if use.contains("(x+1,y)"):
-		return Vector2i(1, 0)
-	if use.contains("(x,y+1)"):
+	var axis := _field(entry, "tile_axis").to_lower()
+	var edge := _field(entry, "edge").to_upper()
+	if axis == "x" or edge == "SW":
 		return Vector2i(0, 1)
-	var face := str(entry.get("face", "")).to_lower()
-	if face.begins_with("se"):
+	if axis == "y" or edge == "SE":
 		return Vector2i(1, 0)
-	if face.begins_with("sw"):
-		return Vector2i(0, 1)
 	return Vector2i.ZERO
 
 
 static func edge_side(entry: Dictionary) -> String:
-	var step := drop_step(entry)
-	if step == Vector2i(0, 1):
+	var edge := _field(entry, "edge").to_upper()
+	var axis := _field(entry, "tile_axis").to_lower()
+	if edge == "SW" or axis == "x":
 		return "left"
-	if step == Vector2i(1, 0):
-		return "right"
-	var use := str(entry.get("use", "")).to_lower()
-	if use.contains("left"):
-		return "left"
-	if use.contains("right"):
+	if edge == "SE" or axis == "y":
 		return "right"
 	return ""
 
 
 static func vertex_where(entry: Dictionary) -> String:
-	var named := _step_named(str(entry.get("vertex", "")).strip_edges().to_lower())
-	var vertex := str(entry.get("vertex", "")).strip_edges().to_lower()
-	if vertex in ["front", "south", "s"]:
-		return "front"
-	if named == Vector2i(0, 1) or vertex in ["left", "west", "sw"]:
-		return "left"
-	if named == Vector2i(1, 0) or vertex in ["right", "east", "se"]:
-		return "right"
-	var use := str(entry.get("use", "")).to_lower()
-	if use.contains("both"):
-		return "front"
-	if use.contains("left"):
-		return "left"
-	if use.contains("right"):
-		return "right"
-	return ""
+	match _field(entry, "vertex").to_upper():
+		"S":
+			return "front"
+		"W":
+			return "left"
+		"E":
+			return "right"
+		_:
+			return ""
 
 
-static func _step_named(text: String) -> Vector2i:
-	match text:
-		"x", "+x", "se", "right", "east", "(x+1,y)", "x+1":
-			return Vector2i(1, 0)
-		"y", "+y", "sw", "left", "west", "(x,y+1)", "y+1":
-			return Vector2i(0, 1)
-		"-x", "nw":
-			return Vector2i(-1, 0)
-		"-y", "ne":
-			return Vector2i(0, -1)
-	return Vector2i.ZERO
+static func height_steps(entry: Dictionary) -> int:
+	var raw: Variant = entry.get("height_steps", null)
+	if raw == null or not (raw is int or raw is float):
+		return -1
+	return int(raw)
 
 
-static func _vec_before(text: String, marker: String) -> Variant:
-	var at := text.find(marker)
-	if at < 0:
-		return null
-	var open := text.rfind("(", at)
-	if open < 0:
-		return null
-	var close := text.find(")", open)
-	if close < 0 or close > at:
-		return null
-	return _parse_pair(text.substr(open + 1, close - open - 1))
-
-
-static func _centre_2x(text: String) -> Variant:
-	var at := text.find("centre+")
-	if at < 0:
-		at = text.find("center+")
-	if at < 0:
-		return null
-	var open := text.find("(", at)
-	if open < 0:
-		return null
-	var close := text.find(")", open)
-	if close < 0:
-		return null
-	return _parse_pair(text.substr(open + 1, close - open - 1))
-
-
-static func _parse_pair(body: String) -> Variant:
-	var bits := body.split(",")
-	if bits.size() < 2:
-		return null
-	return Vector2(float(bits[0].strip_edges()), float(bits[1].strip_edges()))
+static func _field(entry: Dictionary, key: String) -> String:
+	var raw: Variant = entry.get(key, null)
+	if raw == null:
+		return ""
+	return str(raw).strip_edges()
 
 
 static func piece_path(folder: String, id: String) -> String:
@@ -465,7 +394,10 @@ func _add_cell(dress: Dress, cell: Vector2i, spec: Dictionary, size: int, tint: 
 		_add_terrace(dress, id, tint)
 	_add_floor(dress, str(spec.get("tile", "")), tint)
 	for raw in spec.get("overlays", []):
-		_add_flat(dress, str(raw), "overlay", tint)
+		var overlay := str(raw)
+		if _shore_lip_hidden(overlay, cell):
+			continue
+		_add_flat(dress, overlay, "overlay", tint)
 	for id in strips:
 		_add_terrace(dress, id, tint)
 	for id in corners:
@@ -521,8 +453,9 @@ func _face_for_edge(side: String, steps: int) -> String:
 		var id := str(entry.get("id", ""))
 		if id.ends_with("_water") or terrace_role(entry) != "face":
 			continue
-		var height := int(entry.get("height_steps", entry.get("steps", -1)))
-		if height == steps and edge_side(entry) == side:
+		if _field(entry, "foot") == "water":
+			continue
+		if height_steps(entry) == steps and edge_side(entry) == side:
 			return id
 	return "cliff_%s_h%d" % [side, steps]
 
@@ -546,18 +479,63 @@ func _corner_id(where: String) -> String:
 	return ""
 
 
-## A face that drops onto water uses the `<id>_water` piece when the kit has it.
+## A ground foot becomes the water-foot face when the lower neighbour is water.
+## looks.json still names the dry id. The atlas foot field picks the variant.
 func _resolve_face(id: String, cell: Vector2i) -> String:
 	if id == "" or _role_for(id) != "face":
 		return id
 	var entry := _entry_for(id)
+	if entry.is_empty() or _field(entry, "foot") == "water":
+		return id
 	var step := drop_step(entry)
 	if step == Vector2i.ZERO or not _is_water(cell + step):
 		return id
-	var wet := id + "_water"
-	if piece_path("terrace", wet) == "":
+	var wet := _water_face(entry)
+	if wet == "" or piece_path("terrace", wet) == "":
 		return id
 	return wet
+
+
+func _water_face(entry: Dictionary) -> String:
+	var direct := str(entry.get("id", "")) + "_water"
+	if _terrace.has(direct):
+		return direct
+	var edge := _field(entry, "edge").to_upper()
+	var steps := height_steps(entry)
+	for other in _terrace_list:
+		if not (other is Dictionary):
+			continue
+		if terrace_role(other) != "face" or _field(other, "foot") != "water":
+			continue
+		if _field(other, "edge").to_upper() == edge and height_steps(other) == steps:
+			return str(other.get("id", ""))
+	return ""
+
+
+## The water face is the shore. The stone lip on that edge of the water cell
+## would sit in front of the foam, so it stays off. SW skips water_edge_ne.
+## SE skips water_edge_nw.
+func _shore_lip_hidden(overlay: String, cell: Vector2i) -> bool:
+	if overlay == "water_edge_ne" and _water_face_above(cell + Vector2i(0, -1), "SW", cell):
+		return true
+	if overlay == "water_edge_nw" and _water_face_above(cell + Vector2i(-1, 0), "SE", cell):
+		return true
+	return false
+
+
+func _water_face_above(upper: Vector2i, edge: String, here: Vector2i) -> bool:
+	var spec: Dictionary = _by_cell.get(upper, {})
+	if spec.is_empty() or not _is_water(here):
+		return false
+	for raw in spec.get("terrace", []):
+		var entry := _entry_for(str(raw))
+		if entry.is_empty() or terrace_role(entry) != "face":
+			continue
+		if _field(entry, "edge").to_upper() != edge:
+			continue
+		if upper + drop_step(entry) == here:
+			return true
+	return false
 
 
 func _is_water(cell: Vector2i) -> bool:

@@ -37,17 +37,19 @@ func _test_ids_and_files() -> void:
 	eq(int(looks.get("version", 0)), 1, "the kit version field stays an int")
 	truthy(FileAccess.file_exists(BOARD.ART_ROOT + "README.md"), "the kit ships its readme")
 	var readme := FileAccess.get_file_as_string(BOARD.ART_ROOT + "README.md")
-	truthy(readme.contains("v1.2"), "the art on disk is the v1.2 pass")
+	truthy(readme.begins_with("# l9_outdoor_board:") and readme.contains("— v1.3"), "the art on disk is the v1.3 pass")
 	var pair_script := load("res://tests/pc/pair_match.gd")
 	eq(int(pair_script.SEED), 1, "before/after pairs share match seed 1")
-	for capture_path in ["res://tests/pc/capture_l9.gd", "res://tests/pc/capture_l9_clip.gd", "res://tests/pc/capture_l7.gd", "res://tests/pc/capture_l7_clip.gd", "res://tests/pc/capture_l7_grade.gd"]:
+	for capture_path in ["res://tests/pc/capture_l9.gd", "res://tests/pc/capture_l9_clip.gd", "res://tests/pc/capture_l9_grade.gd", "res://tests/pc/capture_l7.gd", "res://tests/pc/capture_l7_clip.gd", "res://tests/pc/capture_l7_grade.gd"]:
 		var capture := FileAccess.get_file_as_string(capture_path)
 		truthy(capture.contains("pair_match.gd"), "%s boots from the shared match" % capture_path)
 		eq(capture.contains("\"seed\":"), false, "%s does not pick a second match seed" % capture_path)
 	var missing := BOARD.unresolved_ids()
 	eq(missing.size(), 0, "every looks.json id resolves to a file (%s)" % " ".join(missing))
+	eq(BOARD.load_catalog().size(), 15, "the kit lists 15 props")
 	for spec in BOARD.load_catalog():
 		if spec is Dictionary:
+			eq(str(spec.get("blocks", "")), "none", "prop %s writes blocks none" % str(spec.get("id", "")))
 			eq(BOARD.prop_blocks(spec), "none", "prop %s does not block" % str(spec.get("id", "")))
 	var sample := BOARD.piece_path("tiles", "grass_top_a")
 	truthy(sample.ends_with("grass_top_a@2x.png"), "the loader prefers the @2x master")
@@ -76,7 +78,7 @@ func _test_ids_and_files() -> void:
 				truthy(text.contains("compress/mode=0"), "%s stays lossless" % name)
 				truthy(text.contains("mipmaps/generate=false"), "%s has no mipmaps" % name)
 			name = dir.get_next()
-	eq(pngs, 126, "the kit is 126 pngs")
+	eq(pngs, 130, "the kit is 130 pngs, including the two water faces")
 
 
 func _test_terrace_schema() -> void:
@@ -92,30 +94,25 @@ func _test_terrace_schema() -> void:
 	eq(BOARD.terrace_role(by_id["cliff_left_h2"]), "face", "a cliff is a face")
 	eq(BOARD.terrace_role(by_id["grass_overhang_right"]), "strip", "an overhang is a strip")
 	eq(BOARD.terrace_role(by_id["grass_overhang_corner_left"]), "corner", "a corner piece stays a corner")
-	eq(BOARD.drop_step(by_id["cliff_left_h1"]), Vector2i(0, 1), "the left face drops toward +y")
-	eq(BOARD.drop_step(by_id["cliff_right_h1"]), Vector2i(1, 0), "the right face drops toward +x")
-	eq(BOARD.edge_side(by_id["cliff_left_h2"]), "left", "the 2-step left face is the front-row edge")
-	eq(BOARD.edge_side(by_id["cliff_right_h2"]), "right", "the 2-step right face is the front-column edge")
-	var sample := {
-		"id": "cliff_left_h1",
-		"kind": "face",
-		"edge": "left",
-		"height_steps": 1,
-		"offset_2x": [-64, 0],
-		"tile_axis": "y",
-		"size_2x": [64, 52],
-	}
-	eq(BOARD.terrace_origin(sample), Vector2(-32, 0), "offset_2x is the canvas top-left at half scale")
-	eq(BOARD.drop_step(sample), Vector2i(0, 1), "tile_axis y is the +y neighbour")
-	eq(BOARD.terrace_role(sample), "face", "kind face draws under the top")
-	var wet := {
-		"kind": "face",
-		"edge": "right",
-		"tile_axis": [1, 0],
-		"offset_2x": [0, 0],
-	}
-	eq(BOARD.drop_step(wet), Vector2i(1, 0), "a tile_axis pair is the neighbour step")
-	eq(BOARD.terrace_origin(wet), Vector2(0, 0), "a zero offset_2x stays on the cell centre")
+	eq(BOARD.drop_step(by_id["cliff_left_h1"]), Vector2i(0, 1), "tile_axis x, the SW face, drops toward +y")
+	eq(BOARD.drop_step(by_id["cliff_right_h1"]), Vector2i(1, 0), "tile_axis y, the SE face, drops toward +x")
+	eq(str(by_id["cliff_left_h1_water"].get("foot", "")), "water", "the SW water face is a water foot")
+	eq(str(by_id["cliff_right_h1_water"].get("foot", "")), "water", "the SE water face is a water foot")
+	eq(BOARD.edge_side(by_id["cliff_left_h2"]), "left", "the 2-step SW face is the front-row edge")
+	eq(BOARD.edge_side(by_id["cliff_right_h2"]), "right", "the 2-step SE face is the front-column edge")
+	eq(BOARD.vertex_where(by_id["grass_overhang_corner_front"]), "front", "vertex S is the south corner")
+	eq(BOARD.vertex_where(by_id["grass_overhang_corner_left"]), "left", "vertex W is the west corner")
+	eq(BOARD.vertex_where(by_id["grass_overhang_corner_right"]), "right", "vertex E is the east corner")
+	eq(BOARD.terrace_origin(by_id["grass_overhang_corner_left"]), Vector2(-42, -6), "the west corner uses offset_2x")
+	eq(BOARD.terrace_origin(by_id["grass_overhang_corner_right"]), Vector2(22, -6), "the east corner uses offset_2x")
+	var wall: Dictionary = {}
+	for spec in BOARD.load_catalog():
+		if spec is Dictionary and str(spec.get("id", "")) == "ruined_wall_2c":
+			wall = spec
+	var wall_anchor: Array = wall.get("anchor_px_2x", [])
+	var wall_size: Array = wall.get("size_2x", [])
+	eq(Vector2i(int(wall_anchor[0]), int(wall_anchor[1])), Vector2i(96, 160), "the 2c wall anchor stays (96, 160)")
+	eq(Vector2i(int(wall_size[0]), int(wall_size[1])), Vector2i(192, 160), "the 2c wall canvas stays 192x160")
 
 
 func _test_data_stays() -> void:
@@ -264,15 +261,44 @@ func _test_live() -> void:
 	eq(raised.piece("cliff_left_h1").get("dest", Rect2()).position, Vector2(-32, 0), "the left cliff hangs from the west edge")
 	eq(raised.piece("grass_overhang_left").get("dest", Rect2()).position, Vector2(-32, -4), "the left lip uses the atlas anchor")
 	eq(raised.piece("grass_overhang_corner_front").get("dest", Rect2()).position, Vector2(-10, 10), "the front corner uses the atlas anchor")
-	for drop in [[Vector2i(10, 3), "cliff_left_h1"], [Vector2i(9, 5), "cliff_right_h1"], [Vector2i(3, 7), "cliff_right_h1"], [Vector2i(11, 7), "cliff_right_h1"]]:
+	var sw: PackedStringArray = board.tiles[Vector2i(10, 3)].get_node("CrosshavenDress").piece_ids()
+	truthy(sw.has("cliff_left_h1_water"), "(10,3) uses the SW water face")
+	eq(sw.has("cliff_left_h1"), false, "(10,3) does not also draw the dry SW face")
+	truthy(sw.has("cliff_right_h1"), "(10,3) keeps the dry SE face over ground")
+	for drop in [[Vector2i(9, 5), "cliff_right_h1"], [Vector2i(3, 7), "cliff_right_h1"], [Vector2i(11, 7), "cliff_right_h1"]]:
 		var at: Vector2i = drop[0]
 		var dry := str(drop[1])
-		var wet_id := dry + "_water"
-		var want := wet_id if BOARD.piece_path("terrace", wet_id) != "" else dry
 		var got: PackedStringArray = board.tiles[at].get_node("CrosshavenDress").piece_ids()
-		truthy(got.has(want), "%s drops onto water with %s" % [str(at), want])
-		if want != dry:
-			eq(got.has(dry), false, "%s does not also draw the dry face" % str(at))
+		truthy(got.has(dry + "_water"), "%s uses the SE water face" % str(at))
+		eq(got.has(dry), false, "%s does not also draw the dry SE face" % str(at))
+	var shore_a: PackedStringArray = board.tiles[Vector2i(10, 4)].get_node("CrosshavenDress").piece_ids()
+	eq(shore_a.has("water_edge_ne"), false, "(10,4) skips the stone lip under the SW water face")
+	truthy(shore_a.has("water_edge_nw"), "(10,4) keeps the other shore lip")
+	var shore_b: PackedStringArray = board.tiles[Vector2i(10, 5)].get_node("CrosshavenDress").piece_ids()
+	eq(shore_b.has("water_edge_nw"), false, "(10,5) skips the stone lip under the SE water face")
+	truthy(shore_b.has("water_edge_sw"), "(10,5) keeps the far shore lip")
+	var shore_c: PackedStringArray = board.tiles[Vector2i(4, 7)].get_node("CrosshavenDress").piece_ids()
+	eq(shore_c.has("water_edge_nw"), false, "(4,7) skips the stone lip under the SE water face")
+	truthy(shore_c.has("water_edge_ne"), "(4,7) keeps the other shore lip")
+	var shore_d: PackedStringArray = board.tiles[Vector2i(12, 7)].get_node("CrosshavenDress").piece_ids()
+	eq(shore_d.has("water_edge_nw"), false, "(12,7) skips the stone lip under the SE water face")
+	truthy(shore_d.has("water_edge_ne") and shore_d.has("water_edge_corner_s"), "(12,7) keeps the other shore pieces")
+	var light := preload("res://board/pc/look_light.gd")
+	var dress_node := board.tiles[Vector2i(0, 0)].get_node("CrosshavenDress") as CanvasItem
+	eq(dress_node.material == null, true, "the shipped grade leaves the board ungraded")
+	light.set_outdoor_preset(light.PRESET_LIGHT)
+	board._sync_look_light()
+	eq(dress_node.material != null, true, "light grades the new board when it is selected")
+	eq(is_equal_approx(float(dress_node.material.get_shader_parameter("grade_sat")), light.LIGHT_SAT), true, "light is saturation 1.10")
+	eq(is_equal_approx(float(dress_node.material.get_shader_parameter("grade_contrast")), light.LIGHT_CONTRAST), true, "light is contrast 1.04")
+	light.set_outdoor_preset(light.PRESET_MEDIUM)
+	board._sync_look_light()
+	eq(is_equal_approx(float(dress_node.material.get_shader_parameter("grade_sat")), light.MEDIUM_SAT), true, "medium is saturation 1.15")
+	eq(is_equal_approx(float(dress_node.material.get_shader_parameter("grade_contrast")), light.MEDIUM_CONTRAST), true, "medium is contrast 1.07")
+	light.set_outdoor_preset(light.PRESET_OFF)
+	board._sync_look_light()
+	eq(dress_node.material == null, true, "turning the preset off clears the board grade")
+	eq(light.outdoor_preset, light.PRESET_OFF, "the outdoor grade ships at strength 0")
 	var corner = board.tiles[Vector2i(14, 14)].get_node("CrosshavenDress")
 	var corner_ids: PackedStringArray = corner.piece_ids()
 	truthy(corner_ids.has("cliff_left_h2") and corner_ids.has("cliff_right_h2"), "the south corner gets the 2-step earth edge")

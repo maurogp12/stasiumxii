@@ -16,7 +16,8 @@
    "anchor_px_2x": [
     64,
     224
-   ]
+   ],
+   "blocks": "none"
   },
   {
    "id": "boulder_cluster",
@@ -31,7 +32,8 @@
    "anchor_px_2x": [
     64,
     128
-   ]
+   ],
+   "blocks": "none"
   },
   {
    "id": "lilac_shrub",
@@ -46,7 +48,8 @@
    "anchor_px_2x": [
     64,
     128
-   ]
+   ],
+   "blocks": "none"
   },
   {
    "id": "boulder_small",
@@ -61,7 +64,8 @@
    "anchor_px_2x": [
     64,
     128
-   ]
+   ],
+   "blocks": "none"
   },
   {
    "id": "ruined_wall_short",
@@ -76,7 +80,8 @@
    "anchor_px_2x": [
     64,
     128
-   ]
+   ],
+   "blocks": "none"
   },
   {
    "id": "fallen_log_short",
@@ -91,7 +96,8 @@
    "anchor_px_2x": [
     64,
     128
-   ]
+   ],
+   "blocks": "none"
   },
   {
    "id": "stone_well",
@@ -106,7 +112,8 @@
    "anchor_px_2x": [
     64,
     224
-   ]
+   ],
+   "blocks": "none"
   },
   {
    "id": "ruined_wall_2c",
@@ -121,7 +128,8 @@
    "anchor_px_2x": [
     96,
     160
-   ]
+   ],
+   "blocks": "none"
   },
   {
    "id": "fallen_log_2c",
@@ -136,7 +144,8 @@
    "anchor_px_2x": [
     96,
     160
-   ]
+   ],
+   "blocks": "none"
   },
   {
    "id": "lilac_bush",
@@ -151,7 +160,8 @@
    "anchor_px_2x": [
     64,
     128
-   ]
+   ],
+   "blocks": "none"
   },
   {
    "id": "lilac_tuft",
@@ -166,7 +176,8 @@
    "anchor_px_2x": [
     64,
     128
-   ]
+   ],
+   "blocks": "none"
   },
   {
    "id": "flower_tuft",
@@ -181,7 +192,8 @@
    "anchor_px_2x": [
     64,
     128
-   ]
+   ],
+   "blocks": "none"
   },
   {
    "id": "clover_patch",
@@ -196,7 +208,8 @@
    "anchor_px_2x": [
     64,
     128
-   ]
+   ],
+   "blocks": "none"
   },
   {
    "id": "pebbles_moss",
@@ -211,7 +224,8 @@
    "anchor_px_2x": [
     64,
     128
-   ]
+   ],
+   "blocks": "none"
   },
   {
    "id": "fern",
@@ -226,7 +240,8 @@
    "anchor_px_2x": [
     64,
     128
-   ]
+   ],
+   "blocks": "none"
   }
  ]
 }

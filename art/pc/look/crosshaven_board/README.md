@@ -1,4 +1,52 @@
-# l9_outdoor_board: Crosshaven combat board look kit (L9 outdoor, option A) — v1.2
+# l9_outdoor_board: Crosshaven combat board look kit (L9 outdoor, option A) — v1.3
+
+## v1.3 TA review fixes (Sat 3 Oct 2026, ET)
+Same ids and file names as v1.2. Canvas sizes and anchors are unchanged too, including the 2c pieces (see fix 2). Two new ids: `cliff_left_h1_water` and `cliff_right_h1_water` (each `@2x` + 1x, in `terrace/`). `looks.json` is byte-identical to v1.2. The v1.2 ship folder is backed up in `/workspace/scratch/l9_v12_ship/`.
+
+Changed PNGs (each `@2x` + 1x): `props/ruined_wall_2c`, `props/fallen_log_2c`, `props/ruined_wall_short`, `props/fallen_log_short`, `props/lilac_shrub`, `tiles/raised_rim_ne`, `tiles/raised_rim_nw`. New: `terrace/cliff_left_h1_water`, `terrace/cliff_right_h1_water`. All other PNGs are byte-identical to v1.2.
+
+1. **`blocks`**: `"blocks": "none"` was added to all 15 props in `props.json` and `props/props.json`. It is informational only, because CombatSim has no cover or LOS yet. The world gate's map cross-check (`--map-tags crosshaven_15x15_tags.json`) agrees on all 45 placements.
+2. **2c canvas (`ruined_wall_2c`, `fallen_log_2c`)**: neither of the TA's two options passes the world gate.
+   - Anchor x 128 in the 192 canvas FAILs "anchor x 128 is not on the footprint south tip (canvas centre 96 ±2)".
+   - A 224 canvas FAILs "1x canvas (112, 80) matches no size class for footprint 2x1 (wide (96, 80))".
+   - Both were tested on a temp copy.
+   - So the canvas stays 192x160 with anchor (96,160) (no anchor or size change, nothing for PR #242 to re-wire). The art moved inside the canvas instead: wall (+16,−8), log (+12,−6). That is a quarter-step or less across the piece's long axis, toward the footprint's centre line. In v1.2 the base ran about 7 px inside the front SW edge of the 2-cell footprint. Now it is about 15 px inside, and the art is still centred along the footprint's length.
+   - Art + AO now span canvas x 9..151 (pad L 9 / R 40, top ≥ 23, bottom row empty). Opaque art spans x 17..142 (wall) and 20..132 (log); in v1.2 both started at x 0-1.
+   - The log gets slightly less lift so it stays ≤ 110 px tall (109 px, still an "any edge" prop).
+   - The measured `art_x_from_anchor_2x` / `art_height_px_2x` / `lowest_opaque_gap_px_2x` in `props/props.json` and `atlas_meta.props[]` were refreshed so they are not stale.
+3. **Wall/log contact AO**: same cool #17171f-ish colour, same `exp(−2.2 r²)` falloff with the r 1.35 cut, and the same 40:17 ellipse aspect as the boulders.
+   - It is no longer one ellipse at the cell centre (that was hidden under a long wall). Each base contact point (the lowest opaque px of each column) now carries a 15x6.5 px ellipse, and the field is their max, so the AO hugs the base.
+   - Peak is 0.23. The AO stays inside the footprint (soft 4 px edge) and ≥ 8 px from the canvas sides.
+   - Visible AO in the 4 px under the base (median / peak), v1.2 → v1.3:
+     - `ruined_wall_short` 0.02 / 0.28 → 0.19 / 0.23
+     - `fallen_log_short` 0.05 / 0.22 → 0.20 / 0.23
+     - `ruined_wall_2c` 0.06 / 0.16 → 0.20 / 0.23
+     - `fallen_log_2c` 0.08 / 0.24 → 0.21 / 0.23
+     - The v1.2 peaks were isolated spots (under a loose block, say), not a contact line.
+   - The boulders are unchanged: a 40x17 ellipse with peak 0.28 at the cell centre. Measured the same way, most of their ellipse sits under the rock, so their visible contact is 0.02-0.03 (visible peak 0.05-0.13). If the walls should match that visible value rather than the TA's ~0.22, lower `st` in `build_props.contact_ao`.
+4. **Water-foot faces**: these are the faces that drop onto water in `previews/l9_outdoor_board/layout.json` `visible_cliff_faces`. All are 1-step:
+   - (10,3) SW → `cliff_left_h1_water`
+   - (9,5) SE, (3,7) SE, (11,7) SE → `cliff_right_h1_water`
+   - The variant replaces the earth contact AO with wet, darker, cooler stone above the waterline, a thin dark wet line, the water tint lapping the last ~2 px, broken foam flecks (≤ 0.6) and a faint ripple highlight. The foam/ripple noise is periodic, so chained faces stay seamless (the gate's seam check PASSes).
+   - The art stays inside the face parallelogram (64x52, same anchor as `cliff_*_h1`).
+   - **Loader rule (mock does this):** use `<face>_water` when the face's lower neighbour is water (`atlas_meta.terrace[].foot`). On that water cell, skip the `water_edge_ne` lip (SW face above it) or the `water_edge_nw` lip (SE face above it) along that edge. The face foot is the shore there; otherwise a dry stone lip would sit in front of the foam. `looks.json` still lists `cliff_*_h1` and the lip for those 4 cells (`looks.json` is unchanged), so the loader applies this swap.
+5. **`lilac_shrub` disc removed**: the bush is re-cut from the same sheet by colour (green leaves + lilac flowers, closed / hole-filled / opened to the bush silhouette). The dirt disc and loose grass tufts are gone, and brown gaps in the lower bush rim are repainted with the bush's own deep leaf shade. Scale and position are identical to v1.2, so the bush base still sits 10 px above the south tip. It now sits on bare grass with the same base-contact AO as fix 3 (visible 0.19 / peak 0.22).
+6. **`raised_rim_ne/nw` softened**: lit band 0.07 → 0.05 uv wide, opacity 0.55 → 0.22, colour lift ×1.25 → ×1.10. The dark silhouette line opacity went 0.80 → 0.30, with its colour moved halfway toward the grass mid-tone. Max alpha is 0.92 → 0.44 and mean coverage 0.0126 → 0.0044. The cliff faces + overhangs now carry the height read.
+7. **`wet_earth`**: unchanged (held for Luca's ruling). The `wet_earth_b` puddle stays at ≈ 0.20 of the cell from v1.2.
+8. **`atlas_meta.terrace[]` in the TA schema**: each entry has `id, file, file_2x, kind (face|overhang|corner), edge (SW|SE) | vertex (S|W|E), height_steps, size_2x, offset_2x, tile_axis, foot, draw (before_top|after_top)`. `file`/`file_2x` are kept because the gate reads them.
+   - Faces are exactly `[64, 32+20n]`, with offset SW [−64,0] / SE [0,0], `tile_axis` x (SW) / y (SE), and `foot` ground or water.
+   - Overhangs are the real 64x52 for every height (`height_steps`/`foot` null), with offset [−64,−8] / [0,−8].
+   - Corners are the real 40x40, with offset S [−20,20] / W [−84,−12] / E [44,−12] and `pivot_px_2x` [20,12] (the gate wants the pivot). `height_steps`/`tile_axis`/`foot` are null.
+   - Deviating sizes and the water rule are explained in a `note` per entry.
+   - The 2 `_water` faces are listed after their base face (13 entries). A top-level `"step_px_2x": 20` sits next to `grid.step_px_2x`.
+   - The old per-entry keys `size` (1x), `face`, `steps`, `step_px_2x`, `step_px_1x`, `anchor` and `use` are gone.
+
+Gates (Sat 3 Oct 2026 ~20:20 ET, from /workspace/stasium-pc-look):
+- `--package world` → **Overall PASS, 68 checked: 68 PASS, 0 WARN, 0 FAIL** (13 terrace pieces, `looks.json` terrace cross-check and `props.json blocks` all PASS). Report: `ship/check_report_world_l9_outdoor_board.md`.
+- `--package props` → **Overall WARN, 15 WARN (all "anchor y vs lowest opaque row", accepted), 0 FAIL**. Report moved to `ship/check_report_props_l9_outdoor_board.md`.
+
+Previews: `mock_l9_board_2x`, `mock_l9_1280`, `mock_l9_1920`, `before_after_1280` and `kit_contact` were re-rendered, with `*_v13` copies. `v13_fixes.png` shows the before/after of every changed piece. Build: `build_props.py` (`contact_ao`, `shrub_nodisc`, `SHIFT_2C`), `build_terrace.py water`, `build_overlays.py` (rim), `patch_json_v13.py` (all json edits, from the v1.2 backup), `engine.py` (`water_foot`), `v13_fixes.py`. The v1.2 scripts are in `/workspace/scratch/l9_build_v12_backup/`.
+
 
 ## v1.2 polish pass (Sat 3 Oct 2026, ET)
 Same ids, file names, canvas sizes, modes, anchors and json as v1.1. All four json files are byte-identical to v1.1, and the file list and every PNG size match the v1.1 backup (`/workspace/scratch/l9_v11_ship/`). Only pixels changed. Changed ids: `grass_top_a..d`, `grass_fringe_ne/nw/se/sw`, `grass_fringe_corner_n/e/s/w`, `raised_rim_ne/nw`, `grass_overhang_left/right`, `grass_overhang_corner_front/left/right`, `water_a/b` and `wet_earth_b` (each as `@2x` + 1x). Cliff faces, sandstone, `wet_earth_a`, the other overlays, `seal_slab` and props are unchanged.
@@ -201,6 +249,8 @@ Tiles carry contact AO only through the fringe, foot_ao and lip decals. No long 
 | `kit_contact.png` | Every tile, overlay, terrace piece, assembled h1/h2/h3 blocks and props at 2x with a fighter bar. |
 | `v11_vs_v12_closeup.png`, `v1_vs_v12_closeup.png` | Same 2x crop (600,450)-(1400,950) of `mock_l9_board_2x`: v1.1 (or v1) left, v1.2 right, labelled. |
 | `*_v12.*` | Copies of the v1.2 renders: `mock_l9_board_2x_v12.png`, `mock_l9_1280_v12.png`, `mock_l9_1920_v12.png`, `before_after_1280_v12.jpg`, `kit_contact_v12.png`. The `*_v11.*` files are the v1.1 renders. |
+| `v13_fixes.png` | v1.3 TA fixes, v1.2 left / v1.3 right: 2c wall + log with canvas and footprint outlines, short wall/log AO, shrub, water-foot faces at (3,7) and (10,3), softened raised rims. |
+| `*_v13.*` | Copies of the v1.3 renders: `mock_l9_board_2x_v13.png`, `mock_l9_1280_v13.png`, `mock_l9_1920_v13.png`, `before_after_1280_v13.jpg`, `kit_contact_v13.png`. The `*_v12.*` files are the v1.2 renders. |
 | `v1_vs_v11_closeup.png` | Same 2x crop of the board centre (600,450)-(1400,950) of `mock_l9_board_2x`: v1 left, v1.1 right. |
 | `*_v1.*` | The v1 renders kept for comparison: `mock_l9_board_2x_v1.png`, `mock_l9_1280_v1.png`, `mock_l9_1920_v1.png`, `before_after_1280_v1.jpg`, `kit_contact_v1.png`. |
 
@@ -215,7 +265,7 @@ Tiles carry contact AO only through the fringe, foot_ao and lip decals. No long 
 - **Puddle**: `wet_earth_b` now reads as water at 1280, but at 2x the recoloured pool is a little flat and pastel next to the painted earth (a sticker feel). A natively painted small sky-reflecting puddle would sit better.
 - **Water**: +15 % saturation and the deeper centre help, but the v1.1 swatch's pale cream streaks keep it lighter and milkier than v1's deep teal. If it should match v1 fully, the next step is to tone down the streaks, not add more saturation.
 - **Wall stub orientation**: `ruined_wall_short` runs along the y diagonal as painted, while both 2c pieces run along +x. It only appears at (1,0) now, but a +x stub would match.
-- **lilac_shrub** is still the v1 cut with a faded disc (the new sheet's shrub was all-purple). A no-disc shrub with green leaves and lilac flowers would finish the prop set.
+- **lilac_shrub**: v1.3 removed the disc by re-cutting the v1 shrub. A natively painted no-disc shrub would still give a cleaner base silhouette.
 - **Board-edge skirt**: v1.2 breaks the exact repeat in the mocks only (offset/mirror/course-warp variants, not shipped). The source strip is still one regular row of rounded cobbles, so it reads as a plinth at 2x. A strip with irregular fieldstones would fix it at the source.
 - **Sandstone grid**: seams are ~30 % softer as asked; at rest the slab grid is still visible (by design, each slab countable). If Mauro wants less, the next step is another ~30 % on grout darkness only.
 

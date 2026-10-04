@@ -42,7 +42,8 @@
    "kind": "tall",
    "layer": "prop",
    "anchor_method": "canvas bottom-centre = footprint south tip (anchor cell = the south-most cell)",
-   "edge_rule": "board cells (paint_only, non-blocking), placed per looks.json props[]"
+   "edge_rule": "board cells (paint_only, non-blocking), placed per looks.json props[]",
+   "blocks": "none"
   },
   {
    "id": "boulder_cluster",
@@ -79,7 +80,8 @@
    "kind": "prop",
    "layer": "prop",
    "anchor_method": "canvas bottom-centre = footprint south tip (anchor cell = the south-most cell)",
-   "edge_rule": "board cells (paint_only, non-blocking), placed per looks.json props[]"
+   "edge_rule": "board cells (paint_only, non-blocking), placed per looks.json props[]",
+   "blocks": "none"
   },
   {
    "id": "lilac_shrub",
@@ -108,15 +110,16 @@
    "emissive": "no",
    "art_height_px_2x": 86,
    "art_x_from_anchor_2x": [
-    -38,
-    39
+    -37,
+    34
    ],
    "lowest_opaque_gap_px_2x": 10,
    "replaces": "hay",
    "kind": "prop",
    "layer": "prop",
    "anchor_method": "canvas bottom-centre = footprint south tip (anchor cell = the south-most cell)",
-   "edge_rule": "board cells (paint_only, non-blocking), placed per looks.json props[]"
+   "edge_rule": "board cells (paint_only, non-blocking), placed per looks.json props[]",
+   "blocks": "none"
   },
   {
    "id": "boulder_small",
@@ -153,7 +156,8 @@
    "kind": "prop",
    "layer": "prop",
    "anchor_method": "canvas bottom-centre = footprint south tip (anchor cell = the south-most cell)",
-   "edge_rule": "board cells (paint_only, non-blocking), placed per looks.json props[]"
+   "edge_rule": "board cells (paint_only, non-blocking), placed per looks.json props[]",
+   "blocks": "none"
   },
   {
    "id": "ruined_wall_short",
@@ -190,7 +194,8 @@
    "kind": "prop",
    "layer": "prop",
    "anchor_method": "canvas bottom-centre = footprint south tip (anchor cell = the south-most cell)",
-   "edge_rule": "board cells (paint_only, non-blocking), placed per looks.json props[]"
+   "edge_rule": "board cells (paint_only, non-blocking), placed per looks.json props[]",
+   "blocks": "none"
   },
   {
    "id": "fallen_log_short",
@@ -227,7 +232,8 @@
    "kind": "prop",
    "layer": "prop",
    "anchor_method": "canvas bottom-centre = footprint south tip (anchor cell = the south-most cell)",
-   "edge_rule": "board cells (paint_only, non-blocking), placed per looks.json props[]"
+   "edge_rule": "board cells (paint_only, non-blocking), placed per looks.json props[]",
+   "blocks": "none"
   },
   {
    "id": "stone_well",
@@ -264,7 +270,8 @@
    "kind": "tall",
    "layer": "prop",
    "anchor_method": "canvas bottom-centre = footprint south tip (anchor cell = the south-most cell)",
-   "edge_rule": "board cells (paint_only, non-blocking), placed per looks.json props[]"
+   "edge_rule": "board cells (paint_only, non-blocking), placed per looks.json props[]",
+   "blocks": "none"
   },
   {
    "id": "ruined_wall_2c",
@@ -291,17 +298,18 @@
     80
    ],
    "emissive": "no",
-   "art_height_px_2x": 129,
+   "art_height_px_2x": 137,
    "art_x_from_anchor_2x": [
-    -95,
-    30
+    -79,
+    46
    ],
-   "lowest_opaque_gap_px_2x": 11,
+   "lowest_opaque_gap_px_2x": 19,
    "replaces": null,
    "kind": "cover_dressing",
    "layer": "prop",
    "anchor_method": "canvas bottom-centre = footprint south tip (anchor cell = the south-most cell)",
-   "edge_rule": "board cells (paint_only, non-blocking), placed per looks.json props[]"
+   "edge_rule": "board cells (paint_only, non-blocking), placed per looks.json props[]",
+   "blocks": "none"
   },
   {
    "id": "fallen_log_2c",
@@ -328,17 +336,18 @@
     80
    ],
    "emissive": "no",
-   "art_height_px_2x": 103,
+   "art_height_px_2x": 109,
    "art_x_from_anchor_2x": [
-    -88,
-    24
+    -76,
+    36
    ],
-   "lowest_opaque_gap_px_2x": 11,
+   "lowest_opaque_gap_px_2x": 17,
    "replaces": null,
    "kind": "cover_dressing",
    "layer": "prop",
    "anchor_method": "canvas bottom-centre = footprint south tip (anchor cell = the south-most cell)",
-   "edge_rule": "board cells (paint_only, non-blocking), placed per looks.json props[]"
+   "edge_rule": "board cells (paint_only, non-blocking), placed per looks.json props[]",
+   "blocks": "none"
   },
   {
    "id": "lilac_bush",
@@ -375,7 +384,8 @@
    "kind": "decor",
    "layer": "decor",
    "anchor_method": "canvas bottom-centre = footprint south tip (anchor cell = the south-most cell)",
-   "edge_rule": "board cells (paint_only, non-blocking), placed per looks.json props[]"
+   "edge_rule": "board cells (paint_only, non-blocking), placed per looks.json props[]",
+   "blocks": "none"
   },
   {
    "id": "lilac_tuft",
@@ -412,7 +422,8 @@
    "kind": "decor",
    "layer": "decor",
    "anchor_method": "canvas bottom-centre = footprint south tip (anchor cell = the south-most cell)",
-   "edge_rule": "board cells (paint_only, non-blocking), placed per looks.json props[]"
+   "edge_rule": "board cells (paint_only, non-blocking), placed per looks.json props[]",
+   "blocks": "none"
   },
   {
    "id": "flower_tuft",
@@ -449,7 +460,8 @@
    "kind": "decor",
    "layer": "decor",
    "anchor_method": "canvas bottom-centre = footprint south tip (anchor cell = the south-most cell)",
-   "edge_rule": "board cells (paint_only, non-blocking), placed per looks.json props[]"
+   "edge_rule": "board cells (paint_only, non-blocking), placed per looks.json props[]",
+   "blocks": "none"
   },
   {
    "id": "clover_patch",
@@ -486,7 +498,8 @@
    "kind": "decor",
    "layer": "decor",
    "anchor_method": "canvas bottom-centre = footprint south tip (anchor cell = the south-most cell)",
-   "edge_rule": "board cells (paint_only, non-blocking), placed per looks.json props[]"
+   "edge_rule": "board cells (paint_only, non-blocking), placed per looks.json props[]",
+   "blocks": "none"
   },
   {
    "id": "pebbles_moss",
@@ -523,7 +536,8 @@
    "kind": "decor",
    "layer": "decor",
    "anchor_method": "canvas bottom-centre = footprint south tip (anchor cell = the south-most cell)",
-   "edge_rule": "board cells (paint_only, non-blocking), placed per looks.json props[]"
+   "edge_rule": "board cells (paint_only, non-blocking), placed per looks.json props[]",
+   "blocks": "none"
   },
   {
    "id": "fern",
@@ -560,7 +574,8 @@
    "kind": "decor",
    "layer": "decor",
    "anchor_method": "canvas bottom-centre = footprint south tip (anchor cell = the south-most cell)",
-   "edge_rule": "board cells (paint_only, non-blocking), placed per looks.json props[]"
+   "edge_rule": "board cells (paint_only, non-blocking), placed per looks.json props[]",
+   "blocks": "none"
   }
  ]
 }

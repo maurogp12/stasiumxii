@@ -464,6 +464,11 @@ func _grade_board() -> void:
 		for child in tiles.get_children():
 			if child is CanvasItem:
 				_attach_grade(child, _paint_grade)
+				# The Crosshaven dress paints in _draw, like a tile. The grade
+				# stays off until a named preset is on. Strength 0 is the default.
+				var dress := child.get_node_or_null("CrosshavenDress") as CanvasItem
+				if dress != null:
+					_attach_grade(dress, _paint_grade)
 	var units := _board.get_node_or_null("Units") as CanvasItem
 	if units != null:
 		units.modulate = Color.WHITE
