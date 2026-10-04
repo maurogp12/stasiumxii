@@ -615,7 +615,7 @@
     {
       "x": 16,
       "y": 0,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
@@ -678,15 +678,15 @@
     {
       "x": 1,
       "y": 1,
-      "terrain": "golden_plains",
-      "walkable": true,
+      "terrain": "water",
+      "walkable": false,
       "height": 0
     },
     {
       "x": 2,
       "y": 1,
-      "terrain": "golden_plains",
-      "walkable": true,
+      "terrain": "water",
+      "walkable": false,
       "height": 0
     },
     {
@@ -783,7 +783,7 @@
     {
       "x": 16,
       "y": 1,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
@@ -878,21 +878,9 @@
       "y": 0
     },
     {
-      "id": "crosshaven_westwatch_south_strip_decor_006",
-      "type": "rock_small_c",
-      "x": 1,
-      "y": 1
-    },
-    {
       "id": "crosshaven_westwatch_south_strip_decor_007",
       "type": "decal_moss",
       "x": 10,
-      "y": 1
-    },
-    {
-      "id": "crosshaven_westwatch_south_strip_decor_008",
-      "type": "mushrooms_b",
-      "x": 1,
       "y": 1
     },
     {
@@ -918,6 +906,54 @@
       "type": "mushrooms_a",
       "x": 4,
       "y": 0
+    },
+    {
+      "id": "crosshaven_westwatch_south_strip_theme_011",
+      "type": "mushrooms_b",
+      "x": 6,
+      "y": 0
+    },
+    {
+      "id": "crosshaven_westwatch_south_strip_theme_012",
+      "type": "rock_small_d",
+      "x": 13,
+      "y": 0
+    },
+    {
+      "id": "crosshaven_westwatch_south_strip_theme_013",
+      "type": "bush_small_a",
+      "x": 16,
+      "y": 0
+    },
+    {
+      "id": "crosshaven_westwatch_south_strip_theme_014",
+      "type": "rock_small_c",
+      "x": 3,
+      "y": 1
+    },
+    {
+      "id": "crosshaven_westwatch_south_strip_theme_015",
+      "type": "bush_small_a",
+      "x": 8,
+      "y": 1
+    },
+    {
+      "id": "crosshaven_westwatch_south_strip_theme_016",
+      "type": "mushrooms_b",
+      "x": 9,
+      "y": 1
+    },
+    {
+      "id": "crosshaven_westwatch_south_strip_theme_017",
+      "type": "mushrooms_b",
+      "x": 15,
+      "y": 1
+    },
+    {
+      "id": "crosshaven_westwatch_south_strip_theme_018",
+      "type": "bush_small_a",
+      "x": 16,
+      "y": 1
     }
   ]
 }

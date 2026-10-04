@@ -7618,9 +7618,9 @@
     {
       "x": 17,
       "y": 34,
-      "terrain": "golden_plains",
-      "walkable": true,
-      "height": 0
+      "terrain": "cliff",
+      "walkable": false,
+      "height": 1
     },
     {
       "x": 18,

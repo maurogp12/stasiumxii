@@ -1778,8 +1778,8 @@
     {
       "x": 8,
       "y": 3,
-      "terrain": "golden_plains",
-      "walkable": true,
+      "terrain": "water",
+      "walkable": false,
       "height": 0
     },
     {
@@ -1918,8 +1918,8 @@
     {
       "x": 28,
       "y": 3,
-      "terrain": "golden_plains",
-      "walkable": true,
+      "terrain": "water",
+      "walkable": false,
       "height": 0
     },
     {
@@ -2517,12 +2517,6 @@
       "y": 0
     },
     {
-      "id": "crosshaven_southbridge_east_verge_decor_006",
-      "type": "mushrooms_a",
-      "x": 17,
-      "y": 4
-    },
-    {
       "id": "crosshaven_southbridge_east_verge_decor_007",
       "type": "mushrooms_a",
       "x": 31,
@@ -2665,6 +2659,84 @@
       "type": "decal_puddle_a",
       "x": 25,
       "y": 3
+    },
+    {
+      "id": "crosshaven_southbridge_east_verge_theme_030",
+      "type": "reeds_b",
+      "x": 3,
+      "y": 1
+    },
+    {
+      "id": "crosshaven_southbridge_east_verge_theme_031",
+      "type": "reeds_a",
+      "x": 7,
+      "y": 1
+    },
+    {
+      "id": "crosshaven_southbridge_east_verge_theme_032",
+      "type": "mushrooms_a",
+      "x": 14,
+      "y": 3
+    },
+    {
+      "id": "crosshaven_southbridge_east_verge_theme_033",
+      "type": "reeds_b",
+      "x": 19,
+      "y": 3
+    },
+    {
+      "id": "crosshaven_southbridge_east_verge_theme_034",
+      "type": "mushrooms_a",
+      "x": 0,
+      "y": 4
+    },
+    {
+      "id": "crosshaven_southbridge_east_verge_theme_035",
+      "type": "reeds_b",
+      "x": 17,
+      "y": 4
+    },
+    {
+      "id": "crosshaven_southbridge_east_verge_theme_036",
+      "type": "reeds_b",
+      "x": 20,
+      "y": 4
+    },
+    {
+      "id": "crosshaven_southbridge_east_verge_theme_037",
+      "type": "reeds_a",
+      "x": 35,
+      "y": 4
+    },
+    {
+      "id": "crosshaven_southbridge_east_verge_theme_038",
+      "type": "mushrooms_a",
+      "x": 4,
+      "y": 5
+    },
+    {
+      "id": "crosshaven_southbridge_east_verge_theme_039",
+      "type": "mushrooms_a",
+      "x": 15,
+      "y": 5
+    },
+    {
+      "id": "crosshaven_southbridge_east_verge_theme_040",
+      "type": "reeds_b",
+      "x": 21,
+      "y": 5
+    },
+    {
+      "id": "crosshaven_southbridge_east_verge_theme_041",
+      "type": "mushrooms_a",
+      "x": 22,
+      "y": 5
+    },
+    {
+      "id": "crosshaven_southbridge_east_verge_theme_042",
+      "type": "mushrooms_a",
+      "x": 30,
+      "y": 5
     }
   ]
 }

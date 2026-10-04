@@ -860,21 +860,6 @@
       ]
     },
     {
-      "id": "crosshaven_stoneford_orchard_hedgerow_nesw_4_1",
-      "type": "hedgerow_nesw",
-      "blocks": true,
-      "origin": {
-        "x": 4,
-        "y": 1
-      },
-      "footprint": [
-        {
-          "x": 4,
-          "y": 1
-        }
-      ]
-    },
-    {
       "id": "crosshaven_stoneford_orchard_hay_bale_19_1",
       "type": "hay_bale",
       "blocks": true,
@@ -1125,7 +1110,7 @@
     {
       "x": 33,
       "y": 0,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
@@ -1153,37 +1138,37 @@
     {
       "x": 1,
       "y": 1,
-      "terrain": "golden_plains",
-      "walkable": true,
-      "height": 0
+      "terrain": "cliff",
+      "walkable": false,
+      "height": 1
     },
     {
       "x": 2,
       "y": 1,
-      "terrain": "golden_plains",
-      "walkable": true,
-      "height": 0
+      "terrain": "cliff",
+      "walkable": false,
+      "height": 1
     },
     {
       "x": 3,
       "y": 1,
-      "terrain": "farm_cabbage",
-      "walkable": true,
-      "height": 0
+      "terrain": "cliff",
+      "walkable": false,
+      "height": 1
     },
     {
       "x": 4,
       "y": 1,
-      "terrain": "golden_plains",
-      "walkable": true,
-      "height": 0
+      "terrain": "cliff",
+      "walkable": false,
+      "height": 1
     },
     {
       "x": 5,
       "y": 1,
-      "terrain": "golden_plains",
-      "walkable": true,
-      "height": 0
+      "terrain": "cliff",
+      "walkable": false,
+      "height": 1
     },
     {
       "x": 6,
@@ -1209,21 +1194,21 @@
     {
       "x": 9,
       "y": 1,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 10,
       "y": 1,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 11,
       "y": 1,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
@@ -1377,7 +1362,7 @@
     {
       "x": 33,
       "y": 1,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
@@ -1405,16 +1390,16 @@
     {
       "x": 1,
       "y": 2,
-      "terrain": "golden_plains",
-      "walkable": true,
-      "height": 0
+      "terrain": "cliff",
+      "walkable": false,
+      "height": 1
     },
     {
       "x": 2,
       "y": 2,
-      "terrain": "dirt_road",
-      "walkable": true,
-      "height": 0
+      "terrain": "cliff",
+      "walkable": false,
+      "height": 1
     },
     {
       "x": 3,
@@ -1650,28 +1635,28 @@
     {
       "x": 0,
       "y": 3,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 1,
       "y": 3,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 2,
       "y": 3,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 3,
       "y": 3,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
@@ -1941,12 +1926,6 @@
       "y": 2
     },
     {
-      "id": "crosshaven_stoneford_orchard_decor_006",
-      "type": "flowers_c",
-      "x": 4,
-      "y": 1
-    },
-    {
       "id": "crosshaven_stoneford_orchard_decor_007",
       "type": "flowers_c",
       "x": 16,
@@ -1983,18 +1962,6 @@
       "y": 1
     },
     {
-      "id": "crosshaven_stoneford_orchard_shore_000",
-      "type": "flowers_a",
-      "x": 2,
-      "y": 1
-    },
-    {
-      "id": "crosshaven_stoneford_orchard_shore_001",
-      "type": "sunflowers_tall",
-      "x": 3,
-      "y": 1
-    },
-    {
       "id": "crosshaven_stoneford_orchard_shore_002",
       "type": "flowers_c",
       "x": 9,
@@ -2017,6 +1984,120 @@
       "type": "flowers_a",
       "x": 15,
       "y": 1
+    },
+    {
+      "id": "crosshaven_stoneford_orchard_theme_016",
+      "type": "flowers_c",
+      "x": 6,
+      "y": 0
+    },
+    {
+      "id": "crosshaven_stoneford_orchard_theme_017",
+      "type": "flowers_c",
+      "x": 13,
+      "y": 0
+    },
+    {
+      "id": "crosshaven_stoneford_orchard_theme_018",
+      "type": "flowers_a",
+      "x": 16,
+      "y": 0
+    },
+    {
+      "id": "crosshaven_stoneford_orchard_theme_019",
+      "type": "flowers_a",
+      "x": 24,
+      "y": 0
+    },
+    {
+      "id": "crosshaven_stoneford_orchard_theme_020",
+      "type": "flowers_a",
+      "x": 30,
+      "y": 0
+    },
+    {
+      "id": "crosshaven_stoneford_orchard_theme_021",
+      "type": "flowers_a",
+      "x": 7,
+      "y": 1
+    },
+    {
+      "id": "crosshaven_stoneford_orchard_theme_022",
+      "type": "flowers_a",
+      "x": 8,
+      "y": 1
+    },
+    {
+      "id": "crosshaven_stoneford_orchard_theme_023",
+      "type": "flowers_c",
+      "x": 16,
+      "y": 1
+    },
+    {
+      "id": "crosshaven_stoneford_orchard_theme_024",
+      "type": "flowers_c",
+      "x": 26,
+      "y": 1
+    },
+    {
+      "id": "crosshaven_stoneford_orchard_theme_025",
+      "type": "flowers_a",
+      "x": 35,
+      "y": 1
+    },
+    {
+      "id": "crosshaven_stoneford_orchard_theme_026",
+      "type": "flowers_a",
+      "x": 5,
+      "y": 2
+    },
+    {
+      "id": "crosshaven_stoneford_orchard_theme_027",
+      "type": "flowers_c",
+      "x": 13,
+      "y": 2
+    },
+    {
+      "id": "crosshaven_stoneford_orchard_theme_028",
+      "type": "flowers_a",
+      "x": 31,
+      "y": 2
+    },
+    {
+      "id": "crosshaven_stoneford_orchard_theme_029",
+      "type": "flowers_a",
+      "x": 32,
+      "y": 2
+    },
+    {
+      "id": "crosshaven_stoneford_orchard_theme_030",
+      "type": "flowers_c",
+      "x": 5,
+      "y": 3
+    },
+    {
+      "id": "crosshaven_stoneford_orchard_theme_031",
+      "type": "grass_tuft_tall_a",
+      "x": 14,
+      "y": 3
+    },
+    {
+      "id": "crosshaven_stoneford_orchard_theme_032",
+      "type": "flowers_c",
+      "x": 18,
+      "y": 3
+    },
+    {
+      "id": "crosshaven_stoneford_orchard_theme_033",
+      "type": "flowers_a",
+      "x": 19,
+      "y": 3
+    },
+    {
+      "id": "crosshaven_stoneford_orchard_theme_034",
+      "type": "grass_tuft_tall_a",
+      "x": 33,
+      "y": 3
     }
   ]
 }

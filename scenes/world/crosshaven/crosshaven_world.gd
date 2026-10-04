@@ -326,6 +326,7 @@ func _load_zone(zone_id: String, cell: Vector2i, snap: bool = true) -> void:
 	add_child(ground)
 	move_child(ground, 1)
 	ground.position = pix
+	ground.world_origin = origin
 	_dress_ground(ground, zone)
 	ground.setup(zone)
 	_mark_gates()
@@ -1133,6 +1134,7 @@ func _mount_neighbours(zone_id: String) -> void:
 		var g := Ground.new()
 		g.name = "Ground"
 		host.add_child(g)
+		g.world_origin = origin
 		_dress_ground(g, other)
 		g.setup(other)
 		_mark_gates_on(g, other)
@@ -1341,13 +1343,12 @@ func _draw_snowfall() -> void:
 	if camera != null:
 		zoom = maxf(camera.zoom.x, 0.01)
 	var span := get_viewport().get_visible_rect().size / zoom
-	# Light flakes across the whole 1920 frame, not a patch in the middle.
-	for i in 96:
+	for i in 22:
 		var seed := i * 97
-		var x := fmod(float(seed * 13) + t * (22.0 + float(i % 5) * 5.0), span.x) - span.x * 0.5
-		var y := fmod(float(seed * 29) + t * (48.0 + float(i % 7) * 8.0), span.y) - span.y * 0.5
-		var flake := Color(1, 1, 1, 0.92 * amount)
-		_snow.draw_line(Vector2(x, y), Vector2(x - 2.2, y + 11.0), flake, 2.0)
+		var x := fmod(float(seed * 13) + t * (14.0 + float(i % 5) * 3.0), span.x) - span.x * 0.5
+		var y := fmod(float(seed * 29) + t * (28.0 + float(i % 7) * 4.0), span.y) - span.y * 0.5
+		var flake := Color(1, 1, 1, 0.38 * amount)
+		_snow.draw_line(Vector2(x, y), Vector2(x - 0.5, y + 4.5), flake, 1.0)
 
 
 func _draw_backdrop() -> void:
@@ -2307,19 +2308,11 @@ func _movie_outskirts() -> void:
 	var folder := ProjectSettings.globalize_path("res://docs/pc/media/outskirts")
 	DirAccess.make_dir_recursive_absolute(folder)
 	if not OS.has_feature("movie"):
-		await enter_zone("crosshaven_northgate", Vector2i(20, 12), false)
-		_hide_debug_readout()
-		if tracker != null:
-			tracker.visible = false
-		if _banner != null:
-			_banner.modulate.a = 0.0
-		walker.facing = "s"
-		walker._show_idle()
-		camera.position = walker.position
-		camera.reset_smoothing()
-		_sync_snowfall()
-		await get_tree().create_timer(0.5).timeout
-		await _grab(folder.path_join("northgate_snow.png"))
+		await _grab_theme_still("crosshaven_stoneford_fields", Vector2i(36, 17), folder.path_join("stoneford_fields.png"))
+		await _grab_theme_still("crosshaven_northgate", Vector2i(20, 12), folder.path_join("northgate_snow.png"))
+		await _grab_theme_still("crosshaven_eastmarch_beach", Vector2i(18, 3), folder.path_join("eastmarch_beach.png"))
+		await _grab_theme_still("crosshaven_southbridge_swamp", Vector2i(22, 16), folder.path_join("southbridge_swamp.png"))
+		await _grab_theme_still("crosshaven_westwatch_south_blight", Vector2i(18, 16), folder.path_join("westwatch_blight.png"))
 		return
 	# About 75 s at this pace: fields, crags, beach, swamp, blight.
 	walker.playback = 4.0
@@ -2333,6 +2326,22 @@ func _movie_outskirts() -> void:
 	await get_tree().create_timer(0.45).timeout
 	await _travel("crosshaven_westwatch_south_blight", Vector2i(18, 16))
 	await get_tree().create_timer(0.6).timeout
+
+
+func _grab_theme_still(zone_id: String, cell: Vector2i, path: String) -> void:
+	await enter_zone(zone_id, cell, false)
+	_hide_debug_readout()
+	if tracker != null:
+		tracker.visible = false
+	if _banner != null:
+		_banner.modulate.a = 0.0
+	walker.facing = "s"
+	walker._show_idle()
+	camera.position = walker.position
+	camera.reset_smoothing()
+	_sync_snowfall()
+	await get_tree().create_timer(0.45).timeout
+	await _grab(path)
 
 
 func _hide_debug_readout() -> void:

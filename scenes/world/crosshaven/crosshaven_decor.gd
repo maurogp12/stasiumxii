@@ -36,12 +36,25 @@ func setup(zone: WorldZone, record: Dictionary) -> void:
 	if not _art.is_empty():
 		var size := Art.size_of(_art) * plant
 		cover_rect = Rect2(-size.x * 0.5, -size.y, size.x, size.y)
+	_apply_theme_tint(zone.zone_id)
 	if not _groundish and core:
 		_sway = Art.make_loop(decor_type + "_sway")
 		if _sway != null:
 			_sway.visible = false
 			add_child(_sway)
 	queue_redraw()
+
+
+func _apply_theme_tint(zone_id: String) -> void:
+	if zone_id.find("westwatch") >= 0:
+		if decor_type.find("bush") >= 0 or decor_type.find("tuft") >= 0 or decor_type.find("flower") >= 0:
+			modulate = Color(0.52, 0.44, 0.64)
+		elif decor_type.find("mushroom") >= 0:
+			modulate = Color(0.78, 0.70, 0.86)
+	elif zone_id.find("southbridge") >= 0 and (decor_type.find("reed") >= 0 or decor_type.find("mushroom") >= 0):
+		modulate = Color(0.72, 0.78, 0.58)
+	elif zone_id.find("eastmarch") >= 0 and decor_type.find("rock") >= 0:
+		modulate = Color(0.95, 0.90, 0.78)
 
 
 func _plant_scale(kind: String) -> float:
