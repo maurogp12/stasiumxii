@@ -633,6 +633,20 @@ static func push_stack_notes(unit: Dictionary) -> String:
 		out += "  [b]FROZEN[/b] ×%d" % int(unit.get("frozen_stacks", 1))
 	if int(unit.get("electro_remaining", 0)) > 0:
 		out += "  [b]SHOCK[/b] ×%d" % int(unit.get("electro_stacks", 1))
+	out += element_notes(unit)
+	return out
+
+
+## Elements Step 2: Residue (element, own turns left), Grounded, Water −1 MP.
+static func element_notes(unit: Dictionary) -> String:
+	var out := ""
+	var residue := str(unit.get("residue", ""))
+	if residue != "" and int(unit.get("residue_turns", 0)) > 0:
+		out += "  [b]%s[/b] residue %d" % [residue.to_upper(), int(unit.get("residue_turns", 0))]
+	if bool(unit.get("grounded", false)):
+		out += "  [b]GROUNDED[/b]"
+	if bool(unit.get("water_slow", false)):
+		out += "  [b]WATER[/b] −1 MP next turn"
 	return out
 
 

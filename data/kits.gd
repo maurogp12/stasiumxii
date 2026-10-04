@@ -521,10 +521,55 @@ static func is_gated(spell_id: String) -> bool:
 	return bool(def.get("gated", false))
 
 
+## Elements, Step 2: mono riders (docs/BALANCE_PLAN_HANDOFF.md §3, Mauro's
+## Locked "Elements, riders, Residue, Blends" chassis; Mauro 4 Oct 2026: "its
+## time to continue on elements"). The two riders that are spell data live
+## here so targeting, previews, range text and the AI all read them:
+##   Air:   +1 max range when the spell's max is already 3 or more
+##          (Detonate 1–4 → 1–5). Mark Shot is excluded on purpose.
+##   Water: heals +4 (Mend 20, Pulse Tap 14, ally Heartstop 36).
+## The fight riders (Air melee +1 MP, Earth Grounded / wall collision, Water
+## −1 MP, Fire Burn, Residue) live in CombatSim. Neutral never gets a rider.
+## Tests and the duel simulator can switch riders off to compare.
+static var element_riders: bool = true
+const AIR_RANGE_MIN_MAX := 3
+const AIR_RANGE_EXCLUDED: Array[String] = [MARK_SHOT]
+const WATER_HEAL_RIDER := 4
+static var _rider_cache: Dictionary = {}
+
+
 static func spell(spell_id: String) -> Dictionary:
-	if SPELLS.has(spell_id):
-		return SPELLS[spell_id]
-	return {}
+	if not SPELLS.has(spell_id):
+		return {}
+	var def: Dictionary = SPELLS[spell_id]
+	if not element_riders:
+		return def
+	if _rider_cache.has(spell_id):
+		return _rider_cache[spell_id]
+	var out: Dictionary = def
+	var el := str(def.get("element", "neutral")).to_lower()
+	if bool(def.get("gated", false)):
+		# Gated (open_can_wait) spells never resolve; they get no rider.
+		_rider_cache[spell_id] = def
+		return def
+	if el == "air" and int(def.get("max_range", 0)) >= AIR_RANGE_MIN_MAX and not AIR_RANGE_EXCLUDED.has(spell_id):
+		out = out.duplicate()
+		out["base_max_range"] = int(def["max_range"])
+		out["max_range"] = int(def["max_range"]) + 1
+		out["air_range_rider"] = true
+	if el == "water" and int(def.get("base_heal", 0)) > 0:
+		if out == def:
+			out = out.duplicate()
+		out["base_heal_unrided"] = int(def["base_heal"])
+		out["base_heal"] = int(def["base_heal"]) + WATER_HEAL_RIDER
+		out["water_heal_rider"] = true
+	_rider_cache[spell_id] = out
+	return out
+
+
+static func set_element_riders(enabled: bool) -> void:
+	element_riders = enabled
+	_rider_cache.clear()
 
 
 static func class_spells(class_id: String) -> Array:
