@@ -1,0 +1,272 @@
+{
+ "format": {
+  "idle_S": {
+   "bbox_union": [
+    131,
+    96,
+    321,
+    352
+   ]
+  },
+  "attack_S": {
+   "bbox_union": [
+    134,
+    92,
+    354,
+    352
+   ]
+  },
+  "skill_S": {
+   "bbox_union": [
+    134,
+    68,
+    331,
+    352
+   ]
+  },
+  "hit_S": {
+   "bbox_union": [
+    134,
+    90,
+    322,
+    352
+   ]
+  },
+  "death_S": {
+   "bbox_union": [
+    14,
+    96,
+    326,
+    358
+   ]
+  },
+  "idle_E": {
+   "bbox_union": [
+    146,
+    93,
+    321,
+    334
+   ]
+  },
+  "attack_E": {
+   "bbox_union": [
+    148,
+    41,
+    348,
+    334
+   ]
+  },
+  "skill_E": {
+   "bbox_union": [
+    148,
+    48,
+    333,
+    334
+   ]
+  },
+  "hit_E": {
+   "bbox_union": [
+    148,
+    93,
+    321,
+    334
+   ]
+  },
+  "death_E": {
+   "bbox_union": [
+    0,
+    93,
+    321,
+    354
+   ]
+  }
+ },
+ "counts": {
+  "idle_S": {
+   "frames": 12,
+   "blockout": 12
+  },
+  "attack_S": {
+   "frames": 12,
+   "blockout": 12
+  },
+  "skill_S": {
+   "frames": 12,
+   "blockout": 12
+  },
+  "hit_S": {
+   "frames": 8,
+   "blockout": 8
+  },
+  "death_S": {
+   "frames": 13,
+   "blockout": 13
+  },
+  "idle_E": {
+   "frames": 12,
+   "blockout": 12
+  },
+  "attack_E": {
+   "frames": 12,
+   "blockout": 12
+  },
+  "skill_E": {
+   "frames": 12,
+   "blockout": 12
+  },
+  "hit_E": {
+   "frames": 8,
+   "blockout": 8
+  },
+  "death_E": {
+   "frames": 13,
+   "blockout": 13
+  }
+ },
+ "skate": {
+  "idle_S": {
+   "R": {
+    "planted_pairs": 11,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 0
+   },
+   "L": {
+    "planted_pairs": 11,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 0
+   }
+  },
+  "attack_S": {
+   "R": {
+    "planted_pairs": 11,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 0
+   },
+   "L": {
+    "planted_pairs": 11,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 0
+   }
+  },
+  "skill_S": {
+   "R": {
+    "planted_pairs": 11,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 0
+   },
+   "L": {
+    "planted_pairs": 11,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 0
+   }
+  },
+  "hit_S": {
+   "R": {
+    "planted_pairs": 7,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 0
+   },
+   "L": {
+    "planted_pairs": 7,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 0
+   }
+  },
+  "death_S": {
+   "R": {
+    "planted_pairs": 3,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 9
+   },
+   "L": {
+    "planted_pairs": 3,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 9
+   }
+  },
+  "idle_E": {
+   "R": {
+    "planted_pairs": 11,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 0
+   },
+   "L": {
+    "planted_pairs": 11,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 0
+   }
+  },
+  "attack_E": {
+   "R": {
+    "planted_pairs": 11,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 0
+   },
+   "L": {
+    "planted_pairs": 11,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 0
+   }
+  },
+  "skill_E": {
+   "R": {
+    "planted_pairs": 11,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 0
+   },
+   "L": {
+    "planted_pairs": 11,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 0
+   }
+  },
+  "hit_E": {
+   "R": {
+    "planted_pairs": 7,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 0
+   },
+   "L": {
+    "planted_pairs": 7,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 0
+   }
+  },
+  "death_E": {
+   "R": {
+    "planted_pairs": 3,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 9
+   },
+   "L": {
+    "planted_pairs": 9,
+    "max_px": 0.243,
+    "pairs_where_the_blockout_moves_the_foot": 3
+   }
+  }
+ },
+ "problems": [
+  [
+   "death_E_f11.png",
+   true,
+   true,
+   [
+    0,
+    214,
+    275,
+    354
+   ]
+  ],
+  [
+   "death_E_f12.png",
+   true,
+   true,
+   [
+    0,
+    219,
+    274,
+    354
+   ]
+  ]
+ ]
+}

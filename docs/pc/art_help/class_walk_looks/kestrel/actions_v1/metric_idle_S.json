@@ -1,0 +1,82 @@
+{
+ "facing": "S",
+ "fit": {
+  "scale": 0.3657,
+  "tx": 37.8,
+  "ty": 91.6,
+  "iou_upper": 0.961
+ },
+ "ssim_upper": 0.977,
+ "ssim_lower": 0.6,
+ "ssim_full": 0.712,
+ "iou": 0.845,
+ "palette_detail": {
+  "steel": {
+   "dE": 0.93,
+   "share_cand": 0.945,
+   "share_tgt": 0.94
+  },
+  "cape": null,
+  "bone": {
+   "dE": 0.49,
+   "share_cand": 0.055,
+   "share_tgt": 0.06
+  }
+ },
+ "palette": 0.953,
+ "leg_ratio_vs_repaint": 1.032,
+ "height_vs_idle": 1.0,
+ "look_hold_upper": [
+  0.977,
+  0.977,
+  0.972,
+  0.949,
+  0.912,
+  0.876,
+  0.859,
+  0.876,
+  0.912,
+  0.95,
+  0.972,
+  0.977
+ ],
+ "look_score": 89.1,
+ "bob_err_per_frame": [
+  -0.1,
+  -1.1,
+  -0.1,
+  -0.1,
+  0.9,
+  -0.1,
+  0.9,
+  -0.1,
+  0.9,
+  -0.1,
+  -0.1,
+  -1.1
+ ],
+ "bob_err": 1.08,
+ "bob_amp": {
+  "cand": 4,
+  "v2": 3
+ },
+ "sole_err": [
+  0.02,
+  0.02,
+  0.02,
+  0.02,
+  0.02,
+  0.02,
+  0.02,
+  0.02,
+  0.02,
+  0.02,
+  0.02,
+  0.02
+ ],
+ "motion_score": 83.3,
+ "PASS": {
+  "look": true,
+  "motion": false
+ }
+}
