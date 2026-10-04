@@ -9,7 +9,7 @@ const CURVE_PATH := "res://data/world/level_curve.json"
 const FORMAT := "stasium.level_zones"
 const FORMAT_VERSION := 1
 const DOC_KEYS: Array[String] = ["format", "format_version", "status", "zones"]
-const ZONE_REQUIRED: Array[String] = ["id", "name", "level_min", "level_max", "chunks", "color", "dungeon"]
+const ZONE_REQUIRED: Array[String] = ["id", "name", "level_min", "level_max", "chunks", "color"]
 const ZONE_KEYS: Array[String] = ["id", "name", "level_min", "level_max", "chunks", "depth", "color", "dungeon"]
 const ZONE_IDS: Array[String] = [
 	"crossroads",
@@ -166,11 +166,18 @@ static func _check(doc: Dictionary, errors: Array) -> void:
 			_err(errors, "stormspire must be 35-40")
 		if typeof(zone["color"]) != TYPE_STRING or _color_pattern().search(str(zone["color"])) == null:
 			_err(errors, "%s color must be #rrggbb" % zone_id)
-		var dungeon := str(zone["dungeon"])
-		if typeof(zone["dungeon"]) != TYPE_STRING or not _is_id(dungeon):
-			_err(errors, "%s dungeon id is invalid" % zone_id)
-		## Section 00 reuses Old Granary, Frostspire, Saltmaw, Drowned Abbey,
+		## Section 00: the Crossroads has no dungeon. Millrace Vaults is dropped.
+		## The five towns reuse Old Granary, Frostspire, Saltmaw, Drowned Abbey,
 		## and Heart of the Blight. The outer zones keep those same ids.
+		if zone_id == "crossroads":
+			if (zone as Dictionary).has("dungeon"):
+				_err(errors, "crossroads has no dungeon")
+		else:
+			var dungeon := str(zone.get("dungeon", ""))
+			if typeof(zone.get("dungeon")) != TYPE_STRING or not _is_id(dungeon):
+				_err(errors, "%s dungeon id is invalid" % zone_id)
+			elif dungeon == "millrace_vaults":
+				_err(errors, "millrace vaults is dropped")
 		if typeof(zone["chunks"]) != TYPE_ARRAY:
 			_err(errors, "%s chunks must be an array" % zone_id)
 			continue

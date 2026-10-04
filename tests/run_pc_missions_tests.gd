@@ -76,7 +76,7 @@ func _test_schema() -> void:
 
 func _test_roster(book) -> void:
 	var ids: Array = book.all_ids()
-	eq(ids.size(), 38, "18 chain missions plus 20 sides")
+	eq(ids.size(), 37, "17 chain missions plus 20 sides")
 	var chains := {}
 	for id in ids:
 		var row: Dictionary = book.mission(str(id))
@@ -85,7 +85,7 @@ func _test_roster(book) -> void:
 		eq((rewards["items"] as Array).is_empty(), true, "%s has no item reward yet" % str(id))
 	eq(int(chains["welcome"]), 6, "one welcome per section 00 zone")
 	eq(int(chains["scout"]), 6, "one scout per section 00 zone")
-	eq(int(chains["dungeon"]), 6, "one dungeon mission per section 00 zone")
+	eq(int(chains["dungeon"]), 5, "one dungeon mission per town, and none at the Crossroads")
 	eq(int(chains["side"]), 20, "one side per extra NPC, not the older count of 18")
 	var welcome: Dictionary = book.mission("heart_welcome")
 	eq(str(welcome["name"]), "Welcome to Crosshaven", "heart welcome name")
@@ -129,7 +129,7 @@ func _test_heart_chain(book) -> void:
 	var hero = Progress.new()
 	eq(book.status_of("heart_welcome", hero), "available", "welcome is available at level 1")
 	eq(book.status_of("stoneford_welcome", hero), "locked", "Stoneford stays locked at level 1")
-	eq(book.status_of("heart_dungeon", hero), "locked", "the dungeon mission is locked before the scout")
+	eq(book.status_of("stoneford_dungeon", hero), "locked", "a town dungeon stays locked before its scout")
 	var took: Dictionary = book.accept("heart_welcome", hero)
 	eq(bool(took["ok"]), true, "welcome can be accepted")
 	eq(book.status_of("heart_welcome", hero), "active", "welcome is active")
@@ -208,8 +208,11 @@ func _test_chain(book) -> void:
 	while index < story.size():
 		var welcome_id := story[index]
 		var scout_id := story[index + 1]
-		var dungeon_id := story[index + 2]
-		index += 3
+		index += 2
+		var dungeon_id := ""
+		if index < story.size() and str(book.mission(story[index])["chain"]) == "dungeon":
+			dungeon_id = story[index]
+			index += 1
 		var welcome: Dictionary = book.mission(welcome_id)
 		hero.level = int(welcome["min_level"])
 		if welcome_id == "stoneford_welcome":
@@ -244,12 +247,13 @@ func _test_chain(book) -> void:
 		eq(book.status_of(scout_id, hero), "ready", "%s is ready" % scout_id)
 		eq(bool(book.turn_in(scout_id, hero)["ok"]), true, "%s turns in" % scout_id)
 		played_scouts += 1
-		hero.level = int(book.mission(dungeon_id)["min_level"])
-		eq(book.label_for(dungeon_id, hero), "coming soon", "%s shows coming soon" % dungeon_id)
-		var blocked: Dictionary = book.accept(dungeon_id, hero)
-		eq(bool(blocked["ok"]), false, "%s cannot be taken" % dungeon_id)
-		eq(str(blocked["reason"]), "coming soon", "%s reason is coming soon" % dungeon_id)
-		eq(book.on_dungeon_won(str(book.mission(dungeon_id)["steps"][0]["dungeon"]), hero).is_empty(), true, "a win does nothing until the mission can be taken")
+		if dungeon_id != "":
+			hero.level = int(book.mission(dungeon_id)["min_level"])
+			eq(book.label_for(dungeon_id, hero), "coming soon", "%s shows coming soon" % dungeon_id)
+			var blocked: Dictionary = book.accept(dungeon_id, hero)
+			eq(bool(blocked["ok"]), false, "%s cannot be taken" % dungeon_id)
+			eq(str(blocked["reason"]), "coming soon", "%s reason is coming soon" % dungeon_id)
+			eq(book.on_dungeon_won(str(book.mission(dungeon_id)["steps"][0]["dungeon"]), hero).is_empty(), true, "a win does nothing until the mission can be taken")
 	eq(played_scouts >= 2, true, "heart and towns scouts are on real ground")
 	eq(book.label_for("northgate_scout", hero) != "coming soon", true, "the Northgate scout is not a coming-soon landmark")
 	var north: Dictionary = book.mission("northgate_scout")["steps"][0]
