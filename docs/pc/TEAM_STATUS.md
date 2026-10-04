@@ -12,7 +12,7 @@ Kept by Claude, the PC supervisor (Mauro, 4 Oct 2026: "keep a record of everythi
    - Team branches merge into `pc/world-zones` or `pc/combat-look` only after Claude's approval.
    - Log every decision in `docs/pc/CHANGE_LOG_PC.md`.
 
-**Base branches:** `pc/world-zones` @ `1cf6d46` (#249 merged 11:12; 34-suite re-check running). `pc/combat-look` @ `8d93797` (#242 merged; all 20 suites green on a fresh worktree, 4 Oct 10:45).
+**Base branches:** `pc/world-zones` @ `1cf6d46` (#249 merged 11:12; **34/34 green** on a fresh worktree). `pc/combat-look` @ `8d93797` (#242 merged; all 20 suites green on a fresh worktree, 4 Oct 10:45).
 
 ---
 
@@ -31,7 +31,7 @@ Kept by Claude, the PC supervisor (Mauro, 4 Oct 2026: "keep a record of everythi
 | Bot | Work | PR / branch | Head | Where it stopped | Next step |
 |---|---|---|---|---|---|
 | `ae16` | L9 Crosshaven board, light grade | #242 (merged 10:19) | `c15941b` | **Done.** Media sent to Mauro | none |
-| `ae16` | L9b Crosshaven v1 decoration | `cursor/l9b-v1-decor-ae16` (no PR yet) | `af040d7` (10:39) | Code ready for the leaf frame, clearing and sky swap; it draws nothing until the art files exist. Rim props stay off until `props_live` | Wait for the art, open a PR with media, I review |
+| `ae16` | L9b Crosshaven v1 decoration | `cursor/l9b-v1-decor-ae16` (**no PR yet**) | `cc6a99e` (12:23) | The v1 sky, leaf frame and decor are now drawn, with stills beside mock v1. My first look at `beside_mock_1280.png`: flat pale stepped rectangles in the sky (top right, behind the board), a near-black canopy band across the top, and the board reads darker than the mock | When it opens a PR: I review it fully (suites, the rectangle artefact, the canopy value vs the mock) |
 | `1dff` → **Claude (took over 11:40)** | L10 new PC characters (Ironjaw v3.1, Kestrel v3), PC walk 0.42 s/cell | #248 draft `cursor/l10-pc-characters-1dff` | `714e6ed` (bot stopped 01:32) | **Taken over by Claude 11:40**: merging the base, bench, portrait aspect fix, edge-pixel test, sole/pivot consistency, and re-shooting the 0.22 vs 0.42 clip | When green: post the suites, bench and clip on #248 and send Mauro the clip. Kestrel v3 is a stand-in until the new Kestrel parts land |
 
 ## 3. Scenario Art (Luca's art bot) and Technical Artist
