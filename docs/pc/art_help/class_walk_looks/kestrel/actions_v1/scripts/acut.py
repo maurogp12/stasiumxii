@@ -12,7 +12,7 @@ Written to ../parts:
   arm_R_F.png     ONE continuous painted arm, shoulder -> elbow -> bracer -> fist: the part of the upper arm hidden under the
   arm_L_S.png     cloak or pauldron is grown from the sleeve itself (mirrored, fading into shadow); cloak green, the bow
                   string and the bow limbs crossing it are painted out of the arm (the fist keeps its painted grip).
-                  E's left (draw) arm is the E bow arm mirrored and 12 % darker (it is hidden behind the cloak in the target).
+                  E's left (draw) arm is hidden under the cloak in the target: it is built from keys only (see build_keys).
   cover_F_R/L.png the shoulder covers (S: pauldron / cloak drape, E: cloak over the shoulder) cut from the body with their
                   own alpha; they are drawn over the arm so the shoulder root never shows.
   bow_hang_F.png  the painted bow and string as held in the target (rigid with the bow forearm while it hangs).
@@ -225,12 +225,8 @@ def cut(F, dbg=None):
             if st_[k, cv2.CC_STAT_AREA] < 60: cv_[lab_ == k] = False
         cv_ &= ~bowm
         save(f'cover_{F}_{sd}', trgb, (cv2.GaussianBlur(cv_.astype(np.float32), (0, 0), 0.7) > 0.5))
-    # E: the draw arm (left) is the bow arm mirrored about the shoulder column, a little darker (far side)
     rig = dict(arms={sd: {k: list(v) for k, v in ac['J'].items()} for sd, ac in c['arms'].items()})
     if F == 'E':
-        A = np.asarray(Image.open(f'{OUT}/arm_R_E.png')).copy(); x0 = c['arms']['R']['J']['shoulder'][0]
-        M = np.float32([[-1, 0, 2 * x0], [0, 1, 0]]); L = cv2.warpAffine(A, M, (1280, 720), flags=cv2.INTER_NEAREST)
-        L[..., :3] = (L[..., :3] * 0.88).astype(np.uint8); Image.fromarray(L).save(f'{OUT}/arm_L_E.png')
         rig['arms']['L'] = dict(shoulder=[612, 196], elbow=[600, 280], wrist=[597, 340], hand=[595, 362])   # under the cloak
         Image.fromarray(np.zeros((720, 1280, 4), np.uint8)).save(f'{OUT}/cover_E_L.png')
     # ---- raised-arm key sources (see build_keys)
@@ -325,7 +321,7 @@ KEYS = {
 HW = 24
 
 def build_keys(F, c):
-    """write the key sources: sleeve_F_role.png (the painted visible sleeve, straightened, mirror-extended to 2.6x the
+    """write the key sources: sleeve_F_role.png (the painted visible sleeve, straightened, extended from its own folds to 2.6x the
     painted upper arm, darkening toward the shoulder where it goes under the cloak) and fore_F_role.png (the painted
     forearm + fist straightened; the draw arm's fist is the closed bow fist). Keys are crops of these, never stretched."""
     out = {}
