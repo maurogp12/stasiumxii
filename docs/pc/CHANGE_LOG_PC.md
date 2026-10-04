@@ -4,6 +4,7 @@ PC game only. Never merged into `main` or `mobile` by an agent; only Mauro merge
 
 | Date | What | Why / who asked | Branch | Commit |
 |---|---|---|---|---|
+| 4 Oct 2026 | **19 painted NPC role sprites delivered** by Scenario Art (`art/ironjaw-walk-help` `8763e14`, `docs/pc/art_help/npc_sprites_wip/`): idle/walk/talk/work, N/S at 2x plus 1x, W/E mirrored, a json per role, check reports PASS. Next: import into the world. WIP safety copies for Kestrel, Gloam and Mender pushed; Luca keeps Scenario on Kestrel | Mauro, 4 Oct: hand over before running out of usage | `art/ironjaw-walk-help` | 8763e14 |
 | 4 Oct 2026 | **L10 merged into `pc/combat-look`** (#248, merge `a0aec2e`), at Mauro's request. Brought `pc/combat-look` (L9b) in with merge `81cbc6a` (change-log conflict, no rows lost); 21/21 suites green on that head | Mauro, 4 Oct: "merge L10" | `pc/combat-look` | a0aec2e |
 | 4 Oct 2026 | **Bastion v3 locked** (Luca). Legs are cut from the target at upper-body scale (greave/shoulder within +2.3%/−0.5%) and rooted at the target belt hips (0.0 px). Look S 87.0 / E 88.7 and motion 100, verified. The E mace stays low | Mauro: "legs look oversized … too much to the front"; Luca lock | `art/ironjaw-walk-help` (#252) | 7f65035 |
 | 4 Oct 2026 | Review #254 L9b @ `347d7ad`: **approved**. All 20 suites green (jungle 533). The leaf frame was double-multiplied (COLOR already carries the modulate) and is fixed; mock vs game luma is now −9/−12/−11%. The sky rectangles were fixed earlier | Claude's L9b review | `cursor/l9b-v1-decor-ae16` | review comment |
