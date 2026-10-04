@@ -1882,6 +1882,8 @@ func _play_movie(mode: String) -> void:
 			await _movie_wp12()
 		"outskirts":
 			await _movie_outskirts()
+		"eastmarch_still":
+			await _movie_eastmarch_still()
 		_:
 			push_error("unknown movie %s" % mode)
 	get_tree().quit()
@@ -2310,7 +2312,7 @@ func _movie_outskirts() -> void:
 	if not OS.has_feature("movie"):
 		await _grab_theme_still("crosshaven_stoneford_fields", Vector2i(36, 17), folder.path_join("stoneford_fields.png"))
 		await _grab_theme_still("crosshaven_northgate", Vector2i(20, 12), folder.path_join("northgate_snow.png"))
-		await _grab_theme_still("crosshaven_eastmarch_beach", Vector2i(18, 3), folder.path_join("eastmarch_beach.png"))
+		await _grab_theme_still("crosshaven_eastmarch_coves", Vector2i(22, 6), folder.path_join("eastmarch_beach.png"))
 		await _grab_theme_still("crosshaven_southbridge_swamp", Vector2i(22, 16), folder.path_join("southbridge_swamp.png"))
 		await _grab_theme_still("crosshaven_westwatch_south_blight", Vector2i(18, 16), folder.path_join("westwatch_blight.png"))
 		return
@@ -2326,6 +2328,25 @@ func _movie_outskirts() -> void:
 	await get_tree().create_timer(0.45).timeout
 	await _travel("crosshaven_westwatch_south_blight", Vector2i(18, 16))
 	await get_tree().create_timer(0.6).timeout
+
+
+func _movie_eastmarch_still() -> void:
+	settings.apply_preset("Full")
+	_zoom = 1.15
+	if camera != null:
+		camera.zoom = Vector2.ONE * _zoom
+	weather.auto_rotate = false
+	weather.set_weather("clear")
+	weather.time_of_day = 12.0
+	weather.settle()
+	_hide_debug_readout()
+	if tracker != null:
+		tracker.visible = false
+	if _banner != null:
+		_banner.modulate.a = 0.0
+	var folder := ProjectSettings.globalize_path("res://docs/pc/media/outskirts")
+	DirAccess.make_dir_recursive_absolute(folder)
+	await _grab_theme_still("crosshaven_eastmarch_coves", Vector2i(22, 6), folder.path_join("eastmarch_beach.png"))
 
 
 func _grab_theme_still(zone_id: String, cell: Vector2i, path: String) -> void:

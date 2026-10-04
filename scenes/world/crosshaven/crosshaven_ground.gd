@@ -10,6 +10,7 @@ extends Node2D
 const TILE_ART_ROOT := "res://art/world/crosshaven/tiles/"
 const Pick := preload("res://scenes/world/crosshaven/crosshaven_pick.gd")
 const Art := preload("res://scenes/world/crosshaven/crosshaven_art.gd")
+const Kit := preload("res://scenes/world/crosshaven/outskirts_kit.gd")
 
 const TOP := {
 	"golden_plains": Color("d8c27a"),
@@ -45,6 +46,9 @@ var _exit_dirs: Dictionary = {}
 var _ripple_frame := 0
 var _water_rows: Dictionary = {}
 var _void_ranks: Dictionary = {}
+## Visual family for the Eastmarch beach kit, keyed by local cell.
+var _beach: Dictionary = {}
+const BEACH_REACH := 4
 
 
 ## Ground is split into one canvas item per diagonal (x+y), z = diagonal * 10,
@@ -70,6 +74,7 @@ func setup(target: WorldZone) -> void:
 				var frm: Dictionary = link["from"]
 				_exit_dirs[Vector2i(int(frm["x"]), int(frm["y"]))] = dir
 	_cache_void_ranks()
+	_cache_beach()
 	var margin := blend_margin
 	for d in range(-margin * 2, zone.width + zone.height - 1 + margin * 2):
 		var row := Node2D.new()
@@ -202,6 +207,161 @@ func _faces_void(cell: Vector2i) -> bool:
 	return false
 
 
+## Eastmarch beach is a visual family on top of golden_plains and water.
+## Zone terrain ids stay as they are.
+func _cache_beach() -> void:
+	_beach.clear()
+	if zone == null or not Kit.has_theme("eastmarch"):
+		return
+	var margin := blend_margin
+	for y in range(-margin, zone.height + margin):
+		for x in range(-margin, zone.width + margin):
+			var cell := Vector2i(x, y)
+			var family := _classify_beach(cell)
+			if family != "":
+				_beach[cell] = family
+
+
+func _beach_at(cell: Vector2i) -> String:
+	if _beach.has(cell):
+		return str(_beach[cell])
+	return ""
+
+
+func _family_seen(cell: Vector2i) -> String:
+	var beach := _beach_at(cell)
+	if beach != "":
+		return beach
+	if zone == null:
+		return ""
+	return Art.terrain_seen(zone, cell)
+
+
+func _east_coast(cell: Vector2i) -> bool:
+	var weights := theme_weights(cell)
+	var east := _weight(weights, "eastmarch")
+	if east < 0.38:
+		return false
+	if east + 0.02 < _weight(weights, "northgate"):
+		return false
+	if east + 0.02 < _weight(weights, "southbridge"):
+		return false
+	return true
+
+
+func _sea_dist(cell: Vector2i) -> int:
+	if zone == null:
+		return 99
+	if Art.terrain_seen(zone, cell) == "water":
+		return 0
+	for radius in range(1, BEACH_REACH + 1):
+		for dy in range(-radius, radius + 1):
+			for dx in range(-radius, radius + 1):
+				if maxi(absi(dx), absi(dy)) != radius:
+					continue
+				if Art.terrain_seen(zone, cell + Vector2i(dx, dy)) == "water":
+					return radius
+	return 99
+
+
+func _classify_beach(cell: Vector2i) -> String:
+	if zone == null or not _east_coast(cell):
+		return ""
+	var terrain := Art.terrain_seen(zone, cell)
+	if terrain == "water":
+		for dir in _ORTHO:
+			var nb := Art.terrain_seen(zone, cell + dir)
+			if nb != "" and nb != "water":
+				return "sea_shallow"
+		return "sea_deep"
+	if terrain != "golden_plains":
+		return ""
+	var dist := _sea_dist(cell)
+	if dist == 1:
+		return "wet_sand"
+	if dist <= BEACH_REACH:
+		return "sand"
+	return ""
+
+
+func _kit_sea(cell: Vector2i) -> bool:
+	var family := _beach_at(cell)
+	return family == "sea_shallow" or family == "sea_deep"
+
+
+## Shift only the Eastmarch shelf toward the rim sea (#1e6e96).
+## Repo water tiles stay on their own grade.
+func _kit_sea_modulate(cell: Vector2i) -> Color:
+	var depth := _rim_depth(cell)
+	if depth >= 8:
+		return Color.WHITE
+	var t := (8.0 - float(depth)) / 8.0
+	var toward := Color(30.0 / 36.0, 1.0, 150.0 / 158.0)
+	return Color.WHITE.lerp(toward, t * 0.65)
+
+
+func _cave_id(cell: Vector2i) -> String:
+	if zone == null:
+		return ""
+	if zone.zone_id == "crosshaven_eastmarch_coves" and cell == Vector2i(27, 4):
+		return "cave_mouth_sandstone"
+	if zone.zone_id == "crosshaven_eastmarch_sea_caves" and cell == Vector2i(32, 33):
+		return "cave_mouth_grey"
+	return ""
+
+
+func _shore_prop(cell: Vector2i, family: String) -> String:
+	if zone != null and zone.in_bounds(cell) and zone.blocked_at(cell):
+		return ""
+	if _cave_id(cell) != "" or _cave_id(cell + Vector2i(1, 0)) != "":
+		return ""
+	if family == "wet_sand" and Art.h(cell.x, cell.y, 9) == 0:
+		var wet := ["mooring_post", "shell_heap", "driftwood_fork"]
+		return str(wet[Art.h(cell.x + 1, cell.y, wet.size())])
+	if family == "sand" and _sea_dist(cell) == 2 and Art.h(cell.x, cell.y, 7) == 0:
+		var dry := ["tidepool_rocks_a", "tidepool_rocks_b", "driftwood_long", "shell_heap"]
+		return str(dry[Art.h(cell.x, cell.y + 1, dry.size())])
+	return ""
+
+
+func _draw_beach(ci: Node2D, cell: Vector2i, family: String, steps: int) -> void:
+	var center := BoardVisualSort.cell_to_local(cell, float(steps))
+	var south_tip := center + Vector2(0, Pick.HALF_H)
+	var modulate := Color.WHITE
+	if family == "sea_shallow" or family == "sea_deep":
+		modulate = _kit_sea_modulate(cell)
+	var pick: Dictionary = Kit.pick("eastmarch", family, cell, Callable(self, "_family_seen"))
+	var floor := str(pick.get("floor", ""))
+	if floor != "":
+		Kit.draw(ci, Kit.texture("eastmarch", floor), south_tip, modulate, bool(pick.get("flip_h", false)), bool(pick.get("flip_v", false)))
+	for corner_id in pick.get("corners", []):
+		Kit.draw(ci, Kit.texture("eastmarch", str(corner_id)), south_tip, modulate, false, false)
+	var prop := _shore_prop(cell, family)
+	if prop != "":
+		Kit.draw(ci, Kit.texture("eastmarch", prop), south_tip, Color.WHITE, false, false)
+
+
+func _draw_cave(ci: Node2D, cell: Vector2i, steps: int) -> void:
+	var id := _cave_id(cell)
+	if id == "":
+		return
+	var center := BoardVisualSort.cell_to_local(cell, float(steps))
+	var south_tip := center + Vector2(0, Pick.HALF_H)
+	Kit.draw(ci, Kit.texture("eastmarch", id), south_tip, Color.WHITE, false, false)
+
+
+func _joins_kit_sand(cell: Vector2i) -> bool:
+	for dir in _ORTHO:
+		var fam := _beach_at(cell + dir)
+		if fam == "sand" or fam == "wet_sand":
+			return true
+	for diag in [Vector2i(-1, -1), Vector2i(1, -1), Vector2i(1, 1), Vector2i(-1, 1)]:
+		var corner := _beach_at(cell + diag)
+		if corner == "sand" or corner == "wet_sand":
+			return true
+	return false
+
+
 func _draw_row(row: Node2D, s: int) -> void:
 	var margin := blend_margin
 	var x0 := maxi(-margin, s - (zone.height - 1 + margin))
@@ -221,10 +381,14 @@ func _draw_cell(ci: Node2D, cell: Vector2i) -> void:
 		return
 	var steps := Art.height_seen(zone, cell)
 	var rank := void_rank(cell)
+	var beach := _beach_at(cell)
 	# The last water cell of a stream becomes a bank, not a blue rectangle.
-	var bank := terrain == "water" and rank == 1
+	# Eastmarch kit sea stays the painted shelf instead of that bank.
+	var bank := terrain == "water" and rank == 1 and beach == ""
 	var paint := "golden_plains" if bank else terrain
-	if _use_kit:
+	if beach != "":
+		_draw_beach(ci, cell, beach, steps)
+	elif _use_kit:
 		_draw_cell_kit(ci, cell, terrain, steps, bank)
 	else:
 		var top: Color = TOP.get(paint, Color.MAGENTA)
@@ -245,8 +409,10 @@ func _draw_cell(ci: Node2D, cell: Vector2i) -> void:
 			ci.draw_line(c + Vector2(-8, -1 + 3 * n), c + Vector2(6, -1 + 3 * n), Color(1, 1, 1, 0.22), 1.0)
 		var edge := Color(0, 0, 0, 0.06)
 		ci.draw_polyline(PackedVector2Array([lifted[0], lifted[1], lifted[2], lifted[3], lifted[0]]), edge, 1.0)
+	_draw_cave(ci, cell, steps)
 	_theme_marks(ci, cell, terrain, steps)
-	_fade_void_edge(ci, cell, steps, rank, terrain)
+	if not _kit_sea(cell):
+		_fade_void_edge(ci, cell, steps, rank, terrain)
 	_dust_snow(ci, cell, paint, steps)
 
 
@@ -432,6 +598,8 @@ func _floor_modulate(cell: Vector2i, terrain: String) -> Color:
 		tint += _tint_of(id) * w
 	if not any:
 		tint = Color.WHITE
+	if terrain == "golden_plains" and _joins_kit_sand(cell):
+		return _with_frost(Color.WHITE, cell, terrain)
 	if terrain == "cliff":
 		return _with_frost(tint.lerp(Color(0.90, 0.88, 0.84), 0.45), cell, terrain)
 	if terrain == "water":
@@ -487,7 +655,7 @@ func _theme_marks(ci: Node2D, cell: Vector2i, terrain: String, steps: int) -> vo
 		var crack := Color(0.28, 0.22, 0.32, 0.5)
 		ci.draw_line(c + Vector2(-8, 2), c + Vector2(-1, -2), crack, 1.0)
 		ci.draw_line(c + Vector2(-1, -2), c + Vector2(6, 3), crack, 1.0)
-	if terrain == "cliff" and _faces_water(cell) and n > 0.8 and (east > 0.12 or north > 0.2 or south > 0.15):
+	if terrain == "cliff" and _cave_id(cell) == "" and _faces_water(cell) and n > 0.8 and (east > 0.12 or north > 0.2 or south > 0.15):
 		var d := Pick.diamond(cell, float(steps))
 		var mid := (d[0] + d[2]) * 0.5
 		_soft_blob(ci, mid + Vector2(0, 3), 7.5, 4.5, Color(0.10, 0.09, 0.08, 0.88), n)

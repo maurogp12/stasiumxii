@@ -1,0 +1,127 @@
+{
+ "package": "outskirts_themes/eastmarch",
+ "root": "art/pc/look/outskirts/eastmarch/",
+ "note": "checker index (world package): id, size_2x, footprint_cells, anchor_px_2x",
+ "props": [
+  {
+   "id": "cave_mouth_sandstone",
+   "size_2x": [
+    192,
+    160
+   ],
+   "footprint_cells": [
+    2,
+    1
+   ],
+   "anchor_px_2x": [
+    96,
+    160
+   ]
+  },
+  {
+   "id": "cave_mouth_grey",
+   "size_2x": [
+    192,
+    160
+   ],
+   "footprint_cells": [
+    2,
+    1
+   ],
+   "anchor_px_2x": [
+    96,
+    160
+   ]
+  },
+  {
+   "id": "tidepool_rocks_a",
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64,
+    128
+   ]
+  },
+  {
+   "id": "tidepool_rocks_b",
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64,
+    128
+   ]
+  },
+  {
+   "id": "driftwood_long",
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64,
+    128
+   ]
+  },
+  {
+   "id": "driftwood_fork",
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64,
+    128
+   ]
+  },
+  {
+   "id": "shell_heap",
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64,
+    128
+   ]
+  },
+  {
+   "id": "mooring_post",
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64,
+    128
+   ]
+  }
+ ]
+}

@@ -1,0 +1,2404 @@
+{
+ "format": "stasium.world_atlas",
+ "format_version": 2,
+ "region": "outskirts_eastmarch",
+ "root": "art/pc/look/outskirts/eastmarch/",
+ "package": "outskirts_themes/eastmarch",
+ "date": "2026-10-03",
+ "scope": "PC-only painted 2D iso theme kit for the EASTMARCH open-world outskirts (PR #241 flat washes -> painted ground + props). Box-only; nothing committed.",
+ "grid": {
+  "projection": "2:1 iso",
+  "tile_1x": [
+   64,
+   32
+  ],
+  "tile_2x": [
+   128,
+   64
+  ],
+  "cell_centre_1x": "((x-y)*32, (x+y)*16)",
+  "sort": "(x+y)"
+ },
+ "files": {
+  "tiles": "tiles/<id>.png (1x) + tiles/<id>@2x.png (2x master)",
+  "props": "props/<id>.png + props/<id>@2x.png (also props/props.json)",
+  "overlays": "overlays/<id>.png + overlays/<id>@2x.png (screen-space fog/haze; listed in animated/anim_meta.json as 1-frame scroll layers and in kit.json)",
+  "sway_masks": "animated/sway_masks/<id>_swaymask.png + animated/sway_masks/_2x/"
+ },
+ "anchors": {
+  "tile": "bottom-centre on the cell south tip (= top-left at cell centre + (-32,-16) 1x)",
+  "prop": "bottom-centre on the south tip of the south-most footprint cell"
+ },
+ "autotile": {
+  "picker": "Crosshaven picker (crosshaven_art.gd pick_tile): g = sides nw,ne,se,sw (in that order) whose neighbour is in `against`; g empty -> interior by h(x,y); else <edge_prefix><g joined by _>; then <corner_prefix><c> decals for diagonal corners c whose two sides are not in g but whose diagonal neighbour is in `against`.",
+  "sides": {
+   "nw": "(x-1,y)",
+   "ne": "(x,y-1)",
+   "se": "(x+1,y)",
+   "sw": "(x,y+1)"
+  },
+  "corners": {
+   "n": "(x-1,y-1)",
+   "e": "(x+1,y-1)",
+   "s": "(x+1,y+1)",
+   "w": "(x-1,y+1)"
+  },
+  "families": {
+   "sand": {
+    "interiors": [
+     "sand_a",
+     "sand_b",
+     "sand_c",
+     "sand_d"
+    ],
+    "edge": "sand_edge_",
+    "corner": "sand_corner_",
+    "against": [
+     "golden_plains"
+    ]
+   },
+   "wet_sand": {
+    "interiors": [
+     "wet_sand_a",
+     "wet_sand_b"
+    ],
+    "edge": "wet_sand_edge_",
+    "corner": "wet_sand_corner_",
+    "against": [
+     "sand"
+    ],
+    "joins": [
+     "wet_sand",
+     "sea_shallow",
+     "sea_deep"
+    ]
+   },
+   "sea_shallow": {
+    "interiors": [
+     "sea_shallow_a",
+     "sea_shallow_b"
+    ],
+    "edge": "sand_surf_edge_",
+    "corner": "sand_surf_corner_",
+    "against": [
+     "sand",
+     "wet_sand",
+     "golden_plains (no grass shore piece: put a sand row between grass and sea)"
+    ]
+   },
+   "sea_deep": {
+    "interiors": [
+     "sea_deep_a",
+     "sea_deep_b"
+    ],
+    "edge": "sea_deep_edge_",
+    "corner": "sea_deep_corner_",
+    "against": [
+     "sea_shallow"
+    ]
+   }
+  },
+  "note": "all 15 side combinations are shipped (Crosshaven grammar); the 4 single sides are the brief's <family>_edge_{nw,ne,se,sw}."
+ },
+ "lighting": {
+  "key": "neutral warm daylight from the top-left (as Crosshaven)",
+  "shadows": "contact only; no cast shadows",
+  "grade": "not pre-graded"
+ },
+ "tiles": [
+  {
+   "id": "sand_a",
+   "file": "tiles/sand_a.png",
+   "file_2x": "tiles/sand_a@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "tile",
+   "family": "sand",
+   "base_terrain": "sand",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "variant": "a"
+  },
+  {
+   "id": "sand_b",
+   "file": "tiles/sand_b.png",
+   "file_2x": "tiles/sand_b@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "tile",
+   "family": "sand",
+   "base_terrain": "sand",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "variant": "b"
+  },
+  {
+   "id": "sand_c",
+   "file": "tiles/sand_c.png",
+   "file_2x": "tiles/sand_c@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "tile",
+   "family": "sand",
+   "base_terrain": "sand",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "variant": "c"
+  },
+  {
+   "id": "sand_d",
+   "file": "tiles/sand_d.png",
+   "file_2x": "tiles/sand_d@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "tile",
+   "family": "sand",
+   "base_terrain": "sand",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "variant": "d"
+  },
+  {
+   "id": "wet_sand_a",
+   "file": "tiles/wet_sand_a.png",
+   "file_2x": "tiles/wet_sand_a@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "tile",
+   "family": "wet_sand",
+   "base_terrain": "wet_sand",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "variant": "a"
+  },
+  {
+   "id": "wet_sand_b",
+   "file": "tiles/wet_sand_b.png",
+   "file_2x": "tiles/wet_sand_b@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "tile",
+   "family": "wet_sand",
+   "base_terrain": "wet_sand",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "variant": "b"
+  },
+  {
+   "id": "sea_shallow_a",
+   "file": "tiles/sea_shallow_a.png",
+   "file_2x": "tiles/sea_shallow_a@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "tile",
+   "family": "sea_shallow",
+   "base_terrain": "sea_shallow",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "variant": "a"
+  },
+  {
+   "id": "sea_deep_a",
+   "file": "tiles/sea_deep_a.png",
+   "file_2x": "tiles/sea_deep_a@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "tile",
+   "family": "sea_deep",
+   "base_terrain": "sea_deep",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "variant": "a"
+  },
+  {
+   "id": "sea_shallow_b",
+   "file": "tiles/sea_shallow_b.png",
+   "file_2x": "tiles/sea_shallow_b@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "tile",
+   "family": "sea_shallow",
+   "base_terrain": "sea_shallow",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "variant": "b"
+  },
+  {
+   "id": "sea_deep_b",
+   "file": "tiles/sea_deep_b.png",
+   "file_2x": "tiles/sea_deep_b@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "tile",
+   "family": "sea_deep",
+   "base_terrain": "sea_deep",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "variant": "b"
+  },
+  {
+   "id": "sand_edge_nw",
+   "file": "tiles/sand_edge_nw.png",
+   "file_2x": "tiles/sand_edge_nw@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "sand",
+   "base_terrain": "sand",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "nw"
+   ],
+   "against": "golden_plains",
+   "note": "grass (golden_plains) tufts reaching into sand, sand flecks in the grass lip, soft warm lip shade"
+  },
+  {
+   "id": "sand_edge_ne",
+   "file": "tiles/sand_edge_ne.png",
+   "file_2x": "tiles/sand_edge_ne@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "sand",
+   "base_terrain": "sand",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "ne"
+   ],
+   "against": "golden_plains",
+   "note": "grass (golden_plains) tufts reaching into sand, sand flecks in the grass lip, soft warm lip shade"
+  },
+  {
+   "id": "sand_edge_nw_ne",
+   "file": "tiles/sand_edge_nw_ne.png",
+   "file_2x": "tiles/sand_edge_nw_ne@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "sand",
+   "base_terrain": "sand",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "nw",
+    "ne"
+   ],
+   "against": "golden_plains",
+   "note": "grass (golden_plains) tufts reaching into sand, sand flecks in the grass lip, soft warm lip shade"
+  },
+  {
+   "id": "sand_edge_se",
+   "file": "tiles/sand_edge_se.png",
+   "file_2x": "tiles/sand_edge_se@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "sand",
+   "base_terrain": "sand",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "se"
+   ],
+   "against": "golden_plains",
+   "note": "grass (golden_plains) tufts reaching into sand, sand flecks in the grass lip, soft warm lip shade"
+  },
+  {
+   "id": "sand_edge_nw_se",
+   "file": "tiles/sand_edge_nw_se.png",
+   "file_2x": "tiles/sand_edge_nw_se@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "sand",
+   "base_terrain": "sand",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "nw",
+    "se"
+   ],
+   "against": "golden_plains",
+   "note": "grass (golden_plains) tufts reaching into sand, sand flecks in the grass lip, soft warm lip shade"
+  },
+  {
+   "id": "sand_edge_ne_se",
+   "file": "tiles/sand_edge_ne_se.png",
+   "file_2x": "tiles/sand_edge_ne_se@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "sand",
+   "base_terrain": "sand",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "ne",
+    "se"
+   ],
+   "against": "golden_plains",
+   "note": "grass (golden_plains) tufts reaching into sand, sand flecks in the grass lip, soft warm lip shade"
+  },
+  {
+   "id": "sand_edge_nw_ne_se",
+   "file": "tiles/sand_edge_nw_ne_se.png",
+   "file_2x": "tiles/sand_edge_nw_ne_se@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "sand",
+   "base_terrain": "sand",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "nw",
+    "ne",
+    "se"
+   ],
+   "against": "golden_plains",
+   "note": "grass (golden_plains) tufts reaching into sand, sand flecks in the grass lip, soft warm lip shade"
+  },
+  {
+   "id": "sand_edge_sw",
+   "file": "tiles/sand_edge_sw.png",
+   "file_2x": "tiles/sand_edge_sw@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "sand",
+   "base_terrain": "sand",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "sw"
+   ],
+   "against": "golden_plains",
+   "note": "grass (golden_plains) tufts reaching into sand, sand flecks in the grass lip, soft warm lip shade"
+  },
+  {
+   "id": "sand_edge_nw_sw",
+   "file": "tiles/sand_edge_nw_sw.png",
+   "file_2x": "tiles/sand_edge_nw_sw@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "sand",
+   "base_terrain": "sand",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "nw",
+    "sw"
+   ],
+   "against": "golden_plains",
+   "note": "grass (golden_plains) tufts reaching into sand, sand flecks in the grass lip, soft warm lip shade"
+  },
+  {
+   "id": "sand_edge_ne_sw",
+   "file": "tiles/sand_edge_ne_sw.png",
+   "file_2x": "tiles/sand_edge_ne_sw@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "sand",
+   "base_terrain": "sand",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "ne",
+    "sw"
+   ],
+   "against": "golden_plains",
+   "note": "grass (golden_plains) tufts reaching into sand, sand flecks in the grass lip, soft warm lip shade"
+  },
+  {
+   "id": "sand_edge_nw_ne_sw",
+   "file": "tiles/sand_edge_nw_ne_sw.png",
+   "file_2x": "tiles/sand_edge_nw_ne_sw@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "sand",
+   "base_terrain": "sand",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "nw",
+    "ne",
+    "sw"
+   ],
+   "against": "golden_plains",
+   "note": "grass (golden_plains) tufts reaching into sand, sand flecks in the grass lip, soft warm lip shade"
+  },
+  {
+   "id": "sand_edge_se_sw",
+   "file": "tiles/sand_edge_se_sw.png",
+   "file_2x": "tiles/sand_edge_se_sw@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "sand",
+   "base_terrain": "sand",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "se",
+    "sw"
+   ],
+   "against": "golden_plains",
+   "note": "grass (golden_plains) tufts reaching into sand, sand flecks in the grass lip, soft warm lip shade"
+  },
+  {
+   "id": "sand_edge_nw_se_sw",
+   "file": "tiles/sand_edge_nw_se_sw.png",
+   "file_2x": "tiles/sand_edge_nw_se_sw@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "sand",
+   "base_terrain": "sand",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "nw",
+    "se",
+    "sw"
+   ],
+   "against": "golden_plains",
+   "note": "grass (golden_plains) tufts reaching into sand, sand flecks in the grass lip, soft warm lip shade"
+  },
+  {
+   "id": "sand_edge_ne_se_sw",
+   "file": "tiles/sand_edge_ne_se_sw.png",
+   "file_2x": "tiles/sand_edge_ne_se_sw@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "sand",
+   "base_terrain": "sand",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "ne",
+    "se",
+    "sw"
+   ],
+   "against": "golden_plains",
+   "note": "grass (golden_plains) tufts reaching into sand, sand flecks in the grass lip, soft warm lip shade"
+  },
+  {
+   "id": "sand_edge_nw_ne_se_sw",
+   "file": "tiles/sand_edge_nw_ne_se_sw.png",
+   "file_2x": "tiles/sand_edge_nw_ne_se_sw@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "sand",
+   "base_terrain": "sand",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "nw",
+    "ne",
+    "se",
+    "sw"
+   ],
+   "against": "golden_plains",
+   "note": "grass (golden_plains) tufts reaching into sand, sand flecks in the grass lip, soft warm lip shade"
+  },
+  {
+   "id": "sand_corner_n",
+   "file": "tiles/sand_corner_n.png",
+   "file_2x": "tiles/sand_corner_n@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "decal",
+   "kit_kind": "corner",
+   "family": "sand",
+   "base_terrain": "sand",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "corner": "n",
+   "against": "golden_plains",
+   "note": "grass (golden_plains) tufts reaching into sand, sand flecks in the grass lip, soft warm lip shade"
+  },
+  {
+   "id": "sand_corner_e",
+   "file": "tiles/sand_corner_e.png",
+   "file_2x": "tiles/sand_corner_e@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "decal",
+   "kit_kind": "corner",
+   "family": "sand",
+   "base_terrain": "sand",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "corner": "e",
+   "against": "golden_plains",
+   "note": "grass (golden_plains) tufts reaching into sand, sand flecks in the grass lip, soft warm lip shade"
+  },
+  {
+   "id": "sand_corner_s",
+   "file": "tiles/sand_corner_s.png",
+   "file_2x": "tiles/sand_corner_s@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "decal",
+   "kit_kind": "corner",
+   "family": "sand",
+   "base_terrain": "sand",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "corner": "s",
+   "against": "golden_plains",
+   "note": "grass (golden_plains) tufts reaching into sand, sand flecks in the grass lip, soft warm lip shade"
+  },
+  {
+   "id": "sand_corner_w",
+   "file": "tiles/sand_corner_w.png",
+   "file_2x": "tiles/sand_corner_w@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "decal",
+   "kit_kind": "corner",
+   "family": "sand",
+   "base_terrain": "sand",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "corner": "w",
+   "against": "golden_plains",
+   "note": "grass (golden_plains) tufts reaching into sand, sand flecks in the grass lip, soft warm lip shade"
+  },
+  {
+   "id": "wet_sand_edge_nw",
+   "file": "tiles/wet_sand_edge_nw.png",
+   "file_2x": "tiles/wet_sand_edge_nw@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "wet_sand",
+   "base_terrain": "wet_sand",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "nw"
+   ],
+   "against": "sand",
+   "note": "wet sand flats fading into dry sand with a soft irregular tide line"
+  },
+  {
+   "id": "wet_sand_edge_ne",
+   "file": "tiles/wet_sand_edge_ne.png",
+   "file_2x": "tiles/wet_sand_edge_ne@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "wet_sand",
+   "base_terrain": "wet_sand",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "ne"
+   ],
+   "against": "sand",
+   "note": "wet sand flats fading into dry sand with a soft irregular tide line"
+  },
+  {
+   "id": "wet_sand_edge_nw_ne",
+   "file": "tiles/wet_sand_edge_nw_ne.png",
+   "file_2x": "tiles/wet_sand_edge_nw_ne@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "wet_sand",
+   "base_terrain": "wet_sand",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "nw",
+    "ne"
+   ],
+   "against": "sand",
+   "note": "wet sand flats fading into dry sand with a soft irregular tide line"
+  },
+  {
+   "id": "wet_sand_edge_se",
+   "file": "tiles/wet_sand_edge_se.png",
+   "file_2x": "tiles/wet_sand_edge_se@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "wet_sand",
+   "base_terrain": "wet_sand",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "se"
+   ],
+   "against": "sand",
+   "note": "wet sand flats fading into dry sand with a soft irregular tide line"
+  },
+  {
+   "id": "wet_sand_edge_nw_se",
+   "file": "tiles/wet_sand_edge_nw_se.png",
+   "file_2x": "tiles/wet_sand_edge_nw_se@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "wet_sand",
+   "base_terrain": "wet_sand",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "nw",
+    "se"
+   ],
+   "against": "sand",
+   "note": "wet sand flats fading into dry sand with a soft irregular tide line"
+  },
+  {
+   "id": "wet_sand_edge_ne_se",
+   "file": "tiles/wet_sand_edge_ne_se.png",
+   "file_2x": "tiles/wet_sand_edge_ne_se@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "wet_sand",
+   "base_terrain": "wet_sand",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "ne",
+    "se"
+   ],
+   "against": "sand",
+   "note": "wet sand flats fading into dry sand with a soft irregular tide line"
+  },
+  {
+   "id": "wet_sand_edge_nw_ne_se",
+   "file": "tiles/wet_sand_edge_nw_ne_se.png",
+   "file_2x": "tiles/wet_sand_edge_nw_ne_se@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "wet_sand",
+   "base_terrain": "wet_sand",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "nw",
+    "ne",
+    "se"
+   ],
+   "against": "sand",
+   "note": "wet sand flats fading into dry sand with a soft irregular tide line"
+  },
+  {
+   "id": "wet_sand_edge_sw",
+   "file": "tiles/wet_sand_edge_sw.png",
+   "file_2x": "tiles/wet_sand_edge_sw@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "wet_sand",
+   "base_terrain": "wet_sand",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "sw"
+   ],
+   "against": "sand",
+   "note": "wet sand flats fading into dry sand with a soft irregular tide line"
+  },
+  {
+   "id": "wet_sand_edge_nw_sw",
+   "file": "tiles/wet_sand_edge_nw_sw.png",
+   "file_2x": "tiles/wet_sand_edge_nw_sw@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "wet_sand",
+   "base_terrain": "wet_sand",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "nw",
+    "sw"
+   ],
+   "against": "sand",
+   "note": "wet sand flats fading into dry sand with a soft irregular tide line"
+  },
+  {
+   "id": "wet_sand_edge_ne_sw",
+   "file": "tiles/wet_sand_edge_ne_sw.png",
+   "file_2x": "tiles/wet_sand_edge_ne_sw@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "wet_sand",
+   "base_terrain": "wet_sand",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "ne",
+    "sw"
+   ],
+   "against": "sand",
+   "note": "wet sand flats fading into dry sand with a soft irregular tide line"
+  },
+  {
+   "id": "wet_sand_edge_nw_ne_sw",
+   "file": "tiles/wet_sand_edge_nw_ne_sw.png",
+   "file_2x": "tiles/wet_sand_edge_nw_ne_sw@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "wet_sand",
+   "base_terrain": "wet_sand",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "nw",
+    "ne",
+    "sw"
+   ],
+   "against": "sand",
+   "note": "wet sand flats fading into dry sand with a soft irregular tide line"
+  },
+  {
+   "id": "wet_sand_edge_se_sw",
+   "file": "tiles/wet_sand_edge_se_sw.png",
+   "file_2x": "tiles/wet_sand_edge_se_sw@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "wet_sand",
+   "base_terrain": "wet_sand",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "se",
+    "sw"
+   ],
+   "against": "sand",
+   "note": "wet sand flats fading into dry sand with a soft irregular tide line"
+  },
+  {
+   "id": "wet_sand_edge_nw_se_sw",
+   "file": "tiles/wet_sand_edge_nw_se_sw.png",
+   "file_2x": "tiles/wet_sand_edge_nw_se_sw@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "wet_sand",
+   "base_terrain": "wet_sand",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "nw",
+    "se",
+    "sw"
+   ],
+   "against": "sand",
+   "note": "wet sand flats fading into dry sand with a soft irregular tide line"
+  },
+  {
+   "id": "wet_sand_edge_ne_se_sw",
+   "file": "tiles/wet_sand_edge_ne_se_sw.png",
+   "file_2x": "tiles/wet_sand_edge_ne_se_sw@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "wet_sand",
+   "base_terrain": "wet_sand",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "ne",
+    "se",
+    "sw"
+   ],
+   "against": "sand",
+   "note": "wet sand flats fading into dry sand with a soft irregular tide line"
+  },
+  {
+   "id": "wet_sand_edge_nw_ne_se_sw",
+   "file": "tiles/wet_sand_edge_nw_ne_se_sw.png",
+   "file_2x": "tiles/wet_sand_edge_nw_ne_se_sw@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "wet_sand",
+   "base_terrain": "wet_sand",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "nw",
+    "ne",
+    "se",
+    "sw"
+   ],
+   "against": "sand",
+   "note": "wet sand flats fading into dry sand with a soft irregular tide line"
+  },
+  {
+   "id": "wet_sand_corner_n",
+   "file": "tiles/wet_sand_corner_n.png",
+   "file_2x": "tiles/wet_sand_corner_n@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "decal",
+   "kit_kind": "corner",
+   "family": "wet_sand",
+   "base_terrain": "wet_sand",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "corner": "n",
+   "against": "sand",
+   "note": "wet sand flats fading into dry sand with a soft irregular tide line"
+  },
+  {
+   "id": "wet_sand_corner_e",
+   "file": "tiles/wet_sand_corner_e.png",
+   "file_2x": "tiles/wet_sand_corner_e@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "decal",
+   "kit_kind": "corner",
+   "family": "wet_sand",
+   "base_terrain": "wet_sand",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "corner": "e",
+   "against": "sand",
+   "note": "wet sand flats fading into dry sand with a soft irregular tide line"
+  },
+  {
+   "id": "wet_sand_corner_s",
+   "file": "tiles/wet_sand_corner_s.png",
+   "file_2x": "tiles/wet_sand_corner_s@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "decal",
+   "kit_kind": "corner",
+   "family": "wet_sand",
+   "base_terrain": "wet_sand",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "corner": "s",
+   "against": "sand",
+   "note": "wet sand flats fading into dry sand with a soft irregular tide line"
+  },
+  {
+   "id": "wet_sand_corner_w",
+   "file": "tiles/wet_sand_corner_w.png",
+   "file_2x": "tiles/wet_sand_corner_w@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "decal",
+   "kit_kind": "corner",
+   "family": "wet_sand",
+   "base_terrain": "wet_sand",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "corner": "w",
+   "against": "sand",
+   "note": "wet sand flats fading into dry sand with a soft irregular tide line"
+  },
+  {
+   "id": "sand_surf_edge_nw",
+   "file": "tiles/sand_surf_edge_nw.png",
+   "file_2x": "tiles/sand_surf_edge_nw@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "sea_shallow",
+   "base_terrain": "sea_shallow",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "nw"
+   ],
+   "against": "sand",
+   "note": "drawn on sea_shallow cells; listed sides touch sand. From the shared border: dry sand (matches sand_*), wet-sand band, lace foam, white surf line, sandy shallows, then sea_shallow"
+  },
+  {
+   "id": "sand_surf_edge_ne",
+   "file": "tiles/sand_surf_edge_ne.png",
+   "file_2x": "tiles/sand_surf_edge_ne@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "sea_shallow",
+   "base_terrain": "sea_shallow",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "ne"
+   ],
+   "against": "sand",
+   "note": "drawn on sea_shallow cells; listed sides touch sand. From the shared border: dry sand (matches sand_*), wet-sand band, lace foam, white surf line, sandy shallows, then sea_shallow"
+  },
+  {
+   "id": "sand_surf_edge_nw_ne",
+   "file": "tiles/sand_surf_edge_nw_ne.png",
+   "file_2x": "tiles/sand_surf_edge_nw_ne@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "sea_shallow",
+   "base_terrain": "sea_shallow",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "nw",
+    "ne"
+   ],
+   "against": "sand",
+   "note": "drawn on sea_shallow cells; listed sides touch sand. From the shared border: dry sand (matches sand_*), wet-sand band, lace foam, white surf line, sandy shallows, then sea_shallow"
+  },
+  {
+   "id": "sand_surf_edge_se",
+   "file": "tiles/sand_surf_edge_se.png",
+   "file_2x": "tiles/sand_surf_edge_se@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "sea_shallow",
+   "base_terrain": "sea_shallow",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "se"
+   ],
+   "against": "sand",
+   "note": "drawn on sea_shallow cells; listed sides touch sand. From the shared border: dry sand (matches sand_*), wet-sand band, lace foam, white surf line, sandy shallows, then sea_shallow"
+  },
+  {
+   "id": "sand_surf_edge_nw_se",
+   "file": "tiles/sand_surf_edge_nw_se.png",
+   "file_2x": "tiles/sand_surf_edge_nw_se@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "sea_shallow",
+   "base_terrain": "sea_shallow",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "nw",
+    "se"
+   ],
+   "against": "sand",
+   "note": "drawn on sea_shallow cells; listed sides touch sand. From the shared border: dry sand (matches sand_*), wet-sand band, lace foam, white surf line, sandy shallows, then sea_shallow"
+  },
+  {
+   "id": "sand_surf_edge_ne_se",
+   "file": "tiles/sand_surf_edge_ne_se.png",
+   "file_2x": "tiles/sand_surf_edge_ne_se@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "sea_shallow",
+   "base_terrain": "sea_shallow",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "ne",
+    "se"
+   ],
+   "against": "sand",
+   "note": "drawn on sea_shallow cells; listed sides touch sand. From the shared border: dry sand (matches sand_*), wet-sand band, lace foam, white surf line, sandy shallows, then sea_shallow"
+  },
+  {
+   "id": "sand_surf_edge_nw_ne_se",
+   "file": "tiles/sand_surf_edge_nw_ne_se.png",
+   "file_2x": "tiles/sand_surf_edge_nw_ne_se@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "sea_shallow",
+   "base_terrain": "sea_shallow",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "nw",
+    "ne",
+    "se"
+   ],
+   "against": "sand",
+   "note": "drawn on sea_shallow cells; listed sides touch sand. From the shared border: dry sand (matches sand_*), wet-sand band, lace foam, white surf line, sandy shallows, then sea_shallow"
+  },
+  {
+   "id": "sand_surf_edge_sw",
+   "file": "tiles/sand_surf_edge_sw.png",
+   "file_2x": "tiles/sand_surf_edge_sw@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "sea_shallow",
+   "base_terrain": "sea_shallow",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "sw"
+   ],
+   "against": "sand",
+   "note": "drawn on sea_shallow cells; listed sides touch sand. From the shared border: dry sand (matches sand_*), wet-sand band, lace foam, white surf line, sandy shallows, then sea_shallow"
+  },
+  {
+   "id": "sand_surf_edge_nw_sw",
+   "file": "tiles/sand_surf_edge_nw_sw.png",
+   "file_2x": "tiles/sand_surf_edge_nw_sw@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "sea_shallow",
+   "base_terrain": "sea_shallow",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "nw",
+    "sw"
+   ],
+   "against": "sand",
+   "note": "drawn on sea_shallow cells; listed sides touch sand. From the shared border: dry sand (matches sand_*), wet-sand band, lace foam, white surf line, sandy shallows, then sea_shallow"
+  },
+  {
+   "id": "sand_surf_edge_ne_sw",
+   "file": "tiles/sand_surf_edge_ne_sw.png",
+   "file_2x": "tiles/sand_surf_edge_ne_sw@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "sea_shallow",
+   "base_terrain": "sea_shallow",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "ne",
+    "sw"
+   ],
+   "against": "sand",
+   "note": "drawn on sea_shallow cells; listed sides touch sand. From the shared border: dry sand (matches sand_*), wet-sand band, lace foam, white surf line, sandy shallows, then sea_shallow"
+  },
+  {
+   "id": "sand_surf_edge_nw_ne_sw",
+   "file": "tiles/sand_surf_edge_nw_ne_sw.png",
+   "file_2x": "tiles/sand_surf_edge_nw_ne_sw@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "sea_shallow",
+   "base_terrain": "sea_shallow",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "nw",
+    "ne",
+    "sw"
+   ],
+   "against": "sand",
+   "note": "drawn on sea_shallow cells; listed sides touch sand. From the shared border: dry sand (matches sand_*), wet-sand band, lace foam, white surf line, sandy shallows, then sea_shallow"
+  },
+  {
+   "id": "sand_surf_edge_se_sw",
+   "file": "tiles/sand_surf_edge_se_sw.png",
+   "file_2x": "tiles/sand_surf_edge_se_sw@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "sea_shallow",
+   "base_terrain": "sea_shallow",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "se",
+    "sw"
+   ],
+   "against": "sand",
+   "note": "drawn on sea_shallow cells; listed sides touch sand. From the shared border: dry sand (matches sand_*), wet-sand band, lace foam, white surf line, sandy shallows, then sea_shallow"
+  },
+  {
+   "id": "sand_surf_edge_nw_se_sw",
+   "file": "tiles/sand_surf_edge_nw_se_sw.png",
+   "file_2x": "tiles/sand_surf_edge_nw_se_sw@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "sea_shallow",
+   "base_terrain": "sea_shallow",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "nw",
+    "se",
+    "sw"
+   ],
+   "against": "sand",
+   "note": "drawn on sea_shallow cells; listed sides touch sand. From the shared border: dry sand (matches sand_*), wet-sand band, lace foam, white surf line, sandy shallows, then sea_shallow"
+  },
+  {
+   "id": "sand_surf_edge_ne_se_sw",
+   "file": "tiles/sand_surf_edge_ne_se_sw.png",
+   "file_2x": "tiles/sand_surf_edge_ne_se_sw@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "sea_shallow",
+   "base_terrain": "sea_shallow",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "ne",
+    "se",
+    "sw"
+   ],
+   "against": "sand",
+   "note": "drawn on sea_shallow cells; listed sides touch sand. From the shared border: dry sand (matches sand_*), wet-sand band, lace foam, white surf line, sandy shallows, then sea_shallow"
+  },
+  {
+   "id": "sand_surf_edge_nw_ne_se_sw",
+   "file": "tiles/sand_surf_edge_nw_ne_se_sw.png",
+   "file_2x": "tiles/sand_surf_edge_nw_ne_se_sw@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "sea_shallow",
+   "base_terrain": "sea_shallow",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "nw",
+    "ne",
+    "se",
+    "sw"
+   ],
+   "against": "sand",
+   "note": "drawn on sea_shallow cells; listed sides touch sand. From the shared border: dry sand (matches sand_*), wet-sand band, lace foam, white surf line, sandy shallows, then sea_shallow"
+  },
+  {
+   "id": "sand_surf_corner_n",
+   "file": "tiles/sand_surf_corner_n.png",
+   "file_2x": "tiles/sand_surf_corner_n@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "decal",
+   "kit_kind": "corner",
+   "family": "sea_shallow",
+   "base_terrain": "sea_shallow",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "corner": "n",
+   "against": "sand",
+   "note": "drawn on sea_shallow cells; listed sides touch sand. From the shared border: dry sand (matches sand_*), wet-sand band, lace foam, white surf line, sandy shallows, then sea_shallow"
+  },
+  {
+   "id": "sand_surf_corner_e",
+   "file": "tiles/sand_surf_corner_e.png",
+   "file_2x": "tiles/sand_surf_corner_e@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "decal",
+   "kit_kind": "corner",
+   "family": "sea_shallow",
+   "base_terrain": "sea_shallow",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "corner": "e",
+   "against": "sand",
+   "note": "drawn on sea_shallow cells; listed sides touch sand. From the shared border: dry sand (matches sand_*), wet-sand band, lace foam, white surf line, sandy shallows, then sea_shallow"
+  },
+  {
+   "id": "sand_surf_corner_s",
+   "file": "tiles/sand_surf_corner_s.png",
+   "file_2x": "tiles/sand_surf_corner_s@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "decal",
+   "kit_kind": "corner",
+   "family": "sea_shallow",
+   "base_terrain": "sea_shallow",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "corner": "s",
+   "against": "sand",
+   "note": "drawn on sea_shallow cells; listed sides touch sand. From the shared border: dry sand (matches sand_*), wet-sand band, lace foam, white surf line, sandy shallows, then sea_shallow"
+  },
+  {
+   "id": "sand_surf_corner_w",
+   "file": "tiles/sand_surf_corner_w.png",
+   "file_2x": "tiles/sand_surf_corner_w@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "decal",
+   "kit_kind": "corner",
+   "family": "sea_shallow",
+   "base_terrain": "sea_shallow",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "corner": "w",
+   "against": "sand",
+   "note": "drawn on sea_shallow cells; listed sides touch sand. From the shared border: dry sand (matches sand_*), wet-sand band, lace foam, white surf line, sandy shallows, then sea_shallow"
+  },
+  {
+   "id": "sea_deep_edge_nw",
+   "file": "tiles/sea_deep_edge_nw.png",
+   "file_2x": "tiles/sea_deep_edge_nw@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "sea_deep",
+   "base_terrain": "sea_deep",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "nw"
+   ],
+   "against": "sea_shallow",
+   "note": "soft painted shelf: deep water cells fading into the shallows (listed sides touch sea_shallow)"
+  },
+  {
+   "id": "sea_deep_edge_ne",
+   "file": "tiles/sea_deep_edge_ne.png",
+   "file_2x": "tiles/sea_deep_edge_ne@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "sea_deep",
+   "base_terrain": "sea_deep",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "ne"
+   ],
+   "against": "sea_shallow",
+   "note": "soft painted shelf: deep water cells fading into the shallows (listed sides touch sea_shallow)"
+  },
+  {
+   "id": "sea_deep_edge_nw_ne",
+   "file": "tiles/sea_deep_edge_nw_ne.png",
+   "file_2x": "tiles/sea_deep_edge_nw_ne@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "sea_deep",
+   "base_terrain": "sea_deep",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "nw",
+    "ne"
+   ],
+   "against": "sea_shallow",
+   "note": "soft painted shelf: deep water cells fading into the shallows (listed sides touch sea_shallow)"
+  },
+  {
+   "id": "sea_deep_edge_se",
+   "file": "tiles/sea_deep_edge_se.png",
+   "file_2x": "tiles/sea_deep_edge_se@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "sea_deep",
+   "base_terrain": "sea_deep",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "se"
+   ],
+   "against": "sea_shallow",
+   "note": "soft painted shelf: deep water cells fading into the shallows (listed sides touch sea_shallow)"
+  },
+  {
+   "id": "sea_deep_edge_nw_se",
+   "file": "tiles/sea_deep_edge_nw_se.png",
+   "file_2x": "tiles/sea_deep_edge_nw_se@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "sea_deep",
+   "base_terrain": "sea_deep",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "nw",
+    "se"
+   ],
+   "against": "sea_shallow",
+   "note": "soft painted shelf: deep water cells fading into the shallows (listed sides touch sea_shallow)"
+  },
+  {
+   "id": "sea_deep_edge_ne_se",
+   "file": "tiles/sea_deep_edge_ne_se.png",
+   "file_2x": "tiles/sea_deep_edge_ne_se@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "sea_deep",
+   "base_terrain": "sea_deep",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "ne",
+    "se"
+   ],
+   "against": "sea_shallow",
+   "note": "soft painted shelf: deep water cells fading into the shallows (listed sides touch sea_shallow)"
+  },
+  {
+   "id": "sea_deep_edge_nw_ne_se",
+   "file": "tiles/sea_deep_edge_nw_ne_se.png",
+   "file_2x": "tiles/sea_deep_edge_nw_ne_se@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "sea_deep",
+   "base_terrain": "sea_deep",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "nw",
+    "ne",
+    "se"
+   ],
+   "against": "sea_shallow",
+   "note": "soft painted shelf: deep water cells fading into the shallows (listed sides touch sea_shallow)"
+  },
+  {
+   "id": "sea_deep_edge_sw",
+   "file": "tiles/sea_deep_edge_sw.png",
+   "file_2x": "tiles/sea_deep_edge_sw@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "sea_deep",
+   "base_terrain": "sea_deep",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "sw"
+   ],
+   "against": "sea_shallow",
+   "note": "soft painted shelf: deep water cells fading into the shallows (listed sides touch sea_shallow)"
+  },
+  {
+   "id": "sea_deep_edge_nw_sw",
+   "file": "tiles/sea_deep_edge_nw_sw.png",
+   "file_2x": "tiles/sea_deep_edge_nw_sw@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "sea_deep",
+   "base_terrain": "sea_deep",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "nw",
+    "sw"
+   ],
+   "against": "sea_shallow",
+   "note": "soft painted shelf: deep water cells fading into the shallows (listed sides touch sea_shallow)"
+  },
+  {
+   "id": "sea_deep_edge_ne_sw",
+   "file": "tiles/sea_deep_edge_ne_sw.png",
+   "file_2x": "tiles/sea_deep_edge_ne_sw@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "sea_deep",
+   "base_terrain": "sea_deep",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "ne",
+    "sw"
+   ],
+   "against": "sea_shallow",
+   "note": "soft painted shelf: deep water cells fading into the shallows (listed sides touch sea_shallow)"
+  },
+  {
+   "id": "sea_deep_edge_nw_ne_sw",
+   "file": "tiles/sea_deep_edge_nw_ne_sw.png",
+   "file_2x": "tiles/sea_deep_edge_nw_ne_sw@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "sea_deep",
+   "base_terrain": "sea_deep",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "nw",
+    "ne",
+    "sw"
+   ],
+   "against": "sea_shallow",
+   "note": "soft painted shelf: deep water cells fading into the shallows (listed sides touch sea_shallow)"
+  },
+  {
+   "id": "sea_deep_edge_se_sw",
+   "file": "tiles/sea_deep_edge_se_sw.png",
+   "file_2x": "tiles/sea_deep_edge_se_sw@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "sea_deep",
+   "base_terrain": "sea_deep",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "se",
+    "sw"
+   ],
+   "against": "sea_shallow",
+   "note": "soft painted shelf: deep water cells fading into the shallows (listed sides touch sea_shallow)"
+  },
+  {
+   "id": "sea_deep_edge_nw_se_sw",
+   "file": "tiles/sea_deep_edge_nw_se_sw.png",
+   "file_2x": "tiles/sea_deep_edge_nw_se_sw@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "sea_deep",
+   "base_terrain": "sea_deep",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "nw",
+    "se",
+    "sw"
+   ],
+   "against": "sea_shallow",
+   "note": "soft painted shelf: deep water cells fading into the shallows (listed sides touch sea_shallow)"
+  },
+  {
+   "id": "sea_deep_edge_ne_se_sw",
+   "file": "tiles/sea_deep_edge_ne_se_sw.png",
+   "file_2x": "tiles/sea_deep_edge_ne_se_sw@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "sea_deep",
+   "base_terrain": "sea_deep",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "ne",
+    "se",
+    "sw"
+   ],
+   "against": "sea_shallow",
+   "note": "soft painted shelf: deep water cells fading into the shallows (listed sides touch sea_shallow)"
+  },
+  {
+   "id": "sea_deep_edge_nw_ne_se_sw",
+   "file": "tiles/sea_deep_edge_nw_ne_se_sw.png",
+   "file_2x": "tiles/sea_deep_edge_nw_ne_se_sw@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "sea_deep",
+   "base_terrain": "sea_deep",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "nw",
+    "ne",
+    "se",
+    "sw"
+   ],
+   "against": "sea_shallow",
+   "note": "soft painted shelf: deep water cells fading into the shallows (listed sides touch sea_shallow)"
+  },
+  {
+   "id": "sea_deep_corner_n",
+   "file": "tiles/sea_deep_corner_n.png",
+   "file_2x": "tiles/sea_deep_corner_n@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "decal",
+   "kit_kind": "corner",
+   "family": "sea_deep",
+   "base_terrain": "sea_deep",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "corner": "n",
+   "against": "sea_shallow",
+   "note": "soft painted shelf: deep water cells fading into the shallows (listed sides touch sea_shallow)"
+  },
+  {
+   "id": "sea_deep_corner_e",
+   "file": "tiles/sea_deep_corner_e.png",
+   "file_2x": "tiles/sea_deep_corner_e@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "decal",
+   "kit_kind": "corner",
+   "family": "sea_deep",
+   "base_terrain": "sea_deep",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "corner": "e",
+   "against": "sea_shallow",
+   "note": "soft painted shelf: deep water cells fading into the shallows (listed sides touch sea_shallow)"
+  },
+  {
+   "id": "sea_deep_corner_s",
+   "file": "tiles/sea_deep_corner_s.png",
+   "file_2x": "tiles/sea_deep_corner_s@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "decal",
+   "kit_kind": "corner",
+   "family": "sea_deep",
+   "base_terrain": "sea_deep",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "corner": "s",
+   "against": "sea_shallow",
+   "note": "soft painted shelf: deep water cells fading into the shallows (listed sides touch sea_shallow)"
+  },
+  {
+   "id": "sea_deep_corner_w",
+   "file": "tiles/sea_deep_corner_w.png",
+   "file_2x": "tiles/sea_deep_corner_w@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "decal",
+   "kit_kind": "corner",
+   "family": "sea_deep",
+   "base_terrain": "sea_deep",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "corner": "w",
+   "against": "sea_shallow",
+   "note": "soft painted shelf: deep water cells fading into the shallows (listed sides touch sea_shallow)"
+  }
+ ],
+ "props": [
+  {
+   "id": "cave_mouth_sandstone",
+   "file": "props/cave_mouth_sandstone.png",
+   "file_2x": "props/cave_mouth_sandstone@2x.png",
+   "size": [
+    96,
+    80
+   ],
+   "size_2x": [
+    192,
+    160
+   ],
+   "footprint_size": [
+    2,
+    1
+   ],
+   "kind": "landmark_rock",
+   "layer": "prop",
+   "anchor": "image bottom-centre = south tip of the anchor cell (the south-most footprint cell) ; footprint runs back to (x-1,y)",
+   "art_x_from_anchor_2x": [
+    -94,
+    59
+   ],
+   "art_height_px_2x": 160,
+   "lowest_opaque_gap_px_2x": 15,
+   "sort": "y-sort by the anchor (south-most footprint cell)",
+   "contact_shadow": "painted ground patch from the raw, rim faded into the tile; no cast shadows",
+   "note": "sandstone cave-mouth outcrop with a grass crown; 2-cell footprint (anchor cell + its nw neighbour (x-1,y)); blocks both cells"
+  },
+  {
+   "id": "cave_mouth_grey",
+   "file": "props/cave_mouth_grey.png",
+   "file_2x": "props/cave_mouth_grey@2x.png",
+   "size": [
+    96,
+    80
+   ],
+   "size_2x": [
+    192,
+    160
+   ],
+   "footprint_size": [
+    2,
+    1
+   ],
+   "kind": "landmark_rock",
+   "layer": "prop",
+   "anchor": "image bottom-centre = south tip of the anchor cell (the south-most footprint cell) ; footprint runs back to (x-1,y)",
+   "art_x_from_anchor_2x": [
+    -93,
+    59
+   ],
+   "art_height_px_2x": 160,
+   "lowest_opaque_gap_px_2x": 15,
+   "sort": "y-sort by the anchor (south-most footprint cell)",
+   "contact_shadow": "painted ground patch from the raw, rim faded into the tile; no cast shadows",
+   "note": "grey stone cave-mouth outcrop, mossy crown; 2-cell footprint like cave_mouth_sandstone"
+  },
+  {
+   "id": "tidepool_rocks_a",
+   "file": "props/tidepool_rocks_a.png",
+   "file_2x": "props/tidepool_rocks_a@2x.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "kind": "rock",
+   "layer": "prop",
+   "anchor": "image bottom-centre = south tip of the anchor cell (the south-most footprint cell)",
+   "art_x_from_anchor_2x": [
+    -59,
+    57
+   ],
+   "art_height_px_2x": 102,
+   "lowest_opaque_gap_px_2x": 2,
+   "sort": "y-sort by the anchor (south-most footprint cell)",
+   "contact_shadow": "painted ground patch from the raw, rim faded into the tile; no cast shadows",
+   "note": "barnacled rocks ringing a small tide pool, kelp; sits on sand or wet sand"
+  },
+  {
+   "id": "tidepool_rocks_b",
+   "file": "props/tidepool_rocks_b.png",
+   "file_2x": "props/tidepool_rocks_b@2x.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "kind": "rock",
+   "layer": "prop",
+   "anchor": "image bottom-centre = south tip of the anchor cell (the south-most footprint cell)",
+   "art_x_from_anchor_2x": [
+    -60,
+    58
+   ],
+   "art_height_px_2x": 94,
+   "lowest_opaque_gap_px_2x": 2,
+   "sort": "y-sort by the anchor (south-most footprint cell)",
+   "contact_shadow": "painted ground patch from the raw, rim faded into the tile; no cast shadows",
+   "note": "second tide-pool rock ring (5 rocks), kelp"
+  },
+  {
+   "id": "driftwood_long",
+   "file": "props/driftwood_long.png",
+   "file_2x": "props/driftwood_long@2x.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "kind": "decor_block",
+   "layer": "prop",
+   "anchor": "image bottom-centre = south tip of the anchor cell (the south-most footprint cell)",
+   "art_x_from_anchor_2x": [
+    -52,
+    63
+   ],
+   "art_height_px_2x": 91,
+   "lowest_opaque_gap_px_2x": 3,
+   "sort": "y-sort by the anchor (south-most footprint cell)",
+   "contact_shadow": "painted ground patch from the raw, rim faded into the tile; no cast shadows",
+   "note": "long bleached driftwood log, pebbles"
+  },
+  {
+   "id": "driftwood_fork",
+   "file": "props/driftwood_fork.png",
+   "file_2x": "props/driftwood_fork@2x.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "kind": "decor_block",
+   "layer": "prop",
+   "anchor": "image bottom-centre = south tip of the anchor cell (the south-most footprint cell)",
+   "art_x_from_anchor_2x": [
+    -49,
+    60
+   ],
+   "art_height_px_2x": 97,
+   "lowest_opaque_gap_px_2x": 2,
+   "sort": "y-sort by the anchor (south-most footprint cell)",
+   "contact_shadow": "painted ground patch from the raw, rim faded into the tile; no cast shadows",
+   "note": "forked driftwood branch, pebbles"
+  },
+  {
+   "id": "shell_heap",
+   "file": "props/shell_heap.png",
+   "file_2x": "props/shell_heap@2x.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "kind": "decor",
+   "layer": "prop",
+   "anchor": "image bottom-centre = south tip of the anchor cell (the south-most footprint cell)",
+   "art_x_from_anchor_2x": [
+    -54,
+    58
+   ],
+   "art_height_px_2x": 86,
+   "lowest_opaque_gap_px_2x": 3,
+   "sort": "y-sort by the anchor (south-most footprint cell)",
+   "contact_shadow": "painted ground patch from the raw, rim faded into the tile; no cast shadows",
+   "note": "heap of shells with a red starfish against a grey stone"
+  },
+  {
+   "id": "mooring_post",
+   "file": "props/mooring_post.png",
+   "file_2x": "props/mooring_post@2x.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "kind": "tall",
+   "layer": "prop",
+   "anchor": "image bottom-centre = south tip of the anchor cell (the south-most footprint cell)",
+   "art_x_from_anchor_2x": [
+    -50,
+    58
+   ],
+   "art_height_px_2x": 119,
+   "lowest_opaque_gap_px_2x": 2,
+   "sort": "y-sort by the anchor (south-most footprint cell)",
+   "contact_shadow": "painted ground patch from the raw, rim faded into the tile; no cast shadows",
+   "note": "rope-tied mooring post with a frozen splash (painted, static); place on the sand next to a surf cell"
+  }
+ ]
+}

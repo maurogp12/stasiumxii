@@ -1,0 +1,289 @@
+{
+ "package": "outskirts_themes/eastmarch/props",
+ "version": 1,
+ "date": "2026-10-03",
+ "scale": "2:1 iso, cell top face 128x64 at 2x; fighter ~124 px tall at 2x",
+ "anchor": "canvas px of the footprint south tip; 2x1 props: anchor cell is the FRONT cell, footprint runs back to (x-1,y)",
+ "props": [
+  {
+   "id": "cave_mouth_sandstone",
+   "file_2x": "cave_mouth_sandstone@2x.png",
+   "file_1x": "cave_mouth_sandstone.png",
+   "footprint_cells": [
+    2,
+    1
+   ],
+   "anchor_px_2x": [
+    96,
+    160
+   ],
+   "anchor_px_1x": [
+    48,
+    80
+   ],
+   "size_2x": [
+    192,
+    160
+   ],
+   "size_1x": [
+    96,
+    80
+   ],
+   "emissive": "no",
+   "art_height_px_2x": 160,
+   "art_x_from_anchor_2x": [
+    -94,
+    59
+   ],
+   "lowest_opaque_gap_px_2x": 15,
+   "kind": "landmark_rock",
+   "layer": "prop",
+   "anchor_method": "canvas bottom-centre = footprint south tip (anchor cell = the south-most cell)"
+  },
+  {
+   "id": "cave_mouth_grey",
+   "file_2x": "cave_mouth_grey@2x.png",
+   "file_1x": "cave_mouth_grey.png",
+   "footprint_cells": [
+    2,
+    1
+   ],
+   "anchor_px_2x": [
+    96,
+    160
+   ],
+   "anchor_px_1x": [
+    48,
+    80
+   ],
+   "size_2x": [
+    192,
+    160
+   ],
+   "size_1x": [
+    96,
+    80
+   ],
+   "emissive": "no",
+   "art_height_px_2x": 160,
+   "art_x_from_anchor_2x": [
+    -93,
+    59
+   ],
+   "lowest_opaque_gap_px_2x": 15,
+   "kind": "landmark_rock",
+   "layer": "prop",
+   "anchor_method": "canvas bottom-centre = footprint south tip (anchor cell = the south-most cell)"
+  },
+  {
+   "id": "tidepool_rocks_a",
+   "file_2x": "tidepool_rocks_a@2x.png",
+   "file_1x": "tidepool_rocks_a.png",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64,
+    128
+   ],
+   "anchor_px_1x": [
+    32,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "emissive": "no",
+   "art_height_px_2x": 102,
+   "art_x_from_anchor_2x": [
+    -59,
+    57
+   ],
+   "lowest_opaque_gap_px_2x": 2,
+   "kind": "rock",
+   "layer": "prop",
+   "anchor_method": "canvas bottom-centre = footprint south tip (anchor cell = the south-most cell)"
+  },
+  {
+   "id": "tidepool_rocks_b",
+   "file_2x": "tidepool_rocks_b@2x.png",
+   "file_1x": "tidepool_rocks_b.png",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64,
+    128
+   ],
+   "anchor_px_1x": [
+    32,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "emissive": "no",
+   "art_height_px_2x": 94,
+   "art_x_from_anchor_2x": [
+    -60,
+    58
+   ],
+   "lowest_opaque_gap_px_2x": 2,
+   "kind": "rock",
+   "layer": "prop",
+   "anchor_method": "canvas bottom-centre = footprint south tip (anchor cell = the south-most cell)"
+  },
+  {
+   "id": "driftwood_long",
+   "file_2x": "driftwood_long@2x.png",
+   "file_1x": "driftwood_long.png",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64,
+    128
+   ],
+   "anchor_px_1x": [
+    32,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "emissive": "no",
+   "art_height_px_2x": 91,
+   "art_x_from_anchor_2x": [
+    -52,
+    63
+   ],
+   "lowest_opaque_gap_px_2x": 3,
+   "kind": "decor_block",
+   "layer": "prop",
+   "anchor_method": "canvas bottom-centre = footprint south tip (anchor cell = the south-most cell)"
+  },
+  {
+   "id": "driftwood_fork",
+   "file_2x": "driftwood_fork@2x.png",
+   "file_1x": "driftwood_fork.png",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64,
+    128
+   ],
+   "anchor_px_1x": [
+    32,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "emissive": "no",
+   "art_height_px_2x": 97,
+   "art_x_from_anchor_2x": [
+    -49,
+    60
+   ],
+   "lowest_opaque_gap_px_2x": 2,
+   "kind": "decor_block",
+   "layer": "prop",
+   "anchor_method": "canvas bottom-centre = footprint south tip (anchor cell = the south-most cell)"
+  },
+  {
+   "id": "shell_heap",
+   "file_2x": "shell_heap@2x.png",
+   "file_1x": "shell_heap.png",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64,
+    128
+   ],
+   "anchor_px_1x": [
+    32,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "emissive": "no",
+   "art_height_px_2x": 86,
+   "art_x_from_anchor_2x": [
+    -54,
+    58
+   ],
+   "lowest_opaque_gap_px_2x": 3,
+   "kind": "decor",
+   "layer": "prop",
+   "anchor_method": "canvas bottom-centre = footprint south tip (anchor cell = the south-most cell)"
+  },
+  {
+   "id": "mooring_post",
+   "file_2x": "mooring_post@2x.png",
+   "file_1x": "mooring_post.png",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64,
+    128
+   ],
+   "anchor_px_1x": [
+    32,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "emissive": "no",
+   "art_height_px_2x": 119,
+   "art_x_from_anchor_2x": [
+    -50,
+    58
+   ],
+   "lowest_opaque_gap_px_2x": 2,
+   "kind": "tall",
+   "layer": "prop",
+   "anchor_method": "canvas bottom-centre = footprint south tip (anchor cell = the south-most cell)"
+  }
+ ]
+}
