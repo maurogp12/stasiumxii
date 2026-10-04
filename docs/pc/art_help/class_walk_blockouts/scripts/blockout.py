@@ -24,7 +24,7 @@ BASE = dict(hip=0.585, chest=0.745, shoulder=0.825, neck=0.86, head_c=0.918, hea
             torso_w=0.24, torso_d=0.14, pelvis_w=0.20)
 CLASSES = {
  # hooded ranger: longbow low in the right hand, quiver on the back, ragged knee-length cloak, tall boots
- 'kestrel': dict(BASE, H=250, label='Kestrel (ranger)', hip=0.605, thigh=0.275, shin=0.285, stride=0.32, sh_w=0.105, torso_w=0.21, torso_d=0.12, pelvis_w=0.18,
+ 'kestrel': dict(BASE, H=250, label='Kestrel (ranger)', foot_w=1.45, hip=0.605, thigh=0.275, shin=0.285, stride=0.32, sh_w=0.105, torso_w=0.21, torso_d=0.12, pelvis_w=0.18,
                  arm_swing=(8, 20), elbow=(28, 18), abduct=(10, 7),
                  limb_w=dict(thigh=0.078, shin=0.060, boot=0.072, uarm=0.050, farm=0.046, hand=0.045),
                  extras=['hood', 'cloak', 'quiver', 'bow']),
@@ -113,7 +113,7 @@ def pose(C, t, idle=False):
         else:                                           # swing
             s = (u - 0.6) / 0.4; fy = -S / 2 + S * smooth(s); fz = C['lift'] * Hh * math.sin(math.pi * s)
             pitch = -32 * (1 - s) + 12 * s
-        fx = sg * f('hip_w') * 0.9
+        fx = sg * f('hip_w') * C.get('foot_w', 0.9)
         # foot frame: heel-to-toe along +Y, pitched; ankle above the heel third
         Rf = rot(X, pitch)
         oh = np.array([0, -0.25 * f('foot'), -f('ankle')]); ot = np.array([0, 0.75 * f('foot'), -f('ankle')])   # v3: toe joint on the sole
