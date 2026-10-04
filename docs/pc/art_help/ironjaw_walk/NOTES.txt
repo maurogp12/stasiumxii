@@ -1,0 +1,12 @@
+Ironjaw HD walk (Oct 3 2026)
+- TA underlay: /workspace/art_src/blockout/ironjaw_walk/renders_512/{clay,sides,sil,grid}, 512x360 pivot (256,329). S contacts f00/f06, E f05/f11. Contact soles up to ~15 (S)/~20 (E) px below 329 - keep. Travel 161 cell px/cycle.
+- Per-frame paint-over (paint_S/*.jpg, sides guide) gives stride but leg phase drifts -> jitter. Decision: CUTOUT RIG.
+- Parts kits: parts/parts_S_try1.jpg (front 3/4 facing viewer's right), parts/parts_E_try1.jpg (back 3/4 facing up-left).
+- AXES: Luca changed with TA -> blades edge-forward along the walk. Current kit axes are face-on: repaint axe parts after seeing TA's re-rendered passes.
+- Waiting on TA renders_512/joints_512.json (joints, draw order, per-part rotation, visible-length scale) + re-rendered passes.
+- Next: executor cuts parts (alpha, split arms at elbow, pivots at joint ends), rigs to joints, colour/rim match to v4_hd idle, soles per TA, QA (no skate, bob), GIF S/E, W/N mirrors.
+- 21:48 Oct 3: TA says Luca REJECTED the edge-forward underlay (hands don't visibly hold axes, axes read sideways). Rig build stopped (partial output may exist in scratch/ij_walk/rig and v4_hd/walk - ignore/clean). Do NOT use current joints_512.json. Wait for TA's new hold (matches Luca's HD E ref: axes low and forward in clenched fists), sent only after Luca approves.
+- When it comes: paint forearm+fist+axe as ONE piece per facing (fist visibly wrapped on handle) instead of separate empty fist + axe.
+- 22:03 joints approved by Luca (supersedes the 21:48 'do not use' note). Rig v1 built by executor sand-subagent-369d7922-f860-6eb8-f07f-d1edf23dc216 (resumable): skate 0, bob OK. Issues: E arms horizontal tubes (TA L elbow at shoulder height), S near axe across groin after +24.9 deg raise, doubled spiked upper arms, E boots side view, S cape thin.
+- 22:35: asked TA (priority) to lower E elbows and move S R fist out ~30 px + bake Luca's raise into joints.
+- New parts: parts/parts_fix1.jpg = A,B plain upper arms (front), C,D upper arms (outer/back), E,F back-3/4 boots toe up-right, G wide cape. Next: when TA joints land, resume rig executor with these parts.
