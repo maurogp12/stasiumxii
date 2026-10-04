@@ -56,6 +56,7 @@ func _run() -> void:
 	_test_regen(w)
 	_test_bar(w)
 	_test_npc_speed(w)
+	_test_building_cover(w)
 	await _test_north_road_pace(w)
 	await _test_click_sweep(w)
 	w.queue_free()
@@ -324,6 +325,57 @@ func _test_npc_speed(w: Node2D) -> void:
 	for node in npcs:
 		check(is_equal_approx(node.Art.walk_speed(node.art), before[node]), "%s walk speed unchanged by hero run (%.1f)" % [str(node.npc_id), before[node]])
 	w.set_run_mode(false)
+	_home(w)
+
+
+## Hero deep behind a big building: the building fades to 0.45 at its own
+## depth. It used to drop to just above the hero, under the ground rows and
+## props in front of the hero, and vanish.
+func _test_building_cover(w: Node2D) -> void:
+	_home(w)
+	var zone: WorldZone = w.zone
+	var tall: Node2D = null
+	var deep := Vector2i(-1, -1)
+	var deep_gap := -1
+	for p in w.props_root.get_children():
+		if p.cover_rect.size.y <= 70.0:
+			continue
+		var south: Vector2i = p.south_cell
+		for y in zone.height:
+			for x in zone.width:
+				var c := Vector2i(x, y)
+				if not w._stand_free(c):
+					continue
+				var feet: Vector2 = w.props_root.to_local(w.to_global(w.walker._cell_pos(c)))
+				if not p.hides_feet(feet):
+					continue
+				var gap := (south.x + south.y) - (c.x + c.y)
+				if gap > deep_gap:
+					deep_gap = gap
+					deep = c
+					tall = p
+	check(tall != null and deep_gap >= 3, "found a big building with a hero cell %d rows behind it" % deep_gap)
+	if tall == null:
+		return
+	w.walker.place(zone, deep)
+	var covered: bool = w._cover_children(w.props_root, w.walker.position, w.walker.z_index, [])
+	var south: Vector2i = tall.south_cell
+	check(covered, "the hero at %s counts as covered by %s" % [str(deep), str(tall.prop_type)])
+	check(tall.visible, "the building stays drawn")
+	check(is_equal_approx(tall.modulate.a, 0.45), "the building fades to 0.45 (%.2f)" % tall.modulate.a)
+	check(tall.z_index == tall.base_z, "the building keeps its own depth (%d vs base %d)" % [tall.z_index, tall.base_z])
+	var o: Vector2i = w._origin_of(zone.zone_id)
+	var ground_top: int = w.ground.row_z(o.x + o.y + south.x + south.y)
+	check(tall.z_index > ground_top, "the building sorts above the ground at its foot (%d > %d)" % [tall.z_index, ground_top])
+	var hero_row: int = o.x + o.y + deep.x + deep.y
+	for r in range(hero_row + 1, o.x + o.y + south.x + south.y + 1):
+		if tall.z_index <= w.ground.row_z(r):
+			check(false, "ground row %d sorts over the faded building" % r)
+			break
+	check(tall.z_index > w.walker.z_index, "the faded building still draws over the hero behind it")
+	w.walker.place(zone, zone.spawn)
+	w._cover_children(w.props_root, w.walker.position, w.walker.z_index, [])
+	check(is_equal_approx(tall.modulate.a, 1.0) and tall.z_index == tall.base_z, "the building is opaque again once the hero leaves")
 	_home(w)
 
 
