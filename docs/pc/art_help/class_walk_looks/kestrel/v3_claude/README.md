@@ -1,5 +1,7 @@
 # Kestrel walk v3 (Claude): legs rework
 
+> **LOCKED, 4 Oct 2026.** Mauro: "Lock in Kestrel." Walk S/E/W/N at commit `1abc051` is final. Don't change these frames without his sign-off. Next: arm swing and cape lag, then actions.
+
 This is the Kestrel 8-direction walk for S and E, 12 frames each. W and N are mirrors of these two.
 
 S is built on Kestrel blockout v3.2 (commit `fc3285c`, narrow S foot track, foot_w 0.3). E is built on blockout v3.1 (commit `ec4beff`); v3.2 leaves E unchanged and the E frames are byte-identical to the approved ones. Each leg is **one continuous painted leg**, cut from the approved target and running from the hip under the tunic, through the knee and the laced knee-high boot, to the sole. That leg is bent onto every frame's joints with smooth 3-bone mesh skinning. There is no cut anywhere between the hip and the sole: no knee seam, no boot-top seam, and no pasted pieces.
