@@ -20,6 +20,7 @@ const Decor := preload("res://scenes/world/crosshaven/crosshaven_decor.gd")
 const Snowfall := preload("res://scenes/world/crosshaven/crosshaven_snowfall.gd")
 const Art := preload("res://scenes/world/crosshaven/crosshaven_art.gd")
 const Strips := preload("res://scenes/world/crosshaven/world_strips.gd")
+const HeroStamina := preload("res://scenes/world/crosshaven/hero_stamina.gd")
 const Fx := preload("res://scenes/world/crosshaven/crosshaven_fx.gd")
 const SettingsPanel := preload("res://ui/visual_settings_panel.gd")
 const Progress := preload("res://backend/pc_progress.gd")
@@ -112,6 +113,25 @@ var _fade: ColorRect
 var _screen_fx: CanvasLayer
 var _zoom := 1.6
 var _last_click_ms := 0
+## Run on demand. R toggles `run_mode`; Shift held, a Shift-click, or a
+## double-click also run. Paths never auto-run by length.
+var run_mode := false
+var stamina = HeroStamina.new()
+var stamina_bar: Panel
+var _stamina_fill: ColorRect
+var _shift_down := false
+## The current path was asked to run (double-click, Shift-click, or a scripted "run").
+var _click_run := false
+## Hovered cell in this chunk that the hero cannot reach right now (an NPC
+## plugs the only way in, say). Drawn red instead of green.
+var _hover_unreachable := false
+## Last refused click, drawn as a red X until `_bad_click_until` (msec).
+var bad_click_cell := Vector2i(-1, -1)
+var _bad_click_zone: WorldZone
+var _bad_click_until := 0
+const BAD_CLICK_MS := 700
+var _reach_key := ""
+var _reach_cache := {}
 var _movie := ""
 var _launch_class := ""
 var _movie_t0 := 0
@@ -411,14 +431,59 @@ func walk_to(target: Vector2i, pace: String = "auto") -> Dictionary:
 	var path: Array = result["path"]
 	for i in range(1, path.size()):
 		steps.append(Vector2i(int(path[i]["x"]), int(path[i]["y"])))
-	if pace == "auto":
-		var now := Time.get_ticks_msec()
-		if _last_click_ms > 0 and now - _last_click_ms < 280:
-			pace = "run"
-		_last_click_ms = now
+	pace = _pick_pace(pace)
 	_arm_arrival(target)
 	walker.walk(steps, pace)
 	return result
+
+
+## Resolve a requested pace. "auto" walks unless the player asked to run
+## (run mode, Shift, or a double-click). Stamina has the last word.
+func _pick_pace(pace: String) -> String:
+	if pace == "auto":
+		var now := Time.get_ticks_msec()
+		_click_run = _shift_down or (_last_click_ms > 0 and now - _last_click_ms < 280)
+		_last_click_ms = now
+	else:
+		_click_run = pace == "run"
+	return "run" if want_run() else "walk"
+
+
+## True when the player wants to run and stamina allows it.
+func want_run() -> bool:
+	return (run_mode or _shift_down or _click_run) and stamina.can_run()
+
+
+func set_run_mode(on: bool) -> void:
+	run_mode = on
+	_refresh_hud()
+
+
+## One frame of run/stamina bookkeeping. `_process` calls it; tests step it.
+func tick_run(delta: float) -> void:
+	if walker == null:
+		return
+	if walker.is_moving():
+		var pace := "run" if want_run() else "walk"
+		walker.pace = pace
+		_route_pace = pace
+	elif _route.is_empty():
+		_click_run = false
+	var running: bool = walker.is_moving() and walker.shown_pace() == "run"
+	stamina.tick(delta, running)
+	_sync_stamina_bar(running)
+
+
+func _sync_stamina_bar(running: bool) -> void:
+	if stamina_bar == null:
+		return
+	var hud_on := _hud_label == null or _hud_label.visible
+	stamina_bar.visible = hud_on and (running or not stamina.is_full())
+	if _stamina_fill == null:
+		return
+	var inner := stamina_bar.size - Vector2(6, 6)
+	_stamina_fill.size = Vector2(maxf(0.0, inner.x * stamina.value), inner.y)
+	_stamina_fill.color = Color(0.82, 0.36, 0.26) if stamina.winded else Color(0.93, 0.78, 0.36)
 
 
 ## Walk to a cell that may sit on another streamed chunk. Chunk edges are steps.
@@ -437,14 +502,7 @@ func walk_to_zone(zone_id: String, target: Vector2i, pace: String = "auto") -> D
 		_route.clear()
 		walk_rejected.emit(str(result.get("reason", "no_path")))
 		return result
-	if pace == "auto":
-		var now := Time.get_ticks_msec()
-		if _last_click_ms > 0 and now - _last_click_ms < 280:
-			pace = "run"
-		else:
-			var length := int(result.get("length", 0))
-			pace = "run" if length >= 14 else "walk"
-		_last_click_ms = now
+	pace = _pick_pace(pace)
 	_route = (result["path"] as Array).duplicate()
 	_route_pace = pace
 	_kick_route(pace)
@@ -958,6 +1016,10 @@ func _world_point(screen_pos: Vector2) -> Vector2:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.keycode == KEY_SHIFT:
+		_shift_down = event.pressed
+	elif event is InputEventWithModifiers:
+		_shift_down = event.shift_pressed
 	if event is InputEventMouseMotion:
 		var motion := _pick_world(_world_point(event.position))
 		if motion.is_empty():
@@ -976,16 +1038,16 @@ func _unhandled_input(event: InputEvent) -> void:
 					var record := _npc_record(hit_zone.zone_id, c)
 					if not record.is_empty():
 						_approach_npc_in(hit_zone, record)
-					elif hit_zone.zone_id == zone.zone_id:
-						walk_to(c)
 					else:
-						walk_to_zone(hit_zone.zone_id, c)
+						click_cell(hit_zone, c)
 			MOUSE_BUTTON_WHEEL_UP:
 				_set_zoom(_zoom * 1.1)
 			MOUSE_BUTTON_WHEEL_DOWN:
 				_set_zoom(_zoom / 1.1)
 	elif event is InputEventKey and event.pressed and not event.echo:
 		match event.keycode:
+			KEY_R:
+				set_run_mode(not run_mode)
 			KEY_1:
 				weather.cycle_weather()
 			KEY_2:
@@ -1008,6 +1070,98 @@ func _unhandled_input(event: InputEvent) -> void:
 				if inventory_window != null:
 					inventory_window.set_at_bank(_at_bank())
 					inventory_window.toggle()
+
+
+## A left click on a ground cell. A cell the hero cannot reach gets a red X,
+## and the hero walks to the closest cell of this chunk he can reach instead.
+func click_cell(hit_zone: WorldZone, c: Vector2i) -> Dictionary:
+	if hit_zone == null or zone == null:
+		return {"ok": false, "reason": "busy"}
+	var result: Dictionary
+	if hit_zone.zone_id == zone.zone_id:
+		result = walk_to(c)
+	else:
+		result = walk_to_zone(hit_zone.zone_id, c)
+	if bool(result.get("ok", false)) or str(result.get("reason", "")) == "busy":
+		return result
+	_flag_bad_click(hit_zone, c)
+	if hit_zone.zone_id != zone.zone_id:
+		return result
+	var near := nearest_reachable(c)
+	if near.x < 0:
+		return result
+	var fallback := walk_to(near)
+	fallback["fallback_from"] = c
+	return fallback
+
+
+func _flag_bad_click(z: WorldZone, c: Vector2i) -> void:
+	bad_click_cell = c
+	_bad_click_zone = z
+	_bad_click_until = Time.get_ticks_msec() + BAD_CLICK_MS
+	if _hover != null:
+		var world := _origin_of(z.zone_id) + c
+		_hover.z_index = (world.x + world.y) * BoardVisualSort.TILE_Z_SCALE + 1
+		_hover.queue_redraw()
+	get_tree().create_timer(float(BAD_CLICK_MS) / 1000.0).timeout.connect(func():
+		if Time.get_ticks_msec() >= _bad_click_until and _hover != null:
+			bad_click_cell = Vector2i(-1, -1)
+			_hover.queue_redraw())
+
+
+## Cells of this chunk the hero can reach from where he stands, walking round
+## NPCs. Same step rules as `WorldWalk`, kept inside the chunk.
+func reachable_here() -> Dictionary:
+	var reached := {}
+	if zone == null or walker == null:
+		return reached
+	var start: Vector2i = walker.anchor_cell()
+	if not zone.in_bounds(start):
+		return reached
+	# Hover asks on every cell change; one flood per stand cell and frame.
+	var key := "%s#%d#%d#%d" % [zone.zone_id, start.x, start.y, Engine.get_process_frames()]
+	if key == _reach_key:
+		return _reach_cache
+	var limit := WorldWalk._limit(map, null)
+	var blocked := _extra_blocked()
+	var zid := zone.zone_id
+	reached[start] = true
+	var queue: Array[Vector2i] = [start]
+	var head := 0
+	while head < queue.size():
+		var cur: Vector2i = queue[head]
+		head += 1
+		for dir in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+			var nxt: Vector2i = cur + dir
+			if reached.has(nxt) or not zone.in_bounds(nxt):
+				continue
+			if blocked.has(WorldWalk.cell_key(zid, nxt)):
+				continue
+			if WorldWalk.classify_step(map, zid, cur, zid, nxt, limit) != "":
+				continue
+			reached[nxt] = true
+			queue.append(nxt)
+	_reach_key = key
+	_reach_cache = reached
+	return reached
+
+
+## Closest reachable cell of this chunk to `target` (not the one he stands on).
+## Returns (-1, -1) when nothing nearer than where he stands is reachable.
+func nearest_reachable(target: Vector2i) -> Vector2i:
+	var reached := reachable_here()
+	var here: Vector2i = walker.anchor_cell()
+	var best := Vector2i(-1, -1)
+	var best_d := Vector2(target - here).length_squared()
+	for key in reached.keys():
+		var cell: Vector2i = key
+		if cell == here or not zone.exit_link(cell).is_empty():
+			continue
+		var d := Vector2(target - cell).length_squared()
+		if d < best_d:
+			best_d = d
+			best = cell
+	return best
 
 
 func _at_bank() -> bool:
@@ -1041,6 +1195,10 @@ func _set_hover(z: WorldZone, c: Vector2i) -> void:
 		return
 	_hover_zone = z
 	hover_cell = c
+	_hover_unreachable = false
+	# NPC cells open talk on click, so they never read as unreachable.
+	if z != null and zone != null and z == zone and c.x >= 0 and z.passable_at(c) and walker != null and c != walker.anchor_cell() and _npc_node_at(c) == null:
+		_hover_unreachable = not reachable_here().has(c)
 	if z != null and c.x >= 0:
 		var world := _origin_of(z.zone_id) + c
 		_hover.z_index = (world.x + world.y) * BoardVisualSort.TILE_Z_SCALE + 1
@@ -1048,6 +1206,7 @@ func _set_hover(z: WorldZone, c: Vector2i) -> void:
 
 
 func _draw_hover() -> void:
+	_draw_bad_click()
 	var shown: WorldZone = _hover_zone if _hover_zone != null else zone
 	if shown == null or hover_cell.x < 0 or not shown.in_bounds(hover_cell):
 		return
@@ -1056,7 +1215,7 @@ func _draw_hover() -> void:
 		color = Color(1.0, 0.84, 0.35, 0.95)
 	elif not shown.exit_link(hover_cell).is_empty():
 		color = Color(1.0, 0.84, 0.35, 0.95)
-	elif not shown.passable_at(hover_cell):
+	elif not shown.passable_at(hover_cell) or (shown == zone and _hover_unreachable):
 		color = Color(0.95, 0.35, 0.3, 0.9)
 	var world := _origin_of(shown.zone_id) + hover_cell
 	var d := Pick.diamond(world, float(shown.height_at(hover_cell)))
@@ -1064,6 +1223,20 @@ func _draw_hover() -> void:
 	fill.a = 0.22
 	_hover.draw_colored_polygon(d, fill)
 	_hover.draw_polyline(PackedVector2Array([d[0], d[1], d[2], d[3], d[0]]), color, 2.0)
+
+
+## Red X on a refused click cell.
+func _draw_bad_click() -> void:
+	var z: WorldZone = _bad_click_zone
+	if z == null or bad_click_cell.x < 0 or not z.in_bounds(bad_click_cell):
+		return
+	if Time.get_ticks_msec() >= _bad_click_until:
+		return
+	var world := _origin_of(z.zone_id) + bad_click_cell
+	var c := BoardVisualSort.cell_to_local(world, float(z.height_at(bad_click_cell)))
+	var red := Color(0.95, 0.25, 0.2, 0.95)
+	_hover.draw_line(c + Vector2(-12, -6), c + Vector2(12, 6), red, 3.0)
+	_hover.draw_line(c + Vector2(-12, 6), c + Vector2(12, -6), red, 3.0)
 
 
 func _process(delta: float) -> void:
@@ -1074,6 +1247,7 @@ func _process(delta: float) -> void:
 			return
 	if walker == null or zone == null:
 		return
+	tick_run(delta)
 	var aim: Vector2 = walker.position + walker.visual_offset()
 	if walker.is_moving():
 		var step: Vector2 = _facing_step(walker.facing)
@@ -1135,6 +1309,7 @@ func _build_hud() -> void:
 	_hud_label.add_theme_color_override("font_outline_color", Color(0.1, 0.08, 0.06))
 	_hud_label.add_theme_constant_override("outline_size", 4)
 	sheet.add_child(_hud_label)
+	_build_stamina_bar(sheet)
 	_banner = Label.new()
 	_banner.set_anchors_preset(Control.PRESET_CENTER_TOP)
 	_banner.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -1153,6 +1328,31 @@ func _build_hud() -> void:
 	_fade.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_fade.set_anchors_preset(Control.PRESET_FULL_RECT)
 	sheet.add_child(_fade)
+
+
+## Small stamina strip under the top-left info block, in the HUD card style.
+func _build_stamina_bar(sheet: Control) -> void:
+	stamina_bar = Panel.new()
+	stamina_bar.name = "StaminaBar"
+	stamina_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# Below the six-line info block, clear of its last line.
+	stamina_bar.position = Vector2(48, 178)
+	stamina_bar.size = Vector2(168, 16)
+	var box := StyleBoxFlat.new()
+	box.bg_color = Color(0.1, 0.08, 0.06, 0.82)
+	box.border_color = Color(0.72, 0.58, 0.32)
+	box.set_border_width_all(2)
+	box.set_corner_radius_all(6)
+	stamina_bar.add_theme_stylebox_override("panel", box)
+	_stamina_fill = ColorRect.new()
+	_stamina_fill.name = "Fill"
+	_stamina_fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_stamina_fill.position = Vector2(3, 3)
+	_stamina_fill.size = Vector2(162, 10)
+	stamina_bar.add_child(_stamina_fill)
+	stamina_bar.visible = false
+	sheet.add_child(stamina_bar)
+	_sync_stamina_bar(false)
 
 
 func _dress_ground(g: Node, z: WorldZone) -> void:
@@ -1699,20 +1899,19 @@ func _lerp_grade(from: Dictionary, to: Dictionary, u: float) -> Dictionary:
 func _pick_world(world_point: Vector2) -> Dictionary:
 	if zone == null:
 		return {}
-	var best := {}
-	var best_rank := -1
-	var ranked := _rank_pick(zone, world_point)
-	if int(ranked.get("rank", -1)) > best_rank:
-		best_rank = int(ranked["rank"])
-		best = ranked
+	# Ranks are world diagonals, so chunks north or west of the plane origin
+	# rank below zero. Compare against "no hit yet", not against -1, or every
+	# cell with world x + y < 0 is unclickable (North Road rows near Northgate).
+	var best := _rank_pick(zone, world_point)
 	if neighbours != null:
 		for host in neighbours.get_children():
 			var other: WorldZone = map.zone(str(host.name)) if map != null else null
 			if other == null:
 				continue
 			var hit := _rank_pick(other, world_point)
-			if int(hit.get("rank", -1)) > best_rank:
-				best_rank = int(hit["rank"])
+			if hit.is_empty():
+				continue
+			if best.is_empty() or int(hit["rank"]) > int(best["rank"]):
 				best = hit
 	if best.is_empty():
 		return {}
@@ -1916,11 +2115,11 @@ func _refresh_hud() -> void:
 	var c: Vector2i = walker.cell
 	var speed := "  (time x30)" if weather.time_scale > 1.0 else ""
 	var danger_word := "danger" if danger else "safe"
-	_hud_label.text = "%s\nCell %d, %d   height %d\n%s   %s\nWeather: %s   %s%s\nMusic: %s\nClick to walk · double-click to run · Esc visuals" % [
+	_hud_label.text = "%s\nCell %d, %d   height %d\n%s   %s\nWeather: %s   %s%s\nMusic: %s\nClick to walk · Shift or double-click to run · R run%s · Esc visuals" % [
 		Pick.zone_name(zone), c.x, c.y, zone.height_at(c),
 		level_band, danger_word,
 		str(weather.weather).replace("_", " "), weather.clock_text(), speed,
-		music_id,
+		music_id, " (on)" if run_mode else "",
 	]
 
 
@@ -2066,6 +2265,8 @@ func _play_movie(mode: String) -> void:
 			await _movie_settings()
 		"gait":
 			await _movie_gait(false)
+		"hero_speed":
+			await _movie_hero_speed()
 		"gait_v2":
 			await _movie_gait_v2()
 		"slow":
@@ -3256,6 +3457,35 @@ func _movie_gait(slow: bool) -> void:
 		await _cardinal(dir, 1, "walk")
 	for dir in ["e", "s", "w", "n"]:
 		await _cardinal(dir, 2, "run")
+
+
+## Crossroads square: walk, then run mode with the stamina bar draining,
+## then stand while it refills and hides. About 14 s at 30 fps.
+func _movie_hero_speed() -> void:
+	settings.apply_preset("Full")
+	weather.set_weather("clear")
+	weather.settle()
+	_set_zoom(1.6)
+	enter_zone("crosshaven_crossroads", Vector2i(16, 18), false)
+	await get_tree().process_frame
+	await _hold_frames(15)
+	walk_to(Vector2i(28, 18), "walk")
+	await _hold_frames(90)
+	set_run_mode(true)
+	walk_to(Vector2i(16, 18), "auto")
+	for i in 150:
+		if not walker.is_moving():
+			walk_to(Vector2i(28, 18) if walker.cell.x < 22 else Vector2i(16, 18), "auto")
+		await get_tree().process_frame
+	set_run_mode(false)
+	walker.stop()
+	await _hold_frames(180)
+	get_tree().quit()
+
+
+func _hold_frames(n: int) -> void:
+	for i in n:
+		await get_tree().process_frame
 
 
 ## Crossroads, the north road into Northgate, then Eastmarch and Southbridge.

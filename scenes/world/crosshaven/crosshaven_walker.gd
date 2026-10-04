@@ -18,11 +18,23 @@ var class_id := "ironjaw_tall"
 const CORNER_CUT := 10.0
 ## Ease distance, in strides, so a shorter hero still eases over about one step.
 const EASE_STRIDES := 1.3
+## Ease distance is also capped in time at cruise speed. The east/west walk
+## cycle is one 73 px stride, so 1.3 strides was about 95 px of start-up from
+## 20% speed: over 2 s of crawling before the hero reached pace.
+const EASE_MAX_SEC := 0.25
 ## Idle/walk/run and facing swaps crossfade. Short enough that a step still reads.
 const BLEND_SEC := 0.10
 ## How fast a finished plant returns to the root. The camera follows the offset,
 ## so this is a speed change along the path, not a vertical bob.
 const RELEASE_SEC := 0.18
+## Hero world pace over the painted cadence. The art alone gives about 25 px/s
+## walking and 55 px/s running, which reads as a crawl on PC. Ground speed is
+## multiplied by these; the frame clock follows distance, so playback scales too.
+const HERO_WALK_PACE := 2.2
+const HERO_RUN_PACE := 2.0
+## Above this playback factor the walk cycle looks frantic. The rest of the
+## pace goes into a slightly longer stride instead.
+const WALK_ANIM_CAP := 1.8
 
 var zone: WorldZone
 var cell := Vector2i.ZERO
@@ -50,6 +62,9 @@ var _air := 0.0
 var _idle_t := 0.0
 var _phase := 0.0
 var _halt_after := false
+## True when the current path started from a stand. A re-click while moving
+## keeps cruise speed instead of easing in again from 20%.
+var _ease_in := true
 ## Gait actually on screen. `pace` is the request; it takes over on a plant, not mid-stride.
 var _shown_pace := "walk"
 var _fade: Sprite2D
@@ -129,7 +144,34 @@ func stride_of(gait: String, dir: String = "s") -> float:
 
 
 func speed_of(gait: String) -> float:
-	return _strips.speed_of(gait, "s")
+	return _strips.speed_of(gait, "s") * pace_scale(gait)
+
+
+## Ground-speed multiplier over the art cadence for this gait.
+static func pace_scale(gait: String) -> float:
+	return HERO_RUN_PACE if gait == "run" else HERO_WALK_PACE
+
+
+## Stride multiplier. Only the walk, and only past the playback cap.
+static func stride_scale(gait: String) -> float:
+	if gait == "run":
+		return 1.0
+	return maxf(1.0, HERO_WALK_PACE / WALK_ANIM_CAP)
+
+
+## Playback multiplier over the authored fps. Pace over stride, so one cycle
+## still covers one (scaled) stride of ground and the feet do not skate.
+static func anim_scale(gait: String) -> float:
+	return pace_scale(gait) / stride_scale(gait)
+
+
+## On-screen fps and stride for the south strip, after the pace scales.
+func shown_fps_of(gait: String) -> float:
+	return fps_of(gait) * anim_scale(gait)
+
+
+func shown_stride_of(gait: String, dir: String = "s") -> float:
+	return stride_of(gait, dir) * stride_scale(gait)
 
 
 func face(dir: String) -> void:
@@ -180,6 +222,11 @@ func is_moving() -> bool:
 	return _moving
 
 
+## Gait on screen now. `pace` is the request and swaps in on the next plant.
+func shown_pace() -> String:
+	return _gait_name()
+
+
 ## Sprite shift that keeps a planted sole in the world. The camera follows this
 ## so the shift is not a bob against the view.
 func visual_offset() -> Vector2:
@@ -204,10 +251,11 @@ func anchor_cell() -> Vector2i:
 
 
 ## `steps` excludes the anchor cell. `pace_name` is "auto", "walk", or "run".
+## "auto" walks: running is the player's call (see the world's run mode).
 func walk(steps: Array[Vector2i], pace_name: String = "auto") -> void:
 	var use := pace_name
 	if use == "auto":
-		use = "run" if steps.size() >= 14 else "walk"
+		use = "walk"
 	pace = use
 	_halt_after = false
 	if not _moving:
@@ -277,6 +325,7 @@ func _rebuild(from_cell: Vector2i, from_pos: Vector2) -> void:
 	for step in _queue:
 		cells.append(step)
 	_samples = _bake(cells, from_pos)
+	_ease_in = from_rest
 	_cursor = 0
 	_traveled = 0.0
 	_leg_start = 0.0
@@ -479,7 +528,12 @@ func _consume() -> void:
 			_queue.pop_front()
 		stepped.emit(arrived_cell)
 		if _halt_after:
+			# End the path on this cell. Jumping `_traveled` to the old
+			# `_total` would snap the sprite to the far end of the path
+			# while `cell` and the z order stay here.
+			_total = float(sample["dist"])
 			_traveled = _total
+			_samples.resize(_cursor)
 			_queue.clear()
 			return
 
@@ -503,11 +557,11 @@ func _pending_dist() -> float:
 
 
 func _speed_at(traveled: float, total: float, cruise: float) -> float:
-	var ease := minf(_stride * EASE_STRIDES, total * 0.22)
+	var ease := minf(minf(_stride * EASE_STRIDES, total * 0.22), cruise * EASE_MAX_SEC)
 	if ease < 1.0:
 		return cruise
 	var gate := 1.0
-	if traveled < ease:
+	if traveled < ease and _ease_in:
 		var u := traveled / ease
 		gate = 0.2 + 0.8 * (u * u * (3.0 - 2.0 * u))
 	elif traveled > total - ease:
@@ -555,7 +609,7 @@ func _apply_strip_speed() -> void:
 	if _strips == null:
 		return
 	var gait := _gait_name()
-	var next_stride: float = _strips.stride_of(gait, facing)
+	var next_stride: float = _strips.stride_of(gait, facing) * stride_scale(gait)
 	# Keep the same point in the cycle when a corner changes the stride.
 	if _stride > 0.001 and not is_equal_approx(next_stride, _stride):
 		var frac := fmod(_phase / _stride, 1.0)
@@ -563,7 +617,7 @@ func _apply_strip_speed() -> void:
 			frac += 1.0
 		_phase = frac * next_stride
 	_stride = next_stride
-	_cruise = _strips.speed_of(gait, facing)
+	_cruise = _strips.speed_of(gait, facing) * pace_scale(gait)
 
 
 func _apply_gait(root: Vector2) -> void:

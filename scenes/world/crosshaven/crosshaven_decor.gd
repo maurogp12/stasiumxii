@@ -101,15 +101,16 @@ func _is_core(zone: WorldZone, cell: Vector2i) -> bool:
 
 ## Same as the prop: fade over the hero, or over an NPC of the current chunk
 ## (`npc_feet` holds [feet, z] pairs). Returns true when the hero is behind.
-func update_cover(walker_pos: Vector2, walker_z: int, npc_feet: Array = []) -> bool:
+func update_cover(walker_pos: Vector2, _walker_z: int, npc_feet: Array = []) -> bool:
 	covering_npc = false
 	if _groundish or cover_rect.size.y < 40.0:
 		return false
 	var hero := hides_feet(walker_pos)
-	# Over the hero the prop drops to just above it (the hero rule). Over an
-	# NPC alone it keeps its own depth, which already sorts over the NPC
-	# behind it, so ground and props in between keep their order.
-	var top := walker_z + 1 if hero else base_z
+	# Over the hero or an NPC the prop keeps its own depth and only fades.
+	# Its depth already sorts it over whoever stands behind it. Dropping to
+	# just above the hero sank a big building under the ground tiles and the
+	# props in front of it, so it vanished instead of fading to 0.45.
+	var top := base_z
 	for pair in npc_feet:
 		if hides_feet(pair[0]):
 			covering_npc = true
