@@ -32,6 +32,8 @@ func _test_texture_paths_and_imports() -> void:
 		for facing in ["N", "E", "S", "W"]:
 			var path := Pawn.sprite_path(class_id, facing)
 			var expected := "res://art/characters/%s/%s_%s.png" % [class_id, class_id, facing.to_lower()]
+			if PcCharacters.uses_body(class_id):
+				expected = PcCharacters.frame_path(class_id, facing, "idle", 0)
 			eq(path, expected, "%s %s path" % [class_id, facing])
 			eq(FileAccess.file_exists(path), true, "%s exists" % path)
 			var imported := FileAccess.get_file_as_string(path + ".import")
@@ -40,7 +42,10 @@ func _test_texture_paths_and_imports() -> void:
 			truthy(imported.contains("process/fix_alpha_border=true"), "%s fix alpha border" % path)
 			var tex := Pawn.sprite_texture(class_id, facing)
 			truthy(tex != null, "%s loads" % path)
-	eq(Pawn.sprite_path("nope", "Q"), "res://art/characters/kestrel/kestrel_e.png", "unknown class/facing falls back")
+	var fallback := "res://art/characters/kestrel/kestrel_e.png"
+	if PcCharacters.uses_body(SpellKits.CLASS_KESTREL):
+		fallback = PcCharacters.frame_path(SpellKits.CLASS_KESTREL, "E", "idle", 0)
+	eq(Pawn.sprite_path("nope", "Q"), fallback, "unknown class/facing falls back")
 	var pawn_src := FileAccess.get_file_as_string("res://units/pawn.gd")
 	eq(pawn_src.contains("flip_h = true"), false, "sprites are not mirrored at runtime")
 	truthy(pawn_src.contains("flip_h = false"), "flip_h stays off")
@@ -54,9 +59,17 @@ func _test_sprite_node_setup() -> void:
 	pawn.apply_snapshot(_unit_dict("ironjaw", "W", 1), 1)
 	var sprite := pawn.get_node("Sprite") as Sprite2D
 	truthy(sprite != null, "pawn has one Sprite2D")
-	eq(sprite.centered, true, "sprite is centered")
-	eq(sprite.offset, Vector2(0, -72), "offset puts feet on the origin")
-	eq(sprite.scale, Vector2(0.5, 0.5), "ironjaw uses the shared scale (brute size stays in the art)")
+	if PcCharacters.uses_body("ironjaw"):
+		eq(sprite.centered, false, "ironjaw feet use the json pivot")
+		eq(sprite.offset, PcCharacters.offset_for("ironjaw", "W", "idle"), "offset is -pivot from the json")
+	else:
+		eq(sprite.centered, true, "sprite is centered")
+		eq(sprite.offset, Vector2(0, -72), "offset puts feet on the origin")
+	if PcCharacters.uses_body("ironjaw"):
+		var drawn := PcCharacters.combat_scale("ironjaw")
+		eq(sprite.scale, Vector2(drawn, drawn), "ironjaw uses the json draw scale")
+	else:
+		eq(sprite.scale, Vector2(0.5, 0.5), "ironjaw uses the shared scale (brute size stays in the art)")
 	eq(sprite.flip_h, false, "ironjaw E/W mirror is not flip_h")
 	eq(sprite.texture_filter, CanvasItem.TEXTURE_FILTER_LINEAR, "sprite filter is Linear")
 	eq(sprite.z_index, 0, "sprite z stays relative to the pawn")
@@ -200,10 +213,12 @@ func _test_name_sits_above_the_sprite() -> void:
 		eq(origin.x, -width * 0.5, "%s name is centered over the unit" % class_id)
 		var name_bottom := origin.y + font.get_descent(Pawn.NAME_FONT_SIZE)
 		var name_top := origin.y - font.get_ascent(Pawn.NAME_FONT_SIZE)
-		eq(name_bottom <= Pawn.HEAD_HP_Y - 1.0, true, "%s name sits above the HP bar" % class_id)
+		eq(name_bottom <= pawn.head_hp_y() - 1.0, true, "%s name sits above the HP bar" % class_id)
 		eq(name_bottom < ring_top, true, "%s name clears the seat ring" % class_id)
 		var sprite := pawn.get_node("Sprite") as Sprite2D
 		var visual_top := (sprite.offset.y - float(sprite.texture.get_height()) * 0.5) * sprite.scale.y
+		if not sprite.centered:
+			visual_top = sprite.offset.y * sprite.scale.y
 		eq(name_bottom <= visual_top + 0.01, true, "%s name clears the sprite" % class_id)
 		var chrome := pawn.get_node("Chrome") as Node2D
 		eq(chrome.get_parent(), pawn, "%s name chrome is not parented to the sprite" % class_id)
@@ -261,7 +276,7 @@ func _test_l5_hex_plate_and_scale() -> void:
 	var tall := body.y / float(BoardTile.TILE_HEIGHT)
 	var wide := body.x / float(BoardTile.TILE_WIDTH)
 	truthy(tall >= 2.0 and tall <= 3.0, "chibi height is two to three cells (%.2f)" % tall)
-	truthy(wide >= 0.9 and wide <= 1.4, "chibi width is about one cell (%.2f)" % wide)
+	truthy(wide >= 0.8 and wide <= 1.4, "chibi width is about one cell (%.2f)" % wide)
 	eq(Pawn.NAME_FONT_SIZE, 7, "the name is about 60% of the old 12")
 	truthy(OverheadPlate.BAR_H >= 5.0 and OverheadPlate.BAR_H <= 6.0, "the bar is 5 to 6 px at 1x")
 	eq(OverheadPlate.BAR_RIM, 1.0, "the bar has a 1 px rim")

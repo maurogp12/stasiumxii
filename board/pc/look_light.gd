@@ -225,6 +225,7 @@ static func dress_pawn(pawn: Node) -> void:
 		rim.texture = sprite.texture
 	rim.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	rim.scale = Vector2(1.18, 1.18)
+	rim.centered = bool(body.get("centered")) if "centered" in body else true
 	rim.offset = body.offset if "offset" in body else Vector2.ZERO
 	rim.position = Vector2(-8, -10)
 	rim.flip_h = false

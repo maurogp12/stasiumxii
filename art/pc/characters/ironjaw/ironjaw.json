@@ -1,0 +1,420 @@
+{
+ "char": "ironjaw",
+ "status": "v3 (v3.1) = technical fix of approved v2 (cells padded, pivot on the soles); v3.1: idle S/W stance = walk S f00 stride (upper body pixels unchanged)",
+ "source": "/workspace/art/ironjaw_full/v3",
+ "facing_rule": "S=front down-right, W=front down-left, N=back up-left, E=back up-right (locked)",
+ "combat_code_letter_from_art": {
+  "e": "S",
+  "s": "W",
+  "n": "E",
+  "w": "N"
+ },
+ "size_tier": "big",
+ "target_board_height_px": 78,
+ "idle_f0_height_cell_px": {
+  "S": 147,
+  "W": 147,
+  "N": 136,
+  "E": 136
+ },
+ "draw_scale": 0.578,
+ "world_draw_scale": 0.532,
+ "board_height_px": {
+  "S": 85.0,
+  "W": 85.0,
+  "N": 78.6,
+  "E": 78.6
+ },
+ "head_hp_y": -92,
+ "draw_scale_note": "per class (size tiers): sprite scale = draw_scale in combat, world_draw_scale for the world walker (= draw_scale x 0.46/0.5). head_hp_y = -(tallest idle f0 head top above the feet x draw_scale + 8), node origin = feet.",
+ "walk": {
+  "advance": "by distance",
+  "travel_diag_cell_px_per_cycle": {
+   "S": 89.2,
+   "W": 89.2,
+   "N": 89.2,
+   "E": 89.2
+  },
+  "board_px_per_frame_at_draw_scale": {
+   "S": 4.295,
+   "W": 4.295,
+   "N": 4.295,
+   "E": 4.295
+  }
+ },
+ "states": {
+  "walk": {
+   "frames": 12,
+   "fps": 17.144,
+   "loop": true,
+   "cell": [
+    165,
+    157
+   ],
+   "facings": {
+    "S": {
+     "pivot": [
+      82,
+      152
+     ],
+     "offset": [
+      -82,
+      -152
+     ],
+     "pivot_file": [
+      82,
+      140
+     ],
+     "frames": "walk/ironjaw_walk_S_fNN.png"
+    },
+    "W": {
+     "pivot": [
+      82,
+      152
+     ],
+     "offset": [
+      -82,
+      -152
+     ],
+     "pivot_file": [
+      82,
+      140
+     ],
+     "frames": "walk/ironjaw_walk_W_fNN.png",
+     "baked_flip_of": "S"
+    },
+    "N": {
+     "pivot": [
+      82,
+      140
+     ],
+     "offset": [
+      -82,
+      -140
+     ],
+     "pivot_file": [
+      82,
+      140
+     ],
+     "frames": "walk/ironjaw_walk_N_fNN.png",
+     "baked_flip_of": "E"
+    },
+    "E": {
+     "pivot": [
+      82,
+      140
+     ],
+     "offset": [
+      -82,
+      -140
+     ],
+     "pivot_file": [
+      82,
+      140
+     ],
+     "frames": "walk/ironjaw_walk_E_fNN.png"
+    }
+   }
+  },
+  "idle": {
+   "frames": 4,
+   "fps": 4,
+   "loop": true,
+   "cell": [
+    165,
+    157
+   ],
+   "facings": {
+    "S": {
+     "pivot": [
+      82,
+      152
+     ],
+     "offset": [
+      -82,
+      -152
+     ],
+     "pivot_file": [
+      82,
+      140
+     ],
+     "frames": "idle/ironjaw_idle_S_fNN.png"
+    },
+    "W": {
+     "pivot": [
+      82,
+      152
+     ],
+     "offset": [
+      -82,
+      -152
+     ],
+     "pivot_file": [
+      82,
+      140
+     ],
+     "frames": "idle/ironjaw_idle_W_fNN.png",
+     "baked_flip_of": "S"
+    },
+    "N": {
+     "pivot": [
+      82,
+      140
+     ],
+     "offset": [
+      -82,
+      -140
+     ],
+     "pivot_file": [
+      82,
+      140
+     ],
+     "frames": "idle/ironjaw_idle_N_fNN.png",
+     "baked_flip_of": "E"
+    },
+    "E": {
+     "pivot": [
+      82,
+      140
+     ],
+     "offset": [
+      -82,
+      -140
+     ],
+     "pivot_file": [
+      82,
+      140
+     ],
+     "frames": "idle/ironjaw_idle_E_fNN.png"
+    }
+   }
+  },
+  "attack": {
+   "frames": 6,
+   "fps": 12,
+   "loop": false,
+   "cell": [
+    165,
+    157
+   ],
+   "facings": {
+    "S": {
+     "pivot": [
+      82,
+      152
+     ],
+     "offset": [
+      -82,
+      -152
+     ],
+     "pivot_file": [
+      82,
+      140
+     ],
+     "frames": "attack/ironjaw_attack_S_fNN.png"
+    },
+    "W": {
+     "pivot": [
+      82,
+      152
+     ],
+     "offset": [
+      -82,
+      -152
+     ],
+     "pivot_file": [
+      82,
+      140
+     ],
+     "frames": "attack/ironjaw_attack_W_fNN.png",
+     "baked_flip_of": "S"
+    },
+    "N": {
+     "pivot": [
+      82,
+      140
+     ],
+     "offset": [
+      -82,
+      -140
+     ],
+     "pivot_file": [
+      82,
+      140
+     ],
+     "frames": "attack/ironjaw_attack_N_fNN.png",
+     "baked_flip_of": "E"
+    },
+    "E": {
+     "pivot": [
+      82,
+      140
+     ],
+     "offset": [
+      -82,
+      -140
+     ],
+     "pivot_file": [
+      82,
+      140
+     ],
+     "frames": "attack/ironjaw_attack_E_fNN.png"
+    }
+   }
+  },
+  "hit": {
+   "frames": 4,
+   "fps": 12,
+   "loop": false,
+   "cell": [
+    165,
+    157
+   ],
+   "facings": {
+    "S": {
+     "pivot": [
+      82,
+      152
+     ],
+     "offset": [
+      -82,
+      -152
+     ],
+     "pivot_file": [
+      82,
+      140
+     ],
+     "frames": "hit/ironjaw_hit_S_fNN.png"
+    },
+    "W": {
+     "pivot": [
+      82,
+      152
+     ],
+     "offset": [
+      -82,
+      -152
+     ],
+     "pivot_file": [
+      82,
+      140
+     ],
+     "frames": "hit/ironjaw_hit_W_fNN.png",
+     "baked_flip_of": "S"
+    },
+    "N": {
+     "pivot": [
+      82,
+      140
+     ],
+     "offset": [
+      -82,
+      -140
+     ],
+     "pivot_file": [
+      82,
+      140
+     ],
+     "frames": "hit/ironjaw_hit_N_fNN.png",
+     "baked_flip_of": "E"
+    },
+    "E": {
+     "pivot": [
+      82,
+      140
+     ],
+     "offset": [
+      -82,
+      -140
+     ],
+     "pivot_file": [
+      82,
+      140
+     ],
+     "frames": "hit/ironjaw_hit_E_fNN.png"
+    }
+   }
+  },
+  "death": {
+   "frames": 6,
+   "fps": 10,
+   "loop": false,
+   "cell": [
+    209,
+    183
+   ],
+   "facings": {
+    "S": {
+     "pivot": [
+      104,
+      152
+     ],
+     "offset": [
+      -104,
+      -152
+     ],
+     "pivot_file": [
+      104,
+      140
+     ],
+     "frames": "death/ironjaw_death_S_fNN.png"
+    },
+    "W": {
+     "pivot": [
+      104,
+      152
+     ],
+     "offset": [
+      -104,
+      -152
+     ],
+     "pivot_file": [
+      104,
+      140
+     ],
+     "frames": "death/ironjaw_death_W_fNN.png",
+     "baked_flip_of": "S"
+    },
+    "N": {
+     "pivot": [
+      104,
+      140
+     ],
+     "offset": [
+      -104,
+      -140
+     ],
+     "pivot_file": [
+      104,
+      140
+     ],
+     "frames": "death/ironjaw_death_N_fNN.png",
+     "baked_flip_of": "E"
+    },
+    "E": {
+     "pivot": [
+      104,
+      140
+     ],
+     "offset": [
+      -104,
+      -140
+     ],
+     "pivot_file": [
+      104,
+      140
+     ],
+     "frames": "death/ironjaw_death_E_fNN.png"
+    }
+   }
+  }
+ },
+ "pivot_note": "Pivot y = the frame-0 sole row of each state and facing (the planted foot). S/W rows plant the front foot at y152, N/E at y139-140. Draw scale unchanged; S/W stand 147 cell px above the feet, so head_hp_y is -(146 x 0.578 + 8) = -92.",
+ "portrait_src": [
+  47,
+  1,
+  78,
+  65
+ ],
+ "portrait_note": "Action-bar portrait: head-and-shoulders crop of idle W f00 (code s), [x, y, w, h] in cell px. w:h is 6:5, the 84x70 portrait box, so the bar never stretches it."
+}

@@ -445,10 +445,14 @@ func _test_pawn_samples_then_plants() -> void:
 	pawn.apply_snapshot(_unit("kestrel", "E", 0), 0)
 	var sprite := pawn.get_node("Sprite") as Sprite2D
 	eq(sprite.position, Vector2.ZERO, "snapshot leaves the sprite on the origin")
-	eq(sprite.scale, Vector2(0.5, 0.5), "snapshot leaves the shipped scale")
+	var body_scale := Vector2(0.5, 0.5)
+	if PcCharacters.uses_body("kestrel"):
+		var drawn := PcCharacters.combat_scale("kestrel")
+		body_scale = Vector2(drawn, drawn)
+	eq(sprite.scale, body_scale, "snapshot leaves the class draw scale")
 	pawn._sample_hop(0.5)
 	eq(sprite.position.y, -MOTION.HOP_PX, "pawn applies the bounce on the sprite")
-	eq(sprite.scale, Vector2(0.5, 0.5), "step bounce does not squash or stretch")
+	eq(sprite.scale, body_scale, "step bounce does not squash or stretch")
 	var chrome := pawn.get_node("Chrome") as Node2D
 	eq(chrome.get_parent(), pawn, "name chrome stays on the pawn during a bounce")
 	eq(chrome.position.y, -MOTION.HOP_PX, "the name rides the step bounce")
@@ -461,9 +465,12 @@ func _test_pawn_samples_then_plants() -> void:
 	eq(sprite.scale.y < 0.5, true, "death squashes the sprite")
 	pawn.plant_sprite()
 	eq(sprite.position, Vector2.ZERO, "plant puts feet back on the origin")
-	eq(sprite.scale, Vector2(0.5, 0.5), "plant restores the shipped scale")
+	eq(sprite.scale, body_scale, "plant restores the class draw scale")
 	eq(sprite.rotation, 0.0, "plant clears the tilt")
-	eq(sprite.offset, Vector2(0, -72), "foot offset stays shipped")
+	var foot := Vector2(0, -72)
+	if PcCharacters.uses_body("kestrel"):
+		foot = PcCharacters.offset_for("kestrel", "E", "idle")
+	eq(sprite.offset, foot, "foot offset stays on the active pivot")
 	pawn._sample_idle(0.0)
 	var bob: float = sprite.position.y
 	eq(absf(bob) <= MOTION.IDLE_BOB_PX + 0.001, true, "idle bob stays inside the tuned amplitude")
@@ -1048,6 +1055,8 @@ func _test_strip_library_missing_and_slice() -> void:
 
 
 func _test_batch1_disk_strips() -> void:
+	# The export_2x strips are the phone path. PC Ironjaw and Kestrel play the new set.
+	CombatHUD.set_pc_chrome_override(0)
 	var pawn := Pawn.new()
 	get_root().add_child(pawn)
 	await process_frame
@@ -1100,8 +1109,14 @@ func _test_batch1_disk_strips() -> void:
 	eq(dur > 0.45 and dur <= 0.6, true, "disk attack plays the 12 fps cycle inside the lock")
 	eq(is_equal_approx(strip.speed_scale, 1.0), true, "disk attack stays at authored 12 fps")
 	_assert_attack_impact(strip, "kestrel attack")
-	await create_timer(0.12).timeout
-	eq(sprite.position.length() > 2.0, true, "disk attack keeps the lunge")
+	# Sample the lunge over the first 0.35 s of frames instead of one wall-clock instant, so a loaded
+	# machine that drops frames cannot land the single sample before or after the lunge peak.
+	var lunge_peak := 0.0
+	var lunge_t0 := Time.get_ticks_msec()
+	while Time.get_ticks_msec() - lunge_t0 < 350:
+		await process_frame
+		lunge_peak = maxf(lunge_peak, sprite.position.length())
+	eq(lunge_peak > 2.0, true, "disk attack keeps the lunge")
 	pawn.settle_motion()
 	var mark_plans: Dictionary = MOTION.chrome_plans([{
 		"type": "hit",
@@ -1257,6 +1272,7 @@ func _test_batch1_disk_strips() -> void:
 	eq(gloam_hit <= MOTION.ACTION_LOCK_MAX, true, "gloam hit stays inside the lock")
 	other.settle_motion()
 	other.free()
+	CombatHUD.set_pc_chrome_override(-1)
 
 
 func _assert_attack_hold(pawn: Pawn, aim: Vector2, msg: String) -> void:

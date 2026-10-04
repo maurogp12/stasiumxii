@@ -96,6 +96,8 @@ static func role_line(class_id: String) -> String:
 
 static func portrait_path(class_id: String) -> String:
 	var key := SpellKits.normalize_class_id(class_id)
+	if PcCharacters.uses_body(key):
+		return PcCharacters.frame_path(key, "S", "idle", 0)
 	return "res://art/characters/%s/%s_s.png" % [key, key]
 
 

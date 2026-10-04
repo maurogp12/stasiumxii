@@ -65,11 +65,14 @@ var _impact_frozen: bool = false
 var _body_kind: String = ""
 var _death_tilt: float = 1.0
 var _held_death_strip: bool = false
+## Board pixels along the current glide. PC walk frames read this, not the clock.
+var _walk_board_px: float = 0.0
 
 const VIEW_MOTION := preload("res://units/view_motion.gd")
 const STRIP_LIBRARY := preload("res://units/strip_library.gd")
 const OVERHEAD := preload("res://units/overhead_plate.gd")
 const LOOK_LIGHT := preload("res://board/pc/look_light.gd")
+const PC_CHARS := preload("res://units/pc/pc_characters.gd")
 
 const FACING_ISO := {
 	"N": Vector2(20, -10),
@@ -84,6 +87,10 @@ const SPRITE_SCALE := Vector2(0.5, 0.5)
 ## The step bounce does not use this. It loops on ViewMotion.WALK_STEP_SEC.
 const WALK_TILE_SEC := 0.22
 const WALK_HOP_SEC := WALK_TILE_SEC
+## Trial PC combat glide. Mauro, 4 Oct: "0.42, let's try it". One constant.
+## <= 0 falls back to WALK_TILE_SEC. The phone path ignores it.
+const PC_WALK_TILE_SEC := 0.42
+static var _pc_walk_tile_sec: float = PC_WALK_TILE_SEC
 ## Handoff walk cycle: 6 frames at 12 fps (~0.50s), looped, not one cycle per tile.
 const WALK_STRIP_FRAMES := 6
 const WALK_STRIP_FPS := 12.0
@@ -152,6 +159,78 @@ func set_facing(dir: String) -> void:
 
 func facing_screen() -> Vector2:
 	return FACING_ISO.get(facing, Vector2(20, 10))
+
+
+## Phone stays at 0.22. PC combat uses the 0.42 trial unless a clip overrides it.
+static func set_pc_walk_tile_sec(seconds: float) -> void:
+	_pc_walk_tile_sec = seconds
+
+
+static func walk_tile_sec() -> float:
+	if CombatHUD.uses_pc_chrome() and _pc_walk_tile_sec > 0.0:
+		return _pc_walk_tile_sec
+	return WALK_TILE_SEC
+
+
+## Plate height for this body. PC sets read it from their json. Everyone else stays at HEAD_HP_Y.
+func head_hp_y() -> float:
+	if PC_CHARS.uses_body(class_id):
+		return PC_CHARS.head_hp_y(class_id)
+	return HEAD_HP_Y
+
+
+func _body_scale() -> Vector2:
+	if PC_CHARS.uses_body(class_id):
+		var scale := PC_CHARS.combat_scale(class_id)
+		return Vector2(scale, scale)
+	return SPRITE_SCALE
+
+
+func _layout_state() -> String:
+	if _walk_looping:
+		return "walk"
+	if _body_kind != "":
+		return _body_kind
+	return "idle"
+
+
+## Feet on the node origin. A PC set is uncentered, offset = -pivot from the json.
+func _layout_body(node: Node2D, state: String) -> void:
+	if node == null:
+		return
+	node.set("flip_h", false)
+	if node is CanvasItem:
+		(node as CanvasItem).texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	if PC_CHARS.uses_body(class_id):
+		node.set("centered", false)
+		node.set("offset", PC_CHARS.offset_for(class_id, facing, state))
+		node.scale = _body_scale()
+	else:
+		node.set("centered", true)
+		node.set("offset", SPRITE_OFFSET)
+		node.scale = SPRITE_SCALE
+
+
+## Distance along the glide, in board pixels. PC walk frames follow it.
+## Classes on the shipped strips ignore it and keep the clock.
+func note_walk_distance(board_px: float) -> void:
+	_walk_board_px = maxf(board_px, 0.0)
+	_apply_distance_frame()
+
+
+func _apply_distance_frame() -> void:
+	if not PC_CHARS.uses_body(class_id) or not _walk_looping:
+		return
+	if _active_strip == null or not is_instance_valid(_active_strip):
+		return
+	var count := PC_CHARS.frame_count(class_id, "walk")
+	if count <= 0:
+		return
+	var index := PC_CHARS.walk_frame_index(class_id, facing, _walk_board_px, PC_CHARS.combat_scale(class_id))
+	_active_strip.speed_scale = 0.0
+	_active_strip.frame = clampi(index, 0, count - 1)
+	_layout_body(_active_strip, "walk")
+	LOOK_LIGHT.dress_pawn(self)
 
 
 func motion_playing() -> bool:
@@ -242,6 +321,7 @@ func has_cast_strip() -> bool:
 ## Hold the walk loop and the step bounce across every tile. The board calls this once.
 func begin_path_walk() -> void:
 	_path_walk = true
+	_walk_board_px = 0.0
 	if VIEW_MOTION.reduce_motion() or not is_inside_tree():
 		return
 	_ensure_motion_strips()
@@ -533,6 +613,8 @@ static func sprite_path(class_id: String, facing: String) -> String:
 	var face := facing.strip_edges().to_lower()
 	if not FACING_ORDER.has(face):
 		face = "e"
+	if PC_CHARS.uses_body(cls):
+		return PC_CHARS.frame_path(cls, face.to_upper(), "idle", 0)
 	return "res://art/characters/%s/%s_%s.png" % [cls, cls, face]
 
 
@@ -576,11 +658,7 @@ func _ensure_visuals() -> void:
 
 
 func _adopt_static_sprite(sprite: Sprite2D) -> void:
-	sprite.centered = true
-	sprite.offset = SPRITE_OFFSET
-	sprite.scale = SPRITE_SCALE
-	sprite.flip_h = false
-	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	_layout_body(sprite, "idle")
 	sprite.z_index = 0
 	sprite.z_as_relative = true
 
@@ -613,7 +691,7 @@ func _ensure_chrome() -> void:
 
 func _sync_sprite() -> void:
 	_ensure_visuals()
-	_sprite.flip_h = false
+	_layout_body(_sprite, "idle")
 	_sprite.texture = sprite_texture(class_id, facing)
 	if not _flashing:
 		_sprite.modulate = rest_modulate()
@@ -621,11 +699,35 @@ func _sync_sprite() -> void:
 		_sprite.visible = false
 		if not _flashing:
 			_active_strip.modulate = _sprite.modulate
+		_retarget_held_anim()
 	else:
 		_sprite.visible = true
 		_hide_body_strips()
 	LOOK_LIGHT.dress_pawn(self)
 	_request_paint()
+
+
+func _retarget_held_anim() -> void:
+	if not PC_CHARS.uses_body(class_id):
+		return
+	if _active_strip == null or not is_instance_valid(_active_strip):
+		return
+	var kind := _layout_state()
+	var anim := "%s_%s" % [kind, facing.strip_edges().to_lower()]
+	var frames := _active_strip.sprite_frames
+	if frames == null or not frames.has_animation(anim):
+		return
+	if String(_active_strip.animation) != anim:
+		var held := _active_strip.frame
+		_active_strip.play(anim)
+		if kind == "walk":
+			_active_strip.speed_scale = 0.0
+			_apply_distance_frame()
+		else:
+			var count := frames.get_frame_count(anim)
+			if count > 0:
+				_active_strip.frame = mini(held, count - 1)
+	_layout_body(_active_strip, kind)
 
 
 func _sync_idle() -> void:
@@ -677,7 +779,8 @@ func _sample_hop(t: float) -> void:
 		_reset_walk_scale()
 	else:
 		var mul := VIEW_MOTION.fallback_hop_scale(t)
-		var scaled := Vector2(SPRITE_SCALE.x * mul.x, SPRITE_SCALE.y * mul.y)
+		var body := _body_scale()
+		var scaled := Vector2(body.x * mul.x, body.y * mul.y)
 		if _sprite != null and is_instance_valid(_sprite):
 			_sprite.scale = scaled
 		if _active_strip != null and is_instance_valid(_active_strip):
@@ -685,10 +788,11 @@ func _sample_hop(t: float) -> void:
 
 
 func _reset_walk_scale() -> void:
+	var body := _body_scale()
 	if _sprite != null and is_instance_valid(_sprite):
-		_sprite.scale = SPRITE_SCALE
+		_sprite.scale = body
 	if _active_strip != null and is_instance_valid(_active_strip):
-		_active_strip.scale = SPRITE_SCALE
+		_active_strip.scale = body
 
 
 func _sample_attack(t: float, dir: Vector2, reach: float = -1.0) -> void:
@@ -704,7 +808,8 @@ func _sample_cast(t: float, dir: Vector2 = Vector2.ZERO) -> void:
 func _apply_body_pose(pose: Dictionary) -> void:
 	var pos: Vector2 = pose.get("pos", Vector2.ZERO)
 	var mul: Vector2 = pose.get("scale", Vector2.ONE)
-	var scaled := Vector2(SPRITE_SCALE.x * mul.x, SPRITE_SCALE.y * mul.y)
+	var body := _body_scale()
+	var scaled := Vector2(body.x * mul.x, body.y * mul.y)
 	_ride_chrome(Vector2.ZERO)
 	if _sprite != null and is_instance_valid(_sprite):
 		_sprite.position = pos
@@ -767,10 +872,11 @@ func _sample_hit(t: float, dir: Vector2) -> void:
 	if not drawn and t > 0.0 and t < 1.0:
 		k = sin(clampf(t, 0.0, 1.0) * PI)
 	var mul := Vector2(lerpf(1.0, 1.10, k), lerpf(1.0, 0.84, k))
-	_sprite.scale = Vector2(SPRITE_SCALE.x * mul.x, SPRITE_SCALE.y * mul.y)
+	var body := _body_scale()
+	_sprite.scale = Vector2(body.x * mul.x, body.y * mul.y)
 	if _active_strip != null and is_instance_valid(_active_strip):
 		_active_strip.position = pos
-		_active_strip.scale = SPRITE_SCALE if drawn else _sprite.scale
+		_active_strip.scale = body if drawn else _sprite.scale
 
 
 func _sample_lift(t: float) -> void:
@@ -787,7 +893,8 @@ func _sample_death(t: float, tilt_sign: float) -> void:
 		_death_sampled = true
 	var pose: Dictionary = VIEW_MOTION.death_pose(t, tilt_sign)
 	var mul: Vector2 = pose.get("scale", Vector2.ONE)
-	_sprite.scale = Vector2(SPRITE_SCALE.x * mul.x, SPRITE_SCALE.y * mul.y)
+	var body := _body_scale()
+	_sprite.scale = Vector2(body.x * mul.x, body.y * mul.y)
 	_sprite.rotation_degrees = float(pose.get("rot", 0.0))
 	_sprite.position = Vector2(0.0, float(pose.get("drop", 0.0)))
 	var faded: float = float(pose.get("fade", 1.0))
@@ -819,9 +926,10 @@ func _apply_downed_pose() -> void:
 		return
 	var pose: Dictionary = VIEW_MOTION.death_pose(1.0, _death_tilt)
 	var mul: Vector2 = pose.get("scale", Vector2.ONE)
+	var body := _body_scale()
 	_sprite.visible = true
 	_sprite.position = Vector2(0.0, float(pose.get("drop", 0.0)))
-	_sprite.scale = Vector2(SPRITE_SCALE.x * mul.x, SPRITE_SCALE.y * mul.y)
+	_sprite.scale = Vector2(body.x * mul.x, body.y * mul.y)
 	_sprite.rotation_degrees = float(pose.get("rot", 0.0))
 	_sprite.modulate = Color(0.45, 0.45, 0.45, float(pose.get("fade", 0.0)))
 
@@ -842,15 +950,15 @@ func _hold_death_strip() -> bool:
 		strip.animation = anim
 	_active_strip = strip
 	_strip_holds_body = true
-	LOOK_LIGHT.dress_pawn(self)
 	_held_death_strip = true
 	_body_kind = "death"
 	strip.position = Vector2.ZERO
-	strip.scale = SPRITE_SCALE
+	_layout_body(strip, "death")
+	LOOK_LIGHT.dress_pawn(self)
 	strip.rotation = 0.0
 	if _sprite != null and is_instance_valid(_sprite):
 		_sprite.position = Vector2.ZERO
-		_sprite.scale = SPRITE_SCALE
+		_sprite.scale = _body_scale()
 		_sprite.rotation = 0.0
 	_freeze_on_frame(strip, _last_frame(strip))
 	strip.visible = true
@@ -882,12 +990,55 @@ func _start_idle() -> void:
 		return
 	if VIEW_MOTION.reduce_motion():
 		return
+	if PC_CHARS.uses_body(class_id):
+		if _pc_idle_current():
+			return
+		_play_pc_idle()
+		return
 	if _idle_tween != null and is_instance_valid(_idle_tween) and _idle_tween.is_running():
 		return
 	_ensure_visuals()
 	_idle_tween = create_tween()
 	_idle_tween.set_loops()
 	_idle_tween.tween_method(_sample_idle, 0.0, 1.0, VIEW_MOTION.IDLE_PERIOD)
+
+
+func _pc_idle_current() -> bool:
+	return (
+		_strip_holds_body
+		and not _walk_looping
+		and _body_kind == ""
+		and _active_strip != null
+		and is_instance_valid(_active_strip)
+		and _active_strip.visible
+		and String(_active_strip.animation).begins_with("idle_")
+	)
+
+
+func _play_pc_idle() -> void:
+	_ensure_visuals()
+	_ensure_motion_strips()
+	var choice := _strip_choice("idle")
+	if choice.is_empty():
+		return
+	var strip: AnimatedSprite2D = choice["node"]
+	var anim := StringName(str(choice["anim"]))
+	if strip == null or not is_instance_valid(strip):
+		return
+	_prepare_strip_pose(strip)
+	strip.visible = true
+	strip.speed_scale = 1.0
+	strip.play(anim)
+	if not strip.is_playing():
+		strip.visible = false
+		return
+	_active_strip = strip
+	_strip_holds_body = true
+	_walk_looping = false
+	if _sprite != null and is_instance_valid(_sprite):
+		strip.modulate = _sprite.modulate
+		_sprite.visible = false
+	LOOK_LIGHT.dress_pawn(self)
 
 
 func _sample_idle(_t: float) -> void:
@@ -910,9 +1061,8 @@ func _plant_sprite() -> void:
 	if _sprite == null or not is_instance_valid(_sprite):
 		return
 	_sprite.position = Vector2.ZERO
-	_sprite.scale = SPRITE_SCALE
 	_sprite.rotation = 0.0
-	_sprite.flip_h = false
+	_layout_body(_sprite, "idle")
 	_sprite.visible = true
 	LOOK_LIGHT.dress_pawn(self)
 
@@ -1080,14 +1230,10 @@ func _duplicate_kept_clips(src: SpriteFrames, copy: SpriteFrames) -> bool:
 
 
 func _prepare_strip_pose(strip: AnimatedSprite2D) -> void:
-	strip.centered = true
-	strip.offset = SPRITE_OFFSET
-	strip.scale = SPRITE_SCALE
-	strip.flip_h = false
+	_layout_body(strip, _layout_state())
 	strip.rotation = 0.0
 	strip.z_index = 0
 	strip.z_as_relative = true
-	strip.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	if _sprite != null and is_instance_valid(_sprite):
 		strip.position = _sprite.position
 		strip.modulate = _sprite.modulate
@@ -1104,6 +1250,9 @@ func bind_motion_frames(frames: SpriteFrames) -> void:
 		add_child(strip)
 	strip.sprite_frames = frames
 	strip.set_meta("_from_strip_library", false)
+	strip.set_meta("_bound_frames", true)
+	if strip.has_meta("_pc_class"):
+		strip.remove_meta("_pc_class")
 	if strip.has_meta("_chrome_frames_copy"):
 		strip.remove_meta("_chrome_frames_copy")
 	strip.visible = false
@@ -1114,12 +1263,20 @@ func bind_motion_frames(frames: SpriteFrames) -> void:
 func _ensure_motion_strips() -> void:
 	if class_id == "":
 		return
-	var frames := STRIP_LIBRARY.frames_for(class_id)
 	var existing := get_node_or_null(BODY_STRIP_PATH) as AnimatedSprite2D
+	if existing != null and bool(existing.get_meta("_bound_frames", false)):
+		return
+	if existing != null and bool(existing.get_meta("_chrome_frames_copy", false)):
+		return
+	if PC_CHARS.uses_body(class_id):
+		_install_pc_strips(existing)
+		return
+	if existing != null and str(existing.get_meta("_pc_class", "")) != "":
+		existing.sprite_frames = null
+		existing.remove_meta("_pc_class")
+	var frames := STRIP_LIBRARY.frames_for(class_id)
 	if existing != null and existing.sprite_frames != null:
 		if not bool(existing.get_meta("_from_strip_library", false)):
-			return
-		if bool(existing.get_meta("_chrome_frames_copy", false)):
 			return
 		if frames == null or existing.sprite_frames == frames:
 			return
@@ -1132,6 +1289,30 @@ func _ensure_motion_strips() -> void:
 		add_child(strip)
 	strip.sprite_frames = frames
 	strip.set_meta("_from_strip_library", true)
+	strip.set_meta("_bound_frames", false)
+	if strip.has_meta("_chrome_frames_copy"):
+		strip.remove_meta("_chrome_frames_copy")
+	if not _strip_holds_body or _active_strip != strip:
+		strip.visible = false
+	strip.flip_h = false
+
+
+func _install_pc_strips(existing: AnimatedSprite2D) -> void:
+	var frames := PC_CHARS.frames_for(class_id)
+	if frames == null:
+		return
+	var cls := SpellKits.normalize_class_id(class_id)
+	if existing != null and existing.sprite_frames == frames and str(existing.get_meta("_pc_class", "")) == cls:
+		return
+	var strip := existing
+	if strip == null:
+		strip = AnimatedSprite2D.new()
+		strip.name = "BodyStrip"
+		add_child(strip)
+	strip.sprite_frames = frames
+	strip.set_meta("_from_strip_library", false)
+	strip.set_meta("_bound_frames", false)
+	strip.set_meta("_pc_class", cls)
 	if strip.has_meta("_chrome_frames_copy"):
 		strip.remove_meta("_chrome_frames_copy")
 	if not _strip_holds_body or _active_strip != strip:
@@ -1149,12 +1330,13 @@ func _play_walk_flat() -> bool:
 	var anim := StringName(str(choice["anim"]))
 	if strip == null or not is_instance_valid(strip):
 		return false
+	var distance_walk := PC_CHARS.uses_body(class_id)
 	var continuing := (
 		_walk_looping
 		and _active_strip == strip
 		and strip.visible
 		and strip.animation == anim
-		and strip.is_playing()
+		and (strip.is_playing() or (distance_walk and is_equal_approx(strip.speed_scale, 0.0)))
 	)
 	if continuing:
 		_motion_playing = true
@@ -1178,6 +1360,9 @@ func _play_walk_flat() -> bool:
 	if _sprite != null and is_instance_valid(_sprite):
 		strip.modulate = _sprite.modulate
 		_sprite.visible = false
+	if PC_CHARS.uses_body(class_id):
+		strip.speed_scale = 0.0
+		_apply_distance_frame()
 	LOOK_LIGHT.dress_pawn(self)
 	_flatten_body()
 	return true
@@ -1271,13 +1456,13 @@ func _paint_status(canvas: CanvasItem) -> void:
 		return
 	if _plate != null and is_instance_valid(_plate):
 		_plate.visible = true
-	_paint_badges(canvas, HEAD_HP_Y, name_baseline())
+	_paint_badges(canvas, head_hp_y(), name_baseline())
 
 
 ## Baseline of the overhead name, in chrome-local space. The chrome node
 ## itself rides the step bounce. Lunges and the idle bob leave it on the pawn.
 func name_baseline() -> float:
-	return HEAD_HP_Y - NAME_GAP_ABOVE_HP - ThemeDB.fallback_font.get_descent(NAME_FONT_SIZE)
+	return head_hp_y() - NAME_GAP_ABOVE_HP - ThemeDB.fallback_font.get_descent(NAME_FONT_SIZE)
 
 
 func name_label_origin() -> Vector2:

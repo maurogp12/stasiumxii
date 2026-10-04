@@ -22,6 +22,19 @@ const END_W := 112.0
 const SPELL_H := 80.0
 const END_H := 98.0
 const SLOT_Y := 56.0
+## Portrait art box inside the 100x100 frame. Source crops keep this 6:5 aspect.
+const PORTRAIT_BOX := Rect2(8, 4, 84, 70)
+## The PC world light (scenes/pc/pc_world_light.gdshader defaults): warm multiply,
+## +6% saturation, contrast 1.04. Both portraits take it, hero and foe alike.
+const WORLD_WARM := Color(1.02, 1.0, 0.96)
+const WORLD_SAT := 1.06
+const WORLD_CONTRAST := 1.04
+## Both portraits are keyed to the same mean body luma before the world light, so a
+## dark set (Ironjaw's red plate) reads on the dark frame like a light one. Never darkens.
+const PORTRAIT_LUMA := 0.21
+const PORTRAIT_KEY_MAX := 1.6
+
+static var _portrait_cache: Dictionary = {}
 
 var _hud: CombatHUD
 var _stamp := ""
@@ -36,6 +49,76 @@ static func phrase_reason(reason: String) -> String:
 	if reason == "":
 		return ""
 	return reason.replace("_", " ")
+
+
+## Head-and-shoulders source rect for a portrait texture, always the 6:5 aspect of
+## PORTRAIT_BOX so nothing is stretched. PC bodies use the json crop; shipped sprites
+## take a top-centred crop.
+static func portrait_source_rect(class_id: String, tex_size: Vector2) -> Rect2:
+	var aspect := PORTRAIT_BOX.size.x / PORTRAIT_BOX.size.y
+	if PcCharacters.uses_body(class_id):
+		var src := PcCharacters.portrait_src(class_id)
+		if src.size.x > 0.0 and src.size.y > 0.0 and Rect2(Vector2.ZERO, tex_size).encloses(src):
+			return src
+	# Whole pixels at exactly 6:5: h is a multiple of 5, w = h * 6 / 5.
+	var step := floorf(minf(tex_size.y * 0.45, tex_size.x / aspect) / 5.0)
+	var h := step * 5.0
+	var w := step * 6.0
+	return Rect2(floorf((tex_size.x - w) * 0.5), 0.0, w, h)
+
+
+## The cropped portrait under the world light. Cached per source texture.
+static func portrait_art(class_id: String, tex: Texture2D) -> Dictionary:
+	if tex == null:
+		return {}
+	var key_name := "%s|%s|%d" % [class_id, tex.resource_path, tex.get_instance_id()]
+	if _portrait_cache.has(key_name):
+		return _portrait_cache[key_name]
+	var src := portrait_source_rect(class_id, tex.get_size())
+	var full := tex.get_image()
+	if full == null:
+		return {}
+	full = full.duplicate()
+	if full.is_compressed():
+		full.decompress()
+	full.convert(Image.FORMAT_RGBA8)
+	var crop := full.get_region(Rect2i(src))
+	var sum := 0.0
+	var count := 0
+	for y in crop.get_height():
+		for x in crop.get_width():
+			var c := crop.get_pixel(x, y)
+			if c.a > 0.8:
+				sum += c.r * 0.2126 + c.g * 0.7152 + c.b * 0.0722
+				count += 1
+	var mean := sum / float(count) if count > 0 else PORTRAIT_LUMA
+	var key := clampf(PORTRAIT_LUMA / maxf(mean, 0.001), 1.0, PORTRAIT_KEY_MAX)
+	for y in crop.get_height():
+		for x in crop.get_width():
+			crop.set_pixel(x, y, world_light(crop.get_pixel(x, y), key))
+	var out := {
+		"texture": ImageTexture.create_from_image(crop),
+		"src": src,
+		"key": key,
+		"mean_luma": mean,
+	}
+	_portrait_cache[key_name] = out
+	return out
+
+
+## Same math as pc_world_light.gdshader, after a key multiply.
+static func world_light(c: Color, key: float = 1.0) -> Color:
+	var r := c.r * key * WORLD_WARM.r
+	var g := c.g * key * WORLD_WARM.g
+	var b := c.b * key * WORLD_WARM.b
+	var luma := r * 0.2126 + g * 0.7152 + b * 0.0722
+	r = lerpf(luma, r, WORLD_SAT)
+	g = lerpf(luma, g, WORLD_SAT)
+	b = lerpf(luma, b, WORLD_SAT)
+	r = (r - 0.5) * WORLD_CONTRAST + 0.5
+	g = (g - 0.5) * WORLD_CONTRAST + 0.5
+	b = (b - 0.5) * WORLD_CONTRAST + 0.5
+	return Color(clampf(r, 0.0, 1.0), clampf(g, 0.0, 1.0), clampf(b, 0.0, 1.0), c.a)
 
 
 func revision() -> int:
@@ -645,9 +728,10 @@ func _draw_portrait(who: Dictionary, x: float) -> void:
 	draw_rect(Rect2(frame.position + Vector2(frame.size.x - 2, 0), Vector2(2, frame.size.y)), rim)
 	var icon: Variant = who.get("icon", null)
 	if icon is Texture2D:
-		var tex := icon as Texture2D
-		var src_h := float(tex.get_height()) * 0.72
-		draw_texture_rect_region(tex, Rect2(frame.position + Vector2(8, 4), Vector2(84, 70)), Rect2(0, 0, tex.get_width(), src_h))
+		var art := portrait_art(str(who.get("class_id", "")), icon as Texture2D)
+		var lit: Variant = art.get("texture", null)
+		if lit is Texture2D:
+			draw_texture_rect(lit as Texture2D, Rect2(frame.position + PORTRAIT_BOX.position, PORTRAIT_BOX.size), false)
 	var hp := int(who.get("hp", 0))
 	var cap := maxi(int(who.get("max_hp", 1)), 1)
 	var ratio := clampf(float(hp) / float(cap), 0.0, 1.0)

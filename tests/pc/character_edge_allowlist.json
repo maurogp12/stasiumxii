@@ -1,0 +1,396 @@
+{
+ "note": "PC character cells whose paint touches the cell edge. Only Kestrel v3 is listed: these cells await re-export (a new Kestrel design is coming). run_pc_character_tests.gd fails on any edge pixel not listed here, and on any listed cell that is now clean. Ironjaw must have none. Do not add cells to hide new art bugs.",
+ "cells": {
+  "kestrel/attack/kestrel_attack_N_f00.png": [
+   "top",
+   "right"
+  ],
+  "kestrel/attack/kestrel_attack_N_f01.png": [
+   "top",
+   "right"
+  ],
+  "kestrel/attack/kestrel_attack_N_f02.png": [
+   "top"
+  ],
+  "kestrel/attack/kestrel_attack_N_f03.png": [
+   "top"
+  ],
+  "kestrel/attack/kestrel_attack_N_f04.png": [
+   "top",
+   "right"
+  ],
+  "kestrel/attack/kestrel_attack_N_f05.png": [
+   "top",
+   "right"
+  ],
+  "kestrel/attack/kestrel_attack_S_f00.png": [
+   "top"
+  ],
+  "kestrel/attack/kestrel_attack_S_f01.png": [
+   "top"
+  ],
+  "kestrel/attack/kestrel_attack_S_f02.png": [
+   "top"
+  ],
+  "kestrel/attack/kestrel_attack_S_f03.png": [
+   "top"
+  ],
+  "kestrel/attack/kestrel_attack_S_f04.png": [
+   "top"
+  ],
+  "kestrel/attack/kestrel_attack_S_f05.png": [
+   "top"
+  ],
+  "kestrel/attack/kestrel_attack_W_f00.png": [
+   "top",
+   "right"
+  ],
+  "kestrel/attack/kestrel_attack_W_f01.png": [
+   "top",
+   "right"
+  ],
+  "kestrel/attack/kestrel_attack_W_f02.png": [
+   "top",
+   "right"
+  ],
+  "kestrel/attack/kestrel_attack_W_f03.png": [
+   "right"
+  ],
+  "kestrel/attack/kestrel_attack_W_f04.png": [
+   "top",
+   "right"
+  ],
+  "kestrel/attack/kestrel_attack_W_f05.png": [
+   "top",
+   "right"
+  ],
+  "kestrel/cast/kestrel_cast_E_f01.png": [
+   "right"
+  ],
+  "kestrel/cast/kestrel_cast_E_f02.png": [
+   "top",
+   "right"
+  ],
+  "kestrel/cast/kestrel_cast_E_f03.png": [
+   "right"
+  ],
+  "kestrel/cast/kestrel_cast_E_f04.png": [
+   "right"
+  ],
+  "kestrel/cast/kestrel_cast_N_f00.png": [
+   "top",
+   "right"
+  ],
+  "kestrel/cast/kestrel_cast_N_f01.png": [
+   "top"
+  ],
+  "kestrel/cast/kestrel_cast_N_f02.png": [
+   "top",
+   "right"
+  ],
+  "kestrel/cast/kestrel_cast_N_f03.png": [
+   "top",
+   "right"
+  ],
+  "kestrel/cast/kestrel_cast_N_f04.png": [
+   "top",
+   "right"
+  ],
+  "kestrel/cast/kestrel_cast_N_f05.png": [
+   "top",
+   "right"
+  ],
+  "kestrel/cast/kestrel_cast_S_f00.png": [
+   "top"
+  ],
+  "kestrel/cast/kestrel_cast_S_f01.png": [
+   "top"
+  ],
+  "kestrel/cast/kestrel_cast_S_f04.png": [
+   "top"
+  ],
+  "kestrel/cast/kestrel_cast_S_f05.png": [
+   "top"
+  ],
+  "kestrel/cast/kestrel_cast_W_f00.png": [
+   "top",
+   "right"
+  ],
+  "kestrel/cast/kestrel_cast_W_f01.png": [
+   "top",
+   "right"
+  ],
+  "kestrel/cast/kestrel_cast_W_f02.png": [
+   "top",
+   "right"
+  ],
+  "kestrel/cast/kestrel_cast_W_f03.png": [
+   "right"
+  ],
+  "kestrel/cast/kestrel_cast_W_f04.png": [
+   "top",
+   "right"
+  ],
+  "kestrel/cast/kestrel_cast_W_f05.png": [
+   "top",
+   "right"
+  ],
+  "kestrel/cast_mark/kestrel_cast_mark_E_f04.png": [
+   "right"
+  ],
+  "kestrel/cast_mark/kestrel_cast_mark_N_f00.png": [
+   "top",
+   "right"
+  ],
+  "kestrel/cast_mark/kestrel_cast_mark_N_f01.png": [
+   "top",
+   "right"
+  ],
+  "kestrel/cast_mark/kestrel_cast_mark_N_f02.png": [
+   "top",
+   "right"
+  ],
+  "kestrel/cast_mark/kestrel_cast_mark_N_f03.png": [
+   "top"
+  ],
+  "kestrel/cast_mark/kestrel_cast_mark_N_f04.png": [
+   "top",
+   "right"
+  ],
+  "kestrel/cast_mark/kestrel_cast_mark_N_f05.png": [
+   "top",
+   "right"
+  ],
+  "kestrel/cast_mark/kestrel_cast_mark_S_f00.png": [
+   "top"
+  ],
+  "kestrel/cast_mark/kestrel_cast_mark_S_f01.png": [
+   "top"
+  ],
+  "kestrel/cast_mark/kestrel_cast_mark_S_f02.png": [
+   "top"
+  ],
+  "kestrel/cast_mark/kestrel_cast_mark_S_f03.png": [
+   "top"
+  ],
+  "kestrel/cast_mark/kestrel_cast_mark_S_f04.png": [
+   "top"
+  ],
+  "kestrel/cast_mark/kestrel_cast_mark_S_f05.png": [
+   "top"
+  ],
+  "kestrel/cast_mark/kestrel_cast_mark_W_f00.png": [
+   "top",
+   "right"
+  ],
+  "kestrel/cast_mark/kestrel_cast_mark_W_f01.png": [
+   "top",
+   "right"
+  ],
+  "kestrel/cast_mark/kestrel_cast_mark_W_f02.png": [
+   "top",
+   "right"
+  ],
+  "kestrel/cast_mark/kestrel_cast_mark_W_f03.png": [
+   "right"
+  ],
+  "kestrel/cast_mark/kestrel_cast_mark_W_f04.png": [
+   "top",
+   "right"
+  ],
+  "kestrel/cast_mark/kestrel_cast_mark_W_f05.png": [
+   "top",
+   "right"
+  ],
+  "kestrel/hit/kestrel_hit_N_f02.png": [
+   "top"
+  ],
+  "kestrel/hit/kestrel_hit_N_f03.png": [
+   "top"
+  ],
+  "kestrel/hit/kestrel_hit_S_f03.png": [
+   "top"
+  ],
+  "kestrel/hit/kestrel_hit_W_f00.png": [
+   "right"
+  ],
+  "kestrel/hit/kestrel_hit_W_f01.png": [
+   "right"
+  ],
+  "kestrel/hit/kestrel_hit_W_f02.png": [
+   "right"
+  ],
+  "kestrel/hit/kestrel_hit_W_f03.png": [
+   "top",
+   "right"
+  ],
+  "kestrel/idle/kestrel_idle_E_f01.png": [
+   "top"
+  ],
+  "kestrel/idle/kestrel_idle_E_f02.png": [
+   "top"
+  ],
+  "kestrel/idle/kestrel_idle_N_f00.png": [
+   "top",
+   "right"
+  ],
+  "kestrel/idle/kestrel_idle_N_f01.png": [
+   "top",
+   "right"
+  ],
+  "kestrel/idle/kestrel_idle_N_f02.png": [
+   "top",
+   "right"
+  ],
+  "kestrel/idle/kestrel_idle_N_f03.png": [
+   "top",
+   "right"
+  ],
+  "kestrel/idle/kestrel_idle_S_f00.png": [
+   "top"
+  ],
+  "kestrel/idle/kestrel_idle_S_f01.png": [
+   "top"
+  ],
+  "kestrel/idle/kestrel_idle_S_f02.png": [
+   "top"
+  ],
+  "kestrel/idle/kestrel_idle_S_f03.png": [
+   "top"
+  ],
+  "kestrel/idle/kestrel_idle_W_f00.png": [
+   "top",
+   "right"
+  ],
+  "kestrel/idle/kestrel_idle_W_f01.png": [
+   "top",
+   "right"
+  ],
+  "kestrel/idle/kestrel_idle_W_f02.png": [
+   "top",
+   "right"
+  ],
+  "kestrel/idle/kestrel_idle_W_f03.png": [
+   "top",
+   "right"
+  ],
+  "kestrel/walk/kestrel_walk_E_f01.png": [
+   "top"
+  ],
+  "kestrel/walk/kestrel_walk_E_f02.png": [
+   "top"
+  ],
+  "kestrel/walk/kestrel_walk_E_f03.png": [
+   "top"
+  ],
+  "kestrel/walk/kestrel_walk_E_f04.png": [
+   "top"
+  ],
+  "kestrel/walk/kestrel_walk_E_f05.png": [
+   "top"
+  ],
+  "kestrel/walk/kestrel_walk_E_f06.png": [
+   "right"
+  ],
+  "kestrel/walk/kestrel_walk_E_f07.png": [
+   "top"
+  ],
+  "kestrel/walk/kestrel_walk_E_f08.png": [
+   "top"
+  ],
+  "kestrel/walk/kestrel_walk_E_f09.png": [
+   "top"
+  ],
+  "kestrel/walk/kestrel_walk_E_f10.png": [
+   "top"
+  ],
+  "kestrel/walk/kestrel_walk_E_f11.png": [
+   "top"
+  ],
+  "kestrel/walk/kestrel_walk_N_f01.png": [
+   "top"
+  ],
+  "kestrel/walk/kestrel_walk_N_f02.png": [
+   "top",
+   "right"
+  ],
+  "kestrel/walk/kestrel_walk_N_f03.png": [
+   "top",
+   "right"
+  ],
+  "kestrel/walk/kestrel_walk_N_f04.png": [
+   "top",
+   "right"
+  ],
+  "kestrel/walk/kestrel_walk_N_f05.png": [
+   "top"
+  ],
+  "kestrel/walk/kestrel_walk_N_f06.png": [
+   "right"
+  ],
+  "kestrel/walk/kestrel_walk_N_f07.png": [
+   "top",
+   "right"
+  ],
+  "kestrel/walk/kestrel_walk_N_f08.png": [
+   "top",
+   "right"
+  ],
+  "kestrel/walk/kestrel_walk_N_f09.png": [
+   "top",
+   "right"
+  ],
+  "kestrel/walk/kestrel_walk_N_f10.png": [
+   "top"
+  ],
+  "kestrel/walk/kestrel_walk_N_f11.png": [
+   "top"
+  ],
+  "kestrel/walk/kestrel_walk_W_f00.png": [
+   "right"
+  ],
+  "kestrel/walk/kestrel_walk_W_f01.png": [
+   "top",
+   "right"
+  ],
+  "kestrel/walk/kestrel_walk_W_f02.png": [
+   "top",
+   "right"
+  ],
+  "kestrel/walk/kestrel_walk_W_f03.png": [
+   "top",
+   "right"
+  ],
+  "kestrel/walk/kestrel_walk_W_f04.png": [
+   "top",
+   "right"
+  ],
+  "kestrel/walk/kestrel_walk_W_f05.png": [
+   "top",
+   "right"
+  ],
+  "kestrel/walk/kestrel_walk_W_f06.png": [
+   "right"
+  ],
+  "kestrel/walk/kestrel_walk_W_f07.png": [
+   "top",
+   "right"
+  ],
+  "kestrel/walk/kestrel_walk_W_f08.png": [
+   "top",
+   "right"
+  ],
+  "kestrel/walk/kestrel_walk_W_f09.png": [
+   "top",
+   "right"
+  ],
+  "kestrel/walk/kestrel_walk_W_f10.png": [
+   "top",
+   "right"
+  ],
+  "kestrel/walk/kestrel_walk_W_f11.png": [
+   "top",
+   "right"
+  ]
+ }
+}
