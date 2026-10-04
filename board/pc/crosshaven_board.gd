@@ -1,4 +1,5 @@
 extends Node2D
+class_name CrosshavenBoard
 
 ## View-only Crosshaven combat board (map crosshaven_15). PC only.
 ## Reads art/pc/look/crosshaven_board/looks.json and draws the @2x masters
@@ -7,8 +8,9 @@ extends Node2D
 ## tiles stay as they are.
 ## Luca, 3 Oct 2026, locked the four open calls:
 ## the kit's 2-step earth edge, tall stones under the fighter with no fade,
-## no decor on raised cells, and the 2-cell wall and log only where looks.json
-## already placed them.
+## no decor on raised cells, and the 2-cell wall and log art (not the old
+## fence cells). Tall props sit off the walkable grid, on the rim. Walkable
+## cells get low decor in clusters. Props do not block.
 
 const ART_ROOT := "res://art/pc/look/crosshaven_board/"
 const LOOKS_PATH := ART_ROOT + "looks.json"
@@ -29,6 +31,12 @@ const TALL_FADE := false
 const DECOR_ON_RAISED := false
 ## "fences" keeps the 2-cell ids looks.json wrote. "off" uses the 1-cell shorts.
 const TWO_CELL_COVER := "fences"
+## A tuft at or under this height (fern is 71) reads as walkable. Taller art
+## is a wall, log, shrub, or rock and stays off walkable cells.
+const LOW_TUFT_PX_2X := 72.0
+## Water is pulled toward this dark blue-green so it is not the move cyan.
+const WATER_TARGET := Color(0.12, 0.30, 0.28, 1.0)
+const WATER_MIX := 0.70
 
 static var suppressed := false
 
@@ -37,6 +45,7 @@ var _ready_data := false
 var _by_cell: Dictionary = {}
 var _props_at: Dictionary = {}
 var _decor_at: Dictionary = {}
+var _frame: Array = []
 var _catalog: Dictionary = {}
 var _terrace: Dictionary = {}
 var _terrace_list: Array = []
@@ -97,6 +106,36 @@ static func prop_blocks(spec: Dictionary) -> String:
 	if raw == "":
 		return "none"
 	return raw
+
+
+## Walls, logs, shrubs, and rocks taller than a low tuft. Kind "tall" and
+## "cover_dressing" always count. They must not sit on a walkable cell.
+static func prop_is_tall(spec: Dictionary) -> bool:
+	var kind := str(spec.get("kind", "")).to_lower()
+	if kind == "tall" or kind == "cover_dressing":
+		return true
+	return float(spec.get("art_height_px_2x", 0.0)) > LOW_TUFT_PX_2X
+
+
+## Anchor cell, plus the back cell of a 2-wide piece. The kit's 2-cell
+## props run back to (x - 1, y).
+static func prop_footprint(entry: Dictionary, spec: Dictionary) -> Array[Vector2i]:
+	var at := Vector2i(int(entry.get("x", 0)), int(entry.get("y", 0)))
+	var cells: Array[Vector2i] = [at]
+	var fp: Variant = spec.get("footprint_cells", [])
+	var wide := 1
+	if fp is Array and (fp as Array).size() >= 1:
+		wide = int((fp as Array)[0])
+	if wide >= 2:
+		cells.append(Vector2i(at.x - 1, at.y))
+	return cells
+
+
+## Darker blue-green. Ripples only darken this, so a bright pixel cannot
+## climb back toward the move-range cyan.
+static func grade_water(src: Color) -> Color:
+	var mixed := src.lerp(WATER_TARGET, WATER_MIX)
+	return Color(mixed.r * 0.90, mixed.g * 0.90, mixed.b * 0.90, src.a)
 
 
 static func load_atlas() -> Dictionary:
@@ -196,6 +235,16 @@ static func _field(entry: Dictionary, key: String) -> String:
 
 
 static func piece_path(folder: String, id: String) -> String:
+	var found := _piece_file(folder, id)
+	if found != "":
+		return found
+	# Sand stands in on the sandstone masters until kit v1.4 paints sand_*.
+	if folder == "tiles" and id.begins_with("sand_"):
+		return _piece_file(folder, "sandstone_" + id.trim_prefix("sand_"))
+	return ""
+
+
+static func _piece_file(folder: String, id: String) -> String:
 	var root := ART_ROOT + folder + "/"
 	var hi := root + id + "@2x.png"
 	if FileAccess.file_exists(hi):
@@ -341,6 +390,7 @@ func _build(board: Node2D) -> void:
 		tile.add_child(dress)
 		if tile.has_method("set_hide_stock"):
 			tile.set_hide_stock(true)
+	_place_frame(board, size)
 	_built_for = board.tiles.size()
 
 
@@ -352,12 +402,16 @@ func _ensure_data() -> void:
 	for cell in looks.get("cells", []):
 		if cell is Dictionary:
 			_by_cell[Vector2i(int(cell.get("x", 0)), int(cell.get("y", 0)))] = cell
+	_frame = []
 	for entry in looks.get("props", []):
 		if not (entry is Dictionary):
 			continue
 		if str(entry.get("layer", "")) != "prop":
 			continue
 		var at := Vector2i(int(entry.get("x", 0)), int(entry.get("y", 0)))
+		if not _by_cell.has(at):
+			_frame.append(entry)
+			continue
 		if not _props_at.has(at):
 			_props_at[at] = []
 		(_props_at[at] as Array).append(entry)
@@ -582,7 +636,7 @@ func _add_floor(dress: Dress, id: String, tint: Color) -> void:
 		return
 	var scale := draw_scale_for(path)
 	var size := tex.get_size() * scale
-	dress.add_piece(id, "floor", tex, Rect2(-size * 0.5, size), tint, true)
+	dress.add_piece(id, "floor", tex, Rect2(-size * 0.5, size), tint, true, _water_fill(id))
 
 
 func _add_flat(dress: Dress, id: String, role: String, tint: Color) -> void:
@@ -606,7 +660,34 @@ func _add_terrace(dress: Dress, id: String, tint: Color) -> void:
 	dress.add_piece(id, _role_for(id), tex, Rect2(origin, tex.get_size() * scale), tint, true)
 
 
-func _add_prop(dress: Dress, id: String, role: String, cell: Vector2i) -> void:
+func _water_fill(id: String) -> bool:
+	return id == "water_a" or id == "water_b"
+
+
+## Off-grid props draw on the nearest rim cell, shifted by the iso step,
+## so a tall piece frames the board without occupying a walkable cell.
+func _place_frame(board: Node2D, size: int) -> void:
+	var dirty: Array = []
+	for entry in _frame:
+		if not (entry is Dictionary):
+			continue
+		var at := Vector2i(int(entry.get("x", 0)), int(entry.get("y", 0)))
+		var host := Vector2i(clampi(at.x, 0, size - 1), clampi(at.y, 0, size - 1))
+		var tile: Node = board.tiles.get(host)
+		if tile == null:
+			continue
+		var dress := tile.get_node_or_null("CrosshavenDress") as Dress
+		if dress == null:
+			continue
+		var shift := SORT.cell_to_local(at, 0.0) - SORT.cell_to_local(host, 0.0)
+		_add_prop(dress, _prop_id(entry), "prop", host, shift)
+		if not dirty.has(dress):
+			dirty.append(dress)
+	for dress in dirty:
+		(dress as Dress).rebuild_bake()
+
+
+func _add_prop(dress: Dress, id: String, role: String, cell: Vector2i, shift: Vector2 = Vector2.ZERO) -> void:
 	var spec: Dictionary = _catalog.get(id, {})
 	var path := piece_path("props", id)
 	var tex := _texture(path)
@@ -615,7 +696,7 @@ func _add_prop(dress: Dress, id: String, role: String, cell: Vector2i) -> void:
 	var master := path.ends_with("@2x.png")
 	var scale := draw_scale_for(path)
 	var anchor := _anchor_px(spec, master, tex)
-	var origin := Vector2(0.0, float(BoardTile.TILE_HEIGHT) * 0.5) - anchor * scale
+	var origin := Vector2(0.0, float(BoardTile.TILE_HEIGHT) * 0.5) - anchor * scale + shift
 	var tint := Color(1, 1, 1, _prop_alpha(spec, cell))
 	dress.add_piece(id, role, tex, Rect2(origin, tex.get_size() * scale), tint, false)
 
@@ -666,7 +747,7 @@ class Dress extends Node2D:
 	var _baked: Texture2D
 	var _baked_origin := Vector2.ZERO
 
-	func add_piece(id: String, role: String, tex: Texture2D, dest: Rect2, tint: Color, canopy: bool) -> void:
+	func add_piece(id: String, role: String, tex: Texture2D, dest: Rect2, tint: Color, canopy: bool, water: bool = false) -> void:
 		_pieces.append({
 			"id": id,
 			"role": role,
@@ -674,6 +755,7 @@ class Dress extends Node2D:
 			"dest": dest,
 			"tint": tint,
 			"canopy": canopy,
+			"water": water,
 		})
 		queue_redraw()
 
@@ -721,7 +803,7 @@ class Dress extends Node2D:
 			if tex == null:
 				continue
 			var dest: Rect2 = piece.get("dest", Rect2())
-			var stamp := _stamp(tex, dest.size, piece.get("tint", Color.WHITE))
+			var stamp := _stamp(tex, dest.size, piece.get("tint", Color.WHITE), bool(piece.get("water", false)))
 			if stamp == null:
 				continue
 			var at := Vector2i(Vector2(round(dest.position.x - origin.x), round(dest.position.y - origin.y)))
@@ -734,14 +816,15 @@ class Dress extends Node2D:
 		_baked_origin = origin
 		queue_redraw()
 
-	static func _stamp(tex: Texture2D, dest_size: Vector2, tint: Color) -> Image:
+	static func _stamp(tex: Texture2D, dest_size: Vector2, tint: Color, water: bool = false) -> Image:
 		var dw := maxi(1, int(round(dest_size.x)))
 		var dh := maxi(1, int(round(dest_size.y)))
-		var key := "%s|%d|%d|%d|%d|%d|%d" % [
+		var key := "%s|%d|%d|%d|%d|%d|%d|%s" % [
 			tex.resource_path,
 			dw, dh,
 			int(round(tint.r * 255.0)), int(round(tint.g * 255.0)),
 			int(round(tint.b * 255.0)), int(round(tint.a * 255.0)),
+			"w" if water else "d",
 		]
 		if _stamp_cache.has(key):
 			return _stamp_cache[key]
@@ -760,8 +843,32 @@ class Dress extends Node2D:
 			if sw != dw or sh != dh:
 				src.resize(dw, dh, Image.INTERPOLATE_BILINEAR)
 			out = _tint_image(src, tint)
+		if water and out != null:
+			_grade_water_image(out)
 		_stamp_cache[key] = out
 		return out
+
+
+	## Ripple and the shoreline only darken the graded blue-green.
+	static func _grade_water_image(image: Image) -> void:
+		var w := image.get_width()
+		var h := image.get_height()
+		for y in h:
+			for x in w:
+				var c := image.get_pixel(x, y)
+				if c.a <= 0.001:
+					continue
+				var graded := CrosshavenBoard.grade_water(c)
+				var wave := sin(float(x) * 0.85 + float(y) * 0.45)
+				var ripple := 0.90 + 0.10 * (0.5 + 0.5 * wave)
+				var nx := absf(float(x) - float(w) * 0.5) / maxf(float(w) * 0.5, 1.0)
+				var ny := absf(float(y) - float(h) * 0.5) / maxf(float(h) * 0.5, 1.0)
+				var edge := nx + ny
+				var shore := 1.0
+				if edge > 0.78:
+					shore = lerpf(1.0, 0.62, clampf((edge - 0.78) / 0.45, 0.0, 1.0))
+				var dim := ripple * shore
+				image.set_pixel(x, y, Color(graded.r * dim, graded.g * dim, graded.b * dim, c.a))
 
 	static func _box_half(src: Image, dw: int, dh: int, tint: Color) -> Image:
 		var raw := src.get_data()

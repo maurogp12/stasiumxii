@@ -1,6 +1,7 @@
 extends SceneTree
 
-## 15s cast on the v1.1 Crosshaven board. 150 frames at 10 fps.
+## 15s of play on the Crosshaven board. 150 frames at 10 fps.
+## A walk, Mark Shot, Detonate, and a hit. The move tiles stay up during the walk.
 ## godot --display-driver x11 --rendering-driver opengl3 --audio-driver Dummy --path . -s res://tests/pc/capture_l9_clip.gd -- --out=/tmp/l9_clip
 
 const BOARD := preload("res://board/pc/crosshaven_board.gd")
@@ -21,7 +22,10 @@ func _initialize() -> void:
 
 
 func _go() -> void:
-	Engine.time_scale = 0.22
+	# 20 fps and a slow scale, so a walk and two casts fill the 150 frames
+	# instead of one short cast and a long hold.
+	Engine.max_fps = 20
+	Engine.time_scale = 0.28
 	DirAccess.make_dir_recursive_absolute(_out)
 	root.content_scale_mode = Window.CONTENT_SCALE_MODE_CANVAS_ITEMS
 	root.content_scale_aspect = Window.CONTENT_SCALE_ASPECT_EXPAND
@@ -39,7 +43,7 @@ func _go() -> void:
 		await process_frame
 		if bool(board.get("_booted")):
 			break
-	sim.reset_match(PAIR.args("crosshaven", {"rolls": [1]}))
+	sim.reset_match(PAIR.args("crosshaven", {"rolls": [1, 1, 1]}))
 	board._rebuild_pawns()
 	board._refresh()
 	board._fit_board_camera()
@@ -48,28 +52,95 @@ func _go() -> void:
 	for _i in 6:
 		await process_frame
 	var frame := 0
-	for _i in 30:
-		frame = _save(frame)
-		await process_frame
-	var hit: Dictionary = sim.submit({"type": "cast", "spell": "mark_shot", "to": _target})
-	if not bool(hit.get("ok", false)):
-		push_error("mark_shot failed %s" % str(hit))
+	frame = await _roll(board, frame, 10, {})
+	var pawn: Node = board.get("pawns_by_seat")[0]
+	var home: Vector2 = pawn.global_position
+	var walked: Dictionary = sim.submit({"type": "move", "to": Vector2i(7, 5)})
+	if not bool(walked.get("ok", false)):
+		push_error("walk failed %s" % str(walked))
 		quit(1)
 		return
-	var events: Array = hit.get("events", [])
-	events.append({"type": "cast", "spell": "mark_shot", "to": _target, "seat": 0})
-	board._apply_units(sim.snapshot())
-	board._arm_view_motions(hit.get("events", []))
-	board._arm_vfx(events)
-	var saw := false
-	for _i in 120:
+	var path: Array = []
+	var origin := Vector2i(7, 7)
+	for event in walked.get("events", []):
+		if event is Dictionary and (event as Dictionary).has("path"):
+			path = (event as Dictionary).get("path", [])
+			origin = board._as_cell((event as Dictionary).get("from", origin))
+	board._play_walk(0, path, origin)
+	var moved := false
+	for _i in 42:
 		await process_frame
-		if _damage_alpha(board) > 0.85:
-			saw = true
+		if pawn.global_position.distance_to(home) > 12.0:
+			moved = true
 		frame = _save(frame)
-	print("L9_CLIP frames=%d saw=%s dir=%s" % [frame, str(saw), _out])
+	var shot: Dictionary = sim.submit({"type": "cast", "spell": "mark_shot", "to": _target})
+	if not bool(shot.get("ok", false)):
+		push_error("mark_shot failed %s" % str(shot))
+		quit(1)
+		return
+	_arm_cast(board, sim, shot, "mark_shot")
+	var mark := ""
+	frame = await _roll(board, frame, 44, {"bucket": "mark"})
+	mark = str(_roll_note)
+	var boom: Dictionary = sim.submit({"type": "cast", "spell": "detonate", "to": _target})
+	if not bool(boom.get("ok", false)):
+		push_error("detonate failed %s" % str(boom))
+		quit(1)
+		return
+	_arm_cast(board, sim, boom, "detonate")
+	frame = await _roll(board, frame, 44, {"bucket": "detonate"})
+	var detonate := str(_roll_note)
+	while frame < 150:
+		await process_frame
+		frame = _save(frame)
+	print("L9_CLIP frames=%d walked=%s mark=%s detonate=%s dir=%s" % [frame, str(moved), mark, detonate, _out])
 	main.free()
-	quit(0 if saw and frame == 150 else 1)
+	var ok := moved and mark != "" and detonate != "" and mark != detonate and frame == 150
+	quit(0 if ok else 1)
+
+
+var _roll_note := ""
+
+
+func _arm_cast(board: Node, sim: Node, result: Dictionary, spell: String) -> void:
+	var events: Array = result.get("events", [])
+	events.append({"type": "cast", "spell": spell, "to": _target, "seat": 0})
+	board._apply_units(sim.snapshot())
+	board._arm_view_motions(result.get("events", []))
+	board._arm_vfx(events)
+
+
+func _roll(board: Node, frame: int, count: int, note: Dictionary) -> int:
+	var bucket := str(note.get("bucket", ""))
+	var best := ""
+	for _i in count:
+		await process_frame
+		if bucket != "" and _damage_alpha(board) > 0.85:
+			var shown := _damage_text(board)
+			if shown != "":
+				best = shown
+		frame = _save(frame)
+	if bucket != "":
+		_roll_note = best
+	return frame
+
+
+func _damage_text(board: Node) -> String:
+	var director := board.get_node_or_null("VfxDirector")
+	if director == null:
+		return ""
+	var best := ""
+	var alpha := 0.0
+	for child in director.get_children():
+		if child == null or not str(child.name).begins_with("number"):
+			continue
+		var shown := str(child.get("_text"))
+		if not shown.is_valid_int():
+			continue
+		if float(child.modulate.a) > alpha:
+			alpha = float(child.modulate.a)
+			best = shown
+	return best
 
 
 func _damage_alpha(board: Node) -> float:

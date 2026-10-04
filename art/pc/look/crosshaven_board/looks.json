@@ -7,11 +7,11 @@
  "coords": "x right-down (screen E), y left-down (screen S); cell centre at 2x = ((x-y)*64, (x+y)*32 - height*20); at 1x = ((x-y)*32, (x+y)*16 - height*10); sort z = (x+y)*10 + height*8 (fighters +4)",
  "look_counts": {
   "grass": 112,
-  "sandstone": 65,
+  "sand": 53,
+  "stone": 12,
   "wet_earth": 30,
   "water": 18
  },
- "sandstone_share_of_ground": 0.367,
  "draw_order_per_cell": [
   "terrace cliff faces (cliff_left_h*, cliff_right_h*) - canvas top-left at centre+(-64,0) / centre+(0,0) at 2x",
   "tile (128x64 at 2x, top-left = centre+(-64,-32))",
@@ -21,9 +21,9 @@
   "props / decor at the same z after the tile layer of that z (anchor = canvas bottom-centre on the south tip centre+(0,32))"
  ],
  "rules": {
-  "grass_fringe_<side>": "on a sandstone / wet_earth cell whose <side> neighbour is grass at the same height",
+  "grass_fringe_<side>": "on a sand / stone / wet_earth cell whose <side> neighbour is grass at the same height",
   "grass_fringe_corner_<c>": "diagonal neighbour grass while neither adjacent side is",
-  "wet_earth_fringe_<side>": "on sandstone next to wet earth",
+  "wet_earth_fringe_<side>": "on sand or stone next to wet earth",
   "water_edge_<side>": "on a water cell whose <side> neighbour is not water (board edge: none)",
   "water_edge_corner_<c>": "diagonal non-water neighbour only",
   "foot_ao_ne/nw": "cell directly in front of a higher cell (the cliff foot)",
@@ -69,9 +69,9 @@
    "y": 0,
    "terrain": "ground",
    "height": 0,
-   "look": "sandstone",
+   "look": "sand",
    "variant": "b",
-   "tile": "sandstone_b",
+   "tile": "sand_b",
    "overlays": [
     "grass_fringe_nw",
     "grass_fringe_corner_s"
@@ -83,9 +83,9 @@
    "y": 0,
    "terrain": "ground",
    "height": 0,
-   "look": "sandstone",
+   "look": "sand",
    "variant": "a",
-   "tile": "sandstone_a",
+   "tile": "sand_a",
    "overlays": [
     "grass_fringe_sw"
    ],
@@ -96,9 +96,9 @@
    "y": 0,
    "terrain": "ground",
    "height": 0,
-   "look": "sandstone",
+   "look": "sand",
    "variant": "c",
-   "tile": "sandstone_c",
+   "tile": "sand_c",
    "overlays": [
     "grass_fringe_se",
     "grass_fringe_sw"
@@ -121,9 +121,9 @@
    "y": 0,
    "terrain": "ground",
    "height": 0,
-   "look": "sandstone",
+   "look": "sand",
    "variant": "b",
-   "tile": "sandstone_b",
+   "tile": "sand_b",
    "overlays": [
     "grass_fringe_nw",
     "grass_fringe_sw"
@@ -135,9 +135,9 @@
    "y": 0,
    "terrain": "ground",
    "height": 0,
-   "look": "sandstone",
+   "look": "sand",
    "variant": "a",
-   "tile": "sandstone_a",
+   "tile": "sand_a",
    "overlays": [
     "grass_fringe_se",
     "grass_fringe_corner_w"
@@ -253,9 +253,9 @@
    "y": 1,
    "terrain": "ground",
    "height": 0,
-   "look": "sandstone",
+   "look": "sand",
    "variant": "a",
-   "tile": "sandstone_a",
+   "tile": "sand_a",
    "overlays": [
     "wet_earth_fringe_nw",
     "grass_fringe_se",
@@ -313,9 +313,9 @@
    "y": 1,
    "terrain": "ground",
    "height": 0,
-   "look": "sandstone",
+   "look": "sand",
    "variant": "b",
-   "tile": "sandstone_b",
+   "tile": "sand_b",
    "overlays": [
     "grass_fringe_nw",
     "grass_fringe_se"
@@ -399,9 +399,9 @@
    "y": 2,
    "terrain": "ground",
    "height": 0,
-   "look": "sandstone",
+   "look": "sand",
    "variant": "c",
-   "tile": "sandstone_c",
+   "tile": "sand_c",
    "overlays": [
     "grass_fringe_ne",
     "wet_earth_fringe_se"
@@ -503,9 +503,9 @@
    "y": 2,
    "terrain": "ground",
    "height": 0,
-   "look": "sandstone",
+   "look": "sand",
    "variant": "a",
-   "tile": "sandstone_a",
+   "tile": "sand_a",
    "overlays": [
     "grass_fringe_nw",
     "grass_fringe_corner_e",
@@ -518,9 +518,9 @@
    "y": 2,
    "terrain": "ground",
    "height": 0,
-   "look": "sandstone",
+   "look": "sand",
    "variant": "b",
-   "tile": "sandstone_b",
+   "tile": "sand_b",
    "overlays": [
     "grass_fringe_ne",
     "grass_fringe_sw"
@@ -532,9 +532,9 @@
    "y": 2,
    "terrain": "ground",
    "height": 0,
-   "look": "sandstone",
+   "look": "sand",
    "variant": "a",
-   "tile": "sandstone_a",
+   "tile": "sand_a",
    "overlays": [
     "grass_fringe_ne",
     "grass_fringe_corner_s",
@@ -547,9 +547,9 @@
    "y": 2,
    "terrain": "ground",
    "height": 0,
-   "look": "sandstone",
+   "look": "sand",
    "variant": "c",
-   "tile": "sandstone_c",
+   "tile": "sand_c",
    "overlays": [
     "wet_earth_fringe_ne",
     "wet_earth_fringe_se",
@@ -599,9 +599,9 @@
    "y": 3,
    "terrain": "ground",
    "height": 0,
-   "look": "sandstone",
+   "look": "sand",
    "variant": "a",
-   "tile": "sandstone_a",
+   "tile": "sand_a",
    "overlays": [],
    "terrace": []
   },
@@ -610,9 +610,9 @@
    "y": 3,
    "terrain": "ground",
    "height": 0,
-   "look": "sandstone",
+   "look": "sand",
    "variant": "b",
-   "tile": "sandstone_b",
+   "tile": "sand_b",
    "overlays": [
     "wet_earth_fringe_ne"
    ],
@@ -623,9 +623,9 @@
    "y": 3,
    "terrain": "ground",
    "height": 0,
-   "look": "sandstone",
+   "look": "sand",
    "variant": "c",
-   "tile": "sandstone_c",
+   "tile": "sand_c",
    "overlays": [
     "wet_earth_fringe_ne",
     "grass_fringe_se"
@@ -717,9 +717,9 @@
    "y": 3,
    "terrain": "ground",
    "height": 0,
-   "look": "sandstone",
+   "look": "sand",
    "variant": "b",
-   "tile": "sandstone_b",
+   "tile": "sand_b",
    "overlays": [
     "grass_fringe_se",
     "grass_fringe_corner_n",
@@ -778,9 +778,9 @@
    "y": 3,
    "terrain": "ground",
    "height": 0,
-   "look": "sandstone",
+   "look": "sand",
    "variant": "a",
-   "tile": "sandstone_a",
+   "tile": "sand_a",
    "overlays": [
     "wet_earth_fringe_ne",
     "grass_fringe_nw",
@@ -794,9 +794,9 @@
    "y": 3,
    "terrain": "ground",
    "height": 0,
-   "look": "sandstone",
+   "look": "sand",
    "variant": "c",
-   "tile": "sandstone_c",
+   "tile": "sand_c",
    "overlays": [
     "grass_fringe_ne",
     "grass_fringe_se",
@@ -834,9 +834,9 @@
    "y": 4,
    "terrain": "ground",
    "height": 0,
-   "look": "sandstone",
+   "look": "sand",
    "variant": "a",
-   "tile": "sandstone_a",
+   "tile": "sand_a",
    "overlays": [],
    "terrace": []
   },
@@ -845,9 +845,9 @@
    "y": 4,
    "terrain": "ground",
    "height": 0,
-   "look": "sandstone",
+   "look": "sand",
    "variant": "b",
-   "tile": "sandstone_b",
+   "tile": "sand_b",
    "overlays": [
     "wet_earth_fringe_sw",
     "grass_fringe_corner_e"
@@ -859,9 +859,9 @@
    "y": 4,
    "terrain": "ground",
    "height": 0,
-   "look": "sandstone",
+   "look": "sand",
    "variant": "a",
-   "tile": "sandstone_a",
+   "tile": "sand_a",
    "overlays": [
     "grass_fringe_ne",
     "wet_earth_fringe_sw"
@@ -873,9 +873,9 @@
    "y": 4,
    "terrain": "ground",
    "height": 0,
-   "look": "sandstone",
+   "look": "sand",
    "variant": "b",
-   "tile": "sandstone_b",
+   "tile": "sand_b",
    "overlays": [
     "grass_fringe_se",
     "grass_fringe_corner_n",
@@ -899,9 +899,9 @@
    "y": 4,
    "terrain": "ground",
    "height": 0,
-   "look": "sandstone",
+   "look": "stone",
    "variant": "c",
-   "tile": "sandstone_c",
+   "tile": "stone_flag_c",
    "overlays": [
     "wet_earth_fringe_ne",
     "grass_fringe_nw"
@@ -935,9 +935,9 @@
    "y": 4,
    "terrain": "ground",
    "height": 0,
-   "look": "sandstone",
+   "look": "sand",
    "variant": "a",
-   "tile": "sandstone_a",
+   "tile": "sand_a",
    "overlays": [
     "grass_fringe_se",
     "foot_ao_nw"
@@ -1036,9 +1036,9 @@
    "y": 5,
    "terrain": "ground",
    "height": 0,
-   "look": "sandstone",
+   "look": "sand",
    "variant": "c",
-   "tile": "sandstone_c",
+   "tile": "sand_c",
    "overlays": [
     "wet_earth_fringe_se",
     "grass_fringe_corner_w"
@@ -1072,9 +1072,9 @@
    "y": 5,
    "terrain": "ground",
    "height": 0,
-   "look": "sandstone",
+   "look": "sand",
    "variant": "c",
-   "tile": "sandstone_c",
+   "tile": "sand_c",
    "overlays": [
     "wet_earth_fringe_nw",
     "grass_fringe_corner_e"
@@ -1108,9 +1108,9 @@
    "y": 5,
    "terrain": "ground",
    "height": 0,
-   "look": "sandstone",
+   "look": "stone",
    "variant": "a",
-   "tile": "sandstone_a",
+   "tile": "stone_flag_a",
    "overlays": [
     "grass_fringe_corner_n",
     "foot_ao_nw"
@@ -1122,9 +1122,9 @@
    "y": 5,
    "terrain": "ground",
    "height": 0,
-   "look": "sandstone",
+   "look": "stone",
    "variant": "c",
-   "tile": "sandstone_c",
+   "tile": "stone_flag_c",
    "overlays": [
     "foot_ao_ne"
    ],
@@ -1135,9 +1135,9 @@
    "y": 5,
    "terrain": "ground",
    "height": 0,
-   "look": "sandstone",
+   "look": "stone",
    "variant": "b",
-   "tile": "sandstone_b",
+   "tile": "stone_flag_b",
    "overlays": [
     "grass_fringe_corner_e",
     "grass_fringe_corner_s"
@@ -1248,9 +1248,9 @@
    "y": 6,
    "terrain": "ground",
    "height": 0,
-   "look": "sandstone",
+   "look": "sand",
    "variant": "a",
-   "tile": "sandstone_a",
+   "tile": "sand_a",
    "overlays": [
     "grass_fringe_nw",
     "wet_earth_fringe_se",
@@ -1289,9 +1289,9 @@
    "y": 6,
    "terrain": "ground",
    "height": 0,
-   "look": "sandstone",
+   "look": "sand",
    "variant": "b",
-   "tile": "sandstone_b",
+   "tile": "sand_b",
    "overlays": [
     "seal_slab",
     "wet_earth_fringe_nw"
@@ -1303,9 +1303,9 @@
    "y": 6,
    "terrain": "ground",
    "height": 0,
-   "look": "sandstone",
+   "look": "sand",
    "variant": "a",
-   "tile": "sandstone_a",
+   "tile": "sand_a",
    "overlays": [
     "foot_ao_ne"
    ],
@@ -1316,9 +1316,9 @@
    "y": 6,
    "terrain": "ground",
    "height": 0,
-   "look": "sandstone",
+   "look": "stone",
    "variant": "b",
-   "tile": "sandstone_b",
+   "tile": "stone_flag_b",
    "overlays": [],
    "terrace": []
   },
@@ -1327,9 +1327,9 @@
    "y": 6,
    "terrain": "ground",
    "height": 0,
-   "look": "sandstone",
-   "variant": "d",
-   "tile": "sandstone_d",
+   "look": "stone",
+   "variant": "c",
+   "tile": "stone_flag_c",
    "overlays": [],
    "terrace": []
   },
@@ -1338,9 +1338,9 @@
    "y": 6,
    "terrain": "ground",
    "height": 0,
-   "look": "sandstone",
+   "look": "stone",
    "variant": "a",
-   "tile": "sandstone_a",
+   "tile": "stone_flag_a",
    "overlays": [
     "seal_slab",
     "grass_fringe_se"
@@ -1423,9 +1423,9 @@
    "y": 7,
    "terrain": "ground",
    "height": 0,
-   "look": "sandstone",
+   "look": "sand",
    "variant": "a",
-   "tile": "sandstone_a",
+   "tile": "sand_a",
    "overlays": [
     "grass_fringe_ne",
     "grass_fringe_se",
@@ -1513,9 +1513,9 @@
    "y": 7,
    "terrain": "ground",
    "height": 0,
-   "look": "sandstone",
+   "look": "stone",
    "variant": "c",
-   "tile": "sandstone_c",
+   "tile": "stone_flag_c",
    "overlays": [
     "grass_fringe_corner_w"
    ],
@@ -1548,9 +1548,9 @@
    "y": 7,
    "terrain": "ground",
    "height": 0,
-   "look": "sandstone",
-   "variant": "d",
-   "tile": "sandstone_d",
+   "look": "stone",
+   "variant": "c",
+   "tile": "stone_flag_c",
    "overlays": [
     "grass_fringe_se",
     "foot_ao_nw"
@@ -1732,9 +1732,9 @@
    "y": 8,
    "terrain": "ground",
    "height": 0,
-   "look": "sandstone",
-   "variant": "d",
-   "tile": "sandstone_d",
+   "look": "stone",
+   "variant": "c",
+   "tile": "stone_flag_c",
    "overlays": [
     "seal_slab",
     "grass_fringe_nw"
@@ -1746,9 +1746,9 @@
    "y": 8,
    "terrain": "ground",
    "height": 0,
-   "look": "sandstone",
+   "look": "stone",
    "variant": "c",
-   "tile": "sandstone_c",
+   "tile": "stone_flag_c",
    "overlays": [
     "foot_ao_ne"
    ],
@@ -1759,9 +1759,9 @@
    "y": 8,
    "terrain": "ground",
    "height": 0,
-   "look": "sandstone",
+   "look": "stone",
    "variant": "b",
-   "tile": "sandstone_b",
+   "tile": "stone_flag_b",
    "overlays": [
     "grass_fringe_corner_e"
    ],
@@ -1772,9 +1772,9 @@
    "y": 8,
    "terrain": "ground",
    "height": 0,
-   "look": "sandstone",
+   "look": "sand",
    "variant": "c",
-   "tile": "sandstone_c",
+   "tile": "sand_c",
    "overlays": [
     "grass_fringe_ne"
    ],
@@ -1785,9 +1785,9 @@
    "y": 8,
    "terrain": "ground",
    "height": 0,
-   "look": "sandstone",
+   "look": "sand",
    "variant": "b",
-   "tile": "sandstone_b",
+   "tile": "sand_b",
    "overlays": [
     "seal_slab",
     "grass_fringe_ne",
@@ -1933,9 +1933,9 @@
    "y": 9,
    "terrain": "ground",
    "height": 0,
-   "look": "sandstone",
+   "look": "sand",
    "variant": "c",
-   "tile": "sandstone_c",
+   "tile": "sand_c",
    "overlays": [
     "wet_earth_fringe_sw",
     "grass_fringe_corner_n",
@@ -1966,9 +1966,9 @@
    "y": 9,
    "terrain": "ground",
    "height": 0,
-   "look": "sandstone",
+   "look": "sand",
    "variant": "c",
-   "tile": "sandstone_c",
+   "tile": "sand_c",
    "overlays": [
     "grass_fringe_corner_s",
     "foot_ao_nw"
@@ -2002,9 +2002,9 @@
    "y": 9,
    "terrain": "ground",
    "height": 0,
-   "look": "sandstone",
+   "look": "sand",
    "variant": "d",
-   "tile": "sandstone_d",
+   "tile": "sand_d",
    "overlays": [
     "grass_fringe_se",
     "grass_fringe_corner_w",
@@ -2039,9 +2039,9 @@
    "y": 9,
    "terrain": "ground",
    "height": 0,
-   "look": "sandstone",
+   "look": "sand",
    "variant": "a",
-   "tile": "sandstone_a",
+   "tile": "sand_a",
    "overlays": [
     "grass_fringe_ne",
     "grass_fringe_nw",
@@ -2167,9 +2167,9 @@
    "y": 10,
    "terrain": "ground",
    "height": 0,
-   "look": "sandstone",
+   "look": "sand",
    "variant": "a",
-   "tile": "sandstone_a",
+   "tile": "sand_a",
    "overlays": [
     "grass_fringe_se",
     "foot_ao_nw"
@@ -2194,9 +2194,9 @@
    "y": 10,
    "terrain": "ground",
    "height": 0,
-   "look": "sandstone",
+   "look": "sand",
    "variant": "a",
-   "tile": "sandstone_a",
+   "tile": "sand_a",
    "overlays": [
     "grass_fringe_nw",
     "grass_fringe_corner_e"
@@ -2208,9 +2208,9 @@
    "y": 10,
    "terrain": "ground",
    "height": 0,
-   "look": "sandstone",
+   "look": "sand",
    "variant": "b",
-   "tile": "sandstone_b",
+   "tile": "sand_b",
    "overlays": [
     "grass_fringe_ne",
     "grass_fringe_se"
@@ -2273,9 +2273,9 @@
    "y": 11,
    "terrain": "ground",
    "height": 0,
-   "look": "sandstone",
+   "look": "sand",
    "variant": "b",
-   "tile": "sandstone_b",
+   "tile": "sand_b",
    "overlays": [
     "grass_fringe_ne",
     "grass_fringe_nw",
@@ -2288,9 +2288,9 @@
    "y": 11,
    "terrain": "ground",
    "height": 0,
-   "look": "sandstone",
+   "look": "sand",
    "variant": "a",
-   "tile": "sandstone_a",
+   "tile": "sand_a",
    "overlays": [
     "grass_fringe_ne",
     "wet_earth_fringe_sw",
@@ -2303,9 +2303,9 @@
    "y": 11,
    "terrain": "ground",
    "height": 0,
-   "look": "sandstone",
+   "look": "sand",
    "variant": "b",
-   "tile": "sandstone_b",
+   "tile": "sand_b",
    "overlays": [
     "grass_fringe_ne",
     "grass_fringe_sw"
@@ -2440,9 +2440,9 @@
    "y": 11,
    "terrain": "ground",
    "height": 0,
-   "look": "sandstone",
+   "look": "sand",
    "variant": "a",
-   "tile": "sandstone_a",
+   "tile": "sand_a",
    "overlays": [
     "wet_earth_fringe_sw",
     "grass_fringe_corner_e",
@@ -2456,9 +2456,9 @@
    "y": 11,
    "terrain": "ground",
    "height": 0,
-   "look": "sandstone",
+   "look": "sand",
    "variant": "b",
-   "tile": "sandstone_b",
+   "tile": "sand_b",
    "overlays": [
     "grass_fringe_ne",
     "wet_earth_fringe_sw",
@@ -2471,9 +2471,9 @@
    "y": 11,
    "terrain": "ground",
    "height": 0,
-   "look": "sandstone",
+   "look": "sand",
    "variant": "a",
-   "tile": "sandstone_a",
+   "tile": "sand_a",
    "overlays": [
     "grass_fringe_sw",
     "grass_fringe_corner_n"
@@ -2485,9 +2485,9 @@
    "y": 11,
    "terrain": "ground",
    "height": 0,
-   "look": "sandstone",
+   "look": "sand",
    "variant": "b",
-   "tile": "sandstone_b",
+   "tile": "sand_b",
    "overlays": [
     "grass_fringe_corner_w"
    ],
@@ -2548,9 +2548,9 @@
    "y": 12,
    "terrain": "ground",
    "height": 0,
-   "look": "sandstone",
+   "look": "sand",
    "variant": "b",
-   "tile": "sandstone_b",
+   "tile": "sand_b",
    "overlays": [
     "grass_fringe_nw",
     "grass_fringe_sw",
@@ -2563,9 +2563,9 @@
    "y": 12,
    "terrain": "ground",
    "height": 0,
-   "look": "sandstone",
+   "look": "sand",
    "variant": "a",
-   "tile": "sandstone_a",
+   "tile": "sand_a",
    "overlays": [
     "wet_earth_fringe_ne",
     "grass_fringe_sw"
@@ -2577,9 +2577,9 @@
    "y": 12,
    "terrain": "ground",
    "height": 0,
-   "look": "sandstone",
+   "look": "sand",
    "variant": "b",
-   "tile": "sandstone_b",
+   "tile": "sand_b",
    "overlays": [
     "wet_earth_fringe_ne",
     "grass_fringe_se",
@@ -2679,9 +2679,9 @@
    "y": 12,
    "terrain": "ground",
    "height": 0,
-   "look": "sandstone",
+   "look": "sand",
    "variant": "a",
-   "tile": "sandstone_a",
+   "tile": "sand_a",
    "overlays": [
     "grass_fringe_nw",
     "grass_fringe_sw"
@@ -2940,9 +2940,9 @@
    "y": 14,
    "terrain": "ground",
    "height": 0,
-   "look": "sandstone",
+   "look": "sand",
    "variant": "b",
-   "tile": "sandstone_b",
+   "tile": "sand_b",
    "overlays": [
     "grass_fringe_ne",
     "grass_fringe_nw"
@@ -2954,9 +2954,9 @@
    "y": 14,
    "terrain": "ground",
    "height": 0,
-   "look": "sandstone",
+   "look": "sand",
    "variant": "a",
-   "tile": "sandstone_a",
+   "tile": "sand_a",
    "overlays": [
     "grass_fringe_ne"
    ],
@@ -2993,9 +2993,9 @@
    "y": 14,
    "terrain": "ground",
    "height": 0,
-   "look": "sandstone",
+   "look": "sand",
    "variant": "b",
-   "tile": "sandstone_b",
+   "tile": "sand_b",
    "overlays": [
     "grass_fringe_ne"
    ],
@@ -3006,9 +3006,9 @@
    "y": 14,
    "terrain": "ground",
    "height": 0,
-   "look": "sandstone",
+   "look": "sand",
    "variant": "c",
-   "tile": "sandstone_c",
+   "tile": "sand_c",
    "overlays": [
     "wet_earth_fringe_ne",
     "grass_fringe_se",
@@ -3052,401 +3052,263 @@
  ],
  "props": [
   {
-   "x": 0,
-   "y": 0,
+   "x": -1,
+   "y": 1,
    "old_kind": "ruins",
    "new_id": "standing_stone",
    "height": 0,
-   "cell_look": "grass",
-   "layer": "prop"
-  },
-  {
-   "x": 1,
-   "y": 0,
-   "old_kind": "fence",
-   "new_id": "ruined_wall_short",
-   "height": 0,
-   "cell_look": "grass",
-   "layer": "prop"
-  },
-  {
-   "x": 6,
-   "y": 0,
-   "old_kind": "hay",
-   "new_id": "lilac_shrub",
-   "height": 0,
-   "cell_look": "grass",
-   "layer": "prop"
-  },
-  {
-   "x": 14,
-   "y": 0,
-   "old_kind": "ruins",
-   "new_id": "standing_stone",
-   "height": 0,
-   "cell_look": "grass",
-   "layer": "prop"
-  },
-  {
-   "x": 9,
-   "y": 1,
-   "old_kind": "rubble",
-   "new_id": "boulder_small",
-   "height": 0,
-   "cell_look": "grass",
-   "layer": "prop"
-  },
-  {
-   "x": 12,
-   "y": 1,
-   "old_kind": "rubble",
-   "new_id": "boulder_small",
-   "height": 0,
-   "cell_look": "wet_earth",
-   "layer": "prop"
-  },
-  {
-   "x": 3,
-   "y": 3,
-   "old_kind": "rubble",
-   "new_id": "boulder_small",
-   "height": 0,
-   "cell_look": "grass",
-   "layer": "prop"
-  },
-  {
-   "x": 11,
-   "y": 3,
-   "old_kind": "hay",
-   "new_id": "lilac_shrub",
-   "height": 0,
-   "cell_look": "grass",
-   "layer": "prop"
-  },
-  {
-   "x": 14,
-   "y": 4,
-   "old_kind": "rock_pillar",
-   "new_id": "boulder_cluster",
-   "height": 0,
-   "cell_look": "grass",
-   "layer": "prop"
-  },
-  {
-   "x": 0,
-   "y": 6,
-   "old_kind": "fence",
-   "new_id": "fallen_log_short",
-   "height": 0,
-   "cell_look": "grass",
-   "layer": "dropped",
-   "note": "stacked with hay on this cell; only the lilac_shrub is placed so two props never overlap on one cell"
-  },
-  {
-   "x": 0,
-   "y": 6,
-   "old_kind": "hay",
-   "new_id": "lilac_shrub",
-   "height": 0,
-   "cell_look": "grass",
    "layer": "prop",
-   "note": "stacked cell (old: fence+hay); single replacement placed"
+   "note": "northwest rim cluster. off the walkable grid, along the rim. Tall props do not sit on a cell a fighter can enter."
   },
   {
-   "x": 4,
-   "y": 6,
-   "old_kind": "floor_seal",
-   "new_id": "seal_slab",
+   "x": -1,
+   "y": 2,
+   "old_kind": "rock_pillar",
+   "new_id": "boulder_cluster",
    "height": 0,
-   "cell_look": "sandstone",
-   "layer": "tile_overlay",
-   "note": "flat: drawn as the first overlay on the cell (no prop node)"
+   "layer": "prop",
+   "note": "northwest rim cluster. off the walkable grid, along the rim. Tall props do not sit on a cell a fighter can enter."
   },
   {
-   "x": 8,
+   "x": -1,
    "y": 6,
-   "old_kind": "floor_seal",
-   "new_id": "seal_slab",
-   "height": 0,
-   "cell_look": "sandstone",
-   "layer": "tile_overlay",
-   "note": "flat: drawn as the first overlay on the cell (no prop node)"
-  },
-  {
-   "x": 1,
-   "y": 7,
    "old_kind": "hay",
    "new_id": "lilac_shrub",
    "height": 0,
-   "cell_look": "grass",
-   "layer": "prop"
+   "layer": "prop",
+   "note": "northwest rim cluster. off the walkable grid, along the rim. Tall props do not sit on a cell a fighter can enter."
   },
   {
-   "x": 14,
-   "y": 7,
-   "old_kind": "well",
-   "new_id": "stone_well",
-   "height": 0,
-   "cell_look": "grass",
-   "layer": "prop"
-  },
-  {
-   "x": 6,
+   "x": -1,
    "y": 8,
-   "old_kind": "floor_seal",
-   "new_id": "seal_slab",
-   "height": 0,
-   "cell_look": "sandstone",
-   "layer": "tile_overlay",
-   "note": "flat: drawn as the first overlay on the cell (no prop node)"
-  },
-  {
-   "x": 10,
-   "y": 8,
-   "old_kind": "floor_seal",
-   "new_id": "seal_slab",
-   "height": 0,
-   "cell_look": "sandstone",
-   "layer": "tile_overlay",
-   "note": "flat: drawn as the first overlay on the cell (no prop node)"
-  },
-  {
-   "x": 13,
-   "y": 8,
-   "old_kind": "rubble",
-   "new_id": "boulder_small",
-   "height": 0,
-   "cell_look": "grass",
-   "layer": "prop"
-  },
-  {
-   "x": 0,
-   "y": 10,
-   "old_kind": "rock_pillar",
-   "new_id": "boulder_cluster",
-   "height": 0,
-   "cell_look": "grass",
-   "layer": "prop"
-  },
-  {
-   "x": 2,
-   "y": 10,
-   "old_kind": "ruins",
-   "new_id": "standing_stone",
-   "height": 0,
-   "cell_look": "grass",
-   "layer": "prop"
-  },
-  {
-   "x": 12,
-   "y": 10,
-   "old_kind": "rubble",
-   "new_id": "boulder_small",
-   "height": 0,
-   "cell_look": "grass",
-   "layer": "prop"
-  },
-  {
-   "x": 3,
-   "y": 12,
-   "old_kind": "fence",
-   "new_id": "ruined_wall_2c",
-   "height": 0,
-   "cell_look": "grass",
-   "note": "2-cell piece: anchor cell (3, 12) (south-most), back cell (2, 12); both fit (same height, no water, no other prop)",
-   "layer": "prop"
-  },
-  {
-   "x": 10,
-   "y": 12,
-   "old_kind": "rock_pillar",
-   "new_id": "boulder_cluster",
-   "height": 0,
-   "cell_look": "grass",
-   "layer": "prop"
-  },
-  {
-   "x": 2,
-   "y": 13,
-   "old_kind": "rubble",
-   "new_id": "boulder_small",
-   "height": 0,
-   "cell_look": "grass",
-   "layer": "prop"
-  },
-  {
-   "x": 5,
-   "y": 13,
    "old_kind": "fence",
    "new_id": "fallen_log_2c",
    "height": 0,
-   "cell_look": "grass",
-   "note": "2-cell piece: anchor cell (5, 13) (south-most), back cell (4, 13); both fit (same height, no water, no other prop)",
-   "layer": "prop"
-  },
-  {
-   "x": 6,
-   "y": 13,
-   "old_kind": "hay",
-   "new_id": "lilac_shrub",
-   "height": 0,
-   "cell_look": "grass",
-   "layer": "prop"
-  },
-  {
-   "x": 0,
-   "y": 14,
-   "old_kind": "ruins",
-   "new_id": "standing_stone",
-   "height": 0,
-   "cell_look": "grass",
    "layer": "prop",
-   "note": "stacked cell (old: ruins+fence); single replacement placed"
+   "note": "northwest rim cluster. Anchor (-1, 8), back cell (-2, 8), both off the board. off the walkable grid, along the rim. Tall props do not sit on a cell a fighter can enter."
   },
   {
-   "x": 0,
-   "y": 14,
-   "old_kind": "fence",
-   "new_id": "ruined_wall_short",
+   "x": -1,
+   "y": 10,
+   "old_kind": "hay",
+   "new_id": "lilac_bush",
    "height": 0,
-   "cell_look": "grass",
-   "layer": "dropped",
-   "note": "stacked with ruins on this cell; only the standing_stone is placed so two props never overlap on one cell"
+   "layer": "prop",
+   "note": "northwest rim cluster. Taller than a tuft, so it leaves the walkable cells. off the walkable grid, along the rim. Tall props do not sit on a cell a fighter can enter."
+  },
+  {
+   "x": 3,
+   "y": -1,
+   "old_kind": "well",
+   "new_id": "stone_well",
+   "height": 0,
+   "layer": "prop",
+   "note": "northeast rim cluster. off the walkable grid, along the rim. Tall props do not sit on a cell a fighter can enter."
   },
   {
    "x": 4,
-   "y": 14,
+   "y": -1,
    "old_kind": "ruins",
    "new_id": "standing_stone",
    "height": 0,
-   "cell_look": "grass",
-   "layer": "prop"
-  },
-  {
-   "x": 8,
-   "y": 14,
-   "old_kind": "hay",
-   "new_id": "lilac_shrub",
-   "height": 0,
-   "cell_look": "water",
-   "layer": "dropped",
-   "note": "stacked with fence on this cell; only the fallen_log_short is placed so two props never overlap on one cell"
-  },
-  {
-   "x": 8,
-   "y": 14,
-   "old_kind": "fence",
-   "new_id": "fallen_log_short",
-   "height": 0,
-   "cell_look": "water",
    "layer": "prop",
-   "note": "stacked cell (old: hay+fence); single replacement placed"
+   "note": "northeast rim cluster. off the walkable grid, along the rim. Tall props do not sit on a cell a fighter can enter."
   },
   {
-   "x": 13,
-   "y": 14,
+   "x": 5,
+   "y": -1,
+   "old_kind": "fence",
+   "new_id": "ruined_wall_short",
+   "height": 0,
+   "layer": "prop",
+   "note": "northeast rim cluster. off the walkable grid, along the rim. Tall props do not sit on a cell a fighter can enter."
+  },
+  {
+   "x": 7,
+   "y": -1,
    "old_kind": "fence",
    "new_id": "ruined_wall_2c",
    "height": 0,
-   "cell_look": "grass",
-   "note": "2-cell piece: anchor cell (13, 14) (south-most), back cell (12, 14); both fit (same height, no water, no other prop)",
-   "layer": "prop"
+   "layer": "prop",
+   "note": "northeast rim cluster. Anchor (7, -1), back cell (6, -1), both off the board. off the walkable grid, along the rim. Tall props do not sit on a cell a fighter can enter."
   },
   {
-   "x": 14,
-   "y": 14,
+   "x": 9,
+   "y": -1,
+   "old_kind": "rock_pillar",
+   "new_id": "boulder_cluster",
+   "height": 0,
+   "layer": "prop",
+   "note": "northeast rim cluster. off the walkable grid, along the rim. Tall props do not sit on a cell a fighter can enter."
+  },
+  {
+   "x": 10,
+   "y": -1,
+   "old_kind": "fence",
+   "new_id": "fallen_log_short",
+   "height": 0,
+   "layer": "prop",
+   "note": "northeast rim cluster. off the walkable grid, along the rim. Tall props do not sit on a cell a fighter can enter."
+  },
+  {
+   "x": 4,
+   "y": 4,
    "old_kind": "rubble",
    "new_id": "boulder_small",
    "height": 0,
-   "cell_look": "grass",
-   "layer": "prop"
+   "layer": "prop",
+   "note": "path cluster, with the flowers on (2, 4) and (3, 4). Under a tuft, so it stays walkable."
+  },
+  {
+   "x": 2,
+   "y": 3,
+   "old_kind": "rubble",
+   "new_id": "boulder_small",
+   "height": 0,
+   "layer": "prop",
+   "note": "path cluster, beside (2, 4). Under a tuft, so it stays walkable."
+  },
+  {
+   "x": 4,
+   "y": 6,
+   "old_kind": "floor_seal",
+   "new_id": "seal_slab",
+   "height": 0,
+   "cell_look": "sand",
+   "layer": "tile_overlay",
+   "note": "flat: drawn as an overlay, not a prop"
+  },
+  {
+   "x": 8,
+   "y": 6,
+   "old_kind": "floor_seal",
+   "new_id": "seal_slab",
+   "height": 0,
+   "cell_look": "stone",
+   "layer": "tile_overlay",
+   "note": "flat: drawn as an overlay, not a prop"
+  },
+  {
+   "x": 6,
+   "y": 8,
+   "old_kind": "floor_seal",
+   "new_id": "seal_slab",
+   "height": 0,
+   "cell_look": "stone",
+   "layer": "tile_overlay",
+   "note": "flat: drawn as an overlay, not a prop"
+  },
+  {
+   "x": 10,
+   "y": 8,
+   "old_kind": "floor_seal",
+   "new_id": "seal_slab",
+   "height": 0,
+   "cell_look": "sand",
+   "layer": "tile_overlay",
+   "note": "flat: drawn as an overlay, not a prop"
   }
  ],
  "decor": [
   {
-   "x": 7,
-   "y": 13,
+   "x": 12,
+   "y": 4,
    "id": "clover_patch",
    "height": 0,
-   "where": "grass_by_water"
+   "where": "water_cluster"
   },
   {
-   "x": 14,
-   "y": 9,
-   "id": "lilac_tuft",
-   "height": 0,
-   "where": "grass_by_water"
-  },
-  {
-   "x": 10,
-   "y": 1,
+   "x": 12,
+   "y": 5,
    "id": "fern",
    "height": 0,
-   "where": "grass_by_path"
-  },
-  {
-   "x": 11,
-   "y": 9,
-   "id": "flower_tuft",
-   "height": 0,
-   "where": "grass_by_path"
-  },
-  {
-   "x": 10,
-   "y": 6,
-   "id": "pebbles_moss",
-   "height": 0,
-   "where": "grass_by_water"
-  },
-  {
-   "x": 5,
-   "y": 14,
-   "id": "lilac_bush",
-   "height": 0,
-   "where": "grass_by_path"
+   "where": "water_cluster"
   },
   {
    "x": 12,
    "y": 6,
-   "id": "clover_patch",
-   "height": 0,
-   "where": "grass_by_water"
-  },
-  {
-   "x": 10,
-   "y": 13,
-   "id": "lilac_tuft",
-   "height": 0,
-   "where": "grass_by_water"
-  },
-  {
-   "x": 4,
-   "y": 1,
-   "id": "fern",
-   "height": 0,
-   "where": "grass_by_path"
-  },
-  {
-   "x": 13,
-   "y": 4,
-   "id": "flower_tuft",
-   "height": 0,
-   "where": "grass_by_path"
-  },
-  {
-   "x": 3,
-   "y": 10,
    "id": "pebbles_moss",
    "height": 0,
-   "where": "grass_by_path"
+   "where": "water_cluster"
   },
   {
    "x": 2,
-   "y": 0,
-   "id": "lilac_bush",
+   "y": 4,
+   "id": "flower_tuft",
    "height": 0,
-   "where": "grass_by_path"
+   "where": "path_cluster"
+  },
+  {
+   "x": 3,
+   "y": 4,
+   "id": "lilac_tuft",
+   "height": 0,
+   "where": "path_cluster"
+  },
+  {
+   "x": 5,
+   "y": 2,
+   "id": "clover_patch",
+   "height": 0,
+   "where": "mud_cluster"
+  },
+  {
+   "x": 6,
+   "y": 2,
+   "id": "fern",
+   "height": 0,
+   "where": "mud_cluster"
+  },
+  {
+   "x": 5,
+   "y": 3,
+   "id": "flower_tuft",
+   "height": 0,
+   "where": "mud_cluster"
   }
  ],
- "thunderwell_pattern": "Like Thunderwell (board/tile.gd:175-177 hides the stock paint_only props when the theme is active, then the theme places its own art from its props.json), the new loader should hide the stock crosshaven prop nodes and place props[] above from props.json; the map data (tags json) is untouched."
+ "thunderwell_pattern": "Like Thunderwell (board/tile.gd:175-177 hides the stock paint_only props when the theme is active, then the theme places its own art from its props.json), the new loader should hide the stock crosshaven prop nodes and place props[] above from props.json; the map data (tags json) is untouched.",
+ "grounds": {
+  "grass": {
+   "look": "grass",
+   "tiles": [
+    "grass_top_a",
+    "grass_top_b",
+    "grass_top_c"
+   ]
+  },
+  "sand": {
+   "look": "sand",
+   "tiles": [
+    "sand_a",
+    "sand_b",
+    "sand_c",
+    "sand_d"
+   ],
+   "stand_in": "sandstone"
+  },
+  "stone": {
+   "look": "stone",
+   "tiles": [
+    "stone_flag_a",
+    "stone_flag_b",
+    "stone_flag_c"
+   ],
+   "stand_in": "cool_grey"
+  },
+  "water": {
+   "look": "water",
+   "tiles": [
+    "water_a",
+    "water_b"
+   ]
+  },
+  "mud": {
+   "look": "wet_earth",
+   "tiles": [
+    "wet_earth_a",
+    "wet_earth_b"
+   ]
+  }
+ }
 }

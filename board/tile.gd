@@ -12,6 +12,7 @@ const OVERLAY_Z: int = 1
 const HIGHLIGHT_FILL_ALPHA: float = 0.5
 const LABEL_SETTING := "stasium/debug/show_tile_labels"
 const GLYPHS := preload("res://board/pc/glyph_decals.gd")
+const HUD := preload("res://ui/hud.gd")
 ## Full-grid hold. Thin, and faint enough that a move tile still reads.
 const GRID_LINE_WIDTH := 1.0
 const GRID_LINE_ALPHA := 0.18
@@ -318,7 +319,9 @@ func set_canopy_tint(tint: Color) -> void:
 	if canopy_tint.is_equal_approx(tint):
 		return
 	canopy_tint = tint
-	_tint_canopy_children(self, tint)
+	# The child walk is the PC board only. The phone path leaves props alone.
+	if HUD.uses_pc_chrome():
+		_tint_canopy_children(self, tint)
 	queue_redraw()
 
 

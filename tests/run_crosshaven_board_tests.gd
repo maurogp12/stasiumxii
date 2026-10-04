@@ -19,6 +19,7 @@ func _initialize() -> void:
 	_test_terrace_schema()
 	_test_data_stays()
 	_test_locked_calls()
+	_test_grounds_water_and_cover()
 	_test_phone_gate()
 	call_deferred("_finish_live")
 
@@ -78,7 +79,7 @@ func _test_ids_and_files() -> void:
 				truthy(text.contains("compress/mode=0"), "%s stays lossless" % name)
 				truthy(text.contains("mipmaps/generate=false"), "%s has no mipmaps" % name)
 			name = dir.get_next()
-	eq(pngs, 130, "the kit is 130 pngs, including the two water faces")
+	eq(pngs, 136, "the kit is 136 pngs, including the water faces and the stone-flag stand-ins")
 
 
 func _test_terrace_schema() -> void:
@@ -140,24 +141,8 @@ func _test_data_stays() -> void:
 		if props.is_empty():
 			continue
 		paint[Vector2i(int(cell.get("x", 0)), int(cell.get("y", 0)))] = props
-	var seen := {}
-	for entry in looks.get("props", []):
-		var at := Vector2i(int(entry.get("x", -1)), int(entry.get("y", -1)))
-		if not seen.has(at):
-			seen[at] = []
-		(seen[at] as Array).append(str(entry.get("old_kind", "")))
-	eq(seen.size(), paint.size(), "prop cells are the same set")
-	var kinds_ok := true
-	for at in paint.keys():
-		var want: Array = paint[at]
-		var got: Array = seen.get(at, [])
-		if want.size() != got.size():
-			kinds_ok = false
-			continue
-		for kind in want:
-			if not got.has(str(kind)):
-				kinds_ok = false
-	truthy(kinds_ok, "each prop cell keeps its old kinds")
+	eq(paint.size(), 30, "the tags file still lists the old paint_only props")
+	truthy((paint.get(Vector2i(0, 0), []) as Array).has("ruins"), "paint_only at (0,0) is still ruins")
 
 
 func _test_locked_calls() -> void:
@@ -165,28 +150,38 @@ func _test_locked_calls() -> void:
 	eq(BOARD.tall_under_fighter(), true, "a tall stone draws under a fighter")
 	eq(BOARD.tall_fade(), false, "a tall stone does not fade")
 	eq(BOARD.decor_on_raised(), false, "raised cells get no decor")
-	eq(BOARD.two_cell_cover(), "fences", "2-cell cover stays on the fence cells looks.json named")
+	eq(BOARD.two_cell_cover(), "fences", "2-cell pieces stay the looks.json ids")
 	var looks := BOARD.load_looks()
 	var props := {}
 	for entry in looks.get("props", []):
 		if str(entry.get("layer", "")) != "prop":
 			continue
 		props[Vector2i(int(entry.get("x", 0)), int(entry.get("y", 0)))] = str(entry.get("new_id", ""))
-	eq(str(props.get(Vector2i(3, 12), "")), "ruined_wall_2c", "(3,12) is the 2-cell wall")
-	eq(str(props.get(Vector2i(13, 14), "")), "ruined_wall_2c", "(13,14) is the 2-cell wall")
-	eq(str(props.get(Vector2i(5, 13), "")), "fallen_log_2c", "(5,13) is the 2-cell log")
-	eq(str(props.get(Vector2i(1, 0), "")), "ruined_wall_short", "(1,0) keeps the short wall")
-	eq(str(props.get(Vector2i(8, 14), "")), "fallen_log_short", "(8,14) keeps the short log")
-	eq(str(props.get(Vector2i(0, 0), "")), "standing_stone", "(0,0) is the standing stone")
-	eq(str(props.get(Vector2i(0, 6), "")), "lilac_shrub", "(0,6) keeps one prop")
-	eq(str(props.get(Vector2i(0, 14), "")), "standing_stone", "(0,14) keeps one prop")
+	eq(str(props.get(Vector2i(7, -1), "")), "ruined_wall_2c", "the 2-cell wall is on the northeast rim")
+	eq(str(props.get(Vector2i(-1, 8), "")), "fallen_log_2c", "the 2-cell log is on the northwest rim")
+	eq(str(props.get(Vector2i(-1, 1), "")), "standing_stone", "a standing stone frames the northwest rim")
+	eq(props.has(Vector2i(0, 0)), false, "the corner cell is not a tall prop")
 	var decor: Array = looks.get("decor", [])
-	eq(decor.size(), 12, "v1.1 places 12 decor pieces")
+	eq(decor.size(), 8, "low decor is three clusters, not the old scatter")
 	var raised := 0
 	for entry in decor:
 		if int(entry.get("height", 0)) > 0:
 			raised += 1
 	eq(raised, 0, "no decor sits on a raised cell")
+	var decor_at: Array[Vector2i] = []
+	for entry in decor:
+		decor_at.append(Vector2i(int(entry.get("x", 0)), int(entry.get("y", 0))))
+	var clustered := true
+	for at in decor_at:
+		var near := false
+		for other in decor_at:
+			if other == at:
+				continue
+			if absi(other.x - at.x) <= 1 and absi(other.y - at.y) <= 1:
+				near = true
+		if not near:
+			clustered = false
+	truthy(clustered, "each decor piece sits in a cluster")
 
 
 func _test_phone_gate() -> void:
@@ -198,10 +193,96 @@ func _test_phone_gate() -> void:
 	eq(BOARD.applies_to({"demo_map": "crosshaven_15"}), true, "a demo_map stamp still selects the board")
 	for other in ["stormspire_15", "brinewake_15", "slagcrown_15", "windmere_15", ""]:
 		eq(BOARD.applies_to({"map_id": other}), false, "the look stays off %s" % other)
+	var phone_tile := BoardTile.new()
+	var phone_child := Sprite2D.new()
+	phone_child.set_meta("canopy_tint", true)
+	phone_tile.add_child(phone_child)
+	HUD.set_pc_chrome_override(0)
+	phone_tile.set_canopy_tint(Color(0.55, 0.78, 0.62))
+	eq(phone_child.modulate, Color.WHITE, "the phone path does not tint canopy children")
+	HUD.set_pc_chrome_override(1)
+	phone_tile.set_canopy_tint(Color(0.40, 0.70, 0.55))
+	eq(phone_child.modulate, Color(0.40, 0.70, 0.55), "the PC board tints canopy children")
+	phone_tile.free()
 	BOARD.set_suppressed(true)
 	eq(BOARD.applies_to({"map_id": "crosshaven_15"}), false, "the bench can turn the look off")
 	BOARD.set_suppressed(false)
 	HUD.set_pc_chrome_override(-1)
+
+
+func _test_grounds_water_and_cover() -> void:
+	var looks := BOARD.load_looks()
+	var grounds: Dictionary = looks.get("grounds", {})
+	for family in ["grass", "sand", "stone", "water", "mud"]:
+		truthy(grounds.has(family), "the looks schema names %s" % family)
+	eq(str(grounds.get("sand", {}).get("stand_in", "")), "sandstone", "sand stands in on the sandstone masters")
+	eq(str(grounds.get("mud", {}).get("look", "")), "wet_earth", "mud is the wet-earth family")
+	var sand_path := BOARD.piece_path("tiles", "sand_a")
+	var stone_path := BOARD.piece_path("tiles", "stone_flag_a")
+	truthy(sand_path.ends_with("sandstone_a@2x.png"), "sand_a uses the sandstone master until v1.4")
+	truthy(stone_path.ends_with("stone_flag_a@2x.png"), "stone_flag_a is its own stand-in")
+	var sand_tex := load(sand_path) as Texture2D
+	var stone_tex := load(stone_path) as Texture2D
+	var sand_img: Image = sand_tex.get_image() if sand_tex != null else null
+	var stone_img: Image = stone_tex.get_image() if stone_tex != null else null
+	truthy(sand_img != null and stone_img != null, "sand and stone stand-ins load")
+	if sand_img != null and stone_img != null:
+		var sand_px := sand_img.get_pixel(sand_img.get_width() / 2, sand_img.get_height() / 2)
+		var stone_px := stone_img.get_pixel(stone_img.get_width() / 2, stone_img.get_height() / 2)
+		var apart := Vector3(sand_px.r - stone_px.r, sand_px.g - stone_px.g, sand_px.b - stone_px.b).length()
+		truthy(apart > 0.15, "sand and the grey stone flag do not share a colour")
+	var sand_n := 0
+	var stone_n := 0
+	for cell in looks.get("cells", []):
+		var look := str(cell.get("look", ""))
+		var tile := str(cell.get("tile", ""))
+		if look == "sand":
+			sand_n += 1
+			truthy(tile.begins_with("sand_"), "a sand cell names a sand tile")
+		elif look == "stone":
+			stone_n += 1
+			truthy(tile.begins_with("stone_flag_"), "a stone cell names a stone-flag tile")
+	eq(sand_n, 53, "the path stays sand")
+	eq(stone_n, 12, "the court is stone flag")
+	var tile := BoardTile.new()
+	tile.set_move_pulse_frozen(true)
+	tile.set_move_pulse_time(0.0)
+	tile.set_highlight("move")
+	var move := tile.highlight_fill_color()
+	tile.free()
+	var kit := Color(90.0 / 255.0, 192.0 / 255.0, 171.0 / 255.0, 1.0)
+	for src in [kit, Color.WHITE]:
+		var graded := BOARD.grade_water(src)
+		var dist := Vector3(graded.r - move.r, graded.g - move.g, graded.b - move.b).length()
+		truthy(dist > 0.45, "graded water stays clear of the move-range cyan")
+	var catalog := {}
+	for spec in BOARD.load_catalog():
+		if spec is Dictionary:
+			catalog[str(spec.get("id", ""))] = spec
+	var walkable := {}
+	for cell in looks.get("cells", []):
+		if str(cell.get("terrain", "")) == "lava":
+			continue
+		walkable[Vector2i(int(cell.get("x", 0)), int(cell.get("y", 0)))] = true
+	var tall_on := 0
+	for entry in looks.get("props", []):
+		if str(entry.get("layer", "")) != "prop":
+			continue
+		var spec: Dictionary = catalog.get(str(entry.get("new_id", "")), {})
+		if not BOARD.prop_is_tall(spec):
+			continue
+		for at in BOARD.prop_footprint(entry, spec):
+			if walkable.has(at):
+				tall_on += 1
+	for entry in looks.get("decor", []):
+		var spec: Dictionary = catalog.get(str(entry.get("id", "")), {})
+		if not BOARD.prop_is_tall(spec):
+			continue
+		var at := Vector2i(int(entry.get("x", 0)), int(entry.get("y", 0)))
+		if walkable.has(at):
+			tall_on += 1
+	eq(tall_on, 0, "no tall prop sits on a walkable cell")
+	eq(BOARD.prop_blocks(catalog.get("standing_stone", {})), "none", "a tall stone still does not block")
 
 
 func _test_live() -> void:
@@ -240,16 +321,18 @@ func _test_live() -> void:
 	truthy(dress != null, "(0,0) has the new dress")
 	var ids: PackedStringArray = dress.piece_ids()
 	eq(ids[0], "grass_top_b", "(0,0) draws its grass top")
-	truthy(ids.has("standing_stone"), "(0,0) draws the standing stone")
+	eq(ids.has("standing_stone"), false, "(0,0) is open ground, not a standing stone")
 	var floor: Dictionary = dress.piece("grass_top_b")
 	var floor_dest: Rect2 = floor.get("dest", Rect2())
 	eq(floor_dest.size, Vector2(64, 32), "the @2x grass top covers the 64x32 diamond")
 	eq(floor_dest.position, Vector2(-32, -16), "the grass top is centred on the cell")
-	var stone: Dictionary = dress.piece("standing_stone")
+	var rim = board.tiles[Vector2i(0, 1)].get_node("CrosshavenDress")
+	var stone: Dictionary = rim.piece("standing_stone")
+	truthy(not stone.is_empty(), "the northwest rim cell carries the off-grid standing stone")
 	var stone_dest: Rect2 = stone.get("dest", Rect2())
-	eq(stone_dest.position, Vector2(-32, -96), "the standing stone anchors on the south tip")
+	eq(stone_dest.position, Vector2(-64, -112), "the standing stone is shifted off the walkable cell")
 	eq(is_equal_approx((stone.get("tint", Color.WHITE) as Color).a, 1.0), true, "the standing stone does not fade")
-	eq(dress.z_index < SORT.UNIT_Z_BIAS, true, "the stone draws under a fighter on its cell")
+	eq(rim.z_index < SORT.UNIT_Z_BIAS, true, "the stone draws under a fighter on its cell")
 	var raised = board.tiles[Vector2i(4, 3)].get_node("CrosshavenDress")
 	var raised_ids := PackedStringArray([
 		"cliff_left_h1", "cliff_right_h1", "grass_top_b",
@@ -308,8 +391,9 @@ func _test_live() -> void:
 	eq(sand.piece_ids().has("grass_overhang_right"), false, "sandstone does not grow a grass overhang")
 	var shrub: Node = board.tiles[Vector2i(2, 8)]
 	eq(shrub.get_node("CrosshavenDress").piece("lilac_bush").is_empty(), true, "the old raised-cell bush is gone")
-	truthy(board.tiles[Vector2i(7, 13)].get_node("CrosshavenDress").piece_ids().has("clover_patch"), "path-edge decor stays")
-	eq(board.tiles[Vector2i(3, 12)].get_node("CrosshavenDress").piece_ids().has("ruined_wall_2c"), true, "the live board uses the 2-cell wall")
+	truthy(board.tiles[Vector2i(12, 4)].get_node("CrosshavenDress").piece_ids().has("clover_patch"), "the water cluster keeps its clover")
+	eq(board.tiles[Vector2i(3, 12)].get_node("CrosshavenDress").piece_ids().has("ruined_wall_2c"), false, "the old fence cell is not a wall")
+	truthy(board.tiles[Vector2i(7, 0)].get_node("CrosshavenDress").piece_ids().has("ruined_wall_2c"), "the rim hosts the 2-cell wall")
 	var jungle = board.get_node_or_null("JungleBackdrop")
 	truthy(jungle != null and jungle.kit_edge(), "the kit edge replaces the jungle lip")
 	eq(is_equal_approx(jungle.skirt_alpha(0.2), float(jungle.load_params()["ground_skirt"]["strength"])), true, "the jungle skirt math stays for its own tests")
