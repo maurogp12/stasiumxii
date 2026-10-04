@@ -1919,7 +1919,7 @@
     {
       "x": 18,
       "y": 0,
-      "terrain": "water",
+      "terrain": "cliff",
       "walkable": false,
       "height": 0
     },
@@ -2171,8 +2171,8 @@
     {
       "x": 18,
       "y": 1,
-      "terrain": "water",
-      "walkable": false,
+      "terrain": "golden_plains",
+      "walkable": true,
       "height": 0
     },
     {
@@ -2423,8 +2423,8 @@
     {
       "x": 18,
       "y": 2,
-      "terrain": "water",
-      "walkable": false,
+      "terrain": "golden_plains",
+      "walkable": true,
       "height": 0
     },
     {
@@ -2675,8 +2675,8 @@
     {
       "x": 18,
       "y": 3,
-      "terrain": "water",
-      "walkable": false,
+      "terrain": "golden_plains",
+      "walkable": true,
       "height": 0
     },
     {
@@ -2927,8 +2927,8 @@
     {
       "x": 18,
       "y": 4,
-      "terrain": "water",
-      "walkable": false,
+      "terrain": "golden_plains",
+      "walkable": true,
       "height": 0
     },
     {
@@ -3179,8 +3179,8 @@
     {
       "x": 18,
       "y": 5,
-      "terrain": "water",
-      "walkable": false,
+      "terrain": "golden_plains",
+      "walkable": true,
       "height": 0
     },
     {
@@ -3431,8 +3431,8 @@
     {
       "x": 18,
       "y": 6,
-      "terrain": "water",
-      "walkable": false,
+      "terrain": "golden_plains",
+      "walkable": true,
       "height": 0
     },
     {
@@ -3683,8 +3683,8 @@
     {
       "x": 18,
       "y": 7,
-      "terrain": "water",
-      "walkable": false,
+      "terrain": "golden_plains",
+      "walkable": true,
       "height": 0
     },
     {
@@ -3935,8 +3935,8 @@
     {
       "x": 18,
       "y": 8,
-      "terrain": "water",
-      "walkable": false,
+      "terrain": "golden_plains",
+      "walkable": true,
       "height": 0
     },
     {
@@ -4187,8 +4187,8 @@
     {
       "x": 18,
       "y": 9,
-      "terrain": "water",
-      "walkable": false,
+      "terrain": "golden_plains",
+      "walkable": true,
       "height": 0
     },
     {
@@ -5699,8 +5699,8 @@
     {
       "x": 18,
       "y": 15,
-      "terrain": "water",
-      "walkable": false,
+      "terrain": "golden_plains",
+      "walkable": true,
       "height": 0
     },
     {
@@ -5951,8 +5951,8 @@
     {
       "x": 18,
       "y": 16,
-      "terrain": "water",
-      "walkable": false,
+      "terrain": "golden_plains",
+      "walkable": true,
       "height": 0
     },
     {
@@ -6203,8 +6203,8 @@
     {
       "x": 18,
       "y": 17,
-      "terrain": "water",
-      "walkable": false,
+      "terrain": "golden_plains",
+      "walkable": true,
       "height": 0
     },
     {
@@ -6455,8 +6455,8 @@
     {
       "x": 18,
       "y": 18,
-      "terrain": "water",
-      "walkable": false,
+      "terrain": "golden_plains",
+      "walkable": true,
       "height": 0
     },
     {
@@ -6707,8 +6707,8 @@
     {
       "x": 18,
       "y": 19,
-      "terrain": "water",
-      "walkable": false,
+      "terrain": "golden_plains",
+      "walkable": true,
       "height": 0
     },
     {
@@ -6959,8 +6959,8 @@
     {
       "x": 18,
       "y": 20,
-      "terrain": "water",
-      "walkable": false,
+      "terrain": "golden_plains",
+      "walkable": true,
       "height": 0
     },
     {
@@ -7211,8 +7211,8 @@
     {
       "x": 18,
       "y": 21,
-      "terrain": "water",
-      "walkable": false,
+      "terrain": "golden_plains",
+      "walkable": true,
       "height": 0
     },
     {
@@ -7463,8 +7463,8 @@
     {
       "x": 18,
       "y": 22,
-      "terrain": "water",
-      "walkable": false,
+      "terrain": "golden_plains",
+      "walkable": true,
       "height": 0
     },
     {
@@ -7715,7 +7715,7 @@
     {
       "x": 18,
       "y": 23,
-      "terrain": "water",
+      "terrain": "cliff",
       "walkable": false,
       "height": 0
     },

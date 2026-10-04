@@ -26,6 +26,11 @@ const SIDE := {
 const EXIT_COLOR := Color(1.0, 0.84, 0.35, 0.85)
 ## Same olive as the world's field fill, so an outer edge fades into it.
 const FIELD_FADE := Color("90a91b")
+## Plane bbox. Olive void fill stays on the outer rim, never on the island.
+const PLANE_X0 := -72
+const PLANE_Y0 := -64
+const PLANE_X1 := 112
+const PLANE_Y1 := 104
 const _ORTHO: Array[Vector2i] = [Vector2i(0, -1), Vector2i(0, 1), Vector2i(-1, 0), Vector2i(1, 0)]
 
 var zone: WorldZone
@@ -140,6 +145,14 @@ static func snow_at(zone_id: String, cell: Vector2i) -> float:
 			return 0.0
 		return clampf(1.0 - float(cell.y) / 16.0, 0.0, 1.0)
 	return 0.0
+
+
+## Cells from the plane edge. Interior of the island is deeper than the coast band.
+func _rim_depth(cell: Vector2i) -> int:
+	var world := world_origin + cell
+	var dx := mini(world.x - PLANE_X0, PLANE_X1 - 1 - world.x)
+	var dy := mini(world.y - PLANE_Y0, PLANE_Y1 - 1 - world.y)
+	return mini(dx, dy)
 
 
 func snow_at_cell(cell: Vector2i) -> float:
@@ -336,6 +349,8 @@ func _draw_named_floor(ci: Node2D, south_tip: Vector2, first_id: String, fallbac
 func _fade_void_edge(ci: Node2D, cell: Vector2i, steps: int, rank: int, terrain: String) -> void:
 	if rank <= 0:
 		return
+	if _rim_depth(cell) > 8:
+		return
 	var fade := FIELD_FADE
 	# The sea meets the island. A stream that runs off the land fades into that sea.
 	if terrain == "water":
@@ -404,7 +419,7 @@ func _weight(weights: Dictionary, id: String) -> float:
 
 func _floor_modulate(cell: Vector2i, terrain: String) -> Color:
 	if terrain == "dirt_road":
-		return Color(1.0, 0.97, 0.90)
+		return _with_frost(Color(1.0, 0.97, 0.90), cell, terrain)
 	var weights := theme_weights(cell)
 	var names: Array[String] = ["stoneford", "northgate", "eastmarch", "southbridge", "westwatch"]
 	var tint := Color(0, 0, 0, 0)
@@ -418,7 +433,7 @@ func _floor_modulate(cell: Vector2i, terrain: String) -> Color:
 	if not any:
 		tint = Color.WHITE
 	if terrain == "cliff":
-		return tint.lerp(Color(0.90, 0.88, 0.84), 0.45)
+		return _with_frost(tint.lerp(Color(0.90, 0.88, 0.84), 0.45), cell, terrain)
 	if terrain == "water":
 		if _weight(weights, "southbridge") > 0.2:
 			return Color(0.68, 0.78, 0.56)
@@ -429,7 +444,20 @@ func _floor_modulate(cell: Vector2i, terrain: String) -> Color:
 		tint = tint.lerp(Color(1.0, 0.86, 0.58), 0.72)
 	elif _faces_water(cell) and _weight(weights, "southbridge") > 0.22:
 		tint = tint.lerp(Color(0.62, 0.58, 0.40), 0.55)
-	return tint
+	return _with_frost(tint, cell, terrain)
+
+
+## Soft white-blue on every snowy land tile, roads included, so frost is not a grid.
+func _with_frost(tint: Color, cell: Vector2i, terrain: String) -> Color:
+	var amount := snow_at_cell(cell)
+	if amount <= 0.2 or terrain == "water":
+		return tint
+	var mix := 0.62 * amount
+	if terrain == "dirt_road":
+		mix = 0.5 * amount
+	elif terrain == "cliff":
+		mix = 0.4 * amount
+	return tint.lerp(Color(0.82, 0.90, 0.97), mix)
 
 
 func _faces_water(cell: Vector2i) -> bool:
@@ -482,13 +510,19 @@ func _dust_snow(ci: Node2D, cell: Vector2i, terrain: String, steps: int) -> void
 	if terrain == "water":
 		ci.draw_colored_polygon(diamond, Color(0.62, 0.78, 0.90, 0.22 * amount))
 		return
-	if terrain == "dirt_road":
-		return
 	if terrain == "cliff":
-		ci.draw_line(diamond[0], diamond[1], Color(0.94, 0.97, 1.0, 0.28 * amount), 1.4)
-		ci.draw_line(diamond[0], diamond[3], Color(0.94, 0.97, 1.0, 0.28 * amount), 1.4)
+		ci.draw_line(diamond[0], diamond[1], Color(0.97, 0.98, 1.0, 0.55 * amount), 1.6)
+		ci.draw_line(diamond[0], diamond[3], Color(0.97, 0.98, 1.0, 0.55 * amount), 1.6)
 		return
-	ci.draw_colored_polygon(diamond, Color(0.86, 0.92, 0.97, 0.16 * amount))
+	# Drifts sit on grass and roads. A full-cell wash reads as a grey checker.
+	var n := _hash(cell)
+	if n < 0.2:
+		return
+	var c := BoardVisualSort.cell_to_local(cell, float(steps))
+	var salt := n * 6.2
+	_soft_blob(ci, c + Vector2(-8.0 + n * 14.0, 1.0), 16.0, 5.5, Color(0.97, 0.98, 1.0, 0.62 * amount), salt)
+	if n > 0.7:
+		_soft_blob(ci, c + Vector2(7.0, 3.0), 10.0, 3.6, Color(1.0, 1.0, 1.0, 0.5 * amount), salt + 1.4)
 
 
 func _draw_ripple(ci: Node2D, anim_id: String, south_tip: Vector2, modulate: Color = Color.WHITE) -> bool:

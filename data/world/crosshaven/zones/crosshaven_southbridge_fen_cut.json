@@ -240,8 +240,8 @@
     {
       "x": 1,
       "y": 0,
-      "terrain": "water",
-      "walkable": false,
+      "terrain": "golden_plains",
+      "walkable": true,
       "height": 0
     },
     {
@@ -289,15 +289,15 @@
     {
       "x": 0,
       "y": 1,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
     {
       "x": 1,
       "y": 1,
-      "terrain": "water",
-      "walkable": false,
+      "terrain": "golden_plains",
+      "walkable": true,
       "height": 0
     },
     {
@@ -345,15 +345,15 @@
     {
       "x": 0,
       "y": 2,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
     {
       "x": 1,
       "y": 2,
-      "terrain": "water",
-      "walkable": false,
+      "terrain": "golden_plains",
+      "walkable": true,
       "height": 0
     },
     {
@@ -401,14 +401,14 @@
     {
       "x": 0,
       "y": 3,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
     {
       "x": 1,
       "y": 3,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
@@ -484,6 +484,12 @@
       "y": 3
     },
     {
+      "id": "crosshaven_southbridge_fen_cut_decor_004",
+      "type": "mushrooms_a",
+      "x": 1,
+      "y": 2
+    },
+    {
       "id": "crosshaven_southbridge_fen_cut_decor_005",
       "type": "decal_puddle_a",
       "x": 2,
@@ -536,6 +542,12 @@
       "type": "reeds_b",
       "x": 1,
       "y": 0
+    },
+    {
+      "id": "crosshaven_southbridge_fen_cut_shore_001",
+      "type": "mushrooms_a",
+      "x": 1,
+      "y": 1
     }
   ]
 }

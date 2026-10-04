@@ -72,6 +72,7 @@ func setup(zone: WorldZone, record: Dictionary) -> void:
 var _sway: AnimatedSprite2D
 var _shadow_sway: AnimatedSprite2D
 var _overlay: AnimatedSprite2D
+var _snow_plate: Sprite2D
 var _loops_ready := false
 
 
@@ -234,7 +235,7 @@ func _paint_snow_cap() -> void:
 		return
 	var kind := _snow_kind()
 	var swayed := _sway != null and _sway.visible
-	if kind != "" and not swayed and _tex != null:
+	if kind != "" and not swayed and _tex != null and _snow_plate == null:
 		_stamp_masked_cap(kind)
 	if _snow_gathers_at_base():
 		_paint_drifts()
@@ -260,19 +261,19 @@ func _snow_kind() -> String:
 
 func _cap_band(kind: String) -> float:
 	if kind == "tree":
-		return 0.46
+		return 0.58
 	if kind == "fence":
-		return 0.22
-	return 0.36
+		return 0.30
+	return 0.62
 
 
 func _cap_strength(kind: String) -> float:
 	var amount := clampf(snow_amount, 0.0, 1.0)
 	if kind == "tree":
-		return amount * 0.42
+		return amount * 0.95
 	if kind == "fence":
-		return amount * 0.7
-	return amount * 0.9
+		return amount * 0.8
+	return amount
 
 
 ## Upper slope only, and only where the sprite itself is opaque.
@@ -282,21 +283,49 @@ func _stamp_masked_cap(kind: String) -> void:
 	var band := _cap_band(kind)
 	var src := Rect2(0, 0, full.x, full.y * band)
 	var dst := Rect2(-shown.x * 0.5, -shown.y, shown.x, shown.y * band)
-	draw_texture_rect_region(_tex, dst, src, Color(0.96, 0.98, 1.0, _cap_strength(kind)))
+	draw_texture_rect_region(_tex, dst, src, Color(1, 1, 1, _cap_strength(kind)))
 
 
 func _sync_snow_shader() -> void:
-	if _sway == null:
-		return
 	var kind := _snow_kind()
-	if snow_amount <= 0.05 or kind == "" or not _sway.visible:
-		_sway.material = null
+	if _sway != null:
+		if snow_amount <= 0.05 or kind == "" or not _sway.visible:
+			_sway.material = null
+		else:
+			var mat := ShaderMaterial.new()
+			mat.shader = _SNOW_SHADER
+			mat.set_shader_parameter("snow_amount", _cap_strength(kind))
+			mat.set_shader_parameter("cap", _cap_band(kind))
+			_sway.material = mat
+	_sync_snow_plate(kind)
+
+
+## Still prop (sway hidden). The shader paints the roof slope white.
+## A modulate multiply cannot, so the cap is a second sprite.
+func _sync_snow_plate(kind: String) -> void:
+	var show := snow_amount > 0.05 and kind != "" and _tex != null and (_sway == null or not _sway.visible)
+	if not show:
+		if _snow_plate != null:
+			_snow_plate.visible = false
 		return
-	var mat := ShaderMaterial.new()
-	mat.shader = _SNOW_SHADER
-	mat.set_shader_parameter("snow_amount", _cap_strength(kind))
-	mat.set_shader_parameter("cap", _cap_band(kind))
-	_sway.material = mat
+	if _snow_plate == null:
+		_snow_plate = Sprite2D.new()
+		_snow_plate.centered = false
+		_snow_plate.texture = _tex
+		var sc := float(_art.get("scale", 1.0))
+		_snow_plate.scale = Vector2(sc, sc)
+		var s := Art.size_of(_art)
+		_snow_plate.position = Vector2(-s.x * 0.5, -s.y)
+		_snow_plate.z_as_relative = true
+		_snow_plate.z_index = 1
+		var mat := ShaderMaterial.new()
+		mat.shader = _SNOW_SHADER
+		_snow_plate.material = mat
+		add_child(_snow_plate)
+	var plate_mat := _snow_plate.material as ShaderMaterial
+	plate_mat.set_shader_parameter("snow_amount", _cap_strength(kind))
+	plate_mat.set_shader_parameter("cap", _cap_band(kind))
+	_snow_plate.visible = true
 
 
 func _paint_drifts() -> void:

@@ -59,6 +59,7 @@ func _run() -> void:
 	_test_cover(map, offsets)
 	_test_edges(map, offsets)
 	_test_coast(map, offsets)
+	_test_land(map, offsets)
 	_test_bands(fresh)
 	_test_walks(map, fresh)
 
@@ -107,6 +108,66 @@ func _test_coast(map: WorldMap, offsets: Dictionary) -> void:
 			hi = inset
 	eq(water_edge > 100, true, "the north edge is mostly sea (%d)" % water_edge)
 	eq(hi - lo >= 4, true, "the north shore is not one straight line (%d..%d)" % [lo, hi])
+
+
+## Water stays on the outer rim. Interior sea is gone. Paths keep land on both sides.
+func _test_land(map: WorldMap, offsets: Dictionary) -> void:
+	var at := {}
+	var water := 0
+	var total := 0
+	var deep := 0
+	var swamp_water := 0
+	var swamp_total := 0
+	for id in offsets.keys():
+		var zone: WorldZone = map.zone(str(id))
+		var origin: Vector2i = offsets[id]
+		var swamp := str(id) == "crosshaven_southbridge_swamp"
+		for y in zone.height:
+			for x in zone.width:
+				var world := origin + Vector2i(x, y)
+				var terrain := zone.terrain_at(Vector2i(x, y))
+				at["%d,%d" % [world.x, world.y]] = terrain
+				total += 1
+				if swamp:
+					swamp_total += 1
+				if terrain == "water":
+					water += 1
+					if swamp:
+						swamp_water += 1
+					var dx := mini(world.x - X0, X1 - 1 - world.x)
+					var dy := mini(world.y - Y0, Y1 - 1 - world.y)
+					if mini(dx, dy) >= 8 and not swamp:
+						deep += 1
+	var land_share := float(total - water) / float(total)
+	eq(land_share >= 0.85, true, "at least 85 percent of the plane is land (%.3f)" % land_share)
+	eq(deep, 0, "water past the outer 8 cells is only swamp pools (%d)" % deep)
+	var pool := float(swamp_water) / float(swamp_total)
+	eq(pool <= 0.35, true, "swamp pools cover at most 35 percent (%.3f)" % pool)
+	var bare := 0
+	for key in at.keys():
+		if str(at[key]) != "dirt_road":
+			continue
+		var parts := str(key).split(",")
+		var x := int(parts[0])
+		var y := int(parts[1])
+		var north := str(at.get("%d,%d" % [x, y - 1], ""))
+		var south := str(at.get("%d,%d" % [x, y + 1], ""))
+		var west := str(at.get("%d,%d" % [x - 1, y], ""))
+		var east := str(at.get("%d,%d" % [x + 1, y], ""))
+		var along_x := east == "dirt_road" or west == "dirt_road"
+		var along_y := north == "dirt_road" or south == "dirt_road"
+		var flank := false
+		if along_x and not along_y:
+			flank = north != "water" and south != "water" and north != "" and south != ""
+		elif along_y and not along_x:
+			flank = east != "water" and west != "water" and east != "" and west != ""
+		else:
+			var ns := north != "water" and south != "water" and north != "" and south != ""
+			var ew := east != "water" and west != "water" and east != "" and west != ""
+			flank = ns or ew
+		if not flank:
+			bare += 1
+	eq(bare, 0, "every path cell has land on both sides (%d bare)" % bare)
 
 
 func _terrain_at_world(map: WorldMap, offsets: Dictionary, world: Vector2i) -> String:

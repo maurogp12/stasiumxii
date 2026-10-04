@@ -825,6 +825,21 @@
       ]
     },
     {
+      "id": "crosshaven_northgate_pass_quarry_rocks_a_1_7",
+      "type": "quarry_rocks_a",
+      "blocks": true,
+      "origin": {
+        "x": 1,
+        "y": 7
+      },
+      "footprint": [
+        {
+          "x": 1,
+          "y": 7
+        }
+      ]
+    },
+    {
       "id": "crosshaven_northgate_pass_stone_wall_high_nesw_2_9",
       "type": "stone_wall_high_nesw",
       "blocks": true,
@@ -902,7 +917,7 @@
     {
       "x": 4,
       "y": 0,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
@@ -944,9 +959,9 @@
     {
       "x": 2,
       "y": 1,
-      "terrain": "cliff",
-      "walkable": false,
-      "height": 1
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
     },
     {
       "x": 3,
@@ -1105,16 +1120,16 @@
     {
       "x": 1,
       "y": 4,
-      "terrain": "cliff",
-      "walkable": false,
-      "height": 1
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
     },
     {
       "x": 2,
       "y": 4,
-      "terrain": "cliff",
-      "walkable": false,
-      "height": 1
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
     },
     {
       "x": 3,
@@ -1273,9 +1288,9 @@
     {
       "x": 1,
       "y": 7,
-      "terrain": "cliff",
-      "walkable": false,
-      "height": 1
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
     },
     {
       "x": 2,
@@ -2393,9 +2408,9 @@
     {
       "x": 1,
       "y": 27,
-      "terrain": "cliff",
-      "walkable": false,
-      "height": 1
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
     },
     {
       "x": 2,
@@ -2449,9 +2464,9 @@
     {
       "x": 1,
       "y": 28,
-      "terrain": "cliff",
-      "walkable": false,
-      "height": 1
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
     },
     {
       "x": 2,
@@ -2610,35 +2625,35 @@
     {
       "x": 0,
       "y": 31,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
     {
       "x": 1,
       "y": 31,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
     {
       "x": 2,
       "y": 31,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
     {
       "x": 3,
       "y": 31,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
     {
       "x": 4,
       "y": 31,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
@@ -2681,6 +2696,18 @@
       "y": 19
     },
     {
+      "id": "crosshaven_northgate_pass_decor_002",
+      "type": "tuft_b",
+      "x": 5,
+      "y": 5
+    },
+    {
+      "id": "crosshaven_northgate_pass_decor_003",
+      "type": "grass_tuft_b",
+      "x": 2,
+      "y": 17
+    },
+    {
       "id": "crosshaven_northgate_pass_decor_004",
       "type": "rock_small_c",
       "x": 5,
@@ -2691,6 +2718,18 @@
       "type": "tuft_b",
       "x": 3,
       "y": 0
+    },
+    {
+      "id": "crosshaven_northgate_pass_decor_006",
+      "type": "grass_tuft_b",
+      "x": 1,
+      "y": 4
+    },
+    {
+      "id": "crosshaven_northgate_pass_decor_007",
+      "type": "tuft_b",
+      "x": 1,
+      "y": 25
     },
     {
       "id": "crosshaven_northgate_pass_decor_008",
@@ -2705,10 +2744,22 @@
       "y": 26
     },
     {
+      "id": "crosshaven_northgate_pass_decor_010",
+      "type": "grass_tuft_b",
+      "x": 6,
+      "y": 28
+    },
+    {
       "id": "crosshaven_northgate_pass_decor_011",
       "type": "rock_small_c",
       "x": 4,
       "y": 16
+    },
+    {
+      "id": "crosshaven_northgate_pass_decor_012",
+      "type": "grass_tuft_b",
+      "x": 1,
+      "y": 10
     },
     {
       "id": "crosshaven_northgate_pass_shore_000",
@@ -2765,6 +2816,12 @@
       "y": 27
     },
     {
+      "id": "crosshaven_northgate_pass_shore_009",
+      "type": "tuft_a",
+      "x": 1,
+      "y": 28
+    },
+    {
       "id": "crosshaven_northgate_pass_shore_010",
       "type": "rock_small_d",
       "x": 3,
@@ -2775,174 +2832,6 @@
       "type": "decal_pebbles",
       "x": 6,
       "y": 30
-    },
-    {
-      "id": "crosshaven_northgate_pass_theme_018",
-      "type": "rock_small_c",
-      "x": 6,
-      "y": 0
-    },
-    {
-      "id": "crosshaven_northgate_pass_theme_019",
-      "type": "rock_small_d",
-      "x": 3,
-      "y": 1
-    },
-    {
-      "id": "crosshaven_northgate_pass_theme_020",
-      "type": "rock_small_c",
-      "x": 7,
-      "y": 1
-    },
-    {
-      "id": "crosshaven_northgate_pass_theme_021",
-      "type": "rock_small_c",
-      "x": 5,
-      "y": 2
-    },
-    {
-      "id": "crosshaven_northgate_pass_theme_022",
-      "type": "rock_small_d",
-      "x": 5,
-      "y": 3
-    },
-    {
-      "id": "crosshaven_northgate_pass_theme_023",
-      "type": "rock_small_c",
-      "x": 0,
-      "y": 4
-    },
-    {
-      "id": "crosshaven_northgate_pass_theme_024",
-      "type": "rock_small_d",
-      "x": 3,
-      "y": 5
-    },
-    {
-      "id": "crosshaven_northgate_pass_theme_025",
-      "type": "rock_small_c",
-      "x": 4,
-      "y": 5
-    },
-    {
-      "id": "crosshaven_northgate_pass_theme_026",
-      "type": "rock_small_d",
-      "x": 1,
-      "y": 6
-    },
-    {
-      "id": "crosshaven_northgate_pass_theme_027",
-      "type": "rock_small_c",
-      "x": 6,
-      "y": 6
-    },
-    {
-      "id": "crosshaven_northgate_pass_theme_028",
-      "type": "rock_small_d",
-      "x": 5,
-      "y": 7
-    },
-    {
-      "id": "crosshaven_northgate_pass_theme_029",
-      "type": "rock_small_c",
-      "x": 2,
-      "y": 8
-    },
-    {
-      "id": "crosshaven_northgate_pass_theme_030",
-      "type": "rock_small_d",
-      "x": 4,
-      "y": 8
-    },
-    {
-      "id": "crosshaven_northgate_pass_theme_031",
-      "type": "rock_small_c",
-      "x": 6,
-      "y": 8
-    },
-    {
-      "id": "crosshaven_northgate_pass_theme_032",
-      "type": "rock_small_d",
-      "x": 1,
-      "y": 10
-    },
-    {
-      "id": "crosshaven_northgate_pass_theme_033",
-      "type": "rock_small_c",
-      "x": 2,
-      "y": 10
-    },
-    {
-      "id": "crosshaven_northgate_pass_theme_034",
-      "type": "rock_small_c",
-      "x": 4,
-      "y": 13
-    },
-    {
-      "id": "crosshaven_northgate_pass_theme_035",
-      "type": "rock_small_d",
-      "x": 3,
-      "y": 15
-    },
-    {
-      "id": "crosshaven_northgate_pass_theme_036",
-      "type": "rock_small_c",
-      "x": 0,
-      "y": 16
-    },
-    {
-      "id": "crosshaven_northgate_pass_theme_037",
-      "type": "rock_small_d",
-      "x": 1,
-      "y": 16
-    },
-    {
-      "id": "crosshaven_northgate_pass_theme_038",
-      "type": "rock_small_c",
-      "x": 5,
-      "y": 16
-    },
-    {
-      "id": "crosshaven_northgate_pass_theme_039",
-      "type": "rock_small_c",
-      "x": 4,
-      "y": 17
-    },
-    {
-      "id": "crosshaven_northgate_pass_theme_040",
-      "type": "rock_small_d",
-      "x": 0,
-      "y": 19
-    },
-    {
-      "id": "crosshaven_northgate_pass_theme_041",
-      "type": "rock_small_c",
-      "x": 4,
-      "y": 19
-    },
-    {
-      "id": "crosshaven_northgate_pass_theme_042",
-      "type": "rock_small_c",
-      "x": 7,
-      "y": 19
-    },
-    {
-      "id": "crosshaven_northgate_pass_theme_043",
-      "type": "rock_small_d",
-      "x": 1,
-      "y": 20
-    },
-    {
-      "id": "crosshaven_northgate_pass_theme_044",
-      "type": "rock_small_d",
-      "x": 0,
-      "y": 25
-    },
-    {
-      "id": "crosshaven_northgate_pass_theme_045",
-      "type": "rock_small_d",
-      "x": 5,
-      "y": 27
     }
   ]
 }
