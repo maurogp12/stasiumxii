@@ -48,6 +48,11 @@ var _void_ranks: Dictionary = {}
 var _beach: Dictionary = {}
 ## How far a void cell sits past the real shore. Breakers use this.
 var _skirt_dist: Dictionary = {}
+## Sea or river cells within 4 of the empty map edge. 1 is the outer cell.
+var _edge_fade: Dictionary = {}
+## River cells within 3 of sea water or the map edge, 0..1 toward the sea tint.
+var _mouth_mix: Dictionary = {}
+const WATER_OVERLAP := 1.0
 const BEACH_REACH := 4
 ## Painted sea past the last water cell, so the view edge is not a flat fill.
 const SEA_SKIRT := 22
@@ -78,6 +83,7 @@ func setup(target: WorldZone) -> void:
 	_cache_void_ranks()
 	_cache_beach()
 	_cache_sea_skirt()
+	_cache_water_edge()
 	var margin := _view_margin()
 	for d in range(-margin * 2, zone.width + zone.height - 1 + margin * 2):
 		var row := Node2D.new()
@@ -353,15 +359,90 @@ const SEA_TINT := Color(36.0 / 94.0, 110.0 / 173.0, 158.0 / 224.0)
 const SWAMP_TINT := Color(92.0 / 94.0, 96.0 / 173.0, 52.0 / 224.0)
 
 
+func _zone_id_at(cell: Vector2i) -> String:
+	if zone == null:
+		return ""
+	if zone.in_bounds(cell):
+		return zone.zone_id
+	if zone.sample_zone_id.is_valid():
+		return str(zone.sample_zone_id.call(cell))
+	return ""
+
+
 func _water_grade(cell: Vector2i) -> String:
-	if zone != null and zone.zone_id.contains("swamp"):
+	var zone_id := _zone_id_at(cell)
+	if zone_id.contains("swamp"):
 		return "swamp"
 	# Stoneford's channel is the river. Inland pools are the same lighter blue.
-	if zone != null and zone.zone_id.begins_with("crosshaven_stoneford"):
+	if zone_id.begins_with("crosshaven_stoneford"):
 		return "river"
 	if _rim_depth(cell) > 8 and not _faces_void(cell):
 		return "river"
 	return "sea"
+
+
+## Outer water dissolves into the sea fill. River cells next to that sea
+## pick up the same hue over a few cells.
+func _cache_water_edge() -> void:
+	_edge_fade.clear()
+	_mouth_mix.clear()
+	if zone == null:
+		return
+	var queue: Array[Vector2i] = []
+	var dist := {}
+	var margin := 4
+	for y in range(-margin, zone.height + margin):
+		for x in range(-margin, zone.width + margin):
+			var cell := Vector2i(x, y)
+			if Art.terrain_seen(zone, cell) != "water":
+				continue
+			if not _faces_void(cell):
+				continue
+			dist[cell] = 1
+			queue.append(cell)
+	var head := 0
+	while head < queue.size():
+		var at: Vector2i = queue[head]
+		head += 1
+		var here := int(dist[at])
+		if here >= 4:
+			continue
+		for dir in _ORTHO:
+			var nb: Vector2i = at + dir
+			if dist.has(nb):
+				continue
+			if Art.terrain_seen(zone, nb) != "water":
+				continue
+			dist[nb] = here + 1
+			queue.append(nb)
+	_edge_fade = dist
+	for y in range(-margin, zone.height + margin):
+		for x in range(-margin, zone.width + margin):
+			var cell := Vector2i(x, y)
+			if Art.terrain_seen(zone, cell) != "water" or _water_grade(cell) != "river":
+				continue
+			var near := _near_sea_or_void(cell)
+			if near == 1:
+				_mouth_mix[cell] = 0.72
+			elif near == 2:
+				_mouth_mix[cell] = 0.44
+			elif near == 3:
+				_mouth_mix[cell] = 0.2
+
+
+func _near_sea_or_void(cell: Vector2i) -> int:
+	for radius in range(1, 4):
+		for dy in range(-radius, radius + 1):
+			for dx in range(-radius, radius + 1):
+				if maxi(absi(dx), absi(dy)) != radius:
+					continue
+				var nb := cell + Vector2i(dx, dy)
+				var seen := Art.terrain_seen(zone, nb)
+				if seen == "":
+					return radius
+				if seen == "water" and _water_grade(nb) == "sea":
+					return radius
+	return 99
 
 
 func _water_grade_tint(cell: Vector2i) -> Color:
@@ -385,6 +466,17 @@ func _touches_sea_water(cell: Vector2i) -> bool:
 	return false
 
 
+## One cell of sand where grass, snow, or a town path meets the sea.
+## Cliffs keep their face and take the foam line instead.
+func _shore_land(cell: Vector2i) -> bool:
+	if _beach_at(cell) != "":
+		return false
+	var seen := Art.terrain_seen(zone, cell)
+	if seen == "" or seen == "water" or seen == "cliff":
+		return false
+	return _touches_sea_water(cell)
+
+
 func _sea_meets_land(cell: Vector2i) -> bool:
 	if _water_grade(cell) != "sea":
 		return false
@@ -403,7 +495,7 @@ func _sand_pick(cell: Vector2i) -> Dictionary:
 	for side in Art.SIDES:
 		var nb: Vector2i = cell + Art.SIDE_DIR[side]
 		var seen := Art.terrain_seen(zone, nb)
-		var joins := seen == "water" or (seen == "golden_plains" and _touches_sea_water(nb))
+		var joins := seen == "water" or _shore_land(nb)
 		if not joins:
 			g.append(side)
 	if not g.is_empty():
@@ -418,7 +510,7 @@ func _sand_pick(cell: Vector2i) -> Dictionary:
 			continue
 		var diag: Vector2i = cell + (rec[0] as Vector2i)
 		var seen := Art.terrain_seen(zone, diag)
-		var joins := seen == "water" or (seen == "golden_plains" and _touches_sea_water(diag))
+		var joins := seen == "water" or _shore_land(diag)
 		if joins:
 			continue
 		var corner_id := "golden_plains_sand_corner_" + c
@@ -516,9 +608,10 @@ func _draw_cell(ci: Node2D, cell: Vector2i) -> void:
 		steps = _terrace(cell)
 	var rank := void_rank(cell)
 	var beach := _beach_at(cell)
-	# The last water cell of a stream becomes a bank, not a blue rectangle.
-	# Eastmarch kit sea stays the painted shelf instead of that bank.
-	var bank := terrain == "water" and rank == 1 and beach == ""
+	# A stream that ends inland can still close on a grass bank. Sea, and the
+	# river where it meets the map fill, stay water so the edge can fade.
+	var sea_edge := terrain == "water" and (_water_grade(cell) == "sea" or _rim_depth(cell) <= 4)
+	var bank := terrain == "water" and rank == 1 and beach == "" and not sea_edge
 	var paint := "golden_plains" if bank else terrain
 	if beach != "":
 		_draw_beach(ci, cell, beach, steps)
@@ -548,6 +641,9 @@ func _draw_cell(ci: Node2D, cell: Vector2i) -> void:
 	if not _kit_sea(cell):
 		_fade_void_edge(ci, cell, steps, rank, terrain)
 	_dust_snow(ci, cell, paint, steps)
+	# After the snow wash, so the shore band stays bright on Northgate water.
+	if terrain == "water":
+		_draw_sea_foam(ci, cell, steps)
 
 
 func _draw_flat_faces(ci: Node2D, lifted: PackedVector2Array, steps: int, side: Color) -> void:
@@ -642,35 +738,36 @@ func _draw_cell_kit(ci: Node2D, cell: Vector2i, terrain: String, steps: int, ban
 				if Art.has("tiles", cid):
 					shore_corners.append(cid)
 			corner_ids = shore_corners
+	var water_overlap := 0.0
 	if terrain == "water":
+		water_overlap = WATER_OVERLAP
 		if _open_water_tile(floor_id):
 			floor_tint = _water_grade_tint(cell)
+			var mix := float(_mouth_mix.get(cell, 0.0))
+			if mix > 0.0:
+				floor_tint = floor_tint.lerp(SEA_TINT, mix)
 		elif _water_grade(cell) == "swamp":
 			floor_tint = SWAMP_TINT
 		else:
 			# Bank and shore art already carry their grade. A multiply would tint the sand.
 			floor_tint = Color.WHITE
-	elif terrain == "golden_plains" and _beach_at(cell) == "" and _touches_sea_water(cell):
+	elif _shore_land(cell):
 		var sand_pick := _sand_pick(cell)
 		floor_id = str(sand_pick["floor"])
 		corner_ids = sand_pick["corners"]
 		floor_tint = Color.WHITE
 	var drew_ripple := false
 	if terrain == "water" and VisualSettings.current != null and VisualSettings.current.enabled("animations"):
-		drew_ripple = _draw_ripple(ci, floor_id + "_ripple", south_tip, floor_tint)
+		drew_ripple = _draw_ripple(ci, floor_id + "_ripple", south_tip, floor_tint, water_overlap)
 	if not drew_ripple:
 		var floor_art := Art.texture("tiles", floor_id)
 		if floor_art.is_empty():
 			floor_art = Art.texture("tiles", terrain)
-		if not floor_art.is_empty():
-			var size := Art.size_of(floor_art)
-			Art.draw_at(ci, floor_art, south_tip + Vector2(-size.x * 0.5, -size.y), floor_tint)
+		_paint_art(ci, floor_art, south_tip, floor_tint, water_overlap)
 	for raw_corner in corner_ids:
 		var corner_id := str(raw_corner)
 		var corner_art := Art.texture("tiles", corner_id)
-		if not corner_art.is_empty():
-			var csize := Art.size_of(corner_art)
-			Art.draw_at(ci, corner_art, south_tip + Vector2(-csize.x * 0.5, -csize.y), floor_tint)
+		_paint_art(ci, corner_art, south_tip, floor_tint, water_overlap)
 	if terrain == "water" and VisualSettings.current != null and VisualSettings.current.enabled("animations"):
 		_draw_water_polish(ci, cell, steps)
 	var lip := str(pick.get("lip", ""))
@@ -698,9 +795,13 @@ func _draw_water_polish(ci: Node2D, cell: Vector2i, steps: int) -> void:
 
 
 func _foam_if_shore(ci: Node2D, cell: Vector2i, d: PackedVector2Array, step: Vector2i, ia: int, ib: int) -> void:
+	# Sea foam is drawn on its own, inset onto the water. River banks stay.
+	if _water_grade(cell) == "sea":
+		return
 	var nb: Vector2i = cell + step
-	# A water cell that is itself the bank still gets a foam line on this side.
-	if Art.terrain_seen(zone, nb) == "water" and void_rank(nb) != 1:
+	var seen := Art.terrain_seen(zone, nb)
+	# Empty map and open water do not get a line. That line was the white edge.
+	if seen == "" or seen == "water":
 		return
 	var snow := snow_at_cell(cell)
 	if snow > 0.2:
@@ -722,15 +823,63 @@ func _draw_named_floor(ci: Node2D, south_tip: Vector2, first_id: String, fallbac
 	Art.draw_at(ci, floor_art, south_tip + Vector2(-size.x * 0.5, -size.y), modulate)
 
 
-func _fade_void_edge(ci: Node2D, cell: Vector2i, steps: int, rank: int, terrain: String) -> void:
-	if rank <= 0 or terrain != "water":
+func _fade_void_edge(ci: Node2D, cell: Vector2i, steps: int, _rank: int, terrain: String) -> void:
+	if terrain != "water":
 		return
-	if _rim_depth(cell) > 8:
+	var dist := int(_edge_fade.get(cell, 0))
+	if dist <= 0:
 		return
-	# Land keeps its tiles. Olive is not drawn inside the coast.
+	# Textured water thins into the sea fill over four cells. The outer cell
+	# is not a solid cap, so there is no white cut and no grass grid.
 	var fade := Color("246e9e")
-	fade.a = 1.0 if rank == 1 else 0.5
+	if dist == 1:
+		fade.a = 0.78
+	elif dist == 2:
+		fade.a = 0.55
+	elif dist == 3:
+		fade.a = 0.32
+	else:
+		fade.a = 0.14
 	ci.draw_colored_polygon(Pick.diamond(cell, float(steps)), fade)
+
+
+func _paint_art(ci: Node2D, art: Dictionary, south_tip: Vector2, tint: Color, overlap: float) -> void:
+	if art.is_empty():
+		return
+	var tex: Texture2D = art["tex"]
+	var size := Art.size_of(art)
+	var top_left := south_tip + Vector2(-size.x * 0.5, -size.y)
+	if overlap > 0.0:
+		top_left -= Vector2(overlap, overlap)
+		size += Vector2(overlap * 2.0, overlap * 2.0)
+	ci.draw_texture_rect(tex, Rect2(top_left, size), false, tint)
+
+
+## A short white band on the water, inset from the land edge so the next
+## tile does not cover it. Cliffs, snow, and paths all read as a shore.
+func _draw_sea_foam(ci: Node2D, cell: Vector2i, steps: int) -> void:
+	if _water_grade(cell) != "sea":
+		return
+	# Eastmarch kit surf already paints that shore.
+	if _beach_at(cell) != "":
+		return
+	var d := Pick.diamond(cell, float(steps))
+	var center := BoardVisualSort.cell_to_local(cell, float(steps))
+	var sides: Array[Vector2i] = [Vector2i(0, -1), Vector2i(1, 0), Vector2i(0, 1), Vector2i(-1, 0)]
+	var ia := 0
+	for step in sides:
+		var nb: Vector2i = cell + step
+		var seen := Art.terrain_seen(zone, nb)
+		var ib := (ia + 1) % 4
+		ia += 1
+		if seen == "" or seen == "water":
+			continue
+		# Wide enough to read at the Northgate shore still. Inset so the land tile does not cover it.
+		var outer_a := d[ia - 1].lerp(center, 0.08)
+		var outer_b := d[ib].lerp(center, 0.08)
+		var inner_a := d[ia - 1].lerp(center, 0.58)
+		var inner_b := d[ib].lerp(center, 0.58)
+		ci.draw_colored_polygon(PackedVector2Array([outer_a, outer_b, inner_b, inner_a]), Color(0.93, 0.98, 1.0, 0.9))
 
 
 ## Hook for the painted theme kits. Weights fall off over tens of cells,
@@ -892,7 +1041,7 @@ func _dust_snow(ci: Node2D, cell: Vector2i, terrain: String, steps: int) -> void
 		ci.draw_line(diamond[1], diamond[2], lip, 2.2)
 
 
-func _draw_ripple(ci: Node2D, anim_id: String, south_tip: Vector2, modulate: Color = Color.WHITE) -> bool:
+func _draw_ripple(ci: Node2D, anim_id: String, south_tip: Vector2, modulate: Color = Color.WHITE, overlap: float = 0.0) -> bool:
 	var meta := Art.anim_meta(anim_id)
 	var tex := Art.anim_texture(anim_id)
 	if tex == null or meta.is_empty():
@@ -903,7 +1052,10 @@ func _draw_ripple(ci: Node2D, anim_id: String, south_tip: Vector2, modulate: Col
 	var fw := float(size[0])
 	var fh := float(size[1])
 	var region := Rect2(_ripple_frame * fw, 0, fw, fh)
-	ci.draw_texture_rect_region(tex, Rect2(south_tip + Vector2(-fw * 0.5, -fh), Vector2(fw, fh)), region, modulate)
+	var dest := Rect2(south_tip + Vector2(-fw * 0.5, -fh), Vector2(fw, fh))
+	if overlap > 0.0:
+		dest = Rect2(dest.position - Vector2(overlap, overlap), dest.size + Vector2(overlap * 2.0, overlap * 2.0))
+	ci.draw_texture_rect_region(tex, dest, region, modulate)
 	return true
 
 

@@ -1092,6 +1092,21 @@
       ]
     },
     {
+      "id": "crosshaven_eastmarch_sea_caves_net_rack_11_2",
+      "type": "net_rack",
+      "blocks": true,
+      "origin": {
+        "x": 11,
+        "y": 2
+      },
+      "footprint": [
+        {
+          "x": 11,
+          "y": 2
+        }
+      ]
+    },
+    {
       "id": "crosshaven_eastmarch_sea_caves_tree_30_2",
       "type": "tree",
       "blocks": true,
@@ -1148,6 +1163,36 @@
         {
           "x": 29,
           "y": 4
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_eastmarch_sea_caves_net_rack_13_5",
+      "type": "net_rack",
+      "blocks": true,
+      "origin": {
+        "x": 13,
+        "y": 5
+      },
+      "footprint": [
+        {
+          "x": 13,
+          "y": 5
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_eastmarch_sea_caves_net_rack_14_6",
+      "type": "net_rack",
+      "blocks": true,
+      "origin": {
+        "x": 14,
+        "y": 6
+      },
+      "footprint": [
+        {
+          "x": 14,
+          "y": 6
         }
       ]
     },

@@ -160,6 +160,7 @@ var presentation: Dictionary = {}
 ## chunk's tiles. Walk rules stay on terrain_at and height_at.
 var sample_terrain: Callable = Callable()
 var sample_height: Callable = Callable()
+var sample_zone_id: Callable = Callable()
 
 var _terrain: PackedStringArray = PackedStringArray()
 var _walkable: PackedByteArray = PackedByteArray()

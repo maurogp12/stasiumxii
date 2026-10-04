@@ -1083,6 +1083,21 @@
       ]
     },
     {
+      "id": "crosshaven_eastmarch_net_rack_01",
+      "type": "net_rack",
+      "blocks": true,
+      "origin": {
+        "x": 22,
+        "y": 11
+      },
+      "footprint": [
+        {
+          "x": 22,
+          "y": 11
+        }
+      ]
+    },
+    {
       "id": "crosshaven_eastmarch_scatter_tree_02",
       "type": "tree",
       "blocks": true,

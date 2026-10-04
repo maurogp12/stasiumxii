@@ -1200,6 +1200,21 @@
       ]
     },
     {
+      "id": "crosshaven_eastmarch_coves_net_rack_11_2",
+      "type": "net_rack",
+      "blocks": true,
+      "origin": {
+        "x": 11,
+        "y": 2
+      },
+      "footprint": [
+        {
+          "x": 11,
+          "y": 2
+        }
+      ]
+    },
+    {
       "id": "crosshaven_eastmarch_coves_tree_16_3",
       "type": "tree",
       "blocks": true,
@@ -1226,6 +1241,36 @@
         {
           "x": 27,
           "y": 3
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_eastmarch_coves_net_rack_13_5",
+      "type": "net_rack",
+      "blocks": true,
+      "origin": {
+        "x": 13,
+        "y": 5
+      },
+      "footprint": [
+        {
+          "x": 13,
+          "y": 5
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_eastmarch_coves_net_rack_14_6",
+      "type": "net_rack",
+      "blocks": true,
+      "origin": {
+        "x": 14,
+        "y": 6
+      },
+      "footprint": [
+        {
+          "x": 14,
+          "y": 6
         }
       ]
     },
@@ -1270,6 +1315,21 @@
       "footprint": [
         {
           "x": 2,
+          "y": 7
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_eastmarch_coves_net_rack_28_7",
+      "type": "net_rack",
+      "blocks": true,
+      "origin": {
+        "x": 28,
+        "y": 7
+      },
+      "footprint": [
+        {
+          "x": 28,
           "y": 7
         }
       ]
@@ -1485,6 +1545,21 @@
       ]
     },
     {
+      "id": "crosshaven_eastmarch_coves_net_rack_25_18",
+      "type": "net_rack",
+      "blocks": true,
+      "origin": {
+        "x": 25,
+        "y": 18
+      },
+      "footprint": [
+        {
+          "x": 25,
+          "y": 18
+        }
+      ]
+    },
+    {
       "id": "crosshaven_eastmarch_coves_tree_3_19",
       "type": "tree",
       "blocks": true,
@@ -1515,6 +1590,21 @@
       ]
     },
     {
+      "id": "crosshaven_eastmarch_coves_net_rack_25_19",
+      "type": "net_rack",
+      "blocks": true,
+      "origin": {
+        "x": 25,
+        "y": 19
+      },
+      "footprint": [
+        {
+          "x": 25,
+          "y": 19
+        }
+      ]
+    },
+    {
       "id": "crosshaven_eastmarch_coves_tree_20_20",
       "type": "tree",
       "blocks": true,
@@ -1526,6 +1616,36 @@
         {
           "x": 20,
           "y": 20
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_eastmarch_coves_net_rack_26_20",
+      "type": "net_rack",
+      "blocks": true,
+      "origin": {
+        "x": 26,
+        "y": 20
+      },
+      "footprint": [
+        {
+          "x": 26,
+          "y": 20
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_eastmarch_coves_net_rack_6_21",
+      "type": "net_rack",
+      "blocks": true,
+      "origin": {
+        "x": 6,
+        "y": 21
+      },
+      "footprint": [
+        {
+          "x": 6,
+          "y": 21
         }
       ]
     },
