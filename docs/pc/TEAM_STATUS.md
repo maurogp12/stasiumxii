@@ -56,10 +56,10 @@ Kept by Claude, the PC supervisor (Mauro, 4 Oct 2026: "keep a record of everythi
 
 ## 5. Waiting on Mauro
 
-- **Mender:** approve the look targets when Scenario posts them.
 - **Store:** Q16 (what's sold, prices, billing).
 - **Main merge:** his review of the PC branches.
 - **Mobile team:** the APK size note.
+- (Answered 4 Oct: the Mender repaint is approved, Kestrel keeps the new version, mirrors are fine.)
 
 ## 6. Not ours (record only, do not touch)
 
