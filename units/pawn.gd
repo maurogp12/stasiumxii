@@ -9,7 +9,8 @@ class_name Pawn
 ## while the pawn eases, which is the idle slide.
 ## Painted looks (4 Oct 2026): `art/characters/<class>/walk/` holds the
 ## 12-cell walk per facing (StripLibrary.painted_cells). The frame follows the
-## distance walked (painted_walk_frames_per_tile), not one cycle per tile, and
+## distance walked (painted_walk_frames_per_tile, capped at 1.6x the authored
+## fps for natural leg speed), not one cycle per tile, and
 ## the sprite hop is off while it plays. The static files below are that
 ## walk's frame 0.
 ## `art/characters/<class>/<class>_<n|e|s|w>.png` stays the fallback when that
@@ -757,8 +758,9 @@ func walk_contact_frame() -> int:
 func _sampled_walk_frame(t: float, count: int) -> int:
 	var per_tile := painted_walk_frames_per_tile()
 	if per_tile > 0.0:
-		# Painted walk: the frame follows the distance walked on this path,
-		# so the planted foot keeps pace with the board (no skate).
+		# Painted walk: the frame follows the distance walked on this path
+		# (eased travel), at the spec rate. That rate is capped at natural
+		# leg speed, so a capped class slides its foot a little.
 		var walked := float(_stride_tile) + VIEW_MOTION.step_travel(t)
 		return VIEW_MOTION.painted_walk_frame(walked, per_tile, count, walk_contact_frame())
 	return VIEW_MOTION.walk_cycle_frame(t, count, _stride_tile, walk_contact_frame())

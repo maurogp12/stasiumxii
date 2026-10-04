@@ -217,7 +217,8 @@ static func painted_cells(class_id: String, kind: String, face: String) -> Array
 
 
 ## Painted walk cells crossed by one board tile of travel, or 0 when this
-## class and facing has no painted walk on disk. Feet do not skate at this rate.
+## class and facing has no painted walk on disk. The spec caps it at
+## MAX_LEG_RATE x the authored fps (natural leg speed, small foot slide).
 static func painted_frames_per_tile(class_id: String, face: String) -> float:
 	var spec := painted_spec(class_id, "walk")
 	if spec.is_empty():

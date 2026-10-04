@@ -36,9 +36,10 @@ texture is never upscaled.
 
 Speed. Mobile moves one tile (hypot(32, 16) board px) every
 Pawn.WALK_TILE_SEC. The planted foot of the S walk is tracked across the
-stance to get the source px per frame, and frames_per_tile is the number of
-frames whose foot travel equals one tile on the board at the class draw
-scale, so the feet do not skate.
+stance to get the source px per frame. frames_per_tile_no_slide is the number
+of frames whose foot travel equals one tile on the board at the class draw
+scale. frames_per_tile is that, capped at MAX_LEG_RATE x the authored fps
+(natural leg speed); a capped class has a small foot slide.
 
 Actions. ACTION_SOURCES below is the documented drop for idle, attack,
 skill, hit and death. Each entry uses the same layout and lands in
@@ -134,6 +135,12 @@ DRAW_SCALE = {
     "gloam": 0.5 * 0.88,
     "mender": 0.5 * 0.88,
 }
+# Leg rate cap (Mauro 4 Oct 2026, "natural leg speed"). Matching the foot to
+# the board at WALK_TILE_SEC would cycle the legs 1.6-3.7x the authored
+# 17.144 fps (up to 63 fps), which reads as flailing. The walk never plays
+# faster than MAX_LEG_RATE x the authored fps; a class whose stride is shorter
+# than that allows accepts a small foot slide. WALK_TILE_SEC is not changed.
+MAX_LEG_RATE = 1.6
 TILE_STEP_PX = math.hypot(32.0, 16.0)  # board/tile.gd 64x32 diamond
 WALK_TILE_SEC = 0.34  # Pawn.WALK_TILE_SEC
 
@@ -292,7 +299,8 @@ def build_class(cls: str, src: dict, actions: dict) -> dict:
     good = [v for v in stances if v >= 0.5 * max(stances)]
     ppf = sum(good) / len(good)
     board_ppf = ppf * k * DRAW_SCALE[cls]
-    fpt = TILE_STEP_PX / board_ppf
+    measured = TILE_STEP_PX / board_ppf
+    fpt = min(measured, MAX_LEG_RATE * AUTHORED_FPS * WALK_TILE_SEC)
     out = {
         "walk": {
             "cell": [cell_w, cell_h],
@@ -302,6 +310,7 @@ def build_class(cls: str, src: dict, actions: dict) -> dict:
             "loop": True,
             "contact": 0,
             "frames_per_tile": round(fpt, 3),
+            "frames_per_tile_no_slide": round(measured, 3),
             "scale": round(k, 4),
             "src_px_per_frame": round(ppf, 3),
             "playback_fps": round(fpt / WALK_TILE_SEC, 2),
@@ -332,7 +341,12 @@ def write_specs(specs: dict) -> None:
         "## Painted character strips for the mobile board. One entry per class",
         "## and kind. cell and pivot are in texture px; the pivot is the ground",
         "## point and always sits on Pawn.FOOT_PIVOT_Y (152). frames_per_tile is",
-        "## how many cells one board tile of travel spans (no foot skate).",
+        "## how many cells one board tile of travel spans: the no-slide value",
+        "## (frames_per_tile_no_slide) capped so the legs never cycle faster than",
+        "## MAX_LEG_RATE x the authored fps (Mauro 4 Oct 2026, natural leg speed;",
+        "## a capped class accepts a small foot slide).",
+        "",
+        f"const MAX_LEG_RATE := {MAX_LEG_RATE!r}",
         "",
         "const SPECS := {",
     ]
@@ -341,7 +355,7 @@ def write_specs(specs: dict) -> None:
         for kind in sorted(specs[cls]):
             s = specs[cls][kind]
             lines.append(f'\t\t"{kind}": {{')
-            for key in ("cell", "pivot", "frames", "fps", "loop", "contact", "impact", "frames_per_tile", "scale", "source"):
+            for key in ("cell", "pivot", "frames", "fps", "loop", "contact", "impact", "frames_per_tile", "frames_per_tile_no_slide", "scale", "source"):
                 if key not in s:
                     continue
                 v = s[key]
@@ -377,7 +391,8 @@ def main() -> int:
         specs[cls] = build_class(cls, src, ACTION_SOURCES.get(cls, {}))
         w = specs[cls]["walk"]
         print(f"{cls}: cell {w['cell']} scale {w['scale']} src {w['src_px_per_frame']} px/frame "
-              f"-> {w['frames_per_tile']} frames/tile ({w['playback_fps']} fps at {WALK_TILE_SEC}s/tile)")
+              f"-> {w['frames_per_tile']} frames/tile (no-slide {w['frames_per_tile_no_slide']}, "
+              f"{round(w['frames_per_tile'] / WALK_TILE_SEC, 2)} fps at {WALK_TILE_SEC}s/tile)")
     if only:
         print("partial run: units/character_strip_specs.gd not rewritten")
         return 0

@@ -5,7 +5,12 @@ extends RefCounted
 ## Painted character strips for the mobile board. One entry per class
 ## and kind. cell and pivot are in texture px; the pivot is the ground
 ## point and always sits on Pawn.FOOT_PIVOT_Y (152). frames_per_tile is
-## how many cells one board tile of travel spans (no foot skate).
+## how many cells one board tile of travel spans: the no-slide value
+## (frames_per_tile_no_slide) capped so the legs never cycle faster than
+## MAX_LEG_RATE x the authored fps (Mauro 4 Oct 2026, natural leg speed;
+## a capped class accepts a small foot slide).
+
+const MAX_LEG_RATE := 1.6
 
 const SPECS := {
 	"bastion": {
@@ -16,7 +21,8 @@ const SPECS := {
 			"fps": 17.144,
 			"loop": true,
 			"contact": 0,
-			"frames_per_tile": 14.095,
+			"frames_per_tile": 9.326,
+			"frames_per_tile_no_slide": 14.095,
 			"scale": 0.5445,
 			"source": "art/ironjaw-walk-help @ 7f65035 docs/pc/art_help/class_walk_looks/bastion/v3/frames",
 		},
@@ -29,7 +35,8 @@ const SPECS := {
 			"fps": 17.144,
 			"loop": true,
 			"contact": 0,
-			"frames_per_tile": 20.908,
+			"frames_per_tile": 9.326,
+			"frames_per_tile_no_slide": 20.908,
 			"scale": 0.5929,
 			"source": "claude/gloam-legs @ bdf0ff3 docs/pc/art_help/class_walk_looks/gloam/v1_claude/frames",
 		},
@@ -43,6 +50,7 @@ const SPECS := {
 			"loop": true,
 			"contact": 0,
 			"frames_per_tile": 9.141,
+			"frames_per_tile_no_slide": 9.141,
 			"scale": 1.0,
 			"source": "pc/combat-look @ a0aec2e art/pc/characters/ironjaw/walk",
 		},
@@ -55,7 +63,8 @@ const SPECS := {
 			"fps": 17.144,
 			"loop": true,
 			"contact": 0,
-			"frames_per_tile": 17.167,
+			"frames_per_tile": 9.326,
+			"frames_per_tile_no_slide": 17.167,
 			"scale": 0.6292,
 			"source": "claude/kestrel-legs @ d08e0b7 docs/pc/art_help/class_walk_looks/kestrel/v3_claude/frames",
 		},
@@ -68,7 +77,8 @@ const SPECS := {
 			"fps": 17.144,
 			"loop": true,
 			"contact": 0,
-			"frames_per_tile": 21.409,
+			"frames_per_tile": 9.326,
+			"frames_per_tile_no_slide": 21.409,
 			"scale": 0.6214,
 			"source": "claude/mender-legs @ 08ea869 docs/pc/art_help/class_walk_looks/mender/v1_claude/frames",
 		},
