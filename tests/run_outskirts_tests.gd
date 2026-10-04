@@ -136,11 +136,18 @@ func _test_land(map: WorldMap, offsets: Dictionary) -> void:
 						swamp_water += 1
 					var dx := mini(world.x - X0, X1 - 1 - world.x)
 					var dy := mini(world.y - Y0, Y1 - 1 - world.y)
-					if mini(dx, dy) >= 8 and not swamp:
+					var on_rim := mini(dx, dy) < 8
+					# Corner bays reach about 16–20 cells on the diagonal.
+					var on_corner := dx * dx + dy * dy <= 28 * 28
+					if not on_rim and not on_corner and not swamp:
 						deep += 1
 	var land_share := float(total - water) / float(total)
 	eq(land_share >= 0.85, true, "at least 85 percent of the plane is land (%.3f)" % land_share)
-	eq(deep, 0, "water past the outer 8 cells is only swamp pools (%d)" % deep)
+	eq(deep, 0, "water inside the island is only swamp pools (%d)" % deep)
+	eq(_corner_run(map, offsets, Vector2i(X0, Y0), Vector2i(1, 1)) >= 14, true, "the northwest corner is a bay")
+	eq(_corner_run(map, offsets, Vector2i(X1 - 1, Y0), Vector2i(-1, 1)) >= 14, true, "the northeast corner is a bay")
+	eq(_corner_run(map, offsets, Vector2i(X0, Y1 - 1), Vector2i(1, -1)) >= 10, true, "the southwest corner is a bay")
+	eq(_corner_run(map, offsets, Vector2i(X1 - 1, Y1 - 1), Vector2i(-1, -1)) >= 14, true, "the southeast corner is a bay")
 	var pool := float(swamp_water) / float(swamp_total)
 	eq(pool <= 0.35, true, "swamp pools cover at most 35 percent (%.3f)" % pool)
 	var bare := 0
@@ -168,6 +175,15 @@ func _test_land(map: WorldMap, offsets: Dictionary) -> void:
 		if not flank:
 			bare += 1
 	eq(bare, 0, "every path cell has land on both sides (%d bare)" % bare)
+
+
+func _corner_run(map: WorldMap, offsets: Dictionary, start: Vector2i, step: Vector2i) -> int:
+	var n := 0
+	var at := start
+	while n < 40 and _terrain_at_world(map, offsets, at) == "water":
+		n += 1
+		at += step
+	return n
 
 
 func _terrain_at_world(map: WorldMap, offsets: Dictionary, world: Vector2i) -> String:

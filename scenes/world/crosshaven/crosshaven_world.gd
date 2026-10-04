@@ -37,11 +37,6 @@ const MissionTracker := preload("res://scenes/world/ui/mission_tracker.gd")
 const MissionLog := preload("res://scenes/world/ui/mission_log.gd")
 
 const SEA := Color("1e6e96")
-const FIELD := Color("90a91b")
-const SHALLOW := Color("3285ab")
-const FOAM := Color("d7f3f1")
-const CLIFF := Color("9c935f")
-const BREAKER := Color(0.93, 0.98, 0.97, 0.9)
 const ZOOM_MIN := 1.0
 const ZOOM_MAX := 2.5
 const FADE_SECONDS := 0.35
@@ -1111,14 +1106,19 @@ func _clamp_z(z: int) -> int:
 	return clampi(z, -4096, 4096)
 
 
-func _mount_neighbours(zone_id: String) -> void:
+func _mount_neighbours(zone_id: String, everything: bool = false) -> void:
 	if neighbours == null:
 		return
 	for child in neighbours.get_children():
 		child.free()
 	if not _seamless():
 		return
-	var touch: Array = WorldPlane.touching(map, plane_offsets, zone_id)
+	var touch: Array = []
+	if everything:
+		for id in plane_offsets.keys():
+			touch.append(id)
+	else:
+		touch = WorldPlane.touching(map, plane_offsets, zone_id)
 	for id in touch:
 		var zid := str(id)
 		if zid == zone_id:
@@ -1355,69 +1355,9 @@ func _draw_backdrop() -> void:
 	if _backdrop == null or not _backdrop.has_meta("sea"):
 		return
 	var sea: Rect2 = _backdrop.get_meta("sea")
-	var fields: Rect2 = _backdrop.get_meta("fields")
-	var shallow := fields.grow(120.0)
-	var foam := fields.grow(64.0)
-	var cliff := fields.grow(28.0)
-	# Rings, not stacked full rects. Five full-screen fills blew the frame
-	# budget on the software renderer; inland the camera only touches the field.
-	_draw_ring(sea, shallow, SEA)
-	_draw_ring(shallow, foam, SHALLOW)
-	_draw_ring(foam, cliff, FOAM)
-	_draw_breakers(foam, cliff)
-	_draw_ring(cliff, fields, CLIFF)
-	_backdrop.draw_rect(fields, FIELD, true)
-
-
-func _draw_breakers(outer: Rect2, inner: Rect2) -> void:
-	if _backdrop == null:
-		return
-	var span := 0.0
-	var y := inner.position.y - 6.0
-	var x := inner.position.x
-	while x < inner.end.x:
-		span = 16.0 + float(int(x) % 22)
-		_backdrop.draw_line(Vector2(x, y), Vector2(x + span, y + 1.5), BREAKER, 2.2)
-		x += span + 12.0
-	y = inner.end.y + 6.0
-	x = inner.position.x
-	while x < inner.end.x:
-		span = 16.0 + float(int(x) % 22)
-		_backdrop.draw_line(Vector2(x, y), Vector2(x + span, y - 1.5), BREAKER, 2.2)
-		x += span + 12.0
-	var side_x := inner.position.x - 6.0
-	y = inner.position.y
-	while y < inner.end.y:
-		span = 14.0 + float(int(y) % 18)
-		_backdrop.draw_line(Vector2(side_x, y), Vector2(side_x - 1.5, y + span), BREAKER, 2.2)
-		y += span + 12.0
-	side_x = inner.end.x + 6.0
-	y = inner.position.y
-	while y < inner.end.y:
-		span = 14.0 + float(int(y) % 18)
-		_backdrop.draw_line(Vector2(side_x, y), Vector2(side_x + 1.5, y + span), BREAKER, 2.2)
-		y += span + 12.0
-	# outer is the foam ring; the strokes sit on its inner lip, against the cliff.
-	if outer.size == Vector2.ZERO:
-		return
-
-
-func _draw_ring(outer: Rect2, inner: Rect2, color: Color) -> void:
-	if _backdrop == null:
-		return
-	var top_h := inner.position.y - outer.position.y
-	if top_h > 0.0:
-		_backdrop.draw_rect(Rect2(outer.position, Vector2(outer.size.x, top_h)), color, true)
-	var bot_h := outer.end.y - inner.end.y
-	if bot_h > 0.0:
-		_backdrop.draw_rect(Rect2(outer.position.x, inner.end.y, outer.size.x, bot_h), color, true)
-	var left_w := inner.position.x - outer.position.x
-	var mid_h := inner.size.y
-	if left_w > 0.0 and mid_h > 0.0:
-		_backdrop.draw_rect(Rect2(outer.position.x, inner.position.y, left_w, mid_h), color, true)
-	var right_w := outer.end.x - inner.end.x
-	if right_w > 0.0 and mid_h > 0.0:
-		_backdrop.draw_rect(Rect2(inner.end.x, inner.position.y, right_w, mid_h), color, true)
+	# Past the coast the fill is sea. The olive field rect and the square
+	# cliff rings used to show inside the camera before the land diamonds.
+	_backdrop.draw_rect(sea, SEA, true)
 
 
 func _refresh_presence() -> void:
@@ -1884,6 +1824,10 @@ func _play_movie(mode: String) -> void:
 			await _movie_outskirts()
 		"eastmarch_still":
 			await _movie_eastmarch_still()
+		"plane_still":
+			await _movie_plane_still()
+		"crag_still":
+			await _movie_crag_still()
 		_:
 			push_error("unknown movie %s" % mode)
 	get_tree().quit()
@@ -2328,6 +2272,68 @@ func _movie_outskirts() -> void:
 	await get_tree().create_timer(0.45).timeout
 	await _travel("crosshaven_westwatch_south_blight", Vector2i(18, 16))
 	await get_tree().create_timer(0.6).timeout
+
+
+## Whole island, zoomed out, so the coast outline can sit beside the plate.
+func _movie_plane_still() -> void:
+	settings.apply_preset("Full")
+	weather.auto_rotate = false
+	weather.set_weather("clear")
+	weather.time_of_day = 12.0
+	weather.settle()
+	_hide_debug_readout()
+	if tracker != null:
+		tracker.visible = false
+	if _banner != null:
+		_banner.modulate.a = 0.0
+	if walker != null:
+		walker.visible = false
+	var here := map.start_zone
+	if zone != null:
+		here = zone.zone_id
+	_mount_neighbours(here, true)
+	var center := BoardVisualSort.cell_to_local(Vector2i(20, 20))
+	if camera != null:
+		camera.zoom = Vector2(0.11, 0.11)
+		camera.position = center + Vector2(2200, 0)
+		camera.reset_smoothing()
+		camera.limit_left = -100000
+		camera.limit_top = -100000
+		camera.limit_right = 100000
+		camera.limit_bottom = 100000
+	if _backdrop != null:
+		_backdrop.visible = true
+		_backdrop.set_meta("sea", Rect2(-30000, -30000, 60000, 60000))
+		_backdrop.queue_redraw()
+	if neighbours != null:
+		for host in neighbours.get_children():
+			var body := host as Node2D
+			if body != null:
+				body.visible = true
+	await get_tree().create_timer(0.8).timeout
+	var folder := ProjectSettings.globalize_path("res://docs/pc/media/outskirts")
+	DirAccess.make_dir_recursive_absolute(folder)
+	await _grab(folder.path_join("plane_island_raw.png"))
+
+
+func _movie_crag_still() -> void:
+	settings.apply_preset("Full")
+	_zoom = 1.15
+	if camera != null:
+		camera.zoom = Vector2.ONE * _zoom
+	weather.auto_rotate = false
+	weather.set_weather("clear")
+	weather.time_of_day = 12.0
+	weather.settle()
+	_hide_debug_readout()
+	if tracker != null:
+		tracker.visible = false
+	if _banner != null:
+		_banner.modulate.a = 0.0
+	var folder := ProjectSettings.globalize_path("res://docs/pc/media/outskirts")
+	DirAccess.make_dir_recursive_absolute(folder)
+	await _grab_theme_still("crosshaven_northgate_crags_far", Vector2i(18, 20), folder.path_join("crags_far.png"))
+	await _grab_theme_still("crosshaven_northgate_crags_west", Vector2i(8, 16), folder.path_join("crags_west.png"))
 
 
 func _movie_eastmarch_still() -> void:

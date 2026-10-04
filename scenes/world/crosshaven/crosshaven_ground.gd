@@ -25,9 +25,7 @@ const SIDE := {
 	"cliff": Color("625c54"),
 }
 const EXIT_COLOR := Color(1.0, 0.84, 0.35, 0.85)
-## Same olive as the world's field fill, so an outer edge fades into it.
-const FIELD_FADE := Color("90a91b")
-## Plane bbox. Olive void fill stays on the outer rim, never on the island.
+## Plane bbox. Past the coast the backdrop is sea, never an olive field.
 const PLANE_X0 := -72
 const PLANE_Y0 := -64
 const PLANE_X1 := 112
@@ -380,6 +378,8 @@ func _draw_cell(ci: Node2D, cell: Vector2i) -> void:
 	if terrain == "":
 		return
 	var steps := Art.height_seen(zone, cell)
+	if _north_crag(cell):
+		steps = _terrace(cell)
 	var rank := void_rank(cell)
 	var beach := _beach_at(cell)
 	# The last water cell of a stream becomes a bank, not a blue rectangle.
@@ -422,12 +422,63 @@ func _draw_flat_faces(ci: Node2D, lifted: PackedVector2Array, steps: int, side: 
 	ci.draw_colored_polygon(PackedVector2Array([lifted[2], lifted[1], lifted[1] + drop, lifted[2] + drop]), side.darkened(0.18))
 
 
+## Northgate crag chunks stay height 1 in the zone data. The terrace is draw-only,
+## so zone tests that forbid a step of more than one stay green.
+func _north_crag(cell: Vector2i) -> bool:
+	if zone == null:
+		return false
+	var id := zone.zone_id
+	if not id.begins_with("crosshaven_northgate_crag") and id != "crosshaven_northgate_pass":
+		return false
+	return Art.terrain_seen(zone, cell) == "cliff"
+
+
+func _terrace(cell: Vector2i) -> int:
+	if zone == null:
+		return 0
+	var base := Art.height_seen(zone, cell)
+	if Art.terrain_seen(zone, cell) != "cliff":
+		return base
+	var id := zone.zone_id
+	if not id.begins_with("crosshaven_northgate_crag") and id != "crosshaven_northgate_pass":
+		return base
+	# A step on most edges, so the dotted cliff tops do not sit as one flat grid.
+	var band := posmod(cell.x + cell.y * 2, 3)
+	if Art.h(cell.x, cell.y, 5) == 0:
+		band = mini(band + 1, 2)
+	return base + band
+
+
+func _draw_crag_faces(ci: Node2D, cell: Vector2i, south_tip: Vector2) -> void:
+	var elev := _terrace(cell)
+	var tint := _floor_modulate(cell, "cliff")
+	for face in ["left", "right"]:
+		var step := Vector2i(0, 1) if face == "left" else Vector2i(1, 0)
+		var ncell := cell + step
+		var diff := elev - _terrace(ncell)
+		var base_x := -32.0 if face == "left" else 0.0
+		for k in range(maxi(diff, 0)):
+			var variant := "a"
+			if k == 0:
+				variant = "top"
+			elif k % 2 == 0:
+				variant = "b"
+			if k == diff - 1 and k > 0:
+				var below_water := Art.terrain_seen(zone, ncell) == "water"
+				variant = "base_water" if below_water else "base_ground"
+			var tid := "cliff_side_%s_%s" % [face, variant]
+			if Art.has("tiles", tid):
+				Art.draw_at(ci, Art.texture("tiles", tid), south_tip + Vector2(base_x, -16.0 + 10.0 * float(k)), tint)
+
+
 ## Technical Artist kit path: height strips, autotiled floor, corner decals.
 func _draw_cell_kit(ci: Node2D, cell: Vector2i, terrain: String, steps: int, bank: bool = false) -> void:
 	var center := BoardVisualSort.cell_to_local(cell, float(steps))
 	var south_tip := center + Vector2(0, Pick.HALF_H)
 	var shown := "golden_plains" if bank else terrain
-	if steps > 0:
+	if _north_crag(cell):
+		_draw_crag_faces(ci, cell, south_tip)
+	elif steps > 0:
 		var strips := Art.face_strips(zone, cell)
 		var all_found := true
 		for strip in strips:
@@ -513,16 +564,12 @@ func _draw_named_floor(ci: Node2D, south_tip: Vector2, first_id: String, fallbac
 
 
 func _fade_void_edge(ci: Node2D, cell: Vector2i, steps: int, rank: int, terrain: String) -> void:
-	if rank <= 0:
+	if rank <= 0 or terrain != "water":
 		return
 	if _rim_depth(cell) > 8:
 		return
-	var fade := FIELD_FADE
-	# The sea meets the island. A stream that runs off the land fades into that sea.
-	if terrain == "water":
-		fade = Color("1e6e96")
-	elif terrain == "cliff":
-		fade = Color("9c935f")
+	# Land keeps its tiles. Olive is not drawn inside the coast.
+	var fade := Color("1e6e96")
 	fade.a = 1.0 if rank == 1 else 0.5
 	ci.draw_colored_polygon(Pick.diamond(cell, float(steps)), fade)
 
@@ -678,19 +725,16 @@ func _dust_snow(ci: Node2D, cell: Vector2i, terrain: String, steps: int) -> void
 	if terrain == "water":
 		ci.draw_colored_polygon(diamond, Color(0.62, 0.78, 0.90, 0.22 * amount))
 		return
-	if terrain == "cliff":
-		ci.draw_line(diamond[0], diamond[1], Color(0.97, 0.98, 1.0, 0.55 * amount), 1.6)
-		ci.draw_line(diamond[0], diamond[3], Color(0.97, 0.98, 1.0, 0.55 * amount), 1.6)
+	if terrain != "cliff" or not _north_crag(cell):
 		return
-	# Drifts sit on grass and roads. A full-cell wash reads as a grey checker.
-	var n := _hash(cell)
-	if n < 0.2:
-		return
-	var c := BoardVisualSort.cell_to_local(cell, float(steps))
-	var salt := n * 6.2
-	_soft_blob(ci, c + Vector2(-8.0 + n * 14.0, 1.0), 16.0, 5.5, Color(0.97, 0.98, 1.0, 0.62 * amount), salt)
-	if n > 0.7:
-		_soft_blob(ci, c + Vector2(7.0, 3.0), 10.0, 3.6, Color(1.0, 1.0, 1.0, 0.5 * amount), salt + 1.4)
+	# A lip where the terrace drops. Grass frost is the tint, not a disc per cell.
+	var lip := Color(0.97, 0.98, 1.0, 0.7 * amount)
+	var south := cell + Vector2i(0, 1)
+	var east := cell + Vector2i(1, 0)
+	if _terrace(cell) > _terrace(south):
+		ci.draw_line(diamond[2], diamond[3], lip, 2.2)
+	if _terrace(cell) > _terrace(east):
+		ci.draw_line(diamond[1], diamond[2], lip, 2.2)
 
 
 func _draw_ripple(ci: Node2D, anim_id: String, south_tip: Vector2, modulate: Color = Color.WHITE) -> bool:
