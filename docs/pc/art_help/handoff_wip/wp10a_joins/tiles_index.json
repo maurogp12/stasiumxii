@@ -1,0 +1,2843 @@
+{
+ "stoneford_rowanvale": [
+  {
+   "id": "meadow_join_l1_a",
+   "kind": "floor",
+   "level": 1,
+   "coverage_pct": 33,
+   "variant": "a"
+  },
+  {
+   "id": "meadow_join_l1_b",
+   "kind": "floor",
+   "level": 1,
+   "coverage_pct": 33,
+   "variant": "b"
+  },
+  {
+   "id": "meadow_join_l1_c",
+   "kind": "floor",
+   "level": 1,
+   "coverage_pct": 33,
+   "variant": "c"
+  },
+  {
+   "id": "meadow_join_l2_a",
+   "kind": "floor",
+   "level": 2,
+   "coverage_pct": 67,
+   "variant": "a"
+  },
+  {
+   "id": "meadow_join_l2_b",
+   "kind": "floor",
+   "level": 2,
+   "coverage_pct": 67,
+   "variant": "b"
+  },
+  {
+   "id": "meadow_join_l2_c",
+   "kind": "floor",
+   "level": 2,
+   "coverage_pct": 67,
+   "variant": "c"
+  },
+  {
+   "id": "meadow_join_l1_edge_nw",
+   "kind": "floor",
+   "level": 1,
+   "sides": [
+    "nw"
+   ],
+   "variant": "a"
+  },
+  {
+   "id": "meadow_join_l1_edge_nw_b",
+   "kind": "floor",
+   "level": 1,
+   "sides": [
+    "nw"
+   ],
+   "variant": "b",
+   "variant_of": "meadow_join_l1_edge_nw"
+  },
+  {
+   "id": "meadow_join_l1_edge_nw_c",
+   "kind": "floor",
+   "level": 1,
+   "sides": [
+    "nw"
+   ],
+   "variant": "c",
+   "variant_of": "meadow_join_l1_edge_nw"
+  },
+  {
+   "id": "meadow_join_l1_edge_ne",
+   "kind": "floor",
+   "level": 1,
+   "sides": [
+    "ne"
+   ],
+   "variant": "a"
+  },
+  {
+   "id": "meadow_join_l1_edge_ne_b",
+   "kind": "floor",
+   "level": 1,
+   "sides": [
+    "ne"
+   ],
+   "variant": "b",
+   "variant_of": "meadow_join_l1_edge_ne"
+  },
+  {
+   "id": "meadow_join_l1_edge_ne_c",
+   "kind": "floor",
+   "level": 1,
+   "sides": [
+    "ne"
+   ],
+   "variant": "c",
+   "variant_of": "meadow_join_l1_edge_ne"
+  },
+  {
+   "id": "meadow_join_l1_edge_nw_ne",
+   "kind": "floor",
+   "level": 1,
+   "sides": [
+    "nw",
+    "ne"
+   ],
+   "variant": "a"
+  },
+  {
+   "id": "meadow_join_l1_edge_se",
+   "kind": "floor",
+   "level": 1,
+   "sides": [
+    "se"
+   ],
+   "variant": "a"
+  },
+  {
+   "id": "meadow_join_l1_edge_se_b",
+   "kind": "floor",
+   "level": 1,
+   "sides": [
+    "se"
+   ],
+   "variant": "b",
+   "variant_of": "meadow_join_l1_edge_se"
+  },
+  {
+   "id": "meadow_join_l1_edge_se_c",
+   "kind": "floor",
+   "level": 1,
+   "sides": [
+    "se"
+   ],
+   "variant": "c",
+   "variant_of": "meadow_join_l1_edge_se"
+  },
+  {
+   "id": "meadow_join_l1_edge_nw_se",
+   "kind": "floor",
+   "level": 1,
+   "sides": [
+    "nw",
+    "se"
+   ],
+   "variant": "a"
+  },
+  {
+   "id": "meadow_join_l1_edge_ne_se",
+   "kind": "floor",
+   "level": 1,
+   "sides": [
+    "ne",
+    "se"
+   ],
+   "variant": "a"
+  },
+  {
+   "id": "meadow_join_l1_edge_nw_ne_se",
+   "kind": "floor",
+   "level": 1,
+   "sides": [
+    "nw",
+    "ne",
+    "se"
+   ],
+   "variant": "a"
+  },
+  {
+   "id": "meadow_join_l1_edge_sw",
+   "kind": "floor",
+   "level": 1,
+   "sides": [
+    "sw"
+   ],
+   "variant": "a"
+  },
+  {
+   "id": "meadow_join_l1_edge_sw_b",
+   "kind": "floor",
+   "level": 1,
+   "sides": [
+    "sw"
+   ],
+   "variant": "b",
+   "variant_of": "meadow_join_l1_edge_sw"
+  },
+  {
+   "id": "meadow_join_l1_edge_sw_c",
+   "kind": "floor",
+   "level": 1,
+   "sides": [
+    "sw"
+   ],
+   "variant": "c",
+   "variant_of": "meadow_join_l1_edge_sw"
+  },
+  {
+   "id": "meadow_join_l1_edge_nw_sw",
+   "kind": "floor",
+   "level": 1,
+   "sides": [
+    "nw",
+    "sw"
+   ],
+   "variant": "a"
+  },
+  {
+   "id": "meadow_join_l1_edge_ne_sw",
+   "kind": "floor",
+   "level": 1,
+   "sides": [
+    "ne",
+    "sw"
+   ],
+   "variant": "a"
+  },
+  {
+   "id": "meadow_join_l1_edge_nw_ne_sw",
+   "kind": "floor",
+   "level": 1,
+   "sides": [
+    "nw",
+    "ne",
+    "sw"
+   ],
+   "variant": "a"
+  },
+  {
+   "id": "meadow_join_l1_edge_se_sw",
+   "kind": "floor",
+   "level": 1,
+   "sides": [
+    "se",
+    "sw"
+   ],
+   "variant": "a"
+  },
+  {
+   "id": "meadow_join_l1_edge_nw_se_sw",
+   "kind": "floor",
+   "level": 1,
+   "sides": [
+    "nw",
+    "se",
+    "sw"
+   ],
+   "variant": "a"
+  },
+  {
+   "id": "meadow_join_l1_edge_ne_se_sw",
+   "kind": "floor",
+   "level": 1,
+   "sides": [
+    "ne",
+    "se",
+    "sw"
+   ],
+   "variant": "a"
+  },
+  {
+   "id": "meadow_join_l1_edge_nw_ne_se_sw",
+   "kind": "floor",
+   "level": 1,
+   "sides": [
+    "nw",
+    "ne",
+    "se",
+    "sw"
+   ],
+   "variant": "a"
+  },
+  {
+   "id": "meadow_join_l1_corner_n",
+   "kind": "decal",
+   "level": 1,
+   "corner": "n"
+  },
+  {
+   "id": "meadow_join_l1_corner_e",
+   "kind": "decal",
+   "level": 1,
+   "corner": "e"
+  },
+  {
+   "id": "meadow_join_l1_corner_s",
+   "kind": "decal",
+   "level": 1,
+   "corner": "s"
+  },
+  {
+   "id": "meadow_join_l1_corner_w",
+   "kind": "decal",
+   "level": 1,
+   "corner": "w"
+  },
+  {
+   "id": "meadow_join_l2_edge_nw",
+   "kind": "floor",
+   "level": 2,
+   "sides": [
+    "nw"
+   ],
+   "variant": "a"
+  },
+  {
+   "id": "meadow_join_l2_edge_nw_b",
+   "kind": "floor",
+   "level": 2,
+   "sides": [
+    "nw"
+   ],
+   "variant": "b",
+   "variant_of": "meadow_join_l2_edge_nw"
+  },
+  {
+   "id": "meadow_join_l2_edge_nw_c",
+   "kind": "floor",
+   "level": 2,
+   "sides": [
+    "nw"
+   ],
+   "variant": "c",
+   "variant_of": "meadow_join_l2_edge_nw"
+  },
+  {
+   "id": "meadow_join_l2_edge_ne",
+   "kind": "floor",
+   "level": 2,
+   "sides": [
+    "ne"
+   ],
+   "variant": "a"
+  },
+  {
+   "id": "meadow_join_l2_edge_ne_b",
+   "kind": "floor",
+   "level": 2,
+   "sides": [
+    "ne"
+   ],
+   "variant": "b",
+   "variant_of": "meadow_join_l2_edge_ne"
+  },
+  {
+   "id": "meadow_join_l2_edge_ne_c",
+   "kind": "floor",
+   "level": 2,
+   "sides": [
+    "ne"
+   ],
+   "variant": "c",
+   "variant_of": "meadow_join_l2_edge_ne"
+  },
+  {
+   "id": "meadow_join_l2_edge_nw_ne",
+   "kind": "floor",
+   "level": 2,
+   "sides": [
+    "nw",
+    "ne"
+   ],
+   "variant": "a"
+  },
+  {
+   "id": "meadow_join_l2_edge_se",
+   "kind": "floor",
+   "level": 2,
+   "sides": [
+    "se"
+   ],
+   "variant": "a"
+  },
+  {
+   "id": "meadow_join_l2_edge_se_b",
+   "kind": "floor",
+   "level": 2,
+   "sides": [
+    "se"
+   ],
+   "variant": "b",
+   "variant_of": "meadow_join_l2_edge_se"
+  },
+  {
+   "id": "meadow_join_l2_edge_se_c",
+   "kind": "floor",
+   "level": 2,
+   "sides": [
+    "se"
+   ],
+   "variant": "c",
+   "variant_of": "meadow_join_l2_edge_se"
+  },
+  {
+   "id": "meadow_join_l2_edge_nw_se",
+   "kind": "floor",
+   "level": 2,
+   "sides": [
+    "nw",
+    "se"
+   ],
+   "variant": "a"
+  },
+  {
+   "id": "meadow_join_l2_edge_ne_se",
+   "kind": "floor",
+   "level": 2,
+   "sides": [
+    "ne",
+    "se"
+   ],
+   "variant": "a"
+  },
+  {
+   "id": "meadow_join_l2_edge_nw_ne_se",
+   "kind": "floor",
+   "level": 2,
+   "sides": [
+    "nw",
+    "ne",
+    "se"
+   ],
+   "variant": "a"
+  },
+  {
+   "id": "meadow_join_l2_edge_sw",
+   "kind": "floor",
+   "level": 2,
+   "sides": [
+    "sw"
+   ],
+   "variant": "a"
+  },
+  {
+   "id": "meadow_join_l2_edge_sw_b",
+   "kind": "floor",
+   "level": 2,
+   "sides": [
+    "sw"
+   ],
+   "variant": "b",
+   "variant_of": "meadow_join_l2_edge_sw"
+  },
+  {
+   "id": "meadow_join_l2_edge_sw_c",
+   "kind": "floor",
+   "level": 2,
+   "sides": [
+    "sw"
+   ],
+   "variant": "c",
+   "variant_of": "meadow_join_l2_edge_sw"
+  },
+  {
+   "id": "meadow_join_l2_edge_nw_sw",
+   "kind": "floor",
+   "level": 2,
+   "sides": [
+    "nw",
+    "sw"
+   ],
+   "variant": "a"
+  },
+  {
+   "id": "meadow_join_l2_edge_ne_sw",
+   "kind": "floor",
+   "level": 2,
+   "sides": [
+    "ne",
+    "sw"
+   ],
+   "variant": "a"
+  },
+  {
+   "id": "meadow_join_l2_edge_nw_ne_sw",
+   "kind": "floor",
+   "level": 2,
+   "sides": [
+    "nw",
+    "ne",
+    "sw"
+   ],
+   "variant": "a"
+  },
+  {
+   "id": "meadow_join_l2_edge_se_sw",
+   "kind": "floor",
+   "level": 2,
+   "sides": [
+    "se",
+    "sw"
+   ],
+   "variant": "a"
+  },
+  {
+   "id": "meadow_join_l2_edge_nw_se_sw",
+   "kind": "floor",
+   "level": 2,
+   "sides": [
+    "nw",
+    "se",
+    "sw"
+   ],
+   "variant": "a"
+  },
+  {
+   "id": "meadow_join_l2_edge_ne_se_sw",
+   "kind": "floor",
+   "level": 2,
+   "sides": [
+    "ne",
+    "se",
+    "sw"
+   ],
+   "variant": "a"
+  },
+  {
+   "id": "meadow_join_l2_edge_nw_ne_se_sw",
+   "kind": "floor",
+   "level": 2,
+   "sides": [
+    "nw",
+    "ne",
+    "se",
+    "sw"
+   ],
+   "variant": "a"
+  },
+  {
+   "id": "meadow_join_l2_corner_n",
+   "kind": "decal",
+   "level": 2,
+   "corner": "n"
+  },
+  {
+   "id": "meadow_join_l2_corner_e",
+   "kind": "decal",
+   "level": 2,
+   "corner": "e"
+  },
+  {
+   "id": "meadow_join_l2_corner_s",
+   "kind": "decal",
+   "level": 2,
+   "corner": "s"
+  },
+  {
+   "id": "meadow_join_l2_corner_w",
+   "kind": "decal",
+   "level": 2,
+   "corner": "w"
+  },
+  {
+   "id": "meadow_join_l3_edge_nw",
+   "kind": "floor",
+   "level": 3,
+   "sides": [
+    "nw"
+   ],
+   "variant": "a"
+  },
+  {
+   "id": "meadow_join_l3_edge_nw_b",
+   "kind": "floor",
+   "level": 3,
+   "sides": [
+    "nw"
+   ],
+   "variant": "b",
+   "variant_of": "meadow_join_l3_edge_nw"
+  },
+  {
+   "id": "meadow_join_l3_edge_nw_c",
+   "kind": "floor",
+   "level": 3,
+   "sides": [
+    "nw"
+   ],
+   "variant": "c",
+   "variant_of": "meadow_join_l3_edge_nw"
+  },
+  {
+   "id": "meadow_join_l3_edge_ne",
+   "kind": "floor",
+   "level": 3,
+   "sides": [
+    "ne"
+   ],
+   "variant": "a"
+  },
+  {
+   "id": "meadow_join_l3_edge_ne_b",
+   "kind": "floor",
+   "level": 3,
+   "sides": [
+    "ne"
+   ],
+   "variant": "b",
+   "variant_of": "meadow_join_l3_edge_ne"
+  },
+  {
+   "id": "meadow_join_l3_edge_ne_c",
+   "kind": "floor",
+   "level": 3,
+   "sides": [
+    "ne"
+   ],
+   "variant": "c",
+   "variant_of": "meadow_join_l3_edge_ne"
+  },
+  {
+   "id": "meadow_join_l3_edge_nw_ne",
+   "kind": "floor",
+   "level": 3,
+   "sides": [
+    "nw",
+    "ne"
+   ],
+   "variant": "a"
+  },
+  {
+   "id": "meadow_join_l3_edge_se",
+   "kind": "floor",
+   "level": 3,
+   "sides": [
+    "se"
+   ],
+   "variant": "a"
+  },
+  {
+   "id": "meadow_join_l3_edge_se_b",
+   "kind": "floor",
+   "level": 3,
+   "sides": [
+    "se"
+   ],
+   "variant": "b",
+   "variant_of": "meadow_join_l3_edge_se"
+  },
+  {
+   "id": "meadow_join_l3_edge_se_c",
+   "kind": "floor",
+   "level": 3,
+   "sides": [
+    "se"
+   ],
+   "variant": "c",
+   "variant_of": "meadow_join_l3_edge_se"
+  },
+  {
+   "id": "meadow_join_l3_edge_nw_se",
+   "kind": "floor",
+   "level": 3,
+   "sides": [
+    "nw",
+    "se"
+   ],
+   "variant": "a"
+  },
+  {
+   "id": "meadow_join_l3_edge_ne_se",
+   "kind": "floor",
+   "level": 3,
+   "sides": [
+    "ne",
+    "se"
+   ],
+   "variant": "a"
+  },
+  {
+   "id": "meadow_join_l3_edge_nw_ne_se",
+   "kind": "floor",
+   "level": 3,
+   "sides": [
+    "nw",
+    "ne",
+    "se"
+   ],
+   "variant": "a"
+  },
+  {
+   "id": "meadow_join_l3_edge_sw",
+   "kind": "floor",
+   "level": 3,
+   "sides": [
+    "sw"
+   ],
+   "variant": "a"
+  },
+  {
+   "id": "meadow_join_l3_edge_sw_b",
+   "kind": "floor",
+   "level": 3,
+   "sides": [
+    "sw"
+   ],
+   "variant": "b",
+   "variant_of": "meadow_join_l3_edge_sw"
+  },
+  {
+   "id": "meadow_join_l3_edge_sw_c",
+   "kind": "floor",
+   "level": 3,
+   "sides": [
+    "sw"
+   ],
+   "variant": "c",
+   "variant_of": "meadow_join_l3_edge_sw"
+  },
+  {
+   "id": "meadow_join_l3_edge_nw_sw",
+   "kind": "floor",
+   "level": 3,
+   "sides": [
+    "nw",
+    "sw"
+   ],
+   "variant": "a"
+  },
+  {
+   "id": "meadow_join_l3_edge_ne_sw",
+   "kind": "floor",
+   "level": 3,
+   "sides": [
+    "ne",
+    "sw"
+   ],
+   "variant": "a"
+  },
+  {
+   "id": "meadow_join_l3_edge_nw_ne_sw",
+   "kind": "floor",
+   "level": 3,
+   "sides": [
+    "nw",
+    "ne",
+    "sw"
+   ],
+   "variant": "a"
+  },
+  {
+   "id": "meadow_join_l3_edge_se_sw",
+   "kind": "floor",
+   "level": 3,
+   "sides": [
+    "se",
+    "sw"
+   ],
+   "variant": "a"
+  },
+  {
+   "id": "meadow_join_l3_edge_nw_se_sw",
+   "kind": "floor",
+   "level": 3,
+   "sides": [
+    "nw",
+    "se",
+    "sw"
+   ],
+   "variant": "a"
+  },
+  {
+   "id": "meadow_join_l3_edge_ne_se_sw",
+   "kind": "floor",
+   "level": 3,
+   "sides": [
+    "ne",
+    "se",
+    "sw"
+   ],
+   "variant": "a"
+  },
+  {
+   "id": "meadow_join_l3_edge_nw_ne_se_sw",
+   "kind": "floor",
+   "level": 3,
+   "sides": [
+    "nw",
+    "ne",
+    "se",
+    "sw"
+   ],
+   "variant": "a"
+  },
+  {
+   "id": "meadow_join_l3_corner_n",
+   "kind": "decal",
+   "level": 3,
+   "corner": "n"
+  },
+  {
+   "id": "meadow_join_l3_corner_e",
+   "kind": "decal",
+   "level": 3,
+   "corner": "e"
+  },
+  {
+   "id": "meadow_join_l3_corner_s",
+   "kind": "decal",
+   "level": 3,
+   "corner": "s"
+  },
+  {
+   "id": "meadow_join_l3_corner_w",
+   "kind": "decal",
+   "level": 3,
+   "corner": "w"
+  },
+  {
+   "id": "meadow_join_road_l1_nw_mid",
+   "kind": "floor",
+   "level": 1,
+   "band_low_side": "nw",
+   "road_axis": "x",
+   "road_part": "mid",
+   "road_ground_sides": []
+  },
+  {
+   "id": "meadow_join_road_l1_nw_edge_ne",
+   "kind": "floor",
+   "level": 1,
+   "band_low_side": "nw",
+   "road_axis": "x",
+   "road_part": "edge_ne",
+   "road_ground_sides": [
+    "ne"
+   ]
+  },
+  {
+   "id": "meadow_join_road_l1_nw_edge_sw",
+   "kind": "floor",
+   "level": 1,
+   "band_low_side": "nw",
+   "road_axis": "x",
+   "road_part": "edge_sw",
+   "road_ground_sides": [
+    "sw"
+   ]
+  },
+  {
+   "id": "meadow_join_road_l1_nw_edge_ne_sw",
+   "kind": "floor",
+   "level": 1,
+   "band_low_side": "nw",
+   "road_axis": "x",
+   "road_part": "edge_ne_sw",
+   "road_ground_sides": [
+    "ne",
+    "sw"
+   ]
+  },
+  {
+   "id": "meadow_join_road_l1_ne_mid",
+   "kind": "floor",
+   "level": 1,
+   "band_low_side": "ne",
+   "road_axis": "y",
+   "road_part": "mid",
+   "road_ground_sides": []
+  },
+  {
+   "id": "meadow_join_road_l1_ne_edge_nw",
+   "kind": "floor",
+   "level": 1,
+   "band_low_side": "ne",
+   "road_axis": "y",
+   "road_part": "edge_nw",
+   "road_ground_sides": [
+    "nw"
+   ]
+  },
+  {
+   "id": "meadow_join_road_l1_ne_edge_se",
+   "kind": "floor",
+   "level": 1,
+   "band_low_side": "ne",
+   "road_axis": "y",
+   "road_part": "edge_se",
+   "road_ground_sides": [
+    "se"
+   ]
+  },
+  {
+   "id": "meadow_join_road_l1_ne_edge_nw_se",
+   "kind": "floor",
+   "level": 1,
+   "band_low_side": "ne",
+   "road_axis": "y",
+   "road_part": "edge_nw_se",
+   "road_ground_sides": [
+    "nw",
+    "se"
+   ]
+  },
+  {
+   "id": "meadow_join_road_l1_se_mid",
+   "kind": "floor",
+   "level": 1,
+   "band_low_side": "se",
+   "road_axis": "x",
+   "road_part": "mid",
+   "road_ground_sides": []
+  },
+  {
+   "id": "meadow_join_road_l1_se_edge_ne",
+   "kind": "floor",
+   "level": 1,
+   "band_low_side": "se",
+   "road_axis": "x",
+   "road_part": "edge_ne",
+   "road_ground_sides": [
+    "ne"
+   ]
+  },
+  {
+   "id": "meadow_join_road_l1_se_edge_sw",
+   "kind": "floor",
+   "level": 1,
+   "band_low_side": "se",
+   "road_axis": "x",
+   "road_part": "edge_sw",
+   "road_ground_sides": [
+    "sw"
+   ]
+  },
+  {
+   "id": "meadow_join_road_l1_se_edge_ne_sw",
+   "kind": "floor",
+   "level": 1,
+   "band_low_side": "se",
+   "road_axis": "x",
+   "road_part": "edge_ne_sw",
+   "road_ground_sides": [
+    "ne",
+    "sw"
+   ]
+  },
+  {
+   "id": "meadow_join_road_l1_sw_mid",
+   "kind": "floor",
+   "level": 1,
+   "band_low_side": "sw",
+   "road_axis": "y",
+   "road_part": "mid",
+   "road_ground_sides": []
+  },
+  {
+   "id": "meadow_join_road_l1_sw_edge_nw",
+   "kind": "floor",
+   "level": 1,
+   "band_low_side": "sw",
+   "road_axis": "y",
+   "road_part": "edge_nw",
+   "road_ground_sides": [
+    "nw"
+   ]
+  },
+  {
+   "id": "meadow_join_road_l1_sw_edge_se",
+   "kind": "floor",
+   "level": 1,
+   "band_low_side": "sw",
+   "road_axis": "y",
+   "road_part": "edge_se",
+   "road_ground_sides": [
+    "se"
+   ]
+  },
+  {
+   "id": "meadow_join_road_l1_sw_edge_nw_se",
+   "kind": "floor",
+   "level": 1,
+   "band_low_side": "sw",
+   "road_axis": "y",
+   "road_part": "edge_nw_se",
+   "road_ground_sides": [
+    "nw",
+    "se"
+   ]
+  },
+  {
+   "id": "meadow_join_road_l2_nw_mid",
+   "kind": "floor",
+   "level": 2,
+   "band_low_side": "nw",
+   "road_axis": "x",
+   "road_part": "mid",
+   "road_ground_sides": []
+  },
+  {
+   "id": "meadow_join_road_l2_nw_edge_ne",
+   "kind": "floor",
+   "level": 2,
+   "band_low_side": "nw",
+   "road_axis": "x",
+   "road_part": "edge_ne",
+   "road_ground_sides": [
+    "ne"
+   ]
+  },
+  {
+   "id": "meadow_join_road_l2_nw_edge_sw",
+   "kind": "floor",
+   "level": 2,
+   "band_low_side": "nw",
+   "road_axis": "x",
+   "road_part": "edge_sw",
+   "road_ground_sides": [
+    "sw"
+   ]
+  },
+  {
+   "id": "meadow_join_road_l2_nw_edge_ne_sw",
+   "kind": "floor",
+   "level": 2,
+   "band_low_side": "nw",
+   "road_axis": "x",
+   "road_part": "edge_ne_sw",
+   "road_ground_sides": [
+    "ne",
+    "sw"
+   ]
+  },
+  {
+   "id": "meadow_join_road_l2_ne_mid",
+   "kind": "floor",
+   "level": 2,
+   "band_low_side": "ne",
+   "road_axis": "y",
+   "road_part": "mid",
+   "road_ground_sides": []
+  },
+  {
+   "id": "meadow_join_road_l2_ne_edge_nw",
+   "kind": "floor",
+   "level": 2,
+   "band_low_side": "ne",
+   "road_axis": "y",
+   "road_part": "edge_nw",
+   "road_ground_sides": [
+    "nw"
+   ]
+  },
+  {
+   "id": "meadow_join_road_l2_ne_edge_se",
+   "kind": "floor",
+   "level": 2,
+   "band_low_side": "ne",
+   "road_axis": "y",
+   "road_part": "edge_se",
+   "road_ground_sides": [
+    "se"
+   ]
+  },
+  {
+   "id": "meadow_join_road_l2_ne_edge_nw_se",
+   "kind": "floor",
+   "level": 2,
+   "band_low_side": "ne",
+   "road_axis": "y",
+   "road_part": "edge_nw_se",
+   "road_ground_sides": [
+    "nw",
+    "se"
+   ]
+  },
+  {
+   "id": "meadow_join_road_l2_se_mid",
+   "kind": "floor",
+   "level": 2,
+   "band_low_side": "se",
+   "road_axis": "x",
+   "road_part": "mid",
+   "road_ground_sides": []
+  },
+  {
+   "id": "meadow_join_road_l2_se_edge_ne",
+   "kind": "floor",
+   "level": 2,
+   "band_low_side": "se",
+   "road_axis": "x",
+   "road_part": "edge_ne",
+   "road_ground_sides": [
+    "ne"
+   ]
+  },
+  {
+   "id": "meadow_join_road_l2_se_edge_sw",
+   "kind": "floor",
+   "level": 2,
+   "band_low_side": "se",
+   "road_axis": "x",
+   "road_part": "edge_sw",
+   "road_ground_sides": [
+    "sw"
+   ]
+  },
+  {
+   "id": "meadow_join_road_l2_se_edge_ne_sw",
+   "kind": "floor",
+   "level": 2,
+   "band_low_side": "se",
+   "road_axis": "x",
+   "road_part": "edge_ne_sw",
+   "road_ground_sides": [
+    "ne",
+    "sw"
+   ]
+  },
+  {
+   "id": "meadow_join_road_l2_sw_mid",
+   "kind": "floor",
+   "level": 2,
+   "band_low_side": "sw",
+   "road_axis": "y",
+   "road_part": "mid",
+   "road_ground_sides": []
+  },
+  {
+   "id": "meadow_join_road_l2_sw_edge_nw",
+   "kind": "floor",
+   "level": 2,
+   "band_low_side": "sw",
+   "road_axis": "y",
+   "road_part": "edge_nw",
+   "road_ground_sides": [
+    "nw"
+   ]
+  },
+  {
+   "id": "meadow_join_road_l2_sw_edge_se",
+   "kind": "floor",
+   "level": 2,
+   "band_low_side": "sw",
+   "road_axis": "y",
+   "road_part": "edge_se",
+   "road_ground_sides": [
+    "se"
+   ]
+  },
+  {
+   "id": "meadow_join_road_l2_sw_edge_nw_se",
+   "kind": "floor",
+   "level": 2,
+   "band_low_side": "sw",
+   "road_axis": "y",
+   "road_part": "edge_nw_se",
+   "road_ground_sides": [
+    "nw",
+    "se"
+   ]
+  },
+  {
+   "id": "meadow_join_road_l3_nw_mid",
+   "kind": "floor",
+   "level": 3,
+   "band_low_side": "nw",
+   "road_axis": "x",
+   "road_part": "mid",
+   "road_ground_sides": []
+  },
+  {
+   "id": "meadow_join_road_l3_nw_edge_ne",
+   "kind": "floor",
+   "level": 3,
+   "band_low_side": "nw",
+   "road_axis": "x",
+   "road_part": "edge_ne",
+   "road_ground_sides": [
+    "ne"
+   ]
+  },
+  {
+   "id": "meadow_join_road_l3_nw_edge_sw",
+   "kind": "floor",
+   "level": 3,
+   "band_low_side": "nw",
+   "road_axis": "x",
+   "road_part": "edge_sw",
+   "road_ground_sides": [
+    "sw"
+   ]
+  },
+  {
+   "id": "meadow_join_road_l3_nw_edge_ne_sw",
+   "kind": "floor",
+   "level": 3,
+   "band_low_side": "nw",
+   "road_axis": "x",
+   "road_part": "edge_ne_sw",
+   "road_ground_sides": [
+    "ne",
+    "sw"
+   ]
+  },
+  {
+   "id": "meadow_join_road_l3_ne_mid",
+   "kind": "floor",
+   "level": 3,
+   "band_low_side": "ne",
+   "road_axis": "y",
+   "road_part": "mid",
+   "road_ground_sides": []
+  },
+  {
+   "id": "meadow_join_road_l3_ne_edge_nw",
+   "kind": "floor",
+   "level": 3,
+   "band_low_side": "ne",
+   "road_axis": "y",
+   "road_part": "edge_nw",
+   "road_ground_sides": [
+    "nw"
+   ]
+  },
+  {
+   "id": "meadow_join_road_l3_ne_edge_se",
+   "kind": "floor",
+   "level": 3,
+   "band_low_side": "ne",
+   "road_axis": "y",
+   "road_part": "edge_se",
+   "road_ground_sides": [
+    "se"
+   ]
+  },
+  {
+   "id": "meadow_join_road_l3_ne_edge_nw_se",
+   "kind": "floor",
+   "level": 3,
+   "band_low_side": "ne",
+   "road_axis": "y",
+   "road_part": "edge_nw_se",
+   "road_ground_sides": [
+    "nw",
+    "se"
+   ]
+  },
+  {
+   "id": "meadow_join_road_l3_se_mid",
+   "kind": "floor",
+   "level": 3,
+   "band_low_side": "se",
+   "road_axis": "x",
+   "road_part": "mid",
+   "road_ground_sides": []
+  },
+  {
+   "id": "meadow_join_road_l3_se_edge_ne",
+   "kind": "floor",
+   "level": 3,
+   "band_low_side": "se",
+   "road_axis": "x",
+   "road_part": "edge_ne",
+   "road_ground_sides": [
+    "ne"
+   ]
+  },
+  {
+   "id": "meadow_join_road_l3_se_edge_sw",
+   "kind": "floor",
+   "level": 3,
+   "band_low_side": "se",
+   "road_axis": "x",
+   "road_part": "edge_sw",
+   "road_ground_sides": [
+    "sw"
+   ]
+  },
+  {
+   "id": "meadow_join_road_l3_se_edge_ne_sw",
+   "kind": "floor",
+   "level": 3,
+   "band_low_side": "se",
+   "road_axis": "x",
+   "road_part": "edge_ne_sw",
+   "road_ground_sides": [
+    "ne",
+    "sw"
+   ]
+  },
+  {
+   "id": "meadow_join_road_l3_sw_mid",
+   "kind": "floor",
+   "level": 3,
+   "band_low_side": "sw",
+   "road_axis": "y",
+   "road_part": "mid",
+   "road_ground_sides": []
+  },
+  {
+   "id": "meadow_join_road_l3_sw_edge_nw",
+   "kind": "floor",
+   "level": 3,
+   "band_low_side": "sw",
+   "road_axis": "y",
+   "road_part": "edge_nw",
+   "road_ground_sides": [
+    "nw"
+   ]
+  },
+  {
+   "id": "meadow_join_road_l3_sw_edge_se",
+   "kind": "floor",
+   "level": 3,
+   "band_low_side": "sw",
+   "road_axis": "y",
+   "road_part": "edge_se",
+   "road_ground_sides": [
+    "se"
+   ]
+  },
+  {
+   "id": "meadow_join_road_l3_sw_edge_nw_se",
+   "kind": "floor",
+   "level": 3,
+   "band_low_side": "sw",
+   "road_axis": "y",
+   "road_part": "edge_nw_se",
+   "road_ground_sides": [
+    "nw",
+    "se"
+   ]
+  },
+  {
+   "id": "dirt_road_meadow_edge_nw",
+   "kind": "floor",
+   "sides": [
+    "nw"
+   ],
+   "road_set": true
+  },
+  {
+   "id": "dirt_road_meadow_edge_ne",
+   "kind": "floor",
+   "sides": [
+    "ne"
+   ],
+   "road_set": true
+  },
+  {
+   "id": "dirt_road_meadow_edge_nw_ne",
+   "kind": "floor",
+   "sides": [
+    "nw",
+    "ne"
+   ],
+   "road_set": true
+  },
+  {
+   "id": "dirt_road_meadow_edge_se",
+   "kind": "floor",
+   "sides": [
+    "se"
+   ],
+   "road_set": true
+  },
+  {
+   "id": "dirt_road_meadow_edge_nw_se",
+   "kind": "floor",
+   "sides": [
+    "nw",
+    "se"
+   ],
+   "road_set": true
+  },
+  {
+   "id": "dirt_road_meadow_edge_ne_se",
+   "kind": "floor",
+   "sides": [
+    "ne",
+    "se"
+   ],
+   "road_set": true
+  },
+  {
+   "id": "dirt_road_meadow_edge_nw_ne_se",
+   "kind": "floor",
+   "sides": [
+    "nw",
+    "ne",
+    "se"
+   ],
+   "road_set": true
+  },
+  {
+   "id": "dirt_road_meadow_edge_sw",
+   "kind": "floor",
+   "sides": [
+    "sw"
+   ],
+   "road_set": true
+  },
+  {
+   "id": "dirt_road_meadow_edge_nw_sw",
+   "kind": "floor",
+   "sides": [
+    "nw",
+    "sw"
+   ],
+   "road_set": true
+  },
+  {
+   "id": "dirt_road_meadow_edge_ne_sw",
+   "kind": "floor",
+   "sides": [
+    "ne",
+    "sw"
+   ],
+   "road_set": true
+  },
+  {
+   "id": "dirt_road_meadow_edge_nw_ne_sw",
+   "kind": "floor",
+   "sides": [
+    "nw",
+    "ne",
+    "sw"
+   ],
+   "road_set": true
+  },
+  {
+   "id": "dirt_road_meadow_edge_se_sw",
+   "kind": "floor",
+   "sides": [
+    "se",
+    "sw"
+   ],
+   "road_set": true
+  },
+  {
+   "id": "dirt_road_meadow_edge_nw_se_sw",
+   "kind": "floor",
+   "sides": [
+    "nw",
+    "se",
+    "sw"
+   ],
+   "road_set": true
+  },
+  {
+   "id": "dirt_road_meadow_edge_ne_se_sw",
+   "kind": "floor",
+   "sides": [
+    "ne",
+    "se",
+    "sw"
+   ],
+   "road_set": true
+  },
+  {
+   "id": "dirt_road_meadow_edge_nw_ne_se_sw",
+   "kind": "floor",
+   "sides": [
+    "nw",
+    "ne",
+    "se",
+    "sw"
+   ],
+   "road_set": true
+  },
+  {
+   "id": "dirt_road_meadow_corner_n",
+   "kind": "decal",
+   "corner": "n",
+   "road_set": true
+  },
+  {
+   "id": "dirt_road_meadow_corner_e",
+   "kind": "decal",
+   "corner": "e",
+   "road_set": true
+  },
+  {
+   "id": "dirt_road_meadow_corner_s",
+   "kind": "decal",
+   "corner": "s",
+   "road_set": true
+  },
+  {
+   "id": "dirt_road_meadow_corner_w",
+   "kind": "decal",
+   "corner": "w",
+   "road_set": true
+  },
+  {
+   "id": "dirt_road_meadow_a",
+   "kind": "floor",
+   "road_set": true,
+   "variant": "a"
+  },
+  {
+   "id": "dirt_road_meadow_b",
+   "kind": "floor",
+   "road_set": true,
+   "variant": "b"
+  },
+  {
+   "id": "dirt_road_meadow_c",
+   "kind": "floor",
+   "road_set": true,
+   "variant": "c"
+  },
+  {
+   "id": "dirt_road_meadow_d",
+   "kind": "floor",
+   "road_set": true,
+   "variant": "d"
+  }
+ ],
+ "northgate_windmere": [
+  {
+   "id": "snow_grass_join_l1_a",
+   "kind": "floor",
+   "level": 1,
+   "coverage_pct": 33,
+   "variant": "a"
+  },
+  {
+   "id": "snow_grass_join_l1_b",
+   "kind": "floor",
+   "level": 1,
+   "coverage_pct": 33,
+   "variant": "b"
+  },
+  {
+   "id": "snow_grass_join_l1_c",
+   "kind": "floor",
+   "level": 1,
+   "coverage_pct": 33,
+   "variant": "c"
+  },
+  {
+   "id": "snow_grass_join_l2_a",
+   "kind": "floor",
+   "level": 2,
+   "coverage_pct": 67,
+   "variant": "a"
+  },
+  {
+   "id": "snow_grass_join_l2_b",
+   "kind": "floor",
+   "level": 2,
+   "coverage_pct": 67,
+   "variant": "b"
+  },
+  {
+   "id": "snow_grass_join_l2_c",
+   "kind": "floor",
+   "level": 2,
+   "coverage_pct": 67,
+   "variant": "c"
+  },
+  {
+   "id": "snow_grass_join_l1_edge_nw",
+   "kind": "floor",
+   "level": 1,
+   "sides": [
+    "nw"
+   ],
+   "variant": "a"
+  },
+  {
+   "id": "snow_grass_join_l1_edge_nw_b",
+   "kind": "floor",
+   "level": 1,
+   "sides": [
+    "nw"
+   ],
+   "variant": "b",
+   "variant_of": "snow_grass_join_l1_edge_nw"
+  },
+  {
+   "id": "snow_grass_join_l1_edge_nw_c",
+   "kind": "floor",
+   "level": 1,
+   "sides": [
+    "nw"
+   ],
+   "variant": "c",
+   "variant_of": "snow_grass_join_l1_edge_nw"
+  },
+  {
+   "id": "snow_grass_join_l1_edge_ne",
+   "kind": "floor",
+   "level": 1,
+   "sides": [
+    "ne"
+   ],
+   "variant": "a"
+  },
+  {
+   "id": "snow_grass_join_l1_edge_ne_b",
+   "kind": "floor",
+   "level": 1,
+   "sides": [
+    "ne"
+   ],
+   "variant": "b",
+   "variant_of": "snow_grass_join_l1_edge_ne"
+  },
+  {
+   "id": "snow_grass_join_l1_edge_ne_c",
+   "kind": "floor",
+   "level": 1,
+   "sides": [
+    "ne"
+   ],
+   "variant": "c",
+   "variant_of": "snow_grass_join_l1_edge_ne"
+  },
+  {
+   "id": "snow_grass_join_l1_edge_nw_ne",
+   "kind": "floor",
+   "level": 1,
+   "sides": [
+    "nw",
+    "ne"
+   ],
+   "variant": "a"
+  },
+  {
+   "id": "snow_grass_join_l1_edge_se",
+   "kind": "floor",
+   "level": 1,
+   "sides": [
+    "se"
+   ],
+   "variant": "a"
+  },
+  {
+   "id": "snow_grass_join_l1_edge_se_b",
+   "kind": "floor",
+   "level": 1,
+   "sides": [
+    "se"
+   ],
+   "variant": "b",
+   "variant_of": "snow_grass_join_l1_edge_se"
+  },
+  {
+   "id": "snow_grass_join_l1_edge_se_c",
+   "kind": "floor",
+   "level": 1,
+   "sides": [
+    "se"
+   ],
+   "variant": "c",
+   "variant_of": "snow_grass_join_l1_edge_se"
+  },
+  {
+   "id": "snow_grass_join_l1_edge_nw_se",
+   "kind": "floor",
+   "level": 1,
+   "sides": [
+    "nw",
+    "se"
+   ],
+   "variant": "a"
+  },
+  {
+   "id": "snow_grass_join_l1_edge_ne_se",
+   "kind": "floor",
+   "level": 1,
+   "sides": [
+    "ne",
+    "se"
+   ],
+   "variant": "a"
+  },
+  {
+   "id": "snow_grass_join_l1_edge_nw_ne_se",
+   "kind": "floor",
+   "level": 1,
+   "sides": [
+    "nw",
+    "ne",
+    "se"
+   ],
+   "variant": "a"
+  },
+  {
+   "id": "snow_grass_join_l1_edge_sw",
+   "kind": "floor",
+   "level": 1,
+   "sides": [
+    "sw"
+   ],
+   "variant": "a"
+  },
+  {
+   "id": "snow_grass_join_l1_edge_sw_b",
+   "kind": "floor",
+   "level": 1,
+   "sides": [
+    "sw"
+   ],
+   "variant": "b",
+   "variant_of": "snow_grass_join_l1_edge_sw"
+  },
+  {
+   "id": "snow_grass_join_l1_edge_sw_c",
+   "kind": "floor",
+   "level": 1,
+   "sides": [
+    "sw"
+   ],
+   "variant": "c",
+   "variant_of": "snow_grass_join_l1_edge_sw"
+  },
+  {
+   "id": "snow_grass_join_l1_edge_nw_sw",
+   "kind": "floor",
+   "level": 1,
+   "sides": [
+    "nw",
+    "sw"
+   ],
+   "variant": "a"
+  },
+  {
+   "id": "snow_grass_join_l1_edge_ne_sw",
+   "kind": "floor",
+   "level": 1,
+   "sides": [
+    "ne",
+    "sw"
+   ],
+   "variant": "a"
+  },
+  {
+   "id": "snow_grass_join_l1_edge_nw_ne_sw",
+   "kind": "floor",
+   "level": 1,
+   "sides": [
+    "nw",
+    "ne",
+    "sw"
+   ],
+   "variant": "a"
+  },
+  {
+   "id": "snow_grass_join_l1_edge_se_sw",
+   "kind": "floor",
+   "level": 1,
+   "sides": [
+    "se",
+    "sw"
+   ],
+   "variant": "a"
+  },
+  {
+   "id": "snow_grass_join_l1_edge_nw_se_sw",
+   "kind": "floor",
+   "level": 1,
+   "sides": [
+    "nw",
+    "se",
+    "sw"
+   ],
+   "variant": "a"
+  },
+  {
+   "id": "snow_grass_join_l1_edge_ne_se_sw",
+   "kind": "floor",
+   "level": 1,
+   "sides": [
+    "ne",
+    "se",
+    "sw"
+   ],
+   "variant": "a"
+  },
+  {
+   "id": "snow_grass_join_l1_edge_nw_ne_se_sw",
+   "kind": "floor",
+   "level": 1,
+   "sides": [
+    "nw",
+    "ne",
+    "se",
+    "sw"
+   ],
+   "variant": "a"
+  },
+  {
+   "id": "snow_grass_join_l1_corner_n",
+   "kind": "decal",
+   "level": 1,
+   "corner": "n"
+  },
+  {
+   "id": "snow_grass_join_l1_corner_e",
+   "kind": "decal",
+   "level": 1,
+   "corner": "e"
+  },
+  {
+   "id": "snow_grass_join_l1_corner_s",
+   "kind": "decal",
+   "level": 1,
+   "corner": "s"
+  },
+  {
+   "id": "snow_grass_join_l1_corner_w",
+   "kind": "decal",
+   "level": 1,
+   "corner": "w"
+  },
+  {
+   "id": "snow_grass_join_l2_edge_nw",
+   "kind": "floor",
+   "level": 2,
+   "sides": [
+    "nw"
+   ],
+   "variant": "a"
+  },
+  {
+   "id": "snow_grass_join_l2_edge_nw_b",
+   "kind": "floor",
+   "level": 2,
+   "sides": [
+    "nw"
+   ],
+   "variant": "b",
+   "variant_of": "snow_grass_join_l2_edge_nw"
+  },
+  {
+   "id": "snow_grass_join_l2_edge_nw_c",
+   "kind": "floor",
+   "level": 2,
+   "sides": [
+    "nw"
+   ],
+   "variant": "c",
+   "variant_of": "snow_grass_join_l2_edge_nw"
+  },
+  {
+   "id": "snow_grass_join_l2_edge_ne",
+   "kind": "floor",
+   "level": 2,
+   "sides": [
+    "ne"
+   ],
+   "variant": "a"
+  },
+  {
+   "id": "snow_grass_join_l2_edge_ne_b",
+   "kind": "floor",
+   "level": 2,
+   "sides": [
+    "ne"
+   ],
+   "variant": "b",
+   "variant_of": "snow_grass_join_l2_edge_ne"
+  },
+  {
+   "id": "snow_grass_join_l2_edge_ne_c",
+   "kind": "floor",
+   "level": 2,
+   "sides": [
+    "ne"
+   ],
+   "variant": "c",
+   "variant_of": "snow_grass_join_l2_edge_ne"
+  },
+  {
+   "id": "snow_grass_join_l2_edge_nw_ne",
+   "kind": "floor",
+   "level": 2,
+   "sides": [
+    "nw",
+    "ne"
+   ],
+   "variant": "a"
+  },
+  {
+   "id": "snow_grass_join_l2_edge_se",
+   "kind": "floor",
+   "level": 2,
+   "sides": [
+    "se"
+   ],
+   "variant": "a"
+  },
+  {
+   "id": "snow_grass_join_l2_edge_se_b",
+   "kind": "floor",
+   "level": 2,
+   "sides": [
+    "se"
+   ],
+   "variant": "b",
+   "variant_of": "snow_grass_join_l2_edge_se"
+  },
+  {
+   "id": "snow_grass_join_l2_edge_se_c",
+   "kind": "floor",
+   "level": 2,
+   "sides": [
+    "se"
+   ],
+   "variant": "c",
+   "variant_of": "snow_grass_join_l2_edge_se"
+  },
+  {
+   "id": "snow_grass_join_l2_edge_nw_se",
+   "kind": "floor",
+   "level": 2,
+   "sides": [
+    "nw",
+    "se"
+   ],
+   "variant": "a"
+  },
+  {
+   "id": "snow_grass_join_l2_edge_ne_se",
+   "kind": "floor",
+   "level": 2,
+   "sides": [
+    "ne",
+    "se"
+   ],
+   "variant": "a"
+  },
+  {
+   "id": "snow_grass_join_l2_edge_nw_ne_se",
+   "kind": "floor",
+   "level": 2,
+   "sides": [
+    "nw",
+    "ne",
+    "se"
+   ],
+   "variant": "a"
+  },
+  {
+   "id": "snow_grass_join_l2_edge_sw",
+   "kind": "floor",
+   "level": 2,
+   "sides": [
+    "sw"
+   ],
+   "variant": "a"
+  },
+  {
+   "id": "snow_grass_join_l2_edge_sw_b",
+   "kind": "floor",
+   "level": 2,
+   "sides": [
+    "sw"
+   ],
+   "variant": "b",
+   "variant_of": "snow_grass_join_l2_edge_sw"
+  },
+  {
+   "id": "snow_grass_join_l2_edge_sw_c",
+   "kind": "floor",
+   "level": 2,
+   "sides": [
+    "sw"
+   ],
+   "variant": "c",
+   "variant_of": "snow_grass_join_l2_edge_sw"
+  },
+  {
+   "id": "snow_grass_join_l2_edge_nw_sw",
+   "kind": "floor",
+   "level": 2,
+   "sides": [
+    "nw",
+    "sw"
+   ],
+   "variant": "a"
+  },
+  {
+   "id": "snow_grass_join_l2_edge_ne_sw",
+   "kind": "floor",
+   "level": 2,
+   "sides": [
+    "ne",
+    "sw"
+   ],
+   "variant": "a"
+  },
+  {
+   "id": "snow_grass_join_l2_edge_nw_ne_sw",
+   "kind": "floor",
+   "level": 2,
+   "sides": [
+    "nw",
+    "ne",
+    "sw"
+   ],
+   "variant": "a"
+  },
+  {
+   "id": "snow_grass_join_l2_edge_se_sw",
+   "kind": "floor",
+   "level": 2,
+   "sides": [
+    "se",
+    "sw"
+   ],
+   "variant": "a"
+  },
+  {
+   "id": "snow_grass_join_l2_edge_nw_se_sw",
+   "kind": "floor",
+   "level": 2,
+   "sides": [
+    "nw",
+    "se",
+    "sw"
+   ],
+   "variant": "a"
+  },
+  {
+   "id": "snow_grass_join_l2_edge_ne_se_sw",
+   "kind": "floor",
+   "level": 2,
+   "sides": [
+    "ne",
+    "se",
+    "sw"
+   ],
+   "variant": "a"
+  },
+  {
+   "id": "snow_grass_join_l2_edge_nw_ne_se_sw",
+   "kind": "floor",
+   "level": 2,
+   "sides": [
+    "nw",
+    "ne",
+    "se",
+    "sw"
+   ],
+   "variant": "a"
+  },
+  {
+   "id": "snow_grass_join_l2_corner_n",
+   "kind": "decal",
+   "level": 2,
+   "corner": "n"
+  },
+  {
+   "id": "snow_grass_join_l2_corner_e",
+   "kind": "decal",
+   "level": 2,
+   "corner": "e"
+  },
+  {
+   "id": "snow_grass_join_l2_corner_s",
+   "kind": "decal",
+   "level": 2,
+   "corner": "s"
+  },
+  {
+   "id": "snow_grass_join_l2_corner_w",
+   "kind": "decal",
+   "level": 2,
+   "corner": "w"
+  },
+  {
+   "id": "snow_grass_join_l3_edge_nw",
+   "kind": "floor",
+   "level": 3,
+   "sides": [
+    "nw"
+   ],
+   "variant": "a"
+  },
+  {
+   "id": "snow_grass_join_l3_edge_nw_b",
+   "kind": "floor",
+   "level": 3,
+   "sides": [
+    "nw"
+   ],
+   "variant": "b",
+   "variant_of": "snow_grass_join_l3_edge_nw"
+  },
+  {
+   "id": "snow_grass_join_l3_edge_nw_c",
+   "kind": "floor",
+   "level": 3,
+   "sides": [
+    "nw"
+   ],
+   "variant": "c",
+   "variant_of": "snow_grass_join_l3_edge_nw"
+  },
+  {
+   "id": "snow_grass_join_l3_edge_ne",
+   "kind": "floor",
+   "level": 3,
+   "sides": [
+    "ne"
+   ],
+   "variant": "a"
+  },
+  {
+   "id": "snow_grass_join_l3_edge_ne_b",
+   "kind": "floor",
+   "level": 3,
+   "sides": [
+    "ne"
+   ],
+   "variant": "b",
+   "variant_of": "snow_grass_join_l3_edge_ne"
+  },
+  {
+   "id": "snow_grass_join_l3_edge_ne_c",
+   "kind": "floor",
+   "level": 3,
+   "sides": [
+    "ne"
+   ],
+   "variant": "c",
+   "variant_of": "snow_grass_join_l3_edge_ne"
+  },
+  {
+   "id": "snow_grass_join_l3_edge_nw_ne",
+   "kind": "floor",
+   "level": 3,
+   "sides": [
+    "nw",
+    "ne"
+   ],
+   "variant": "a"
+  },
+  {
+   "id": "snow_grass_join_l3_edge_se",
+   "kind": "floor",
+   "level": 3,
+   "sides": [
+    "se"
+   ],
+   "variant": "a"
+  },
+  {
+   "id": "snow_grass_join_l3_edge_se_b",
+   "kind": "floor",
+   "level": 3,
+   "sides": [
+    "se"
+   ],
+   "variant": "b",
+   "variant_of": "snow_grass_join_l3_edge_se"
+  },
+  {
+   "id": "snow_grass_join_l3_edge_se_c",
+   "kind": "floor",
+   "level": 3,
+   "sides": [
+    "se"
+   ],
+   "variant": "c",
+   "variant_of": "snow_grass_join_l3_edge_se"
+  },
+  {
+   "id": "snow_grass_join_l3_edge_nw_se",
+   "kind": "floor",
+   "level": 3,
+   "sides": [
+    "nw",
+    "se"
+   ],
+   "variant": "a"
+  },
+  {
+   "id": "snow_grass_join_l3_edge_ne_se",
+   "kind": "floor",
+   "level": 3,
+   "sides": [
+    "ne",
+    "se"
+   ],
+   "variant": "a"
+  },
+  {
+   "id": "snow_grass_join_l3_edge_nw_ne_se",
+   "kind": "floor",
+   "level": 3,
+   "sides": [
+    "nw",
+    "ne",
+    "se"
+   ],
+   "variant": "a"
+  },
+  {
+   "id": "snow_grass_join_l3_edge_sw",
+   "kind": "floor",
+   "level": 3,
+   "sides": [
+    "sw"
+   ],
+   "variant": "a"
+  },
+  {
+   "id": "snow_grass_join_l3_edge_sw_b",
+   "kind": "floor",
+   "level": 3,
+   "sides": [
+    "sw"
+   ],
+   "variant": "b",
+   "variant_of": "snow_grass_join_l3_edge_sw"
+  },
+  {
+   "id": "snow_grass_join_l3_edge_sw_c",
+   "kind": "floor",
+   "level": 3,
+   "sides": [
+    "sw"
+   ],
+   "variant": "c",
+   "variant_of": "snow_grass_join_l3_edge_sw"
+  },
+  {
+   "id": "snow_grass_join_l3_edge_nw_sw",
+   "kind": "floor",
+   "level": 3,
+   "sides": [
+    "nw",
+    "sw"
+   ],
+   "variant": "a"
+  },
+  {
+   "id": "snow_grass_join_l3_edge_ne_sw",
+   "kind": "floor",
+   "level": 3,
+   "sides": [
+    "ne",
+    "sw"
+   ],
+   "variant": "a"
+  },
+  {
+   "id": "snow_grass_join_l3_edge_nw_ne_sw",
+   "kind": "floor",
+   "level": 3,
+   "sides": [
+    "nw",
+    "ne",
+    "sw"
+   ],
+   "variant": "a"
+  },
+  {
+   "id": "snow_grass_join_l3_edge_se_sw",
+   "kind": "floor",
+   "level": 3,
+   "sides": [
+    "se",
+    "sw"
+   ],
+   "variant": "a"
+  },
+  {
+   "id": "snow_grass_join_l3_edge_nw_se_sw",
+   "kind": "floor",
+   "level": 3,
+   "sides": [
+    "nw",
+    "se",
+    "sw"
+   ],
+   "variant": "a"
+  },
+  {
+   "id": "snow_grass_join_l3_edge_ne_se_sw",
+   "kind": "floor",
+   "level": 3,
+   "sides": [
+    "ne",
+    "se",
+    "sw"
+   ],
+   "variant": "a"
+  },
+  {
+   "id": "snow_grass_join_l3_edge_nw_ne_se_sw",
+   "kind": "floor",
+   "level": 3,
+   "sides": [
+    "nw",
+    "ne",
+    "se",
+    "sw"
+   ],
+   "variant": "a"
+  },
+  {
+   "id": "snow_grass_join_l3_corner_n",
+   "kind": "decal",
+   "level": 3,
+   "corner": "n"
+  },
+  {
+   "id": "snow_grass_join_l3_corner_e",
+   "kind": "decal",
+   "level": 3,
+   "corner": "e"
+  },
+  {
+   "id": "snow_grass_join_l3_corner_s",
+   "kind": "decal",
+   "level": 3,
+   "corner": "s"
+  },
+  {
+   "id": "snow_grass_join_l3_corner_w",
+   "kind": "decal",
+   "level": 3,
+   "corner": "w"
+  },
+  {
+   "id": "snow_grass_join_road_l1_nw_mid",
+   "kind": "floor",
+   "level": 1,
+   "band_low_side": "nw",
+   "road_axis": "x",
+   "road_part": "mid",
+   "road_ground_sides": []
+  },
+  {
+   "id": "snow_grass_join_road_l1_nw_edge_ne",
+   "kind": "floor",
+   "level": 1,
+   "band_low_side": "nw",
+   "road_axis": "x",
+   "road_part": "edge_ne",
+   "road_ground_sides": [
+    "ne"
+   ]
+  },
+  {
+   "id": "snow_grass_join_road_l1_nw_edge_sw",
+   "kind": "floor",
+   "level": 1,
+   "band_low_side": "nw",
+   "road_axis": "x",
+   "road_part": "edge_sw",
+   "road_ground_sides": [
+    "sw"
+   ]
+  },
+  {
+   "id": "snow_grass_join_road_l1_nw_edge_ne_sw",
+   "kind": "floor",
+   "level": 1,
+   "band_low_side": "nw",
+   "road_axis": "x",
+   "road_part": "edge_ne_sw",
+   "road_ground_sides": [
+    "ne",
+    "sw"
+   ]
+  },
+  {
+   "id": "snow_grass_join_road_l1_ne_mid",
+   "kind": "floor",
+   "level": 1,
+   "band_low_side": "ne",
+   "road_axis": "y",
+   "road_part": "mid",
+   "road_ground_sides": []
+  },
+  {
+   "id": "snow_grass_join_road_l1_ne_edge_nw",
+   "kind": "floor",
+   "level": 1,
+   "band_low_side": "ne",
+   "road_axis": "y",
+   "road_part": "edge_nw",
+   "road_ground_sides": [
+    "nw"
+   ]
+  },
+  {
+   "id": "snow_grass_join_road_l1_ne_edge_se",
+   "kind": "floor",
+   "level": 1,
+   "band_low_side": "ne",
+   "road_axis": "y",
+   "road_part": "edge_se",
+   "road_ground_sides": [
+    "se"
+   ]
+  },
+  {
+   "id": "snow_grass_join_road_l1_ne_edge_nw_se",
+   "kind": "floor",
+   "level": 1,
+   "band_low_side": "ne",
+   "road_axis": "y",
+   "road_part": "edge_nw_se",
+   "road_ground_sides": [
+    "nw",
+    "se"
+   ]
+  },
+  {
+   "id": "snow_grass_join_road_l1_se_mid",
+   "kind": "floor",
+   "level": 1,
+   "band_low_side": "se",
+   "road_axis": "x",
+   "road_part": "mid",
+   "road_ground_sides": []
+  },
+  {
+   "id": "snow_grass_join_road_l1_se_edge_ne",
+   "kind": "floor",
+   "level": 1,
+   "band_low_side": "se",
+   "road_axis": "x",
+   "road_part": "edge_ne",
+   "road_ground_sides": [
+    "ne"
+   ]
+  },
+  {
+   "id": "snow_grass_join_road_l1_se_edge_sw",
+   "kind": "floor",
+   "level": 1,
+   "band_low_side": "se",
+   "road_axis": "x",
+   "road_part": "edge_sw",
+   "road_ground_sides": [
+    "sw"
+   ]
+  },
+  {
+   "id": "snow_grass_join_road_l1_se_edge_ne_sw",
+   "kind": "floor",
+   "level": 1,
+   "band_low_side": "se",
+   "road_axis": "x",
+   "road_part": "edge_ne_sw",
+   "road_ground_sides": [
+    "ne",
+    "sw"
+   ]
+  },
+  {
+   "id": "snow_grass_join_road_l1_sw_mid",
+   "kind": "floor",
+   "level": 1,
+   "band_low_side": "sw",
+   "road_axis": "y",
+   "road_part": "mid",
+   "road_ground_sides": []
+  },
+  {
+   "id": "snow_grass_join_road_l1_sw_edge_nw",
+   "kind": "floor",
+   "level": 1,
+   "band_low_side": "sw",
+   "road_axis": "y",
+   "road_part": "edge_nw",
+   "road_ground_sides": [
+    "nw"
+   ]
+  },
+  {
+   "id": "snow_grass_join_road_l1_sw_edge_se",
+   "kind": "floor",
+   "level": 1,
+   "band_low_side": "sw",
+   "road_axis": "y",
+   "road_part": "edge_se",
+   "road_ground_sides": [
+    "se"
+   ]
+  },
+  {
+   "id": "snow_grass_join_road_l1_sw_edge_nw_se",
+   "kind": "floor",
+   "level": 1,
+   "band_low_side": "sw",
+   "road_axis": "y",
+   "road_part": "edge_nw_se",
+   "road_ground_sides": [
+    "nw",
+    "se"
+   ]
+  },
+  {
+   "id": "snow_grass_join_road_l2_nw_mid",
+   "kind": "floor",
+   "level": 2,
+   "band_low_side": "nw",
+   "road_axis": "x",
+   "road_part": "mid",
+   "road_ground_sides": []
+  },
+  {
+   "id": "snow_grass_join_road_l2_nw_edge_ne",
+   "kind": "floor",
+   "level": 2,
+   "band_low_side": "nw",
+   "road_axis": "x",
+   "road_part": "edge_ne",
+   "road_ground_sides": [
+    "ne"
+   ]
+  },
+  {
+   "id": "snow_grass_join_road_l2_nw_edge_sw",
+   "kind": "floor",
+   "level": 2,
+   "band_low_side": "nw",
+   "road_axis": "x",
+   "road_part": "edge_sw",
+   "road_ground_sides": [
+    "sw"
+   ]
+  },
+  {
+   "id": "snow_grass_join_road_l2_nw_edge_ne_sw",
+   "kind": "floor",
+   "level": 2,
+   "band_low_side": "nw",
+   "road_axis": "x",
+   "road_part": "edge_ne_sw",
+   "road_ground_sides": [
+    "ne",
+    "sw"
+   ]
+  },
+  {
+   "id": "snow_grass_join_road_l2_ne_mid",
+   "kind": "floor",
+   "level": 2,
+   "band_low_side": "ne",
+   "road_axis": "y",
+   "road_part": "mid",
+   "road_ground_sides": []
+  },
+  {
+   "id": "snow_grass_join_road_l2_ne_edge_nw",
+   "kind": "floor",
+   "level": 2,
+   "band_low_side": "ne",
+   "road_axis": "y",
+   "road_part": "edge_nw",
+   "road_ground_sides": [
+    "nw"
+   ]
+  },
+  {
+   "id": "snow_grass_join_road_l2_ne_edge_se",
+   "kind": "floor",
+   "level": 2,
+   "band_low_side": "ne",
+   "road_axis": "y",
+   "road_part": "edge_se",
+   "road_ground_sides": [
+    "se"
+   ]
+  },
+  {
+   "id": "snow_grass_join_road_l2_ne_edge_nw_se",
+   "kind": "floor",
+   "level": 2,
+   "band_low_side": "ne",
+   "road_axis": "y",
+   "road_part": "edge_nw_se",
+   "road_ground_sides": [
+    "nw",
+    "se"
+   ]
+  },
+  {
+   "id": "snow_grass_join_road_l2_se_mid",
+   "kind": "floor",
+   "level": 2,
+   "band_low_side": "se",
+   "road_axis": "x",
+   "road_part": "mid",
+   "road_ground_sides": []
+  },
+  {
+   "id": "snow_grass_join_road_l2_se_edge_ne",
+   "kind": "floor",
+   "level": 2,
+   "band_low_side": "se",
+   "road_axis": "x",
+   "road_part": "edge_ne",
+   "road_ground_sides": [
+    "ne"
+   ]
+  },
+  {
+   "id": "snow_grass_join_road_l2_se_edge_sw",
+   "kind": "floor",
+   "level": 2,
+   "band_low_side": "se",
+   "road_axis": "x",
+   "road_part": "edge_sw",
+   "road_ground_sides": [
+    "sw"
+   ]
+  },
+  {
+   "id": "snow_grass_join_road_l2_se_edge_ne_sw",
+   "kind": "floor",
+   "level": 2,
+   "band_low_side": "se",
+   "road_axis": "x",
+   "road_part": "edge_ne_sw",
+   "road_ground_sides": [
+    "ne",
+    "sw"
+   ]
+  },
+  {
+   "id": "snow_grass_join_road_l2_sw_mid",
+   "kind": "floor",
+   "level": 2,
+   "band_low_side": "sw",
+   "road_axis": "y",
+   "road_part": "mid",
+   "road_ground_sides": []
+  },
+  {
+   "id": "snow_grass_join_road_l2_sw_edge_nw",
+   "kind": "floor",
+   "level": 2,
+   "band_low_side": "sw",
+   "road_axis": "y",
+   "road_part": "edge_nw",
+   "road_ground_sides": [
+    "nw"
+   ]
+  },
+  {
+   "id": "snow_grass_join_road_l2_sw_edge_se",
+   "kind": "floor",
+   "level": 2,
+   "band_low_side": "sw",
+   "road_axis": "y",
+   "road_part": "edge_se",
+   "road_ground_sides": [
+    "se"
+   ]
+  },
+  {
+   "id": "snow_grass_join_road_l2_sw_edge_nw_se",
+   "kind": "floor",
+   "level": 2,
+   "band_low_side": "sw",
+   "road_axis": "y",
+   "road_part": "edge_nw_se",
+   "road_ground_sides": [
+    "nw",
+    "se"
+   ]
+  },
+  {
+   "id": "snow_grass_join_road_l3_nw_mid",
+   "kind": "floor",
+   "level": 3,
+   "band_low_side": "nw",
+   "road_axis": "x",
+   "road_part": "mid",
+   "road_ground_sides": []
+  },
+  {
+   "id": "snow_grass_join_road_l3_nw_edge_ne",
+   "kind": "floor",
+   "level": 3,
+   "band_low_side": "nw",
+   "road_axis": "x",
+   "road_part": "edge_ne",
+   "road_ground_sides": [
+    "ne"
+   ]
+  },
+  {
+   "id": "snow_grass_join_road_l3_nw_edge_sw",
+   "kind": "floor",
+   "level": 3,
+   "band_low_side": "nw",
+   "road_axis": "x",
+   "road_part": "edge_sw",
+   "road_ground_sides": [
+    "sw"
+   ]
+  },
+  {
+   "id": "snow_grass_join_road_l3_nw_edge_ne_sw",
+   "kind": "floor",
+   "level": 3,
+   "band_low_side": "nw",
+   "road_axis": "x",
+   "road_part": "edge_ne_sw",
+   "road_ground_sides": [
+    "ne",
+    "sw"
+   ]
+  },
+  {
+   "id": "snow_grass_join_road_l3_ne_mid",
+   "kind": "floor",
+   "level": 3,
+   "band_low_side": "ne",
+   "road_axis": "y",
+   "road_part": "mid",
+   "road_ground_sides": []
+  },
+  {
+   "id": "snow_grass_join_road_l3_ne_edge_nw",
+   "kind": "floor",
+   "level": 3,
+   "band_low_side": "ne",
+   "road_axis": "y",
+   "road_part": "edge_nw",
+   "road_ground_sides": [
+    "nw"
+   ]
+  },
+  {
+   "id": "snow_grass_join_road_l3_ne_edge_se",
+   "kind": "floor",
+   "level": 3,
+   "band_low_side": "ne",
+   "road_axis": "y",
+   "road_part": "edge_se",
+   "road_ground_sides": [
+    "se"
+   ]
+  },
+  {
+   "id": "snow_grass_join_road_l3_ne_edge_nw_se",
+   "kind": "floor",
+   "level": 3,
+   "band_low_side": "ne",
+   "road_axis": "y",
+   "road_part": "edge_nw_se",
+   "road_ground_sides": [
+    "nw",
+    "se"
+   ]
+  },
+  {
+   "id": "snow_grass_join_road_l3_se_mid",
+   "kind": "floor",
+   "level": 3,
+   "band_low_side": "se",
+   "road_axis": "x",
+   "road_part": "mid",
+   "road_ground_sides": []
+  },
+  {
+   "id": "snow_grass_join_road_l3_se_edge_ne",
+   "kind": "floor",
+   "level": 3,
+   "band_low_side": "se",
+   "road_axis": "x",
+   "road_part": "edge_ne",
+   "road_ground_sides": [
+    "ne"
+   ]
+  },
+  {
+   "id": "snow_grass_join_road_l3_se_edge_sw",
+   "kind": "floor",
+   "level": 3,
+   "band_low_side": "se",
+   "road_axis": "x",
+   "road_part": "edge_sw",
+   "road_ground_sides": [
+    "sw"
+   ]
+  },
+  {
+   "id": "snow_grass_join_road_l3_se_edge_ne_sw",
+   "kind": "floor",
+   "level": 3,
+   "band_low_side": "se",
+   "road_axis": "x",
+   "road_part": "edge_ne_sw",
+   "road_ground_sides": [
+    "ne",
+    "sw"
+   ]
+  },
+  {
+   "id": "snow_grass_join_road_l3_sw_mid",
+   "kind": "floor",
+   "level": 3,
+   "band_low_side": "sw",
+   "road_axis": "y",
+   "road_part": "mid",
+   "road_ground_sides": []
+  },
+  {
+   "id": "snow_grass_join_road_l3_sw_edge_nw",
+   "kind": "floor",
+   "level": 3,
+   "band_low_side": "sw",
+   "road_axis": "y",
+   "road_part": "edge_nw",
+   "road_ground_sides": [
+    "nw"
+   ]
+  },
+  {
+   "id": "snow_grass_join_road_l3_sw_edge_se",
+   "kind": "floor",
+   "level": 3,
+   "band_low_side": "sw",
+   "road_axis": "y",
+   "road_part": "edge_se",
+   "road_ground_sides": [
+    "se"
+   ]
+  },
+  {
+   "id": "snow_grass_join_road_l3_sw_edge_nw_se",
+   "kind": "floor",
+   "level": 3,
+   "band_low_side": "sw",
+   "road_axis": "y",
+   "road_part": "edge_nw_se",
+   "road_ground_sides": [
+    "nw",
+    "se"
+   ]
+  }
+ ]
+}

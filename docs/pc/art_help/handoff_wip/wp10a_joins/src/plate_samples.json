@@ -1,0 +1,30 @@
+{
+ "grass_yellow_green": {
+  "hex": "#74723a",
+  "px": 3618
+ },
+ "grass_hay_gold": {
+  "hex": "#af9d64",
+  "px": 214151
+ },
+ "road_pale_cream": {
+  "hex": "#e3dabe",
+  "px": 14898
+ },
+ "stone_cliff_white": {
+  "hex": "#dee4dc",
+  "px": 1923
+ },
+ "stone_warm_grey": {
+  "hex": "#908d80",
+  "px": 18659
+ },
+ "water_clear_blue": {
+  "hex": "#216c81",
+  "px": 102596
+ },
+ "roof_terracotta": {
+  "hex": "#805338",
+  "px": 1967
+ }
+}
