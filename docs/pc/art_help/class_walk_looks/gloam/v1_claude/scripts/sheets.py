@@ -66,7 +66,10 @@ def target_meas(F):
                 thigh_w=tw, boot_w=bw)
 
 def walk_meas(F, i, T):
-    img, meta = grig.render(F, i, RS); al = img[..., 3]
+    img, meta = grig.render(F, i, RS)
+    # tiles show the shipped cell frame (binary alpha, specks filled), upscaled RS x
+    cell = grig.to_cell(img, RS, F).astype(np.float32) / 255
+    cell = np.repeat(np.repeat(cell, RS, 0), RS, 1); img = np.dstack([cell[..., :3] * cell[..., 3:], cell[..., 3:]]); al = img[..., 3]
     dy = grig.get_dy(F); BT = grig.body_T(F, i, dy); s = BT[0]; pl = grig.plants(F)
     top = int(np.nonzero((al > 0.5).any(1))[0].min()) / RS
     legs = {}; soles = {}

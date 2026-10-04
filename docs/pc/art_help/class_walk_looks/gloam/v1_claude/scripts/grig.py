@@ -367,12 +367,31 @@ def close_crotch(F, img, legs_a, knee_y, RS):
     img[:] = over(fill, img)
     return n_gap
 
-def to_cell(img, RS):
+def to_cell(img, RS, F=None):
     sm = cv2.resize(img, (CW, CH), interpolation=cv2.INTER_AREA) if RS != 1 else img
     a = sm[..., 3]; m = a > 0.5
     rgb = np.clip(sm[..., :3] / np.maximum(a[..., None], 1e-6), 0, 1)
     out = np.zeros((CH, CW, 4), np.uint8); out[m, :3] = (rgb[m] * 255 + 0.5).astype(np.uint8); out[m, 3] = 255
+    if F is not None and CFG[F].get('speck_px'): fill_specks(out, CFG[F]['speck_px'])
     return out
+
+def fill_specks(out, max_px):
+    """see-through specks: enclosed background islands of at most max_px cell px (4-connected, not touching the cell
+    border) become opaque, coloured from their opaque neighbours. Larger enclosed gaps (between two legs below the knee)
+    are kept."""
+    bg = (out[..., 3] == 0).astype(np.uint8); n, lab, st, _ = cv2.connectedComponentsWithStats(bg, connectivity=4)
+    edge = set(np.unique(np.concatenate([lab[0], lab[-1], lab[:, 0], lab[:, -1]])).tolist())
+    hole = np.zeros(bg.shape, bool)
+    for k in range(1, n):
+        if k not in edge and st[k, cv2.CC_STAT_AREA] <= max_px: hole |= lab == k
+    if not hole.any(): return 0
+    col = out[..., :3].astype(np.float32); wgt = (out[..., 3] > 0).astype(np.float32)
+    for _ in range(8):
+        if not hole.any(): break
+        s_ = cv2.blur(col * wgt[..., None], (3, 3)); w_ = cv2.blur(wgt, (3, 3))
+        ok = hole & (w_ > 0)
+        col[ok] = s_[ok] / w_[ok, None]; wgt[ok] = 1; out[ok, :3] = col[ok].astype(np.uint8); out[ok, 3] = 255; hole &= ~ok
+    return int(ok.sum())
 
 def gif(paths, out, scale=1, bg=(172, 172, 172), mirror=False):
     from PIL import ImageOps
@@ -392,7 +411,7 @@ if __name__ == '__main__':
         info[F] = {}
         for i in fl:
             img, meta = render(F, i, a.rs)
-            Image.fromarray(to_cell(img, a.rs)).save(f'{a.out}/gloam_walk_{F}_f{i:02d}.png'); info[F][f'f{i:02d}'] = meta
+            Image.fromarray(to_cell(img, a.rs, F)).save(f'{a.out}/gloam_walk_{F}_f{i:02d}.png'); info[F][f'f{i:02d}'] = meta
             print(F, i, 'near', meta['near'], 'k', round(meta['R']['k'], 3), round(meta['L']['k'], 3), 'pull', round(meta['R']['pull'], 1), round(meta['L']['pull'], 1), flush=True)
         if a.gif and not a.frames:
             gif([f'{a.out}/gloam_walk_{F}_f{i:02d}.png' for i in range(12)], os.path.join(a.out, '..', f'walk_{F}.gif'))

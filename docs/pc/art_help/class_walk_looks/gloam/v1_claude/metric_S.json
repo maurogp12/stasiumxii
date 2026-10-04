@@ -6,38 +6,38 @@
   "ty": 95.5,
   "iou_upper": 0.986
  },
- "ssim_upper": 0.993,
- "ssim_lower": 0.541,
- "ssim_full": 0.713,
+ "ssim_upper": 0.992,
+ "ssim_lower": 0.54,
+ "ssim_full": 0.712,
  "iou": 0.812,
  "palette_detail": {
   "steel": {
-   "dE": 0.44,
+   "dE": 0.45,
    "share_cand": 0.945,
    "share_tgt": 0.944
   },
   "cape": {
-   "dE": 0.13,
+   "dE": 0.15,
    "share_cand": 0.055,
    "share_tgt": 0.056
   },
   "bone": null
  },
- "palette": 0.981,
+ "palette": 0.98,
  "leg_ratio_vs_repaint": 1.057,
  "height_vs_idle": 1.0,
  "look_hold_upper": [
-  0.993,
-  0.973,
-  0.976,
   0.992,
+  0.973,
+  0.975,
   0.991,
+  0.99,
   0.994,
   0.964,
-  0.966,
+  0.965,
   0.981,
   0.995,
-  0.994,
+  0.993,
   0.995
  ],
  "look_score": 88.7,

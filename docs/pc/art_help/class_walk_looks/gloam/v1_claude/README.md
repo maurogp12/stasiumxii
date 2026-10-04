@@ -24,6 +24,7 @@ The method is the one used for the locked Kestrel walk (`kestrel/v3_claude/`). T
 | `feet_S_far_boot.png`, `.json` | All 12 S frames zoomed on the feet, with the far boot's visible % and the gap between the boots. |
 | `s_checks_S.json`, `s_checks_E.json` | For each frame: crotch gap (background inside the legs' hull above the knees), thigh angles, the swing thigh's forward angle, and far-boot visibility. |
 | `metric_S.json`, `metric_E.json` | Bastion metric (`bastion/v2/scripts/bastion_metric.py`, unchanged; the same one Kestrel's `run_metric.py` uses) against the v3 clay. |
+| `s_track_options.png` | The S foot-track options for the knock-knee fix, set beside Kestrel's approved and rejected tracks (see the section below). |
 | `parts/` | The cut layers: `leg_F`, `legfar_F`, `back_F`, `front_F` and `rig_F.json`. |
 | `scripts/` | `gcut.py` (cut), `grig.py` (rig and render), `sheets.py`, `run_metric.py`, `boot_vis.py`, `s_checks.py`, `gcfg.json` (Gloam settings). |
 
@@ -59,8 +60,8 @@ The method is the one used for the locked Kestrel walk (`kestrel/v3_claude/`). T
 
 | | look | ssim upper / lower | iou | palette | height vs idle | bob err | motion | sole_err per frame (px) |
 |---|---|---|---|---|---|---|---|---|
-| S | **88.7** (PASS) | 0.993 / 0.541 | 0.812 | 0.981 | 1.000 | 0 | 83.3 | 0.94 0.28 0.78 0.41 0.23 0.10 1.94 1.02 1.35 0.27 4.72 2.91 |
-| E | **87.9** (PASS) | 0.976 / 0.577 | 0.776 | 0.980 | 1.000 | 0 | 91.7 | 3.41 1.02 1.77 1.44 1.40 0.86 1.33 1.24 1.36 1.29 1.58 0.10 |
+| S | **88.7** (PASS) | 0.992 / 0.540 | 0.812 | 0.980 | 1.000 | 0 | 83.3 | 0.94 0.28 0.78 0.41 0.23 0.10 1.94 1.02 1.35 0.27 4.72 2.91 |
+| E | **87.8** (PASS) | 0.975 / 0.574 | 0.775 | 0.979 | 1.000 | 0 | 91.7 | 3.41 1.02 1.77 1.44 1.40 0.86 1.33 1.24 1.36 1.29 1.58 0.10 |
 
 Motion misses:
 
@@ -92,6 +93,31 @@ The real skate on planted heels and toes is ≤ 0.56 px (`legs_sheet.json` → `
 | f00 | f01 | f02 | f03 | f04 | f05 | f06 | f07 | f08 | f09 | f10 | f11 |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | **41.4** | **46.5** | **47.0** | 73.5 | 98.9 | 100 | 100 | 99.9 | 100 | 92.9 | 65.3 | **23.0** |
+
+## Review round 1: E specks fixed, the S track is still open
+
+**E specks (fixed).** `speck_px` in `gcfg.json` (E 10 px, S 4 px) fills enclosed background islands up to that size in the final cell, coloured from their opaque neighbours. Larger enclosed gaps (between the two legs below the knee) are kept. The strips and the legs sheet now tile the shipped cell frame, so they show exactly what the GIFs show.
+
+**S knock-knee: blockout track sweep (no blockout committed).** I rendered Gloam S at `foot_w` 0.3, 0.5, 0.65, 0.9 (the current v3), 1.2, 1.35, 1.5, 1.65 and 1.8, rigged each one, and checked three things:
+
+- **(a) Shins crossing** below the knee.
+- **(b) Far boot** visible on every frame.
+- **(c) Sideways splay.** This is the angle of the front heel minus the back heel at the contacts, against the 27° travel diagonal. Kestrel v3.2 (approved) is 41° / 27°. Kestrel v3.1 (rejected, splayed) is 78° / 9°.
+
+| foot_w | shins cross (a) | far boot min (b) | contact angle f00 / f06 (c) |
+|---|---|---|---|
+| 0.3–0.65 | f00–f03 (and f11) | 20–37% | closer to the diagonal |
+| 0.9 (v3 now) | f00–f02, f11 | 23% | 66° / 14° |
+| 1.2 | none | 39% | 77° / 10° |
+| 1.5 (+ f02 swing key, straight late stance) | none | 48% (f11) | 88° / 6° |
+| 1.65 (same) | none | 61% (f11) | 92° / 5° |
+| 1.8 | none | 79% | 96° / 3° |
+
+- **The conflict.** Every track that passes (a) and (b) is splayed sideways at least as much as the rejected Kestrel v3.1, because the lateral foot offset projects onto the screen's down-left / up-right axis. The current v3 track is already at about Kestrel v3.1's angle.
+- **Why narrowing doesn't help.** A narrower track brings the feet back to the diagonal, but the legs hang from the wide painted belt hips, so the shins cross and the far boot hides.
+- **So I committed nothing.** No track meets all three conditions, so there is no Gloam blockout v3.1, and S is unchanged on v3.
+- **The options sheet.** `s_track_options.png` shows Kestrel v3.2 and v3.1 next to Gloam v3, 1.5 and 1.65, rigged.
+- **Late-stance bend.** Straightening the late-stance knees on v3 (`stance_kmin` 0.82) lowers the far boot to 25% (f00) and 13% (f11), so it is not applied on v3. With a 1.5 or 1.65 track, all 12 planted legs come out straight (7°).
 
 ## Open issues (honest list)
 
