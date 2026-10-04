@@ -36,6 +36,7 @@ func _run() -> void:
 	_test_pivots_from_json()
 	_test_distance_formula()
 	_test_unshipped_classes_stay()
+	_test_action_stills()
 	_test_walk_setting_and_sources()
 	_test_combat_sim_untouched()
 	_test_imports()
@@ -114,6 +115,17 @@ func _test_unshipped_classes_stay() -> void:
 	eq(select.portrait_path("gloam"), "res://art/characters/gloam/gloam_s.png", "gloam picker stays shipped")
 	var bar := FileAccess.get_file_as_string("res://ui/pc/action_bar.gd")
 	truthy(bar.contains("Pawn.sprite_path"), "the action bar portrait goes through sprite_path")
+
+
+func _test_action_stills() -> void:
+	eq(CHARS.frame_count("ironjaw", "cast"), 0, "ironjaw has no cast folder")
+	eq(CHARS.frame_count("ironjaw", "cast_mark"), 0, "ironjaw has no cast_mark folder")
+	truthy(CHARS.frame_count("ironjaw", "attack") > 0, "ironjaw attack is the action still")
+	truthy(CHARS.frame_count("kestrel", "cast") > 0, "kestrel has a cast strip")
+	truthy(CHARS.frame_count("kestrel", "cast_mark") > 0, "kestrel has a cast_mark strip")
+	var motion := FileAccess.get_file_as_string("res://units/view_motion.gd")
+	truthy(motion.contains("plan[\"strip\"] = \"cast_mark\""), "Mark Shot is wired to cast_mark")
+	truthy(motion.contains("plan[\"strip\"] = \"cast\""), "Detonate is wired to cast")
 
 
 func _test_walk_setting_and_sources() -> void:

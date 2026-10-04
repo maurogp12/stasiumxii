@@ -2,6 +2,9 @@ extends SceneTree
 
 ## L10 stills. The same script runs on pc/combat-look (before) and on this branch.
 ## World shots and the 0.22 / 0.42 walk need the new files, so a before tree skips them.
+## Ironjaw v2 has no cast folder. Its stills are idle, walk, and attack (Strike).
+## Kestrel stills are idle, walk, and cast (Detonate). Mark Shot is wired to
+## cast_mark, so Kestrel also gets a cast_mark still.
 ## godot --display-driver x11 --rendering-driver opengl3 --audio-driver Dummy --path . -s res://tests/pc/capture_l10.gd -- --out=/tmp/l10_after_1280 --size=1280x720 --role=after
 
 const HUD := preload("res://ui/hud.gd")
@@ -65,16 +68,41 @@ func _board_pass(board_name: String, map_id: String, theme: String) -> void:
 			_aim(cam, _pawn(board, _seat_of(class_id)).global_position, 1.12)
 			_save(board_name, class_id, "walk")
 			await _until_idle(board)
-		_place(sim, board, map_id, class_id, Vector2i(7, 7), Vector2i(10, 7) if class_id == "kestrel" else Vector2i(8, 7))
-		await _frames(4)
-		if not await _action(board, sim, class_id):
-			_failed = true
+		if class_id == "ironjaw":
+			# No cast folder. Strike is the attack still.
+			_place(sim, board, map_id, class_id, Vector2i(7, 7), Vector2i(8, 7))
+			await _frames(4)
+			if not await _cast(board, sim, 1, "strike", Vector2i(7, 7)):
+				_failed = true
+			else:
+				await _seconds(0.18)
+				_aim(cam, _pawn(board, 1).global_position, 1.12)
+				_save(board_name, class_id, "attack")
+				_stop_motion(board)
+				await _frames(2)
 		else:
-			await _seconds(0.18)
-			_aim(cam, _pawn(board, _seat_of(class_id)).global_position, 1.12)
-			_save(board_name, class_id, "action")
-			_stop_motion(board)
-			await _frames(2)
+			# Detonate plays cast_*. Distance 3 is inside 1–4.
+			_place(sim, board, map_id, class_id, Vector2i(7, 7), Vector2i(10, 7), 1)
+			await _frames(4)
+			if not await _cast(board, sim, 0, "detonate", Vector2i(10, 7)):
+				_failed = true
+			else:
+				await _seconds(0.18)
+				_aim(cam, _pawn(board, 0).global_position, 1.12)
+				_save(board_name, class_id, "cast")
+				_stop_motion(board)
+				await _frames(2)
+			# Mark Shot plays cast_mark_*. Distance 3 is inside 2–7.
+			_place(sim, board, map_id, class_id, Vector2i(7, 7), Vector2i(10, 7))
+			await _frames(4)
+			if not await _cast(board, sim, 0, "mark_shot", Vector2i(10, 7)):
+				_failed = true
+			else:
+				await _seconds(0.18)
+				_aim(cam, _pawn(board, 0).global_position, 1.12)
+				_save(board_name, class_id, "cast_mark")
+				_stop_motion(board)
+				await _frames(2)
 	_place(sim, board, map_id, "kestrel", Vector2i(7, 7), Vector2i(10, 7))
 	await _frames(4)
 	var a: Node2D = _pawn(board, 0)
@@ -121,10 +149,17 @@ func _world_pass() -> void:
 		await _frames(2)
 		_aim(cam, walker.global_position, 1.12)
 		_save("world", class_id, "walk")
-		var action := "attack" if class_id == "ironjaw" else "cast"
-		walker.show_state(action)
-		await _seconds(0.18)
-		_save("world", class_id, "action")
+		if class_id == "ironjaw":
+			walker.show_state("attack")
+			await _seconds(0.18)
+			_save("world", class_id, "attack")
+		else:
+			walker.show_state("cast")
+			await _seconds(0.18)
+			_save("world", class_id, "cast")
+			walker.show_state("cast_mark")
+			await _seconds(0.18)
+			_save("world", class_id, "cast_mark")
 		walker.free()
 	main.free()
 	await _frames(2)
@@ -214,8 +249,8 @@ func _boot(map_id: String, theme: String) -> Dictionary:
 	return {"main": main, "board": board, "sim": sim}
 
 
-func _place(sim: Node, board: Node, map_id: String, focus: String, kestrel_at: Vector2i, ironjaw_at: Vector2i) -> void:
-	sim.reset_match({
+func _place(sim: Node, board: Node, map_id: String, focus: String, kestrel_at: Vector2i, ironjaw_at: Vector2i, ironjaw_marks: int = 0) -> void:
+	var setup := {
 		"seed": 1,
 		"map_id": map_id,
 		"skip_deploy": true,
@@ -226,7 +261,10 @@ func _place(sim: Node, board: Node, map_id: String, focus: String, kestrel_at: V
 		"kestrel_facing": "E",
 		"ironjaw_facing": "W",
 		"rolls": [1],
-	})
+	}
+	if ironjaw_marks > 0:
+		setup["ironjaw_marks"] = ironjaw_marks
+	sim.reset_match(setup)
 	board._rebuild_pawns()
 	board._refresh()
 	if focus == "ironjaw":
@@ -254,15 +292,12 @@ func _walk_to(board: Node, sim: Node, seat: int, to: Vector2i) -> bool:
 	return true
 
 
-func _action(board: Node, sim: Node, class_id: String) -> bool:
-	var seat := _seat_of(class_id)
+func _cast(board: Node, sim: Node, seat: int, spell: String, to: Vector2i) -> bool:
 	if seat != 0:
 		var ended: Dictionary = sim.submit({"type": "end_turn", "seat": 0})
 		if not bool(ended.get("ok", false)):
 			push_error("end turn failed %s" % str(ended))
 			return false
-	var spell := "mark_shot" if class_id == "kestrel" else "strike"
-	var to := Vector2i(10, 7) if class_id == "kestrel" else Vector2i(7, 7)
 	var result: Dictionary = sim.submit({"type": "cast", "spell": spell, "to": to, "seat": seat})
 	if not bool(result.get("ok", false)):
 		push_error("%s failed %s" % [spell, str(result)])
