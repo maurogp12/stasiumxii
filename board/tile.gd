@@ -12,6 +12,7 @@ const OVERLAY_Z: int = 1
 const HIGHLIGHT_FILL_ALPHA: float = 0.5
 const LABEL_SETTING := "stasium/debug/show_tile_labels"
 const GLYPHS := preload("res://board/pc/glyph_decals.gd")
+const HUD := preload("res://ui/hud.gd")
 ## Full-grid hold. Thin, and faint enough that a move tile still reads.
 const GRID_LINE_WIDTH := 1.0
 const GRID_LINE_ALPHA := 0.18
@@ -63,6 +64,9 @@ var _look_slot := Rect2(0, 0, 1, 1)
 var _look_sprite: Sprite2D
 var _look_mat: ShaderMaterial
 var _seam: SeamPlate
+## Crosshaven look. Hides the stock terrain and paint_only props the same way a
+## Thunderwell floor does, without taking over the look-floor sprite.
+var _hide_stock: bool = false
 
 const LOOK_FLOOR_SHADER := """shader_type canvas_item;
 uniform vec3 floor_grade = vec3(1.0);
@@ -170,9 +174,22 @@ func set_look_pulse(amount: float) -> void:
 		_sync_look_sprite()
 
 
+func set_hide_stock(on: bool) -> void:
+	if _hide_stock == on:
+		return
+	_hide_stock = on
+	_request_paint()
+
+
+func hide_stock() -> bool:
+	return _hide_stock
+
+
 func _draw() -> void:
 	var points := _diamond_points()
-	if _look_floor != null:
+	# Thunderwell (a look floor) and the Crosshaven board both skip the shared
+	# terrain and the paint_only props. The phone path leaves both off.
+	if _look_floor != null or _hide_stock:
 		_paint_label()
 		return
 	var tex := _KoliseoArt.terrain_texture(terrain_type, elevation, _dress)
@@ -302,7 +319,19 @@ func set_canopy_tint(tint: Color) -> void:
 	if canopy_tint.is_equal_approx(tint):
 		return
 	canopy_tint = tint
+	# The child walk is the PC board only. The phone path leaves props alone.
+	if HUD.uses_pc_chrome():
+		_tint_canopy_children(self, tint)
 	queue_redraw()
+
+
+func _tint_canopy_children(node: Node, tint: Color) -> void:
+	for child in node.get_children():
+		if child.has_method("set_canopy_tint"):
+			child.set_canopy_tint(tint)
+		elif child is CanvasItem and bool(child.get_meta("canopy_tint", false)):
+			(child as CanvasItem).modulate = tint
+		_tint_canopy_children(child, tint)
 
 
 ## Props stand on the south tip of the diamond. paint_only never affects pathing.
