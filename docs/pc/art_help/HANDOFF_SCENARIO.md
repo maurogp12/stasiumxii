@@ -122,24 +122,29 @@ $PY docs/pc/art_help/class_walk_looks/kestrel/wip/v2/scripts/kestrel_metric.py -
 **Open problems**
 1. **E foreshortening conflict.** The clay E hip→ankle length runs from 110 px at heel strike to 133 px at mid-stance (about ±10%).
    - A fixed target-length leg with 1 ≤ k ≤ 1.10 can't be straight at both. At drop 20, E contact (f05/f11) bends 41–46° and f06 bends 33°.
-   - The **E-ALT** row (k ≥ 0.90) straightens them but breaks the rule. **Claude / Mauro to decide.**
+   - The **E-ALT** row (k ≥ 0.90) straightens them but breaks the rule.
    - Using the forward leg's own foreshortened boot made it worse (mid-stance reach 1.22).
+   - **Answered** by [5981423472](https://github.com/maurogp12/stasiumxii/pull/252#issuecomment-5981423472): use E-ALT, k ≥ 0.90.
 2. **Thigh width.** The target's mid-thigh is 70 px = 0.397 of shoulder width = **2.2× the forearm plus bracer** (31 px). Mauro's "thigh as wide as the forearm"
-   would mean about 45% of the target width, which breaks the ±8% thigh/shoulder rule. Needs a ruling.
-3. **Upright legs (Luca) vs no compression (Mauro).** depth_bend uses k < 1 on bent legs. Needs a ruling; it may become moot after a repaint.
+   would mean about 45% of the target width, which breaks the ±8% thigh/shoulder rule.
+   - **Answered** by [5981423472](https://github.com/maurogp12/stasiumxii/pull/252#issuecomment-5981423472): keep the target ratio, thigh ÷ shoulder ±8%. The forearm note is withdrawn. Do not slim the thighs to 45%.
+3. **Upright legs (Luca) vs no compression (Mauro).** depth_bend uses k < 1 on bent legs.
+   - **Answered** by [5981423472](https://github.com/maurogp12/stasiumxii/pull/252#issuecomment-5981423472): Luca's upright-legs rule wins. `depth_bend` k from 0.85 to 1.0 is allowed on bent swing and toe-off legs. Stance legs stay at k between 1.0 and 1.10.
 4. **S f00 / f10–f11 leg crossing** (see Where I stopped).
-5. The S back thigh barely trails (thigh angles +22 / +13 / +6° for fwd / down / back; v1 had +19 / +8 / −10° but with squashed, bent legs).
+   - **Answered** by [5981423472](https://github.com/maurogp12/stasiumxii/pull/252#issuecomment-5981423472): Kestrel blockout v3.1, `ec4beff918ad691be293d7f22de3689b1516e67e` on `claude/class-walk-blockouts`. `foot_w` 1.45× the hip half-width (was 0.9). Knee x gap 4.5–20.7 px at f00, f01, f10, and f11. No skate. Kestrel rigs on v3.1. Gloam and Mender stay on v3 (`ffbfe3a9`). Re-solve `foot_o` and `swing_drop` on v3.1.
+5. The S back thigh barely trails (thigh angles +22 / +13 / +6° for fwd / down / back; v1 had +19 / +8 / −10° but with squashed, bent legs). Still **open**.
 6. E toe-off R f00 and L f06 can't reach after a 25° heel lift, so the boot lifts about 2.7 px off the ground.
-7. Not done: the scores on v3, foot_o / swing_drop re-solve, qa / mauro scripts update, cape, arms, bow swing.
+   - **Answered** by [5981423472](https://github.com/maurogp12/stasiumxii/pull/252#issuecomment-5981423472): the lift of about 2.7 px is fine for now. Pin the toe if possible.
+7. Not done: the scores on v3, foot_o / swing_drop re-solve, qa / mauro scripts update, cape, arms, bow swing. Still **open**. The re-solve is now on v3.1, per the same comment.
 
 **Decisions**
-- v2 is on blockout v3. `toe_pin: full` on S and E, so the earlier E toe workaround is obsolete.
+- v2 was on blockout v3. `toe_pin: full` on S and E, so the earlier E toe workaround is obsolete. [5981423472](https://github.com/maurogp12/stasiumxii/pull/252#issuecomment-5981423472) moves Kestrel onto v3.1 (`ec4beff9`). Gloam and Mender stay on v3.
 - Legs are full target length. Hips sit on the target belt centre ± half the blockout hip vector (hip offset 0 px).
 - The boot is one piece from knee to sole (sheet A). Sheet B goes further: one continuous painted leg, hip to sole.
 - Thigh keys change shape (the thigh bends toward the travel side for fwd, toward the trailing side for back) and are keyed by the rendered thigh angle:
   S `key_deg 3`, E `key_deg 6`.
 - Body height: drop S 21, E 20, chosen so the stance legs are straight within the 1.10 stretch.
-- **Planned next step (Luca):** repaint keys f00/f03/f06/f09 for S and E with an image model, over the paint guides, with the target as the style reference.
+- **Planned next step (Luca), approved** by [5981423472](https://github.com/maurogp12/stasiumxii/pull/252#issuecomment-5981423472): repaint keys f00/f03/f06/f09 for S and E with an image model, over the paint guides, with the target as the style reference. Keep the leg-axis check within 8°. Send legs sheet B side by side with the target before the full body.
   Then transfer them back:
   - mask the legs
   - align by the hip / knee / ankle joints (the rig meta in `_build_info.json` has hip, knee, ankle per leg per frame)
