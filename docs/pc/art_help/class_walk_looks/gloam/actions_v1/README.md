@@ -1,5 +1,7 @@
 # Gloam actions v1: idle, attack, skill, hit and death
 
+> **LOCKED, 4 Oct 2026, at `83ab63bb`.** Mauro: "Lock all three". These frames ship as they are. Every rough spot and every change from the approved poses is listed in this README's open-issues section for a future pass. To change anything, re-run `scripts/` from the same pipeline; don't hand-edit frames.
+
 These are Gloam's combat actions for S and E. W and N are game-side mirrors. They use the painted-part pipeline of the LOCKED Kestrel and Bastion actions (`../../kestrel/actions_v1`, `../../bastion/actions_v1`), with every lesson from their "Known issues" applied from the start.
 
 The look is Gloam's LOCKED walk (`gloam/v1_claude` on `claude/gloam-legs`, locked at `8119c9e`, lock note `bdf0ff37`). The walk is not on this branch, so `scripts/gwalk.py` extracts it read-only with `git archive` and imports its rig (`grig.py`) and parts from there. Nothing of the walk is changed.
