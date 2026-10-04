@@ -268,11 +268,12 @@ def body_bones(F, act, i):
     return dict(Mt=Mt, Mu=Mu, Mh=Mh, Mk=Mk), dict(torso=ti, twist=twi, head_deg=hd, skirt_deg=math.degrees(sk))
 
 # ------------------------------------------------------------------ legs (walk rules)
-def leg_pose(F, act, i, sd, Mt):
+def leg_pose(F, act, i, sd, Mt, hip=None):
     c = CFG[F]; s = c['s']; R = MJ[F]['walk_rig']
     H, K, A = (np.array(R[k], float) for k in ('H', 'K', 'A')); he_s, to_s = np.array(R['heel'], float), np.array(R['toe'], float)
-    hc = apm(Mt, hc_t(F)); hv = (jt(F, act, i, 'L_hip') - jt(F, act, i, 'R_hip')) / 2
-    hip = hc + hv if sd == 'L' else hc - hv
+    if hip is None:
+        hc = apm(Mt, hc_t(F)); hv = (jt(F, act, i, 'L_hip') - jt(F, act, i, 'R_hip')) / 2
+        hip = hc + hv if sd == 'L' else hc - hv
     he_d, to_d = jt(F, act, i, sd + '_heel'), jt(F, act, i, sd + '_toe')
     kf = float(np.clip(math.dist(he_d, to_d) / (s * math.dist(he_s, to_s)), *c['foot_k']))
     u = unit(to_s - he_s); n = np.array([-u[1], u[0]]); v = unit(to_d - he_d); m = np.array([-v[1], v[0]])
@@ -364,6 +365,8 @@ def staff_M(F, act, i, arm):
     g = apm(arm['Mf'], g_t); v0 = s * (t_t - g_t)
     b0 = jt(F, 'idle', 0, 'staff_top') - jt(F, 'idle', 0, 'staff_grip'); bi = jt(F, act, i, 'staff_top') - jt(F, act, i, 'staff_grip')
     a = turn(ang(v0), ang(b0), ang(bi), arm['w'])          # screen rotation of the painted staff about the fist
+    if act == 'death':      # the knees go: the staff tilts with the body (the arms are thrown out, the fist loosens)
+        a = HIT_STAFF[F] * math.radians(torso_M(F, act, i)[1]['phi'])
     if act == 'hit':        # knocked back, the staff stays in the fist and tilts with the recoil (it does not fly across him)
         a = HIT_STAFF[F] * math.radians(torso_M(F, act, i)[1]['phi'])
     if act == 'skill':      # the heal: the staff is lifted near-upright, its top tipped toward the facing (it never sweeps)
@@ -435,7 +438,7 @@ def rel_depth(F, act, i, part):
     return (di[part] - di['torso']) - (d0[part] - d0['torso'])
 
 # ------------------------------------------------------------------ frame
-def render_upright(F, act, i, cv):
+def render_upright(F, act, i, cv, layers=False, skip_leg=None):
     bb, binfo = body_bones(F, act, i)
     V, tris, W = body_mesh(F); Vd = lbs(V, W, (bb['Mt'], bb['Mu'], bb['Mh'], bb['Mk']))
     back, maps = warp(ptex(f'back_{F}')[0], src_px(f'back_{F}', V), cv.pts(Vd), tris, cv.H, cv.W)
@@ -443,6 +446,7 @@ def render_upright(F, act, i, cv):
     meta = dict(binfo)
     legs = {sd: leg_pose(F, act, i, sd, bb['Mt']) for sd in 'RL'}; nr = near_leg(F, act, i); leg_imgs = []
     for sd in [x for x in 'RL' if x != nr] + [nr]:
+        if sd == skip_leg: meta[sd] = {k: (v.tolist() if isinstance(v, np.ndarray) else v) for k, v in legs[sd].items() if not k.startswith('M')}; continue
         L_ = render_leg(F, sd, legs[sd], cv)
         if sd != nr: L_[..., :3] *= CFG[F]['far_dark']
         leg_imgs.append(L_)
@@ -467,13 +471,20 @@ def render_upright(F, act, i, cv):
         behind = (['uL', 'fL'] if bL else []) + (['lant', 'staff'] if bS else []) + (['dR', 'fR'] if bR else [])
         frontL = ([] if bL else ['uL', 'fL']) + ([] if bS else ['lant', 'staff']) + ['uR'] + ([] if bR else ['dR', 'fR'])
         meta['behind'] = dict(R=bool(bR), staff=bool(bS), L=bool(bL))
-    out = np.zeros((cv.H, cv.W, 4), np.float32)
-    for k in behind: out = over(out, img[k])
-    out = over(out, back)
-    for L_ in leg_imgs: out = over(out, L_)
-    out = over(out, front)
-    for k in frontL: out = over(out, img[k])
-    return out, meta
+    def stack(skip=()):
+        o = np.zeros((cv.H, cv.W, 4), np.float32)
+        for k in behind:
+            if k not in skip: o = over(o, img[k])
+        o = over(o, back)
+        for L_ in leg_imgs: o = over(o, L_)
+        o = over(o, front)
+        for k in frontL:
+            if k not in skip: o = over(o, img[k])
+        return o
+    if layers:
+        prop = over(img['lant'], img['staff'])
+        return dict(body=stack(skip=('lant', 'staff')), prop=prop), meta
+    return stack(), meta
 
 def lie_A(theta):
     """painting plane -> screen as the figure turns from standing (theta 0) onto the iso ground (theta 90, head up-left)."""
@@ -483,22 +494,67 @@ def lie_A(theta):
     return np.column_stack([X, -Up])
 
 FALL_FROM = 3
-_SRC = {}
+SLIP = 10.0          # px the dropped staff and lantern slip away from his side by the time he lies flat
+_SRC = {}; _SHIFT = {}
+# E falls to his side about his planted left boot (act_blockout side_fall): that boot stays on its blockout heel / toe
+# through the fall, the fall pivots there, and that leg is re-skinned every frame from the falling hip to the planted boot
+PIN_LEG = {'E': 'L'}
+def fall_src(F, cv):
+    if F not in _SRC: _SRC[F] = render_upright(F, 'death', FALL_FROM, cv, layers=True, skip_leg=PIN_LEG.get(F))
+    return _SRC[F]
+
+def fall_M(F, i, shift):
+    """the fall map (cell space): the f03 figure's painting plane turned onto the ground by the blockout tilt, pivoting at
+    its feet (the painted heel / toe midpoint of f03), which follow the blockout heels, plus the in-cell shift (eased in)."""
+    m0 = fall_src(F, Canvas())[1]; sds = PIN_LEG[F] if F in PIN_LEG else 'RL'
+    p0 = np.mean([m0[sd]['heel'] for sd in sds], 0)
+    b0 = np.mean([jt(F, 'death', FALL_FROM, f'{sd}_heel') for sd in sds], 0); bi = np.mean([jt(F, 'death', i, f'{sd}_heel') for sd in sds], 0)
+    th = float(fr(F, 'death', i)['key'].get('tilt', 0.0)); A = lie_A(th); e = float(ss(th / 86.0))
+    p1 = p0 + (bi - b0) + np.asarray(shift, float) * e
+    return np.hstack([A, (p1 - A @ p0)[:, None]]), th, e
+
+def fall_img(F, i, cv, shift):
+    src = fall_src(F, cv)[0]; M2, th, e = fall_M(F, i, shift)
+    body = cv.cellimg_affine(src['body'], M2)
+    # the dropped staff and lantern slip away from his side (painting -x for S: his right, toward the camera when he lies;
+    # painting +x for E: his right, away from the camera) and lie flat with him
+    sx = (-1.0 if F == 'S' else 1.0) * SLIP * e; Ms_ = M2.copy(); Ms_[:, 2] += M2[:, :2] @ np.array([sx, 0.0])
+    prop = cv.cellimg_affine(src['prop'], Ms_)
+    if F in PIN_LEG:      # the planted leg: hip carried by the fall, boot on the blockout heel / toe of this frame
+        sd = PIN_LEG[F]; m0 = fall_src(F, cv)[1]; P = leg_pose(F, 'death', i, sd, None, hip=apm(M2, m0[sd]['hip']))
+        leg = render_leg(F, sd, P, cv); leg[..., :3] *= CFG[F]['far_dark'] if near_leg(F, 'death', FALL_FROM) != sd else 1.0
+        _PL[(F, i)] = P
+        return over(over(prop, leg), body), e
+    return (over(body, prop) if F == 'S' else over(prop, body)), e
+_PL = {}
+
+def fall_shift(F):
+    """the least translation (eased in with the fall) that keeps every lying frame inside the cell (2 px margin), so the
+    lying figure is never lifted off the ground: he lands a little up-left / right of the blockout's spot instead."""
+    if F in _SHIFT: return _SHIFT[F]
+    cv = Canvas(); need = np.zeros(2)
+    for i in range(FALL_FROM + 1, ACTS['death']):
+        img, e = fall_img(F, i, cv, (0.0, 0.0))
+        if e < 1e-3: continue
+        a = img[..., 3] > 0.5; ys, xs = np.nonzero(a); xs = xs - PADX; ys = ys - PADT
+        lo = np.array([xs.min(), ys.min()]); hi = np.array([xs.max(), ys.max()]); lim = np.array([CW - 3, CH - 3])
+        d = np.where(lo < 2, 2 - lo, np.where(hi > lim, lim - hi, 0)) / e
+        need = np.where(np.abs(d) > np.abs(need), d, need)
+    _SHIFT[F] = np.ceil(np.abs(need)) * np.sign(need); return _SHIFT[F]
+
 def render(F, act, i, RS=1):
     cv = Canvas(RS)
     if act != 'death' or i <= FALL_FROM:
         img, meta = render_upright(F, act, i, cv); meta['lie_deg'] = 0.0; return img, meta, cv
-    if F not in _SRC: _SRC[F] = render_upright(F, act, FALL_FROM, cv)
-    src, meta0 = _SRC[F]; meta = json.loads(json.dumps(meta0))
-    th = float(fr(F, act, i)['key'].get('tilt', 0.0)); A = lie_A(th)
-    p0 = jt(F, act, FALL_FROM, 'pelvis'); p1 = jt(F, act, i, 'pelvis') + LIE_SHIFT.get(F, np.zeros(2)) * float(ss(th / 86.0))
-    M2 = np.hstack([A, (p1 - A @ p0)[:, None]])
-    img = cv.cellimg_affine(src, M2)
+    src, meta0 = fall_src(F, cv); meta = json.loads(json.dumps(meta0))
+    sh = fall_shift(F); img, e = fall_img(F, i, cv, sh); M2, th, e = fall_M(F, i, sh)
     for sd in 'RL':
-        for k in ('heel', 'toe'): meta[sd][k] = apm(M2, meta0[sd][k]).tolist()
-    meta['lie_deg'] = th; meta['lie_M'] = M2.tolist()
+        if (F, i) in _PL and sd == PIN_LEG.get(F):
+            P = _PL[(F, i)]; meta[sd] = {k: (v.tolist() if isinstance(v, np.ndarray) else v) for k, v in P.items() if not k.startswith('M')}
+        else:
+            for k in ('heel', 'toe'): meta[sd][k] = apm(M2, meta0[sd][k]).tolist()
+    meta['lie_deg'] = th; meta['lie_M'] = M2.tolist(); meta['lie_shift'] = [float(x) for x in sh]
     return img, meta, cv
-LIE_SHIFT = {}
 
 def to_cell(img, cv):
     RS = cv.RS; sm = cv2.resize(img, (img.shape[1] // RS, img.shape[0] // RS), interpolation=cv2.INTER_AREA) if RS != 1 else img

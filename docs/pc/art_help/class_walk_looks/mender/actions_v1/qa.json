@@ -1,0 +1,511 @@
+{
+ "format": {
+  "idle_S": {
+   "bbox_union": [
+    144,
+    99,
+    326,
+    351
+   ]
+  },
+  "attack_S": {
+   "bbox_union": [
+    125,
+    96,
+    399,
+    356
+   ]
+  },
+  "skill_S": {
+   "bbox_union": [
+    143,
+    35,
+    339,
+    351
+   ]
+  },
+  "hit_S": {
+   "bbox_union": [
+    112,
+    97,
+    336,
+    356
+   ]
+  },
+  "death_S": {
+   "bbox_union": [
+    3,
+    89,
+    337,
+    357
+   ]
+  },
+  "idle_E": {
+   "bbox_union": [
+    146,
+    91,
+    346,
+    337
+   ]
+  },
+  "attack_E": {
+   "bbox_union": [
+    148,
+    91,
+    425,
+    355
+   ]
+  },
+  "skill_E": {
+   "bbox_union": [
+    148,
+    28,
+    353,
+    336
+   ]
+  },
+  "hit_E": {
+   "bbox_union": [
+    148,
+    91,
+    344,
+    356
+   ]
+  },
+  "death_E": {
+   "bbox_union": [
+    66,
+    91,
+    344,
+    356
+   ]
+  }
+ },
+ "counts": {
+  "idle_S": {
+   "frames": 12,
+   "blockout": 12
+  },
+  "attack_S": {
+   "frames": 12,
+   "blockout": 12
+  },
+  "skill_S": {
+   "frames": 12,
+   "blockout": 12
+  },
+  "hit_S": {
+   "frames": 8,
+   "blockout": 8
+  },
+  "death_S": {
+   "frames": 13,
+   "blockout": 13
+  },
+  "idle_E": {
+   "frames": 12,
+   "blockout": 12
+  },
+  "attack_E": {
+   "frames": 12,
+   "blockout": 12
+  },
+  "skill_E": {
+   "frames": 12,
+   "blockout": 12
+  },
+  "hit_E": {
+   "frames": 8,
+   "blockout": 8
+  },
+  "death_E": {
+   "frames": 13,
+   "blockout": 13
+  }
+ },
+ "skate": {
+  "idle_S": {
+   "R": {
+    "planted_pairs": 11,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 0
+   },
+   "L": {
+    "planted_pairs": 11,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 0
+   }
+  },
+  "attack_S": {
+   "R": {
+    "planted_pairs": 6,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 5
+   },
+   "L": {
+    "planted_pairs": 11,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 0
+   }
+  },
+  "skill_S": {
+   "R": {
+    "planted_pairs": 11,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 0
+   },
+   "L": {
+    "planted_pairs": 11,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 0
+   }
+  },
+  "hit_S": {
+   "R": {
+    "planted_pairs": 7,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 0
+   },
+   "L": {
+    "planted_pairs": 7,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 0
+   }
+  },
+  "death_S": {
+   "R": {
+    "planted_pairs": 3,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 9
+   },
+   "L": {
+    "planted_pairs": 3,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 9
+   }
+  },
+  "idle_E": {
+   "R": {
+    "planted_pairs": 11,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 0
+   },
+   "L": {
+    "planted_pairs": 11,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 0
+   }
+  },
+  "attack_E": {
+   "R": {
+    "planted_pairs": 6,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 5
+   },
+   "L": {
+    "planted_pairs": 11,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 0
+   }
+  },
+  "skill_E": {
+   "R": {
+    "planted_pairs": 11,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 0
+   },
+   "L": {
+    "planted_pairs": 11,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 0
+   }
+  },
+  "hit_E": {
+   "R": {
+    "planted_pairs": 7,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 0
+   },
+   "L": {
+    "planted_pairs": 7,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 0
+   }
+  },
+  "death_E": {
+   "R": {
+    "planted_pairs": 3,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 9
+   },
+   "L": {
+    "planted_pairs": 9,
+    "max_px": 0.238,
+    "pairs_where_the_blockout_moves_the_foot": 3
+   }
+  }
+ },
+ "touch_border": [],
+ "arm_stretch": {
+  "idle_S": {
+   "min": 0.98,
+   "max": 1.015,
+   "R_upper": [
+    1.0,
+    1.015
+   ],
+   "R_fore": [
+    0.995,
+    1.0
+   ],
+   "L_upper": [
+    0.98,
+    1.0
+   ],
+   "L_fore": [
+    0.988,
+    1.0
+   ]
+  },
+  "attack_S": {
+   "min": 0.85,
+   "max": 1.063,
+   "R_upper": [
+    0.923,
+    1.063
+   ],
+   "R_fore": [
+    0.85,
+    1.0
+   ],
+   "L_upper": [
+    0.899,
+    1.038
+   ],
+   "L_fore": [
+    0.934,
+    1.022
+   ]
+  },
+  "skill_S": {
+   "min": 0.866,
+   "max": 1.15,
+   "R_upper": [
+    1.0,
+    1.0
+   ],
+   "R_fore": [
+    1.0,
+    1.0
+   ],
+   "L_upper": [
+    1.0,
+    1.15
+   ],
+   "L_fore": [
+    0.866,
+    1.081
+   ]
+  },
+  "hit_S": {
+   "min": 0.85,
+   "max": 1.056,
+   "R_upper": [
+    1.0,
+    1.052
+   ],
+   "R_fore": [
+    0.997,
+    1.0
+   ],
+   "L_upper": [
+    0.85,
+    1.056
+   ],
+   "L_fore": [
+    0.868,
+    1.031
+   ]
+  },
+  "death_S": {
+   "min": 0.85,
+   "max": 1.027,
+   "R_upper": [
+    1.0,
+    1.027
+   ],
+   "R_fore": [
+    1.0,
+    1.0
+   ],
+   "L_upper": [
+    0.85,
+    1.0
+   ],
+   "L_fore": [
+    0.85,
+    1.0
+   ]
+  },
+  "idle_E": {
+   "min": 0.988,
+   "max": 1.024,
+   "R_upper": [
+    1.0,
+    1.005
+   ],
+   "R_fore": [
+    0.988,
+    1.0
+   ],
+   "L_upper": [
+    1.0,
+    1.017
+   ],
+   "L_fore": [
+    1.0,
+    1.024
+   ]
+  },
+  "attack_E": {
+   "min": 0.85,
+   "max": 1.15,
+   "R_upper": [
+    0.85,
+    1.064
+   ],
+   "R_fore": [
+    0.89,
+    1.15
+   ],
+   "L_upper": [
+    0.964,
+    1.081
+   ],
+   "L_fore": [
+    0.953,
+    1.119
+   ]
+  },
+  "skill_E": {
+   "min": 0.85,
+   "max": 1.15,
+   "R_upper": [
+    1.0,
+    1.055
+   ],
+   "R_fore": [
+    1.0,
+    1.15
+   ],
+   "L_upper": [
+    0.85,
+    1.0
+   ],
+   "L_fore": [
+    0.904,
+    1.14
+   ]
+  },
+  "hit_E": {
+   "min": 0.85,
+   "max": 1.15,
+   "R_upper": [
+    1.0,
+    1.063
+   ],
+   "R_fore": [
+    1.0,
+    1.15
+   ],
+   "L_upper": [
+    0.928,
+    1.0
+   ],
+   "L_fore": [
+    0.85,
+    1.0
+   ]
+  },
+  "death_E": {
+   "min": 0.85,
+   "max": 1.15,
+   "R_upper": [
+    1.0,
+    1.063
+   ],
+   "R_fore": [
+    1.0,
+    1.15
+   ],
+   "L_upper": [
+    0.995,
+    1.064
+   ],
+   "L_fore": [
+    0.85,
+    1.0
+   ]
+  },
+  "all": {
+   "min": 0.85,
+   "max": 1.15,
+   "max_abs_pct": 15.0
+  }
+ },
+ "leg_k": {
+  "idle_S": {
+   "max": 0.992,
+   "max_short_px": 0.0
+  },
+  "attack_S": {
+   "max": 0.998,
+   "max_short_px": 0.0
+  },
+  "skill_S": {
+   "max": 0.992,
+   "max_short_px": 0.0
+  },
+  "hit_S": {
+   "max": 0.992,
+   "max_short_px": 0.0
+  },
+  "death_S": {
+   "max": 0.992,
+   "max_short_px": 0.0
+  },
+  "idle_E": {
+   "max": 1.058,
+   "max_short_px": 0.0
+  },
+  "attack_E": {
+   "max": 1.068,
+   "max_short_px": 0.0
+  },
+  "skill_E": {
+   "max": 1.062,
+   "max_short_px": 0.0
+  },
+  "hit_E": {
+   "max": 1.058,
+   "max_short_px": 0.0
+  },
+  "death_E": {
+   "max": 1.061,
+   "max_short_px": 0.0
+  }
+ },
+ "staff_tip_corr_deg": {
+  "idle_S": 0.0,
+  "attack_S": 0.0,
+  "skill_S": 0.0,
+  "hit_S": 0.0,
+  "death_S": 0.0,
+  "idle_E": 0.0,
+  "attack_E": 0.0,
+  "skill_E": 0.0,
+  "hit_E": 0.0,
+  "death_E": 0.0
+ },
+ "problems": []
+}
