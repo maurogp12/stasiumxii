@@ -12,7 +12,7 @@ Kept by Claude, the PC supervisor (Mauro, 4 Oct 2026: "keep a record of everythi
    - Team branches merge into `pc/world-zones` or `pc/combat-look` only after Claude's approval.
    - Log every decision in `docs/pc/CHANGE_LOG_PC.md`.
 
-**Base branches:** `pc/world-zones` @ `1cf6d46` (#249 merged 11:12; **34/34 green** on a fresh worktree). `pc/combat-look` @ `8d93797` (#242 merged; all 20 suites green on a fresh worktree, 4 Oct 10:45).
+**Base branches:** `pc/world-zones` @ `ef3bcc9` (#253 merged 12:54; 34-suite check running). `pc/combat-look` @ `8d93797`. `pc/combat-look` @ `8d93797` (#242 merged; all 20 suites green on a fresh worktree, 4 Oct 10:45).
 
 ---
 
@@ -20,10 +20,10 @@ Kept by Claude, the PC supervisor (Mauro, 4 Oct 2026: "keep a record of everythi
 
 | Work | PR / branch | Head (last push) | Where it stopped | Next step |
 |---|---|---|---|---|
-| Water regrade + sea shoreline | #251 `cursor/water-regrade-a156` | `2c874d1` (12:16) | **Taken over by Claude 12:30 (Mauro: "Take over this fix please").** The world bot is told not to push. Fixing: the sea tile lattice, the Northgate shore in snow (not sand), the map-edge rectangle and fill blend, and soft foam instead of chevrons | When green: post the stills on #251, send Mauro the Northgate shore before/after, then approve the merge |
-| Town NPCs + missions | #253 `cursor/town-npcs-a156` | `4dc3b7d` (11:18) | Items 1–2 approved. Item 3 pushed: rebased onto `1cf6d46`, Millrace drops moved to the Old Granary. **My 34-suite re-check is running** | After #249 merges, bring `pc/world-zones` in and drop Millrace from `rewards.json`, `build_rewards.py`, `build_missions.py` and the Crossroads mission |
-| Drop Millrace dungeon | #249 `cursor/drop-millrace-dungeon-a156` | `ccb7c56` (10:22) | **Approved to merge (34/34 green, 11:15)** | The bot merges into `pc/world-zones`; then #253 brings it in |
-| Old NPC stand-ins | #250 `cursor/town-npc-standins-a156` | `808d3d8` | Superseded by #253 | Close #250 once #253 merges |
+| Water regrade + sea shoreline | #251 `cursor/water-regrade-a156` | `e96cb73` (world bot pushed 12:32/12:45 despite hands-off; now hard-stopped) | **Claude take-over agent finishing**: it merges their 2 commits, makes the Northgate shore snow (theirs was sand), keeps the better open-sea fill, and uses soft foam | When it reports: view the stills, run 34 suites, post on #251, send Mauro the Northgate before/after, approve |
+| Town NPCs + missions | #253 (**merged 12:54**) | `4dc3b7d` | **Done.** #250 closed. 34-suite check on the merged `pc/world-zones` (`ef3bcc9`) running | none |
+| Drop Millrace dungeon | #249 (merged 11:12) | `ccb7c56` | **Done** | none |
+| Old NPC stand-ins | #250 | `808d3d8` | **Closed** (superseded by #253) | none |
 | **Queue after these** | | | | (1) L10 world walker: new bodies and world light. (2) Painted NPC sprites: 19 roles, idle/walk/talk, wardens patrol, townsfolk wander, everyone turns to the player; media = one still per role beside its concept and a walk clip per town. (3) **Northgate snow town** (`docs/pc/look_target/northgate_snow/`). (4) WP7 dungeon doors. (5) WP8 dungeon runs. (6) WP9 world monsters, with the danger zone at level 30+ and aggro within 3 cells. (7) Crag/coast passes when kits land. (8) WP2 zone banner. Regions stay paused (`world.regions_enabled`) |
 
 ## 2. Combat look bots (Cursor agents) (base `pc/combat-look`)
@@ -31,8 +31,8 @@ Kept by Claude, the PC supervisor (Mauro, 4 Oct 2026: "keep a record of everythi
 | Bot | Work | PR / branch | Head | Where it stopped | Next step |
 |---|---|---|---|---|---|
 | `ae16` | L9 Crosshaven board, light grade | #242 (merged 10:19) | `c15941b` | **Done.** Media sent to Mauro | none |
-| `ae16` | L9b Crosshaven v1 decoration | `cursor/l9b-v1-decor-ae16` (**no PR yet**) | `cc6a99e` (12:23) | The v1 sky, leaf frame and decor are now drawn, with stills beside mock v1. My first look at `beside_mock_1280.png`: flat pale stepped rectangles in the sky (top right, behind the board), a near-black canopy band across the top, and the board reads darker than the mock | When it opens a PR: I review it fully (suites, the rectangle artefact, the canopy value vs the mock) |
-| `1dff` → **Claude (took over 11:40)** | L10 new PC characters (Ironjaw v3.1, Kestrel v3), PC walk 0.42 s/cell | #248 draft `cursor/l10-pc-characters-1dff` | `714e6ed` (bot stopped 01:32) | **Taken over by Claude 11:40**: merging the base, bench, portrait aspect fix, edge-pixel test, sole/pivot consistency, and re-shooting the 0.22 vs 0.42 clip | When green: post the suites, bench and clip on #248 and send Mauro the clip. Kestrel v3 is a stand-in until the new Kestrel parts land |
+| `ae16` | L9b Crosshaven v1 decoration | **#254** `cursor/l9b-v1-decor-ae16` (opened ~12:38) | `0d4469c` | The sky rectangles are fixed (sky hole blends). Still open: the near-black canopy band at the top and the darker right foliage compared with mock v1. **My 20-suite run is queued** | I review #254 when the suites finish |
+| `1dff` → **Claude (took over 11:40)** | L10 new PC characters (Ironjaw v3.1, Kestrel v3), PC walk 0.42 s/cell **locked by Mauro** | #248 `cursor/l10-pc-characters-1dff` | `2910f5b` | **Take-over done**: all 6 items, plus a load-proof lunge test (a flake that also happens on base). 21/21 green. Results posted 12:55 | Merge into `pc/combat-look` |
 
 ## 3. Scenario Art (Luca's art bot) and Technical Artist
 
