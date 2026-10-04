@@ -2367,6 +2367,14 @@ func _movie_water_stills() -> void:
 	DirAccess.make_dir_recursive_absolute(folder)
 	await _grab_theme_still("crosshaven_stoneford", Vector2i(10, 16), folder.path_join("crosshaven_river.png"))
 	await _grab_theme_still("crosshaven_northgate", Vector2i(16, 8), folder.path_join("northgate_shore.png"))
+	# The snow lip and ice rim up close.
+	_zoom = 1.6
+	if camera != null:
+		camera.zoom = Vector2.ONE * _zoom
+	await _grab_theme_still("crosshaven_northgate", Vector2i(16, 5), folder.path_join("northgate_shore_zoom_1_6.png"))
+	_zoom = 1.15
+	if camera != null:
+		camera.zoom = Vector2.ONE * _zoom
 	var beach := ProjectSettings.globalize_path("res://docs/pc/media/outskirts")
 	DirAccess.make_dir_recursive_absolute(beach)
 	await _grab_theme_still("crosshaven_eastmarch_coves", Vector2i(22, 6), beach.path_join("eastmarch_beach.png"))
