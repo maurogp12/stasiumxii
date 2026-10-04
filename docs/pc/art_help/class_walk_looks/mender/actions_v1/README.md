@@ -1,5 +1,7 @@
 # Mender actions v1: idle, attack, skill, hit and death
 
+> **LOCKED, 4 Oct 2026, at `73e4d7bd`.** Mauro: "Lock all three". These frames ship as they are. Every rough spot and every change from the approved poses is listed in this README's open-issues section for a future pass. To change anything, re-run `scripts/` from the same pipeline; don't hand-edit frames.
+
 The Mender's combat actions for S and E, painted with the same part-rig method as the LOCKED Kestrel and Bastion actions (`../../kestrel/actions_v1`, `../../bastion/actions_v1`). W and N are the game-side mirrors of S and E. This is the first pass for review. It is not locked.
 
 Every part is cut from the approved look targets `targets/mender_rp_{S,E}_f00` (repaint `3250c2ba`). The cut starts from the LOCKED Mender walk's own layers (`mender/v1_claude` at the lock commit `08ea869b`, on `claude/mender-legs`), which are read-only here.
