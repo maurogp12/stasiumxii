@@ -136,6 +136,7 @@ def main():
                    f"belt->sole {T['belt_pct']:.1f}% of H", f"knee line {T['knee_pct']:.1f}% of H",
                    f"leg axis fwd {T['axis']['fwd']:+.1f}  back {T['axis']['back']:+.1f} deg", f"painted stance bend {T['stance_bend']:.0f} deg"])]
         sb = [tile(trgba, T['top'], T['sole'], T['belt'], T['knee'], T, 1.0, w=470, full=True, dashed=False)]
+        if F == 'S': strip = [('S approved target', tile(trgba, T['top'], T['sole'], T['belt'], T['knee'], T, 1.0, w=380, full=True, dashed=False))]
         for i in range(12):
             img, m = walk_meas(F, i, T); res[F]['frames'][f'f{i:02d}'] = m
             L = m['legs']; st = m['stance']
@@ -155,6 +156,7 @@ def main():
                        f"axis R {L['R']['axis_deg']:+.1f} ({L['R']['role']} {L['R']['axis_dev']:+.1f})  L {L['L']['axis_deg']:+.1f} ({L['L']['role']} {L['L']['axis_dev']:+.1f})"]
                 tiles.append((tl, txt))
                 if i in (0, 6): sb.append(tile(img, m['top'] * 1.0, m['sole'], m['belt'], knee, T, RS, w=470, full=True, dashed=False))
+                if F == 'S': strip.append((f'S walk f{i:02d}', tile(img, m['top'] * 1.0, m['sole'], m['belt'], knee, T, RS, w=380, full=True, dashed=False)))
         rows.append(tiles); sbs.append(sb)
         sk = [d['skate_px'] for d in res[F]['skate']]
         print(F, 'target', {k: round(T[k], 3) for k in ('thigh_sh', 'boot_sh', 'belt_pct', 'knee_pct')}, T['axis'], 'max skate', max(sk))
@@ -167,7 +169,7 @@ def main():
     tw = 300; th = max(t.height for r in rows for t, _ in r); txt_h = 8 * 18 + 10
     W = 5 * (tw + 10) + 10; Hs = 40 + len(rows) * (th + txt_h + 20)
     sheet = Image.new('RGB', (W, Hs), (255, 255, 255)); d = ImageDraw.Draw(sheet)
-    d.text((10, 10), 'Kestrel v3 (Claude) legs on blockout v3.1: one continuous painted leg (hip -> sole) per side, mesh-skinned on 3 bones. '
+    d.text((10, 10), 'Kestrel v3 (Claude) legs on blockout v3.2 (S) / v3.1 (E): one continuous painted leg (hip -> sole) per side, mesh-skinned on 3 bones. '
            'Solid = this tile belt / knee (boot top) / sole; dashed = target lines at the same % of height.', fill='black', font=FT)
     y = 40
     for r in rows:
@@ -187,6 +189,13 @@ def main():
             x = 10 + c * (sw + 10); yy = 40 + r * (sh_ + 40)
             d.text((x, yy), f'{F} {lab}', fill='black', font=FB); S2.paste(t, (x, yy + 22))
     S2.save(os.path.join(OUT, 'side_by_side_f00_f06.png'))
+    # S strip: the approved target beside walk f00 / f03 / f06 / f09, full figure, same height
+    sw = 380; sh_ = max(t.height for _, t in strip)
+    S3 = Image.new('RGB', (len(strip) * (sw + 10) + 10, 40 + sh_ + 32), (255, 255, 255)); d = ImageDraw.Draw(S3)
+    d.text((10, 10), 'Kestrel S (blockout v3.2): approved target | walk f00 | f03 | f06 | f09, same figure height (hood -> sole).', fill='black', font=FT)
+    for c, (lab, t) in enumerate(strip):
+        x = 10 + c * (sw + 10); d.text((x, 40), lab, fill='black', font=FB); S3.paste(t, (x, 62))
+    S3.save(os.path.join(OUT, 'strip_S_target_f00_f03_f06_f09.png'))
     json.dump(res, open(os.path.join(OUT, 'legs_sheet.json'), 'w'), indent=1, default=float)
 
 if __name__ == '__main__':

@@ -1,4 +1,4 @@
-"""Kestrel v3 (Claude) - the walk rig: ONE continuous painted leg per side, mesh-skinned on 3 bones onto blockout v3.1 joints.
+"""Kestrel v3 (Claude) - the walk rig: ONE continuous painted leg per side, mesh-skinned on 3 bones onto the blockout joints (S v3.2, E v3.1).
 
 Per frame i and facing F (S, E):
   body   back_F (target minus legs, under-tunic fill) and front_F (belt / pouches / hem / bow, or the whole cape for E) are placed
@@ -14,14 +14,15 @@ Per frame i and facing F (S, E):
          knee bends smoothly, there is no cut anywhere between hip and sole. Across the bone the scale is always s.
   shade  the painting's own shading is kept; the far-side leg (blockout R) is far_dark darker.
 Render at RS x the cell (default 3), then area-downsample to 512x360, binary alpha, black under alpha 0.
-usage: krig.py [--out DIR] [--only SE] [--gif]"""
+usage: krig.py [--out DIR] [--only SE] [--gif]   (--gif also writes walk_W.gif, the mirror of S)"""
 import os, sys, json, math, subprocess, argparse, numpy as np, cv2
 from PIL import Image
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.abspath(os.path.join(HERE, '../../../../../../..'))
 PARTS = os.environ.get('K3PARTS', os.path.join(HERE, '..', 'parts'))
-BLOCK_COMMIT = 'ec4beff918ad691be293d7f22de3689b1516e67e'      # Kestrel blockout v3.1 on claude/class-walk-blockouts
-BLOCK = os.environ.get('KBLOCK', '/tmp/kestrel_blockout_v31')
+# Kestrel blockouts on claude/class-walk-blockouts: S from v3.2 (narrow S foot track, foot_w 0.3), E from v3.1 (approved, unchanged)
+BLOCKS = {'S': ('fc3285cc0d0914137b128060cb4dbddf28b2722c', os.environ.get('KBLOCK_S', '/tmp/kestrel_blockout_v32')),
+          'E': ('ec4beff918ad691be293d7f22de3689b1516e67e', os.environ.get('KBLOCK_E', '/tmp/kestrel_blockout_v31'))}
 CW, CH, PIV = 512, 360, (256, 329)
 FPS = 17.144
 EXP = {'S': np.array([-8.13, -4.07]), 'E': np.array([-8.13, 4.07])}   # ground motion per frame in the blockout
@@ -36,17 +37,18 @@ OVR = os.path.join(HERE, 'kcfg.json')
 if os.path.exists(OVR):
     for F_, d_ in json.load(open(OVR)).items(): CFG[F_].update(d_)
 
-def blockout_dir():
-    d = os.path.join(BLOCK, 'docs/pc/art_help/class_walk_blockouts/kestrel/')
+def blockout_dir(F):
+    commit, root = BLOCKS[F]; d = os.path.join(root, 'docs/pc/art_help/class_walk_blockouts/kestrel/')
     if not os.path.exists(d + 'joints_512.json'):
-        os.makedirs(BLOCK, exist_ok=True)
-        subprocess.run(f'git -C "{REPO}" archive {BLOCK_COMMIT} docs/pc/art_help/class_walk_blockouts/kestrel | tar -x -C "{BLOCK}"',
+        os.makedirs(root, exist_ok=True)
+        subprocess.run(f'git -C "{REPO}" archive {commit} docs/pc/art_help/class_walk_blockouts/kestrel | tar -x -C "{root}"',
                        shell=True, check=True)
     return d
 
-BD = blockout_dir()
-J = json.load(open(BD + 'joints_512.json'))['facings']
-def frames(F): return [J['walk_' + F][f'f{i:02d}'] for i in range(12)]
+BDS = {F: blockout_dir(F) for F in 'SE'}
+def bd(F): return BDS[F]
+J = {F: json.load(open(BDS[F] + 'joints_512.json'))['facings'] for F in 'SE'}
+def frames(F): return [J[F]['walk_' + F][f'f{i:02d}'] for i in range(12)]
 def jnt(fr, k): return np.array(fr['joints'][k], float)
 def unit(v): v = np.asarray(v, float); return v / max(float(np.hypot(*v)), 1e-9)
 
@@ -63,7 +65,7 @@ def plants(F, tol=0.6):
 _CT = {}
 def clay_top(F, i):
     if (F, i) not in _CT:
-        a = np.asarray(Image.open(f'{BD}clay/kestrel_walk_{F}_f{i:02d}.png').convert('RGBA'))[..., 3] > 127
+        a = np.asarray(Image.open(f'{bd(F)}clay/kestrel_walk_{F}_f{i:02d}.png').convert('RGBA'))[..., 3] > 127
         _CT[(F, i)] = int(np.nonzero(a[:, 200:312].any(1))[0].min())
     return _CT[(F, i)]
 
@@ -132,7 +134,34 @@ def foot_M(F, i, sd, pl):
     # per-leg constant lateral offset of the foot track (S: the far boot must not hide straight behind the near leg).
     # Constant over the whole cycle -> a planted foot still moves exactly with the ground (no skate).
     M[:, 2] += np.array(c.get('foot_lat', {}).get(sd, (0.0, 0.0)), float)
+    M[:, 2] += swing_push(F, i, sd, pl)
     return M, pin
+
+def swing_phase(F, i, sd, pl, skew=1.0):
+    """0 on planted frames; a sin^p bump (p = CFG swing_pow, default 2) over each run of swing (non-planted) frames, 1 at
+    mid-swing. skew < 1 moves the peak earlier: the bump is taken at t^skew, t = the frame's share of the swing run."""
+    P = [bool(pl[sd]['heel'][j] or pl[sd]['toe'][j]) for j in range(12)]
+    if P[i] or all(not p for p in P): return 0.0
+    a = i
+    while not P[(a - 1) % 12]: a -= 1
+    b = i
+    while not P[(b + 1) % 12]: b += 1
+    n = b - a + 1; j = i - a
+    return math.sin(math.pi * ((j + 1) / (n + 1)) ** skew) ** CFG[F].get('swing_pow', 2.0)
+
+def swing_push(F, i, sd, pl):
+    """S: the swing foot clears the stance leg (planted frames are untouched, so there is no skate). The v3.2 S track puts the
+    passing foot straight over the planted one in screen space, so the far boot would hide behind the near shin.
+    CFG swing_off = {side: [lat, lift, back]} px at mid-swing: lat along the blockout hip axis (L_hip - R_hip, unit), lift
+    straight up the screen, back against the ground's walk direction (the swing heel trails, the knee leads). lat follows the
+    symmetric bump; lift and back peak early in the swing (CFG swing_skew), as the heel trails right after toe-off and the
+    foot comes through late."""
+    o = CFG[F].get('swing_off', {}).get(sd)
+    if not o: return np.zeros(2)
+    fr = frames(F)[i]; ph = swing_phase(F, i, sd, pl); pe = swing_phase(F, i, sd, pl, CFG[F].get('swing_skew', 1.0))
+    if not ph: return np.zeros(2)
+    lat = unit(jnt(fr, 'L_hip') - jnt(fr, 'R_hip')); back = unit(EXP[F])
+    return lat * o[0] * ph + (np.array([0.0, -1.0]) * o[1] + back * o[2]) * pe
 
 def ik_knee(hip, ank, L1, L2, kref):
     d = np.subtract(ank, hip); D = float(np.hypot(*d)); D = min(D, L1 + L2 - 1e-4); u = unit(d); n = np.array([-u[1], u[0]])
@@ -170,9 +199,18 @@ def leg_pose(F, i, sd, dy, pl=None):
         an2 = hip + unit(an - hip) * (Lt0 + Ls0) * kc * c['reach']; Mf = Mf.copy(); Mf[:, 2] += an2 - an; pull = math.dist(an2, an); an = an2
     else: pull = 0.0
     kn = ik_knee(hip, an, Lt0 * kc, Ls0 * kc, jnt(fr, sd + '_knee'))
+    clamp = 0.0
+    tmax = c.get('thigh_fwd_max')
+    if tmax is not None and not planted:
+        # no march: the swing thigh comes at most tmax deg forward of vertical (screen, + = the walk direction). The knee is
+        # turned back about the hip and the shin and foot follow rigidly (the swing foot is free, so nothing skates).
+        sg = 1.0 if F == 'S' else -1.0; v = kn - hip; th = math.degrees(math.atan2(sg * v[0], v[1]))
+        if th > tmax:
+            a_ = math.radians(tmax); L_ = float(np.hypot(*v)); kn2 = hip + L_ * np.array([sg * math.sin(a_), math.cos(a_)])
+            d_ = kn2 - kn; Mf = Mf.copy(); Mf[:, 2] += d_; an = an + d_; kn = kn2; clamp = th - tmax
     Mt = bone_M(H, K, hip, kn, s); Ms = bone_M(K, A, kn, an, s)
     toe = apm(Mf, R['toe']); heel = apm(Mf, R['heel'])
-    return dict(hip=hip, knee=kn, ankle=an, toe=toe, heel=heel, Mt=Mt, Ms=Ms, Mf=Mf, k=kc, pull=pull, pin=pin,
+    return dict(hip=hip, knee=kn, ankle=an, toe=toe, heel=heel, Mt=Mt, Ms=Ms, Mf=Mf, k=kc, pull=pull, pin=pin, thigh_clamp=clamp,
                 planted=bool(pl[sd]['heel'][i] or pl[sd]['toe'][i]), heel_pl=pl[sd]['heel'][i], toe_pl=pl[sd]['toe'][i])
 
 # ------------------------------------------------------------------ mesh skin
@@ -263,16 +301,40 @@ def render(F, i, RS=3, legs_only=False):
     dy = get_dy(F); T = body_T(F, i, dy); fr = frames(F)[i]; pl = plants(F)
     img = np.zeros((CH * RS, CW * RS, 4), np.float32)
     if not legs_only: img = over(img, place(F, f'back_{F}', T, RS))
-    nr = near_side(fr); meta = dict(near=nr)
+    nr = near_side(fr); meta = dict(near=nr); legs_a = np.zeros(img.shape[:2], np.float32)
     for sd in ([x for x in 'RL' if x != nr] + [nr]):
         P = leg_pose(F, i, sd, dy, pl)
         L = skin(F, f'leg_{F}' if sd == 'L' else f'legfar_{F}', P, RS)
-        L[..., :3] *= far_dark(F, i, sd)
+        L[..., :3] *= far_dark(F, i, sd); legs_a = np.maximum(legs_a, L[..., 3])
         img = over(img, L)
         meta[sd] = {k: (v.tolist() if isinstance(v, np.ndarray) and v.ndim == 1 else v) for k, v in P.items() if k not in ('Mt', 'Ms', 'Mf')}
     if not legs_only: img = over(img, place(F, f'front_{F}', T, RS))
+    if not legs_only and CFG[F].get('crotch_fill'):
+        meta['crotch_fill_px'] = close_crotch(F, img, legs_a, min(meta['R']['knee'][1], meta['L']['knee'][1]), RS)
     meta['body_T'] = list(T); meta['dy'] = dy
     return img, meta
+
+def legs_hull(legs_cell, knee_y):
+    """cell mask: the convex hull of the two legs over the rows above the higher knee (smaller y)."""
+    ky = int(math.floor(knee_y)); lm = legs_cell.copy(); lm[ky:] = False; hm = np.zeros(lm.shape, np.uint8)
+    if lm.any():
+        cv2.fillConvexPoly(hm, cv2.convexHull(np.column_stack(np.nonzero(lm)[::-1]).astype(np.int32)), 1); hm[ky:] = 0
+    return hm.astype(bool)
+
+def close_crotch(F, img, legs_a, knee_y, RS):
+    """no see-through between the thighs: every cell pixel inside the legs' hull above the knees that would come out as
+    background is filled, behind everything, with the dark under-tunic / inner-thigh shadow (darkest under the hem, a little
+    lighter toward the knees). Decided on the cell grid (the same masks as s_checks.py), painted as whole RS blocks."""
+    small = lambda a: cv2.resize(a, (CW, CH), interpolation=cv2.INTER_AREA) > 0.5
+    gap = legs_hull(small(legs_a), knee_y) & ~small(img[..., 3])
+    if not gap.any(): return 0
+    ys = np.nonzero(gap)[0]; t = np.clip((np.arange(CH) - ys.min()) / max(knee_y - ys.min(), 1.0), 0, 1)
+    top, bot = np.array(CFG[F]['crotch_fill'][0], np.float32) / 255, np.array(CFG[F]['crotch_fill'][1], np.float32) / 255
+    col = top[None, :] * (1 - t[:, None]) + bot[None, :] * t[:, None]                      # per cell row
+    G = np.kron(gap, np.ones((RS, RS), bool)); C = np.repeat(col, RS, 0)[:, None, :]
+    fill = np.zeros_like(img); fill[G, 3] = 1; fill[..., :3] = np.where(G[..., None], np.broadcast_to(C, img[..., :3].shape), 0)
+    img[:] = over(fill, img)
+    return int(gap.sum())
 
 def to_cell(img, RS):
     sm = cv2.resize(img, (CW, CH), interpolation=cv2.INTER_AREA) if RS != 1 else img
@@ -281,10 +343,11 @@ def to_cell(img, RS):
     out = np.zeros((CH, CW, 4), np.uint8); out[m, :3] = (rgb[m] * 255 + 0.5).astype(np.uint8); out[m, 3] = 255
     return out
 
-def gif(paths, out, scale=1, bg=(172, 172, 172)):
+def gif(paths, out, scale=1, bg=(172, 172, 172), mirror=False):
+    from PIL import ImageOps
     ims = []
     for p in paths:
-        a = Image.open(p).convert('RGBA'); b = Image.new('RGBA', a.size, bg + (255,)); b.alpha_composite(a)
+        a = Image.open(p).convert('RGBA'); a = ImageOps.mirror(a) if mirror else a; b = Image.new('RGBA', a.size, bg + (255,)); b.alpha_composite(a)
         if scale != 1: b = b.resize((a.width * scale, a.height * scale), Image.NEAREST)
         ims.append(b.convert('RGB').convert('P', palette=Image.ADAPTIVE, colors=255))
     ims[0].save(out, save_all=True, append_images=ims[1:], duration=10 * round(100 / FPS), loop=0, disposal=2)
@@ -302,4 +365,6 @@ if __name__ == '__main__':
             print(F, i, 'near', meta['near'], 'k', round(meta['R']['k'], 3), round(meta['L']['k'], 3), 'pull', round(meta['R']['pull'], 1), round(meta['L']['pull'], 1), flush=True)
         if a.gif and not a.frames:
             gif([f'{a.out}/kestrel_walk_{F}_f{i:02d}.png' for i in range(12)], os.path.join(a.out, '..', f'walk_{F}.gif'))
+            # W and N are mirrors of S and E (game-side flip); W is written out because it is the facing under review
+            if F == 'S': gif([f'{a.out}/kestrel_walk_S_f{i:02d}.png' for i in range(12)], os.path.join(a.out, '..', 'walk_W.gif'), mirror=True)
     json.dump(dict(cfg=CFG, frames=info), open(f'{a.out}/_build_info.json', 'w'), indent=1, default=float)

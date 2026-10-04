@@ -1,0 +1,254 @@
+{
+ "f00": {
+  "crotch_gap_px": 0,
+  "knee_row": 271,
+  "thigh_deg": {
+   "R": 22.7,
+   "L": 10.8
+  },
+  "planted": {
+   "R": true,
+   "L": true
+  },
+  "swing_fwd_deg": null,
+  "far_boot": {
+   "near": "R",
+   "far": "L",
+   "far_boot_px": 1274,
+   "visible_pct": 63.1,
+   "gap_px": 0.0,
+   "touching": true
+  }
+ },
+ "f01": {
+  "crotch_gap_px": 0,
+  "knee_row": 270,
+  "thigh_deg": {
+   "R": 21.3,
+   "L": 11.9
+  },
+  "planted": {
+   "R": true,
+   "L": true
+  },
+  "swing_fwd_deg": null,
+  "far_boot": {
+   "near": "R",
+   "far": "L",
+   "far_boot_px": 1263,
+   "visible_pct": 63.5,
+   "gap_px": 0.0,
+   "touching": true
+  }
+ },
+ "f02": {
+  "crotch_gap_px": 0,
+  "knee_row": 266,
+  "thigh_deg": {
+   "R": 18.5,
+   "L": 3.8
+  },
+  "planted": {
+   "R": true,
+   "L": false
+  },
+  "swing_fwd_deg": 3.8,
+  "far_boot": {
+   "near": "R",
+   "far": "L",
+   "far_boot_px": 1221,
+   "visible_pct": 63.5,
+   "gap_px": 0.0,
+   "touching": true
+  }
+ },
+ "f03": {
+  "crotch_gap_px": 0,
+  "knee_row": 262,
+  "thigh_deg": {
+   "R": 15.2,
+   "L": 14.0
+  },
+  "planted": {
+   "R": true,
+   "L": false
+  },
+  "swing_fwd_deg": 14.0,
+  "far_boot": {
+   "near": "R",
+   "far": "L",
+   "far_boot_px": 1213,
+   "visible_pct": 63.5,
+   "gap_px": 0.0,
+   "touching": true
+  }
+ },
+ "f04": {
+  "crotch_gap_px": 0,
+  "knee_row": 261,
+  "thigh_deg": {
+   "R": 21.9,
+   "L": 21.6
+  },
+  "planted": {
+   "R": true,
+   "L": false
+  },
+  "swing_fwd_deg": 21.6,
+  "far_boot": {
+   "near": "L",
+   "far": "R",
+   "far_boot_px": 1230,
+   "visible_pct": 63.0,
+   "gap_px": 0.0,
+   "touching": true
+  }
+ },
+ "f05": {
+  "crotch_gap_px": 0,
+  "knee_row": 270,
+  "thigh_deg": {
+   "R": 24.3,
+   "L": 15.2
+  },
+  "planted": {
+   "R": true,
+   "L": false
+  },
+  "swing_fwd_deg": 15.2,
+  "far_boot": {
+   "near": "L",
+   "far": "R",
+   "far_boot_px": 1225,
+   "visible_pct": 97.3,
+   "gap_px": 0.0,
+   "touching": true
+  }
+ },
+ "f06": {
+  "crotch_gap_px": 0,
+  "knee_row": 276,
+  "thigh_deg": {
+   "R": 28.4,
+   "L": 13.4
+  },
+  "planted": {
+   "R": true,
+   "L": true
+  },
+  "swing_fwd_deg": null,
+  "far_boot": {
+   "near": "L",
+   "far": "R",
+   "far_boot_px": 1261,
+   "visible_pct": 93.0,
+   "gap_px": 0.0,
+   "touching": true
+  }
+ },
+ "f07": {
+  "crotch_gap_px": 0,
+  "knee_row": 275,
+  "thigh_deg": {
+   "R": 27.8,
+   "L": 11.1
+  },
+  "planted": {
+   "R": true,
+   "L": true
+  },
+  "swing_fwd_deg": null,
+  "far_boot": {
+   "near": "L",
+   "far": "R",
+   "far_boot_px": 1260,
+   "visible_pct": 90.6,
+   "gap_px": 0.0,
+   "touching": true
+  }
+ },
+ "f08": {
+  "crotch_gap_px": 0,
+  "knee_row": 274,
+  "thigh_deg": {
+   "R": 18.3,
+   "L": 7.3
+  },
+  "planted": {
+   "R": false,
+   "L": true
+  },
+  "swing_fwd_deg": 18.3,
+  "far_boot": {
+   "near": "L",
+   "far": "R",
+   "far_boot_px": 1215,
+   "visible_pct": 98.0,
+   "gap_px": 2.0,
+   "touching": false
+  }
+ },
+ "f09": {
+  "crotch_gap_px": 0,
+  "knee_row": 269,
+  "thigh_deg": {
+   "R": 25.0,
+   "L": 3.7
+  },
+  "planted": {
+   "R": false,
+   "L": true
+  },
+  "swing_fwd_deg": 25.0,
+  "far_boot": {
+   "near": "L",
+   "far": "R",
+   "far_boot_px": 1214,
+   "visible_pct": 82.8,
+   "gap_px": 0.0,
+   "touching": true
+  }
+ },
+ "f10": {
+  "crotch_gap_px": 0,
+  "knee_row": 270,
+  "thigh_deg": {
+   "R": 25.0,
+   "L": 0.2
+  },
+  "planted": {
+   "R": false,
+   "L": true
+  },
+  "swing_fwd_deg": 25.0,
+  "far_boot": {
+   "near": "R",
+   "far": "L",
+   "far_boot_px": 1280,
+   "visible_pct": 65.5,
+   "gap_px": 0.0,
+   "touching": true
+  }
+ },
+ "f11": {
+  "crotch_gap_px": 0,
+  "knee_row": 268,
+  "thigh_deg": {
+   "R": 25.0,
+   "L": -3.4
+  },
+  "planted": {
+   "R": false,
+   "L": true
+  },
+  "swing_fwd_deg": 25.0,
+  "far_boot": {
+   "near": "R",
+   "far": "L",
+   "far_boot_px": 1243,
+   "visible_pct": 75.5,
+   "gap_px": 0.0,
+   "touching": true
+  }
+ }
+}

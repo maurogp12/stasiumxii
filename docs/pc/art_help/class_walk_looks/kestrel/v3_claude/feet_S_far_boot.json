@@ -2,8 +2,8 @@
  "f00": {
   "near": "R",
   "far": "L",
-  "far_boot_px": 1264,
-  "visible_pct": 76.3,
+  "far_boot_px": 1274,
+  "visible_pct": 63.1,
   "gap_px": 0.0,
   "touching": true
  },
@@ -11,87 +11,87 @@
   "near": "R",
   "far": "L",
   "far_boot_px": 1263,
-  "visible_pct": 72.0,
+  "visible_pct": 63.5,
   "gap_px": 0.0,
   "touching": true
  },
  "f02": {
   "near": "R",
   "far": "L",
-  "far_boot_px": 1220,
-  "visible_pct": 78.0,
+  "far_boot_px": 1221,
+  "visible_pct": 63.5,
   "gap_px": 0.0,
   "touching": true
  },
  "f03": {
   "near": "R",
   "far": "L",
-  "far_boot_px": 1222,
-  "visible_pct": 84.1,
-  "gap_px": 9.0,
-  "touching": false
+  "far_boot_px": 1213,
+  "visible_pct": 63.5,
+  "gap_px": 0.0,
+  "touching": true
  },
  "f04": {
-  "near": "R",
-  "far": "L",
-  "far_boot_px": 1228,
-  "visible_pct": 95.0,
-  "gap_px": 34.6,
-  "touching": false
+  "near": "L",
+  "far": "R",
+  "far_boot_px": 1230,
+  "visible_pct": 63.0,
+  "gap_px": 0.0,
+  "touching": true
  },
  "f05": {
   "near": "L",
   "far": "R",
-  "far_boot_px": 1232,
-  "visible_pct": 100.0,
-  "gap_px": 41.6,
-  "touching": false
+  "far_boot_px": 1225,
+  "visible_pct": 97.3,
+  "gap_px": 0.0,
+  "touching": true
  },
  "f06": {
   "near": "L",
   "far": "R",
-  "far_boot_px": 1266,
-  "visible_pct": 100.0,
-  "gap_px": 28.6,
-  "touching": false
+  "far_boot_px": 1261,
+  "visible_pct": 93.0,
+  "gap_px": 0.0,
+  "touching": true
  },
  "f07": {
   "near": "L",
   "far": "R",
-  "far_boot_px": 1254,
-  "visible_pct": 100.0,
-  "gap_px": 26.8,
-  "touching": false
+  "far_boot_px": 1260,
+  "visible_pct": 90.6,
+  "gap_px": 0.0,
+  "touching": true
  },
  "f08": {
   "near": "L",
   "far": "R",
-  "far_boot_px": 1230,
-  "visible_pct": 100.0,
-  "gap_px": 32.8,
+  "far_boot_px": 1215,
+  "visible_pct": 98.0,
+  "gap_px": 2.0,
   "touching": false
  },
  "f09": {
-  "near": "R",
-  "far": "L",
-  "far_boot_px": 1301,
-  "visible_pct": 99.5,
-  "gap_px": 16.4,
-  "touching": false
+  "near": "L",
+  "far": "R",
+  "far_boot_px": 1214,
+  "visible_pct": 82.8,
+  "gap_px": 0.0,
+  "touching": true
  },
  "f10": {
   "near": "R",
   "far": "L",
-  "far_boot_px": 1269,
-  "visible_pct": 99.1,
-  "gap_px": 4.4,
-  "touching": false
+  "far_boot_px": 1280,
+  "visible_pct": 65.5,
+  "gap_px": 0.0,
+  "touching": true
  },
  "f11": {
   "near": "R",
   "far": "L",
-  "far_boot_px": 1232,
-  "visible_pct": 91.6,
+  "far_boot_px": 1243,
+  "visible_pct": 75.5,
   "gap_px": 0.0,
   "touching": true
  }

@@ -1,4 +1,4 @@
-"""Score the v3 frames with the Bastion metric (bastion/v2/scripts/bastion_metric.py, unchanged) on Kestrel blockout v3.1.
+"""Score the v3 frames with the Bastion metric (bastion/v2/scripts/bastion_metric.py, unchanged) on the Kestrel blockout (S v3.2, E v3.1).
 The S target alpha file is an RGBA cut-out (its alpha channel is the mask) and the metric reads --target_alpha with
 .convert('L'), which would read the painting instead; so a binary L copy of each mask is written to a temp dir first.
 Also writes the support-sole error as a vector per frame (cand - clay, px) next to the metric json.
@@ -17,9 +17,9 @@ for F in 'SE':
     a = Image.open(f'{LOOKS}targets/kestrel_rp_{F}_f00_alpha.png')
     m = np.asarray(a)[..., 3] if a.mode == 'RGBA' else np.asarray(a.convert('L'))
     ta = os.path.join(tmp, f'alpha_{F}.png'); Image.fromarray(((m > 127) * 255).astype(np.uint8)).save(ta)
-    cmd = [sys.executable, MET, '--prefix', 'kestrel', '--facing', F, '--cand', cand, '--v2', krig.BD + 'clay',
+    cmd = [sys.executable, MET, '--prefix', 'kestrel', '--facing', F, '--cand', cand, '--v2', krig.bd(F) + 'clay',
            '--target', f'{LOOKS}targets/kestrel_rp_{F}_f00.jpg', '--target_alpha', ta,
-           '--idle', f'{krig.BD}clay/kestrel_idle_{F}_f00.png', '--joints', krig.BD + 'joints_512.json',
+           '--idle', f'{krig.bd(F)}clay/kestrel_idle_{F}_f00.png', '--joints', krig.bd(F) + 'joints_512.json',
            '--out', os.path.join(out, f'metric_{F}.json')]
     subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL)
     r = json.load(open(os.path.join(out, f'metric_{F}.json')))
