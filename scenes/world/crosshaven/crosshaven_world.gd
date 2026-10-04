@@ -1365,9 +1365,12 @@ func _draw_backdrop() -> void:
 	if _backdrop == null or not _backdrop.has_meta("sea"):
 		return
 	var sea: Rect2 = _backdrop.get_meta("sea")
-	# Past the coast the fill is sea. The olive field rect and the square
-	# cliff rings used to show inside the camera before the land diamonds.
-	_backdrop.draw_rect(sea, SEA, true)
+	# Past the coast the fill is sea. Match the ground's sea colour, including
+	# the Northgate snow wash, so the skirt does not end in a hard diagonal.
+	var snow := 0.0
+	if zone != null and walker != null:
+		snow = Ground.snow_at(zone.zone_id, walker.cell)
+	_backdrop.draw_rect(sea, Ground.sea_fill(snow), true)
 
 
 func _refresh_presence() -> void:
@@ -2367,10 +2370,29 @@ func _movie_water_stills() -> void:
 	DirAccess.make_dir_recursive_absolute(folder)
 	await _grab_theme_still("crosshaven_stoneford", Vector2i(10, 16), folder.path_join("crosshaven_river.png"))
 	await _grab_theme_still("crosshaven_northgate", Vector2i(16, 8), folder.path_join("northgate_shore.png"))
+	_zoom = 1.0
+	if camera != null:
+		camera.zoom = Vector2.ONE * _zoom
+	await _grab_theme_still("crosshaven_northgate", Vector2i(16, 8), folder.path_join("northgate_shore_zoom_1.png"))
+	_zoom = 1.6
+	if camera != null:
+		camera.zoom = Vector2.ONE * _zoom
+	await _grab_theme_still("crosshaven_northgate", Vector2i(16, 8), folder.path_join("northgate_shore_zoom_1_6.png"))
+	_zoom = 1.15
+	if camera != null:
+		camera.zoom = Vector2.ONE * _zoom
 	var beach := ProjectSettings.globalize_path("res://docs/pc/media/outskirts")
 	DirAccess.make_dir_recursive_absolute(beach)
 	await _grab_theme_still("crosshaven_eastmarch_coves", Vector2i(22, 6), beach.path_join("eastmarch_beach.png"))
 	await _grab_theme_still("crosshaven_eastmarch_coves", Vector2i(22, 6), folder.path_join("eastmarch_beach.png"))
+	_zoom = 1.0
+	if camera != null:
+		camera.zoom = Vector2.ONE * _zoom
+	await _grab_theme_still("crosshaven_eastmarch_coves", Vector2i(22, 6), folder.path_join("eastmarch_beach_zoom_1.png"))
+	_zoom = 1.6
+	if camera != null:
+		camera.zoom = Vector2.ONE * _zoom
+	await _grab_theme_still("crosshaven_eastmarch_coves", Vector2i(22, 6), folder.path_join("eastmarch_beach_zoom_1_6.png"))
 	# The north-east lip of Northgate, where the sea meets the map fill.
 	_zoom = 1.0
 	if camera != null:

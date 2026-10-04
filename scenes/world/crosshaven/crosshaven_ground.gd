@@ -109,6 +109,9 @@ func _mark_water_rows() -> void:
 		for x in zone.width:
 			if zone.terrain_at(Vector2i(x, y)) == "water":
 				_water_rows[x + y] = true
+	for key in _void_sea.keys():
+		var cell: Vector2i = key
+		_water_rows[cell.x + cell.y] = true
 
 
 func _process(_delta: float) -> void:
@@ -360,6 +363,22 @@ func _kit_sea(cell: Vector2i) -> bool:
 ## Open water_a..d are the lighter river blue. These multiplies make sea and swamp.
 const SEA_TINT := Color(36.0 / 94.0, 110.0 / 173.0, 158.0 / 224.0)
 const SWAMP_TINT := Color(92.0 / 94.0, 96.0 / 173.0, 52.0 / 224.0)
+const SEA_FILL := Color("246e9e")
+
+
+## Flat sea the backdrop uses. Snow is the same wash the Northgate tiles used
+## to paint on top, baked in so a second diamond does not draw a grid.
+static func sea_fill(snow: float) -> Color:
+	if snow <= 0.2:
+		return SEA_FILL
+	var wash_a := 0.22 * snow
+	var wash := Color(0.62, 0.78, 0.90, 1.0)
+	return Color(
+		SEA_FILL.r * (1.0 - wash_a) + wash.r * wash_a,
+		SEA_FILL.g * (1.0 - wash_a) + wash.g * wash_a,
+		SEA_FILL.b * (1.0 - wash_a) + wash.b * wash_a,
+		1.0
+	)
 
 
 func _zone_id_at(cell: Vector2i) -> String:
@@ -470,7 +489,7 @@ func _cache_void_sea() -> void:
 	while head < queue.size():
 		var at: Vector2i = queue[head]
 		head += 1
-		_void_sea[at] = true
+		_void_sea[at] = int(dist[at])
 		var here := int(dist[at])
 		if here >= reach:
 			continue
@@ -574,13 +593,13 @@ func _touches_sea_water(cell: Vector2i) -> bool:
 	return false
 
 
-## One cell of sand where grass, snow, or a town path meets the sea.
-## Cliffs keep their face and take the foam line instead.
+## One cell of sand where grass, a path, or a cliff top meets the sea.
+## Cliff faces stay. The top becomes the sand lip the water was missing.
 func _shore_land(cell: Vector2i) -> bool:
 	if _beach_at(cell) != "":
 		return false
 	var seen := Art.terrain_seen(zone, cell)
-	if seen == "" or seen == "water" or seen == "cliff":
+	if seen == "" or seen == "water":
 		return false
 	return _touches_sea_water(cell)
 
@@ -749,9 +768,9 @@ func _draw_cell(ci: Node2D, cell: Vector2i) -> void:
 	if not _kit_sea(cell):
 		_fade_void_edge(ci, cell, steps, rank, terrain)
 	_dust_snow(ci, cell, paint, steps)
-	# After the snow wash, so the shore band stays bright on Northgate water.
-	if terrain == "water":
-		_draw_sea_foam(ci, cell, steps)
+	# Foam is drawn with the land row, which sorts above the water it meets.
+	if terrain != "" and terrain != "water":
+		_draw_soft_foam(ci, cell, steps)
 
 
 func _draw_flat_faces(ci: Node2D, lifted: PackedVector2Array, steps: int, side: Color) -> void:
@@ -832,17 +851,14 @@ func _draw_cell_kit(ci: Node2D, cell: Vector2i, terrain: String, steps: int, ban
 	if bank:
 		_draw_named_floor(ci, south_tip, "golden_plains_a", "golden_plains", _floor_modulate(cell, "golden_plains"))
 		return
+	# Open sea is one world-space fill. The per-cell ripple tiles drew the lattice.
+	if terrain == "water" and _water_grade(cell) == "sea":
+		_draw_open_sea(ci, cell, steps, _sea_skirt_fade(cell))
+		return
 	var floor_tint := _floor_modulate(cell, terrain)
 	var pick := Art.pick_tile(zone, cell)
 	var floor_id := str(pick["floor"])
 	var corner_ids: Array = pick["corners"]
-	# One sea surface. Bank and shore pieces carry a grass fringe, so the sea
-	# uses the open water tile on the same fill the void skirt paints.
-	if terrain == "water" and _water_grade(cell) == "sea":
-		var pieces: Array[String] = ["water_a", "water_b", "water_c", "water_d"]
-		floor_id = pieces[Art.h(cell.x, cell.y, pieces.size())]
-		corner_ids = []
-		ci.draw_colored_polygon(_sea_diamond(cell, steps), Color("246e9e"))
 	var water_overlap := 0.0
 	if terrain == "water":
 		water_overlap = WATER_OVERLAP
@@ -876,7 +892,7 @@ func _draw_cell_kit(ci: Node2D, cell: Vector2i, terrain: String, steps: int, ban
 	if terrain == "water" and VisualSettings.current != null and VisualSettings.current.enabled("animations"):
 		_draw_water_polish(ci, cell, steps)
 	var lip := str(pick.get("lip", ""))
-	if lip != "":
+	if lip != "" and not _shore_land(cell):
 		var lip_art := Art.texture("tiles", lip)
 		if not lip_art.is_empty():
 			var lsize := Art.size_of(lip_art)
@@ -1011,23 +1027,51 @@ func _sea_diamond(cell: Vector2i, steps: int) -> PackedVector2Array:
 	return grown
 
 
-## Flat sea past the last tile. The snow wash matches Northgate water so the
-## fill is not a darker rectangle.
+## How far a void cell is into the skirt. 0 on real water. The outer four
+## cells lose the ripple so they meet the flat backdrop without a cut.
+func _sea_skirt_fade(cell: Vector2i) -> float:
+	if not _void_sea.has(cell):
+		return 0.0
+	var dist := int(_void_sea[cell])
+	if dist < 13:
+		return 0.0
+	return clampf(float(dist - 12) / 4.0, 0.0, 1.0)
+
+
+func _sea_wave(world: Vector2, scroll: float) -> float:
+	var period := 220.0
+	var u := (world.x + scroll) / period * TAU
+	var v := (world.y * 0.85 + scroll * 0.4) / period * TAU
+	return sin(u) * 0.55 + sin(v * 1.3 + u * 0.35) * 0.3 + sin((u + v) * 0.7) * 0.15
+
+
+## One fill for open sea. Corner colours come from the world position, so
+## neighbouring diamonds share an edge and no cell outline is readable.
+func _draw_open_sea(ci: Node2D, cell: Vector2i, steps: int, fade: float) -> void:
+	var d := Pick.diamond(cell, float(steps))
+	var fill := sea_fill(snow_at_cell(cell))
+	var amp := 0.045 * (1.0 - fade)
+	var scroll := float(maxi(_ripple_frame, 0)) * 18.0
+	var colors := PackedColorArray()
+	for i in 4:
+		var point: Vector2 = d[i]
+		var world := ci.to_global(point)
+		var scale := 1.0 + _sea_wave(world, scroll) * amp
+		colors.append(Color(fill.r * scale, fill.g * scale, fill.b * scale, 1.0))
+	ci.draw_polygon(d, colors)
+
+
+## Flat sea past the last tile, the same fill as the cells in front of it.
 func _draw_void_sea(ci: Node2D, cell: Vector2i, steps: int) -> void:
-	var diamond := _sea_diamond(cell, steps)
-	ci.draw_colored_polygon(diamond, Color("246e9e"))
-	var amount := snow_at_cell(cell)
-	if amount > 0.2:
-		ci.draw_colored_polygon(diamond, Color(0.62, 0.78, 0.90, 0.22 * amount))
+	_draw_open_sea(ci, cell, steps, _sea_skirt_fade(cell))
 
 
-## A short white band on the water, inset from the land edge so the next
-## tile does not cover it. Cliffs, snow, and paths all read as a shore.
-func _draw_sea_foam(ci: Node2D, cell: Vector2i, steps: int) -> void:
-	if _water_grade(cell) != "sea":
-		return
-	# Eastmarch kit surf already paints that shore.
+## Soft surf on the water side of a shore edge. A constant-width curve, not
+## a filled chevron. The kit surf tiles already do this on the Eastmarch beach.
+func _draw_soft_foam(ci: Node2D, cell: Vector2i, steps: int) -> void:
 	if _beach_at(cell) != "":
+		return
+	if not _touches_sea_water(cell):
 		return
 	var d := Pick.diamond(cell, float(steps))
 	var center := BoardVisualSort.cell_to_local(cell, float(steps))
@@ -1035,18 +1079,25 @@ func _draw_sea_foam(ci: Node2D, cell: Vector2i, steps: int) -> void:
 	var ia := 0
 	for step in sides:
 		var nb: Vector2i = cell + step
-		var seen := Art.terrain_seen(zone, nb)
 		var ib := (ia + 1) % 4
+		var edge_a: Vector2 = d[ia]
+		var edge_b: Vector2 = d[ib]
 		ia += 1
-		if seen == "" or seen == "water":
+		if Art.terrain_seen(zone, nb) != "water" or _water_grade(nb) != "sea":
 			continue
-		# Wide enough to read at the Northgate shore still. Inset so the land tile does not cover it.
-		# Far enough onto the water that the land diamond does not cover the band.
-		var outer_a := d[ia - 1].lerp(center, 0.22)
-		var outer_b := d[ib].lerp(center, 0.22)
-		var inner_a := d[ia - 1].lerp(center, 0.62)
-		var inner_b := d[ib].lerp(center, 0.62)
-		ci.draw_colored_polygon(PackedVector2Array([outer_a, outer_b, inner_b, inner_a]), Color(0.93, 0.98, 1.0, 0.9))
+		var mid := (edge_a + edge_b) * 0.5
+		var away := mid - center
+		if away.length() < 0.01:
+			continue
+		away = away.normalized()
+		var pts := PackedVector2Array()
+		for s in 7:
+			var t := float(s) / 6.0
+			var along := edge_a.lerp(edge_b, t)
+			var bulge := sin(t * PI) * 2.4
+			pts.append(along + away * (6.0 + bulge))
+		ci.draw_polyline(pts, Color(0.90, 0.96, 1.0, 0.34), 7.0)
+		ci.draw_polyline(pts, Color(0.97, 0.99, 1.0, 0.82), 2.0)
 
 
 ## Hook for the painted theme kits. Weights fall off over tens of cells,
@@ -1194,6 +1245,9 @@ func _dust_snow(ci: Node2D, cell: Vector2i, terrain: String, steps: int) -> void
 		return
 	var diamond := Pick.diamond(cell, float(steps))
 	if terrain == "water":
+		# Sea already bakes this wash into the fill. A second diamond drew the grid.
+		if _water_grade(cell) == "sea":
+			return
 		ci.draw_colored_polygon(diamond, Color(0.62, 0.78, 0.90, 0.22 * amount))
 		return
 	if terrain != "cliff" or not _north_crag(cell):
