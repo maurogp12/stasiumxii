@@ -121,6 +121,9 @@ var _pinch_zoom := 0.0
 var _board_px := Vector2(960, 500)
 var _fit_camera_pos := Vector2.ZERO
 var _pan_limit := Vector2(PAN_LIMIT, PAN_LIMIT)
+## Turn focus glide (Mauro 4 Oct 2026: "the map focus whoever turn it is").
+const FOCUS_GLIDE_SEC := 0.45
+var _focus_tween: Tween
 var _framed_cell := Vector2i(-999, -999)
 var _panning := false
 var _touch_panning := false
@@ -433,6 +436,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			(tile as BoardTile).queue_redraw()
 		return
 	if _busy or _view_locked:
+		# Watching an AI or monster turn: a finger can still drag the map.
+		_pan_while_watching(event)
 		return
 	if event.is_action_pressed("ui_cancel"):
 		# Esc returns to Walk. Right-click stays face and is not a cancel.
@@ -2570,7 +2575,7 @@ func _rebuild_grid(size: int) -> void:
 ## Desktop stays the 960×720 fit. A phone keeps most of the iso diamond
 ## on screen and frames the active fighter. Middle-mouse can pan past the
 ## fit. A phone drag stays inside the board.
-func _fit_board_camera() -> void:
+func _fit_board_camera(glide: bool = false) -> void:
 	_ensure_camera()
 	var n := _board_size
 	if n < 1:
@@ -2595,6 +2600,7 @@ func _fit_board_camera() -> void:
 	var center := Vector2((min_x + max_x) * 0.5, (min_y + max_y) * 0.5)
 	var room := TOUCH.pan_room(board_w, board_h, viewport, zoom, mobile)
 	if mobile:
+		room = TOUCH.free_room(board_w, board_h, room)
 		_pan_limit = room
 	else:
 		_pan_limit = Vector2(maxf(room.x, PAN_LIMIT), maxf(room.y, PAN_LIMIT))
@@ -2612,8 +2618,19 @@ func _fit_board_camera() -> void:
 	var world_center := global_position + center
 	var camera_world := world_center - (play_center - view_center) / zoom
 	_fit_camera_pos = camera_world - global_position
-	_camera.position = _fit_camera_pos + (look - center)
-	_clamp_camera()
+	var goal := _fit_camera_pos + (look - center)
+	var dx := clampf(goal.x - _fit_camera_pos.x, -_pan_limit.x, _pan_limit.x)
+	var dy := clampf(goal.y - _fit_camera_pos.y, -_pan_limit.y, _pan_limit.y)
+	goal = _fit_camera_pos + Vector2(dx, dy)
+	if _focus_tween != null and _focus_tween.is_valid():
+		_focus_tween.kill()
+	if glide and is_inside_tree() and not _touch_panning and not _panning:
+		# Turn focus: glide to the fighter whose turn it is.
+		_focus_tween = create_tween()
+		_focus_tween.tween_property(_camera, "position", goal, FOCUS_GLIDE_SEC).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	else:
+		_camera.position = goal
+		_clamp_camera()
 	var limits := TOUCH.player_zoom_limits(board_w, board_h, viewport, mobile)
 	if _hud != null and _hud.has_method("set_zoom_buttons"):
 		_hud.set_zoom_buttons(zoom < limits.y - 0.02, zoom > limits.x + 0.02)
@@ -2646,7 +2663,17 @@ func _maybe_reframe(snap: Dictionary) -> void:
 	if cell == _framed_cell:
 		return
 	_framed_cell = cell
-	_fit_board_camera()
+	_fit_board_camera(true)
+
+
+func _pan_while_watching(event: InputEvent) -> void:
+	if TOUCH.is_touch_press(event):
+		_touch_down = TOUCH.pointer_position(event)
+		_touch_panning = false
+	elif TOUCH.is_touch_release(event):
+		_touch_panning = false
+	elif event is InputEventScreenDrag and _touches.size() < 2:
+		_pan_board_drag(event)
 
 
 func _pan_board_drag(event: InputEvent) -> bool:
@@ -2659,6 +2686,9 @@ func _pan_board_drag(event: InputEvent) -> bool:
 		_touch_panning = true
 		_touch_commit_open = false
 		_pan_origin = pos
+		# The finger wins over a turn-focus glide in progress.
+		if _focus_tween != null and _focus_tween.is_valid():
+			_focus_tween.kill()
 		return true
 	var delta := pos - _pan_origin
 	_pan_origin = pos

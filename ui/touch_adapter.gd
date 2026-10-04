@@ -322,6 +322,17 @@ static func pan_room(board_w: float, board_h: float, viewport_size: Vector2, zoo
 	)
 
 
+## Free roam (Mauro 4 Oct 2026: "the map focus whoever turn it is, also
+## move the screen by touching it in the direction we want"): even when the
+## whole board fits, a finger can drag it this share of its size each way,
+## and the turn focus can bring the active fighter toward the middle.
+const FREE_ROAM := 0.32
+
+
+static func free_room(board_w: float, board_h: float, room: Vector2) -> Vector2:
+	return Vector2(maxf(room.x, board_w * FREE_ROAM), maxf(room.y, board_h * FREE_ROAM))
+
+
 ## Shift the look-at point toward focus, without sliding past the board edge.
 static func focus_point(center: Vector2, focus: Vector2, room: Vector2) -> Vector2:
 	var delta := focus - center
