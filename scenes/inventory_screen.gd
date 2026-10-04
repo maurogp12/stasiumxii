@@ -334,6 +334,7 @@ func _refresh_doll() -> void:
 	sock.caption = "Still"
 	if _vault.socket != "":
 		sock.tint = StillVault.COLORS[_vault.socket]
+		sock.icon_tex = StillVault.icon(_vault.socket)
 		sock.filled = true
 		sock.badge = "OW" if _vault.mode == "overwound" else ""
 		sock.pressed.connect(select.bind({"kind": "still", "id": _vault.socket}))
@@ -459,6 +460,8 @@ func _refresh_grid() -> void:
 				any = true
 				var t := _grid_tile("Still_" + id)
 				t.glyph = "still"
+				# Fragments show the shard; a socketed Still with none left shows the hourglass.
+				t.icon_tex = StillVault.icon(id, _vault.count(id) > 0)
 				t.tint = StillVault.COLORS[id]
 				t.filled = true
 				t.count = _vault.count(id)
@@ -571,9 +574,20 @@ func _refresh_detail() -> void:
 	if kind == "still":
 		var id := str(picked.get("id", ""))
 		var fx: Dictionary = StillVault.EFFECTS.get(id, {})
-		_detail.add_child(_label("%s — %d / %d fragments%s" % [StillVault.display_name(id), _vault.count(id), StillVault.FORGE_COST, "   (socketed, %s)" % _vault.mode if _vault.socket == id else ""], 17, StillVault.COLORS.get(id, GOLD_BRIGHT).lerp(GOLD_BRIGHT, 0.4)))
-		_detail.add_child(_label("Intact: %s   ·   Overwound: %s" % [str(fx.get("intact", "")), str(fx.get("overwound", ""))], 13, GOLD_BRIGHT))
-		var vault_button := _button("Open the Vault")
+		var still_tint: Color = StillVault.COLORS.get(id, GOLD_BRIGHT).lerp(GOLD_BRIGHT, 0.4)
+		var head := _label("%s Still" % StillVault.display_name(id), 18, still_tint)
+		head.name = "StillHead"
+		_detail.add_child(head)
+		var have := _vault.count(id)
+		var line := "Fragments: %d.  %s" % [have, StillVault.forge_summary(have)]
+		if _vault.socket == id:
+			line = "In your Still socket (%s).  %s" % ["Intact" if _vault.mode == "intact" else "Overwound", line]
+		_detail.add_child(_label(line, 14, GOLD_BRIGHT))
+		var soon := "" if bool(fx.get("built", true)) else "  (coming in the next update)"
+		_detail.add_child(_label("Intact — safe: %s%s" % [StillVault.plain(id, "intact"), soon], 14, GOLD_BRIGHT))
+		_detail.add_child(_label("Overwound — stronger, then it cracks: %s%s" % [StillVault.plain(id, "overwound"), soon], 14, GOLD_BRIGHT))
+		_detail.add_child(_label("  ".join(StillVault.HOW_TO), 12, GOLD_DIM))
+		var vault_button := _button("Open the Vault to forge")
 		vault_button.name = "OpenVault"
 		vault_button.pressed.connect(open_stills)
 		_detail.add_child(vault_button)
@@ -695,6 +709,8 @@ class InvTile extends Button:
 		if count > 0:
 			var ct := "x%d" % count
 			var w := f.get_string_size(ct, HORIZONTAL_ALIGNMENT_LEFT, -1, 12).x
+			# Dark plate so the count reads over painted icons.
+			draw_rect(Rect2(Vector2(size.x - w - 7, size.y - 18), Vector2(w + 5, 15)), Color(0.04, 0.03, 0.02, 0.82))
 			draw_string(f, Vector2(size.x - w - 4, size.y - 5), ct, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color(1, 0.95, 0.7))
 		if badge != "":
 			draw_circle(Vector2(size.x - 9, 9), 8, Color(0.66, 0.84, 0.25) if badge == "E" else Color(0.62, 0.36, 0.95))
