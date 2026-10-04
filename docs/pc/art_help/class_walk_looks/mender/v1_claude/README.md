@@ -1,87 +1,111 @@
-# Mender walk v1 (Claude): STOPPED at the S foot-track gate
+# Mender walk v1 (Claude): painted legs on blockout v3.1 (S) / v3 (E)
 
-> **Status, 4 Oct 2026: not built.** The S foot-track check comes before the full rig. No Mender S track passes both gates (no shin X, far boot ≥ 60% on every S frame) without sideways splay worse than Gloam's approved 88° / 6°. As instructed, I stopped here and did not hack the feet. There are no walk frames, GIFs or scores yet. No blockout v-next was committed. Mauro's call is needed (options at the end).
+The Mender walk for S and E, 12 frames each; W and N are mirrors of S and E. First pass for review, not locked.
 
-## What was used
+Same method as the locked Kestrel (`kestrel/v3_claude/`) and Gloam (`gloam/v1_claude/`) walks. Their scripts were copied and adapted here; neither was changed.
 
-- **Approved look.** `targets/mender_rp_S_f00.jpg` and `targets/mender_rp_E_f00.jpg` with their `_alpha.png` masks: the design-B repaint at `3250c2ba` on `art/ironjaw-walk-help`, which Mauro approved. The same bytes are on this branch. The rejected first pair in `targets/_orig/` was not used.
-- **Blockout.** Mender v3 (`ffbfe3a9` on `claude/class-walk-blockouts`), whose current S track is `foot_w` 0.9 (the default). The sweep re-rendered S only, with `scripts/blockout.py` and `foot_w` overridden. At 0.9 that render is pixel-identical to the committed v3 clay and ID, and its joints are identical.
-- **Pipeline.** The Gloam v1 scripts (`gloam/v1_claude/scripts/`), copied and adapted here. Gloam and Kestrel are unchanged.
+- **Legs.** Each leg is one continuous painted leg cut from the approved target (hip → thigh → knee → wrapped boot → sole). It is bent onto every frame's blockout joints with 3-bone mesh skinning (hip, knee, ankle). It hangs from the target's belt hips, and the boot is pinned to the blockout heel and toe.
+- **Upper body.** The hood, face, mantle, robe, sash, pouches, arms, staff and lantern are the approved target, placed with one uniform scale. They follow the blockout pelvis and bob.
 
-## The cut (`scripts/mcut.py`)
+## Inputs
 
-Mender's robe hangs to the boot tops, so the cut differs from Gloam:
+- **Approved look.** `targets/mender_rp_{S,E}_f00.jpg` and `_alpha.png`: the design-B repaint `3250c2ba` (on `art/ironjaw-walk-help`), which Mauro approved. The rejected first pair in `targets/_orig/` is not used.
+- **Blockout** on `claude/class-walk-blockouts`:
+  - S uses Mender **v3.1** (`ca1a7c30`): the narrow S foot track (`foot_w` 0.3) Mauro picked from `s_track_options.png`. Contact foot-pair angle is 44° at f00 and 27° at f06, against the 27° walk diagonal.
+  - E uses Mender **v3** (`ffbfe3a9`). v3.1 leaves E byte-identical.
+- **Gate change for Mender only (Mauro).** The far-boot ≥ 60% gate is dropped because the robe covering the boots is accepted. Far-boot % is still reported below.
 
-- **Legs.** Only the S forward leg shows above the hem, through the robe's front slit. It is cut as one leg, from the slit trouser to the wrapped boot and sole. That is blockout L, screen-right.
-  - E uses the screen-right planted boot, which is blockout R. The staff in front of its toe is painted out.
-  - Above the visible part, the leg is grown from itself, as in Gloam, and the robe hides it.
-- **Body.** The whole robe, the staff and the lantern sit in front of the legs on both S and E.
-  - The S slit, where the leg was, is filled with the robe's dark inside, with a ragged lower edge.
-  - The removed boots leave a ragged robe hem, never a straight cut.
-- **Hood top.** The figure top is the hood, not the staff crook. The crook rises above the hood in E, and in a few E clay frames it also reached the column range Gloam used for the clay head row. `clay_top` now looks only within 15 px of the `head_top` joint.
+## What changed from the Gloam pipeline
 
-A first rig pass on v3 already holds the proportions in S: belt −0.9 to +1.2 pts, knee −1.7 to +0.3 pts, thigh and boot within ±1.5%, skate 0.56 px. E needs `dy` tuning: its belt is −0.4 to −3.9 pts at the auto `dy`.
+- **Robe cut (`mcut.py`).** The ivory robe hangs to the boot tops, so the robe, staff and lantern are the front layer in S and E. The legs only show below the hem and, in S, through the robe's front slit.
+  - S source leg: the forward leg in the slit, cut from the trouser to the wrapped boot (blockout L).
+  - E source leg: the planted screen-right boot (blockout R). The staff in front of its toe is painted out.
+  - Above the visible part, each leg is grown from its own pixels (Gloam's method) and is hidden under the robe.
+  - The S slit is filled with the robe's dark inside. The fill is darkest at the slit's apex and has a ragged edge at the hem.
+  - The right panel's grey lining, beside the forward leg, stays painted but is drawn behind the legs.
+  - Where a boot was removed, the robe hem ends in ragged tatter tips instead of the cut polygon's straight edge. Light robe tatters that hang over a boot top are kept.
+- **Hood top, not staff.** The figure top used for placement is the hood. The E staff crook rises above the hood, so `clay_top` only looks within 15 px of the `head_top` joint. The crook can enter Gloam's fixed column window on some E clay frames.
+- **Settings (`mcfg.json`).**
+  - S: s 0.372, dy −0.3, `foot_o` (−3.3, +3.0).
+  - E: s 0.368, dy −2.0, `foot_o` (+2.6, +4.0). `foot_o` puts the painted sole on the clay sole; sole error is ≤ 1.35 px in S and ≤ 2.3 px in E.
+  - E dy is set so the belt stays inside ±2.5 (it was −3.9 at the first auto dy) with no planted foot pulled.
+- **S f03 shin X fixed with one swing key.** `swing_keys` L f03 = (+5, +3) cell px moves the L swing foot slightly forward and down. f03 is a swing frame for L, so nothing planted moves. The shins no longer cross below the knee on any S frame.
+- **Kept from Kestrel and Gloam:** `thigh_fwd_max` 25°, crotch fill, speck fill (S 20 px, E 10 px), straight late stance (`stance_kmin` 0.82), and the toe-off toe pin.
 
-## S foot track (`s_track_options.png`, `s_track_sweep.json`)
+## Scores (Bastion metric, `run_metric.py`, unchanged; against the clay above)
 
-I rendered Mender S at `foot_w` 0.0 to 1.8 and rigged the painted legs on each with the same settings (`hip_w` 1.0, auto `dy`). For each one I measured:
+| | look | ssim upper / lower | iou | palette | height vs idle | bob err | motion | sole_err per frame (px) |
+|---|---|---|---|---|---|---|---|---|
+| S | **90.5** (PASS) | 0.980 / 0.710 | 0.895 | 0.948 | 1.013 | 0 | **100** | 0.06 0.01 0.04 0.14 0.04 0.37 1.35 0.05 0.08 1.08 0.28 0.66 |
+| E | **87.0** (PASS) | 0.985 / 0.673 | 0.816 | 0.949 | 0.971 | 6.58 | 8.3 | 2.30 1.79 1.11 0.61 1.27 1.32 1.83 0.13 0.61 0.13 0.61 1.88 |
 
-- **(a) Shins cross.** The two knee→ankle segments intersect on screen.
-- **(b) Far boot.** `boot_vis.measure`, with the near leg and the robe as occluders, the same as Gloam.
-- **(c) Contact angle.** Front heel minus back heel at f00 / f06, against the 27° diagonal. The formula reproduces Kestrel v3.2 (41 / 27), Kestrel v3.1 (78 / 9) and Gloam v3.1 (88 / 6) from their joints.
+E motion fails on bob, not on the feet. The metric's `head_top` reads columns 200–312. On clay E f00–f03 and f11, the clay's staff crook (x ≈ 310) is inside that window and is read as the head, so the clay "bob" jumps 6–9 px. The painted staff stays outside the window, so the walk's head top is the hood. On f04–f10, where the clay reading is also the hood, the walk is a steady 2 px above it (dy −2). The same staff crook sets the idle top, so E `height_vs_idle` reads 0.971.
 
-| foot_w | shins cross | far boot min | frames < 60% | angle f00 / f06 | far boot % f00 … f11 |
-|---|---|---|---|---|---|
-| 0.0 | f03 | 30% (f03) | f01, f02, f03, f09, f10 | 34 / 34 | 74 55 59 30 69 89 91 74 76 56 37 80 |
-| 0.15 | f03 | 23% (f03) | f01, f02, f03, f10 | 39 / 30 | 73 55 58 23 83 88 87 73 77 70 26 78 |
-| 0.3 (Kestrel's) | f03 | 9% (f10) | f01, f02, f03, f10 | 44 / 27 | 70 54 55 20 91 86 82 71 73 79 9 71 |
-| 0.5 | none | 14% (f10) | f01, f02, f03, f10, f11 | 50 / 22 | 60 48 46 26 96 84 76 69 71 95 14 57 |
-| 0.65 | none | 29% (f10) | f00–f03, f10, f11 | 56 / 19 | 47 38 35 41 93 83 72 68 69 98 29 41 |
-| **0.9 (v3 now)** | f02 | 16% (f11) | f00, f01, f02, f10, f11 | 65 / 15 | 22 20 18 65 89 83 70 63 66 100 53 16 |
-| 1.2 | none | 10% (f00) | f00, f01, f02, f11 | 76 / 10 | 10 22 20 86 82 82 70 61 67 100 76 12 |
-| 1.35 | none | 14% (f00) | f00, f01, f02, f11 | 81 / 8 | 14 29 31 92 78 81 68 62 65 98 84 23 |
-| 1.5 (Gloam's) | none | 32% (f00) | f00, f01, f02, f11 | 86 / 7 | 32 40 48 92 74 67 67 77 87 96 90 37 |
-| 1.65 | none | 50% (f11) | f00, f01, f11 | 90 / 5 | 53 54 62 90 70 65 69 73 84 93 95 50 |
-| 1.7 | none | 55% (f11) | f00, f01, f11 | 92 / 5 | 58 58 65 89 69 65 68 72 83 92 96 55 |
-| 1.75 | none | 59% (f11) | f11 | 93 / 4 | 64 61 68 88 68 64 68 71 81 91 98 59 |
-| 1.8 | none | 64% (f11) | none | 95 / 4 | 67 64 71 87 66 64 67 71 80 90 98 64 |
+## Checks (all 12 frames)
 
-**Why no track passes.**
+| | thigh/shoulder | boot/shoulder | belt→sole | knee line | stance bend | swing thigh max | crotch bg px | skate |
+|---|---|---|---|---|---|---|---|---|
+| S | −1.5 to +1.4% | −0.8 to +2.2% | −0.9 to +0.7 pts | −1.7 to +0.2 pts | 7.6° every frame | 23.8° | 0 | 0.56 px |
+| E | −1.0 to +1.6% | −1.6 to +1.2% | −2.3 to +0.8 pts | −1.6 to +1.0 pts | 7.2° every frame | 24.8° | 0 | 0.54 px |
 
-- **f01 is the blocker.** Both feet are planted there, so swing keys can't touch it without skate. Its visible share is about 55% at every narrow track (0.0–0.3). It drops to 20–40% in the middle (0.65–1.5) and reaches 60% only at 1.75 or wider.
-  - At 0.3, most of the loss is the robe hem: 26% of the far boot, against 23% for the near shin.
-  - At 1.5 it is the near R shin (59%).
-- **Narrow tracks fail on the swing frames too.**
-  - At f03 the L swing passes behind the R stance leg: 20–30%, and the shins cross at 0.0–0.3.
-  - At f10 the R swing passes in front of the planted L: 9–37%.
-  - Gloam showed that ≤ 8 px swing keys gain about 10 points, so they cannot close a 30–50 point gap.
-- **The robe makes it worse than Gloam.** The robe hem covers the far boot's top on most frames: up to 37% of it by itself on f06–f08.
-- **Only 1.8 passes, and 1.75 passes with one f11 swing key.** Their splay is 95° / 4° and 93° / 4°, which is wider than Gloam's 88° / 6° and much wider than the rejected Kestrel v3.1.
+- **Shins.** No X below the knee on any S frame (`s_checks_S.json` → `shins_cross`).
+- **Stance.** Stance legs are straight on every frame. The only bent planted legs are toe-off legs (heel up, toe pinned): S f06 R 16.5° and f07 R 36.9°, the same pattern as Gloam's locked S (34–62°).
+- **Along-bone k.** 0.87–1.05 in S and 0.93–1.08 in E, under the 1.10 cap. No planted foot is pulled.
+- **Facing.**
+  - S: the face and hood look down-right, toward the travel direction, on every frame.
+  - E: the back of the hood faces up-right.
+  - Both are the approved target's head, unchanged.
 
-**Rig hip width, not used.** Narrowing the painted hips (`hip_w` 0.6, legs about 6 cell px inside the painted hips each side) lifts f00/f01 to 78% / 62% on a 0.3 track. f02, f03 and f10 still fail (47%, 23%, 15%). It also breaks the rule that the legs root at the target's own hips. Kestrel reverted the same kind of hip change, so I did not use it.
+**Far boot visible share, S** (report only, `feet_S_far_boot.json`; the robe hem counts as cover):
 
-## Options for Mauro
-
-1. **Accept a wide track: `foot_w` 1.8**, or 1.75 plus one f11 swing key. This passes no-X and far boot ≥ 60%. The splay is 95° / 4°, wider than Gloam's.
-2. **Relax the far-boot gate for Mender only**, because the robe hides the boot tops by design. This means measuring against the near leg alone, without the robe hem. It does not rescue either track by itself:
-   - Gloam's 1.5 track (86° / 7°) still fails f00, f01 and f11 (32%, 41%, 37%).
-   - Kestrel's 0.3 track (44° / 27°) then passes f00–f02 (79%, 77%, 69%). It still fails the swing frames f03 (20%, shins cross) and f10 (9%).
-3. **A new blockout plant pattern.** For example, put the trailing foot's toe-off earlier, so f01 is not double-planted behind the near shin. That is a blockout motion change, not a track change.
+| f00 | f01 | f02 | f03 | f04 | f05 | f06 | f07 | f08 | f09 | f10 | f11 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| 71.5 | 57.9 | 58.6 | 27.6 | 91.9 | 86.7 | 77.0 | 71.6 | 72.6 | 79.0 | 9.4 | 75.6 |
 
 ## Files
 
 | file | what |
 |---|---|
-| `s_track_options.png` | Kestrel v3.2 (approved) and v3.1 (rejected) clay, Gloam v1 (approved), then Mender at foot_w 0.3, 0.65, 0.9, 1.5 and 1.8, rigged. Columns are f00, f01, f03, f06, f09 and the option's lowest far-boot frame. |
-| `s_track_sweep.json` | Every option's per-frame shin cross and far-boot %, plus the contact angles. |
-| `scripts/` | `mcut.py`, `mrig.py`, `mcfg.json`, `boot_vis.py`, `s_checks.py`, `sheets.py`, `run_metric.py` (adapted from Gloam), `s_track.py` (sweep), `s_track_options.py` (sheet). |
+| `frames/mender_walk_{S,E}_f00..f11.png` | 512x360 RGBA cells, pivot (256,329), binary alpha, black under alpha 0. `_build_info.json` holds each frame's rig joints and settings. |
+| `walk_S.gif`, `walk_E.gif`, `walk_W.gif` | 12-frame loops on grey 172 at 60 ms per frame. W is the mirror of S. |
+| `strip_{S,E}_target_f00_f03_f06_f09.png` | The approved target beside walk f00/f03/f06/f09, tiled from the shipped cells. |
+| `legs_sheet.png`, `legs_sheet.json` | Lower body for the target and f00/f03/f06/f09 at the same figure height. The json has every number for all 12 frames, plus skate. |
+| `side_by_side_f00_f06.png` | Target, f00 and f06, full figure, S and E. |
+| `feet_S_far_boot.png`, `.json` | S feet zoom with the far-boot %, for reporting only. |
+| `s_checks_{S,E}.json` | Per frame: crotch gap, shins cross, thigh angles, swing-thigh angle, far boot. |
+| `metric_{S,E}.json` | Bastion metric output. |
+| `s_track_options.png`, `s_track_sweep.json` | The S foot-track options Mauro picked from (foot_w 0.0–1.8, rigged), with Kestrel and Gloam for reference. |
+| `parts/` | The cut layers: `leg_F`, `legfar_F`, `back_F`, `front_F`, `rig_F.json`. |
+| `scripts/` | `mcut.py`, `mrig.py`, `mcfg.json`, `sheets.py`, `run_metric.py`, `boot_vis.py`, `s_checks.py`, `s_track.py`, `s_track_options.py`. |
 
-## How to re-run the sweep
+The 4-direction clip (S, E, W, N, then a loop) was rendered outside the repo as `mender_all_movement.mp4`.
+
+## Open issues (honest list)
+
+1. **The far boot is hidden on some S frames: f10 9%, f03 28%, f01 and f02 about 58%.** This is the accepted cost of the narrow track.
+   - f10: the R swing foot passes in front of the planted L boot.
+   - f03: the L swing passes behind the R stance leg. The f03 key fixes the X, not the cover.
+   - The robe hem covers the far boot's top on most frames.
+2. **The robe is rigid.** The robe, sash tail, staff and lantern do not swing or lag, and the hem does not react to the knees. This is the same limit as the Gloam cloak and the Kestrel bow.
+3. **One painted leg per side.** Each far leg is the same painting, 10% darker. Swing and toe-off boots are the painted contact boot rotated, not separately painted heel-up boots.
+4. **E shins cross on f00, f01, f10 and f11.** The X gate is for S only.
+5. **The S slit is a flat fill.** When neither leg is in the slit (f06, f07), it shows the dark robe inside: a smooth shaded fill with no painted folds.
+6. **The E metric is sensitive to scale.** The metric's coarse fit swings E `ssim_upper` between 0.93 and 0.98 for scale changes of about 1% (look 84–88 for E s 0.360–0.370). s 0.368 was picked inside that range; it keeps every proportion within ±2.5%.
+7. **E motion is 8.3.** The cause is the staff and head-top window described under Scores, not foot sliding. Real skate is ≤ 0.54 px.
+8. **A few dark cell pixels in the E hem.** The removed back leg's trouser leaves a 5×2 px dark spot under the left hem tatters (E, target x≈560, y≈502), where it reads as hem shadow.
+9. **Leg axis against the target.** The target's legs are posed wider than the narrow track. The walk's leg axis differs from the target's by up to +16° in S (back leg, f04) and +19° in E (f02). The legs follow the clay plants, and no axis rule was set for Mender.
+
+## How to re-run
 
 ```
 cd docs/pc/art_help/class_walk_looks/mender/v1_claude/scripts
-python3 mcut.py                                    # parts/ (M1PARTS to put them elsewhere)
-# render S at a foot_w with the blockout script (FOOT_W / FACINGS overrides in a scratch copy), then:
-MBLOCK_S_DIR=<render>/ python3 s_track.py <trk>/fw<w>
-python3 s_track_options.py <trk> <kestrel clay dir> ../s_track_options.png
+python3 mcut.py            # parts/
+python3 mrig.py --gif      # frames/ + walk_{S,E,W}.gif
+python3 sheets.py          # legs_sheet, side_by_side, strips
+python3 run_metric.py      # metric_{S,E}.json
+python3 boot_vis.py S ../feet_S_far_boot.png
+python3 s_checks.py S ../frames ../s_checks_S.json; python3 s_checks.py E ../frames ../s_checks_E.json
 ```
+
+- **Blockout files.** These are extracted with `git archive` on the first run: S from `ca1a7c30` into `$MBLOCK_S` (default `/tmp/mender_blockout_v31`), and E from `ffbfe3a9` into `$MBLOCK_E` (default `/tmp/mender_blockout_v3`). Fetch `claude/class-walk-blockouts` first.
+- **Dependencies.** numpy, pillow, opencv-python and scikit-image.

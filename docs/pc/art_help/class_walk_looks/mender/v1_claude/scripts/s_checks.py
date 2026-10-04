@@ -3,6 +3,7 @@
                  the higher knee (smaller y): see-through between the thighs. Target: 0 on every frame.
   thigh_deg      hip -> knee screen angle off vertical per leg, + = forward (the screen walk direction: +x for S and E).
                  swing_fwd_deg = the largest forward thigh angle of a non-planted leg (rule: <= 25).
+  shins_cross    the two knee->ankle segments intersect on screen (an X below the knees; rule: never on S).
   far_boot       far-boot visible % and the gap between the boots (from boot_vis.measure; rule: >= 60 %).
 usage: s_checks.py [F] [frames_dir] [out.json]"""
 import os, sys, json, math, numpy as np, cv2
@@ -24,7 +25,9 @@ def check(F, i, D):
     for sd in 'RL':
         v = P[sd]['knee'] - P[sd]['hip']; th[sd] = round(FWD[F] * math.degrees(math.atan2(v[0], v[1])), 1)
     sw = [th[sd] for sd in 'RL' if not P[sd]['planted']]
-    return dict(crotch_gap_px=gap, knee_row=ky, thigh_deg=th, planted={sd: P[sd]['planted'] for sd in 'RL'},
+    from s_track import seg_x
+    cross = bool(seg_x(P['R']['knee'], P['R']['ankle'], P['L']['knee'], P['L']['ankle']))
+    return dict(crotch_gap_px=gap, shins_cross=cross, knee_row=ky, thigh_deg=th, planted={sd: P[sd]['planted'] for sd in 'RL'},
                 swing_fwd_deg=max(sw) if sw else None, far_boot=boot_vis.measure(F, i))
 
 if __name__ == '__main__':
@@ -32,6 +35,6 @@ if __name__ == '__main__':
     D = sys.argv[2] if len(sys.argv) > 2 else os.path.join(grig.HERE, '..', 'frames')
     res = {f'f{i:02d}': check(F, i, D) for i in range(12)}
     for k, v in res.items():
-        print(k, 'gap', v['crotch_gap_px'], 'thigh', v['thigh_deg'], 'planted', v['planted'], 'swing', v['swing_fwd_deg'],
+        print(k, 'gap', v['crotch_gap_px'], 'X' if v['shins_cross'] else '-', 'thigh', v['thigh_deg'], 'planted', v['planted'], 'swing', v['swing_fwd_deg'],
               'boot', v['far_boot']['visible_pct'], v['far_boot']['far'], 'gap', v['far_boot']['gap_px'])
     if len(sys.argv) > 3: json.dump(res, open(sys.argv[3], 'w'), indent=1)

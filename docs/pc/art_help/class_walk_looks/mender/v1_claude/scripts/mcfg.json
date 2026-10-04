@@ -1,6 +1,7 @@
 {
- "S": {"s": 0.372, "dy": null, "stance_kmin": 0.82, "foot_o": [0.0, 0.0], "thigh_fwd_max": 25.0,
-       "crotch_fill": [[38, 31, 24], [56, 47, 37]], "crotch_rag": 5, "speck_px": 20},
- "E": {"s": 0.36, "dy": null, "stance_kmin": 0.82, "foot_o": [0.0, 0.0], "thigh_fwd_max": 25.0,
+ "S": {"s": 0.372, "dy": -0.3, "stance_kmin": 0.82, "foot_o": [-3.3, 3.0], "thigh_fwd_max": 25.0,
+       "crotch_fill": [[38, 31, 24], [56, 47, 37]], "crotch_rag": 5, "speck_px": 20,
+       "swing_keys": {"L": {"3": [5, 3]}}},
+ "E": {"s": 0.368, "dy": -2.0, "stance_kmin": 0.82, "foot_o": [2.6, 4.0], "thigh_fwd_max": 25.0,
        "crotch_fill": [[38, 31, 24], [56, 47, 37]], "crotch_rag": 5, "speck_px": 10}
 }

@@ -1,4 +1,4 @@
-"""Score the v3 frames with the Bastion metric (bastion/v2/scripts/bastion_metric.py, unchanged) on the Mender blockout v3 (ffbfe3a9).
+"""Score the v3 frames with the Bastion metric (bastion/v2/scripts/bastion_metric.py, unchanged) on the Mender blockout (S v3.1 ca1a7c30, E v3 ffbfe3a9).
 The S target alpha file is an RGBA cut-out (its alpha channel is the mask) and the metric reads --target_alpha with
 .convert('L'), which would read the painting instead; so a binary L copy of each mask is written to a temp dir first.
 Also writes the support-sole error as a vector per frame (cand - clay, px) next to the metric json.

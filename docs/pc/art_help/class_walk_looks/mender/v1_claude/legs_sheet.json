@@ -1,0 +1,2022 @@
+{
+ "S": {
+  "target": {
+   "top": 32,
+   "sole": 697,
+   "H": 665,
+   "belt": 295.0,
+   "knee": 535.0,
+   "thigh_sh": 0.2628,
+   "boot_sh": 0.2783,
+   "shoulder": 210.238,
+   "own_sole": 697,
+   "belt_pct": 60.4511,
+   "knee_pct": 75.6391,
+   "axis": {
+    "fwd": 11.415839524407016,
+    "back": -6.491939577470666
+   },
+   "stance_bend": 16.3215,
+   "thigh_w": 55.25,
+   "boot_w": 58.5
+  },
+  "frames": {
+   "f00": {
+    "top": 100.0,
+    "sole": 350.0,
+    "H": 250.0,
+    "belt": 198.048,
+    "belt_pct": 60.780800000000006,
+    "knee_leg": "R",
+    "knee_pct": 75.74128605153015,
+    "stance": "R",
+    "legs": {
+     "R": {
+      "thigh_sh": 0.26211977500449274,
+      "boot_sh": 0.27703716057385414,
+      "axis_deg": 19.0,
+      "bend": 7.6,
+      "k": 1.003,
+      "planted": true,
+      "heel": true,
+      "toe": false,
+      "hip": [
+       244.82799999999997,
+       217.9665
+      ],
+      "knee": [
+       273.2658648250569,
+       289.3532151288254
+      ],
+      "ankle": [
+       283.79345223798936,
+       331.0665886002886
+      ],
+      "hip_offset_px": 0.0,
+      "role": "fwd",
+      "axis_dev": 7.6,
+      "hip_vs_painted_px": 7.6,
+      "thigh_dev_pct": -0.3,
+      "boot_dev_pct": -0.4
+     },
+     "L": {
+      "thigh_sh": 0.25998871992315536,
+      "boot_sh": 0.28236479827719746,
+      "axis_deg": -6.0,
+      "bend": 7.6,
+      "k": 0.89,
+      "planted": true,
+      "heel": false,
+      "toe": true,
+      "hip": [
+       267.172,
+       204.16950000000003
+      ],
+      "knee": [
+       263.26120608853853,
+       272.25699080551686
+      ],
+      "ankle": [
+       256.07810794451285,
+       309.75778039341486
+      ],
+      "hip_offset_px": 0.0,
+      "role": "back",
+      "axis_dev": 0.5,
+      "hip_vs_painted_px": 7.6,
+      "thigh_dev_pct": -1.1,
+      "boot_dev_pct": 1.5
+     }
+    },
+    "near": "R",
+    "belt_vs_target_pct": 0.33,
+    "knee_vs_target_pts": 0.1
+   },
+   "f01": {
+    "top": 100.0,
+    "sole": 352.3333333333333,
+    "H": 252.33333333333331,
+    "belt": 198.048,
+    "belt_pct": 61.14346103038309,
+    "knee_leg": "R",
+    "knee_pct": 75.37587008126769,
+    "stance": "R",
+    "legs": {
+     "R": {
+      "thigh_sh": 0.26318530254516137,
+      "boot_sh": 0.28023374319586014,
+      "axis_deg": 17.7,
+      "bend": 7.6,
+      "k": 1.007,
+      "planted": true,
+      "heel": true,
+      "toe": true,
+      "hip": [
+       243.56,
+       217.887
+      ],
+      "knee": [
+       270.44600028448104,
+       290.1984455050655
+      ],
+      "ankle": [
+       280.0442209536442,
+       332.310798075999
+      ],
+      "hip_offset_px": 0.0,
+      "role": "fwd",
+      "axis_dev": 6.3,
+      "hip_vs_painted_px": 7.4,
+      "thigh_dev_pct": 0.1,
+      "boot_dev_pct": 0.7
+     },
+     "L": {
+      "thigh_sh": 0.26531635762649874,
+      "boot_sh": 0.28023374319586014,
+      "axis_deg": -7.8,
+      "bend": 7.6,
+      "k": 0.856,
+      "planted": true,
+      "heel": false,
+      "toe": true,
+      "hip": [
+       266.288,
+       204.24900000000002
+      ],
+      "knee": [
+       260.45556792238074,
+       269.53965020055364
+      ],
+      "ankle": [
+       252.41185984017804,
+       305.34671635832166
+      ],
+      "hip_offset_px": 0.0,
+      "role": "back",
+      "axis_dev": -1.3,
+      "hip_vs_painted_px": 7.4,
+      "thigh_dev_pct": 1.0,
+      "boot_dev_pct": 0.7
+     }
+    },
+    "near": "R",
+    "belt_vs_target_pct": 0.69,
+    "knee_vs_target_pts": -0.26
+   },
+   "f02": {
+    "top": 98.0,
+    "sole": 349.3333333333333,
+    "H": 251.33333333333331,
+    "belt": 196.048,
+    "belt_pct": 60.98885941644562,
+    "knee_leg": "R",
+    "knee_pct": 75.43278458714452,
+    "stance": "R",
+    "legs": {
+     "R": {
+      "thigh_sh": 0.25998871992315536,
+      "boot_sh": 0.27810268811452277,
+      "axis_deg": 15.3,
+      "bend": 7.6,
+      "k": 0.987,
+      "planted": true,
+      "heel": true,
+      "toe": true,
+      "hip": [
+       242.25800000000004,
+       215.66450000000003
+      ],
+      "knee": [
+       265.63544284953133,
+       287.5877319290232
+      ],
+      "ankle": [
+       273.3149869571052,
+       329.22632523767857
+      ],
+      "hip_offset_px": 0.0,
+      "role": "fwd",
+      "axis_dev": 3.9,
+      "hip_vs_painted_px": 7.0,
+      "thigh_dev_pct": -1.1,
+      "boot_dev_pct": -0.1
+     },
+     "L": {
+      "thigh_sh": 0.26531635762649874,
+      "boot_sh": 0.27916821565519145,
+      "axis_deg": -9.4,
+      "bend": 18.5,
+      "k": 0.9,
+      "planted": false,
+      "heel": false,
+      "toe": false,
+      "hip": [
+       266.015,
+       202.4715
+      ],
+      "knee": [
+       262.628864483959,
+       271.3301794278528
+      ],
+      "ankle": [
+       248.57644919862912,
+       307.2793007632063
+      ],
+      "hip_offset_px": 0.0,
+      "role": "back",
+      "axis_dev": -2.9,
+      "hip_vs_painted_px": 7.0,
+      "thigh_dev_pct": 1.0,
+      "boot_dev_pct": 0.3
+     }
+    },
+    "near": "R",
+    "belt_vs_target_pct": 0.54,
+    "knee_vs_target_pts": -0.21
+   },
+   "f03": {
+    "top": 97.0,
+    "sole": 346.0,
+    "H": 249.0,
+    "belt": 195.048,
+    "belt_pct": 60.623293172690765,
+    "knee_leg": "R",
+    "knee_pct": 75.52605798678499,
+    "stance": "R",
+    "legs": {
+     "R": {
+      "thigh_sh": 0.26531635762649874,
+      "boot_sh": 0.2844958533585348,
+      "axis_deg": 12.7,
+      "bend": 7.6,
+      "k": 0.957,
+      "planted": true,
+      "heel": true,
+      "toe": true,
+      "hip": [
+       241.29500000000002,
+       214.3445
+      ],
+      "knee": [
+       260.74966898170993,
+       285.05988438709466
+      ],
+      "ankle": [
+       266.3409869571052,
+       325.73932523767854
+      ],
+      "hip_offset_px": 0.0,
+      "role": "fwd",
+      "axis_dev": 1.3,
+      "hip_vs_painted_px": 6.5,
+      "thigh_dev_pct": 1.0,
+      "boot_dev_pct": 2.2
+     },
+     "L": {
+      "thigh_sh": 0.25892319238248673,
+      "boot_sh": 0.27810268811452277,
+      "axis_deg": -0.2,
+      "bend": 27.6,
+      "k": 0.935,
+      "planted": false,
+      "heel": false,
+      "toe": false,
+      "hip": [
+       266.401,
+       201.7915
+      ],
+      "knee": [
+       278.38961142894004,
+       272.45493298060507
+      ],
+      "ankle": [
+       266.02852517231656,
+       310.6308027087912
+      ],
+      "hip_offset_px": 0.0,
+      "role": "back",
+      "axis_dev": 6.3,
+      "hip_vs_painted_px": 6.5,
+      "thigh_dev_pct": -1.5,
+      "boot_dev_pct": -0.1
+     }
+    },
+    "near": "R",
+    "belt_vs_target_pct": 0.17,
+    "knee_vs_target_pts": -0.11
+   },
+   "f04": {
+    "top": 98.0,
+    "sole": 342.3333333333333,
+    "H": 244.33333333333331,
+    "belt": 196.048,
+    "belt_pct": 59.87121418826739,
+    "knee_leg": "R",
+    "knee_pct": 75.82308117743416,
+    "stance": "R",
+    "legs": {
+     "R": {
+      "thigh_sh": 0.26211977500449274,
+      "boot_sh": 0.27810268811452277,
+      "axis_deg": 9.7,
+      "bend": 7.6,
+      "k": 0.912,
+      "planted": true,
+      "heel": true,
+      "toe": true,
+      "hip": [
+       240.94400000000002,
+       215.007
+      ],
+      "knee": [
+       256.0229820303847,
+       283.26106167686413
+      ],
+      "ankle": [
+       259.3669869571052,
+       322.2523252376786
+      ],
+      "hip_offset_px": 0.0,
+      "role": "back",
+      "axis_dev": 16.2,
+      "hip_vs_painted_px": 6.0,
+      "thigh_dev_pct": -0.3,
+      "boot_dev_pct": -0.1
+     },
+     "L": {
+      "thigh_sh": 0.26318530254516137,
+      "boot_sh": 0.2812992707365288,
+      "axis_deg": 4.7,
+      "bend": 23.3,
+      "k": 0.944,
+      "planted": false,
+      "heel": false,
+      "toe": false,
+      "hip": [
+       267.329,
+       203.12900000000002
+      ],
+      "knee": [
+       283.57396140846157,
+       273.63981917627075
+      ],
+      "ankle": [
+       276.3243302103165,
+       313.49644521585157
+      ],
+      "hip_offset_px": 0.0,
+      "role": "fwd",
+      "axis_dev": -6.7,
+      "hip_vs_painted_px": 6.0,
+      "thigh_dev_pct": 0.1,
+      "boot_dev_pct": 1.1
+     }
+    },
+    "near": "L",
+    "belt_vs_target_pct": -0.58,
+    "knee_vs_target_pts": 0.18
+   },
+   "f05": {
+    "top": 99.0,
+    "sole": 342.3333333333333,
+    "H": 243.33333333333331,
+    "belt": 197.048,
+    "belt_pct": 59.706301369863006,
+    "knee_leg": "L",
+    "knee_pct": 74.06458489897675,
+    "stance": "R",
+    "legs": {
+     "R": {
+      "thigh_sh": 0.26318530254516137,
+      "boot_sh": 0.2812992707365288,
+      "axis_deg": 6.2,
+      "bend": 7.6,
+      "k": 0.869,
+      "planted": true,
+      "heel": true,
+      "toe": true,
+      "hip": [
+       241.286,
+       215.75050000000002
+      ],
+      "knee": [
+       251.54217258213302,
+       281.51231755937863
+      ],
+      "ankle": [
+       252.39298695710517,
+       318.7653252376786
+      ],
+      "hip_offset_px": 0.0,
+      "role": "back",
+      "axis_dev": 12.7,
+      "hip_vs_painted_px": 5.7,
+      "thigh_dev_pct": 0.1,
+      "boot_dev_pct": 1.1
+     },
+     "L": {
+      "thigh_sh": 0.2642508300858301,
+      "boot_sh": 0.27703716057385414,
+      "axis_deg": 9.8,
+      "bend": 12.2,
+      "k": 1.007,
+      "planted": false,
+      "heel": false,
+      "toe": false,
+      "hip": [
+       268.562,
+       204.3855
+      ],
+      "knee": [
+       287.4151255289779,
+       279.22382325417675
+      ],
+      "ankle": [
+       288.8781422829889,
+       322.40737155015734
+      ],
+      "hip_offset_px": 0.0,
+      "role": "fwd",
+      "axis_dev": -1.6,
+      "hip_vs_painted_px": 5.7,
+      "thigh_dev_pct": 0.6,
+      "boot_dev_pct": -0.4
+     }
+    },
+    "near": "L",
+    "belt_vs_target_pct": -0.74,
+    "knee_vs_target_pts": -1.57
+   },
+   "f06": {
+    "top": 100.0,
+    "sole": 346.3333333333333,
+    "H": 246.33333333333331,
+    "belt": 198.048,
+    "belt_pct": 60.19702300405954,
+    "knee_leg": "L",
+    "knee_pct": 74.28657408104962,
+    "stance": "L",
+    "legs": {
+     "R": {
+      "thigh_sh": 0.26318530254516137,
+      "boot_sh": 0.27916821565519145,
+      "axis_deg": 3.7,
+      "bend": 16.5,
+      "k": 0.82,
+      "planted": true,
+      "heel": false,
+      "toe": true,
+      "hip": [
+       242.204,
+       216.654
+      ],
+      "knee": [
+       252.72621286218083,
+       278.59674694718467
+      ],
+      "ankle": [
+       248.54610794451276,
+       313.52378039341494
+      ],
+      "hip_offset_px": 0.0,
+      "role": "back",
+      "axis_dev": 10.2,
+      "hip_vs_painted_px": 5.6,
+      "thigh_dev_pct": 0.1,
+      "boot_dev_pct": 0.3
+     },
+     "L": {
+      "thigh_sh": 0.26211977500449274,
+      "boot_sh": 0.27810268811452277,
+      "axis_deg": 10.0,
+      "bend": 7.6,
+      "k": 1.037,
+      "planted": true,
+      "heel": true,
+      "toe": false,
+      "hip": [
+       269.796,
+       205.48200000000003
+      ],
+      "knee": [
+       287.3109471560699,
+       282.99259415298553
+      ],
+      "ankle": [
+       291.32545223798945,
+       327.30058860028856
+      ],
+      "hip_offset_px": 0.0,
+      "role": "fwd",
+      "axis_dev": -1.4,
+      "hip_vs_painted_px": 5.6,
+      "thigh_dev_pct": -0.3,
+      "boot_dev_pct": -0.1
+     }
+    },
+    "near": "L",
+    "belt_vs_target_pct": -0.25,
+    "knee_vs_target_pts": -1.35
+   },
+   "f07": {
+    "top": 99.0,
+    "sole": 348.6666666666667,
+    "H": 249.66666666666669,
+    "belt": 197.048,
+    "belt_pct": 60.72843791722297,
+    "knee_leg": "L",
+    "knee_pct": 73.91445005202945,
+    "stance": "L",
+    "legs": {
+     "R": {
+      "thigh_sh": 0.26318530254516137,
+      "boot_sh": 0.27703716057385414,
+      "axis_deg": 0.9,
+      "bend": 36.9,
+      "k": 0.82,
+      "planted": true,
+      "heel": false,
+      "toe": true,
+      "hip": [
+       243.43800000000002,
+       215.7505
+      ],
+      "knee": [
+       258.6018868564097,
+       276.7232594773765
+      ],
+      "ankle": [
+       244.87985984017809,
+       309.1127163583217
+      ],
+      "hip_offset_px": 0.0,
+      "role": "back",
+      "axis_dev": 7.4,
+      "hip_vs_painted_px": 5.7,
+      "thigh_dev_pct": 0.1,
+      "boot_dev_pct": -0.4
+     },
+     "L": {
+      "thigh_sh": 0.25998871992315536,
+      "boot_sh": 0.27703716057385414,
+      "axis_deg": 7.7,
+      "bend": 7.6,
+      "k": 1.05,
+      "planted": true,
+      "heel": true,
+      "toe": true,
+      "hip": [
+       270.71400000000006,
+       204.38550000000004
+      ],
+      "knee": [
+       285.3048815008947,
+       283.5397436299002
+      ],
+      "ankle": [
+       287.5755184990735,
+       328.5446973972224
+      ],
+      "hip_offset_px": 0.0,
+      "role": "fwd",
+      "axis_dev": -3.7,
+      "hip_vs_painted_px": 5.7,
+      "thigh_dev_pct": -1.1,
+      "boot_dev_pct": -0.4
+     }
+    },
+    "near": "L",
+    "belt_vs_target_pct": 0.28,
+    "knee_vs_target_pts": -1.72
+   },
+   "f08": {
+    "top": 97.0,
+    "sole": 345.6666666666667,
+    "H": 248.66666666666669,
+    "belt": 195.048,
+    "belt_pct": 60.57050938337802,
+    "knee_leg": "L",
+    "knee_pct": 73.98123949754384,
+    "stance": "L",
+    "legs": {
+     "R": {
+      "thigh_sh": 0.2642508300858301,
+      "boot_sh": 0.27703716057385414,
+      "axis_deg": -2.1,
+      "bend": 35.7,
+      "k": 0.85,
+      "planted": false,
+      "heel": false,
+      "toe": false,
+      "hip": [
+       244.671,
+       214.0075
+      ],
+      "knee": [
+       256.55100809479916,
+       278.0435868937781
+      ],
+      "ankle": [
+       241.04444919862914,
+       311.04530076320634
+      ],
+      "hip_offset_px": 0.0,
+      "role": "back",
+      "axis_dev": 4.4,
+      "hip_vs_painted_px": 6.0,
+      "thigh_dev_pct": 0.6,
+      "boot_dev_pct": -0.4
+     },
+     "L": {
+      "thigh_sh": 0.2663818851671674,
+      "boot_sh": 0.2812992707365288,
+      "axis_deg": 4.5,
+      "bend": 7.6,
+      "k": 1.037,
+      "planted": true,
+      "heel": true,
+      "toe": true,
+      "hip": [
+       271.056,
+       202.12850000000003
+      ],
+      "knee": [
+       281.0843154069988,
+       280.9666822172257
+      ],
+      "ankle": [
+       280.8459869571052,
+       325.46032523767855
+      ],
+      "hip_offset_px": 0.0,
+      "role": "fwd",
+      "axis_dev": -6.9,
+      "hip_vs_painted_px": 6.0,
+      "thigh_dev_pct": 1.4,
+      "boot_dev_pct": 1.1
+     }
+    },
+    "near": "L",
+    "belt_vs_target_pct": 0.12,
+    "knee_vs_target_pts": -1.66
+   },
+   "f09": {
+    "top": 95.0,
+    "sole": 342.0,
+    "H": 247.0,
+    "belt": 193.048,
+    "belt_pct": 60.30445344129555,
+    "knee_leg": "L",
+    "knee_pct": 74.12680503588582,
+    "stance": "L",
+    "legs": {
+     "R": {
+      "thigh_sh": 0.25998871992315536,
+      "boot_sh": 0.2812992707365288,
+      "axis_deg": 4.6,
+      "bend": 29.6,
+      "k": 0.858,
+      "planted": false,
+      "heel": false,
+      "toe": false,
+      "hip": [
+       245.599,
+       212.344
+      ],
+      "knee": [
+       262.70608829445143,
+       275.7820127046907
+      ],
+      "ankle": [
+       253.4965187499688,
+       311.39586230882077
+      ],
+      "hip_offset_px": 0.0,
+      "role": "back",
+      "axis_dev": 11.1,
+      "hip_vs_painted_px": 6.5,
+      "thigh_dev_pct": -1.1,
+      "boot_dev_pct": 1.1
+     },
+     "L": {
+      "thigh_sh": 0.26105424746382405,
+      "boot_sh": 0.27810268811452277,
+      "axis_deg": 1.5,
+      "bend": 7.6,
+      "k": 1.025,
+      "planted": true,
+      "heel": true,
+      "toe": true,
+      "hip": [
+       270.705,
+       199.79200000000003
+      ],
+      "knee": [
+       276.44918910553235,
+       278.093208438638
+      ],
+      "ankle": [
+       273.8726934465696,
+       321.9734326094528
+      ],
+      "hip_offset_px": 0.0,
+      "role": "fwd",
+      "axis_dev": -9.9,
+      "hip_vs_painted_px": 6.5,
+      "thigh_dev_pct": -0.7,
+      "boot_dev_pct": -0.1
+     }
+    },
+    "near": "L",
+    "belt_vs_target_pct": -0.15,
+    "knee_vs_target_pts": -1.51
+   },
+   "f10": {
+    "top": 96.0,
+    "sole": 338.6666666666667,
+    "H": 242.66666666666669,
+    "belt": 194.048,
+    "belt_pct": 59.5956043956044,
+    "knee_leg": "L",
+    "knee_pct": 74.29195404334133,
+    "stance": "L",
+    "legs": {
+     "R": {
+      "thigh_sh": 0.26211977500449274,
+      "boot_sh": 0.27810268811452277,
+      "axis_deg": 12.4,
+      "bend": 27.3,
+      "k": 0.911,
+      "planted": false,
+      "heel": false,
+      "toe": false,
+      "hip": [
+       245.98500000000004,
+       213.6645
+      ],
+      "knee": [
+       272.307825975622,
+       278.33148895435704
+      ],
+      "ankle": [
+       268.79260771567743,
+       317.2622984696891
+      ],
+      "hip_offset_px": 0.0,
+      "role": "fwd",
+      "axis_dev": 1.0,
+      "hip_vs_painted_px": 7.0,
+      "thigh_dev_pct": -0.3,
+      "boot_dev_pct": -0.1
+     },
+     "L": {
+      "thigh_sh": 0.25998871992315536,
+      "boot_sh": 0.27810268811452277,
+      "axis_deg": -1.4,
+      "bend": 7.6,
+      "k": 0.99,
+      "planted": true,
+      "heel": true,
+      "toe": true,
+      "hip": [
+       269.7420000000001,
+       200.47150000000002
+      ],
+      "knee": [
+       271.502859196127,
+       276.2818084785083
+      ],
+      "ankle": [
+       266.8989869571052,
+       318.48632523767856
+      ],
+      "hip_offset_px": 0.0,
+      "role": "back",
+      "axis_dev": 5.1,
+      "hip_vs_painted_px": 7.0,
+      "thigh_dev_pct": -1.1,
+      "boot_dev_pct": -0.1
+     }
+    },
+    "near": "R",
+    "belt_vs_target_pct": -0.86,
+    "knee_vs_target_pts": -1.35
+   },
+   "f11": {
+    "top": 98.0,
+    "sole": 346.0,
+    "H": 248.0,
+    "belt": 196.048,
+    "belt_pct": 60.46451612903226,
+    "knee_leg": "R",
+    "knee_pct": 75.21403992935115,
+    "stance": "L",
+    "legs": {
+     "R": {
+      "thigh_sh": 0.26105424746382405,
+      "boot_sh": 0.27916821565519145,
+      "axis_deg": 17.9,
+      "bend": 16.4,
+      "k": 0.979,
+      "planted": false,
+      "heel": false,
+      "toe": false,
+      "hip": [
+       245.71100000000004,
+       215.887
+      ],
+      "knee": [
+       275.93608001522637,
+       284.53081902479084
+      ],
+      "ankle": [
+       281.34568113587517,
+       326.17266068067624
+      ],
+      "hip_offset_px": 0.0,
+      "role": "fwd",
+      "axis_dev": 6.5,
+      "hip_vs_painted_px": 7.4,
+      "thigh_dev_pct": -0.7,
+      "boot_dev_pct": 0.3
+     },
+     "L": {
+      "thigh_sh": 0.2642508300858301,
+      "boot_sh": 0.27597163303318545,
+      "axis_deg": -4.3,
+      "bend": 7.6,
+      "k": 0.948,
+      "planted": true,
+      "heel": true,
+      "toe": true,
+      "hip": [
+       268.44000000000005,
+       202.24900000000002
+      ],
+      "knee": [
+       266.40150758535196,
+       274.85365894525023
+      ],
+      "ankle": [
+       259.9249869571052,
+       314.99932523767853
+      ],
+      "hip_offset_px": 0.0,
+      "role": "back",
+      "axis_dev": 2.2,
+      "hip_vs_painted_px": 7.4,
+      "thigh_dev_pct": 0.6,
+      "boot_dev_pct": -0.8
+     }
+    },
+    "near": "R",
+    "belt_vs_target_pct": 0.01,
+    "knee_vs_target_pts": -0.43
+   }
+  },
+  "skate": [
+   {
+    "leg": "R",
+    "point": "heel",
+    "frames": "f00->f01",
+    "skate_px": 0.0
+   },
+   {
+    "leg": "R",
+    "point": "heel",
+    "frames": "f01->f02",
+    "skate_px": 0.0
+   },
+   {
+    "leg": "R",
+    "point": "toe",
+    "frames": "f01->f02",
+    "skate_px": 0.56
+   },
+   {
+    "leg": "R",
+    "point": "heel",
+    "frames": "f02->f03",
+    "skate_px": 0.0
+   },
+   {
+    "leg": "R",
+    "point": "toe",
+    "frames": "f02->f03",
+    "skate_px": 0.0
+   },
+   {
+    "leg": "R",
+    "point": "heel",
+    "frames": "f03->f04",
+    "skate_px": 0.01
+   },
+   {
+    "leg": "R",
+    "point": "toe",
+    "frames": "f03->f04",
+    "skate_px": 0.01
+   },
+   {
+    "leg": "R",
+    "point": "heel",
+    "frames": "f04->f05",
+    "skate_px": 0.01
+   },
+   {
+    "leg": "R",
+    "point": "toe",
+    "frames": "f04->f05",
+    "skate_px": 0.01
+   },
+   {
+    "leg": "R",
+    "point": "toe",
+    "frames": "f05->f06",
+    "skate_px": 0.01
+   },
+   {
+    "leg": "R",
+    "point": "toe",
+    "frames": "f06->f07",
+    "skate_px": 0.0
+   },
+   {
+    "leg": "L",
+    "point": "toe",
+    "frames": "f00->f01",
+    "skate_px": 0.01
+   },
+   {
+    "leg": "L",
+    "point": "heel",
+    "frames": "f06->f07",
+    "skate_px": 0.01
+   },
+   {
+    "leg": "L",
+    "point": "heel",
+    "frames": "f07->f08",
+    "skate_px": 0.0
+   },
+   {
+    "leg": "L",
+    "point": "toe",
+    "frames": "f07->f08",
+    "skate_px": 0.56
+   },
+   {
+    "leg": "L",
+    "point": "heel",
+    "frames": "f08->f09",
+    "skate_px": 0.0
+   },
+   {
+    "leg": "L",
+    "point": "toe",
+    "frames": "f08->f09",
+    "skate_px": 0.0
+   },
+   {
+    "leg": "L",
+    "point": "heel",
+    "frames": "f09->f10",
+    "skate_px": 0.0
+   },
+   {
+    "leg": "L",
+    "point": "toe",
+    "frames": "f09->f10",
+    "skate_px": 0.0
+   },
+   {
+    "leg": "L",
+    "point": "heel",
+    "frames": "f10->f11",
+    "skate_px": 0.0
+   },
+   {
+    "leg": "L",
+    "point": "toe",
+    "frames": "f10->f11",
+    "skate_px": 0.0
+   },
+   {
+    "leg": "L",
+    "point": "toe",
+    "frames": "f11->f00",
+    "skate_px": 0.0
+   }
+  ]
+ },
+ "E": {
+  "target": {
+   "top": 7,
+   "sole": 697,
+   "H": 690,
+   "belt": 272.5,
+   "knee": 478.0,
+   "thigh_sh": 0.2694,
+   "boot_sh": 0.2904,
+   "shoulder": 190.263,
+   "own_sole": 666,
+   "belt_pct": 61.5217,
+   "knee_pct": 71.4719,
+   "axis": {
+    "fwd": 4.795463836586621,
+    "back": -15.333284793053549
+   },
+   "stance_bend": 3.4997,
+   "thigh_w": 51.25,
+   "boot_w": 55.25
+  },
+  "frames": {
+   "f00": {
+    "top": 90.0,
+    "sole": 342.0,
+    "H": 252.0,
+    "belt": 187.816,
+    "belt_pct": 61.18412698412698,
+    "knee_leg": "R",
+    "knee_pct": 72.02342946658575,
+    "stance": "R",
+    "legs": {
+     "R": {
+      "thigh_sh": 0.2677929676771247,
+      "boot_sh": 0.2904065960587486,
+      "axis_deg": -6.8,
+      "bend": 7.2,
+      "k": 1.018,
+      "planted": true,
+      "heel": false,
+      "toe": true,
+      "hip": [
+       266.288,
+       215.79500000000002
+      ],
+      "knee": [
+       263.2204408945548,
+       271.4990422557961
+      ],
+      "ankle": [
+       253.06504694247647,
+       326.8275821041545
+      ],
+      "hip_offset_px": 0.0,
+      "role": "back",
+      "axis_dev": 8.5,
+      "hip_vs_painted_px": 7.8,
+      "thigh_dev_pct": -0.6,
+      "boot_dev_pct": 0.0
+     },
+     "L": {
+      "thigh_sh": 0.2701733496120325,
+      "boot_sh": 0.2927869779936563,
+      "axis_deg": 10.4,
+      "bend": 7.2,
+      "k": 0.962,
+      "planted": true,
+      "heel": true,
+      "toe": true,
+      "hip": [
+       243.56,
+       202.15699999999998
+      ],
+      "knee": [
+       256.36119337465703,
+       253.33218878292962
+      ],
+      "ankle": [
+       262.6549495148149,
+       306.1495974574076
+      ],
+      "hip_offset_px": 0.0,
+      "role": "fwd",
+      "axis_dev": 5.6,
+      "hip_vs_painted_px": 7.8,
+      "thigh_dev_pct": 0.3,
+      "boot_dev_pct": 0.8
+     }
+    },
+    "near": "R",
+    "belt_vs_target_pct": -0.34,
+    "knee_vs_target_pts": 0.55
+   },
+   "f01": {
+    "top": 88.0,
+    "sole": 347.6666666666667,
+    "H": 259.6666666666667,
+    "belt": 185.816,
+    "belt_pct": 62.330166880616176,
+    "knee_leg": "R",
+    "knee_pct": 71.53031478764868,
+    "stance": "L",
+    "legs": {
+     "R": {
+      "thigh_sh": 0.26898315864457856,
+      "boot_sh": 0.2892164050912947,
+      "axis_deg": -8.4,
+      "bend": 9.8,
+      "k": 1.1,
+      "planted": false,
+      "heel": false,
+      "toe": false,
+      "hip": [
+       266.015,
+       213.572
+      ],
+      "knee": [
+       262.3610684026285,
+       273.7403840652611
+      ],
+      "ankle": [
+       248.3817688799263,
+       332.89194728254404
+      ],
+      "hip_offset_px": 0.0,
+      "role": "back",
+      "axis_dev": 6.9,
+      "hip_vs_painted_px": 7.3,
+      "thigh_dev_pct": -0.1,
+      "boot_dev_pct": -0.4
+     },
+     "L": {
+      "thigh_sh": 0.27136354057948636,
+      "boot_sh": 0.2904065960587486,
+      "axis_deg": 7.1,
+      "bend": 7.2,
+      "k": 1.003,
+      "planted": true,
+      "heel": true,
+      "toe": true,
+      "hip": [
+       242.25800000000004,
+       200.38
+      ],
+      "knee": [
+       252.501532833358,
+       254.3997934920692
+      ],
+      "ankle": [
+       255.87504153398228,
+       309.73715943622926
+      ],
+      "hip_offset_px": 0.0,
+      "role": "fwd",
+      "axis_dev": 2.3,
+      "hip_vs_painted_px": 7.3,
+      "thigh_dev_pct": 0.7,
+      "boot_dev_pct": 0.0
+     }
+    },
+    "near": "R",
+    "belt_vs_target_pct": 0.81,
+    "knee_vs_target_pts": 0.06
+   },
+   "f02": {
+    "top": 86.0,
+    "sole": 335.6666666666667,
+    "H": 249.66666666666669,
+    "belt": 183.816,
+    "belt_pct": 60.82136181575434,
+    "knee_leg": "R",
+    "knee_pct": 72.44657893594164,
+    "stance": "L",
+    "legs": {
+     "R": {
+      "thigh_sh": 0.26898315864457856,
+      "boot_sh": 0.2904065960587486,
+      "axis_deg": -3.7,
+      "bend": 21.2,
+      "k": 1.022,
+      "planted": false,
+      "heel": false,
+      "toe": false,
+      "hip": [
+       266.401,
+       211.2525
+      ],
+      "knee": [
+       273.1958483171059,
+       266.874958743401
+      ],
+      "ankle": [
+       259.28072964124084,
+       321.63707288008277
+      ],
+      "hip_offset_px": 0.0,
+      "role": "fwd",
+      "axis_dev": -8.5,
+      "hip_vs_painted_px": 6.8,
+      "thigh_dev_pct": -0.1,
+      "boot_dev_pct": 0.0
+     },
+     "L": {
+      "thigh_sh": 0.26898315864457856,
+      "boot_sh": 0.2904065960587486,
+      "axis_deg": 3.8,
+      "bend": 7.2,
+      "k": 1.045,
+      "planted": true,
+      "heel": true,
+      "toe": true,
+      "hip": [
+       241.29500000000002,
+       198.6995
+      ],
+      "knee": [
+       248.70919450260783,
+       255.48266026865676
+      ],
+      "ankle": [
+       248.9010415339823,
+       313.22415943622923
+      ],
+      "hip_offset_px": 0.0,
+      "role": "back",
+      "axis_dev": 19.1,
+      "hip_vs_painted_px": 6.8,
+      "thigh_dev_pct": -0.1,
+      "boot_dev_pct": 0.0
+     }
+    },
+    "near": "R",
+    "belt_vs_target_pct": -0.7,
+    "knee_vs_target_pts": 0.97
+   },
+   "f03": {
+    "top": 87.0,
+    "sole": 331.6666666666667,
+    "H": 244.66666666666669,
+    "belt": 184.816,
+    "belt_pct": 60.020708446866486,
+    "knee_leg": "L",
+    "knee_pct": 69.93185455115878,
+    "stance": "L",
+    "legs": {
+     "R": {
+      "thigh_sh": 0.2666027767096708,
+      "boot_sh": 0.28802621412384083,
+      "axis_deg": 3.7,
+      "bend": 27.9,
+      "k": 0.949,
+      "planted": false,
+      "heel": false,
+      "toe": false,
+      "hip": [
+       267.329,
+       211.9155
+      ],
+      "knee": [
+       283.1411431066692,
+       261.48424436619075
+      ],
+      "ankle": [
+       273.8767622769976,
+       313.12250360362253
+      ],
+      "hip_offset_px": 0.0,
+      "role": "fwd",
+      "axis_dev": -1.1,
+      "hip_vs_painted_px": 6.2,
+      "thigh_dev_pct": -1.0,
+      "boot_dev_pct": -0.8
+     },
+     "L": {
+      "thigh_sh": 0.2666027767096708,
+      "boot_sh": 0.2904065960587486,
+      "axis_deg": 0.5,
+      "bend": 7.2,
+      "k": 1.062,
+      "planted": true,
+      "heel": true,
+      "toe": true,
+      "hip": [
+       240.94400000000002,
+       200.0365
+      ],
+      "knee": [
+       245.12856521877927,
+       258.0999374685018
+      ],
+      "ankle": [
+       241.92704153398228,
+       316.71115943622925
+      ],
+      "hip_offset_px": 0.0,
+      "role": "back",
+      "axis_dev": 15.8,
+      "hip_vs_painted_px": 6.2,
+      "thigh_dev_pct": -1.0,
+      "boot_dev_pct": 0.0
+     }
+    },
+    "near": "R",
+    "belt_vs_target_pct": -1.5,
+    "knee_vs_target_pts": -1.54
+   },
+   "f04": {
+    "top": 89.0,
+    "sole": 335.3333333333333,
+    "H": 246.33333333333331,
+    "belt": 186.816,
+    "belt_pct": 60.29120433017591,
+    "knee_leg": "L",
+    "knee_pct": 69.90571428859685,
+    "stance": "L",
+    "legs": {
+     "R": {
+      "thigh_sh": 0.2677929676771247,
+      "boot_sh": 0.2904065960587486,
+      "axis_deg": 10.7,
+      "bend": 22.8,
+      "k": 0.909,
+      "planted": false,
+      "heel": false,
+      "toe": false,
+      "hip": [
+       268.562,
+       213.6585
+      ],
+      "knee": [
+       287.35092239549056,
+       259.8089632167347
+      ],
+      "ankle": [
+       286.7405015777188,
+       310.04861545253345
+      ],
+      "hip_offset_px": 0.0,
+      "role": "fwd",
+      "axis_dev": 5.9,
+      "hip_vs_painted_px": 5.9,
+      "thigh_dev_pct": -0.6,
+      "boot_dev_pct": 0.0
+     },
+     "L": {
+      "thigh_sh": 0.27136354057948636,
+      "boot_sh": 0.29159678702620245,
+      "axis_deg": -3.1,
+      "bend": 7.2,
+      "k": 1.075,
+      "planted": true,
+      "heel": true,
+      "toe": true,
+      "hip": [
+       241.286,
+       202.2935
+      ],
+      "knee": [
+       241.86674139993704,
+       261.2010761975769
+      ],
+      "ankle": [
+       234.9530415339823,
+       320.1981594362292
+      ],
+      "hip_offset_px": 0.0,
+      "role": "back",
+      "axis_dev": 12.2,
+      "hip_vs_painted_px": 5.9,
+      "thigh_dev_pct": 0.7,
+      "boot_dev_pct": 0.4
+     }
+    },
+    "near": "L",
+    "belt_vs_target_pct": -1.23,
+    "knee_vs_target_pts": -1.57
+   },
+   "f05": {
+    "top": 92.0,
+    "sole": 331.6666666666667,
+    "H": 239.66666666666669,
+    "belt": 189.816,
+    "belt_pct": 59.186648122392214,
+    "knee_leg": "L",
+    "knee_pct": 70.75353479795207,
+    "stance": "L",
+    "legs": {
+     "R": {
+      "thigh_sh": 0.27136354057948636,
+      "boot_sh": 0.2927869779936563,
+      "axis_deg": 11.3,
+      "bend": 7.2,
+      "k": 0.9,
+      "planted": true,
+      "heel": true,
+      "toe": false,
+      "hip": [
+       269.796,
+       216.562
+      ],
+      "knee": [
+       282.5149801021039,
+       264.2514064784051
+      ],
+      "ankle": [
+       289.16998448975096,
+       313.5716487755166
+      ],
+      "hip_offset_px": 0.0,
+      "role": "fwd",
+      "axis_dev": 6.5,
+      "hip_vs_painted_px": 5.7,
+      "thigh_dev_pct": 0.7,
+      "boot_dev_pct": 0.8
+     },
+     "L": {
+      "thigh_sh": 0.27255373154694024,
+      "boot_sh": 0.2892164050912947,
+      "axis_deg": -5.4,
+      "bend": 7.2,
+      "k": 1.025,
+      "planted": true,
+      "heel": false,
+      "toe": true,
+      "hip": [
+       242.204,
+       205.39
+      ],
+      "knee": [
+       240.4675772285204,
+       261.57263839909183
+      ],
+      "ankle": [
+       231.58278257328402,
+       317.54925691026585
+      ],
+      "hip_offset_px": 0.0,
+      "role": "back",
+      "axis_dev": 9.9,
+      "hip_vs_painted_px": 5.7,
+      "thigh_dev_pct": 1.2,
+      "boot_dev_pct": -0.4
+     }
+    },
+    "near": "L",
+    "belt_vs_target_pct": -2.34,
+    "knee_vs_target_pts": -0.72
+   },
+   "f06": {
+    "top": 92.0,
+    "sole": 332.6666666666667,
+    "H": 240.66666666666669,
+    "belt": 189.816,
+    "belt_pct": 59.35623268698061,
+    "knee_leg": "R",
+    "knee_pct": 72.4582008741671,
+    "stance": "R",
+    "legs": {
+     "R": {
+      "thigh_sh": 0.2677929676771247,
+      "boot_sh": 0.2904065960587486,
+      "axis_deg": 8.2,
+      "bend": 7.2,
+      "k": 0.927,
+      "planted": true,
+      "heel": true,
+      "toe": true,
+      "hip": [
+       270.71400000000006,
+       216.658
+      ],
+      "knee": [
+       281.14373996240516,
+       266.3827367704955
+      ],
+      "ankle": [
+       285.249949514815,
+       317.4475974574076
+      ],
+      "hip_offset_px": 0.0,
+      "role": "fwd",
+      "axis_dev": 3.4,
+      "hip_vs_painted_px": 5.9,
+      "thigh_dev_pct": -0.6,
+      "boot_dev_pct": 0.0
+     },
+     "L": {
+      "thigh_sh": 0.27136354057948636,
+      "boot_sh": 0.285645832188933,
+      "axis_deg": -6.7,
+      "bend": 7.2,
+      "k": 1.01,
+      "planted": true,
+      "heel": false,
+      "toe": true,
+      "hip": [
+       243.43800000000002,
+       205.294
+      ],
+      "knee": [
+       240.4715629743327,
+       260.59342857561506
+      ],
+      "ankle": [
+       230.46879543546265,
+       315.53011283810724
+      ],
+      "hip_offset_px": 0.0,
+      "role": "back",
+      "axis_dev": 8.6,
+      "hip_vs_painted_px": 5.9,
+      "thigh_dev_pct": 0.7,
+      "boot_dev_pct": -1.6
+     }
+    },
+    "near": "L",
+    "belt_vs_target_pct": -2.17,
+    "knee_vs_target_pts": 0.99
+   },
+   "f07": {
+    "top": 90.0,
+    "sole": 336.3333333333333,
+    "H": 246.33333333333331,
+    "belt": 187.816,
+    "belt_pct": 60.29120433017591,
+    "knee_leg": "L",
+    "knee_pct": 70.12234612024488,
+    "stance": "R",
+    "legs": {
+     "R": {
+      "thigh_sh": 0.27374392251439417,
+      "boot_sh": 0.2904065960587486,
+      "axis_deg": 4.0,
+      "bend": 7.2,
+      "k": 0.968,
+      "planted": true,
+      "heel": true,
+      "toe": true,
+      "hip": [
+       271.056,
+       214.9155
+      ],
+      "knee": [
+       278.10840739605044,
+       267.51972878937147
+      ],
+      "ankle": [
+       278.4700415339823,
+       321.03515943622926
+      ],
+      "hip_offset_px": 0.0,
+      "role": "fwd",
+      "axis_dev": -0.8,
+      "hip_vs_painted_px": 6.2,
+      "thigh_dev_pct": 1.6,
+      "boot_dev_pct": 0.0
+     },
+     "L": {
+      "thigh_sh": 0.2677929676771247,
+      "boot_sh": 0.2939771689611102,
+      "axis_deg": -9.1,
+      "bend": 8.1,
+      "k": 1.093,
+      "planted": false,
+      "heel": false,
+      "toe": false,
+      "hip": [
+       244.671,
+       203.0365
+      ],
+      "knee": [
+       239.44899506808696,
+       262.73471260953653
+      ],
+      "ankle": [
+       225.78524944313108,
+       321.59455549535994
+      ],
+      "hip_offset_px": 0.0,
+      "role": "back",
+      "axis_dev": 6.2,
+      "hip_vs_painted_px": 6.2,
+      "thigh_dev_pct": -0.6,
+      "boot_dev_pct": 1.2
+     }
+    },
+    "near": "L",
+    "belt_vs_target_pct": -1.23,
+    "knee_vs_target_pts": -1.35
+   },
+   "f08": {
+    "top": 88.0,
+    "sole": 339.6666666666667,
+    "H": 251.66666666666669,
+    "belt": 185.816,
+    "belt_pct": 61.132715231788076,
+    "knee_leg": "R",
+    "knee_pct": 71.77381352382234,
+    "stance": "R",
+    "legs": {
+     "R": {
+      "thigh_sh": 0.27255373154694024,
+      "boot_sh": 0.2904065960587486,
+      "axis_deg": 0.4,
+      "bend": 7.2,
+      "k": 1.013,
+      "planted": true,
+      "heel": true,
+      "toe": true,
+      "hip": [
+       270.705,
+       213.2525
+      ],
+      "knee": [
+       274.62278819846716,
+       268.6307640349529
+      ],
+      "ankle": [
+       271.4960415339823,
+       324.52215943622923
+      ],
+      "hip_offset_px": 0.0,
+      "role": "fwd",
+      "axis_dev": -4.4,
+      "hip_vs_painted_px": 6.8,
+      "thigh_dev_pct": 1.2,
+      "boot_dev_pct": 0.0
+     },
+     "L": {
+      "thigh_sh": 0.2677929676771247,
+      "boot_sh": 0.29159678702620245,
+      "axis_deg": -4.6,
+      "bend": 21.2,
+      "k": 1.016,
+      "planted": false,
+      "heel": false,
+      "toe": false,
+      "hip": [
+       245.599,
+       200.6995
+      ],
+      "knee": [
+       251.41562589681996,
+       256.11816301555314
+      ],
+      "ankle": [
+       236.68525533529268,
+       310.339789582918
+      ],
+      "hip_offset_px": 0.0,
+      "role": "back",
+      "axis_dev": 10.7,
+      "hip_vs_painted_px": 6.8,
+      "thigh_dev_pct": -0.6,
+      "boot_dev_pct": 0.4
+     }
+    },
+    "near": "R",
+    "belt_vs_target_pct": -0.39,
+    "knee_vs_target_pts": 0.3
+   },
+   "f09": {
+    "top": 89.0,
+    "sole": 343.0,
+    "H": 254.0,
+    "belt": 186.816,
+    "belt_pct": 61.48976377952756,
+    "knee_leg": "R",
+    "knee_pct": 71.74021700372903,
+    "stance": "R",
+    "legs": {
+     "R": {
+      "thigh_sh": 0.27136354057948636,
+      "boot_sh": 0.28802621412384083,
+      "axis_deg": -2.6,
+      "bend": 7.2,
+      "k": 1.033,
+      "planted": true,
+      "heel": true,
+      "toe": true,
+      "hip": [
+       269.7420000000001,
+       214.5725
+      ],
+      "knee": [
+       270.73566104231355,
+       271.2201511894717
+      ],
+      "ankle": [
+       264.52251230468653,
+       328.0092443750126
+      ],
+      "hip_offset_px": 0.0,
+      "role": "fwd",
+      "axis_dev": -7.4,
+      "hip_vs_painted_px": 7.3,
+      "thigh_dev_pct": 0.7,
+      "boot_dev_pct": -0.8
+     },
+     "L": {
+      "thigh_sh": 0.27136354057948636,
+      "boot_sh": 0.28802621412384083,
+      "axis_deg": 3.0,
+      "bend": 31.7,
+      "k": 0.95,
+      "planted": false,
+      "heel": false,
+      "toe": false,
+      "hip": [
+       245.98500000000004,
+       201.3795
+      ],
+      "knee": [
+       262.87633022082895,
+       250.6258504650499
+      ],
+      "ankle": [
+       251.28086957623893,
+       301.8252360149287
+      ],
+      "hip_offset_px": 0.0,
+      "role": "back",
+      "axis_dev": 18.3,
+      "hip_vs_painted_px": 7.3,
+      "thigh_dev_pct": 0.7,
+      "boot_dev_pct": -0.8
+     }
+    },
+    "near": "R",
+    "belt_vs_target_pct": -0.03,
+    "knee_vs_target_pts": 0.27
+   },
+   "f10": {
+    "top": 90.0,
+    "sole": 346.6666666666667,
+    "H": 256.6666666666667,
+    "belt": 187.816,
+    "belt_pct": 61.889870129870125,
+    "knee_leg": "R",
+    "knee_pct": 71.59081671585139,
+    "stance": "R",
+    "legs": {
+     "R": {
+      "thigh_sh": 0.27136354057948636,
+      "boot_sh": 0.2892164050912947,
+      "axis_deg": -5.4,
+      "bend": 7.2,
+      "k": 1.058,
+      "planted": true,
+      "heel": true,
+      "toe": true,
+      "hip": [
+       268.44000000000005,
+       215.79500000000002
+      ],
+      "knee": [
+       266.6814401007676,
+       273.74976290401855
+      ],
+      "ankle": [
+       257.54904153398223,
+       331.4961594362292
+      ],
+      "hip_offset_px": 0.0,
+      "role": "back",
+      "axis_dev": 9.9,
+      "hip_vs_painted_px": 7.8,
+      "thigh_dev_pct": 0.7,
+      "boot_dev_pct": -0.4
+     },
+     "L": {
+      "thigh_sh": 0.26898315864457856,
+      "boot_sh": 0.29159678702620245,
+      "axis_deg": 10.8,
+      "bend": 27.8,
+      "k": 0.92,
+      "planted": false,
+      "heel": false,
+      "toe": false,
+      "hip": [
+       245.71100000000004,
+       202.15699999999998
+      ],
+      "knee": [
+       266.8616576943441,
+       247.95628182466112
+      ],
+      "ankle": [
+       264.14475802734785,
+       298.75083323074193
+      ],
+      "hip_offset_px": 0.0,
+      "role": "fwd",
+      "axis_dev": 6.0,
+      "hip_vs_painted_px": 7.8,
+      "thigh_dev_pct": -0.1,
+      "boot_dev_pct": 0.4
+     }
+    },
+    "near": "R",
+    "belt_vs_target_pct": 0.37,
+    "knee_vs_target_pts": 0.12
+   },
+   "f11": {
+    "top": 91.0,
+    "sole": 343.0,
+    "H": 252.0,
+    "belt": 188.816,
+    "belt_pct": 61.18412698412698,
+    "knee_leg": "R",
+    "knee_pct": 72.23776027546286,
+    "stance": "R",
+    "legs": {
+     "R": {
+      "thigh_sh": 0.2666027767096708,
+      "boot_sh": 0.2904065960587486,
+      "axis_deg": -6.6,
+      "bend": 7.2,
+      "k": 1.026,
+      "planted": true,
+      "heel": false,
+      "toe": true,
+      "hip": [
+       267.172,
+       216.87400000000002
+      ],
+      "knee": [
+       264.24834624341645,
+       273.0391558941664
+      ],
+      "ankle": [
+       254.17823000166055,
+       328.8472402123002
+      ],
+      "hip_offset_px": 0.0,
+      "role": "back",
+      "axis_dev": 8.7,
+      "hip_vs_painted_px": 7.9,
+      "thigh_dev_pct": -1.0,
+      "boot_dev_pct": 0.0
+     },
+     "L": {
+      "thigh_sh": 0.2677929676771247,
+      "boot_sh": 0.28802621412384083,
+      "axis_deg": 12.4,
+      "bend": 7.2,
+      "k": 0.924,
+      "planted": true,
+      "heel": true,
+      "toe": false,
+      "hip": [
+       244.82799999999997,
+       203.07799999999997
+      ],
+      "knee": [
+       258.79780506915426,
+       251.78120311552706
+      ],
+      "ankle": [
+       266.57498448975093,
+       302.2746487755167
+      ],
+      "hip_offset_px": 0.0,
+      "role": "fwd",
+      "axis_dev": 7.6,
+      "hip_vs_painted_px": 7.9,
+      "thigh_dev_pct": -0.6,
+      "boot_dev_pct": -0.8
+     }
+    },
+    "near": "R",
+    "belt_vs_target_pct": -0.34,
+    "knee_vs_target_pts": 0.77
+   }
+  },
+  "skate": [
+   {
+    "leg": "R",
+    "point": "heel",
+    "frames": "f05->f06",
+    "skate_px": 0.0
+   },
+   {
+    "leg": "R",
+    "point": "heel",
+    "frames": "f06->f07",
+    "skate_px": 0.01
+   },
+   {
+    "leg": "R",
+    "point": "toe",
+    "frames": "f06->f07",
+    "skate_px": 0.54
+   },
+   {
+    "leg": "R",
+    "point": "heel",
+    "frames": "f07->f08",
+    "skate_px": 0.01
+   },
+   {
+    "leg": "R",
+    "point": "toe",
+    "frames": "f07->f08",
+    "skate_px": 0.01
+   },
+   {
+    "leg": "R",
+    "point": "heel",
+    "frames": "f08->f09",
+    "skate_px": 0.0
+   },
+   {
+    "leg": "R",
+    "point": "toe",
+    "frames": "f08->f09",
+    "skate_px": 0.0
+   },
+   {
+    "leg": "R",
+    "point": "heel",
+    "frames": "f09->f10",
+    "skate_px": 0.01
+   },
+   {
+    "leg": "R",
+    "point": "toe",
+    "frames": "f09->f10",
+    "skate_px": 0.0
+   },
+   {
+    "leg": "R",
+    "point": "toe",
+    "frames": "f10->f11",
+    "skate_px": 0.0
+   },
+   {
+    "leg": "R",
+    "point": "toe",
+    "frames": "f11->f00",
+    "skate_px": 0.01
+   },
+   {
+    "leg": "L",
+    "point": "heel",
+    "frames": "f00->f01",
+    "skate_px": 0.01
+   },
+   {
+    "leg": "L",
+    "point": "toe",
+    "frames": "f00->f01",
+    "skate_px": 0.54
+   },
+   {
+    "leg": "L",
+    "point": "heel",
+    "frames": "f01->f02",
+    "skate_px": 0.01
+   },
+   {
+    "leg": "L",
+    "point": "toe",
+    "frames": "f01->f02",
+    "skate_px": 0.0
+   },
+   {
+    "leg": "L",
+    "point": "heel",
+    "frames": "f02->f03",
+    "skate_px": 0.01
+   },
+   {
+    "leg": "L",
+    "point": "toe",
+    "frames": "f02->f03",
+    "skate_px": 0.0
+   },
+   {
+    "leg": "L",
+    "point": "heel",
+    "frames": "f03->f04",
+    "skate_px": 0.01
+   },
+   {
+    "leg": "L",
+    "point": "toe",
+    "frames": "f03->f04",
+    "skate_px": 0.01
+   },
+   {
+    "leg": "L",
+    "point": "toe",
+    "frames": "f04->f05",
+    "skate_px": 0.0
+   },
+   {
+    "leg": "L",
+    "point": "toe",
+    "frames": "f05->f06",
+    "skate_px": 0.0
+   },
+   {
+    "leg": "L",
+    "point": "heel",
+    "frames": "f11->f00",
+    "skate_px": 0.01
+   }
+  ]
+ }
+}

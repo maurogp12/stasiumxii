@@ -29,13 +29,17 @@ CFG = {
    vis_top=[(680, 405), (780, 405)],
    H=(722, 330), K=(742, 535), A=(785, 642), heel=(765, 696), toe=(838, 662), boot_top=553,
    # removed from the body: the forward leg below the slit top, the slit itself (filled dark: the robe's inside), the back boot
-   remove=[[(696, 405), (760, 405), (775, 560), (845, 640), (845, 705), (745, 705), (700, 590)],
+   remove=[[(705, 420), (748, 420), (752, 490), (758, 530), (765, 556), (790, 600), (845, 640), (845, 705), (745, 705), (700, 590)],
            [(578, 575), (655, 575), (662, 600), (660, 630), (657, 650), (650, 662), (612, 662), (598, 642), (581, 624), (575, 600)]],
-   slit=[(703, 392), (722, 392), (745, 400), (760, 405), (768, 480), (775, 560), (740, 568), (712, 576), (690, 586), (670, 591),
-         (650, 593), (655, 560), (668, 530), (684, 495), (695, 460), (700, 425)],
+   # the front slit between the centre panel's trimmed edge and the forward trouser's outer edge (filled with the robe's dark inside)
+   slit=[(714, 372), (722, 380), (740, 420), (748, 450), (752, 490), (758, 530), (765, 556), (740, 568), (712, 576), (690, 586),
+         (670, 591), (650, 593), (650, 557), (662, 535), (677, 510), (688, 480), (700, 445), (705, 420), (710, 390)],
+   # the right panel's grey lining beside the forward leg: kept, but drawn behind the legs
+   behind=[[(720, 372), (745, 420), (770, 465), (792, 490), (800, 520), (790, 556), (765, 556), (758, 530), (752, 490), (748, 450),
+            (740, 420), (722, 380)]],
    keep_light=(600, 60.0),          # robe tatters (L* > 60) above this row stay on the body
    staff=[dict(pts=[(520, 330), (530, 420), (540, 500), (548, 580), (556, 640), (565, 684)], w=18)],
-   behind=[], fill_rag=6.0, dark=(38, 31, 24),
+   fill_rag=6.0, dark=(30, 25, 19),
    head_x=(600, 800), hips=dict(near=(722, 330), far=(645, 330)), far_ankle=(612, 620),
    belt=((620, 290), (760, 300)), shoulder=((565, 195), (775, 205))),
  'E': dict(
@@ -157,7 +161,10 @@ def cut(F, dbg=None):
     known = body & ~cv2.dilate(rem.astype(np.uint8), np.ones((5, 5), np.uint8)).astype(bool)
     f = cv2.inpaint(src, (~known).astype(np.uint8) * 255, 11, cv2.INPAINT_TELEA)
     dark = np.array(c['dark'], np.float32)
-    fillc = (f.astype(np.float32) * 0.3 + dark * 0.7)
+    fillc = (f.astype(np.float32) * 0.2 + dark * 0.8)
+    if len(sy):     # the inside is darkest up at the slit's apex and catches a little light toward the hem
+        t = np.clip((yy - sy.min()) / max(sy.max() - sy.min(), 1), 0, 1)[..., None]
+        fillc = fillc * (0.75 + 0.25 * t)
     back = rgb.copy(); back[fillm] = fillc[fillm].astype(np.uint8)
     backa = body | fillm
     k_ = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (9, 9))

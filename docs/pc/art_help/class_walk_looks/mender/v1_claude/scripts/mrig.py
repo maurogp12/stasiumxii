@@ -1,4 +1,4 @@
-"""Mender v1 (Claude) - the walk rig: ONE continuous painted leg per side, mesh-skinned on 3 bones onto the Mender blockout v3 joints (ffbfe3a9).
+"""Mender v1 (Claude) - the walk rig: ONE continuous painted leg per side, mesh-skinned on 3 bones onto the Mender blockout joints (S v3.1 ca1a7c30, E v3 ffbfe3a9).
 
 Per frame i and facing F (S, E):
   body   back_F (target minus legs, under-tunic fill) and front_F (belt / pouches / hem / bow, or the whole cape for E) are placed
@@ -20,9 +20,10 @@ from PIL import Image
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.abspath(os.path.join(HERE, '../../../../../../..'))
 PARTS = os.environ.get('M1PARTS', os.path.join(HERE, '..', 'parts'))
-# Mender blockouts on claude/class-walk-blockouts: S and E from v3 (ffbfe3a9). MBLOCK_{S,E}_DIR point straight at a
-# rendered mender/ blockout folder instead (used for the S foot-track sweep).
-BLOCKS = {'S': ('ffbfe3a9e0d219ac3b5ef8898b9f6979b7fececf', os.environ.get('MBLOCK_S', '/tmp/mender_blockout_v3')),
+# Mender blockouts on claude/class-walk-blockouts: S from v3.1 (ca1a7c30, S foot track foot_w 0.3, Mauro's pick),
+# E from v3 (ffbfe3a9; v3.1 leaves E unchanged). MBLOCK_{S,E}_DIR point straight at a rendered mender/ blockout folder
+# instead (used for the S foot-track sweep).
+BLOCKS = {'S': ('ca1a7c30b68ebffb8279a14b05b1005568f75757', os.environ.get('MBLOCK_S', '/tmp/mender_blockout_v31')),
           'E': ('ffbfe3a9e0d219ac3b5ef8898b9f6979b7fececf', os.environ.get('MBLOCK_E', '/tmp/mender_blockout_v3'))}
 CW, CH, PIV = 512, 360, (256, 329)
 FPS = 17.144

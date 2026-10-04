@@ -1,0 +1,266 @@
+{
+ "f00": {
+  "crotch_gap_px": 0,
+  "shins_cross": false,
+  "knee_row": 272,
+  "thigh_deg": {
+   "R": 21.7,
+   "L": -3.3
+  },
+  "planted": {
+   "R": true,
+   "L": true
+  },
+  "swing_fwd_deg": null,
+  "far_boot": {
+   "near": "R",
+   "far": "L",
+   "far_boot_px": 1078,
+   "visible_pct": 71.5,
+   "gap_px": 0.0,
+   "touching": true
+  }
+ },
+ "f01": {
+  "crotch_gap_px": 0,
+  "shins_cross": false,
+  "knee_row": 269,
+  "thigh_deg": {
+   "R": 20.4,
+   "L": -5.1
+  },
+  "planted": {
+   "R": true,
+   "L": true
+  },
+  "swing_fwd_deg": null,
+  "far_boot": {
+   "near": "R",
+   "far": "L",
+   "far_boot_px": 1068,
+   "visible_pct": 57.9,
+   "gap_px": 0.0,
+   "touching": true
+  }
+ },
+ "f02": {
+  "crotch_gap_px": 0,
+  "shins_cross": false,
+  "knee_row": 271,
+  "thigh_deg": {
+   "R": 18.0,
+   "L": -2.8
+  },
+  "planted": {
+   "R": true,
+   "L": false
+  },
+  "swing_fwd_deg": -2.8,
+  "far_boot": {
+   "near": "R",
+   "far": "L",
+   "far_boot_px": 1113,
+   "visible_pct": 58.6,
+   "gap_px": 0.0,
+   "touching": true
+  }
+ },
+ "f03": {
+  "crotch_gap_px": 0,
+  "shins_cross": false,
+  "knee_row": 272,
+  "thigh_deg": {
+   "R": 15.4,
+   "L": 9.6
+  },
+  "planted": {
+   "R": true,
+   "L": false
+  },
+  "swing_fwd_deg": 9.6,
+  "far_boot": {
+   "near": "R",
+   "far": "L",
+   "far_boot_px": 1123,
+   "visible_pct": 27.6,
+   "gap_px": 0.0,
+   "touching": true
+  }
+ },
+ "f04": {
+  "crotch_gap_px": 0,
+  "shins_cross": false,
+  "knee_row": 273,
+  "thigh_deg": {
+   "R": 12.5,
+   "L": 13.0
+  },
+  "planted": {
+   "R": true,
+   "L": false
+  },
+  "swing_fwd_deg": 13.0,
+  "far_boot": {
+   "near": "L",
+   "far": "R",
+   "far_boot_px": 1042,
+   "visible_pct": 91.9,
+   "gap_px": 0.0,
+   "touching": true
+  }
+ },
+ "f05": {
+  "crotch_gap_px": 0,
+  "shins_cross": false,
+  "knee_row": 279,
+  "thigh_deg": {
+   "R": 8.9,
+   "L": 14.1
+  },
+  "planted": {
+   "R": true,
+   "L": false
+  },
+  "swing_fwd_deg": 14.1,
+  "far_boot": {
+   "near": "L",
+   "far": "R",
+   "far_boot_px": 1017,
+   "visible_pct": 86.7,
+   "gap_px": 9.2,
+   "touching": false
+  }
+ },
+ "f06": {
+  "crotch_gap_px": 0,
+  "shins_cross": false,
+  "knee_row": 278,
+  "thigh_deg": {
+   "R": 9.6,
+   "L": 12.7
+  },
+  "planted": {
+   "R": true,
+   "L": true
+  },
+  "swing_fwd_deg": null,
+  "far_boot": {
+   "near": "L",
+   "far": "R",
+   "far_boot_px": 1017,
+   "visible_pct": 77.0,
+   "gap_px": 13.0,
+   "touching": false
+  }
+ },
+ "f07": {
+  "crotch_gap_px": 0,
+  "shins_cross": false,
+  "knee_row": 276,
+  "thigh_deg": {
+   "R": 14.0,
+   "L": 10.4
+  },
+  "planted": {
+   "R": true,
+   "L": true
+  },
+  "swing_fwd_deg": null,
+  "far_boot": {
+   "near": "L",
+   "far": "R",
+   "far_boot_px": 1055,
+   "visible_pct": 71.6,
+   "gap_px": 8.0,
+   "touching": false
+  }
+ },
+ "f08": {
+  "crotch_gap_px": 0,
+  "shins_cross": false,
+  "knee_row": 278,
+  "thigh_deg": {
+   "R": 10.5,
+   "L": 7.2
+  },
+  "planted": {
+   "R": false,
+   "L": true
+  },
+  "swing_fwd_deg": 10.5,
+  "far_boot": {
+   "near": "L",
+   "far": "R",
+   "far_boot_px": 1075,
+   "visible_pct": 72.6,
+   "gap_px": 6.0,
+   "touching": false
+  }
+ },
+ "f09": {
+  "crotch_gap_px": 0,
+  "shins_cross": false,
+  "knee_row": 275,
+  "thigh_deg": {
+   "R": 15.1,
+   "L": 4.2
+  },
+  "planted": {
+   "R": false,
+   "L": true
+  },
+  "swing_fwd_deg": 15.1,
+  "far_boot": {
+   "near": "L",
+   "far": "R",
+   "far_boot_px": 1056,
+   "visible_pct": 79.0,
+   "gap_px": 0.0,
+   "touching": true
+  }
+ },
+ "f10": {
+  "crotch_gap_px": 0,
+  "shins_cross": false,
+  "knee_row": 276,
+  "thigh_deg": {
+   "R": 22.1,
+   "L": 1.3
+  },
+  "planted": {
+   "R": false,
+   "L": true
+  },
+  "swing_fwd_deg": 22.1,
+  "far_boot": {
+   "near": "R",
+   "far": "L",
+   "far_boot_px": 1119,
+   "visible_pct": 9.4,
+   "gap_px": 0.0,
+   "touching": true
+  }
+ },
+ "f11": {
+  "crotch_gap_px": 0,
+  "shins_cross": false,
+  "knee_row": 274,
+  "thigh_deg": {
+   "R": 23.8,
+   "L": -1.6
+  },
+  "planted": {
+   "R": false,
+   "L": true
+  },
+  "swing_fwd_deg": 23.8,
+  "far_boot": {
+   "near": "R",
+   "far": "L",
+   "far_boot_px": 1099,
+   "visible_pct": 75.6,
+   "gap_px": 0.0,
+   "touching": true
+  }
+ }
+}
