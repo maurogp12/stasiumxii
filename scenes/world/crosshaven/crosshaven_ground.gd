@@ -68,6 +68,39 @@ var _cover: Dictionary = {}
 var snow_rects: Array[Rect2i] = []
 ## Diagonal -> the foam canvas item hung under that row.
 var _foam_rows: Dictionary = {}
+## Cells per ground run at most (see `_split_row`).
+const RUN_CELLS := 12
+## Runs and foam rows not drawn yet: [node, local rect, cell count].
+var _cold: Array = []
+## How far a row's art reaches above and below its diamonds (raised tiles,
+## crag faces, kit tiles taller than a diamond; foam onto the next row).
+const ROW_ART_ABOVE := 128.0
+const ROW_ART_BELOW := 48.0
+## Same plane layout, same tag (set by the world). Empty turns the memo off.
+var cache_tag := ""
+## Diagonal -> [[anim, cells], ...] (`_split_row`).
+var _row_parts: Dictionary = {}
+## Setup results per chunk placement, shared read-only between loads. They
+## only depend on the chunk, where it sits on the plane, the margin and the
+## snow kit, and cost up to a third of a second a chunk to work out, which
+## every seam crossing paid for all seven grounds it mounts.
+static var _memo: Dictionary = {}
+const MEMO_FIELDS: Array[String] = [
+	"_void_ranks", "_beach", "_skirt_dist", "_sea_body", "_void_sea", "_void_dist",
+	"_edge_fade", "_mouth_mix", "_snow_shore", "_cover", "_water_rows",
+	"_corner_cache", "_foam_cells", "_row_parts",
+]
+## Foam row diagonal -> its foam cells.
+var _foam_cells: Dictionary = {}
+## Canvas items that follow the ripple: [{node, rect, frame}], rect in local px.
+var _anim_items: Array = []
+var _anim_stale := false
+## View margin (px) for redrawing animated runs just before they scroll in.
+const ANIM_VIEW_MARGIN := 64.0
+## Cell -> its sea corner alphas (`_corner_alphas`).
+var _corner_cache: Dictionary = {}
+## Diagonal -> runs of that row: [{anim, cells, node}], west to east.
+var _runs: Dictionary = {}
 ## Sample inside the tile and overlap the neighbours so the fringe is not a seam.
 const WATER_OVERLAP := 4.0
 const BEACH_REACH := 4
@@ -122,23 +155,49 @@ func setup(target: WorldZone) -> void:
 			for link in exit_rec["links"]:
 				var frm: Dictionary = link["from"]
 				_exit_dirs[Vector2i(int(frm["x"]), int(frm["y"]))] = dir
-	_cache_void_ranks()
-	_cache_beach()
-	_cache_sea_skirt()
-	_cache_sea_body()
-	_cache_void_sea()
-	_cache_water_edge()
-	_cache_snow_shore()
-	_cache_cover()
+	# Fresh dictionaries first: a memo hit hands out shared read-only ones,
+	# and the cache passes below clear() what they fill.
+	for field in MEMO_FIELDS:
+		set(field, {})
+	_void_margin = 0
+	_foam_rows = {}
+	_runs = {}
+	_anim_items = []
+	var key := _memo_key()
+	var memo: Dictionary = _memo.get(key, {}) if key != "" else {}
+	if memo.is_empty():
+		_cache_void_ranks()
+		_cache_beach()
+		_cache_sea_skirt()
+		_cache_sea_body()
+		_cache_void_sea()
+		_cache_water_edge()
+		_cache_snow_shore()
+		_cache_cover()
+		_mark_water_rows()
+	else:
+		for field in MEMO_FIELDS:
+			set(field, memo[field])
+		_void_margin = int(memo["_void_margin"])
 	var margin := _view_margin()
-	_foam_rows.clear()
 	for d in range(-margin * 2, zone.width + zone.height - 1 + margin * 2):
 		var row := Node2D.new()
 		row.name = "Row%d" % d
 		row.z_as_relative = false
 		row.z_index = row_z(d)
-		row.draw.connect(_draw_row.bind(row, d))
 		add_child(row)
+		# The row draws through its runs. They hang under it at the same z,
+		# so tree order keeps the cells in their usual west-to-east order.
+		var runs := _split_row(d)
+		for i in runs.size():
+			var seg := Node2D.new()
+			seg.name = "Run%d" % i
+			seg.z_as_relative = false
+			seg.z_index = row_z(d)
+			seg.draw.connect(_draw_run.bind(seg, d, i))
+			row.add_child(seg)
+			(runs[i] as Dictionary)["node"] = seg
+		_runs[d] = runs
 		if _row_has_foam(d):
 			# Foam reaches past its own diamond onto the next water cell and up
 			# the face of a raised bank, so it sorts just after the next row.
@@ -150,7 +209,20 @@ func setup(target: WorldZone) -> void:
 			foam.draw.connect(_draw_foam_row.bind(foam, d))
 			row.add_child(foam)
 			_foam_rows[d] = foam
-	_mark_water_rows()
+			_track_anim(foam, _row_foam_cells(d))
+		if _water_rows.has(d):
+			for run in runs:
+				if bool(run["anim"]):
+					_track_anim(run["node"], run["cells"])
+	if key != "" and memo.is_empty():
+		var keep := {"_void_margin": _void_margin}
+		for field in MEMO_FIELDS:
+			var value: Dictionary = get(field)
+			# Corner alphas keep filling as cells draw; the values never change.
+			if field != "_corner_cache":
+				value.make_read_only()
+			keep[field] = value
+		_memo[key] = keep
 
 
 func _mark_water_rows() -> void:
@@ -170,35 +242,168 @@ func _process(_delta: float) -> void:
 	if zone == null or _water_rows.is_empty():
 		return
 	var on := VisualSettings.current != null and VisualSettings.current.enabled("animations")
-	if not on:
-		if _ripple_frame != -1:
-			_ripple_frame = -1
-			_redraw_water()
-		return
-	var frame := int(float(Time.get_ticks_msec()) * 4.0 / 1000.0) % 8
-	if frame == _ripple_frame:
-		return
-	_ripple_frame = frame
-	_redraw_water()
+	var frame := -1
+	if on:
+		frame = int(float(Time.get_ticks_msec()) * 4.0 / 1000.0) % 8
+	if frame != _ripple_frame:
+		_ripple_frame = frame
+		_anim_stale = true
+	if _anim_stale:
+		_redraw_water()
 
 
+## Animated runs and foam rows whose drawn ripple frame is behind, and that
+## meet the view, redraw. Off-screen ones wait until they scroll into view, so
+## a ripple frame costs only the sea the camera shows.
 func _redraw_water() -> void:
-	for d in _water_rows.keys():
-		var row := get_node_or_null("Row%d" % int(d))
-		if row != null:
-			row.queue_redraw()
-	for d in _foam_rows.keys():
-		var foam: Node2D = _foam_rows[d]
-		if is_instance_valid(foam):
-			foam.queue_redraw()
+	var view := Rect2()
+	var have_view := is_inside_tree()
+	if have_view:
+		view = get_global_transform_with_canvas().affine_inverse() * get_viewport_rect()
+		view = view.grow(ANIM_VIEW_MARGIN)
+	var behind := false
+	for item in _anim_items:
+		if int(item["frame"]) == _ripple_frame:
+			continue
+		var node: Node2D = item["node"]
+		if not is_instance_valid(node):
+			continue
+		if have_view and not view.intersects(item["rect"]):
+			behind = true
+			continue
+		item["frame"] = _ripple_frame
+		node.queue_redraw()
+	_anim_stale = behind
+
+
+## Only the runs whose drawing follows the ripple phase (water, and the sea
+## fringe that still shows the moving surface) redraw with the ripple. The
+## rest of a water row (snow, cobble, sand, flat far sea) is drawn once.
+## Redrawing whole rows cost Northgate about a second of script per frame.
+func _track_anim(node: Node2D, cells: Array[Vector2i]) -> void:
+	if cells.is_empty():
+		return
+	var rect := Rect2(BoardVisualSort.cell_to_local(cells[0]), Vector2.ZERO)
+	for cell in cells:
+		rect = rect.expand(BoardVisualSort.cell_to_local(cell))
+	# A diamond, its overlap, foam up a bank face and raised tiles.
+	rect = rect.grow_individual(Pick.HALF_W + 8.0, 96.0, Pick.HALF_W + 8.0, Pick.HALF_H + 8.0)
+	_anim_items.append({"node": node, "rect": rect, "frame": _ripple_frame})
 
 
 func redraw_all() -> void:
-	for child in get_children():
-		child.queue_redraw()
+	for runs in _runs.values():
+		for run in runs:
+			var node: Node2D = run.get("node")
+			if is_instance_valid(node):
+				node.queue_redraw()
 	for foam in _foam_rows.values():
 		if is_instance_valid(foam):
 			(foam as Node2D).queue_redraw()
+
+
+## Rows draw once, when first shown. `start_cold` hides them all; `warm`
+## shows the ones that meet the view right away and a few more a frame, so a
+## zone load or seam crossing draws only what the camera sees.
+func start_cold() -> void:
+	_cold = []
+	for d in _runs.keys():
+		for run in _runs[d]:
+			_chill(run["node"], run["cells"])
+	for d in _foam_rows.keys():
+		_chill(_foam_rows[d], _row_foam_cells(d))
+
+
+func _chill(node: Node2D, cells: Array[Vector2i]) -> void:
+	if not is_instance_valid(node) or cells.is_empty():
+		return
+	var rect := Rect2(BoardVisualSort.cell_to_local(cells[0]), Vector2.ZERO)
+	rect = rect.expand(BoardVisualSort.cell_to_local(cells[cells.size() - 1]))
+	rect = rect.grow_individual(Pick.HALF_W + 16.0, ROW_ART_ABOVE, Pick.HALF_W + 16.0, ROW_ART_BELOW)
+	node.visible = false
+	_cold.append([node, rect, cells.size()])
+
+
+func is_warm() -> bool:
+	return _cold.is_empty()
+
+
+## Show cold rows that meet `view` (local px), then others until `budget`
+## cells are spent. A negative budget shows every row. Returns what is left.
+func warm(view: Rect2, budget: int) -> int:
+	if _cold.is_empty():
+		return budget
+	var keep: Array = []
+	for item in _cold:
+		var row: Node2D = item[0]
+		if not is_instance_valid(row):
+			continue
+		if budget < 0 or view.intersects(item[1]):
+			row.visible = true
+		elif budget > 0:
+			row.visible = true
+			budget = maxi(0, budget - int(item[2]))
+		else:
+			keep.append(item)
+	_cold = keep
+	return budget
+
+
+func _memo_key() -> String:
+	if cache_tag == "" or zone == null:
+		return ""
+	return "%s|%s|%s|%d|%s|%s|%s" % [cache_tag, zone.zone_id, world_origin, blend_margin, snow_kit, Kit.has_theme("eastmarch"), str(snow_rects)]
+
+
+static func clear_memo() -> void:
+	_memo.clear()
+
+
+func _redraw_row(d: int) -> void:
+	for run in _runs.get(d, []):
+		var node: Node2D = run.get("node")
+		if is_instance_valid(node):
+			node.queue_redraw()
+
+
+## Splits diagonal `s` into runs of up to RUN_CELLS neighbouring cells that
+## are all static or all animated. Only water rows get animated runs, as
+## before. Short runs let a load draw only the part of a row on screen.
+func _split_row(s: int) -> Array:
+	var parts: Array = _row_parts.get(s, [])
+	if parts.is_empty():
+		var water_row := _water_rows.has(s)
+		for cell in _row_cells(s):
+			var anim := water_row and _follows_phase(cell)
+			if parts.is_empty() or bool(parts[parts.size() - 1][0]) != anim or (parts[parts.size() - 1][1] as Array).size() >= RUN_CELLS:
+				parts.append([anim, [] as Array[Vector2i]])
+			(parts[parts.size() - 1][1] as Array[Vector2i]).append(cell)
+		if parts.is_empty():
+			parts.append([false, [] as Array[Vector2i]])
+		_row_parts[s] = parts
+	var runs: Array = []
+	for part in parts:
+		runs.append({"anim": bool(part[0]), "cells": part[1]})
+	return runs
+
+
+## True when this cell's drawing reads `_ripple_frame`: water (ripple strip,
+## polish, sea surface, sparkle, foam) and void sea whose textured surface
+## still shows at one of its corners (a corner mixes the 3x3 around the cell).
+func _follows_phase(cell: Vector2i) -> bool:
+	var terrain := Art.terrain_seen(zone, cell)
+	if terrain == "water":
+		return true
+	if terrain != "" or not _void_sea.has(cell):
+		return false
+	var skirt := _beach_at(cell)
+	if skirt == "sea_deep" or skirt == "sea_shallow":
+		return false
+	for dy in range(-1, 2):
+		for dx in range(-1, 2):
+			if _sea_alpha(cell + Vector2i(dx, dy)) > 0.0:
+				return true
+	return false
 
 
 func uses_kit() -> bool:
@@ -207,10 +412,10 @@ func uses_kit() -> bool:
 
 ## Same gold arrow as a chunk exit. Gates are sidecar data, so the zone file stays untouched.
 func add_gate_arrow(cell: Vector2i, dir: Vector2i) -> void:
+	if _exit_dirs.get(cell) == dir:
+		return
 	_exit_dirs[cell] = dir
-	var row := get_node_or_null("Row%d" % (cell.x + cell.y))
-	if row != null:
-		row.queue_redraw()
+	_redraw_row(cell.x + cell.y)
 
 
 func marker_dir(cell: Vector2i) -> Vector2i:
@@ -759,12 +964,15 @@ func _joins_kit_sand(cell: Vector2i) -> bool:
 	return false
 
 
-func _draw_row(row: Node2D, s: int) -> void:
-	var margin := _view_margin()
-	var x0 := maxi(-margin, s - (zone.height - 1 + margin))
-	var x1 := mini(zone.width - 1 + margin, s + margin)
-	for x in range(x0, x1 + 1):
-		var cell := Vector2i(x, s - x)
+func _draw_run(ci: Node2D, s: int, i: int) -> void:
+	var runs: Array = _runs.get(s, [])
+	if i >= runs.size():
+		return
+	_draw_cells(ci, (runs[i] as Dictionary)["cells"])
+
+
+func _draw_cells(row: Node2D, cells: Array[Vector2i]) -> void:
+	for cell in cells:
 		if not zone.in_bounds(cell) and Art.terrain_seen(zone, cell) == "" and _beach_at(cell) == "" and not _void_sea.has(cell):
 			continue
 		_draw_cell(row, cell)
@@ -795,16 +1003,25 @@ func _foam_cell(cell: Vector2i) -> bool:
 
 
 func _row_has_foam(s: int) -> bool:
+	return not _row_foam_cells(s).is_empty()
+
+
+## Foam cells of a row, found once per setup. Each ripple frame used to test
+## every cell of every foam row again.
+func _row_foam_cells(s: int) -> Array[Vector2i]:
+	if _foam_cells.has(s):
+		return _foam_cells[s]
+	var out: Array[Vector2i] = []
 	for cell in _row_cells(s):
 		if _foam_cell(cell):
-			return true
-	return false
+			out.append(cell)
+	_foam_cells[s] = out
+	return out
 
 
 func _draw_foam_row(ci: Node2D, s: int) -> void:
-	for cell in _row_cells(s):
-		if _foam_cell(cell):
-			_draw_sea_foam(ci, cell, Art.height_seen(zone, cell), true)
+	for cell in _row_foam_cells(s):
+		_draw_sea_foam(ci, cell, Art.height_seen(zone, cell), true)
 
 
 func _draw_cell(ci: Node2D, cell: Vector2i) -> void:
@@ -1195,6 +1412,26 @@ func _corner_alpha(cell: Vector2i, i: int) -> float:
 	return clampf(a, 0.0, 1.0)
 
 
+## The four corner alphas of a cell, empty when none shows. They depend on
+## the terrain only, so each cell works them out once per setup, not on every
+## ripple frame.
+func _corner_alphas(cell: Vector2i) -> PackedFloat32Array:
+	var known: Variant = _corner_cache.get(cell)
+	if known != null:
+		return known
+	var alphas := PackedFloat32Array()
+	var any := false
+	for i in 4:
+		var a := _corner_alpha(cell, i)
+		alphas.append(a)
+		if a > 0.0:
+			any = true
+	if not any:
+		alphas = PackedFloat32Array()
+	_corner_cache[cell] = alphas
+	return alphas
+
+
 func _sea_phase() -> float:
 	if _ripple_frame < 0:
 		return 0.0
@@ -1209,14 +1446,8 @@ func _draw_sea_surface(ci: Node2D, cell: Vector2i, steps: int) -> void:
 	_load_sea_textures()
 	if _sea_surface_tex == null:
 		return
-	var alphas := PackedFloat32Array()
-	var any := false
-	for i in 4:
-		var a := _corner_alpha(cell, i)
-		alphas.append(a)
-		if a > 0.0:
-			any = true
-	if not any:
+	var alphas := _corner_alphas(cell)
+	if alphas.is_empty():
 		return
 	var shift := BoardVisualSort.cell_to_local(world_origin) + Vector2(0, float(steps) * BoardVisualSort.ELEVATION_PIXELS)
 	var phase := _sea_phase()

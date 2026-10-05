@@ -132,6 +132,8 @@ class NamePlate extends Node2D:
 	var mark := ""
 	## Screen y of the sprite's visible head, relative to this plate's origin.
 	var head_y := 0.0
+	## Text as of the last redraw request.
+	var drawn_text := ""
 
 	func backing_rect() -> Rect2:
 		var label := label_rect()
@@ -564,9 +566,14 @@ func _sync_plate() -> void:
 		return
 	var canvas := get_global_transform_with_canvas()
 	_plate.position = canvas.origin
-	_plate.head_y = canvas.basis_xform(Vector2(0.0, _head_local_y())).y
-	_plate.mark = mark
-	_plate.queue_redraw()
+	# Moving the plate is a transform change. Only a new head height, mark or
+	# name changes what it draws, so it redraws only then, not every frame.
+	var head := canvas.basis_xform(Vector2(0.0, _head_local_y())).y
+	if _plate.head_y != head or _plate.mark != mark or _plate.drawn_text != _plate.plate_text:
+		_plate.head_y = head
+		_plate.mark = mark
+		_plate.drawn_text = _plate.plate_text
+		_plate.queue_redraw()
 
 
 ## Visible head in this NPC's local space. Painted art uses the highest idle
