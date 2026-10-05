@@ -41,10 +41,19 @@ of frames whose foot travel equals one tile on the board at the class draw
 scale. frames_per_tile is that, capped at MAX_LEG_RATE x the authored fps
 (natural leg speed); a capped class has a small foot slide.
 
-Actions. ACTION_SOURCES below is the documented drop for idle, attack,
-skill, hit and death. Each entry uses the same layout and lands in
-art/characters/<class>/<kind>/<class>_<kind>_<n|e|s|w>.pngbin. It is empty
-until the painted actions arrive.
+Actions. ACTION_SOURCES below holds the LOCKED painted idle, attack, skill,
+hit and death of every class (4 Oct 2026), read from git at the lock
+commits. They land in art/characters/<class>/<kind>/<class>_<kind>_<n|e|s|w>.pngbin
+with the same facing map and baked mirrors, binary alpha and the walk's scale
+(no size jump). walk and idle share one cell, pivot centred on the 152 sole
+line, so standing never jumps between the two. Each action kind has its own
+tight cell (<= 256): its sole row drops below 152 when a raised weapon needs
+head room, and its pivot x is per facing (a body lying on its side reaches far
+to one side). The spec's "pivots" holds that pivot per mobile facing.
+
+Ironjaw's walk is the dark-steel HD v7 (Mauro: "Dark-steel for all"), so it
+matches his actions. Its pin holes and dark edge pixels are cleaned here the
+same way the LOCKED actions were (clean_frame).
 """
 from __future__ import annotations
 
@@ -91,23 +100,58 @@ WALK_SOURCES = {
         "note": "Mender v1_claude, locked 08ea869",
     },
     "ironjaw": {
-        "commit": "a0aec2e66c7c3883e241467e75facc6ca2ae6bc5",
-        "branch": "pc/combat-look",
-        "dir": "art/pc/characters/ironjaw/walk",
-        # ironjaw.json on that commit: states.walk.facings.{S,E}.pivot
-        "pivot": {"S": (82, 152), "E": (82, 140)},
-        "note": "Ironjaw painted walk from the PC combat look (L10)",
+        # Dark-steel HD walk v7 (Mauro: "Dark-steel for all"; the v7 walk he
+        # approved apart from the legs, not v8). 512x360, pivot (256,329),
+        # 12 frames at 17.144 fps, like the other classes (BRIEF.md on that
+        # branch). Replaces the older red v3.1 set (pc/combat-look a0aec2e).
+        "commit": "0f3eeb801f5bf679d6082e248e99490a81ff2580",
+        "branch": "art/ironjaw-walk-help",
+        "dir": "docs/pc/art_help/ironjaw_walk/v7/frames",
+        "pivot": {"S": (256, 329), "E": (256, 329)},
+        # v7 has pin holes and dark halo pixels on the silhouette edge; the
+        # LOCKED actions were cleaned the same way (actions_v1 README, lesson 7).
+        "clean": True,
+        "note": "Ironjaw dark-steel HD walk v7 (art/ironjaw-walk-help 0f3eeb8)",
     },
 }
 
-# Painted actions drop here when they arrive. Same shape as WALK_SOURCES plus
-# "pattern", "frames", "fps", "loop" and, for attack/skill, "impact". Kinds: idle,
-# attack, skill, hit, death. Example:
-#   ACTION_SOURCES = {"ironjaw": {"attack": {"commit": ..., "dir": ...,
-#       "pattern": "ironjaw_attack_{F}_f{i:02d}.png", "frames": 6,
-#       "fps": 12.0, "loop": False, "impact": 3}}}
-# The cell and scale are the class walk's, so the feet line up.
-ACTION_SOURCES: dict = {}
+# LOCKED painted actions (4 Oct 2026). Every class: 512x360 cells, pivot
+# (256,329), 17.144 fps, S and E (W and N are mirrors). Read from git at the
+# lock commits. "impact" is the 0-based contact cell (the blockout key):
+# release_sec and the hit flinch read it.
+_ACTION_FRAMES = {"idle": 12, "attack": 12, "skill": 12, "hit": 8, "death": 13}
+_ACTION_LOCKS = {
+    "kestrel": ("claude/kestrel-actions", "0227894a777b9cddf4d21ffbb9f4ced200c3164f", {"attack": 9, "skill": 9}),
+    "bastion": ("claude/bastion-actions", "b50c5983b0b70e389eb28dec707c5793e1e13740", {"attack": 6, "skill": 4}),
+    "gloam": ("claude/gloam-actions", "94891db0c1710c78b167d36664749618e1320e04", {"attack": 6, "skill": 4}),
+    "mender": ("claude/mender-actions", "0afabd727874e1c401f1f4a1779e738c5cebc457", {"attack": 6, "skill": 4}),
+    "ironjaw": ("claude/ironjaw-actions", "9d784a1678e92b0af633747f87c816346c765330", {"attack": 6, "skill": 6}),
+}
+
+
+def _action_sources() -> dict:
+    out: dict = {}
+    for cls, (branch, commit, impacts) in _ACTION_LOCKS.items():
+        out[cls] = {}
+        for kind, n in _ACTION_FRAMES.items():
+            a = {
+                "branch": branch,
+                "commit": commit,
+                "dir": f"docs/pc/art_help/class_walk_looks/{cls}/actions_v1/frames",
+                "pivot": {"S": (256, 329), "E": (256, 329)},
+                "pattern": kind + "_{F}_f{i:02d}.png",
+                "frames": n,
+                "fps": 17.144,
+                "loop": kind == "idle",
+                "clean": False,
+            }
+            if kind in impacts:
+                a["impact"] = impacts[kind]
+            out[cls][kind] = a
+    return out
+
+
+ACTION_SOURCES: dict = _action_sources()
 ACTION_KINDS = ("idle", "attack", "skill", "hit", "death")
 
 FRAMES = 12
@@ -236,52 +280,165 @@ def stance_px_per_frame(frames: list[Image.Image], start: int, span: int = 3) ->
     return along / float(span)
 
 
+def clean_frame(img: Image.Image) -> tuple[Image.Image, dict]:
+    """Speckles, pin holes and dark edge pixels, the actions_v1 lesson 7 pass.
+
+    Islands under 8 px are dropped. Transparent pin holes under 24 px inside
+    the figure are closed with the paint around them. Opaque pixels on the
+    silhouette edge darker than 0.55x the paint just inside are recoloured
+    from it. Deterministic: same input, same bytes.
+    """
+    from scipy import ndimage as ndi
+
+    a = np.asarray(img).copy()
+    m = a[..., 3] > 0
+    eight = np.ones((3, 3), dtype=bool)
+    lab, n = ndi.label(m, structure=eight)
+    dropped = 0
+    if n:
+        sizes = ndi.sum(m, lab, range(1, n + 1))
+        small = np.isin(lab, np.nonzero(sizes < 8)[0] + 1)
+        dropped = int(small.sum())
+        m &= ~small
+    holes = ~m
+    hl, hn = ndi.label(holes)
+    border = set(np.unique(np.concatenate([hl[0], hl[-1], hl[:, 0], hl[:, -1]])).tolist())
+    filled = 0
+    if hn:
+        hs = ndi.sum(holes, hl, range(1, hn + 1))
+        ids = [i + 1 for i, v in enumerate(hs) if v < 24 and (i + 1) not in border]
+        pin = np.isin(hl, ids)
+        filled = int(pin.sum())
+        rgb = a[..., :3].astype(np.float64)
+        known = m.copy()
+        todo = pin.copy()
+        while todo.any():
+            w = ndi.uniform_filter(known.astype(np.float64), 3)
+            ring = todo & (w > 0)
+            for c in range(3):
+                acc = ndi.uniform_filter(rgb[..., c] * known, 3)
+                rgb[..., c] = np.where(ring, acc / np.maximum(w, 1e-9), rgb[..., c])
+            known |= ring
+            todo &= ~ring
+        a[..., :3] = np.where(pin[..., None], np.round(rgb).astype(np.uint8), a[..., :3])
+        m |= pin
+    inner = ndi.binary_erosion(m, structure=eight)
+    edge = m & ~inner
+    lum = a[..., :3].astype(np.float64) @ np.array([0.299, 0.587, 0.114])
+    den = ndi.uniform_filter(inner.astype(np.float64), 5)
+    ref = np.zeros(a.shape[:2] + (3,))
+    for c in range(3):
+        ref[..., c] = ndi.uniform_filter(a[..., c].astype(np.float64) * inner, 5) / np.maximum(den, 1e-9)
+    ref_lum = ref @ np.array([0.299, 0.587, 0.114])
+    dark = edge & (den > 0) & (lum < 0.55 * ref_lum)
+    a[..., :3] = np.where(dark[..., None], np.round(ref).astype(np.uint8), a[..., :3])
+    a[..., 3] = np.where(m, 255, 0).astype(np.uint8)
+    a[..., :3] = np.where(m[..., None], a[..., :3], 0)
+    return Image.fromarray(a, mode="RGBA"), {"specks": dropped, "holes": filled, "dark_edge": int(dark.sum())}
+
+
 def build_class(cls: str, src: dict, actions: dict) -> dict:
-    """Walk plus any painted actions for one class, all in one cell."""
-    piv = src["pivot"]
-    sets = {"walk": {F: load_frames(src, F, f"{cls}_walk_{{F}}_f{{i:02d}}.png", FRAMES) for F in ("S", "E")}}
+    """Walk plus the painted actions for one class, all at the walk's scale.
+
+    walk and idle share one cell, pivot centred on the 152 sole line, so the
+    standing idle and the stride never jump. Each action kind (attack, skill,
+    hit, death) gets its own tight cell at the same scale: its sole row is
+    152, or lower when a raised weapon needs the head room, and its pivot x is
+    per facing (a lying body reaches far to one side). The cell's pivot is
+    written per facing into the spec; the pawn stands every cell on it.
+    """
+    sets = {"walk": (src, {F: load_frames(src, F, f"{cls}_walk_{{F}}_f{{i:02d}}.png", FRAMES) for F in ("S", "E")})}
     for kind, a in actions.items():
         merged = dict(src)
         merged.update(a)
-        sets[kind] = {F: load_frames(merged, F, a["pattern"], int(a["frames"])) for F in ("S", "E")}
-    art = sets["walk"]
+        sets[kind] = (merged, {F: load_frames(merged, F, a["pattern"], int(a["frames"])) for F in ("S", "E")})
+    clean_log = {"specks": 0, "holes": 0, "dark_edge": 0}
+    for kind, (meta, by_face) in sets.items():
+        if not meta.get("clean"):
+            continue
+        for F in ("S", "E"):
+            for i, f in enumerate(by_face[F]):
+                by_face[F][i], log = clean_frame(f)
+                for key in clean_log:
+                    clean_log[key] += log[key]
+    art = sets["walk"][1]
+    piv = src["pivot"]
 
-    # Scale: f00 front height above the ground point vs the old static.
+    # Scale: f00 front height above the ground point vs the old static, capped
+    # so that walk and idle stay under the 152 sole line. The actions use this
+    # same scale (no size jump between walk, idle and actions).
     s_top = alpha_bbox(art["S"][0])[1]
     above_f00 = piv["S"][1] - s_top
     k = OLD_STATIC_ABOVE_SOLE[cls] / float(above_f00)
-    top_all = 0
-    reach = 0
-    below = 0
-    for frames_by_face in sets.values():
-        for F in ("S", "E"):
-            px, py = piv[F]
-            for f in frames_by_face[F]:
-                x0, y0, x1, y1 = alpha_bbox(f)
-                top_all = max(top_all, py - y0)
-                below = max(below, y1 - py)
-                reach = max(reach, px - x0, x1 - px)
-    k = min(k, MAX_ABOVE / float(top_all), 1.0)
-    half = int(math.ceil(reach * k)) + PAD
-    cell_w = min(2 * half, MAX_CELL)
-    cell_h = min(FOOT_ROW + int(math.ceil(below * k)) + PAD, MAX_CELL)
 
-    def place(img: Image.Image, F: str, mirror: bool) -> Image.Image:
-        px, py = piv[F]
+    def extents(kinds: tuple) -> dict:
+        ext = {"top": 0, "below": 0, "L": {"S": 0, "E": 0}, "R": {"S": 0, "E": 0}}
+        for kind in kinds:
+            if kind not in sets:
+                continue
+            meta, by_face = sets[kind]
+            for F in ("S", "E"):
+                px, py = meta["pivot"][F]
+                for f in by_face[F]:
+                    x0, y0, x1, y1 = alpha_bbox(f)
+                    ext["top"] = max(ext["top"], py - y0)
+                    ext["below"] = max(ext["below"], y1 - py)
+                    ext["L"][F] = max(ext["L"][F], px - x0)
+                    ext["R"][F] = max(ext["R"][F], x1 - px)
+        return ext
+
+    stand = extents(("walk", "idle"))
+    k = min(k, MAX_ABOVE / float(stand["top"]), 1.0)
+
+    layout: dict = {}
+    reach = max(max(stand["L"].values()), max(stand["R"].values()))
+    half = int(math.ceil(reach * k)) + PAD
+    stand_cell = (min(2 * half, MAX_CELL), min(FOOT_ROW + int(math.ceil(stand["below"] * k)) + PAD, MAX_CELL))
+    for kind in ("walk", "idle"):
+        if kind in sets:
+            px = stand_cell[0] // 2
+            layout[kind] = {"cell": stand_cell, "piv": {"S": (px, FOOT_ROW), "E": (px, FOOT_ROW)}}
+    for kind in sets:
+        if kind in layout:
+            continue
+        e = extents((kind,))
+        sole = max(FOOT_ROW, int(math.ceil(e["top"] * k)) + PAD)
+        lefts = {F: int(math.ceil(e["L"][F] * k)) + PAD for F in ("S", "E")}
+        rights = {F: int(math.ceil(e["R"][F] * k)) + PAD for F in ("S", "E")}
+        cw = max(lefts[F] + rights[F] for F in ("S", "E"))
+        ch = sole + int(math.ceil(e["below"] * k)) + PAD
+        if cw > MAX_CELL or ch > MAX_CELL:
+            raise SystemExit(f"{cls} {kind} cell {cw}x{ch} is over the {MAX_CELL} cap")
+        # Spare width goes to the right of the S/E art (the left after a mirror).
+        layout[kind] = {"cell": (cw, ch), "piv": {F: (lefts[F], sole) for F in ("S", "E")}}
+
+    def place(img: Image.Image, src_piv: tuple, cell: tuple, dst_piv: tuple, mirror: bool) -> Image.Image:
+        px, py = src_piv
         sw, sh = img.size
         size = (max(1, round(sw * k)), max(1, round(sh * k)))
         small = resize_binary(img, size)
         spx, spy = px * size[0] / sw, py * size[1] / sh
-        cell = Image.new("RGBA", (cell_w, cell_h), (0, 0, 0, 0))
-        cell.alpha_composite(small, (int(round(cell_w / 2 - spx)), int(round(FOOT_ROW - spy))))
-        return ImageOps.mirror(cell) if mirror else cell
+        out = Image.new("RGBA", cell, (0, 0, 0, 0))
+        dx, dy = int(round(dst_piv[0] - spx)), int(round(dst_piv[1] - spy))
+        # Nothing may leave the cell (the layout above already reserved room).
+        x0, y0, x1, y1 = alpha_bbox(small)
+        if x0 + dx < 0 or y0 + dy < 0 or x1 + dx >= cell[0] or y1 + dy >= cell[1]:
+            raise SystemExit(f"{cls}: a frame leaves its {cell} cell")
+        out.alpha_composite(small, (dx, dy))
+        return ImageOps.mirror(out) if mirror else out
 
-    for kind, frames_by_face in sets.items():
+    pivots: dict = {}
+    for kind, (meta, by_face) in sets.items():
+        lay = layout[kind]
+        cell_w, cell_h = lay["cell"]
+        pivots[kind] = {}
         out_dir = os.path.join(ROOT, "art", "characters", cls, kind)
         os.makedirs(out_dir, exist_ok=True)
         for letter in LETTERS:
             F, mirror = LETTER_FROM_ART[letter]
-            cells = [place(f, F, mirror) for f in frames_by_face[F]]
+            dst = lay["piv"][F]
+            pivots[kind][letter] = [cell_w - dst[0] if mirror else dst[0], dst[1]]
+            cells = [place(f, meta["pivot"][F], lay["cell"], dst, mirror) for f in by_face[F]]
             sheet = Image.new("RGBA", (cell_w * len(cells), cell_h), (0, 0, 0, 0))
             for i, c in enumerate(cells):
                 sheet.paste(c, (i * cell_w, 0))
@@ -301,10 +458,12 @@ def build_class(cls: str, src: dict, actions: dict) -> dict:
     board_ppf = ppf * k * DRAW_SCALE[cls]
     measured = TILE_STEP_PX / board_ppf
     fpt = min(measured, MAX_LEG_RATE * AUTHORED_FPS * WALK_TILE_SEC)
+    wc = layout["walk"]["cell"]
     out = {
         "walk": {
-            "cell": [cell_w, cell_h],
-            "pivot": [cell_w // 2, FOOT_ROW],
+            "cell": list(wc),
+            "pivot": [wc[0] // 2, FOOT_ROW],
+            "pivots": pivots["walk"],
             "frames": FRAMES,
             "fps": AUTHORED_FPS,
             "loop": True,
@@ -315,12 +474,15 @@ def build_class(cls: str, src: dict, actions: dict) -> dict:
             "src_px_per_frame": round(ppf, 3),
             "playback_fps": round(fpt / WALK_TILE_SEC, 2),
             "source": f"{src['branch']} @ {src['commit'][:7]} {src['dir']}",
+            "cleaned": clean_log if src.get("clean") else None,
         }
     }
     for kind, a in actions.items():
+        cell = layout[kind]["cell"]
         out[kind] = {
-            "cell": [cell_w, cell_h],
-            "pivot": [cell_w // 2, FOOT_ROW],
+            "cell": list(cell),
+            "pivot": list(pivots[kind]["e"]),
+            "pivots": pivots[kind],
             "frames": int(a["frames"]),
             "fps": float(a["fps"]),
             "loop": bool(a.get("loop", kind == "idle")),
@@ -340,11 +502,15 @@ def write_specs(specs: dict) -> None:
         "## Do not edit by hand: re-run the script.",
         "## Painted character strips for the mobile board. One entry per class",
         "## and kind. cell and pivot are in texture px; the pivot is the ground",
-        "## point and always sits on Pawn.FOOT_PIVOT_Y (152). frames_per_tile is",
-        "## how many cells one board tile of travel spans: the no-slide value",
-        "## (frames_per_tile_no_slide) capped so the legs never cycle faster than",
-        "## MAX_LEG_RATE x the authored fps (Mauro 4 Oct 2026, natural leg speed;",
-        "## a capped class accepts a small foot slide).",
+        "## point. walk and idle share one cell with the pivot centred on",
+        "## Pawn.FOOT_PIVOT_Y (152). Each action kind has its own cell at the same",
+        "## scale; its pivot (per facing, in pivots) can sit lower than 152 to give",
+        "## a raised weapon head room, or off centre for a body lying on its side.",
+        "## frames_per_tile is how many cells one board tile of travel spans: the",
+        "## no-slide value (frames_per_tile_no_slide) capped so the legs never",
+        "## cycle faster than MAX_LEG_RATE x the authored fps (Mauro 4 Oct 2026,",
+        "## natural leg speed; a capped class accepts a small foot slide). impact",
+        "## is the 0-based contact cell of an attack or skill.",
         "",
         f"const MAX_LEG_RATE := {MAX_LEG_RATE!r}",
         "",
@@ -355,11 +521,13 @@ def write_specs(specs: dict) -> None:
         for kind in sorted(specs[cls]):
             s = specs[cls][kind]
             lines.append(f'\t\t"{kind}": {{')
-            for key in ("cell", "pivot", "frames", "fps", "loop", "contact", "impact", "frames_per_tile", "frames_per_tile_no_slide", "scale", "source"):
+            for key in ("cell", "pivot", "pivots", "frames", "fps", "loop", "contact", "impact", "frames_per_tile", "frames_per_tile_no_slide", "scale", "source"):
                 if key not in s:
                     continue
                 v = s[key]
-                if isinstance(v, list):
+                if isinstance(v, dict):
+                    val = "{" + ", ".join(f'"{l}": Vector2i({v[l][0]}, {v[l][1]})' for l in LETTERS) + "}"
+                elif isinstance(v, list):
                     val = f"Vector2i({v[0]}, {v[1]})"
                 elif isinstance(v, bool):
                     val = "true" if v else "false"
@@ -393,6 +561,12 @@ def main() -> int:
         print(f"{cls}: cell {w['cell']} scale {w['scale']} src {w['src_px_per_frame']} px/frame "
               f"-> {w['frames_per_tile']} frames/tile (no-slide {w['frames_per_tile_no_slide']}, "
               f"{round(w['frames_per_tile'] / WALK_TILE_SEC, 2)} fps at {WALK_TILE_SEC}s/tile)")
+        if w.get("cleaned"):
+            print(f"  cleaned walk source: {w['cleaned']}")
+        for kind in ACTION_KINDS:
+            if kind in specs[cls]:
+                a = specs[cls][kind]
+                print(f"  {kind}: cell {a['cell']} pivots e{a['pivots']['e']} s{a['pivots']['s']} n{a['pivots']['n']} w{a['pivots']['w']}")
     if only:
         print("partial run: units/character_strip_specs.gd not rewritten")
         return 0
