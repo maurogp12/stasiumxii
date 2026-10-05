@@ -168,7 +168,7 @@ Only after the loadout screen can pick a real Secondary. Approved guard-rails:
 - **Pin (Drift-Pin) blocks walking (MP) off the tile only — never Advance or
   Ambush.** A target Pinned on its last turn cannot be Pinned on its next.
 - A body that took a Blend cannot take another until its own next turn ends.
-- Spark chip 6 → **4**. Sleet at most once per target turn (max −1 MP).
+- Spark chip 6 → **4**. Sleet at most once per target turn (max −1 MP). *Mauro 5 Oct 2026: Sleet now pushes 2 tiles back instead of −1 MP.*
 - Steam works as written (line of sight exists).
 - Two mono teammates never share a Blend. Mender stays mono Water. Gloam stays
   Air / Neutral.
