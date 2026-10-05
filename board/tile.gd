@@ -52,6 +52,9 @@ const BLOCK_GLOW_DEFAULT := Color(0.95, 0.85, 0.6)
 ## Per-map liquid glow where the default disappears on a light floor.
 const LIQUID_GLOW_BY_MAP := {
 	"windmere": {"water": Color(0.0, 0.42, 0.55)},
+	# Mauro 5 Oct 2026: "This tiles are not supposed to be water its
+	# electricity" - Stormspire's charged pools glow electric violet.
+	"stormspire": {"water": Color(0.78, 0.5, 1.0)},
 }
 ## Light floors: a soft tint fills the blocked diamond so the glow still shows
 ## around the base of a tall obstacle (alpha of the fill).
