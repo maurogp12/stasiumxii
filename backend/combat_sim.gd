@@ -1988,6 +1988,10 @@ func _note_attacks(actor: Dictionary) -> void:
 	actor["attacked_this_turn"] = seen
 
 
+## Stacks a fighter keeps on itself; lost on a turn without an attack.
+const SELF_STACKS := ["impact", "umbral", "aegis", "pulse"]
+
+
 func _drop_unattended_marks(actor: Dictionary) -> void:
 	var attacked: Array = actor.get("attacked_this_turn", [])
 	var me := int(actor["seat"])
@@ -2001,6 +2005,14 @@ func _drop_unattended_marks(actor: Dictionary) -> void:
 			unit["residue"] = ""
 			unit["residue_turns"] = 0
 			_emit_expire("residue", unit["pos"], me, int(unit["seat"]))
+	# Mauro 5 Oct 2026 ("Why ironjaw even if he does not attack he keeps his
+	# marks?" ... "all of them"): a turn with no attack on an enemy also drops
+	# the fighter's own stacks: Impact, Umbral, Aegis, Pulse.
+	if attacked.is_empty():
+		for field in SELF_STACKS:
+			if int(actor.get(field, 0)) > 0:
+				_clear_resource(actor, field)
+				_emit_expire(field, actor["pos"], me, me)
 	actor["attacked_this_turn"] = []
 
 

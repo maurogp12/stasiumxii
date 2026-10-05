@@ -650,8 +650,9 @@ func _test_phase_a_demo_map() -> void:
 		saw[str(rec["terrain_type"])] = int(saw.get(str(rec["terrain_type"]), 0)) + 1
 		if int(rec["elevation"]) >= 1:
 			elev_hi += 1
-	eq(saw["ground"], 177, "Crosshaven ground count")
-	eq(saw["mud"], 30, "Crosshaven mud count")
+	# Mauro 5 Oct 2026 "make sure every map has a way to walk": 3 mud -> ground.
+	eq(saw["ground"], 180, "Crosshaven ground count")
+	eq(saw["mud"], 27, "Crosshaven mud count")
 	eq(saw["water"], 18, "Crosshaven water count")
 	eq(saw["lava"], 0, "Crosshaven has no lava")
 	eq(elev_hi, 18, "Crosshaven elevation ≥1 count")
@@ -7821,6 +7822,29 @@ func _test_marks_fade_without_attack() -> void:
 	_sim.submit({"type": "cast", "spell": "mark_shot", "to": Vector2i(6, 5), "seat": 0})
 	_sim.submit({"type": "end_turn", "seat": 0})
 	eq(int(_unit(1)["marks"]), 1, "a missed attack on him still keeps the Mark")
+	# Mauro 5 Oct 2026 ("Why ironjaw even if he does not attack he keeps his
+	# marks?" ... "all of them"): a fighter's own stacks go too.
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1, 1, 1], "classes": ["kestrel", "ironjaw"], "positions": [Vector2i(3, 5), Vector2i(4, 5)]})
+	_sim.submit({"type": "end_turn", "seat": 0})
+	_live_unit(1)["impact"] = 3
+	_sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(3, 5), "seat": 1})
+	var kept := int(_unit(1)["impact"])
+	truthy(kept >= 3, "Impact stays on a turn Ironjaw attacks")
+	_sim.submit({"type": "end_turn", "seat": 1})
+	eq(int(_unit(1)["impact"]), kept, "and is still there after that turn ends")
+	_sim.submit({"type": "end_turn", "seat": 0})
+	var idle: Dictionary = _sim.submit({"type": "end_turn", "seat": 1})
+	eq(int(_unit(1)["impact"]), 0, "a turn without an attack clears Ironjaw's Impact")
+	var gone := 0
+	for e in idle.get("events", []):
+		if str(e.get("type", "")) == "expire" and str(e.get("status", "")) == "impact":
+			gone += 1
+	eq(gone, 1, "the board is told the Impact is gone")
+	for field in ["umbral", "aegis", "pulse"]:
+		_live_unit(0)[field] = 2
+	_sim.submit({"type": "end_turn", "seat": 0})
+	for field in ["umbral", "aegis", "pulse"]:
+		eq(int(_unit(0)[field]), 0, "a quiet turn clears %s too" % field)
 
 
 func _test_element_blends() -> void:

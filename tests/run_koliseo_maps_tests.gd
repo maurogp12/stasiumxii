@@ -25,6 +25,7 @@ func _run() -> void:
 	_test_walk_blocked_tiles_marked()
 	_test_brinewake_dock_layout()
 	_test_slagcrown_steam_blocks_sight()
+	_test_every_map_has_a_way_out()
 	_test_cell_tags_override()
 	_test_random_ship_id()
 	_test_hotseat_rolls_map()
@@ -884,6 +885,39 @@ func _test_walk_blocked_tiles_marked() -> void:
 			elif terrain == "void":
 				eq(kind, "block", "%s %s: a hole is an obstacle" % [map_id, cell])
 		truthy(marked > 0, "%s has marked tiles" % map_id)
+		sim.free()
+
+
+## Mauro 5 Oct 2026: "Heres another trap you cannot get out make sure every map
+## has a way to walk". On every Koliseo map each standable tile reaches every
+## other one with the real walk rules (terrain, props, climb limits).
+func _test_every_map_has_a_way_out() -> void:
+	var none := func(_c, _i = null): return false
+	for map_id in CellTagMap.SHIP_MAPS:
+		var sim: Node = load("res://backend/combat_sim.gd").new()
+		root.add_child(sim)
+		sim.reset_match({"seed": 3, "map_id": map_id, "skip_deploy": true, "positions": [Vector2i(-5, -5), Vector2i(-6, -6)]})
+		var b = sim._board
+		var stand: Array = []
+		for y in b.height:
+			for x in b.width:
+				var c := Vector2i(x, y)
+				if b.is_walkable(c) and not b.is_voluntary_impassable(c):
+					stand.append(c)
+		var trapped: Array = []
+		for start in stand:
+			var seen := {start: true}
+			var q: Array = [start]
+			while not q.is_empty():
+				var cur: Vector2i = q.pop_back()
+				for d in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+					var n: Vector2i = cur + d
+					if not seen.has(n) and b.in_bounds(n) and bool(b.step_cost(cur, n, none).get("ok", false)):
+						seen[n] = true
+						q.append(n)
+			if seen.size() < stand.size():
+				trapped.append(start)
+		eq(trapped, [], "%s: every standable tile can walk to every other" % map_id)
 		sim.free()
 
 
