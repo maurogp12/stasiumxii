@@ -1882,15 +1882,17 @@ func _map_steam_at(cell: Vector2i) -> bool:
 	return _CellTagMap.terrain_blocks_sight(_map_id, str(_TerrainDef.NAMES.get(int(tile.terrain_type), "")))
 
 
-## Cells whose terrain steams for the board view (looping steam over them).
+## Cells that steam for the board view (looping steam over them): boiling
+## terrain and the round pits that hold boiling water (CellTagMap.STEAM_PROPS).
 func _map_steam_snapshot() -> Array:
 	var out: Array = []
-	if _map_id == "" or _board == null or not _CellTagMap.SIGHT_TERRAIN.has(_CellTagMap.normalize_id(_map_id)):
+	var id := _CellTagMap.normalize_id(_map_id)
+	if _map_id == "" or _board == null or not (_CellTagMap.SIGHT_TERRAIN.has(id) or _CellTagMap.STEAM_PROPS.has(id)):
 		return out
 	for y in int(_board.height):
 		for x in int(_board.width):
 			var cell := Vector2i(x, y)
-			if _map_steam_at(cell):
+			if _map_steam_at(cell) or _CellTagMap.props_steam(_map_id, _paint_only.get(cell, [])):
 				out.append({"x": x, "y": y, "pos": cell})
 	return out
 

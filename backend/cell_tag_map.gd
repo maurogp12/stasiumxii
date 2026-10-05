@@ -57,6 +57,10 @@ const SIGHT_PROP_KEEP := {
 ## boils and steams ("no attack could cross that steam"). Still not walkable,
 ## like all water; a fighter is never on it, so no target is hidden.
 const SIGHT_TERRAIN := {"slagcrown": ["water"]}
+## Props that hold boiling water and steam (view only: an ash_rock pit already
+## blocks walk and sight as a BLOCKING_PROPS entry). Mauro 5 Oct 2026: "do the
+## steaming water in the circles".
+const STEAM_PROPS := {"slagcrown": ["ash_rock"]}
 ## The arena centrepiece (Slagcrown volcano, Stormspire tower) blocks sight.
 const SIGHT_CENTERPIECE := {"slagcrown": Vector2i(7, 7), "stormspire": Vector2i(7, 7)}
 const _INFO := {
@@ -261,6 +265,16 @@ static func terrain_blocks_sight(map_id: String, terrain: String) -> bool:
 	if map_id == "":
 		return false
 	return (SIGHT_TERRAIN.get(normalize_id(map_id), []) as Array).has(terrain)
+
+
+static func props_steam(map_id: String, props: Variant) -> bool:
+	if map_id == "" or typeof(props) != TYPE_ARRAY:
+		return false
+	var steamy: Array = STEAM_PROPS.get(normalize_id(map_id), [])
+	for prop_name in props:
+		if steamy.has(str(prop_name)):
+			return true
+	return false
 
 
 static func _tall_prop_at(map_id: String, props: Variant, cell: Vector2i) -> bool:
