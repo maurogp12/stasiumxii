@@ -1,0 +1,37 @@
+name: Publish PC build release
+
+# A push to a download-only pc/<version> branch publishes the Windows build
+# (StasiumXII_PC_<version>.zip, stored as 90 MB parts) as the GitHub
+# prerelease pc-<version>.
+on:
+  push:
+    branches:
+      - "pc/**"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Join and check
+        run: |
+          VERSION="${GITHUB_REF_NAME#pc/}"
+          NAME="StasiumXII_PC_${VERSION}.zip"
+          cat $(ls "$NAME".part-* | sort) > "$NAME"
+          sha256sum -c "$NAME.sha256"
+      - name: Publish prerelease
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="${GITHUB_REF_NAME#pc/}"
+          NAME="StasiumXII_PC_${VERSION}.zip"
+          TAG="pc-${VERSION}"
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$TAG" "$NAME" --clobber --repo "$GITHUB_REPOSITORY"
+          else
+            gh release create "$TAG" "$NAME" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
+              --title "STASIUM XII PC (Windows) $VERSION" --notes-file README.md --prerelease
+          fi
