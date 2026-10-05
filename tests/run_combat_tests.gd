@@ -5384,7 +5384,7 @@ func _test_shoulder_push_blocked_locked() -> void:
 func _test_crush_spend_and_stun() -> void:
 	eq(int(SpellKits.spell(SpellKits.CRUSH)["ap"]), 4, "Crush costs 4 AP")
 	eq(int(SpellKits.spell(SpellKits.CRUSH)["mp"]), 0, "Crush costs 0 MP")
-	eq(int(SpellKits.spell(SpellKits.CRUSH)["base_damage"]), 20, "Crush base is 20 Earth")
+	eq(int(SpellKits.spell(SpellKits.CRUSH)["base_damage"]), 12, "Crush base is 12 Earth (Mauro 5 Oct 2026)")
 
 	# Gate: fewer than 2 Impact rejects and refunds.
 	_sim.reset_match({
@@ -5402,7 +5402,7 @@ func _test_crush_spend_and_stun() -> void:
 	eq(_unit(1)["impact"], 1, "Crush gate does not spend Impact")
 	eq(_unit(0)["hp"], 75, "Crush gate deals no damage")
 
-	# Connect at Impact 2: spend 2, 24 Earth, no Stun.
+	# Connect at Impact 2: spend 2, 12 Earth, no Stun.
 	_sim.reset_match({
 		"seed": 1,
 		"flat_board": true,
@@ -5415,12 +5415,12 @@ func _test_crush_spend_and_stun() -> void:
 	_sim.submit({"type": "end_turn"})
 	result = _sim.submit({"type": "cast", "spell": "crush", "to": Vector2i(3, 3)})
 	eq(result["ok"], true, "Crush at 2 Impact connects")
-	eq(result["events"][0]["damage"], 20, "front Crush deals 20 Earth")
+	eq(result["events"][0]["damage"], 12, "front Crush deals 12 Earth")
 	eq(result["events"][0]["impact_before"], 2, "Impact before spend is 2")
 	eq(result["events"][0]["impact_spent"], 2, "connect spends 2 Impact")
 	eq(result["events"][0]["stun_applied"], 0, "Impact 2 before spend does not Stun")
 	eq(_unit(1)["impact"], 0, "2-2=0 Impact left")
-	eq(_unit(0)["hp"], 55, "75-20=55")
+	eq(_unit(0)["hp"], 63, "75-12=63")
 	eq(_unit(0)["stun_remaining"], 0, "no Stun stored")
 	eq(_unit(1)["ap"], 2, "Crush spends 4 AP")
 	eq(_unit(1)["mp"], 3, "Crush spends 0 MP")
@@ -5459,7 +5459,7 @@ func _test_crush_spend_and_stun() -> void:
 	eq(result["events"][0]["stun_applied"], 1, "Stun 1 when Impact was 5 before spend")
 	eq(result["events"][0].has("open_a05_stun"), false, "Stun application is not labeled OPEN A05")
 	eq(result["events"][0]["back"], true, "Crush still applies facing")
-	eq(result["events"][0]["damage"], 24, "24 × 1.20 rounds to 29")
+	eq(result["events"][0]["damage"], 14, "12 × 1.20 rounds to 14")
 	eq(_unit(1)["impact"], 0, "a stunning Crush leaves 0 Impact")
 	eq(_unit(0)["stun_remaining"], 1, "Stun 1 stored on the target")
 	eq(result["events"][1]["type"], "status", "status event for Stun")
@@ -6518,7 +6518,7 @@ func _test_preview_cast() -> void:
 	truthy(_notes_has(preview["notes"], "6+6×M"), "needs_marks notes explain 6+6×M when Marks exist")
 	eq(_unit(0)["ap"], 6, "needs_marks preview does not spend AP")
 
-	# Crush: would_stun when Impact is 4 and would spend 2. Sample 24 Earth front.
+	# Crush: would_stun when Impact is full (5) and would spend 2. Sample 12 Earth front.
 	_sim.reset_match({
 		"seed": 1,
 		"flat_board": true,
@@ -6537,8 +6537,8 @@ func _test_preview_cast() -> void:
 	eq(preview["hit_chance"], 90, "Crush melee uses Locked 90%")
 	eq(preview["impact_before"], 5, "Crush preview reports impact_before 5")
 	eq(preview["would_stun"], true, "Crush would_stun at Impact 4 spending 2")
-	eq(preview["sample_damage"], 20, "front Crush samples 20 Earth")
-	eq(preview["on_connect_text"], "24 Earth. Spends 2 Impact. Stun 1 if Impact was full (5); a stunning Crush spends all.", "Crush connect kit line")
+	eq(preview["sample_damage"], 12, "front Crush samples 12 Earth")
+	eq(preview["on_connect_text"], "12 Earth. Spends 2 Impact. Stun 1 if Impact was full (5); a stunning Crush spends all.", "Crush connect kit line")
 	eq(preview["on_miss_text"], "Impact retained. AP/MP stay spent.", "Crush miss kit line")
 	eq(preview["legal"], true, "Crush at 4 Impact is legal")
 	_assert_preview_did_not_mutate(before, "Crush preview is read-only")
@@ -6558,7 +6558,7 @@ func _test_preview_cast() -> void:
 	preview = _sim.preview_cast(SpellKits.CRUSH, Vector2i(4, 3), Vector2i(3, 3), 0)
 	eq(preview["impact_before"], 2, "Crush at 2 Impact reports impact_before 2")
 	eq(preview["would_stun"], false, "Crush does not stun when Impact before is 2")
-	eq(preview["sample_damage"], 20, "Crush still samples 20 Earth at Impact 2")
+	eq(preview["sample_damage"], 12, "Crush still samples 12 Earth at Impact 2")
 
 	# Shoulder: sample 6 + push note.
 	_sim.reset_match({
@@ -7079,12 +7079,12 @@ func _test_spell_tooltip_cards() -> void:
 	var crush := SpellTooltip.card_text(crush_preview)
 	eq(crush_preview["would_stun"], true, "Crush preview flags stun at Impact 4")
 	truthy(crush.contains("4 AP / 0 MP"), "Crush card names AP/MP from preview")
-	truthy(crush.contains("On hit: 24 Earth. Spends 2 Impact. Stun 1 if Impact was full (5); a stunning Crush spends all."), "Crush hit line is preview kit text")
+	truthy(crush.contains("On hit: 12 Earth. Spends 2 Impact. Stun 1 if Impact was full (5); a stunning Crush spends all."), "Crush hit line is preview kit text")
 	truthy(crush.contains("On miss: Impact retained. AP/MP stay spent."), "Crush miss line is preview kit text")
 	truthy(crush.contains("Stun 1 (Locked A′) this cast."), "Crush card shows stun flag when preview would_stun")
 	eq(crush.contains("Stun 1 (Open"), false, "Crush Stun wording is Locked, not Open")
 	truthy(crush.contains("HIT 90% (Locked)"), "Crush card uses preview melee 90%")
-	truthy(crush.contains("sample 20"), "Crush card uses preview sample_damage")
+	truthy(crush.contains("sample 12"), "Crush card uses preview sample_damage")
 
 	_sim.reset_match({
 		"seed": 1,
