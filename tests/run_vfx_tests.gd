@@ -198,6 +198,64 @@ func _test_blend_fx() -> void:
 	eq(looping, 0, "the tile effect leaves with the tile")
 	board.queue_free()
 	await process_frame
+	await _test_blend_fx_cleanup()
+
+
+## Mauro 5 Oct 2026: "Just make sure effect goes away after the effect is gone".
+## A real fight: each one-shot Blend effect ends on its own, and the Steam tile
+## effect stays exactly as long as the tile and leaves with it.
+func _test_blend_fx_cleanup() -> void:
+	var board_script := GDScript.new()
+	board_script.source_code = "extends Node2D\nvar pawns_by_seat: Dictionary = {}\nfunc _cell_to_local(cell: Vector2i) -> Vector2:\n\treturn BoardVisualSort.cell_to_local(cell, 0.0)\nfunc _elev_at(_cell: Vector2i) -> float:\n\treturn 0.0\n"
+	board_script.reload()
+	var board := Node2D.new()
+	board.set_script(board_script)
+	root.add_child(board)
+	var director: Node = DIRECTOR.new()
+	director.allow_headless = true
+	board.add_child(director)
+	director.bind_board(board)
+	await process_frame
+	var live := func() -> int:
+		var n := 0
+		for node in director._pools["strip"]:
+			if bool(node.in_use):
+				n += 1
+		return n
+	# Every one-shot effect clears itself.
+	for blend in ["drift_pin", "spark", "sleet", "magma", "mire", "steam"]:
+		for r in ROUTER.recipes_for([{"type": "blend", "blend": blend, "name": blend, "seat": 0, "target_seat": 1, "to": Vector2i(4, 4), "from": Vector2i(4, 4)}]):
+			if str(r.get("id", "")) == "blend_fx":
+				director._spawn(r, false)
+	await create_timer(0.3).timeout
+	eq(live.call(), 6, "all six Blend effects are playing")
+	await create_timer(1.2).timeout
+	eq(live.call(), 0, "every one-shot Blend effect is gone after it plays")
+	# Steam from a real fight: on the board while the tile is, gone with it.
+	var sim: Node = load("res://backend/combat_sim.gd").new()
+	root.add_child(sim)
+	sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1], "classes": ["ironjaw", "kestrel"], "positions": [Vector2i(5, 5), Vector2i(6, 5)]})
+	sim._unit_by_seat(0)["spell_elements"] = {"strike": "fire", "shoulder": "water", "crush": "water"}
+	var kestrel: Dictionary = sim._unit_by_seat(1)
+	kestrel["residue"] = "water"
+	kestrel["residue_seat"] = 0
+	kestrel["residue_turns"] = 2
+	var cast: Dictionary = sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(6, 5), "seat": 0})
+	director.play(cast.get("events", []), cast.get("snapshot", {}))
+	await create_timer(1.5).timeout
+	eq(live.call(), 1, "after the Steam burst only the lasting Steam tile remains")
+	var e0: Dictionary = sim.submit({"type": "end_turn", "seat": 0})
+	director.sync_snapshot(e0.get("snapshot", {}))
+	await create_timer(0.4).timeout
+	eq(live.call(), 1, "the Steam tile stays through the enemy's turn")
+	var e1: Dictionary = sim.submit({"type": "end_turn", "seat": 1})
+	eq((e1.get("snapshot", {}).get("element_tiles", []) as Array).is_empty(), true, "the Steam tile ends at the caster's next turn")
+	director.sync_snapshot(e1.get("snapshot", {}))
+	await create_timer(0.5).timeout
+	eq(live.call(), 0, "the Steam effect is gone when the tile is gone")
+	sim.queue_free()
+	board.queue_free()
+	await process_frame
 
 
 ## Mauro 29 Sep: keep improving the look. "+1 Impact" printed over "BACK 19"
