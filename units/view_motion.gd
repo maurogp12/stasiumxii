@@ -345,6 +345,8 @@ static func damage_resolve_sec(spell_id: String) -> float:
 				return FOE_BOLT_CAST_SEC + foe_bolt_travel_sec(5)
 			if BOSS_FX_TIMING.has(spell_id):
 				return boss_fx_impact_sec(spell_id)
+			if _mender_damage_spell(spell_id) and not StripLibrary.painted_action_spec(SpellKits.CLASS_MENDER, "attack").is_empty():
+				return StripLibrary.release_sec(SpellKits.CLASS_MENDER, "attack")
 			if caster_motion(spell_id) == "attack":
 				# A painted attack strikes on its own impact cell.
 				var cls := _spell_class(spell_id)
@@ -352,6 +354,27 @@ static func damage_resolve_sec(spell_id: String) -> float:
 					return StripLibrary.release_sec(cls, "attack")
 				return ANTICIPATION_SEC + ATTACK_OUT_SEC
 			return 0.0
+
+
+## Mender spell that can deal damage (Pulse Tap since option B, Heartstop).
+static func _mender_damage_spell(spell_id: String) -> bool:
+	if not SpellKits.has_spell(SpellKits.CLASS_MENDER, spell_id):
+		return false
+	return int(SpellKits.spell(spell_id).get("base_damage", 0)) > 0
+
+
+## True when this Mender cast event strikes a foe and the painted lantern
+## attack is on disk: damage landed, or a Heartstop missed (it only harms).
+## A Pulse Tap miss stays the skill (it could have been a heal).
+static func mender_strikes(event: Dictionary) -> bool:
+	var spell_id := str(event.get("spell", ""))
+	if not _mender_damage_spell(spell_id):
+		return false
+	if StripLibrary.painted_action_spec(SpellKits.CLASS_MENDER, "attack").is_empty():
+		return false
+	if int(event.get("damage", 0)) > 0 and int(event.get("target_seat", -1)) != int(event.get("seat", -2)):
+		return true
+	return str(event.get("type", "")) == "miss" and spell_id == SpellKits.HEARTSTOP
 
 
 ## Roster class that owns a hero spell, or "".
@@ -429,6 +452,11 @@ static func chrome_plans(events: Array) -> Dictionary:
 						plan["strip"] = "cast_mark"
 					elif spell_id == SpellKits.DETONATE:
 						plan["strip"] = "cast"
+					elif mender_strikes(event):
+						# Mender has no melee spell: a cast that hurts an enemy
+						# (Pulse Tap option B, Heartstop) swings the painted
+						# lantern attack; heals and wards keep the skill.
+						plan["strip"] = "attack"
 				plans[seat] = plan
 		if typ != "hit":
 			continue
