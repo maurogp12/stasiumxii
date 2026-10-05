@@ -113,4 +113,4 @@ NPC missions of type `clear_dungeon` count the win.
 
 ## Mauro's rules for every dungeon (5 Oct 2026)
 - **Boss escort:** the boss fights with monsters beside him. Room B always has an escort pack, plus any summons.
-- **Star difficulty, like mobile:** the player picks ★1–★5 per run. Higher stars bring tougher monsters (mobile `STAR_SCALE` HP and damage multipliers), bigger packs, and boss extras at ★5. They also bring **more XP, better loot (rarity gated by star) and more coins**. The source is mobile's `backend/stasis_catalog.gd`, `hero_progress.gd` and `gear_bag.gd`.
+- **Star difficulty, like mobile:** the player picks ★1–★5 per run. Higher stars bring tougher monsters (mobile `STAR_SCALE` HP and damage multipliers), bigger packs, and boss extras at ★5: a mutated ★5 boss form, starting with the Old Granary Cellar's Radioactive Ratking. They also bring **more XP, better loot (rarity gated by star) and more coins**. The source is mobile's `backend/stasis_catalog.gd`, `hero_progress.gd` and `gear_bag.gd`.
