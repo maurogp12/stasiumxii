@@ -43,11 +43,19 @@ const LIQUID_GLOW := {
 const BLOCK_GLOW := {
 	"brinewake": Color(0.35, 0.95, 0.9),
 	"slagcrown": Color(1.0, 0.5, 0.15),
-	"windmere": Color(0.75, 0.92, 1.0),
+	# Mauro 5 Oct 2026: the pale glow vanished on the white ice; deep blue reads.
+	"windmere": Color(0.08, 0.32, 0.95),
 	"stormspire": Color(0.7, 0.5, 1.0),
 	"crosshaven": Color(1.0, 0.82, 0.42),
 }
 const BLOCK_GLOW_DEFAULT := Color(0.95, 0.85, 0.6)
+## Per-map liquid glow where the default disappears on a light floor.
+const LIQUID_GLOW_BY_MAP := {
+	"windmere": {"water": Color(0.0, 0.42, 0.55)},
+}
+## Light floors: a soft tint fills the blocked diamond so the glow still shows
+## around the base of a tall obstacle (alpha of the fill).
+const GLOW_FILL := {"windmere": 0.3}
 const BLOCK_SHADE := Color(0.0, 0.0, 0.02, 0.38)
 var _dress: String = ""
 var _paint_props: Array = []
@@ -371,6 +379,9 @@ func _has_drawn_obstacle() -> bool:
 
 func walk_glow_color() -> Color:
 	if walk_block_kind == "liquid":
+		var by_map: Dictionary = LIQUID_GLOW_BY_MAP.get(_look_map, {})
+		if by_map.has(terrain_type):
+			return by_map[terrain_type]
 		return LIQUID_GLOW.get(terrain_type, LIQUID_GLOW["water"])
 	return BLOCK_GLOW.get(_look_map, BLOCK_GLOW_DEFAULT)
 
@@ -383,6 +394,9 @@ func _paint_walk_blocked(canvas: CanvasItem) -> void:
 	if walk_block_kind == "block" and not _has_drawn_obstacle():
 		# A bare hole: shade it. A tile with an obstacle drawn on it is clear enough.
 		canvas.draw_colored_polygon(points, BLOCK_SHADE)
+	var fill: float = GLOW_FILL.get(_look_map, 0.0)
+	if fill > 0.0:
+		canvas.draw_colored_polygon(points, Color(glow.r, glow.g, glow.b, fill * (0.6 if walk_block_kind == "liquid" else 1.0)))
 	var rings := [[0.96, 3.0, 1.0], [0.88, 3.0, 0.55], [0.8, 3.0, 0.28], [0.72, 2.5, 0.12]]
 	for ring in rings:
 		var line := PackedVector2Array()
