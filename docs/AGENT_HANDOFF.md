@@ -47,6 +47,7 @@ Version history, reasons and Mauro's exact words are in
 | **Fade / Invisible lasts 1 turn.** | `CombatSim.INVISIBLE_TURNS` | Mauro 29 Sep |
 | **Ambush without Invisible**: Gloam's own tile is always an Ambush origin (armed Shades add angles). | `CombatSim.AMBUSH_SELF_ALWAYS / _ambush_self_origin` | Mauro 30 Sep |
 | **Advance max 2 uses per Ironjaw turn** (reject `advance_limit`). | `CombatSim.ADVANCE_USES_PER_TURN`, `advance_uses` reset in `_begin_unit_turn` | Mauro 30 Sep |
+| **Advance cannot jump over big obstacles**: the tile jumped over may be water, mud, lava or a fighter, but not a rock / crate / pillar / pit / centrepiece, wall, Snap Wall or Steam (reject `advance_blocked`). | `CombatSim._advance_jump_blocked` (sight blockers without bodies), called by `_advance_stand_reason` | Mauro 5 Oct 2026 |
 
 ## Stasis monsters (kits, packs, planner)
 

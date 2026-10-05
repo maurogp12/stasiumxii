@@ -2634,6 +2634,8 @@ func _submit_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
 			return _reject(intent, "destination_occupied", "REJECT — Advance needs an empty tile (refund).")
 		if reason == "advance_limit":
 			return _reject(intent, "advance_limit", "REJECT — Advance is %d uses per turn (refund)." % ADVANCE_USES_PER_TURN)
+		if reason == "advance_blocked":
+			return _reject(intent, "advance_blocked", "REJECT — Advance cannot jump over a rock, crate, wall or steam (refund).")
 		if reason != "":
 			return _reject(intent, reason, "REJECT — illegal Advance (%s)." % reason)
 		return _resolve_advance(intent, actor, def, dest, advance_ap, advance_mp)
@@ -3164,6 +3166,8 @@ func _validate_advance(actor: Dictionary, dest: Vector2i) -> String:
 
 
 func _advance_stand_reason(from: Vector2i, dest: Vector2i) -> String:
+	if _advance_jump_blocked(from, dest):
+		return "advance_blocked"
 	var gate: Dictionary = _board.stand_on_gate(from, dest, Callable(self, "_walk_occupied"))
 	if bool(gate.get("ok", false)):
 		return ""
@@ -3171,6 +3175,25 @@ func _advance_stand_reason(from: Vector2i, dest: Vector2i) -> String:
 	if reason == "occupied":
 		return "destination_occupied"
 	return reason
+
+
+## Mauro 5 Oct 2026: "advance spell of iron jaw cannot jump over obstacles like
+## steam, i can jump over water, mud, lava etc but not big obstacles like rocks
+## steam crates". The tile Advance jumps over may be any terrain or a fighter,
+## but not a tall obstacle: a solid / tall prop, the centrepiece, a wall, a
+## Snap Wall, Steam (Blend tile or Slagcrown's boiling water). These are the
+## sight blockers without bodies; raised ground never blocks either.
+func _advance_jump_blocked(from: Vector2i, dest: Vector2i) -> bool:
+	var delta := dest - from
+	if absi(delta.x) + absi(delta.y) < 2:
+		return false
+	var step := Vector2i(signi(delta.x), signi(delta.y))
+	var cell := from + step
+	while cell != dest:
+		if _blocks_sight(cell, 0, false):
+			return true
+		cell += step
+	return false
 
 
 func _range_distance(def: Dictionary, from: Vector2i, to: Vector2i) -> int:
