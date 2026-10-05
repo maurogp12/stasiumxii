@@ -83,6 +83,8 @@ class Facing:
             for i in range(1, n):
                 if i == main:
                     continue
+                if st[i, cv2.CC_STAT_AREA] > 1500:
+                    continue
                 m = lab == i
                 y, x = np.argwhere(m)[0]
                 best = min(dist, key=lambda k: dist[k][y, x]) if dist else None
@@ -94,7 +96,9 @@ class Facing:
         bsol = body[..., 3] > 0.5
         closed = cv2.morphologyEx(bsol.astype(np.uint8), cv2.MORPH_CLOSE, np.ones((close_k, close_k), np.uint8)) > 0
         band = cv2.dilate(bsol.astype(np.uint8), cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2 * band_px + 1, 2 * band_px + 1))) > 0
-        hole = fillmask & (closed | band) & ~bsol
+        from scipy.ndimage import binary_fill_holes
+        enclosed = binary_fill_holes(bsol)
+        hole = fillmask & (closed | band | enclosed) & ~bsol
         filled = patch_fill(body, hole)
         fs = (filled[..., 3] > 0.5).astype(np.uint8)
         n, lab, st, _ = cv2.connectedComponentsWithStats(fs, 8)
@@ -137,7 +141,7 @@ class Facing:
         if order is None:
             order = sorted(["body"] + [p.name for p in self.parts],
                            key=lambda n: self.body_z if n == "body" else [p for p in self.parts if p.name == n][0].z)
-        pad = 200
+        pad = 480
         can = np.zeros((H * SS + 2 * pad, W * SS + 2 * pad, 4), np.float32)
         P = trans(pad, pad)
         for name in order:
@@ -172,7 +176,7 @@ class Facing:
         return im, lost_px // (SS * SS)
 
 
-def patch_fill(layer, hole, max_off=160):
+def patch_fill(layer, hole, max_off=320):
     """Fill `hole` pixels with the layer's own texture copied from shifted patches."""
     out = layer.copy()
     todo = hole.copy()
@@ -185,7 +189,7 @@ def patch_fill(layer, hole, max_off=160):
             a = math.radians(ang)
             offs.append((int(round(r * math.cos(a))), int(round(r * math.sin(a)))))
     H, W = hole.shape
-    for _ in range(3):
+    for _ in range(10):
         if not todo.any():
             break
         best = []

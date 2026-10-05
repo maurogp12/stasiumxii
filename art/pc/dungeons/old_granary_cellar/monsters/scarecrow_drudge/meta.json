@@ -71,8 +71,8 @@
   "px_outside_cell_hit_S": 0,
   "keep_in_shift_px_hit_S": 0.0,
   "px_outside_cell_death_S": 0,
-  "keep_in_shift_px_death_S": 10.0,
-  "hole_fill_px_E": 42617,
+  "keep_in_shift_px_death_S": 0.0,
+  "hole_fill_px_E": 50235,
   "px_outside_cell_idle_E": 0,
   "keep_in_shift_px_idle_E": 0.0,
   "px_outside_cell_walk_E": 0,
@@ -82,6 +82,6 @@
   "px_outside_cell_hit_E": 0,
   "keep_in_shift_px_hit_E": 0.0,
   "px_outside_cell_death_E": 0,
-  "keep_in_shift_px_death_E": 19.7
+  "keep_in_shift_px_death_E": 0.0
  }
 }

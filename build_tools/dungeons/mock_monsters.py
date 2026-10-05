@@ -83,7 +83,7 @@ def clip(out_path):
                 img = Image.new("RGB", (W, H), (172, 172, 172))
                 d = ImageDraw.Draw(img)
                 d.text((20, 16), "%s - %s" % (meta["name"], act), fill=(0, 0, 0))
-                tiles = [("S", fs["S"][i], False), ("E", fs["E"][i], False), ("W (E mirror)", fs["E"][i], True), ("N (S mirror)", fs["S"][i], True)]
+                tiles = [("S: front, down-right", fs["S"][i], False), ("E: back, up-right", fs["E"][i], False), ("S mirrored: front, down-left", fs["S"][i], True), ("E mirrored: back, up-left", fs["E"][i], True)]
                 tw = W // 4
                 for k, (lbl, im, mir) in enumerate(tiles):
                     if mir:
@@ -93,7 +93,7 @@ def clip(out_path):
                     yb = 560
                     piv_y = meta["pivot"][1] * sc
                     img.paste(im2, (x, int(yb - piv_y)), im2)
-                    d.text((k * tw + tw // 2 - 30, 600), lbl, fill=(0, 0, 0))
+                    d.text((k * tw + tw // 2 - 70, 600), lbl, fill=(0, 0, 0))
                 img.save(os.path.join(tmp, "f%05d.png" % n))
                 n += 1
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
