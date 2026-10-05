@@ -1070,6 +1070,7 @@ func _fresh_hero():
 	hero.bag = []
 	hero.bank = []
 	hero.mission_blob = {}
+	hero.dungeon_stars = {}
 	hero.hero_class = "kestrel"
 	return hero
 
