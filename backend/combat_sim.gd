@@ -2154,6 +2154,8 @@ func _submit_ready(intent: Dictionary) -> Dictionary:
 	_intent_log.append(intent)
 	if _flow.is_combat():
 		_lock_all_units()
+		# Mauro 5 Oct 2026: a match starts face to face (no free back hit).
+		_face_opponents()
 		_begin_combat(_opening_turn_coach("Positions locked."))
 		# _begin_combat replaces last_events; prepend the ready that triggered it.
 		_last_events.insert(0, {
@@ -2260,6 +2262,38 @@ func _lock_all_units() -> void:
 	for unit in _units:
 		unit["locked"] = true
 		unit["placed"] = true
+
+
+## Mauro 5 Oct 2026 (deploy screenshot, Ironjaw's back to Kestrel): "When a
+## match start player always have to be facing where the other opponent is
+## face to face". After deployment every fighter turns to its nearest living
+## enemy: the cardinal facing that points most toward it (a tie prefers the
+## east-west axis).
+func _face_opponents() -> void:
+	for unit in _units:
+		if not bool(unit.get("alive", true)) or not bool(unit.get("placed", true)):
+			continue
+		var best := {}
+		var best_d := 1 << 30
+		for other in _units:
+			if _allied(other, unit) or not bool(other.get("alive", true)) or not bool(other.get("placed", true)):
+				continue
+			var d := absi(int(other["pos"].x) - int(unit["pos"].x)) + absi(int(other["pos"].y) - int(unit["pos"].y))
+			if d < best_d:
+				best_d = d
+				best = other
+		if best.is_empty():
+			continue
+		unit["facing"] = facing_toward(unit["pos"], best["pos"], str(unit.get("facing", "S")))
+
+
+static func facing_toward(from: Vector2i, to: Vector2i, fallback: String = "S") -> String:
+	var delta := to - from
+	if delta == Vector2i.ZERO:
+		return fallback
+	if absi(delta.x) >= absi(delta.y):
+		return "E" if delta.x > 0 else "W"
+	return "S" if delta.y > 0 else "N"
 
 
 func _begin_combat(coach: String) -> void:
