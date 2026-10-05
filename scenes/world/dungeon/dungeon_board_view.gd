@@ -181,23 +181,41 @@ func _tidy_hud() -> void:
 		_hud._apply_turn_label_clock()
 
 
-## Fit the board and the backdrop's walls into the play band.
-func _fit_board_camera() -> void:
-	_ensure_camera()
+## Dungeon framing (the Koliseo band in board_view.gd is not used here):
+## the whole room backdrop, walls included, fills the play area between the
+## HUD's top cards / AP strip and its bottom action bar, at the live window
+## size. Re-fit on every resize.
+const FRAME_TOP := 96.0
+const FRAME_BOTTOM_GAP := 200.0
+const FRAME_SIDE := 12.0
+
+
+func frame_rect() -> Rect2:
+	var vis := get_viewport().get_visible_rect().size if is_inside_tree() else Vector2(VIEW_W, VIEW_H)
+	return Rect2(FRAME_SIDE, FRAME_TOP, vis.x - FRAME_SIDE * 2.0, maxf(vis.y - FRAME_BOTTOM_GAP - FRAME_TOP, 120.0))
+
+
+func room_rect() -> Rect2:
 	var n := _board_size
 	var rect := Rect2(Vector2(float(-(n - 1)) * 32.0 - 32.0, -36.0), Vector2(float(n - 1) * 64.0 + 64.0, float(2 * (n - 1)) * 16.0 + 52.0))
 	if _backdrop != null and is_instance_valid(_backdrop) and _backdrop.has_method("bounds"):
 		rect = rect.merge(_backdrop.bounds())
-	var play_w := VIEW_W - 32.0
-	var play_h := PLAY_BOTTOM - PLAY_TOP
-	var zoom := clampf(minf(play_w / rect.size.x, play_h / rect.size.y), 0.35, 1.6)
+	return rect
+
+
+func _fit_board_camera() -> void:
+	_ensure_camera()
+	if is_inside_tree() and not get_viewport().size_changed.is_connected(_fit_board_camera):
+		get_viewport().size_changed.connect(_fit_board_camera)
+	var rect := room_rect()
+	var play := frame_rect()
+	var vis := get_viewport().get_visible_rect().size if is_inside_tree() else Vector2(VIEW_W, VIEW_H)
+	var zoom := clampf(minf(play.size.x / rect.size.x, play.size.y / rect.size.y), 0.3, 3.0)
 	_camera.zoom = Vector2(zoom, zoom)
-	var center := rect.get_center()
-	var play_center := Vector2(VIEW_W * 0.5, (PLAY_TOP + PLAY_BOTTOM) * 0.5)
-	var view_center := Vector2(VIEW_W * 0.5, VIEW_H * 0.5)
-	var camera_world := global_position + center - (play_center - view_center) / zoom
+	var camera_world := global_position + rect.get_center() - (play.get_center() - vis * 0.5) / zoom
 	_fit_camera_pos = camera_world - global_position
 	_camera.position = _fit_camera_pos
+	_camera.reset_smoothing()
 
 
 func _rebuild_pawns() -> void:

@@ -53,6 +53,7 @@ func _run() -> void:
 	await _test_world_door_and_panel()
 	await _test_run_scene_win_and_return()
 	await _test_run_scene_loss_and_return()
+	await _test_click_sweep()
 	_test_paths_unchanged()
 	_finish()
 
@@ -623,6 +624,63 @@ func _test_run_scene_loss_and_return() -> void:
 	eq(w.walker.cell, DOOR, "a loss returns to the door cell")
 	eq(w.reward_popup.is_open(), false, "no reward pop-up after a loss")
 	w.queue_free()
+	await process_frame
+
+
+## Dungeon camera framing and picking at three window sizes: the whole room
+## (backdrop walls included) is on screen and fills the play area, and a tap
+## on every walkable cell picks that cell exactly.
+func _test_click_sweep() -> void:
+	Launcher.pending = {"dungeon_id": GRANARY, "level": 1, "class_id": "kestrel", "autoplay": false, "return_zone": "crosshaven_stoneford", "return_cell": DOOR, "seed": 5}
+	var scene: Node = (load(RUN_SCENE_PATH) as PackedScene).instantiate()
+	root.add_child(scene)
+	for i in 4:
+		await process_frame
+	var board = scene.get_node("BoardView")
+	var before := root.size
+	for room_index in 2:
+		if room_index == 1:
+			board.end_room()
+			scene.run.room_index = 1
+			board.start_room(scene.run.combat_config(1, 5), scene.manifest)
+			await process_frame
+		for size in [Vector2i(1280, 768), Vector2i(1920, 1080), Vector2i(2560, 1440)]:
+			root.size = size
+			await process_frame
+			await process_frame
+			board._fit_board_camera()
+			var label := "%s at %dx%d" % ["room A" if room_index == 0 else "room B", size.x, size.y]
+			var vis: Rect2 = board.get_viewport().get_visible_rect()
+			eq(absf(vis.size.x / vis.size.y - float(size.x) / float(size.y)) < 0.02, true, "%s window aspect reaches the view (%s)" % [label, vis.size])
+			var xf: Transform2D = board.get_global_transform_with_canvas()
+			var room: Rect2 = board.room_rect()
+			var a: Vector2 = xf * room.position
+			var b: Vector2 = xf * room.end
+			var shown := Rect2(a, b - a)
+			eq(vis.encloses(shown.grow(-1.0)), true, "%s shows the whole room and its walls" % label)
+			var play: Rect2 = board.frame_rect()
+			var fill := maxf(shown.size.x / play.size.x, shown.size.y / play.size.y)
+			eq(fill > 0.97, true, "%s fills the play area (%.2f)" % [label, fill])
+			var zoom: float = board._camera.zoom.x
+			eq(zoom >= 0.7, true, "%s zoom %.2f keeps units at about hero scale" % [label, zoom])
+			var misses := 0
+			var tried := 0
+			for cell in board.tiles.keys():
+				if not bool(sim.tile_at(cell).get("walkable", true)):
+					continue
+				var tile: Node2D = board.tiles[cell]
+				var at: Vector2 = tile.get_global_transform_with_canvas().origin
+				for nudge in [Vector2.ZERO, Vector2(10, 0) * zoom, Vector2(-10, 0) * zoom, Vector2(0, 5) * zoom, Vector2(0, -5) * zoom]:
+					var tap := InputEventScreenTouch.new()
+					tap.pressed = true
+					tap.position = at + nudge
+					tried += 1
+					if board._cell_under_pointer(tap) != cell:
+						misses += 1
+			eq(tried > 400, true, "%s sweeps every walkable cell (%d taps)" % [label, tried])
+			eq(misses, 0, "%s every walkable cell picks exactly" % label)
+	root.size = before
+	scene.queue_free()
 	await process_frame
 
 

@@ -17,7 +17,8 @@ var _body: AnimatedSprite2D
 var _oneshot := ""
 var _blank: Texture2D
 var _faded := false
-const WARM := Color(1.06, 0.94, 0.8, 1.0)
+## Cellar lantern light: lift red, cut blue (the kit frames are flat and cool).
+const WARM := Color(1.14, 0.96, 0.74, 1.0)
 
 
 func bind_art(man: Dictionary, id: String, is_boss: bool) -> void:
