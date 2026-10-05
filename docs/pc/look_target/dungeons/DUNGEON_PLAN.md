@@ -3,10 +3,15 @@
 *Read this before working on dungeons, dungeon doors or monsters.*
 
 **Status (5 Oct 2026)**
-- **Old Granary Cellar:** design approved by Mauro ("Wow love it").
-- **The other four:** designs sent to Mauro and waiting for his approval.
-- **Build:** not started.
-- **Rule:** Mauro confirms every step from pictures before it is built ("send me images of how you design and wait for confirmation").
+- **Designs:** all five approved by Mauro ("Wow love it" for the Granary; "Approve all 4" for the rest).
+- **Build:** the Old Granary Cellar build has started.
+
+**Mauro's gate rule (5 Oct, binding):** build one dungeon at a time. When a dungeon is finished, send Mauro:
+1. in-game stills of how it looks: the door in town, room A, room B;
+2. a gameplay video of a full run;
+3. the monsters.
+
+Then **ask him whether to advance to the next dungeon**, and do not start the next one without his yes. Order: Old Granary Cellar → Frostspire Archive → Saltmaw Grotto → Drowned Abbey → Heart of the Blight.
 
 **Sources**
 - **Design images:** painted in Scenario (team "Maurogarza06's Organization", project "stasium") with a game screenshot as the style reference. Asset ids are listed in each dungeon's README or below.
@@ -17,10 +22,10 @@
 | Town | Levels | Dungeon | Monsters | Boss | Floor glow | Design |
 |---|---|---|---|---|---|---|
 | Stoneford | 1–10 | Old Granary Cellar | Granary Rat, Scarecrow Drudge | The Ratking | amber wheat pads | **Approved** |
-| Northgate | 10–20 | Frostspire Archive | Ice Construct, Book Wraith | The Pale Archivist | ice-blue rune pads | Waiting |
-| Eastmarch | 20–30 | Saltmaw Grotto | Reef Crab, Drowned Sailor | Old Saltmaw | teal coral pads | Waiting |
-| Southbridge | 30–40 (danger) | Drowned Abbey | Bog Dead, Mire Leech | The Mire Abbess | green candle-rune pads | Waiting |
-| Westwatch | 40–50 (danger) | Heart of the Blight | Blight Hound, Blight Horror | The Rotting Elder | violet pulse pads | Waiting |
+| Northgate | 10–20 | Frostspire Archive | Ice Construct, Book Wraith | The Pale Archivist | ice-blue rune pads | **Approved** |
+| Eastmarch | 20–30 | Saltmaw Grotto | Reef Crab, Drowned Sailor | Old Saltmaw | teal coral pads | **Approved** |
+| Southbridge | 30–40 (danger) | Drowned Abbey | Bog Dead, Mire Leech | The Mire Abbess | green candle-rune pads | **Approved** |
+| Westwatch | 40–50 (danger) | Heart of the Blight | Blight Hound, Blight Horror | The Rotting Elder | violet pulse pads | **Approved** |
 
 Each dungeon folder holds four images:
 - `1_door_keeper.jpg`: the entrance in town, with the Door Keeper next to it.
@@ -28,7 +33,7 @@ Each dungeon folder holds four images:
 - `3_boss_room.jpg`: room B, the boss fight.
 - `4_monsters.jpg`: the monster sheet.
 
-**Scenario asset ids (not yet approved)**
+**Scenario asset ids (approved 5 Oct)**
 
 | Dungeon | Entrance | Room | Boss | Monsters |
 |---|---|---|---|---|
