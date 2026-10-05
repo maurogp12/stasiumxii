@@ -650,18 +650,19 @@ func _test_phase_a_demo_map() -> void:
 		saw[str(rec["terrain_type"])] = int(saw.get(str(rec["terrain_type"]), 0)) + 1
 		if int(rec["elevation"]) >= 1:
 			elev_hi += 1
-	# Mauro 5 Oct 2026 "make sure every map has a way to walk": 3 mud -> ground.
-	eq(saw["ground"], 180, "Crosshaven ground count")
-	eq(saw["mud"], 27, "Crosshaven mud count")
+	# Mauro 5 Oct 2026 "make sure every map has a way to walk" + "He is trapped again": 9 mud -> ground, (6,4) raised to 1.
+	eq(saw["ground"], 186, "Crosshaven ground count")
+	eq(saw["mud"], 21, "Crosshaven mud count")
 	eq(saw["water"], 18, "Crosshaven water count")
 	eq(saw["lava"], 0, "Crosshaven has no lava")
-	eq(elev_hi, 18, "Crosshaven elevation ≥1 count")
+	eq(elev_hi, 19, "Crosshaven elevation ≥1 count")
 	eq(live["tiles"][Vector2i(0, 0)]["terrain_type"], "ground", "Crosshaven (0,0) is ground")
 	eq(live["tiles"][Vector2i(0, 0)]["elevation"], 0, "Crosshaven (0,0) tag elevation is 0")
 	eq(live["tiles"][Vector2i(0, 0)]["walkable"], false, "tall ruins block (0,0) (Mauro 30 Sep 2026)")
 	eq(live["paint_only"][Vector2i(0, 0)][0], "ruins", "paint_only stays off the walk tile")
-	eq(live["tiles"][Vector2i(1, 1)]["terrain_type"], "mud", "Crosshaven (1,1) is mud")
-	eq(live["tiles"][Vector2i(1, 1)]["walkable"], true, "Crosshaven (1,1) mud is walkable")
+	# Mauro 5 Oct 2026 (no traps): (1,1) became ground; (2,5) is mud.
+	eq(live["tiles"][Vector2i(2, 5)]["terrain_type"], "mud", "Crosshaven (2,5) is mud")
+	eq(live["tiles"][Vector2i(2, 5)]["walkable"], true, "Crosshaven (2,5) mud is walkable")
 	eq(live["tiles"][Vector2i(0, 4)]["terrain_type"], "water", "Crosshaven (0,4) is water")
 	eq(live["tiles"][Vector2i(7, 3)]["elevation"], 1, "Crosshaven (7,3) tag elevation is 1")
 	eq(live["tiles"][Vector2i(7, 4)]["elevation"], 2, "Crosshaven (7,4) tag elevation is 2")
@@ -696,7 +697,7 @@ func _test_phase_a_demo_map() -> void:
 	truthy(ruins_tex.get_height() > 32, "painted ruins stand above the diamond")
 	var other: Dictionary = _sim.reset_match({"seed": 2})
 	eq(other["tiles"][Vector2i(7, 4)]["elevation"], 2, "a new seed does not retune tag elevation")
-	eq(other["tiles"][Vector2i(1, 1)]["terrain_type"], "mud", "a new seed keeps Crosshaven terrain")
+	eq(other["tiles"][Vector2i(2, 5)]["terrain_type"], "mud", "a new seed keeps Crosshaven terrain")
 
 	var proto: Dictionary = _sim.reset_match({"seed": 1, "board_size": 8})
 	_assert_phase_a_demo_tiles(proto, "proto 8", 1)
