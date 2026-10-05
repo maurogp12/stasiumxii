@@ -161,7 +161,7 @@ const SPELLS := {
 		"max_range": 1,
 		"rolls": true,
 		"element": "earth",
-		"base_damage": 20,  # Mauro 1 Oct 2026 balance (was 24)
+		"base_damage": 12,  # Mauro 5 Oct 2026: weaker than Strike, the stun is the reward (was 20; 24 before 1 Oct)
 		"target": "enemy",
 		# Locked: needs/spends 2 Impact on connect; miss retains Impact.
 		"engine_on_connect": "spend_impact",

@@ -1525,7 +1525,7 @@ func _preview_kit_lines(spell_id: String) -> Dictionary:
 		SpellKits.SHOULDER:
 			return {"on_connect": "6 Earth. +1 Impact. Push 1.", "on_miss": "No push. No Impact. AP/MP stay spent."}
 		SpellKits.CRUSH:
-			return {"on_connect": "24 Earth. Spends 2 Impact. Stun 1 if Impact was full (5); a stunning Crush spends all.", "on_miss": "Impact retained. AP/MP stay spent."}
+			return {"on_connect": "%d Earth. Spends 2 Impact. Stun 1 if Impact was full (5); a stunning Crush spends all." % int(SpellKits.spell(SpellKits.CRUSH).get("base_damage", 0)), "on_miss": "Impact retained. AP/MP stay spent."}
 		SpellKits.ADVANCE:
 			return {"on_connect": "Teleport snap. +1 Impact if adjacent. Facing unchanged.", "on_miss": "No roll."}
 		SpellKits.AEGIS_BREAK:

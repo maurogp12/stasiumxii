@@ -335,7 +335,7 @@
     {
       "x": 1,
       "y": 3,
-      "terrain": "mud",
+      "terrain": "ground",
       "elevation": 0,
       "paint_only": []
     },
@@ -344,7 +344,9 @@
       "y": 3,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": []
+      "paint_only": [
+        "chest"
+      ]
     },
     {
       "x": 3,
@@ -446,9 +448,7 @@
       "y": 4,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": [
-        "chest"
-      ]
+      "paint_only": []
     },
     {
       "x": 2,
@@ -695,7 +695,7 @@
     {
       "x": 6,
       "y": 6,
-      "terrain": "water",
+      "terrain": "ground",
       "elevation": 0,
       "paint_only": []
     },
@@ -772,7 +772,7 @@
     {
       "x": 2,
       "y": 7,
-      "terrain": "mud",
+      "terrain": "ground",
       "elevation": 0,
       "paint_only": []
     },
@@ -848,7 +848,7 @@
     {
       "x": 12,
       "y": 7,
-      "terrain": "mud",
+      "terrain": "ground",
       "elevation": 0,
       "paint_only": []
     },
@@ -1179,7 +1179,7 @@
     {
       "x": 14,
       "y": 10,
-      "terrain": "mud",
+      "terrain": "ground",
       "elevation": 0,
       "paint_only": []
     },
@@ -1446,7 +1446,7 @@
     {
       "x": 6,
       "y": 13,
-      "terrain": "mud",
+      "terrain": "ground",
       "elevation": 0,
       "paint_only": []
     },

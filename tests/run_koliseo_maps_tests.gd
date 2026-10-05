@@ -918,6 +918,23 @@ func _test_every_map_has_a_way_out() -> void:
 			if seen.size() < stand.size():
 				trapped.append(start)
 		eq(trapped, [], "%s: every standable tile can walk to every other" % map_id)
+		# Mauro ("He is trapped again"): one fighter standing anywhere never
+		# shuts the others off from the rest of the board.
+		var sealing: Array = []
+		for blocker in stand:
+			var from: Vector2i = stand[0] if stand[0] != blocker else stand[1]
+			var reach := {from: true}
+			var todo: Array = [from]
+			while not todo.is_empty():
+				var at: Vector2i = todo.pop_back()
+				for d in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+					var nb: Vector2i = at + d
+					if nb != blocker and not reach.has(nb) and b.in_bounds(nb) and bool(b.step_cost(at, nb, none).get("ok", false)) and bool(b.step_cost(nb, at, none).get("ok", false)):
+						reach[nb] = true
+						todo.append(nb)
+			if reach.size() < stand.size() - 1:
+				sealing.append(blocker)
+		eq(sealing, [], "%s: no single body can seal a fighter in" % map_id)
 		sim.free()
 
 

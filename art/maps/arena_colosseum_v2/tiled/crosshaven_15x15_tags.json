@@ -127,14 +127,14 @@
     {
       "x": 1,
       "y": 1,
-      "terrain": "mud",
+      "terrain": "ground",
       "elevation": 0,
       "paint_only": []
     },
     {
       "x": 2,
       "y": 1,
-      "terrain": "mud",
+      "terrain": "ground",
       "elevation": 0,
       "paint_only": []
     },
@@ -199,7 +199,7 @@
     {
       "x": 11,
       "y": 1,
-      "terrain": "mud",
+      "terrain": "ground",
       "elevation": 0,
       "paint_only": []
     },
@@ -236,14 +236,14 @@
     {
       "x": 1,
       "y": 2,
-      "terrain": "mud",
+      "terrain": "ground",
       "elevation": 0,
       "paint_only": []
     },
     {
       "x": 2,
       "y": 2,
-      "terrain": "mud",
+      "terrain": "ground",
       "elevation": 0,
       "paint_only": []
     },
@@ -486,7 +486,7 @@
       "x": 6,
       "y": 4,
       "terrain": "ground",
-      "elevation": 0,
+      "elevation": 1,
       "paint_only": []
     },
     {
@@ -867,9 +867,7 @@
       "y": 7,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": [
-        "well"
-      ]
+      "paint_only": []
     },
     {
       "x": 0,
@@ -1420,7 +1418,7 @@
     {
       "x": 1,
       "y": 13,
-      "terrain": "mud",
+      "terrain": "ground",
       "elevation": 0,
       "paint_only": []
     },
@@ -1452,9 +1450,7 @@
       "y": 13,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": [
-        "fence"
-      ]
+      "paint_only": []
     },
     {
       "x": 6,
