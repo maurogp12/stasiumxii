@@ -88,8 +88,14 @@ var plane_offsets: Dictionary = {}
 ## Ground cells of off-screen neighbour chunks drawn per frame ahead of need.
 ## About 2–4 ms of script a frame on a desktop CPU.
 const WARM_CELLS_PER_FRAME := 160
+## Margin (px) around the view inside which ground rows draw at once.
+const WARM_VIEW_MARGIN := 128.0
 ## `_chunk_at` answers for `_chunk_map` laid out as `_chunk_offsets`.
 var _chunk_hits: Dictionary = {}
+var _plane_map: Object
+## Grounds kept across loads (`_ground_for`), keyed by chunk and placement.
+var _grounds_root: Node2D
+var _ground_pool: Dictionary = {}
 var _chunk_map: Object
 var _chunk_offsets: Dictionary = {}
 var transition_count := 0
@@ -137,6 +143,11 @@ var bad_click_cell := Vector2i(-1, -1)
 var _bad_click_zone: WorldZone
 var _bad_click_until := 0
 const BAD_CLICK_MS := 700
+## Last mouse position (viewport px) and the canvas transform its hover used.
+var _mouse_pos := Vector2.ZERO
+var _mouse_seen := false
+var _hover_xf := Transform2D()
+var _max_h_cache: Dictionary = {}
 var _reach_key := ""
 var _reach_cache := {}
 var _movie := ""
@@ -343,24 +354,19 @@ func enter_zone(zone_id: String, cell: Vector2i, fade: bool = true) -> void:
 
 
 func _load_zone(zone_id: String, cell: Vector2i, snap: bool = true) -> void:
+	_max_h_cache.clear()
 	zone = map.zone(zone_id)
 	_refresh_plane()
 	var origin := _origin_of(zone_id)
 	walker.plane_origin = origin
 	_max_h = Pick.max_height(zone)
 	var pix := BoardVisualSort.cell_to_local(origin)
-	if ground != null:
-		ground.free()
-	ground = Ground.new()
-	ground.name = "Ground"
-	add_child(ground)
-	move_child(ground, 1)
-	ground.position = pix
-	ground.world_origin = origin
-	_dress_ground(ground, zone)
-	ground.setup(zone)
+	if ground != null and is_instance_valid(ground):
+		ground.set_process(false)
+	ground = _ground_for(zone, origin)
+	ground.set_process(true)
+	_show_ground(ground, true)
 	_mark_gates()
-	_raise_sort(ground, origin)
 	for child in props_root.get_children():
 		child.free()
 	props_root.position = pix
@@ -406,6 +412,8 @@ func _load_zone(zone_id: String, cell: Vector2i, snap: bool = true) -> void:
 	# A jump in snaps the snowfall; walking over a seam lets it fade.
 	if snap:
 		_sync_snowfall(true)
+	# The frame that loaded may already be past the world's _process.
+	_warm_grounds(true)
 	_show_banner(Pick.zone_name(zone))
 	_refresh_presence()
 	_refresh_hud()
@@ -523,10 +531,7 @@ func _spawn_npcs() -> void:
 	if npcs_root == null:
 		return
 	for child in npcs_root.get_children():
-		child.free()
-	if npc_plates != null:
-		for plate in npc_plates.get_children():
-			plate.free()
+		_free_npc(child)
 	if npc_book == null or zone == null:
 		return
 	for record in npc_book.for_zone(zone.zone_id):
@@ -1028,11 +1033,9 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event is InputEventWithModifiers:
 		_shift_down = event.shift_pressed
 	if event is InputEventMouseMotion:
-		var motion := _pick_world(_world_point(event.position))
-		if motion.is_empty():
-			_set_hover(null, Vector2i(-1, -1))
-		else:
-			_set_hover(motion["zone"], motion["cell"])
+		_mouse_pos = event.position
+		_mouse_seen = true
+		_refresh_hover()
 	elif event is InputEventMouseButton and event.pressed:
 		match event.button_index:
 			MOUSE_BUTTON_LEFT:
@@ -1125,12 +1128,13 @@ func reachable_here() -> Dictionary:
 	var start: Vector2i = walker.anchor_cell()
 	if not zone.in_bounds(start):
 		return reached
-	# Hover asks on every cell change; one flood per stand cell and frame.
-	var key := "%s#%d#%d#%d" % [zone.zone_id, start.x, start.y, Engine.get_process_frames()]
+	# Hover asks on every cell change. One flood per stand cell and set of
+	# NPC-blocked cells, so it is reused across frames until either moves.
+	var blocked := _extra_blocked()
+	var key := "%s#%d#%d#%d" % [zone.zone_id, start.x, start.y, hash(blocked.keys())]
 	if key == _reach_key:
 		return _reach_cache
 	var limit := WorldWalk._limit(map, null)
-	var blocked := _extra_blocked()
 	var zid := zone.zone_id
 	reached[start] = true
 	var queue: Array[Vector2i] = [start]
@@ -1195,6 +1199,18 @@ func _set_zoom(z: float) -> void:
 	_zoom_tween.set_trans(Tween.TRANS_SINE)
 	_zoom_tween.set_ease(Tween.EASE_OUT)
 	_zoom_tween.tween_property(camera, "zoom", Vector2.ONE * _zoom, 0.32)
+
+
+## Hover the cell under the last mouse position. Also called when the view
+## moves under a still cursor (the camera follows the hero), so the green
+## diamond stays under the pointer and marks the cell a click would pick.
+func _refresh_hover() -> void:
+	_hover_xf = get_canvas_transform()
+	var motion := _pick_world(_world_point(_mouse_pos))
+	if motion.is_empty():
+		_set_hover(null, Vector2i(-1, -1))
+	else:
+		_set_hover(motion["zone"], motion["cell"])
 
 
 func _set_hover(z: WorldZone, c: Vector2i) -> void:
@@ -1278,9 +1294,12 @@ func _process(delta: float) -> void:
 			covered = _cover_children(props, feet, wz, npc_feet) or covered
 			covered = _cover_children(decor, feet, wz, npc_feet) or covered
 	walker.set_covered(covered)
+	if _mouse_seen and not _transitioning and get_canvas_transform() != _hover_xf:
+		_refresh_hover()
 	if weather.time_scale > 1.0 or Engine.get_process_frames() % 30 == 0:
 		_refresh_hud()
 	_cull_neighbour_hosts()
+	_warm_grounds()
 	_sync_snowfall()
 
 
@@ -1364,6 +1383,7 @@ func _build_stamina_bar(sheet: Control) -> void:
 
 func _dress_ground(g: Node, z: WorldZone) -> void:
 	_bind_plane_samples(z)
+	g.set("cache_tag", "map%d" % map.get_instance_id() if map != null and _seamless() else "")
 	g.set("snow_rects", _snow_town_rects())
 	g.set("show_walk_exits", not _seamless())
 	g.set("blend_margin", 2 if _seamless() else 0)
@@ -1450,6 +1470,11 @@ func _seamless() -> bool:
 
 
 func _refresh_plane() -> void:
+	# The layout depends on the map alone. Keeping the same dictionary for the
+	# same map lets chunk lookups and ground setups stay cached across loads.
+	if map != null and map == _plane_map and not plane_offsets.is_empty():
+		return
+	_plane_map = map
 	plane_offsets = {}
 	if map == null or map.region != "crosshaven":
 		return
@@ -1502,19 +1527,52 @@ func _clamp_z(z: int) -> int:
 	return clampi(z, -4096, 4096)
 
 
+## Free an NPC body and its name plate now (the body's own exit only queues
+## the plate, which would show a frame at its old place).
+func _free_npc(node: Node) -> void:
+	var plate: Variant = node.get("_plate")
+	if plate != null and is_instance_valid(plate):
+		(plate as Node).free()
+	node.free()
+
+
+func _free_host(host: Node) -> void:
+	var npcs := host.get_node_or_null("Npcs")
+	if npcs != null:
+		for node in npcs.get_children():
+			_free_npc(node)
+	host.free()
+
+
 func _mount_neighbours(zone_id: String, everything: bool = false) -> void:
 	if neighbours == null:
 		return
-	for child in neighbours.get_children():
-		child.free()
-	if not _seamless():
-		return
 	var touch: Array = []
-	if everything:
-		for id in plane_offsets.keys():
-			touch.append(id)
-	else:
-		touch = WorldPlane.touching(map, plane_offsets, zone_id)
+	if _seamless():
+		if everything:
+			for id in plane_offsets.keys():
+				touch.append(id)
+		else:
+			touch = WorldPlane.touching(map, plane_offsets, zone_id)
+	# A chunk that stays a neighbour keeps its host (props, decor, NPCs), as
+	# built and drawn. The rest are freed before new hosts take their names.
+	var kept := {}
+	var keep := {ground: true}
+	for child in neighbours.get_children():
+		var zid := str(child.name)
+		var g: Variant = child.get_meta("ground", null)
+		var reuse: bool = touch.has(zid) and zid != zone_id and g != null and is_instance_valid(g) \
+			and child.get_meta("origin", Vector2i(-99999, -99999)) == _origin_of(zid) \
+			and child.get_meta("snow_kit", not Ground.snow_kit) == Ground.snow_kit \
+			and child.get_meta("map", 0) == (map.get_instance_id() if map != null else 0)
+		if reuse:
+			kept[zid] = child
+			keep[g] = true
+		else:
+			_free_host(child)
+	if not _seamless():
+		_prune_grounds(keep)
+		return
 	for id in touch:
 		var zid := str(id)
 		if zid == zone_id:
@@ -1522,19 +1580,22 @@ func _mount_neighbours(zone_id: String, everything: bool = false) -> void:
 		var other: WorldZone = map.zone(zid)
 		if other == null:
 			continue
+		if kept.has(zid):
+			_mark_gates_on(kept[zid].get_meta("ground"), other)
+			continue
 		var origin: Vector2i = _origin_of(zid)
 		var host := Node2D.new()
 		host.name = zid
 		host.position = BoardVisualSort.cell_to_local(origin)
 		neighbours.add_child(host)
-		var g := Ground.new()
-		g.name = "Ground"
-		host.add_child(g)
-		g.world_origin = origin
-		_dress_ground(g, other)
-		g.setup(other)
+		# A neighbour's ground is kept from earlier loads when it was already
+		# built (as the main chunk or a neighbour), so a seam crossing does
+		# not set up and draw the ground of seven chunks again.
+		var g := _ground_for(other, origin)
+		g.set_process(false)
+		host.set_meta("ground", g)
+		keep[g] = true
 		_mark_gates_on(g, other)
-		_raise_sort(g, origin)
 		var props := Node2D.new()
 		props.name = "Props"
 		host.add_child(props)
@@ -1568,31 +1629,83 @@ func _mount_neighbours(zone_id: String, everything: bool = false) -> void:
 		rect.position += host.position
 		host.set_meta("bounds", rect)
 		host.set_meta("origin", origin)
+		host.set_meta("snow_kit", Ground.snow_kit)
+		host.set_meta("map", map.get_instance_id())
 		host.set_meta("wide", other.width)
 		host.set_meta("tall", other.height)
 		# Neighbours stay in the tree. Sway stays frozen, and a host is drawn
 		# only while its diamond meets the camera, so off-screen roads do not
 		# walk the software renderer.
-		_freeze_visuals(g)
 		_freeze_visuals(props)
 		_freeze_visuals(decor)
 		# Showing a hidden node redraws everything under it, which cost a
 		# whole chunk of ground script (up to half a second) each time the
-		# camera edge crossed a chunk. The cull hides hosts on the rendering
-		# server instead, and ground rows start node-hidden ("cold") so each
-		# is drawn once: a few a frame, or all at once when the host shows.
-		var cold: Array = []
-		for row in g.get_children():
-			var r := row as Node2D
-			if r == null:
-				continue
-			r.visible = false
-			var d := int(str(r.name).trim_prefix("Row"))
-			r.set_meta("warm_cost", maxi(1, (g.call("_row_cells", d) as Array).size()))
-			cold.append(r)
-		host.set_meta("cold", cold)
+		# camera edge crossed a chunk. The cull hides hosts and their grounds
+		# on the rendering server instead (see `_cull_neighbour_hosts`).
 		host.set_meta("shown", false)
 		RenderingServer.canvas_item_set_visible(host.get_canvas_item(), false)
+		_show_ground(g, false)
+	_prune_grounds(keep)
+	# Same draw order as a fresh mount: hosts in touch order, the main ground
+	# first, then the neighbours' grounds. Moving a child does not redraw it.
+	var slot := 0
+	for id in touch:
+		var host := neighbours.get_node_or_null(NodePath(str(id)))
+		if host != null:
+			neighbours.move_child(host, slot)
+			slot += 1
+	var at := 0
+	for g in [ground] + neighbours.get_children().map(func(h: Node) -> Variant: return h.get_meta("ground", null)):
+		if g != null and is_instance_valid(g) and (g as Node).get_parent() == _grounds_root:
+			_grounds_root.move_child(g, at)
+			at += 1
+
+
+## The ground of chunk `z` placed at `origin`, built once and kept under
+## `_grounds_root` while it is the main chunk or a neighbour. Grounds never
+## change parent: re-entering the canvas would redraw every row.
+func _ground_for(z: WorldZone, origin: Vector2i) -> Node2D:
+	if _grounds_root == null:
+		_grounds_root = Node2D.new()
+		_grounds_root.name = "Grounds"
+		add_child(_grounds_root)
+		move_child(_grounds_root, 1)
+	var key := "%s|%s|%s|%d" % [z.zone_id, origin, Ground.snow_kit, map.get_instance_id() if map != null else 0]
+	var known: Node2D = _ground_pool.get(key)
+	if known != null and is_instance_valid(known):
+		return known
+	var g := Ground.new()
+	g.name = "Ground_%s" % z.zone_id
+	_grounds_root.add_child(g, true)
+	g.position = BoardVisualSort.cell_to_local(origin)
+	g.world_origin = origin
+	_dress_ground(g, z)
+	g.setup(z)
+	g.start_cold()
+	_raise_sort(g, origin)
+	_ground_pool[key] = g
+	return g
+
+
+## Free kept grounds that are neither the main chunk nor a neighbour now.
+func _prune_grounds(keep: Dictionary) -> void:
+	for key in _ground_pool.keys():
+		var g: Node2D = _ground_pool[key]
+		if g == null or not is_instance_valid(g):
+			_ground_pool.erase(key)
+		elif not keep.has(g):
+			_ground_pool.erase(key)
+			g.free()
+
+
+## Show or hide a ground on the rendering server only (no redraw).
+func _show_ground(g: Node2D, show: bool) -> void:
+	if g == null or not is_instance_valid(g):
+		return
+	if bool(g.get_meta("shown", true)) == show:
+		return
+	g.set_meta("shown", show)
+	RenderingServer.canvas_item_set_visible(g.get_canvas_item(), show)
 
 
 func _freeze_visuals(node: Node) -> void:
@@ -1620,37 +1733,33 @@ func _cull_neighbour_hosts() -> void:
 		var body := host as Node2D
 		if body == null:
 			continue
-		if show:
-			_warm_host(body, -1)
 		if bool(body.get_meta("shown", true)) != show:
 			body.set_meta("shown", show)
 			RenderingServer.canvas_item_set_visible(body.get_canvas_item(), show)
-	var budget := WARM_CELLS_PER_FRAME
-	for host in hosts:
-		if budget <= 0:
-			break
-		budget = _warm_host(host as Node2D, budget)
+		_show_ground(body.get_meta("ground", null), show)
 
 
-## True while `host` is drawn on screen (the cull's rendering-server state).
-func host_shown(host: Node) -> bool:
-	return host != null and bool(host.get_meta("shown", (host as CanvasItem).visible))
-
-
-## Draw cold ground rows of `host` until `budget` cells are spent (all of
-## them when `budget` is negative). Returns the budget left.
-func _warm_host(host: Node2D, budget: int) -> int:
-	if host == null or not host.has_meta("cold"):
-		return budget
-	var cold: Array = host.get_meta("cold")
-	while not cold.is_empty() and budget != 0:
-		var row: Node2D = cold.pop_back()
-		if not is_instance_valid(row):
-			continue
-		row.visible = true
-		if budget > 0:
-			budget = maxi(0, budget - int(row.get_meta("warm_cost", 1)))
-	return budget
+## Ground rows draw once, when first shown. Rows that meet the view (where
+## the camera is and where it is heading) show now; the rest of this chunk
+## and its neighbours warm up WARM_CELLS_PER_FRAME cells a frame, so a load
+## or a seam crossing does not draw seven chunks of ground in one frame.
+func _warm_grounds(view_only: bool = false) -> void:
+	var grounds: Array[Node2D] = []
+	for g in _ground_pool.values():
+		if g != null and is_instance_valid(g):
+			grounds.append(g)
+	if camera == null:
+		for g in grounds:
+			g.call("warm", Rect2(), -1)
+		return
+	var view := _camera_world_rect()
+	if walker != null:
+		var aim := to_global(walker.position + _lead)
+		view = view.merge(Rect2(aim - view.size * 0.5, view.size))
+	view = view.grow(WARM_VIEW_MARGIN)
+	var budget := 0 if view_only else WARM_CELLS_PER_FRAME
+	for g in grounds:
+		budget = int(g.call("warm", Rect2(view.position - g.global_position, view.size), budget))
 
 
 func _view_hits_chunk(view: Rect2, origin: Vector2i, wide: int, tall: int) -> bool:
@@ -1990,12 +2099,24 @@ func _pick_world(world_point: Vector2) -> Dictionary:
 func _rank_pick(z: WorldZone, world_point: Vector2) -> Dictionary:
 	var origin := _origin_of(z.zone_id)
 	var local_pt := world_point - BoardVisualSort.cell_to_local(origin)
-	var cell := Pick.pick(z, local_pt, Pick.max_height(z))
+	var cell := Pick.pick(z, local_pt, _max_height_of(z))
 	if cell.x < 0:
 		return {}
 	var world := origin + cell
 	var rank := (world.x + world.y) * 64 + z.height_at(cell)
 	return {"zone": z, "cell": cell, "rank": rank}
+
+
+## Tallest step of a chunk, kept per chunk until the next zone load. The
+## pick asks it for every chunk on every mouse move; scanning all cells of
+## seven chunks each time cost a few ms a move.
+func _max_height_of(z: WorldZone) -> int:
+	var known: Variant = _max_h_cache.get(z)
+	if known != null:
+		return int(known)
+	var top := Pick.max_height(z)
+	_max_h_cache[z] = top
+	return top
 
 
 func _npc_record(zone_id: String, cell: Vector2i) -> Dictionary:
@@ -2215,8 +2336,8 @@ func _redraw_ground_and_props() -> void:
 	if neighbours == null:
 		return
 	for host in neighbours.get_children():
-		var ground_node := host.get_node_or_null("Ground")
-		if ground_node != null and ground_node.has_method("redraw_all"):
+		var ground_node: Node = host.get_meta("ground", null)
+		if ground_node != null and is_instance_valid(ground_node) and ground_node.has_method("redraw_all"):
 			ground_node.redraw_all()
 		var props := host.get_node_or_null("Props")
 		if props == null:

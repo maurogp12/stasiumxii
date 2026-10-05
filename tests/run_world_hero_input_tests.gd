@@ -14,7 +14,8 @@ const SWEEP_ZONES := [
 	"crosshaven_northgate",
 	"crosshaven_westwatch",
 ]
-const SWEEP_SIZES := [Vector2i(1280, 768), Vector2i(1920, 1080)]
+## 2554x1500 is a maximised window on a 2560x1600 laptop (the Northgate report).
+const SWEEP_SIZES := [Vector2i(1280, 768), Vector2i(1920, 1080), Vector2i(2560, 1440), Vector2i(2554, 1500)]
 
 var passed := 0
 var failed := 0

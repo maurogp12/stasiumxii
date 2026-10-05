@@ -68,6 +68,28 @@ var _cover: Dictionary = {}
 var snow_rects: Array[Rect2i] = []
 ## Diagonal -> the foam canvas item hung under that row.
 var _foam_rows: Dictionary = {}
+## Cells per ground run at most (see `_split_row`).
+const RUN_CELLS := 12
+## Runs and foam rows not drawn yet: [node, local rect, cell count].
+var _cold: Array = []
+## How far a row's art reaches above and below its diamonds (raised tiles,
+## crag faces, kit tiles taller than a diamond; foam onto the next row).
+const ROW_ART_ABOVE := 128.0
+const ROW_ART_BELOW := 48.0
+## Same plane layout, same tag (set by the world). Empty turns the memo off.
+var cache_tag := ""
+## Diagonal -> [[anim, cells], ...] (`_split_row`).
+var _row_parts: Dictionary = {}
+## Setup results per chunk placement, shared read-only between loads. They
+## only depend on the chunk, where it sits on the plane, the margin and the
+## snow kit, and cost up to a third of a second a chunk to work out, which
+## every seam crossing paid for all seven grounds it mounts.
+static var _memo: Dictionary = {}
+const MEMO_FIELDS: Array[String] = [
+	"_void_ranks", "_beach", "_skirt_dist", "_sea_body", "_void_sea", "_void_dist",
+	"_edge_fade", "_mouth_mix", "_snow_shore", "_cover", "_water_rows",
+	"_corner_cache", "_foam_cells", "_row_parts",
+]
 ## Foam row diagonal -> its foam cells.
 var _foam_cells: Dictionary = {}
 ## Canvas items that follow the ripple: [{node, rect, frame}], rect in local px.
@@ -133,33 +155,41 @@ func setup(target: WorldZone) -> void:
 			for link in exit_rec["links"]:
 				var frm: Dictionary = link["from"]
 				_exit_dirs[Vector2i(int(frm["x"]), int(frm["y"]))] = dir
-	_corner_cache.clear()
-	_cache_void_ranks()
-	_cache_beach()
-	_cache_sea_skirt()
-	_cache_sea_body()
-	_cache_void_sea()
-	_cache_water_edge()
-	_cache_snow_shore()
-	_cache_cover()
+	# Fresh dictionaries first: a memo hit hands out shared read-only ones,
+	# and the cache passes below clear() what they fill.
+	for field in MEMO_FIELDS:
+		set(field, {})
+	_void_margin = 0
+	_foam_rows = {}
+	_runs = {}
+	_anim_items = []
+	var key := _memo_key()
+	var memo: Dictionary = _memo.get(key, {}) if key != "" else {}
+	if memo.is_empty():
+		_cache_void_ranks()
+		_cache_beach()
+		_cache_sea_skirt()
+		_cache_sea_body()
+		_cache_void_sea()
+		_cache_water_edge()
+		_cache_snow_shore()
+		_cache_cover()
+		_mark_water_rows()
+	else:
+		for field in MEMO_FIELDS:
+			set(field, memo[field])
+		_void_margin = int(memo["_void_margin"])
 	var margin := _view_margin()
-	_foam_rows.clear()
-	_foam_cells.clear()
-	_runs.clear()
-	_anim_items.clear()
-	_mark_water_rows()
 	for d in range(-margin * 2, zone.width + zone.height - 1 + margin * 2):
 		var row := Node2D.new()
 		row.name = "Row%d" % d
 		row.z_as_relative = false
 		row.z_index = row_z(d)
-		var runs := _split_row(d)
-		row.draw.connect(_draw_run.bind(row, d, 0))
 		add_child(row)
-		(runs[0] as Dictionary)["node"] = row
-		# Later runs hang under the row at the same z, so tree order keeps
-		# the cells in their usual west-to-east order.
-		for i in range(1, runs.size()):
+		# The row draws through its runs. They hang under it at the same z,
+		# so tree order keeps the cells in their usual west-to-east order.
+		var runs := _split_row(d)
+		for i in runs.size():
 			var seg := Node2D.new()
 			seg.name = "Run%d" % i
 			seg.z_as_relative = false
@@ -184,6 +214,15 @@ func setup(target: WorldZone) -> void:
 			for run in runs:
 				if bool(run["anim"]):
 					_track_anim(run["node"], run["cells"])
+	if key != "" and memo.is_empty():
+		var keep := {"_void_margin": _void_margin}
+		for field in MEMO_FIELDS:
+			var value: Dictionary = get(field)
+			# Corner alphas keep filling as cells draw; the values never change.
+			if field != "_corner_cache":
+				value.make_read_only()
+			keep[field] = value
+		_memo[key] = keep
 
 
 func _mark_water_rows() -> void:
@@ -253,8 +292,6 @@ func _track_anim(node: Node2D, cells: Array[Vector2i]) -> void:
 
 
 func redraw_all() -> void:
-	for child in get_children():
-		child.queue_redraw()
 	for runs in _runs.values():
 		for run in runs:
 			var node: Node2D = run.get("node")
@@ -265,6 +302,63 @@ func redraw_all() -> void:
 			(foam as Node2D).queue_redraw()
 
 
+## Rows draw once, when first shown. `start_cold` hides them all; `warm`
+## shows the ones that meet the view right away and a few more a frame, so a
+## zone load or seam crossing draws only what the camera sees.
+func start_cold() -> void:
+	_cold = []
+	for d in _runs.keys():
+		for run in _runs[d]:
+			_chill(run["node"], run["cells"])
+	for d in _foam_rows.keys():
+		_chill(_foam_rows[d], _row_foam_cells(d))
+
+
+func _chill(node: Node2D, cells: Array[Vector2i]) -> void:
+	if not is_instance_valid(node) or cells.is_empty():
+		return
+	var rect := Rect2(BoardVisualSort.cell_to_local(cells[0]), Vector2.ZERO)
+	rect = rect.expand(BoardVisualSort.cell_to_local(cells[cells.size() - 1]))
+	rect = rect.grow_individual(Pick.HALF_W + 16.0, ROW_ART_ABOVE, Pick.HALF_W + 16.0, ROW_ART_BELOW)
+	node.visible = false
+	_cold.append([node, rect, cells.size()])
+
+
+func is_warm() -> bool:
+	return _cold.is_empty()
+
+
+## Show cold rows that meet `view` (local px), then others until `budget`
+## cells are spent. A negative budget shows every row. Returns what is left.
+func warm(view: Rect2, budget: int) -> int:
+	if _cold.is_empty():
+		return budget
+	var keep: Array = []
+	for item in _cold:
+		var row: Node2D = item[0]
+		if not is_instance_valid(row):
+			continue
+		if budget < 0 or view.intersects(item[1]):
+			row.visible = true
+		elif budget > 0:
+			row.visible = true
+			budget = maxi(0, budget - int(item[2]))
+		else:
+			keep.append(item)
+	_cold = keep
+	return budget
+
+
+func _memo_key() -> String:
+	if cache_tag == "" or zone == null:
+		return ""
+	return "%s|%s|%s|%d|%s|%s|%s" % [cache_tag, zone.zone_id, world_origin, blend_margin, snow_kit, Kit.has_theme("eastmarch"), str(snow_rects)]
+
+
+static func clear_memo() -> void:
+	_memo.clear()
+
+
 func _redraw_row(d: int) -> void:
 	for run in _runs.get(d, []):
 		var node: Node2D = run.get("node")
@@ -272,18 +366,24 @@ func _redraw_row(d: int) -> void:
 			node.queue_redraw()
 
 
-## Splits diagonal `s` into runs of neighbouring cells that are all static or
-## all animated. Only water rows get animated runs, as before.
+## Splits diagonal `s` into runs of up to RUN_CELLS neighbouring cells that
+## are all static or all animated. Only water rows get animated runs, as
+## before. Short runs let a load draw only the part of a row on screen.
 func _split_row(s: int) -> Array:
+	var parts: Array = _row_parts.get(s, [])
+	if parts.is_empty():
+		var water_row := _water_rows.has(s)
+		for cell in _row_cells(s):
+			var anim := water_row and _follows_phase(cell)
+			if parts.is_empty() or bool(parts[parts.size() - 1][0]) != anim or (parts[parts.size() - 1][1] as Array).size() >= RUN_CELLS:
+				parts.append([anim, [] as Array[Vector2i]])
+			(parts[parts.size() - 1][1] as Array[Vector2i]).append(cell)
+		if parts.is_empty():
+			parts.append([false, [] as Array[Vector2i]])
+		_row_parts[s] = parts
 	var runs: Array = []
-	var water_row := _water_rows.has(s)
-	for cell in _row_cells(s):
-		var anim := water_row and _follows_phase(cell)
-		if runs.is_empty() or bool((runs[runs.size() - 1] as Dictionary)["anim"]) != anim:
-			runs.append({"anim": anim, "cells": [] as Array[Vector2i]})
-		((runs[runs.size() - 1] as Dictionary)["cells"] as Array[Vector2i]).append(cell)
-	if runs.is_empty():
-		runs.append({"anim": false, "cells": [] as Array[Vector2i]})
+	for part in parts:
+		runs.append({"anim": bool(part[0]), "cells": part[1]})
 	return runs
 
 
@@ -312,6 +412,8 @@ func uses_kit() -> bool:
 
 ## Same gold arrow as a chunk exit. Gates are sidecar data, so the zone file stays untouched.
 func add_gate_arrow(cell: Vector2i, dir: Vector2i) -> void:
+	if _exit_dirs.get(cell) == dir:
+		return
 	_exit_dirs[cell] = dir
 	_redraw_row(cell.x + cell.y)
 
@@ -867,10 +969,6 @@ func _draw_run(ci: Node2D, s: int, i: int) -> void:
 	if i >= runs.size():
 		return
 	_draw_cells(ci, (runs[i] as Dictionary)["cells"])
-
-
-func _draw_row(row: Node2D, s: int) -> void:
-	_draw_cells(row, _row_cells(s))
 
 
 func _draw_cells(row: Node2D, cells: Array[Vector2i]) -> void:
