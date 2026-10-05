@@ -3624,9 +3624,10 @@ func _test_line_of_sight() -> void:
 	eq(_sim.has_line_of_sight(Vector2i(2, 7), Vector2i(7, 7)), false, "a Snap Wall blocks sight")
 	# Raised stone on the real Crosshaven map: z1 at (5,5) between two z0 tiles.
 	_sim.reset_match({"seed": 1, "skip_deploy": true})
-	eq(_sim.sight_blocker(Vector2i(4, 9), Vector2i(6, 9)), Vector2i(5, 9), "a raised block higher than both ends is a wall")
+	# Mauro 5 Oct 2026: raised ground never blocks sight, only obstacles and fighters.
+	eq(_sim.sight_blocker(Vector2i(4, 9), Vector2i(6, 9)), Vector2i(-1, -1), "a raised block between two low tiles does not block sight")
 	eq(_sim.sight_blocker(Vector2i(1, 1), Vector2i(6, 6)), Vector2i(3, 3), "a tall bush on the line is a wall too")
-	eq(shot.call(_sim.legal_intents(0), "mark_shot", Vector2i(6, 6)), false, "Kestrel cannot shoot over the raised wall")
+	eq(shot.call(_sim.legal_intents(0), "mark_shot", Vector2i(6, 6)), false, "Kestrel cannot shoot through the tall bush")
 	# Water and mud do not block: Crosshaven row 8 has water at (4,8).
 	eq(_sim.has_line_of_sight(Vector2i(3, 8), Vector2i(8, 8)), true, "water on the line does not block sight")
 	_sim.reset_match({"seed": 1, "skip_deploy": true})
@@ -8173,12 +8174,11 @@ func _test_ambush_obstacle_ray() -> void:
 	eq(_has_legal_cast_to(0, SpellKits.AMBUSH, prey), true, "the Shade gives Ambush another angle")
 	var hit: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": prey, "seat": 0})
 	eq(bool(hit.get("ok", false)), true, "the Shade-origin Ambush resolves around the obstacle")
-	# A raised wall (higher than both ends) walls the ray on the real map:
-	# Crosshaven (5,9) z1 between (4,9) and (6,9), both z0.
+	# Mauro 5 Oct 2026: raised ground does not block sight, so a raised block
+	# no longer walls the ray. Crosshaven (5,9) z1 between (4,9) and (6,9), both z0.
 	_sim.reset_match({"seed": 1, "skip_deploy": true, "classes": ["gloam", "bastion"], "positions": [Vector2i(4, 9), Vector2i(6, 9)], "gloam_invisible": true, "rolls": [1]})
 	eq([_sim._elevation_at(Vector2i(4, 9)), _sim._elevation_at(Vector2i(5, 9)), _sim._elevation_at(Vector2i(6, 9))], [0, 1, 0], "fixture: raised block between two floor tiles")
-	eq(_sim._ambush_ray_walled(Vector2i(4, 9), Vector2i(6, 9)), true, "a raised block on the ray walls Ambush")
-	eq(_has_legal_cast_to(0, SpellKits.AMBUSH, Vector2i(6, 9)), false, "no Ambush over the raised block")
+	eq(_sim._ambush_ray_walled(Vector2i(4, 9), Vector2i(6, 9)), false, "a raised block on the ray does not wall Ambush")
 
 
 func _test_invisible_wears_off() -> void:

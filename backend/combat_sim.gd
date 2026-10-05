@@ -4995,9 +4995,10 @@ func sight_blocker(from_cell: Vector2i, to_cell: Vector2i, bodies: bool = true) 
 	return none
 
 
-func _blocks_sight(cell: Vector2i, top: int, bodies: bool = true) -> bool:
-	if _elevation_at(cell) > top:
-		return true
+## Mauro 5 Oct 2026: "elevated ground should not affect vision only obstacles
+## or players infront can affect vision". Raised tiles never block; `top` is
+## kept for the callers' signature.
+func _blocks_sight(cell: Vector2i, _top: int, bodies: bool = true) -> bool:
 	if _CellTagMap.props_block_sight(_map_id, _paint_only.get(cell, []), cell):
 		return true
 	if _snap_wall_blocks(cell):
@@ -6379,8 +6380,8 @@ func _ambush_candidate(actor: Dictionary, enemy: Dictionary, origin_cell: Vector
 ## Wall on any cell strictly between them blocks that origin (grey, 0 AP).
 ## Mauro 30 Sep 2026: Gloam cannot Ambush through a wall or obstacle; a
 ## Shade on another side may still give him a clear angle. Same walls as
-## spell sight: Snap Wall / blocker, solid prop, or a tile raised above both
-## the origin and the target.
+## spell sight: Snap Wall / blocker, solid prop or a fighter (raised ground
+## does not block since Mauro 5 Oct 2026).
 func _ambush_ray_walled(origin_cell: Vector2i, target_cell: Vector2i) -> bool:
 	var step := _cardinal_unit_step(origin_cell, target_cell)
 	if step == Vector2i.ZERO:
