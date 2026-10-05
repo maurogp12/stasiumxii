@@ -51,6 +51,7 @@ func _run() -> void:
 	_test_hold_line_exit_tax()
 	_test_heartstop()
 	_test_gloam_backstab()
+	_test_mender_option_b()
 
 
 func _test_roster_gate() -> void:
@@ -788,6 +789,34 @@ func _test_heartstop() -> void:
 	eq(str(again.get("reason", "")), "open_can_wait", "immunity refresh is open_can_wait")
 	eq(int(_sim.snapshot()["units"][0]["ap"]), 6, "gated Heartstop does not spend AP")
 	eq(int(_sim.snapshot()["units"][0]["pulse"]), 4, "gated Heartstop does not spend Pulse")
+
+
+## Mauro 5 Oct 2026 option B: Pulse Tap can hit an enemy; Heartstop 4 AP.
+func _test_mender_option_b() -> void:
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["mender", "kestrel"],
+		"positions": [Vector2i(2, 2), Vector2i(4, 2)],
+		"rolls": [1, 1],
+	})
+	var mender: Dictionary = _sim._unit_by_seat(0)
+	mender["pulse"] = 3
+	var offered := false
+	for intent in _sim.legal_intents(0):
+		if str(intent.get("spell", "")) == "pulse_tap" and int(intent.get("target_seat", -1)) == 1:
+			offered = true
+	eq(offered, true, "Pulse Tap is offered on an enemy")
+	var hp_before := int(_sim._unit_by_seat(1)["hp"])
+	var tap: Dictionary = _sim.submit({"type": "cast", "spell": "pulse_tap", "to": Vector2i(4, 2), "seat": 0})
+	eq(bool(tap.get("ok", false)), true, "Pulse Tap hits an enemy")
+	eq(int(_sim._unit_by_seat(1)["hp"]) < hp_before, true, "Pulse Tap deals damage to an enemy")
+	eq(int(mender["pulse"]), 2, "Pulse Tap on an enemy spends 1 Pulse")
+	eq(int(mender["ap"]), 4, "Pulse Tap costs 2 AP")
+	var stop: Dictionary = _sim.submit({"type": "cast", "spell": "heartstop", "to": Vector2i(4, 2), "seat": 0})
+	eq(bool(stop.get("ok", false)), true, "Heartstop fits after Pulse Tap (2 + 4 AP)")
+	eq(int(mender["ap"]), 0, "Heartstop costs 4 AP")
 
 
 func _test_gloam_backstab() -> void:

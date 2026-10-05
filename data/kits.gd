@@ -200,7 +200,10 @@ const SPELLS := {
 		"rolls": true,
 		"element": "water",
 		"base_heal": 10,
-		"target": "ally",
+		# Mauro 5 Oct 2026: "lets try a and b for mender" — option B: Pulse Tap
+		# can also hit an enemy (2 AP, 10 damage, still spends 1 Pulse).
+		"base_damage": 10,
+		"target": "any",
 		"engine_on_connect": "spend_pulse",
 		"requires_pulse": 1,
 		"spend_pulse": 1,
@@ -267,7 +270,8 @@ const SPELLS := {
 		"id": HEARTSTOP,
 		"name": "Heartstop",
 		"class_id": CLASS_MENDER,
-		"ap": 5,
+		# Mauro 5 Oct 2026 option B: 5 → 4 AP (Pulse Tap + Heartstop fit in 6 AP).
+		"ap": 4,
 		"mp": 0,
 		"range_mode": "chebyshev",
 		"min_range": 0,
