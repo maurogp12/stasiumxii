@@ -1741,8 +1741,7 @@ func _try_blend(actor: Dictionary, target: Dictionary, el: String) -> String:
 		"spark":
 			note = _blend_spark(actor, target, event)
 		"sleet":
-			target["sleet"] = true
-			note = "−1 MP at the start of their next turn"
+			note = _blend_sleet(actor, target, event)
 		"magma":
 			target["magma_pending"] = int(actor["seat"])
 			note = "the tile they end their next turn on burns for %d" % MAGMA_TICK_HP
@@ -1800,6 +1799,37 @@ func _blend_drift_pin(actor: Dictionary, target: Dictionary, event: Dictionary) 
 		event["pin"] = true
 		note += "; Pinned: cannot walk next turn"
 	return note
+
+
+## Sleet (Air + Water), Mauro 5 Oct 2026: "instead of taking away 1 mp pushes
+## 2 spaces back". Two pushes of 1 away from the caster, one tile at a time:
+## a body stops it (no damage), a wall / the edge bounces with the usual
+## stagger, a hazard tile ends the slide there. Grounded / Plant: no push.
+const SLEET_PUSH := 2
+
+
+func _blend_sleet(actor: Dictionary, target: Dictionary, event: Dictionary) -> String:
+	var from: Vector2i = target["pos"]
+	var moved := 0
+	var last := {}
+	for i in SLEET_PUSH:
+		last = _try_push(actor["pos"], target, 1, false)
+		if not bool(last.get("moved", false)):
+			break
+		moved += 1
+		_apply_landing_punishments(target, last)
+		if str(last.get("reason", "")) != "":
+			# Lava / water / mud: the slide ends in the hazard.
+			break
+	event["from"] = from
+	event["to"] = target["pos"]
+	event["pushed_tiles"] = moved
+	event["push"] = last.duplicate()
+	if moved > 0:
+		return "pushed %d tile%s back" % [moved, "" if moved == 1 else "s"]
+	if bool(last.get("bounced", false)):
+		return "slams into the wall (%d)" % int(last.get("stagger_hp", 0))
+	return "holds its ground"
 
 
 ## Spark (Air + Fire): 4 Neutral chip (no resist, eats shield first), then
@@ -1890,17 +1920,11 @@ func _end_turn_elements(unit: Dictionary) -> void:
 		_emit_expire("infusion", unit["pos"], int(unit["seat"]), int(unit["seat"]))
 
 
-## A unit's turn starts: Pin arms, Sleet takes 1 MP (after the refill).
-func _start_turn_elements(unit: Dictionary) -> int:
+## A unit's turn starts: Pin arms.
+func _start_turn_elements(unit: Dictionary) -> void:
 	if bool(unit.get("pin_pending", false)):
 		unit["pin_pending"] = false
 		unit["pinned"] = true
-	var cut := 0
-	if bool(unit.get("sleet", false)):
-		unit["sleet"] = false
-		cut = mini(1, int(unit.get("mp", 0)))
-		unit["mp"] = int(unit["mp"]) - cut
-	return cut
 
 
 ## Extra MP to walk: Hold Line's exit tax and Mire (first step off its tile).
@@ -2281,7 +2305,7 @@ func _handoff_seat(actor: Dictionary, auto_skip: bool, skip_reason: String = "")
 		# Heartstop enemy badge ends when this turn consumes the skip. MP is already 0.
 		_emit_expire("skip_next_mp", next_unit["pos"], int(next_unit["seat"]), int(next_unit["seat"]))
 	_still_turn_start(next_unit)
-	var sleet_cut := _start_turn_elements(next_unit)
+	_start_turn_elements(next_unit)
 	var water_cut := 0
 	if bool(next_unit.get("water_slow", false)):
 		# Water rider: −1 MP at the start of this turn (once, clamp 0).
@@ -2301,8 +2325,6 @@ func _handoff_seat(actor: Dictionary, auto_skip: bool, skip_reason: String = "")
 		_last_coach = "%s's turn. AP/MP refilled to %d/%d." % [next_unit["name"], int(next_unit["ap"]), int(next_unit["mp"])]
 	if water_cut > 0:
 		_last_coach += " Water: −1 MP."
-	if sleet_cut > 0:
-		_last_coach += " Sleet: −1 MP."
 	if bool(next_unit.get("pinned", false)):
 		_last_coach += " Pinned: no walking."
 	if _invisible_wore_off:
@@ -2951,7 +2973,7 @@ func _check_death(target: Dictionary, cause: String = "damage") -> void:
 	target["residue_turns"] = 0
 	target["water_slow"] = false
 	target["grounded"] = false
-	for key in ["sleet", "pin_pending", "pinned", "magma_pending", "mire_cell", "infusion", "blend_lock"]:
+	for key in ["pin_pending", "pinned", "magma_pending", "mire_cell", "infusion", "blend_lock"]:
 		target.erase(key)
 	_last_events.append({
 		"type": "dead",

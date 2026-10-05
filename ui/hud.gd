@@ -648,8 +648,6 @@ static func element_notes(unit: Dictionary) -> String:
 	if bool(unit.get("water_slow", false)):
 		out += "  [b]WATER[/b] −1 MP next turn"
 	# Elements Step 3: Blend statuses on this body.
-	if bool(unit.get("sleet", false)):
-		out += "  [b]SLEET[/b] −1 MP next turn"
 	if bool(unit.get("pin_pending", false)) or bool(unit.get("pinned", false)):
 		out += "  [b]PINNED[/b] no walking"
 	if unit.has("mire_cell"):

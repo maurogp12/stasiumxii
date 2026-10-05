@@ -7808,7 +7808,39 @@ func _test_element_blends() -> void:
 	var again: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": _unit(1)["pos"], "seat": 0})
 	eq(_first_event_where(again.get("events", []), "blend").is_empty(), true, "no second Blend on the same body this round")
 	_sim.submit({"type": "end_turn", "seat": 0})
-	eq(int(_unit(1)["mp"]), int(_unit(1)["max_mp"]) - 2, "Sleet −1 MP and the Water rider −1 MP at their turn start")
+	eq(int(_unit(1)["mp"]), int(_unit(1)["max_mp"]) - 1, "only the Water rider takes MP (Sleet pushes now)")
+
+	# Sleet (Mauro 5 Oct 2026): pushes 2 tiles back from the caster instead of −1 MP.
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1, 1], "classes": ["ironjaw", "kestrel"], "positions": [Vector2i(5, 5), Vector2i(6, 5)]})
+	_live_unit(0)["spell_elements"] = {"strike": "air", "shoulder": "water", "crush": "water"}
+	_live_unit(1)["residue"] = "water"
+	_live_unit(1)["residue_seat"] = 0
+	_live_unit(1)["residue_turns"] = 2
+	var push2: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(6, 5), "seat": 0})
+	var sl := _first_event_where(push2.get("events", []), "blend")
+	eq(str(sl.get("blend", "")), "sleet", "Air on own Water = Sleet")
+	eq(_unit(1)["pos"], Vector2i(8, 5), "Sleet pushes the target 2 tiles back")
+	eq(int(sl.get("pushed_tiles", 0)), 2, "the Blend event counts 2 tiles")
+	eq(sl.get("from", null), Vector2i(6, 5), "the slide starts where it stood")
+	# A body 2 tiles back stops it after 1.
+	_sim.reset_match({"seed": 1, "flat_board": true, "team_size": 2, "skip_deploy": true, "rolls": [1], "classes": ["ironjaw", "kestrel", "mender", "gloam"],
+		"positions": [Vector2i(5, 5), Vector2i(6, 5), Vector2i(1, 1), Vector2i(8, 5)]})
+	_sim._active_seat = 0
+	_live_unit(0)["spell_elements"] = {"strike": "air", "shoulder": "water", "crush": "water"}
+	_live_unit(1)["residue"] = "water"
+	_live_unit(1)["residue_seat"] = 0
+	_live_unit(1)["residue_turns"] = 2
+	var blocked: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(6, 5), "seat": 0})
+	eq(_unit(1)["pos"], Vector2i(7, 5), "a body in the way stops the Sleet push after 1 tile")
+	eq(int(_first_event_where(blocked.get("events", []), "blend").get("pushed_tiles", -1)), 1, "1 tile pushed")
+	# The edge: 1 tile from the edge, one step then a bounce.
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1], "classes": ["ironjaw", "kestrel"], "positions": [Vector2i(12, 5), Vector2i(13, 5)]})
+	_live_unit(0)["spell_elements"] = {"strike": "air", "shoulder": "water", "crush": "water"}
+	_live_unit(1)["residue"] = "water"
+	_live_unit(1)["residue_seat"] = 0
+	_live_unit(1)["residue_turns"] = 2
+	_sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(13, 5), "seat": 0})
+	eq(_unit(1)["pos"], Vector2i(14, 5), "Sleet stops at the board edge")
 
 	# Drift-Pin: slide 1 away, Pinned next turn (no walking), never two turns running.
 	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1, 1], "classes": ["ironjaw", "kestrel"], "positions": [Vector2i(5, 5), Vector2i(6, 5)]})
