@@ -438,6 +438,11 @@ func _test_both_ready_starts_combat() -> void:
 	eq(started["ok"], true, "second ready succeeds")
 	var snap: Dictionary = _sim.snapshot()
 	eq(snap["phase"], "TURN_1", "both ready → TURN_1")
+	# Mauro 5 Oct 2026: the fight starts face to face.
+	eq(str(_unit(0)["facing"]), _sim.facing_toward(_unit(0)["pos"], _unit(1)["pos"]), "P1 starts facing P2")
+	eq(str(_unit(1)["facing"]), _sim.facing_toward(_unit(1)["pos"], _unit(0)["pos"]), "P2 starts facing P1")
+	eq(_sim._facing_multiplier(_unit(0)["pos"], _unit(1)["pos"], str(_unit(1)["facing"])) <= 1.0, true, "P1 has no back hit on P2 at the start")
+	eq(_sim._facing_multiplier(_unit(1)["pos"], _unit(0)["pos"], str(_unit(0)["facing"])) <= 1.0, true, "P2 has no back hit on P1 at the start")
 	eq(snap["both_ready"], true, "both_ready is true")
 	eq(snap["positions_locked"], true, "positions lock")
 	eq(snap["combat_enabled"], true, "combat on")
