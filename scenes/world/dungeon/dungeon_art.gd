@@ -153,6 +153,10 @@ static func building(man: Dictionary) -> Dictionary:
 
 ## Building size in cells (x wide, y tall) from the manifest footprint.
 static func building_size(man: Dictionary, fallback: Vector2i) -> Vector2i:
+	var td: Variant = (man.get("raw", {}) as Dictionary).get("town_door", null)
+	if typeof(td) == TYPE_DICTIONARY and (td as Dictionary).has("footprint_size"):
+		var fs: Array = td["footprint_size"]
+		return Vector2i(int(fs[0]), int(fs[1]))
 	var entry := building(man)
 	var cells: Array = entry.get("footprint", [])
 	if cells.is_empty():
@@ -306,6 +310,10 @@ static func monster_frames(man: Dictionary, monster_id: String) -> Dictionary:
 	var key := "frames:%s:%s" % [str(man.get("path", "")), monster_id]
 	if _cache.has(key):
 		return _cache[key]
+	var kit_frames := _kit_monster(man, monster_id)
+	if not kit_frames.is_empty():
+		_cache[key] = kit_frames
+		return kit_frames
 	var frames := SpriteFrames.new()
 	var painted := false
 	var faces := {}
@@ -544,3 +552,202 @@ static func _cells(value: Variant) -> Array:
 				c = Vector2i(int(item[0]), int(item[1]))
 			out.append(c)
 	return out
+
+
+
+# --- The granary art kit (manifest format stasium.dungeon_art v1) -----------
+# town_door, board {tiles, glows, props, decals, backdrops, rooms}, monsters.
+# Files under _2x/ are 2x masters drawn at 0.5 with the 1x placement.
+
+## Board scale of a hero-format monster cell (512x360, pivot 256,329): a
+## Scarecrow Drudge stands about as tall as a hero on the board.
+const MONSTER_CELL_SCALE := 0.28
+## Monster frames are cropped to the used area and kept at this fraction of
+## the master size (they are drawn at MONSTER_CELL_SCALE, so 0.5 keeps them sharp).
+const MONSTER_KEEP := 0.5
+
+
+static func is_kit(man: Dictionary) -> bool:
+	return str((man.get("raw", {}) as Dictionary).get("format", "")) == "stasium.dungeon_art"
+
+
+static func kit_path(man: Dictionary, rel: String) -> String:
+	if rel == "" or rel.begins_with("res://"):
+		return rel
+	var raw: Dictionary = man.get("raw", {})
+	var base := str(raw.get("root", str(man.get("dir", "")) + "/"))
+	if not base.ends_with("/"):
+		base += "/"
+	return base + rel
+
+
+static func tex_at(man: Dictionary, rel: String) -> Texture2D:
+	if rel == "":
+		return null
+	return texture({"path": kit_path(man, rel)})
+
+
+## {tex, scale} preferring the 2x master.
+static func _pick(man: Dictionary, row: Dictionary, one: String = "file", two: String = "file_2x") -> Dictionary:
+	var hi := tex_at(man, str(row.get(two, "")))
+	if hi != null:
+		return {"tex": hi, "scale": 0.5}
+	var lo := tex_at(man, str(row.get(one, "")))
+	if lo != null:
+		return {"tex": lo, "scale": 1.0}
+	return {}
+
+
+## Town entrance: {tex, scale, glow, glow_scale, footprint}. Empty without art.
+static func door_kit(man: Dictionary) -> Dictionary:
+	var td: Variant = (man.get("raw", {}) as Dictionary).get("town_door", null)
+	if typeof(td) != TYPE_DICTIONARY:
+		return {}
+	var row: Dictionary = td
+	var body := _pick(man, row)
+	if body.is_empty():
+		return {}
+	var glow := _pick(man, row, "hatch_glow", "hatch_glow_2x")
+	var out := body.duplicate()
+	out["glow"] = glow.get("tex", null)
+	out["glow_scale"] = float(glow.get("scale", 1.0))
+	out["footprint"] = building_size(man, Vector2i(3, 3))
+	return out
+
+
+static func _by_id(list: Variant, id: String) -> Dictionary:
+	if typeof(list) != TYPE_ARRAY:
+		return {}
+	for row in list:
+		if typeof(row) == TYPE_DICTIONARY and str((row as Dictionary).get("id", "")) == id:
+			return row
+	return {}
+
+
+## Board kit for one room on an n x n board. Every key may be missing.
+static func room_kit(man: Dictionary, room_id: String, n: int) -> Dictionary:
+	var key := "room:%s:%s:%d" % [str(man.get("path", "")), room_id, n]
+	if _cache.has(key):
+		return _cache[key]
+	var out := {"floors": [], "pad": {}, "pad_glow": {}, "backdrop": {}, "props": {}, "decals": {}}
+	var board: Variant = (man.get("raw", {}) as Dictionary).get("board", null)
+	if typeof(board) != TYPE_DICTIONARY:
+		_cache[key] = out
+		return out
+	var letter := room_id.trim_prefix("room_")
+	var rooms: Dictionary = (board as Dictionary).get("rooms", {})
+	var spec: Dictionary = rooms.get(letter, {})
+	for name in spec.get("floor", []):
+		var pick := _pick(man, _by_id(board["tiles"], str(name)))
+		if not pick.is_empty():
+			(out["floors"] as Array).append(pick)
+	var pad_id := str(spec.get("pad", ""))
+	if pad_id != "":
+		out["pad"] = _pick(man, _by_id(board["tiles"], pad_id))
+		for g in board.get("glows", []):
+			if str(g.get("for", "")) == pad_id:
+				out["pad_glow"] = _pick(man, g)
+	var bd: Variant = spec.get("backdrop", {})
+	if typeof(bd) == TYPE_DICTIONARY:
+		var row := _by_id(board.get("backdrops", []), str((bd as Dictionary).get(str(n), "")))
+		var tex := tex_at(man, str(row.get("file", "")))
+		if tex != null:
+			var c00: Array = row.get("cell00_centre_px", [0, 0])
+			out["backdrop"] = {"tex": tex, "scale": 1.0, "cell00": Vector2(float(c00[0]), float(c00[1]))}
+	for row in board.get("props", []):
+		var pick2 := _pick(man, row)
+		if not pick2.is_empty():
+			var fp: Array = row.get("footprint_size", [1, 1])
+			pick2["footprint"] = Vector2i(int(fp[0]), int(fp[1]))
+			(out["props"] as Dictionary)[str(row["id"])] = pick2
+	for row in board.get("decals", []):
+		var pick3 := _pick(man, row)
+		if pick3.is_empty():
+			continue
+		var fp2: Array = row.get("footprint_size", [1, 1])
+		pick3["footprint"] = Vector2i(int(fp2[0]), int(fp2[1]))
+		for g in board.get("glows", []):
+			if str(g.get("for", "")) == str(row["id"]):
+				var gl := _pick(man, g)
+				pick3["glow"] = gl.get("tex", null)
+				pick3["glow_scale"] = float(gl.get("scale", 1.0))
+		(out["decals"] as Dictionary)[str(row["id"])] = pick3
+	_cache[key] = out
+	return out
+
+
+## Monster frames from the kit: one PNG per frame, S and E painted, cropped to
+## the used area and kept at MONSTER_KEEP. Empty when the kit has no monster.
+static func _kit_monster(man: Dictionary, monster_id: String) -> Dictionary:
+	var list: Variant = (man.get("raw", {}) as Dictionary).get("monsters", null)
+	var row := _by_id(list, monster_id)
+	if row.is_empty():
+		return {}
+	var pivot := _vec2(row.get("pivot", [256, 329]), Vector2(256, 329))
+	var fps := float(row.get("fps", 12.0))
+	var actions: Dictionary = row.get("actions", {})
+	var images := {}
+	var used := Rect2i()
+	var first := true
+	for act in actions.keys():
+		var count := int((actions[act] as Dictionary).get("frames", 1))
+		for face in ["S", "E"]:
+			var list_imgs: Array = []
+			for i in count:
+				var rel := "monsters/%s/%s/%s_%s_f%02d.png" % [monster_id, act, act, face, i]
+				var img := _image_at(man, rel)
+				if img == null:
+					continue
+				list_imgs.append(img)
+				var r := img.get_used_rect()
+				if r.size.x <= 0:
+					continue
+				used = r if first else used.merge(r)
+				first = false
+			if not list_imgs.is_empty():
+				images["%s_%s" % [act, face.to_lower()]] = list_imgs
+	if images.is_empty():
+		return {}
+	used = used.grow(2).intersection(Rect2i(Vector2i.ZERO, (images.values()[0][0] as Image).get_size()))
+	var frames := SpriteFrames.new()
+	if frames.has_animation("default"):
+		frames.remove_animation("default")
+	var faces := {}
+	for name in images.keys():
+		var act := str(name).get_slice("_", 0)
+		frames.add_animation(name)
+		frames.set_animation_loop(name, bool((actions.get(act, {}) as Dictionary).get("loop", act in ["idle", "walk"])))
+		frames.set_animation_speed(name, fps)
+		for img in images[name]:
+			var cut := (img as Image).get_region(used)
+			cut.resize(maxi(int(used.size.x * MONSTER_KEEP), 1), maxi(int(used.size.y * MONSTER_KEEP), 1), Image.INTERPOLATE_LANCZOS)
+			frames.add_frame(name, ImageTexture.create_from_image(cut))
+		faces[str(name).get_slice("_", 1)] = true
+	var new_pivot := (pivot - Vector2(used.position)) * MONSTER_KEEP
+	return {
+		"frames": frames,
+		"faces": faces,
+		"pivot": new_pivot,
+		"scale": MONSTER_CELL_SCALE / MONSTER_KEEP,
+		"painted": true,
+		"height": float(used.size.y) * MONSTER_CELL_SCALE,
+	}
+
+
+static func _image_at(man: Dictionary, rel: String) -> Image:
+	var path := kit_path(man, rel)
+	if ResourceLoader.exists(path):
+		var tex := ResourceLoader.load(path) as Texture2D
+		if tex != null:
+			var img := tex.get_image()
+			if img != null:
+				if img.is_compressed():
+					img.decompress()
+				img.convert(Image.FORMAT_RGBA8)
+				return img
+	if FileAccess.file_exists(path):
+		var raw_img := Image.load_from_file(ProjectSettings.globalize_path(path))
+		if raw_img != null and not raw_img.is_empty():
+			raw_img.convert(Image.FORMAT_RGBA8)
+			return raw_img
+	return null

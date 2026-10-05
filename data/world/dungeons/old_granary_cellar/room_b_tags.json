@@ -45,7 +45,7 @@
    "terrain": "ground",
    "elevation": 0,
    "paint_only": [
-    "throne"
+    "bone_throne:part"
    ],
    "blocks": true
   },
@@ -55,7 +55,7 @@
    "terrain": "ground",
    "elevation": 0,
    "paint_only": [
-    "throne"
+    "bone_throne:part"
    ],
    "blocks": true
   },
@@ -134,14 +134,20 @@
    "y": 1,
    "terrain": "ground",
    "elevation": 0,
-   "paint_only": []
+   "paint_only": [
+    "bone_throne:part"
+   ],
+   "blocks": true
   },
   {
    "x": 6,
    "y": 1,
    "terrain": "ground",
    "elevation": 0,
-   "paint_only": []
+   "paint_only": [
+    "bone_throne"
+   ],
+   "blocks": true
   },
   {
    "x": 7,
@@ -198,7 +204,7 @@
    "terrain": "ground",
    "elevation": 0,
    "paint_only": [
-    "tool_rack"
+    "crate_stack"
    ],
    "blocks": true
   },
@@ -250,7 +256,7 @@
    "terrain": "ground",
    "elevation": 0,
    "paint_only": [
-    "tool_rack"
+    "barrel_cluster"
    ],
    "blocks": true
   },
@@ -496,7 +502,10 @@
    "y": 5,
    "terrain": "ground",
    "elevation": 0,
-   "paint_only": []
+   "paint_only": [
+    "drain_grate"
+   ],
+   "special": "pad"
   },
   {
    "x": 8,
@@ -586,7 +595,10 @@
    "y": 6,
    "terrain": "ground",
    "elevation": 0,
-   "paint_only": []
+   "paint_only": [
+    "drain_grate"
+   ],
+   "special": "pad"
   },
   {
    "x": 8,
@@ -608,7 +620,7 @@
    "terrain": "ground",
    "elevation": 0,
    "paint_only": [
-    "bone_pile"
+    "broken_crate"
    ],
    "blocks": true
   },
@@ -632,7 +644,7 @@
    "terrain": "ground",
    "elevation": 0,
    "paint_only": [
-    "bone_pile"
+    "grain_sacks"
    ],
    "blocks": true
   },
@@ -662,21 +674,30 @@
    "y": 7,
    "terrain": "ground",
    "elevation": 0,
-   "paint_only": []
+   "paint_only": [
+    "drain_grate"
+   ],
+   "special": "pad"
   },
   {
    "x": 6,
    "y": 7,
    "terrain": "ground",
    "elevation": 0,
-   "paint_only": []
+   "paint_only": [
+    "drain_grate"
+   ],
+   "special": "pad"
   },
   {
    "x": 7,
    "y": 7,
    "terrain": "ground",
    "elevation": 0,
-   "paint_only": []
+   "paint_only": [
+    "drain_grate"
+   ],
+   "special": "pad"
   },
   {
    "x": 8,
@@ -824,7 +845,7 @@
    "terrain": "ground",
    "elevation": 0,
    "paint_only": [
-    "sack"
+    "grain_sacks"
    ],
    "blocks": true
   },
@@ -855,7 +876,7 @@
    "terrain": "ground",
    "elevation": 0,
    "paint_only": [
-    "barrel"
+    "barrel_cluster"
    ],
    "blocks": true
   },

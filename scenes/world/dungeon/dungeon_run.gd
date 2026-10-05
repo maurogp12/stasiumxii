@@ -87,7 +87,7 @@ func _start_room(index: int, first: bool) -> void:
 	var spec: Dictionary = run.room(index)
 	var config: Dictionary = run.combat_config(index, int(ctx.get("seed", -1)))
 	board.start_room(config, manifest)
-	_title.text = "%s  ·  %s" % [str(run.dungeon.get("name", "")), str(spec.get("name", ""))]
+	_title.text = "%s\n%s" % [str(run.dungeon.get("name", "")), str(spec.get("name", ""))]
 	_sub.text = "Room %s of %d  ·  Level %d" % ["A" if index == 0 else "B", run.room_count(), run.level]
 	if first:
 		_fade.color.a = 1.0
@@ -203,29 +203,33 @@ func _build_overlay() -> void:
 	_overlay.name = "DungeonOverlay"
 	_overlay.layer = 20
 	add_child(_overlay)
+	# Right column (the HUD's second seat card is hidden in dungeon rooms).
 	var top := VBoxContainer.new()
-	top.set_anchors_preset(Control.PRESET_CENTER_TOP)
-	top.offset_left = -300
-	top.offset_right = 300
-	top.offset_top = 10
+	top.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	top.offset_left = -330
+	top.offset_right = -14
+	top.offset_top = 12
 	top.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	top.add_theme_constant_override("separation", 4)
 	_overlay.add_child(top)
-	_title = _label(22, Color(0.98, 0.84, 0.5))
+	_title = _label(20, Color(0.98, 0.84, 0.5))
+	_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	top.add_child(_title)
-	_sub = _label(15, Color(0.85, 0.8, 0.7))
+	_sub = _label(14, Color(0.85, 0.8, 0.7))
+	_sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	top.add_child(_sub)
 	_roster = RichTextLabel.new()
 	_roster.bbcode_enabled = true
 	_roster.fit_content = true
 	_roster.scroll_active = false
 	_roster.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_roster.set_anchors_preset(Control.PRESET_TOP_RIGHT)
-	_roster.offset_left = -270
-	_roster.offset_right = -14
-	_roster.offset_top = 150
-	_roster.offset_bottom = 400
+	_roster.custom_minimum_size = Vector2(316, 60)
 	_roster.add_theme_font_size_override("normal_font_size", 14)
-	_overlay.add_child(_roster)
+	_roster.add_theme_color_override("default_color", Color(0.95, 0.92, 0.86))
+	_roster.add_theme_constant_override("outline_size", 4)
+	_roster.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
+	top.add_child(_roster)
 	_fade = ColorRect.new()
 	_fade.color = Color(0.02, 0.015, 0.01, 0.0)
 	_fade.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -330,7 +334,7 @@ func _showcase() -> void:
 		p.position = board._cell_to_local(row[1])
 		p.z_index = BoardVisualSort.unit_z_index(row[1])
 		shown.append(p)
-	_title.text = "Old Granary Cellar  ·  Monsters"
+	_title.text = "Old Granary Cellar\nMonsters"
 	_sub.text = "Granary Rat  ·  Scarecrow Drudge  ·  The Ratking"
 	_roster.text = ""
 	await get_tree().create_timer(1.5).timeout

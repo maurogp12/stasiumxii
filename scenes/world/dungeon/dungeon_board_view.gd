@@ -91,26 +91,37 @@ func _rebuild_grid(size: int) -> void:
 	_fit_board_camera()
 
 
-## Floor art, pads, props and the backdrop for the current room.
+## Floor art, pads, props, the grate decal and the backdrop for the room.
+## Uses the art kit (manifest) when present, else drawn placeholders.
 func _dress_room() -> void:
 	var snap: Dictionary = sim_node().snapshot()
 	var info: Dictionary = snap.get("dungeon", {})
 	var pads: Array = info.get("pads", [])
-	var floor_entry := Art.room_entry(manifest, room_id, "floor")
-	var pad_entry := Art.room_entry(manifest, room_id, "pad")
-	if pad_entry.is_empty():
-		pad_entry = Art.room_entry(manifest, room_id, "glow")
-	var floor_tex := Art.texture(floor_entry) if not floor_entry.is_empty() else null
-	var pad_tex := Art.texture(pad_entry) if not pad_entry.is_empty() else null
+	var kit := Art.room_kit(manifest, room_id, _board_size)
+	var floors: Array = kit.get("floors", [])
+	var pad_kit: Dictionary = kit.get("pad", {})
+	var glow_kit: Dictionary = kit.get("pad_glow", {})
+	var decals: Dictionary = kit.get("decals", {})
 	var paint: Dictionary = snap.get("paint_only", {})
+	var grate_cells: Array = []
 	for cell in tiles.keys():
 		var tile = tiles[cell]
-		tile.floor_tex = floor_tex
-		tile.pad = pads.has(cell)
-		tile.pad_tex = pad_tex
-		var props: Array = paint.get(cell, [])
+		var c: Vector2i = cell
+		var props: Array = paint.get(c, [])
+		tile.pad = pads.has(c)
 		tile.pad_kind = "drain_grate" if props.has("drain_grate") else "wheat_pad"
 		tile.pad_color = Color(0.55, 0.95, 0.45) if tile.pad_kind == "drain_grate" else Color(1.0, 0.72, 0.28)
+		tile.floor_tex = null
+		if not floors.is_empty():
+			tile.floor_tex = (floors[absi(c.x * 7 + c.y * 13 + c.x * c.y) % floors.size()] as Dictionary)["tex"]
+		tile.pad_tex = null
+		tile.skip_floor = false
+		if tile.pad and tile.pad_kind == "wheat_pad" and not pad_kit.is_empty():
+			tile.pad_tex = pad_kit["tex"]
+		if tile.pad_kind == "drain_grate":
+			grate_cells.append(c)
+			tile.skip_floor = decals.has("drain_grate")
+		tile.set_pad_glow(glow_kit.get("tex", null) if tile.pad_kind == "wheat_pad" else null, float(glow_kit.get("scale", 1.0)))
 		tile.set_process(tile.pad)
 		tile.queue_redraw()
 	if _props_root != null and is_instance_valid(_props_root):
@@ -118,24 +129,68 @@ func _dress_room() -> void:
 	_props_root = Node2D.new()
 	_props_root.name = "RoomProps"
 	$Units.add_child(_props_root)
-	_props_root.z_as_relative = true
 	for cell in paint.keys():
-		var c: Vector2i = cell if cell is Vector2i else _as_cell(cell)
-		var tile_rec: Dictionary = sim_node().tile_at(c)
-		if bool(tile_rec.get("walkable", true)):
+		var c2: Vector2i = cell if cell is Vector2i else _as_cell(cell)
+		if bool(sim_node().tile_at(c2).get("walkable", true)):
 			continue
 		var names: Array = paint[cell]
+		var kind := str(names[0]) if not names.is_empty() else "crate_stack"
+		if kind.ends_with(":part"):
+			continue
 		var prop := Props.new()
 		_props_root.add_child(prop)
-		prop.setup(str(names[0]) if not names.is_empty() else "crate", c, manifest, room_id)
-		prop.position = _cell_to_local(c)
+		prop.setup(kind, c2, (kit.get("props", {}) as Dictionary).get(kind, {}))
+		prop.position = _cell_to_local(c2)
 		prop.z_as_relative = false
-		prop.z_index = VISUAL_SORT.unit_z_index(c, _elev_at(c))
+		prop.z_index = VISUAL_SORT.unit_z_index(c2, _elev_at(c2))
+	if not grate_cells.is_empty():
+		var south: Vector2i = grate_cells[0]
+		for gc in grate_cells:
+			if gc.x + gc.y > south.x + south.y:
+				south = gc
+		var decal := Props.make_decal(decals.get("drain_grate", {}), south)
+		decal.position = _cell_to_local(south)
+		_props_root.add_child(decal)
 	if _backdrop != null and is_instance_valid(_backdrop):
 		_backdrop.free()
-	_backdrop = Props.make_backdrop(manifest, room_id, _board_size)
+	_backdrop = Props.make_backdrop(kit.get("backdrop", {}), room_id, _board_size)
 	add_child(_backdrop)
 	move_child(_backdrop, 0)
+	_fit_board_camera()
+
+
+## The Koliseo HUD is shared as is; in a room it hides the second seat card
+## (the run's monster list replaces it), the terrain legend and the
+## online "HOST" prefix that the dungeon's local seat would show.
+func _tidy_hud() -> void:
+	if _hud == null:
+		return
+	if _hud._seat_panels.size() > 1 and _hud._seat_panels[1] != null:
+		_hud._seat_panels[1].visible = false
+	if _hud._terrain_legend != null:
+		_hud._terrain_legend.visible = false
+	if str(_hud._turn_label_base).begins_with("HOST · "):
+		_hud._turn_label_base = str(_hud._turn_label_base).trim_prefix("HOST · ")
+		_hud._apply_turn_label_clock()
+
+
+## Fit the board and the backdrop's walls into the play band.
+func _fit_board_camera() -> void:
+	_ensure_camera()
+	var n := _board_size
+	var rect := Rect2(Vector2(float(-(n - 1)) * 32.0 - 32.0, -36.0), Vector2(float(n - 1) * 64.0 + 64.0, float(2 * (n - 1)) * 16.0 + 52.0))
+	if _backdrop != null and is_instance_valid(_backdrop) and _backdrop.has_method("bounds"):
+		rect = rect.merge(_backdrop.bounds())
+	var play_w := VIEW_W - 32.0
+	var play_h := PLAY_BOTTOM - PLAY_TOP
+	var zoom := clampf(minf(play_w / rect.size.x, play_h / rect.size.y), 0.35, 1.6)
+	_camera.zoom = Vector2(zoom, zoom)
+	var center := rect.get_center()
+	var play_center := Vector2(VIEW_W * 0.5, (PLAY_TOP + PLAY_BOTTOM) * 0.5)
+	var view_center := Vector2(VIEW_W * 0.5, VIEW_H * 0.5)
+	var camera_world := global_position + center - (play_center - view_center) / zoom
+	_fit_camera_pos = camera_world - global_position
+	_camera.position = _fit_camera_pos
 
 
 func _rebuild_pawns() -> void:
@@ -211,6 +266,7 @@ func _arm_view_motions(events: Array) -> void:
 
 func _refresh() -> void:
 	super._refresh()
+	_tidy_hud()
 	if not _room_live:
 		return
 	var snap: Dictionary = sim_node().snapshot()
@@ -346,6 +402,7 @@ func _present_turn_handoff(result: Dictionary) -> void:
 	var next_unit := _active_unit(snap)
 	var monster := next_unit.has("monster")
 	var caption := "" if monster else "Your turn"
+	_tidy_hud()
 	_hud.show_turn_banner(str(next_unit.get("name", "Next")), str(next_unit.get("class_id", "")), caption)
 	await get_tree().create_timer(MONSTER_BANNER_SEC if monster else HANDOFF_SEC * 0.8).timeout
 	if not is_inside_tree():

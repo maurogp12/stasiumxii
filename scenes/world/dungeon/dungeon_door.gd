@@ -20,6 +20,11 @@ var _hatch: Node2D
 var _tex: Texture2D
 var _entry: Dictionary = {}
 var _glow_t := 0.0
+var _tex_scale := 0.0
+var _glow_tex: Texture2D
+var _glow_scale := 1.0
+var _glow_node: Node2D
+var _glow_alpha := 0.0
 
 
 class Painter extends Node2D:
@@ -31,6 +36,8 @@ class Painter extends Node2D:
 			return
 		if part == "building":
 			host._draw_building(self)
+		elif part == "glow":
+			host._draw_glow(self)
 		else:
 			host._draw_hatch(self)
 
@@ -42,8 +49,16 @@ func setup(row: Dictionary, man: Dictionary, origin: Vector2i = Vector2i.ZERO) -
 	door_cell = Dungeons.door_cell(row)
 	var size := Art.building_size(man, Dungeons.DEFAULT_BUILDING)
 	footprint = Dungeons.building_cells(row, size)
-	_entry = Art.building(man)
-	_tex = Art.texture(_entry) if not _entry.is_empty() else null
+	var kit := Art.door_kit(man)
+	if not kit.is_empty():
+		_tex = kit["tex"]
+		_tex_scale = float(kit["scale"])
+		_glow_tex = kit.get("glow", null)
+		_glow_scale = float(kit.get("glow_scale", 1.0))
+	else:
+		_entry = Art.building(man)
+		_tex = Art.texture(_entry) if not _entry.is_empty() else null
+		_tex_scale = float(_entry.get("scale", 0.0))
 	painted = _tex != null
 	name = "Door_%s" % dungeon_id
 	z_as_relative = false
@@ -61,6 +76,17 @@ func setup(row: Dictionary, man: Dictionary, origin: Vector2i = Vector2i.ZERO) -
 	_hatch.name = "Hatch"
 	_hatch.z_as_relative = false
 	add_child(_hatch)
+	if _glow_tex != null:
+		var g := Painter.new()
+		g.host = self
+		g.part = "glow"
+		_glow_node = g
+		_glow_node.name = "HatchGlow"
+		var mat := CanvasItemMaterial.new()
+		mat.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
+		_glow_node.material = mat
+		_glow_node.modulate.a = 0.0
+		_building.add_child(_glow_node)
 	place(origin)
 
 
@@ -90,6 +116,10 @@ func set_hovered(on: bool) -> void:
 
 func _process(delta: float) -> void:
 	_glow_t += delta
+	if _glow_node != null:
+		var want := 1.0 if hovered else 0.0
+		_glow_alpha = move_toward(_glow_alpha, want, delta * 4.0)
+		_glow_node.modulate.a = _glow_alpha * (0.85 + 0.15 * sin(_glow_t * 4.0))
 	if hovered or not painted:
 		_hatch.queue_redraw()
 
@@ -114,7 +144,7 @@ func _fp_size() -> Vector2i:
 func _draw_building(c: CanvasItem) -> void:
 	if _tex != null:
 		var size := _tex.get_size()
-		var scale_by := float(_entry.get("scale", 0.0))
+		var scale_by := _tex_scale
 		if scale_by <= 0.0:
 			var fp := _fp_size()
 			scale_by = float((fp.x + fp.y) * 32) / maxf(size.x, 1.0)
@@ -185,6 +215,13 @@ func _draw_placeholder_granary(c: CanvasItem) -> void:
 	var pulse := 0.85 + 0.15 * sin(_glow_t * 3.0)
 	c.draw_circle(lamp, 13.0, Color(1.0, 0.7, 0.3, 0.18 * pulse))
 	c.draw_circle(lamp, 4.5, Color(1.0, 0.82, 0.42))
+
+
+func _draw_glow(cv: CanvasItem) -> void:
+	if _glow_tex == null:
+		return
+	var size := _glow_tex.get_size() * _glow_scale
+	cv.draw_texture_rect(_glow_tex, Rect2(Vector2(-size.x * 0.5, -size.y), size), false)
 
 
 func _draw_hatch(cv: CanvasItem) -> void:

@@ -46,6 +46,8 @@ func _ensure_body() -> void:
 
 
 func body_height() -> float:
+	if float(art.get("height", 0.0)) > 0.0:
+		return minf(float(art["height"]) * 0.82, 150.0)
 	return float(Art.PLACEHOLDER_HEIGHT.get(monster_id, 80.0))
 
 

@@ -157,7 +157,7 @@
    "terrain": "ground",
    "elevation": 0,
    "paint_only": [
-    "barrel"
+    "barrel_cluster"
    ],
    "blocks": true
   },
@@ -167,7 +167,7 @@
    "terrain": "ground",
    "elevation": 0,
    "paint_only": [
-    "barrel"
+    "barrel_cluster"
    ],
    "blocks": true
   },
@@ -184,7 +184,7 @@
    "terrain": "ground",
    "elevation": 0,
    "paint_only": [
-    "lantern_post"
+    "broken_crate"
    ],
    "blocks": true
   },
@@ -490,7 +490,7 @@
    "terrain": "ground",
    "elevation": 0,
    "paint_only": [
-    "crate"
+    "broken_crate"
    ],
    "blocks": true
   },
@@ -542,7 +542,7 @@
    "terrain": "ground",
    "elevation": 0,
    "paint_only": [
-    "sack_pile"
+    "grain_sacks"
    ],
    "blocks": true
   },
@@ -632,7 +632,7 @@
    "terrain": "ground",
    "elevation": 0,
    "paint_only": [
-    "sack_pile"
+    "grain_sacks"
    ],
    "blocks": true
   },
@@ -701,7 +701,7 @@
    "terrain": "ground",
    "elevation": 0,
    "paint_only": [
-    "crate"
+    "crate_stack"
    ],
    "blocks": true
   },
@@ -823,7 +823,7 @@
    "terrain": "ground",
    "elevation": 0,
    "paint_only": [
-    "barrel"
+    "barrel_cluster"
    ],
    "blocks": true
   },
@@ -854,7 +854,7 @@
    "terrain": "ground",
    "elevation": 0,
    "paint_only": [
-    "sack"
+    "grain_sacks"
    ],
    "blocks": true
   },

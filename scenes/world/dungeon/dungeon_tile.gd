@@ -10,17 +10,49 @@ var pad_tex: Texture2D
 var pad_color := Color(1.0, 0.72, 0.28)
 var pad_kind := "wheat_pad"
 var blocked := false
+## A floor decal (the drain grate) is drawn under this tile; draw no floor.
+var skip_floor := false
+var pad_glow_tex: Texture2D
+var pad_glow_scale := 1.0
 var _t := 0.0
+var _glow: Sprite2D
+
+
+func set_pad_glow(tex: Texture2D, scale_by: float) -> void:
+	pad_glow_tex = tex
+	pad_glow_scale = scale_by
+	if _glow != null and is_instance_valid(_glow):
+		_glow.queue_free()
+		_glow = null
+	if tex == null or not pad:
+		return
+	_glow = Sprite2D.new()
+	_glow.name = "PadGlow"
+	_glow.texture = tex
+	_glow.scale = Vector2(scale_by, scale_by)
+	_glow.z_index = 2
+	_glow.z_as_relative = true
+	var mat := CanvasItemMaterial.new()
+	mat.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
+	_glow.material = mat
+	add_child(_glow)
 
 
 func _process(delta: float) -> void:
 	if pad:
 		_t += delta
-		queue_redraw()
+		if _glow != null:
+			_glow.modulate.a = 0.6 + 0.4 * sin(_t * 2.4 + float(grid_position.x + grid_position.y))
+		elif pad_tex == null:
+			queue_redraw()
 
 
 func _draw() -> void:
 	var pts := _diamond_points()
+	if skip_floor:
+		if pad and pad_tex == null and pad_kind != "drain_grate":
+			_draw_pad(pts)
+		return
 	if floor_tex != null:
 		var size := floor_tex.get_size()
 		var h := 64.0 * size.y / maxf(size.x, 1.0)
@@ -58,7 +90,7 @@ func _draw_pad(pts: PackedVector2Array) -> void:
 	if pad_tex != null:
 		var size := pad_tex.get_size()
 		var h := 64.0 * size.y / maxf(size.x, 1.0)
-		draw_texture_rect(pad_tex, Rect2(-32, -16, 64, h), false, Color(1, 1, 1, 0.75 + 0.25 * pulse))
+		draw_texture_rect(pad_tex, Rect2(-32, -16, 64, h), false)
 		return
 	var inner := PackedVector2Array()
 	for p in pts:
