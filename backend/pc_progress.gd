@@ -61,6 +61,8 @@ var load_log: Array = []
 ## Story and task state. Missing from an old save, so those loads start clear.
 var mission_blob: Dictionary = {}
 var world_zone := ""
+## Highest dungeon star cleared, per dungeon id (PC dungeons, star runs).
+var dungeon_stars: Dictionary = {}
 var world_cell := Vector2i.ZERO
 var _uid := 1
 var _equip_seq := 1
@@ -344,6 +346,7 @@ func save() -> bool:
 		"next_uid": _uid,
 		"equip_seq": _equip_seq,
 		"missions": mission_blob.duplicate(true),
+		"dungeon_stars": dungeon_stars.duplicate(),
 		"world": {
 			"zone_id": world_zone,
 			"x": world_cell.x,
@@ -413,6 +416,7 @@ func read_save() -> bool:
 	var prev_log: Array = load_log.duplicate()
 	var prev_missions: Dictionary = mission_blob.duplicate(true)
 	var prev_world := world_zone
+	var prev_stars: Dictionary = dungeon_stars.duplicate()
 	var prev_cell := world_cell
 	level = next_level
 	xp = next_xp
@@ -424,6 +428,12 @@ func read_save() -> bool:
 			mission_blob = (doc["missions"] as Dictionary).duplicate(true)
 	else:
 		mission_blob = {}
+	dungeon_stars = {}
+	if doc.has("dungeon_stars") and typeof(doc["dungeon_stars"]) == TYPE_DICTIONARY:
+		for key in (doc["dungeon_stars"] as Dictionary).keys():
+			var best: Variant = doc["dungeon_stars"][key]
+			if _whole(best) and int(best) >= 1 and int(best) <= 5:
+				dungeon_stars[str(key)] = int(best)
 	world_zone = ""
 	world_cell = Vector2i.ZERO
 	if doc.has("world") and typeof(doc["world"]) == TYPE_DICTIONARY:
@@ -447,6 +457,7 @@ func read_save() -> bool:
 		mission_blob = prev_missions
 		world_zone = prev_world
 		world_cell = prev_cell
+		dungeon_stars = prev_stars
 		return false
 	return true
 
@@ -1088,6 +1099,19 @@ func set_hero_class(class_id: String) -> bool:
 
 func note_zone(zone_id: String) -> void:
 	note_place(zone_id, world_cell)
+
+
+## Records a cleared dungeon star; keeps the highest. Returns true when it is new.
+func note_dungeon_star(dungeon_id: String, star: int) -> bool:
+	var best := int(dungeon_stars.get(dungeon_id, 0))
+	if star <= best:
+		return false
+	dungeon_stars[dungeon_id] = clampi(star, 1, 5)
+	return true
+
+
+func best_dungeon_star(dungeon_id: String) -> int:
+	return int(dungeon_stars.get(dungeon_id, 0))
 
 
 func note_place(zone_id: String, cell: Vector2i) -> void:

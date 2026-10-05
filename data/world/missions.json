@@ -9,7 +9,7 @@
     "The 4.5 summary says 18 extra NPCs and about 51 missions. The shipped roster has 20 extras, so this file has 17 chain missions and 20 sides.",
     "Town chunks have no landmark point of interest. Town scouts and some sides use the town-center cell.",
     "The Fisher sends you to the cell beside the Eastmarch fishing hut. The Fen Guide sends you to the Sunken Mill door. The Last Watcher sends you to the Heart of the Blight door.",
-    "clear_dungeon steps cannot be accepted until dungeon runs exist. They are pending and show as coming soon.",
+    "clear_dungeon steps on a dungeon that is not built (dungeons.json status planned) are pending and show as coming soon. Old Granary Cellar is built, so its step can be taken and a win credits it.",
     "Story chains are the six section 00 zones in level_zones.json: Crossroads, Stoneford, Northgate, Eastmarch, Southbridge, Westwatch. The Crossroads has no dungeon. Millrace Vaults is dropped. The five town dungeons are Old Granary Cellar, Frostspire Archive, Saltmaw Grotto, Drowned Abbey, and Heart of the Blight. No story step uses an outer level zone or an outer dungeon. A dungeon step is pending because its door is not built.",
     "Each town welcome stays in that town: Elder, then Warden, then Trader, then Door Keeper, skipping a role the town does not have. A town with no one left to meet sends you to its own square.",
     "Each zone welcome requires the previous zone's scout, in level_zones.json order.",
@@ -550,8 +550,7 @@
         {
           "type": "clear_dungeon",
           "dungeon": "old_granary_cellar",
-          "place": "Old Granary Cellar",
-          "pending_chunk": true
+          "place": "Old Granary Cellar"
         }
       ],
       "rewards": {
@@ -561,7 +560,7 @@
       },
       "lines": {
         "offer": [
-          "Clear the Old Granary Cellar. The Warden wants it quiet. The way down is not open yet."
+          "Clear the Old Granary Cellar. The Warden wants it quiet. The Door Keeper by the granary will let you down."
         ],
         "active": [
           "The Old Granary Cellar is still ahead."

@@ -256,6 +256,15 @@ func passable_at(cell: Vector2i) -> bool:
 	return walkable_at(cell) and not blocked_at(cell)
 
 
+## Runtime blocked cells that are not zone props (a dungeon entrance
+## building from dungeons.json). Walk data only; the zone file is unchanged.
+func add_blocked(cells: Array) -> void:
+	for raw in cells:
+		var cell: Vector2i = raw
+		if in_bounds(cell):
+			_blocked[_index(cell)] = 1
+
+
 func exit_link(cell: Vector2i) -> Dictionary:
 	if _links.has(cell):
 		return _links[cell]

@@ -1,0 +1,85 @@
+{
+  "format": "stasium.world_dungeons",
+  "format_version": 1,
+  "status": "proposed",
+  "notes": [
+    "Section 4.6, Crosshaven phase (section 00): one dungeon per town band, five in all.",
+    "Old Granary Cellar is built. The other four are approved designs, planned: no door yet.",
+    "door is the hatch cell: passable, clickable, not an NPC, gate, exit or spawn cell. The granary building stands on the cells north of it (footprint from the art manifest) and blocks walking.",
+    "keeper names the Door Keeper NPC that opens the entry panel. party 1-4 is the rule; runs are solo for now."
+  ],
+  "dungeons": [
+    {
+      "id": "old_granary_cellar",
+      "name": "Old Granary Cellar",
+      "level_zone": "stoneford",
+      "level_min": 1,
+      "level_max": 10,
+      "door": {"zone_id": "crosshaven_stoneford", "x": 16, "y": 11},
+      "door_art": "door_old_granary_cellar",
+      "theme": "granary_cellar",
+      "boss": "The Ratking",
+      "rooms": 2,
+      "party": {"min": 1, "max": 4},
+      "keeper": "granary_door_keeper",
+      "run": "res://data/world/dungeons/old_granary_cellar/run.json",
+      "status": "built"
+    },
+    {
+      "id": "frostspire_archive",
+      "name": "Frostspire Archive",
+      "level_zone": "northgate",
+      "level_min": 10,
+      "level_max": 20,
+      "door_art": "door_frostspire_archive",
+      "theme": "frost_archive",
+      "boss": "The Pale Archivist",
+      "rooms": 2,
+      "party": {"min": 1, "max": 4},
+      "keeper": "northgate_door_keeper",
+      "status": "planned"
+    },
+    {
+      "id": "saltmaw_grotto",
+      "name": "Saltmaw Grotto",
+      "level_zone": "eastmarch",
+      "level_min": 20,
+      "level_max": 30,
+      "door_art": "door_saltmaw_grotto",
+      "theme": "sea_grotto",
+      "boss": "Old Saltmaw",
+      "rooms": 2,
+      "party": {"min": 1, "max": 4},
+      "keeper": "eastmarch_door_keeper",
+      "status": "planned"
+    },
+    {
+      "id": "drowned_abbey",
+      "name": "Drowned Abbey",
+      "level_zone": "southbridge",
+      "level_min": 30,
+      "level_max": 40,
+      "door_art": "door_drowned_abbey",
+      "theme": "drowned_abbey",
+      "boss": "The Mire Abbess",
+      "rooms": 2,
+      "party": {"min": 1, "max": 4},
+      "keeper": "drowned_abbey_door_keeper",
+      "status": "planned"
+    },
+    {
+      "id": "heart_of_the_blight",
+      "name": "Heart of the Blight",
+      "level_zone": "westwatch",
+      "level_min": 40,
+      "level_max": 50,
+      "door_art": "door_heart_of_the_blight",
+      "theme": "blight_heart",
+      "boss": "The Rotting Elder",
+      "rooms": 2,
+      "party": {"min": 1, "max": 4},
+      "keeper": "westwatch_door_keeper",
+      "status": "planned"
+    }
+  ]
+}
