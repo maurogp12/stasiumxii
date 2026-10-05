@@ -215,7 +215,7 @@
     }
   ],
   "stars": {
-    "note": "Star difficulty mirrors the mobile Stasis stars (origin/mobile backend/stasis_catalog.gd). The player picks \u26051-\u26055 per run on the entry panel; no unlock gate, as on mobile. Monster HP and damage are the level-band stats times the star row. Mobile's STAR_SCALE is tuned for a party of 4 from \u26053 (PARTY_FOR_STAR, PARTY_SCALE); PC runs are solo for now, so only the solo row applies and the mobile multipliers are scaled down for a solo level 1-10 hero (see scale vs mobile_scale). Tuned with tests/sim_granary_stars.gd.",
+    "note": "Star difficulty mirrors the mobile Stasis stars (origin/mobile backend/stasis_catalog.gd). The player picks \u26051-\u26055 per run on the entry panel; no unlock gate, as on mobile. Monster HP and damage are the level-band stats times the star row. Mobile's STAR_SCALE is tuned for a party of 4 from \u26053 (PARTY_FOR_STAR, PARTY_SCALE); PC runs are solo for now, so only the solo row applies and the mobile multipliers are scaled down for a solo level 1-10 hero (see scale vs mobile_scale). Tuned with tests/sim_granary_stars.gd (solo bot, level 2, 8 runs x 5 classes): \u26051 85%, \u26052 68%, \u26053 60%, \u26054 58%, \u26055 38%.",
     "mobile_scale": {
       "1": [
         1.0,
@@ -252,8 +252,8 @@
         1.1
       ],
       "4": [
-        1.25,
-        1.15
+        1.2,
+        1.1
       ],
       "5": [
         1.0,
