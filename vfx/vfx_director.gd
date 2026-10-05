@@ -142,8 +142,12 @@ func sync_snapshot(snapshot: Dictionary) -> void:
 	for tile in snapshot.get("element_tiles", []):
 		if typeof(tile) == TYPE_DICTIONARY:
 			(magma if str(tile.get("kind", "")) == "magma" else steam).append(tile)
-	_want_tokens(wanted, magma, "magma", Color(1.0, 0.42, 0.1), 0.6)
-	_want_tokens(wanted, steam, "steam", Color(0.88, 0.92, 0.96), 0.3)
+	for tile in magma + steam:
+		var cell := _Router.cell_of(tile.get("pos", Vector2i(int(tile.get("x", 0)), int(tile.get("y", 0)))))
+		var kind := str(tile.get("kind", ""))
+		var spec := _Router.blend_tile_spec(kind, cell)
+		if not spec.is_empty():
+			wanted["%s:%d,%d" % [kind, cell.x, cell.y]] = spec
 	for unit in snapshot.get("units", []):
 		if typeof(unit) != TYPE_DICTIONARY:
 			continue
@@ -252,6 +256,8 @@ func _spawn(spec: Dictionary, ghost_motion: bool) -> void:
 			_play_stamp(spec)
 		"boss_fx":
 			_play_boss_fx(spec)
+		"blend_fx":
+			_play_blend_fx(spec)
 		"puff":
 			_play_burst("puff", spec, false)
 		"motes":
@@ -387,6 +393,26 @@ func _play_boss_fx(spec: Dictionary) -> void:
 		payload["pos"] = _pos_cell(cell)
 		payload["z"] = _z_ground(cell) if bool(spec.get("ground", false)) else BOSS_FX_AIR_Z
 	_acquire("strip").play(payload)
+
+
+## Elements Step 3: one painted Blend effect on the target's tile.
+func _play_blend_fx(spec: Dictionary) -> void:
+	var cell := _Router.cell_of(spec.get("cell", Vector2i.ZERO))
+	var at := _pos_cell(cell)
+	var pawn := _pawn(int(spec.get("seat", -1)))
+	if pawn != null and _pawn_stands_on(pawn, cell):
+		at = pawn.position
+	_acquire("strip").play({
+		"path": str(spec.get("path", "")),
+		"frames": int(spec.get("frames", 1)),
+		"anchor": spec.get("anchor", Vector2.ZERO),
+		"fps": float(spec.get("fps", 15.0)),
+		"scale": float(spec.get("scale", 0.5)),
+		"delay": float(spec.get("delay", 0.0)),
+		"pos": at,
+		# Always on top: a wall or prop in front must not hide the Blend.
+		"z": BOSS_FX_AIR_Z,
+	})
 
 
 ## World size of one boss-cell pixel: the boss sprite's own scale.
@@ -693,7 +719,7 @@ func _ensure_linger(key: String, spec: Dictionary) -> void:
 	payload["pos"] = _body_pos(int(spec.get("seat", -1)), cell, false) if pool_name == "status" else _pos_cell(cell)
 	var style := str(spec.get("style", ""))
 	var standing := pool_name == "status" or style == "slab" or style == "figure"
-	payload["z"] = _z_air(cell) if standing else _z_ground(cell)
+	payload["z"] = _z_air(cell) if standing else (_z_floor(cell) if pool_name == "strip" else _z_ground(cell))
 	payload["linger"] = true
 	if _linger.has(key):
 		var existing: Node = _linger[key]
@@ -859,6 +885,12 @@ func _elev(cell: Vector2i) -> float:
 
 func _z_ground(cell: Vector2i) -> int:
 	return BoardVisualSort.tile_z_index(cell, _elev(cell)) + 1
+
+
+## Floor decals wider than one tile (Blend pools): above the row of tiles in
+## front so it is not cut off, under the fighters standing in that row.
+func _z_floor(cell: Vector2i) -> int:
+	return BoardVisualSort.tile_z_index(cell, _elev(cell)) + BoardVisualSort.TILE_Z_SCALE + 1
 
 
 func _z_air(cell: Vector2i) -> int:

@@ -25,6 +25,7 @@ func _finish_live() -> void:
 	await _test_shade_markers_survive_rebuild()
 	await _test_readable_numbers_and_plates()
 	await _test_boss_fx_strip_plays()
+	await _test_blend_fx()
 	print("VFX tests: %d passed, %d failed" % [_passed, _failed])
 	quit(1 if _failed > 0 else 0)
 
@@ -141,6 +142,60 @@ func _test_boss_fx_strip_plays() -> void:
 		eq((cells[0] as Texture2D).get_size(), Vector2(192, 160), "an explosion cell is 192x160")
 	for i in 40:
 		await process_frame
+	board.queue_free()
+	await process_frame
+
+
+## Mauro 5 Oct 2026: "Can you add some visual effect to every element blend?"
+func _test_blend_fx() -> void:
+	for blend in ["drift_pin", "spark", "sleet", "magma", "mire", "steam"]:
+		var event := {"type": "blend", "blend": blend, "name": blend, "seat": 0, "target_seat": 1, "to": Vector2i(4, 4), "from": Vector2i(4, 4)}
+		var fx := {}
+		for r in ROUTER.recipes_for([event]):
+			if str(r.get("id", "")) == "blend_fx":
+				fx = r
+		eq(str(fx.get("path", "")), "res://art/vfx/blends/blend_%s.png" % blend, "%s plays its painted effect" % blend)
+		eq(fx.get("cell", null), Vector2i(4, 4), "%s plays on the target" % blend)
+		var cells: Array = load("res://vfx/vfx_strip.gd").cells_for(str(fx.get("path", "")), int(fx.get("frames", 0)))
+		eq(cells.size(), 12, "%s has 12 cells" % blend)
+		if not cells.is_empty():
+			eq((cells[0] as Texture2D).get_size(), Vector2(192, 192), "%s cells are 192x192" % blend)
+	for kind in ["magma", "steam"]:
+		var spec: Dictionary = ROUTER.blend_tile_spec(kind, Vector2i(2, 3))
+		eq(bool(spec.get("loop", false)), true, "%s tile loops" % kind)
+		eq(load("res://vfx/vfx_strip.gd").cells_for(str(spec["path"]), int(spec["frames"])).size(), 8, "%s tile strip has 8 cells" % kind)
+	# A Blend tile in the snapshot keeps a looping strip on the board.
+	var board_script := GDScript.new()
+	board_script.source_code = "extends Node2D\nvar pawns_by_seat: Dictionary = {}\nfunc _cell_to_local(cell: Vector2i) -> Vector2:\n\treturn BoardVisualSort.cell_to_local(cell, 0.0)\nfunc _elev_at(_cell: Vector2i) -> float:\n\treturn 0.0\n"
+	board_script.reload()
+	var board := Node2D.new()
+	board.set_script(board_script)
+	root.add_child(board)
+	var director: Node = DIRECTOR.new()
+	director.allow_headless = true
+	board.add_child(director)
+	director.bind_board(board)
+	await process_frame
+	director.sync_snapshot({"units": [], "element_tiles": [{"kind": "magma", "x": 2, "y": 3, "pos": Vector2i(2, 3), "owner_seat": 0}]})
+	var looping := 0
+	for node in director._pools["strip"]:
+		if bool(node.in_use) and bool(node._loop):
+			looping += 1
+	eq(looping, 1, "the Magma tile loops on the board")
+	for i in 30:
+		await process_frame
+	looping = 0
+	for node in director._pools["strip"]:
+		if bool(node.in_use) and bool(node._loop):
+			looping += 1
+	eq(looping, 1, "a looping tile does not end by itself")
+	director.sync_snapshot({"units": [], "element_tiles": []})
+	await create_timer(0.5).timeout
+	looping = 0
+	for node in director._pools["strip"]:
+		if bool(node.in_use):
+			looping += 1
+	eq(looping, 0, "the tile effect leaves with the tile")
 	board.queue_free()
 	await process_frame
 

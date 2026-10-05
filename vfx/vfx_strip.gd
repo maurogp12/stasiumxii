@@ -17,6 +17,7 @@ extends "res://vfx/vfx_pooled.gd"
 ##   duration flight seconds (fly mode)
 ##   delay    seconds before it shows
 ##   z        z index
+##   loop     true: loop the strip in place until released (lingering tiles)
 
 var _sprite: Sprite2D
 var _cells: Array = []
@@ -28,6 +29,7 @@ var _from: Vector2 = Vector2.ZERO
 var _to: Vector2 = Vector2.ZERO
 var _arc: float = 0.0
 var _duration: float = 0.3
+var _loop: bool = false
 
 static var _cache: Dictionary = {}
 
@@ -80,6 +82,7 @@ func play(spec: Dictionary) -> void:
 	_wait = float(spec.get("delay", 0.0))
 	_age = 0.0
 	_fly = spec.has("from") and spec.has("to")
+	_loop = bool(spec.get("loop", false))
 	var anchor: Vector2 = spec.get("anchor", Vector2.ZERO)
 	_sprite.offset = -anchor
 	var s := float(spec.get("scale", 1.0))
@@ -96,6 +99,16 @@ func play(spec: Dictionary) -> void:
 		position = spec.get("pos", Vector2.ZERO)
 	_sprite.texture = _cells[0]
 	visible = _wait <= 0.0
+
+
+## A lingering (looping) strip leaves when its tile does: quick fade, then free.
+func dismiss() -> void:
+	if not in_use:
+		return
+	_kill_tween()
+	_tween = create_tween()
+	_tween.tween_property(self, "modulate:a", 0.0, 0.2)
+	_tween.tween_callback(release)
 
 
 func _process(delta: float) -> void:
@@ -118,6 +131,9 @@ func _process(delta: float) -> void:
 		position = here
 		if (ahead - here).length_squared() > 0.0001:
 			rotation = (ahead - here).angle()
+		_sprite.texture = _cells[posmod(index, _cells.size())]
+		return
+	if _loop:
 		_sprite.texture = _cells[posmod(index, _cells.size())]
 		return
 	if index >= _cells.size():
