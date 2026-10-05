@@ -6,7 +6,10 @@ ship in the middle just without the flags and a little bit less obstacles".
 The automatic cut-out (arena_props.py, rembg) loses these dark objects in the
 dark dock floor, so each piece is cut with a traced outline instead.
 Writes art/maps/arena_look/brinewake/prop_<name>.png:
-  wreck       the shipwreck, drawn as the centrepiece on (7, 7)
+  wreck       the shipwreck, drawn as the centrepiece on (7, 7). Mauro 5 Oct
+              2026: "do your own ship, that looks like you copy and paste a bad
+              image". Painted with Scenario (style from the dock picture, no
+              flags) and cut from its black backdrop: refs/brinewake_wreck_painted.png
   wreck_side  clear 1x1: the wreck's flank cells (they block, the art is the centrepiece)
   coral_rock  barnacled coral rock (obstacle)
   crate       braced cargo crate (obstacle)
@@ -20,6 +23,8 @@ import os
 from PIL import Image, ImageDraw, ImageEnhance, ImageFilter
 
 REF = "art/maps/arena_look/refs/brinewake_look.jpg"
+WRECK = "art/maps/arena_look/refs/brinewake_wreck_painted.png"
+WRECK_W = 168
 OUT = "art/maps/arena_look/brinewake/"
 MAX_H = 92
 # Brightness lift (see cut).
@@ -32,9 +37,6 @@ RIM_ALPHA = 210
 
 # name -> (outline polygons in picture px, sprite width in board px, max height)
 PIECES = {
-    "wreck": ([[(1270, 470), (1318, 418), (1338, 368), (1356, 418), (1400, 468), (1480, 498), (1540, 470),
-                (1582, 500), (1622, 560), (1700, 608), (1750, 640), (1768, 700), (1700, 730), (1600, 722),
-                (1500, 702), (1452, 682), (1402, 742), (1350, 742), (1300, 692), (1260, 622), (1245, 560)]], 150, 140),
     "coral_rock": ([[(1800, 470), (1835, 468), (1845, 490), (1825, 520), (1830, 560), (1860, 580), (1880, 610),
                      (1870, 640), (1820, 650), (1760, 648), (1720, 640), (1708, 610), (1715, 570), (1740, 545),
                      (1760, 520), (1770, 495), (1785, 480)]], 46, MAX_H),
@@ -72,19 +74,6 @@ def cut(img, polys, width, max_h):
     return rgb
 
 
-def calm_water(sprite):
-    """Mauro 5 Oct 2026 ("improve the map I told you I like"): the wreck keeps
-    some of the picture's sea around it; tone the blue down so the hull reads."""
-    px = sprite.load()
-    for y in range(sprite.height):
-        for x in range(sprite.width):
-            r, g, b, a = px[x, y]
-            if a and b > r + 25:
-                grey = (r + g + b) // 3
-                px[x, y] = ((r + grey) // 2, (g + grey) // 2, (b + grey) // 2 + 4, a * 3 // 4)
-    return sprite
-
-
 def rim(sprite, pad=RIM_PAD):
     """Soft warm rim so each piece stands out from the dark dock planks
     (Mauro: obstacles you cannot see or tell apart). No bottom pad: the
@@ -106,11 +95,19 @@ def main():
     os.makedirs(OUT, exist_ok=True)
     for name, (polys, width, max_h) in PIECES.items():
         sprite = cut(img, polys, width, max_h)
-        if name == "wreck":
-            sprite = calm_water(sprite)
         sprite = rim(sprite)
         sprite.save(os.path.join(OUT, "prop_%s.png" % name), optimize=True)
         print(name, sprite.size)
+    wreck = Image.open(WRECK).convert("RGBA")
+    wreck = wreck.resize((WRECK_W, round(wreck.height * WRECK_W / wreck.width)), Image.LANCZOS)
+    # Small on the board the hull's inner shadows close up; open them a little.
+    alpha = wreck.getchannel("A")
+    rgb = wreck.convert("RGB").point(lambda v: round(255 * (v / 255.0) ** 0.8))
+    rgb = ImageEnhance.Brightness(rgb).enhance(1.2)
+    rgb.putalpha(alpha)
+    wreck = rim(rgb)
+    wreck.save(os.path.join(OUT, "prop_wreck.png"), optimize=True)
+    print("wreck", wreck.size)
     Image.new("RGBA", (1, 1), (0, 0, 0, 0)).save(os.path.join(OUT, "prop_wreck_side.png"))
     print("wreck_side hidden")
 
