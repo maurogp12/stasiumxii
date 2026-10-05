@@ -148,6 +148,12 @@ func sync_snapshot(snapshot: Dictionary) -> void:
 		var spec := _Router.blend_tile_spec(kind, cell)
 		if not spec.is_empty():
 			wanted["%s:%d,%d" % [kind, cell.x, cell.y]] = spec
+	# Slagcrown's boiling water steams for the whole match (it blocks sight).
+	for tile in snapshot.get("map_steam", []):
+		if typeof(tile) != TYPE_DICTIONARY:
+			continue
+		var steam_cell := _Router.cell_of(tile.get("pos", Vector2i(int(tile.get("x", 0)), int(tile.get("y", 0)))))
+		wanted["map_steam:%d,%d" % [steam_cell.x, steam_cell.y]] = _Router.map_steam_spec(steam_cell)
 	for unit in snapshot.get("units", []):
 		if typeof(unit) != TYPE_DICTIONARY:
 			continue

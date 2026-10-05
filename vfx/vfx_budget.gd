@@ -36,8 +36,9 @@ const POOL_MOTE := 2
 const POOL_STATUS := 12
 const POOL_STAMP := 6
 ## Painted boss effect strips (cannonball, explosion, eruption).
-## Boss effects plus Blend effects and the looping Magma / Steam tiles.
-const POOL_STRIP := 10
+## Boss effects plus Blend effects, the looping Magma / Steam tiles and
+## Slagcrown's seven steaming water tiles.
+const POOL_STRIP := 18
 
 ## Authored overlays, in pixels on the board (before camera zoom).
 ## A phone tile is 64px wide. These stay on the body, not the screen.

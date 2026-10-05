@@ -24,6 +24,7 @@ func _run() -> void:
 	_test_unknown_map_does_not_invent()
 	_test_walk_blocked_tiles_marked()
 	_test_brinewake_dock_layout()
+	_test_slagcrown_steam_blocks_sight()
 	_test_cell_tags_override()
 	_test_random_ship_id()
 	_test_hotseat_rolls_map()
@@ -607,7 +608,8 @@ func _test_slag_punch() -> void:
 		at[Vector2i(int(cell["x"]), int(cell["y"]))] = cell
 	eq(int(at[Vector2i(5, 4)]["elevation"]), 2, "Slagcrown high platform cell stays elevation 2")
 	eq(str(at[Vector2i(7, 7)]["terrain"]), "lava", "Slagcrown lava river stays lava")
-	eq(str(at[Vector2i(1, 12)]["terrain"]), "water", "Slagcrown ash pool tag stays water")
+	# Mauro 5 Oct 2026 steam corner: (1, 12) became the path; (2, 10) is a pool.
+	eq(str(at[Vector2i(2, 10)]["terrain"]), "water", "Slagcrown boiling pool tag stays water")
 	eq(str((at[Vector2i(0, 0)]["paint_only"] as Array)[0]), "basalt_pillar", "Slagcrown corner prop stays the basalt pillar")
 
 
@@ -883,6 +885,29 @@ func _test_walk_blocked_tiles_marked() -> void:
 				eq(kind, "block", "%s %s: a hole is an obstacle" % [map_id, cell])
 		truthy(marked > 0, "%s has marked tiles" % map_id)
 		sim.free()
+
+
+## Mauro 5 Oct 2026: Slagcrown's water boils and steams; "no attack could
+## cross that steam". Other maps' water still lets shots through.
+func _test_slagcrown_steam_blocks_sight() -> void:
+	var sim: Node = load("res://backend/combat_sim.gd").new()
+	root.add_child(sim)
+	sim.reset_match({"seed": 3, "map_id": "slagcrown", "skip_deploy": true})
+	truthy(not sim.has_line_of_sight(Vector2i(2, 9), Vector2i(2, 12)), "nobody shoots through the steaming pools")
+	truthy(sim.has_line_of_sight(Vector2i(0, 12), Vector2i(4, 12)), "the path row between the pools stays open")
+	truthy(sim._board.is_voluntary_impassable(Vector2i(2, 10)), "the boiling pool still cannot be walked into")
+	var steam: Array = sim.snapshot().get("map_steam", [])
+	eq(steam.size(), 11, "the board steams over its 5 boiling pools and 6 round water pits")
+	# Mauro: "do the steaming water in the circles": the ash_rock pits steam
+	# and (as before) block walk and sight.
+	truthy(not sim.has_line_of_sight(Vector2i(12, 11), Vector2i(12, 13)), "nobody shoots through a steaming pit")
+	# Mauro's steam picture "but leaving a path that characters can walk":
+	# the corner path runs x0 down to row 12, across it, and down x2 / x4.
+	for cell in [Vector2i(0, 10), Vector2i(0, 11), Vector2i(0, 12), Vector2i(1, 12), Vector2i(2, 12), Vector2i(3, 12), Vector2i(4, 12), Vector2i(2, 13), Vector2i(2, 14), Vector2i(4, 13), Vector2i(4, 14)]:
+		truthy(sim._board.is_walkable(cell) and not sim._board.is_voluntary_impassable(cell), "steam corner path walkable at %s" % str(cell))
+	truthy(not CellTagMap.terrain_blocks_sight("brinewake", "water"), "the dock's water does not block sight")
+	truthy(CellTagMap.terrain_blocks_sight("slagcrown", "water"), "the lava map's water does")
+	sim.free()
 
 
 ## Mauro 5 Oct 2026: the dock like his picture - the wreck in the middle, coral
