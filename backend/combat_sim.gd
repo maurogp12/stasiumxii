@@ -2116,6 +2116,9 @@ func _submit_place(intent: Dictionary) -> Dictionary:
 	var from: Vector2i = actor["pos"]
 	actor["pos"] = dest
 	actor["placed"] = true
+	# Mauro 5 Oct 2026 ("Players are not facing each other", deploy screenshot):
+	# while placing, every placed fighter already looks at its nearest enemy.
+	_face_opponents()
 	if _side_all_placed(_side(seat)):
 		_flow.mark_placed(_side(seat))
 	_intent_log.append(intent)
