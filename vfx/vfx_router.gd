@@ -221,14 +221,72 @@ const BLEND_TINT := {
 }
 
 
+## Painted Blend effects (build_tools/art/blend_fx.py, Mauro 5 Oct 2026:
+## "Can you add some visual effect to every element blend?"). 192x192 cells,
+## anchor = the target's feet. `ground` effects draw under the fighter.
+const BLEND_FX_DIR := "res://art/vfx/blends/"
+const BLEND_FX_ANCHOR := Vector2(96, 150)
+## World px per cell px: a 192 cell covers about 1.6 tiles.
+const BLEND_FX_SCALE := 0.55
+const BLEND_FX := {
+	"drift_pin": {"frames": 12, "fps": 16.0, "ground": false},
+	"spark": {"frames": 12, "fps": 18.0, "ground": false},
+	"sleet": {"frames": 12, "fps": 15.0, "ground": false},
+	"magma": {"frames": 12, "fps": 15.0, "ground": true},
+	"mire": {"frames": 12, "fps": 15.0, "ground": true},
+	"steam": {"frames": 12, "fps": 13.0, "ground": false},
+}
+## Lingering tiles: looping ground strips while the tile is on the board.
+const BLEND_TILE_FX := {
+	"magma": {"frames": 8, "fps": 9.0},
+	"steam": {"frames": 8, "fps": 8.0},
+}
+
+
+static func blend_fx_path(blend: String) -> String:
+	return BLEND_FX_DIR + "blend_%s.png" % blend
+
+
+static func blend_tile_spec(kind: String, cell: Vector2i) -> Dictionary:
+	var fx: Dictionary = BLEND_TILE_FX.get(kind, {})
+	if fx.is_empty():
+		return {}
+	return {
+		"pool": "strip",
+		"cell": cell,
+		"path": BLEND_FX_DIR + "blend_%s_loop.png" % kind,
+		"frames": int(fx["frames"]),
+		"fps": float(fx["fps"]),
+		"anchor": BLEND_FX_ANCHOR,
+		"scale": BLEND_FX_SCALE,
+		"loop": true,
+	}
+
+
 static func _blend_recipes(event: Dictionary) -> Array:
 	var seat := int(event.get("target_seat", -1))
 	var to := cell_of(event.get("to", Vector2i.ZERO))
-	var tint: Color = BLEND_TINT.get(str(event.get("blend", "")), Color.WHITE)
+	var blend := str(event.get("blend", ""))
+	var tint: Color = BLEND_TINT.get(blend, Color.WHITE)
 	var out: Array = []
 	var from := cell_of(event.get("from", to))
 	if from != to:
 		out.append(_slide(event, from, to, VfxBudget.BLOCK_SLIDE))
+	if BLEND_FX.has(blend):
+		var fx: Dictionary = BLEND_FX[blend]
+		out.append({
+			"id": "blend_fx",
+			"block": 0.0,
+			"seat": seat,
+			"cell": to,
+			"path": blend_fx_path(blend),
+			"frames": int(fx["frames"]),
+			"fps": float(fx["fps"]),
+			"anchor": BLEND_FX_ANCHOR,
+			"scale": BLEND_FX_SCALE,
+			"ground": bool(fx["ground"]),
+			"delay": 0.05,
+		})
 	out.append(_ring(to, tint, false, 0.45, 0.8, "sigil"))
 	out.append(_number(seat, to, str(event.get("name", "BLEND")).to_upper() + "!", "triage", 0.1, 1.3, "", tint))
 	if int(event.get("chip", 0)) > 0:
