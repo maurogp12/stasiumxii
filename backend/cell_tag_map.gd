@@ -53,6 +53,10 @@ const SIGHT_PROPS := {
 const SIGHT_PROP_KEEP := {
 	"stormspire": {"conduit": [Vector2i(7, 2), Vector2i(7, 12), Vector2i(2, 7), Vector2i(12, 7)]},
 }
+## Terrain that blocks sight on one arena. Mauro 5 Oct 2026: Slagcrown's water
+## boils and steams ("no attack could cross that steam"). Still not walkable,
+## like all water; a fighter is never on it, so no target is hidden.
+const SIGHT_TERRAIN := {"slagcrown": ["water"]}
 ## The arena centrepiece (Slagcrown volcano, Stormspire tower) blocks sight.
 const SIGHT_CENTERPIECE := {"slagcrown": Vector2i(7, 7), "stormspire": Vector2i(7, 7)}
 const _INFO := {
@@ -251,6 +255,12 @@ static func props_block_move(props: Variant, map_id: String = "", cell: Vector2i
 
 static func props_block_sight(map_id: String, props: Variant, cell: Vector2i) -> bool:
 	return props_block_move(props, map_id, cell)
+
+
+static func terrain_blocks_sight(map_id: String, terrain: String) -> bool:
+	if map_id == "":
+		return false
+	return (SIGHT_TERRAIN.get(normalize_id(map_id), []) as Array).has(terrain)
 
 
 static func _tall_prop_at(map_id: String, props: Variant, cell: Vector2i) -> bool:

@@ -24,6 +24,7 @@ func _run() -> void:
 	_test_unknown_map_does_not_invent()
 	_test_walk_blocked_tiles_marked()
 	_test_brinewake_dock_layout()
+	_test_slagcrown_steam_blocks_sight()
 	_test_cell_tags_override()
 	_test_random_ship_id()
 	_test_hotseat_rolls_map()
@@ -883,6 +884,22 @@ func _test_walk_blocked_tiles_marked() -> void:
 				eq(kind, "block", "%s %s: a hole is an obstacle" % [map_id, cell])
 		truthy(marked > 0, "%s has marked tiles" % map_id)
 		sim.free()
+
+
+## Mauro 5 Oct 2026: Slagcrown's water boils and steams; "no attack could
+## cross that steam". Other maps' water still lets shots through.
+func _test_slagcrown_steam_blocks_sight() -> void:
+	var sim: Node = load("res://backend/combat_sim.gd").new()
+	root.add_child(sim)
+	sim.reset_match({"seed": 3, "map_id": "slagcrown", "skip_deploy": true})
+	truthy(not sim.has_line_of_sight(Vector2i(0, 12), Vector2i(6, 12)), "nobody shoots through the steaming water")
+	truthy(sim.has_line_of_sight(Vector2i(0, 8), Vector2i(3, 8)), "a line beside the water stays open")
+	truthy(sim._board.is_voluntary_impassable(Vector2i(2, 12)), "the boiling water still cannot be walked into")
+	var steam: Array = sim.snapshot().get("map_steam", [])
+	eq(steam.size(), 8, "the board steams over its 8 water tiles")
+	truthy(not CellTagMap.terrain_blocks_sight("brinewake", "water"), "the dock's water does not block sight")
+	truthy(CellTagMap.terrain_blocks_sight("slagcrown", "water"), "the lava map's water does")
+	sim.free()
 
 
 ## Mauro 5 Oct 2026: the dock like his picture - the wreck in the middle, coral

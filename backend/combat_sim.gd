@@ -846,6 +846,7 @@ func snapshot() -> Dictionary:
 		"snap_wall_active": _bastion_in_match(),
 		"blocked_tiles": _blocked_tile_snapshot(),
 		"element_tiles": _element_tile_snapshot(),
+		"map_steam": _map_steam_snapshot(),
 		"shade_tokens": _placed_token_snapshot(_shade_tokens, false),
 		"plant_tiles": _placed_token_snapshot(_plant_tiles, true),
 		"umbral_cap": SpellKits.UMBRAL_CAP,
@@ -1869,6 +1870,29 @@ func element_tile_at(cell: Vector2i, kind: String) -> bool:
 		if str(tile["kind"]) == kind and tile["pos"] == cell:
 			return true
 	return false
+
+
+## Slagcrown's boiling water: its steam blocks sight (CellTagMap.SIGHT_TERRAIN).
+func _map_steam_at(cell: Vector2i) -> bool:
+	if _map_id == "" or _board == null:
+		return false
+	var tile = _board.tile_at(cell)
+	if tile == null:
+		return false
+	return _CellTagMap.terrain_blocks_sight(_map_id, str(_TerrainDef.NAMES.get(int(tile.terrain_type), "")))
+
+
+## Cells whose terrain steams for the board view (looping steam over them).
+func _map_steam_snapshot() -> Array:
+	var out: Array = []
+	if _map_id == "" or _board == null or not _CellTagMap.SIGHT_TERRAIN.has(_CellTagMap.normalize_id(_map_id)):
+		return out
+	for y in int(_board.height):
+		for x in int(_board.width):
+			var cell := Vector2i(x, y)
+			if _map_steam_at(cell):
+				out.append({"x": x, "y": y, "pos": cell})
+	return out
 
 
 func _element_tile_snapshot() -> Array:
@@ -5107,6 +5131,8 @@ func _blocks_sight(cell: Vector2i, _top: int, bodies: bool = true) -> bool:
 	if _CellTagMap.props_block_sight(_map_id, _paint_only.get(cell, []), cell):
 		return true
 	if _snap_wall_blocks(cell):
+		return true
+	if _map_steam_at(cell):
 		return true
 	# Steam (Fire + Water Blend): its tile blocks the line. The fighter on it
 	# is still a legal target (the end cells are never tested).

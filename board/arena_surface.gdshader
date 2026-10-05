@@ -8,6 +8,7 @@ shader_type canvas_item;
 //   mode 3  energy runes: dark cell with crackling violet/blue veins
 //   mode 4  slate: the stamp lifted, with a faint cold sheen
 //   mode 5  water: the stamp with drifting caustic light and a soft swell
+//   mode 6  boiling water: churning swell and bubbles that rise, swell and pop
 
 uniform int mode = 0;
 uniform float gain = 1.0;
@@ -99,6 +100,24 @@ void fragment() {
 		float caustic = smoothstep(0.86, 0.98, c1) * 0.7 + smoothstep(0.88, 0.99, c2) * 0.5;
 		float swell = 0.94 + 0.08 * sin(t * 1.3 + p.x * 0.9 + p.y * 0.6);
 		col = base * swell + vec3(0.55, 0.85, 1.0) * caustic * 0.45;
+	} else if (mode == 6) {
+		// Churn: fast warped swell so the surface never sits still.
+		float churn = fbm(p * 2.8 + vec2(t * 0.6, -t * 0.45));
+		col = base * (0.9 + 0.25 * churn);
+		// Bubbles: a few per cell, each on its own rise-and-pop cycle.
+		vec2 g = p * 3.0;
+		vec2 id = floor(g);
+		vec2 f = fract(g) - 0.5;
+		float seed = hash(id);
+		vec2 off = vec2(hash(id + 7.1), hash(id + 3.7)) - 0.5;
+		float phase = fract(t * (0.55 + seed * 0.6) + seed * 9.0);
+		float r = 0.08 + 0.22 * phase;
+		float d = length(f - off * 0.5);
+		float ring = smoothstep(r + 0.06, r, d) * smoothstep(r - 0.09, r - 0.02, d);
+		float fade = smoothstep(1.0, 0.75, phase) * step(0.35, seed);
+		col += vec3(0.75, 0.95, 1.0) * ring * fade * 0.9;
+		// Heat shimmer from the lava under it.
+		col += vec3(0.35, 0.12, 0.02) * smoothstep(0.6, 0.85, churn) * 0.5;
 	} else if (mode == 4) {
 		// Near-black slate, cooled toward the picture's blue-violet night.
 		float lum = dot(base, vec3(0.299, 0.587, 0.114));
