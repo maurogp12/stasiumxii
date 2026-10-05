@@ -167,8 +167,8 @@ const SPELLS := {
 		"engine_on_connect": "spend_impact",
 		"requires_impact": 2,
 		"spend_impact": 2,
-		# Locked Stun (A′): Stun 1 if Impact was 4 before the spend. Blocks move + cast + face.
-		"stun_if_impact_before": 4,
+		# Locked Stun (A′): Stun 1 if Impact was full (5, Mauro 5 Oct 2026; was 4) before the spend. Blocks move + cast + face.
+		"stun_if_impact_before": 5,
 		"stun_remaining": 1,
 	},
 	MEND: {
@@ -463,7 +463,9 @@ const CLASS_SPELLS := {
 }
 
 const MARKS_CAP := 5
-const IMPACT_CAP := 4
+# Mauro 5 Oct 2026: "need to be harder because once he stuns you its over":
+# Impact holds 5 and a stunning Crush needs the full 5 (was 4).
+const IMPACT_CAP := 5
 
 
 static func normalize_class_id(class_id: String) -> String:

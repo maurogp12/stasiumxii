@@ -38,7 +38,7 @@ const ELEMENT_TEXT := {
 const BLEND_ROWS := [
 	["air", "earth", "Drift-Pin", "Slides the enemy 1 tile away from you. If a wall, the edge or a body is in the way it hits for 8 instead. Pinned: it cannot walk on its next turn (Advance and Ambush still work). Never twice in a row on the same enemy.", "Ranged fighters keeping melee away; slamming enemies into walls."],
 	["air", "fire", "Spark", "4 damage that ignores resist and breaks shields first, then pushes the enemy 1 tile away. Your Fire Burn still lands.", "Finishing low enemies, cracking Mender's Ward."],
-	["air", "water", "Sleet", "An icy blast pushes the enemy 2 tiles away from you. A body in the way stops it; a wall or the edge stops it with the usual 4-damage bump.", "Ranged fighters knocking melee chasers back out of reach."],
+	["air", "water", "Sleet", "An icy blast pushes the enemy 1 tile away from you. A body in the way stops it; a wall or the edge stops it with the usual 4-damage bump.", "Ranged fighters knocking melee chasers back out of reach."],
 	["earth", "fire", "Magma", "The tile the enemy ends its next turn on burns: 4 damage to anyone who ends a turn there until your next turn.", "Enemies that are Stunned, Pinned or stuck in a corridor."],
 	["earth", "water", "Mire", "On its next turn, the enemy's first step off its tile costs +1 MP. Being pushed is free. Stacks with Bastion's Hold Line (+2 MP to leave).", "Melee fighters holding an enemy next to them."],
 	["fire", "water", "Steam", "The enemy's tile blocks line of sight until your next turn. The enemy standing there can still be hit; once it moves, nobody can shoot through that tile.", "Blocking enemy archers and casters, covering a retreat."],

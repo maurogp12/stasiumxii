@@ -55,7 +55,7 @@ to beat its counter:
 
 | Class | Countered by | Its way to win vs the counter |
 |---|---|---|
-| Ironjaw | Kestrel (kites) | close with walk + Advance (3 AP, max 2 per turn), build 4 Impact, Crush stun |
+| Ironjaw | Kestrel (kites) | close with walk + Advance (3 AP, max 2 per turn), build 5 Impact (cap 5 since Mauro 5 Oct 2026), Crush stun |
 | Kestrel | Gloam (dives while invisible) | blind shots reveal him on damage; Marks + Detonate burst his low HP |
 | Gloam | Bastion (Aegis Break hits invisible, big HP) | backstabs ×1.35 and Shade angles |
 | Bastion | Ironjaw (Crush stun, Shoulder push) | Snap Wall / Plant to block his path, outlast |
@@ -168,7 +168,7 @@ Only after the loadout screen can pick a real Secondary. Approved guard-rails:
 - **Pin (Drift-Pin) blocks walking (MP) off the tile only — never Advance or
   Ambush.** A target Pinned on its last turn cannot be Pinned on its next.
 - A body that took a Blend cannot take another until its own next turn ends.
-- Spark chip 6 → **4**. Sleet at most once per target turn (max −1 MP). *Mauro 5 Oct 2026: Sleet now pushes 2 tiles back instead of −1 MP.*
+- Spark chip 6 → **4**. Sleet at most once per target turn (max −1 MP). *Mauro 5 Oct 2026: Sleet now pushes 2 tiles back instead of −1 MP; later the same day 1 tile ("make that sleet only pushes 1 space").*
 - Steam works as written (line of sight exists).
 - Two mono teammates never share a Blend. Mender stays mono Water. Gloam stays
   Air / Neutral.
