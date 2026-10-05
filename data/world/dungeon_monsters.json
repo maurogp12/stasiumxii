@@ -1,0 +1,93 @@
+{
+  "format": "stasium.dungeon_monsters",
+  "format_version": 1,
+  "status": "proposed",
+  "notes": [
+    "Monster numbers are Proposed (WP8 says propose them, do not make them final). WP15 should score them.",
+    "Base values are at the band's first level. Each level above level_min adds hp_per_level of the base HP and damage_per_level of the base damage, rounded.",
+    "The hero side is the normal combat unit: 80 HP, 6 AP, 3 MP, the class kit. A level 1 hero of any class should clear the cellar solo.",
+    "Hit chance for monster attacks uses the same locked hit bands as the heroes (Chebyshev distance).",
+    "When the boss falls, the monsters it summoned scatter (they leave the fight), so a boss room is won by downing the boss."
+  ],
+  "scaling": {
+    "hp_per_level": 0.05,
+    "damage_per_level": 0.03
+  },
+  "monsters": [
+    {
+      "id": "granary_rat",
+      "name": "Granary Rat",
+      "dungeon": "old_granary_cellar",
+      "role": "basic",
+      "level_min": 1,
+      "level_max": 10,
+      "hp": 16,
+      "ap": 4,
+      "mp": 3,
+      "attack": {
+        "id": "rat_gnaw",
+        "name": "Gnaw",
+        "ap": 3,
+        "min_range": 1,
+        "max_range": 1,
+        "damage": 4,
+        "element": "earth"
+      },
+      "art": "granary_rat"
+    },
+    {
+      "id": "scarecrow_drudge",
+      "name": "Scarecrow Drudge",
+      "dungeon": "old_granary_cellar",
+      "role": "basic",
+      "level_min": 1,
+      "level_max": 10,
+      "hp": 30,
+      "ap": 5,
+      "mp": 2,
+      "attack": {
+        "id": "drudge_sickle",
+        "name": "Sickle Sweep",
+        "ap": 4,
+        "min_range": 1,
+        "max_range": 1,
+        "damage": 7,
+        "element": "earth"
+      },
+      "art": "scarecrow_drudge"
+    },
+    {
+      "id": "the_ratking",
+      "name": "The Ratking",
+      "dungeon": "old_granary_cellar",
+      "role": "boss",
+      "level_min": 1,
+      "level_max": 10,
+      "hp": 80,
+      "ap": 6,
+      "mp": 2,
+      "attack": {
+        "id": "ratking_crook",
+        "name": "Crook Smash",
+        "ap": 4,
+        "min_range": 1,
+        "max_range": 1,
+        "damage": 9,
+        "element": "earth"
+      },
+      "signature": {
+        "id": "ratking_call",
+        "name": "Call the Swarm",
+        "kind": "summon",
+        "ap": 2,
+        "summon": "granary_rat",
+        "count": 2,
+        "first_turn": 2,
+        "every": 3,
+        "cap_alive": 3,
+        "cap_total": 4
+      },
+      "art": "the_ratking"
+    }
+  ]
+}

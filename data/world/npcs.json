@@ -95,13 +95,13 @@
       "zone_id": "crosshaven_stoneford",
       "cell": {
         "x": 15,
-        "y": 12
+        "y": 11
       },
       "facing": "S",
       "body": "npc_door_keeper",
       "lines": [
         "I keep the door to Old Granary Cellar.",
-        "The way down is not open yet."
+        "Rats in the grain again. Mind the Ratking down there."
       ],
       "status": "proposed"
     },

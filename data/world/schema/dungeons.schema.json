@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://stasiumxii.local/schemas/world_dungeons.v1.json",
+  "title": "Stasium PC dungeon doors",
+  "description": "Sidecar stasium.world_dungeons version 1. Section 4.6. One dungeon per town band in the Crosshaven phase. A built dungeon has a door and a run file; a planned one has neither.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["format", "format_version", "status", "dungeons"],
+  "properties": {
+    "format": {"const": "stasium.world_dungeons"},
+    "format_version": {"const": 1},
+    "status": {"const": "proposed"},
+    "notes": {"type": "array", "items": {"type": "string"}},
+    "dungeons": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/dungeon"}}
+  },
+  "$defs": {
+    "dungeon": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "level_zone", "level_min", "level_max", "door_art", "theme", "boss", "rooms", "party", "keeper", "status"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+        "name": {"type": "string", "minLength": 1},
+        "level_zone": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+        "level_min": {"type": "integer", "minimum": 1},
+        "level_max": {"type": "integer", "minimum": 1},
+        "door": {"$ref": "#/$defs/door"},
+        "door_art": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+        "theme": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+        "boss": {"type": "string", "minLength": 1},
+        "rooms": {"const": 2},
+        "party": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["min", "max"],
+          "properties": {"min": {"const": 1}, "max": {"const": 4}}
+        },
+        "keeper": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+        "run": {"type": "string", "pattern": "^res://"},
+        "status": {"enum": ["built", "planned"]}
+      }
+    },
+    "door": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["zone_id", "x", "y"],
+      "properties": {
+        "zone_id": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+        "x": {"type": "integer", "minimum": 0},
+        "y": {"type": "integer", "minimum": 0}
+      }
+    }
+  }
+}

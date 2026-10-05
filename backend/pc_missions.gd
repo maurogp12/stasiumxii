@@ -11,6 +11,7 @@ const Progress = preload("res://backend/pc_progress.gd")
 const Maps = preload("res://backend/world_map.gd")
 const Walk = preload("res://backend/world_walk.gd")
 const Regions = preload("res://backend/world_regions.gd")
+const Dungeons = preload("res://backend/world_dungeons.gd")
 
 const MISSIONS_PATH := "res://data/world/missions.json"
 const TEMPLATES_PATH := "res://data/world/task_templates.json"
@@ -72,6 +73,9 @@ var _clear_percent := 0
 var _map = null
 var _walk_cache: Dictionary = {}
 var _migrating := false
+## Dungeon ids whose run is built (dungeons.json status "built"). A
+## clear_dungeon step on any other dungeon stays "coming soon".
+var _built_dungeons: Dictionary = {}
 
 
 static func load_default() -> Dictionary:
@@ -900,6 +904,14 @@ func _talk_target_line(npc_id: String, hero) -> String:
 func _soon(row: Dictionary) -> bool:
 	for step_value in row["steps"]:
 		var step: Dictionary = step_value
+		if str(step.get("type", "")) == "clear_dungeon" and not _built_dungeons.has(str(step.get("dungeon", ""))):
+			return true
+	return false
+
+
+func _has_dungeon_step(row: Dictionary) -> bool:
+	for step_value in row["steps"]:
+		var step: Dictionary = step_value
 		if str(step.get("type", "")) == "clear_dungeon":
 			return true
 	return false
@@ -1194,6 +1206,7 @@ func _empty_turn(reason: String) -> Dictionary:
 
 
 func _read(missions_doc: Dictionary, templates_doc: Dictionary, levels, npcs, curve: Dictionary, errors: Array) -> void:
+	_load_built_dungeons()
 	_load_pace(curve, errors)
 	_load_economy(errors)
 	_load_walk_map(errors)
@@ -1559,7 +1572,7 @@ func _check_sides(npcs, errors: Array) -> void:
 			_err(errors, "%s side turn-in" % id)
 		if not (row["requires"] as Array).is_empty():
 			_err(errors, "%s side requires" % id)
-		if _soon(row):
+		if _has_dungeon_step(row):
 			_err(errors, "%s side cannot be a dungeon" % id)
 		for step_value in row["steps"]:
 			var step: Dictionary = step_value
@@ -1697,6 +1710,15 @@ func _same_requires(row: Dictionary, only: String) -> bool:
 	if only == "":
 		return requires.is_empty()
 	return requires.size() == 1 and str(requires[0]) == only
+
+
+func _load_built_dungeons() -> void:
+	_built_dungeons = {}
+	var loaded: Dictionary = Dungeons.load_default()
+	if not bool(loaded.get("ok", false)):
+		return
+	for row in loaded["dungeons"].built():
+		_built_dungeons[str(row["id"])] = true
 
 
 func _load_pace(curve: Dictionary, errors: Array) -> void:

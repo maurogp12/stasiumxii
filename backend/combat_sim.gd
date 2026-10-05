@@ -114,9 +114,16 @@ var _turn_time_limit: float = TURN_TIME_LIMIT
 var _turn_time_running: bool = false
 ## True after apply_host_snapshot. Replica may paint; it must not tick or submit.
 var _replica: bool = false
+## PC dungeon run state. Empty in every PvP / Koliseo / mobile match. Only
+## reset_match(config) with a `dungeon` key fills it (see the dungeon section
+## at the end of this file). Every dungeon branch checks it first.
+var _dungeon: Dictionary = {}
 
 
 func reset_match(config: Dictionary = {}) -> Dictionary:
+	_dungeon = {}
+	if config.has("dungeon") and typeof(config["dungeon"]) == TYPE_DICTIONARY:
+		return _reset_dungeon(config)
 	_units.clear()
 	_blocked_cells.clear()
 	_snap_wall_cells.clear()
@@ -270,6 +277,8 @@ func legal_intents(seat: int) -> Array:
 	if _is_stunned(actor):
 		out.append({"type": "end_turn", "seat": seat, "auto": true})
 		return out
+	if not _dungeon.is_empty() and actor.has("monster"):
+		return _monster_legal_intents(actor)
 
 	for dir in FACING_VEC.keys():
 		if str(dir) == str(actor["facing"]):
@@ -361,19 +370,20 @@ func legal_intents(seat: int) -> Array:
 			# Card MP was already compared to the unit's MP. Do not reuse the
 			# walk budget here: exit tax shortens walks only. A 0 MP cast
 			# such as Ambush stays legal at MP 0.
-			var enemy := _enemy_of(seat)
-			if enemy.is_empty() or not enemy["alive"]:
-				continue
-			if _cast_gate_reason(actor, enemy, def) != "":
-				continue
-			if _in_spell_range(def, from, enemy["pos"]):
-				out.append({
-					"type": "cast",
-					"spell": spell_id,
-					"to": enemy["pos"],
-					"target_seat": enemy["seat"],
-					"seat": seat,
-				})
+			# PvP has one enemy. A dungeon offers the cast on every live foe.
+			for enemy in _cast_enemies(seat):
+				if enemy.is_empty() or not enemy["alive"]:
+					continue
+				if _cast_gate_reason(actor, enemy, def) != "":
+					continue
+				if _in_spell_range(def, from, enemy["pos"]):
+					out.append({
+						"type": "cast",
+						"spell": spell_id,
+						"to": enemy["pos"],
+						"target_seat": enemy["seat"],
+						"seat": seat,
+					})
 
 	out.append({"type": "end_turn", "seat": seat})
 	return out
@@ -540,6 +550,12 @@ func range_highlight_cells(seat: int, spell_id: String) -> Array:
 
 
 func snapshot() -> Dictionary:
+	if not _dungeon.is_empty():
+		return _dungeon_snapshot()
+	return _pvp_snapshot()
+
+
+func _pvp_snapshot() -> Dictionary:
 	var units: Array = []
 	for unit in _units:
 		units.append(_unit_snapshot(unit))
@@ -670,6 +686,7 @@ func snapshot() -> Dictionary:
 ## Does not roll, does not _broadcast, and is not authority. Host still owns submit.
 func apply_host_snapshot(snap: Dictionary) -> void:
 	_replica = true
+	_dungeon = {}
 	_seed = int(snap.get("seed", 0))
 	_elev_seed = int(snap.get("elev_seed", _seed))
 	_rng.seed = _seed
@@ -1353,6 +1370,8 @@ func _handoff_seat(actor: Dictionary, auto_skip: bool, skip_reason: String = "")
 	# The seat that is leaving has completed this turn, including a stunned skip.
 	# Shades owned by the other seat count that completion toward Ambush arming.
 	_note_opponent_shade_turns(int(actor.get("seat", -1)))
+	if not _dungeon.is_empty():
+		return _dungeon_handoff(actor, auto_skip, skip_reason)
 	var next_seat := 1 if _active_seat == 0 else 0
 	var next_unit := _unit_by_seat(next_seat)
 	if next_unit.is_empty() or not next_unit["alive"]:
@@ -1511,6 +1530,8 @@ func _face_along_walk(actor: Dictionary, from: Vector2i, path: Array) -> Array:
 
 
 func _submit_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
+	if not _dungeon.is_empty() and actor.has("monster"):
+		return _submit_monster_cast(intent, actor)
 	var spell_id := str(intent.get("spell", ""))
 	var def: Dictionary = SpellKits.spell(spell_id)
 	if def.is_empty():
@@ -1938,6 +1959,9 @@ func _check_death(target: Dictionary, cause: String = "damage") -> void:
 		"cause": cause,
 		"coach": "%s falls." % target["name"],
 	})
+	if not _dungeon.is_empty():
+		_dungeon_after_death(target)
+		return
 	_finish_match(_enemy_of(int(target["seat"]))["seat"])
 
 
@@ -2612,7 +2636,16 @@ func _unit_by_seat(seat: int) -> Dictionary:
 
 
 func _enemy_of(seat: int) -> Dictionary:
+	if not _dungeon.is_empty():
+		return _dungeon_enemy_of(seat)
 	return _unit_by_seat(1 if seat == 0 else 0)
+
+
+## Bodies a single-target cast may be offered on. PvP: the one enemy.
+func _cast_enemies(seat: int) -> Array:
+	if not _dungeon.is_empty():
+		return _dungeon_foes_of(seat)
+	return [_enemy_of(seat)]
 
 
 func _living_unit_at(cell: Vector2i) -> Dictionary:
@@ -3920,6 +3953,9 @@ func _is_empty(cell: Vector2i) -> bool:
 	for unit in _units:
 		if not bool(unit.get("placed", true)):
 			continue
+		# Dungeon corpses do not block (the match goes on past a death).
+		if not _dungeon.is_empty() and not bool(unit.get("alive", true)):
+			continue
 		if unit["pos"] == cell:
 			return false
 	return true
@@ -3943,3 +3979,579 @@ func _as_cell(value: Variant) -> Vector2i:
 
 func _cell_text(cell: Vector2i) -> String:
 	return "(%d,%d)" % [cell.x, cell.y]
+
+
+# ---------------------------------------------------------------------------
+# PC dungeon mode. Reached only through reset_match({"dungeon": room, ...}).
+# PvP, Koliseo and mobile matches never set _dungeon, so every branch above
+# that checks it keeps its old path. Same turn system, AP / MP, hit bands,
+# facing and hero kit; seat 0 is the hero, seats 1+ are monsters (team
+# "monsters"). Monsters act through their own attack and, for a boss, one
+# signature move. The view and the monster AI drive them with ordinary
+# intents (move / cast / face / end_turn).
+#
+# Room dict (built by backend/pc_dungeon_run.gd):
+#   dungeon_id, room_id, room_name, kind ("pack" / "boss"), board_size,
+#   cells [{pos, terrain, elevation, paint_only, blocks, special}],
+#   pad_heal, hero {class_id, name, pos, facing, hp, max_hp},
+#   monsters [{monster, name, pos, facing, hp, ap, mp, attack, signature,
+#   boss, art, level, element}], summons {monster_id: same shape}.
+# ---------------------------------------------------------------------------
+
+const DUNGEON_HERO_SEAT := 0
+
+
+func is_dungeon() -> bool:
+	return not _dungeon.is_empty()
+
+
+func dungeon_state() -> Dictionary:
+	return _dungeon.duplicate(true)
+
+
+func _reset_dungeon(config: Dictionary) -> Dictionary:
+	var room: Dictionary = (config["dungeon"] as Dictionary).duplicate(true)
+	_units.clear()
+	_blocked_cells.clear()
+	_snap_wall_cells.clear()
+	_snap_wall_state.clear()
+	_shade_tokens.clear()
+	_plant_tiles.clear()
+	_active_seat = DUNGEON_HERO_SEAT
+	_turn_index = 0
+	_match_over = false
+	_winner_seat = -1
+	_scripted_rolls.clear()
+	_last_events.clear()
+	_intent_log.clear()
+	_replica = false
+	_stop_turn_timer()
+	_board_size = int(config.get("board_size", room.get("board_size", 12)))
+	if _board_size < 4:
+		_board_size = 12
+	_board = _WalkBoard.new(_board_size, _board_size)
+	_paint_only = {}
+	_seed = int(config.get("seed", Time.get_ticks_usec()))
+	_elev_seed = _seed
+	_rng.seed = _seed
+	_quiet = bool(config.get("quiet", false))
+	_elevation_gen = "dungeon"
+	_map_id = "dungeon_%s" % str(room.get("room_id", "room"))
+	_demo_map = _map_id
+	if config.has("rolls"):
+		for roll in config["rolls"]:
+			_scripted_rolls.append(int(roll))
+	var pads: Array = []
+	for raw in room.get("cells", []):
+		if typeof(raw) != TYPE_DICTIONARY:
+			continue
+		var rec: Dictionary = raw
+		var cell := _as_cell(rec.get("pos", rec))
+		if not _in_bounds(cell):
+			continue
+		var walk: Variant = false if bool(rec.get("blocks", false)) else null
+		_board.set_tile(cell, rec.get("terrain", "ground"), _ElevationCost.as_z(rec.get("elevation", 0)), walk)
+		var props: Variant = rec.get("paint_only", [])
+		if props is Array and not (props as Array).is_empty():
+			_paint_only[cell] = (props as Array).duplicate()
+		if str(rec.get("special", "")) != "":
+			pads.append(cell)
+	_dungeon = {
+		"dungeon_id": str(room.get("dungeon_id", "")),
+		"room_id": str(room.get("room_id", "")),
+		"room_name": str(room.get("room_name", "")),
+		"kind": str(room.get("kind", "pack")),
+		"pads": pads,
+		"pad_heal": int(room.get("pad_heal", 0)),
+		"summons": (room.get("summons", {}) as Dictionary).duplicate(true) if typeof(room.get("summons", {})) == TYPE_DICTIONARY else {},
+		"result": "",
+		"round": 1,
+		"summoned_total": 0,
+	}
+	var flow_config := {"board_size": _board_size, "elev_seed": _elev_seed}
+	_flow.reset(_seed, flow_config)
+	var hero_cfg: Dictionary = room.get("hero", {})
+	var class_id := SpellKits.normalize_class_id(str(hero_cfg.get("class_id", SpellKits.CLASS_KESTREL)))
+	if not SpellKits.is_roster_class(class_id):
+		class_id = SpellKits.CLASS_KESTREL
+	var hero_name := str(hero_cfg.get("name", ""))
+	if hero_name == "":
+		hero_name = SpellKits.display_name(class_id)
+	var hero := _make_unit(DUNGEON_HERO_SEAT, class_id, hero_name, SpellKits.element_of(class_id), _as_cell(hero_cfg.get("pos", Vector2i(0, 0))), str(hero_cfg.get("facing", "N")), true)
+	hero["team"] = "hero"
+	if hero_cfg.has("max_hp"):
+		hero["max_hp"] = maxi(int(hero_cfg["max_hp"]), 1)
+	hero["hp"] = clampi(int(hero_cfg.get("hp", hero["max_hp"])), 1, int(hero["max_hp"]))
+	hero["locked"] = true
+	_units.append(hero)
+	var seat := DUNGEON_HERO_SEAT + 1
+	for raw in room.get("monsters", []):
+		if typeof(raw) != TYPE_DICTIONARY:
+			continue
+		var spec: Dictionary = raw
+		_units.append(_make_monster(seat, spec, _as_cell(spec.get("pos", Vector2i.ZERO)), str(spec.get("facing", "S")), false))
+		seat += 1
+	_flow.skip_to_combat()
+	_turn_index = 1
+	_active_seat = DUNGEON_HERO_SEAT
+	for unit in _units:
+		unit["ap"] = int(unit.get("max_ap", MAX_AP))
+		unit["mp"] = int(unit.get("max_mp", MAX_MP))
+	_start_turn_timer()
+	_last_coach = "%s. %s's turn." % [str(_dungeon["room_name"]), hero_name]
+	_last_events = [{
+		"type": "combat_start",
+		"phase": _flow.phase_name(),
+		"positions_locked": true,
+		"dungeon": true,
+		"coach": _last_coach,
+	}, {
+		"type": "turn_start",
+		"seat": _active_seat,
+		"turn": _turn_index,
+		"turn_time_remaining": _turn_time_remaining,
+		"turn_time_limit": _turn_time_limit,
+		"coach": _last_coach,
+	}]
+	_broadcast()
+	return snapshot()
+
+
+func _make_monster(seat: int, spec: Dictionary, pos: Vector2i, facing: String, summoned: bool) -> Dictionary:
+	var monster_id := str(spec.get("monster", "monster"))
+	var unit := _make_unit(seat, monster_id, str(spec.get("name", monster_id)), str(spec.get("element", "earth")), pos, facing, true)
+	unit["spells"] = []
+	unit["team"] = "monsters"
+	unit["monster"] = monster_id
+	unit["boss"] = bool(spec.get("boss", false))
+	unit["art"] = str(spec.get("art", monster_id))
+	unit["level"] = int(spec.get("level", 1))
+	unit["max_hp"] = maxi(int(spec.get("hp", 20)), 1)
+	unit["hp"] = int(unit["max_hp"])
+	unit["max_ap"] = maxi(int(spec.get("ap", 4)), 0)
+	unit["max_mp"] = maxi(int(spec.get("mp", 3)), 0)
+	unit["ap"] = int(unit["max_ap"])
+	unit["mp"] = int(unit["max_mp"])
+	unit["attack"] = (spec.get("attack", {}) as Dictionary).duplicate(true) if typeof(spec.get("attack", {})) == TYPE_DICTIONARY else {}
+	unit["signature"] = (spec.get("signature", {}) as Dictionary).duplicate(true) if typeof(spec.get("signature", {})) == TYPE_DICTIONARY else {}
+	unit["summoned"] = summoned
+	unit["own_turns"] = 0
+	unit["acted_signature"] = false
+	unit["locked"] = true
+	return unit
+
+
+func _is_monster(unit: Dictionary) -> bool:
+	return unit.has("monster")
+
+
+func _dungeon_hero() -> Dictionary:
+	return _unit_by_seat(DUNGEON_HERO_SEAT)
+
+
+func _living_monsters() -> Array:
+	var out: Array = []
+	for unit in _units:
+		if _is_monster(unit) and bool(unit.get("alive", false)):
+			out.append(unit)
+	return out
+
+
+## Hero side: the nearest live monster (Chebyshev, then lowest seat). Monster: the hero.
+func _dungeon_enemy_of(seat: int) -> Dictionary:
+	var actor := _unit_by_seat(seat)
+	if actor.is_empty():
+		return {}
+	if _is_monster(actor):
+		return _dungeon_hero()
+	var best: Dictionary = {}
+	var best_d := 1 << 20
+	for unit in _living_monsters():
+		var d := chebyshev(actor["pos"], unit["pos"])
+		if d < best_d:
+			best_d = d
+			best = unit
+	return best
+
+
+func _dungeon_foes_of(seat: int) -> Array:
+	var actor := _unit_by_seat(seat)
+	if actor.is_empty():
+		return []
+	if _is_monster(actor):
+		var hero := _dungeon_hero()
+		return [] if hero.is_empty() else [hero]
+	return _living_monsters()
+
+
+func _next_dungeon_seat(from_seat: int) -> int:
+	var seats: Array[int] = []
+	for unit in _units:
+		seats.append(int(unit["seat"]))
+	seats.sort()
+	if seats.is_empty():
+		return -1
+	var start := seats.find(from_seat)
+	for step in range(1, seats.size() + 1):
+		var seat: int = seats[(start + step) % seats.size()]
+		var unit := _unit_by_seat(seat)
+		if bool(unit.get("alive", false)):
+			return seat
+	return -1
+
+
+func _dungeon_handoff(actor: Dictionary, auto_skip: bool, skip_reason: String, depth: int = 0) -> Dictionary:
+	if _match_over:
+		return {}
+	var next_seat := _next_dungeon_seat(int(actor.get("seat", _active_seat)))
+	if next_seat < 0:
+		return {}
+	var next_unit := _unit_by_seat(next_seat)
+	if int(actor.get("exit_tax", 0)) > 0:
+		actor["exit_tax"] = int(actor["exit_tax"]) - 1
+	if next_seat <= int(actor.get("seat", 0)):
+		_dungeon["round"] = int(_dungeon.get("round", 1)) + 1
+	_active_seat = next_seat
+	_turn_index += 1
+	_begin_unit_turn(next_unit)
+	next_unit["ap"] = int(next_unit.get("max_ap", MAX_AP))
+	next_unit["mp"] = int(next_unit.get("max_mp", MAX_MP))
+	if _is_monster(next_unit):
+		next_unit["own_turns"] = int(next_unit.get("own_turns", 0)) + 1
+		next_unit["acted_signature"] = false
+	if bool(next_unit.get("skip_next_mp", false)):
+		next_unit["mp"] = 0
+		next_unit["skip_next_mp"] = false
+		_emit_expire("skip_next_mp", next_unit["pos"], int(next_unit["seat"]), int(next_unit["seat"]))
+	_start_turn_timer()
+	var stunned := _is_stunned(next_unit)
+	if stunned:
+		_last_coach = "%s's turn skipped — stunned." % next_unit["name"]
+	else:
+		_last_coach = "%s's turn." % next_unit["name"]
+	var end_event := {
+		"type": "end_turn",
+		"seat": actor["seat"],
+		"next_seat": _active_seat,
+		"coach": _last_coach,
+	}
+	if auto_skip:
+		end_event["auto"] = true
+		end_event["reason"] = skip_reason if skip_reason != "" else "stunned"
+	_last_events.append(end_event)
+	_last_events.append({
+		"type": "turn_start",
+		"seat": _active_seat,
+		"turn": _turn_index,
+		"round": int(_dungeon.get("round", 1)),
+		"stunned_skip": stunned,
+		"turn_time_remaining": _turn_time_remaining,
+		"turn_time_limit": _turn_time_limit,
+		"coach": _last_coach,
+	})
+	_dungeon_pad_heal(next_unit)
+	_tick_burn(next_unit)
+	if not _match_over and not bool(next_unit.get("alive", false)) and depth < _units.size() + 1:
+		return _dungeon_handoff(next_unit, true, "dead", depth + 1)
+	return next_unit
+
+
+## Glowing pads: the hero heals pad_heal at the start of a turn on one.
+func _dungeon_pad_heal(unit: Dictionary) -> void:
+	var amount := int(_dungeon.get("pad_heal", 0))
+	if amount <= 0 or _is_monster(unit) or not bool(unit.get("alive", false)):
+		return
+	var pads: Array = _dungeon.get("pads", [])
+	if not pads.has(unit["pos"]):
+		return
+	var healed := _apply_heal(unit, amount)
+	if healed <= 0:
+		return
+	_last_events.append({
+		"type": "pad",
+		"seat": unit["seat"],
+		"cell": unit["pos"],
+		"healed": healed,
+		"hp": int(unit["hp"]),
+		"coach": "The pad's glow mends %s (+%d HP)." % [unit["name"], healed],
+	})
+
+
+func _dungeon_after_death(target: Dictionary) -> void:
+	if _match_over:
+		return
+	if not _is_monster(target):
+		_dungeon["result"] = "lose"
+		var killer := 1
+		var alive := _living_monsters()
+		if not alive.is_empty():
+			killer = int((alive[0] as Dictionary)["seat"])
+		_finish_match(killer)
+		return
+	if bool(target.get("boss", false)):
+		_scatter_summons(target)
+	if _living_monsters().is_empty():
+		_dungeon["result"] = "win"
+		_finish_match(DUNGEON_HERO_SEAT)
+
+
+## A fallen boss's summons scatter: they leave the fight (not a kill).
+func _scatter_summons(boss: Dictionary) -> void:
+	var fled: Array = []
+	for unit in _living_monsters():
+		if bool(unit.get("summoned", false)):
+			unit["alive"] = false
+			unit["hp"] = 0
+			unit["fled"] = true
+			fled.append(int(unit["seat"]))
+	if fled.is_empty():
+		return
+	_last_events.append({
+		"type": "scatter",
+		"seat": boss["seat"],
+		"fled": fled,
+		"coach": "With %s down, the swarm scatters." % boss["name"],
+	})
+
+
+func _monster_legal_intents(actor: Dictionary) -> Array:
+	var out: Array = []
+	var seat := int(actor["seat"])
+	for dir in FACING_VEC.keys():
+		if str(dir) != str(actor["facing"]):
+			out.append({"type": "face", "dir": dir, "seat": seat})
+	var mp := int(actor.get("mp", 0))
+	if mp > 0:
+		for cell in _board.reachable_dests(actor["pos"], mp, Callable(self, "_walk_occupied")):
+			out.append({"type": "move", "to": cell, "seat": seat})
+	var attack: Dictionary = actor.get("attack", {})
+	var hero := _dungeon_hero()
+	if not attack.is_empty() and not hero.is_empty() and bool(hero.get("alive", false)):
+		if _monster_attack_reason(actor, attack, hero["pos"]) == "":
+			out.append({"type": "cast", "spell": str(attack.get("id", "")), "to": hero["pos"], "target_seat": hero["seat"], "seat": seat})
+	var sig: Dictionary = actor.get("signature", {})
+	if not sig.is_empty() and summon_ready(actor):
+		out.append({"type": "cast", "spell": str(sig.get("id", "")), "to": actor["pos"], "seat": seat})
+	out.append({"type": "end_turn", "seat": seat})
+	return out
+
+
+func _monster_attack_reason(actor: Dictionary, attack: Dictionary, dest: Vector2i) -> String:
+	if int(actor.get("ap", 0)) < int(attack.get("ap", 0)):
+		return "insufficient_ap"
+	var dist := chebyshev(actor["pos"], dest)
+	if dist < int(attack.get("min_range", 1)) or dist > int(attack.get("max_range", 1)):
+		return "out_of_range"
+	if hit_chance(dist) < 0:
+		return "out_of_range"
+	var target := _living_unit_at(dest)
+	if target.is_empty() or _is_monster(target):
+		return "no_target"
+	return ""
+
+
+## Boss signature: on the boss's first_turn-th turn, then every `every`
+## turns, while under the live and total caps, with AP and a free cell.
+func summon_ready(actor: Dictionary) -> bool:
+	var sig: Dictionary = actor.get("signature", {})
+	if sig.is_empty() or str(sig.get("kind", "summon")) != "summon":
+		return false
+	if bool(actor.get("acted_signature", false)):
+		return false
+	if int(actor.get("ap", 0)) < int(sig.get("ap", 0)):
+		return false
+	var turns := int(actor.get("own_turns", 0))
+	var first := maxi(int(sig.get("first_turn", 1)), 1)
+	var every := maxi(int(sig.get("every", 1)), 1)
+	if turns < first or (turns - first) % every != 0:
+		return false
+	return _summon_room(actor) > 0
+
+
+func _summon_room(actor: Dictionary) -> int:
+	var sig: Dictionary = actor.get("signature", {})
+	var alive_summons := 0
+	for unit in _living_monsters():
+		if bool(unit.get("summoned", false)):
+			alive_summons += 1
+	var by_alive := int(sig.get("cap_alive", 0)) - alive_summons
+	var by_total := int(sig.get("cap_total", 0)) - int(_dungeon.get("summoned_total", 0))
+	var free := _summon_cells(actor, int(sig.get("count", 1))).size()
+	return maxi(mini(mini(mini(by_alive, by_total), int(sig.get("count", 1))), free), 0)
+
+
+## Free walkable cells around the caster, ring by ring (Chebyshev 1, then 2).
+func _summon_cells(actor: Dictionary, want: int) -> Array[Vector2i]:
+	var out: Array[Vector2i] = []
+	var origin: Vector2i = actor["pos"]
+	var hero := _dungeon_hero()
+	for ring in [1, 2]:
+		var ring_cells: Array[Vector2i] = []
+		for dy in range(-ring, ring + 1):
+			for dx in range(-ring, ring + 1):
+				if maxi(absi(dx), absi(dy)) != ring:
+					continue
+				ring_cells.append(origin + Vector2i(dx, dy))
+		# Nearest to the hero first so the swarm comes at the fight.
+		if not hero.is_empty():
+			ring_cells.sort_custom(func(a: Vector2i, b: Vector2i) -> bool:
+				var da := manhattan(a, hero["pos"])
+				var db := manhattan(b, hero["pos"])
+				if da != db:
+					return da < db
+				return a.y * 100 + a.x < b.y * 100 + b.x)
+		for cell in ring_cells:
+			if out.size() >= want:
+				return out
+			if _in_bounds(cell) and _board.is_walkable(cell) and _is_empty(cell):
+				out.append(cell)
+	return out
+
+
+func _submit_monster_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
+	var spell_id := str(intent.get("spell", ""))
+	var attack: Dictionary = actor.get("attack", {})
+	var sig: Dictionary = actor.get("signature", {})
+	if not sig.is_empty() and spell_id == str(sig.get("id", "")):
+		return _resolve_summon(intent, actor, sig)
+	if attack.is_empty() or spell_id != str(attack.get("id", "")):
+		return _reject(intent, "spell_not_in_kit", "REJECT — %s cannot use that." % actor["name"])
+	if not intent.has("to"):
+		return _reject(intent, "missing_target", "REJECT — %s needs a target." % attack.get("name", "Attack"))
+	var dest: Vector2i = intent["to"]
+	var reason := _monster_attack_reason(actor, attack, dest)
+	if reason != "":
+		return _reject(intent, reason, "REJECT — %s (%s)." % [attack.get("name", "Attack"), reason])
+	var target := _living_unit_at(dest)
+	var caster_cell: Vector2i = actor["pos"]
+	var ap_cost := int(attack.get("ap", 0))
+	actor["ap"] = int(actor["ap"]) - ap_cost
+	var face := _face_toward_cell(caster_cell, dest)
+	if face != "":
+		actor["facing"] = face
+	var dist := chebyshev(caster_cell, dest)
+	var chance := hit_chance(dist)
+	var roll := _roll_d100()
+	_intent_log.append(intent)
+	if roll > chance:
+		_last_coach = "%s's %s misses %s (%d vs %d%%)." % [actor["name"], attack.get("name", "attack"), target["name"], roll, chance]
+		_last_events.append({
+			"type": "miss",
+			"seat": actor["seat"],
+			"spell": spell_id,
+			"monster_attack": true,
+			"caster_cell": caster_cell,
+			"target_seat": target["seat"],
+			"to": dest,
+			"range": dist,
+			"hit_chance": chance,
+			"roll": roll,
+			"ap_spent": ap_cost,
+			"mp_spent": 0,
+			"damage": 0,
+			"coach": _last_coach,
+		})
+		return _accept()
+	var facing_mult := _facing_multiplier(caster_cell, target["pos"], str(target["facing"]))
+	var base := int(attack.get("damage", 1))
+	var pre := _dealt(base, facing_mult, actor, target)
+	var mitigation := _mitigate_hit(actor, target, pre)
+	var damage := int(mitigation["damage"])
+	target["hp"] = maxi(int(target["hp"]) - damage, 0)
+	var is_back := facing_mult > FRONT_SIDE_FACING + 0.001
+	_last_coach = "HIT %d — %s's %s on %s (%d vs %d%%)%s." % [damage, actor["name"], attack.get("name", "attack"), target["name"], roll, chance, " BACK" if is_back else ""]
+	var hit_event := {
+		"type": "hit",
+		"seat": actor["seat"],
+		"spell": spell_id,
+		"monster_attack": true,
+		"caster_cell": caster_cell,
+		"target_seat": target["seat"],
+		"to": dest,
+		"range": dist,
+		"hit_chance": chance,
+		"roll": roll,
+		"ap_spent": ap_cost,
+		"mp_spent": 0,
+		"base_damage": base,
+		"facing_mult": facing_mult,
+		"back": is_back,
+		"crit_mult": CRIT_MULT,
+		"damage": damage,
+		"element": str(attack.get("element", "earth")),
+		"engine": "",
+		"engine_gained": 0,
+		"engine_spent": 0,
+		"coach": _last_coach,
+	}
+	_stamp_mitigation(hit_event, mitigation)
+	_last_events.append(hit_event)
+	_emit_immunity_spent(target, mitigation)
+	_check_death(target)
+	return _accept()
+
+
+func _resolve_summon(intent: Dictionary, actor: Dictionary, sig: Dictionary) -> Dictionary:
+	if not summon_ready(actor):
+		return _reject(intent, "summon_not_ready", "REJECT — %s is not ready." % sig.get("name", "Summon"))
+	var room := _summon_room(actor)
+	var spec: Dictionary = (_dungeon.get("summons", {}) as Dictionary).get(str(sig.get("summon", "")), {})
+	if spec.is_empty() or room <= 0:
+		return _reject(intent, "summon_not_ready", "REJECT — nothing answers the call.")
+	var ap_cost := int(sig.get("ap", 0))
+	actor["ap"] = int(actor["ap"]) - ap_cost
+	actor["acted_signature"] = true
+	_intent_log.append(intent)
+	var made: Array = []
+	var next_seat := 0
+	for unit in _units:
+		next_seat = maxi(next_seat, int(unit["seat"]) + 1)
+	for cell in _summon_cells(actor, room):
+		var hero := _dungeon_hero()
+		var face := _face_toward_cell(cell, hero["pos"]) if not hero.is_empty() else "S"
+		var unit := _make_monster(next_seat, spec, cell, face if face != "" else "S", true)
+		# A fresh summon waits for its own turn in this round.
+		_units.append(unit)
+		made.append({"seat": next_seat, "pos": cell, "monster": str(unit["monster"]), "name": str(unit["name"])})
+		next_seat += 1
+	_dungeon["summoned_total"] = int(_dungeon.get("summoned_total", 0)) + made.size()
+	_last_coach = "%s uses %s: %d %s answer." % [actor["name"], sig.get("name", "a summon"), made.size(), str(spec.get("name", "monsters"))]
+	_last_events.append({
+		"type": "summon",
+		"seat": actor["seat"],
+		"spell": str(sig.get("id", "")),
+		"caster_cell": actor["pos"],
+		"summoned": made,
+		"ap_spent": ap_cost,
+		"summoned_total": int(_dungeon["summoned_total"]),
+		"coach": _last_coach,
+	})
+	return _accept()
+
+
+static func _face_toward_cell(from: Vector2i, to: Vector2i) -> String:
+	var delta := to - from
+	if delta == Vector2i.ZERO:
+		return ""
+	if absi(delta.x) >= absi(delta.y):
+		return "E" if delta.x > 0 else "W"
+	return "S" if delta.y > 0 else "N"
+
+
+func _dungeon_snapshot() -> Dictionary:
+	var snap := _pvp_snapshot()
+	var alive := _living_monsters().size()
+	snap["local_seat"] = DUNGEON_HERO_SEAT
+	snap["dungeon"] = {
+		"dungeon_id": str(_dungeon.get("dungeon_id", "")),
+		"room_id": str(_dungeon.get("room_id", "")),
+		"room_name": str(_dungeon.get("room_name", "")),
+		"kind": str(_dungeon.get("kind", "")),
+		"pads": (_dungeon.get("pads", []) as Array).duplicate(),
+		"pad_heal": int(_dungeon.get("pad_heal", 0)),
+		"result": str(_dungeon.get("result", "")),
+		"round": int(_dungeon.get("round", 1)),
+		"monsters_alive": alive,
+		"summoned_total": int(_dungeon.get("summoned_total", 0)),
+	}
+	return snap
