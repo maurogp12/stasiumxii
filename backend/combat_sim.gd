@@ -57,6 +57,13 @@ const BACK_FACING := 1.20
 const FRONT_SIDE_FACING := 1.00
 ## Director Locked Shoulder stagger: 4 HP; +1 MP only when current MP >= 1.
 const STAGGER_HP := 4
+## Elements Step 2 (docs/BALANCE_PLAN_HANDOFF.md §3; Mauro 4 Oct 2026: "its time
+## to continue on elements"). Residue lasts 2 of the target's own turns. An
+## Earth push into a wall hits for 8 instead of the stagger 4, once per target
+## per turn.
+const RESIDUE_TURNS := 2
+const EARTH_COLLISION_HP := 8
+const FIRE_RIDER_BURN_TURNS := 1
 const STAGGER_MP := 1
 ## Clean push (walkable empty, or lava land — not a bounce): +1 Impact.
 ## Bounce (OOB / truly blocked, not lava): +2 Impact only. Do not add +1 on top.
@@ -840,7 +847,7 @@ func snapshot() -> Dictionary:
 		"crit_mult": CRIT_MULT,
 		"mastery": MASTERY,
 		"momentum": true,
-		"residue": false,
+		"residue": SpellKits.element_riders,
 		"blends": false,
 		"gust": false,
 		"longshot": true,
@@ -1559,6 +1566,101 @@ func _spend_mp(actor: Dictionary, amount: int) -> void:
 		actor["momentum"] = true
 
 
+## ---- Elements, Step 2: mono riders + Residue -------------------------------
+## SpellKits.spell carries the data riders (Air +1 range, Water heals +4).
+## These are the fight riders of a connecting FLEX hit by a hero's kit spell:
+##   Air   melee (max range 2 or less: Cut, Ambush): +1 MP this turn.
+##   Earth caster Grounded until its next turn. Bastion's Grounded blocks every
+##         push; other Earth casters' Grounded only stops Gust (not in the game).
+##         Earth pushes into a wall: 8 instead of the stagger 4, once per target
+##         per turn (see _apply_bounce_stagger).
+##   Water damage: the target loses 1 MP at the start of its next turn (once).
+##   Fire  Burn 4 at the target's next turn start, no stack (no class is Fire yet).
+## Residue: the hit writes its element on the target for 2 of the target's own
+## turns; one per body, same element refreshes, a new one overwrites, death
+## clears it, Cleanse does not. Heals to allies write none. Neutral: nothing.
+func _rider_element(actor: Dictionary, def: Dictionary) -> String:
+	if not SpellKits.element_riders:
+		return ""
+	# Hero kit spells only: Stasis foes that borrow a card do not ride.
+	if int(actor.get("stasis_attack_base", -1)) >= 0 or not (actor.get("foe_kit", []) as Array).is_empty():
+		return ""
+	if not SpellKits.has_spell(str(actor.get("class_id", "")), str(def.get("id", ""))):
+		return ""
+	var el := str(def.get("element", "neutral")).to_lower()
+	return "" if el == "" or el == "neutral" else el
+
+
+## Per enemy body hit: Residue, Water slow, Fire burn. Returns rider tags.
+func _flex_target(actor: Dictionary, target: Dictionary, def: Dictionary) -> Array:
+	var el := _rider_element(actor, def)
+	var tags: Array = []
+	if el == "" or target.is_empty() or _team_of(target) == _team_of(actor):
+		return tags
+	target["residue"] = el
+	target["residue_turns"] = RESIDUE_TURNS
+	tags.append("residue")
+	match el:
+		"water":
+			target["water_slow"] = true
+			tags.append("water_slow")
+		"fire":
+			if int(target.get("burn_stacks", 0)) <= 0:
+				target["burn_stacks"] = 1
+			target["burn_remaining"] = maxi(int(target.get("burn_remaining", 0)), FIRE_RIDER_BURN_TURNS)
+			tags.append("fire_burn")
+	return tags
+
+
+## Once per connecting cast: Air melee +1 MP, Earth Grounded.
+func _flex_caster(actor: Dictionary, def: Dictionary) -> Array:
+	var el := _rider_element(actor, def)
+	var tags: Array = []
+	match el:
+		"air":
+			if int(def.get("max_range", 0)) <= 2:
+				actor["mp"] = int(actor.get("mp", 0)) + 1
+				tags.append("air_mp")
+		"earth":
+			actor["grounded"] = true
+			tags.append("grounded")
+	return tags
+
+
+func _stamp_riders(event: Dictionary, tags: Array, def: Dictionary) -> void:
+	if tags.is_empty():
+		return
+	var seen: Array = []
+	for t in tags:
+		if not seen.has(t):
+			seen.append(t)
+	event["riders"] = seen
+	if seen.has("residue"):
+		event["residue"] = str(def.get("element", "")).to_lower()
+
+
+## An Earth hero's push spell (Shoulder, Aegis Break).
+func _earth_push(actor: Dictionary, def: Dictionary) -> bool:
+	return _rider_element(actor, def) == "earth"
+
+
+## Bastion Grounded (Earth, option C): no push moves him.
+func _push_immune(target: Dictionary) -> bool:
+	return bool(target.get("grounded", false)) and str(target.get("class_id", "")) == SpellKits.CLASS_BASTION
+
+
+## The target's own turn ended: its Residue clock ticks.
+func _tick_residue(unit: Dictionary) -> void:
+	var left := int(unit.get("residue_turns", 0))
+	if left <= 0 or str(unit.get("residue", "")) == "":
+		return
+	left -= 1
+	unit["residue_turns"] = left
+	if left <= 0:
+		unit["residue"] = ""
+		_emit_expire("residue", unit["pos"], int(unit["seat"]), int(unit["seat"]))
+
+
 ## Gear FLEX bonus (Mobile Sets): any non-neutral damage/heal spell gets the
 ## set flex_pct plus the 2-piece attune rider of its element. Stillcut 5:
 ## the first FLEX HIT of the fight +15% (spent on a resolved hit).
@@ -1893,6 +1995,7 @@ func _handoff_seat(actor: Dictionary, auto_skip: bool, skip_reason: String = "")
 	if int(actor.get("exit_tax", 0)) > 0:
 		actor["exit_tax"] = int(actor["exit_tax"]) - 1
 	_expire_turn_statuses(actor)
+	_tick_residue(actor)
 	_active_seat = next_seat
 	_turn_index += 1
 	_invisible_wore_off = false
@@ -1905,6 +2008,12 @@ func _handoff_seat(actor: Dictionary, auto_skip: bool, skip_reason: String = "")
 		# Heartstop enemy badge ends when this turn consumes the skip. MP is already 0.
 		_emit_expire("skip_next_mp", next_unit["pos"], int(next_unit["seat"]), int(next_unit["seat"]))
 	_still_turn_start(next_unit)
+	var water_cut := 0
+	if bool(next_unit.get("water_slow", false)):
+		# Water rider: −1 MP at the start of this turn (once, clamp 0).
+		next_unit["water_slow"] = false
+		water_cut = mini(1, int(next_unit["mp"]))
+		next_unit["mp"] = int(next_unit["mp"]) - water_cut
 	var slow_cut := 0
 	if int(next_unit.get("slow_remaining", 0)) > 0:
 		slow_cut = mini(SLOW_MP * maxi(int(next_unit.get("slow_stacks", 1)), 1), int(next_unit["mp"]))
@@ -1916,6 +2025,8 @@ func _handoff_seat(actor: Dictionary, auto_skip: bool, skip_reason: String = "")
 		_last_coach = "%s's turn. AP/MP refilled to %d/%d (Slow −%d MP)." % [next_unit["name"], int(next_unit["ap"]), int(next_unit["mp"]) - slow_cut, slow_cut]
 	else:
 		_last_coach = "%s's turn. AP/MP refilled to %d/%d." % [next_unit["name"], int(next_unit["ap"]), int(next_unit["mp"])]
+	if water_cut > 0:
+		_last_coach += " Water: −1 MP."
 	if _invisible_wore_off:
 		_last_coach += " Invisible wore off — %s is visible." % next_unit["name"]
 	var end_event := {
@@ -2375,7 +2486,7 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 	if int(def.get("push_cells", 0)) > 0:
 		# Director Locked Shoulder: occupied = push_blocked; OOB / truly blocked = bounce + stagger.
 		# Lava displaces and Burns. Water silences one spell. Mud slows −1 MP.
-		push_result = _try_push(actor["pos"], target, int(def["push_cells"]))
+		push_result = _try_push(actor["pos"], target, int(def["push_cells"]), _earth_push(actor, def))
 	if defer_shoulder_impact:
 		var impact_amount := SHOULDER_CONNECT_IMPACT
 		if bool(push_result.get("bounced", false)):
@@ -2457,6 +2568,9 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 			hit_event["slow_refreshed"] = bool(slow_info.get("refreshed", false))
 	if skip_next_mp:
 		hit_event["skip_next_mp"] = true
+	var rider_tags := _flex_target(actor, target, def)
+	rider_tags.append_array(_flex_caster(actor, def))
+	_stamp_riders(hit_event, rider_tags, def)
 	_stamp_mitigation(hit_event, mitigation)
 	_last_events.append(hit_event)
 	if bool(push_result.get("blocked", false)):
@@ -2548,6 +2662,11 @@ func _check_death(target: Dictionary, cause: String = "damage") -> void:
 		_still_fired(target, "end")
 		return
 	target["alive"] = false
+	# Death clears Residue and the element riders on this body.
+	target["residue"] = ""
+	target["residue_turns"] = 0
+	target["water_slow"] = false
+	target["grounded"] = false
 	_last_events.append({
 		"type": "dead",
 		"seat": target["seat"],
@@ -3197,6 +3316,10 @@ func _opening_turn_coach(lead: String) -> String:
 
 func _begin_unit_turn(unit: Dictionary) -> void:
 	unit["momentum"] = false
+	# Earth rider: Grounded lasts until the caster's next turn.
+	if bool(unit.get("grounded", false)):
+		unit["grounded"] = false
+		_emit_expire("grounded", unit["pos"], int(unit["seat"]), int(unit["seat"]))
 	unit["advance_uses"] = 0
 	_tick_foe_cooldowns(unit)
 	# Locked Stun (A′): decrement stun at start of that unit's turn.
@@ -3332,7 +3455,7 @@ func _apply_stun(unit: Dictionary, remaining: int) -> int:
 	return remaining
 
 
-func _try_push(caster_pos: Vector2i, target: Dictionary, cells: int) -> Dictionary:
+func _try_push(caster_pos: Vector2i, target: Dictionary, cells: int, earth: bool = false) -> Dictionary:
 	# Chebyshev push 1 along the caster→target line.
 	# Director Locked Shoulder:
 	# - occupied dest: push_blocked (no bounce, no stagger)
@@ -3365,6 +3488,12 @@ func _try_push(caster_pos: Vector2i, target: Dictionary, cells: int) -> Dictiona
 		result["blocked"] = true
 		result["reason"] = "plant_resist"
 		return result
+	if _push_immune(target):
+		# Earth rider (Bastion only): Grounded blocks every push.
+		result["blocked"] = true
+		result["reason"] = "grounded"
+		return result
+	result["earth"] = earth
 	if not _in_bounds(dest):
 		return _apply_bounce_stagger(target, result, "out_of_bounds")
 	if not _is_empty(dest):
@@ -3754,6 +3883,12 @@ func _apply_bounce_stagger(target: Dictionary, result: Dictionary, reason: Strin
 	result["reason"] = reason
 	result["to"] = result["from"]
 	var hp_lost := STAGGER_HP
+	# Earth rider: a wall collision hits for 8 and REPLACES the stagger 4, at
+	# most once per target per turn.
+	if bool(result.get("earth", false)) and int(target.get("earth_collision_turn", -1)) != _turn_index:
+		target["earth_collision_turn"] = _turn_index
+		hp_lost = EARTH_COLLISION_HP
+		result["earth_collision"] = true
 	var mp_lost := 0
 	if int(target.get("mp", 0)) >= STAGGER_MP:
 		mp_lost = STAGGER_MP
@@ -5343,7 +5478,7 @@ func _resolve_aegis_break(intent: Dictionary, actor: Dictionary, def: Dictionary
 		var silence_info: Dictionary = {}
 		var slow_info: Dictionary = {}
 		if int(def.get("push_cells", 0)) > 0:
-			push_result = _try_push(actor["pos"], target, int(def["push_cells"]))
+			push_result = _try_push(actor["pos"], target, int(def["push_cells"]), _earth_push(actor, def))
 			var punish := _apply_landing_punishments(target, push_result)
 			burn_info = punish["burn"]
 			silence_info = punish["silence"]
@@ -5358,6 +5493,7 @@ func _resolve_aegis_break(intent: Dictionary, actor: Dictionary, def: Dictionary
 		}
 		_stamp_push_fields(row, push_result, burn_info, silence_info, slow_info)
 		_stamp_mitigation(row, mitigation)
+		_stamp_riders(row, _flex_target(actor, target, def), def)
 		targets.append(row)
 		if aim_row.is_empty() or cell == dest:
 			aim_row = row
@@ -5398,6 +5534,10 @@ func _resolve_aegis_break(intent: Dictionary, actor: Dictionary, def: Dictionary
 		hit_event["facing_mult"] = float(aim_row.get("facing_mult", FRONT_SIDE_FACING))
 		hit_event["back"] = bool(aim_row.get("back", false))
 		_copy_push_fields(hit_event, aim_row)
+	if hit_bodies > 0:
+		var cast_tags: Array = (aim_row.get("riders", []) as Array).duplicate()
+		cast_tags.append_array(_flex_caster(actor, def))
+		_stamp_riders(hit_event, cast_tags, def)
 	_last_events.append(hit_event)
 	_break_invisible_on_attack(actor)
 	return _accept()
@@ -5554,6 +5694,7 @@ func _resolve_hold_line(intent: Dictionary, actor: Dictionary, def: Dictionary, 
 			"back": is_back,
 		}
 		_stamp_mitigation(row, mitigation)
+		_stamp_riders(row, _flex_target(actor, target, def), def)
 		targets.append(row)
 		total += damage
 		hit_bodies += 1
@@ -5564,6 +5705,11 @@ func _resolve_hold_line(intent: Dictionary, actor: Dictionary, def: Dictionary, 
 	var gained := 0
 	if hit_bodies > 0 and not _match_over:
 		gained = _gain_resource(actor, "aegis", 1)
+	var hold_tags: Array = []
+	if hit_bodies > 0:
+		for r in targets:
+			hold_tags.append_array(r.get("riders", []))
+		hold_tags.append_array(_flex_caster(actor, def))
 	_last_coach = "HIT Hold Line %d across %d." % [total, hit_bodies]
 	_last_events.append({
 		"type": "hit",
@@ -5581,6 +5727,7 @@ func _resolve_hold_line(intent: Dictionary, actor: Dictionary, def: Dictionary, 
 		"engine_gained": gained,
 		"coach": _last_coach,
 	})
+	_stamp_riders(_last_events[_last_events.size() - 1], hold_tags, def)
 	_break_invisible_on_attack(actor)
 	return _accept()
 
@@ -5706,6 +5853,9 @@ func _resolve_ambush(intent: Dictionary, actor: Dictionary, target: Dictionary, 
 		"coach": _last_coach,
 	})
 	_stamp_mitigation(_last_events[_last_events.size() - 1], mitigation)
+	var ambush_tags := _flex_target(actor, target, def)
+	ambush_tags.append_array(_flex_caster(actor, def))
+	_stamp_riders(_last_events[_last_events.size() - 1], ambush_tags, def)
 	_emit_immunity_spent(target, mitigation)
 	_check_death(target)
 	return _accept()

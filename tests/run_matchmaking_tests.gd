@@ -51,6 +51,7 @@ func _run() -> void:
 	_test_hold_line_exit_tax()
 	_test_heartstop()
 	_test_gloam_backstab()
+	_test_mender_option_b()
 
 
 func _test_roster_gate() -> void:
@@ -673,7 +674,7 @@ func _test_mender_heals_and_ward() -> void:
 	})
 	var mend: Dictionary = _sim.submit({"type": "cast", "spell": "mend", "to": Vector2i(1, 1), "seat": 0})
 	eq(bool(mend.get("ok", false)), true, "Mend hits an ally")
-	eq(int(_sim.snapshot()["units"][0]["hp"]), 51, "Triage heals 16 × 1.25 below 40% HP")
+	eq(int(_sim.snapshot()["units"][0]["hp"]), 56, "Triage heals (16 + Water 4) × 1.25 below 40% HP")
 	eq(int(_sim.snapshot()["units"][0]["pulse"]), 1, "Mend gains 1 Pulse")
 	eq(int(_sim.snapshot()["units"][0]["ap"]), 3, "Mend costs 3 AP")
 	_sim.reset_match({
@@ -790,6 +791,34 @@ func _test_heartstop() -> void:
 	eq(int(_sim.snapshot()["units"][0]["pulse"]), 4, "gated Heartstop does not spend Pulse")
 
 
+## Mauro 5 Oct 2026 option B: Pulse Tap can hit an enemy; Heartstop 4 AP.
+func _test_mender_option_b() -> void:
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["mender", "kestrel"],
+		"positions": [Vector2i(2, 2), Vector2i(4, 2)],
+		"rolls": [1, 1],
+	})
+	var mender: Dictionary = _sim._unit_by_seat(0)
+	mender["pulse"] = 3
+	var offered := false
+	for intent in _sim.legal_intents(0):
+		if str(intent.get("spell", "")) == "pulse_tap" and int(intent.get("target_seat", -1)) == 1:
+			offered = true
+	eq(offered, true, "Pulse Tap is offered on an enemy")
+	var hp_before := int(_sim._unit_by_seat(1)["hp"])
+	var tap: Dictionary = _sim.submit({"type": "cast", "spell": "pulse_tap", "to": Vector2i(4, 2), "seat": 0})
+	eq(bool(tap.get("ok", false)), true, "Pulse Tap hits an enemy")
+	eq(int(_sim._unit_by_seat(1)["hp"]) < hp_before, true, "Pulse Tap deals damage to an enemy")
+	eq(int(mender["pulse"]), 2, "Pulse Tap on an enemy spends 1 Pulse")
+	eq(int(mender["ap"]), 4, "Pulse Tap costs 2 AP")
+	var stop: Dictionary = _sim.submit({"type": "cast", "spell": "heartstop", "to": Vector2i(4, 2), "seat": 0})
+	eq(bool(stop.get("ok", false)), true, "Heartstop fits after Pulse Tap (2 + 4 AP)")
+	eq(int(mender["ap"]), 0, "Heartstop costs 4 AP")
+
+
 func _test_gloam_backstab() -> void:
 	_sim.reset_match({
 		"seed": 1,
@@ -801,7 +830,7 @@ func _test_gloam_backstab() -> void:
 	})
 	var cut: Dictionary = _sim.submit({"type": "cast", "spell": "cut", "to": Vector2i(3, 2), "seat": 0})
 	eq(bool(cut.get("ok", false)), true, "Cut hits")
-	eq(int(_sim.snapshot()["units"][1]["hp"]), 52, "Gloam backstab is 17 × 1.35 = 23")
+	eq(int(_sim.snapshot()["units"][1]["hp"]), 57, "Gloam backstab is 13 × 1.35 = 18")
 	eq(int(_sim.snapshot()["units"][0]["umbral"]), 1, "Cut gains 1 Umbral")
 
 

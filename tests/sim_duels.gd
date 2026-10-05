@@ -34,6 +34,9 @@ var _spell_use := {}
 
 func _initialize() -> void:
 	var args := OS.get_cmdline_user_args()
+	# DUEL_RIDERS=0 plays without the element riders (compare before / after).
+	if OS.get_environment("DUEL_RIDERS") == "0":
+		SpellKits.set_element_riders(false)
 	if args.size() > 0:
 		_games = int(args[0])
 	if args.size() > 1:

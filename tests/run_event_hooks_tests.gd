@@ -903,8 +903,8 @@ func _test_triage_on_heals() -> void:
 	hot["session"].free()
 	var mend := _event_of(hot["result"].get("events", []), "hit")
 	eq(bool(mend.get("triage", false)), true, "hot-seat Mend sets triage below 40% HP")
-	eq(int(mend.get("healed", -1)), 20, "Triage Mend still heals 16 × 1.25")
-	eq(int(_sim.snapshot()["units"][0]["hp"]), 51, "Triage Mend HP stays 51")
+	eq(int(mend.get("healed", -1)), 25, "Triage Mend heals (16 + Water 4) × 1.25")
+	eq(int(_sim.snapshot()["units"][0]["hp"]), 56, "Triage Mend HP is 56")
 	eq(int(_sim.snapshot()["units"][0]["pulse"]), 1, "Triage Mend still gains 1 Pulse")
 	eq(int(_sim.snapshot()["units"][0]["ap"]), 3, "Triage Mend still spends 3 AP")
 
@@ -920,8 +920,8 @@ func _test_triage_on_heals() -> void:
 	var at_line: Dictionary = _sim.submit({"type": "cast", "spell": "mend", "to": Vector2i(1, 1), "seat": 0})
 	var line_hit := _event_of(at_line.get("events", []), "hit")
 	eq(line_hit.has("triage"), false, "Mend at 40% HP omits triage")
-	eq(int(line_hit.get("healed", -1)), 16, "Mend at 40% HP still heals 16")
-	eq(int(_sim.snapshot()["units"][0]["hp"]), 50, "Mend at 40% HP stays 50")
+	eq(int(line_hit.get("healed", -1)), 20, "Mend at 40% HP heals 16 + Water 4")
+	eq(int(_sim.snapshot()["units"][0]["hp"]), 54, "Mend at 40% HP is 54")
 
 	_sim.reset_match({
 		"seed": 1,
@@ -949,8 +949,8 @@ func _test_triage_on_heals() -> void:
 	var tap: Dictionary = _sim.submit({"type": "cast", "spell": "pulse_tap", "to": Vector2i(1, 1), "seat": 0})
 	var tap_hit := _event_of(tap.get("events", []), "hit")
 	eq(bool(tap_hit.get("triage", false)), true, "Pulse Tap sets triage below 40% HP")
-	eq(int(tap_hit.get("healed", -1)), 13, "Triage Pulse Tap still heals round(10 × 1.25)")
-	eq(int(_sim.snapshot()["units"][0]["hp"]), 44, "Triage Pulse Tap HP stays 44")
+	eq(int(tap_hit.get("healed", -1)), 18, "Triage Pulse Tap heals round((10 + Water 4) × 1.25)")
+	eq(int(_sim.snapshot()["units"][0]["hp"]), 49, "Triage Pulse Tap HP is 49")
 	eq(int(_sim.snapshot()["units"][0]["pulse"]), 0, "Pulse Tap still spends 1 Pulse")
 
 	_sim.reset_match({
@@ -966,8 +966,8 @@ func _test_triage_on_heals() -> void:
 	var ally: Dictionary = _sim.submit({"type": "cast", "spell": "heartstop", "to": Vector2i(1, 1), "seat": 0})
 	var ally_hit := _event_of(ally.get("events", []), "hit")
 	eq(bool(ally_hit.get("triage", false)), true, "ally Heartstop sets triage below 40% HP")
-	eq(int(ally_hit.get("healed", -1)), 40, "Triage Heartstop still heals 32 × 1.25")
-	eq(int(_sim.snapshot()["units"][0]["hp"]), 71, "Triage Heartstop HP stays 71")
+	eq(int(ally_hit.get("healed", -1)), 45, "Triage Heartstop heals (32 + Water 4) × 1.25")
+	eq(int(_sim.snapshot()["units"][0]["hp"]), 76, "Triage Heartstop HP is 76")
 	eq(int(ally_hit.get("hit_immunity", -1)), 1, "ally Heartstop still grants 1 immunity hit")
 
 	_sim.reset_match({
@@ -1003,7 +1003,7 @@ func _test_triage_on_heals() -> void:
 	eq(bool(_event_of((decoded as Dictionary).get("events", []), "hit").get("triage", false)), true, "packed Mend keeps triage")
 	_guest.apply_packed_state(packed)
 	eq(bool(_event_of(_guest.snapshot().get("last_events", []), "hit").get("triage", false)), true, "guest Mend keeps triage")
-	eq(int(_guest.snapshot()["units"][0]["hp"]), 51, "guest Triage HP matches the host")
+	eq(int(_guest.snapshot()["units"][0]["hp"]), 56, "guest Triage HP matches the host")
 
 
 func _test_cleanse_cc_removed() -> void:
