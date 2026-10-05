@@ -751,7 +751,7 @@ func _test_expiry_events() -> void:
 		"kestrel_pos": Vector2i(3, 3),
 		"ironjaw_pos": Vector2i(4, 3),
 		"kestrel_facing": "W",
-		"ironjaw_impact": 4,
+		"ironjaw_impact": 5,
 	})
 	_sim.submit({"type": "end_turn", "seat": 0})
 	_sim.submit({"type": "cast", "spell": "crush", "to": Vector2i(3, 3), "seat": 1})

@@ -5096,7 +5096,7 @@ func _test_shoulder_bounce_stagger_locked() -> void:
 	eq(result["events"][2]["mp_delta"], 0, "stagger event MP delta is 0 at 0 MP")
 	eq(result["events"][2]["mp"], 0, "stagger event remaining MP is 0")
 
-	# Impact cap still clips a +2 bounce (3 + 2 cannot exceed 4).
+	# Impact cap still clips a +2 bounce (4 + 2 cannot exceed 5).
 	_sim.reset_match({
 		"seed": 1,
 		"flat_board": true,
@@ -5104,12 +5104,12 @@ func _test_shoulder_bounce_stagger_locked() -> void:
 		"kestrel_pos": Vector2i(0, 0),
 		"ironjaw_pos": Vector2i(1, 0),
 		"kestrel_facing": "E",
-		"ironjaw_impact": 3,
+		"ironjaw_impact": 4,
 	})
 	_sim.submit({"type": "end_turn"})
 	result = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(0, 0)})
 	eq(result["events"][0]["engine_gained"], 1, "bounce +2 clips to the Impact cap")
-	eq(_unit(1)["impact"], 4, "Impact cap stays 4 after a bounce")
+	eq(_unit(1)["impact"], 5, "Impact cap stays 5 after a bounce")
 
 	# Unwalkable override (not lava): same bounce + stagger, +2 Impact.
 	_sim.reset_match({
@@ -5448,14 +5448,14 @@ func _test_crush_spend_and_stun() -> void:
 		"kestrel_pos": Vector2i(3, 3),
 		"ironjaw_pos": Vector2i(4, 3),
 		"kestrel_facing": "W",
-		"ironjaw_impact": 4,
+		"ironjaw_impact": 5,
 	})
 	_sim.submit({"type": "end_turn"})
 	result = _sim.submit({"type": "cast", "spell": "crush", "to": Vector2i(3, 3)})
-	eq(result["ok"], true, "Crush at Impact 4 connects")
-	eq(result["events"][0]["impact_before"], 4, "Impact was 4 before the spend")
-	eq(result["events"][0]["impact_spent"], 4, "a stunning Crush spends all 4 Impact (Mauro 1 Oct 2026)")
-	eq(result["events"][0]["stun_applied"], 1, "Stun 1 when Impact was 4 before spend")
+	eq(result["ok"], true, "Crush at Impact 5 connects")
+	eq(result["events"][0]["impact_before"], 5, "Impact was 5 before the spend")
+	eq(result["events"][0]["impact_spent"], 5, "a stunning Crush spends all 5 Impact (Mauro 1 Oct 2026; cap 5 since 5 Oct)")
+	eq(result["events"][0]["stun_applied"], 1, "Stun 1 when Impact was 5 before spend")
 	eq(result["events"][0].has("open_a05_stun"), false, "Stun application is not labeled OPEN A05")
 	eq(result["events"][0]["back"], true, "Crush still applies facing")
 	eq(result["events"][0]["damage"], 24, "24 × 1.20 rounds to 29")
@@ -5476,14 +5476,14 @@ func _test_crush_spend_and_stun() -> void:
 		"rolls": [100],
 		"kestrel_pos": Vector2i(3, 3),
 		"ironjaw_pos": Vector2i(4, 3),
-		"ironjaw_impact": 4,
+		"ironjaw_impact": 5,
 	})
 	_sim.submit({"type": "end_turn"})
 	result = _sim.submit({"type": "cast", "spell": "crush", "to": Vector2i(3, 3)})
 	eq(result["ok"], true, "Crush miss is legal")
 	eq(result["events"][0]["type"], "miss", "Crush miss event")
 	eq(result["events"][0]["impact_retained"], true, "miss retains Impact")
-	eq(_unit(1)["impact"], 4, "miss does not spend Impact")
+	eq(_unit(1)["impact"], 5, "miss does not spend Impact")
 	eq(_unit(0)["stun_remaining"], 0, "miss does not Stun")
 	eq(_unit(0)["hp"], 75, "miss deals 0")
 	eq(_unit(1)["ap"], 2, "miss keeps the 4 AP spend")
@@ -5498,7 +5498,7 @@ func _test_stun_auto_end_turn_after_crush() -> void:
 		"kestrel_pos": Vector2i(3, 3),
 		"ironjaw_pos": Vector2i(4, 3),
 		"kestrel_facing": "E",
-		"ironjaw_impact": 4,
+		"ironjaw_impact": 5,
 		"ironjaw_marks": 1,
 	})
 	_sim.submit({"type": "end_turn"})
@@ -5614,7 +5614,7 @@ func _test_stun_hud_greys_walk_face_spells() -> void:
 		"kestrel_pos": Vector2i(3, 3),
 		"ironjaw_pos": Vector2i(4, 3),
 		"kestrel_facing": "E",
-		"ironjaw_impact": 4,
+		"ironjaw_impact": 5,
 	})
 	_sim.submit({"type": "end_turn"})
 	_sim.submit({"type": "cast", "spell": "crush", "to": Vector2i(3, 3)})
@@ -5825,7 +5825,7 @@ func _test_shoulder_impact_lava_burn_chrome() -> void:
 		"kestrel_pos": Vector2i(0, 0),
 		"ironjaw_pos": Vector2i(1, 0),
 		"kestrel_facing": "E",
-		"ironjaw_impact": 3,
+		"ironjaw_impact": 4,
 	})
 	_sim.submit({"type": "end_turn"})
 	var clipped: Dictionary = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(0, 0)})
@@ -6036,7 +6036,7 @@ func _test_legal_intents_new_spell_gates() -> void:
 		"flat_board": true,
 		"kestrel_pos": Vector2i(3, 3),
 		"ironjaw_pos": Vector2i(6, 3),
-		"ironjaw_impact": 4,
+		"ironjaw_impact": 5,
 	})
 	_sim.submit({"type": "end_turn"})
 	eq(_has_legal_cast(1, "crush"), false, "Crush omitted when out of range even at 4 Impact")
@@ -6085,7 +6085,7 @@ func _test_kit_class_exclusions() -> void:
 		"kestrel_pos": Vector2i(3, 3),
 		"ironjaw_pos": Vector2i(4, 3),
 		"ironjaw_marks": 2,
-		"ironjaw_impact": 4,
+		"ironjaw_impact": 5,
 	})
 	var result: Dictionary = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(4, 3)})
 	eq(result["illegal"], true, "Kestrel cannot Shoulder")
@@ -6099,7 +6099,7 @@ func _test_kit_class_exclusions() -> void:
 	eq(result["illegal"], true, "Ironjaw cannot Detonate")
 	eq(result["reason"], "spell_not_in_kit", "Ironjaw Detonate is spell_not_in_kit")
 	eq(_unit(1)["ap"], 6, "wrong-kit Detonate refunds")
-	eq(_unit(1)["impact"], 4, "wrong-kit Detonate does not spend Impact")
+	eq(_unit(1)["impact"], 5, "wrong-kit Detonate does not spend Impact")
 	for intent in _sim.legal_intents(1):
 		if str(intent.get("type", "")) == "cast" and str(intent.get("spell", "")) == "detonate":
 			fail("Ironjaw legal_intents must not include detonate")
@@ -6201,8 +6201,8 @@ func _test_hud_marks_and_impact_pips() -> void:
 	_sim.submit({"type": "end_turn"})
 	eq(_sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(3, 3)})["ok"], true, "Strike grants Impact")
 	hud = _hud_from_snap(_sim.snapshot())
-	eq(_impact_row(hud, 1), "●○○○", "Ironjaw Impact row shows 1/4 after Strike")
-	eq(_impact_row(hud, 0), "○○○○", "Kestrel does not display Ironjaw's Impact")
+	eq(_impact_row(hud, 1), "●○○○○", "Ironjaw Impact row shows 1/5 after Strike")
+	eq(_impact_row(hud, 0), "○○○○○", "Kestrel does not display Ironjaw's Impact")
 	hud.free()
 	_sim.reset_match({
 		"seed": 1,
@@ -6217,7 +6217,7 @@ func _test_hud_marks_and_impact_pips() -> void:
 	eq(_sim.submit({"type": "cast", "spell": "crush", "to": Vector2i(3, 3)})["ok"], true, "Crush spends Impact")
 	eq(int(_unit(1)["impact"]), 1, "3-2 leaves 1 Impact")
 	hud = _hud_from_snap(_sim.snapshot())
-	eq(_impact_row(hud, 1), "●○○○", "Ironjaw Impact row shows the stack left after Crush")
+	eq(_impact_row(hud, 1), "●○○○○", "Ironjaw Impact row shows the stack left after Crush")
 	hud.free()
 
 
@@ -6525,7 +6525,7 @@ func _test_preview_cast() -> void:
 		"kestrel_pos": Vector2i(3, 3),
 		"ironjaw_pos": Vector2i(4, 3),
 		"kestrel_facing": "E",
-		"ironjaw_impact": 4,
+		"ironjaw_impact": 5,
 	})
 	_sim.submit({"type": "end_turn"})
 	before = _preview_state()
@@ -6534,14 +6534,14 @@ func _test_preview_cast() -> void:
 	eq(preview["ap"], 4, "Crush costs 4 AP")
 	eq(preview["rolling"], true, "Crush is rolling")
 	eq(preview["hit_chance"], 90, "Crush melee uses Locked 90%")
-	eq(preview["impact_before"], 4, "Crush preview reports impact_before 4")
+	eq(preview["impact_before"], 5, "Crush preview reports impact_before 5")
 	eq(preview["would_stun"], true, "Crush would_stun at Impact 4 spending 2")
 	eq(preview["sample_damage"], 20, "front Crush samples 20 Earth")
-	eq(preview["on_connect_text"], "24 Earth. Spends 2 Impact. Stun 1 if Impact was 4.", "Crush connect kit line")
+	eq(preview["on_connect_text"], "24 Earth. Spends 2 Impact. Stun 1 if Impact was full (5); a stunning Crush spends all.", "Crush connect kit line")
 	eq(preview["on_miss_text"], "Impact retained. AP/MP stay spent.", "Crush miss kit line")
 	eq(preview["legal"], true, "Crush at 4 Impact is legal")
 	_assert_preview_did_not_mutate(before, "Crush preview is read-only")
-	eq(_unit(1)["impact"], 4, "Crush preview does not spend Impact")
+	eq(_unit(1)["impact"], 5, "Crush preview does not spend Impact")
 	eq(_unit(0)["stun_remaining"], 0, "Crush preview does not apply Stun")
 	eq(_unit(0)["hp"], 75, "Crush preview does not deal 24")
 
@@ -7071,14 +7071,14 @@ func _test_spell_tooltip_cards() -> void:
 		"kestrel_pos": Vector2i(3, 3),
 		"ironjaw_pos": Vector2i(4, 3),
 		"kestrel_facing": "E",
-		"ironjaw_impact": 4,
+		"ironjaw_impact": 5,
 	})
 	_sim.submit({"type": "end_turn"})
 	var crush_preview: Dictionary = _sim.preview_cast(SpellKits.CRUSH, Vector2i(4, 3), Vector2i(3, 3), 0)
 	var crush := SpellTooltip.card_text(crush_preview)
 	eq(crush_preview["would_stun"], true, "Crush preview flags stun at Impact 4")
 	truthy(crush.contains("4 AP / 0 MP"), "Crush card names AP/MP from preview")
-	truthy(crush.contains("On hit: 24 Earth. Spends 2 Impact. Stun 1 if Impact was 4."), "Crush hit line is preview kit text")
+	truthy(crush.contains("On hit: 24 Earth. Spends 2 Impact. Stun 1 if Impact was full (5); a stunning Crush spends all."), "Crush hit line is preview kit text")
 	truthy(crush.contains("On miss: Impact retained. AP/MP stay spent."), "Crush miss line is preview kit text")
 	truthy(crush.contains("Stun 1 (Locked A′) this cast."), "Crush card shows stun flag when preview would_stun")
 	eq(crush.contains("Stun 1 (Open"), false, "Crush Stun wording is Locked, not Open")
@@ -7328,7 +7328,7 @@ func _test_stun_skip_chrome() -> void:
 		"kestrel_pos": Vector2i(3, 3),
 		"ironjaw_pos": Vector2i(4, 3),
 		"kestrel_facing": "E",
-		"ironjaw_impact": 4,
+		"ironjaw_impact": 5,
 	})
 	_sim.submit({"type": "end_turn"})
 	_sim.submit({"type": "cast", "spell": "crush", "to": Vector2i(3, 3)})
@@ -7905,7 +7905,8 @@ func _test_element_blends() -> void:
 	_sim.submit({"type": "end_turn", "seat": 0})
 	eq(int(_unit(1)["mp"]), int(_unit(1)["max_mp"]) - 1, "only the Water rider takes MP (Sleet pushes now)")
 
-	# Sleet (Mauro 5 Oct 2026): pushes 2 tiles back from the caster instead of −1 MP.
+	# Sleet (Mauro 5 Oct 2026): pushes back from the caster instead of −1 MP;
+	# 2 tiles, then "make that sleet only pushes 1 space".
 	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1, 1], "classes": ["ironjaw", "kestrel"], "positions": [Vector2i(5, 5), Vector2i(6, 5)]})
 	_live_unit(0)["spell_elements"] = {"strike": "air", "shoulder": "water", "crush": "water"}
 	_live_unit(1)["residue"] = "water"
@@ -7914,21 +7915,21 @@ func _test_element_blends() -> void:
 	var push2: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(6, 5), "seat": 0})
 	var sl := _first_event_where(push2.get("events", []), "blend")
 	eq(str(sl.get("blend", "")), "sleet", "Air on own Water = Sleet")
-	eq(_unit(1)["pos"], Vector2i(8, 5), "Sleet pushes the target 2 tiles back")
-	eq(int(sl.get("pushed_tiles", 0)), 2, "the Blend event counts 2 tiles")
+	eq(_unit(1)["pos"], Vector2i(7, 5), "Sleet pushes the target 1 tile back")
+	eq(int(sl.get("pushed_tiles", 0)), 1, "the Blend event counts 1 tile")
 	eq(sl.get("from", null), Vector2i(6, 5), "the slide starts where it stood")
-	# A body 2 tiles back stops it after 1.
+	# A body right behind stops it.
 	_sim.reset_match({"seed": 1, "flat_board": true, "team_size": 2, "skip_deploy": true, "rolls": [1], "classes": ["ironjaw", "kestrel", "mender", "gloam"],
-		"positions": [Vector2i(5, 5), Vector2i(6, 5), Vector2i(1, 1), Vector2i(8, 5)]})
+		"positions": [Vector2i(5, 5), Vector2i(6, 5), Vector2i(1, 1), Vector2i(7, 5)]})
 	_sim._active_seat = 0
 	_live_unit(0)["spell_elements"] = {"strike": "air", "shoulder": "water", "crush": "water"}
 	_live_unit(1)["residue"] = "water"
 	_live_unit(1)["residue_seat"] = 0
 	_live_unit(1)["residue_turns"] = 2
 	var blocked: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(6, 5), "seat": 0})
-	eq(_unit(1)["pos"], Vector2i(7, 5), "a body in the way stops the Sleet push after 1 tile")
-	eq(int(_first_event_where(blocked.get("events", []), "blend").get("pushed_tiles", -1)), 1, "1 tile pushed")
-	# The edge: 1 tile from the edge, one step then a bounce.
+	eq(_unit(1)["pos"], Vector2i(6, 5), "a body right behind stops the Sleet push")
+	eq(int(_first_event_where(blocked.get("events", []), "blend").get("pushed_tiles", -1)), 0, "0 tiles pushed")
+	# The edge: 1 tile from the edge, one step to the edge.
 	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1], "classes": ["ironjaw", "kestrel"], "positions": [Vector2i(12, 5), Vector2i(13, 5)]})
 	_live_unit(0)["spell_elements"] = {"strike": "air", "shoulder": "water", "crush": "water"}
 	_live_unit(1)["residue"] = "water"

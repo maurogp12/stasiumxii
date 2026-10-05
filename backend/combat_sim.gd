@@ -1406,7 +1406,7 @@ func preview_cast(spell_or_intent: Variant, from: Variant = null, to: Variant = 
 		var impact_before := int(actor.get("impact", 0))
 		var spend := int(def.get("spend_impact", 2))
 		out["impact_before"] = impact_before
-		out["would_stun"] = impact_before == int(def.get("stun_if_impact_before", 4)) and impact_before >= spend
+		out["would_stun"] = impact_before == int(def.get("stun_if_impact_before", SpellKits.IMPACT_CAP)) and impact_before >= spend
 	elif spell_id == SpellKits.SHOULDER:
 		notes.append("Push 1 along the line. Director Locked Shoulder: walkable empty dest pushes (+1 Impact). Occupied dest is push_blocked (hard body-block). OOB / truly blocked dest bounces + staggers (4 HP; +1 MP if MP>=1) for +2 Impact only (no stack with +1). Hazard pushes stack 1–3 (Map push stacks): lava 10/10/15 + Burn 4×2 / 5×3 / 5×4, water Breathless, mud Slow −1/−2/−3 MP, Windmere ice Frozen, Stormspire charge Electrocuted. Voluntary walk and Advance refuse mud and water.")
 
@@ -1525,7 +1525,7 @@ func _preview_kit_lines(spell_id: String) -> Dictionary:
 		SpellKits.SHOULDER:
 			return {"on_connect": "6 Earth. +1 Impact. Push 1.", "on_miss": "No push. No Impact. AP/MP stay spent."}
 		SpellKits.CRUSH:
-			return {"on_connect": "24 Earth. Spends 2 Impact. Stun 1 if Impact was 4.", "on_miss": "Impact retained. AP/MP stay spent."}
+			return {"on_connect": "24 Earth. Spends 2 Impact. Stun 1 if Impact was full (5); a stunning Crush spends all.", "on_miss": "Impact retained. AP/MP stay spent."}
 		SpellKits.ADVANCE:
 			return {"on_connect": "Teleport snap. +1 Impact if adjacent. Facing unchanged.", "on_miss": "No roll."}
 		SpellKits.AEGIS_BREAK:
@@ -1806,10 +1806,11 @@ func _blend_drift_pin(actor: Dictionary, target: Dictionary, event: Dictionary) 
 
 
 ## Sleet (Air + Water), Mauro 5 Oct 2026: "instead of taking away 1 mp pushes
-## 2 spaces back". Two pushes of 1 away from the caster, one tile at a time:
-## a body stops it (no damage), a wall / the edge bounces with the usual
-## stagger, a hazard tile ends the slide there. Grounded / Plant: no push.
-const SLEET_PUSH := 2
+## 2 spaces back", then "make that sleet only pushes 1 space". A push of 1
+## away from the caster: a body stops it (no damage), a wall / the edge
+## bounces with the usual stagger, a hazard tile ends it there. Grounded /
+## Plant: no push.
+const SLEET_PUSH := 1
 
 
 func _blend_sleet(actor: Dictionary, target: Dictionary, event: Dictionary) -> String:
@@ -2878,9 +2879,9 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 			engine_spent = marks_consumed
 		"spend_impact":
 			var spend_amount := int(def.get("spend_impact", 2))
-			# Mauro 1 Oct 2026: a Crush that stuns (Impact 4 before) spends ALL
+			# Mauro 1 Oct 2026: a Crush that stuns (full Impact before, 5 since 5 Oct) spends ALL
 			# Impact, so Ironjaw cannot stun every other turn.
-			if spell_id == SpellKits.CRUSH and impact_before >= int(def.get("stun_if_impact_before", 4)):
+			if spell_id == SpellKits.CRUSH and impact_before >= int(def.get("stun_if_impact_before", SpellKits.IMPACT_CAP)):
 				spend_amount = impact_before
 			engine_spent = _spend_impact(actor, spend_amount)
 			engine_name = "Impact"
@@ -2905,8 +2906,8 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 		target["skip_next_mp"] = true
 		skip_next_mp = true
 	var stun_applied := 0
-	if spell_id == SpellKits.CRUSH and impact_before >= int(def.get("stun_if_impact_before", 4)):
-		# Locked Stun (A′): Stun 1 if Impact was 4 before the spend. Blocks move + cast + face.
+	if spell_id == SpellKits.CRUSH and impact_before >= int(def.get("stun_if_impact_before", SpellKits.IMPACT_CAP)):
+		# Locked Stun (A′): Stun 1 if Impact was full (5 since Mauro 5 Oct 2026) before the spend. Blocks move + cast + face.
 		stun_applied = _apply_stun(target, int(def.get("stun_remaining", 1)))
 
 	var push_result := {}
