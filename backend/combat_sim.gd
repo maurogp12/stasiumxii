@@ -154,6 +154,8 @@ var _blocked_cells: Array[Vector2i] = []
 ## implemented (A03). Walls exist only while Snap Wall placed them.
 var _snap_wall_cells: Array[Vector2i] = []
 var _snap_wall_state: Array = []
+## Elements Step 3 Blend tiles: [{kind "magma"|"steam", pos, owner_seat}].
+var _element_tiles: Array = []
 var _shade_tokens: Array = []
 var _plant_tiles: Array = []
 ## Locked deploy. Live duel starts here; (1,1)/(6,6) are skip_deploy fixtures only.
@@ -197,6 +199,7 @@ func reset_match(config: Dictionary = {}) -> Dictionary:
 	_blocked_cells.clear()
 	_snap_wall_cells.clear()
 	_snap_wall_state.clear()
+	_element_tiles.clear()
 	_shade_tokens.clear()
 	_plant_tiles.clear()
 	_active_seat = 0
@@ -383,9 +386,10 @@ func legal_intents(seat: int) -> Array:
 		out.append({"type": "face", "dir": dir, "seat": seat})
 
 	var from: Vector2i = actor["pos"]
-	var mp: int = int(actor["mp"])
-	if int(actor.get("exit_tax", 0)) > 0:
-		mp = maxi(mp - 1, 0)
+	var mp: int = maxi(int(actor["mp"]) - _walk_tax(actor), 0)
+	# Drift-Pin: a Pinned fighter cannot walk this turn (Advance / Ambush can).
+	if bool(actor.get("pinned", false)):
+		mp = 0
 	var ap: int = int(actor["ap"])
 	# Walk dests whenever mp>0, regardless of remaining AP. Advance is 3 AP / 0 MP, so
 	# leftover MP after teleport still offers moves (including at 0 AP). Walk facing
@@ -406,7 +410,7 @@ func legal_intents(seat: int) -> Array:
 			continue
 		if spell_id == SpellKits.ADVANCE and str(actor["class_id"]) != SpellKits.CLASS_IRONJAW:
 			continue
-		var def: Dictionary = SpellKits.spell(str(spell_id))
+		var def: Dictionary = SpellKits.spell_for(actor, str(spell_id))
 		if def.is_empty() or SpellKits.is_gated(str(spell_id)):
 			continue
 		# Ambush is a blink (4 AP / 0 MP), not a walk. Offer it before the
@@ -534,7 +538,7 @@ func _append_blind_casts(out: Array, actor: Dictionary) -> void:
 	var from: Vector2i = actor["pos"]
 	for spell_id in actor.get("spells", []):
 		var id := str(spell_id)
-		var def: Dictionary = SpellKits.spell(id)
+		var def: Dictionary = SpellKits.spell_for(actor, id)
 		if def.is_empty() or str(def.get("target", "")) != "enemy" or id == SpellKits.AMBUSH:
 			continue
 		if _is_spell_silenced(actor, id) or _is_spell_frozen(actor, id) or SpellKits.is_gated(id):
@@ -749,7 +753,7 @@ func range_highlight_cells(seat: int, spell_id: String) -> Array:
 		return out
 	if not SpellKits.has_spell(str(actor["class_id"]), spell_id):
 		return out
-	var def: Dictionary = SpellKits.spell(spell_id)
+	var def: Dictionary = SpellKits.spell_for(actor, spell_id)
 	if def.is_empty():
 		return out
 	if spell_id == SpellKits.ADVANCE:
@@ -790,7 +794,7 @@ func sight_blocked_cells(seat: int, spell_id: String) -> Array:
 	var actor := _unit_by_seat(seat)
 	if actor.is_empty() or not actor["alive"] or not SpellKits.has_spell(str(actor["class_id"]), spell_id):
 		return out
-	var def: Dictionary = SpellKits.spell(spell_id)
+	var def: Dictionary = SpellKits.spell_for(actor, spell_id)
 	if def.is_empty() or not spell_needs_sight(def):
 		return out
 	var from: Vector2i = actor["pos"]
@@ -838,6 +842,7 @@ func snapshot() -> Dictionary:
 		"snap_walls": _cell_list(_snap_wall_cells),
 		"snap_wall_active": _bastion_in_match(),
 		"blocked_tiles": _blocked_tile_snapshot(),
+		"element_tiles": _element_tile_snapshot(),
 		"shade_tokens": _placed_token_snapshot(_shade_tokens, false),
 		"plant_tiles": _placed_token_snapshot(_plant_tiles, true),
 		"umbral_cap": SpellKits.UMBRAL_CAP,
@@ -956,6 +961,10 @@ func apply_host_snapshot(snap: Dictionary) -> void:
 	_snap_wall_state.clear()
 	_shade_tokens.clear()
 	_plant_tiles.clear()
+	_element_tiles.clear()
+	for entry in snap.get("element_tiles", []):
+		if typeof(entry) == TYPE_DICTIONARY:
+			_element_tiles.append({"kind": str(entry.get("kind", "")), "pos": _blocked_entry_cell(entry), "owner_seat": int(entry.get("owner_seat", -1))})
 	if snap.has("shade_tokens"):
 		_restore_placed_tokens(_shade_tokens, snap.get("shade_tokens", []))
 	if snap.has("plant_tiles"):
@@ -1121,7 +1130,7 @@ func aim_hit_preview(seat: int, spell_id: String, dest: Variant = null) -> Dicti
 		"rolls": false,
 		"spell": spell_id,
 	}
-	var def: Dictionary = SpellKits.spell(spell_id)
+	var def: Dictionary = SpellKits.spell_for(_unit_by_seat(seat), spell_id)
 	# Client chrome allowlist only. Kit resolve stays in CombatSim / #7.
 	# Locked rolling aim: Mark Shot / Strike / Detonate / Shoulder / Crush / Ambush.
 	# No +5. No Advance. No invented stun/push. Ambush % is origin-to-target.
@@ -1202,7 +1211,7 @@ func aim_feel(seat: int, spell_id: String, hover: Variant = null) -> Dictionary:
 		return _aim_hidden()
 	if spell_id == "" or not SpellKits.has_spell(str(actor.get("class_id", "")), spell_id):
 		return _aim_hidden()
-	var def: Dictionary = SpellKits.spell(spell_id)
+	var def: Dictionary = SpellKits.spell_for(actor, spell_id)
 	if def.is_empty():
 		return _aim_hidden()
 	if spell_id == SpellKits.AMBUSH:
@@ -1316,7 +1325,7 @@ func preview_cast(spell_or_intent: Variant, from: Variant = null, to: Variant = 
 	if from == null and not actor.is_empty():
 		from_cell = actor["pos"]
 
-	var def: Dictionary = SpellKits.spell(spell_id)
+	var def: Dictionary = SpellKits.spell_for(actor, spell_id)
 	var lines: Dictionary = _preview_kit_lines(spell_id)
 	var out := {
 		"spell_id": spell_id,
@@ -1591,15 +1600,32 @@ func _rider_element(actor: Dictionary, def: Dictionary) -> String:
 	return "" if el == "" or el == "neutral" else el
 
 
-## Per enemy body hit: Residue, Water slow, Fire burn. Returns rider tags.
+## Per enemy body hit: Water slow, Fire burn, then the Blend test, then
+## Residue (Elements PDF §5: riders + push first, dead check, pair test,
+## Blend, clear, write Residue). Returns rider tags.
 func _flex_target(actor: Dictionary, target: Dictionary, def: Dictionary) -> Array:
 	var el := _rider_element(actor, def)
 	var tags: Array = []
 	if el == "" or target.is_empty() or _team_of(target) == _team_of(actor):
 		return tags
+	# Dead check: no Blend and no Residue on a body that just fell.
+	if int(target.get("hp", 0)) <= 0:
+		_add_element_rider(target, el, tags)
+		return tags
+	_add_element_rider(target, el, tags)
+	var blend := _try_blend(actor, target, el)
+	if blend != "":
+		tags.append("blend")
+		tags.append("blend_" + blend)
+		return tags
 	target["residue"] = el
 	target["residue_turns"] = RESIDUE_TURNS
+	target["residue_seat"] = int(actor["seat"])
 	tags.append("residue")
+	return tags
+
+
+func _add_element_rider(target: Dictionary, el: String, tags: Array) -> void:
 	match el:
 		"water":
 			target["water_slow"] = true
@@ -1609,7 +1635,6 @@ func _flex_target(actor: Dictionary, target: Dictionary, def: Dictionary) -> Arr
 				target["burn_stacks"] = 1
 			target["burn_remaining"] = maxi(int(target.get("burn_remaining", 0)), FIRE_RIDER_BURN_TURNS)
 			tags.append("fire_burn")
-	return tags
 
 
 ## Once per connecting cast: Air melee +1 MP, Earth Grounded.
@@ -1637,6 +1662,253 @@ func _stamp_riders(event: Dictionary, tags: Array, def: Dictionary) -> void:
 	event["riders"] = seen
 	if seen.has("residue"):
 		event["residue"] = str(def.get("element", "")).to_lower()
+	for t in seen:
+		if str(t).begins_with("blend_"):
+			event["blend"] = str(t).substr(6)
+
+
+## ---- Elements Step 3: Blends (Mauro 5 Oct 2026) ---------------------------
+## "1 attack plus other attack = element": a hit of one element on a body that
+## holds this caster's Residue of another element fires the pair's Blend
+## (0 AP, no crit, no mastery), then the Residue clears and this hit writes
+## none. Only your own two hits make a Blend (Elements PDF §2), except Mender's
+## heal (option A): the healed teammate's next hit Blends with Mender's element.
+## Guard-rails (docs/BALANCE_PLAN_HANDOFF.md §4): one Blend per body until its
+## own next turn ends; Pin never two turns running and blocks walking only;
+## Spark 4; Sleet once per target turn.
+const BLENDS := {
+	"air+earth": "drift_pin",
+	"air+fire": "spark",
+	"air+water": "sleet",
+	"earth+fire": "magma",
+	"earth+water": "mire",
+	"fire+water": "steam",
+}
+const BLEND_NAMES := {
+	"drift_pin": "Drift-Pin", "spark": "Spark", "sleet": "Sleet",
+	"magma": "Magma", "mire": "Mire", "steam": "Steam",
+}
+const SPARK_CHIP := 4
+const DRIFT_COLLISION_HP := 8
+const MAGMA_TICK_HP := 4
+var _blend_queue: Array = []
+
+
+static func blend_of(a: String, b: String) -> String:
+	var pair := [a, b]
+	pair.sort()
+	return str(BLENDS.get("%s+%s" % [pair[0], pair[1]], ""))
+
+
+## Fires the Blend if this hit pairs with the caster's own Residue (or with a
+## Mender infusion on the caster). Returns the Blend id or "".
+func _try_blend(actor: Dictionary, target: Dictionary, el: String) -> String:
+	if bool(target.get("blend_lock", false)):
+		return ""
+	var other := ""
+	var used_infusion := false
+	var residue := str(target.get("residue", ""))
+	if residue != "" and residue != el and int(target.get("residue_seat", -1)) == int(actor["seat"]):
+		other = residue
+	elif str(actor.get("infusion", "")) != "" and str(actor["infusion"]) != el:
+		other = str(actor["infusion"])
+		used_infusion = true
+	if other == "":
+		return ""
+	var blend := blend_of(el, other)
+	if blend == "":
+		return ""
+	if used_infusion:
+		actor["infusion"] = ""
+		_emit_expire("infusion", actor["pos"], int(actor["seat"]), int(actor["seat"]))
+	target["residue"] = ""
+	target["residue_turns"] = 0
+	target["blend_lock"] = true
+	var event := {
+		"type": "blend",
+		"blend": blend,
+		"name": BLEND_NAMES[blend],
+		"elements": [other, el],
+		"seat": int(actor["seat"]),
+		"target_seat": int(target["seat"]),
+		"to": target["pos"],
+		"infused": used_infusion,
+	}
+	var note := ""
+	match blend:
+		"drift_pin":
+			note = _blend_drift_pin(actor, target, event)
+		"spark":
+			note = _blend_spark(actor, target, event)
+		"sleet":
+			target["sleet"] = true
+			note = "−1 MP at the start of their next turn"
+		"magma":
+			target["magma_pending"] = int(actor["seat"])
+			note = "the tile they end their next turn on burns for %d" % MAGMA_TICK_HP
+		"mire":
+			target["mire_cell"] = target["pos"]
+			note = "leaving this tile costs +1 MP on their next turn"
+		"steam":
+			_add_element_tile("steam", target["pos"], int(actor["seat"]))
+			note = "this tile blocks line of sight until %s's next turn" % str(actor.get("name", "the caster"))
+	event["coach"] = "BLEND %s on %s: %s." % [BLEND_NAMES[blend], str(target.get("name", "")), note]
+	_blend_queue.append(event)
+	return blend
+
+
+## Mender option A (Mauro 5 Oct 2026 "lets try a and b for mender"): a Mender
+## heal on a teammate gives that teammate the heal's element until the end of
+## its next turn. Its next hit of another element fires that pair's Blend.
+func _infuse(actor: Dictionary, target: Dictionary, def: Dictionary) -> String:
+	if str(actor.get("class_id", "")) != SpellKits.CLASS_MENDER or int(actor["seat"]) == int(target["seat"]):
+		return ""
+	var el := _rider_element(actor, def)
+	if el == "":
+		return ""
+	target["infusion"] = el
+	target["infusion_seat"] = int(actor["seat"])
+	return el
+
+
+## Drift-Pin (Air + Earth): slide 1 away from the caster; a wall or body in
+## the way hits for 8 instead. Pin: no walking (MP) next turn; Advance and
+## Ambush still work. Never two turns running.
+func _blend_drift_pin(actor: Dictionary, target: Dictionary, event: Dictionary) -> String:
+	var from: Vector2i = target["pos"]
+	var result := _try_push(actor["pos"], target, 1, true)
+	var note := ""
+	if bool(result.get("moved", false)):
+		_apply_landing_punishments(target, result)
+		note = "slides 1"
+	elif bool(result.get("bounced", false)):
+		# _try_push(earth) hits a wall for 8 (once per target per turn).
+		note = "slams into the wall (%d)" % int(result.get("stagger_hp", 0))
+	elif str(result.get("reason", "")) == "occupied":
+		target["hp"] = maxi(0, int(target["hp"]) - DRIFT_COLLISION_HP)
+		event["collision_hp"] = DRIFT_COLLISION_HP
+		note = "slams into a body (%d)" % DRIFT_COLLISION_HP
+	else:
+		note = "holds its ground"
+	event["from"] = from
+	event["to"] = target["pos"]
+	event["slide"] = result.duplicate()
+	if bool(target.get("pinned", false)) or bool(target.get("pinned_last", false)):
+		note += "; no Pin (Pinned last turn)"
+	else:
+		target["pin_pending"] = true
+		event["pin"] = true
+		note += "; Pinned: cannot walk next turn"
+	return note
+
+
+## Spark (Air + Fire): 4 Neutral chip (no resist, eats shield first), then
+## push 1 away from the caster (Grounded / Plant: chip lands, no push).
+func _blend_spark(actor: Dictionary, target: Dictionary, event: Dictionary) -> String:
+	var chip := SPARK_CHIP
+	var shield := int(target.get("shield", 0))
+	var soaked := mini(shield, chip)
+	target["shield"] = shield - soaked
+	target["hp"] = maxi(0, int(target["hp"]) - (chip - soaked))
+	event["chip"] = chip
+	event["shield_soaked"] = soaked
+	var from: Vector2i = target["pos"]
+	var result := _try_push(actor["pos"], target, 1, false)
+	if bool(result.get("moved", false)):
+		_apply_landing_punishments(target, result)
+	event["from"] = from
+	event["to"] = target["pos"]
+	event["push"] = result.duplicate()
+	return "%d chip%s" % [chip, ", pushed 1" if bool(result.get("moved", false)) else ""]
+
+
+func _add_element_tile(kind: String, cell: Vector2i, owner_seat: int) -> void:
+	for tile in _element_tiles:
+		if str(tile["kind"]) == kind and tile["pos"] == cell:
+			# Refresh, do not double.
+			tile["owner_seat"] = owner_seat
+			return
+	_element_tiles.append({"kind": kind, "pos": cell, "owner_seat": owner_seat})
+
+
+func element_tile_at(cell: Vector2i, kind: String) -> bool:
+	for tile in _element_tiles:
+		if str(tile["kind"]) == kind and tile["pos"] == cell:
+			return true
+	return false
+
+
+func _element_tile_snapshot() -> Array:
+	var out: Array = []
+	for tile in _element_tiles:
+		var cell: Vector2i = tile["pos"]
+		out.append({"kind": str(tile["kind"]), "x": cell.x, "y": cell.y, "pos": cell, "owner_seat": int(tile["owner_seat"])})
+	return out
+
+
+## Magma and Steam last until the blender's next turn starts.
+func _expire_element_tiles(owner: Dictionary) -> void:
+	var keep: Array = []
+	for tile in _element_tiles:
+		if int(tile["owner_seat"]) == int(owner["seat"]):
+			_emit_expire(str(tile["kind"]), tile["pos"], int(owner["seat"]), int(owner["seat"]))
+		else:
+			keep.append(tile)
+	_element_tiles = keep
+
+
+## A unit's own turn is ending: its pending Magma is painted, Magma ticks, and
+## the one-turn Blend statuses (Pin, Mire, the Blend lock, Mender's infusion) end.
+func _end_turn_elements(unit: Dictionary) -> void:
+	if not bool(unit.get("alive", false)):
+		return
+	if unit.has("magma_pending"):
+		_add_element_tile("magma", unit["pos"], int(unit["magma_pending"]))
+		unit.erase("magma_pending")
+	if element_tile_at(unit["pos"], "magma"):
+		unit["hp"] = maxi(0, int(unit["hp"]) - MAGMA_TICK_HP)
+		_last_events.append({
+			"type": "magma",
+			"target_seat": int(unit["seat"]),
+			"to": unit["pos"],
+			"damage": MAGMA_TICK_HP,
+			"hp_delta": -MAGMA_TICK_HP,
+			"hp": int(unit["hp"]),
+			"coach": "%s ends the turn on Magma (−%d HP)." % [str(unit.get("name", "Unit")), MAGMA_TICK_HP],
+		})
+		_check_death(unit, "magma")
+	unit["pinned_last"] = bool(unit.get("pinned", false))
+	if bool(unit.get("pinned", false)):
+		unit["pinned"] = false
+		_emit_expire("pinned", unit["pos"], int(unit["seat"]), int(unit["seat"]))
+	if unit.has("mire_cell"):
+		unit.erase("mire_cell")
+		_emit_expire("mire", unit["pos"], int(unit["seat"]), int(unit["seat"]))
+	unit["blend_lock"] = false
+	if str(unit.get("infusion", "")) != "":
+		unit["infusion"] = ""
+		_emit_expire("infusion", unit["pos"], int(unit["seat"]), int(unit["seat"]))
+
+
+## A unit's turn starts: Pin arms, Sleet takes 1 MP (after the refill).
+func _start_turn_elements(unit: Dictionary) -> int:
+	if bool(unit.get("pin_pending", false)):
+		unit["pin_pending"] = false
+		unit["pinned"] = true
+	var cut := 0
+	if bool(unit.get("sleet", false)):
+		unit["sleet"] = false
+		cut = mini(1, int(unit.get("mp", 0)))
+		unit["mp"] = int(unit["mp"]) - cut
+	return cut
+
+
+## Extra MP to walk: Hold Line's exit tax and Mire (first step off its tile).
+func _walk_tax(actor: Dictionary) -> int:
+	var tax := 1 if int(actor.get("exit_tax", 0)) > 0 else 0
+	if actor.has("mire_cell") and actor["mire_cell"] == actor["pos"]:
+		tax += 1
+	return tax
 
 
 ## An Earth hero's push spell (Shoulder, Aegis Break).
@@ -1996,6 +2268,7 @@ func _handoff_seat(actor: Dictionary, auto_skip: bool, skip_reason: String = "")
 		actor["exit_tax"] = int(actor["exit_tax"]) - 1
 	_expire_turn_statuses(actor)
 	_tick_residue(actor)
+	_end_turn_elements(actor)
 	_active_seat = next_seat
 	_turn_index += 1
 	_invisible_wore_off = false
@@ -2008,6 +2281,7 @@ func _handoff_seat(actor: Dictionary, auto_skip: bool, skip_reason: String = "")
 		# Heartstop enemy badge ends when this turn consumes the skip. MP is already 0.
 		_emit_expire("skip_next_mp", next_unit["pos"], int(next_unit["seat"]), int(next_unit["seat"]))
 	_still_turn_start(next_unit)
+	var sleet_cut := _start_turn_elements(next_unit)
 	var water_cut := 0
 	if bool(next_unit.get("water_slow", false)):
 		# Water rider: −1 MP at the start of this turn (once, clamp 0).
@@ -2027,6 +2301,10 @@ func _handoff_seat(actor: Dictionary, auto_skip: bool, skip_reason: String = "")
 		_last_coach = "%s's turn. AP/MP refilled to %d/%d." % [next_unit["name"], int(next_unit["ap"]), int(next_unit["mp"])]
 	if water_cut > 0:
 		_last_coach += " Water: −1 MP."
+	if sleet_cut > 0:
+		_last_coach += " Sleet: −1 MP."
+	if bool(next_unit.get("pinned", false)):
+		_last_coach += " Pinned: no walking."
 	if _invisible_wore_off:
 		_last_coach += " Invisible wore off — %s is visible." % next_unit["name"]
 	var end_event := {
@@ -2132,7 +2410,9 @@ func _submit_move(intent: Dictionary, actor: Dictionary) -> Dictionary:
 	if not intent.has("to"):
 		return _reject(intent, "missing_destination", "REJECT — move needs a destination.")
 	var dest: Vector2i = intent["to"]
-	var tax := 1 if int(actor.get("exit_tax", 0)) > 0 else 0
+	if bool(actor.get("pinned", false)):
+		return _reject(intent, "pinned", "REJECT — %s is Pinned (Drift-Pin): no walking this turn." % actor["name"])
+	var tax := _walk_tax(actor)
 	var budget := maxi(int(actor["mp"]) - tax, 0)
 	var planned: Dictionary = _board.validate_move(actor["pos"], dest, budget, Callable(self, "_walk_occupied"))
 	if not bool(planned.get("ok", false)):
@@ -2151,6 +2431,10 @@ func _submit_move(intent: Dictionary, actor: Dictionary) -> Dictionary:
 	var facing_hops: Array = _face_along_walk(actor, from, path)
 	actor["pos"] = dest
 	_spend_mp(actor, dist + tax)
+	if actor.has("mire_cell"):
+		# Mire taxes only the first step off its tile.
+		actor.erase("mire_cell")
+		_emit_expire("mire", dest, int(actor["seat"]), int(actor["seat"]))
 	_intent_log.append(intent)
 	_last_coach = "%s walks to %s (−%d MP)." % [actor["name"], _cell_text(dest), dist + tax]
 	_last_events.append({
@@ -2186,7 +2470,7 @@ func _submit_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
 	var spell_id := str(intent.get("spell", ""))
 	if FoeKits.is_foe_spell(spell_id):
 		return _submit_foe_cast(intent, actor)
-	var def: Dictionary = SpellKits.spell(spell_id)
+	var def: Dictionary = SpellKits.spell_for(actor, spell_id)
 	if def.is_empty():
 		return _reject(intent, "unknown_spell", "REJECT — unknown spell.")
 	if spell_id == SpellKits.ADVANCE and str(actor["class_id"]) != SpellKits.CLASS_IRONJAW:
@@ -2667,6 +2951,8 @@ func _check_death(target: Dictionary, cause: String = "damage") -> void:
 	target["residue_turns"] = 0
 	target["water_slow"] = false
 	target["grounded"] = false
+	for key in ["sleet", "pin_pending", "pinned", "magma_pending", "mire_cell", "infusion", "blend_lock"]:
+		target.erase(key)
 	_last_events.append({
 		"type": "dead",
 		"seat": target["seat"],
@@ -3033,6 +3319,10 @@ func _apply_gear(unit: Dictionary, raw: Variant) -> void:
 	if typeof(heroes) == TYPE_DICTIONARY and (heroes as Dictionary).has(class_id):
 		hero_raw = heroes[class_id]
 	var hero := HeroProgress.combat_stats(hero_raw, class_id)
+	# Elements Step 3: the player's spell → element picks. A hero entry with
+	# no "elements" key (AI companions, tests) keeps the kit elements.
+	if typeof(hero_raw) == TYPE_DICTIONARY and (hero_raw as Dictionary).has("elements"):
+		unit["spell_elements"] = GearBag.clean_spell_elements(class_id, hero_raw["elements"])
 	# Mauro 30 Sep 2026: class base HP. Final HP = (class base + level HP + part HP) × (1 + set HP%).
 	var base_hp := class_base_hp(class_id)
 	var max_hp := roundi(float(base_hp + int(hero["hp"]) + int(stats["hp_flat"])) * (1.0 + float(stats["hp_pct"]) / 100.0))
@@ -3316,6 +3606,7 @@ func _opening_turn_coach(lead: String) -> String:
 
 func _begin_unit_turn(unit: Dictionary) -> void:
 	unit["momentum"] = false
+	_expire_element_tiles(unit)
 	# Earth rider: Grounded lasts until the caster's next turn.
 	if bool(unit.get("grounded", false)):
 		unit["grounded"] = false
@@ -3695,7 +3986,7 @@ func _is_melee(def: Dictionary) -> bool:
 func _is_spell_frozen(unit: Dictionary, spell_id: String) -> bool:
 	if int(unit.get("frozen_remaining", 0)) <= 0:
 		return false
-	return _is_melee(SpellKits.spell(spell_id))
+	return _is_melee(SpellKits.spell_for(unit, spell_id))
 
 
 ## Breathless and Frozen count the victim's own turns: one ends here.
@@ -3917,6 +4208,10 @@ func _roll_d100() -> int:
 
 
 func _accept() -> Dictionary:
+	# Blend events land after the hit / push rows of the cast that fired them.
+	if not _blend_queue.is_empty():
+		_last_events.append_array(_blend_queue)
+		_blend_queue.clear()
 	_skip_fallen_active()
 	_broadcast()
 	return {
@@ -4562,7 +4857,7 @@ func _next_turn_seat(from_seat: int) -> int:
 func soft_lock_dest(seat: int, spell_id: String, dest: Vector2i) -> Vector2i:
 	if spell_id == SpellKits.AMBUSH:
 		return dest
-	var def: Dictionary = SpellKits.spell(spell_id)
+	var def: Dictionary = SpellKits.spell_for(_unit_by_seat(seat), spell_id)
 	if def.is_empty():
 		return dest
 	var target_kind := str(def.get("target", ""))
@@ -4706,6 +5001,10 @@ func _blocks_sight(cell: Vector2i, top: int, bodies: bool = true) -> bool:
 	if _CellTagMap.props_block_sight(_map_id, _paint_only.get(cell, []), cell):
 		return true
 	if _snap_wall_blocks(cell):
+		return true
+	# Steam (Fire + Water Blend): its tile blocks the line. The fighter on it
+	# is still a legal target (the end cells are never tested).
+	if element_tile_at(cell, "steam"):
 		return true
 	for blocked in _blocked_cells:
 		if blocked == cell:
@@ -5262,6 +5561,10 @@ func _resolve_support(intent: Dictionary, actor: Dictionary, target: Dictionary,
 		hit_event["cc_removed"] = cc_removed
 	if spell_id == SpellKits.HEARTSTOP:
 		hit_event["hit_immunity"] = int(target.get("hit_immunity", 0))
+	var infused := _infuse(actor, target, def)
+	if infused != "":
+		hit_event["infusion"] = infused
+		hit_event["coach"] = str(hit_event["coach"]) + " %s carries %s: their next hit of another element fires a Blend." % [str(target.get("name", "")), infused.capitalize()]
 	_last_events.append(hit_event)
 	return _accept()
 
@@ -6049,7 +6352,7 @@ func _ambush_candidates(actor: Dictionary, enemy: Dictionary) -> Array:
 
 
 func _ambush_candidate(actor: Dictionary, enemy: Dictionary, origin_cell: Vector2i, from_shade: bool, armed: bool) -> Dictionary:
-	var def: Dictionary = SpellKits.spell(SpellKits.AMBUSH)
+	var def: Dictionary = SpellKits.spell_for(actor, SpellKits.AMBUSH)
 	var axis := _cardinal_axis_len(origin_cell, enemy["pos"])
 	var axis_ok := axis >= int(def.get("min_range", 1)) and axis <= int(def.get("max_range", 2))
 	var landing := _ambush_landing_from(origin_cell, actor, enemy) if axis_ok else {"ok": false}

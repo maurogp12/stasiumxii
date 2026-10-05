@@ -103,6 +103,9 @@ func from_dict(data: Dictionary) -> void:
 		var level := clampi(int(rec.get("level", 1)), 1, MAX_LEVEL)
 		var xp := clampi(int(rec.get("xp", 0)), 0, maxi(xp_to_next(level) - 1, 0))
 		classes[str(class_id)] = {"xp": xp, "level": level, "spent": clean_spent(rec.get("spent", {}), level)}
+		var picked := clean_elements(str(class_id), rec.get("elements", {}))
+		if not picked.is_empty():
+			classes[str(class_id)]["elements"] = picked
 
 
 func record(class_id: String) -> Dictionary:
@@ -160,21 +163,98 @@ func spend(class_id: String, bucket: String) -> Dictionary:
 	return {"ok": true, "reason": ""}
 
 
-## What a fight receives: {"class_id", "level", "spent"}.
+## What a fight receives: {"class_id", "level", "spent", "elements"}.
 func fight_hero(class_id: String) -> Dictionary:
 	if not GROWTH.has(class_id):
 		return {}
 	var rec := record(class_id)
-	return {"class_id": class_id, "level": int(rec["level"]), "spent": (rec["spent"] as Dictionary).duplicate()}
+	return {"class_id": class_id, "level": int(rec["level"]), "spent": (rec["spent"] as Dictionary).duplicate(), "elements": spell_elements(class_id)}
 
 
-## Every class this player has levelled: {class_id: {level, spent}}.
-## A fight picks the entry for the class the seat plays.
+## Every class: {class_id: {level, spent, elements}}. A fight picks the entry
+## for the class the seat plays. "elements" is that class's spell → element
+## map (empty until the player picks: its FLEX spells fight Neutral).
 func fight_heroes() -> Dictionary:
 	var out := {}
-	for class_id in classes:
-		out[class_id] = {"level": int(classes[class_id]["level"]), "spent": (classes[class_id]["spent"] as Dictionary).duplicate()}
+	for class_id in GROWTH:
+		var rec := record(class_id)
+		out[class_id] = {"level": int(rec["level"]), "spent": (rec["spent"] as Dictionary).duplicate(), "elements": spell_elements(class_id)}
 	return out
+
+
+## ---- Elements Step 3 (Mauro 5 Oct 2026) -----------------------------------
+## "everyone can change elements and build combos as they like in order to
+## change elements they would need trophies each change its 2 trophies ...
+## only 2 elements can be selected in whatever spell they want"; "there is no
+## primary". Each class keeps its own pick: {"pair": [a, b], "spells": {id: a|b}}.
+## The first pick is free; changing the pair costs 2 trophies. Moving a spell
+## between the two picked elements is free.
+
+## {"pair": [a, b], "spells": {spell_id: element}} or {} (not picked yet).
+func elements_of(class_id: String) -> Dictionary:
+	if not GROWTH.has(class_id):
+		return {}
+	var picked: Variant = record(class_id).get("elements", {})
+	return (picked as Dictionary).duplicate(true) if typeof(picked) == TYPE_DICTIONARY else {}
+
+
+func spell_elements(class_id: String) -> Dictionary:
+	return (elements_of(class_id).get("spells", {}) as Dictionary).duplicate()
+
+
+## Trophies this pick would cost (0 for the first pick or the same pair).
+func element_change_cost(class_id: String, pair: Array) -> int:
+	var old: Array = elements_of(class_id).get("pair", [])
+	if old.size() != 2:
+		return 0
+	var a := pair.duplicate()
+	a.sort()
+	var b := old.duplicate()
+	b.sort()
+	return 0 if a == b else SpellKits.ELEMENT_CHANGE_TROPHIES
+
+
+## Saves a pick. `spells` may leave spells out: they take the first element.
+## `wallet` pays the change (KoliseoWallet; the caller saves both files).
+## Returns {"ok", "reason", "cost"}.
+func set_elements(class_id: String, pair: Array, spells: Dictionary, wallet: Variant) -> Dictionary:
+	if not GROWTH.has(class_id):
+		return {"ok": false, "reason": "unknown_class", "cost": 0}
+	var raw := {"pair": pair, "spells": spells}
+	var picked := clean_elements(class_id, raw)
+	if picked.is_empty():
+		return {"ok": false, "reason": "pick_two", "cost": 0}
+	var cost := element_change_cost(class_id, picked["pair"])
+	if cost > 0:
+		if wallet == null or int(wallet.trophies) < cost:
+			return {"ok": false, "reason": "no_trophies", "cost": cost}
+		wallet.trophies = int(wallet.trophies) - cost
+	record(class_id)["elements"] = picked
+	return {"ok": true, "reason": "", "cost": cost}
+
+
+## Two different elements from SpellKits.ELEMENTS, every FLEX spell of the
+## class set to one of them. Anything else → {}.
+static func clean_elements(class_id: String, raw: Variant) -> Dictionary:
+	if typeof(raw) != TYPE_DICTIONARY:
+		return {}
+	var pair_raw: Variant = (raw as Dictionary).get("pair", [])
+	if typeof(pair_raw) != TYPE_ARRAY or (pair_raw as Array).size() != 2:
+		return {}
+	var pair: Array = []
+	for e in pair_raw:
+		var el := str(e).to_lower()
+		if not SpellKits.ELEMENTS.has(el) or pair.has(el):
+			return {}
+		pair.append(el)
+	var spells_raw: Variant = (raw as Dictionary).get("spells", {})
+	var spells := {}
+	for id in SpellKits.flex_spells(class_id):
+		var el: String = str(pair[0])
+		if typeof(spells_raw) == TYPE_DICTIONARY and pair.has(str((spells_raw as Dictionary).get(id, "")).to_lower()):
+			el = str(spells_raw[id]).to_lower()
+		spells[id] = el
+	return {"pair": pair, "spells": spells}
 
 
 ## Spent points cleaned: known buckets, 0+, total never above 2 × (level − 1).

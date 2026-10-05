@@ -636,7 +636,27 @@ static func clean_fight_gear(raw: Variant) -> Dictionary:
 			if HeroProgress.GROWTH.has(str(class_id)) and typeof(heroes[class_id]) == TYPE_DICTIONARY:
 				var lvl := clampi(int(heroes[class_id].get("level", 1)), 1, HeroProgress.MAX_LEVEL)
 				out["heroes"][str(class_id)] = {"level": lvl, "spent": HeroProgress.clean_spent(heroes[class_id].get("spent", {}), lvl)}
+				# Elements Step 3: the class's spell → element picks ({} = Neutral).
+				if (heroes[class_id] as Dictionary).has("elements"):
+					out["heroes"][str(class_id)]["elements"] = clean_spell_elements(str(class_id), heroes[class_id]["elements"])
 	return out
+
+
+## A fight's spell → element map: FLEX spells of the class only, at most two
+## different elements (a phone cannot smuggle a third). Bad input → {}.
+static func clean_spell_elements(class_id: String, raw: Variant) -> Dictionary:
+	if typeof(raw) != TYPE_DICTIONARY:
+		return {}
+	var out := {}
+	var seen: Array = []
+	for id in SpellKits.flex_spells(class_id):
+		var el := str((raw as Dictionary).get(id, "")).to_lower()
+		if not SpellKits.ELEMENTS.has(el):
+			continue
+		if not seen.has(el):
+			seen.append(el)
+		out[id] = el
+	return out if seen.size() <= 2 else {}
 
 
 ## Everything a fight needs from this bag: {"worn": [...], "attune": {...}}.
