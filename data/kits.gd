@@ -289,7 +289,8 @@ const SPELLS := {
 		"id": CUT,
 		"name": "Cut",
 		"class_id": CLASS_GLOAM,
-		"ap": 3,
+		# Mauro 5 Oct 2026: "id like to try cut 2 ap" (option B: 3 AP / 17 → 2 AP / 13).
+		"ap": 2,
 		"mp": 0,
 		"range_mode": "chebyshev",
 		"min_range": 1,
@@ -297,7 +298,7 @@ const SPELLS := {
 		"rolls": true,
 		"element": "air",
 		# Mauro 30 Sep 2026 balance: 13 → 16.
-		"base_damage": 17,  # Mauro 1 Oct 2026 balance round 2 (was 16)
+		"base_damage": 13,  # Mauro 5 Oct 2026 try (was 17; 16 before round 2)
 		"target": "enemy",
 		"engine_on_connect": "umbral",
 	},
