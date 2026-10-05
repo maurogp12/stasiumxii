@@ -49,11 +49,17 @@ const ATTACK_IMPACT_FRAME := 3
 ## Walk: a class with a painted walk spec plays only that walk. A missing
 ## facing sheet drops the walk clip, and the pawn shows its static
 ## `art/characters/<class>/<class>_<facing>.png` with the old hop.
-## Actions (idle, attack, skill, hit, death) are the drop spot for the next
-## painted strips: a sheet that exists replaces that clip (`skill` plays as
-## `cast_<facing>`). A missing sheet keeps today's export_2x strip or motion.
-## `idle_<facing>` is loaded but the pawn does not play it yet; the standing
-## pose stays walk frame 0 (the static file is that same cell).
+## Actions (LOCKED painted idle, attack, skill, hit, death, 4 Oct 2026): a
+## sheet that exists replaces that clip (`skill` plays as `cast_<facing>`).
+## A missing sheet keeps today's export_2x strip or motion. A painted attack
+## also drops the old export_2x `cast_mark_*` bow (another costume), so Mark
+## Shot takes its existing fallback, the attack (Kestrel's painted bow shot).
+## `idle_<facing>` loops while the pawn stands (Pawn.painted_idle_cell); walk
+## frame 0 stays the fallback when that sheet is missing.
+## Every painted cell carries its ground point as the `cell_pivot` meta
+## (Vector2i, texture px). walk and idle sit on (cell_w / 2, 152); an action
+## cell may sit lower (head room for a raised weapon) or off centre (a body
+## lying on its side). Pawn.texture_pivot_offset stands any cell on it.
 const STRIP_SPECS := preload("res://units/character_strip_specs.gd")
 const PAINTED_ROOT := "res://art/characters/"
 const PAINTED_KINDS: Array[String] = ["walk", "idle", "attack", "skill", "hit", "death"]
@@ -69,6 +75,12 @@ const PAINTED_ANIM := {
 ## Tests flip this off to pin the export_2x walk pipeline that a class
 ## without a painted spec still uses. The game never turns it off.
 static var painted_looks: bool = true
+## Meta key on each painted cell: its ground point in texture px (Vector2i).
+const CELL_PIVOT_META := "cell_pivot"
+## Longest a painted one-shot plays: the board's action lock
+## (ViewMotion.ACTION_LOCK_MAX, 0.6 s). A 12-frame attack or skill authored
+## at 17.144 fps is 0.70 s, so it plays at 20 fps to fit the lock.
+const PAINTED_ACTION_MAX_SEC := 0.6
 
 static var _cache: Dictionary = {}
 static var _painted_cells: Dictionary = {}
@@ -204,6 +216,11 @@ static func painted_cells(class_id: String, kind: String, face: String) -> Array
 		return out
 	if image.get_width() != cell.x * count or image.get_height() != cell.y:
 		return out
+	var letter := letter_for_sheet(face)
+	var pivot: Vector2i = spec.get("pivot", Vector2i(cell.x / 2, 152))
+	var pivots: Variant = spec.get("pivots", {})
+	if pivots is Dictionary and (pivots as Dictionary).has(letter):
+		pivot = (pivots as Dictionary)[letter]
 	# Same edge pass the importer runs (fix_alpha_border), so linear filtering
 	# does not pull black into the binary-alpha edge.
 	image.fix_alpha_edges()
@@ -211,6 +228,7 @@ static func painted_cells(class_id: String, kind: String, face: String) -> Array
 		var tex := ImageTexture.create_from_image(image.get_region(Rect2i(i * cell.x, 0, cell.x, cell.y)))
 		if tex == null:
 			return []
+		tex.set_meta(CELL_PIVOT_META, pivot)
 		out.append(tex)
 	_painted_cells[path] = out
 	return out
@@ -280,14 +298,40 @@ static func batch1c_png_paths() -> Array[String]:
 
 
 ## Seconds from clip start to the impact cell. Playback and VFX share this.
+## A painted strip plays evenly inside the action lock, so its release is
+## the impact cell at that playback rate (f06 of 12 in 0.6 s is 0.30 s).
 static func release_sec(class_id: String, kind: String) -> float:
 	var fps := kind_fps(kind)
 	var painted := _painted_action_spec(class_id, kind)
 	if not painted.is_empty():
-		fps = float(painted.get("fps", fps))
+		fps = painted_play_fps(painted)
 	if fps <= 0.0:
 		return 0.0
 	return float(impact_frame(class_id, kind)) / fps
+
+
+## Playback rate of a painted one-shot: authored, or faster when its
+## authored length is longer than the action lock.
+static func painted_play_fps(spec: Dictionary) -> float:
+	var fps := float(spec.get("fps", 0.0))
+	var count := int(spec.get("frames", 0))
+	if fps <= 0.0 or count <= 0:
+		return fps
+	var natural := float(count) / fps
+	if natural <= PAINTED_ACTION_MAX_SEC:
+		return fps
+	return float(count) / PAINTED_ACTION_MAX_SEC
+
+
+## True when this cell is a painted strip cell (it carries its own pivot).
+static func is_painted_cell(tex: Texture2D) -> bool:
+	return tex != null and tex.has_meta(CELL_PIVOT_META)
+
+
+## Painted spec behind a pawn clip kind ("attack", "cast", "hit", "death"),
+## or {} when that kind still plays the export_2x strip or a motion.
+static func painted_action_spec(class_id: String, kind: String) -> Dictionary:
+	return _painted_action_spec(class_id, kind)
 
 
 ## Locked map. Unknown tokens pass through so `e` stays `e`.
@@ -483,6 +527,10 @@ static func _load_painted_actions(built: SpriteFrames, class_id: String) -> bool
 				"loop": bool(spec.get("loop", kind == "idle")),
 			}):
 				any = true
+			# The old export_2x Mark Shot bow is another costume. Without it
+			# Mark Shot takes its existing fallback: the (painted) attack.
+			if kind == "attack" and built.has_animation("cast_mark_%s" % face):
+				built.remove_animation("cast_mark_%s" % face)
 	return any
 
 
@@ -793,7 +841,7 @@ static func _stabilize_walk_feet(frames: SpriteFrames, class_id: String = "") ->
 		# Painted walks (Look 1, 144x176) plant every frame on the sole line
 		# themselves. Pulling every sole back to frame 0 would erase the step.
 		var probe := frames.get_frame_texture(anim, 0)
-		if probe != null and probe.get_height() != 160:
+		if probe != null and (probe.get_height() != 160 or is_painted_cell(probe)):
 			# Painted 8-frame walk: frame 0 is the right-foot contact.
 			if cls != "":
 				_walk_contact["%s:%s" % [cls, face]] = 0
@@ -869,12 +917,12 @@ static func _stabilize_hit_feet(frames: SpriteFrames) -> void:
 			continue
 		# Painted hit sheets (Look 1, 144x176) already stand on the sole line.
 		var hit_probe := frames.get_frame_texture(anim, 0)
-		if hit_probe != null and hit_probe.get_height() != 160:
+		if hit_probe != null and (hit_probe.get_height() != 160 or is_painted_cell(hit_probe)):
 			continue
 		# Old 160 hit cell beside a painted walk: frame 0 of the painted walk
 		# is a stride, so pin to the old standing row instead.
 		var walk_probe := frames.get_frame_texture("walk_%s" % face, 0)
-		if walk_probe != null and walk_probe.get_height() != 160:
+		if walk_probe != null and (walk_probe.get_height() != 160 or is_painted_cell(walk_probe)):
 			anchor_y = LEGACY_STAND_ROW
 		for i in count:
 			var tex := frames.get_frame_texture(anim, i)

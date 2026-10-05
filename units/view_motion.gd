@@ -346,8 +346,20 @@ static func damage_resolve_sec(spell_id: String) -> float:
 			if BOSS_FX_TIMING.has(spell_id):
 				return boss_fx_impact_sec(spell_id)
 			if caster_motion(spell_id) == "attack":
+				# A painted attack strikes on its own impact cell.
+				var cls := _spell_class(spell_id)
+				if cls != "" and not StripLibrary.painted_action_spec(cls, "attack").is_empty():
+					return StripLibrary.release_sec(cls, "attack")
 				return ANTICIPATION_SEC + ATTACK_OUT_SEC
 			return 0.0
+
+
+## Roster class that owns a hero spell, or "".
+static func _spell_class(spell_id: String) -> String:
+	for cls in SpellKits.CLASS_SPELLS.keys():
+		if SpellKits.has_spell(str(cls), spell_id):
+			return str(cls)
+	return ""
 
 
 ## First commit event in the batch. Miss uses the same caster motion as hit.
