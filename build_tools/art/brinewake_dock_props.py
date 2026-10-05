@@ -23,7 +23,12 @@ REF = "art/maps/arena_look/refs/brinewake_look.jpg"
 OUT = "art/maps/arena_look/brinewake/"
 MAX_H = 92
 # Brightness lift (see cut).
-LIFT = 1.9
+LIFT = 1.75
+SHADOW_GAMMA = 0.62
+# Warm rim around each piece (see rim).
+RIM_PAD = 2
+RIM_COLOR = (255, 226, 170, 255)
+RIM_ALPHA = 210
 
 # name -> (outline polygons in picture px, sprite width in board px, max height)
 PIECES = {
@@ -58,6 +63,8 @@ def cut(img, polys, width, max_h):
     # Lift the piece so it reads on the board, keeping its alpha.
     alpha = piece.getchannel("A")
     rgb = piece.convert("RGB")
+    # Open the near-black shadows first (a plain brightness lift keeps them black).
+    rgb = rgb.point(lambda v: round(255 * (v / 255.0) ** SHADOW_GAMMA))
     rgb = ImageEnhance.Brightness(rgb).enhance(LIFT)
     rgb = ImageEnhance.Contrast(rgb).enhance(1.15)
     rgb = ImageEnhance.Color(rgb).enhance(1.25)
@@ -65,11 +72,43 @@ def cut(img, polys, width, max_h):
     return rgb
 
 
+def calm_water(sprite):
+    """Mauro 5 Oct 2026 ("improve the map I told you I like"): the wreck keeps
+    some of the picture's sea around it; tone the blue down so the hull reads."""
+    px = sprite.load()
+    for y in range(sprite.height):
+        for x in range(sprite.width):
+            r, g, b, a = px[x, y]
+            if a and b > r + 25:
+                grey = (r + g + b) // 3
+                px[x, y] = ((r + grey) // 2, (g + grey) // 2, (b + grey) // 2 + 4, a * 3 // 4)
+    return sprite
+
+
+def rim(sprite, pad=RIM_PAD):
+    """Soft warm rim so each piece stands out from the dark dock planks
+    (Mauro: obstacles you cannot see or tell apart). No bottom pad: the
+    sprite's bottom centre stays on the tile's bottom point."""
+    w, h = sprite.size
+    out = Image.new("RGBA", (w + 2 * pad, h + pad), (0, 0, 0, 0))
+    alpha = Image.new("L", out.size, 0)
+    alpha.paste(sprite.getchannel("A"), (pad, pad))
+    grown = alpha.filter(ImageFilter.MaxFilter(3)).filter(ImageFilter.GaussianBlur(0.8))
+    glow = Image.new("RGBA", out.size, RIM_COLOR)
+    glow.putalpha(grown.point(lambda v: v * RIM_ALPHA // 255))
+    out.alpha_composite(glow)
+    out.alpha_composite(sprite, (pad, pad))
+    return out
+
+
 def main():
     img = Image.open(REF).convert("RGBA")
     os.makedirs(OUT, exist_ok=True)
     for name, (polys, width, max_h) in PIECES.items():
         sprite = cut(img, polys, width, max_h)
+        if name == "wreck":
+            sprite = calm_water(sprite)
+        sprite = rim(sprite)
         sprite.save(os.path.join(OUT, "prop_%s.png" % name), optimize=True)
         print(name, sprite.size)
     Image.new("RGBA", (1, 1), (0, 0, 0, 0)).save(os.path.join(OUT, "prop_wreck_side.png"))
