@@ -123,8 +123,9 @@ func _attach_overlay() -> void:
 		overlay_id = "fountain_water"
 	elif prop_type == "bakery_2x2" or prop_type == "smithy_2x2" or prop_type == "red_roof_cottage" or prop_type == "farmhouse_2x2" or prop_type == "tavern_3x2":
 		overlay_id = "smoke_puff"
-	if overlay_id == "smoke_puff" and VisualSettings.still():
-		overlay_id = ""
+	if VisualSettings.still():
+		_attach_still_overlay(overlay_id)
+		return
 	_overlay = Art.make_loop(overlay_id) if overlay_id != "" else null
 	if _overlay != null:
 		_overlay.visible = false
@@ -136,10 +137,31 @@ func _attach_overlay() -> void:
 			_overlay.position = Vector2(cover_rect.position.x + cover_rect.size.x * 0.72, cover_rect.position.y + 12.0)
 			_overlay.modulate = Color(1, 1, 1, 0.8)
 		add_child(_overlay)
-		if VisualSettings.still():
-			_overlay.stop()
-			_overlay.visible = true
 	_loops_ready = true
+
+
+## Performance mode: mill sails, the water wheel and the fountain keep one
+## still frame (a small texture, not the strip). Chimney smoke is left out.
+var _still_overlay: Sprite2D
+
+
+func _attach_still_overlay(overlay_id: String) -> void:
+	_loops_ready = true
+	if overlay_id == "" or overlay_id == "smoke_puff":
+		return
+	_still_overlay = Art.make_still(overlay_id)
+	if _still_overlay == null:
+		return
+	_still_overlay.name = "StillOverlay"
+	_still_overlay.z_as_relative = true
+	_still_overlay.z_index = 2
+	if prop_type == "windmill_2x2_body":
+		_still_overlay.position = Vector2(0, -104)
+	add_child(_still_overlay)
+
+
+func has_still_overlay() -> bool:
+	return _still_overlay != null
 
 
 func _process(_delta: float) -> void:

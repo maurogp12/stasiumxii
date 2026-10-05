@@ -375,3 +375,38 @@ static func make_loop(anim_id: String) -> AnimatedSprite2D:
 	sprite.speed_scale = 0.88 + float(h(fh, fw, 20)) / 100.0
 	sprite.play("loop")
 	return sprite
+
+
+## Performance mode: one frame of a loop as its own small texture, placed
+## like `make_loop` (bottom-center, the same hashed frame). The whole strip
+## is not kept: a 6720 px windmill strip becomes one 140 px frame.
+static func make_still(anim_id: String) -> Sprite2D:
+	var meta := anim_meta(anim_id)
+	if meta.is_empty() or not meta.has("file"):
+		return null
+	var frames := int(meta.get("frames", 1))
+	var size: Array = meta.get("frame_size", [64, 32])
+	if size.size() < 2 or frames < 1:
+		return null
+	var fw := int(size[0])
+	var fh := int(size[1])
+	var key := "still/" + anim_id
+	var tex: Texture2D = _cache.get(key, null)
+	if tex == null:
+		var path := ROOT + str(meta["file"])
+		if not ResourceLoader.exists(path):
+			return null
+		var strip: Texture2D = load(path)
+		var img := strip.get_image()
+		if img == null:
+			return null
+		if img.is_compressed():
+			img.decompress()
+		var i := h(fw, fh, frames)
+		tex = ImageTexture.create_from_image(img.get_region(Rect2i(i * fw, 0, fw, fh)))
+		_cache[key] = tex
+	var sprite := Sprite2D.new()
+	sprite.texture = tex
+	sprite.centered = true
+	sprite.position = Vector2(0, -float(fh) * 0.5)
+	return sprite

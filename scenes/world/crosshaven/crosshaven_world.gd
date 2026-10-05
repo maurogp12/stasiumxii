@@ -20,6 +20,7 @@ const Decor := preload("res://scenes/world/crosshaven/crosshaven_decor.gd")
 const Snowfall := preload("res://scenes/world/crosshaven/crosshaven_snowfall.gd")
 const Art := preload("res://scenes/world/crosshaven/crosshaven_art.gd")
 const OutskirtsKit := preload("res://scenes/world/crosshaven/outskirts_kit.gd")
+const NpcSprites := preload("res://scenes/world/npc/npc_sprites.gd")
 const Strips := preload("res://scenes/world/crosshaven/world_strips.gd")
 const HeroStamina := preload("res://scenes/world/crosshaven/hero_stamina.gd")
 const Fx := preload("res://scenes/world/crosshaven/crosshaven_fx.gd")
@@ -575,6 +576,10 @@ func _spawn_npcs() -> void:
 		return
 	for child in npcs_root.get_children():
 		_free_npc(child)
+	if settings != null and settings.performance:
+		# Performance mode keeps only the sheets of NPCs alive now; a role
+		# met three chunks ago is loaded again when it is next seen.
+		NpcSprites.clear_cache()
 	if npc_book == null or zone == null:
 		return
 	for record in npc_book.for_zone(zone.zone_id):

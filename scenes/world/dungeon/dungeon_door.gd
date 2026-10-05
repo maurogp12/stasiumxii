@@ -115,7 +115,9 @@ func set_hovered(on: bool) -> void:
 
 
 func _process(delta: float) -> void:
-	_glow_t += delta
+	# Performance mode: the hatch glow holds one brightness (no pulse).
+	if not VisualSettings.still():
+		_glow_t += delta
 	if _glow_node != null:
 		var want := 1.0 if hovered else 0.0
 		_glow_alpha = move_toward(_glow_alpha, want, delta * 4.0)
