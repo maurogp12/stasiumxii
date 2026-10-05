@@ -88,6 +88,12 @@ var _loops_ready := false
 
 
 func _attach_loops() -> void:
+	if VisualSettings.still():
+		# Performance mode: no sway strips at all (no sheet in memory, no
+		# _process). Mills and the fountain keep one still frame; smoke goes.
+		_attach_overlay()
+		set_process(false)
+		return
 	if snowy_art:
 		_attach_overlay()
 		return
@@ -117,6 +123,8 @@ func _attach_overlay() -> void:
 		overlay_id = "fountain_water"
 	elif prop_type == "bakery_2x2" or prop_type == "smithy_2x2" or prop_type == "red_roof_cottage" or prop_type == "farmhouse_2x2" or prop_type == "tavern_3x2":
 		overlay_id = "smoke_puff"
+	if overlay_id == "smoke_puff" and VisualSettings.still():
+		overlay_id = ""
 	_overlay = Art.make_loop(overlay_id) if overlay_id != "" else null
 	if _overlay != null:
 		_overlay.visible = false
@@ -128,6 +136,9 @@ func _attach_overlay() -> void:
 			_overlay.position = Vector2(cover_rect.position.x + cover_rect.size.x * 0.72, cover_rect.position.y + 12.0)
 			_overlay.modulate = Color(1, 1, 1, 0.8)
 		add_child(_overlay)
+		if VisualSettings.still():
+			_overlay.stop()
+			_overlay.visible = true
 	_loops_ready = true
 
 
@@ -147,6 +158,15 @@ func _process(_delta: float) -> void:
 	if changed:
 		_sync_snow_shader()
 		queue_redraw()
+
+
+## Sway, shadow-sway, and overlay loops this prop runs (performance mode: none).
+func live_loops() -> int:
+	var n := 0
+	for loop in [_sway, _shadow_sway, _overlay]:
+		if loop != null and (loop as AnimatedSprite2D).is_playing():
+			n += 1
+	return n
 
 
 ## Kit art id for this placement: fences along y use `fence_wood_nesw`,

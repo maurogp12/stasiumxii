@@ -28,6 +28,11 @@ static var _docs: Dictionary = {}
 static var _tex: Dictionary = {}
 
 
+## Drop loaded textures (performance mode switches between 2x and 1x).
+static func clear_textures() -> void:
+	_tex.clear()
+
+
 static func doc(theme: String) -> Dictionary:
 	if _docs.has(theme):
 		return _docs[theme]
@@ -107,7 +112,9 @@ static func texture(theme: String, id: String) -> Dictionary:
 		var item: Dictionary = items[id]
 		var hi := ROOT + theme + "/" + str(item.get("file", ""))
 		var lo := ROOT + theme + "/" + str(item.get("file_1x", ""))
-		if str(item.get("file", "")) != "" and ResourceLoader.exists(hi):
+		if Art.lite and str(item.get("file_1x", "")) != "" and ResourceLoader.exists(lo):
+			out = {"tex": load(lo), "scale": 1.0}
+		elif str(item.get("file", "")) != "" and ResourceLoader.exists(hi):
 			out = {"tex": load(hi), "scale": 0.5}
 		elif str(item.get("file_1x", "")) != "" and ResourceLoader.exists(lo):
 			out = {"tex": load(lo), "scale": 1.0}

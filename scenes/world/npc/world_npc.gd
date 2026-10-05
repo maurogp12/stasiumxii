@@ -83,6 +83,8 @@ var anim := "idle"
 var mark := ""
 ## False keeps a mover at its post (tests and captures may set this).
 var roam_enabled := true
+## Idle loop speed. Performance mode plays it at half speed (a slow idle).
+var idle_rate := 1.0
 
 var _zone: WorldZone
 var _sprite: Sprite2D
@@ -346,7 +348,7 @@ func _tick_anim(delta: float) -> void:
 	var spec: Dictionary = (art["anims"] as Dictionary).get(anim, {})
 	if spec.is_empty():
 		return
-	_anim_t += delta
+	_anim_t += delta * (idle_rate if anim == "idle" else 1.0)
 	var per := 1.0 / float(spec["fps"])
 	var frames := int(spec["frames"])
 	var moved := false

@@ -19,6 +19,7 @@ const Weather := preload("res://scenes/world/crosshaven/crosshaven_weather.gd")
 const Decor := preload("res://scenes/world/crosshaven/crosshaven_decor.gd")
 const Snowfall := preload("res://scenes/world/crosshaven/crosshaven_snowfall.gd")
 const Art := preload("res://scenes/world/crosshaven/crosshaven_art.gd")
+const OutskirtsKit := preload("res://scenes/world/crosshaven/outskirts_kit.gd")
 const Strips := preload("res://scenes/world/crosshaven/world_strips.gd")
 const HeroStamina := preload("res://scenes/world/crosshaven/hero_stamina.gd")
 const Fx := preload("res://scenes/world/crosshaven/crosshaven_fx.gd")
@@ -92,7 +93,10 @@ var door_nodes: Dictionary = {}
 var _pending_door := ""
 var _door_outcome: Dictionary = {}
 ## False keeps every NPC at its post (spec 4.5a movement off).
+## Performance mode keeps them at their posts too, whatever this says.
 var npc_roam := true
+## Idle loop speed of the townsfolk in performance mode.
+const LITE_IDLE_RATE := 0.5
 var hover_cell := Vector2i(-1, -1)
 var _hover_zone: WorldZone
 var neighbours: Node2D
@@ -126,6 +130,8 @@ var _snow: Control
 ## Shown snowfall amount, 0..1. The grade cools and brightens with it.
 var snow_level := 0.0
 var _presence_tween: Tween
+## True while `rebuild_view` reloads the chunk (no banner, no zone_entered).
+var _rebuilding := false
 
 var _hover: Node2D
 var _max_h := 0
@@ -195,6 +201,8 @@ func _ready() -> void:
 	add_child(neighbours)
 
 	settings = VisualSettings.new()
+	# First, so the very first textures already come from the right folder.
+	settings.bind(self, VisualSettings.PERFORMANCE, _on_performance)
 	props_root = Node2D.new()
 	props_root.name = "Props"
 	add_child(props_root)
@@ -252,6 +260,7 @@ func _ready() -> void:
 	weather.setup(self, _screen_fx)
 	weather.weather_changed.connect(func(_w): _refresh_hud())
 	settings.bind(weather, "weather", weather.set_visuals_enabled)
+	settings.bind(weather, VisualSettings.PERFORMANCE, func(on: bool) -> void: weather.set_motion_enabled(not on))
 	fx = Fx.new()
 	fx.name = "Fx"
 	add_child(fx)
@@ -261,7 +270,7 @@ func _ready() -> void:
 	visuals = SettingsPanel.new()
 	visuals.name = "VisualSettings"
 	add_child(visuals)
-	visuals.setup(settings)
+	visuals.setup(settings, true)
 
 	_build_hud()
 	progress = Progress.new()
@@ -341,6 +350,7 @@ func _ready() -> void:
 	seam_count = 0
 	if _movie == "" and DisplayServer.get_name() != "headless":
 		restore_place()
+		offer_performance()
 	_take_dungeon_outcome()
 	if _movie != "":
 		get_tree().process_frame.connect(_start_movie, CONNECT_ONE_SHOT)
@@ -444,10 +454,12 @@ func _load_zone(zone_id: String, cell: Vector2i, snap: bool = true) -> void:
 		_sync_snowfall(true)
 	# The frame that loaded may already be past the world's _process.
 	_warm_grounds(true)
-	_show_banner(Pick.zone_name(zone))
 	_refresh_presence()
 	_refresh_hud()
 	_apply_decor_density()
+	if _rebuilding:
+		return
+	_show_banner(Pick.zone_name(zone))
 	if not _booting and progress != null and progress.has_method("note_place"):
 		progress.note_place(zone.zone_id, cell)
 	zone_entered.emit(zone.zone_id, cell)
@@ -569,7 +581,8 @@ func _spawn_npcs() -> void:
 		var node := WorldNpc.new()
 		npcs_root.add_child(node)
 		node.setup(zone, record, npc_plates)
-		node.roam_enabled = npc_roam
+		node.roam_enabled = npc_roam and not settings.performance
+		node.idle_rate = LITE_IDLE_RATE if settings.performance else 1.0
 		node.attach_host(self, _roam_forbidden(zone, record, false), _roam_forbidden(zone, record, true))
 	_refresh_marks()
 
@@ -1673,6 +1686,7 @@ func _mount_neighbours(zone_id: String, everything: bool = false) -> void:
 				var node := WorldNpc.new()
 				npcs.add_child(node)
 				node.setup(other, record, npc_plates)
+				node.idle_rate = LITE_IDLE_RATE if settings.performance else 1.0
 			_raise_sort(npcs, origin)
 		var rect := Pick.zone_rect(other)
 		rect.position += host.position
@@ -2035,6 +2049,7 @@ func _sync_snowfall(snap: bool = false) -> void:
 	if zone != null and walker != null and ground != null:
 		target = ground.cover_at(walker.cell)
 	_snow.target = target
+	_snow.still = settings != null and settings.performance
 	if camera != null:
 		_snow.camera_pos = camera.position
 		_snow.camera_zoom = camera.zoom.x
@@ -2360,6 +2375,53 @@ func _refresh_hud() -> void:
 		str(weather.weather).replace("_", " "), weather.clock_text(), speed,
 		music_id, " (on)" if run_mode else "",
 	]
+
+
+## Performance mode switched (or read at start). The art caches swap to the
+## 1x files, then the chunk on screen and its neighbours are built again
+## where the hero stands, so props, plants, critters and NPCs pick up the
+## still look. No restart.
+func _on_performance(on: bool) -> void:
+	Art.set_lite(on)
+	OutskirtsKit.clear_textures()
+	Ground.reset_shared()
+	DungeonArt.clear_cache()
+	if zone == null or walker == null:
+		return
+	rebuild_view()
+
+
+## Build the current chunk and its neighbours again where the hero stands.
+## Every kept ground is freed first, so nothing drawn with the old art stays.
+func rebuild_view() -> void:
+	var here := zone.zone_id
+	var at: Vector2i = walker.cell
+	var face := str(walker.facing)
+	_route = []
+	if neighbours != null:
+		for host in neighbours.get_children():
+			_free_host(host)
+	ground = null
+	_prune_grounds({})
+	_rebuilding = true
+	_load_zone(here, at, true)
+	_rebuilding = false
+	walker.facing = face
+	if walker.has_method("queue_redraw"):
+		walker.queue_redraw()
+
+
+## One-time offer of performance mode on a machine that looks slow. Returns
+## true when the prompt opened. `profile` defaults to this machine.
+func offer_performance(profile: Dictionary = {}) -> bool:
+	if profile.is_empty():
+		profile = VisualSettings.machine_profile()
+	if settings == null or not settings.should_offer_performance(profile):
+		return false
+	settings.mark_performance_prompted()
+	if visuals != null and visuals.has_method("show_offer"):
+		visuals.show_offer(VisualSettings.weak_reasons(profile))
+	return true
 
 
 func _on_decor_flag(_on: bool) -> void:

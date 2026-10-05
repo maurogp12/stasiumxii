@@ -56,6 +56,18 @@ const COTTAGE_SKIN := {
 
 static var _cache: Dictionary = {}
 static var _anim_meta: Dictionary = {}
+## Performance mode: load the 1x art first (a quarter of the 2x masters'
+## memory). Drawn at scale 1.0, so placement and size stay the same.
+static var lite := false
+
+
+## Switch between the 2x masters and the 1x art. Clears the cache so the
+## next load picks the other file; callers rebuild what they drew.
+static func set_lite(on: bool) -> void:
+	if lite == on:
+		return
+	lite = on
+	clear_cache()
 
 
 ## {tex: Texture2D, scale: float} or {} when the file is missing.
@@ -66,7 +78,9 @@ static func texture(kind: String, id: String) -> Dictionary:
 	var out := {}
 	var hi := ROOT + kind + "/_2x/" + id + ".png"
 	var lo := ROOT + kind + "/" + id + ".png"
-	if ResourceLoader.exists(hi):
+	if lite and ResourceLoader.exists(lo):
+		out = {"tex": load(lo), "scale": 1.0}
+	elif ResourceLoader.exists(hi):
 		out = {"tex": load(hi), "scale": 0.5}
 	elif ResourceLoader.exists(lo):
 		out = {"tex": load(lo), "scale": 1.0}
