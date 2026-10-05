@@ -678,27 +678,40 @@ static func room_kit(man: Dictionary, room_id: String, n: int) -> Dictionary:
 
 ## Monster frames from the kit: one PNG per frame, S and E painted, cropped to
 ## the used area and kept at MONSTER_KEEP. Empty when the kit has no monster.
+static func _monster_row(man: Dictionary, monster_id: String) -> Dictionary:
+	var raw: Dictionary = man.get("raw", {})
+	var row := _by_id(raw.get("monsters", null), monster_id)
+	if row.is_empty() and typeof(raw.get("star5", null)) == TYPE_DICTIONARY:
+		row = _by_id((raw["star5"] as Dictionary).get("monsters", null), monster_id)
+	return row
+
+
 static func _kit_monster(man: Dictionary, monster_id: String) -> Dictionary:
-	var list: Variant = (man.get("raw", {}) as Dictionary).get("monsters", null)
-	var row := _by_id(list, monster_id)
+	var row := _monster_row(man, monster_id)
 	if row.is_empty():
 		return {}
+	var dir := str(row.get("dir", "monsters/%s" % monster_id))
 	var pivot := _vec2(row.get("pivot", [256, 329]), Vector2(256, 329))
 	var fps := float(row.get("fps", 12.0))
 	var actions: Dictionary = row.get("actions", {})
 	var images := {}
+	var glows := {}
 	var used := Rect2i()
 	var first := true
 	for act in actions.keys():
 		var count := int((actions[act] as Dictionary).get("frames", 1))
 		for face in ["S", "E"]:
 			var list_imgs: Array = []
+			var list_glows: Array = []
 			for i in count:
-				var rel := "monsters/%s/%s/%s_%s_f%02d.png" % [monster_id, act, act, face, i]
+				var rel := "%s/%s/%s_%s_f%02d.png" % [dir, act, act, face, i]
 				var img := _image_at(man, rel)
 				if img == null:
 					continue
 				list_imgs.append(img)
+				var glow := _image_at(man, rel.trim_suffix(".png") + "_glow.png")
+				if glow != null:
+					list_glows.append(glow)
 				var r := img.get_used_rect()
 				if r.size.x <= 0:
 					continue
@@ -706,13 +719,41 @@ static func _kit_monster(man: Dictionary, monster_id: String) -> Dictionary:
 				first = false
 			if not list_imgs.is_empty():
 				images["%s_%s" % [act, face.to_lower()]] = list_imgs
+			if list_glows.size() == list_imgs.size() and not list_glows.is_empty():
+				glows["%s_%s" % [act, face.to_lower()]] = list_glows
 	if images.is_empty():
 		return {}
 	used = used.grow(2).intersection(Rect2i(Vector2i.ZERO, (images.values()[0][0] as Image).get_size()))
+	var frames := _cut_frames(images, used, actions, fps)
+	var glow_frames: SpriteFrames = _cut_frames(glows, used, actions, fps) if not glows.is_empty() else null
+	var faces := {}
+	for name in images.keys():
+		faces[str(name).get_slice("_", 1)] = true
+	var new_pivot := (pivot - Vector2(used.position)) * MONSTER_KEEP
+	var release := {}
+	var rel_doc: Dictionary = row.get("release", {})
+	if not rel_doc.is_empty():
+		var pts: Dictionary = rel_doc.get("point_px", {})
+		var by_face := {}
+		for f in pts.keys():
+			by_face[str(f).to_lower()] = (_vec2(pts[f], pivot) - pivot) * MONSTER_CELL_SCALE
+		release = {"frame": int(rel_doc.get("frame", 0)), "sec": float(rel_doc.get("frame", 0)) / maxf(fps, 1.0), "offset": by_face}
+	return {
+		"frames": frames,
+		"glow_frames": glow_frames,
+		"faces": faces,
+		"pivot": new_pivot,
+		"scale": MONSTER_CELL_SCALE / MONSTER_KEEP,
+		"painted": true,
+		"height": float(used.size.y) * MONSTER_CELL_SCALE,
+		"release": release,
+	}
+
+
+static func _cut_frames(images: Dictionary, used: Rect2i, actions: Dictionary, fps: float) -> SpriteFrames:
 	var frames := SpriteFrames.new()
 	if frames.has_animation("default"):
 		frames.remove_animation("default")
-	var faces := {}
 	for name in images.keys():
 		var act := str(name).get_slice("_", 0)
 		frames.add_animation(name)
@@ -722,16 +763,7 @@ static func _kit_monster(man: Dictionary, monster_id: String) -> Dictionary:
 			var cut := (img as Image).get_region(used)
 			cut.resize(maxi(int(used.size.x * MONSTER_KEEP), 1), maxi(int(used.size.y * MONSTER_KEEP), 1), Image.INTERPOLATE_LANCZOS)
 			frames.add_frame(name, ImageTexture.create_from_image(cut))
-		faces[str(name).get_slice("_", 1)] = true
-	var new_pivot := (pivot - Vector2(used.position)) * MONSTER_KEEP
-	return {
-		"frames": frames,
-		"faces": faces,
-		"pivot": new_pivot,
-		"scale": MONSTER_CELL_SCALE / MONSTER_KEEP,
-		"painted": true,
-		"height": float(used.size.y) * MONSTER_CELL_SCALE,
-	}
+	return frames
 
 
 static func _image_at(man: Dictionary, rel: String) -> Image:
@@ -751,3 +783,75 @@ static func _image_at(man: Dictionary, rel: String) -> Image:
 			raw_img.convert(Image.FORMAT_RGBA8)
 			return raw_img
 	return null
+
+
+
+# --- Effects and ★5 pieces (manifest "star5" / "fx" sections) --------------
+
+## First manifest file entry whose text holds every word.
+static func _file_by_words(man: Dictionary, words: Array) -> Dictionary:
+	return find(man, words, ["_2x/", "mock"])
+
+
+static func fx_texture(man: Dictionary, kind: String, what: String) -> Texture2D:
+	var e := _file_by_words(man, [what, "sling"] if not kind.begins_with("rad") else [what, "rad"])
+	if e.is_empty():
+		e = _file_by_words(man, [what, "sling"])
+	return texture(e) if not e.is_empty() else null
+
+
+static func fx_frames(man: Dictionary, kind: String, what: String) -> Array:
+	var out: Array = []
+	var want := "rad" if kind.begins_with("rad") else "sling"
+	var rows := find_all(man, [what, want], ["_2x/", "mock"])
+	if rows.is_empty() and want == "rad":
+		rows = find_all(man, [what, "sling"], ["_2x/", "mock", "rad"])
+	rows.sort_custom(func(a, b): return str(a["path"]) < str(b["path"]))
+	for e in rows:
+		var t := texture(e)
+		if t != null:
+			out.append(t)
+	return out
+
+
+static func pool_texture(man: Dictionary) -> Texture2D:
+	var e := _file_by_words(man, ["toxic", "pool"])
+	return texture(e) if not e.is_empty() else null
+
+
+
+## Projectile kit: {tex, scale, glow, glow_scale} for a projectile id
+## (projectiles[] or star5.projectiles[]); "impact" gives the puff.
+static func projectile_kit(man: Dictionary, id: String) -> Dictionary:
+	var raw: Dictionary = man.get("raw", {})
+	var row := _by_id(raw.get("projectiles", null), id)
+	if row.is_empty() and typeof(raw.get("star5", null)) == TYPE_DICTIONARY:
+		row = _by_id((raw["star5"] as Dictionary).get("projectiles", null), id)
+	if row.is_empty():
+		return {}
+	var out := _pick(man, row)
+	if out.is_empty():
+		return {}
+	var g := _pick(man, row, "glow", "glow_2x")
+	out["glow"] = g.get("tex", null)
+	out["glow_scale"] = float(g.get("scale", 1.0))
+	return out
+
+
+## ★5 toxic pool decal: {tex, scale, glow, glow_scale}.
+static func pool_kit(man: Dictionary) -> Dictionary:
+	var raw: Dictionary = man.get("raw", {})
+	var s5: Variant = raw.get("star5", null)
+	if typeof(s5) != TYPE_DICTIONARY:
+		return {}
+	var board: Dictionary = (s5 as Dictionary).get("board", {})
+	var row := _by_id(board.get("decals", []), "toxic_pool")
+	var out := _pick(man, row)
+	if out.is_empty():
+		return {}
+	for g in board.get("glows", []):
+		if str(g.get("for", "")) == "toxic_pool":
+			var gl := _pick(man, g)
+			out["glow"] = gl.get("tex", null)
+			out["glow_scale"] = float(gl.get("scale", 1.0))
+	return out

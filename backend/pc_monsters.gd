@@ -8,9 +8,11 @@ extends RefCounted
 const PATH := "res://data/world/dungeon_monsters.json"
 const FORMAT := "stasium.dungeon_monsters"
 const FORMAT_VERSION := 1
-const DOC_KEYS: Array[String] = ["format", "format_version", "status", "notes", "scaling", "monsters"]
+const DOC_KEYS: Array[String] = ["format", "format_version", "status", "notes", "scaling", "stars", "monsters"]
+const MAX_STAR := 5
 const MONSTER_KEYS: Array[String] = [
-	"id", "name", "dungeon", "role", "level_min", "level_max", "hp", "ap", "mp", "attack", "signature", "art",
+	"id", "name", "dungeon", "role", "level_min", "level_max", "hp", "ap", "mp", "attack", "signature", "signature2",
+	"art", "variant_of", "star_min",
 ]
 const ATTACK_KEYS: Array[String] = ["id", "name", "ap", "min_range", "max_range", "damage", "element"]
 const SIGNATURE_KEYS: Array[String] = [
@@ -23,6 +25,9 @@ const HERO_AP := 6
 var _by_id: Dictionary = {}
 var _order: Array[String] = []
 var _scaling: Dictionary = {}
+var _stars: Dictionary = {}
+## Dev balance tool only (tests/sim_granary_stars.gd): star -> [hp, damage].
+static var star_scale_override: Dictionary = {}
 
 
 static func load_default() -> Dictionary:
@@ -59,8 +64,23 @@ func raw(monster_id: String) -> Dictionary:
 	return (_by_id.get(monster_id, {}) as Dictionary).duplicate(true)
 
 
-## Combat-ready numbers at a dungeon level, clamped to the monster's band.
-func stats_at(monster_id: String, level: int) -> Dictionary:
+## [HP multiplier, damage multiplier] for a star (solo row; see the json).
+func star_scale(star: int) -> Array:
+	var s := clampi(star, 1, MAX_STAR)
+	if star_scale_override.has(s):
+		return star_scale_override[s]
+	var rows: Dictionary = _stars.get("scale", {})
+	var row: Variant = rows.get(str(s), [1.0, 1.0])
+	return [float(row[0]), float(row[1])]
+
+
+func stars_doc() -> Dictionary:
+	return _stars.duplicate(true)
+
+
+## Combat-ready numbers at a dungeon level, clamped to the monster's band,
+## then scaled by the star (and the boss's ★5 form).
+func stats_at(monster_id: String, level: int, star: int = 1) -> Dictionary:
 	var row: Dictionary = _by_id.get(monster_id, {})
 	if row.is_empty():
 		return {}
@@ -86,6 +106,18 @@ func stats_at(monster_id: String, level: int) -> Dictionary:
 	}
 	if row.has("signature"):
 		out["signature"] = (row["signature"] as Dictionary).duplicate(true)
+	var mult := star_scale(star)
+	out["star"] = clampi(star, 1, MAX_STAR)
+	out["hp"] = maxi(int(round(float(out["hp"]) * float(mult[0]))), 1)
+	(out["attack"] as Dictionary)["damage"] = maxi(int(round(float(attack["damage"]) * float(mult[1]))), 1)
+	if row.has("signature2"):
+		var sig2: Dictionary = (row["signature2"] as Dictionary).duplicate(true)
+		sig2["hp"] = maxi(int(round(float(sig2.get("hp", 0)) * float(mult[1]))), 1)
+		out["signature2"] = sig2
+	if (attack as Dictionary).has("poison"):
+		var poison: Dictionary = ((out["attack"] as Dictionary)["poison"] as Dictionary)
+		poison["hp"] = maxi(int(round(float(poison.get("hp", 1)) * float(mult[1]))), 1)
+	out["variant_of"] = str(row.get("variant_of", ""))
 	return out
 
 
@@ -122,6 +154,11 @@ func _read(doc: Dictionary, errors: Array) -> void:
 	if str(doc.get("status", "")) != "proposed":
 		errors.append("status")
 	_scaling = doc.get("scaling", {}) if typeof(doc.get("scaling", {})) == TYPE_DICTIONARY else {}
+	_stars = doc.get("stars", {}) if typeof(doc.get("stars", {})) == TYPE_DICTIONARY else {}
+	for s_key in ["1", "2", "3", "4", "5"]:
+		var srow: Variant = (_stars.get("scale", {}) as Dictionary).get(s_key, null)
+		if typeof(srow) != TYPE_ARRAY or (srow as Array).size() != 2:
+			errors.append("stars scale %s" % s_key)
 	var rows: Variant = doc.get("monsters", null)
 	if typeof(rows) != TYPE_ARRAY or (rows as Array).is_empty():
 		errors.append("monsters")

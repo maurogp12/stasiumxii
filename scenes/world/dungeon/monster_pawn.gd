@@ -17,14 +17,46 @@ var _body: AnimatedSprite2D
 var _oneshot := ""
 var _blank: Texture2D
 var _faded := false
+var _glow: AnimatedSprite2D
 ## Cellar lantern light: lift red, cut blue (the kit frames are flat and cool).
 const WARM := Color(1.14, 0.96, 0.74, 1.0)
 
 
-func bind_art(man: Dictionary, id: String, is_boss: bool) -> void:
+## Stand-in base art for monsters whose own art is not in the kit yet.
+const STAND_IN := {
+	"sling_rat": "granary_rat",
+	"radioactive_rat": "granary_rat",
+	"radioactive_sling_rat": "granary_rat",
+	"radioactive_ratking": "the_ratking",
+}
+## Stand-in tints: radioactive green, the Sling Rat a dusty grey-blue.
+const STAND_IN_TINT := {
+	"sling_rat": Color(0.82, 0.9, 1.08, 1.0),
+	"radioactive_rat": Color(0.55, 1.3, 0.45, 1.0),
+	"radioactive_sling_rat": Color(0.55, 1.3, 0.45, 1.0),
+	"radioactive_ratking": Color(0.6, 1.35, 0.5, 1.0),
+}
+var tint := Color.WHITE
+var stand_in := false
+var radioactive := false
+
+
+func bind_art(man: Dictionary, id: String, is_boss: bool, variant_of: String = "") -> void:
 	monster_id = id
 	boss = is_boss
+	radioactive = id.begins_with("radioactive")
 	art = Art.monster_frames(man, id)
+	tint = Color.WHITE
+	stand_in = false
+	if not bool(art.get("painted", false)) and STAND_IN.has(id):
+		var base := Art.monster_frames(man, str(STAND_IN[id]))
+		if bool(base.get("painted", false)) or not Art.is_kit(man):
+			art = base
+			tint = STAND_IN_TINT.get(id, Color.WHITE)
+			stand_in = true
+			if id.contains("sling"):
+				art = art.duplicate()
+				art["scale"] = float(art.get("scale", 0.5)) * 0.85
 	_ensure_body()
 
 
@@ -44,6 +76,16 @@ func _ensure_body() -> void:
 	if not art.is_empty():
 		_body.sprite_frames = art["frames"]
 	_body.animation_finished.connect(_on_body_finished)
+	if art.get("glow_frames", null) != null:
+		# ★5 light maps: same frame, transform and flip, added on top.
+		_glow = AnimatedSprite2D.new()
+		_glow.name = "MonsterGlow"
+		_glow.centered = false
+		_glow.sprite_frames = art["glow_frames"]
+		var mat := CanvasItemMaterial.new()
+		mat.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
+		_glow.material = mat
+		_root.add_child(_glow)
 	_play_body("idle", true)
 
 
@@ -146,7 +188,15 @@ func _process(_delta: float) -> void:
 	_root.rotation = _sprite.rotation
 	_root.scale = Vector2(s * rel.x, s * rel.y)
 	# The kit's monsters are flatly lit and cool: warm them to the room light.
-	_body.modulate = _sprite.modulate * WARM
+	_body.modulate = _sprite.modulate * WARM * tint
+	if _glow != null:
+		_glow.flip_h = flip
+		_glow.offset = _body.offset
+		if _glow.sprite_frames.has_animation(_body.animation):
+			if _glow.animation != _body.animation:
+				_glow.animation = _body.animation
+			_glow.frame = _body.frame
+		_glow.modulate = Color(1, 1, 1, _sprite.modulate.a)
 	if _path_walk and _oneshot == "":
 		_play_body("walk", true)
 
@@ -210,3 +260,20 @@ func _paint_status(canvas: CanvasItem) -> void:
 	if debug_draw_tokens or not _sprite_ready() or _faded:
 		return
 	_paint_unit_chrome(canvas, -body_height() - 10.0, name_baseline())
+
+
+
+## Where the sling releases its stone, in pawn-local px, for the facing shown.
+func release_offset() -> Vector2:
+	var rel: Dictionary = art.get("release", {})
+	var by_face: Dictionary = rel.get("offset", {})
+	var src := _face()
+	var off: Vector2 = by_face.get(str(src["face"]), Vector2(14, -40))
+	if bool(src["flip"]):
+		off.x = -off.x
+	return off
+
+
+## Seconds from the attack's start to the release frame.
+func release_sec() -> float:
+	return float((art.get("release", {}) as Dictionary).get("sec", 0.22))

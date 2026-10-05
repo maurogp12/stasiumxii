@@ -16,6 +16,7 @@ const Art := preload("res://scenes/world/dungeon/dungeon_art.gd")
 const Progress := preload("res://backend/pc_progress.gd")
 const Missions := preload("res://backend/pc_missions.gd")
 const MonsterPawn := preload("res://scenes/world/dungeon/monster_pawn.gd")
+const Fx := preload("res://scenes/world/dungeon/dungeon_fx.gd")
 
 var ctx: Dictionary = {}
 var run = null
@@ -43,10 +44,10 @@ func _ready() -> void:
 	ctx = Launcher.take_pending()
 	_read_capture_args()
 	if ctx.is_empty():
-		ctx = {"dungeon_id": "old_granary_cellar", "level": 1, "class_id": _arg("--class", "kestrel"), "autoplay": capture != "", "return_zone": "crosshaven_stoneford", "return_cell": Vector2i(16, 11)}
+		ctx = {"dungeon_id": "old_granary_cellar", "level": 1, "class_id": _arg("--class", "kestrel"), "star": int(_arg("--star", "1")), "autoplay": capture != "", "return_zone": "crosshaven_stoneford", "return_cell": Vector2i(16, 11)}
 	progress = Progress.new()
 	var level := int(ctx.get("level", progress.level))
-	var made: Dictionary = Run.create(str(ctx.get("dungeon_id", "")), level, str(ctx.get("class_id", "kestrel")), str(ctx.get("name", "")))
+	var made: Dictionary = Run.create(str(ctx.get("dungeon_id", "")), level, str(ctx.get("class_id", "kestrel")), str(ctx.get("name", "")), int(ctx.get("star", 1)))
 	if not bool(made.get("ok", false)):
 		push_error("Dungeon run failed to start: %s" % [made.get("errors", [])])
 		_build_overlay()
@@ -66,29 +67,49 @@ func _ready() -> void:
 	if capture == "showcase":
 		call_deferred("_showcase")
 		return
+	if capture == "rewards":
+		call_deferred("_rewards_still")
+		return
+	if capture == "room":
+		call_deferred("_room_clip")
+		return
 	call_deferred("_begin")
 
 
 func _begin() -> void:
 	await _start_room(0, true)
 	if capture == "stills":
-		await get_tree().create_timer(2.2).timeout
-		await _grab("03_room_a_monsters.png")
+		board.autoplay = false
+		await get_tree().create_timer(1.5).timeout
+		await _grab(_arg("--a-name", "03_room_a_monsters.png"))
 		run.room_index = 1
 		board.end_room()
 		await _start_room(1, false)
-		await get_tree().create_timer(2.2).timeout
-		await _grab("04_room_b_ratking.png")
+		board.autoplay = true
+		# A hero turn with no banner up; at ★5 wait for his toxic pools.
+		var t0 := Time.get_ticks_msec()
+		while Time.get_ticks_msec() - t0 < 40000:
+			await get_tree().create_timer(0.25).timeout
+			var snap: Dictionary = sim_node().snapshot()
+			var ready: bool = int(snap.get("active_seat", -1)) == 0 and not board._busy and not bool(snap.get("match_over", false))
+			if run.star >= 5 and ((snap.get("dungeon", {}) as Dictionary).get("pools", []) as Array).is_empty():
+				ready = false
+			if ready:
+				break
+		board.autoplay = false
+		await get_tree().create_timer(0.6).timeout
+		await _grab(_arg("--b-name", "04_room_b_ratking.png"))
 		get_tree().quit()
 
 
 func _start_room(index: int, first: bool) -> void:
 	run.room_index = index
 	var spec: Dictionary = run.room(index)
-	var config: Dictionary = run.combat_config(index, int(ctx.get("seed", -1)))
+	var seed := int(ctx.get("seed", -1))
+	var config: Dictionary = run.combat_config(index, seed + index if seed >= 0 else -1)
 	board.start_room(config, manifest)
 	_title.text = "%s\n%s" % [str(run.dungeon.get("name", "")), str(spec.get("name", ""))]
-	_sub.text = "Room %s of %d  ·  Level %d" % ["A" if index == 0 else "B", run.room_count(), run.level]
+	_sub.text = "★%d  ·  Room %s of %d  ·  Level %d" % [run.star, "A" if index == 0 else "B", run.room_count(), run.level]
 	if first:
 		_fade.color.a = 1.0
 	var tw := create_tween()
@@ -154,8 +175,10 @@ func _show_result(result: String, data: Dictionary) -> void:
 	finished = true
 	var lines: PackedStringArray = []
 	if result == "win":
-		lines.append("[font_size=30][color=#f5d27a]Victory![/color][/font_size]")
-		lines.append("%s is cleared. The Ratking is down." % str(data.get("name", "")))
+		lines.append("[font_size=30][color=#f5d27a]Victory!  ★%d[/color][/font_size]" % int(data.get("star", run.star if run != null else 1)))
+		lines.append("%s is cleared at ★%d. The Ratking is down." % [str(data.get("name", "")), int(data.get("star", 1))])
+		if bool(data.get("new_best_star", false)):
+			lines.append("[color=#f5d27a]New best: ★%d[/color]" % int(data.get("star", 1)))
 		lines.append("")
 		lines.append("XP [b]+%d[/b]" % int(data.get("xp", 0)))
 		lines.append("Crypto Coins [b]+%d[/b]" % int(data.get("coins", 0)))
@@ -328,7 +351,8 @@ func _showcase() -> void:
 	var stage := Node2D.new()
 	stage.name = "Showcase"
 	board.add_child(stage)
-	var cast := [["granary_rat", Vector2i(3, 9), false], ["the_ratking", Vector2i(6, 6), true], ["scarecrow_drudge", Vector2i(9, 3), false]]
+	var cast := [["granary_rat", Vector2i(3, 8), false], ["sling_rat", Vector2i(4, 6), false], ["the_ratking", Vector2i(6, 5), true], ["scarecrow_drudge", Vector2i(8, 3), false],
+		["radioactive_rat", Vector2i(5, 9), false], ["radioactive_sling_rat", Vector2i(7, 8), false], ["radioactive_ratking", Vector2i(9, 6), true]]
 	var shown: Array = []
 	for row in cast:
 		var p := MonsterPawn.new()
@@ -342,10 +366,10 @@ func _showcase() -> void:
 		shown.append(p)
 	var cam: Camera2D = board._camera
 	var mid: Vector2 = board._cell_to_local(Vector2i(6, 6))
-	cam.position = mid + Vector2(0, -70)
-	cam.zoom = Vector2(1.9, 1.9)
+	cam.position = mid + Vector2(0, -40)
+	cam.zoom = Vector2(1.45, 1.45)
 	_title.text = "Old Granary Cellar\nMonsters"
-	_sub.text = "Granary Rat  ·  The Ratking  ·  Scarecrow Drudge"
+	_sub.text = "Granary Rat · Sling Rat · Scarecrow Drudge · The Ratking\n★5: Radioactive Rat · Radioactive Sling Rat · Radioactive Ratking"
 	await get_tree().create_timer(2.0).timeout
 	for face in ["E", "N", "W", "S"]:
 		for p in shown:
@@ -357,19 +381,46 @@ func _showcase() -> void:
 	for p in shown:
 		p.end_path_walk()
 	await get_tree().create_timer(0.6).timeout
+	var target_at: Vector2 = board._cell_to_local(Vector2i(2, 11)) + Vector2(0, -20)
 	for p in shown:
 		p.play_view_plan({"attack": true, "aim": Vector2(-30, 15)})
-		await get_tree().create_timer(1.0).timeout
+		if str(p.monster_id).contains("sling"):
+			var kind := "sling_pebble_radioactive" if str(p.monster_id).begins_with("radioactive") else "sling_pebble"
+			Fx.throw(board, manifest, kind, p.position + p.release_offset(), target_at, true, 900, p.release_sec())
+			await get_tree().create_timer(0.5).timeout
+		await get_tree().create_timer(0.9).timeout
 	for p in shown:
 		p.play_view_plan({"hit": true, "away": Vector2(20, -10)})
 		await get_tree().create_timer(0.8).timeout
-	shown[1].play_view_plan({"cast": true, "strip": "summon"})
+	shown[2].play_view_plan({"cast": true, "strip": "summon"})
+	shown[6].play_view_plan({"cast": true, "strip": "summon"})
 	await get_tree().create_timer(1.8).timeout
 	for p in shown:
 		p.alive = false
 		p.play_view_plan({"death": true})
 		await get_tree().create_timer(1.1).timeout
 	await get_tree().create_timer(1.5).timeout
+	get_tree().quit()
+
+
+## Capture: one room played by the hero bot for --secs seconds.
+func _room_clip() -> void:
+	var index := int(_arg("--room", "0"))
+	await _start_room(index, true)
+	await get_tree().create_timer(float(_arg("--secs", "15"))).timeout
+	get_tree().quit()
+
+
+## Capture: the result screen of a won run at the picked star.
+func _rewards_still() -> void:
+	board.autoplay = false
+	await _start_room(1, true)
+	board.end_room()
+	run.result = "win"
+	summary = run.pay_out(progress, missions, RandomNumberGenerator.new(), false)
+	_show_result("win", summary)
+	await get_tree().create_timer(0.8).timeout
+	await _grab("rewards_star%d.png" % run.star)
 	get_tree().quit()
 
 

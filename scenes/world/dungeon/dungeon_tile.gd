@@ -22,6 +22,36 @@ var decal_tex: Texture2D
 var decal_glow: Texture2D
 var decal_rect := Rect2()
 var _decal_glow_node: Node2D
+## ★5 toxic pool on this cell (danger: ending a turn here poisons the hero).
+var pool := false
+var pool_turns := 0
+var pool_tex: Texture2D
+var _pool_t := 0.0
+var _pool_glow: Sprite2D
+
+
+func set_pool(on: bool, turns: int, man: Dictionary) -> void:
+	if on == pool and turns == pool_turns:
+		return
+	pool = on
+	pool_turns = turns
+	if on and pool_tex == null:
+		var kit: Dictionary = load("res://scenes/world/dungeon/dungeon_art.gd").pool_kit(man)
+		pool_tex = kit.get("tex", null)
+		if kit.get("glow", null) != null and _pool_glow == null:
+			_pool_glow = Sprite2D.new()
+			_pool_glow.texture = kit["glow"]
+			_pool_glow.scale = Vector2.ONE * float(kit.get("glow_scale", 1.0))
+			_pool_glow.position = Vector2(0, -4)
+			_pool_glow.z_index = 2
+			var mat := CanvasItemMaterial.new()
+			mat.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
+			_pool_glow.material = mat
+			add_child(_pool_glow)
+	if _pool_glow != null:
+		_pool_glow.visible = on
+	set_process(pool or self.pad)
+	queue_redraw()
 
 
 class GlowCut extends Node2D:
@@ -83,6 +113,11 @@ func set_pad_glow(tex: Texture2D, scale_by: float) -> void:
 
 
 func _process(delta: float) -> void:
+	if pool:
+		_pool_t += delta
+		if _pool_glow != null:
+			_pool_glow.modulate.a = 0.6 + 0.4 * (0.5 + 0.5 * sin(_pool_t * 3.0))
+		queue_redraw()
 	if pad:
 		_t += delta
 		if _decal_glow_node != null:
@@ -109,6 +144,8 @@ func _draw() -> void:
 		_draw_cut(self, decal_tex)
 	elif pad:
 		_draw_pad(pts)
+	if pool:
+		_draw_pool(pts)
 
 
 func _draw_stone(pts: PackedVector2Array) -> void:
@@ -159,3 +196,26 @@ func _draw_pad(pts: PackedVector2Array) -> void:
 		for k in range(-1, 2):
 			draw_line(Vector2(0, 5), Vector2(k * 6, -6), core, 1.6)
 			draw_circle(Vector2(k * 6, -7), 1.8, core)
+
+
+
+func _draw_pool(pts: PackedVector2Array) -> void:
+	var pulse := 0.5 + 0.5 * sin(_pool_t * 4.0 + float(grid_position.x))
+	if pool_tex != null:
+		var size := pool_tex.get_size()
+		var h := 64.0 * size.y / maxf(size.x, 1.0)
+		draw_texture_rect(pool_tex, Rect2(-32, -h * 0.5, 64, h), false, Color(1, 1, 1, minf(_pool_t / 0.3, 1.0)))
+	else:
+		var inner := PackedVector2Array()
+		for p in pts:
+			inner.append(p * 0.82)
+		draw_colored_polygon(inner, Color(0.35, 0.95, 0.2, 0.42 + 0.18 * pulse))
+		for k in 3:
+			var a := float(k) * 2.1 + _pool_t * 1.3
+			draw_circle(Vector2(cos(a) * 12.0, sin(a) * 5.0), 2.5 + pulse * 1.5, Color(0.7, 1.0, 0.4, 0.85))
+	var ring := PackedVector2Array(pts)
+	ring.append(pts[0])
+	draw_polyline(ring, Color(0.6, 1.0, 0.3, 0.75 + 0.25 * pulse), 2.0)
+	if pool_turns > 0:
+		var font := ThemeDB.fallback_font
+		draw_string(font, Vector2(-4, 5), str(pool_turns), HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color(0.1, 0.2, 0.05))

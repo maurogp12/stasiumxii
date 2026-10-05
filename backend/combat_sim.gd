@@ -4067,6 +4067,8 @@ func _reset_dungeon(config: Dictionary) -> Dictionary:
 		"result": "",
 		"round": 1,
 		"summoned_total": 0,
+		"star": int(room.get("star", 1)),
+		"pools": [],
 	}
 	var flow_config := {"board_size": _board_size, "elev_seed": _elev_seed}
 	_flow.reset(_seed, flow_config)
@@ -4134,6 +4136,9 @@ func _make_monster(seat: int, spec: Dictionary, pos: Vector2i, facing: String, s
 	unit["mp"] = int(unit["max_mp"])
 	unit["attack"] = (spec.get("attack", {}) as Dictionary).duplicate(true) if typeof(spec.get("attack", {})) == TYPE_DICTIONARY else {}
 	unit["signature"] = (spec.get("signature", {}) as Dictionary).duplicate(true) if typeof(spec.get("signature", {})) == TYPE_DICTIONARY else {}
+	unit["signature2"] = (spec.get("signature2", {}) as Dictionary).duplicate(true) if typeof(spec.get("signature2", {})) == TYPE_DICTIONARY else {}
+	unit["variant_of"] = str(spec.get("variant_of", ""))
+	unit["acted_signature2"] = false
 	unit["summoned"] = summoned
 	unit["own_turns"] = 0
 	unit["acted_signature"] = false
@@ -4203,6 +4208,10 @@ func _next_dungeon_seat(from_seat: int) -> int:
 func _dungeon_handoff(actor: Dictionary, auto_skip: bool, skip_reason: String, depth: int = 0) -> Dictionary:
 	if _match_over:
 		return {}
+	if not _is_monster(actor) and depth == 0:
+		_pools_on_hero_end(actor)
+		if _match_over:
+			return {}
 	var next_seat := _next_dungeon_seat(int(actor.get("seat", _active_seat)))
 	if next_seat < 0:
 		return {}
@@ -4219,6 +4228,7 @@ func _dungeon_handoff(actor: Dictionary, auto_skip: bool, skip_reason: String, d
 	if _is_monster(next_unit):
 		next_unit["own_turns"] = int(next_unit.get("own_turns", 0)) + 1
 		next_unit["acted_signature"] = false
+		next_unit["acted_signature2"] = false
 	if bool(next_unit.get("skip_next_mp", false)):
 		next_unit["mp"] = 0
 		next_unit["skip_next_mp"] = false
@@ -4250,6 +4260,7 @@ func _dungeon_handoff(actor: Dictionary, auto_skip: bool, skip_reason: String, d
 		"coach": _last_coach,
 	})
 	_dungeon_pad_heal(next_unit)
+	_tick_poison(next_unit)
 	_tick_burn(next_unit)
 	if not _match_over and not bool(next_unit.get("alive", false)) and depth < _units.size() + 1:
 		return _dungeon_handoff(next_unit, true, "dead", depth + 1)
@@ -4332,6 +4343,9 @@ func _monster_legal_intents(actor: Dictionary) -> Array:
 	var sig: Dictionary = actor.get("signature", {})
 	if not sig.is_empty() and summon_ready(actor):
 		out.append({"type": "cast", "spell": str(sig.get("id", "")), "to": actor["pos"], "seat": seat})
+	var sig2: Dictionary = actor.get("signature2", {})
+	if not sig2.is_empty() and pools_ready(actor):
+		out.append({"type": "cast", "spell": str(sig2.get("id", "")), "to": hero["pos"] if not hero.is_empty() else actor["pos"], "seat": seat})
 	out.append({"type": "end_turn", "seat": seat})
 	return out
 
@@ -4347,6 +4361,8 @@ func _monster_attack_reason(actor: Dictionary, attack: Dictionary, dest: Vector2
 	var target := _living_unit_at(dest)
 	if target.is_empty() or _is_monster(target):
 		return "no_target"
+	if bool(attack.get("los", false)) and not has_los(actor["pos"], dest):
+		return "no_line_of_sight"
 	return ""
 
 
@@ -4370,9 +4386,11 @@ func summon_ready(actor: Dictionary) -> bool:
 
 func _summon_room(actor: Dictionary) -> int:
 	var sig: Dictionary = actor.get("signature", {})
+	# One cap for every live monster of the summoned kind: escort and calls.
 	var alive_summons := 0
+	var kind := str(sig.get("summon", ""))
 	for unit in _living_monsters():
-		if bool(unit.get("summoned", false)):
+		if bool(unit.get("summoned", false)) or str(unit.get("monster", "")) == kind:
 			alive_summons += 1
 	var by_alive := int(sig.get("cap_alive", 0)) - alive_summons
 	var by_total := int(sig.get("cap_total", 0)) - int(_dungeon.get("summoned_total", 0))
@@ -4414,6 +4432,9 @@ func _submit_monster_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
 	var sig: Dictionary = actor.get("signature", {})
 	if not sig.is_empty() and spell_id == str(sig.get("id", "")):
 		return _resolve_summon(intent, actor, sig)
+	var sig2: Dictionary = actor.get("signature2", {})
+	if not sig2.is_empty() and spell_id == str(sig2.get("id", "")):
+		return _resolve_pools(intent, actor, sig2)
 	if attack.is_empty() or spell_id != str(attack.get("id", "")):
 		return _reject(intent, "spell_not_in_kit", "REJECT — %s cannot use that." % actor["name"])
 	if not intent.has("to"):
@@ -4440,6 +4461,7 @@ func _submit_monster_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
 			"seat": actor["seat"],
 			"spell": spell_id,
 			"monster_attack": true,
+			"projectile": str(attack.get("projectile", "")),
 			"caster_cell": caster_cell,
 			"target_seat": target["seat"],
 			"to": dest,
@@ -4484,9 +4506,23 @@ func _submit_monster_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
 		"engine_spent": 0,
 		"coach": _last_coach,
 	}
+	if attack.has("projectile"):
+		hit_event["projectile"] = str(attack["projectile"])
 	_stamp_mitigation(hit_event, mitigation)
 	_last_events.append(hit_event)
 	_emit_immunity_spent(target, mitigation)
+	var poison: Dictionary = attack.get("poison", {})
+	if not poison.is_empty() and damage > 0 and int(target["hp"]) > 0:
+		target["poison_remaining"] = int(poison.get("turns", 2))
+		target["poison_hp"] = int(poison.get("hp", 1))
+		_last_events.append({
+			"type": "status",
+			"status": "poison",
+			"target_seat": target["seat"],
+			"remaining": int(target["poison_remaining"]),
+			"hp_per_tick": int(target["poison_hp"]),
+			"coach": "%s is poisoned (%d HP a turn, %d turns)." % [target["name"], int(target["poison_hp"]), int(target["poison_remaining"])],
+		})
 	_check_death(target)
 	return _accept()
 
@@ -4553,5 +4589,151 @@ func _dungeon_snapshot() -> Dictionary:
 		"round": int(_dungeon.get("round", 1)),
 		"monsters_alive": alive,
 		"summoned_total": int(_dungeon.get("summoned_total", 0)),
+		"star": int(_dungeon.get("star", 1)),
+		"pools": (_dungeon.get("pools", []) as Array).duplicate(true),
 	}
 	return snap
+
+
+
+# --- Dungeon: line of sight, poison, toxic pools (★5) ----------------------
+
+## Dungeon line of sight: the cells a straight line from `a` to `b` passes
+## through (both ends excluded) must not be props (not walkable). Bodies do
+## not block. The Koliseo has no LoS rule; only dungeon ranged monsters use it.
+func has_los(a: Vector2i, b: Vector2i) -> bool:
+	var n := maxi(absi(b.x - a.x), absi(b.y - a.y))
+	if n <= 1:
+		return true
+	var steps := n * 4
+	for i in range(1, steps):
+		var t := float(i) / float(steps)
+		var p := Vector2(a).lerp(Vector2(b), t)
+		var c := Vector2i(roundi(p.x), roundi(p.y))
+		if c == a or c == b:
+			continue
+		if not _board.is_walkable(c):
+			return false
+	return true
+
+
+func _tick_poison(unit: Dictionary) -> void:
+	var left := int(unit.get("poison_remaining", 0))
+	if left <= 0 or not bool(unit.get("alive", false)):
+		return
+	var hp_loss := int(unit.get("poison_hp", 1))
+	unit["hp"] = maxi(int(unit["hp"]) - hp_loss, 0)
+	unit["poison_remaining"] = left - 1
+	_last_events.append({
+		"type": "poison_tick",
+		"seat": unit["seat"],
+		"target_seat": unit["seat"],
+		"damage": hp_loss,
+		"remaining": left - 1,
+		"coach": "%s takes %d poison." % [unit["name"], hp_loss],
+	})
+	_check_death(unit, "poison")
+
+
+## Toxic pools: on the boss's first_turn-th turn, then every `every` turns.
+func pools_ready(actor: Dictionary) -> bool:
+	var sig: Dictionary = actor.get("signature2", {})
+	if sig.is_empty() or str(sig.get("kind", "")) != "pools":
+		return false
+	if bool(actor.get("acted_signature2", false)):
+		return false
+	if int(actor.get("ap", 0)) < int(sig.get("ap", 0)):
+		return false
+	var turns := int(actor.get("own_turns", 0))
+	var first := maxi(int(sig.get("first_turn", 1)), 1)
+	var every := maxi(int(sig.get("every", 1)), 1)
+	if turns < first or (turns - first) % every != 0:
+		return false
+	return not _pool_cells(actor, int(sig.get("cells_max", 3))).is_empty()
+
+
+## The hero's cell and its free walkable neighbours, nearest first.
+func _pool_cells(actor: Dictionary, want: int) -> Array[Vector2i]:
+	var out: Array[Vector2i] = []
+	var hero := _dungeon_hero()
+	if hero.is_empty() or not bool(hero.get("alive", false)):
+		return out
+	var center: Vector2i = hero["pos"]
+	var ring: Array[Vector2i] = [center]
+	for d in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1), Vector2i(1, 1), Vector2i(-1, -1), Vector2i(1, -1), Vector2i(-1, 1)]:
+		ring.append(center + d)
+	var taken := {}
+	for pool in _dungeon.get("pools", []):
+		taken[pool["cell"]] = true
+	for c in ring:
+		if out.size() >= want:
+			break
+		if not _in_bounds(c) or not _board.is_walkable(c) or taken.has(c):
+			continue
+		if c != center and not _is_empty(c):
+			continue
+		out.append(c)
+	return out
+
+
+func _resolve_pools(intent: Dictionary, actor: Dictionary, sig: Dictionary) -> Dictionary:
+	if not pools_ready(actor):
+		return _reject(intent, "pools_not_ready", "REJECT — %s is not ready." % sig.get("name", "Toxic Pools"))
+	var lo := int(sig.get("cells_min", 2))
+	var hi := int(sig.get("cells_max", 3))
+	var want := lo + int(_rng.randi() % maxi(hi - lo + 1, 1))
+	var cells := _pool_cells(actor, want)
+	actor["ap"] = int(actor["ap"]) - int(sig.get("ap", 0))
+	actor["acted_signature2"] = true
+	_intent_log.append(intent)
+	var pools: Array = _dungeon.get("pools", [])
+	var made: Array = []
+	for c in cells:
+		pools.append({"cell": c, "turns": int(sig.get("turns", 3)), "hp": int(sig.get("hp", 5))})
+		made.append(c)
+	_dungeon["pools"] = pools
+	_last_coach = "%s spills %s: %d toxic pools." % [actor["name"], sig.get("name", "toxic pools"), made.size()]
+	_last_events.append({
+		"type": "pools",
+		"seat": actor["seat"],
+		"spell": str(sig.get("id", "")),
+		"caster_cell": actor["pos"],
+		"cells": made,
+		"turns": int(sig.get("turns", 3)),
+		"coach": _last_coach,
+	})
+	return _accept()
+
+
+## The hero ends a turn: a pool under the hero poisons, then every pool ages.
+func _pools_on_hero_end(hero: Dictionary) -> void:
+	var pools: Array = _dungeon.get("pools", [])
+	if pools.is_empty():
+		return
+	for pool in pools:
+		if pool["cell"] == hero["pos"] and bool(hero.get("alive", false)):
+			var dmg := int(pool.get("hp", 5))
+			hero["hp"] = maxi(int(hero["hp"]) - dmg, 0)
+			_last_events.append({
+				"type": "pool_hit",
+				"seat": hero["seat"],
+				"target_seat": hero["seat"],
+				"cell": pool["cell"],
+				"damage": dmg,
+				"coach": "%s ends the turn in a toxic pool: %d poison." % [hero["name"], dmg],
+			})
+			_check_death(hero, "poison")
+			break
+	var kept: Array = []
+	for pool in pools:
+		pool["turns"] = int(pool["turns"]) - 1
+		if int(pool["turns"]) > 0:
+			kept.append(pool)
+	_dungeon["pools"] = kept
+
+
+func pool_cells() -> Array:
+	var out: Array = []
+	for pool in _dungeon.get("pools", []):
+		out.append(pool["cell"])
+	return out

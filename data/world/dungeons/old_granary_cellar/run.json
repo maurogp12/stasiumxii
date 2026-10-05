@@ -12,29 +12,286 @@
     "who": "hero",
     "note": "Amber wheat pads (room A) and the drain grate (room B): the hero heals 4 HP when a turn starts on one. Monsters get nothing."
   },
-  "between_rooms": {"heal": "full", "note": "A short rest on the stairs between room A and room B. Proposed for a tutorial dungeon."},
+  "between_rooms": {
+    "heal": "full",
+    "note": "A short rest on the stairs between room A and room B. Proposed for a tutorial dungeon."
+  },
   "rooms": [
     {
       "id": "room_a",
       "name": "Cellar Stores",
       "kind": "pack",
       "tags": "res://data/world/dungeons/old_granary_cellar/room_a_tags.json",
-      "hero": {"x": 8, "y": 10, "facing": "N"},
+      "hero": {
+        "x": 8,
+        "y": 10,
+        "facing": "N"
+      },
       "monsters": [
-        {"monster": "granary_rat", "x": 3, "y": 2, "facing": "S"},
-        {"monster": "granary_rat", "x": 7, "y": 1, "facing": "S"},
-        {"monster": "scarecrow_drudge", "x": 4, "y": 1, "facing": "S"}
-      ]
+        {
+          "monster": "granary_rat",
+          "x": 2,
+          "y": 1,
+          "facing": "S"
+        },
+        {
+          "monster": "granary_rat",
+          "x": 9,
+          "y": 3,
+          "facing": "S"
+        },
+        {
+          "monster": "sling_rat",
+          "x": 5,
+          "y": 0,
+          "facing": "S"
+        },
+        {
+          "monster": "sling_rat",
+          "x": 11,
+          "y": 2,
+          "facing": "S"
+        },
+        {
+          "monster": "scarecrow_drudge",
+          "x": 3,
+          "y": 2,
+          "facing": "S"
+        },
+        {
+          "monster": "scarecrow_drudge",
+          "x": 7,
+          "y": 2,
+          "facing": "S"
+        }
+      ],
+      "note": "packs: the pack for the highest key at or below the star. monsters is the \u26051 pack. Spawns spread over the far rows, off the pads, away from the hero (8,10).",
+      "packs": {
+        "1": [
+          {
+            "monster": "granary_rat",
+            "x": 2,
+            "y": 1,
+            "facing": "S"
+          },
+          {
+            "monster": "granary_rat",
+            "x": 9,
+            "y": 3,
+            "facing": "S"
+          },
+          {
+            "monster": "sling_rat",
+            "x": 5,
+            "y": 0,
+            "facing": "S"
+          },
+          {
+            "monster": "sling_rat",
+            "x": 11,
+            "y": 2,
+            "facing": "S"
+          },
+          {
+            "monster": "scarecrow_drudge",
+            "x": 3,
+            "y": 2,
+            "facing": "S"
+          },
+          {
+            "monster": "scarecrow_drudge",
+            "x": 7,
+            "y": 2,
+            "facing": "S"
+          }
+        ],
+        "3": [
+          {
+            "monster": "granary_rat",
+            "x": 2,
+            "y": 1,
+            "facing": "S"
+          },
+          {
+            "monster": "granary_rat",
+            "x": 9,
+            "y": 3,
+            "facing": "S"
+          },
+          {
+            "monster": "sling_rat",
+            "x": 5,
+            "y": 0,
+            "facing": "S"
+          },
+          {
+            "monster": "sling_rat",
+            "x": 11,
+            "y": 2,
+            "facing": "S"
+          },
+          {
+            "monster": "scarecrow_drudge",
+            "x": 3,
+            "y": 2,
+            "facing": "S"
+          },
+          {
+            "monster": "scarecrow_drudge",
+            "x": 7,
+            "y": 2,
+            "facing": "S"
+          },
+          {
+            "monster": "granary_rat",
+            "x": 1,
+            "y": 3,
+            "facing": "S"
+          }
+        ],
+        "5": [
+          {
+            "monster": "radioactive_rat",
+            "x": 2,
+            "y": 1,
+            "facing": "S"
+          },
+          {
+            "monster": "radioactive_rat",
+            "x": 9,
+            "y": 3,
+            "facing": "S"
+          },
+          {
+            "monster": "radioactive_rat",
+            "x": 1,
+            "y": 3,
+            "facing": "S"
+          },
+          {
+            "monster": "radioactive_sling_rat",
+            "x": 5,
+            "y": 0,
+            "facing": "S"
+          },
+          {
+            "monster": "radioactive_sling_rat",
+            "x": 11,
+            "y": 2,
+            "facing": "S"
+          },
+          {
+            "monster": "radioactive_sling_rat",
+            "x": 6,
+            "y": 0,
+            "facing": "S"
+          },
+          {
+            "monster": "scarecrow_drudge",
+            "x": 3,
+            "y": 2,
+            "facing": "S"
+          },
+          {
+            "monster": "scarecrow_drudge",
+            "x": 7,
+            "y": 2,
+            "facing": "S"
+          }
+        ]
+      }
     },
     {
       "id": "room_b",
       "name": "The Ratking's Lair",
       "kind": "boss",
       "tags": "res://data/world/dungeons/old_granary_cellar/room_b_tags.json",
-      "hero": {"x": 6, "y": 10, "facing": "N"},
+      "hero": {
+        "x": 6,
+        "y": 10,
+        "facing": "N"
+      },
       "monsters": [
-        {"monster": "the_ratking", "x": 6, "y": 2, "facing": "S"}
-      ]
+        {
+          "monster": "the_ratking",
+          "x": 6,
+          "y": 2,
+          "facing": "S"
+        },
+        {
+          "monster": "granary_rat",
+          "x": 4,
+          "y": 2,
+          "facing": "S"
+        },
+        {
+          "monster": "granary_rat",
+          "x": 8,
+          "y": 2,
+          "facing": "S"
+        },
+        {
+          "monster": "scarecrow_drudge",
+          "x": 6,
+          "y": 4,
+          "facing": "S"
+        }
+      ],
+      "note": "The Ratking with his escort (2 Granary Rats, 1 Scarecrow Drudge) in front of the throne. His summons count against one rat cap together with the escort rats.",
+      "packs": {
+        "1": [
+          {
+            "monster": "the_ratking",
+            "x": 6,
+            "y": 2,
+            "facing": "S"
+          },
+          {
+            "monster": "granary_rat",
+            "x": 4,
+            "y": 2,
+            "facing": "S"
+          },
+          {
+            "monster": "granary_rat",
+            "x": 8,
+            "y": 2,
+            "facing": "S"
+          },
+          {
+            "monster": "scarecrow_drudge",
+            "x": 6,
+            "y": 4,
+            "facing": "S"
+          }
+        ],
+        "5": [
+          {
+            "monster": "radioactive_ratking",
+            "x": 6,
+            "y": 2,
+            "facing": "S"
+          },
+          {
+            "monster": "radioactive_rat",
+            "x": 4,
+            "y": 2,
+            "facing": "S"
+          },
+          {
+            "monster": "radioactive_rat",
+            "x": 8,
+            "y": 2,
+            "facing": "S"
+          },
+          {
+            "monster": "scarecrow_drudge",
+            "x": 6,
+            "y": 4,
+            "facing": "S"
+          }
+        ]
+      }
     }
   ]
 }

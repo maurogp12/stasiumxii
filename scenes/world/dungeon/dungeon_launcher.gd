@@ -20,9 +20,9 @@ static var dry_run := false
 static var last_scene := ""
 
 
-## ctx: level, class_id, name, return_zone, return_cell, autoplay, movie.
+## ctx: level, class_id, name, star (1-5), return_zone, return_cell, autoplay, movie.
 static func enter(tree: SceneTree, dungeon_id: String, ctx: Dictionary) -> Dictionary:
-	var made: Dictionary = Run.create(dungeon_id, int(ctx.get("level", 1)), str(ctx.get("class_id", "")), str(ctx.get("name", "")))
+	var made: Dictionary = Run.create(dungeon_id, int(ctx.get("level", 1)), str(ctx.get("class_id", "")), str(ctx.get("name", "")), int(ctx.get("star", 1)))
 	if not bool(made.get("ok", false)):
 		return {"ok": false, "reason": "not_ready", "errors": made.get("errors", [])}
 	pending = ctx.duplicate(true)

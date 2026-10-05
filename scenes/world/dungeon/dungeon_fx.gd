@@ -1,0 +1,88 @@
+extends RefCounted
+
+## VIEW ONLY. Dungeon effects: the Sling Rat's projectile and impact puff.
+## The stone leaves at the sling's release frame, flies to the target and
+## bursts. Art from the manifest (sling projectile / impact frames) when
+## present, else drawn stand-ins (a grey stone, a green pellet at ★5).
+
+const Art := preload("res://scenes/world/dungeon/dungeon_art.gd")
+const RELEASE_SEC := 0.22
+const FLIGHT_SEC := 0.26
+const PUFF_SEC := 0.32
+
+
+## Returns how long the throw keeps the view busy.
+static func throw(parent: Node2D, man: Dictionary, kind: String, from: Vector2, to: Vector2, hit: bool, z: int, release: float = RELEASE_SEC) -> float:
+	var shot := Shot.new()
+	shot.kind = kind
+	var pk := Art.projectile_kit(man, kind)
+	shot.tex = pk.get("tex", null)
+	shot.tex_scale = float(pk.get("scale", 1.0))
+	shot.glow = pk.get("glow", null)
+	var puff := Art.projectile_kit(man, "sling_impact_puff")
+	shot.puff = puff.get("tex", null)
+	shot.puff_scale = float(puff.get("scale", 1.0))
+	shot.hit = hit
+	shot.position = from
+	shot.z_as_relative = false
+	shot.z_index = z
+	shot.visible = false
+	parent.add_child(shot)
+	var tw := shot.create_tween()
+	tw.tween_interval(release)
+	tw.tween_callback(func(): shot.visible = true)
+	var mid := (from + to) * 0.5 + Vector2(0, -minf(from.distance_to(to) * 0.15 + 12.0, 36.0))
+	tw.tween_method(func(t: float): shot.position = from.lerp(mid, t).lerp(mid.lerp(to, t), t), 0.0, 1.0, FLIGHT_SEC)
+	tw.tween_callback(shot.burst)
+	tw.tween_interval(PUFF_SEC)
+	tw.tween_callback(shot.queue_free)
+	return release + FLIGHT_SEC + PUFF_SEC
+
+
+class Shot extends Node2D:
+	var kind := ""
+	var tex: Texture2D
+	var tex_scale := 1.0
+	var glow: Texture2D
+	var puff: Texture2D
+	var puff_scale := 1.0
+	var hit := true
+	var _puff := -1.0
+	var _t := 0.0
+
+	func burst() -> void:
+		_puff = 0.0
+
+	func _process(delta: float) -> void:
+		_t += delta
+		if _puff >= 0.0:
+			_puff += delta
+		queue_redraw()
+
+	func _draw() -> void:
+		var green := kind.begins_with("rad")
+		if _puff < 0.0:
+			if tex != null:
+				# Spin ~720 deg/s, centred on the flight point.
+				draw_set_transform(Vector2.ZERO, _t * TAU * 2.0, Vector2.ONE)
+				var s := tex.get_size() * tex_scale
+				draw_texture_rect(tex, Rect2(-s * 0.5, s), false)
+				draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+			else:
+				var c := Color(0.55, 1.0, 0.35) if green else Color(0.62, 0.58, 0.52)
+				if green:
+					draw_circle(Vector2.ZERO, 7.0, Color(0.5, 1.0, 0.3, 0.3))
+				draw_circle(Vector2.ZERO, 3.5, c)
+			return
+		var u := clampf(_puff / 0.25, 0.0, 1.0)
+		if puff != null:
+			# Quick scale-up and fade at the hit point.
+			var s2 := puff.get_size() * puff_scale * (0.6 + 0.7 * u)
+			draw_texture_rect(puff, Rect2(-s2 * 0.5, s2), false, Color(1, 1, 1, 1.0 - u) if hit else Color(1, 1, 1, 0.6 * (1.0 - u)))
+			return
+		var col := Color(0.6, 1.0, 0.35, 1.0 - u) if green else Color(0.85, 0.8, 0.7, 1.0 - u)
+		if not hit:
+			col.a *= 0.6
+		for k in 6:
+			var a := TAU * float(k) / 6.0
+			draw_circle(Vector2(cos(a), sin(a) * 0.6) * (4.0 + 16.0 * u), 3.0 * (1.0 - u) + 1.0, col)

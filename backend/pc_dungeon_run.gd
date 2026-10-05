@@ -16,6 +16,16 @@ const Rewards = preload("res://backend/pc_rewards.gd")
 const BALANCE_PATH := "res://data/world/balance_inputs.json"
 const CURVE_PATH := "res://data/world/level_curve.json"
 const RUN_FORMAT := "stasium.dungeon_run"
+const MAX_STAR := 5
+## Mobile: Stasis clear XP is 60 x star (hero_progress.gd). PC keeps its
+## level-curve base XP (4.8) and multiplies it by the star the same way.
+const XP_STAR_LINEAR := true
+## Loot gates by star, as mobile's gear sources (gear_bag.gd FAMILIES):
+## Normal from ★1, Rare from ★3, Legendary from ★5 or the boss. PC set parts
+## are regular / rare; PC has no Legendary tier for a level 1-10 band (epics
+## and relics start at level 40), so the ★5 Legendary slot is a Mystery Box.
+const RARE_FROM_STAR := 3
+const LEGENDARY_FROM_STAR := 5
 
 var dungeon: Dictionary = {}
 var run_doc: Dictionary = {}
@@ -33,7 +43,7 @@ var _rooms: Array = []
 
 
 ## Builds a run for a built dungeon, or {ok: false, errors}.
-static func create(dungeon_id: String, hero_level: int, class_id: String, display_name: String = "") -> Dictionary:
+static func create(dungeon_id: String, hero_level: int, class_id: String, display_name: String = "", star_pick: int = 1) -> Dictionary:
 	var run = new()
 	var loaded: Dictionary = Dungeons.load_default()
 	if not bool(loaded.get("ok", false)):
@@ -50,6 +60,7 @@ static func create(dungeon_id: String, hero_level: int, class_id: String, displa
 	run.level = clampi(hero_level, int(run.dungeon["level_min"]), int(run.dungeon["level_max"]))
 	run.hero_class = class_id if SpellKits.is_roster_class(class_id) else SpellKits.CLASS_KESTREL
 	run.hero_name = display_name
+	run.star = clampi(star_pick, 1, MAX_STAR)
 	run._load_run_doc()
 	if not run.errors.is_empty():
 		return {"ok": false, "errors": run.errors}
@@ -111,16 +122,17 @@ func combat_config(index: int = -1, seed: int = -1) -> Dictionary:
 	var pads: Dictionary = run_doc.get("pads", {})
 	var mons: Array = []
 	var summons := {}
-	for raw in spec.get("monsters", []):
+	var pack: Array = pack_for(spec, star)
+	for raw in pack:
 		var m: Dictionary = raw
-		var stats: Dictionary = monsters.stats_at(str(m["monster"]), level)
+		var stats: Dictionary = monsters.stats_at(str(m["monster"]), level, star)
 		stats["pos"] = Vector2i(int(m["x"]), int(m["y"]))
 		stats["facing"] = str(m.get("facing", "S"))
 		mons.append(stats)
 		var sig: Dictionary = stats.get("signature", {})
 		if not sig.is_empty():
 			var summon_id := str(sig.get("summon", ""))
-			summons[summon_id] = monsters.stats_at(summon_id, level)
+			summons[summon_id] = monsters.stats_at(summon_id, level, star)
 	var size := tags.get("size", [12, 12]) as Array
 	var config := {
 		"board_size": int(size[0]) if size.size() > 0 else 12,
@@ -128,6 +140,7 @@ func combat_config(index: int = -1, seed: int = -1) -> Dictionary:
 			"dungeon_id": str(dungeon["id"]),
 			"room_id": str(spec["id"]),
 			"room_name": str(spec.get("name", "")),
+			"star": star,
 			"kind": str(spec.get("kind", "pack")),
 			"cells": cells,
 			"pad_heal": int(pads.get("amount", 0)) if str(pads.get("effect", "")) == "heal" else 0,
@@ -148,6 +161,21 @@ func combat_config(index: int = -1, seed: int = -1) -> Dictionary:
 	return config
 
 
+## The room's pack for a star: the packs entry with the highest key at or
+## below the star; `monsters` when the room has no packs.
+static func pack_for(spec: Dictionary, for_star: int) -> Array:
+	var packs: Variant = spec.get("packs", {})
+	var best := 0
+	var out: Array = spec.get("monsters", [])
+	if typeof(packs) == TYPE_DICTIONARY:
+		for key in (packs as Dictionary).keys():
+			var k := int(key)
+			if k <= for_star and k > best:
+				best = k
+				out = packs[key]
+	return out
+
+
 ## Room won: step on. Returns true when another room follows.
 func advance() -> bool:
 	if is_last_room():
@@ -166,13 +194,17 @@ func win_xp(hero_level: int) -> int:
 	var balance: Dictionary = _read_json(BALANCE_PATH)
 	var curve: Dictionary = _read_json(CURVE_PATH)
 	var share := float((balance.get("xp_share_of_step", {}) as Dictionary).get("dungeon_win", 0.0))
-	var stars: Array = balance.get("stars", [1.0])
-	var star_mult := float(stars[clampi(star - 1, 0, stars.size() - 1)]) if not stars.is_empty() else 1.0
+	var need := 0.0
 	var steps: Array = curve.get("xp_to_next", [])
 	if steps.is_empty():
 		return 0
-	var need := float(steps[clampi(level - 1, 0, steps.size() - 1)])
+	need = float(steps[clampi(level - 1, 0, steps.size() - 1)])
 	var pace := float(curve.get("pace_start", 1.0)) * pow(float(curve.get("pace_ratio", 1.0)), float(maxi(hero_level, 1) - 1))
+	var base := int(round(share * need * pace))
+	if XP_STAR_LINEAR:
+		return base * star
+	var stars: Array = balance.get("stars", [1.0])
+	var star_mult := float(stars[clampi(star - 1, 0, stars.size() - 1)]) if not stars.is_empty() else 1.0
 	return int(round(share * need * star_mult * pace))
 
 
@@ -202,6 +234,7 @@ func pay_out(progress, missions, rng: RandomNumberGenerator, persist: bool = tru
 			"class_id": hero_class,
 			"zone_id": str((dungeon.get("door", {}) as Dictionary).get("zone_id", "")),
 		}, rng)
+	drop["items"] = star_loot(catalog.get("rewards", null), drop.get("items", []), rng)
 	var xp := win_xp(int(progress.level))
 	summary["xp"] = xp
 	summary["coins"] = int(drop.get("coins", 0))
@@ -210,9 +243,37 @@ func pay_out(progress, missions, rng: RandomNumberGenerator, persist: bool = tru
 	summary["granted"] = progress.grant({"coins": summary["coins"], "items": summary["items"]})
 	if missions != null:
 		summary["missions"] = missions.on_dungeon_won(str(dungeon["id"]), progress)
+	summary["star"] = star
+	if progress.has_method("note_dungeon_star"):
+		summary["new_best_star"] = progress.note_dungeon_star(str(dungeon["id"]), star)
 	if persist:
 		progress.save()
 	return summary
+
+
+## Star gate on the dungeon roll: no Rare part below ★3; at ★5 one Rare part
+## and one Mystery Box (the Legendary slot) are guaranteed.
+func star_loot(catalog, items: Array, rng: RandomNumberGenerator) -> Array:
+	var out: Array = []
+	for raw in items:
+		var item: Dictionary = raw
+		if str(item.get("rarity", "regular")) == "rare" and star < RARE_FROM_STAR:
+			item = item.duplicate()
+			item["rarity"] = "regular"
+		out.append(item)
+	if star >= LEGENDARY_FROM_STAR and catalog != null:
+		var has_rare := false
+		var has_box := false
+		for item in out:
+			has_rare = has_rare or str(item.get("rarity", "")) == "rare"
+			has_box = has_box or str(item.get("item_id", "")) == "mystery_box"
+		if not has_rare:
+			var rare: Dictionary = catalog._part_drop(catalog._dungeon_part_set(catalog._dungeon(str(dungeon["id"])), {"class_id": hero_class}, rng), "rare", rng)
+			if str(rare.get("item_id", "")) != "":
+				out.append(rare)
+		if not has_box:
+			out.append(catalog._box_item())
+	return out
 
 
 func _load_run_doc() -> void:
@@ -230,7 +291,10 @@ func _load_run_doc() -> void:
 		var tags := _read_tags(str(spec.get("tags", "")))
 		if tags.is_empty():
 			errors.append("room %s tags missing" % spec.get("id", "?"))
-		for m in spec.get("monsters", []):
+		var all_packs: Array = (spec.get("monsters", []) as Array).duplicate()
+		for p in (spec.get("packs", {}) as Dictionary).values():
+			all_packs.append_array(p)
+		for m in all_packs:
 			if not monsters.has(str(m.get("monster", ""))):
 				errors.append("room %s names unknown monster %s" % [spec.get("id", "?"), m.get("monster", "")])
 

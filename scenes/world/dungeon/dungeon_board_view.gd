@@ -18,7 +18,11 @@ const Art := preload("res://scenes/world/dungeon/dungeon_art.gd")
 const DungeonTile := preload("res://scenes/world/dungeon/dungeon_tile.gd")
 const MonsterPawn := preload("res://scenes/world/dungeon/monster_pawn.gd")
 const Props := preload("res://scenes/world/dungeon/dungeon_props.gd")
-const MONSTER_BANNER_SEC := 0.55
+## Monster turns play back quickly: a short seat banner and a short beat
+## before each monster acts (6-8 monsters in room A).
+const MONSTER_BANNER_SEC := 0.3
+const MONSTER_BEAT_SEC := 0.06
+const Fx := preload("res://scenes/world/dungeon/dungeon_fx.gd")
 
 var manifest: Dictionary = {}
 var room_id := ""
@@ -166,6 +170,18 @@ func _dress_room() -> void:
 	_fit_board_camera()
 
 
+## Toxic pools (★5) show on their tiles as danger cells.
+func _sync_pools() -> void:
+	var snap: Dictionary = sim_node().snapshot()
+	var cells := {}
+	for pool in (snap.get("dungeon", {}) as Dictionary).get("pools", []):
+		cells[_as_cell(pool["cell"])] = int(pool.get("turns", 0))
+	for cell in tiles.keys():
+		var t = tiles[cell]
+		if t.has_method("set_pool"):
+			t.set_pool(cells.has(cell), int(cells.get(cell, 0)), manifest)
+
+
 ## The Koliseo HUD is shared as is; in a room it hides the second seat card
 ## (the run's monster list replaces it), the terrain legend and the
 ## online "HOST" prefix that the dungeon's local seat would show.
@@ -237,7 +253,7 @@ func _add_pawn(unit: Dictionary) -> Pawn:
 	var pawn: Pawn
 	if unit.has("monster"):
 		var mp := MonsterPawn.new()
-		mp.bind_art(manifest, str(unit["monster"]), bool(unit.get("boss", false)))
+		mp.bind_art(manifest, str(unit["monster"]), bool(unit.get("boss", false)), str(unit.get("variant_of", "")))
 		pawn = mp
 	else:
 		pawn = PAWN_SCENE.instantiate() as Pawn
@@ -284,7 +300,13 @@ func _arm_view_motions(events: Array) -> void:
 		if bool(event.get("monster_attack", false)) and (typ == "hit" or typ == "miss"):
 			# The target's recoil / slump already comes from the base plans.
 			longest = maxf(longest, pawn.play_view_plan({"attack": true, "aim": _aim_vector(seat, event)}))
-		elif typ == "summon":
+			if str(event.get("projectile", "")) != "":
+				var to_cell := _as_cell(event.get("to", Vector2i.ZERO))
+				var to_at := _cell_to_local(to_cell) + Vector2(0, -26)
+				var from_at: Vector2 = pawn.position + (pawn.release_offset() if pawn.has_method("release_offset") else Vector2(0, -22))
+				var at_sec: float = pawn.release_sec() if pawn.has_method("release_sec") else 0.22
+				longest = maxf(longest, Fx.throw(self, manifest, str(event["projectile"]), from_at, to_at, typ == "hit", VISUAL_SORT.unit_z_index(to_cell) + 6, at_sec))
+		elif typ == "summon" or typ == "pools":
 			longest = maxf(longest, pawn.play_view_plan({"cast": true, "strip": "summon"}))
 	_pending_motion_sec = minf(longest, VIEW_MOTION.ACTION_LOCK_MAX)
 
@@ -292,6 +314,7 @@ func _arm_view_motions(events: Array) -> void:
 func _refresh() -> void:
 	super._refresh()
 	_tidy_hud()
+	_sync_pools()
 	if not _room_live:
 		return
 	var snap: Dictionary = sim_node().snapshot()
@@ -325,7 +348,7 @@ func _drive_monsters() -> void:
 		if seat == 0:
 			break
 		turn_changed.emit(seat)
-		await get_tree().create_timer(0.2).timeout
+		await get_tree().create_timer(MONSTER_BEAT_SEC).timeout
 		if not is_inside_tree():
 			return
 		var faced := false

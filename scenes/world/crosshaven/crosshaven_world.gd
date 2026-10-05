@@ -4087,7 +4087,8 @@ func open_door_panel(dungeon_id: String, keeper_line: String = "") -> void:
 		dialogue.close()
 	walker.face("n")
 	var level := int(progress.level) if progress != null else 1
-	door_panel.open_for(row, level, keeper_line)
+	var best := int(progress.best_dungeon_star(dungeon_id)) if progress != null and progress.has_method("best_dungeon_star") else 0
+	door_panel.open_for(row, level, keeper_line, best)
 
 
 ## A built dungeon's Door Keeper opens the entry panel instead of plain talk,
@@ -4136,11 +4137,12 @@ func _on_door_enter(dungeon_id: String) -> void:
 		"class_id": hero_combat_class(),
 		"return_zone": door_zone,
 		"return_cell": door,
-		"autoplay": _movie == "granary",
+		"autoplay": _movie.begins_with("granary"),
 		"movie": _movie,
+		"star": int(door_panel.selected_star) if door_panel != null else 1,
 	}
 	if _movie != "":
-		ctx["seed"] = 1000
+		ctx["seed"] = 1
 	var started: Dictionary = Launcher.enter(get_tree(), dungeon_id, ctx)
 	if not bool(started.get("ok", false)):
 		_show_banner("The way down is not open yet.")
@@ -4201,7 +4203,14 @@ func _movie_granary() -> void:
 	await _wait_until_stopped()
 	await get_tree().create_timer(0.4).timeout
 	_mark("granary_panel")
-	await get_tree().create_timer(2.6).timeout
+	await get_tree().create_timer(1.4).timeout
+	# Show the star picker: walk up the stars, then settle on the run's star.
+	var want := int(OS.get_environment("GRANARY_STAR")) if OS.get_environment("GRANARY_STAR") != "" else 1
+	for n in [2, 3, 4, 5]:
+		door_panel.select_star(n)
+		await get_tree().create_timer(0.7).timeout
+	door_panel.select_star(want)
+	await get_tree().create_timer(1.4).timeout
 	_mark("granary_enter")
 	door_panel.press_enter()
 	await get_tree().create_timer(30.0).timeout

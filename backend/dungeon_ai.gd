@@ -38,6 +38,10 @@ static func next_intent(sim: Node, seat: int, faced: bool = false) -> Dictionary
 	for intent in legal:
 		if str(intent.get("type", "")) == "cast" and not sig.is_empty() and str(intent.get("spell", "")) == str(sig.get("id", "")):
 			return intent
+	var sig2: Dictionary = actor.get("signature2", {})
+	for intent in legal:
+		if str(intent.get("type", "")) == "cast" and not sig2.is_empty() and str(intent.get("spell", "")) == str(sig2.get("id", "")):
+			return intent
 	for intent in legal:
 		if str(intent.get("type", "")) == "cast" and str(intent.get("spell", "")) == str(attack.get("id", "")):
 			return intent
@@ -49,7 +53,11 @@ static func next_intent(sim: Node, seat: int, faced: bool = false) -> Dictionary
 		if str(intent.get("type", "")) == "move":
 			moves.append(intent)
 	if not moves.is_empty() and int(actor.get("ap", 0)) >= int(attack.get("ap", 0)):
-		var field := attack_field(snap, hero["pos"], int(attack.get("min_range", 1)), int(attack.get("max_range", 1)))
+		# Ranged (min range 2+) monsters need a clear line: goal cells are those
+		# in range with line of sight. Adjacent to the hero, the current cell is
+		# not a goal, so the monster steps back before it throws (kiting).
+		var los := Callable(sim, "has_los") if bool(attack.get("los", false)) and sim.has_method("has_los") else Callable()
+		var field := attack_field(snap, hero["pos"], int(attack.get("min_range", 1)), int(attack.get("max_range", 1)), los)
 		var here: Vector2i = _cell(actor["pos"])
 		var here_d := int(field.get(here, UNREACHED))
 		var best: Dictionary = {}
@@ -84,7 +92,7 @@ static func next_intent(sim: Node, seat: int, faced: bool = false) -> Dictionary
 ## Walking distance (ortho steps over walkable cells) from every cell to the
 ## nearest cell that can hit `target` with an attack of that range. Bodies are
 ## ignored here; legal_intents already keeps them off the stand cells.
-static func attack_field(snap: Dictionary, target: Variant, min_range: int, max_range: int) -> Dictionary:
+static func attack_field(snap: Dictionary, target: Variant, min_range: int, max_range: int, los: Callable = Callable()) -> Dictionary:
 	var size := int(snap.get("board_size", 12))
 	var walk := walkable_cells(snap)
 	var goal := _cell(target)
@@ -93,7 +101,7 @@ static func attack_field(snap: Dictionary, target: Variant, min_range: int, max_
 	for cell in walk.keys():
 		var c: Vector2i = cell
 		var d := _cheb(c, goal)
-		if d >= min_range and d <= max_range:
+		if d >= min_range and d <= max_range and (not los.is_valid() or bool(los.call(c, goal))):
 			dist[c] = 0
 			queue.append(c)
 	var head := 0
@@ -171,6 +179,9 @@ static func hero_intent(sim: Node) -> Dictionary:
 	for intent in legal:
 		if bool(intent.get("auto", false)):
 			return intent
+	var pools := {}
+	for c in (snap.get("dungeon", {}) as Dictionary).get("pools", []):
+		pools[_cell(c["cell"])] = true
 	var low := float(hero.get("hp", 0)) < float(hero.get("max_hp", 80)) * 0.45
 	var best: Dictionary = {}
 	var best_score := -1.0
@@ -213,8 +224,11 @@ static func hero_intent(sim: Node) -> Dictionary:
 		reach_max = int(reach[1])
 	var moves: Array = []
 	for intent in legal:
-		if str(intent.get("type", "")) == "move":
+		if str(intent.get("type", "")) == "move" and not pools.has(_cell(intent["to"])):
 			moves.append(intent)
+	if not moves.is_empty() and pools.has(_cell(hero["pos"])) and int(hero.get("ap", 0)) < 2:
+		# Do not end the turn in a toxic pool.
+		return moves[0]
 	if not moves.is_empty() and int(hero.get("ap", 0)) >= 3:
 		var foes: Array = []
 		for unit in snap.get("units", []):
@@ -234,6 +248,8 @@ static func hero_intent(sim: Node) -> Dictionary:
 					pick = intent
 			if not pick.is_empty():
 				return pick
+	if not moves.is_empty() and pools.has(_cell(hero["pos"])):
+		return moves[0]
 	return {"type": "end_turn", "seat": 0}
 
 

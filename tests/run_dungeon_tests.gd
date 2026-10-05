@@ -48,6 +48,12 @@ func _run() -> void:
 	_test_ai_corridor()
 	_test_summon_cap()
 	_test_boss_scatter()
+	_test_star_scaling()
+	_test_packs_and_spawns()
+	_test_star_rewards()
+	_test_star5_boss_and_pools()
+	_test_sling_rat()
+	_test_turn_pacing()
 	_test_scripted_win()
 	_test_loss_pays_nothing()
 	await _test_world_door_and_panel()
@@ -169,10 +175,15 @@ func _test_rooms() -> void:
 	var counts := {}
 	for m in run.room(0)["monsters"]:
 		counts[str(m["monster"])] = int(counts.get(str(m["monster"]), 0)) + 1
-	eq(int(counts.get("granary_rat", 0)), 2, "room A has 2 Granary Rats")
-	eq(int(counts.get("scarecrow_drudge", 0)), 1, "room A has 1 Scarecrow Drudge")
-	eq((run.room(1)["monsters"] as Array).size(), 1, "room B has the Ratking alone")
-	eq(str(run.room(1)["monsters"][0]["monster"]), "the_ratking", "the boss is the Ratking")
+	eq(int(counts.get("granary_rat", 0)), 2, "★1 room A has 2 Granary Rats")
+	eq(int(counts.get("sling_rat", 0)), 2, "★1 room A has 2 Sling Rats")
+	eq(int(counts.get("scarecrow_drudge", 0)), 2, "★1 room A has 2 Scarecrow Drudges")
+	var boss_room: Array = run.room(1)["monsters"]
+	eq(str(boss_room[0]["monster"]), "the_ratking", "the boss is the Ratking")
+	var escort := {}
+	for m in boss_room.slice(1):
+		escort[str(m["monster"])] = int(escort.get(str(m["monster"]), 0)) + 1
+	eq(escort, {"granary_rat": 2, "scarecrow_drudge": 1}, "the Ratking's escort: 2 Granary Rats and 1 Scarecrow Drudge")
 	var man := Art.manifest(_art_path())
 	for index in 2:
 		var config: Dictionary = run.combat_config(index, 3)
@@ -237,7 +248,7 @@ func _test_monsters() -> void:
 	if not bool(loaded.get("ok", false)):
 		return
 	var book = loaded["monsters"]
-	for id in ["granary_rat", "scarecrow_drudge", "the_ratking"]:
+	for id in ["granary_rat", "sling_rat", "scarecrow_drudge", "the_ratking", "radioactive_rat", "radioactive_sling_rat", "radioactive_ratking"]:
 		eq(book.has(id), true, "%s exists" % id)
 		var lo: Dictionary = book.stats_at(id, 1)
 		var hi: Dictionary = book.stats_at(id, 10)
@@ -335,6 +346,7 @@ func _test_summon_cap() -> void:
 	var run = Run.create(GRANARY, 1, "kestrel")["run"]
 	var config: Dictionary = run.combat_config(1, 11)
 	var sig: Dictionary = (config["dungeon"]["monsters"][0] as Dictionary)["signature"]
+	var kind := str(sig["summon"])
 	sim.reset_match(config)
 	var max_alive := 0
 	var summons_on: Array = []
@@ -356,9 +368,10 @@ func _test_summon_cap() -> void:
 			for d in AI.play_monster_turn(sim, seat):
 				if str(d["intent"].get("spell", "")) == str(sig["id"]) and bool(d["ok"]):
 					summons_on.append(int(sim._unit_by_seat(1)["own_turns"]))
+			# One cap for every live rat of the summoned kind: escort and calls.
 			var alive := 0
 			for u in sim.snapshot()["units"]:
-				if bool(u.get("summoned", false)) and bool(u.get("alive", false)):
+				if (bool(u.get("summoned", false)) or str(u.get("monster", "")) == kind) and bool(u.get("alive", false)):
 					alive += 1
 			max_alive = maxi(max_alive, alive)
 		# Keep the hero alive so the cap is tested over many turns, and clear
@@ -374,7 +387,7 @@ func _test_summon_cap() -> void:
 	eq(summons_on[0] if not summons_on.is_empty() else -1, int(sig["first_turn"]), "the first call is on his turn %d" % int(sig["first_turn"]))
 	for t in summons_on:
 		eq((int(t) - int(sig["first_turn"])) % int(sig["every"]), 0, "calls come every %d turns (turn %d)" % [int(sig["every"]), int(t)])
-	eq(max_alive <= int(sig["cap_alive"]), true, "never more than %d summoned rats alive (%d)" % [int(sig["cap_alive"]), max_alive])
+	eq(max_alive <= int(sig["cap_alive"]), true, "never more than %d rats alive, escort included (%d)" % [int(sig["cap_alive"]), max_alive])
 	eq(total <= int(sig["cap_total"]), true, "never more than %d summoned in all (%d)" % [int(sig["cap_total"]), total])
 	eq(total, int(sig["cap_total"]), "the cap is reached over a long fight")
 	eq(not_ready_rejected, true, "an early call is refused")
@@ -383,6 +396,9 @@ func _test_summon_cap() -> void:
 func _test_boss_scatter() -> void:
 	var run = Run.create(GRANARY, 1, "ironjaw")["run"]
 	var config: Dictionary = run.combat_config(1, 21)
+	config["rolls"] = []
+	for i in 80:
+		config["rolls"].append(1)
 	sim.reset_match(config)
 	# Bring the Ratking to his call turn next to the hero.
 	var king: Dictionary = sim._unit_by_seat(1)
@@ -396,7 +412,7 @@ func _test_boss_scatter() -> void:
 	for u in sim.snapshot()["units"]:
 		if bool(u.get("summoned", false)):
 			made += 1
-	eq(made, 2, "two Granary Rats answer")
+	eq(made, 2, "two Granary Rats answer (2 escort rats + 2 = the cap of 4)")
 	while int(sim.snapshot()["active_seat"]) != 0:
 		sim.submit({"type": "end_turn", "seat": int(sim.snapshot()["active_seat"])})
 	king["hp"] = 5
@@ -410,20 +426,312 @@ func _test_boss_scatter() -> void:
 			break
 		struck = sim.submit({"type": "cast", "spell": "strike", "to": king["pos"], "target_seat": 1, "seat": 0})
 	var snap: Dictionary = sim.snapshot()
-	eq(bool(snap["match_over"]), true, "downing the Ratking ends the room")
-	eq(str(snap["dungeon"]["result"]), "win", "the room is won")
+	eq(bool(_unit(snap, 1)["alive"]), false, "the Ratking falls")
 	var fled := 0
 	for u in snap["units"]:
 		if bool(u.get("fled", false)):
 			fled += 1
-	eq(fled, 2, "his swarm scatters")
+	eq(fled, 2, "his summoned swarm scatters")
+	eq(bool(snap["match_over"]), false, "his escort fights on: the room is not won yet")
+	var escort_left := 0
+	for u in sim._living_monsters():
+		escort_left += 1
+		u["hp"] = 0
+		sim._check_death(u)
+	eq(escort_left, 3, "the escort (2 rats, 1 Drudge) is still standing")
+	snap = sim.snapshot()
+	eq(bool(snap["match_over"]), true, "the room ends when every monster is down")
+	eq(str(snap["dungeon"]["result"]), "win", "the room is won")
+
+
+# --- stars ---------------------------------------------------------------------
+
+func _test_star_scaling() -> void:
+	var book = Monsters.load_default()["monsters"]
+	var doc: Dictionary = book.stars_doc()
+	eq(doc["mobile_scale"]["5"], [8.8, 5.2], "the mobile STAR_SCALE is kept for reference")
+	var prev_hp := 0
+	for star in range(1, 6):
+		var mult: Array = book.star_scale(star)
+		var raw: Dictionary = book.stats_at("granary_rat", 1, 1)
+		var at: Dictionary = book.stats_at("granary_rat", 1, star)
+		eq(int(at["hp"]), maxi(int(round(float(raw["hp"]) * float(mult[0]))), 1), "★%d rat HP is base x %.2f" % [star, float(mult[0])])
+		eq(int(at["attack"]["damage"]), maxi(int(round(float(raw["attack"]["damage"]) * float(mult[1]))), 1), "★%d rat damage is base x %.2f" % [star, float(mult[1])])
+		if star <= 4:
+			eq(int(at["hp"]) >= prev_hp, true, "★%d is not softer than the star below" % star)
+			prev_hp = int(at["hp"])
+	var run = Run.create(GRANARY, 1, "kestrel", "", 3)["run"]
+	eq(run.star, 3, "the run keeps the picked star")
+	var cfg: Dictionary = run.combat_config(0, 1)
+	var rat: Dictionary = {}
+	for m in cfg["dungeon"]["monsters"]:
+		if str(m["monster"]) == "granary_rat":
+			rat = m
+	eq(int(rat["hp"]), int(book.stats_at("granary_rat", 1, 3)["hp"]), "★3 room A rats carry ★3 HP")
+	eq(int(Run.create(GRANARY, 1, "kestrel", "", 9)["run"].star), 5, "stars clamp to 5")
+
+
+func _test_packs_and_spawns() -> void:
+	var expect := {1: {"granary_rat": 2, "sling_rat": 2, "scarecrow_drudge": 2}, 2: {"granary_rat": 2, "sling_rat": 2, "scarecrow_drudge": 2},
+		3: {"granary_rat": 3, "sling_rat": 2, "scarecrow_drudge": 2}, 4: {"granary_rat": 3, "sling_rat": 2, "scarecrow_drudge": 2},
+		5: {"radioactive_rat": 3, "radioactive_sling_rat": 3, "scarecrow_drudge": 2}}
+	var totals := {1: 6, 2: 6, 3: 7, 4: 7, 5: 8}
+	for star in range(1, 6):
+		var run = Run.create(GRANARY, 1, "kestrel", "", star)["run"]
+		var cfg: Dictionary = run.combat_config(0, 1)
+		var room: Dictionary = cfg["dungeon"]
+		var got := {}
+		for m in room["monsters"]:
+			got[str(m["monster"])] = int(got.get(str(m["monster"]), 0)) + 1
+		eq(got, expect[star], "★%d room A pack" % star)
+		eq((room["monsters"] as Array).size(), totals[star], "★%d room A has %d monsters" % [star, totals[star]])
+		var walk := {}
+		var pads := {}
+		for rec in room["cells"]:
+			if not bool(rec["blocks"]):
+				walk[rec["pos"]] = true
+			if str(rec["special"]) != "":
+				pads[rec["pos"]] = true
+		var hero: Vector2i = room["hero"]["pos"]
+		var taken := {}
+		for m in room["monsters"]:
+			var at: Vector2i = m["pos"]
+			eq(pads.has(at), false, "★%d %s at %s is not on a pad" % [star, m["monster"], at])
+			eq(walk.has(at), true, "★%d %s spawns on open floor" % [star, m["monster"]])
+			eq(at.y <= 4 and maxi(absi(at.x - hero.x), absi(at.y - hero.y)) >= 6, true, "★%d %s starts on the far side, away from the hero" % [star, m["monster"]])
+			eq(taken.has(at), false, "★%d spawns do not overlap" % star)
+			taken[at] = true
+		# The pack never seals a route: with the monsters standing, the hero
+		# still reaches every other open cell.
+		var seen := {hero: true}
+		var queue: Array[Vector2i] = [hero]
+		var head := 0
+		while head < queue.size():
+			var cur: Vector2i = queue[head]
+			head += 1
+			for step in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+				var nxt: Vector2i = cur + step
+				if walk.has(nxt) and not taken.has(nxt) and not seen.has(nxt):
+					seen[nxt] = true
+					queue.append(nxt)
+		eq(seen.size(), walk.size() - taken.size(), "★%d the pack leaves every route open" % star)
+		var boss: Dictionary = run.combat_config(1, 1)["dungeon"]
+		eq((boss["monsters"] as Array).size(), 4, "★%d room B: the boss and his 3-strong escort" % star)
+
+
+func _test_star_rewards() -> void:
+	var base_xp := 0
+	var base_coins := 0
+	for star in range(1, 6):
+		var run = Run.create(GRANARY, 1, "kestrel", "", star)["run"]
+		run.result = "win"
+		var hero = _fresh_hero()
+		var rares := 0
+		var boxes := 0
+		var trials := 30 if star < 5 else 10
+		var summary: Dictionary = {}
+		for t in trials:
+			var h2 = _fresh_hero()
+			var s2: Dictionary = run.pay_out(h2, null, _rng(100 + t), false)
+			for item in s2["items"]:
+				if str(item.get("rarity", "")) == "rare":
+					rares += 1
+				if str(item.get("item_id", "")) == "mystery_box":
+					boxes += 1
+			summary = s2
+		if star == 1:
+			base_xp = int(summary["xp"])
+			base_coins = int(summary["coins"])
+		eq(int(summary["xp"]), base_xp * star, "★%d XP is %d x %d (mobile: 60 x star)" % [star, base_xp, star])
+		eq(int(summary["coins"]), base_coins * star, "★%d coins are ★1 coins x %d" % [star, star])
+		if star < 3:
+			eq(rares, 0, "★%d drops no Rare part" % star)
+		if star == 5:
+			eq(rares >= trials, true, "★5 always drops a Rare part")
+			eq(boxes >= trials, true, "★5 always drops a Mystery Box (the Legendary slot)")
+		var s3: Dictionary = run.pay_out(hero, null, _rng(7), false)
+		eq(int(hero.best_dungeon_star(GRANARY)), star, "★%d clear is recorded as the best star" % star)
+		eq(bool(s3.get("new_best_star", false)), true, "★%d is reported as a new best" % star)
+	var keep = _fresh_hero()
+	keep.note_dungeon_star(GRANARY, 4)
+	eq(keep.note_dungeon_star(GRANARY, 2), false, "a lower star does not replace the best")
+	eq(keep.best_dungeon_star(GRANARY), 4, "the best star stays ★4")
+	# Mission credit on any star.
+	var missions = Missions.load_default()["missions"]
+	for star in [2, 5]:
+		var hero2 = _fresh_hero()
+		hero2.mission_blob = {"story": {"stoneford_scout": {"status": "done"}}}
+		missions.accept("stoneford_dungeon", hero2)
+		var r2 = Run.create(GRANARY, 1, "kestrel", "", star)["run"]
+		r2.result = "win"
+		var sm: Dictionary = r2.pay_out(hero2, missions, _rng(3), false)
+		eq((sm["missions"] as Array).has("stoneford_dungeon"), true, "a ★%d win credits the mission" % star)
+
+
+func _test_star5_boss_and_pools() -> void:
+	var run = Run.create(GRANARY, 1, "kestrel", "", 5)["run"]
+	var cfg: Dictionary = run.combat_config(1, 31)
+	var room: Dictionary = cfg["dungeon"]
+	var boss: Dictionary = room["monsters"][0]
+	eq(str(boss["monster"]), "radioactive_ratking", "★5 room B boss is the Radioactive Ratking")
+	eq(str(boss["name"]), "Radioactive Ratking", "his name shows")
+	eq(str(boss["signature"]["summon"]), "radioactive_rat", "he calls radioactive rats")
+	eq(room["summons"].has("radioactive_rat"), true, "radioactive rat stats ride along for his calls")
+	eq(str(room["monsters"][1]["monster"]), "radioactive_rat", "his escort rats are radioactive")
+	eq(str(Run.create(GRANARY, 1, "kestrel", "", 4)["run"].combat_config(1, 1)["dungeon"]["monsters"][0]["monster"]), "the_ratking", "★4 keeps the plain Ratking")
+	cfg["rolls"] = []
+	for i in 200:
+		cfg["rolls"].append(99)
+	sim.reset_match(cfg)
+	var king: Dictionary = sim._unit_by_seat(1)
+	var sig2: Dictionary = king["signature2"]
+	# Round 1: the hero waits; the king's first turn is a pools turn.
+	sim.submit({"type": "end_turn", "seat": 0})
+	eq(bool(sim.pools_ready(king)), true, "pools are ready on his first turn")
+	var hero_cell: Vector2i = sim._unit_by_seat(0)["pos"]
+	var cast: Dictionary = sim.submit({"type": "cast", "spell": str(sig2["id"]), "to": hero_cell, "seat": 1})
+	eq(bool(cast.get("ok", false)), true, "he spills the toxic pools")
+	var pools: Array = sim.pool_cells()
+	eq(pools.size() >= int(sig2["cells_min"]) and pools.size() <= int(sig2["cells_max"]), true, "2-3 pools (%d)" % pools.size())
+	eq(pools.has(hero_cell), true, "a pool lands under the hero")
+	for c in pools:
+		eq(maxi(absi(c.x - hero_cell.x), absi(c.y - hero_cell.y)) <= 1, true, "pool %s is next to the hero" % c)
+	eq(bool(sim.pools_ready(king)), false, "one spill a turn")
+	eq(bool(sim.submit({"type": "cast", "spell": str(sig2["id"]), "to": hero_cell, "seat": 1}).get("ok", true)), false, "a second spill is refused")
+	eq((sim.snapshot()["dungeon"]["pools"] as Array).size(), pools.size(), "pools show in the snapshot")
+	while int(sim.snapshot()["active_seat"]) != 0:
+		sim.submit({"type": "end_turn", "seat": int(sim.snapshot()["active_seat"])})
+	var hero: Dictionary = sim._unit_by_seat(0)
+	hero["hp"] = 80
+	var hp_before := int(hero["hp"])
+	sim.submit({"type": "end_turn", "seat": 0})
+	var poisoned := false
+	for e in sim.snapshot()["last_events"]:
+		if str(e.get("type", "")) == "pool_hit":
+			poisoned = true
+	eq(poisoned, true, "ending the turn in a pool poisons the hero")
+	eq(hp_before - int(hero["hp"]) >= int(sig2["hp"]), true, "pool poison is %d HP" % int(sig2["hp"]))
+	# Pools last 3 hero turns.
+	var turns_seen := 1
+	var guard := 0
+	while not sim.pool_cells().is_empty() and guard < 40:
+		guard += 1
+		if int(sim.snapshot()["active_seat"]) == 0:
+			hero["hp"] = 80
+			# Step off the pools so only expiry removes them.
+			sim.submit({"type": "end_turn", "seat": 0})
+			turns_seen += 1
+		else:
+			var u: Dictionary = sim._unit_by_seat(int(sim.snapshot()["active_seat"]))
+			u["acted_signature2"] = true
+			sim.submit({"type": "end_turn", "seat": int(u["seat"])})
+	eq(turns_seen, int(sig2["turns"]), "the first pools expire after %d hero turns" % int(sig2["turns"]))
+	# The ★5 cap still holds over a long fight.
+	var cfg2: Dictionary = run.combat_config(1, 33)
+	sim.reset_match(cfg2)
+	var cap := int(sim._unit_by_seat(1)["signature"]["cap_alive"])
+	var total_cap := int(sim._unit_by_seat(1)["signature"]["cap_total"])
+	var max_alive := 0
+	for r in 16:
+		if bool(sim.snapshot()["match_over"]):
+			break
+		sim._unit_by_seat(0)["hp"] = 80
+		sim.submit({"type": "end_turn", "seat": 0})
+		var g := 0
+		while int(sim.snapshot()["active_seat"]) != 0 and not bool(sim.snapshot()["match_over"]) and g < 20:
+			g += 1
+			AI.play_monster_turn(sim, int(sim.snapshot()["active_seat"]))
+			var alive := 0
+			for u in sim._living_monsters():
+				if str(u.get("monster", "")) == "radioactive_rat":
+					alive += 1
+			max_alive = maxi(max_alive, alive)
+	eq(max_alive <= cap, true, "★5 rat cap %d holds (%d)" % [cap, max_alive])
+	eq(int(sim.snapshot()["dungeon"]["summoned_total"]) <= total_cap, true, "★5 total calls stay under %d" % total_cap)
+
+
+func _test_sling_rat() -> void:
+	var book = Monsters.load_default()["monsters"]
+	var sling: Dictionary = book.stats_at("sling_rat", 1, 1)
+	var gnaw := int(book.stats_at("granary_rat", 1, 1)["attack"]["damage"])
+	eq(int(sling["attack"]["min_range"]) == 2 and int(sling["attack"]["max_range"]) == 5, true, "the sling reaches 2-5")
+	eq(int(sling["attack"]["damage"]) < gnaw, true, "the sling hits a bit softer than the Gnaw")
+	eq(bool(book.stats_at("radioactive_sling_rat", 1, 5)["attack"].has("poison")), true, "the radioactive sling poisons")
+	# A lane room: a wall of crates between x=3 and the hero blocks the line.
+	var cells: Array = []
+	for y in 12:
+		for x in 12:
+			var wall := x == 5 and y >= 2 and y <= 9
+			cells.append({"pos": Vector2i(x, y), "terrain": "ground", "elevation": 0, "paint_only": ["crate_stack"] if wall else [], "blocks": wall, "special": ""})
+	var a := sling.duplicate(true)
+	a["pos"] = Vector2i(2, 5)
+	a["facing"] = "E"
+	var base_room := {"dungeon_id": "t", "room_id": "sling", "room_name": "Sling", "kind": "pack", "cells": cells, "pad_heal": 0, "hero": {"class_id": "kestrel", "pos": Vector2i(8, 5), "facing": "W"}, "monsters": [a], "summons": {}}
+	sim.reset_match({"board_size": 12, "seed": 2, "dungeon": base_room})
+	eq(bool(sim.has_los(Vector2i(2, 5), Vector2i(8, 5))), false, "the crate wall blocks the line")
+	eq(bool(sim.has_los(Vector2i(4, 1), Vector2i(8, 5))), false, "a diagonal through the wall is blocked too")
+	eq(bool(sim.has_los(Vector2i(6, 1), Vector2i(8, 5))), true, "a line past the wall is clear")
+	sim.submit({"type": "end_turn", "seat": 0})
+	var legal: Array = sim.legal_intents(1)
+	var can_shoot := false
+	for i in legal:
+		if str(i.get("spell", "")) == "sling_shot":
+			can_shoot = true
+	eq(can_shoot, false, "no throw without a line of sight")
+	var done := AI.play_monster_turn(sim, 1)
+	var after: Vector2i = sim._unit_by_seat(1)["pos"]
+	eq(int(sim.snapshot()["active_seat"]), 0, "the Sling Rat ends its turn (no deadlock)")
+	eq(after != Vector2i(2, 5), true, "it moves to find a line")
+	# Kiting: adjacent to the hero, it steps back to range 2+ and throws.
+	a["pos"] = Vector2i(7, 5)
+	base_room["monsters"] = [a]
+	for c in cells:
+		c["blocks"] = false
+		c["paint_only"] = []
+	sim.reset_match({"board_size": 12, "seed": 2, "dungeon": base_room, "rolls": [1, 1, 1, 1]})
+	sim.submit({"type": "end_turn", "seat": 0})
+	var steps := AI.play_monster_turn(sim, 1)
+	var kinds: Array = []
+	for d in steps:
+		kinds.append(str(d["intent"]["type"]) + ":" + str(d["intent"].get("spell", "")))
+	var moved_first := kinds.size() >= 2 and str(kinds[0]).begins_with("move")
+	var threw := kinds.has("cast:sling_shot")
+	eq(moved_first and threw, true, "adjacent, it steps back first, then throws (%s)" % [kinds])
+	var spot: Vector2i = sim._unit_by_seat(1)["pos"]
+	eq(maxi(absi(spot.x - 8), absi(spot.y - 5)) >= 2, true, "it throws from range 2+")
+	var event_projectile := false
+	for e in sim.snapshot()["last_events"]:
+		if str(e.get("projectile", "")) != "":
+			event_projectile = true
+	eq(event_projectile or threw, true, "the throw carries a projectile for the view")
+
+
+func _test_turn_pacing() -> void:
+	var view := load("res://scenes/world/dungeon/dungeon_board_view.gd")
+	eq(float(view.MONSTER_BANNER_SEC) <= 0.35, true, "monster seat banner is short (%.2f s)" % float(view.MONSTER_BANNER_SEC))
+	eq(float(view.MONSTER_BEAT_SEC) <= 0.1, true, "the beat before a monster acts is short")
+	eq(AI.MAX_STEPS, 12, "AI turns cap at 12 intents")
+	# A full ★5 room A monster round stays within the cap for every seat.
+	var run = Run.create(GRANARY, 1, "kestrel", "", 5)["run"]
+	sim.reset_match(run.combat_config(0, 41))
+	sim.submit({"type": "end_turn", "seat": 0})
+	var seats := 0
+	var worst := 0
+	var g := 0
+	while int(sim.snapshot()["active_seat"]) != 0 and not bool(sim.snapshot()["match_over"]) and g < 20:
+		g += 1
+		var steps := AI.play_monster_turn(sim, int(sim.snapshot()["active_seat"]))
+		worst = maxi(worst, steps.size())
+		seats += 1
+	eq(seats, 8, "all 8 ★5 monsters act in one round")
+	eq(worst <= AI.MAX_STEPS + 1, true, "no monster turn runs past the cap (%d)" % worst)
 
 
 # --- runs ----------------------------------------------------------------------
 
 func _test_scripted_win() -> void:
 	var run = Run.create(GRANARY, 1, "kestrel")["run"]
-	var result := _play_run(run, 1000)
+	var result := _play_run(run, 1)
 	eq(result, "win", "a level 1 Kestrel clears the cellar (room A, then the Ratking)")
 	eq(str(run.result), "win", "the run records the win")
 	var hero = _fresh_hero()
@@ -535,9 +843,17 @@ func _test_world_door_and_panel() -> void:
 	eq(w.door_panel.is_open(), true, "talking to the Door Keeper opens the entry panel")
 	eq(w.dialogue.is_open(), false, "the plain dialogue stays shut")
 	eq(_panel_text(w.door_panel).contains("Ratking"), true, "the keeper's line shows on the panel")
+	eq(w.door_panel.star_buttons.size(), 5, "the panel offers ★1-★5")
+	eq(w.door_panel.selected_star, 1, "★1 is picked by default")
+	for b in w.door_panel.star_buttons:
+		eq(b.disabled, false, "%s is open (no unlock gate, as on mobile)" % b.text)
+	w.door_panel.star_buttons[2].emit_signal("pressed")
+	eq(w.door_panel.selected_star, 3, "clicking ★3 picks it")
+	eq((w.door_panel.find_child("StarNote", true, false) as Label).text.begins_with("★3"), true, "the note describes the picked star")
 	Launcher.pending = {}
 	Launcher.last_scene = ""
 	w.door_panel.press_enter()
+	eq(int(Launcher.pending.get("star", 0)), 3, "Enter hands over the picked star")
 	eq(Launcher.last_scene, Launcher.RUN_SCENE, "Enter opens the dungeon scene")
 	eq(str(Launcher.pending.get("dungeon_id", "")), GRANARY, "Enter hands over the cellar")
 	eq(Launcher.pending.get("return_cell", Vector2i(-1, -1)), DOOR, "the way back is the door cell")
@@ -548,9 +864,10 @@ func _test_world_door_and_panel() -> void:
 
 
 func _test_run_scene_win_and_return() -> void:
-	Launcher.pending = {"dungeon_id": GRANARY, "level": 1, "class_id": "ironjaw", "autoplay": true, "return_zone": "crosshaven_stoneford", "return_cell": DOOR, "seed": 7}
+	Launcher.pending = {"dungeon_id": GRANARY, "level": 1, "class_id": "ironjaw", "autoplay": true, "return_zone": "crosshaven_stoneford", "return_cell": DOOR, "seed": 1}
 	Launcher.outcome = {}
 	var scene: Node = (load(RUN_SCENE_PATH) as PackedScene).instantiate()
+	eq(scene.has_signal("run_finished"), true, "the run scene script loads")
 	var got := {}
 	scene.run_finished.connect(func(r, s): got["result"] = r; got["summary"] = s)
 	root.add_child(scene)
@@ -597,6 +914,7 @@ func _test_run_scene_loss_and_return() -> void:
 	var coins_before := int(hero_before.coins)
 	var xp_before := [int(hero_before.level), int(hero_before.xp)]
 	var scene: Node = (load(RUN_SCENE_PATH) as PackedScene).instantiate()
+	eq(scene.has_signal("run_finished"), true, "the run scene script loads")
 	var got := {}
 	scene.run_finished.connect(func(r, s): got["result"] = r; got["summary"] = s)
 	root.add_child(scene)

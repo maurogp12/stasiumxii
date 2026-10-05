@@ -5,9 +5,11 @@
   "notes": [
     "Monster numbers are Proposed (WP8 says propose them, do not make them final). WP15 should score them.",
     "Base values are at the band's first level. Each level above level_min adds hp_per_level of the base HP and damage_per_level of the base damage, rounded.",
-    "The hero side is the normal combat unit: 80 HP, 6 AP, 3 MP, the class kit. A level 1 hero of any class should clear the cellar solo.",
     "Hit chance for monster attacks uses the same locked hit bands as the heroes (Chebyshev distance).",
-    "When the boss falls, the monsters it summoned scatter (they leave the fight), so a boss room is won by downing the boss."
+    "Base stats were lowered when room A grew to 6-8 monsters (solo for now): rat 10 HP / Gnaw 3, Sling Rat 8 HP / Sling 2 at range 2-5 with line of sight, Drudge 20 HP / Sickle 5, Ratking 70 HP / Crook 8.",
+    "Line of sight (dungeon only; the Koliseo has no LoS rule): a ranged monster attack needs a straight line not crossed by a prop cell. Units do not block.",
+    "When the boss falls, the monsters he summoned scatter (they leave the fight); his escort stays and must be beaten.",
+    "The rat cap counts every live rat of the summoned kind, escort and summons together."
   ],
   "scaling": {
     "hp_per_level": 0.05,
@@ -21,7 +23,7 @@
       "role": "basic",
       "level_min": 1,
       "level_max": 10,
-      "hp": 16,
+      "hp": 13,
       "ap": 4,
       "mp": 3,
       "attack": {
@@ -36,13 +38,36 @@
       "art": "granary_rat"
     },
     {
+      "id": "sling_rat",
+      "name": "Sling Rat",
+      "dungeon": "old_granary_cellar",
+      "role": "ranged",
+      "level_min": 1,
+      "level_max": 10,
+      "hp": 9,
+      "ap": 4,
+      "mp": 3,
+      "attack": {
+        "id": "sling_shot",
+        "name": "Sling Stone",
+        "ap": 3,
+        "min_range": 2,
+        "max_range": 5,
+        "damage": 3,
+        "element": "earth",
+        "los": true,
+        "projectile": "sling_pebble"
+      },
+      "art": "sling_rat"
+    },
+    {
       "id": "scarecrow_drudge",
       "name": "Scarecrow Drudge",
       "dungeon": "old_granary_cellar",
       "role": "basic",
       "level_min": 1,
       "level_max": 10,
-      "hp": 30,
+      "hp": 24,
       "ap": 5,
       "mp": 2,
       "attack": {
@@ -51,7 +76,7 @@
         "ap": 4,
         "min_range": 1,
         "max_range": 1,
-        "damage": 7,
+        "damage": 6,
         "element": "earth"
       },
       "art": "scarecrow_drudge"
@@ -63,7 +88,7 @@
       "role": "boss",
       "level_min": 1,
       "level_max": 10,
-      "hp": 80,
+      "hp": 82,
       "ap": 6,
       "mp": 2,
       "attack": {
@@ -72,7 +97,7 @@
         "ap": 4,
         "min_range": 1,
         "max_range": 1,
-        "damage": 9,
+        "damage": 10,
         "element": "earth"
       },
       "signature": {
@@ -84,10 +109,158 @@
         "count": 2,
         "first_turn": 2,
         "every": 3,
-        "cap_alive": 3,
+        "cap_alive": 4,
         "cap_total": 4
       },
       "art": "the_ratking"
+    },
+    {
+      "id": "radioactive_rat",
+      "name": "Radioactive Rat",
+      "dungeon": "old_granary_cellar",
+      "role": "basic",
+      "level_min": 1,
+      "level_max": 10,
+      "hp": 13,
+      "ap": 4,
+      "mp": 3,
+      "attack": {
+        "id": "rad_gnaw",
+        "name": "Glowing Gnaw",
+        "ap": 3,
+        "min_range": 1,
+        "max_range": 1,
+        "damage": 4,
+        "element": "earth"
+      },
+      "art": "radioactive_rat",
+      "variant_of": "granary_rat",
+      "star_min": 5
+    },
+    {
+      "id": "radioactive_sling_rat",
+      "name": "Radioactive Sling Rat",
+      "dungeon": "old_granary_cellar",
+      "role": "ranged",
+      "level_min": 1,
+      "level_max": 10,
+      "hp": 9,
+      "ap": 4,
+      "mp": 3,
+      "attack": {
+        "id": "rad_sling",
+        "name": "Hot Pellet",
+        "ap": 3,
+        "min_range": 2,
+        "max_range": 5,
+        "damage": 3,
+        "element": "earth",
+        "los": true,
+        "projectile": "sling_pebble_radioactive",
+        "poison": {
+          "hp": 2,
+          "turns": 2
+        }
+      },
+      "art": "radioactive_sling_rat",
+      "variant_of": "sling_rat",
+      "star_min": 5
+    },
+    {
+      "id": "radioactive_ratking",
+      "name": "Radioactive Ratking",
+      "dungeon": "old_granary_cellar",
+      "role": "boss",
+      "level_min": 1,
+      "level_max": 10,
+      "hp": 82,
+      "ap": 6,
+      "mp": 2,
+      "attack": {
+        "id": "rad_crook",
+        "name": "Glowing Crook",
+        "ap": 4,
+        "min_range": 1,
+        "max_range": 1,
+        "damage": 10,
+        "element": "earth"
+      },
+      "signature": {
+        "id": "rad_call",
+        "name": "Call the Glowing Swarm",
+        "kind": "summon",
+        "ap": 2,
+        "summon": "radioactive_rat",
+        "count": 2,
+        "first_turn": 2,
+        "every": 3,
+        "cap_alive": 4,
+        "cap_total": 6
+      },
+      "art": "radioactive_ratking",
+      "variant_of": "the_ratking",
+      "star_min": 5,
+      "signature2": {
+        "id": "toxic_pools",
+        "name": "Toxic Pools",
+        "kind": "pools",
+        "ap": 2,
+        "first_turn": 1,
+        "every": 2,
+        "cells_min": 2,
+        "cells_max": 3,
+        "turns": 3,
+        "hp": 6
+      }
     }
-  ]
+  ],
+  "stars": {
+    "note": "Star difficulty mirrors the mobile Stasis stars (origin/mobile backend/stasis_catalog.gd). The player picks \u26051-\u26055 per run on the entry panel; no unlock gate, as on mobile. Monster HP and damage are the level-band stats times the star row. Mobile's STAR_SCALE is tuned for a party of 4 from \u26053 (PARTY_FOR_STAR, PARTY_SCALE); PC runs are solo for now, so only the solo row applies and the mobile multipliers are scaled down for a solo level 1-10 hero (see scale vs mobile_scale). Tuned with tests/sim_granary_stars.gd.",
+    "mobile_scale": {
+      "1": [
+        1.0,
+        1.0
+      ],
+      "2": [
+        1.4,
+        1.2
+      ],
+      "3": [
+        4.0,
+        2.8
+      ],
+      "4": [
+        6.8,
+        4.2
+      ],
+      "5": [
+        8.8,
+        5.2
+      ]
+    },
+    "scale": {
+      "1": [
+        1.0,
+        1.0
+      ],
+      "2": [
+        1.1,
+        1.05
+      ],
+      "3": [
+        1.15,
+        1.1
+      ],
+      "4": [
+        1.25,
+        1.15
+      ],
+      "5": [
+        1.0,
+        1.0
+      ]
+    },
+    "packs_note": "Room A packs by star (Mauro: at least 6 monsters in the first room): \u26051-\u26052 2 rats + 2 Sling Rats + 2 Drudges; \u26053-\u26054 3 + 2 + 2; \u26055 3 radioactive rats + 3 radioactive Sling Rats + 2 Drudges. Room B: the Ratking + escort (2 rats, 1 Drudge); at \u26055 the Radioactive Ratking with radioactive escort rats. Packs live in run.json (packs by star).",
+    "star5": "\u26055 boss form (Mauro: 'Boss 5 stars should be a radioactive rat'): the Radioactive Ratking. Summons radioactive rats; every other turn he leaves 2-3 toxic pools around the hero (last 3 hero turns, 6 poison when the hero ends a turn on one). Radioactive Sling Rats add a small poison (2 HP for 2 turns)."
+  }
 }
