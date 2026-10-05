@@ -53,6 +53,7 @@ func _run() -> void:
 	_test_deploy_rejects_lava()
 	_test_hit_bands_ignore_height()
 	_test_advance_stand_on_gates()
+	_test_advance_cannot_jump_obstacles()
 	_test_noise_elevation_per_match()
 	_test_walk_facing_follows_hops()
 	_test_spell_range_stays_chebyshev()
@@ -1495,6 +1496,33 @@ func _test_hit_bands_ignore_height() -> void:
 	var hit_src := sim_src.substr(hit_idx, 220)
 	eq(hit_src.contains("elevation"), false, "hit_chance does not read elevation")
 	eq(hit_src.contains("terrain"), false, "hit_chance does not read terrain")
+
+
+## Mauro 5 Oct 2026: Advance jumps over water, mud, lava (and fighters) but
+## not over big obstacles: rocks, crates, walls, steam.
+func _test_advance_cannot_jump_obstacles() -> void:
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"kestrel_pos": Vector2i(7, 7),
+		"ironjaw_pos": Vector2i(2, 2),
+		"tiles": [{"pos": Vector2i(3, 2), "terrain": "lava", "elevation": 0}, {"pos": Vector2i(2, 3), "terrain": "water", "elevation": 0}],
+		"blockers": [Vector2i(1, 2)],
+	})
+	_sim.submit({"type": "end_turn"})
+	eq(_sim._validate_advance(_unit(1), Vector2i(4, 2)), "", "Advance jumps over lava")
+	eq(_sim._validate_advance(_unit(1), Vector2i(2, 4)), "", "Advance jumps over water")
+	eq(_sim._validate_advance(_unit(1), Vector2i(0, 2)), "advance_blocked", "Advance cannot jump over a wall / rock")
+	var result: Dictionary = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(0, 2)})
+	eq(result["ok"], false, "Advance over an obstacle is rejected")
+	eq(str(result.get("reason", "")), "advance_blocked", "the reject names the jump block")
+	_sim._element_tiles.append({"kind": "steam", "pos": Vector2i(2, 1), "owner_seat": 0, "turns": 1})
+	eq(_sim._validate_advance(_unit(1), Vector2i(2, 0)), "advance_blocked", "Advance cannot jump over Steam")
+	eq(str(_sim.preview_cast("advance", Vector2i(2, 2), Vector2i(2, 0)).get("reason", "")), "advance_blocked", "the preview says the jump is blocked")
+	# Slagcrown's boiling water steams: no jump over it either.
+	_sim.reset_match({"seed": 3, "map_id": "slagcrown", "skip_deploy": true, "classes": ["ironjaw", "kestrel"], "positions": [Vector2i(12, 11), Vector2i(1, 1)]})
+	eq(_sim._advance_jump_blocked(Vector2i(12, 11), Vector2i(12, 13)), true, "no jump over a steaming pit")
+	eq(_sim._advance_jump_blocked(Vector2i(0, 9), Vector2i(2, 9)), false, "a jump over the lava stream is fine")
 
 
 func _test_advance_stand_on_gates() -> void:
