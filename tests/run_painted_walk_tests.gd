@@ -1,7 +1,8 @@
 extends SceneTree
 
 ## Painted character walks on the mobile board (new looks, 4 Oct 2026).
-## Assets: 4 facings x 12 cells per class, pivot on the 152 sole line,
+## Assets: 4 facings x 12 cells per class (Ironjaw: the dark-steel v7),
+## pivot on the 152 sole line,
 ## binary alpha, W/S mirrors baked. Playback: a board move plays the facing
 ## strip at the spec rate (frame follows the distance walked, legs capped at
 ## 1.6x the authored fps), with the
@@ -201,13 +202,14 @@ func _test_action_placeholder() -> void:
 		truthy(StripLibrary.PAINTED_ANIM.has(kind), "%s maps to a pawn clip" % kind)
 	eq(str(StripLibrary.PAINTED_ANIM["skill"]), "cast", "a painted skill plays as cast")
 	eq(StripLibrary.painted_path("ironjaw", "attack", "e"), "res://art/characters/ironjaw/attack/ironjaw_attack_e.pngbin", "actions load from the same layout as walk")
-	# No painted actions yet: today's strips stay.
+	# The LOCKED painted actions are in (run_painted_actions_tests.gd covers
+	# them); Ironjaw's Look 1 attack/hit/death are replaced.
 	StripLibrary.clear_cache()
 	var frames := StripLibrary.frames_for("ironjaw")
-	eq(StripLibrary.painted_spec("ironjaw", "attack").is_empty(), true, "no painted attack spec yet")
-	truthy(frames != null and frames.has_animation("attack_e") and frames.get_frame_count("attack_e") > 0, "Ironjaw keeps the export_2x attack")
-	truthy(frames != null and frames.has_animation("hit_e"), "Ironjaw keeps the export_2x hit")
-	eq(StripLibrary.release_sec("ironjaw", "attack"), float(StripLibrary.ATTACK_IMPACT_FRAME) / 12.0, "attack release timing is unchanged")
+	eq(StripLibrary.painted_spec("ironjaw", "attack").is_empty(), false, "Ironjaw has a painted attack spec")
+	truthy(frames != null and StripLibrary.is_painted_cell(frames.get_frame_texture("attack_e", 0)), "Ironjaw attack_e is the painted strip")
+	truthy(frames != null and StripLibrary.is_painted_cell(frames.get_frame_texture("hit_e", 0)), "Ironjaw hit_e is the painted strip")
+	near(StripLibrary.release_sec("ironjaw", "attack"), 6.0 / 20.0, "Strike releases on painted f06 inside the lock")
 
 
 func _unit(class_id: String, facing: String, seat: int) -> Dictionary:

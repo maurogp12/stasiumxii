@@ -139,8 +139,15 @@ func _test_sprite_node_setup() -> void:
 	eq(Color(dead.modulate.r, dead.modulate.g, dead.modulate.b, 1.0), Color(0.45, 0.45, 0.45, 1.0), "dead sprite stays grey")
 	# Mauro 3 Oct 2026 (Rekindle): a fallen hero stays on the floor, greyed, so it can be revived.
 	eq(is_equal_approx(dead.modulate.a, ViewMotion.DEATH_FADE_ALPHA) and dead.modulate.a > 0.5, true, "a dead hero stays visible on the floor")
-	eq(dead.position.y > 4.0, true, "a dead snapshot stays collapsed")
-	eq(dead.scale.y < 0.35, true, "a dead snapshot stays squashed")
+	# Bastion's LOCKED painted death (4 Oct 2026): the downed body is its last
+	# cell, held. The collapse and squash are the fallback without that sheet.
+	var held := _visible_strip(bastion)
+	if not StripLibrary.painted_action_spec("bastion", "death").is_empty():
+		truthy(held != null and String(held.animation) == "death_w" and held.frame == held.sprite_frames.get_frame_count("death_w") - 1, "a dead snapshot holds the painted death's last cell")
+		eq(dead.visible, false, "the painted death hides the static")
+	else:
+		eq(dead.position.y > 4.0, true, "a dead snapshot stays collapsed")
+		eq(dead.scale.y < 0.35, true, "a dead snapshot stays squashed")
 	pawn.free()
 	bastion.free()
 

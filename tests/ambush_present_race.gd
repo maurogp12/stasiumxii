@@ -118,7 +118,8 @@ static func run(host: SceneTree) -> void:
 			card_early = true
 		if on_back and str(gloam.facing) == "E":
 			saw_back = true
-		if on_back and str(gloam.facing) == "E" and offset > 10.0:
+		# A painted attack strip is the slash itself (no lunge offset on top).
+		if on_back and str(gloam.facing) == "E" and (offset > 10.0 or _attack_strip_visible(gloam)):
 			slashed_on_back = true
 			break
 	host.eq(faced_on_cast, false, "Ambush does not turn toward the prey on the cast cell")

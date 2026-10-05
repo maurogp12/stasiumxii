@@ -13,6 +13,15 @@ class_name Pawn
 ## fps for natural leg speed), not one cycle per tile, and
 ## the sprite hop is off while it plays. The static files below are that
 ## walk's frame 0.
+## Painted actions (LOCKED, 4 Oct 2026): standing loops the painted idle on
+## WalkDraw (same cell and pivot as walk f00, which stays the fallback). The
+## painted attack, skill (as cast) and hit play once, evenly, with no lunge,
+## squash, hand mark or impact freeze on top, and the board's settle returns
+## to the idle. A 12-cell attack or skill fits the 0.6 s action lock (20 fps);
+## Mark Shot and the Ambush slash are timed so their impact cell meets the
+## fixed bolt / contact times. The painted death plays at 17.144 fps and
+## holds its last cell. Each painted cell stands on its own pivot
+## (texture_pivot_offset).
 ## `art/characters/<class>/<class>_<n|e|s|w>.png` stays the fallback when that
 ## sheet is missing. It is not the combat idle under a walk sheet, and it is
 ## not the class card. Select uses `art/ui/select/<class>_select.png`. Mirrors are baked into
@@ -137,6 +146,8 @@ var _body_kind: String = ""
 var _death_tilt: float = 1.0
 var _held_death_strip: bool = false
 var _foot: FootMark
+## Painted idle loop clock (msec at its f00), -1 when the pawn is not standing.
+var _idle_t0: int = -1
 
 const VIEW_MOTION := preload("res://units/view_motion.gd")
 const STRIP_LIBRARY := preload("res://units/strip_library.gd")
@@ -157,6 +168,19 @@ const FOOT_PIVOT_Y := 152.0
 
 static func pivot_offset_for(cell_h: float) -> Vector2:
 	return Vector2(0.0, -(FOOT_PIVOT_Y - cell_h * 0.5))
+
+
+## Offset that stands this cell's ground point on the pawn origin. A painted
+## cell carries its own pivot (StripLibrary.CELL_PIVOT_META: an action cell
+## can sit lower or off centre); any other cell uses the 152 sole line.
+static func texture_pivot_offset(tex: Texture2D) -> Vector2:
+	if tex == null:
+		return SPRITE_OFFSET
+	var size := Vector2(float(tex.get_width()), float(tex.get_height()))
+	if tex.has_meta(StripLibrary.CELL_PIVOT_META):
+		var p: Vector2i = tex.get_meta(StripLibrary.CELL_PIVOT_META)
+		return Vector2(size.x * 0.5 - float(p.x), size.y * 0.5 - float(p.y))
+	return pivot_offset_for(size.y)
 const SPRITE_SCALE := Vector2(0.5, 0.5)
 ## Body scale per class (Mauro, 29 Sep): the plate fighters, Bastion and
 ## Ironjaw, are the biggest; Kestrel, Gloam and Mender are small. Scale grows
@@ -648,6 +672,7 @@ func _ensure_walk_draw() -> Sprite2D:
 
 func _hide_walk_draw() -> void:
 	_walk_draw_stamp = false
+	_idle_t0 = -1
 	if _walk_draw != null and is_instance_valid(_walk_draw):
 		_walk_draw.visible = false
 
@@ -673,7 +698,7 @@ func _publish_walk_cell() -> void:
 	draw.visible = true
 	draw.flip_h = false
 	draw.centered = true
-	draw.offset = pivot_offset_for(float(tex.get_height()))
+	draw.offset = texture_pivot_offset(tex)
 	draw.position = strip.position
 	draw.scale = strip.scale
 	draw.rotation = strip.rotation
@@ -1071,6 +1096,13 @@ func play_view_plan(plan: Dictionary) -> float:
 			_face_strike(aim)
 			var reach := float(step.get("reach", plan.get("reach", VIEW_MOTION.ATTACK_LUNGE_PX)))
 			_begin_body_strip("attack", play_sec)
+			# A painted attack keeps the existing contact contracts: Mark Shot's
+			# bolt leaves at MARK_WINDUP_SEC, the Ambush slash lands at
+			# ambush_contact_sec. Both are fixed VFX/damage times.
+			if kind == "cast":
+				_fit_painted_release("attack", VIEW_MOTION.MARK_WINDUP_SEC)
+			elif is_equal_approx(reach, VIEW_MOTION.AMBUSH_LUNGE_PX):
+				_fit_painted_release("attack", VIEW_MOTION.ambush_contact_sec())
 			tw.tween_method(_sample_attack.bind(aim, reach), 0.0, 1.0, play_sec)
 			tw.tween_callback(_end_body_strip)
 			total += play_sec - sec
@@ -1724,8 +1756,10 @@ func _write_figure_read(mat: ShaderMaterial) -> void:
 	# Living idle: a slow breath and a small head sway, per-fighter phase so a
 	# pair never breathes in lockstep. Heavy plate breathes less. Off when down.
 	var heavy := class_id == SpellKits.CLASS_IRONJAW or class_id == SpellKits.CLASS_BASTION
-	mat.set_shader_parameter("breath", (0.016 if heavy else 0.024) if alive else 0.0)
-	mat.set_shader_parameter("sway", (0.004 if heavy else 0.009) if alive else 0.0)
+	# A painted idle breathes in its own cells; the shader breath would double it.
+	var painted_breath := stasis_sprite == "" and class_id != "" and not STRIP_LIBRARY.painted_cells(class_id, "idle", facing).is_empty()
+	mat.set_shader_parameter("breath", (0.016 if heavy else 0.024) if alive and not painted_breath else 0.0)
+	mat.set_shader_parameter("sway", (0.004 if heavy else 0.009) if alive and not painted_breath else 0.0)
 	mat.set_shader_parameter("breath_rate", 3.3)
 	mat.set_shader_parameter("breath_phase", float(seat) * 2.1 + float(class_id.hash() % 97) * 0.13)
 	mat.set_shader_parameter("mirror", 0.0)
@@ -2006,6 +2040,9 @@ func _reset_walk_scale() -> void:
 
 
 func _sample_attack(t: float, dir: Vector2, reach: float = -1.0) -> void:
+	if _painted_strip_is_body():
+		_sample_painted_one_shot()
+		return
 	var pose: Dictionary = VIEW_MOTION.attack_pose(t, dir, reach)
 	_boss_frame("attack", t)
 	_apply_body_pose(pose)
@@ -2014,6 +2051,9 @@ func _sample_attack(t: float, dir: Vector2, reach: float = -1.0) -> void:
 
 
 func _sample_cast(t: float, dir: Vector2 = Vector2.ZERO) -> void:
+	if _painted_strip_is_body():
+		_sample_painted_one_shot()
+		return
 	var pose: Dictionary = VIEW_MOTION.cast_pose(t, dir)
 	_boss_frame("cast", t)
 	_apply_body_pose(pose)
@@ -2040,6 +2080,38 @@ func _apply_body_pose(pose: Dictionary) -> void:
 		_active_strip.scale = scaled
 		if _sprite != null and is_instance_valid(_sprite):
 			_active_strip.modulate = _sprite.modulate
+
+
+## A painted one-shot is the whole motion: its cells wind up, strike and
+## recover, and its feet step on their own. No lunge, squash, hand mark or
+## impact freeze on top; the strip plays evenly to its last cell.
+func _sample_painted_one_shot() -> void:
+	_hide_gesture()
+	_apply_body_pose({})
+
+
+## The playing body is a painted strip cell (not export_2x, not the walk plant).
+func _painted_strip_is_body() -> bool:
+	if not _strip_holds_body or _active_strip == null or not is_instance_valid(_active_strip):
+		return false
+	var frames := _active_strip.sprite_frames
+	if frames == null or not frames.has_animation(_active_strip.animation) or frames.get_frame_count(_active_strip.animation) < 1:
+		return false
+	return STRIP_LIBRARY.is_painted_cell(frames.get_frame_texture(_active_strip.animation, 0))
+
+
+## Speed a painted one-shot so its impact cell lands at release_sec. The
+## clip still plays evenly; it ends early and holds its last (rest) cell.
+func _fit_painted_release(kind: String, release_sec: float) -> void:
+	if release_sec <= 0.0 or not _painted_strip_is_body():
+		return
+	var spec := STRIP_LIBRARY.painted_action_spec(class_id, kind)
+	var impact := int(spec.get("impact", -1))
+	var fps := _active_strip.sprite_frames.get_animation_speed(_active_strip.animation)
+	if impact <= 0 or fps <= 0.0:
+		return
+	_active_strip.speed_scale = float(impact) / (fps * release_sec)
+	_strip_play_scale = _active_strip.speed_scale
 
 
 ## Pause on the impact cell (attack) or the last cell (cast) while the pose holds.
@@ -2175,7 +2247,7 @@ func _sample_death_strip(t: float, _tilt_sign: float) -> void:
 		_sample_death(t, _tilt_sign)
 		return
 	var last := _last_frame(strip)
-	if strip.frame >= last or t >= 0.58:
+	if (strip.frame >= last or t >= 0.58) and not _painted_strip_is_body():
 		_freeze_on_frame(strip, last)
 	_hide_walk_draw()
 	if _sprite != null and is_instance_valid(_sprite):
@@ -2231,6 +2303,15 @@ func _hold_death_strip() -> bool:
 	var anim := StringName(str(choice["anim"]))
 	if strip == null or not is_instance_valid(strip):
 		return false
+	# A painted fall still playing finishes at its authored rate and stops on
+	# its last cell by itself (the clip does not loop).
+	var falling := (
+		_active_strip == strip
+		and strip.animation == anim
+		and strip.is_playing()
+		and strip.visible
+		and STRIP_LIBRARY.is_painted_cell(strip.sprite_frames.get_frame_texture(anim, 0))
+	)
 	if _active_strip != strip:
 		_prepare_strip_pose(strip)
 	if strip.animation != anim:
@@ -2246,7 +2327,9 @@ func _hold_death_strip() -> bool:
 		_sprite.position = Vector2.ZERO
 		_sprite.scale = _body_scale()
 		_sprite.rotation = 0.0
-	_freeze_on_frame(strip, _last_frame(strip))
+	if not falling:
+		_freeze_on_frame(strip, _last_frame(strip))
+	_fit_strip_offset(strip)
 	_hide_walk_draw()
 	strip.visible = true
 	if _sprite != null and is_instance_valid(_sprite):
@@ -2295,6 +2378,9 @@ func _sample_idle(_t: float) -> void:
 		# A boss idle sheet breathes on its own frames.
 		if _boss_rest(now + phase):
 			bob = Vector2.ZERO
+	# The painted idle breathes in its own cells. No sprite bob on top.
+	if stasis_sprite == "" and _show_painted_idle():
+		bob = Vector2.ZERO
 	_sprite.position = bob
 	if _walk_idle_plant and _active_strip != null and is_instance_valid(_active_strip):
 		_active_strip.position = bob
@@ -2398,6 +2484,12 @@ func body_anim_candidates(kind: String) -> Array:
 func _start_kind_strip(kind: String, window_sec: float) -> void:
 	_begin_body_strip(kind, window_sec)
 	if kind != "death" or _active_strip == null or not is_instance_valid(_active_strip):
+		return
+	if _painted_strip_is_body():
+		# The painted fall plays at its authored 17.144 fps and may run past
+		# the action lock; it stops on its last cell, which stays down.
+		_active_strip.speed_scale = 1.0
+		_strip_play_scale = 1.0
 		return
 	# Finish the authored collapse early so the last cell can sit.
 	var quicker := maxf(_active_strip.speed_scale * 1.45, 1.15)
@@ -2516,6 +2608,47 @@ func _plant_walk_idle() -> bool:
 			strip.modulate = _sprite.modulate
 		_sprite.visible = false
 	_publish_walk_cell()
+	_show_painted_idle()
+	return true
+
+
+## Painted idle cells for the facing, or [] (no sheet: walk f00 stands).
+func painted_idle_cells() -> Array[Texture2D]:
+	var none: Array[Texture2D] = []
+	if class_id == "" or stasis_sprite != "":
+		return none
+	return STRIP_LIBRARY.painted_cells(class_id, "idle", facing)
+
+
+## True while the standing body is the painted idle loop.
+func painted_idle_showing() -> bool:
+	return _idle_t0 >= 0 and walk_cell_is_drawn()
+
+
+## Standing on the painted idle: the loop replaces walk f00 on WalkDraw (same
+## cell, same pivot), at the authored fps from f00 when the stand begins.
+## The walk strip stays the sampler, so a step starts from the walk as before.
+func _show_painted_idle() -> bool:
+	if not alive or _path_walk or _motion_playing or not _walk_idle_plant:
+		_idle_t0 = -1
+		return false
+	if not _walk_draw_stamp or _walk_draw == null or not is_instance_valid(_walk_draw):
+		return false
+	var cells := painted_idle_cells()
+	if cells.is_empty():
+		_idle_t0 = -1
+		return false
+	var now := Time.get_ticks_msec()
+	if _idle_t0 < 0:
+		_idle_t0 = now
+	var fps := float(STRIP_LIBRARY.painted_spec(class_id, "idle").get("fps", 17.144))
+	var index := 0
+	if not VIEW_MOTION.reduce_motion():
+		index = int(floor(float(now - _idle_t0) / 1000.0 * fps)) % cells.size()
+	var tex := cells[index]
+	if _walk_draw.texture != tex:
+		_walk_draw.texture = tex
+		_walk_draw.offset = texture_pivot_offset(tex)
 	return true
 
 
@@ -2614,14 +2747,15 @@ func _duplicate_kept_clips(src: SpriteFrames, copy: SpriteFrames) -> bool:
 	return true
 
 
-## Taller painted cells (144x176) keep the sole line on the tile.
+## Taller painted cells keep the ground point on the tile (each painted
+## action cell carries its own pivot; one clip shares one cell).
 func _fit_strip_offset(strip: AnimatedSprite2D) -> void:
 	var frames := strip.sprite_frames
 	if frames == null or not frames.has_animation(strip.animation) or frames.get_frame_count(strip.animation) < 1:
 		return
 	var tex := frames.get_frame_texture(strip.animation, 0)
 	if tex != null:
-		strip.offset = pivot_offset_for(float(tex.get_height()))
+		strip.offset = texture_pivot_offset(tex)
 
 
 func _prepare_strip_pose(strip: AnimatedSprite2D) -> void:
@@ -2698,6 +2832,7 @@ func _ensure_motion_strips() -> void:
 func _play_walk_flat() -> bool:
 	_ensure_visuals()
 	_stop_idle()
+	_idle_t0 = -1
 	# The board samples the frame. play() on device can stay on frame 0 while
 	# the pawn node eases, which is the idle slide.
 	if _driven_walk:
@@ -2759,6 +2894,7 @@ func _play_walk_flat() -> bool:
 ## Driven steps show the facing strip paused on the sampled cell.
 ## A one-frame clip is refused: that cell is the idle slide.
 func _present_driven_walk() -> bool:
+	_idle_t0 = -1
 	var choice := _strip_choice("walk")
 	if choice.is_empty():
 		return false
