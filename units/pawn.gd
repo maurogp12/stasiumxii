@@ -13,6 +13,15 @@ class_name Pawn
 ## fps for natural leg speed), not one cycle per tile, and
 ## the sprite hop is off while it plays. The static files below are that
 ## walk's frame 0.
+## Painted actions (LOCKED, 4 Oct 2026): standing loops the painted idle on
+## WalkDraw (same cell and pivot as walk f00, which stays the fallback). The
+## painted attack, skill (as cast) and hit play once, evenly, with no lunge,
+## squash, hand mark or impact freeze on top, and the board's settle returns
+## to the idle. A 12-cell attack or skill fits the 0.6 s action lock (20 fps);
+## Mark Shot and the Ambush slash are timed so their impact cell meets the
+## fixed bolt / contact times. The painted death plays at 17.144 fps and
+## holds its last cell. Each painted cell stands on its own pivot
+## (texture_pivot_offset).
 ## `art/characters/<class>/<class>_<n|e|s|w>.png` stays the fallback when that
 ## sheet is missing. It is not the combat idle under a walk sheet, and it is
 ## not the class card. Select uses `art/ui/select/<class>_select.png`. Mirrors are baked into
