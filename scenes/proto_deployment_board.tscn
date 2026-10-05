@@ -1,7 +1,0 @@
-[gd_scene format=3]
-
-[ext_resource type="Script" path="res://proto/deployment/proto_deployment_board.gd" id="1_proto"]
-
-[node name="ProtoDeploymentBoard" type="Node2D"]
-script = ExtResource("1_proto")
-editor_description = "Phase B+ deploy proto: simultaneous south+west / north+east 1-deep border-ring halves. Not the Phase A duel."
