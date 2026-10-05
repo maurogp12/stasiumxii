@@ -29,6 +29,7 @@ func _run() -> void:
 	_test_init_seat()
 	_test_xp_awards()
 	_test_screens()
+	_test_elements_screen()
 	_wipe()
 	print("Levels tests: %d passed, %d failed" % [_passed, _failed])
 	quit(1 if _failed > 0 else 0)
@@ -226,6 +227,45 @@ func _test_screens() -> void:
 	var opened := gear.open_levels()
 	truthy(opened != null and opened.is_inside_tree(), "Levels opens from Gear")
 	gear.free()
+
+
+## Elements Step 3 (Mauro 5 Oct 2026): pick 2, set spells, first pick free,
+## a new pair costs 2 trophies, the pick reaches the fight gear.
+func _test_elements_screen() -> void:
+	_wipe()
+	var wallet := KoliseoWallet.new()
+	wallet.trophies = 3
+	wallet.save()
+	var screen: ElementsScreen = load("res://scenes/elements_screen.gd").new()
+	root.add_child(screen)
+	screen.pick_class("kestrel")
+	eq((screen.find_child("SaveElements", true, false) as Button).disabled, true, "Save waits for 2 elements")
+	screen.toggle_element("air")
+	screen.toggle_element("water")
+	screen.toggle_element("fire")
+	truthy(screen.status_text().contains("already have 2"), "a third element is refused")
+	screen.set_spell_element("detonate", "water")
+	truthy(screen.find_child("Spell_mark_shot_air", true, false) != null, "each spell shows both picked elements")
+	truthy(screen.find_child("ElementsDetail", true, false).get_children().any(func(n: Node) -> bool: return n is Label and (n as Label).text.contains("Sleet")), "the screen names this pick's Blend")
+	var first := screen.save_pick()
+	eq([bool(first["ok"]), int(first["cost"])], [true, 0], "first pick is free")
+	eq(HeroProgress.load_saved().spell_elements("kestrel"), {"mark_shot": "air", "detonate": "water"}, "the pick is saved")
+	eq((GearBag.load_saved().fight_gear()["heroes"]["kestrel"] as Dictionary).get("elements", {}), {"mark_shot": "air", "detonate": "water"}, "the pick rides into fights")
+	screen.toggle_element("water")
+	screen.toggle_element("earth")
+	var change := screen.save_pick()
+	eq([bool(change["ok"]), int(change["cost"]), KoliseoWallet.load_saved().trophies], [true, 2, 1], "a new pair spends 2 trophies")
+	screen.toggle_element("earth")
+	screen.toggle_element("fire")
+	eq(str(screen.save_pick()["reason"]), "no_trophies", "1 trophy cannot pay a change")
+	truthy(screen.status_text().contains("costs 2 trophies"), "the screen says why")
+	screen.free()
+	var inv: InventoryScreen = load("res://scenes/inventory_screen.gd").new()
+	root.add_child(inv)
+	truthy(inv.find_child("OpenElements", true, false) != null, "Inventory has an Elements button")
+	var opened := inv.open_elements()
+	truthy(opened != null and opened.is_inside_tree(), "Elements opens from the Inventory")
+	inv.free()
 
 
 func _wipe() -> void:

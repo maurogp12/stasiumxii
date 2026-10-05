@@ -135,6 +135,17 @@ func open_levels() -> CharacterScreen:
 	return screen
 
 
+## Elements Step 3: pick 2 elements per class, set each spell, Blend guide.
+func open_elements() -> ElementsScreen:
+	var screen: ElementsScreen = load("res://scenes/elements_screen.gd").new()
+	screen.name = "ElementsScreen"
+	screen.font = font
+	screen.selected = champion
+	screen.closed.connect(_on_child_closed)
+	add_child(screen)
+	return screen
+
+
 func open_stills() -> StillsScreen:
 	var screen: StillsScreen = load("res://scenes/stills_screen.gd").new()
 	screen.name = "StillsScreen"
@@ -209,7 +220,7 @@ func _build() -> void:
 	_header.autowrap_mode = TextServer.AUTOWRAP_OFF
 	_header.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	top.add_child(_header)
-	for spec in [["Levels", "OpenLevels", open_levels], ["Stills", "OpenStills", open_stills], ["Sets", "OpenSets", open_sets], ["Close", "CloseInventory", close]]:
+	for spec in [["Levels", "OpenLevels", open_levels], ["Elements", "OpenElements", open_elements], ["Stills", "OpenStills", open_stills], ["Sets", "OpenSets", open_sets], ["Close", "CloseInventory", close]]:
 		var b := _button(str(spec[0]))
 		b.name = str(spec[1])
 		b.alignment = HORIZONTAL_ALIGNMENT_CENTER

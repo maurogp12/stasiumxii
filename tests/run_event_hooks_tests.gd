@@ -1003,7 +1003,9 @@ func _test_triage_on_heals() -> void:
 	eq(bool(_event_of((decoded as Dictionary).get("events", []), "hit").get("triage", false)), true, "packed Mend keeps triage")
 	_guest.apply_packed_state(packed)
 	eq(bool(_event_of(_guest.snapshot().get("last_events", []), "hit").get("triage", false)), true, "guest Mend keeps triage")
-	eq(int(_guest.snapshot()["units"][0]["hp"]), 56, "guest Triage HP matches the host")
+	# The host seat wears this phone's save; with no element picked yet its
+	# Mend is Neutral (Elements Step 3), so compare with the host, not a number.
+	eq(int(_guest.snapshot()["units"][0]["hp"]), int(_host.sim().snapshot()["units"][0]["hp"]), "guest Triage HP matches the host")
 
 
 func _test_cleanse_cc_removed() -> void:

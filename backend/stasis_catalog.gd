@@ -436,6 +436,10 @@ static func _party_fight_config(cells: Array, foes: Array, heroes: int) -> Dicti
 			var g: Dictionary = gear.duplicate(true)
 			if seat > 0:
 				g.erase("still")
+				# AI companions keep the kit elements (Elements PDF: "companion
+				# AI stays Primary and never reads Residue").
+				for hid in (g.get("heroes", {}) as Dictionary):
+					(g["heroes"][hid] as Dictionary).erase("elements")
 			rec["gear"] = g
 		roster.append(rec)
 		positions.append(hero_cells[seat])

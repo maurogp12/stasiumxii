@@ -647,10 +647,27 @@ static func element_notes(unit: Dictionary) -> String:
 		out += "  [b]GROUNDED[/b]"
 	if bool(unit.get("water_slow", false)):
 		out += "  [b]WATER[/b] −1 MP next turn"
+	# Elements Step 3: Blend statuses on this body.
+	if bool(unit.get("sleet", false)):
+		out += "  [b]SLEET[/b] −1 MP next turn"
+	if bool(unit.get("pin_pending", false)) or bool(unit.get("pinned", false)):
+		out += "  [b]PINNED[/b] no walking"
+	if unit.has("mire_cell"):
+		out += "  [b]MIRE[/b] +1 MP to leave"
+	if unit.has("magma_pending"):
+		out += "  [b]MAGMA[/b] burns where it ends its turn"
+	if bool(unit.get("blend_lock", false)):
+		out += "  [b]BLENDED[/b]"
+	if str(unit.get("infusion", "")) != "":
+		out += "  [b]%s[/b] from Mender: next hit Blends" % str(unit["infusion"]).to_upper()
 	return out
 
 
 static func toast_for_events(events: Array) -> String:
+	# Elements Step 3: a Blend is the headline of its cast.
+	for event in events:
+		if typeof(event) == TYPE_DICTIONARY and str(event.get("type", "")) == "blend":
+			return str(event.get("coach", "BLEND %s" % str(event.get("name", ""))))
 	if events_include_push_blocked(events):
 		return PUSH_BLOCKED_TOAST
 	if events_include_lava_burn(events):
@@ -1976,7 +1993,7 @@ func _sync_spell_buttons(offered: Array) -> void:
 		if spell_id != primary:
 			arc.append(spell_id)
 	for spell_id in offered_ids:
-		var def: Dictionary = SpellKits.spell(spell_id)
+		var def: Dictionary = _spell_def(spell_id)
 		if def.is_empty():
 			continue
 		if not _spell_buttons.has(spell_id):
@@ -2034,7 +2051,7 @@ func _place_spell_host(spell_id: String, center: Vector2, primary: bool, arc_cou
 	host.set_meta("cluster_primary", primary)
 	var button: Button = _spell_buttons[spell_id]
 	button.add_theme_font_size_override("font_size", 15 if primary else 12)
-	button.set_meta("ability_fallback_text", _spell_button_text(SpellKits.spell(spell_id)))
+	button.set_meta("ability_fallback_text", _spell_button_text(_spell_def(spell_id)))
 	_apply_circle_style(button, size.x, primary)
 
 
@@ -2314,17 +2331,30 @@ func _update_selected_label() -> void:
 	if _selected_spell == "":
 		_selected_label.text = _with_shade_tip("Selected: Walk  ·  tap a destination  ·  Face pad turns")
 		return
-	var def: Dictionary = SpellKits.spell(_selected_spell)
+	var def: Dictionary = _spell_def(_selected_spell)
 	var text := "Selected: %s  ·  %d AP / %d MP  ·  %s" % [
 		def.get("name", _selected_spell),
 		int(def.get("ap", 0)),
 		int(def.get("mp", 0)),
 		SpellKits.range_text(def),
 	]
+	var el := str(def.get("element", "neutral"))
+	if SpellKits.is_flex(_selected_spell):
+		text += "  ·  %s" % (el.capitalize() if el != "neutral" else "no element (pick in Elements)")
 	if bool(def.get("rolls", false)) and _aim_hit_chance >= 0:
 		text += "  ·  %s" % aim_hit_caption(_aim_hit_chance)
 	text += "  ·  tap a cell  ·  Walk / Esc to cancel"
 	_selected_label.text = _with_shade_tip(text)
+
+
+## The active fighter's version of a spell (Elements Step 3: its element).
+func _spell_def(spell_id: String) -> Dictionary:
+	var active := int(_last_snap.get("active_seat", -1)) if typeof(_last_snap) == TYPE_DICTIONARY else -1
+	if typeof(_last_snap) == TYPE_DICTIONARY:
+		for unit in _last_snap.get("units", []):
+			if typeof(unit) == TYPE_DICTIONARY and int(unit.get("seat", -2)) == active:
+				return SpellKits.spell_for(unit, spell_id)
+	return SpellKits.spell(spell_id)
 
 
 func _with_shade_tip(text: String) -> String:
