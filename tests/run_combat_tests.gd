@@ -431,6 +431,8 @@ func _test_both_ready_starts_combat() -> void:
 	var p1_move: Vector2i = _zone_cell(0, 1)
 	eq(_sim.place_unit(1, p2)["ok"], true, "P2 can place first")
 	eq(_sim.place_unit(0, p1)["ok"], true, "P1 places after P2")
+	eq(str(_unit(0)["facing"]), _sim.facing_toward(_unit(0)["pos"], _unit(1)["pos"]), "placing: P1 already faces P2")
+	eq(str(_unit(1)["facing"]), _sim.facing_toward(_unit(1)["pos"], _unit(0)["pos"]), "placing: P2 already faces P1")
 	eq(_sim.ready_seat(1)["ok"], true, "P2 can ready first")
 	eq(_sim.snapshot()["phase"], "DEPLOYMENT", "still DEPLOYMENT after only P2 ready")
 	eq(_sim.place_unit(0, p1_move)["ok"], true, "P1 may reposition after P2 is ready")
