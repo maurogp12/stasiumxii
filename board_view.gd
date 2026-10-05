@@ -2469,6 +2469,7 @@ func _apply_board_tiles(snap: Dictionary) -> void:
 		tile.apply_board_data(str(rec.get("terrain_type", "ground")), float(rec.get("elevation", 0.0)))
 		tile.apply_koliseo_grade(map_key)
 		tile.set_paint_props(_paint_props_at(paint, cell))
+		tile.set_walk_blocked(SNAPSHOT_TILES.walk_blocked(rec))
 		tile.position = VISUAL_SORT.cell_to_local(cell, float(rec.get("elevation", 0.0)))
 		tile.z_index = VISUAL_SORT.tile_z_index(cell, float(rec.get("elevation", 0.0)))
 	_apply_edge_glow(map_key)

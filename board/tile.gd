@@ -27,6 +27,11 @@ var is_selected: bool = false
 var highlight: String = ""
 var elevation: int = 0
 var terrain_type: String = "ground"
+## Mauro 5 Oct 2026: a tile no fighter can walk onto (water, mud, lava, hole,
+## solid obstacle) is shaded with a red inner border on every map.
+var walk_blocked: bool = false
+const WALK_BLOCKED_SHADE := Color(0.02, 0.02, 0.04, 0.34)
+const WALK_BLOCKED_LINE := Color(0.92, 0.22, 0.16, 0.85)
 var _dress: String = ""
 var _paint_props: Array = []
 var _grade_key: String = ""
@@ -319,6 +324,23 @@ func set_selected(value: bool) -> void:
 	_request_paint()
 
 
+func set_walk_blocked(value: bool) -> void:
+	if walk_blocked == value:
+		return
+	walk_blocked = value
+	_request_paint()
+
+
+func _paint_walk_blocked(canvas: CanvasItem) -> void:
+	var points := _diamond_points()
+	canvas.draw_colored_polygon(points, WALK_BLOCKED_SHADE)
+	var inner := PackedVector2Array()
+	for p in points:
+		inner.append(p * 0.78)
+	inner.append(inner[0])
+	canvas.draw_polyline(inner, WALK_BLOCKED_LINE, 2.0, true)
+
+
 func set_highlight(kind: String) -> void:
 	highlight = kind
 	_request_paint()
@@ -386,6 +408,8 @@ static func consume_debug_label_key(event: InputEvent) -> bool:
 
 
 func paint_highlight_overlay(canvas: CanvasItem) -> void:
+	if walk_blocked:
+		_paint_walk_blocked(canvas)
 	var color := overlay_color()
 	if color.a <= 0.0:
 		return
