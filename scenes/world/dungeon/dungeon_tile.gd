@@ -16,6 +16,50 @@ var pad_glow_tex: Texture2D
 var pad_glow_scale := 1.0
 var _t := 0.0
 var _glow: Sprite2D
+## A floor decal (drain grate) cut to this tile's diamond: the texture and
+## its rect in this tile's local space. The glow layer adds on top.
+var decal_tex: Texture2D
+var decal_glow: Texture2D
+var decal_rect := Rect2()
+var _decal_glow_node: Node2D
+
+
+class GlowCut extends Node2D:
+	var host
+
+	func _draw() -> void:
+		if host != null:
+			host._draw_cut(self, host.decal_glow)
+
+
+func set_decal(tex: Texture2D, glow: Texture2D, rect: Rect2) -> void:
+	decal_tex = tex
+	decal_glow = glow
+	decal_rect = rect
+	if _decal_glow_node != null and is_instance_valid(_decal_glow_node):
+		_decal_glow_node.queue_free()
+		_decal_glow_node = null
+	if glow != null:
+		var g := GlowCut.new()
+		g.host = self
+		g.z_index = 1
+		g.z_as_relative = true
+		var mat := CanvasItemMaterial.new()
+		mat.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
+		g.material = mat
+		add_child(g)
+		_decal_glow_node = g
+	queue_redraw()
+
+
+func _draw_cut(canvas: CanvasItem, tex: Texture2D) -> void:
+	if tex == null or decal_rect.size.x <= 0.0:
+		return
+	var pts := _diamond_points()
+	var uvs := PackedVector2Array()
+	for p in pts:
+		uvs.append((p - decal_rect.position) / decal_rect.size)
+	canvas.draw_colored_polygon(pts, Color.WHITE, uvs, tex)
 
 
 func set_pad_glow(tex: Texture2D, scale_by: float) -> void:
@@ -41,6 +85,8 @@ func set_pad_glow(tex: Texture2D, scale_by: float) -> void:
 func _process(delta: float) -> void:
 	if pad:
 		_t += delta
+		if _decal_glow_node != null:
+			_decal_glow_node.modulate.a = 0.65 + 0.35 * sin(_t * 2.2)
 		if _glow != null:
 			_glow.modulate.a = 0.6 + 0.4 * sin(_t * 2.4 + float(grid_position.x + grid_position.y))
 		elif pad_tex == null:
@@ -59,7 +105,9 @@ func _draw() -> void:
 		draw_texture_rect(floor_tex, Rect2(-32, -16, 64, h), false)
 	else:
 		_draw_stone(pts)
-	if pad:
+	if decal_tex != null:
+		_draw_cut(self, decal_tex)
+	elif pad:
 		_draw_pad(pts)
 
 

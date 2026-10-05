@@ -17,6 +17,7 @@ var _body: AnimatedSprite2D
 var _oneshot := ""
 var _blank: Texture2D
 var _faded := false
+const WARM := Color(1.06, 0.94, 0.8, 1.0)
 
 
 func bind_art(man: Dictionary, id: String, is_boss: bool) -> void:
@@ -143,7 +144,8 @@ func _process(_delta: float) -> void:
 	_root.position = _sprite.position
 	_root.rotation = _sprite.rotation
 	_root.scale = Vector2(s * rel.x, s * rel.y)
-	_body.modulate = _sprite.modulate
+	# The kit's monsters are flatly lit and cool: warm them to the room light.
+	_body.modulate = _sprite.modulate * WARM
 	if _path_walk and _oneshot == "":
 		_play_body("walk", true)
 

@@ -320,47 +320,55 @@ func _showcase() -> void:
 	await _start_room(0, true)
 	board.end_room()
 	board.autoplay = false
-	for pawn in board.pawns_by_seat.values():
-		pawn.visible = false
-	var cast := [["granary_rat", Vector2i(3, 7), false], ["scarecrow_drudge", Vector2i(5, 7), false], ["the_ratking", Vector2i(7, 7), true]]
+	board.set_process(false)
+	sim_node().set_process(false)
+	board.get_node("Units").visible = false
+	_roster.visible = false
+	$HUD.visible = false
+	var stage := Node2D.new()
+	stage.name = "Showcase"
+	board.add_child(stage)
+	var cast := [["granary_rat", Vector2i(3, 9), false], ["the_ratking", Vector2i(6, 6), true], ["scarecrow_drudge", Vector2i(9, 3), false]]
 	var shown: Array = []
-	var units: Node = board.get_node("Units")
 	for row in cast:
 		var p := MonsterPawn.new()
 		p.bind_art(manifest, str(row[0]), bool(row[2]))
-		units.add_child(p)
+		stage.add_child(p)
 		var stats: Dictionary = run.monsters.stats_at(str(row[0]), 1)
 		p.apply_snapshot({"pos": row[1], "name": str(stats["name"]), "class_id": str(row[0]), "facing": "S", "seat": 1, "hp": int(stats["hp"]), "max_hp": int(stats["hp"]), "alive": true}, -1)
 		p.position = board._cell_to_local(row[1])
+		p.z_as_relative = false
 		p.z_index = BoardVisualSort.unit_z_index(row[1])
 		shown.append(p)
+	var cam: Camera2D = board._camera
+	var mid: Vector2 = board._cell_to_local(Vector2i(6, 6))
+	cam.position = mid + Vector2(0, -70)
+	cam.zoom = Vector2(1.9, 1.9)
 	_title.text = "Old Granary Cellar\nMonsters"
-	_sub.text = "Granary Rat  ·  Scarecrow Drudge  ·  The Ratking"
-	_roster.text = ""
-	await get_tree().create_timer(1.5).timeout
-	for face in ["S", "E", "W", "N"]:
+	_sub.text = "Granary Rat  ·  The Ratking  ·  Scarecrow Drudge"
+	await get_tree().create_timer(2.0).timeout
+	for face in ["E", "N", "W", "S"]:
 		for p in shown:
 			p.set_facing(face)
-		await get_tree().create_timer(0.7).timeout
-	for p in shown:
-		p.set_facing("S")
+		await get_tree().create_timer(1.1).timeout
 	for p in shown:
 		p.begin_path_walk()
-	await get_tree().create_timer(1.6).timeout
+	await get_tree().create_timer(2.0).timeout
 	for p in shown:
 		p.end_path_walk()
+	await get_tree().create_timer(0.6).timeout
 	for p in shown:
 		p.play_view_plan({"attack": true, "aim": Vector2(-30, 15)})
-		await get_tree().create_timer(0.9).timeout
+		await get_tree().create_timer(1.0).timeout
 	for p in shown:
 		p.play_view_plan({"hit": true, "away": Vector2(20, -10)})
-		await get_tree().create_timer(0.7).timeout
-	shown[2].play_view_plan({"cast": true, "strip": "summon"})
-	await get_tree().create_timer(1.4).timeout
+		await get_tree().create_timer(0.8).timeout
+	shown[1].play_view_plan({"cast": true, "strip": "summon"})
+	await get_tree().create_timer(1.8).timeout
 	for p in shown:
 		p.alive = false
-		p.play_view_plan({"death": true, "hit": true})
-		await get_tree().create_timer(0.9).timeout
+		p.play_view_plan({"death": true})
+		await get_tree().create_timer(1.1).timeout
 	await get_tree().create_timer(1.5).timeout
 	get_tree().quit()
 

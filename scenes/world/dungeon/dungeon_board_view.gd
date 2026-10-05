@@ -118,9 +118,9 @@ func _dress_room() -> void:
 		tile.skip_floor = false
 		if tile.pad and tile.pad_kind == "wheat_pad" and not pad_kit.is_empty():
 			tile.pad_tex = pad_kit["tex"]
+		tile.set_decal(null, null, Rect2())
 		if tile.pad_kind == "drain_grate":
 			grate_cells.append(c)
-			tile.skip_floor = decals.has("drain_grate")
 		tile.set_pad_glow(glow_kit.get("tex", null) if tile.pad_kind == "wheat_pad" else null, float(glow_kit.get("scale", 1.0)))
 		tile.set_process(tile.pad)
 		tile.queue_redraw()
@@ -148,9 +148,16 @@ func _dress_room() -> void:
 		for gc in grate_cells:
 			if gc.x + gc.y > south.x + south.y:
 				south = gc
-		var decal := Props.make_decal(decals.get("drain_grate", {}), south)
-		decal.position = _cell_to_local(south)
-		_props_root.add_child(decal)
+		var grate: Dictionary = decals.get("drain_grate", {})
+		if grate.has("tex"):
+			# Kit rule: bottom-centre on the south tip of the south cell. Each
+			# grate tile draws its own diamond of the decal (and of its glow),
+			# so units on the grate stay on top.
+			var size: Vector2 = (grate["tex"] as Texture2D).get_size() * float(grate.get("scale", 1.0))
+			var at := _cell_to_local(south) + Vector2(-size.x * 0.5, 16.0 - size.y)
+			for gc in grate_cells:
+				var t = tiles[gc]
+				t.set_decal(grate["tex"], grate.get("glow", null), Rect2(at - _cell_to_local(gc), size))
 	if _backdrop != null and is_instance_valid(_backdrop):
 		_backdrop.free()
 	_backdrop = Props.make_backdrop(kit.get("backdrop", {}), room_id, _board_size)

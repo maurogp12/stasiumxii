@@ -58,7 +58,7 @@ func ensure_built() -> void:
 	_body.bbcode_enabled = true
 	_body.fit_content = true
 	_body.scroll_active = false
-	_body.custom_minimum_size = Vector2(440, 150)
+	_body.custom_minimum_size = Vector2(440, 110)
 	_body.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_body.add_theme_font_size_override("normal_font_size", 17)
 	col.add_child(_body)
