@@ -21,7 +21,7 @@ const STYLES := {
 		"face_left": Color(0.17, 0.10, 0.08), "face_right": Color(0.10, 0.06, 0.05),
 		"lip": Color(1.0, 0.48, 0.14, 0.85),
 		# terrain -> [shader mode, gain] (board/arena_surface.gdshader)
-		"surfaces": {"lava": [1, 1.0], "ground": [2, 1.0], "mud": [2, 0.85]},
+		"surfaces": {"lava": [1, 1.0], "ground": [2, 1.0], "mud": [2, 0.85], "water": [5, 1.0]},
 		"no_grid": ["lava"],
 		"edge_glow": Color(1.0, 0.40, 0.08, 0.95), "edge_from": "lava",
 		# One volcano on the centre lava cross (Mauro, 29 Sep). Decoration only.
