@@ -2004,7 +2004,7 @@ func _create_spell_button(spell_id: String, def: Dictionary) -> void:
 	var host := Control.new()
 	host.mouse_filter = Control.MOUSE_FILTER_STOP
 	_bind_spell_hover(host, spell_id)
-	host.gui_input.connect(_on_spell_host_input.bind(spell_id))
+	host.gui_input.connect(_on_spell_host_input.bind(spell_id, host))
 	var button := Button.new()
 	button.text = _spell_button_text(def)
 	button.clip_text = true
@@ -2014,7 +2014,7 @@ func _create_spell_button(spell_id: String, def: Dictionary) -> void:
 	button.pressed.connect(_on_spell_pressed.bind(spell_id))
 	button.button_down.connect(_on_spell_button_down.bind(spell_id))
 	button.button_up.connect(_on_spell_button_up)
-	button.gui_input.connect(_on_spell_host_input.bind(spell_id))
+	button.gui_input.connect(_on_spell_host_input.bind(spell_id, button))
 	# Enabled buttons are the hover target; greyed buttons IGNORE so the host still previews.
 	_bind_spell_hover(button, spell_id)
 	host.add_child(button)
@@ -2537,11 +2537,16 @@ func _control_claims(control: Control, point: Vector2) -> bool:
 	return control.get_global_rect().has_point(point)
 
 
-func _on_spell_host_input(event: InputEvent, spell_id: String) -> void:
+func _on_spell_host_input(event: InputEvent, spell_id: String, source: Control = null) -> void:
 	if TOUCH.is_emulated_mouse(event):
 		return
 	if event is InputEventScreenTouch or event is InputEventScreenDrag:
-		var screen_pos := TOUCH.pointer_position(event)
+		# gui_input positions are local to the button. The board reads screen
+		# positions: a release on the button used to land as a tap near the
+		# screen's top-left corner, which a zoomed / panned board now covers, so
+		# the spell fired at a far tile and was rejected (Mauro 5 Oct 2026
+		# recording: "i cannot choose spells").
+		var screen_pos := spell_event_screen_pos(event, source)
 		var committing := TOUCH.is_touch_release(event)
 		if event is InputEventScreenTouch:
 			var touch := event as InputEventScreenTouch
@@ -2567,6 +2572,13 @@ func _on_spell_host_input(event: InputEvent, spell_id: String) -> void:
 			_begin_long_press(spell_id)
 		else:
 			_cancel_long_press()
+
+
+static func spell_event_screen_pos(event: InputEvent, source: Control) -> Vector2:
+	var local := TOUCH.pointer_position(event)
+	if source == null or not is_instance_valid(source) or not source.is_inside_tree():
+		return local
+	return source.get_global_transform_with_canvas() * local
 
 
 func _begin_long_press(spell_id: String, from_touch: bool = false) -> void:

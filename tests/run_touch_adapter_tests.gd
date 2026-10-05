@@ -11,7 +11,11 @@ var _passed: int = 0
 
 
 func _initialize() -> void:
-	_run()
+	_main()
+
+
+func _main() -> void:
+	await _run()
 	print("Touch adapter tests: %d passed, %d failed" % [_passed, _failed])
 	quit(1 if _failed > 0 else 0)
 
@@ -25,6 +29,7 @@ func _run() -> void:
 	_test_ability_cluster_layout()
 	_test_ability_icons()
 	_test_hud_targets_and_tooltip_tap()
+	await _test_spell_button_release_stays_on_button()
 	_test_hold_card_hides_when_drag_leaves()
 	_test_player_zoom()
 	_test_sources_keep_desktop_and_hub()
@@ -779,3 +784,30 @@ func truthy(value: Variant, msg: String) -> void:
 		print("FAIL: %s  (got %s)" % [msg, value])
 	else:
 		_passed += 1
+
+
+## Mauro 5 Oct 2026 recording ("i cannot choose spells"): a spell button gets
+## its finger in its own coordinates. The board must get screen coordinates,
+## or the release lands as a board tap near the top-left corner and casts at a
+## far tile. The release point must be on the button (the board ignores it).
+func _test_spell_button_release_stays_on_button() -> void:
+	var sim: Node = load("res://backend/combat_sim.gd").new()
+	root.add_child(sim)
+	sim.reset_match({"seed": 1, "skip_deploy": true, "flat_board": true})
+	var hud := CombatHUD.new()
+	root.add_child(hud)
+	await process_frame
+	hud.set_preview_source(sim)
+	hud.render(sim.snapshot(), sim.legal_intents(0))
+	await process_frame
+	await process_frame
+	var mark_button: Control = hud._spell_hosts[SpellKits.MARK_SHOT]
+	var local_touch := InputEventScreenTouch.new()
+	local_touch.position = Vector2(8, 8)
+	var on_screen: Vector2 = hud.spell_event_screen_pos(local_touch, mark_button)
+	eq(on_screen, mark_button.get_global_transform_with_canvas() * Vector2(8, 8), "a button touch maps to its screen point")
+	eq(on_screen != Vector2(8, 8), true, "not the raw button-local point")
+	eq(hud.claims_screen_point(on_screen), true, "the release point is on the button, so the board ignores it")
+	hud.queue_free()
+	sim.queue_free()
+	await process_frame
