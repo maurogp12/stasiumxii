@@ -86,3 +86,6 @@ When those land, Claude reads them, copies the key facts into this file, and con
 ## 6. Not ours (record only, do not touch)
 
 The mobile team's work: `mobile`, `apk/*`, and the `cursor/*-04b3` / `-d1e3` walk branches. PRs #216, #190 and #211 are mobile or older main-based work.
+
+## Dungeons (5 Oct 2026)
+The plan, designs and status are in **`docs/pc/look_target/dungeons/DUNGEON_PLAN.md`** (PDF copy: `STASIUM_XII_Dungeons_Plan.pdf`). The Old Granary Cellar design is APPROVED; the other four are waiting for Mauro. Building has not started. Every step needs pictures and Mauro's OK first.
