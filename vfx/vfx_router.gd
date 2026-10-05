@@ -236,6 +236,26 @@ const BLEND_FX := {
 	"mire": {"frames": 12, "fps": 15.0, "ground": true},
 	"steam": {"frames": 12, "fps": 13.0, "ground": false},
 }
+## Slagcrown's boiling pools steam all match long: a tall thin plume
+## (build_tools/art/steam_plume.py), no floor puff so the pool shows.
+const MAP_STEAM := {
+	"path": BLEND_FX_DIR + "map_steam_plume.png", "frames": 12, "fps": 9.0,
+	"anchor": Vector2(48, 214), "scale": 0.9,
+}
+
+
+static func map_steam_spec(cell: Vector2i) -> Dictionary:
+	return {
+		"pool": "strip",
+		"cell": cell,
+		"path": str(MAP_STEAM["path"]),
+		"frames": int(MAP_STEAM["frames"]),
+		"fps": float(MAP_STEAM["fps"]),
+		"anchor": MAP_STEAM["anchor"],
+		"scale": float(MAP_STEAM["scale"]),
+		"loop": true,
+	}
+
 ## Lingering tiles: looping ground strips while the tile is on the board.
 const BLEND_TILE_FX := {
 	"magma": {"frames": 8, "fps": 9.0},

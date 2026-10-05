@@ -608,7 +608,8 @@ func _test_slag_punch() -> void:
 		at[Vector2i(int(cell["x"]), int(cell["y"]))] = cell
 	eq(int(at[Vector2i(5, 4)]["elevation"]), 2, "Slagcrown high platform cell stays elevation 2")
 	eq(str(at[Vector2i(7, 7)]["terrain"]), "lava", "Slagcrown lava river stays lava")
-	eq(str(at[Vector2i(1, 12)]["terrain"]), "water", "Slagcrown ash pool tag stays water")
+	# Mauro 5 Oct 2026 steam corner: (1, 12) became the path; (2, 10) is a pool.
+	eq(str(at[Vector2i(2, 10)]["terrain"]), "water", "Slagcrown boiling pool tag stays water")
 	eq(str((at[Vector2i(0, 0)]["paint_only"] as Array)[0]), "basalt_pillar", "Slagcrown corner prop stays the basalt pillar")
 
 
@@ -892,11 +893,15 @@ func _test_slagcrown_steam_blocks_sight() -> void:
 	var sim: Node = load("res://backend/combat_sim.gd").new()
 	root.add_child(sim)
 	sim.reset_match({"seed": 3, "map_id": "slagcrown", "skip_deploy": true})
-	truthy(not sim.has_line_of_sight(Vector2i(0, 12), Vector2i(6, 12)), "nobody shoots through the steaming water")
-	truthy(sim.has_line_of_sight(Vector2i(0, 8), Vector2i(3, 8)), "a line beside the water stays open")
-	truthy(sim._board.is_voluntary_impassable(Vector2i(2, 12)), "the boiling water still cannot be walked into")
+	truthy(not sim.has_line_of_sight(Vector2i(2, 9), Vector2i(2, 12)), "nobody shoots through the steaming pools")
+	truthy(sim.has_line_of_sight(Vector2i(0, 12), Vector2i(4, 12)), "the path row between the pools stays open")
+	truthy(sim._board.is_voluntary_impassable(Vector2i(2, 10)), "the boiling pool still cannot be walked into")
 	var steam: Array = sim.snapshot().get("map_steam", [])
-	eq(steam.size(), 8, "the board steams over its 8 water tiles")
+	eq(steam.size(), 5, "the board steams over its 5 boiling pools")
+	# Mauro's steam picture "but leaving a path that characters can walk":
+	# the corner path runs x0 down to row 12, across it, and down x2 / x4.
+	for cell in [Vector2i(0, 10), Vector2i(0, 11), Vector2i(0, 12), Vector2i(1, 12), Vector2i(2, 12), Vector2i(3, 12), Vector2i(4, 12), Vector2i(2, 13), Vector2i(2, 14), Vector2i(4, 13), Vector2i(4, 14)]:
+		truthy(sim._board.is_walkable(cell) and not sim._board.is_voluntary_impassable(cell), "steam corner path walkable at %s" % str(cell))
 	truthy(not CellTagMap.terrain_blocks_sight("brinewake", "water"), "the dock's water does not block sight")
 	truthy(CellTagMap.terrain_blocks_sight("slagcrown", "water"), "the lava map's water does")
 	sim.free()

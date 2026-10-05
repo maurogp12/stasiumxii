@@ -101,11 +101,14 @@ void fragment() {
 		float swell = 0.94 + 0.08 * sin(t * 1.3 + p.x * 0.9 + p.y * 0.6);
 		col = base * swell + vec3(0.55, 0.85, 1.0) * caustic * 0.45;
 	} else if (mode == 6) {
+		// Only the round pool in the cell boils (UV radius 0.21, see
+		// build_tools/art/slagcrown_water.py); the basalt lip stays still.
+		float pool = 1.0 - smoothstep(0.18, 0.21, length(UV - vec2(0.5)));
 		// Churn: fast warped swell so the surface never sits still.
 		float churn = fbm(p * 2.8 + vec2(t * 0.6, -t * 0.45));
-		col = base * (0.9 + 0.25 * churn);
+		col = mix(base, base * (0.9 + 0.25 * churn), pool);
 		// Bubbles: a few per cell, each on its own rise-and-pop cycle.
-		vec2 g = p * 3.0;
+		vec2 g = p * 7.0;
 		vec2 id = floor(g);
 		vec2 f = fract(g) - 0.5;
 		float seed = hash(id);
@@ -115,9 +118,9 @@ void fragment() {
 		float d = length(f - off * 0.5);
 		float ring = smoothstep(r + 0.06, r, d) * smoothstep(r - 0.09, r - 0.02, d);
 		float fade = smoothstep(1.0, 0.75, phase) * step(0.35, seed);
-		col += vec3(0.75, 0.95, 1.0) * ring * fade * 0.9;
+		col += vec3(0.75, 0.95, 1.0) * ring * fade * 0.9 * pool;
 		// Heat shimmer from the lava under it.
-		col += vec3(0.35, 0.12, 0.02) * smoothstep(0.6, 0.85, churn) * 0.5;
+		col += vec3(0.35, 0.12, 0.02) * smoothstep(0.6, 0.85, churn) * 0.5 * pool;
 	} else if (mode == 4) {
 		// Near-black slate, cooled toward the picture's blue-violet night.
 		float lum = dot(base, vec3(0.299, 0.587, 0.114));

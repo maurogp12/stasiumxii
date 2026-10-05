@@ -5,14 +5,20 @@ The water cut from the volcano picture came out near black, so the seven
 water tiles read as black holes ("Is that circled area obstacles?" ... "yes do
 it"). Repaint them as dark teal hot-spring water from the dock map's water
 stamps, with a faint warm lava reflection so they belong on the volcano board.
+Then (Mauro's steam picture) each water tile is a round boiling pool sunk in
+the basalt floor: a dark rock rim, dark teal water inside (the pool circle is
+UV radius POOL_R = 0.21, the same circle board/arena_surface.gdshader mode 6 boils).
 Writes art/maps/arena_look/slagcrown/water_<n>.png (64x32, same diamond alpha).
 Run: python3 build_tools/art/slagcrown_water.py
 """
 from PIL import Image, ImageEnhance
 
 SRC = "art/maps/arena_look/brinewake/water_%d.png"
+FLOOR = "art/maps/arena_look/slagcrown/ground_%d.png"
+POOL_R = 0.21
+RIM_R = 0.28
 OUT = "art/maps/arena_look/slagcrown/water_%d.png"
-DEEP = (10, 52, 62)      # dark teal
+DEEP = (6, 30, 40)       # dark teal
 WARM = (255, 120, 40)    # lava glow from below
 
 
@@ -35,11 +41,37 @@ def repaint(img):
     return out
 
 
+def pool(n):
+    floor = Image.open(FLOOR % n).convert("RGBA")
+    water = repaint(Image.open(SRC % n).convert("RGBA"))
+    w, h = floor.size
+    out = floor.copy()
+    px = out.load()
+    wp = water.load()
+    for y in range(h):
+        for x in range(w):
+            # UV circle (the 2:1 diamond stamp is a square in UV).
+            u, v = (x + 0.5) / w - 0.5, (y + 0.5) / h - 0.5
+            d = (u * u + v * v) ** 0.5
+            r, g, b, a = px[x, y]
+            if d < POOL_R:
+                wr, wg, wb, _ = wp[x, y]
+                # Darker toward the far (upper) lip, as if sunk.
+                k = 0.75 + 0.5 * (v + POOL_R) / (2 * POOL_R)
+                px[x, y] = (int(wr * k), int(wg * k), int(wb * k), a)
+            elif d < RIM_R:
+                t = (d - POOL_R) / (RIM_R - POOL_R)
+                # Dark basalt lip, lit on the near (lower) edge.
+                lit = 0.35 + 0.35 * max(0.0, v) / RIM_R
+                f = lit + (1.0 - lit) * t * t
+                px[x, y] = (int(r * f), int(g * f), int(b * f), a)
+    return out
+
+
 def main():
     for n in range(4):
-        img = Image.open(SRC % n).convert("RGBA")
-        repaint(img).save(OUT % n, optimize=True)
-        print("water", n)
+        pool(n % 10).save(OUT % n, optimize=True)
+        print("pool", n)
 
 
 if __name__ == "__main__":

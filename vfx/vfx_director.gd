@@ -153,9 +153,7 @@ func sync_snapshot(snapshot: Dictionary) -> void:
 		if typeof(tile) != TYPE_DICTIONARY:
 			continue
 		var steam_cell := _Router.cell_of(tile.get("pos", Vector2i(int(tile.get("x", 0)), int(tile.get("y", 0)))))
-		var steam_spec := _Router.blend_tile_spec("steam", steam_cell)
-		if not steam_spec.is_empty():
-			wanted["map_steam:%d,%d" % [steam_cell.x, steam_cell.y]] = steam_spec
+		wanted["map_steam:%d,%d" % [steam_cell.x, steam_cell.y]] = _Router.map_steam_spec(steam_cell)
 	for unit in snapshot.get("units", []):
 		if typeof(unit) != TYPE_DICTIONARY:
 			continue
