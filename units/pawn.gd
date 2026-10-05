@@ -328,6 +328,16 @@ class StatusChrome extends Node2D:
 
 ## `events` supply Burn only when the unit dict has no `burn_remaining` / `burn_stacks`.
 ## This pawn does not tick Burn or add stacks; the next host snapshot replaces both.
+## Elements Step 2: Residue element shown as a gem on the team ring.
+const RESIDUE_TINT := {
+	"air": Color(0.55, 0.92, 0.86),
+	"earth": Color(0.78, 0.56, 0.3),
+	"water": Color(0.32, 0.62, 1.0),
+	"fire": Color(1.0, 0.45, 0.15),
+}
+var residue := ""
+
+
 func apply_snapshot(unit: Dictionary, active_seat: int, events: Array = []) -> void:
 	grid_position = unit["pos"]
 	unit_name = str(unit["name"])
@@ -347,6 +357,7 @@ func apply_snapshot(unit: Dictionary, active_seat: int, events: Array = []) -> v
 	burn_remaining = CombatHUD.unit_burn_remaining(unit, events)
 	burn_stacks = CombatHUD.unit_burn_stacks(unit, events)
 	burning = burn_remaining > 0 and burn_stacks > 0
+	residue = str(unit.get("residue", "")) if int(unit.get("residue_turns", 0)) > 0 else ""
 	if alive and (_held_death_strip or _body_kind == "death"):
 		_held_death_strip = false
 		_plan_died = false
@@ -3029,6 +3040,12 @@ func _draw_ground_mark_on(canvas: CanvasItem) -> void:
 		_draw_ellipse_ring_on(canvas, foot, 24.0, 9.2, Color(0.95, 0.78, 0.2, 0.95), 2.0)
 	if is_active:
 		_draw_ellipse_ring_on(canvas, foot, 21.0, 8.2, Color(0.95, 0.78, 0.28, 0.95), 2.2)
+	if residue != "" and RESIDUE_TINT.has(residue):
+		# Elements Step 2: the Residue's element as a gem on the team ring.
+		var gem := foot + Vector2(SEAT_RING_RX - 1.0, -1.0)
+		canvas.draw_circle(gem, 4.6, Color(0.05, 0.04, 0.06, 0.85))
+		canvas.draw_circle(gem, 3.4, RESIDUE_TINT[residue])
+		canvas.draw_circle(gem + Vector2(-1.0, -1.0), 1.1, Color(1, 1, 1, 0.7))
 
 
 func _paint_status(canvas: CanvasItem) -> void:

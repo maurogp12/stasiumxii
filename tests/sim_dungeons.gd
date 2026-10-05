@@ -25,6 +25,8 @@ const MAX_TURNS := 400
 var _runs := 4
 var _stars: Array = [1, 2, 3, 4, 5]
 var _done := false
+## star → [level, set pieces worn, plus] (DUNGEON_HERO).
+var _hero_for: Dictionary = {}
 
 
 func _initialize() -> void:
@@ -38,6 +40,12 @@ func _initialize() -> void:
 	GearBag.save_path = "user://dungeon_sim_bag.json"
 	HeroProgress.save_path = "user://dungeon_sim_hero.json"
 	StillVault.save_path = "user://dungeon_sim_still.json"
+	# DUNGEON_HERO="3:15,3,0;4:23,5,2" sets the party per star: level, worn
+	# set pieces (of 5), fuse plus. Default: level 30, all 5 pieces, +5.
+	for part in OS.get_environment("DUNGEON_HERO").split(";", false):
+		var kv := part.split(":")
+		var v := kv[1].split(",")
+		_hero_for[int(kv[0])] = [int(v[0]), int(v[1]), int(v[2])]
 	# DUNGEON_SCALE="3:3.2,2.2;5:9,5" tries other [hp, damage] star scales.
 	for part in OS.get_environment("DUNGEON_SCALE").split(";", false):
 		var kv := part.split(":")
@@ -82,7 +90,13 @@ func _room(door: String, room: String, star: int, classes: Array, seed: int) -> 
 		print("  (no config for %s %s)" % [door, room])
 		return false
 	config["seed"] = int(config.get("seed", 0)) + seed
-	# Level 30 + build + a +5 set for every hero.
+	# Level 30 + build + a +5 set for every hero, unless DUNGEON_HERO says
+	# otherwise for this star (level, pieces worn, plus; points scale with level).
+	var kit: Array = _hero_for.get(star, [30, 5, 5])
+	var level := int(kit[0])
+	var pieces := int(kit[1])
+	var plus := int(kit[2])
+	var share := float(level - 1) / 29.0
 	var roster: Array = config["stasis_roster"]
 	for rec in roster:
 		var seat := int(rec["seat"])
@@ -91,8 +105,13 @@ func _room(door: String, room: String, star: int, classes: Array, seed: int) -> 
 		var cls: String = classes[seat]
 		var worn: Array = []
 		for slot in GearBag.SLOTS:
-			worn.append({"item_id": GearBag.item_id_for(SET_FOR[cls], slot), "plus": 5})
-		rec["gear"] = {"worn": worn, "attune": {}, "heroes": {cls: {"level": 30, "spent": BUILDS[cls]}}}
+			if worn.size() >= pieces:
+				break
+			worn.append({"item_id": GearBag.item_id_for(SET_FOR[cls], slot), "plus": plus})
+		var spent := {}
+		for k in BUILDS[cls]:
+			spent[k] = int(floor(float(BUILDS[cls][k]) * share))
+		rec["gear"] = {"worn": worn, "attune": {}, "heroes": {cls: {"level": level, "spent": spent}}}
 		rec.erase("hp")
 	if classes.size() == 1:
 		config["classes"] = [classes[0], StasisCatalog.STRIKE_CARD_CLASS]

@@ -24,6 +24,7 @@ func _finish_shade_board() -> void:
 
 
 func _run() -> void:
+	_test_element_riders()
 	_test_reset_and_turn_order()
 	_test_live_deploy_starts_before_turn_1()
 	_test_deploy_zone_sampler_rules()
@@ -1955,7 +1956,7 @@ func _test_ambush_arms_at_zero_mp() -> void:
 	eq(str(hit.get("reason", "")), "", "Ambush at MP 0 is not an insufficient_mp reject")
 	eq(_unit(0)["pos"], Vector2i(5, 2), "Shade-origin Ambush still lands on the empty back tile")
 	eq(int(_unit(0)["ap"]), 0, "Ambush at MP 0 spends 4 AP")
-	eq(int(_unit(0)["mp"]), 0, "Ambush at MP 0 spends 0 MP")
+	eq(int(_unit(0)["mp"]), 1, "Ambush at MP 0 spends 0 MP, then the Air rider gives +1 MP")
 	eq(int(_unit(0)["shades"]), 0, "Shade origin still spends one Shade on hit")
 
 	_sim.reset_match({
@@ -4590,7 +4591,8 @@ func _test_detonate_gates_and_damage() -> void:
 	eq(int(SpellKits.spell(SpellKits.DETONATE)["ap"]), 3, "Detonate costs 3 AP")
 	eq(int(SpellKits.spell(SpellKits.DETONATE)["mp"]), 0, "Detonate costs 0 MP")
 	eq(int(SpellKits.spell(SpellKits.DETONATE)["min_range"]), 1, "Detonate min range 1 Chebyshev")
-	eq(int(SpellKits.spell(SpellKits.DETONATE)["max_range"]), 4, "Detonate max range 4 Chebyshev")
+	eq(int(SpellKits.spell(SpellKits.DETONATE)["max_range"]), 5, "Detonate max range 5 (Air rider: 4 + 1)")
+	eq(int(SpellKits.spell(SpellKits.DETONATE)["base_max_range"]), 4, "Detonate base max range stays 4")
 	eq(int(SpellKits.spell(SpellKits.DETONATE)["base_damage"]), 6, "Detonate base damage stays 6")
 	eq(int(SpellKits.spell(SpellKits.DETONATE)["damage_per_mark"]), 6, "Detonate stays 6 per Mark")
 	eq(str(SpellKits.spell(SpellKits.DETONATE).get("range_mode", "")), "chebyshev", "Detonate range is Chebyshev")
@@ -4612,8 +4614,8 @@ func _test_detonate_gates_and_damage() -> void:
 	eq(_unit(1)["hp"], 90, "Detonate gate deals no damage")
 	eq(_unit(1)["marks"], 0, "Detonate gate does not invent Marks")
 
-	# Locked max is 4. Dist 5–7 refund even with Marks.
-	for dist in [5, 6, 7]:
+	# Locked max 4 + Air rider = 5. Dist 6–8 refund even with Marks.
+	for dist in [6, 7, 8]:
 		_sim.reset_match({
 			"seed": 1,
 			"flat_board": true,
@@ -4717,7 +4719,7 @@ func _test_drop_shade_range() -> void:
 	eq(int(SpellKits.spell(SpellKits.MARK_SHOT)["min_range"]), 2, "Mark Shot min range stays 2")
 	eq(int(SpellKits.spell(SpellKits.MARK_SHOT)["max_range"]), 5, "Mark Shot max range is 5")
 	eq(int(SpellKits.spell(SpellKits.DETONATE)["min_range"]), 1, "Detonate min range stays 1")
-	eq(int(SpellKits.spell(SpellKits.DETONATE)["max_range"]), 4, "Detonate max range stays 4")
+	eq(int(SpellKits.spell(SpellKits.DETONATE)["max_range"]), 5, "Detonate max range is 5 with the Air rider")
 	eq(int(SpellKits.spell(SpellKits.AMBUSH)["min_range"]), 1, "Ambush min stays 1")
 	eq(int(SpellKits.spell(SpellKits.AMBUSH)["max_range"]), 2, "Ambush max stays 2")
 	eq(str(SpellKits.spell(SpellKits.AMBUSH).get("range_mode", "")), "cardinal", "Ambush range stays cardinal")
@@ -5006,7 +5008,7 @@ func _test_shoulder_bounce_stagger_locked() -> void:
 	var result: Dictionary = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(0, 0)})
 	eq(result["ok"], true, "OOB bounce still resolves the hit")
 	eq(_unit(0)["pos"], Vector2i(0, 0), "OOB bounce leaves the target put")
-	eq(_unit(0)["hp"], 65, "OOB bounce is 6 Earth + 4 stagger HP")
+	eq(_unit(0)["hp"], 61, "OOB bounce is 6 Earth + 8 Earth collision (rider, replaces stagger 4)")
 	eq(_unit(0)["mp"], 2, "OOB bounce spends 1 stagger MP when MP>=1")
 	eq(_unit(1)["impact"], 2, "OOB bounce grants +2 Impact only")
 	eq(result["events"][0]["engine_gained"], 2, "OOB bounce engine gain is +2, not +1 and +2")
@@ -5016,20 +5018,20 @@ func _test_shoulder_bounce_stagger_locked() -> void:
 	eq(result["events"][0]["bounced"], true, "hit records bounced")
 	eq(result["events"][0]["staggered"], true, "hit records staggered")
 	eq(result["events"][0]["bounce_reason"], "out_of_bounds", "bounce reason is out_of_bounds")
-	eq(result["events"][0]["stagger_hp"], 4, "hit records 4 stagger HP")
+	eq(result["events"][0]["stagger_hp"], 8, "hit records 8 Earth collision HP")
 	eq(result["events"][0]["stagger_mp"], 1, "hit records 1 stagger MP")
-	eq(result["events"][0]["hp_delta"], -4, "hit records stagger HP delta")
+	eq(result["events"][0]["hp_delta"], -8, "hit records stagger HP delta")
 	eq(result["events"][0]["mp_delta"], -1, "hit records stagger MP delta")
 	eq(result["events"][1]["type"], "push_bounce", "OOB emits push_bounce")
 	eq(result["events"][1]["reason"], "out_of_bounds", "push_bounce reason is out_of_bounds")
-	eq(result["events"][1]["hp_delta"], -4, "push_bounce carries HP delta")
+	eq(result["events"][1]["hp_delta"], -8, "push_bounce carries HP delta")
 	eq(result["events"][1]["mp_delta"], -1, "push_bounce carries MP delta")
 	truthy(str(result["events"][1].get("locked", "")).contains("Director Locked Shoulder"), "push_bounce is labeled Director Locked Shoulder")
 	eq(result["events"][1].has("open"), false, "push_bounce is not labeled OPEN")
 	eq(result["events"][2]["type"], "stagger", "OOB emits stagger after bounce")
-	eq(result["events"][2]["hp_delta"], -4, "stagger HP delta is -4")
+	eq(result["events"][2]["hp_delta"], -8, "stagger HP delta is -8 (Earth collision)")
 	eq(result["events"][2]["mp_delta"], -1, "stagger MP delta is -1")
-	eq(result["events"][2]["hp"], 65, "stagger event reports remaining HP")
+	eq(result["events"][2]["hp"], 61, "stagger event reports remaining HP")
 	eq(result["events"][2]["mp"], 2, "stagger event reports remaining MP")
 	eq(_event_type_count(result["events"], "push_blocked"), 0, "OOB does not emit push_blocked")
 
@@ -5047,9 +5049,9 @@ func _test_shoulder_bounce_stagger_locked() -> void:
 	result = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(0, 0)})
 	eq(result["ok"], true, "0 MP OOB bounce still hits")
 	eq(_unit(0)["pos"], Vector2i(0, 0), "0 MP OOB bounce stays put")
-	eq(_unit(0)["hp"], 65, "0 MP OOB still applies 4 stagger HP")
+	eq(_unit(0)["hp"], 61, "0 MP OOB still applies 8 Earth collision HP")
 	eq(_unit(0)["mp"], 0, "0 MP OOB does not apply stagger MP")
-	eq(result["events"][0]["stagger_hp"], 4, "0 MP still records 4 stagger HP")
+	eq(result["events"][0]["stagger_hp"], 8, "0 MP still records 8 Earth collision HP")
 	eq(result["events"][0]["stagger_mp"], 0, "0 MP records 0 stagger MP")
 	eq(result["events"][0]["mp_delta"], 0, "0 MP stagger MP delta is 0")
 	eq(result["events"][2]["mp_delta"], 0, "stagger event MP delta is 0 at 0 MP")
@@ -5084,13 +5086,13 @@ func _test_shoulder_bounce_stagger_locked() -> void:
 	result = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(4, 3)})
 	eq(result["ok"], true, "unwalkable dest still resolves the hit")
 	eq(_unit(0)["pos"], Vector2i(4, 3), "unwalkable dest bounce leaves the target put")
-	eq(_unit(0)["hp"], 65, "unwalkable dest is 6 Earth + 4 stagger HP")
+	eq(_unit(0)["hp"], 61, "unwalkable dest is 6 Earth + 8 Earth collision (rider, replaces stagger 4)")
 	eq(_unit(0)["mp"], 2, "unwalkable dest spends 1 stagger MP")
 	eq(result["events"][0]["bounced"], true, "unwalkable dest records bounced")
 	eq(result["events"][1]["type"], "push_bounce", "unwalkable dest emits push_bounce")
 	eq(result["events"][1]["reason"], "not_walkable", "bounce reason is not_walkable")
 	eq(result["events"][2]["type"], "stagger", "unwalkable dest emits stagger")
-	eq(result["events"][2]["hp_delta"], -4, "unwalkable stagger HP delta is -4")
+	eq(result["events"][2]["hp_delta"], -8, "unwalkable stagger HP delta is -8 (Earth collision)")
 	eq(result["events"][0]["engine_gained"], 2, "truly blocked bounce is +2 Impact only")
 	eq(_unit(1)["impact"], 2, "unwalkable bounce stores +2 Impact")
 	eq(_event_type_count(result["events"], "push_blocked"), 0, "unwalkable dest does not emit push_blocked")
@@ -5665,7 +5667,7 @@ func _test_push_blocked_client_toast_no_hop() -> void:
 	eq(CombatHUD.toast_for_events(result["events"]), "Bounce  +2 Impact", "OOB toast is Bounce plus +2 Impact")
 	eq(CombatHUD.toast_for_events(result["events"]).contains("+1"), false, "OOB bounce toast is not also +1")
 	eq(_unit(0)["pos"], Vector2i(0, 0), "target stayed put")
-	eq(_unit(0)["hp"], 65, "hit + stagger HP still applied")
+	eq(_unit(0)["hp"], 61, "hit + stagger HP still applied")
 	eq(_unit(1)["impact"], 2, "OOB bounce Impact is +2")
 
 	var walk_events: Array = [{
@@ -5947,7 +5949,7 @@ func _test_legal_intents_new_spell_gates() -> void:
 	eq(_has_legal_cast(0, "detonate"), true, "Detonate offered at Chebyshev 4")
 	eq(_has_legal_cast(0, "mark_shot"), true, "Mark Shot offered at Chebyshev 4")
 
-	for dist in [5, 6, 7]:
+	for dist in [6, 7, 8]:
 		_sim.reset_match({
 			"seed": 1,
 			"flat_board": true,
@@ -6001,7 +6003,7 @@ func _test_legal_intents_new_spell_gates() -> void:
 	eq(_has_legal_cast(1, "crush"), false, "Crush omitted when out of range even at 4 Impact")
 	eq(_has_legal_cast(1, "shoulder"), false, "Shoulder omitted when out of range")
 
-	# Range chrome for Detonate is Chebyshev 1–4. Hit-percent chrome is tested separately.
+	# Range chrome for Detonate is Chebyshev 1–5 (Air rider). Hit-percent chrome is tested separately.
 	_sim.reset_match({"seed": 1, "flat_board": true, "kestrel_pos": Vector2i(3, 3), "ironjaw_pos": Vector2i(5, 3)})
 	var painted: Dictionary = {}
 	for cell in _sim.range_highlight_cells(0, SpellKits.DETONATE):
@@ -6010,7 +6012,8 @@ func _test_legal_intents_new_spell_gates() -> void:
 	eq(painted.has(Vector2i(3, 3)), false, "caster tile is not in Detonate chrome")
 	truthy(painted.has(Vector2i(0, 3)), "Chebyshev 3 ortho is inside Detonate chrome")
 	eq(painted.has(Vector2i(3, 7)), true, "Chebyshev 4 ortho is inside Detonate chrome")
-	eq(painted.has(Vector2i(3, 8)), false, "Chebyshev 5 ortho is outside Detonate chrome")
+	eq(painted.has(Vector2i(3, 8)), true, "Chebyshev 5 ortho is inside Detonate chrome (Air rider)")
+	eq(painted.has(Vector2i(3, 9)), false, "Chebyshev 6 ortho is outside Detonate chrome")
 	_sim.reset_match({"seed": 1, "flat_board": true, "kestrel_pos": Vector2i(0, 0), "ironjaw_pos": Vector2i(7, 7)})
 	var has_r4 := false
 	var has_r5 := false
@@ -6028,7 +6031,7 @@ func _test_legal_intents_new_spell_gates() -> void:
 			has_r1 = true
 	truthy(has_r1, "Detonate chrome includes Chebyshev 1")
 	truthy(has_r4, "Detonate chrome includes Chebyshev 4")
-	eq(has_r5, false, "Detonate chrome excludes Chebyshev 5")
+	truthy(has_r5, "Detonate chrome includes Chebyshev 5 (Air rider)")
 	eq(has_r6, false, "Detonate chrome excludes Chebyshev 6")
 	var view := FileAccess.get_file_as_string("res://board_view.gd")
 	truthy(view.contains("aim_hit_preview"), "board_view feeds Locked hit-percent preview")
@@ -6958,8 +6961,8 @@ func _test_spell_tooltip_cards() -> void:
 	eq(detonate_preview["marks_on_target"], 3, "Detonate preview uses current Marks")
 	eq(detonate_preview["sample_damage"], 24, "Detonate M=3 samples 24")
 	truthy(detonate.contains("3 AP / 0 MP"), "Detonate card names AP/MP from preview")
-	eq(detonate_preview["range_text"], "range 1–4", "Detonate preview_cast range_text is player-facing")
-	truthy(detonate.contains("range 1–4"), "Detonate card names range from preview")
+	eq(detonate_preview["range_text"], "range 1–5", "Detonate preview_cast range_text is player-facing")
+	truthy(detonate.contains("range 1–5"), "Detonate card names range from preview")
 	eq(detonate.contains("Chebyshev"), false, "Detonate card does not name Chebyshev")
 	truthy(detonate.contains("On hit: 6+6×M Air. Consumes Marks on the target."), "Detonate hit line is preview kit text")
 	truthy(detonate.contains("On miss: Marks stay. AP/MP stay spent."), "Detonate miss line is preview kit text")
@@ -7121,7 +7124,7 @@ func _test_spell_tooltip_cards() -> void:
 	truthy(gated_lines.size() >= 2, "M=0 Detonate card has a lead-in")
 	eq(str(gated_lines[1]), "needs Marks", "M=0 Detonate card leads with needs Marks")
 	truthy(gated_card.contains("3 AP / 0 MP"), "M=0 Detonate card keeps costs")
-	truthy(gated_card.contains("range 1–4"), "M=0 Detonate card keeps range")
+	truthy(gated_card.contains("range 1–5"), "M=0 Detonate card keeps range")
 	eq(gated_card.contains("Chebyshev"), false, "M=0 Detonate card does not name Chebyshev")
 	truthy(gated_card.contains("HIT "), "M=0 Detonate card keeps HIT%")
 	eq(gated_card.contains("sample 6"), false, "M=0 Detonate card does not lead with sample 6")
@@ -7740,6 +7743,112 @@ func _event_type_count(events: Array, kind: String) -> int:
 		if typeof(event) == TYPE_DICTIONARY and str(event.get("type", "")) == kind:
 			n += 1
 	return n
+
+
+## Elements Step 2 (docs/BALANCE_PLAN_HANDOFF.md §3; Mauro 4 Oct 2026: "its
+## time to continue on elements"): mono riders + Residue.
+func _test_element_riders() -> void:
+	# Data riders: Air +1 range when max >= 3 (Mark Shot excluded), Water heals +4.
+	eq(int(SpellKits.spell(SpellKits.DETONATE)["max_range"]), 5, "Air: Detonate 1–4 becomes 1–5")
+	eq(int(SpellKits.spell(SpellKits.MARK_SHOT)["max_range"]), 5, "Air: Mark Shot stays 2–5 (excluded)")
+	eq(int(SpellKits.spell(SpellKits.CUT)["max_range"]), 1, "Air: a melee spell keeps its range")
+	eq(int(SpellKits.spell(SpellKits.MEND)["base_heal"]), 20, "Water: Mend heals 20")
+	eq(int(SpellKits.spell(SpellKits.PULSE_TAP)["base_heal"]), 14, "Water: Pulse Tap heals 14")
+	eq(int(SpellKits.spell(SpellKits.HEARTSTOP)["base_heal"]), 36, "Water: ally Heartstop heals 36")
+	eq(int(SpellKits.spell(SpellKits.WARD).get("shield", 0)), 20, "Water: Ward shield is not a heal (stays 20)")
+	eq(int(SpellKits.spell(SpellKits.STRIKE)["max_range"]), 1, "Earth spells keep their range")
+	SpellKits.set_element_riders(false)
+	eq(int(SpellKits.spell(SpellKits.DETONATE)["max_range"]), 4, "riders off: Detonate back to 4")
+	eq(int(SpellKits.spell(SpellKits.MEND)["base_heal"]), 16, "riders off: Mend back to 16")
+	SpellKits.set_element_riders(true)
+
+	# Air melee: Cut connects → +1 MP this turn, Air Residue on the target for 2 of its turns.
+	_sim.reset_match({"seed": 1, "flat_board": true, "rolls": [1], "classes": ["gloam", "ironjaw"], "positions": [Vector2i(5, 5), Vector2i(6, 5)]})
+	var mp_before := int(_unit(0)["mp"])
+	var cut: Dictionary = _sim.submit({"type": "cast", "spell": "cut", "to": Vector2i(6, 5), "seat": 0})
+	eq(bool(cut.get("ok", false)), true, "Cut connects")
+	eq(int(_unit(0)["mp"]), mp_before + 1, "Air: Cut gives +1 MP after it connects")
+	eq(str(_unit(1).get("residue", "")), "air", "Residue: Cut writes Air on the target")
+	eq(int(_unit(1).get("residue_turns", 0)), 2, "Residue lasts 2 of the target's turns")
+	var hit := _first_event_where(cut.get("events", []), "hit")
+	truthy((hit.get("riders", []) as Array).has("air_mp"), "the hit event names the Air rider")
+	eq(str(hit.get("residue", "")), "air", "the hit event names the Residue")
+	_sim.submit({"type": "end_turn", "seat": 0})
+	eq(int(_unit(1).get("residue_turns", 0)), 2, "the caster's turn ending does not tick the target's Residue")
+	_sim.submit({"type": "end_turn", "seat": 1})
+	eq(int(_unit(1).get("residue_turns", 0)), 1, "the target's own turn ends: Residue 1 left")
+	_sim.submit({"type": "end_turn", "seat": 0})
+	_sim.submit({"type": "end_turn", "seat": 1})
+	eq(str(_unit(1).get("residue", "")), "", "Residue clears after 2 of the target's turns")
+
+	# Earth: Strike connects → Ironjaw Grounded until his next turn; Earth Residue.
+	_sim.reset_match({"seed": 1, "flat_board": true, "rolls": [1], "classes": ["ironjaw", "gloam"], "positions": [Vector2i(5, 5), Vector2i(6, 5)]})
+	_sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(6, 5), "seat": 0})
+	eq(bool(_unit(0).get("grounded", false)), true, "Earth: Strike grounds Ironjaw")
+	eq(str(_unit(1).get("residue", "")), "earth", "Residue: Strike writes Earth")
+	_sim.submit({"type": "end_turn", "seat": 0})
+	eq(bool(_unit(0).get("grounded", false)), true, "Grounded holds through the enemy turn")
+	_sim.submit({"type": "end_turn", "seat": 1})
+	eq(bool(_unit(0).get("grounded", false)), false, "Grounded ends at Ironjaw's next turn")
+	# A new element overwrites the Residue.
+	_live_unit(1)["residue"] = "water"
+	_live_unit(1)["residue_turns"] = 1
+	_sim._scripted_rolls.append(1)
+	_sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(6, 5), "seat": 0})
+	eq(str(_unit(1).get("residue", "")), "earth", "a new element overwrites the Residue")
+	eq(int(_unit(1).get("residue_turns", 0)), 2, "and refreshes it to 2")
+
+	# Earth wall collision: 8 instead of the stagger 4, once per target per turn.
+	_sim.reset_match({"seed": 1, "flat_board": true, "rolls": [1, 1], "classes": ["ironjaw", "kestrel"], "positions": [Vector2i(1, 0), Vector2i(0, 0)]})
+	var hp0 := int(_unit(1)["hp"])
+	var sh1: Dictionary = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(0, 0), "seat": 0})
+	var bump1 := _first_event_where(sh1.get("events", []), "hit")
+	eq(int(bump1.get("stagger_hp", 0)), 8, "Earth: the first wall collision hits for 8")
+	var hp1 := int(_unit(1)["hp"])
+	var sh2: Dictionary = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(0, 0), "seat": 0})
+	var bump2 := _first_event_where(sh2.get("events", []), "hit")
+	eq(int(bump2.get("stagger_hp", 0)), 4, "Earth: a second collision the same turn is the plain stagger 4")
+	truthy(hp0 > hp1 and hp1 > int(_unit(1)["hp"]), "both Shoulders hurt")
+
+	# Bastion only: his Grounded blocks every push.
+	_sim.reset_match({"seed": 1, "flat_board": true, "rolls": [1, 1], "classes": ["bastion", "ironjaw"], "positions": [Vector2i(5, 5), Vector2i(6, 5)]})
+	_sim.submit({"type": "cast", "spell": "bash", "to": Vector2i(6, 5), "seat": 0})
+	eq(bool(_unit(0).get("grounded", false)), true, "Earth: Bash grounds Bastion")
+	_sim.submit({"type": "end_turn", "seat": 0})
+	var shove: Dictionary = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(5, 5), "seat": 1})
+	var shove_hit := _first_event_where(shove.get("events", []), "hit")
+	eq(_unit(0)["pos"], Vector2i(5, 5), "a Grounded Bastion is not pushed")
+	eq(str(shove_hit.get("push_block_reason", "")), "grounded", "the push is blocked by Grounded")
+	# Ironjaw's own Grounded does not stop pushes (it only stops Gust).
+	_sim.reset_match({"seed": 1, "flat_board": true, "classes": ["ironjaw", "bastion"], "positions": [Vector2i(5, 5), Vector2i(6, 5)]})
+	_live_unit(0)["grounded"] = true
+	var push_ij: Dictionary = _sim._try_push(Vector2i(6, 5), _live_unit(0), 1)
+	eq(bool(push_ij.get("moved", false)), true, "a Grounded Ironjaw is still pushed (his Grounded only stops Gust)")
+
+	# Water: damage leaves −1 MP at the target's next turn start (once, clamp 0).
+	_sim.reset_match({"seed": 1, "flat_board": true, "classes": ["kestrel", "ironjaw"], "positions": [Vector2i(2, 2), Vector2i(8, 8)]})
+	_live_unit(1)["water_slow"] = true
+	_sim.submit({"type": "end_turn", "seat": 0})
+	eq(int(_unit(1)["mp"]), int(_unit(1).get("max_mp", 3)) - 1, "Water: −1 MP at the target's turn start")
+	eq(bool(_unit(1).get("water_slow", false)), false, "the Water slow is spent")
+	eq(str(_sim.snapshot().get("coach", "")).contains("Water"), true, "the coach line says Water")
+
+	# Death clears the Residue. Cleanse does not.
+	_sim.reset_match({"seed": 1, "flat_board": true, "classes": ["mender", "ironjaw"], "positions": [Vector2i(2, 2), Vector2i(8, 8)]})
+	_live_unit(0)["residue"] = "earth"
+	_live_unit(0)["residue_turns"] = 2
+	_sim.submit({"type": "cast", "spell": "cleanse", "to": Vector2i(2, 2), "seat": 0})
+	eq(str(_unit(0).get("residue", "")), "earth", "Cleanse does not strip Residue")
+	_live_unit(1)["residue"] = "air"
+	_live_unit(1)["hp"] = 0
+	_sim._check_death(_live_unit(1))
+	eq(str(_live_unit(1).get("residue", "")), "", "death clears Residue")
+
+	# Heals to allies write no Residue; Neutral spells never ride.
+	eq(_sim._rider_element(_live_unit(0), SpellKits.spell(SpellKits.CLEANSE)), "", "Neutral (Cleanse) has no rider")
+	var foe := {"class_id": "ironjaw", "stasis_attack_base": 9, "team": 1}
+	eq(_sim._rider_element(foe, SpellKits.spell(SpellKits.STRIKE)), "", "a Stasis foe's borrowed card does not ride")
+	eq(bool(_sim.snapshot().get("residue", false)), true, "the snapshot says Residue is on")
 
 
 func _unit(seat: int) -> Dictionary:
