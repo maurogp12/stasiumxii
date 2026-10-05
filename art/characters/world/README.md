@@ -1,30 +1,31 @@
 # PC world characters
 
-Copies for the Crosshaven walker on `main`. The mobile branch is unchanged.
+## Hero
 
-Source commit: `d9ec4044c98581805cce2a6732f89d0de95fbb83` (mobile 0.1.61, "Mobile 0.1.61: Berserker Ironjaw kept, Stills test fix").
+The world hero walks on the locked painted looks (4 Oct 2026), the same sheets the
+dungeon pawn uses: `art/characters/painted/<class>/<class>_<kind>_<S|E>.png`.
+`build_tools/pc_characters/build_pc_characters.py` builds them from the locked frames
+(read from git at the lock commits) and writes the numbers to
+`units/pc_character_specs.gd`. The old per-class strips, the `locked_s/` east walks,
+`ironjaw_tall` and `bake_world_strips.py` are retired.
 
-Copied read-only from `art/export_2x/characters/<class>/`:
+- Class: `progress.hero_class` (Ironjaw before a class is picked). The world sets it
+  on the walker before it loads, so only that class's sheets are in memory.
+- Ironjaw is the dark-steel HD walk v7 (cleaned like the locked actions).
+- Gaits: `walk` is the painted walk, `run` is the same sheet played faster with a
+  longer stride, `idle` loops the painted idle at the authored 17.144 fps.
+- Facings: e (down-right) is the art S sheet, n (up-right) the art E sheet; s and w
+  draw those mirrored. Every gait has all four.
+- Height: Ironjaw stands 62.7 px above the ground at zoom 1 (the old `ironjaw_tall`
+  hero). The other classes keep their pawn proportions (`WORLD.<class>.height`).
+- Pace: the #271 hero speeds stay (55.10 px/s walking, 109.59 px/s running). The shown
+  walk stride is the painted foot's travel per cycle, so the foot does not skate,
+  unless that needs the legs faster than 1.6x the authored fps; then the leg rate is
+  capped and the stride grows a little (natural leg speed, as on mobile). The run
+  caps its leg rate at 2.0x.
 
-- `anims/<class>_walk_{n,e,s,w}.png` — 864×160, six 144×160 cells, for ironjaw, kestrel, gloam, mender, bastion
-- `idle/<class>_idle_plant_{n,e,s,w}_v1.png` — ironjaw and bastion only
+See `scenes/world/crosshaven/world_strips.gd` and `units/painted_looks.gd`.
 
-Kestrel, Gloam, and Mender have no idle plant on mobile. Their idle frame is walk cell 0 (the foot-down plant).
+## NPCs
 
-## What changed on the PC copies
-
-Mobile playback is six frames. These strips are twelve frames: each authored cell is kept, in the same order, and an in-between is inserted before the next cell (including the loop from cell 5 back to cell 0).
-
-The in-between is a 35% mix of the next pose after that pose is shifted onto the current torso, so the axes and cape do not double. Pixels from y=128 down stay on the leading authored frame, with a 12px feather. The body of that in-between is then lifted (3px walk, 7px run) and swayed sideways by 2px / 3px on alternating steps. There is no separate mobile run sheet. The run strip is this same order with the taller loft and a wider sway. The feet stay planted.
-
-The world walker does not play these strips on a clock. It picks the frame from distance traveled, one walk cycle per tile, and a longer stride while running. Each step holds the planted frame at the start and end, and shows the lifted in-between through the middle of the step. Facing stays the mobile four-direction lock (east, south, north, west). Pivot matches the mobile pawn: centered sprite, offset `(0, -72)` before scale.
-
-Combat pawns still use `art/characters/<class>/` static facings. These files are only for the open-world walker.
-
-`bake_world_strips.py` rebuilds the strips from an extract of that mobile commit.
-
-## Locked S walks (down-right)
-
-`locked_s/<class>_walk_S_f00.png` … `f11.png` are the painted front walk, used exactly as delivered. Art-team "S" is screen down-right, which this walker calls east (`+x` on the grid, iso step `(32, 16)`). They replace walk east only. South (down-left), north (up-right), and west (up-left) stay on the strips above. The walker does not mirror facings.
-
-Twelve frames at `12 / 0.70` fps, so each frame is `0.70 / 12` s (58.33 ms) and the loop is 0.70 s. East `stride` is set so cruise speed stays the speed that class already had: Ironjaw 31.68 px/s, and Gloam, Kestrel, Bastion, and Mender 16 px/s. Scale and pivot in each class json put the bottom-centre of the planted boot (frame 0) on that class's previous ground line, at the previous on-screen body height.
+`npc/<role>/` holds the painted NPC roles (see `scenes/world/npc/npc_sprites.gd`).

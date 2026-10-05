@@ -31,7 +31,7 @@ const ART_FOR_STEP := {
 }
 
 ## Drawn scale of a 1x frame. A 1x figure is about 64 px tall, so the NPC
-## stands about 54 px on screen at zoom 1.0. The default hero (ironjaw_tall)
+## stands about 54 px on screen at zoom 1.0. The default hero (Ironjaw)
 ## is about 56 px to the top of the helm, so NPCs read a touch shorter.
 const DRAW_SCALE_1X := 0.84
 

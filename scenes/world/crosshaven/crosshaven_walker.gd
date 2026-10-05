@@ -1,20 +1,20 @@
 extends Node2D
 
-## VIEW ONLY. Ironjaw walks Crosshaven from data-driven strips.
+## VIEW ONLY. The hero walks Crosshaven on the painted class sheets.
 ## Paths still come from `WorldWalk.find_path`. This node only animates them.
 ## `advance(delta)` is public so tests can step it deterministically.
 ##
-## Art lives in `res://art/characters/world/ironjaw_tall/` and is described by
-## `ironjaw_tall.json` (scale, pivot, fps, stride). The previous strips stay
-## in `ironjaw/` so this id can swap back. See `world_strips.gd`.
-## `--class` loads ironjaw, gloam, kestrel, bastion, or mender. Their east
-## walk is the locked down-right sheet. Other facings stay on the old strips.
+## Art: the locked painted walk and idle of `class_id` (`world_strips.gd`,
+## `units/painted_looks.gd`, built by build_tools/pc_characters). The world
+## sets `class_id` from `progress.hero_class` before this node enters the
+## tree, so only the hero's class loads. walk and run share the walk sheet;
+## idle loops the painted idle. s and w draw the e and n sheets mirrored.
 
 signal stepped(cell: Vector2i)
 signal arrived(cell: Vector2i)
 
 const Strips := preload("res://scenes/world/crosshaven/world_strips.gd")
-var class_id := "ironjaw_tall"
+var class_id := "ironjaw"
 const CORNER_CUT := 10.0
 ## Ease distance, in strides, so a shorter hero still eases over about one step.
 const EASE_STRIDES := 1.3
@@ -24,12 +24,11 @@ const EASE_STRIDES := 1.3
 const EASE_MAX_SEC := 0.25
 ## Idle/walk/run and facing swaps crossfade. Short enough that a step still reads.
 const BLEND_SEC := 0.10
-## How fast a finished plant returns to the root. The camera follows the offset,
-## so this is a speed change along the path, not a vertical bob.
-const RELEASE_SEC := 0.18
-## Hero world pace over the painted cadence. The art alone gives about 25 px/s
-## walking and 55 px/s running, which reads as a crawl on PC. Ground speed is
-## multiplied by these; the frame clock follows distance, so playback scales too.
+## Hero world pace over the painted cadence. Every class's art cadence is
+## 25.05 px/s walking and 54.80 px/s running (pc_character_specs WORLD), which
+## reads as a crawl on PC. Ground speed is multiplied by these; the frame clock
+## follows distance, so playback scales too. The build picks fps and stride so
+## the shown stride is the painted foot's travel (no skate) under the leg cap.
 const HERO_WALK_PACE := 2.2
 const HERO_RUN_PACE := 2.0
 ## Above this playback factor the walk cycle looks frantic. The rest of the
@@ -65,20 +64,15 @@ var _halt_after := false
 ## True when the current path started from a stand. A re-click while moving
 ## keeps cruise speed instead of easing in again from 20%.
 var _ease_in := true
-## Gait actually on screen. `pace` is the request; it takes over on a plant, not mid-stride.
+## Gait actually on screen. `pace` is the request; it takes over on the next tick.
 var _shown_pace := "walk"
 var _fade: Sprite2D
 var _rim: Sprite2D
 var _covered := false
 var _blend_left := 0.0
-## Path point versus the drawn pivot. The pivot locks to the sole while it is
-## down, then returns to the path. The camera follows `position`, so that
-## return is not a bob against the view.
+## Path point of the drawn pivot. The painted cells keep the planted foot on
+## the pivot, so this is the path point itself.
 var _visual := Vector2.ZERO
-var _planted := false
-var _lock := Vector2.ZERO
-var _release_anchor := Vector2.ZERO
-var _release_u := 1.0
 
 
 func _ready() -> void:
@@ -116,7 +110,8 @@ func base_scale() -> float:
 	return _strips.scale
 
 
-## Swap the loaded strips. The default hero stays ironjaw_tall until this is called.
+## Swap the loaded strips (movies and tests). The world picks the hero class
+## before _ready, so the game does not load a second class through this.
 func use_class(id: String) -> void:
 	var next := id.strip_edges().to_lower()
 	if next == "":
@@ -235,15 +230,6 @@ func visual_offset() -> Vector2:
 	return _sprite.position
 
 
-func foot_planted() -> bool:
-	return _moving and _on_contact(_gait_name(), facing, _frame_index())
-
-
-func planted_sole_world() -> Vector2:
-	var frame := _frame_index()
-	return position + _sole_of(_gait_name(), facing, frame)
-
-
 func anchor_cell() -> Vector2i:
 	if not _moving:
 		return cell
@@ -289,8 +275,6 @@ func _process(delta: float) -> void:
 func advance(delta: float) -> void:
 	delta *= playback
 	_tick_blend(delta)
-	if _release_u < 1.0:
-		_release_u = minf(1.0, _release_u + delta / RELEASE_SEC)
 	if not _moving:
 		_idle_t += delta
 		_show_idle()
@@ -308,7 +292,6 @@ func advance(delta: float) -> void:
 		_visual = position
 		z_index = _z_for(cell)
 		_bob = 0.0
-		_planted = false
 		_show_idle()
 		arrived.emit(cell)
 		return
@@ -334,8 +317,6 @@ func _rebuild(from_cell: Vector2i, from_pos: Vector2) -> void:
 		_total = float(_samples[_samples.size() - 1]["dist"])
 	_moving = _total > 0.4
 	_visual = from_pos
-	_planted = false
-	_release_u = 1.0
 	if _moving:
 		_sync_facing(from_rest)
 		_sync_pace()
@@ -579,26 +560,21 @@ func _facing_ahead() -> String:
 	return facing
 
 
-## Turn when a sole is down, not halfway through a stride.
-## The tall strips bake the planted foot on the pivot, so they do not use the
-## 144x160 sole table. Facing can change on any frame of those strips.
-func _sync_facing(force: bool) -> void:
+## The painted cells bake the planted foot on the pivot, so facing and gait can
+## change on any frame. _apply_strip_speed keeps the point in the cycle.
+func _sync_facing(_force: bool) -> void:
 	var want := _facing_ahead()
 	if want == "" or want == facing:
 		return
-	if force or not _locks_sole() or _on_contact(_gait_name(), facing, _frame_index()):
-		facing = want
-		_planted = false
-		_apply_strip_speed()
+	facing = want
+	_apply_strip_speed()
 
 
 func _sync_pace() -> void:
 	if pace == _shown_pace:
 		return
-	if not _locks_sole() or _on_contact(_gait_name(), facing, _frame_index()):
-		_shown_pace = pace
-		_planted = false
-		_apply_strip_speed()
+	_shown_pace = pace
+	_apply_strip_speed()
 
 
 func _gait_name() -> String:
@@ -635,35 +611,37 @@ func _apply_gait(root: Vector2) -> void:
 	var cell_size: Vector2i = _strips.frame_size_of(gait, facing)
 	_bob = 0.0
 	_air = 0.0
-	_visual = _visual_for(frame, root)
+	_visual = root
 	position = _visual
 	var sc: float = _strips.draw_scale(gait, facing)
 	_apply_pivot(_strips.draw_pivot(gait, facing))
-	_present(tex, true, Rect2(frame * cell_size.x, 0, cell_size.x, cell_size.y), Vector2(sc, sc), Vector2.ZERO)
+	_present(tex, true, Rect2(frame * cell_size.x, 0, cell_size.x, cell_size.y), Vector2(sc, sc), Vector2.ZERO, _strips.flipped(facing))
 	queue_redraw()
 
 
 func _show_idle() -> void:
-	var breath := sin(_idle_t * TAU * 1.35) * 0.012
-	if _strips != null and facing == "e" and _strips.has_locked_walk("e"):
-		var locked: Texture2D = _strips.texture("walk", "e")
-		var cell: Vector2i = _strips.frame_size_of("walk", "e")
-		var locked_scale: float = _strips.draw_scale("walk", "e")
-		_apply_pivot(_strips.draw_pivot("walk", "e"))
-		var locked_sc := Vector2(locked_scale * (1.0 - breath * 0.4), locked_scale * (1.0 + breath))
-		_present(locked, true, Rect2(0, 0, cell.x, cell.y), locked_sc, Vector2.ZERO)
+	if _strips == null or not _strips.has_gait("idle"):
+		_present(null, false, Rect2(), Vector2.ONE * 0.33, Vector2.ZERO)
 	else:
-		var tex: Texture2D = _strips.idle(facing) if _strips != null else null
-		var sc: float = _strips.scale if _strips != null else 0.33
-		_apply_pivot(_strips.pivot if _strips != null else Vector2(0, -72))
-		var drawn := Vector2(sc * (1.0 - breath * 0.4), sc * (1.0 + breath))
-		_present(tex, false, Rect2(), drawn, Vector2.ZERO)
+		# The painted idle breathes in its own cells, at the authored fps.
+		var count := maxi(1, _strips.frame_count("idle", facing))
+		var frame := idle_frame()
+		var cell: Vector2i = _strips.frame_size_of("idle", facing)
+		var sc: float = _strips.draw_scale("idle", facing)
+		_apply_pivot(_strips.draw_pivot("idle", facing))
+		_present(_strips.texture("idle", facing), true, Rect2((frame % count) * cell.x, 0, cell.x, cell.y), Vector2(sc, sc), Vector2.ZERO, _strips.flipped(facing))
 	_visual = position
-	_planted = false
-	_release_u = 1.0
 	_bob = 0.0
 	_air = 0.0
 	queue_redraw()
+
+
+## Painted idle cell on screen now (loops at the idle fps while standing).
+func idle_frame() -> int:
+	if _strips == null:
+		return 0
+	var count := maxi(1, _strips.frame_count("idle", facing))
+	return int(floor(_idle_t * _strips.fps_of("idle", facing))) % count
 
 
 ## A building in front of the hero fades to 45%. This rim sits above that fade.
@@ -681,10 +659,11 @@ func _apply_pivot(piv: Vector2) -> void:
 		_rim.offset = piv
 
 
-func _present(tex: Texture2D, region_on: bool, region: Rect2, sc: Vector2, foot: Vector2) -> void:
-	if tex != _sprite.texture and _sprite.texture != null:
+func _present(tex: Texture2D, region_on: bool, region: Rect2, sc: Vector2, foot: Vector2, flip: bool = false) -> void:
+	if (tex != _sprite.texture or flip != _sprite.flip_h) and _sprite.texture != null:
 		_begin_fade()
 	_sprite.texture = tex
+	_sprite.flip_h = flip
 	_sprite.region_enabled = region_on
 	if region_on:
 		_sprite.region_rect = region
@@ -700,6 +679,7 @@ func _sync_rim() -> void:
 	if not _rim.visible:
 		return
 	_rim.texture = _sprite.texture
+	_rim.flip_h = _sprite.flip_h
 	_rim.region_enabled = _sprite.region_enabled
 	_rim.region_rect = _sprite.region_rect
 	_rim.scale = _sprite.scale
@@ -709,6 +689,7 @@ func _sync_rim() -> void:
 
 func _begin_fade() -> void:
 	_fade.texture = _sprite.texture
+	_fade.flip_h = _sprite.flip_h
 	_fade.region_enabled = _sprite.region_enabled
 	_fade.region_rect = _sprite.region_rect
 	_fade.scale = _sprite.scale
@@ -754,98 +735,13 @@ func _cell_pos(c: Vector2i) -> Vector2:
 	return BoardVisualSort.cell_to_local(plane_origin + c, h)
 
 
-## Sole, in world pixels from the node, measured on each strip. Contact bits are
-## the frames where that sole stays on the ground and moves with one foot.
-const _SOLE := {
-	"walk": {
-		"e": [Vector2(9.74, -1.32), Vector2(14.19, -0.66), Vector2(11.55, -0.66), Vector2(8.91, -0.66), Vector2(6.11, -0.99), Vector2(6.77, -1.65), Vector2(11.55, -2.31), Vector2(8.91, -2.31)],
-		"w": [Vector2(-10.07, -1.32), Vector2(-14.52, -0.66), Vector2(-11.88, -0.66), Vector2(-9.24, -0.66), Vector2(-6.44, -0.99), Vector2(-7.10, -1.65), Vector2(-11.88, -2.31), Vector2(-9.24, -2.31)],
-		"s": [Vector2(-9.90, -1.65), Vector2(-8.75, -0.99), Vector2(-6.93, -1.98), Vector2(-5.45, -2.64), Vector2(-6.60, 0.00), Vector2(-5.45, 0.66), Vector2(-3.63, -0.33), Vector2(-1.82, -1.32)],
-		"n": [Vector2(-2.90, -2.66), Vector2(6.60, -3.30), Vector2(4.79, -2.31), Vector2(2.81, -1.32), Vector2(0.40, -1.01), Vector2(-15.02, -0.33), Vector2(-13.20, -2.64), Vector2(-0.49, -2.97)],
-	},
-	"run": {
-		"e": [Vector2(9.08, -0.99), Vector2(10.23, -0.66), Vector2(7.76, -1.32), Vector2(5.28, -2.64), Vector2(9.08, -2.64), Vector2(-0.49, -1.65), Vector2(7.92, -2.97), Vector2(17.66, -2.31)],
-		"s": [Vector2(-9.08, -1.32), Vector2(-6.11, -2.31), Vector2(-5.12, -3.30), Vector2(-6.93, -0.66), Vector2(-5.78, 0.33), Vector2(-2.81, -0.66), Vector2(-16.97, -3.31), Vector2(-10.23, -2.31)],
-		"w": [Vector2(-9.41, -0.99), Vector2(-10.56, -0.66), Vector2(-8.09, -1.32), Vector2(-5.61, -2.64), Vector2(-9.41, -2.64), Vector2(0.17, -1.65), Vector2(-8.25, -2.97), Vector2(-17.98, -2.31)],
-		"n": [Vector2(7.10, -3.96), Vector2(3.96, -1.98), Vector2(0.24, -2.00), Vector2(-14.69, -2.64), Vector2(-19.96, -1.98), Vector2(-20.96, -0.33), Vector2(-17.98, -1.65), Vector2(-14.36, -4.29)],
-	},
-}
-## Bit i set means frame i is a plant. Walk east/west is frames 1-4, south 4-5.
-## Run east/west is frames 0-2. North plants jump between feet, so they stay free.
-const _PLANT := {
-	"walk": {"e": 30, "w": 30, "s": 48, "n": 0},
-	"run": {"e": 7, "w": 7, "s": 0, "n": 0},
-}
-
-
-func _frame_index() -> int:
-	var count := maxi(1, _strips.frame_count(_gait_name(), facing))
-	var span := maxf(_stride, 0.001)
-	var phase := fmod(_phase / span, 1.0)
-	if phase < 0.0:
-		phase += 1.0
-	return int(phase * float(count)) % count
-
-
-func _sole_of(gait: String, dir: String, frame: int) -> Vector2:
-	var rows: Dictionary = _SOLE.get(gait, {})
-	var row: Array = rows.get(dir, [])
-	if row.is_empty():
-		return Vector2.ZERO
-	var sole: Vector2 = row[frame % row.size()]
-	return sole
-
-
-func _on_contact(gait: String, dir: String, frame: int) -> bool:
-	var rows: Dictionary = _PLANT.get(gait, {})
-	var mask := int(rows.get(dir, 0))
-	return (mask & (1 << frame)) != 0
-
-
-## Sole offsets above were measured on the 144x160 strips. The tall cell bakes
-## the planted foot onto the pivot, so locking those old offsets would yank him.
-func _locks_sole() -> bool:
-	if _strips == null:
-		return false
-	# Sole table is the old 144×160 strips. Locked east cells are a different
-	# size, so that facing keeps the painted boot instead of the old offsets.
-	if _strips.frame_size_of(_gait_name(), facing) != Vector2i(144, 160):
-		return false
-	return _strips.frame_size("walk") == Vector2i(144, 160)
-
-
-## Pivot while the sole is down, then a return to the path point `root`.
-## The sole's world position is `_visual + sole`.
-func _visual_for(frame: int, root: Vector2) -> Vector2:
-	if not _locks_sole():
-		_planted = false
-		_release_u = 1.0
-		return root
-	var gait := _gait_name()
-	var sole := _sole_of(gait, facing, frame)
-	if _on_contact(gait, facing, frame):
-		_release_u = 1.0
-		if not _planted:
-			_planted = true
-			_lock = _visual + sole
-		return _lock - sole
-	if _planted:
-		_planted = false
-		_release_anchor = _visual
-		_release_u = 0.0
-	if _release_u >= 1.0:
-		return root
-	var t := clampf(_release_u, 0.0, 1.0)
-	var eased := t * t * (3.0 - 2.0 * t)
-	return _release_anchor.lerp(root, eased)
-
-
 func _draw() -> void:
-	var s := 0.33
-	if _strips != null:
-		s = float(_strips.draw_scale("walk", facing))
-	var rx := 24.0 * s
-	var ry := 9.0 * s
+	# Contact shadow sized to the figure (the old 62.7 px hero had rx 7.9).
+	var tall := 62.7
+	if _strips != null and _strips.height() > 0.0:
+		tall = _strips.height()
+	var rx := tall * 0.126
+	var ry := rx * 0.375
 	var at := Vector2.ZERO
 	if _sprite != null:
 		at = _sprite.position

@@ -4,7 +4,11 @@ extends CanvasLayer
 ## Numbers come from pc_progress.gd. This panel does not invent them.
 ## Loaded with preload. No global class.
 
-const PORTRAIT := "res://art/characters/world/ironjaw/ironjaw_idle_s.png"
+const Painted := preload("res://units/painted_looks.gd")
+
+var _portrait: TextureRect
+var _who: Label
+var _portrait_class := ""
 
 var progress = null
 var _root: Control
@@ -43,7 +47,27 @@ func _ready() -> void:
 
 func refresh() -> void:
 	ensure_built()
+	_sync_portrait()
 	_fill()
+
+
+## The hero's class: painted idle, front view, first cell. Ironjaw until a
+## class is picked (the world's default hero).
+func _sync_portrait() -> void:
+	var cls := str(progress.hero_class) if progress != null else ""
+	if not Painted.has_class(cls):
+		cls = "ironjaw"
+	if cls == _portrait_class or _portrait == null:
+		return
+	_portrait_class = cls
+	var sheet := Painted.sheet(cls, "idle", "S")
+	var cell := Painted.cell_of(cls, "idle")
+	if sheet != null:
+		var first := AtlasTexture.new()
+		first.atlas = sheet
+		first.region = Rect2(Vector2.ZERO, Vector2(cell))
+		_portrait.texture = first
+	_who.text = "Hero\n%s" % cls.capitalize()
 
 
 func ensure_built() -> void:
@@ -75,14 +99,15 @@ func ensure_built() -> void:
 	portrait.custom_minimum_size = Vector2(72, 96)
 	portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	if ResourceLoader.exists(PORTRAIT):
-		portrait.texture = load(PORTRAIT)
 	header.add_child(portrait)
+	_portrait = portrait
 	var who := Label.new()
 	who.text = "Hero\nIronjaw"
 	who.add_theme_font_size_override("font_size", 22)
 	who.add_theme_color_override("font_color", Color(1, 0.95, 0.82))
 	header.add_child(who)
+	_who = who
+	_sync_portrait()
 	_body = RichTextLabel.new()
 	_body.bbcode_enabled = true
 	_body.fit_content = true
