@@ -650,8 +650,9 @@ func _test_phase_a_demo_map() -> void:
 		saw[str(rec["terrain_type"])] = int(saw.get(str(rec["terrain_type"]), 0)) + 1
 		if int(rec["elevation"]) >= 1:
 			elev_hi += 1
-	eq(saw["ground"], 177, "Crosshaven ground count")
-	eq(saw["mud"], 30, "Crosshaven mud count")
+	# Mauro 5 Oct 2026 "make sure every map has a way to walk": 3 mud -> ground.
+	eq(saw["ground"], 180, "Crosshaven ground count")
+	eq(saw["mud"], 27, "Crosshaven mud count")
 	eq(saw["water"], 18, "Crosshaven water count")
 	eq(saw["lava"], 0, "Crosshaven has no lava")
 	eq(elev_hi, 18, "Crosshaven elevation ≥1 count")
