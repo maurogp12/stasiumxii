@@ -328,7 +328,10 @@ func submit(intent: Dictionary) -> Dictionary:
 		"move":
 			return _submit_move(normalized, actor)
 		"cast":
-			return _submit_cast(normalized, actor)
+			var cast_result := _submit_cast(normalized, actor)
+			if bool(cast_result.get("ok", false)):
+				_note_attacks(actor)
+			return cast_result
 		"place", "reposition", "ready", "confirm":
 			return _reject(normalized, "wrong_phase", "REJECT — deploy is over.")
 		_:
@@ -1935,6 +1938,46 @@ func _walk_tax(actor: Dictionary) -> int:
 	return tax
 
 
+## Mauro 5 Oct 2026: "Marks and residue should dissapear if player does not
+## attack for 1 turn ... if krestel attacks 1 turn leaves a residue and he gets
+## marks but if the next turn he does not attack the enemy looses the marks".
+## Every cast that hits or misses an enemy is noted for the caster's turn.
+## When the caster's turn ends, the Marks and Residue it put on an enemy it did
+## not attack this turn are gone. (The Residue clock of 2 target turns stays.)
+func _note_attacks(actor: Dictionary) -> void:
+	var seen: Array = actor.get("attacked_this_turn", [])
+	for event in _last_events:
+		if typeof(event) != TYPE_DICTIONARY:
+			continue
+		var kind := str(event.get("type", ""))
+		if kind != "hit" and kind != "miss":
+			continue
+		if int(event.get("seat", -1)) != int(actor["seat"]) or not event.has("target_seat"):
+			continue
+		var seat := int(event["target_seat"])
+		var target := _unit_by_seat(seat)
+		if target.is_empty() or _allied(target, actor) or seen.has(seat):
+			continue
+		seen.append(seat)
+	actor["attacked_this_turn"] = seen
+
+
+func _drop_unattended_marks(actor: Dictionary) -> void:
+	var attacked: Array = actor.get("attacked_this_turn", [])
+	var me := int(actor["seat"])
+	for unit in _units:
+		if not bool(unit.get("alive", false)) or _allied(unit, actor) or attacked.has(int(unit["seat"])):
+			continue
+		if int(unit.get("marks", 0)) > 0 and int(unit.get("marks_seat", -1)) == me:
+			unit["marks"] = 0
+			_emit_expire("marks", unit["pos"], me, int(unit["seat"]))
+		if str(unit.get("residue", "")) != "" and int(unit.get("residue_seat", -1)) == me:
+			unit["residue"] = ""
+			unit["residue_turns"] = 0
+			_emit_expire("residue", unit["pos"], me, int(unit["seat"]))
+	actor["attacked_this_turn"] = []
+
+
 ## An Earth hero's push spell (Shoulder, Aegis Break).
 func _earth_push(actor: Dictionary, def: Dictionary) -> bool:
 	return _rider_element(actor, def) == "earth"
@@ -2293,6 +2336,7 @@ func _handoff_seat(actor: Dictionary, auto_skip: bool, skip_reason: String = "")
 	_expire_turn_statuses(actor)
 	_tick_residue(actor)
 	_end_turn_elements(actor)
+	_drop_unattended_marks(actor)
 	_active_seat = next_seat
 	_turn_index += 1
 	_invisible_wore_off = false
@@ -2748,7 +2792,7 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 				engine_gained = _gain_impact(actor, 1)
 				engine_name = "Impact"
 		"mark":
-			engine_gained = _gain_marks(target, 1)
+			engine_gained = _gain_marks(target, 1, int(actor["seat"]))
 			engine_name = "Mark"
 		"consume_marks":
 			# A01 Locked: consume Marks from the target on connect.
@@ -3746,9 +3790,11 @@ func _spend_impact(unit: Dictionary, amount: int) -> int:
 	return amount
 
 
-func _gain_marks(unit: Dictionary, amount: int) -> int:
+func _gain_marks(unit: Dictionary, amount: int, owner_seat: int = -1) -> int:
 	# A01 Locked: Marks live on the target unit this helper is called with.
 	var before: int = int(unit["marks"])
+	if owner_seat >= 0:
+		unit["marks_seat"] = owner_seat
 	unit["marks"] = mini(before + amount, int(unit["marks_cap"]))
 	return int(unit["marks"]) - before
 

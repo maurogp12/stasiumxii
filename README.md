@@ -61,7 +61,7 @@ Intents: `end_turn` | `face` | `move` | `cast` | `place` / `reposition` | `ready
 - Facing front/side ×1.00, back ×1.20
 - Miss keeps AP/MP, refunds engine, no engine gain. Detonate miss retains Marks. Crush miss retains Impact.
 - Illegal cast reject + refund
-- **A01 Locked:** Marks live on the target (cap 5). Mark Shot +1 on connect. Detonate reads/consumes that stack.
+- **A01 Locked:** Marks live on the target (cap 5). Mark Shot +1 on connect. Detonate reads/consumes that stack. Mauro 5 Oct 2026: if the caster goes a whole turn without attacking that enemy, its Marks (and its Residue) on it are gone at that turn end.
 - Detonate / Shoulder / Crush / Advance / Strike / Mark Shot values above
 - Advance / Shoulder / Crush are Ironjaw-only. Detonate / Mark Shot are Kestrel-only.
 - Kestrel then Ironjaw

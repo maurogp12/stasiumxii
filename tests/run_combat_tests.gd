@@ -26,6 +26,7 @@ func _finish_shade_board() -> void:
 func _run() -> void:
 	_test_element_riders()
 	_test_element_blends()
+	_test_marks_fade_without_attack()
 	_test_reset_and_turn_order()
 	_test_live_deploy_starts_before_turn_1()
 	_test_deploy_zone_sampler_rules()
@@ -7752,6 +7753,41 @@ func _event_type_count(events: Array, kind: String) -> int:
 ## Elements Step 3 (Mauro 5 Oct 2026): every player picks 2 elements and sets
 ## each FLEX spell to one of them; one hit + a hit of the other element on the
 ## same body fires the pair's Blend.
+## Mauro 5 Oct 2026: Marks and Residue disappear if the attacker does not
+## attack that enemy on its next turn.
+func _test_marks_fade_without_attack() -> void:
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1, 1, 1], "classes": ["kestrel", "ironjaw"], "positions": [Vector2i(3, 5), Vector2i(6, 5)]})
+	_live_unit(0)["spell_elements"] = {"mark_shot": "earth", "detonate": "water"}
+	_sim.submit({"type": "cast", "spell": "mark_shot", "to": Vector2i(6, 5), "seat": 0})
+	eq(int(_unit(1)["marks"]), 1, "Mark Shot puts a Mark")
+	eq(str(_unit(1).get("residue", "")), "earth", "and Earth Residue")
+	_sim.submit({"type": "end_turn", "seat": 0})
+	eq(int(_unit(1)["marks"]), 1, "the turn Kestrel attacked keeps the Mark")
+	_sim.submit({"type": "end_turn", "seat": 1})
+	# Kestrel's next turn: she attacks again, so both stay and the Marks build.
+	_sim.submit({"type": "cast", "spell": "mark_shot", "to": Vector2i(6, 5), "seat": 0})
+	_sim.submit({"type": "end_turn", "seat": 0})
+	eq(int(_unit(1)["marks"]), 2, "attacking again keeps and adds Marks")
+	_sim.submit({"type": "end_turn", "seat": 1})
+	# Next turn she does not attack him: they are gone when her turn ends.
+	var quiet: Dictionary = _sim.submit({"type": "end_turn", "seat": 0})
+	eq(int(_unit(1)["marks"]), 0, "a turn without attacking him clears Kestrel's Marks")
+	eq(str(_unit(1).get("residue", "")), "", "and her Residue")
+	var expired := 0
+	for e in quiet.get("events", []):
+		if str(e.get("type", "")) == "expire" and str(e.get("status", "")) in ["marks", "residue"]:
+			expired += 1
+	eq(expired, 2, "the board is told both are gone")
+	# A miss still counts as attacking him.
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1, 100], "classes": ["kestrel", "ironjaw"], "positions": [Vector2i(3, 5), Vector2i(6, 5)]})
+	_sim.submit({"type": "cast", "spell": "mark_shot", "to": Vector2i(6, 5), "seat": 0})
+	_sim.submit({"type": "end_turn", "seat": 0})
+	_sim.submit({"type": "end_turn", "seat": 1})
+	_sim.submit({"type": "cast", "spell": "mark_shot", "to": Vector2i(6, 5), "seat": 0})
+	_sim.submit({"type": "end_turn", "seat": 0})
+	eq(int(_unit(1)["marks"]), 1, "a missed attack on him still keeps the Mark")
+
+
 func _test_element_blends() -> void:
 	# Spell data follows the picked element.
 	eq(str(SpellKits.spell_as("detonate", "earth")["element"]), "earth", "Detonate can be cast as Earth")
