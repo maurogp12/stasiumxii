@@ -284,9 +284,20 @@ const WALK_BLOCKED_TERRAIN := ["mud", "water", "lava", "void"]
 
 
 static func walk_blocked(rec: Dictionary) -> bool:
-	if WALK_BLOCKED_TERRAIN.has(normalize_terrain(rec.get("terrain_type", DEFAULT_TERRAIN))):
-		return true
-	return rec.has("walkable") and not bool(rec["walkable"])
+	return walk_block_kind(rec) != ""
+
+
+## "" (you can walk there), "liquid" (water / mud / lava: you know it by its
+## look, so it only glows) or "block" (a hole or a solid obstacle).
+static func walk_block_kind(rec: Dictionary) -> String:
+	var terrain := normalize_terrain(rec.get("terrain_type", DEFAULT_TERRAIN))
+	if terrain == "void":
+		return "block"
+	if rec.has("walkable") and not bool(rec["walkable"]) and not ["mud", "water", "lava"].has(terrain):
+		return "block"
+	if ["mud", "water", "lava"].has(terrain):
+		return "liquid"
+	return ""
 
 
 static func _normalize_record(raw: Variant) -> Dictionary:
