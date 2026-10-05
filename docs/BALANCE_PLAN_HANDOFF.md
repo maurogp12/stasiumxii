@@ -162,7 +162,7 @@ Implementation notes:
 
 ---
 
-## 4. STEP 3 — dual loadouts + Blends (LATER, only when Mauro asks)
+## 4. STEP 3 — Blends (IN THE GAME since 0.1.105; Mauro 5 Oct 2026: every player picks 2 elements, no home element, 2 trophies per change, see docs/CHANGE_LOG_CLAUDE.md)
 
 Only after the loadout screen can pick a real Secondary. Approved guard-rails:
 - **Pin (Drift-Pin) blocks walking (MP) off the tile only — never Advance or

@@ -546,17 +546,32 @@ static var _rider_cache: Dictionary = {}
 static func spell(spell_id: String) -> Dictionary:
 	if not SPELLS.has(spell_id):
 		return {}
-	var def: Dictionary = SPELLS[spell_id]
-	if not element_riders:
-		return def
-	if _rider_cache.has(spell_id):
-		return _rider_cache[spell_id]
-	var out: Dictionary = def
-	var el := str(def.get("element", "neutral")).to_lower()
-	if bool(def.get("gated", false)):
+	return spell_as(spell_id, str(SPELLS[spell_id].get("element", "neutral")))
+
+
+## Elements Step 3 (Mauro 5 Oct 2026: "everyone will choose their own elements
+## there is no primary"): a FLEX spell cast in the element the player set for
+## it. Geometry spells (kit element Neutral) and gated spells ignore `element`.
+## "neutral" is a FLEX spell with no element picked yet: no rider, no Residue.
+static func spell_as(spell_id: String, element: String) -> Dictionary:
+	if not SPELLS.has(spell_id):
+		return {}
+	var base: Dictionary = SPELLS[spell_id]
+	var el := element.to_lower()
+	if not is_flex(spell_id) or not (ELEMENTS.has(el) or el == "neutral"):
+		el = str(base.get("element", "neutral")).to_lower()
+	var key := "%s#%s#%s" % [spell_id, el, "r" if element_riders else "-"]
+	if _rider_cache.has(key):
+		return _rider_cache[key]
+	var def: Dictionary = base
+	if el != str(base.get("element", "neutral")).to_lower():
+		def = base.duplicate()
+		def["element"] = el
+	if not element_riders or bool(def.get("gated", false)):
 		# Gated (open_can_wait) spells never resolve; they get no rider.
-		_rider_cache[spell_id] = def
+		_rider_cache[key] = def
 		return def
+	var out: Dictionary = def
 	if el == "air" and int(def.get("max_range", 0)) >= AIR_RANGE_MIN_MAX and not AIR_RANGE_EXCLUDED.has(spell_id):
 		out = out.duplicate()
 		out["base_max_range"] = int(def["max_range"])
@@ -568,8 +583,50 @@ static func spell(spell_id: String) -> Dictionary:
 		out["base_heal_unrided"] = int(def["base_heal"])
 		out["base_heal"] = int(def["base_heal"]) + WATER_HEAL_RIDER
 		out["water_heal_rider"] = true
-	_rider_cache[spell_id] = out
+	_rider_cache[key] = out
 	return out
+
+
+## The four elements a player can pick (Neutral is never picked).
+const ELEMENTS: Array[String] = ["air", "earth", "fire", "water"]
+## Trophies to change a class's elements after the first (free) pick.
+## Mauro 5 Oct 2026: "each change its 2 trophies they need to spend".
+const ELEMENT_CHANGE_TROPHIES := 2
+
+
+## A spell that takes an element (FLEX): its kit element is not Neutral and it
+## is not gated. Advance, Drop Shade, Fade, Cleanse, Plant, Snap Wall stay Neutral.
+static func is_flex(spell_id: String) -> bool:
+	if not SPELLS.has(spell_id):
+		return false
+	var def: Dictionary = SPELLS[spell_id]
+	# Rekindle (revive) has nothing for an element to change.
+	return str(def.get("element", "neutral")).to_lower() != "neutral" and not bool(def.get("gated", false)) and str(def.get("target", "")) != "fallen_ally"
+
+
+static func flex_spells(class_id: String) -> Array:
+	var out: Array = []
+	for id in class_spells(class_id):
+		if is_flex(str(id)):
+			out.append(str(id))
+	return out
+
+
+## The element a unit casts this spell in. A unit without "spell_elements"
+## (AI companions, Stasis foes, tests) uses the kit element, as the PDF says
+## ("companion AI stays Primary"); a player's unit carries its picks.
+static func element_for(unit: Dictionary, spell_id: String) -> String:
+	var kit := str(SPELLS.get(spell_id, {}).get("element", "neutral")).to_lower()
+	if not is_flex(spell_id):
+		return kit
+	var picks: Variant = unit.get("spell_elements", null)
+	if typeof(picks) != TYPE_DICTIONARY:
+		return kit
+	return str((picks as Dictionary).get(spell_id, "neutral"))
+
+
+static func spell_for(unit: Dictionary, spell_id: String) -> Dictionary:
+	return spell_as(spell_id, element_for(unit, spell_id))
 
 
 static func set_element_riders(enabled: bool) -> void:

@@ -136,6 +136,14 @@ func sync_snapshot(snapshot: Dictionary) -> void:
 	# Shade bodies are board markers (board_view). A shader ring here was invisible on device.
 	_want_tokens(wanted, snapshot.get("plant_tiles", []), "plant", VfxPalette.BASTION, 0.0)
 	_want_tokens(wanted, snapshot.get("blocked_tiles", []), "wall", VfxPalette.BASTION_BLACK, 0.0)
+	# Elements Step 3: Magma (burning tile) and Steam (sight-blocking tile).
+	var magma: Array = []
+	var steam: Array = []
+	for tile in snapshot.get("element_tiles", []):
+		if typeof(tile) == TYPE_DICTIONARY:
+			(magma if str(tile.get("kind", "")) == "magma" else steam).append(tile)
+	_want_tokens(wanted, magma, "magma", Color(1.0, 0.42, 0.1), 0.6)
+	_want_tokens(wanted, steam, "steam", Color(0.88, 0.92, 0.96), 0.3)
 	for unit in snapshot.get("units", []):
 		if typeof(unit) != TYPE_DICTIONARY:
 			continue
@@ -206,7 +214,7 @@ func _emit(events: Array, snapshot: Dictionary, lock_input: bool, ghost_motion: 
 		if typeof(item) != TYPE_DICTIONARY:
 			continue
 		_spawn(item, ghost_motion)
-	var sync := snapshot.has("units") or snapshot.has("shade_tokens") or snapshot.has("plant_tiles") or snapshot.has("blocked_tiles")
+	var sync := snapshot.has("units") or snapshot.has("shade_tokens") or snapshot.has("plant_tiles") or snapshot.has("blocked_tiles") or snapshot.has("element_tiles")
 	if sync:
 		sync_snapshot(snapshot)
 	return block
@@ -772,6 +780,8 @@ func _want_tokens(wanted: Dictionary, raw: Variant, kind: String, tint: Color, s
 			style = "sigil"
 		elif kind == "wall":
 			style = "slab"
+		elif kind == "magma" or kind == "steam":
+			style = "sigil"
 		wanted[key] = {
 			"pool": "ring",
 			"cell": cell,

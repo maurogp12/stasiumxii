@@ -200,12 +200,42 @@ static func _recipes_for_event(event: Dictionary) -> Array:
 			return _expire_recipes(event)
 		"intercept":
 			return _intercept_recipes(event)
+		"blend":
+			return _blend_recipes(event)
+		"magma":
+			var at := cell_of(event.get("to", Vector2i.ZERO))
+			return [_number(int(event.get("target_seat", -1)), at, "-%d MAGMA" % int(event.get("damage", 0)), "damage", 0.0, 1.0, "", Color(1.0, 0.42, 0.1))]
 		"end_turn":
 			if str(event.get("reason", "")) == "stunned":
 				return [{"id": "status_pulse", "block": 0.0, "status": "stun", "seat": int(event.get("seat", -1))}]
 			return []
 		_:
 			return []
+
+
+## Elements Step 3: the Blend name pops over the target in the pair's colours,
+## a ring flares, and a Drift-Pin / Spark slide moves the body.
+const BLEND_TINT := {
+	"drift_pin": Color(0.66, 0.74, 0.58), "spark": Color(1.0, 0.7, 0.35), "sleet": Color(0.5, 0.8, 1.0),
+	"magma": Color(1.0, 0.42, 0.1), "mire": Color(0.5, 0.55, 0.45), "steam": Color(0.88, 0.92, 0.96),
+}
+
+
+static func _blend_recipes(event: Dictionary) -> Array:
+	var seat := int(event.get("target_seat", -1))
+	var to := cell_of(event.get("to", Vector2i.ZERO))
+	var tint: Color = BLEND_TINT.get(str(event.get("blend", "")), Color.WHITE)
+	var out: Array = []
+	var from := cell_of(event.get("from", to))
+	if from != to:
+		out.append(_slide(event, from, to, VfxBudget.BLOCK_SLIDE))
+	out.append(_ring(to, tint, false, 0.45, 0.8, "sigil"))
+	out.append(_number(seat, to, str(event.get("name", "BLEND")).to_upper() + "!", "triage", 0.1, 1.3, "", tint))
+	if int(event.get("chip", 0)) > 0:
+		out.append(_number(seat, to, "-%d" % int(event.get("chip", 0)), "damage", 0.35, 1.0, "", Color(0, 0, 0, 0)))
+	if int(event.get("collision_hp", 0)) > 0:
+		out.append(_number(seat, to, "-%d" % int(event.get("collision_hp", 0)), "damage", 0.35, 1.0, "", Color(0, 0, 0, 0)))
+	return out
 
 
 static func _hit_recipes(event: Dictionary) -> Array:

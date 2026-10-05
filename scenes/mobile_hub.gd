@@ -51,6 +51,7 @@ var _wallet_label: Label
 var _shop_button: Button
 var _shop: Control
 var _gear_button: Button
+var _elements_button: Button
 var _gear: Control
 var _banner_ratio: float = 1536.0 / 510.0
 var _tile_ratio: float = 292.0 / 410.0
@@ -356,6 +357,14 @@ func _make_title_row() -> HBoxContainer:
 	_gear_button.pressed.disconnect(_on_update_pressed)
 	_gear_button.pressed.connect(open_inventory)
 	row.add_child(_gear_button)
+	# Elements Step 3 (Mauro 5 Oct 2026): pick each class's 2 elements.
+	_elements_button = _make_update_button()
+	_elements_button.name = "Elements"
+	_elements_button.text = "Elements"
+	_elements_button.custom_minimum_size = Vector2(120, 48)
+	_elements_button.pressed.disconnect(_on_update_pressed)
+	_elements_button.pressed.connect(open_elements)
+	row.add_child(_elements_button)
 	_update_button = _make_update_button()
 	row.add_child(_update_button)
 	return row
@@ -378,6 +387,17 @@ func open_inventory() -> void:
 	inv.closed.connect(refresh_wallet)
 	add_child(inv)
 	_gear = inv
+
+
+func open_elements() -> void:
+	if _gear != null and is_instance_valid(_gear):
+		return
+	var screen: ElementsScreen = load("res://scenes/elements_screen.gd").new()
+	screen.name = "ElementsScreen"
+	screen.font = _font
+	screen.closed.connect(refresh_wallet)
+	add_child(screen)
+	_gear = screen
 
 
 ## The full Gear list (sets, attune). The Inventory opens it as "Sets".

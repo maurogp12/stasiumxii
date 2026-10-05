@@ -25,6 +25,7 @@ func _finish_shade_board() -> void:
 
 func _run() -> void:
 	_test_element_riders()
+	_test_element_blends()
 	_test_reset_and_turn_order()
 	_test_live_deploy_starts_before_turn_1()
 	_test_deploy_zone_sampler_rules()
@@ -7747,6 +7748,187 @@ func _event_type_count(events: Array, kind: String) -> int:
 
 ## Elements Step 2 (docs/BALANCE_PLAN_HANDOFF.md §3; Mauro 4 Oct 2026: "its
 ## time to continue on elements"): mono riders + Residue.
+## Elements Step 3 (Mauro 5 Oct 2026): every player picks 2 elements and sets
+## each FLEX spell to one of them; one hit + a hit of the other element on the
+## same body fires the pair's Blend.
+func _test_element_blends() -> void:
+	# Spell data follows the picked element.
+	eq(str(SpellKits.spell_as("detonate", "earth")["element"]), "earth", "Detonate can be cast as Earth")
+	eq(int(SpellKits.spell_as("detonate", "earth")["max_range"]), 4, "Earth Detonate has no Air range")
+	eq(int(SpellKits.spell_as("detonate", "air")["max_range"]), 5, "Air Detonate keeps +1 range")
+	eq(int(SpellKits.spell_as("mend", "fire")["base_heal"]), 16, "Fire Mend has no Water +4")
+	eq(str(SpellKits.spell_as("advance", "fire")["element"]), "neutral", "geometry spells stay Neutral")
+	eq(SpellKits.is_flex("rekindle"), false, "Rekindle takes no element")
+	eq(SpellKits.flex_spells("ironjaw"), ["strike", "shoulder", "crush"], "Ironjaw's FLEX spells")
+	eq(SpellKits.element_for({"spell_elements": {}}, "strike"), "neutral", "no pick yet: Neutral")
+	eq(SpellKits.element_for({}, "strike"), "earth", "AI / tests keep the kit element")
+	eq(_sim.blend_of("water", "earth"), "mire", "Earth + Water = Mire in any order")
+	eq(_sim.blend_of("air", "air"), "", "same element is no Blend")
+
+	# Picks ride in the fight gear.
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1, 1, 1], "classes": ["kestrel", "ironjaw"], "positions": [Vector2i(3, 5), Vector2i(6, 5)],
+		"seat_gear": {0: {"worn": [], "attune": {}, "heroes": {"kestrel": {"level": 1, "spent": {}, "elements": {"mark_shot": "earth", "detonate": "water"}}}}}})
+	eq(_unit(0).get("spell_elements", {}), {"mark_shot": "earth", "detonate": "water"}, "the fight reads the player's picks")
+	_sim.submit({"type": "cast", "spell": "mark_shot", "to": Vector2i(6, 5), "seat": 0})
+	eq(str(_unit(1).get("residue", "")), "earth", "Earth Mark Shot writes Earth Residue")
+	var det: Dictionary = _sim.submit({"type": "cast", "spell": "detonate", "to": Vector2i(6, 5), "seat": 0})
+	var blend := _first_event_where(det.get("events", []), "blend")
+	eq(str(blend.get("blend", "")), "mire", "Water Detonate on own Earth Residue fires Mire")
+	eq(str(_unit(1).get("residue", "")), "", "the Blend clears the Residue and writes none")
+	eq(_unit(1).get("mire_cell", null), Vector2i(6, 5), "Mire marks the tile")
+	_sim.submit({"type": "end_turn", "seat": 0})
+	var mp := int(_unit(1)["mp"])
+	var walk: Dictionary = _sim.submit({"type": "move", "to": Vector2i(7, 5), "seat": 1})
+	eq(bool(walk.get("ok", false)), true, "a Mired fighter can still walk")
+	eq(int(_unit(1)["mp"]), mp - 2, "the first step off a Mire tile costs +1 MP")
+	eq(_unit(1).has("mire_cell"), false, "Mire ends after that first step")
+
+	# No pick yet: Neutral, no Residue.
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1], "classes": ["kestrel", "ironjaw"], "positions": [Vector2i(3, 5), Vector2i(6, 5)],
+		"seat_gear": {0: {"worn": [], "attune": {}, "heroes": {"kestrel": {"level": 1, "spent": {}, "elements": {}}}}}})
+	_sim.submit({"type": "cast", "spell": "mark_shot", "to": Vector2i(6, 5), "seat": 0})
+	eq(str(_unit(1).get("residue", "")), "", "a Neutral spell writes no Residue")
+
+	# Only your own Residue Blends; one Blend per body until its next turn ends.
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1, 1, 1, 1], "classes": ["ironjaw", "kestrel"], "positions": [Vector2i(5, 5), Vector2i(6, 5)]})
+	_live_unit(0)["spell_elements"] = {"strike": "air", "shoulder": "water", "crush": "earth"}
+	_live_unit(1)["residue"] = "air"
+	_live_unit(1)["residue_turns"] = 2
+	_live_unit(1)["residue_seat"] = 7
+	_sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(6, 5), "seat": 0})
+	eq(str(_unit(1).get("residue", "")), "water", "someone else's Residue is overwritten, no Blend")
+	_live_unit(0)["ap"] = 6
+	_live_unit(0)["pos"] = _unit(1)["pos"] - Vector2i(1, 0)
+	var sleet: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": _unit(1)["pos"], "seat": 0})
+	eq(str(_first_event_where(sleet.get("events", []), "blend").get("blend", "")), "sleet", "Air on own Water = Sleet")
+	_live_unit(1)["residue"] = "water"
+	_live_unit(1)["residue_seat"] = 0
+	_live_unit(1)["residue_turns"] = 2
+	var again: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": _unit(1)["pos"], "seat": 0})
+	eq(_first_event_where(again.get("events", []), "blend").is_empty(), true, "no second Blend on the same body this round")
+	_sim.submit({"type": "end_turn", "seat": 0})
+	eq(int(_unit(1)["mp"]), int(_unit(1)["max_mp"]) - 2, "Sleet −1 MP and the Water rider −1 MP at their turn start")
+
+	# Drift-Pin: slide 1 away, Pinned next turn (no walking), never two turns running.
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1, 1], "classes": ["ironjaw", "kestrel"], "positions": [Vector2i(5, 5), Vector2i(6, 5)]})
+	_live_unit(0)["spell_elements"] = {"strike": "air", "shoulder": "earth", "crush": "earth"}
+	_live_unit(1)["residue"] = "earth"
+	_live_unit(1)["residue_seat"] = 0
+	_live_unit(1)["residue_turns"] = 2
+	var pin: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(6, 5), "seat": 0})
+	eq(str(_first_event_where(pin.get("events", []), "blend").get("blend", "")), "drift_pin", "Air on own Earth = Drift-Pin")
+	eq(_unit(1)["pos"], Vector2i(7, 5), "Drift-Pin slides the target 1 away")
+	_sim.submit({"type": "end_turn", "seat": 0})
+	eq(bool(_unit(1).get("pinned", false)), true, "Pinned on its next turn")
+	var no_walk: Dictionary = _sim.submit({"type": "move", "to": Vector2i(8, 5), "seat": 1})
+	eq(str(no_walk.get("reason", "")), "pinned", "a Pinned fighter cannot walk")
+	var walks := 0
+	for intent in _sim.legal_intents(1):
+		if str(intent.get("type", "")) == "move":
+			walks += 1
+	eq(walks, 0, "no walk is offered while Pinned")
+	_sim.submit({"type": "end_turn", "seat": 1})
+	eq(bool(_unit(1).get("pinned", false)), false, "Pin lasts one of their turns")
+	_live_unit(1)["residue"] = "earth"
+	_live_unit(1)["residue_seat"] = 0
+	_live_unit(1)["residue_turns"] = 2
+	_sim._scripted_rolls.append(1)
+	_live_unit(0)["pos"] = Vector2i(6, 5)
+	var pin2: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(7, 5), "seat": 0})
+	eq(bool(_first_event_where(pin2.get("events", []), "blend").get("pin", false)), false, "no Pin two turns running")
+
+	# Drift-Pin into a wall / body: 8.
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1], "classes": ["ironjaw", "kestrel"], "positions": [Vector2i(13, 5), Vector2i(14, 5)]})
+	_live_unit(0)["spell_elements"] = {"strike": "air", "shoulder": "earth", "crush": "earth"}
+	_live_unit(1)["residue"] = "earth"
+	_live_unit(1)["residue_seat"] = 0
+	_live_unit(1)["residue_turns"] = 2
+	var hp0 := int(_unit(1)["hp"])
+	var slam: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(14, 5), "seat": 0})
+	var strike_dmg := int(_first_event_where(slam.get("events", []), "hit").get("damage", 0))
+	eq(hp0 - int(_unit(1)["hp"]), strike_dmg + 8, "Drift-Pin into the board edge hits for 8")
+
+	# Spark: 4 chip that eats shield, then push 1.
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1], "classes": ["ironjaw", "kestrel"], "positions": [Vector2i(5, 5), Vector2i(6, 5)]})
+	_live_unit(0)["spell_elements"] = {"strike": "fire", "shoulder": "air", "crush": "air"}
+	_live_unit(1)["residue"] = "air"
+	_live_unit(1)["residue_seat"] = 0
+	_live_unit(1)["residue_turns"] = 2
+	var spark: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(6, 5), "seat": 0})
+	var sp := _first_event_where(spark.get("events", []), "blend")
+	eq(str(sp.get("blend", "")), "spark", "Fire on own Air = Spark")
+	eq(int(sp.get("chip", 0)), 4, "Spark chips 4 (approved 6 → 4)")
+	eq(_unit(1)["pos"], Vector2i(7, 5), "Spark pushes 1")
+	eq(int(_unit(1).get("burn_remaining", 0)) > 0, true, "the Fire hit's Burn rider stays")
+
+	# Magma: the tile they end their next turn on burns 4, until the blender's turn.
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1], "classes": ["ironjaw", "kestrel"], "positions": [Vector2i(5, 5), Vector2i(6, 5)]})
+	_live_unit(0)["spell_elements"] = {"strike": "fire", "shoulder": "earth", "crush": "earth"}
+	_live_unit(1)["residue"] = "earth"
+	_live_unit(1)["residue_seat"] = 0
+	_live_unit(1)["residue_turns"] = 2
+	_sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(6, 5), "seat": 0})
+	_sim.submit({"type": "end_turn", "seat": 0})
+	_sim.submit({"type": "move", "to": Vector2i(8, 5), "seat": 1})
+	var hp1 := int(_unit(1)["hp"])
+	var burn_before := int(_unit(1).get("burn_remaining", 0))
+	var end1: Dictionary = _sim.submit({"type": "end_turn", "seat": 1})
+	eq(_first_event_where(end1.get("events", []), "magma").is_empty(), false, "Magma ticks where they end the turn")
+	eq(_sim.element_tile_at(Vector2i(8, 5), "magma"), false, "Magma ends when the blender's turn starts")
+	truthy(hp1 - int(_unit(1)["hp"]) >= 4, "Magma burns 4")
+
+	# Steam: its tile blocks line of sight; the fighter on it can still be hit.
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1], "classes": ["ironjaw", "kestrel"], "positions": [Vector2i(5, 5), Vector2i(6, 5)]})
+	_live_unit(0)["spell_elements"] = {"strike": "fire", "shoulder": "water", "crush": "water"}
+	_live_unit(1)["residue"] = "water"
+	_live_unit(1)["residue_seat"] = 0
+	_live_unit(1)["residue_turns"] = 2
+	_sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(6, 5), "seat": 0})
+	eq(_sim.element_tile_at(Vector2i(6, 5), "steam"), true, "Fire on own Water = Steam on their tile")
+	eq(_sim.has_line_of_sight(Vector2i(6, 3), Vector2i(6, 5)), true, "the fighter on Steam is still a target")
+	_sim.submit({"type": "end_turn", "seat": 0})
+	_sim.submit({"type": "move", "to": Vector2i(6, 7), "seat": 1})
+	eq(_sim.has_line_of_sight(Vector2i(6, 3), Vector2i(6, 8)), false, "the Steam tile blocks the line")
+	_sim.submit({"type": "end_turn", "seat": 1})
+	eq(_sim.element_tile_at(Vector2i(6, 5), "steam"), false, "Steam ends at the blender's next turn")
+
+	# Mender option A: a heal gives a teammate Mender's element; their next hit
+	# of another element fires the Blend at once.
+	_sim.reset_match({"seed": 1, "flat_board": true, "team_size": 2, "skip_deploy": true, "rolls": [1, 1], "classes": ["mender", "kestrel", "ironjaw", "gloam"],
+		"positions": [Vector2i(4, 4), Vector2i(10, 10), Vector2i(6, 4), Vector2i(7, 4)]})
+	_sim._active_seat = 0
+	_live_unit(0)["spell_elements"] = {"mend": "water", "pulse_tap": "water", "ward": "water", "heartstop": "fire"}
+	_sim.submit({"type": "cast", "spell": "mend", "to": Vector2i(6, 4), "seat": 0})
+	eq(str(_unit(2).get("infusion", "")), "water", "Mend gives Ironjaw Mender's Water")
+	_sim._active_seat = 2
+	_live_unit(2)["ap"] = 6
+	var mire: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(7, 4), "seat": 2})
+	var mb := _first_event_where(mire.get("events", []), "blend")
+	eq(str(mb.get("blend", "")), "mire", "Ironjaw's Earth Strike + Mender's Water = Mire")
+	eq(bool(mb.get("infused", false)), true, "the Blend says it came from the infusion")
+	eq(str(_unit(2).get("infusion", "")), "", "the infusion is spent")
+
+	# Saved picks: first free, a new pair costs 2 trophies, the same pair is free.
+	var hero := HeroProgress.new()
+	var wallet := KoliseoWallet.new()
+	wallet.trophies = 3
+	var first := hero.set_elements("gloam", ["air", "fire"], {"ambush": "fire"}, wallet)
+	eq(bool(first["ok"]), true, "the first pick is free")
+	eq(int(wallet.trophies), 3, "no trophies for the first pick")
+	eq(hero.spell_elements("gloam"), {"cut": "air", "ambush": "fire"}, "unset spells take the first element")
+	var swap := hero.set_elements("gloam", ["fire", "air"], {"cut": "fire", "ambush": "air"}, wallet)
+	eq([bool(swap["ok"]), int(swap["cost"]), int(wallet.trophies)], [true, 0, 3], "moving spells inside the same pair is free")
+	var change := hero.set_elements("gloam", ["water", "air"], {}, wallet)
+	eq([bool(change["ok"]), int(change["cost"]), int(wallet.trophies)], [true, 2, 1], "a new pair costs 2 trophies")
+	var broke := hero.set_elements("gloam", ["earth", "air"], {}, wallet)
+	eq([bool(broke["ok"]), str(broke["reason"])], [false, "no_trophies"], "not enough trophies: no change")
+	eq(hero.elements_of("gloam")["pair"], ["water", "air"], "the old pick stays")
+	eq(bool(hero.set_elements("gloam", ["air", "air"], {}, wallet)["ok"]), false, "two different elements")
+	eq(HeroProgress.clean_elements("kestrel", {"pair": ["air", "neutral"]}), {}, "Neutral is not a pick")
+	eq(GearBag.clean_spell_elements("ironjaw", {"strike": "air", "shoulder": "fire", "crush": "water"}), {}, "a fight never takes a third element")
+	eq(GearBag.clean_spell_elements("ironjaw", {"strike": "air", "advance": "fire"}), {"strike": "air"}, "only FLEX spells take an element")
+
+
 func _test_element_riders() -> void:
 	# Data riders: Air +1 range when max >= 3 (Mark Shot excluded), Water heals +4.
 	eq(int(SpellKits.spell(SpellKits.DETONATE)["max_range"]), 5, "Air: Detonate 1–4 becomes 1–5")
@@ -7790,9 +7972,10 @@ func _test_element_riders() -> void:
 	eq(bool(_unit(0).get("grounded", false)), true, "Grounded holds through the enemy turn")
 	_sim.submit({"type": "end_turn", "seat": 1})
 	eq(bool(_unit(0).get("grounded", false)), false, "Grounded ends at Ironjaw's next turn")
-	# A new element overwrites the Residue.
+	# A new element overwrites another fighter's Residue (your own would Blend).
 	_live_unit(1)["residue"] = "water"
 	_live_unit(1)["residue_turns"] = 1
+	_live_unit(1)["residue_seat"] = 9
 	_sim._scripted_rolls.append(1)
 	_sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(6, 5), "seat": 0})
 	eq(str(_unit(1).get("residue", "")), "earth", "a new element overwrites the Residue")
