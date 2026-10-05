@@ -85,6 +85,13 @@ var hover_cell := Vector2i(-1, -1)
 var _hover_zone: WorldZone
 var neighbours: Node2D
 var plane_offsets: Dictionary = {}
+## Ground cells of off-screen neighbour chunks drawn per frame ahead of need.
+## About 2–4 ms of script a frame on a desktop CPU.
+const WARM_CELLS_PER_FRAME := 160
+## `_chunk_at` answers for `_chunk_map` laid out as `_chunk_offsets`.
+var _chunk_hits: Dictionary = {}
+var _chunk_map: Object
+var _chunk_offsets: Dictionary = {}
 var transition_count := 0
 var seam_count := 0
 var music_id := ""
@@ -1410,9 +1417,20 @@ func _sample_zone_id(cell: Vector2i, origin: Vector2i) -> String:
 	return (hit["zone"] as WorldZone).zone_id
 
 
+## The chunk under a world cell. Ground and pick ask this for every cell past
+## a chunk edge (the sea fringe asks 16 times a cell), so answers are kept per
+## map and plane layout instead of scanning every chunk each time.
 func _chunk_at(world: Vector2i) -> Dictionary:
 	if map == null:
 		return {}
+	if map != _chunk_map or not is_same(plane_offsets, _chunk_offsets):
+		_chunk_map = map
+		_chunk_offsets = plane_offsets
+		_chunk_hits.clear()
+	var known: Variant = _chunk_hits.get(world)
+	if known != null:
+		return known
+	var found := {}
 	for id in plane_offsets.keys():
 		var z: WorldZone = map.zone(str(id))
 		if z == null:
@@ -1420,8 +1438,11 @@ func _chunk_at(world: Vector2i) -> Dictionary:
 		var origin: Vector2i = plane_offsets[id]
 		var local := world - origin
 		if z.in_bounds(local):
-			return {"zone": z, "cell": local}
-	return {}
+			found = {"zone": z, "cell": local}
+			break
+	found.make_read_only()
+	_chunk_hits[world] = found
+	return found
 
 
 func _seamless() -> bool:
@@ -1555,7 +1576,23 @@ func _mount_neighbours(zone_id: String, everything: bool = false) -> void:
 		_freeze_visuals(g)
 		_freeze_visuals(props)
 		_freeze_visuals(decor)
-		host.visible = false
+		# Showing a hidden node redraws everything under it, which cost a
+		# whole chunk of ground script (up to half a second) each time the
+		# camera edge crossed a chunk. The cull hides hosts on the rendering
+		# server instead, and ground rows start node-hidden ("cold") so each
+		# is drawn once: a few a frame, or all at once when the host shows.
+		var cold: Array = []
+		for row in g.get_children():
+			var r := row as Node2D
+			if r == null:
+				continue
+			r.visible = false
+			var d := int(str(r.name).trim_prefix("Row"))
+			r.set_meta("warm_cost", maxi(1, (g.call("_row_cells", d) as Array).size()))
+			cold.append(r)
+		host.set_meta("cold", cold)
+		host.set_meta("shown", false)
+		RenderingServer.canvas_item_set_visible(host.get_canvas_item(), false)
 
 
 func _freeze_visuals(node: Node) -> void:
@@ -1572,7 +1609,8 @@ func _cull_neighbour_hosts() -> void:
 	if neighbours == null or camera == null or not _seamless():
 		return
 	var view := _camera_world_rect().grow(32.0)
-	for host in neighbours.get_children():
+	var hosts := neighbours.get_children()
+	for host in hosts:
 		if not host.has_meta("origin"):
 			continue
 		var origin: Vector2i = host.get_meta("origin")
@@ -1580,8 +1618,39 @@ func _cull_neighbour_hosts() -> void:
 		var tall := int(host.get_meta("tall"))
 		var show := _view_hits_chunk(view, origin, wide, tall)
 		var body := host as Node2D
-		if body != null and body.visible != show:
-			body.visible = show
+		if body == null:
+			continue
+		if show:
+			_warm_host(body, -1)
+		if bool(body.get_meta("shown", true)) != show:
+			body.set_meta("shown", show)
+			RenderingServer.canvas_item_set_visible(body.get_canvas_item(), show)
+	var budget := WARM_CELLS_PER_FRAME
+	for host in hosts:
+		if budget <= 0:
+			break
+		budget = _warm_host(host as Node2D, budget)
+
+
+## True while `host` is drawn on screen (the cull's rendering-server state).
+func host_shown(host: Node) -> bool:
+	return host != null and bool(host.get_meta("shown", (host as CanvasItem).visible))
+
+
+## Draw cold ground rows of `host` until `budget` cells are spent (all of
+## them when `budget` is negative). Returns the budget left.
+func _warm_host(host: Node2D, budget: int) -> int:
+	if host == null or not host.has_meta("cold"):
+		return budget
+	var cold: Array = host.get_meta("cold")
+	while not cold.is_empty() and budget != 0:
+		var row: Node2D = cold.pop_back()
+		if not is_instance_valid(row):
+			continue
+		row.visible = true
+		if budget > 0:
+			budget = maxi(0, budget - int(row.get_meta("warm_cost", 1)))
+	return budget
 
 
 func _view_hits_chunk(view: Rect2, origin: Vector2i, wide: int, tall: int) -> bool:
