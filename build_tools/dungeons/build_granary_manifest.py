@@ -13,6 +13,7 @@ from PIL import Image
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import gkit  # noqa: E402
 import build_granary_board as board  # noqa: E402
+import build_granary_star5 as build_star5  # noqa: E402
 
 ROOT = gkit.OUT
 
@@ -71,29 +72,83 @@ def main():
         add(b["file"], "backdrop", board_size=b["board_size"], cell00_centre_px=b["cell00_centre_px"])
 
     # Monsters.
-    monsters = []
-    for mid in ("granary_rat", "scarecrow_drudge", "the_ratking"):
-        mm = json.load(open(os.path.join(ROOT, "monsters", mid, "meta.json")))
+    def monster(mid):
+        mm = json.load(open(os.path.join(ROOT, mm_dir(mid), "meta.json")))
+        d = mm.get("dir", "monsters/" + mid)
         acts = {}
         for act, a in mm["actions"].items():
             acts[act] = {"frames": a["frames"], "loop": a["loop"], "fps": mm["fps"],
                          "duration_s": round(a["frames"] / mm["fps"], 3),
-                         "pattern": "monsters/%s/%s/%s_{S,E}_f{00..%02d}.png" % (mid, act, act, a["frames"] - 1)}
+                         "pattern": "%s/%s/%s_{S,E}_f{00..%02d}.png" % (d, act, act, a["frames"] - 1)}
+            if a.get("glow_files"):
+                acts[act]["glow_pattern"] = "%s/%s/%s_{S,E}_f{00..%02d}_glow.png" % (d, act, act, a["frames"] - 1)
             for f in ("S", "E"):
                 for i in range(a["frames"]):
-                    p = "monsters/%s/%s/%s_%s_f%02d.png" % (mid, act, act, f, i)
+                    p = "%s/%s/%s_%s_f%02d.png" % (d, act, act, f, i)
                     files.append({"path": p, "kind": "monster_frame", "size": mm["cell"], "pivot": mm["pivot"],
                                   "monster": mid, "action": act, "facing": f, "frame": i, "frames": a["frames"], "fps": mm["fps"]})
-        monsters.append({"id": mid, "name": mm["name"], "cell": mm["cell"], "pivot": mm["pivot"], "fps": mm["fps"],
-                         "facings": {"S": "front, facing screen down-right", "E": "back, facing screen up-right",
-                                     "mirrors": "the other two facings are game-side flip_h mirrors, as for the heroes: S flipped = front facing down-left, E flipped = back facing up-left"},
-                         "actions": acts, "qa": mm["qa"]})
-    monsters[2]["size_note"] = ("1.5x the hero height: 768x540 cell, pivot (384,494) = the hero cell scaled 1.5x. "
-                                "Draw it exactly like a hero cell at the same sprite scale, but so that pixel (384,494) lands where a hero's (256,329) lands: "
-                                "for a centred Sprite2D, offset_ratking = offset_hero + (0, (540-360)/2 - (494-329)) = offset_hero - (0, 75) (before scale).")
+                    if a.get("glow_files"):
+                        files.append({"path": p[:-4] + "_glow.png", "kind": "monster_glow_frame", "blend": "add", "size": mm["cell"],
+                                      "pivot": mm["pivot"], "monster": mid, "action": act, "facing": f, "frame": i,
+                                      "frames": a["frames"], "fps": mm["fps"], "for": p})
+        e = {"id": mid, "name": mm["name"], "dir": d, "cell": mm["cell"], "pivot": mm["pivot"], "fps": mm["fps"],
+             "facings": {"S": "front, facing screen down-right", "E": "back, facing screen up-right",
+                         "mirrors": "the other two facings are game-side flip_h mirrors, as for the heroes: S flipped = front facing down-left, E flipped = back facing up-left"},
+             "actions": acts, "qa": mm["qa"]}
+        if mm.get("release"):
+            e["release"] = mm["release"]
+            e["release"]["note"] = ("spawn the projectile on this attack frame at point_px (cell pixels, same space as the pivot; "
+                                    "mirror x about the cell centre for the mirrored facings)")
+        if mm.get("star5"):
+            e["star"] = 5
+            e["replaces"] = mm.get("base_of")
+            e["glow"] = ("every frame has a same-size additive light map <frame>_glow.png (green emissive cracks/sludge bloomed + faint aura): "
+                         "draw it as a child of the same sprite, same offset/scale/flip, CanvasItemMaterial BLEND_MODE_ADD; it is black (adds nothing) elsewhere")
+        return e
+
+    def mm_dir(mid):
+        for d in ("monsters/" + mid, "star5/monsters/" + mid):
+            if os.path.exists(os.path.join(ROOT, d, "meta.json")):
+                return d
+        raise FileNotFoundError(mid)
+
+    monsters = [monster(m) for m in ("granary_rat", "sling_rat", "scarecrow_drudge", "the_ratking")]
+    big_note = ("1.5x the hero height: 768x540 cell, pivot (384,494) = the hero cell scaled 1.5x. "
+                "Draw it exactly like a hero cell at the same sprite scale, but so that pixel (384,494) lands where a hero's (256,329) lands: "
+                "for a centred Sprite2D, offset_ratking = offset_hero + (0, (540-360)/2 - (494-329)) = offset_hero - (0, 75) (before scale).")
+    monsters[3]["size_note"] = big_note
     monsters[0]["pawn_note"] = ("Hero-format cell (512x360, pivot (256,329)): place it exactly as the hero action cells. "
-                                "Same for the Scarecrow Drudge.")
-    monsters[2]["signature"] = {"action": "summon", "note": "raises the crook and squeals; spawn the summoned Granary Rats around frame 9 (crook at its highest, squeal held f3-f9), crook slams at f10"}
+                                "Same for the Sling Rat and the Scarecrow Drudge.")
+    monsters[1]["role"] = ("room A ranged attacker: a Granary Rat on its hind legs with a sack hood and a leather sling; "
+                           "attack = sling wind-up, whirl and throw, projectile board/projectiles/sling_pebble (or sling_seed) released on the release frame, "
+                           "board/projectiles/sling_impact_puff on hit")
+    sig = {"action": "summon", "note": "raises the crook and squeals; spawn the summoned Granary Rats around frame 9 (crook at its highest, squeal held f3-f9), crook slams at f10"}
+    monsters[3]["signature"] = sig
+
+    star5_monsters = [monster(m) for m in ("radioactive_ratking", "radioactive_rat", "radioactive_sling_rat")]
+    star5_monsters[0]["size_note"] = big_note
+    star5_monsters[0]["signature"] = dict(sig, note=sig["note"].replace("Granary Rats", "Radioactive Rats (star5 radioactive_rat)"))
+    star5_monsters[0]["special"] = ("leaves star5/board/toxic_pool decals: e.g. on the attack's impact frame (f06) under the target, "
+                                    "or on the cells he walks through; the pool is purely visual, gameplay is CombatSim's")
+    star5_monsters[0]["turnaround"] = "_mock/radioactive_ratking_turnaround.png"
+
+    s5 = build_star5.build()
+    for d in s5["decals"]:
+        add(d["file"], "floor_decal", footprint=d["footprint_size"], star=5)
+        add(d["file_2x"], "floor_decal", footprint=d["footprint_size"], star=5, master="2x", scale=0.5)
+    for g in s5["glows"]:
+        add(g["file"], "glow_add", for_id=g["for"], star=5)
+        add(g["file_2x"], "glow_add", for_id=g["for"], star=5, master="2x", scale=0.5)
+    projectiles = []
+    for p in s5["projectiles"]:
+        add(p["file"], p["kind"], anchor="centre")
+        add(p["file_2x"], p["kind"], anchor="centre", master="2x", scale=0.5)
+        if p.get("glow"):
+            add(p["glow"], "glow_add", for_id=p["id"], anchor="centre")
+            add(p["glow_2x"], "glow_add", for_id=p["id"], anchor="centre", master="2x", scale=0.5)
+        projectiles.append(p)
+    base_proj = [p for p in projectiles if p.get("star") != 5]
+    star5_proj = [p for p in projectiles if p.get("star") == 5]
 
     man = {
         "format": "stasium.dungeon_art", "format_version": 1,
@@ -115,7 +170,7 @@ def main():
                            "props and units y-sorted by south-most cell (x+y)"],
             "rooms": {
                 "a": {"name": "Old Granary Cellar (pack fight)", "floor": ["cellar_floor_a", "cellar_floor_b", "cellar_floor_c"], "pad": "wheat_pad",
-                      "props": ["crate_stack", "grain_sacks", "barrel_cluster", "broken_crate"], "backdrop": {"15": "room_a_cellar_15x15", "12": "room_a_cellar_12x12"}},
+                      "props": ["crate_stack", "grain_sacks", "barrel_cluster", "broken_crate"], "monsters": ["granary_rat", "sling_rat", "scarecrow_drudge"], "backdrop": {"15": "room_a_cellar_15x15", "12": "room_a_cellar_12x12"}},
                 "b": {"name": "The Ratking's lair (boss)", "floor": ["lair_floor_a", "lair_floor_b", "lair_floor_c"], "pad": "wheat_pad",
                       "props": ["bone_throne", "crate_stack", "grain_sacks", "barrel_cluster", "broken_crate"], "decals": ["drain_grate"],
                       "backdrop": {"15": "room_b_lair_15x15", "12": "room_b_lair_12x12"}},
@@ -123,8 +178,17 @@ def main():
             "mock": "_mock/rooms_mock.png",
         },
         "monsters": monsters,
+        "projectiles": base_proj,
+        "star5": {
+            "rule": "at star-5 difficulty the Old Granary Cellar boss is the Radioactive Ratking (replaces the_ratking), his summons are radioactive_rat, and room A's sling rats may be radioactive_sling_rat; mobile's equivalent is boss_art_5",
+            "monsters": star5_monsters,
+            "board": {"decals": s5["decals"], "glows": s5["glows"]},
+            "projectiles": star5_proj,
+            "turnaround": "_mock/radioactive_ratking_turnaround.png",
+            "contact_sheets": ["_mock/star5_radioactive_ratking_contact.png", "_mock/star5_radioactive_rat_contact.png", "_mock/star5_radioactive_sling_rat_contact.png"],
+        },
         "files": files,
-        "build": "python3 build_tools/dungeons/build_granary_town.py; python3 build_tools/dungeons/build_granary_board.py; python3 build_tools/dungeons/granary_monsters.py; python3 build_tools/dungeons/build_granary_manifest.py; python3 build_tools/dungeons/mock_granary_rooms.py; python3 build_tools/dungeons/mock_monsters.py --clip <out.mp4>",
+        "build": "python3 build_tools/dungeons/build_granary_town.py; python3 build_tools/dungeons/build_granary_board.py; python3 build_tools/dungeons/build_granary_star5.py; python3 build_tools/dungeons/granary_monsters.py; python3 build_tools/dungeons/build_granary_manifest.py; python3 build_tools/dungeons/mock_granary_rooms.py; python3 build_tools/dungeons/mock_monsters.py --clip <out.mp4> --clip5 <out_star5.mp4>",
     }
     gkit.write_json(os.path.join(ROOT, "manifest.json"), man)
     # Sanity: every PNG under ROOT (except _mock) is listed.

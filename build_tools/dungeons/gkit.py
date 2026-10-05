@@ -58,6 +58,33 @@ def key_green(rgb: np.ndarray, lo: float = 18.0, hi: float = 200.0) -> np.ndarra
     return out
 
 
+MAGENTA = np.array([249.0, 3.0, 250.0], np.float32)
+
+
+def key_magenta(rgb: np.ndarray, lo: float = 18.0, hi: float = 200.0) -> np.ndarray:
+    """Like key_green, for paintings on flat magenta (used where the piece itself is green)."""
+    r, g, b = rgb[..., 0], rgb[..., 1], rgb[..., 2]
+    ex = np.minimum(r, b) - g
+    a = 1.0 - np.clip((ex - lo) / (hi - lo), 0.0, 1.0)
+    a = a.astype(np.float32)
+    safe = np.maximum(a, 1e-3)[..., None]
+    fg = np.clip((rgb - (1.0 - a[..., None]) * MAGENTA) / safe, 0, 255)
+    near = cv2.dilate((a < 0.5).astype(np.uint8), np.ones((5, 5), np.uint8)) > 0
+    near |= a < 0.999
+    spill = np.maximum(np.minimum(fg[..., 0], fg[..., 2]) - fg[..., 1] - 10.0, 0.0)
+    fg[..., 0] = np.where(near, fg[..., 0] - spill, fg[..., 0])
+    fg[..., 2] = np.where(near, fg[..., 2] - spill, fg[..., 2])
+    out = np.zeros(rgb.shape[:2] + (4,), np.float32)
+    out[..., :3] = fg / 255.0 * a[..., None]
+    out[..., 3] = a
+    return out
+
+
+def key_auto(rgb: np.ndarray) -> np.ndarray:
+    c = rgb[:8, :8].reshape(-1, 3).mean(0)
+    return key_magenta(rgb) if c[0] > 150 and c[2] > 150 and c[1] < 80 else key_green(rgb)
+
+
 def clean_alpha(prem: np.ndarray, min_island: int = 400, fill_holes: int = 60) -> np.ndarray:
     """Drop small floating islands and fill pin holes (source resolution)."""
     a = (prem[..., 3] > 0.5).astype(np.uint8)
