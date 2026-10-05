@@ -901,6 +901,10 @@ func _test_slagcrown_steam_blocks_sight() -> void:
 	# Mauro: "do the steaming water in the circles": the ash_rock pits steam
 	# and (as before) block walk and sight.
 	truthy(not sim.has_line_of_sight(Vector2i(12, 11), Vector2i(12, 13)), "nobody shoots through a steaming pit")
+	# Mauro (circled screenshot): "Remove the 2 tiles ... there is not a path
+	# to keep walking": the lava row y=7 opens at (1,7) (2,7).
+	for cell in [Vector2i(1, 7), Vector2i(2, 7)]:
+		truthy(sim._board.is_walkable(cell) and not sim._board.is_voluntary_impassable(cell), "west crossing walkable at %s" % str(cell))
 	# Mauro's steam picture "but leaving a path that characters can walk":
 	# the corner path runs x0 down to row 12, across it, and down x2 / x4.
 	for cell in [Vector2i(0, 10), Vector2i(0, 11), Vector2i(0, 12), Vector2i(1, 12), Vector2i(2, 12), Vector2i(3, 12), Vector2i(4, 12), Vector2i(2, 13), Vector2i(2, 14), Vector2i(4, 13), Vector2i(4, 14)]:
