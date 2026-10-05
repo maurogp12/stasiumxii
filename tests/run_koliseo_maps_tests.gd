@@ -902,8 +902,9 @@ func _test_slagcrown_steam_blocks_sight() -> void:
 	# and (as before) block walk and sight.
 	truthy(not sim.has_line_of_sight(Vector2i(12, 11), Vector2i(12, 13)), "nobody shoots through a steaming pit")
 	# Mauro (circled screenshot): "Remove the 2 tiles ... there is not a path
-	# to keep walking": the lava row y=7 opens at (1,7) (2,7).
-	for cell in [Vector2i(1, 7), Vector2i(2, 7)]:
+	# to keep walking": the lava row y=7 opens at (1,7) (2,7), and ("yes open
+	# the east side too") at (12,7) (13,7).
+	for cell in [Vector2i(1, 7), Vector2i(2, 7), Vector2i(12, 7), Vector2i(13, 7)]:
 		truthy(sim._board.is_walkable(cell) and not sim._board.is_voluntary_impassable(cell), "west crossing walkable at %s" % str(cell))
 	# Mauro's steam picture "but leaving a path that characters can walk":
 	# the corner path runs x0 down to row 12, across it, and down x2 / x4.

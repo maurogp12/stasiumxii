@@ -2,7 +2,8 @@
 """Slagcrown (lava map) west crossing (Mauro 5 Oct 2026, screenshot with the
 two lava tiles circled: "Remove the 2 tiles circled because there is not a
 path to keep walking"). The lava row y=7 cut the board in two; (1,7) and (2,7)
-become plain ground so fighters can cross on the west side.
+become plain ground so fighters can cross on the west side. Then ("yes open
+the east side too") the mirror pair (12,7) and (13,7) opens as well.
 Writes the tags and the Tiled file. Run after slagcrown_steam_corner.py:
   python3 build_tools/art/slagcrown_west_crossing.py
 """
@@ -11,7 +12,7 @@ import re
 
 PATH = "art/maps/arena_colosseum_v2/tiled/slagcrown_15x15_tags.json"
 TMX = "art/maps/arena_colosseum_v2/tiled/slagcrown_15x15.tmx"
-CELLS = [(1, 7), (2, 7)]
+CELLS = [(1, 7), (2, 7), (12, 7), (13, 7)]
 
 
 def main():
