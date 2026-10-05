@@ -1,0 +1,126 @@
+{
+ "id": "radioactive_ratking",
+ "name": "Radioactive Ratking",
+ "star5": true,
+ "base_of": "the_ratking",
+ "dir": "star5/monsters/radioactive_ratking",
+ "cell": [
+  768,
+  540
+ ],
+ "pivot": [
+  384,
+  494
+ ],
+ "fps": 17.144,
+ "facings": [
+  "S",
+  "E"
+ ],
+ "mirror": {
+  "W": "E",
+  "N": "S"
+ },
+ "actions": {
+  "idle": {
+   "frames": 12,
+   "loop": true,
+   "files": {
+    "S": "star5/monsters/radioactive_ratking/idle/idle_S_fNN.png",
+    "E": "star5/monsters/radioactive_ratking/idle/idle_E_fNN.png"
+   },
+   "glow_files": {
+    "S": "star5/monsters/radioactive_ratking/idle/idle_S_fNN_glow.png",
+    "E": "star5/monsters/radioactive_ratking/idle/idle_E_fNN_glow.png"
+   }
+  },
+  "walk": {
+   "frames": 12,
+   "loop": true,
+   "files": {
+    "S": "star5/monsters/radioactive_ratking/walk/walk_S_fNN.png",
+    "E": "star5/monsters/radioactive_ratking/walk/walk_E_fNN.png"
+   },
+   "glow_files": {
+    "S": "star5/monsters/radioactive_ratking/walk/walk_S_fNN_glow.png",
+    "E": "star5/monsters/radioactive_ratking/walk/walk_E_fNN_glow.png"
+   }
+  },
+  "attack": {
+   "frames": 12,
+   "loop": false,
+   "files": {
+    "S": "star5/monsters/radioactive_ratking/attack/attack_S_fNN.png",
+    "E": "star5/monsters/radioactive_ratking/attack/attack_E_fNN.png"
+   },
+   "glow_files": {
+    "S": "star5/monsters/radioactive_ratking/attack/attack_S_fNN_glow.png",
+    "E": "star5/monsters/radioactive_ratking/attack/attack_E_fNN_glow.png"
+   }
+  },
+  "hit": {
+   "frames": 8,
+   "loop": false,
+   "files": {
+    "S": "star5/monsters/radioactive_ratking/hit/hit_S_fNN.png",
+    "E": "star5/monsters/radioactive_ratking/hit/hit_E_fNN.png"
+   },
+   "glow_files": {
+    "S": "star5/monsters/radioactive_ratking/hit/hit_S_fNN_glow.png",
+    "E": "star5/monsters/radioactive_ratking/hit/hit_E_fNN_glow.png"
+   }
+  },
+  "death": {
+   "frames": 13,
+   "loop": false,
+   "files": {
+    "S": "star5/monsters/radioactive_ratking/death/death_S_fNN.png",
+    "E": "star5/monsters/radioactive_ratking/death/death_E_fNN.png"
+   },
+   "glow_files": {
+    "S": "star5/monsters/radioactive_ratking/death/death_S_fNN_glow.png",
+    "E": "star5/monsters/radioactive_ratking/death/death_E_fNN_glow.png"
+   }
+  },
+  "summon": {
+   "frames": 14,
+   "loop": false,
+   "files": {
+    "S": "star5/monsters/radioactive_ratking/summon/summon_S_fNN.png",
+    "E": "star5/monsters/radioactive_ratking/summon/summon_E_fNN.png"
+   },
+   "glow_files": {
+    "S": "star5/monsters/radioactive_ratking/summon/summon_S_fNN_glow.png",
+    "E": "star5/monsters/radioactive_ratking/summon/summon_E_fNN_glow.png"
+   }
+  }
+ },
+ "qa": {
+  "hole_fill_px_S": 87465,
+  "px_outside_cell_idle_S": 0,
+  "keep_in_shift_px_idle_S": 0.0,
+  "px_outside_cell_walk_S": 0,
+  "keep_in_shift_px_walk_S": 0.0,
+  "px_outside_cell_attack_S": 0,
+  "keep_in_shift_px_attack_S": 0.0,
+  "px_outside_cell_hit_S": 0,
+  "keep_in_shift_px_hit_S": 0.0,
+  "px_outside_cell_death_S": 0,
+  "keep_in_shift_px_death_S": 0.0,
+  "px_outside_cell_summon_S": 0,
+  "keep_in_shift_px_summon_S": 0.0,
+  "hole_fill_px_E": 23159,
+  "px_outside_cell_idle_E": 0,
+  "keep_in_shift_px_idle_E": 0.0,
+  "px_outside_cell_walk_E": 0,
+  "keep_in_shift_px_walk_E": 0.0,
+  "px_outside_cell_attack_E": 0,
+  "keep_in_shift_px_attack_E": 0.0,
+  "px_outside_cell_hit_E": 0,
+  "keep_in_shift_px_hit_E": 0.0,
+  "px_outside_cell_death_E": 0,
+  "keep_in_shift_px_death_E": 0.0,
+  "px_outside_cell_summon_E": 0,
+  "keep_in_shift_px_summon_E": 0.0
+ }
+}

@@ -40,7 +40,7 @@ def fwd(f, d):
 
 # ------------------------------------------------------------------ rigs
 
-def rat_facing(f):
+def rat_facing(f, src="rat"):
     if f == "S":
         parts = [
             Part("tail2", [(0, 25), (215, 25), (215, 150), (195, 250), (0, 250)], (185, 200), "tail1", False, -3),
@@ -51,7 +51,7 @@ def rat_facing(f):
             Part("head", [(612, 232), (700, 212), (875, 228), (900, 320), (872, 420), (832, 495), (760, 500), (700, 470), (640, 400), (605, 300)], (645, 375), "body", True, 2),
             Part("front_near", [(588, 438), (662, 436), (705, 555), (765, 598), (765, 655), (625, 655), (605, 560)], (628, 448), "body", True, 3),
         ]
-        return mrig.Facing("rat_S.jpg", parts, ground=(560, 565), hip=(450, 330), scale=0.22, cell=CELL, cell_pivot=PIV)
+        return mrig.Facing(src + "_S.jpg", parts, ground=(560, 565), hip=(450, 330), scale=0.22, cell=CELL, cell_pivot=PIV)
     parts = [
         Part("tail2", [(20, 560), (120, 560), (300, 545), (330, 600), (200, 630), (90, 615), (50, 672), (15, 660)], (305, 575), "tail1", False, -3),
         Part("tail1", [(380, 345), (465, 345), (455, 425), (395, 520), (330, 600), (285, 560), (345, 480)], (425, 360), "body", True, 4),
@@ -61,7 +61,7 @@ def rat_facing(f):
         Part("front_near", [(785, 300), (840, 300), (895, 365), (890, 400), (790, 400)], (805, 310), "body", True, 2),
         Part("head", [(665, 18), (895, 55), (885, 150), (835, 195), (720, 150), (655, 90)], (760, 165), "body", True, 3),
     ]
-    return mrig.Facing("rat_E.jpg", parts, ground=(630, 480), hip=(560, 300), scale=0.22, cell=CELL, cell_pivot=PIV)
+    return mrig.Facing(src + "_E.jpg", parts, ground=(630, 480), hip=(560, 300), scale=0.22, cell=CELL, cell_pivot=PIV)
 
 
 def scarecrow_facing(f):
@@ -88,7 +88,7 @@ def scarecrow_facing(f):
     return mrig.Facing("scarecrow_E.jpg", parts, ground=(455, 1405), hip=(450, 900), scale=0.18, cell=CELL, cell_pivot=PIV)
 
 
-def ratking_facing(f):
+def ratking_facing(f, src="ratking"):
     if f == "S":
         parts = [
             Part("foot_l", [(55, 1335), (272, 1312), (285, 1405), (172, 1445), (55, 1435)], (200, 1342), "root", False, 3),
@@ -97,7 +97,7 @@ def ratking_facing(f):
             Part("head", [(438, 138), (558, 28), (642, 28), (762, 58), (782, 198), (802, 340), (762, 402), (702, 442), (622, 452), (562, 422), (462, 332), (428, 222)], (582, 440), "body", True, 5),
             Part("crook", [(798, 58), (992, 68), (992, 232), (942, 332), (962, 472), (945, 545), (950, 690), (915, 705), (912, 940), (985, 1080), (985, 1420), (822, 1425), (828, 1000), (840, 708), (790, 700), (758, 600), (770, 548), (842, 520), (842, 332), (808, 200)], (770, 560), "body", True, 6),
         ]
-        return mrig.Facing("ratking_S.jpg", parts, ground=(470, 1440), hip=(470, 1000), scale=0.26, cell=CELL_BIG, cell_pivot=PIV_BIG)
+        return mrig.Facing(src + "_S.jpg", parts, ground=(470, 1440), hip=(470, 1000), scale=0.26, cell=CELL_BIG, cell_pivot=PIV_BIG)
     parts = [
         Part("tail2", [(28, 1225), (122, 1262), (112, 1382), (202, 1442), (332, 1462), (422, 1482), (422, 1512), (300, 1505), (150, 1475), (58, 1405), (25, 1300)], (92, 1268), "tail1", False, -3),
         Part("tail1", [(255, 1065), (345, 1050), (332, 1102), (202, 1202), (112, 1302), (58, 1302), (78, 1222), (178, 1132), (240, 1085)], (300, 1068), "body", False, -2),
@@ -106,7 +106,81 @@ def ratking_facing(f):
         Part("head", [(488, 128), (558, 38), (752, 58), (792, 198), (772, 302), (702, 332), (562, 282), (498, 222)], (640, 300), "body", False, 4),
         Part("crook", [(818, 58), (992, 88), (992, 222), (942, 252), (972, 320), (972, 470), (935, 495), (952, 560), (918, 630), (915, 1362), (862, 1362), (868, 650), (812, 640), (790, 560), (842, 500), (868, 252), (818, 152)], (800, 560), "body", True, 5),
     ]
-    return mrig.Facing("ratking_E.jpg", parts, ground=(555, 1410), hip=(555, 1000), scale=0.264, cell=CELL_BIG, cell_pivot=PIV_BIG)
+    return mrig.Facing(src + "_E.jpg", parts, ground=(555, 1410), hip=(555, 1000), scale=0.264, cell=CELL_BIG, cell_pivot=PIV_BIG)
+
+
+def sling_rat_facing(f, src="sling_rat"):
+    if f == "S":
+        parts = [
+            Part("arm_sling", [(318, 640), (415, 630), (440, 790), (430, 1060), (372, 1145), (288, 1145), (296, 1000), (306, 860), (300, 760)], (398, 650), "body", True, 5),
+            Part("tail", [(25, 845), (262, 845), (300, 1000), (430, 1035), (445, 1140), (300, 1145), (150, 1115), (25, 1010)], (425, 1080), "body", True, -2),
+            Part("arm_l", [(830, 600), (905, 640), (995, 860), (985, 975), (875, 965), (838, 800), (800, 700)], (842, 645), "body", True, 2),
+            Part("leg_r", [(330, 1095), (505, 1095), (475, 1250), (470, 1440), (245, 1440), (300, 1330), (350, 1220)], (430, 1110), "root", True, -1),
+            Part("leg_l", [(700, 1105), (885, 1095), (875, 1260), (985, 1375), (955, 1405), (775, 1390), (715, 1250)], (790, 1120), "root", True, -1),
+            Part("head", [(465, 135), (580, 75), (705, 95), (885, 155), (915, 390), (862, 470), (760, 482), (640, 420), (580, 340), (468, 250)], (700, 470), "body", True, 4),
+        ]
+        fc = mrig.Facing(src + "_S.jpg", parts, ground=(615, 1410), hip=(600, 1060), scale=0.15, cell=CELL, cell_pivot=PIV)
+        fc.pocket = ("arm_sling", (340, 1085))
+        return fc
+    parts = [
+        Part("arm_sling", [(835, 690), (955, 690), (965, 900), (965, 1135), (818, 1135), (825, 900), (828, 760)], (872, 705), "body", True, 5),
+        Part("arm_l", [(258, 560), (345, 560), (385, 700), (365, 835), (268, 835), (248, 700)], (322, 580), "body", True, -2),
+        Part("tail", [(20, 1245), (250, 1175), (330, 1045), (400, 955), (475, 995), (385, 1150), (300, 1300), (200, 1345), (110, 1420), (365, 1480), (372, 1525), (20, 1525)], (432, 990), "body", True, 2),
+        Part("leg_r", [(328, 1115), (505, 1115), (505, 1275), (328, 1275)], (420, 1130), "root", True, -1),
+        Part("leg_l", [(618, 1095), (785, 1095), (785, 1255), (905, 1325), (905, 1405), (655, 1405), (618, 1250)], (700, 1110), "root", True, -1),
+        Part("head", [(505, 95), (640, 55), (845, 125), (875, 300), (822, 405), (700, 385), (598, 332), (515, 232)], (680, 380), "body", True, 4),
+    ]
+    fc = mrig.Facing(src + "_E.jpg", parts, ground=(640, 1400), hip=(600, 1050), scale=0.15, cell=CELL, cell_pivot=PIV)
+    fc.pocket = ("arm_sling", (912, 1080))
+    return fc
+
+
+SLING_RELEASE = 7
+
+
+def sling_rat_actions(f):
+    s = math.sin
+    tau = 2 * math.pi
+    A = {}
+    sg = 1 if f == "S" else -1
+    A["idle"] = cyc(12, lambda t: {"body": 1.5 * s(tau * t), "head": -3 * s(tau * t + 0.6), "sy": 1 + 0.014 * s(tau * t),
+                                   "arm_sling": 4 * sg * s(tau * t + 0.4), "arm_l": -4 * sg * s(tau * t + 0.9),
+                                   "tail": 5 * s(tau * t - 0.5)})
+    def walk(t):
+        w = s(tau * t)
+        return {"leg_r": -16 * w, "leg_l": 16 * w, "body": 3 * w, "rot": 1.5 * w, "dy": -4 * abs(w),
+                "head": -4 * s(tau * t + 0.7), "arm_sling": 10 * w * sg, "arm_l": -10 * w * sg, "tail": 9 * s(tau * t - 0.8)}
+    A["walk"] = cyc(12, walk)
+    # Sling: raise, whirl overhead twice-ish, whip forward (release at SLING_RELEASE), recover.
+    if f == "S":
+        arm = [0, 80, 150, 192, 148, 196, 152, 268, 285, 320, 348, 360]
+    else:
+        arm = [0, -80, -150, -192, -148, -196, -152, -118, -104, -60, -18, 0]
+    lean = [0, -3, -5, -6, -6, -7, -9, 10, 8, 4, 1, 0]
+    step = [0, 0, -2, -3, -3, -3, -4, 8, 7, 4, 1, 0]
+    att = []
+    for i in range(12):
+        p = {"arm_sling": float(arm[i]), "body": float(lean[i]), "head": -0.5 * lean[i], "tail": -lean[i],
+             "leg_r": -0.6 * lean[i], "leg_l": 0.4 * lean[i], "arm_l": -sg * 2 * lean[i]}
+        p.update({k: v for k, v in fwd(f, step[i]).items()})
+        att.append(p)
+    A["attack"] = att
+    A["hit"] = keys(8, [
+        (0, {}),
+        (2, dict(fwd(f, -10), body=-14, head=-16, arm_sling=16 * sg, arm_l=-16 * sg, tail=-14, leg_r=5, leg_l=-5)),
+        (4, dict(fwd(f, -7), body=-6, head=-5)),
+        (7, {}),
+    ])
+    fall = -1 if f == "S" else 1
+    A["death"] = keys(13, [
+        (0, {}),
+        (2, dict(body=-8 * fall, head=-18, dy=-4, arm_sling=25 * fall, arm_l=-25 * fall, tail=-12)),
+        (5, dict(rot=25 * fall, body=8 * fall, dy=12, leg_r=14, leg_l=-14, head=10 * fall, arm_sling=45 * fall, arm_l=-40 * fall, tail=15)),
+        (8, dict(rot=70 * fall, body=10 * fall, dy=34, sy=0.94, leg_r=24, leg_l=-20, head=20 * fall, arm_sling=70 * fall, arm_l=-55 * fall, tail=30)),
+        (10, dict(rot=84 * fall, body=8 * fall, dy=40, sy=0.9, leg_r=28, leg_l=-24, head=24 * fall, arm_sling=78 * fall, arm_l=-60 * fall, tail=36)),
+        (12, dict(rot=86 * fall, body=8 * fall, dy=41, sy=0.9, leg_r=28, leg_l=-24, head=25 * fall, arm_sling=80 * fall, arm_l=-62 * fall, tail=38)),
+    ])
+    return A
 
 
 # --------------------------------------------------------------- actions
@@ -269,6 +343,15 @@ MONSTERS = {
     "scarecrow_drudge": {"name": "Scarecrow Drudge", "rig": scarecrow_facing, "actions": scarecrow_actions, "cell": CELL, "pivot": PIV},
     "the_ratking": {"name": "The Ratking", "rig": ratking_facing, "actions": ratking_actions, "cell": CELL_BIG, "pivot": PIV_BIG},
 }
+MONSTERS["sling_rat"] = {"name": "Sling Rat", "rig": sling_rat_facing, "actions": sling_rat_actions, "cell": CELL, "pivot": PIV,
+                         "release": SLING_RELEASE}
+MONSTERS["radioactive_sling_rat"] = {"name": "Radioactive Sling Rat", "rig": lambda f: sling_rat_facing(f, "rad_sling_rat"), "actions": sling_rat_actions,
+                                     "cell": CELL, "pivot": PIV, "release": SLING_RELEASE, "star5": True, "glow": True, "base_of": "sling_rat"}
+MONSTERS["radioactive_ratking"] = {"name": "Radioactive Ratking", "rig": lambda f: ratking_facing(f, "rad_ratking"), "actions": ratking_actions,
+                                   "cell": CELL_BIG, "pivot": PIV_BIG, "star5": True, "glow": True, "base_of": "the_ratking"}
+MONSTERS["radioactive_rat"] = {"name": "Radioactive Rat", "rig": lambda f: rat_facing(f, "rad_rat"), "actions": rat_actions,
+                               "cell": CELL, "pivot": PIV, "base": {"E": {"tail1": 16, "tail2": 8}}, "star5": True, "glow": True, "base_of": "granary_rat"}
+
 LOOPS = {"idle": True, "walk": True, "attack": False, "hit": False, "death": False, "summon": False}
 
 
@@ -302,10 +385,33 @@ def keep_in(rig, poses):
     return out
 
 
+def glow_frame(im, big):
+    """Additive light map for a radioactive frame: the green emissive paint, bloomed, plus a faint aura."""
+    import cv2
+    a = im[..., 3] > 0
+    r, g, b = [im[..., i].astype(np.float32) for i in range(3)]
+    em = a & (g > r + 30) & (g > b + 50) & (g > 110)
+    e = em.astype(np.float32) * np.clip((g - 110) / 120.0, 0.3, 1.0)
+    k = 1.5 if big else 1.0
+    glow = cv2.GaussianBlur(e, (0, 0), 4 * k) * 1.4 + cv2.GaussianBlur(e, (0, 0), 14 * k) * 1.2
+    glow += cv2.GaussianBlur(a.astype(np.float32), (0, 0), 16 * k) * 0.10
+    glow = np.clip(glow, 0, 1)
+    col = np.array([0.55, 1.0, 0.18], np.float32)
+    g8 = np.clip(glow[..., None] * col * 255 + 0.5, 0, 255).astype(np.uint8)
+    on = g8.max(-1) >= 3
+    out = np.zeros(im.shape, np.uint8)
+    out[..., :3] = np.where(on[..., None], g8, 0)
+    out[..., 3] = np.where(on, 255, 0)
+    return out
+
+
 def build(mid, check=False):
     spec = MONSTERS[mid]
-    mdir = os.path.join(OUT, mid)
-    meta = {"id": mid, "name": spec["name"], "cell": list(spec["cell"]), "pivot": list(spec["pivot"]), "fps": FPS,
+    star5 = spec.get("star5", False)
+    root = os.path.join(gkit.OUT, "star5", "monsters") if star5 else OUT
+    rel_root = "star5/monsters" if star5 else "monsters"
+    mdir = os.path.join(root, mid)
+    meta = {"id": mid, "name": spec["name"], "star5": star5, "base_of": spec.get("base_of"), "dir": rel_root + "/" + mid, "cell": list(spec["cell"]), "pivot": list(spec["pivot"]), "fps": FPS,
             "facings": ["S", "E"], "mirror": {"W": "E", "N": "S"}, "actions": {}, "qa": {}}
     for f in ("S", "E"):
         rig = spec["rig"](f)
@@ -322,12 +428,19 @@ def build(mid, check=False):
             shift_max = 0.0
             for i, pose in enumerate(poses):
                 im, lost = rig.render(pose)
+                if act == "attack" and spec.get("release") == i:
+                    px, py = rig.point(pose, *rig.pocket)
+                    meta.setdefault("release", {"action": "attack", "frame": i, "point_px": {}})["point_px"][f] = [round(px + rig.last_shift[0], 1), round(py + rig.last_shift[1], 1)]
                 lost_max = max(lost_max, lost)
                 shift_max = max(shift_max, abs(rig.last_shift[0]), abs(rig.last_shift[1]))
                 path = os.path.join(mdir, act, "%s_%s_f%02d.png" % (act, f, i))
                 gkit.save_png(path, im)
+                if spec.get("glow"):
+                    gkit.save_png(os.path.join(mdir, act, "%s_%s_f%02d_glow.png" % (act, f, i)), glow_frame(im, spec["cell"] == CELL_BIG))
             a = meta["actions"].setdefault(act, {"frames": len(poses), "loop": LOOPS[act], "files": {}})
-            a["files"][f] = "monsters/%s/%s/%s_%s_fNN.png" % (mid, act, act, f)
+            a["files"][f] = "%s/%s/%s/%s_%s_fNN.png" % (rel_root, mid, act, act, f)
+            if spec.get("glow"):
+                a.setdefault("glow_files", {})[f] = "%s/%s/%s/%s_%s_fNN_glow.png" % (rel_root, mid, act, act, f)
             meta["qa"]["px_outside_cell_%s_%s" % (act, f)] = lost_max
             meta["qa"]["keep_in_shift_px_%s_%s" % (act, f)] = round(shift_max, 1)
             print(mid, f, act, len(poses), "outside", lost_max, "keep-in shift", round(shift_max, 1), flush=True)

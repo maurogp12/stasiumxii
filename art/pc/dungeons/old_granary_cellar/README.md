@@ -65,6 +65,7 @@ The board uses the `board_view.gd` math: `cell_to_local(x,y) = ((x-y)*32, (x+y)*
 | id | cell | pivot | actions (frames) |
 |---|---|---|---|
 | `granary_rat` | 512x360 | (256,329) | idle 12, walk 12, attack 12, hit 8, death 13 |
+| `sling_rat` | 512x360 | (256,329) | idle 12, walk 12, attack 12 (**release f07**), hit 8, death 13 |
 | `scarecrow_drudge` | 512x360 | (256,329) | idle 12, walk 12, attack 12, hit 8, death 13 |
 | `the_ratking` | **768x540** | **(384,494)** | idle 12, walk 12, attack 12, hit 8, death 13, **summon 14** |
 
@@ -87,13 +88,52 @@ The board uses the `board_view.gd` math: `cell_to_local(x,y) = ((x-y)*32, (x+y)*
 - `_mock/<id>_turnaround.png` shows the S and E paintings each rig is cut from.
 - `_mock/<id>_contact.png` shows every frame of every action.
 
+**Sling Rat (ranged, room A):**
+- A Granary Rat on its hind legs, with a sack-scrap hood, a rope belt with a pouch of stones, and a leather sling. It is about 200 px tall in the cell.
+- **Attack:** the arm raises (f01–f02), whirls the sling overhead (f03–f06), and whips forward on **f07, the release frame**. f08–f11 follow through and recover.
+- **Projectile spawn:** `meta.json > release.point_px` gives the sling-pocket position at release, per facing, in cell pixels. Mirror its x for the mirrored facings.
+- **Projectiles** (`board/projectiles/`, centred):
+  - `sling_pebble`: 16x14 at 1x.
+  - `sling_seed`: a grain-hard seed, an alternative ammo.
+  - `sling_impact_puff`: a dust and husk burst. Play it as a scale-up and fade of about 0.25 s at the hit point.
+
+## 4. Star 5: Radioactive Ratking (`star5/`)
+
+At ★5 the boss is the **Radioactive Ratking**, the same Ratking mutated (mobile's equivalent is `boss_art_5`). His look:
+- burned, patchy fur;
+- toxic green glowing cracks, eyes and dripping sludge;
+- a crown fused with green crystal shards;
+- a crook topped by a cracked glowing canister;
+- mutated rats with glowing eyes at his feet.
+
+| id | cell | pivot | actions |
+|---|---|---|---|
+| `star5/monsters/radioactive_ratking` | 768x540 | (384,494) | idle 12, walk 12, attack 12, hit 8, death 13, summon 14 (same rig and timing as `the_ratking`) |
+| `star5/monsters/radioactive_rat` | 512x360 | (256,329) | as `granary_rat`; his ★5 summons |
+| `star5/monsters/radioactive_sling_rat` | 512x360 | (256,329) | as `sling_rat`, release f07 |
+
+**Glow maps:**
+- Every ★5 frame has a same-size additive light map, `<frame>_glow.png`. It is the green emissive paint bloomed, plus a faint green aura.
+- Draw it on top of the frame with the same offset, scale and flip, using an add blend.
+
+**Other ★5 pieces:**
+- `star5/board/toxic_pool.png` is a 1-cell, 64x32 glowing green puddle decal, with a 128x64 `_2x/` master. It is centred on the cell, on the ground layer. `toxic_pool_glow.png` (96x56, additive) goes with it.
+- The Radioactive Ratking leaves these pools as his ★5 special. Only the visual is here; the effect is up to CombatSim.
+- `star5/board/projectiles/sling_pebble_radioactive.png` is the radioactive sling stone, with a `_glow`.
+
+**Review images:**
+- `_mock/radioactive_ratking_turnaround.png` shows the base Ratking S next to the radioactive S and E paintings.
+- `_mock/star5_<id>_contact.png` shows every frame with the glow baked in, on dark.
+
 ## Pipeline (`build_tools/dungeons/`)
 
 | script | does |
 |---|---|
-| `gkit.py` | Chroma key (alpha from green excess, colour un-mixed from the green, despill), binary-alpha cut, iso diamond projection. |
+| `gkit.py` | Chroma key on green or magenta (magenta for the green-glowing ★5 pieces); alpha from the key-colour excess, colour un-mixed from the green, despill), binary-alpha cut, iso diamond projection. |
 | `build_granary_town.py` | Builds the town door and the hatch glow. |
 | `build_granary_board.py` | Builds the tiles, pad, props, decal, glows and backdrops. |
+| `build_granary_star5.py` | Builds the toxic pool decal and the sling projectiles, including the radioactive pebble. |
+| `mock_turnarounds.py` | Writes the keyed turnaround review images. |
 | `granary_monsters.py` + `mrig.py` | Monster rigs and actions. |
 | `build_granary_manifest.py` | Writes `manifest.json`. It checks that every PNG is listed. |
 | `mock_granary_rooms.py`, `mock_monsters.py` | Room mock, contact sheets, and the review clip (`--clip out.mp4`). |
@@ -130,6 +170,10 @@ The board uses the `board_view.gd` math: `cell_to_local(x,y) = ((x-y)*32, (x+y)*
   - The building's 3x3 footprint and the cell scale were measured from the painting.
   - The rat's size (about half the Scarecrow's height) was chosen from the design sheet.
 
+- **Sling whirl:** the whirl is a rigid painted arm and sling rotated overhead, not a painted spin. At release in S the arm crosses the chest.
+- **★5 repaints:** the radioactive paintings are edits of the base turnarounds. They line up closely (mask IoU 0.92–0.95), so they reuse the same part cuts. Drips that hang outside a part's cut polygon stay on the body.
+- **Radiation symbol:** the radioactive E canister shows a faint radiation symbol.
+
 ## Scenario source assets (project "stasium")
 
 Each piece was painted with the approved Granary images as references (door `asset_gTxkfwikMr8Qi8b1CD69pd7P`, room `asset_dW98bSycfweqRnGojHuhqLvB`, boss room `asset_a7VYPepfZNsQjqap7cqRMwmU`, monsters `asset_GuoHFBAwqFM9FLKJW4bMrtuJ`, world style `asset_TQPWy66Pbfv9iRpz7w8NYud3`).
@@ -147,3 +191,9 @@ Each piece was painted with the approved Granary images as references (door `ass
 | Granary Rat S / E | `asset_6pEzMgdW8XgSBWzYMJWE3AiR` / `asset_Hq2GJbiB75bnk88ViCtNpKS5` | `rat_S.jpg` / `rat_E.jpg` |
 | Scarecrow Drudge S / E | `asset_mKuJMfJfgGeAmKNT98w2DSBi` / `asset_KyiJGWXKYQuzwDDFSoqdERcm` | `scarecrow_S.jpg` / `scarecrow_E.jpg` |
 | The Ratking S / E | `asset_oEpUuyitHmqWSnGNEGjRtX2Z` / `asset_d5yHN83CLZr2fQct9RUPnJZV` | `ratking_S.jpg` / `ratking_E.jpg` |
+| Sling Rat S / E | `asset_Ar46LNqAs2hqkMeKJrqHZkbg` / `asset_bNxffG16p6sxw2KwS7KnzdfF` | `sling_rat_S.jpg` / `sling_rat_E.jpg` |
+| sling pebble, seed, impact puff, radioactive pebble | `asset_iu6Y2BAYAnpJ9qnMP8Hkcx7Q` | `sling_projectiles.jpg` |
+| ★5 Radioactive Ratking S / E | `asset_7DjoKDiCFRBh2QoGBZbqEUhv` / `asset_oHX2AJkHCEbGFRxv41oZWwWw` | `rad_ratking_S.jpg` / `rad_ratking_E.jpg` |
+| ★5 Radioactive Rat S / E | `asset_7L2VkhWwdjAuQn2oKY9TNsBd` / `asset_bdDpAS3icrnP4rKyGAVJ91dT` | `rad_rat_S.jpg` / `rad_rat_E.jpg` |
+| ★5 Radioactive Sling Rat S / E | `asset_DutqFtXyPykNfn52atgomA3p` / `asset_Hv5WmHwTjcJKCAq39aCPai6S` | `rad_sling_rat_S.jpg` / `rad_sling_rat_E.jpg` |
+| ★5 toxic pool | `asset_6gQfwAdkAprXo8b1rwgM1U6L` | `toxic_pool.jpg` |

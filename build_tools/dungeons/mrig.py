@@ -45,7 +45,7 @@ class Facing:
 
     def __init__(self, src, parts, ground, hip, scale, cell, cell_pivot, close_k=41, body_z=0, band_px=36):
         rgb = gkit.load_rgb(src)
-        self.prem = gkit.clean_alpha(gkit.key_green(rgb), min_island=150)
+        self.prem = gkit.clean_alpha(gkit.key_auto(rgb), min_island=150)
         self.parts = parts
         self.ground = np.array(ground, np.float64)
         self.hip = np.array(hip, np.float64)
@@ -130,6 +130,14 @@ class Facing:
             # Offsets are screen-space: apply them outside the parent's rotation.
             mats[p.name] = off @ par @ rot_about(p.pivot[0], p.pivot[1], pose.get(p.name, 0.0))
         return mats
+
+    def point(self, pose, part, xy):
+        """Where source pixel `xy` of `part` lands in the cell for this pose (before keep-in shifts)."""
+        k = self.scale
+        K = np.array([[k, 0, self.cell_pivot[0] - k * self.ground[0]],
+                      [0, k, self.cell_pivot[1] - k * self.ground[1]], [0, 0, 1]], np.float64)
+        p = K @ self.matrices(pose)[part] @ np.array([xy[0], xy[1], 1.0])
+        return float(p[0]), float(p[1])
 
     def render(self, pose, order=None):
         W, H = self.cell
