@@ -9,9 +9,7 @@
       "y": 0,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": [
-        "rock_cluster"
-      ]
+      "paint_only": []
     },
     {
       "x": 1,
@@ -60,9 +58,7 @@
       "y": 0,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": [
-        "waterfall"
-      ]
+      "paint_only": []
     },
     {
       "x": 8,
@@ -83,9 +79,7 @@
       "y": 0,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": [
-        "rock_cluster"
-      ]
+      "paint_only": []
     },
     {
       "x": 11,
@@ -113,9 +107,7 @@
       "y": 0,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": [
-        "waterfall"
-      ]
+      "paint_only": []
     },
     {
       "x": 0,
@@ -129,7 +121,9 @@
       "y": 1,
       "terrain": "water",
       "elevation": 0,
-      "paint_only": []
+      "paint_only": [
+        "coral"
+      ]
     },
     {
       "x": 2,
@@ -276,7 +270,9 @@
       "y": 2,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": []
+      "paint_only": [
+        "crate"
+      ]
     },
     {
       "x": 8,
@@ -311,7 +307,9 @@
       "y": 2,
       "terrain": "water",
       "elevation": 0,
-      "paint_only": []
+      "paint_only": [
+        "coral"
+      ]
     },
     {
       "x": 13,
@@ -353,7 +351,9 @@
       "y": 3,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": []
+      "paint_only": [
+        "coral_rock"
+      ]
     },
     {
       "x": 4,
@@ -374,9 +374,7 @@
       "y": 3,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": [
-        "rock_pillar"
-      ]
+      "paint_only": []
     },
     {
       "x": 7,
@@ -390,9 +388,7 @@
       "y": 3,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": [
-        "rock_pillar"
-      ]
+      "paint_only": []
     },
     {
       "x": 9,
@@ -413,7 +409,9 @@
       "y": 3,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": []
+      "paint_only": [
+        "coral_rock"
+      ]
     },
     {
       "x": 12,
@@ -427,9 +425,7 @@
       "y": 3,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": [
-        "waterfall"
-      ]
+      "paint_only": []
     },
     {
       "x": 14,
@@ -450,7 +446,9 @@
       "y": 4,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": []
+      "paint_only": [
+        "chest"
+      ]
     },
     {
       "x": 2,
@@ -464,9 +462,7 @@
       "y": 4,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": [
-        "driftwood"
-      ]
+      "paint_only": []
     },
     {
       "x": 4,
@@ -480,9 +476,7 @@
       "y": 4,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": [
-        "rubble"
-      ]
+      "paint_only": []
     },
     {
       "x": 6,
@@ -510,9 +504,7 @@
       "y": 4,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": [
-        "rubble"
-      ]
+      "paint_only": []
     },
     {
       "x": 10,
@@ -526,9 +518,7 @@
       "y": 4,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": [
-        "rock_cluster"
-      ]
+      "paint_only": []
     },
     {
       "x": 12,
@@ -590,7 +580,7 @@
       "x": 5,
       "y": 5,
       "terrain": "ground",
-      "elevation": 1,
+      "elevation": 0,
       "paint_only": []
     },
     {
@@ -604,7 +594,7 @@
       "x": 7,
       "y": 5,
       "terrain": "ground",
-      "elevation": 1,
+      "elevation": 0,
       "paint_only": []
     },
     {
@@ -612,15 +602,13 @@
       "y": 5,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": [
-        "rock_cluster"
-      ]
+      "paint_only": []
     },
     {
       "x": 9,
       "y": 5,
       "terrain": "ground",
-      "elevation": 1,
+      "elevation": 0,
       "paint_only": []
     },
     {
@@ -656,14 +644,18 @@
       "y": 5,
       "terrain": "water",
       "elevation": 0,
-      "paint_only": []
+      "paint_only": [
+        "coral"
+      ]
     },
     {
       "x": 0,
       "y": 6,
       "terrain": "water",
       "elevation": 0,
-      "paint_only": []
+      "paint_only": [
+        "coral"
+      ]
     },
     {
       "x": 1,
@@ -711,7 +703,7 @@
       "x": 7,
       "y": 6,
       "terrain": "ground",
-      "elevation": 2,
+      "elevation": 0,
       "paint_only": []
     },
     {
@@ -810,7 +802,9 @@
       "y": 7,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": []
+      "paint_only": [
+        "wreck_side"
+      ]
     },
     {
       "x": 7,
@@ -818,7 +812,7 @@
       "terrain": "ground",
       "elevation": 0,
       "paint_only": [
-        "floor_seal"
+        "wreck_side"
       ]
     },
     {
@@ -826,7 +820,9 @@
       "y": 7,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": []
+      "paint_only": [
+        "wreck_side"
+      ]
     },
     {
       "x": 9,
@@ -875,9 +871,7 @@
       "y": 8,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": [
-        "driftwood"
-      ]
+      "paint_only": []
     },
     {
       "x": 1,
@@ -905,9 +899,7 @@
       "y": 8,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": [
-        "ruins"
-      ]
+      "paint_only": []
     },
     {
       "x": 5,
@@ -927,7 +919,7 @@
       "x": 7,
       "y": 8,
       "terrain": "ground",
-      "elevation": 2,
+      "elevation": 0,
       "paint_only": []
     },
     {
@@ -949,9 +941,7 @@
       "y": 8,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": [
-        "ruins"
-      ]
+      "paint_only": []
     },
     {
       "x": 11,
@@ -979,9 +969,7 @@
       "y": 8,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": [
-        "driftwood"
-      ]
+      "paint_only": []
     },
     {
       "x": 0,
@@ -1022,7 +1010,7 @@
       "x": 5,
       "y": 9,
       "terrain": "ground",
-      "elevation": 1,
+      "elevation": 0,
       "paint_only": []
     },
     {
@@ -1030,15 +1018,13 @@
       "y": 9,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": [
-        "driftwood"
-      ]
+      "paint_only": []
     },
     {
       "x": 7,
       "y": 9,
       "terrain": "ground",
-      "elevation": 1,
+      "elevation": 0,
       "paint_only": []
     },
     {
@@ -1052,7 +1038,7 @@
       "x": 9,
       "y": 9,
       "terrain": "ground",
-      "elevation": 1,
+      "elevation": 0,
       "paint_only": []
     },
     {
@@ -1102,9 +1088,7 @@
       "y": 10,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": [
-        "waterfall"
-      ]
+      "paint_only": []
     },
     {
       "x": 2,
@@ -1188,7 +1172,9 @@
       "y": 10,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": []
+      "paint_only": [
+        "chest"
+      ]
     },
     {
       "x": 14,
@@ -1216,16 +1202,16 @@
       "y": 11,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": [
-        "driftwood"
-      ]
+      "paint_only": []
     },
     {
       "x": 3,
       "y": 11,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": []
+      "paint_only": [
+        "coral_rock"
+      ]
     },
     {
       "x": 4,
@@ -1246,9 +1232,7 @@
       "y": 11,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": [
-        "fence"
-      ]
+      "paint_only": []
     },
     {
       "x": 7,
@@ -1262,9 +1246,7 @@
       "y": 11,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": [
-        "fence"
-      ]
+      "paint_only": []
     },
     {
       "x": 9,
@@ -1285,16 +1267,16 @@
       "y": 11,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": []
+      "paint_only": [
+        "coral_rock"
+      ]
     },
     {
       "x": 12,
       "y": 11,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": [
-        "rock_cluster"
-      ]
+      "paint_only": []
     },
     {
       "x": 13,
@@ -1343,7 +1325,9 @@
       "y": 12,
       "terrain": "water",
       "elevation": 0,
-      "paint_only": []
+      "paint_only": [
+        "coral"
+      ]
     },
     {
       "x": 5,
@@ -1364,7 +1348,9 @@
       "y": 12,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": []
+      "paint_only": [
+        "crate"
+      ]
     },
     {
       "x": 8,
@@ -1490,7 +1476,9 @@
       "y": 13,
       "terrain": "water",
       "elevation": 0,
-      "paint_only": []
+      "paint_only": [
+        "coral"
+      ]
     },
     {
       "x": 11,
@@ -1525,9 +1513,7 @@
       "y": 14,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": [
-        "driftwood"
-      ]
+      "paint_only": []
     },
     {
       "x": 1,
@@ -1555,9 +1541,7 @@
       "y": 14,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": [
-        "driftwood"
-      ]
+      "paint_only": []
     },
     {
       "x": 5,
@@ -1578,9 +1562,7 @@
       "y": 14,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": [
-        "rock_cluster"
-      ]
+      "paint_only": []
     },
     {
       "x": 8,
@@ -1629,9 +1611,7 @@
       "y": 14,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": [
-        "rock_cluster"
-      ]
+      "paint_only": []
     }
   ]
 }

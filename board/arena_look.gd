@@ -32,6 +32,10 @@ const STYLES := {
 		"gleam": Color(0.55, 0.62, 0.72, 0.32), "gleam_px": 1.0,
 		"face_left": Color(0.24, 0.19, 0.15), "face_right": Color(0.16, 0.13, 0.11),
 		"surfaces": {"water": [5, 1.0]},
+		# Mauro 5 Oct 2026: "the ship in the middle" of his dock picture.
+		# Only where the map tags the wreck (the Koliseo dock), not the
+		# Brinewake dungeon rooms that share this look.
+		"centerpiece": {"cell": Vector2i(7, 7), "prop": "wreck", "needs_prop": "wreck_side"},
 	},
 	"stormspire": {
 		"ink": Color(0.10, 0.07, 0.02, 0.85), "ink_px": 2.4,
@@ -131,9 +135,11 @@ static func surface_for(map_id: String, terrain: String) -> Array:
 
 
 ## Big decoration an arena draws on one cell (Slagcrown's volcano), or {}.
-static func centerpiece_for(map_id: String, cell: Vector2i) -> Texture2D:
+static func centerpiece_for(map_id: String, cell: Vector2i, props: Array = []) -> Texture2D:
 	var piece: Dictionary = style_for(map_id).get("centerpiece", {})
 	if piece.is_empty() or piece.get("cell") != cell:
+		return null
+	if piece.has("needs_prop") and not props.has(str(piece["needs_prop"])):
 		return null
 	return prop_for(map_id, str(piece.get("prop", "")))
 

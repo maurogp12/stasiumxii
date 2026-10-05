@@ -23,6 +23,7 @@ func _run() -> void:
 	_test_random_deploy_zones()
 	_test_unknown_map_does_not_invent()
 	_test_walk_blocked_tiles_marked()
+	_test_brinewake_dock_layout()
 	_test_cell_tags_override()
 	_test_random_ship_id()
 	_test_hotseat_rolls_map()
@@ -882,3 +883,30 @@ func _test_walk_blocked_tiles_marked() -> void:
 				eq(kind, "block", "%s %s: a hole is an obstacle" % [map_id, cell])
 		truthy(marked > 0, "%s has marked tiles" % map_id)
 		sim.free()
+
+
+## Mauro 5 Oct 2026: the dock like his picture - the wreck in the middle, coral
+## rocks and coral plants, a few crates, no flags, fewer obstacles (was 13).
+func _test_brinewake_dock_layout() -> void:
+	var sim: Node = load("res://backend/combat_sim.gd").new()
+	root.add_child(sim)
+	sim.reset_match({"seed": 3, "map_id": "brinewake", "skip_deploy": true})
+	var blocked: Array = []
+	for y in 15:
+		for x in 15:
+			if not sim._board.is_walkable(Vector2i(x, y)) and not sim._board.is_voluntary_impassable(Vector2i(x, y)):
+				blocked.append(Vector2i(x, y))
+	eq(blocked.size(), 11, "the dock has 11 obstacle tiles (9 pieces: the wreck covers 3)")
+	for cell in [Vector2i(6, 7), Vector2i(7, 7), Vector2i(8, 7)]:
+		truthy(blocked.has(cell), "the wreck blocks %s" % cell)
+	truthy(not sim.has_line_of_sight(Vector2i(7, 4), Vector2i(7, 10)), "nobody shoots through the wreck")
+	var paint: Dictionary = sim.snapshot().get("paint_only", {})
+	var names := {}
+	for key in paint.keys():
+		for prop_name in paint[key]:
+			names[str(prop_name)] = true
+	eq(names.keys().has("fence") or names.keys().has("driftwood") or names.keys().has("waterfall"), false, "the old flags / driftwood are gone")
+	truthy(names.has("coral") and names.has("coral_rock") and names.has("crate") and names.has("chest"), "coral, coral rocks, crates and chests are on the dock")
+	truthy(ArenaLook.centerpiece_for("brinewake", Vector2i(7, 7), ["wreck_side"]) != null, "the wreck is drawn in the middle")
+	eq(ArenaLook.centerpiece_for("brinewake", Vector2i(7, 7), []), null, "the dungeon rooms (no wreck tag) do not get the wreck")
+	sim.free()

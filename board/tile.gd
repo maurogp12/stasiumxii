@@ -130,7 +130,10 @@ func _draw() -> void:
 		_hide_surface()
 		_paint_terrain(tex)
 		_paint_depth_rim()
-	var piece: Texture2D = _ArenaLook.centerpiece_for(_look_map, grid_position) if _look_map != "" else null
+	# Obstacle glow sits on the floor, under the obstacle drawn below.
+	if walk_block_kind == "block":
+		_paint_walk_blocked(self)
+	var piece: Texture2D = _ArenaLook.centerpiece_for(_look_map, grid_position, _paint_props) if _look_map != "" else null
 	if piece != null:
 		# Centred on the cell, base a little below the diamond so it sits in the lava.
 		var size := piece.get_size()
@@ -354,6 +357,18 @@ func set_walk_blocked(kind: Variant) -> void:
 	_request_paint()
 
 
+func _has_drawn_obstacle() -> bool:
+	if _look_map != "" and _ArenaLook.centerpiece_for(_look_map, grid_position, _paint_props) != null:
+		return true
+	for prop_name in _paint_props:
+		var tex: Texture2D = _ArenaLook.prop_for(_look_map, str(prop_name)) if _look_map != "" else null
+		if tex == null:
+			tex = _KoliseoArt.prop_texture(str(prop_name), _dress)
+		if tex != null and tex.get_width() > 1:
+			return true
+	return false
+
+
 func walk_glow_color() -> Color:
 	if walk_block_kind == "liquid":
 		return LIQUID_GLOW.get(terrain_type, LIQUID_GLOW["water"])
@@ -365,7 +380,8 @@ func _paint_walk_blocked(canvas: CanvasItem) -> void:
 	var points := _diamond_points()
 	var glow := walk_glow_color()
 	var strength := 0.55 if walk_block_kind == "liquid" else 0.8
-	if walk_block_kind == "block":
+	if walk_block_kind == "block" and not _has_drawn_obstacle():
+		# A bare hole: shade it. A tile with an obstacle drawn on it is clear enough.
 		canvas.draw_colored_polygon(points, BLOCK_SHADE)
 	var rings := [[0.96, 3.0, 1.0], [0.88, 3.0, 0.55], [0.8, 3.0, 0.28], [0.72, 2.5, 0.12]]
 	for ring in rings:
@@ -443,7 +459,9 @@ static func consume_debug_label_key(event: InputEvent) -> bool:
 
 
 func paint_highlight_overlay(canvas: CanvasItem) -> void:
-	if walk_blocked:
+	# Water / mud / lava glow above their animated surface; obstacles glow
+	# in the tile's own draw, under the obstacle (see _draw).
+	if walk_block_kind == "liquid":
 		_paint_walk_blocked(canvas)
 	var color := overlay_color()
 	if color.a <= 0.0:

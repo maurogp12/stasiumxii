@@ -2472,6 +2472,11 @@ func _apply_board_tiles(snap: Dictionary) -> void:
 		tile.set_walk_blocked(SNAPSHOT_TILES.walk_block_kind(rec))
 		tile.position = VISUAL_SORT.cell_to_local(cell, float(rec.get("elevation", 0.0)))
 		tile.z_index = VISUAL_SORT.tile_z_index(cell, float(rec.get("elevation", 0.0)))
+		if ARENA_LOOK.centerpiece_for(map_key, cell, _paint_props_at(paint, cell)) != null:
+			# A big centrepiece (Brinewake wreck, volcano, tower) spills over the
+			# row of tiles in front: draw it above them, still under the fighters
+			# standing in that row.
+			tile.z_index += VISUAL_SORT.TILE_Z_SCALE + 1
 	_apply_edge_glow(map_key)
 	_ensure_koliseo_life()
 	if _koliseo_life != null:

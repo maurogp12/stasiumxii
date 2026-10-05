@@ -30,6 +30,11 @@ const BLOCKING_PROPS := {
 	"rock_cluster": true,
 	"rock_pillar": true,
 	"well": true,
+	# Brinewake dock (Mauro 5 Oct 2026): obstacles stand above the ground.
+	"coral_rock": true,
+	"crate": true,
+	"chest": true,
+	"wreck_side": true,
 }
 ## Tall props that block line of sight and walking (Mauro 30 Sep 2026:
 ## "maps should have obstacles that are not supposed to allow attack if a
