@@ -873,5 +873,12 @@ func _test_walk_blocked_tiles_marked() -> void:
 			if refuses != shown:
 				wrong.append(cell)
 		eq(wrong, [], "%s: the marked tiles are exactly the ones you cannot walk onto" % map_id)
+		for cell in view.keys():
+			var kind := SnapshotTiles.walk_block_kind(view[cell])
+			var terrain := str(view[cell].get("terrain_type", "ground"))
+			if ["water", "mud", "lava"].has(terrain):
+				eq(kind, "liquid", "%s %s: water / mud / lava only glow" % [map_id, cell])
+			elif terrain == "void":
+				eq(kind, "block", "%s %s: a hole is an obstacle" % [map_id, cell])
 		truthy(marked > 0, "%s has marked tiles" % map_id)
 		sim.free()

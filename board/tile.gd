@@ -27,11 +27,28 @@ var is_selected: bool = false
 var highlight: String = ""
 var elevation: int = 0
 var terrain_type: String = "ground"
-## Mauro 5 Oct 2026: a tile no fighter can walk onto (water, mud, lava, hole,
-## solid obstacle) is shaded with a red inner border on every map.
+## Mauro 5 Oct 2026: a tile no fighter can walk onto is marked in the map's
+## own style ("Instead of being red make look a style with the map ... maybe
+## the water tiles you should already know ... put it like a glow").
+## "liquid" (water / mud / lava): only a soft glow of its own colour.
+## "block" (hole / solid obstacle): a shade plus a soft glow in the map accent.
 var walk_blocked: bool = false
-const WALK_BLOCKED_SHADE := Color(0.02, 0.02, 0.04, 0.34)
-const WALK_BLOCKED_LINE := Color(0.92, 0.22, 0.16, 0.85)
+var walk_block_kind: String = ""
+const LIQUID_GLOW := {
+	"water": Color(0.45, 0.85, 1.0),
+	"mud": Color(0.78, 0.62, 0.36),
+	"lava": Color(1.0, 0.55, 0.18),
+}
+## Map accent for holes / obstacles (ArenaLook ids).
+const BLOCK_GLOW := {
+	"brinewake": Color(0.35, 0.95, 0.9),
+	"slagcrown": Color(1.0, 0.5, 0.15),
+	"windmere": Color(0.75, 0.92, 1.0),
+	"stormspire": Color(0.7, 0.5, 1.0),
+	"crosshaven": Color(1.0, 0.82, 0.42),
+}
+const BLOCK_GLOW_DEFAULT := Color(0.95, 0.85, 0.6)
+const BLOCK_SHADE := Color(0.0, 0.0, 0.02, 0.38)
 var _dress: String = ""
 var _paint_props: Array = []
 var _grade_key: String = ""
@@ -324,21 +341,39 @@ func set_selected(value: bool) -> void:
 	_request_paint()
 
 
-func set_walk_blocked(value: bool) -> void:
-	if walk_blocked == value:
+func set_walk_blocked(kind: Variant) -> void:
+	var next := ""
+	if typeof(kind) == TYPE_BOOL:
+		next = "block" if bool(kind) else ""
+	else:
+		next = str(kind)
+	if walk_block_kind == next:
 		return
-	walk_blocked = value
+	walk_block_kind = next
+	walk_blocked = next != ""
 	_request_paint()
 
 
+func walk_glow_color() -> Color:
+	if walk_block_kind == "liquid":
+		return LIQUID_GLOW.get(terrain_type, LIQUID_GLOW["water"])
+	return BLOCK_GLOW.get(_look_map, BLOCK_GLOW_DEFAULT)
+
+
+## A soft inner glow: rings fading toward the middle of the diamond.
 func _paint_walk_blocked(canvas: CanvasItem) -> void:
 	var points := _diamond_points()
-	canvas.draw_colored_polygon(points, WALK_BLOCKED_SHADE)
-	var inner := PackedVector2Array()
-	for p in points:
-		inner.append(p * 0.78)
-	inner.append(inner[0])
-	canvas.draw_polyline(inner, WALK_BLOCKED_LINE, 2.0, true)
+	var glow := walk_glow_color()
+	var strength := 0.55 if walk_block_kind == "liquid" else 0.8
+	if walk_block_kind == "block":
+		canvas.draw_colored_polygon(points, BLOCK_SHADE)
+	var rings := [[0.96, 3.0, 1.0], [0.88, 3.0, 0.55], [0.8, 3.0, 0.28], [0.72, 2.5, 0.12]]
+	for ring in rings:
+		var line := PackedVector2Array()
+		for p in points:
+			line.append(p * float(ring[0]))
+		line.append(line[0])
+		canvas.draw_polyline(line, Color(glow.r, glow.g, glow.b, strength * float(ring[2])), float(ring[1]), true)
 
 
 func set_highlight(kind: String) -> void:
