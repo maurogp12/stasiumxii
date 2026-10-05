@@ -22,6 +22,7 @@ func _run() -> void:
 	_test_tall_props_block_sight()
 	_test_random_deploy_zones()
 	_test_unknown_map_does_not_invent()
+	_test_walk_blocked_tiles_marked()
 	_test_cell_tags_override()
 	_test_random_ship_id()
 	_test_hotseat_rolls_map()
@@ -851,3 +852,26 @@ func _test_random_deploy_zones() -> void:
 		eq(apart, 0, "%s: the two deploy zones always reach each other" % map_id)
 		truthy(seen.size() >= 10, "%s: deploy zones change match to match (%d / 12 different)" % [map_id, seen.size()])
 	sim.queue_free()
+
+
+## Mauro 5 Oct 2026: "All tiles that are obstacles or cannot be walked in
+## please make it different". On every map the board marks exactly the cells
+## the sim refuses a walk onto (unwalkable, or water / mud / lava).
+func _test_walk_blocked_tiles_marked() -> void:
+	for map_id in ["crosshaven", "brinewake", "slagcrown", "windmere", "stormspire"]:
+		var sim: Node = load("res://backend/combat_sim.gd").new()
+		root.add_child(sim)
+		sim.reset_match({"seed": 3, "map_id": map_id, "skip_deploy": true})
+		var view: Dictionary = SnapshotTiles.from_snapshot(sim.snapshot())
+		var wrong: Array = []
+		var marked := 0
+		for cell in view.keys():
+			var refuses: bool = not sim._board.is_walkable(cell) or sim._board.is_voluntary_impassable(cell)
+			var shown: bool = SnapshotTiles.walk_blocked(view[cell])
+			if shown:
+				marked += 1
+			if refuses != shown:
+				wrong.append(cell)
+		eq(wrong, [], "%s: the marked tiles are exactly the ones you cannot walk onto" % map_id)
+		truthy(marked > 0, "%s has marked tiles" % map_id)
+		sim.free()

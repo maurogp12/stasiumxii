@@ -273,6 +273,20 @@ static func _apply_record(out: Dictionary, raw: Variant, hinted: Vector2i, board
 		out[cell]["elevation"] = rec["elevation"]
 	if rec.has("terrain_type"):
 		out[cell]["terrain_type"] = rec["terrain_type"]
+	if typeof(raw) == TYPE_DICTIONARY and (raw as Dictionary).has("walkable"):
+		out[cell]["walkable"] = bool(raw["walkable"])
+
+
+## Mauro 5 Oct 2026: tiles you cannot walk onto must look different. Water,
+## mud and lava refuse a voluntary walk (Soft Lock), void is a hole, and a
+## tile the map marks unwalkable (solid obstacle) refuses it too.
+const WALK_BLOCKED_TERRAIN := ["mud", "water", "lava", "void"]
+
+
+static func walk_blocked(rec: Dictionary) -> bool:
+	if WALK_BLOCKED_TERRAIN.has(normalize_terrain(rec.get("terrain_type", DEFAULT_TERRAIN))):
+		return true
+	return rec.has("walkable") and not bool(rec["walkable"])
 
 
 static func _normalize_record(raw: Variant) -> Dictionary:
