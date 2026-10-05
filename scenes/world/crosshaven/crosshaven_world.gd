@@ -38,6 +38,11 @@ const NpcDialogue := preload("res://scenes/world/ui/npc_dialogue.gd")
 const NpcRoam := preload("res://scenes/world/npc/npc_roam.gd")
 const MissionTracker := preload("res://scenes/world/ui/mission_tracker.gd")
 const MissionLog := preload("res://scenes/world/ui/mission_log.gd")
+const DungeonBook := preload("res://backend/world_dungeons.gd")
+const DungeonDoor := preload("res://scenes/world/dungeon/dungeon_door.gd")
+const DungeonArt := preload("res://scenes/world/dungeon/dungeon_art.gd")
+const DoorPanel := preload("res://scenes/world/ui/door_panel.gd")
+const Launcher := preload("res://scenes/world/dungeon/dungeon_launcher.gd")
 
 ## Kit deep sea, so the margin past Eastmarch matches the painted tiles.
 const SEA := Color("246e9e")
@@ -79,6 +84,13 @@ var missions = null
 var tracker: CanvasLayer
 var mission_log: CanvasLayer
 var _pending_talk: Dictionary = {}
+## Dungeon doors (dungeons.json). The panel opens from the hatch or the keeper.
+var dungeon_book = null
+var door_panel: CanvasLayer
+var doors_root: Node2D
+var door_nodes: Dictionary = {}
+var _pending_door := ""
+var _door_outcome: Dictionary = {}
 ## False keeps every NPC at its post (spec 4.5a movement off).
 var npc_roam := true
 var hover_cell := Vector2i(-1, -1)
@@ -186,6 +198,9 @@ func _ready() -> void:
 	props_root = Node2D.new()
 	props_root.name = "Props"
 	add_child(props_root)
+	doors_root = Node2D.new()
+	doors_root.name = "DungeonDoors"
+	add_child(doors_root)
 	npcs_root = Node2D.new()
 	npcs_root.name = "Npcs"
 	add_child(npcs_root)
@@ -292,6 +307,15 @@ func _ready() -> void:
 		npc_book = npc_loaded["npcs"]
 	else:
 		push_error("NPC book failed to load: %s" % [npc_loaded.get("errors", [])])
+	var dungeon_loaded: Dictionary = DungeonBook.load_default()
+	if bool(dungeon_loaded.get("ok", false)):
+		dungeon_book = dungeon_loaded["dungeons"]
+	else:
+		push_error("Dungeon doors failed to load: %s" % [dungeon_loaded.get("errors", [])])
+	door_panel = DoorPanel.new()
+	door_panel.name = "DoorPanel"
+	add_child(door_panel)
+	door_panel.enter_requested.connect(_on_door_enter)
 
 	var loaded: Dictionary = Atlas.load_default()
 	if not bool(loaded.get("ok", false)):
@@ -299,6 +323,7 @@ func _ready() -> void:
 		push_error("World atlas failed to load: %s" % [load_errors])
 		return
 	atlas = loaded["atlas"]
+	_block_dungeon_buildings()
 	map = atlas.map_for_chunk(atlas.entry_of(str(atlas.start_region)))
 	if map == null:
 		load_errors = ["start region is not loaded"]
@@ -316,6 +341,7 @@ func _ready() -> void:
 	seam_count = 0
 	if _movie == "" and DisplayServer.get_name() != "headless":
 		restore_place()
+	_take_dungeon_outcome()
 	if _movie != "":
 		get_tree().process_frame.connect(_start_movie, CONNECT_ONE_SHOT)
 
@@ -380,7 +406,10 @@ func _load_zone(zone_id: String, cell: Vector2i, snap: bool = true) -> void:
 	for child in decor_root.get_children():
 		child.free()
 	decor_root.position = pix
+	var door_cells := _door_cells_in(zone.zone_id)
 	for record in zone.decor:
+		if door_cells.has(Vector2i(int(record["x"]), int(record["y"]))):
+			continue
 		var d := Decor.new()
 		decor_root.add_child(d)
 		d.snow_cover = ground.cover_at(Vector2i(int(record["x"]), int(record["y"])))
@@ -401,6 +430,7 @@ func _load_zone(zone_id: String, cell: Vector2i, snap: bool = true) -> void:
 	npcs_root.position = pix
 	_raise_sort(npcs_root, origin)
 	_mount_neighbours(zone_id)
+	_sync_doors()
 	if snap:
 		walker.place(zone, cell)
 		_apply_region_look()
@@ -429,6 +459,7 @@ func walk_to(target: Vector2i, pace: String = "auto") -> Dictionary:
 		return {"ok": false, "reason": "busy"}
 	_route.clear()
 	_pending_talk = {}
+	_pending_door = ""
 	_release_held()
 	var from: Vector2i = walker.anchor_cell()
 	if from == target:
@@ -590,6 +621,9 @@ func _roam_forbidden(z: WorldZone, record: Dictionary, dwell: bool) -> Dictionar
 	var anchors: Array[Vector2i] = [z.spawn]
 	for poi in z.points_of_interest:
 		anchors.append(Vector2i(int(poi["x"]), int(poi["y"])))
+	if dungeon_book != null:
+		for row in dungeon_book.doors_in(z.zone_id):
+			anchors.append(DungeonBook.door_cell(row))
 	if atlas != null:
 		for gate in atlas.gates:
 			for side in [gate["from"], gate["to"]]:
@@ -768,6 +802,8 @@ func _open_talk() -> void:
 	var record: Dictionary = npc_book.by_id(npc_id)
 	if record.is_empty() or dialogue == null:
 		return
+	if _keeper_opens_door(npc_id, record):
+		return
 	var view := _mission_view(npc_id)
 	if missions != null and progress != null:
 		var changed: Array = missions.on_talk(npc_id, progress)
@@ -926,6 +962,13 @@ func _finish_arrival(cell: Vector2i) -> void:
 	if not _pending_talk.is_empty() and cell == (_pending_talk["stand"] as Vector2i):
 		_open_talk()
 		return
+	if _pending_door != "":
+		var door_id := _pending_door
+		_pending_door = ""
+		var row: Dictionary = dungeon_book.by_id(door_id) if dungeon_book != null else {}
+		if not row.is_empty() and cell == DungeonBook.door_cell(row):
+			open_door_panel(door_id)
+			return
 	if not _pending_exit:
 		return
 	_pending_exit = false
@@ -1046,8 +1089,11 @@ func _unhandled_input(event: InputEvent) -> void:
 					var hit_zone: WorldZone = hit["zone"]
 					var c: Vector2i = hit["cell"]
 					var record := _npc_record(hit_zone.zone_id, c)
+					var door_row := door_at(hit_zone.zone_id, c)
 					if not record.is_empty():
 						_approach_npc_in(hit_zone, record)
+					elif not door_row.is_empty():
+						approach_door(str(door_row["id"]))
 					else:
 						click_cell(hit_zone, c)
 			MOUSE_BUTTON_WHEEL_UP:
@@ -1064,7 +1110,9 @@ func _unhandled_input(event: InputEvent) -> void:
 				weather.time_scale = 1.0 if weather.time_scale > 1.0 else 30.0
 				_refresh_hud()
 			KEY_ESCAPE:
-				if dialogue != null and dialogue.is_open():
+				if door_panel != null and door_panel.is_open():
+					door_panel.close()
+				elif dialogue != null and dialogue.is_open():
 					dialogue.close()
 				elif mission_log != null and mission_log.is_open():
 					mission_log.close()
@@ -1218,6 +1266,7 @@ func _set_hover(z: WorldZone, c: Vector2i) -> void:
 		return
 	_hover_zone = z
 	hover_cell = c
+	_sync_door_hover(z, c)
 	_hover_unreachable = false
 	# NPC cells open talk on click, so they never read as unreachable.
 	if z != null and zone != null and z == zone and c.x >= 0 and z.passable_at(c) and walker != null and c != walker.anchor_cell() and _npc_node_at(c) == null:
@@ -2444,6 +2493,18 @@ func _report_bench() -> void:
 
 func _play_movie(mode: String) -> void:
 	weather.auto_rotate = false
+	if mode == "granary" or mode == "granary_stills":
+		# The run swaps scenes; the world comes back and finishes the movie.
+		if not _door_outcome.is_empty():
+			await _movie_granary_return()
+			get_tree().quit()
+			return
+		if mode == "granary_stills":
+			await _movie_granary_stills()
+			get_tree().quit()
+			return
+		await _movie_granary()
+		return
 	if mode.begins_with("v7still_"):
 		await _movie_v7_still(mode.trim_prefix("v7still_"))
 		get_tree().quit()
@@ -3913,3 +3974,272 @@ func _far_cell(min_tiles: int) -> Vector2i:
 	if best.x >= 0:
 		return best
 	return fallback
+
+
+# --- Dungeon doors (dungeons.json, spec 4.6) --------------------------------
+# A built dungeon stands its entrance building north of the hatch cell (the
+# footprint is blocked for walking), shows a hover glow on the hatch, and
+# opens the entry panel from the hatch or its Door Keeper. Enter hands the
+# run to DungeonLauncher; the world takes the outcome back on load and
+# stands the hero on the door cell.
+
+var _door_art_cache: Dictionary = {}
+
+
+func _art_for(row: Dictionary) -> Dictionary:
+	var id := str(row.get("id", ""))
+	if _door_art_cache.has(id):
+		return _door_art_cache[id]
+	var art_path := ""
+	var run_path := str(row.get("run", ""))
+	if run_path != "" and FileAccess.file_exists(run_path):
+		var doc: Variant = JSON.parse_string(FileAccess.get_file_as_string(run_path))
+		if typeof(doc) == TYPE_DICTIONARY:
+			art_path = str((doc as Dictionary).get("art", ""))
+	var man := DungeonArt.manifest(art_path)
+	_door_art_cache[id] = man
+	return man
+
+
+func building_size_for(row: Dictionary) -> Vector2i:
+	return DungeonArt.building_size(_art_for(row), DungeonBook.DEFAULT_BUILDING)
+
+
+func _block_dungeon_buildings() -> void:
+	if dungeon_book == null or atlas == null:
+		return
+	for row in dungeon_book.built():
+		var zone_id := str((row["door"] as Dictionary)["zone_id"])
+		var found = atlas.map_for_chunk(zone_id)
+		if found == null:
+			continue
+		var z: WorldZone = (found as WorldMap).zone(zone_id)
+		if z != null:
+			z.add_blocked(DungeonBook.building_cells(row, building_size_for(row)))
+
+
+func _door_cells_in(zone_id: String) -> Dictionary:
+	var out := {}
+	if dungeon_book == null:
+		return out
+	for row in dungeon_book.doors_in(zone_id):
+		out[DungeonBook.door_cell(row)] = true
+		for c in DungeonBook.building_cells(row, building_size_for(row)):
+			out[c] = true
+	return out
+
+
+func _sync_doors() -> void:
+	if doors_root == null:
+		return
+	for child in doors_root.get_children():
+		child.free()
+	door_nodes.clear()
+	if dungeon_book == null or zone == null:
+		return
+	var ids: Array[String] = [zone.zone_id]
+	if neighbours != null:
+		for host in neighbours.get_children():
+			ids.append(str(host.name))
+	for zid in ids:
+		for row in dungeon_book.doors_in(zid):
+			var node := DungeonDoor.new()
+			doors_root.add_child(node)
+			node.setup(row, _art_for(row), _origin_of(zid))
+			door_nodes[str(row["id"])] = node
+
+
+## The built dungeon whose hatch or building covers this cell, else {}.
+func door_at(zone_id: String, cell: Vector2i) -> Dictionary:
+	if dungeon_book == null:
+		return {}
+	for row in dungeon_book.doors_in(zone_id):
+		if DungeonBook.door_cell(row) == cell or DungeonBook.building_cells(row, building_size_for(row)).has(cell):
+			return row
+	return {}
+
+
+## Walk onto the hatch, then open the entry panel.
+func approach_door(dungeon_id: String) -> Dictionary:
+	var row: Dictionary = dungeon_book.by_id(dungeon_id) if dungeon_book != null else {}
+	if row.is_empty() or zone == null:
+		return {"ok": false, "reason": "no_door"}
+	var door := DungeonBook.door_cell(row)
+	var door_zone := str((row["door"] as Dictionary)["zone_id"])
+	if door_zone == zone.zone_id and walker.cell == door and not walker.is_moving():
+		open_door_panel(dungeon_id)
+		return {"ok": true, "path": [], "length": 0}
+	var result: Dictionary
+	if door_zone == zone.zone_id:
+		result = walk_to(door)
+	else:
+		result = walk_to_zone(door_zone, door)
+	if bool(result.get("ok", false)):
+		_pending_door = dungeon_id
+	return result
+
+
+func open_door_panel(dungeon_id: String, keeper_line: String = "") -> void:
+	var row: Dictionary = dungeon_book.by_id(dungeon_id) if dungeon_book != null else {}
+	if row.is_empty() or door_panel == null:
+		return
+	if dialogue != null and dialogue.is_open():
+		dialogue.close()
+	walker.face("n")
+	var level := int(progress.level) if progress != null else 1
+	door_panel.open_for(row, level, keeper_line)
+
+
+## A built dungeon's Door Keeper opens the entry panel instead of plain talk,
+## unless a mission waits to be accepted or turned in with them.
+func _keeper_opens_door(npc_id: String, record: Dictionary) -> bool:
+	if dungeon_book == null:
+		return false
+	var row: Dictionary = dungeon_book.for_keeper(npc_id)
+	if row.is_empty() or str(row.get("status", "")) != "built":
+		return false
+	var view := _mission_view(npc_id)
+	if str(view.get("accept_id", "")) != "" or str(view.get("turn_in_id", "")) != "":
+		return false
+	var lines: Array = record.get("lines", [])
+	open_door_panel(str(row["id"]), str(lines[lines.size() - 1]) if not lines.is_empty() else "")
+	return true
+
+
+func _sync_door_hover(z: WorldZone, c: Vector2i) -> void:
+	for node in door_nodes.values():
+		var door_zone := str((node.dungeon.get("door", {}) as Dictionary).get("zone_id", ""))
+		node.set_hovered(z != null and z.zone_id == door_zone and node.covers(c))
+
+
+func hero_combat_class() -> String:
+	if progress != null and SpellKits.is_roster_class(str(progress.hero_class)):
+		return str(progress.hero_class)
+	var raw := str(walker.class_id) if walker != null else ""
+	for cls in SpellKits.LOCKED_ROSTER:
+		if raw.begins_with(cls):
+			return cls
+	return SpellKits.CLASS_KESTREL
+
+
+func _on_door_enter(dungeon_id: String) -> void:
+	var row: Dictionary = dungeon_book.by_id(dungeon_id) if dungeon_book != null else {}
+	if row.is_empty():
+		return
+	var door := DungeonBook.door_cell(row)
+	var door_zone := str((row["door"] as Dictionary)["zone_id"])
+	if progress != null:
+		progress.note_place(door_zone, door)
+		progress.save()
+	var ctx := {
+		"level": int(progress.level) if progress != null else 1,
+		"class_id": hero_combat_class(),
+		"return_zone": door_zone,
+		"return_cell": door,
+		"autoplay": _movie == "granary",
+		"movie": _movie,
+	}
+	var started: Dictionary = Launcher.enter(get_tree(), dungeon_id, ctx)
+	if not bool(started.get("ok", false)):
+		_show_banner("The way down is not open yet.")
+
+
+## Back from a run: stand on the door cell and show what it paid.
+func _take_dungeon_outcome() -> void:
+	var back: Dictionary = Launcher.take_outcome()
+	if back.is_empty():
+		return
+	_door_outcome = back
+	var zid := str(back.get("return_zone", ""))
+	var cell: Vector2i = back.get("return_cell", Vector2i(-1, -1))
+	if zid != "" and cell.x >= 0:
+		enter_zone(zid, cell, false)
+	if missions != null and progress != null:
+		missions.reconcile(progress)
+		_refresh_marks()
+	_refresh_hud()
+	var summary: Dictionary = back.get("summary", {})
+	var name_text := str(summary.get("name", "The dungeon"))
+	if str(back.get("result", "")) == "win":
+		_show_banner("%s cleared" % name_text)
+		if reward_popup != null:
+			reward_popup.show_drop({
+				"xp": int(summary.get("xp", 0)),
+				"coins": int(summary.get("coins", 0)),
+				"items": summary.get("items", []),
+			}, progress)
+			if is_inside_tree():
+				get_tree().create_timer(5.0).timeout.connect(func():
+					if is_instance_valid(reward_popup):
+						reward_popup.hide_drop())
+	else:
+		_show_banner("Driven out of %s. No rewards." % name_text)
+
+
+func dungeon_outcome() -> Dictionary:
+	return _door_outcome.duplicate(true)
+
+
+## Capture: walk from the square to the granary, open the panel, Enter.
+func _movie_granary() -> void:
+	settings.apply_preset("Full")
+	weather.set_weather("clear")
+	weather.time_of_day = 11.0
+	weather.settle()
+	_set_zoom(1.6)
+	if zone == null or zone.zone_id != "crosshaven_stoneford":
+		await enter_zone("crosshaven_stoneford", Vector2i(16, 16), false)
+	_hide_debug_readout()
+	_mark("granary_start")
+	await get_tree().create_timer(1.2).timeout
+	var row: Dictionary = dungeon_book.by_id("old_granary_cellar")
+	var door := DungeonBook.door_cell(row)
+	_set_hover(zone, door)
+	approach_door("old_granary_cellar")
+	await _wait_until_stopped()
+	await get_tree().create_timer(0.4).timeout
+	_mark("granary_panel")
+	await get_tree().create_timer(2.6).timeout
+	_mark("granary_enter")
+	door_panel.press_enter()
+	await get_tree().create_timer(30.0).timeout
+
+
+func _movie_granary_return() -> void:
+	_hide_debug_readout()
+	_mark("granary_back")
+	await get_tree().create_timer(5.5).timeout
+	if reward_popup != null:
+		reward_popup.hide_drop()
+	var row: Dictionary = dungeon_book.by_id("old_granary_cellar")
+	var door := DungeonBook.door_cell(row)
+	await _go(door + Vector2i(0, 3), "walk")
+	await get_tree().create_timer(1.5).timeout
+	_mark("granary_end")
+
+
+## Stills: the granary door with its keeper, then the entry panel.
+func _movie_granary_stills() -> void:
+	settings.apply_preset("Full")
+	weather.set_weather("clear")
+	weather.time_of_day = 11.0
+	weather.settle()
+	_set_zoom(1.9)
+	var folder := OS.get_environment("GRANARY_MEDIA")
+	if folder == "":
+		folder = "user://"
+	var row: Dictionary = dungeon_book.by_id("old_granary_cellar")
+	var door := DungeonBook.door_cell(row)
+	await enter_zone("crosshaven_stoneford", door + Vector2i(1, 3), false)
+	_hide_debug_readout()
+	await get_tree().create_timer(1.0).timeout
+	if _banner != null:
+		_banner.modulate.a = 0.0
+	_set_hover(zone, door)
+	walker.face("n")
+	await get_tree().create_timer(0.6).timeout
+	await _grab(folder.path_join("01_door_keeper_stoneford.png"))
+	approach_door("old_granary_cellar")
+	await _wait_until_stopped()
+	await get_tree().create_timer(0.8).timeout
+	await _grab(folder.path_join("02_entry_panel.png"))

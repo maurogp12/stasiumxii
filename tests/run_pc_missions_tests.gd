@@ -251,11 +251,20 @@ func _test_chain(book) -> void:
 		played_scouts += 1
 		if dungeon_id != "":
 			hero.level = int(book.mission(dungeon_id)["min_level"])
+			var dungeon_key := str(book.mission(dungeon_id)["steps"][0]["dungeon"])
+			if dungeon_key == "old_granary_cellar":
+				# Built (dungeons.json): the cellar mission is live and a win credits it.
+				eq(book.label_for(dungeon_id, hero) != "coming soon", true, "%s is live now its dungeon is built" % dungeon_id)
+				eq(bool(book.accept(dungeon_id, hero)["ok"]), true, "%s can be taken" % dungeon_id)
+				eq(book.on_dungeon_won(dungeon_key, hero).has(dungeon_id), true, "a cellar win credits %s" % dungeon_id)
+				eq(book.status_of(dungeon_id, hero), "ready", "%s is ready after the win" % dungeon_id)
+				eq(bool(book.turn_in(dungeon_id, hero)["ok"]), true, "%s turns in" % dungeon_id)
+				continue
 			eq(book.label_for(dungeon_id, hero), "coming soon", "%s shows coming soon" % dungeon_id)
 			var blocked: Dictionary = book.accept(dungeon_id, hero)
 			eq(bool(blocked["ok"]), false, "%s cannot be taken" % dungeon_id)
 			eq(str(blocked["reason"]), "coming soon", "%s reason is coming soon" % dungeon_id)
-			eq(book.on_dungeon_won(str(book.mission(dungeon_id)["steps"][0]["dungeon"]), hero).is_empty(), true, "a win does nothing until the mission can be taken")
+			eq(book.on_dungeon_won(dungeon_key, hero).is_empty(), true, "a win does nothing until the mission can be taken")
 	eq(played_scouts >= 2, true, "heart and towns scouts are on real ground")
 	eq(book.label_for("northgate_scout", hero) != "coming soon", true, "the Northgate scout is not a coming-soon landmark")
 	var north: Dictionary = book.mission("northgate_scout")["steps"][0]

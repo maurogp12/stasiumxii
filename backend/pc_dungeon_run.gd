@@ -26,6 +26,8 @@ var hero_name := ""
 var room_index := 0
 var result := ""
 var star := 1
+## Tests only: start each room with this HP (-1 keeps the full 80).
+var hero_hp := -1
 var errors: Array = []
 var _rooms: Array = []
 
@@ -139,6 +141,8 @@ func combat_config(index: int = -1, seed: int = -1) -> Dictionary:
 			"summons": summons,
 		},
 	}
+	if hero_hp > 0:
+		(config["dungeon"]["hero"] as Dictionary)["hp"] = hero_hp
 	if seed >= 0:
 		config["seed"] = seed
 	return config

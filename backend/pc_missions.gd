@@ -1535,8 +1535,9 @@ func _check_chain(npcs, errors: Array) -> void:
 				_err(errors, "%s dungeon step" % zone_id)
 			elif str(dungeon_steps[0].get("dungeon", "")) != str(zone.get("dungeon", "")):
 				_err(errors, "%s dungeon id" % zone_id)
-			elif not bool(dungeon_steps[0].get("pending_chunk", false)):
-				_err(errors, "%s dungeon is not pending" % zone_id)
+			elif bool(dungeon_steps[0].get("pending_chunk", false)) == _built_dungeons.has(str(zone.get("dungeon", ""))):
+				# Pending until the dungeon's run is built (dungeons.json), then live.
+				_err(errors, "%s dungeon pending flag does not match its build status" % zone_id)
 		if not _same_requires(welcome, previous_scout):
 			_err(errors, "%s welcome requires the previous scout" % zone_id)
 		if not _same_requires(scout, str(welcome["id"])):
