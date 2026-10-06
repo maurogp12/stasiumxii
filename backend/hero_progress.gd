@@ -228,6 +228,19 @@ func element_change_cost(class_id: String, pair: Array) -> int:
 	return 0 if a == b else SpellKits.ELEMENT_CHANGE_TROPHIES
 
 
+## Mauro 6 Oct 2026: "put for now a reset button on the elements so i can try
+## every single one". Clears the class's pick; the next pick is free again
+## (first pick rule). A testing aid for now.
+func reset_elements(class_id: String) -> bool:
+	if not GROWTH.has(class_id):
+		return false
+	var rec := record(class_id)
+	if not rec.has("elements"):
+		return false
+	rec.erase("elements")
+	return true
+
+
 ## Saves a pick. `spells` may leave spells out: they take the first element.
 ## `wallet` pays the change (KoliseoWallet; the caller saves both files).
 ## Returns {"ok", "reason", "cost"}.

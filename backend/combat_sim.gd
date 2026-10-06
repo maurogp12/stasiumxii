@@ -63,7 +63,6 @@ const STAGGER_HP := 4
 ## per turn.
 const RESIDUE_TURNS := 2
 const EARTH_COLLISION_HP := 8
-const FIRE_RIDER_BURN_TURNS := 1
 const STAGGER_MP := 1
 ## Clean push (walkable empty, or lava land — not a bounce): +1 Impact.
 ## Bounce (OOB / truly blocked, not lava): +2 Impact only. Do not add +1 on top.
@@ -78,7 +77,8 @@ const SHOULDER_BOUNCE_IMPACT := 2
 const HAZARD_MAX_STACKS := 3
 ## Lava: enter damage (Fire) then Burn ticks at the victim's turn start.
 const LAVA_ENTER_HP: Array[int] = [0, 10, 10, 15]
-const BURN_STACK_HP: Array[int] = [0, 4, 5, 5]
+# Mauro 6 Oct 2026: "each stack is 4 points burn" (was 4 / 5 / 5).
+const BURN_STACK_HP: Array[int] = [0, 4, 8, 12]
 const BURN_STACK_TURNS: Array[int] = [0, 2, 3, 4]
 const BURN_MAX_STACKS := 3
 const LAVA_LAND_HP := 10
@@ -943,7 +943,7 @@ func snapshot() -> Dictionary:
 		"open_notes": {
 			"A03": "Omitted: Gust/wind heading. WindMod omitted (not invented as 1.0).",
 			"A04": "Crit *roll* OFF. CritMult held at 1.0. No elemental riders.",
-			"A05": "Open: Resist 0, damage rounded to nearest int. WindMod omitted from the formula. Locked Stun (A′): stun_remaining on the unit; reject move/cast/face with stunned_cannot_act; auto end_turn on that seat's turn start (player never presses End Turn). Decrement at start of that unit's turn after setting stunned-this-turn so Stun 1 covers the incoming (skipped) turn. Director Locked Shoulder: occupied dest is push_blocked (hard body-block, no bounce/stagger; Impact stays the hit +1). Walkable empty dest pushes for +1 Impact. OOB / truly blocked (not lava) bounces (target stays) and staggers (4 HP; +1 MP if current MP >= 1) for +2 Impact only (no stack with +1). Map push stacks (Mauro 29 Sep 2026): a forced push onto a hazard stacks 1–3 while live. Lava enter 10/10/15 Fire then Burn 4×2 / 5×3 / 5×4; water Breathless (1 spell silenced 1/2/3 turns, same slot); mud Slow −1/−2/−3 MP; Windmere ice Frozen (no melee 1/2 turns, 3 = Paralyzed); Stormspire charge Electrocuted −1/−2/−3 AP. Cleanse strips one family. Voluntary walk onto hazards stays impassable.",
+			"A05": "Open: Resist 0, damage rounded to nearest int. WindMod omitted from the formula. Locked Stun (A′): stun_remaining on the unit; reject move/cast/face with stunned_cannot_act; auto end_turn on that seat's turn start (player never presses End Turn). Decrement at start of that unit's turn after setting stunned-this-turn so Stun 1 covers the incoming (skipped) turn. Director Locked Shoulder: occupied dest is push_blocked (hard body-block, no bounce/stagger; Impact stays the hit +1). Walkable empty dest pushes for +1 Impact. OOB / truly blocked (not lava) bounces (target stays) and staggers (4 HP; +1 MP if current MP >= 1) for +2 Impact only (no stack with +1). Map push stacks (Mauro 29 Sep 2026): a forced push onto a hazard stacks 1–3 while live. Lava enter 10/10/15 Fire then Burn 4×2 / 8×3 / 12×4 (4 per stack, Mauro 6 Oct 2026); water Breathless (1 spell silenced 1/2/3 turns, same slot); mud Slow −1/−2/−3 MP; Windmere ice Frozen (no melee 1/2 turns, 3 = Paralyzed); Stormspire charge Electrocuted −1/−2/−3 AP. Cleanse takes away one debuff per cast (Mauro 6 Oct 2026). Voluntary walk onto hazards stays impassable.",
 			"A06": "Advance (Locked teleport): dest-click snap, 3 AP / 0 MP, client path ignored. Range gate is exactly 2 cardinal spaces (N/S/E/W at Manhattan 2). Manhattan 1, diagonals, and any non-cardinal are rejected. Dest must pass the same stand-on gates as walk (not mud, water, or lava, not occupied, climb<=1 / drop<=2). Gate only — no terrain+elev MP spend. Illegal dest refunds. legal_intents / preview_cast use the shared helper. leftover MP still walks (legal_intents is mp>0, not AP). No hop path. +1 Impact if Chebyshev 1 to an enemy after landing. Facing unchanged — Advance does not auto-face.",
 			"A07": "Provisional Open: back = 90° rear cone (facing-axis dominates and is opposite). Front/side ×1.00, back ×1.20.",
 			"deploy": "Locked flow: simultaneous place/reposition, Ready gated on place, both ready → lock → Turn 1. Proposed (shipped live): seed-sampled ~6-cell blobs (2×3 or organic), interior allowed, min opening Chebyshev 3 (prefer 4–6), reject overlap and same-edge camping. Open: fog/hidden enemy, deploy timer, multi-unit. No networking.",
@@ -1409,7 +1409,7 @@ func preview_cast(spell_or_intent: Variant, from: Variant = null, to: Variant = 
 		out["impact_before"] = impact_before
 		out["would_stun"] = impact_before == int(def.get("stun_if_impact_before", SpellKits.IMPACT_CAP)) and impact_before >= spend
 	elif spell_id == SpellKits.SHOULDER:
-		notes.append("Push 1 along the line. Director Locked Shoulder: walkable empty dest pushes (+1 Impact). Occupied dest is push_blocked (hard body-block). OOB / truly blocked dest bounces + staggers (4 HP; +1 MP if MP>=1) for +2 Impact only (no stack with +1). Hazard pushes stack 1–3 (Map push stacks): lava 10/10/15 + Burn 4×2 / 5×3 / 5×4, water Breathless, mud Slow −1/−2/−3 MP, Windmere ice Frozen, Stormspire charge Electrocuted. Voluntary walk and Advance refuse mud and water.")
+		notes.append("Push 1 along the line. Director Locked Shoulder: walkable empty dest pushes (+1 Impact). Occupied dest is push_blocked (hard body-block). OOB / truly blocked dest bounces + staggers (4 HP; +1 MP if MP>=1) for +2 Impact only (no stack with +1). Hazard pushes stack 1–3 (Map push stacks): lava 10/10/15 + Burn 4×2 / 8×3 / 12×4 (4 per stack, Mauro 6 Oct 2026), water Breathless, mud Slow −1/−2/−3 MP, Windmere ice Frozen, Stormspire charge Electrocuted. Voluntary walk and Advance refuse mud and water.")
 
 	out["notes"] = notes
 	out["reason"] = _preview_reason(def, actor, target, from_cell, to_cell, out["in_range"])
@@ -1617,15 +1617,8 @@ func _flex_target(actor: Dictionary, target: Dictionary, def: Dictionary) -> Arr
 	if int(target.get("hp", 0)) <= 0:
 		_add_element_rider(target, el, tags)
 		return tags
-	var burn_before := [int(target.get("burn_stacks", 0)), int(target.get("burn_remaining", 0))]
 	_add_element_rider(target, el, tags)
 	var blend := _try_blend(actor, target, el)
-	if blend == "spark" and tags.has("fire_burn"):
-		# Mauro 6 Oct 2026 ("take away burn put a electrocuted"): the Fire hit
-		# that fires Spark does not Burn; Spark electrocutes instead.
-		target["burn_stacks"] = burn_before[0]
-		target["burn_remaining"] = burn_before[1]
-		tags.erase("fire_burn")
 	if blend != "":
 		tags.append("blend")
 		tags.append("blend_" + blend)
@@ -1643,9 +1636,9 @@ func _add_element_rider(target: Dictionary, el: String, tags: Array) -> void:
 			target["water_slow"] = true
 			tags.append("water_slow")
 		"fire":
-			if int(target.get("burn_stacks", 0)) <= 0:
-				target["burn_stacks"] = 1
-			target["burn_remaining"] = maxi(int(target.get("burn_remaining", 0)), FIRE_RIDER_BURN_TURNS)
+			# Mauro 6 Oct 2026: "burn can be stacked 3 times". Each Fire hit adds
+			# a Burn stack like a lava push (cap 3): 4 × 2 / 8 × 3 / 12 × 4.
+			_apply_burn(target)
 			tags.append("fire_burn")
 
 
@@ -1687,20 +1680,22 @@ func _stamp_riders(event: Dictionary, tags: Array, def: Dictionary) -> void:
 ## heal (option A): the healed teammate's next hit Blends with Mender's element.
 ## Guard-rails (docs/BALANCE_PLAN_HANDOFF.md §4): one Blend per body until its
 ## own next turn ends; Pin never two turns running and blocks walking only;
-## Spark 4; Sleet once per target turn.
+## Spark 4.
+## Mauro 6 Oct 2026: "air plus water creates electricity" — Spark is Air +
+## Water; Sleet is gone ("eliminate sleet and just leave air + earth since its
+## almost the same effect"). Air + Fire has no Blend.
 const BLENDS := {
 	"air+earth": "drift_pin",
-	"air+fire": "spark",
-	"air+water": "sleet",
+	"air+water": "spark",
 	"earth+fire": "magma",
 	"earth+water": "mire",
 	"fire+water": "steam",
 }
 const BLEND_NAMES := {
-	"drift_pin": "Drift-Pin", "spark": "Spark", "sleet": "Sleet",
+	"drift_pin": "Drift-Pin", "spark": "Spark",
 	"magma": "Magma", "mire": "Mire", "steam": "Steam",
 }
-const SPARK_CHIP := 4
+const SPARK_CHIP := 10  # Mauro 6 Oct 2026 (was 4)
 const DRIFT_COLLISION_HP := 8
 const MAGMA_TICK_HP := 4
 var _blend_queue: Array = []
@@ -1752,8 +1747,6 @@ func _try_blend(actor: Dictionary, target: Dictionary, el: String) -> String:
 			note = _blend_drift_pin(actor, target, event)
 		"spark":
 			note = _blend_spark(actor, target, event)
-		"sleet":
-			note = _blend_sleet(actor, target, event)
 		"magma":
 			target["magma_pending"] = int(actor["seat"])
 			note = "the tile they end their next turn on burns for %d" % MAGMA_TICK_HP
@@ -1813,45 +1806,16 @@ func _blend_drift_pin(actor: Dictionary, target: Dictionary, event: Dictionary) 
 	return note
 
 
-## Sleet (Air + Water), Mauro 5 Oct 2026: "instead of taking away 1 mp pushes
-## 2 spaces back", then "make that sleet only pushes 1 space". A push of 1
-## away from the caster: a body stops it (no damage), a wall / the edge
-## bounces with the usual stagger, a hazard tile ends it there. Grounded /
-## Plant: no push.
-const SLEET_PUSH := 1
-
-
-func _blend_sleet(actor: Dictionary, target: Dictionary, event: Dictionary) -> String:
-	var from: Vector2i = target["pos"]
-	var moved := 0
-	var last := {}
-	for i in SLEET_PUSH:
-		last = _try_push(actor["pos"], target, 1, false)
-		if not bool(last.get("moved", false)):
-			break
-		moved += 1
-		_apply_landing_punishments(target, last)
-		if str(last.get("reason", "")) != "":
-			# Lava / water / mud: the slide ends in the hazard.
-			break
-	event["from"] = from
-	event["to"] = target["pos"]
-	event["pushed_tiles"] = moved
-	event["push"] = last.duplicate()
-	if moved > 0:
-		return "pushed %d tile%s back" % [moved, "" if moved == 1 else "s"]
-	if bool(last.get("bounced", false)):
-		return "slams into the wall (%d)" % int(last.get("stagger_hp", 0))
-	return "holds its ground"
-
-
-## Spark (Air + Fire): 4 Neutral chip (no resist, eats shield first), then
+## Spark (Air + Water since Mauro 6 Oct 2026; was Air + Fire): 4 Neutral chip (no resist, eats shield first), then
 ## push 1 away from the caster (Grounded / Plant: chip lands, no push).
 ## Healing a Sparked body receives is cut by this share.
 const SPARK_HEAL_CUT := 0.4
 
 
-func _blend_spark(actor: Dictionary, target: Dictionary, event: Dictionary) -> String:
+func _blend_spark(_actor: Dictionary, target: Dictionary, event: Dictionary) -> String:
+	# Mauro 6 Oct 2026: "water + air = electricity 10 damage that ignores
+	# resistences and makes that healing effect is reduced to 40% less heal".
+	# No resist, no crit; a shield still soaks it first. No push, no AP loss.
 	var chip := SPARK_CHIP
 	var shield := int(target.get("shield", 0))
 	var soaked := mini(shield, chip)
@@ -1859,23 +1823,13 @@ func _blend_spark(actor: Dictionary, target: Dictionary, event: Dictionary) -> S
 	target["hp"] = maxi(0, int(target["hp"]) - (chip - soaked))
 	event["chip"] = chip
 	event["shield_soaked"] = soaked
-	var from: Vector2i = target["pos"]
-	var result := _try_push(actor["pos"], target, 1, false)
-	if bool(result.get("moved", false)):
-		_apply_landing_punishments(target, result)
-	event["from"] = from
+	event["from"] = target["pos"]
 	event["to"] = target["pos"]
-	event["push"] = result.duplicate()
-	# Mauro 6 Oct 2026: "spark also makes healing less efficient anyone under
-	# spark effect would receive 40% less healing power". Until the end of the
-	# target's next own turn (the window the other Blend effects use).
+	# Until the end of the target's next own turn (the window the other Blend
+	# effects use): healing it receives is cut by SPARK_HEAL_CUT.
 	target["sparked"] = true
 	event["heal_cut"] = SPARK_HEAL_CUT
-	# Mauro 6 Oct 2026: no Burn from Spark; it electrocutes (−AP next turn,
-	# the Stormspire Electrocuted stack).
-	var shock := _apply_electrocuted(target)
-	event["electrocuted"] = int(shock["stacks"])
-	return "%d chip%s, -%d%% healing, Electrocuted −%d AP" % [chip, ", pushed 1" if bool(result.get("moved", false)) else "", roundi(SPARK_HEAL_CUT * 100.0), int(shock["stacks"])]
+	return "%d damage (ignores resist), -%d%% healing" % [chip, roundi(SPARK_HEAL_CUT * 100.0)]
 
 
 func _add_element_tile(kind: String, cell: Vector2i, owner_seat: int) -> void:
@@ -4260,7 +4214,7 @@ func _append_lava_castigo(target: Dictionary, burn_info: Dictionary) -> void:
 		"refreshed": refreshed,
 		"previous": int(burn_info.get("previous", 0)),
 		"target_seat": target["seat"],
-		"soft_lock": "Map push stack — lava enter 10/10/15 Fire, Burn 4×2 / 5×3 / 5×4, max 3",
+		"soft_lock": "Map push stack — lava enter 10/10/15 Fire, Burn 4×2 / 8×3 / 12×4 (4 per stack, Mauro 6 Oct 2026), max 3",
 		"coach": burn_coach,
 	})
 
@@ -5723,17 +5677,13 @@ func _resolve_support(intent: Dictionary, actor: Dictionary, target: Dictionary,
 		target["shield_turns"] = int(def.get("shield_turns", 2))
 	var cc_removed: Array = []
 	if spell_id == SpellKits.CLEANSE:
-		# Cleanse clears Stun, then strips ONE map family (Mauro's Map push
-		# stacks sheet): the highest stack; ties go Slow, Breathless, Burn,
-		# Frozen, Electrocuted.
-		if int(target.get("stun_remaining", 0)) > 0 or bool(target.get("stunned", false)):
-			cc_removed.append("stun")
-		target["stun_remaining"] = 0
-		target["stunned"] = false
-		var family := cleanse_pick(target)
-		if family != "":
-			_strip_family(target, family)
-			cc_removed.append(family)
+		# Mauro 6 Oct 2026: "cleanse from mender can cleanse every debuff but 1
+		# cleanse only takes away 1 debuff". One per cast: Stun first, then the
+		# highest map stack (ties Slow, Breathless, Burn, Frozen, Electrocuted),
+		# then the Blend / element debuffs in CLEANSE_OTHER order.
+		var removed := cleanse_one(target)
+		if removed != "":
+			cc_removed.append(removed)
 	if spell_id == SpellKits.HEARTSTOP:
 		target["hit_immunity"] = int(def.get("ally_immunity_hits", 1))
 	_last_coach = "HIT %s on %s." % [def["name"], target["name"]]
@@ -5771,6 +5721,8 @@ func _resolve_support(intent: Dictionary, actor: Dictionary, target: Dictionary,
 
 
 const CLEANSE_ORDER := ["slow", "breathless", "burn", "frozen", "electrocuted"]
+## Debuffs Cleanse can take after Stun and the map stacks, in this order.
+const CLEANSE_OTHER := ["sparked", "pinned", "mire", "skip_next_mp", "water_slow", "magma", "residue"]
 const _FAMILY_KEYS := {
 	"slow": ["slow_stacks", "slow_remaining"],
 	"breathless": ["breathless_stacks", "breathless_remaining"],
@@ -5795,6 +5747,51 @@ static func cleanse_pick(unit: Dictionary) -> String:
 			best = family
 			best_stack = stack
 	return best
+
+
+## Takes away ONE debuff from the unit and returns its name ("" when clean).
+func cleanse_one(unit: Dictionary) -> String:
+	if int(unit.get("stun_remaining", 0)) > 0 or bool(unit.get("stunned", false)):
+		unit["stun_remaining"] = 0
+		unit["stunned"] = false
+		return "stun"
+	var family := cleanse_pick(unit)
+	if family != "":
+		_strip_family(unit, family)
+		return family
+	for debuff in CLEANSE_OTHER:
+		match debuff:
+			"sparked":
+				if bool(unit.get("sparked", false)):
+					unit["sparked"] = false
+					return debuff
+			"pinned":
+				if bool(unit.get("pinned", false)) or bool(unit.get("pin_pending", false)):
+					unit["pinned"] = false
+					unit["pin_pending"] = false
+					return debuff
+			"mire":
+				if unit.has("mire_cell"):
+					unit.erase("mire_cell")
+					return debuff
+			"skip_next_mp":
+				if bool(unit.get("skip_next_mp", false)):
+					unit["skip_next_mp"] = false
+					return debuff
+			"water_slow":
+				if bool(unit.get("water_slow", false)):
+					unit["water_slow"] = false
+					return debuff
+			"magma":
+				if unit.has("magma_pending"):
+					unit.erase("magma_pending")
+					return debuff
+			"residue":
+				if str(unit.get("residue", "")) != "":
+					unit["residue"] = ""
+					unit["residue_turns"] = 0
+					return debuff
+	return ""
 
 
 func _strip_family(unit: Dictionary, family: String) -> void:
