@@ -5536,7 +5536,7 @@ func _mitigate_hit(actor: Dictionary, target: Dictionary, damage: int) -> Dictio
 ## hits him from an adjacent tile takes THORNS_REFLECT of that hit back (no
 ## resist): hard hitters like Gloam pay the most. Was a flat 6, then tested as
 ## a % of his max HP; the simulator showed neither made him Gloam's counter.
-const THORNS_REFLECT := 0.25
+const THORNS_REFLECT := 0.2
 ## Balance tool knob: > 0 overrides the reflect share in % (sim_duels reads
 ## THORNS_PCT).
 static var thorns_pct := 0.0

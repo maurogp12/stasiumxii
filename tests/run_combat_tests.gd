@@ -7714,7 +7714,7 @@ func _test_bastion_team_ward_and_thorns() -> void:
 	var strike_hit := _first_event_where(strike.get("events", []), "hit")
 	var dealt := int(strike_hit.get("damage", 0)) + int(strike_hit.get("shield_absorbed", 0))
 	var reflected := maxi(1, roundi(float(dealt) * _sim.THORNS_REFLECT))
-	eq(int(_unit(0)["hp"]), jaw_hp - reflected, "Thorns hits the adjacent attacker for 25% of the blow")
+	eq(int(_unit(0)["hp"]), jaw_hp - reflected, "Thorns hits the adjacent attacker for its share of the blow")
 	eq(int(strike_hit.get("thorns", 0)), reflected, "the hit event names Thorns")
 	# Mauro 6 Oct 2026: Thorns works without a shield too.
 	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1], "classes": ["ironjaw", "bastion"], "positions": [Vector2i(3, 3), Vector2i(4, 3)]})
