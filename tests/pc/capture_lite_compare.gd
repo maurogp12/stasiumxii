@@ -43,7 +43,7 @@ func _initialize() -> void:
 func _go() -> void:
 	var store := VisualSettings.new()
 	store.apply_preset("Full")
-	store.performance_prompted = true
+	store.mark_performance_prompted()
 	store.set_performance(_mode == "lite")
 	_w = WORLD.instantiate()
 	_w.instant_transitions = true

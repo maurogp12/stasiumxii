@@ -40,7 +40,7 @@ func _go() -> void:
 	# The store decides the mode before the world loads its first texture.
 	var store := VisualSettings.new()
 	store.apply_preset("Full")
-	store.performance_prompted = true
+	store.mark_performance_prompted()
 	store.set_performance(mode == "lite")
 	var w: Node2D = WORLD.instantiate()
 	w.instant_transitions = true
