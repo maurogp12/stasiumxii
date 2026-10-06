@@ -210,7 +210,7 @@ func _test_reset_and_turn_order() -> void:
 	eq(snap["burn_stack_turns"], [2, 3, 4], "Burn lasts 2 / 3 / 4 turns")
 	eq(snap["burn_duration"], 4, "Burn duration is 4")
 	eq(snap["burn_max_stacks"], 3, "Burn max stacks is 3")
-	eq(snap["burn_stack_hp"], [4, 5, 5], "Burn ticks are 4 / 5 / 5")
+	eq(snap["burn_stack_hp"], [4, 8, 12], "Burn ticks are 4 per stack (Mauro 6 Oct 2026)")
 	eq(snap["units"][0]["burn_remaining"], 0, "units start with no Burn")
 	eq(snap["units"][0]["burn_stacks"], 0, "units start with no Burn stacks")
 	eq(snap["units"][1]["burn_remaining"], 0, "Ironjaw starts with no Burn")
@@ -5205,12 +5205,12 @@ func _test_shoulder_lava_burn_locked() -> void:
 	var third: Dictionary = _sim.submit({"type": "end_turn", "seat": 1})
 	eq(_event_type_count(third["events"], "burn"), 0, "no third tick")
 
-	# Pushes while burning stack: 2 (10 enter, 5 × 3), 3 (15 enter, 5 × 4), cap 3.
+	# Pushes while burning stack: 2 (10 enter, 8 × 3), 3 (15 enter, 12 × 4), cap 3 (4 HP per stack since Mauro 6 Oct 2026).
 	_sim.reset_match(lava_cfg.call([Vector2i(6, 3), Vector2i(7, 3), Vector2i(8, 3)]))
 	_sim.submit({"type": "end_turn"})
 	_sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(4, 3)})
 	eq(_unit(0)["burn_stacks"], 1, "first push is stack 1")
-	for step in [[Vector2i(5, 3), Vector2i(6, 3), 2, 10, 3, 5], [Vector2i(6, 3), Vector2i(7, 3), 3, 15, 4, 5], [Vector2i(7, 3), Vector2i(8, 3), 3, 15, 4, 5]]:
+	for step in [[Vector2i(5, 3), Vector2i(6, 3), 2, 10, 3, 8], [Vector2i(6, 3), Vector2i(7, 3), 3, 15, 4, 12], [Vector2i(7, 3), Vector2i(8, 3), 3, 15, 4, 12]]:
 		_sim.submit({"type": "end_turn", "seat": 1})
 		_sim.submit({"type": "end_turn", "seat": 0})
 		_live_unit(1)["pos"] = step[0] - Vector2i(1, 0)
@@ -7846,6 +7846,20 @@ func _test_marks_fade_without_attack() -> void:
 	_sim.submit({"type": "end_turn", "seat": 0})
 	for field in ["umbral", "aegis", "pulse"]:
 		eq(int(_unit(0)[field]), 0, "a quiet turn clears %s too" % field)
+	# Mauro 6 Oct 2026: Mender keeps Pulse on a turn she only heals; a turn
+	# with no spell at all drops it.
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "team_size": 2, "rolls": [1, 1, 1, 1],
+		"classes": ["mender", "ironjaw", "kestrel", "gloam"], "positions": [Vector2i(3, 5), Vector2i(10, 5), Vector2i(4, 5), Vector2i(11, 5)]})
+	_sim._active_seat = 0
+	_live_unit(2)["hp"] = int(_live_unit(2)["hp"]) - 20
+	_live_unit(0)["pulse"] = 2
+	var healed: Dictionary = _sim.submit({"type": "cast", "spell": "mend", "to": Vector2i(4, 5), "target_seat": 2, "seat": 0})
+	eq(healed["ok"], true, "Mender heals a teammate")
+	var pulse_after := int(_unit(0)["pulse"])
+	_sim._drop_unattended_marks(_live_unit(0))
+	eq(int(_unit(0)["pulse"]), pulse_after, "a heal-only turn keeps Mender's Pulse")
+	_sim._drop_unattended_marks(_live_unit(0))
+	eq(int(_unit(0)["pulse"]), 0, "a turn with no spell at all drops her Pulse")
 
 
 func _test_element_blends() -> void:
@@ -7896,48 +7910,26 @@ func _test_element_blends() -> void:
 	eq(str(_unit(1).get("residue", "")), "water", "someone else's Residue is overwritten, no Blend")
 	_live_unit(0)["ap"] = 6
 	_live_unit(0)["pos"] = _unit(1)["pos"] - Vector2i(1, 0)
-	var sleet: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": _unit(1)["pos"], "seat": 0})
-	eq(str(_first_event_where(sleet.get("events", []), "blend").get("blend", "")), "sleet", "Air on own Water = Sleet")
+	var air_water: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": _unit(1)["pos"], "seat": 0})
+	eq(str(_first_event_where(air_water.get("events", []), "blend").get("blend", "")), "spark", "Air on own Water = Spark (Mauro 6 Oct 2026)")
 	_live_unit(1)["residue"] = "water"
 	_live_unit(1)["residue_seat"] = 0
 	_live_unit(1)["residue_turns"] = 2
 	var again: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": _unit(1)["pos"], "seat": 0})
 	eq(_first_event_where(again.get("events", []), "blend").is_empty(), true, "no second Blend on the same body this round")
 	_sim.submit({"type": "end_turn", "seat": 0})
-	eq(int(_unit(1)["mp"]), int(_unit(1)["max_mp"]) - 1, "only the Water rider takes MP (Sleet pushes now)")
+	eq(int(_unit(1)["mp"]), int(_unit(1)["max_mp"]) - 1, "only the Water rider takes MP")
 
-	# Sleet (Mauro 5 Oct 2026): pushes back from the caster instead of −1 MP;
-	# 2 tiles, then "make that sleet only pushes 1 space".
+	# Mauro 6 Oct 2026: Sleet is gone; Air + Fire does not Blend.
 	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1, 1], "classes": ["ironjaw", "kestrel"], "positions": [Vector2i(5, 5), Vector2i(6, 5)]})
-	_live_unit(0)["spell_elements"] = {"strike": "air", "shoulder": "water", "crush": "water"}
-	_live_unit(1)["residue"] = "water"
+	_live_unit(0)["spell_elements"] = {"strike": "air", "shoulder": "fire", "crush": "fire"}
+	_live_unit(1)["residue"] = "fire"
 	_live_unit(1)["residue_seat"] = 0
 	_live_unit(1)["residue_turns"] = 2
-	var push2: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(6, 5), "seat": 0})
-	var sl := _first_event_where(push2.get("events", []), "blend")
-	eq(str(sl.get("blend", "")), "sleet", "Air on own Water = Sleet")
-	eq(_unit(1)["pos"], Vector2i(7, 5), "Sleet pushes the target 1 tile back")
-	eq(int(sl.get("pushed_tiles", 0)), 1, "the Blend event counts 1 tile")
-	eq(sl.get("from", null), Vector2i(6, 5), "the slide starts where it stood")
-	# A body right behind stops it.
-	_sim.reset_match({"seed": 1, "flat_board": true, "team_size": 2, "skip_deploy": true, "rolls": [1], "classes": ["ironjaw", "kestrel", "mender", "gloam"],
-		"positions": [Vector2i(5, 5), Vector2i(6, 5), Vector2i(1, 1), Vector2i(7, 5)]})
-	_sim._active_seat = 0
-	_live_unit(0)["spell_elements"] = {"strike": "air", "shoulder": "water", "crush": "water"}
-	_live_unit(1)["residue"] = "water"
-	_live_unit(1)["residue_seat"] = 0
-	_live_unit(1)["residue_turns"] = 2
-	var blocked: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(6, 5), "seat": 0})
-	eq(_unit(1)["pos"], Vector2i(6, 5), "a body right behind stops the Sleet push")
-	eq(int(_first_event_where(blocked.get("events", []), "blend").get("pushed_tiles", -1)), 0, "0 tiles pushed")
-	# The edge: 1 tile from the edge, one step to the edge.
-	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1], "classes": ["ironjaw", "kestrel"], "positions": [Vector2i(12, 5), Vector2i(13, 5)]})
-	_live_unit(0)["spell_elements"] = {"strike": "air", "shoulder": "water", "crush": "water"}
-	_live_unit(1)["residue"] = "water"
-	_live_unit(1)["residue_seat"] = 0
-	_live_unit(1)["residue_turns"] = 2
-	_sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(13, 5), "seat": 0})
-	eq(_unit(1)["pos"], Vector2i(14, 5), "Sleet stops at the board edge")
+	var air_fire: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(6, 5), "seat": 0})
+	eq(_first_event_where(air_fire.get("events", []), "blend").is_empty(), true, "Air on own Fire makes no Blend")
+	eq(str(_unit(1).get("residue", "")), "air", "the Air hit leaves its own Residue instead")
+	eq(_sim.blend_of("air", "fire"), "", "no Blend for Air + Fire")
 
 	# Drift-Pin: slide 1 away, Pinned next turn (no walking), never two turns running.
 	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1, 1], "classes": ["ironjaw", "kestrel"], "positions": [Vector2i(5, 5), Vector2i(6, 5)]})
@@ -7978,18 +7970,46 @@ func _test_element_blends() -> void:
 	var strike_dmg := int(_first_event_where(slam.get("events", []), "hit").get("damage", 0))
 	eq(hp0 - int(_unit(1)["hp"]), strike_dmg + 8, "Drift-Pin into the board edge hits for 8")
 
-	# Spark: 4 chip that eats shield, then push 1.
+	# Spark (Air + Water, Mauro 6 Oct 2026): 10 damage that ignores resist, 40% less healing.
 	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1], "classes": ["ironjaw", "kestrel"], "positions": [Vector2i(5, 5), Vector2i(6, 5)]})
-	_live_unit(0)["spell_elements"] = {"strike": "fire", "shoulder": "air", "crush": "air"}
+	_live_unit(0)["spell_elements"] = {"strike": "water", "shoulder": "air", "crush": "air"}
 	_live_unit(1)["residue"] = "air"
 	_live_unit(1)["residue_seat"] = 0
 	_live_unit(1)["residue_turns"] = 2
 	var spark: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(6, 5), "seat": 0})
 	var sp := _first_event_where(spark.get("events", []), "blend")
-	eq(str(sp.get("blend", "")), "spark", "Fire on own Air = Spark")
-	eq(int(sp.get("chip", 0)), 4, "Spark chips 4 (approved 6 → 4)")
-	eq(_unit(1)["pos"], Vector2i(7, 5), "Spark pushes 1")
-	eq(int(_unit(1).get("burn_remaining", 0)) > 0, true, "the Fire hit's Burn rider stays")
+	eq(str(sp.get("blend", "")), "spark", "Water on own Air = Spark")
+	eq(int(sp.get("chip", 0)), 10, "Spark deals 10")
+	eq(_unit(1)["pos"], Vector2i(6, 5), "Spark no longer pushes")
+	eq(int(_unit(1).get("electro_stacks", 0)), 0, "Spark no longer electrocutes")
+	truthy(bool(_unit(1).get("sparked", false)), "Spark marks the target Sparked")
+	_live_unit(1)["hp"] = 30
+	eq(_sim._apply_heal(_live_unit(1), 20), 12, "a 20 heal on a Sparked body heals 12")
+	_sim.submit({"type": "end_turn", "seat": 0})
+	truthy(bool(_unit(1).get("sparked", false)), "still Sparked during its own turn")
+	var spark_end: Dictionary = _sim.submit({"type": "end_turn", "seat": 1})
+	eq(bool(_unit(1).get("sparked", false)), false, "Sparked ends with its turn")
+	var spark_gone := 0
+	for e in spark_end.get("events", []):
+		if str(e.get("type", "")) == "expire" and str(e.get("status", "")) == "sparked":
+			spark_gone += 1
+	eq(spark_gone, 1, "the board is told Sparked is gone")
+	_live_unit(1)["hp"] = 30
+	eq(_sim._apply_heal(_live_unit(1), 20), 20, "full healing again afterwards")
+	# Mauro 6 Oct 2026: "burn can be stacked 3 times" — each Fire hit adds a stack.
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1, 1, 1], "classes": ["ironjaw", "kestrel"], "positions": [Vector2i(5, 5), Vector2i(6, 5)]})
+	_live_unit(0)["spell_elements"] = {"strike": "fire", "shoulder": "fire", "crush": "fire"}
+	_sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(6, 5), "seat": 0})
+	eq([int(_unit(1)["burn_stacks"]), int(_unit(1)["burn_remaining"])], [1, 2], "1st Fire hit: Burn stack 1 for 2 turns")
+	_live_unit(0)["ap"] = 6
+	_sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(6, 5), "seat": 0})
+	eq([int(_unit(1)["burn_stacks"]), int(_unit(1)["burn_remaining"])], [2, 3], "2nd Fire hit: stack 2 for 3 turns")
+	_live_unit(0)["ap"] = 6
+	_live_unit(1)["blend_lock"] = false
+	_sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(6, 5), "seat": 0})
+	_live_unit(0)["ap"] = 6
+	_sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(6, 5), "seat": 0})
+	eq(int(_unit(1)["burn_stacks"]), 3, "Burn stacks stop at 3")
 
 	# Magma: the tile they end their next turn on burns 4, until the blender's turn.
 	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1], "classes": ["ironjaw", "kestrel"], "positions": [Vector2i(5, 5), Vector2i(6, 5)]})
@@ -8146,12 +8166,13 @@ func _test_element_riders() -> void:
 	eq(bool(_unit(1).get("water_slow", false)), false, "the Water slow is spent")
 	eq(str(_sim.snapshot().get("coach", "")).contains("Water"), true, "the coach line says Water")
 
-	# Death clears the Residue. Cleanse does not.
+	# Death clears the Residue. Since Mauro 6 Oct 2026 Cleanse takes it too
+	# when it is the only debuff ("cleanse every debuff ... 1 per cast").
 	_sim.reset_match({"seed": 1, "flat_board": true, "classes": ["mender", "ironjaw"], "positions": [Vector2i(2, 2), Vector2i(8, 8)]})
 	_live_unit(0)["residue"] = "earth"
 	_live_unit(0)["residue_turns"] = 2
 	_sim.submit({"type": "cast", "spell": "cleanse", "to": Vector2i(2, 2), "seat": 0})
-	eq(str(_unit(0).get("residue", "")), "earth", "Cleanse does not strip Residue")
+	eq(str(_unit(0).get("residue", "")), "", "Cleanse strips a lone Residue")
 	_live_unit(1)["residue"] = "air"
 	_live_unit(1)["hp"] = 0
 	_sim._check_death(_live_unit(1))

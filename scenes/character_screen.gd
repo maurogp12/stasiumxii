@@ -53,6 +53,17 @@ func spend(bucket: String) -> Dictionary:
 	return result
 
 
+func reset_points() -> Dictionary:
+	var result := _hero.reset_points(selected)
+	if bool(result.get("ok", false)):
+		_hero.save()
+		_status.text = "%s: %d points back to spend." % [SpellKits.display_name(selected), int(result["refunded"])]
+	else:
+		_status.text = "No points spent yet."
+	_refresh()
+	return result
+
+
 func close() -> void:
 	closed.emit()
 	queue_free()
@@ -161,6 +172,15 @@ func _refresh() -> void:
 		count.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		row.add_child(count)
 		_detail.add_child(row)
+	var used := 0
+	for bucket in spent:
+		used += int(spent[bucket])
+	var reset := _button("Reset points")
+	reset.name = "ResetPoints"
+	reset.custom_minimum_size = Vector2(250, ROW_HEIGHT)
+	reset.disabled = used <= 0
+	reset.pressed.connect(reset_points)
+	_detail.add_child(reset)
 	var st := HeroProgress.combat_stats(_hero.fight_hero(selected), selected)
 	var line := "In a fight this level adds: Mastery +%d · HP +%d · Init +%d · Ward +%d" % [int(st["mastery"]), int(st["hp"]), int(st["init"]), int(st["ward"])]
 	if int(st["ap"]) > 0:

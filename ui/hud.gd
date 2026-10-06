@@ -5,6 +5,8 @@ signal spell_selected(spell_id: String)
 signal face_requested(dir: String)
 signal end_turn_requested
 signal new_match_requested
+## Mauro 5 Oct 2026: "put a option to go back to hub ... in koliseo".
+signal hub_requested
 signal ready_requested(seat: int)
 ## Finger moved on an ability button. committing is the release.
 signal aim_dragged(screen_pos: Vector2, committing: bool)
@@ -71,6 +73,7 @@ var _mp_pips: HBoxContainer
 var _walk_button: Button
 var _end_turn_button: Button
 var _new_match_button: Button
+var _hub_button: Button
 var _new_match_holder: Button
 var _ready_p1_button: Button
 var _ready_p2_button: Button
@@ -654,6 +657,8 @@ static func element_notes(unit: Dictionary) -> String:
 		out += "  [b]MIRE[/b] +1 MP to leave"
 	if unit.has("magma_pending"):
 		out += "  [b]MAGMA[/b] burns where it ends its turn"
+	if bool(unit.get("sparked", false)):
+		out += "  [b]SPARKED[/b] −40% healing"
 	if bool(unit.get("blend_lock", false)):
 		out += "  [b]BLENDED[/b]"
 	if str(unit.get("infusion", "")) != "":
@@ -1289,6 +1294,16 @@ func _build() -> void:
 	# Kept off the map (Mauro): New Match lives in the left column under Zoom.
 	_new_match_holder = _new_match_button
 
+	_hub_button = Button.new()
+	_hub_button.name = "HubButton"
+	_hub_button.text = "Hub"
+	_hub_button.custom_minimum_size = TOUCH.NEW_MATCH_BUTTON_SIZE
+	_hub_button.add_theme_font_size_override("font_size", 15)
+	_hub_button.add_theme_color_override("font_color", CREAM)
+	_style_chrome_button(_hub_button, false)
+	_hub_button.clip_text = true
+	_hub_button.pressed.connect(func() -> void: hub_requested.emit())
+
 	_coach_label = Label.new()
 	_coach_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_coach_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -1350,6 +1365,8 @@ func _build() -> void:
 	zoom_box.add_child(_zoom_out_button)
 	if _new_match_holder != null:
 		zoom_box.add_child(_new_match_holder)
+	if _hub_button != null:
+		zoom_box.add_child(_hub_button)
 
 	_handoff_overlay = ColorRect.new()
 	_handoff_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -2516,6 +2533,8 @@ func claims_screen_point(point: Vector2) -> bool:
 	if _control_claims(_walk_button, point):
 		return true
 	if _control_claims(_end_turn_button, point):
+		return true
+	if _control_claims(_hub_button, point):
 		return true
 	if _control_claims(_new_match_button, point):
 		return true

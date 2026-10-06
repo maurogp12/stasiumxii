@@ -30,15 +30,15 @@ const TINT := {
 const ELEMENT_TEXT := {
 	"air": "Reach and speed. Spells that reach 3+ tiles reach 1 farther (not Mark Shot). A melee hit gives you +1 MP to step away.",
 	"earth": "Weight. After the hit you are Grounded until your next turn (Bastion: no push can move you). Your pushes into a wall or the edge hit for 8 instead of 4.",
-	"fire": "Burn. The enemy burns for 4 at the start of its next turn (does not stack).",
+	"fire": "Burn. Each Fire hit adds a Burn stack (up to 3). It burns 4 per stack at the start of its turns: 1 stack 4 for 2 turns, 2 stacks 8 for 3 turns, 3 stacks 12 for 4 turns. Mender's Cleanse takes it off.",
 	"water": "Flow. Damage takes 1 MP from the enemy at its next turn start. Your heals heal 4 more.",
 }
 
-## The six Blends: [first, second, name, what it does, good for].
+## The five Blends: [first, second, name, what it does, good for]. Air + Fire
+## has none (Mauro 6 Oct 2026: Sleet removed, Spark moved to Air + Water).
 const BLEND_ROWS := [
 	["air", "earth", "Drift-Pin", "Slides the enemy 1 tile away from you. If a wall, the edge or a body is in the way it hits for 8 instead. Pinned: it cannot walk on its next turn (Advance and Ambush still work). Never twice in a row on the same enemy.", "Ranged fighters keeping melee away; slamming enemies into walls."],
-	["air", "fire", "Spark", "4 damage that ignores resist and breaks shields first, then pushes the enemy 1 tile away. Your Fire Burn still lands.", "Finishing low enemies, cracking Mender's Ward."],
-	["air", "water", "Sleet", "An icy blast pushes the enemy 1 tile away from you. A body in the way stops it; a wall or the edge stops it with the usual 4-damage bump.", "Ranged fighters knocking melee chasers back out of reach."],
+	["air", "water", "Spark", "Electricity: 10 damage that ignores resist (a shield soaks it first). Until the end of its next turn the enemy gets 40% less healing.", "Finishing low enemies, cracking Mender's Ward, shutting down healing."],
 	["earth", "fire", "Magma", "The tile the enemy ends its next turn on burns: 4 damage to anyone who ends a turn there until your next turn.", "Enemies that are Stunned, Pinned or stuck in a corridor."],
 	["earth", "water", "Mire", "On its next turn, the enemy's first step off its tile costs +1 MP. Being pushed is free. Stacks with Bastion's Hold Line (+2 MP to leave).", "Melee fighters holding an enemy next to them."],
 	["fire", "water", "Steam", "The enemy's tile blocks line of sight until your next turn. The enemy standing there can still be hit; once it moves, nobody can shoot through that tile.", "Blocking enemy archers and casters, covering a retreat."],
@@ -134,6 +134,19 @@ func save_pick() -> Dictionary:
 		_status.text = "Pick 2 different elements."
 	_refresh()
 	return result
+
+
+## Test aid (Mauro 6 Oct 2026): wipes this class's pick so the next one is free.
+func reset_pick() -> bool:
+	var done := _hero.reset_elements(selected)
+	if done:
+		_hero.save()
+		_status.text = "%s's elements reset. Pick any 2 again for free." % SpellKits.display_name(selected)
+	else:
+		_status.text = "No elements saved yet."
+	_load_pick()
+	_refresh()
+	return done
 
 
 func close() -> void:
@@ -270,9 +283,13 @@ func _refresh() -> void:
 				line.add_child(b)
 			_detail.add_child(line)
 		var mine := _blend_row(_pair[0], _pair[1])
-		_section("3. Your Blend: %s" % str(mine[2]))
-		_text("%s hit, then %s hit (or the other way): %s" % [str(_pair[0]).capitalize(), str(_pair[1]).capitalize(), str(mine[3])], GREEN)
-		_text("Good for: %s" % str(mine[4]), GOLD_DIM)
+		if str(mine[2]) == "":
+			_section("3. Your Blend: none")
+			_text("%s + %s does not Blend. Each hit still gives its own element effect." % [str(_pair[0]).capitalize(), str(_pair[1]).capitalize()], GOLD_DIM)
+		else:
+			_section("3. Your Blend: %s" % str(mine[2]))
+			_text("%s hit, then %s hit (or the other way): %s" % [str(_pair[0]).capitalize(), str(_pair[1]).capitalize(), str(mine[3])], GREEN)
+			_text("Good for: %s" % str(mine[4]), GOLD_DIM)
 		var one_element := true
 		for id in SpellKits.flex_spells(selected):
 			if str(_spells.get(id, _pair[0])) != str(_spells.get(SpellKits.flex_spells(selected)[0], _pair[0])):
@@ -289,11 +306,18 @@ func _refresh() -> void:
 	save.disabled = _pair.size() != 2
 	save.pressed.connect(save_pick)
 	_detail.add_child(save)
+	var reset := _button("Reset elements (free, for testing)")
+	reset.name = "ResetElements"
+	reset.alignment = HORIZONTAL_ALIGNMENT_CENTER
+	reset.custom_minimum_size = Vector2(320, ROW_HEIGHT)
+	reset.disabled = _hero.elements_of(selected).is_empty()
+	reset.pressed.connect(reset_pick)
+	_detail.add_child(reset)
 
 	_section("Guide: the 4 elements")
 	for el in SpellKits.ELEMENTS:
 		_text("%s — %s" % [el.capitalize(), ELEMENT_TEXT[el]], TINT[el])
-	_section("Guide: the 6 Blends")
+	_section("Guide: the 5 Blends (Air + Fire has none)")
 	for blend in BLEND_ROWS:
 		var head := _label("%s + %s = %s" % [str(blend[0]).capitalize(), str(blend[1]).capitalize(), str(blend[2])], 16, TINT[str(blend[0])].lerp(TINT[str(blend[1])], 0.5))
 		_detail.add_child(head)

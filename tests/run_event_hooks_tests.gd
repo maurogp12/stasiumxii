@@ -845,7 +845,7 @@ func _test_death_cause() -> void:
 	var burned: Dictionary = _sim.submit({"type": "end_turn", "seat": 1})
 	var burn_dead := _event_of(burned.get("events", []), "dead")
 	eq(str(burn_dead.get("cause", "")), "burn", "lethal Burn tick cause is burn")
-	eq(int(_event_of(burned.get("events", []), "burn").get("hp_delta", 0)), -5, "lethal stack 2 tick is 5 HP (push stack sheet)")
+	eq(int(_event_of(burned.get("events", []), "burn").get("hp_delta", 0)), -8, "lethal stack 2 tick is 8 HP (4 per stack, Mauro 6 Oct 2026)")
 	eq(int(_event_of(burned.get("events", []), "burn").get("tick_stacks", 0)), 2, "lethal tick uses stack 2")
 	eq(int(_sim.snapshot()["units"][0]["hp"]), 0, "Burn tick still reduces HP to 0")
 	eq(bool(_sim.snapshot()["units"][0]["alive"]), false, "Burn tick still marks the victim dead")
@@ -1042,10 +1042,10 @@ func _test_cleanse_cc_removed() -> void:
 	_reset_mender()
 	_add_same_seat_ally(1, true, 4, 2)
 	var both: Dictionary = _sim.submit({"type": "cast", "spell": "cleanse", "to": Vector2i(2, 1), "seat": 0})
-	eq(_string_list(_event_of(both.get("events", []), "hit").get("cc_removed")), ["stun", "burn"], "Cleanse lists Stun and Burn")
+	# Mauro 6 Oct 2026: one debuff per Cleanse — Stun first, Burn on the next cast.
+	eq(_string_list(_event_of(both.get("events", []), "hit").get("cc_removed")), ["stun"], "the first Cleanse takes Stun only")
 	var burned := _unit_at(_sim.snapshot(), Vector2i(2, 1))
-	eq(int(burned.get("burn_remaining", -1)), 0, "Cleanse clears Burn duration")
-	eq(int(burned.get("burn_stacks", -1)), 0, "Cleanse clears Burn stacks")
+	eq(int(burned.get("burn_remaining", 0)) > 0, true, "Burn is still there after one Cleanse")
 	eq(int(burned.get("stun_remaining", -1)), 0, "Cleanse still clears Stun beside Burn")
 
 	_reset_mender()

@@ -163,6 +163,20 @@ func spend(class_id: String, bucket: String) -> Dictionary:
 	return {"ok": true, "reason": ""}
 
 
+## Mauro 6 Oct 2026: "do a option to reset level characteristics". Every
+## point spent on this class comes back as free points. Free of charge.
+## Returns {ok, refunded}.
+func reset_points(class_id: String) -> Dictionary:
+	if not GROWTH.has(class_id):
+		return {"ok": false, "reason": "unknown_class", "refunded": 0}
+	var rec := record(class_id)
+	var refunded := 0
+	for b in rec["spent"]:
+		refunded += int(rec["spent"][b])
+	rec["spent"] = {}
+	return {"ok": refunded > 0, "reason": "" if refunded > 0 else "nothing_spent", "refunded": refunded}
+
+
 ## What a fight receives: {"class_id", "level", "spent", "elements"}.
 func fight_hero(class_id: String) -> Dictionary:
 	if not GROWTH.has(class_id):
@@ -212,6 +226,19 @@ func element_change_cost(class_id: String, pair: Array) -> int:
 	var b := old.duplicate()
 	b.sort()
 	return 0 if a == b else SpellKits.ELEMENT_CHANGE_TROPHIES
+
+
+## Mauro 6 Oct 2026: "put for now a reset button on the elements so i can try
+## every single one". Clears the class's pick; the next pick is free again
+## (first pick rule). A testing aid for now.
+func reset_elements(class_id: String) -> bool:
+	if not GROWTH.has(class_id):
+		return false
+	var rec := record(class_id)
+	if not rec.has("elements"):
+		return false
+	rec.erase("elements")
+	return true
 
 
 ## Saves a pick. `spells` may leave spells out: they take the first element.

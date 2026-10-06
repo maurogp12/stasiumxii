@@ -216,7 +216,7 @@ static func _recipes_for_event(event: Dictionary) -> Array:
 ## Elements Step 3: the Blend name pops over the target in the pair's colours,
 ## a ring flares, and a Drift-Pin / Spark slide moves the body.
 const BLEND_TINT := {
-	"drift_pin": Color(0.66, 0.74, 0.58), "spark": Color(1.0, 0.7, 0.35), "sleet": Color(0.5, 0.8, 1.0),
+	"drift_pin": Color(0.66, 0.74, 0.58), "spark": Color(1.0, 0.7, 0.35),
 	"magma": Color(1.0, 0.42, 0.1), "mire": Color(0.5, 0.55, 0.45), "steam": Color(0.88, 0.92, 0.96),
 }
 
@@ -231,7 +231,6 @@ const BLEND_FX_SCALE := 0.55
 const BLEND_FX := {
 	"drift_pin": {"frames": 12, "fps": 16.0, "ground": false},
 	"spark": {"frames": 12, "fps": 18.0, "ground": false},
-	"sleet": {"frames": 12, "fps": 15.0, "ground": false},
 	"magma": {"frames": 12, "fps": 15.0, "ground": true},
 	"mire": {"frames": 12, "fps": 15.0, "ground": true},
 	"steam": {"frames": 12, "fps": 13.0, "ground": false},

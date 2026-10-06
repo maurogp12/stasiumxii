@@ -148,7 +148,7 @@ func _test_boss_fx_strip_plays() -> void:
 
 ## Mauro 5 Oct 2026: "Can you add some visual effect to every element blend?"
 func _test_blend_fx() -> void:
-	for blend in ["drift_pin", "spark", "sleet", "magma", "mire", "steam"]:
+	for blend in ["drift_pin", "spark", "magma", "mire", "steam"]:
 		var event := {"type": "blend", "blend": blend, "name": blend, "seat": 0, "target_seat": 1, "to": Vector2i(4, 4), "from": Vector2i(4, 4)}
 		var fx := {}
 		for r in ROUTER.recipes_for([event]):
@@ -223,12 +223,12 @@ func _test_blend_fx_cleanup() -> void:
 				n += 1
 		return n
 	# Every one-shot effect clears itself.
-	for blend in ["drift_pin", "spark", "sleet", "magma", "mire", "steam"]:
+	for blend in ["drift_pin", "spark", "magma", "mire", "steam"]:
 		for r in ROUTER.recipes_for([{"type": "blend", "blend": blend, "name": blend, "seat": 0, "target_seat": 1, "to": Vector2i(4, 4), "from": Vector2i(4, 4)}]):
 			if str(r.get("id", "")) == "blend_fx":
 				director._spawn(r, false)
 	await create_timer(0.3).timeout
-	eq(live.call(), 6, "all six Blend effects are playing")
+	eq(live.call(), 5, "all five Blend effects are playing (Sleet removed 6 Oct 2026)")
 	await create_timer(1.2).timeout
 	eq(live.call(), 0, "every one-shot Blend effect is gone after it plays")
 	# Steam from a real fight: on the board while the tile is, gone with it.

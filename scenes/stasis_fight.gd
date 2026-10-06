@@ -306,6 +306,11 @@ func _capture_exit() -> void:
 	_exit_button = _find_button(_hud, "New Match")
 	if _exit_button != null:
 		_exit_button.text = "Back to hub"
+	# Stasis has its own Back to hub (it also spends the Still); the Koliseo
+	# Hub button stays hidden here.
+	var koliseo_hub := _find_button(_hud, "Hub")
+	if koliseo_hub != null:
+		koliseo_hub.visible = false
 
 
 func _build_overlay() -> void:
