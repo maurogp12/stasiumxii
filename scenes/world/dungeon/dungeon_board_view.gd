@@ -667,6 +667,8 @@ var _card_label: Label
 var _note := {}
 var _assist := {}
 var _keep_out_sig := ""
+var _card_key := ""
+var _card_at := 0
 var _keep_out_check := 0.0
 
 
@@ -889,7 +891,12 @@ func _sync_card() -> void:
 			_card.visible = false
 		return
 	_ensure_card()
-	_card_label.text = _card_lines(seat)
+	var now := Time.get_ticks_msec()
+	var key := "%d|%s|%s" % [seat, _hud.selected_spell() if _hud != null else "", str(_note.get("until", 0))]
+	if key != _card_key or now - _card_at > 200 or not _card.visible:
+		_card_key = key
+		_card_at = now
+		_card_label.text = _card_lines(seat)
 	_card.reset_size()
 	var head := -float(pawn.body_height()) if pawn.has_method("body_height") else -110.0
 	var at: Vector2 = pawn.get_global_transform_with_canvas() * Vector2(30.0, head * 0.6)
