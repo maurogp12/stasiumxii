@@ -138,6 +138,7 @@ func _run() -> void:
 	_test_snap_wall_knock_down()
 	_test_every_spell_explained()
 	_test_enemy_card_tap_and_hold()
+	_test_kestrel_aims_better_far()
 
 
 func _test_reset_and_turn_order() -> void:
@@ -1495,7 +1496,7 @@ func _test_hit_bands_ignore_height() -> void:
 	eq(_sim.chebyshev(Vector2i(1, 1), Vector2i(6, 1)), 5, "Chebyshev range is still 5")
 	eq(_sim.hit_chance(5), 75, "band 4–5 stays 75% with a height delta")
 	var preview: Dictionary = _sim.aim_hit_preview(0, "mark_shot", Vector2i(6, 1))
-	eq(preview["hit_chance"], 75, "aim preview ignores elevation")
+	eq(preview["hit_chance"], 90, "aim preview ignores elevation")
 	eq(preview["range"], 5, "aim range stays Chebyshev, not height-adjusted")
 	var sim_src := FileAccess.get_file_as_string("res://backend/combat_sim.gd")
 	var hit_idx := sim_src.find("static func hit_chance")
@@ -3339,7 +3340,7 @@ func _test_mark_shot_range_and_marks() -> void:
 	eq(result["ok"], true, "Mark Shot at range 5 is legal")
 	eq(_unit(1)["hp"], 81, "8 Air on connect (Longshot ×1.15 at ≥4: 8→9)")
 	eq(_unit(1)["marks"], 1, "Marks stored on the target (A01 Locked)")
-	eq(result["events"][0]["hit_chance"], 75, "range 5 uses the 75% mid band")
+	eq(result["events"][0]["hit_chance"], 90, "Kestrel range 5 aims at 90% (Mauro 6 Oct 2026)")
 	# Mauro (29 Sep): 2–7 → 2–5. Range 6 and 7 are now out of range and refund.
 	for dist in [6, 7]:
 		_sim.reset_match({
@@ -3467,9 +3468,9 @@ func _test_hit_bands() -> void:
 	eq(size_src.contains("SHIP := 12"), false, "ship board is not 12")
 
 	_assert_aim_matches_resolve(1, SpellKits.STRIKE, 90)
-	_assert_aim_matches_resolve(2, SpellKits.MARK_SHOT, 80)
-	_assert_aim_matches_resolve(4, SpellKits.MARK_SHOT, 75)
-	_assert_aim_matches_resolve(4, SpellKits.DETONATE, 75)
+	_assert_aim_matches_resolve(2, SpellKits.MARK_SHOT, 75)
+	_assert_aim_matches_resolve(4, SpellKits.MARK_SHOT, 85)
+	_assert_aim_matches_resolve(4, SpellKits.DETONATE, 85)
 	for dist in [9, 10, 11, 12, 13, 14]:
 		_assert_far_band_chrome(dist, int(locked[dist]))
 	_assert_past_locked_band()
@@ -3497,7 +3498,7 @@ func _assert_aim_matches_resolve(dist: int, spell_id: String, chance: int) -> vo
 	eq(preview["show"], true, "aim chrome shows Locked %% at dist %d" % dist)
 	eq(preview["range"], dist, "aim range is Chebyshev %d" % dist)
 	eq(preview["hit_chance"], chance, "aim chrome Locked %% at dist %d" % dist)
-	eq(preview["hit_chance"], _sim.hit_chance(dist), "aim chrome matches hit_chance at dist %d" % dist)
+	eq(preview["hit_chance"], _sim._spell_hit_chance(SpellKits.spell(spell_id), dist), "aim chrome matches the spell's hit table at dist %d" % dist)
 	var hud := CombatHUD.new()
 	hud._build()
 	hud.set_aim_preview(preview)
@@ -4753,7 +4754,7 @@ func _test_detonate_gates_and_damage() -> void:
 	eq(result["ok"], true, "Detonate at Chebyshev 4 is legal")
 	eq(result["events"][0]["base_damage"], 24, "3 Marks → base 24")
 	eq(result["events"][0]["damage"], 28, "front 24 Air (Longshot ×1.15: 24→28)")
-	eq(result["events"][0]["hit_chance"], 75, "range 4 uses the 75% mid band")
+	eq(result["events"][0]["hit_chance"], 85, "Kestrel range 4 aims at 85% (Mauro 6 Oct 2026)")
 	eq(_unit(1)["marks"], 0, "3 Marks consumed")
 	eq(_unit(1)["hp"], 62, "90-28=62 with Longshot")
 
@@ -6316,11 +6317,11 @@ func _test_aim_hit_preview() -> void:
 	var preview: Dictionary = _sim.aim_hit_preview(0, SpellKits.MARK_SHOT)
 	eq(preview["show"], true, "Mark Shot in Chebyshev 5 shows hit percent")
 	eq(preview["rolls"], true, "Mark Shot preview is a rolling cast")
-	eq(preview["hit_chance"], 75, "Mark Shot range 5 previews Locked 75%")
+	eq(preview["hit_chance"], 90, "Mark Shot range 5 previews 90%")
 	eq(preview.has("stun_telegraph"), false, "aim preview does not invent stun chrome")
 	preview = _sim.aim_hit_preview(0, SpellKits.DETONATE)
 	eq(preview["show"], true, "Detonate in Chebyshev 5 shows hit percent even without Marks")
-	eq(preview["hit_chance"], 75, "Detonate range 5 previews Locked 75%")
+	eq(preview["hit_chance"], 90, "Detonate range 5 previews 90%")
 	preview = _sim.aim_hit_preview(0, SpellKits.ADVANCE)
 	eq(preview["show"], false, "Advance never shows hit percent")
 	eq(preview["rolls"], false, "Advance preview is not a rolling cast")
@@ -6476,7 +6477,7 @@ func _test_preview_cast() -> void:
 	eq(preview["range_text"], "range 2–5", "Mark Shot HUD range_text omits Chebyshev")
 	eq(preview["in_range"], true, "Chebyshev 5 is in Mark Shot range")
 	eq(preview["rolling"], true, "Mark Shot is a rolling cast")
-	eq(preview["hit_chance"], 75, "Mark Shot range 5 uses Locked 75% band")
+	eq(preview["hit_chance"], 90, "Mark Shot range 5 uses Kestrel 90%")
 	eq(preview["sample_damage"], 9, "front Mark Shot samples 9 Air at range ≥4 (Longshot ×1.15)")
 	eq(preview["on_connect_text"], "8 Air. +1 Mark on the target.", "Mark Shot connect kit line")
 	eq(preview["on_miss_text"], "AP/MP stay spent. No Mark.", "Mark Shot miss kit line")
@@ -6505,7 +6506,7 @@ func _test_preview_cast() -> void:
 		"target_seat": 1,
 		"seat": 0,
 	})
-	eq(preview["hit_chance"], 75, "intent Dictionary Mark Shot still uses Locked 75%")
+	eq(preview["hit_chance"], 90, "intent Dictionary Mark Shot uses Kestrel 90%")
 	eq(preview["sample_damage"], 9, "intent Dictionary Mark Shot samples 9 with Longshot")
 	eq(preview["rolling"], true, "intent Dictionary Mark Shot is rolling")
 
@@ -6518,7 +6519,7 @@ func _test_preview_cast() -> void:
 		"ironjaw_facing": "E",
 	})
 	preview = _sim.preview_cast(SpellKits.MARK_SHOT, Vector2i(0, 0), Vector2i(2, 0), 1)
-	eq(preview["hit_chance"], 80, "Mark Shot Chebyshev 2 uses Locked 80% band")
+	eq(preview["hit_chance"], 75, "Mark Shot Chebyshev 2 uses Kestrel 75%")
 	eq(preview["sample_damage"], 10, "back Mark Shot samples 8 × 1.20 = 10")
 
 	# Detonate M=3 → 24 Air. Formula 6+6*M. Needs marks when M<1.
@@ -6539,7 +6540,7 @@ func _test_preview_cast() -> void:
 	eq(preview["marks_on_target"], 3, "Detonate preview reports current Marks")
 	eq(preview["formula"], "6+6*M", "Detonate formula is 6+6*M")
 	eq(preview["sample_damage"], 24, "Detonate M=3 samples 6+6*3 = 24")
-	eq(preview["hit_chance"], 80, "Detonate Chebyshev 2 uses Locked 80%")
+	eq(preview["hit_chance"], 75, "Detonate Chebyshev 2 uses Kestrel 75%")
 	eq(preview["legal"], true, "Detonate with M=3 is legal")
 	eq(preview["on_connect_text"], "6+6×M Air. Consumes Marks on the target.", "Detonate connect kit line")
 	eq(preview["on_miss_text"], "Marks stay. AP/MP stay spent.", "Detonate miss kit line")
@@ -7003,7 +7004,7 @@ func _test_spell_tooltip_cards() -> void:
 	var mark_preview: Dictionary = _sim.preview_cast(SpellKits.MARK_SHOT, Vector2i(0, 0), Vector2i(5, 0), 1)
 	var mark := SpellTooltip.card_text(mark_preview)
 	eq(mark_preview["sample_damage"], 9, "Mark Shot preview samples live facing 9 (Longshot)")
-	eq(mark_preview["hit_chance"], 75, "Mark Shot preview HIT is Locked 75 at range 5")
+	eq(mark_preview["hit_chance"], 90, "Mark Shot preview HIT is 90 at range 5")
 	truthy(mark.contains("Mark Shot"), "Mark Shot card names the spell")
 	truthy(mark.contains("2 AP / 0 MP"), "Mark Shot card names AP/MP from preview")
 	eq(mark_preview["range_text"], "range 2–5", "Mark Shot preview_cast range_text is player-facing")
@@ -7011,7 +7012,7 @@ func _test_spell_tooltip_cards() -> void:
 	eq(mark.contains("Chebyshev"), false, "Mark Shot card does not name Chebyshev")
 	truthy(mark.contains("On hit: 8 Air. +1 Mark on the target."), "Mark Shot hit line is preview kit text")
 	truthy(mark.contains("On miss: AP/MP stay spent. No Mark."), "Mark Shot miss line is preview kit text")
-	truthy(mark.contains("HIT 75% (Locked)"), "Mark Shot card uses preview hit_chance")
+	truthy(mark.contains("HIT 90% (Locked)"), "Mark Shot card uses preview hit_chance")
 	truthy(mark.contains("sample 9"), "Mark Shot card uses preview sample_damage")
 	truthy(mark.contains("CritMult(1.0) × live Facing"), "Mark Shot sample names CritMult 1.0 and live Facing")
 	eq(mark.contains("+5"), false, "Mark Shot card does not invent +5")
@@ -7031,7 +7032,7 @@ func _test_spell_tooltip_cards() -> void:
 		"ironjaw_facing": "E",
 	})
 	var mark_back := SpellTooltip.card_text(_sim.preview_cast(SpellKits.MARK_SHOT, Vector2i(0, 0), Vector2i(2, 0), 1))
-	truthy(mark_back.contains("HIT 80% (Locked)"), "Mark Shot back preview uses Locked 80% at range 2")
+	truthy(mark_back.contains("HIT 75% (Locked)"), "Mark Shot back preview uses Kestrel 75% at range 2")
 	truthy(mark_back.contains("sample 10"), "Mark Shot back preview samples 8 × 1.20 = 10")
 
 	_sim.reset_match({
@@ -7052,7 +7053,7 @@ func _test_spell_tooltip_cards() -> void:
 	eq(detonate.contains("Chebyshev"), false, "Detonate card does not name Chebyshev")
 	truthy(detonate.contains("On hit: 6+6×M Air. Consumes Marks on the target."), "Detonate hit line is preview kit text")
 	truthy(detonate.contains("On miss: Marks stay. AP/MP stay spent."), "Detonate miss line is preview kit text")
-	truthy(detonate.contains("HIT 80% (Locked)"), "Detonate card uses preview hit_chance")
+	truthy(detonate.contains("HIT 75% (Locked)"), "Detonate card uses preview hit_chance")
 	truthy(detonate.contains("sample 24"), "Detonate card uses current-M sample")
 	truthy(detonate.contains("M=3 (6+6*M)"), "Detonate card names current Marks and formula")
 	eq(detonate.contains("+5"), false, "Detonate card does not invent +5")
@@ -7713,6 +7714,17 @@ func _test_enemy_card_tap_and_hold() -> void:
 		if str(intent.get("spell", "")) == "mark_shot" and intent.get("to") == Vector2i(5, 2):
 			offered = true
 	eq(offered, false, "no line of sight = no legal cast for a portrait tap")
+
+
+
+## Mauro 6 Oct 2026: Kestrel aims better the farther away she shoots.
+func _test_kestrel_aims_better_far() -> void:
+	var want := {1: 70, 2: 75, 3: 80, 4: 85, 5: 90}
+	for spell_id in [SpellKits.MARK_SHOT, SpellKits.DETONATE]:
+		for dist in want:
+			eq(_sim._spell_hit_chance(SpellKits.spell(spell_id), dist), want[dist], "%s at %d tiles hits %d%%" % [spell_id, dist, want[dist]])
+	eq(_sim._spell_hit_chance(SpellKits.spell(SpellKits.STRIKE), 1), 90, "other classes keep the shared table")
+	eq(_sim._spell_hit_chance(SpellKits.spell(SpellKits.MEND), 4), 75, "Mender keeps the shared table")
 
 
 func _walkable_zone_count(seat: int) -> int:

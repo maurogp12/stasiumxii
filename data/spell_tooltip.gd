@@ -168,7 +168,10 @@ static func simple_lines(spell_id: String, preview: Dictionary = {}) -> PackedSt
 		var chance := ""
 		if preview.get("hit_chance", null) != null:
 			chance = " Chance right now: %d%%." % int(preview["hit_chance"])
-		out.append("It can miss. Closer = easier to hit.%s" % chance)
+		if def.has("hit_by_distance"):
+			out.append("It can miss. Kestrel aims better from far away: the farther, the easier to hit.%s" % chance)
+		else:
+			out.append("It can miss. Closer = easier to hit.%s" % chance)
 		if dmg > 0:
 			out.append("Hit their back: +%d%% damage." % (35 if _class_of(spell_id) == SpellKits.CLASS_GLOAM else 20))
 	elif not bool(def.get("gated", false)):
