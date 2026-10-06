@@ -272,23 +272,29 @@ def build(zone_id: str) -> dict:
         ch.height[c] = TERRACE
 
     # 5. Trodden path between the exits. Climbs cost more, so the path keeps to
-    # the flats and crosses a terrace where it must; that crossing gets a ramp.
+    # the flats. Where it still meets a terrace, the terrace opens into a cut
+    # one cell wider than the path on each side, so the path never runs along
+    # a ledge and the faces stay whole.
     path_cells = set()
-    ramps = set()
     for pts in lay["paths"]:
         for a, b in zip(pts, pts[1:]):
-            route = _route(ch, a, b, pond_cells)
-            path_cells |= set(route)
-            for p, q in zip(route, route[1:]):
-                if abs(ch.height[p] - ch.height[q]) > CLIMB:
-                    ramps.add(p if ch.height[p] > ch.height[q] else q)
+            path_cells |= set(_route(ch, a, b, pond_cells))
+    for c in path_cells:
+        for n in _around(c, 1):
+            if n not in tower_top:
+                mask.discard(n)
+    for _ in range(2):
+        mask = {c for c in mask if c in tower_top or _thick(mask, c)}
+        mask = _drop_small(ch, mask, 12, tower_top)
+    for c in ch.cells():
+        if c not in ch.locked and ch.land(c):
+            ch.height[c] = TERRACE if c in mask else 0
     for c in path_cells:
         if c not in ch.locked and ch.terrain[c] == "golden_plains" and c not in ch.blocked:
             ch.terrain[c] = "dirt_road"
-    for c in ramps:
-        ch.height[c] = RAMP
 
     # 6. Ramps until every cell is reachable with a climb of 1, and back.
+    ramps: set = set()
     _ramp_up(ch, ramps, anchors[0])
 
     tiles = []
@@ -490,6 +496,9 @@ def _route(ch: Chunk, a, b, avoid: set) -> list:
                 cost += 1.6
             if any(m in avoid for m in ch.nbrs(n)):
                 cost += 0.8
+            # Keep off the shore line: the path walks inland of the ice rim.
+            if any(ch.inside(m) and not ch.land(m) for m in _around(n, 1)):
+                cost += 4.0
             nxt = (n, step)
             nd = d + cost
             if nd < dist.get(nxt, 1e9):

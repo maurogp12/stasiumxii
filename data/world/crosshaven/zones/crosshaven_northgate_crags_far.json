@@ -733,31 +733,31 @@
       ]
     },
     {
-      "id": "crosshaven_northgate_crags_far_tree_6_12",
+      "id": "crosshaven_northgate_crags_far_tree_5_10",
       "type": "tree",
       "blocks": true,
       "origin": {
-        "x": 6,
-        "y": 12
+        "x": 5,
+        "y": 10
       },
       "footprint": [
         {
-          "x": 6,
-          "y": 12
+          "x": 5,
+          "y": 10
         }
       ]
     },
     {
-      "id": "crosshaven_northgate_crags_far_tree_7_12",
+      "id": "crosshaven_northgate_crags_far_tree_5_12",
       "type": "tree",
       "blocks": true,
       "origin": {
-        "x": 7,
+        "x": 5,
         "y": 12
       },
       "footprint": [
         {
-          "x": 7,
+          "x": 5,
           "y": 12
         }
       ]
@@ -778,6 +778,21 @@
       ]
     },
     {
+      "id": "crosshaven_northgate_crags_far_tree_8_12",
+      "type": "tree",
+      "blocks": true,
+      "origin": {
+        "x": 8,
+        "y": 12
+      },
+      "footprint": [
+        {
+          "x": 8,
+          "y": 12
+        }
+      ]
+    },
+    {
       "id": "crosshaven_northgate_crags_far_tree_8_26",
       "type": "tree",
       "blocks": true,
@@ -789,6 +804,21 @@
         {
           "x": 8,
           "y": 26
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_northgate_crags_far_tree_9_12",
+      "type": "tree",
+      "blocks": true,
+      "origin": {
+        "x": 9,
+        "y": 12
+      },
+      "footprint": [
+        {
+          "x": 9,
+          "y": 12
         }
       ]
     },
@@ -853,96 +883,6 @@
       ]
     },
     {
-      "id": "crosshaven_northgate_crags_far_tree_13_21",
-      "type": "tree",
-      "blocks": true,
-      "origin": {
-        "x": 13,
-        "y": 21
-      },
-      "footprint": [
-        {
-          "x": 13,
-          "y": 21
-        }
-      ]
-    },
-    {
-      "id": "crosshaven_northgate_crags_far_tree_13_22",
-      "type": "tree",
-      "blocks": true,
-      "origin": {
-        "x": 13,
-        "y": 22
-      },
-      "footprint": [
-        {
-          "x": 13,
-          "y": 22
-        }
-      ]
-    },
-    {
-      "id": "crosshaven_northgate_crags_far_tree_14_21",
-      "type": "tree",
-      "blocks": true,
-      "origin": {
-        "x": 14,
-        "y": 21
-      },
-      "footprint": [
-        {
-          "x": 14,
-          "y": 21
-        }
-      ]
-    },
-    {
-      "id": "crosshaven_northgate_crags_far_tree_14_22",
-      "type": "tree",
-      "blocks": true,
-      "origin": {
-        "x": 14,
-        "y": 22
-      },
-      "footprint": [
-        {
-          "x": 14,
-          "y": 22
-        }
-      ]
-    },
-    {
-      "id": "crosshaven_northgate_crags_far_tree_15_23",
-      "type": "tree",
-      "blocks": true,
-      "origin": {
-        "x": 15,
-        "y": 23
-      },
-      "footprint": [
-        {
-          "x": 15,
-          "y": 23
-        }
-      ]
-    },
-    {
-      "id": "crosshaven_northgate_crags_far_tree_15_26",
-      "type": "tree",
-      "blocks": true,
-      "origin": {
-        "x": 15,
-        "y": 26
-      },
-      "footprint": [
-        {
-          "x": 15,
-          "y": 26
-        }
-      ]
-    },
-    {
       "id": "crosshaven_northgate_crags_far_tree_16_26",
       "type": "tree",
       "blocks": true,
@@ -954,6 +894,36 @@
         {
           "x": 16,
           "y": 26
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_northgate_crags_far_tree_17_22",
+      "type": "tree",
+      "blocks": true,
+      "origin": {
+        "x": 17,
+        "y": 22
+      },
+      "footprint": [
+        {
+          "x": 17,
+          "y": 22
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_northgate_crags_far_tree_17_23",
+      "type": "tree",
+      "blocks": true,
+      "origin": {
+        "x": 17,
+        "y": 23
+      },
+      "footprint": [
+        {
+          "x": 17,
+          "y": 23
         }
       ]
     },
@@ -973,21 +943,6 @@
       ]
     },
     {
-      "id": "crosshaven_northgate_crags_far_tree_17_25",
-      "type": "tree",
-      "blocks": true,
-      "origin": {
-        "x": 17,
-        "y": 25
-      },
-      "footprint": [
-        {
-          "x": 17,
-          "y": 25
-        }
-      ]
-    },
-    {
       "id": "crosshaven_northgate_crags_far_tree_18_21",
       "type": "tree",
       "blocks": true,
@@ -1003,62 +958,17 @@
       ]
     },
     {
-      "id": "crosshaven_northgate_crags_far_tree_18_25",
+      "id": "crosshaven_northgate_crags_far_tree_18_22",
       "type": "tree",
       "blocks": true,
       "origin": {
         "x": 18,
-        "y": 25
+        "y": 22
       },
       "footprint": [
         {
           "x": 18,
-          "y": 25
-        }
-      ]
-    },
-    {
-      "id": "crosshaven_northgate_crags_far_tree_19_23",
-      "type": "tree",
-      "blocks": true,
-      "origin": {
-        "x": 19,
-        "y": 23
-      },
-      "footprint": [
-        {
-          "x": 19,
-          "y": 23
-        }
-      ]
-    },
-    {
-      "id": "crosshaven_northgate_crags_far_tree_20_24",
-      "type": "tree",
-      "blocks": true,
-      "origin": {
-        "x": 20,
-        "y": 24
-      },
-      "footprint": [
-        {
-          "x": 20,
-          "y": 24
-        }
-      ]
-    },
-    {
-      "id": "crosshaven_northgate_crags_far_tree_21_23",
-      "type": "tree",
-      "blocks": true,
-      "origin": {
-        "x": 21,
-        "y": 23
-      },
-      "footprint": [
-        {
-          "x": 21,
-          "y": 23
+          "y": 22
         }
       ]
     },
@@ -1119,6 +1029,96 @@
         {
           "x": 24,
           "y": 24
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_northgate_crags_far_tree_24_25",
+      "type": "tree",
+      "blocks": true,
+      "origin": {
+        "x": 24,
+        "y": 25
+      },
+      "footprint": [
+        {
+          "x": 24,
+          "y": 25
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_northgate_crags_far_tree_24_27",
+      "type": "tree",
+      "blocks": true,
+      "origin": {
+        "x": 24,
+        "y": 27
+      },
+      "footprint": [
+        {
+          "x": 24,
+          "y": 27
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_northgate_crags_far_tree_25_25",
+      "type": "tree",
+      "blocks": true,
+      "origin": {
+        "x": 25,
+        "y": 25
+      },
+      "footprint": [
+        {
+          "x": 25,
+          "y": 25
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_northgate_crags_far_tree_25_27",
+      "type": "tree",
+      "blocks": true,
+      "origin": {
+        "x": 25,
+        "y": 27
+      },
+      "footprint": [
+        {
+          "x": 25,
+          "y": 27
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_northgate_crags_far_tree_27_26",
+      "type": "tree",
+      "blocks": true,
+      "origin": {
+        "x": 27,
+        "y": 26
+      },
+      "footprint": [
+        {
+          "x": 27,
+          "y": 26
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_northgate_crags_far_tree_27_27",
+      "type": "tree",
+      "blocks": true,
+      "origin": {
+        "x": 27,
+        "y": 27
+      },
+      "footprint": [
+        {
+          "x": 27,
+          "y": 27
         }
       ]
     }
@@ -4468,14 +4468,14 @@
       "y": 13,
       "terrain": "golden_plains",
       "walkable": true,
-      "height": 2
+      "height": 0
     },
     {
       "x": 10,
       "y": 13,
       "terrain": "golden_plains",
       "walkable": true,
-      "height": 2
+      "height": 0
     },
     {
       "x": 11,
@@ -5292,14 +5292,14 @@
     {
       "x": 19,
       "y": 16,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
     {
       "x": 20,
       "y": 16,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
@@ -5537,7 +5537,7 @@
     {
       "x": 18,
       "y": 17,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
@@ -5551,7 +5551,7 @@
     {
       "x": 20,
       "y": 17,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
@@ -5789,7 +5789,7 @@
     {
       "x": 18,
       "y": 18,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
@@ -5803,7 +5803,7 @@
     {
       "x": 20,
       "y": 18,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
@@ -6041,14 +6041,14 @@
     {
       "x": 18,
       "y": 19,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 19,
       "y": 19,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
@@ -6295,14 +6295,14 @@
       "y": 20,
       "terrain": "golden_plains",
       "walkable": true,
-      "height": 2
+      "height": 0
     },
     {
       "x": 19,
       "y": 20,
       "terrain": "golden_plains",
       "walkable": true,
-      "height": 2
+      "height": 0
     },
     {
       "x": 20,
@@ -6314,14 +6314,14 @@
     {
       "x": 21,
       "y": 20,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
     {
       "x": 22,
       "y": 20,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
@@ -6554,68 +6554,68 @@
       "y": 21,
       "terrain": "golden_plains",
       "walkable": true,
-      "height": 2
+      "height": 0
     },
     {
       "x": 20,
       "y": 21,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
-      "height": 2
+      "height": 0
     },
     {
       "x": 21,
       "y": 21,
       "terrain": "golden_plains",
       "walkable": true,
-      "height": 2
+      "height": 0
     },
     {
       "x": 22,
       "y": 21,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
     {
       "x": 23,
       "y": 21,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
     {
       "x": 24,
       "y": 21,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
     {
       "x": 25,
       "y": 21,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
     {
       "x": 26,
       "y": 21,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
     {
       "x": 27,
       "y": 21,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
     {
       "x": 28,
       "y": 21,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
@@ -6806,21 +6806,21 @@
       "y": 22,
       "terrain": "golden_plains",
       "walkable": true,
-      "height": 2
+      "height": 0
     },
     {
       "x": 20,
       "y": 22,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
-      "height": 2
+      "height": 0
     },
     {
       "x": 21,
       "y": 22,
       "terrain": "golden_plains",
       "walkable": true,
-      "height": 2
+      "height": 0
     },
     {
       "x": 22,
@@ -6841,7 +6841,7 @@
       "y": 22,
       "terrain": "golden_plains",
       "walkable": true,
-      "height": 2
+      "height": 1
     },
     {
       "x": 25,
@@ -6867,7 +6867,7 @@
     {
       "x": 28,
       "y": 22,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
@@ -7058,21 +7058,21 @@
       "y": 23,
       "terrain": "golden_plains",
       "walkable": true,
-      "height": 2
+      "height": 0
     },
     {
       "x": 20,
       "y": 23,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
-      "height": 2
+      "height": 0
     },
     {
       "x": 21,
       "y": 23,
       "terrain": "golden_plains",
       "walkable": true,
-      "height": 2
+      "height": 0
     },
     {
       "x": 22,
@@ -7119,7 +7119,7 @@
     {
       "x": 28,
       "y": 23,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
@@ -7310,21 +7310,21 @@
       "y": 24,
       "terrain": "golden_plains",
       "walkable": true,
-      "height": 2
+      "height": 0
     },
     {
       "x": 20,
       "y": 24,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
-      "height": 2
+      "height": 0
     },
     {
       "x": 21,
       "y": 24,
       "terrain": "golden_plains",
       "walkable": true,
-      "height": 2
+      "height": 0
     },
     {
       "x": 22,
@@ -7371,7 +7371,7 @@
     {
       "x": 28,
       "y": 24,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
@@ -7567,7 +7567,7 @@
     {
       "x": 20,
       "y": 25,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
@@ -7623,7 +7623,7 @@
     {
       "x": 28,
       "y": 25,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
@@ -7819,7 +7819,7 @@
     {
       "x": 20,
       "y": 26,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
@@ -7875,7 +7875,7 @@
     {
       "x": 28,
       "y": 26,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
@@ -8071,7 +8071,7 @@
     {
       "x": 20,
       "y": 27,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
@@ -8127,7 +8127,7 @@
     {
       "x": 28,
       "y": 27,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
@@ -8330,56 +8330,56 @@
     {
       "x": 21,
       "y": 28,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
     {
       "x": 22,
       "y": 28,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
     {
       "x": 23,
       "y": 28,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
     {
       "x": 24,
       "y": 28,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
     {
       "x": 25,
       "y": 28,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
     {
       "x": 26,
       "y": 28,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
     {
       "x": 27,
       "y": 28,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
     {
       "x": 28,
       "y": 28,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
@@ -9220,68 +9220,68 @@
     {
       "id": "crosshaven_northgate_crags_far_decor_004",
       "type": "rock_small_d",
-      "x": 4,
-      "y": 12
+      "x": 24,
+      "y": 29
     },
     {
       "id": "crosshaven_northgate_crags_far_decor_005",
       "type": "rock_small_c",
-      "x": 5,
-      "y": 12
+      "x": 25,
+      "y": 29
     },
     {
       "id": "crosshaven_northgate_crags_far_decor_006",
       "type": "rock_small_d",
-      "x": 19,
-      "y": 24
+      "x": 4,
+      "y": 12
     },
     {
       "id": "crosshaven_northgate_crags_far_decor_007",
       "type": "rock_small_d",
-      "x": 12,
+      "x": 15,
       "y": 23
     },
     {
       "id": "crosshaven_northgate_crags_far_decor_008",
       "type": "rock_small_c",
-      "x": 13,
+      "x": 16,
       "y": 23
     },
     {
       "id": "crosshaven_northgate_crags_far_decor_009",
       "type": "rock_small_c",
-      "x": 12,
+      "x": 15,
       "y": 24
     },
     {
       "id": "crosshaven_northgate_crags_far_decor_010",
       "type": "rock_small_d",
+      "x": 12,
+      "y": 29
+    },
+    {
+      "id": "crosshaven_northgate_crags_far_decor_011",
+      "type": "rock_small_c",
+      "x": 13,
+      "y": 29
+    },
+    {
+      "id": "crosshaven_northgate_crags_far_decor_012",
+      "type": "rock_small_d",
       "x": 2,
       "y": 19
     },
     {
-      "id": "crosshaven_northgate_crags_far_decor_011",
+      "id": "crosshaven_northgate_crags_far_decor_013",
       "type": "rock_small_c",
       "x": 3,
       "y": 19
     },
     {
-      "id": "crosshaven_northgate_crags_far_decor_012",
+      "id": "crosshaven_northgate_crags_far_decor_014",
       "type": "rock_small_c",
       "x": 2,
       "y": 20
-    },
-    {
-      "id": "crosshaven_northgate_crags_far_decor_013",
-      "type": "rock_small_d",
-      "x": 7,
-      "y": 7
-    },
-    {
-      "id": "crosshaven_northgate_crags_far_decor_014",
-      "type": "rock_small_c",
-      "x": 8,
-      "y": 7
     },
     {
       "id": "crosshaven_northgate_crags_far_decor_015",
@@ -9297,164 +9297,164 @@
     },
     {
       "id": "crosshaven_northgate_crags_far_decor_017",
+      "type": "bush_small_a",
+      "x": 6,
+      "y": 9
+    },
+    {
+      "id": "crosshaven_northgate_crags_far_decor_018",
       "type": "bush_small_b",
       "x": 9,
       "y": 9
     },
     {
-      "id": "crosshaven_northgate_crags_far_decor_018",
+      "id": "crosshaven_northgate_crags_far_decor_019",
       "type": "bush_small_a",
       "x": 5,
       "y": 11
     },
     {
-      "id": "crosshaven_northgate_crags_far_decor_019",
+      "id": "crosshaven_northgate_crags_far_decor_020",
+      "type": "bush_small_a",
+      "x": 10,
+      "y": 11
+    },
+    {
+      "id": "crosshaven_northgate_crags_far_decor_021",
       "type": "bush_small_b",
       "x": 12,
       "y": 11
     },
     {
-      "id": "crosshaven_northgate_crags_far_decor_020",
+      "id": "crosshaven_northgate_crags_far_decor_022",
+      "type": "bush_small_a",
+      "x": 6,
+      "y": 12
+    },
+    {
+      "id": "crosshaven_northgate_crags_far_decor_023",
       "type": "bush_small_b",
       "x": 7,
       "y": 13
     },
     {
-      "id": "crosshaven_northgate_crags_far_decor_021",
+      "id": "crosshaven_northgate_crags_far_decor_024",
       "type": "tuft_a",
       "x": 14,
       "y": 14
     },
     {
-      "id": "crosshaven_northgate_crags_far_decor_022",
+      "id": "crosshaven_northgate_crags_far_decor_025",
       "type": "tuft_a",
       "x": 18,
       "y": 14
     },
     {
-      "id": "crosshaven_northgate_crags_far_decor_023",
+      "id": "crosshaven_northgate_crags_far_decor_026",
       "type": "bush_small_b",
       "x": 4,
       "y": 16
     },
     {
-      "id": "crosshaven_northgate_crags_far_decor_024",
+      "id": "crosshaven_northgate_crags_far_decor_027",
       "type": "tuft_a",
       "x": 6,
       "y": 16
     },
     {
-      "id": "crosshaven_northgate_crags_far_decor_025",
+      "id": "crosshaven_northgate_crags_far_decor_028",
       "type": "tuft_a",
       "x": 1,
       "y": 17
     },
     {
-      "id": "crosshaven_northgate_crags_far_decor_026",
+      "id": "crosshaven_northgate_crags_far_decor_029",
       "type": "bush_small_b",
       "x": 2,
       "y": 18
     },
     {
-      "id": "crosshaven_northgate_crags_far_decor_027",
+      "id": "crosshaven_northgate_crags_far_decor_030",
       "type": "bush_small_b",
       "x": 8,
       "y": 18
     },
     {
-      "id": "crosshaven_northgate_crags_far_decor_028",
+      "id": "crosshaven_northgate_crags_far_decor_031",
       "type": "tuft_a",
       "x": 11,
       "y": 18
     },
     {
-      "id": "crosshaven_northgate_crags_far_decor_029",
+      "id": "crosshaven_northgate_crags_far_decor_032",
       "type": "bush_small_b",
       "x": 9,
       "y": 19
     },
     {
-      "id": "crosshaven_northgate_crags_far_decor_030",
+      "id": "crosshaven_northgate_crags_far_decor_033",
       "type": "bush_small_b",
       "x": 17,
       "y": 19
     },
     {
-      "id": "crosshaven_northgate_crags_far_decor_031",
+      "id": "crosshaven_northgate_crags_far_decor_034",
       "type": "tuft_a",
       "x": 7,
       "y": 20
     },
     {
-      "id": "crosshaven_northgate_crags_far_decor_032",
+      "id": "crosshaven_northgate_crags_far_decor_035",
       "type": "bush_small_b",
       "x": 10,
       "y": 20
     },
     {
-      "id": "crosshaven_northgate_crags_far_decor_033",
-      "type": "bush_small_a",
-      "x": 13,
-      "y": 20
-    },
-    {
-      "id": "crosshaven_northgate_crags_far_decor_034",
+      "id": "crosshaven_northgate_crags_far_decor_036",
       "type": "bush_small_b",
       "x": 1,
       "y": 21
     },
     {
-      "id": "crosshaven_northgate_crags_far_decor_035",
+      "id": "crosshaven_northgate_crags_far_decor_037",
       "type": "tuft_a",
       "x": 6,
       "y": 21
     },
     {
-      "id": "crosshaven_northgate_crags_far_decor_036",
-      "type": "bush_small_a",
+      "id": "crosshaven_northgate_crags_far_decor_038",
+      "type": "bush_small_b",
       "x": 12,
       "y": 21
     },
     {
-      "id": "crosshaven_northgate_crags_far_decor_037",
-      "type": "bush_small_a",
-      "x": 15,
-      "y": 21
-    },
-    {
-      "id": "crosshaven_northgate_crags_far_decor_038",
-      "type": "tuft_a",
-      "x": 20,
-      "y": 21
-    },
-    {
       "id": "crosshaven_northgate_crags_far_decor_039",
+      "type": "bush_small_b",
+      "x": 13,
+      "y": 21
+    },
+    {
+      "id": "crosshaven_northgate_crags_far_decor_040",
+      "type": "bush_small_b",
+      "x": 22,
+      "y": 21
+    },
+    {
+      "id": "crosshaven_northgate_crags_far_decor_041",
+      "type": "tuft_a",
+      "x": 23,
+      "y": 21
+    },
+    {
+      "id": "crosshaven_northgate_crags_far_decor_042",
       "type": "tuft_a",
       "x": 11,
       "y": 22
     },
     {
-      "id": "crosshaven_northgate_crags_far_decor_040",
-      "type": "bush_small_a",
-      "x": 17,
-      "y": 22
-    },
-    {
-      "id": "crosshaven_northgate_crags_far_decor_041",
+      "id": "crosshaven_northgate_crags_far_decor_043",
       "type": "bush_small_a",
       "x": 19,
-      "y": 22
-    },
-    {
-      "id": "crosshaven_northgate_crags_far_decor_042",
-      "type": "bush_small_b",
-      "x": 20,
-      "y": 22
-    },
-    {
-      "id": "crosshaven_northgate_crags_far_decor_043",
-      "type": "bush_small_b",
-      "x": 21,
       "y": 22
     },
     {
@@ -9478,101 +9478,113 @@
     {
       "id": "crosshaven_northgate_crags_far_decor_047",
       "type": "bush_small_a",
+      "x": 26,
+      "y": 24
+    },
+    {
+      "id": "crosshaven_northgate_crags_far_decor_048",
+      "type": "bush_small_a",
       "x": 7,
       "y": 25
     },
     {
-      "id": "crosshaven_northgate_crags_far_decor_048",
+      "id": "crosshaven_northgate_crags_far_decor_049",
       "type": "bush_small_b",
       "x": 8,
       "y": 25
     },
     {
-      "id": "crosshaven_northgate_crags_far_decor_049",
-      "type": "bush_small_a",
-      "x": 25,
-      "y": 25
-    },
-    {
       "id": "crosshaven_northgate_crags_far_decor_050",
-      "type": "bush_small_b",
+      "type": "bush_small_a",
       "x": 26,
       "y": 25
     },
     {
       "id": "crosshaven_northgate_crags_far_decor_051",
+      "type": "bush_small_b",
+      "x": 28,
+      "y": 25
+    },
+    {
+      "id": "crosshaven_northgate_crags_far_decor_052",
       "type": "bush_small_a",
+      "x": 15,
+      "y": 26
+    },
+    {
+      "id": "crosshaven_northgate_crags_far_decor_053",
+      "type": "tuft_a",
       "x": 19,
       "y": 26
     },
     {
-      "id": "crosshaven_northgate_crags_far_decor_052",
+      "id": "crosshaven_northgate_crags_far_decor_054",
       "type": "bush_small_b",
       "x": 22,
       "y": 26
     },
     {
-      "id": "crosshaven_northgate_crags_far_decor_053",
+      "id": "crosshaven_northgate_crags_far_decor_055",
       "type": "bush_small_a",
       "x": 23,
       "y": 26
     },
     {
-      "id": "crosshaven_northgate_crags_far_decor_054",
+      "id": "crosshaven_northgate_crags_far_decor_056",
       "type": "bush_small_a",
       "x": 7,
       "y": 27
     },
     {
-      "id": "crosshaven_northgate_crags_far_decor_055",
+      "id": "crosshaven_northgate_crags_far_decor_057",
       "type": "bush_small_a",
       "x": 10,
       "y": 27
     },
     {
-      "id": "crosshaven_northgate_crags_far_decor_056",
+      "id": "crosshaven_northgate_crags_far_decor_058",
       "type": "bush_small_b",
       "x": 15,
       "y": 27
     },
     {
-      "id": "crosshaven_northgate_crags_far_decor_057",
+      "id": "crosshaven_northgate_crags_far_decor_059",
+      "type": "bush_small_b",
+      "x": 26,
+      "y": 28
+    },
+    {
+      "id": "crosshaven_northgate_crags_far_decor_060",
       "type": "tuft_a",
       "x": 4,
       "y": 29
     },
     {
-      "id": "crosshaven_northgate_crags_far_decor_058",
+      "id": "crosshaven_northgate_crags_far_decor_061",
       "type": "tuft_a",
       "x": 10,
       "y": 29
     },
     {
-      "id": "crosshaven_northgate_crags_far_decor_059",
-      "type": "tuft_a",
-      "x": 13,
-      "y": 29
-    },
-    {
-      "id": "crosshaven_northgate_crags_far_decor_060",
+      "id": "crosshaven_northgate_crags_far_decor_062",
       "type": "tuft_a",
       "x": 19,
       "y": 29
     },
     {
-      "id": "crosshaven_northgate_crags_far_decor_061",
+      "id": "crosshaven_northgate_crags_far_decor_063",
       "type": "bush_small_b",
       "x": 4,
       "y": 30
     },
     {
-      "id": "crosshaven_northgate_crags_far_decor_062",
+      "id": "crosshaven_northgate_crags_far_decor_064",
       "type": "bush_small_b",
       "x": 11,
       "y": 30
     },
     {
-      "id": "crosshaven_northgate_crags_far_decor_063",
+      "id": "crosshaven_northgate_crags_far_decor_065",
       "type": "tuft_a",
       "x": 23,
       "y": 30
