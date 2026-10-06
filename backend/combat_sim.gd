@@ -3875,7 +3875,14 @@ func _connect_base_damage(def: Dictionary, target: Dictionary) -> int:
 	if spell_id == SpellKits.DETONATE:
 		# Locked: 6 + 6×M Air, M = Marks on the target consumed on connect.
 		return int(def.get("base_damage", 6)) + int(def.get("damage_per_mark", 6)) * int(target.get("marks", 0))
+	if spell_id == SpellKits.CRUSH and int(target.get("shield", 0)) > 0:
+		# Mauro 6 Oct 2026: Crush is the shield breaker — double base damage on
+		# a shielded target, so Ironjaw keeps his edge over Bastion.
+		return int(def.get("base_damage", 0)) * CRUSH_SHIELD_MULT
 	return int(def.get("base_damage", 0))
+
+
+const CRUSH_SHIELD_MULT := 2
 
 
 func _connect_extra_note(engine_gained: int, engine_name: String, marks_consumed: int, engine_spent: int, stun_applied: int, push_result: Dictionary) -> String:
@@ -5503,17 +5510,18 @@ func _mitigate_hit(actor: Dictionary, target: Dictionary, damage: int) -> Dictio
 
 
 ## Mauro 6 Oct 2026: Bastion Thorns. While Bastion has a shield, an enemy that
-## hits him from an adjacent tile takes THORNS_DAMAGE back (no resist).
-const THORNS_DAMAGE := 6
-## Balance tool knob: > 0 makes Thorns this % of Bastion's max HP instead of
-## the flat THORNS_DAMAGE (tests/sim_duels.gd reads THORNS_PCT).
+## hits him from an adjacent tile takes THORNS_REFLECT of that hit back (no
+## resist): hard hitters like Gloam pay the most. Was a flat 6, then tested as
+## a % of his max HP; the simulator showed neither made him Gloam's counter.
+const THORNS_REFLECT := 0.3
+## Balance tool knob: > 0 overrides the reflect share in % (sim_duels reads
+## THORNS_PCT).
 static var thorns_pct := 0.0
 
 
-static func thorns_amount(bastion: Dictionary) -> int:
-	if thorns_pct > 0.0:
-		return maxi(1, int(round(float(bastion.get("max_hp", 0)) * thorns_pct / 100.0)))
-	return THORNS_DAMAGE
+static func thorns_amount(_bastion: Dictionary, damage: int) -> int:
+	var share := thorns_pct / 100.0 if thorns_pct > 0.0 else THORNS_REFLECT
+	return maxi(1, roundi(float(damage) * share))
 
 
 func _bastion_thorns(actor: Dictionary, target: Dictionary, damage: int, report: Dictionary) -> void:
@@ -5525,7 +5533,7 @@ func _bastion_thorns(actor: Dictionary, target: Dictionary, damage: int, report:
 		return
 	if chebyshev(actor["pos"], target["pos"]) != 1:
 		return
-	var thorns := thorns_amount(target)
+	var thorns := thorns_amount(target, damage)
 	actor["hp"] = maxi(0, int(actor["hp"]) - thorns)
 	report["thorns"] = thorns
 	report["thorns_seat"] = int(actor["seat"])

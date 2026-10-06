@@ -122,13 +122,14 @@ static func simple_lines(spell_id: String, preview: Dictionary = {}) -> PackedSt
 		SpellKits.CRUSH:
 			out.append("A big smash on an enemy next to you for %d damage. Needs 2 Impact and uses 2." % dmg)
 			out.append("If your Impact is full (%d), the enemy is Stunned and skips their next turn, and it uses ALL your Impact." % SpellKits.IMPACT_CAP)
+			out.append("Shield breaker: Crush does double damage to a target that has a shield.")
 		SpellKits.MEND:
 			out.append("Heal a teammate or yourself for %d HP. Very hurt friends (under 40%% HP) get 25%% more. +1 Pulse." % heal)
 		SpellKits.PULSE_TAP:
 			out.append("Tap a teammate (or yourself) to heal %d HP. Uses 1 Pulse." % heal)
 		SpellKits.WARD:
 			out.append("Give every teammate within %d tiles, you too, a shield of +%d. Cast it again to stack it up to %d. Hits break the shield before they hurt you; it stays until it breaks. Uses %d Aegis." % [int(def.get("ward_radius", 3)), int(def.get("shield", 20)), int(def.get("shield_cap", 60)), int(def.get("spend_aegis", 3))])
-			out.append("Thorns: while Bastion has a shield, enemies who hit him from right next to him take %d damage back." % 6)
+			out.append("Thorns: while Bastion has a shield, enemies who hit him from right next to him take 30% of that hit back.")
 		SpellKits.CLEANSE:
 			out.append("Take away 1 bad effect from a teammate (Stun first). 3 bad effects? Use it 3 times. +1 Pulse.")
 		SpellKits.HEARTSTOP:

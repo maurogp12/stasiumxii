@@ -142,6 +142,7 @@ func _run() -> void:
 	_test_bastion_team_ward_and_thorns()
 	_test_spark_counters_mender()
 	_test_prefight_elements_button()
+	_test_crush_breaks_shields()
 
 
 func _test_reset_and_turn_order() -> void:
@@ -7709,8 +7710,11 @@ func _test_bastion_team_ward_and_thorns() -> void:
 	var jaw_hp := int(_unit(0)["hp"])
 	var strike: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(4, 3), "seat": 0})
 	eq(bool(strike.get("ok", false)), true, "Strike on Bastion resolves")
-	eq(int(_unit(0)["hp"]), jaw_hp - _sim.THORNS_DAMAGE, "Thorns hits the adjacent attacker for 6")
-	eq(int(_first_event_where(strike.get("events", []), "hit").get("thorns", 0)), 6, "the hit event names Thorns")
+	var strike_hit := _first_event_where(strike.get("events", []), "hit")
+	var dealt := int(strike_hit.get("damage", 0)) + int(strike_hit.get("shield_absorbed", 0))
+	var reflected := maxi(1, roundi(float(dealt) * _sim.THORNS_REFLECT))
+	eq(int(_unit(0)["hp"]), jaw_hp - reflected, "Thorns hits the adjacent attacker for 30% of the blow")
+	eq(int(strike_hit.get("thorns", 0)), reflected, "the hit event names Thorns")
 	# No shield, no Thorns.
 	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1], "classes": ["ironjaw", "bastion"], "positions": [Vector2i(3, 3), Vector2i(4, 3)]})
 	jaw_hp = int(_unit(0)["hp"])
@@ -7756,6 +7760,15 @@ func _test_prefight_elements_button() -> void:
 	var view := FileAccess.get_file_as_string("res://board_view.gd")
 	truthy(view.contains("_hud.elements_requested.connect(_on_elements_requested)"), "the board opens the Elements screen")
 	truthy(view.contains("set_seat_gear(seat, kit.duplicate(true))"), "closing it re-applies the fighter's pick")
+
+
+
+## Mauro 6 Oct 2026: Crush does double base damage to a shielded target.
+func _test_crush_breaks_shields() -> void:
+	var def := SpellKits.spell(SpellKits.CRUSH)
+	eq(_sim._connect_base_damage(def, {"shield": 0}), int(def["base_damage"]), "Crush base damage on an unshielded target")
+	eq(_sim._connect_base_damage(def, {"shield": 20}), int(def["base_damage"]) * 2, "Crush doubles on a shielded target")
+	eq(_sim._connect_base_damage(SpellKits.spell(SpellKits.STRIKE), {"shield": 20}), int(SpellKits.spell(SpellKits.STRIKE)["base_damage"]), "Strike does not double")
 
 
 func _walkable_zone_count(seat: int) -> int:

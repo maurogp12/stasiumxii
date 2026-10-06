@@ -245,7 +245,8 @@ func _thorns_threat(sim: Node, bastion: Dictionary, foe: Dictionary) -> float:
 		return 0.0
 	if not str(foe.get("class_id", "")) in ["ironjaw", "gloam"]:
 		return 0.0
-	return float(sim.thorns_amount(bastion))
+	# One expected reflected hit of a typical level-15 melee blow (~30).
+	return float(sim.thorns_amount(bastion, 30))
 
 
 func _eval(sim: Node, seat: int) -> float:
