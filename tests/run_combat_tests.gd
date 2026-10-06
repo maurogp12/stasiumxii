@@ -136,6 +136,7 @@ func _run() -> void:
 	_test_aegis_break_burst()
 	_test_snap_wall_bastion_turns()
 	_test_snap_wall_knock_down()
+	_test_every_spell_explained()
 
 
 func _test_reset_and_turn_order() -> void:
@@ -7674,6 +7675,20 @@ func _test_snap_wall_knock_down() -> void:
 	eq(foreign.get("ok", false), false, "Snap Wall cannot knock down another seat's wall")
 	eq(int(_unit(0)["aegis"]), 2, "a refused knock-down keeps the Aegis")
 	eq(_sim.snapshot()["blocked_tiles"].size(), 1, "that wall stays up")
+
+
+
+## Mauro 6 Oct 2026: every spell's hold card explains cost, reach and what it
+## does in plain words.
+func _test_every_spell_explained() -> void:
+	for class_id in SpellKits.CLASS_SPELLS:
+		for spell_id in SpellKits.CLASS_SPELLS[class_id]:
+			var lines := SpellTooltip.simple_lines(str(spell_id))
+			eq(lines.size() >= 2, true, "%s has a plain-words card" % spell_id)
+			if lines.size() > 0:
+				eq(str(lines[0]).begins_with("Costs %d AP" % int(SpellKits.SPELLS[spell_id]["ap"])), true, "%s card names its AP cost" % spell_id)
+	var card := SpellTooltip.card_text(_sim.preview_cast(SpellKits.SNAP_WALL, Vector2i(1, 1), Vector2i(2, 1), 1))
+	truthy(card.contains("knock it down"), "the Snap Wall card explains the knock-down")
 
 
 func _walkable_zone_count(seat: int) -> int:

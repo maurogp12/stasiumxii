@@ -1338,15 +1338,15 @@ func _build() -> void:
 
 	_tooltip_panel = Panel.new()
 	# Above the touch action row so a pinned card does not cover Face / End Turn.
-	_tooltip_panel.position = Vector2(240, 168)
-	_tooltip_panel.size = Vector2(480, 248)
+	_tooltip_panel.position = Vector2(200, 168)
+	_tooltip_panel.size = Vector2(560, 248)
 	_tooltip_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_tooltip_panel.visible = false
 	_tooltip_panel.add_theme_stylebox_override("panel", _card_panel())
 	root.add_child(_tooltip_panel)
 	_tooltip_label = Label.new()
 	_tooltip_label.position = Vector2(12, 8)
-	_tooltip_label.size = Vector2(456, 232)
+	_tooltip_label.size = Vector2(536, 232)
 	_tooltip_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_tooltip_label.add_theme_font_size_override("font_size", 13)
 	_tooltip_label.add_theme_color_override("font_color", Color(0.12, 0.1, 0.12))
@@ -2416,7 +2416,25 @@ func show_spell_tooltip(spell_id: String) -> void:
 		return
 	_tooltip_spell = spell_id
 	_tooltip_label.text = text
+	_fit_tooltip_card()
 	_tooltip_panel.visible = true
+
+
+## The plain-words card (Mauro 6 Oct 2026) is longer than the old one. Grow
+## the card upward from its old bottom edge so it never covers the action row.
+const TOOLTIP_BOTTOM := 470.0
+const TOOLTIP_TOP_MIN := 8.0
+
+
+func _fit_tooltip_card() -> void:
+	var lines := maxi(_tooltip_label.get_line_count(), 1)
+	var spacing := float(_tooltip_label.get_theme_constant("line_spacing"))
+	var want := float(lines) * (float(_tooltip_label.get_line_height()) + spacing) + 12.0
+	var room := TOOLTIP_BOTTOM - TOOLTIP_TOP_MIN - 16.0
+	var height := clampf(want, 232.0, room)
+	_tooltip_label.size = Vector2(_tooltip_label.size.x, height)
+	_tooltip_panel.size = Vector2(_tooltip_panel.size.x, height + 16.0)
+	_tooltip_panel.position = Vector2(_tooltip_panel.position.x, TOOLTIP_BOTTOM - _tooltip_panel.size.y)
 
 
 func preview_for_spell(spell_id: String) -> Dictionary:
