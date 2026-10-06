@@ -61,17 +61,29 @@ func _process(_d: float) -> bool:
 	_done = true
 	var t0 := Time.get_ticks_msec()
 	var kit := {}
+	var seat_kits := {}
 	if _mode == "lvl30":
 		var heroes := {}
 		for c in CLASSES:
 			heroes[c] = {"level": 30, "spent": BUILDS[c]}
 		kit = {"worn": [], "attune": {}, "heroes": heroes}
+	elif _mode == "lvl15rare":
+		# Mauro 6 Oct 2026: level 15, full Rare set (+0), no Stills. Builds are
+		# the level-30 split scaled to 28 points; guards wear Ironveil, the
+		# rest Stillcut.
+		for c in CLASSES:
+			seat_kits[c] = lvl15_rare_kit(c)
 	var n := 0
 	for i in range(CLASSES.size()):
 		for j in range(i + 1, CLASSES.size()):
 			var a: String = CLASSES[i]
 			var b: String = CLASSES[j]
 			if _only != "" and a != _only and b != _only:
+				continue
+			# DUEL_SKIP=mender: leave a class out (Mauro 6 Oct 2026: Mender is
+			# a 2v2 / 3v3 support, not a 1v1 class).
+			var skip := OS.get_environment("DUEL_SKIP").split(",")
+			if skip.has(a) or skip.has(b):
 				continue
 			# DUEL_VS=gloam,ironjaw: only those opponents of `only_class`.
 			var vs := OS.get_environment("DUEL_VS")
@@ -81,7 +93,7 @@ func _process(_d: float) -> bool:
 				var swap := g % 2 == 1
 				var classes := [b, a] if swap else [a, b]
 				var map_id: String = MAPS[(g / 2) % MAPS.size()]
-				var res := _play(classes, map_id, 1000 + g * 7 + i * 131 + j * 17 + _seed_offset, kit)
+				var res := _play(classes, map_id, 1000 + g * 7 + i * 131 + j * 17 + _seed_offset, kit, seat_kits)
 				_record(classes, res)
 				if OS.get_environment("DUEL_VERBOSE") != "":
 					print("    %s(s0) vs %s(s1) %s: winner %d, rounds %d, hp %s, dmg %s" % [classes[0], classes[1], map_id, int(res["winner"]), int(res["rounds"]), str(res["hp"]), str(res["dmg"])])
@@ -93,11 +105,13 @@ func _process(_d: float) -> bool:
 	return true
 
 
-func _play(classes: Array, map_id: String, seed: int, kit: Dictionary) -> Dictionary:
+func _play(classes: Array, map_id: String, seed: int, kit: Dictionary, seat_kits: Dictionary = {}) -> Dictionary:
 	var sim: Node = SIM_SCRIPT.new()
 	var config := {"seed": seed, "map_id": map_id, "classes": classes, "first_by_init": true}
 	if not kit.is_empty():
 		config["seat_gear"] = {0: kit, 1: kit.duplicate(true)}
+	elif not seat_kits.is_empty():
+		config["seat_gear"] = {0: seat_kits[classes[0]].duplicate(true), 1: seat_kits[classes[1]].duplicate(true)}
 	sim.reset_match(config)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed
@@ -387,3 +401,19 @@ func _report(n: int) -> void:
 	keys.sort()
 	for k in keys:
 		print("  %s %d" % [k, _spell_use[k]])
+
+
+static func lvl15_rare_kit(class_id: String) -> Dictionary:
+	var build: Dictionary = BUILDS[class_id]
+	var spent := {}
+	var total := 0
+	for key in build:
+		spent[key] = int(floor(float(build[key]) * 28.0 / 58.0))
+		total += int(spent[key])
+	spent["mastery"] = int(spent.get("mastery", 0)) + maxi(28 - total, 0)
+	var family := "ironveil" if class_id in ["bastion", "mender"] else "stillcut"
+	var worn: Array = []
+	for slot in GearBag.SLOTS:
+		worn.append({"item_id": GearBag.item_id_for(family, slot), "plus": 0})
+	var element := SpellKits.element_of(class_id)
+	return {"worn": worn, "attune": {family: element}, "heroes": {class_id: {"level": 15, "spent": spent}}}
