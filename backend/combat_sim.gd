@@ -188,6 +188,15 @@ var _demo_map: String = ""
 var _elev_seed: int = 0
 var _elevation_gen: String = "tags"
 var _turn_time_remaining: float = 0.0
+## Mauro 6 Oct 2026: "matches should be max of 10 minutes", "at 3vs3 im
+## willing to do 15 mins", "longer fights just gets boring". Koliseo only.
+## -1 = not started (deployment / Stasis). The last SUDDEN_DEATH_SEC are
+## sudden death; at 0 the team with the higher HP share wins.
+const MATCH_SECONDS := 600.0
+const MATCH_SECONDS_3V3 := 900.0
+const SUDDEN_DEATH_SEC := 180.0
+const SUDDEN_DEATH_STEP_PCT := 5
+var _match_time_left: float = -1.0
 var _turn_time_limit: float = TURN_TIME_LIMIT
 var _turn_time_running: bool = false
 ## True after apply_host_snapshot. Replica may paint; it must not tick or submit.
@@ -195,6 +204,7 @@ var _replica: bool = false
 
 
 func reset_match(config: Dictionary = {}) -> Dictionary:
+	_match_time_left = -1.0
 	_units.clear()
 	_blocked_cells.clear()
 	_snap_wall_cells.clear()
@@ -350,6 +360,13 @@ func tick_turn_timer(delta: float) -> Dictionary:
 		return _timer_tick_result(false)
 	if not _turn_time_running:
 		return _timer_tick_result(false)
+	if _match_time_left > 0.0:
+		_match_time_left = maxf(_match_time_left - maxf(delta, 0.0), 0.0)
+		if _match_time_left <= 0.0:
+			_time_up()
+			var up := _timer_tick_result(true)
+			up["events"] = _last_events.duplicate(true)
+			return up
 	_turn_time_remaining = maxf(_turn_time_remaining - maxf(delta, 0.0), 0.0)
 	if _turn_time_remaining > 0.0:
 		return _timer_tick_result(false)
@@ -944,6 +961,8 @@ func snapshot() -> Dictionary:
 		"turn_time_limit": _turn_time_limit,
 		"turn_time_running": _turn_time_running,
 		"turn_time_seconds": _clock_display_seconds(_turn_time_remaining),
+		"match_time_left": _match_time_left,
+		"sudden_death": sudden_death_active(),
 		"turn_timer": "host",
 		"networking": false,
 		"open_deploy": ["fog", "hidden_enemy", "deploy_timer", "multi_unit"],
@@ -989,6 +1008,7 @@ func apply_host_snapshot(snap: Dictionary) -> void:
 	_winner_seat = int(snap.get("winner_seat", -1))
 	_turn_time_limit = float(snap.get("turn_time_limit", TURN_TIME_LIMIT))
 	_turn_time_remaining = float(snap.get("turn_time_remaining", 0.0))
+	_match_time_left = float(snap.get("match_time_left", -1.0))
 	_turn_time_running = bool(snap.get("turn_time_running", false))
 	_last_coach = str(snap.get("coach", ""))
 	_last_events = []
@@ -3836,6 +3856,7 @@ func _refresh_last_stand() -> void:
 
 func _begin_unit_turn(unit: Dictionary) -> void:
 	_refresh_last_stand()
+	_sudden_death_tick(unit)
 	unit["momentum"] = false
 	_expire_element_tiles(unit)
 	# Earth rider: Grounded lasts until the caster's next turn.
@@ -4907,9 +4928,72 @@ func _reject(intent: Dictionary, reason: String, coach: String) -> Dictionary:
 
 
 func _start_turn_timer() -> void:
+	if _match_time_left < 0.0 and not _stasis_pack and not _flow.is_deployment():
+		_match_time_left = MATCH_SECONDS_3V3 if _team_size >= 3 else MATCH_SECONDS
 	_turn_time_limit = TURN_TIME_LIMIT
 	_turn_time_remaining = TURN_TIME_LIMIT
 	_turn_time_running = not _match_over and not _flow.is_deployment()
+
+
+func sudden_death_active() -> bool:
+	return _match_time_left >= 0.0 and _match_time_left <= SUDDEN_DEATH_SEC
+
+
+## Sudden death: at each fighter's turn start it loses 5% of its max HP, then
+## 10%, 15% … (its own sudden-death turns). Shields do not block it.
+func _sudden_death_tick(unit: Dictionary) -> void:
+	if not sudden_death_active() or _match_over or not bool(unit.get("alive", false)):
+		return
+	unit["sudden_turns"] = int(unit.get("sudden_turns", 0)) + 1
+	var pct := SUDDEN_DEATH_STEP_PCT * int(unit["sudden_turns"])
+	var lost := maxi(1, roundi(float(unit.get("max_hp", 1)) * float(pct) / 100.0))
+	unit["hp"] = maxi(0, int(unit["hp"]) - lost)
+	_last_events.append({
+		"type": "sudden_death",
+		"target_seat": int(unit["seat"]),
+		"damage": lost,
+		"pct": pct,
+		"hp": int(unit["hp"]),
+		"coach": "SUDDEN DEATH: %s loses %d (%d%% of max HP)." % [str(unit.get("name", "")), lost, pct],
+	})
+	_check_death(unit, "sudden_death")
+
+
+## Clock at 0: the team keeping the larger share of its max HP wins.
+func _time_up() -> void:
+	if _match_over:
+		return
+	var share := {}
+	for unit in _units:
+		var team := _team_of(unit)
+		var rec: Array = share.get(team, [0, 0])
+		rec[0] += int(unit.get("hp", 0)) if bool(unit.get("alive", false)) else 0
+		rec[1] += int(unit.get("max_hp", 1))
+		share[team] = rec
+	var best_team := -1
+	var best := -1.0
+	var tie := false
+	for team in share:
+		var pct: float = float(share[team][0]) / maxf(1.0, float(share[team][1]))
+		if pct > best + 0.0001:
+			best = pct
+			best_team = int(team)
+			tie = false
+		elif absf(pct - best) <= 0.0001:
+			tie = true
+	_last_events.append({"type": "time_up", "coach": "Time! The team with more HP left wins."})
+	if tie or best_team < 0:
+		_match_over = true
+		_winner_seat = -1
+		_winner_team = -1
+		_stop_turn_timer()
+		_last_coach = "Time! It is a draw."
+		_last_events.append({"type": "match_over", "winner_seat": -1, "coach": _last_coach})
+		return
+	for unit in _units:
+		if _team_of(unit) == best_team:
+			_finish_match(int(unit["seat"]))
+			return
 
 
 func _stop_turn_timer() -> void:

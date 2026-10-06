@@ -144,6 +144,7 @@ func _run() -> void:
 	_test_prefight_elements_button()
 	_test_crush_breaks_shields()
 	_test_mender_last_stand()
+	_test_sudden_death_clock()
 
 
 func _test_reset_and_turn_order() -> void:
@@ -7821,6 +7822,40 @@ func _test_mender_last_stand() -> void:
 	mate["hp"] = 10
 	_sim._refresh_last_stand()
 	eq(bool(mender.get("last_stand", true)), false, "a teammate back on their feet ends Last Stand")
+
+
+
+## Mauro 6 Oct 2026: 10 min matches (3v3 15), sudden death in the last 3 min,
+## HP share decides at 0:00.
+func _test_sudden_death_clock() -> void:
+	_sim.reset_match({"seed": 1, "flat_board": true, "classes": ["kestrel", "ironjaw"]})
+	eq(float(_sim.snapshot().get("match_time_left", 0.0)), -1.0, "no match clock during deployment")
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "classes": ["kestrel", "ironjaw"], "positions": [Vector2i(1, 1), Vector2i(8, 8)]})
+	_sim._start_turn_timer()
+	eq(float(_sim.snapshot().get("match_time_left", 0.0)), 600.0, "a 1v1 match has 10 minutes")
+	eq(bool(_sim.snapshot().get("sudden_death", true)), false, "no sudden death at the start")
+	_sim._match_time_left = 170.0
+	eq(_sim.sudden_death_active(), true, "the last 3 minutes are sudden death")
+	var hp0 := int(_unit(1)["hp"])
+	var max_hp := int(_unit(1)["max_hp"])
+	_sim.submit({"type": "end_turn", "seat": 0})
+	eq(hp0 - int(_unit(1)["hp"]), maxi(1, roundi(float(max_hp) * 0.05)), "first sudden-death turn costs 5% max HP")
+	var hp1 := int(_unit(1)["hp"])
+	_sim.submit({"type": "end_turn", "seat": 1})
+	_sim.submit({"type": "end_turn", "seat": 0})
+	eq(hp1 - int(_unit(1)["hp"]), maxi(1, roundi(float(max_hp) * 0.10)), "the next one costs 10%")
+	_live_unit(0)["hp"] = int(_unit(0)["max_hp"])
+	_sim._match_time_left = 0.5
+	_sim._turn_time_running = true
+	var up: Dictionary = _sim.tick_turn_timer(1.0)
+	eq(bool(_sim.snapshot().get("match_over", false)), true, "the match ends at 0:00")
+	eq(int(_sim.snapshot().get("winner_seat", -1)), 0, "the fighter with the larger HP share wins")
+	eq(bool(up.get("expired", false)), true, "the board is told time ran out")
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "team_size": 3, "classes": ["kestrel", "ironjaw", "gloam", "bastion", "mender", "kestrel"]})
+	_sim._match_time_left = -1.0
+	_sim._start_turn_timer()
+	eq(float(_sim.snapshot().get("match_time_left", 0.0)), 900.0, "a 3v3 match has 15 minutes")
+	eq(CombatHUD.match_clock_text(170.0, true), "  ·  SUDDEN DEATH 2:50", "the top bar shows sudden death")
 
 
 func _walkable_zone_count(seat: int) -> int:
