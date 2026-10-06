@@ -240,6 +240,14 @@ func _followup(sim: Node, seat: int, depth: int) -> float:
 	return best * 0.9
 
 
+func _thorns_threat(sim: Node, bastion: Dictionary, foe: Dictionary) -> float:
+	if str(bastion.get("class_id", "")) != "bastion" or int(bastion.get("shield", 0)) <= 0:
+		return 0.0
+	if not str(foe.get("class_id", "")) in ["ironjaw", "gloam"]:
+		return 0.0
+	return float(sim.thorns_amount(bastion))
+
+
 func _eval(sim: Node, seat: int) -> float:
 	var me := _unit(sim, seat)
 	var foe := _unit(sim, 1 - seat)
@@ -250,7 +258,10 @@ func _eval(sim: Node, seat: int) -> float:
 	if not bool(me.get("alive", true)):
 		return -10000.0
 	var s := float(me["hp"]) - float(foe["hp"]) * 1.1
-	s += float(me.get("shield", 0)) * 0.8 - float(foe.get("shield", 0)) * 0.8
+	# Shields have no clock since 6 Oct 2026, so they count like HP; a shielded
+	# Bastion facing a melee class banks one expected Thorns hit.
+	s += float(me.get("shield", 0)) - float(foe.get("shield", 0))
+	s += _thorns_threat(sim, me, foe) * 1.1 - _thorns_threat(sim, foe, me)
 	s += float(foe.get("stun_remaining", 0)) * 10.0
 	s += float(foe.get("marks", 0)) * 4.0
 	s += float(me.get("impact", 0)) * 3.0
