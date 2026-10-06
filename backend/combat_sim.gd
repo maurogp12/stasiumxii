@@ -1617,8 +1617,15 @@ func _flex_target(actor: Dictionary, target: Dictionary, def: Dictionary) -> Arr
 	if int(target.get("hp", 0)) <= 0:
 		_add_element_rider(target, el, tags)
 		return tags
+	var burn_before := [int(target.get("burn_stacks", 0)), int(target.get("burn_remaining", 0))]
 	_add_element_rider(target, el, tags)
 	var blend := _try_blend(actor, target, el)
+	if blend == "spark" and tags.has("fire_burn"):
+		# Mauro 6 Oct 2026 ("take away burn put a electrocuted"): the Fire hit
+		# that fires Spark does not Burn; Spark electrocutes instead.
+		target["burn_stacks"] = burn_before[0]
+		target["burn_remaining"] = burn_before[1]
+		tags.erase("fire_burn")
 	if blend != "":
 		tags.append("blend")
 		tags.append("blend_" + blend)
@@ -1840,6 +1847,10 @@ func _blend_sleet(actor: Dictionary, target: Dictionary, event: Dictionary) -> S
 
 ## Spark (Air + Fire): 4 Neutral chip (no resist, eats shield first), then
 ## push 1 away from the caster (Grounded / Plant: chip lands, no push).
+## Healing a Sparked body receives is cut by this share.
+const SPARK_HEAL_CUT := 0.4
+
+
 func _blend_spark(actor: Dictionary, target: Dictionary, event: Dictionary) -> String:
 	var chip := SPARK_CHIP
 	var shield := int(target.get("shield", 0))
@@ -1855,7 +1866,16 @@ func _blend_spark(actor: Dictionary, target: Dictionary, event: Dictionary) -> S
 	event["from"] = from
 	event["to"] = target["pos"]
 	event["push"] = result.duplicate()
-	return "%d chip%s" % [chip, ", pushed 1" if bool(result.get("moved", false)) else ""]
+	# Mauro 6 Oct 2026: "spark also makes healing less efficient anyone under
+	# spark effect would receive 40% less healing power". Until the end of the
+	# target's next own turn (the window the other Blend effects use).
+	target["sparked"] = true
+	event["heal_cut"] = SPARK_HEAL_CUT
+	# Mauro 6 Oct 2026: no Burn from Spark; it electrocutes (−AP next turn,
+	# the Stormspire Electrocuted stack).
+	var shock := _apply_electrocuted(target)
+	event["electrocuted"] = int(shock["stacks"])
+	return "%d chip%s, -%d%% healing, Electrocuted −%d AP" % [chip, ", pushed 1" if bool(result.get("moved", false)) else "", roundi(SPARK_HEAL_CUT * 100.0), int(shock["stacks"])]
 
 
 func _add_element_tile(kind: String, cell: Vector2i, owner_seat: int) -> void:
@@ -1946,6 +1966,9 @@ func _end_turn_elements(unit: Dictionary) -> void:
 		unit.erase("mire_cell")
 		_emit_expire("mire", unit["pos"], int(unit["seat"]), int(unit["seat"]))
 	unit["blend_lock"] = false
+	if bool(unit.get("sparked", false)):
+		unit["sparked"] = false
+		_emit_expire("sparked", unit["pos"], int(unit["seat"]), int(unit["seat"]))
 	if str(unit.get("infusion", "")) != "":
 		unit["infusion"] = ""
 		_emit_expire("infusion", unit["pos"], int(unit["seat"]), int(unit["seat"]))
@@ -3101,7 +3124,7 @@ func _check_death(target: Dictionary, cause: String = "damage") -> void:
 	target["residue_turns"] = 0
 	target["water_slow"] = false
 	target["grounded"] = false
-	for key in ["pin_pending", "pinned", "magma_pending", "mire_cell", "infusion", "blend_lock"]:
+	for key in ["pin_pending", "pinned", "magma_pending", "mire_cell", "infusion", "blend_lock", "sparked"]:
 		target.erase(key)
 	_last_events.append({
 		"type": "dead",
@@ -5553,6 +5576,8 @@ func _triage_applied(target: Dictionary, def: Dictionary) -> bool:
 func _apply_heal(target: Dictionary, amount: int) -> int:
 	if amount <= 0:
 		return 0
+	if bool(target.get("sparked", false)):
+		amount = roundi(float(amount) * (1.0 - SPARK_HEAL_CUT))
 	var room := int(target.get("max_hp", class_base_hp(str(target.get("class_id", ""))))) - int(target.get("hp", 0))
 	var healed := mini(amount, maxi(room, 0))
 	target["hp"] = int(target["hp"]) + healed

@@ -8003,7 +8003,26 @@ func _test_element_blends() -> void:
 	eq(str(sp.get("blend", "")), "spark", "Fire on own Air = Spark")
 	eq(int(sp.get("chip", 0)), 4, "Spark chips 4 (approved 6 → 4)")
 	eq(_unit(1)["pos"], Vector2i(7, 5), "Spark pushes 1")
-	eq(int(_unit(1).get("burn_remaining", 0)) > 0, true, "the Fire hit's Burn rider stays")
+	# Mauro 6 Oct 2026 ("take away burn put a electrocuted").
+	eq(int(_unit(1).get("burn_remaining", 0)), 0, "the Fire hit that fires Spark does not Burn")
+	eq(int(_unit(1).get("electro_stacks", 0)), 1, "Spark electrocutes instead")
+	eq(int(sp.get("electrocuted", 0)), 1, "the Blend event names the Electrocuted stack")
+	# Mauro 6 Oct 2026: a Sparked body gets 40% less healing until its next turn ends.
+	truthy(bool(_unit(1).get("sparked", false)), "Spark marks the target Sparked")
+	_live_unit(1)["hp"] = 30
+	eq(_sim._apply_heal(_live_unit(1), 20), 12, "a 20 heal on a Sparked body heals 12")
+	_sim.submit({"type": "end_turn", "seat": 0})
+	truthy(bool(_unit(1).get("sparked", false)), "still Sparked during its own turn")
+	eq(int(_unit(1)["ap"]), int(_unit(1)["max_ap"]) - 1, "Electrocuted takes 1 AP at its turn start")
+	var spark_end: Dictionary = _sim.submit({"type": "end_turn", "seat": 1})
+	eq(bool(_unit(1).get("sparked", false)), false, "Sparked ends with its turn")
+	var spark_gone := 0
+	for e in spark_end.get("events", []):
+		if str(e.get("type", "")) == "expire" and str(e.get("status", "")) == "sparked":
+			spark_gone += 1
+	eq(spark_gone, 1, "the board is told Sparked is gone")
+	_live_unit(1)["hp"] = 30
+	eq(_sim._apply_heal(_live_unit(1), 20), 20, "full healing again afterwards")
 
 	# Magma: the tile they end their next turn on burns 4, until the blender's turn.
 	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1], "classes": ["ironjaw", "kestrel"], "positions": [Vector2i(5, 5), Vector2i(6, 5)]})
