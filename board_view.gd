@@ -158,6 +158,7 @@ func _ready() -> void:
 	_hud.end_turn_requested.connect(_on_end_turn_button_pressed)
 	_hud.new_match_requested.connect(_on_new_match)
 	_hud.hub_requested.connect(_on_hub_requested)
+	_hud.unit_card_tapped.connect(_on_unit_card_tapped)
 	_hud.ready_requested.connect(_on_ready_requested)
 	_hud.aim_dragged.connect(_on_hud_aim_dragged)
 	_hud.zoom_step_requested.connect(_on_zoom_step)
@@ -574,8 +575,9 @@ func _commit_cell(cell: Vector2i) -> void:
 		return
 	if not _in_bounds(cell):
 		return
-	# Snap walls are not a left-click / tap target. Right-click already returned.
-	if _snap_wall_cell(cell):
+	# Snap walls are not a left-click / tap target, except Snap Wall on the
+	# caster's own wall (knock it down, Mauro 6 Oct 2026). Right-click already returned.
+	if _snap_wall_cell(cell) and not _snap_wall_break_cell(cell):
 		return
 	if not _cast_cell_armable(cell):
 		return
@@ -725,6 +727,37 @@ func _handle_left_click(cell: Vector2i) -> void:
 	# repaint walk tiles from legal_intents so remaining MP is selectable at 0 AP.
 	_hud.clear_spell()
 	_paint_highlights()
+
+
+## Mauro 6 Oct 2026: with a spell armed, tapping a fighter's portrait or card
+## in the top bar casts on that fighter, only when the sim says the cast is
+## legal (range + line of sight). Same submit as tapping its tile.
+func _on_unit_card_tapped(seat: int) -> void:
+	if _busy or _view_locked or _hud == null:
+		return
+	var snap: Dictionary = _sim().snapshot()
+	if CombatHUD.is_deployment_phase(snap) or bool(snap.get("match_over", false)):
+		return
+	if not _can_control_seat(int(snap.get("active_seat", 0))) or _active_is_stunned():
+		return
+	var spell_id := _hud.selected_spell()
+	if spell_id == "":
+		return
+	var target := {}
+	for unit in snap.get("units", []):
+		if int(unit.get("seat", -1)) == seat:
+			target = unit
+	if target.is_empty() or not bool(target.get("alive", false)):
+		return
+	var actor := _active_unit(snap)
+	var hidden := bool(target.get("invisible", false)) and CombatHUD.unit_team(target) != CombatHUD.unit_team(actor)
+	var cell: Vector2i = target["pos"]
+	var legal: Array = _sim().legal_intents(CombatHUD.kit_seat(snap))
+	if hidden or not SNAPSHOT_TILES.cast_dests(legal, spell_id).has(cell):
+		_hud.show_toast("%s can't reach %s: too far or no line of sight." % [SpellKits.spell(spell_id).get("name", "That spell"), SpellKits.display_name(str(target.get("class_id", "")))])
+		return
+	select_tile(cell)
+	_handle_left_click(cell)
 
 
 func _advance_click_accepted(cell: Vector2i, spell_id: String) -> bool:
@@ -2235,6 +2268,17 @@ func _paint_blocked(snap: Dictionary) -> void:
 
 func _snap_wall_cell(cell: Vector2i) -> bool:
 	return SNAPSHOT_TILES.blocked_cells(_sim().snapshot()).has(cell)
+
+
+## Snap Wall armed and this wall is a legal knock-down for the active seat.
+func _snap_wall_break_cell(cell: Vector2i) -> bool:
+	if _hud == null or _hud.selected_spell() != SpellKits.SNAP_WALL:
+		return false
+	var snap: Dictionary = _sim().snapshot()
+	for intent in _sim().legal_intents(int(snap.get("active_seat", 0))):
+		if str(intent.get("spell", "")) == SpellKits.SNAP_WALL and intent.get("to") == cell:
+			return true
+	return false
 
 
 func _paint_deploy_highlights(snap: Dictionary) -> void:

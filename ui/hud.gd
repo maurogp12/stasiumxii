@@ -7,6 +7,8 @@ signal end_turn_requested
 signal new_match_requested
 ## Mauro 5 Oct 2026: "put a option to go back to hub ... in koliseo".
 signal hub_requested
+## Mauro 6 Oct 2026: tap an enemy portrait / card to aim the armed spell at it.
+signal unit_card_tapped(seat: int)
 signal ready_requested(seat: int)
 ## Finger moved on an ability button. committing is the release.
 signal aim_dragged(screen_pos: Vector2, committing: bool)
@@ -114,6 +116,10 @@ var _long_press_spell: String = ""
 var _long_press_elapsed: float = 0.0
 ## True while the open long-press started from a finger, not a mouse click.
 var _long_press_touch: bool = false
+## Hold a fighter's portrait or card to read its stats (Mauro 6 Oct 2026).
+var _unit_press_seat: int = -1
+var _unit_press_elapsed: float = 0.0
+var _unit_info_shown: bool = false
 ## Finger contact. Desktop hover must not open the card during a tap.
 var _hover_suppressed: bool = false
 var _last_snap: Dictionary = {}
@@ -775,8 +781,13 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	if _unit_press_seat >= 0 and not _unit_info_shown:
+		_unit_press_elapsed += delta
+		if _unit_press_elapsed >= SpellTooltip.LONG_PRESS_SEC:
+			show_unit_info(_unit_press_seat)
 	if _long_press_spell == "":
-		set_process(false)
+		if _unit_press_seat < 0 or _unit_info_shown:
+			set_process(false)
 		return
 	_long_press_elapsed += delta
 	if _long_press_elapsed >= SpellTooltip.LONG_PRESS_SEC:
@@ -793,6 +804,9 @@ func _process(delta: float) -> void:
 func _input(event: InputEvent) -> void:
 	if TOUCH.is_emulated_mouse(event):
 		return
+	if event is InputEventMouseButton and (event as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT and not event.pressed:
+		_finish_unit_press()
+		return
 	if not event is InputEventScreenTouch:
 		return
 	var touch := event as InputEventScreenTouch
@@ -802,6 +816,7 @@ func _input(event: InputEvent) -> void:
 		# Before emulated mouse_entered, so a tap does not flash the card.
 		_hover_suppressed = true
 		return
+	_finish_unit_press()
 	_finish_touch_tooltip()
 
 
@@ -1338,15 +1353,15 @@ func _build() -> void:
 
 	_tooltip_panel = Panel.new()
 	# Above the touch action row so a pinned card does not cover Face / End Turn.
-	_tooltip_panel.position = Vector2(240, 168)
-	_tooltip_panel.size = Vector2(480, 248)
+	_tooltip_panel.position = Vector2(200, 168)
+	_tooltip_panel.size = Vector2(560, 248)
 	_tooltip_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_tooltip_panel.visible = false
 	_tooltip_panel.add_theme_stylebox_override("panel", _card_panel())
 	root.add_child(_tooltip_panel)
 	_tooltip_label = Label.new()
 	_tooltip_label.position = Vector2(12, 8)
-	_tooltip_label.size = Vector2(456, 232)
+	_tooltip_label.size = Vector2(536, 232)
 	_tooltip_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_tooltip_label.add_theme_font_size_override("font_size", 13)
 	_tooltip_label.add_theme_color_override("font_color", Color(0.12, 0.1, 0.12))
@@ -1476,6 +1491,7 @@ func _make_banner(is_kestrel: bool) -> Panel:
 	panel.add_child(title)
 	_banner_panels.append(panel)
 	_banner_titles.append(title)
+	_make_unit_pressable(panel, _banner_panels.size() - 1)
 	var track := ColorRect.new()
 	track.name = "HpTrack"
 	track.position = Vector2(16, 34)
@@ -1582,6 +1598,7 @@ func _sync_turn_strip(snap: Dictionary) -> void:
 		var seat := int(unit.get("seat", -1))
 		var acting := (not deploying) and (not over) and seat == active
 		var chip := _turn_chip(unit, acting)
+		_make_unit_pressable(chip, seat)
 		# Dofus timeline: each portrait framed in its team color.
 		var frame := _chip_frame(acting)
 		frame.border_color = TEAM_RED if unit_team(unit) == 1 else TEAM_BLUE
@@ -2408,6 +2425,123 @@ func _ambush_has_shade_origin() -> bool:
 	return false
 
 
+func _make_unit_pressable(control: Control, seat: int) -> void:
+	control.mouse_filter = Control.MOUSE_FILTER_STOP
+	control.gui_input.connect(_on_unit_card_input.bind(seat))
+
+
+func _on_unit_card_input(event: InputEvent, seat: int) -> void:
+	if TOUCH.is_emulated_mouse(event):
+		return
+	var pressed := false
+	if event is InputEventScreenTouch:
+		var touch := event as InputEventScreenTouch
+		pressed = touch.pressed and touch.index == 0
+	elif event is InputEventMouseButton:
+		var button := event as InputEventMouseButton
+		pressed = button.pressed and button.button_index == MOUSE_BUTTON_LEFT
+	if not pressed:
+		return
+	_unit_press_seat = seat
+	_unit_press_elapsed = 0.0
+	_unit_info_shown = false
+	set_process(true)
+	accept_event_safe()
+
+
+func accept_event_safe() -> void:
+	var vp := get_viewport()
+	if vp != null:
+		vp.set_input_as_handled()
+
+
+## Finger / button up after a portrait press: a short tap aims the armed
+## spell at that fighter; a hold showed the stats card, so drop it.
+func _finish_unit_press() -> void:
+	if _unit_press_seat < 0:
+		return
+	var seat := _unit_press_seat
+	var shown := _unit_info_shown
+	_unit_press_seat = -1
+	_unit_press_elapsed = 0.0
+	_unit_info_shown = false
+	if shown:
+		hide_spell_tooltip()
+		return
+	unit_card_tapped.emit(seat)
+
+
+func show_unit_info(seat: int) -> void:
+	var unit := _unit(_last_snap.get("units", []), seat)
+	var text := unit_info_text(unit)
+	if text == "" or _tooltip_panel == null:
+		return
+	_unit_info_shown = true
+	_tooltip_spell = ""
+	_tooltip_label.text = text
+	_fit_tooltip_card()
+	_tooltip_panel.visible = true
+	_tooltip_pinned = true
+
+
+## Stats card for a held portrait: life, AP / MP, elements, resist, damage,
+## spells and what is on them right now.
+static func unit_info_text(unit: Dictionary) -> String:
+	if unit.is_empty():
+		return ""
+	var class_id := str(unit.get("class_id", ""))
+	var name := SpellKits.display_name(class_id)
+	if name == "":
+		name = str(unit.get("name", "Fighter"))
+	var lines := PackedStringArray()
+	lines.append(name)
+	if not bool(unit.get("alive", true)):
+		lines.append("Knocked out.")
+	lines.append("Life (HP): %d / %d" % [int(unit.get("hp", 0)), int(unit.get("max_hp", 0))])
+	lines.append("AP (blue dots): %d now, %d each turn" % [int(unit.get("ap", 0)), int(unit.get("max_ap", 0))])
+	lines.append("MP (green dots): %d now, %d each turn" % [int(unit.get("mp", 0)), int(unit.get("max_mp", 0))])
+	var shield := int(unit.get("shield", 0))
+	if shield > 0:
+		lines.append("Shield: %d" % shield)
+	lines.append("Damage bonus (Mastery): +%d" % int(unit.get("mastery", 0)))
+	lines.append("Resist (blocks damage): %d" % int(unit.get("resist", 0)))
+	var spell_elements: Dictionary = unit.get("spell_elements", {}) if unit.get("spell_elements", {}) is Dictionary else {}
+	var used := PackedStringArray()
+	var spell_lines := PackedStringArray()
+	for spell_id in unit.get("spells", SpellKits.class_spells(class_id)):
+		var def: Dictionary = SpellKits.SPELLS.get(str(spell_id), {})
+		if def.is_empty() or bool(def.get("gated", false)):
+			continue
+		var el := str(spell_elements.get(str(spell_id), def.get("element", "neutral"))).to_lower()
+		if el != "neutral" and not used.has(el.capitalize()):
+			used.append(el.capitalize())
+		var what := ""
+		if int(def.get("base_damage", 0)) > 0:
+			what = "%d damage" % int(def["base_damage"])
+		if int(def.get("base_heal", 0)) > 0:
+			what += ("%sheal %d" % [" / " if what != "" else "", int(def["base_heal"])])
+		var tag := " (%s)" % el.capitalize() if el != "neutral" else ""
+		spell_lines.append("• %s%s%s" % [str(def.get("name", spell_id)), (": " + what) if what != "" else "", tag])
+	lines.append("Elements: %s" % (", ".join(used) if not used.is_empty() else "none"))
+	var stacks := PackedStringArray()
+	for key in ["marks", "impact", "pulse", "aegis", "umbral"]:
+		if int(unit.get(key, 0)) > 0:
+			var label := SpellKits.resource_label(key)
+			stacks.append("%s %d" % [label if label != "" else key.capitalize(), int(unit[key])])
+	if not stacks.is_empty():
+		lines.append("Stacks: %s" % ", ".join(stacks))
+	var effects := element_notes(unit).replace("[b]", "").replace("[/b]", "").strip_edges()
+	if int(unit.get("stun_remaining", 0)) > 0 or bool(unit.get("stunned", false)):
+		effects = ("STUNNED  " + effects).strip_edges()
+	if int(unit.get("burn_stacks", 0)) > 0:
+		effects = ("BURN %d  " % int(unit["burn_stacks"]) + effects).strip_edges()
+	if effects != "":
+		lines.append("On them now: %s" % effects)
+	lines.append("Spells:")
+	lines.append_array(spell_lines)
+	return "\n".join(lines)
+
+
 func show_spell_tooltip(spell_id: String) -> void:
 	var preview := preview_for_spell(spell_id)
 	var text := SpellTooltip.card_text(preview)
@@ -2416,7 +2550,25 @@ func show_spell_tooltip(spell_id: String) -> void:
 		return
 	_tooltip_spell = spell_id
 	_tooltip_label.text = text
+	_fit_tooltip_card()
 	_tooltip_panel.visible = true
+
+
+## The plain-words card (Mauro 6 Oct 2026) is longer than the old one. Grow
+## the card upward from its old bottom edge so it never covers the action row.
+const TOOLTIP_BOTTOM := 470.0
+const TOOLTIP_TOP_MIN := 8.0
+
+
+func _fit_tooltip_card() -> void:
+	var lines := maxi(_tooltip_label.get_line_count(), 1)
+	var spacing := float(_tooltip_label.get_theme_constant("line_spacing"))
+	var want := float(lines) * (float(_tooltip_label.get_line_height()) + spacing) + 12.0
+	var room := TOOLTIP_BOTTOM - TOOLTIP_TOP_MIN - 16.0
+	var height := clampf(want, 232.0, room)
+	_tooltip_label.size = Vector2(_tooltip_label.size.x, height)
+	_tooltip_panel.size = Vector2(_tooltip_panel.size.x, height + 16.0)
+	_tooltip_panel.position = Vector2(_tooltip_panel.position.x, TOOLTIP_BOTTOM - _tooltip_panel.size.y)
 
 
 func preview_for_spell(spell_id: String) -> Dictionary:
@@ -2542,6 +2694,13 @@ func claims_screen_point(point: Vector2) -> bool:
 		return true
 	if _control_claims(_ready_p2_button, point):
 		return true
+	for panel in _banner_panels:
+		if _control_claims(panel, point):
+			return true
+	if _turn_strip != null:
+		for chip in _turn_strip.get_children():
+			if _control_claims(chip as Control, point):
+				return true
 	for button in _face_buttons.values():
 		if _control_claims(button, point):
 			return true

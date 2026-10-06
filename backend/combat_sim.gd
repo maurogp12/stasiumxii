@@ -424,6 +424,12 @@ func legal_intents(seat: int) -> Array:
 			continue
 		if ap < int(def["ap"]):
 			continue
+		if str(spell_id) == SpellKits.SNAP_WALL:
+			# Mauro 6 Oct 2026: Snap Wall on one of your own walls knocks it
+			# down and gives the Aegis back. No Aegis needed for that.
+			for wall_cell in _own_snap_walls(actor):
+				if _in_spell_reach(def, from, wall_cell):
+					out.append({"type": "cast", "spell": spell_id, "to": wall_cell, "seat": seat})
 		if _resource_gate(actor, def) != "":
 			continue
 		if int(actor.get("mp", 0)) < int(def.get("mp", 0)):
@@ -1476,6 +1482,8 @@ func _preview_reason(def: Dictionary, actor: Dictionary, target: Dictionary, fro
 			return "no_target"
 		return ""
 	if target_kind == "empty_tile":
+		if spell_id == SpellKits.SNAP_WALL and _is_own_snap_wall(actor, to_cell):
+			return ""
 		if not _is_empty(to_cell):
 			return "destination_occupied"
 		return ""
@@ -1532,7 +1540,7 @@ func _preview_kit_lines(spell_id: String) -> Dictionary:
 		SpellKits.AEGIS_BREAK:
 			return {"on_connect": "26 Earth per body in range 1–2. Push 1. Clears all Aegis.", "on_miss": "Spends 0 Aegis. Does not clear Aegis."}
 		SpellKits.SNAP_WALL:
-			return {"on_connect": "Blocked tile for 2 Bastion turn-starts. Spends 2 Aegis.", "on_miss": "No roll."}
+			return {"on_connect": "Blocked tile for 2 Bastion turn-starts. Spends 2 Aegis. On your own wall: knocks it down, +2 Aegis back.", "on_miss": "No roll."}
 		_:
 			return {"on_connect": "", "on_miss": ""}
 
@@ -2691,7 +2699,8 @@ func _submit_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
 				return _reject(intent, "open_can_wait", "REJECT — shield stacking is open (can-wait).")
 			if spell_id == SpellKits.HEARTSTOP and int(early.get("hit_immunity", 0)) > 0:
 				return _reject(intent, "open_can_wait", "REJECT — immunity refresh is open (can-wait).")
-	var resource_gate := _resource_gate(actor, def)
+	var wall_break := spell_id == SpellKits.SNAP_WALL and _is_own_snap_wall(actor, dest)
+	var resource_gate := "" if wall_break else _resource_gate(actor, def)
 	if resource_gate != "":
 		return _reject(intent, resource_gate, "REJECT — %s failed gate %s (refund)." % [def["name"], resource_gate])
 
@@ -5844,6 +5853,8 @@ func _resolve_fade(intent: Dictionary, actor: Dictionary, def: Dictionary, ap_co
 
 func _resolve_empty_tile(intent: Dictionary, actor: Dictionary, def: Dictionary, dest: Vector2i, ap_cost: int, mp_cost: int) -> Dictionary:
 	var caster_cell: Vector2i = actor["pos"]
+	if str(def.get("id", "")) == SpellKits.SNAP_WALL and _is_own_snap_wall(actor, dest):
+		return _resolve_snap_wall_break(intent, actor, def, dest, ap_cost, mp_cost)
 	if not _is_empty(dest) or not _board.is_walkable(dest):
 		return _reject(intent, "destination_occupied", "REJECT — %s needs an empty tile (refund)." % def["name"])
 	var spell_id := str(def.get("id", ""))
@@ -6749,6 +6760,58 @@ func _shade_setup_cell(unit: Dictionary) -> Vector2i:
 			if best == UNPLACED or cell.x < best.x or (cell.x == best.x and cell.y < best.y):
 				best = cell
 	return best
+
+
+## Mauro 6 Oct 2026: Snap Wall cast on one of your own walls knocks it down
+## (1 AP, no Aegis needed) and gives back the Aegis the wall cost (cap 4).
+## Only the caster's own walls; map rocks and enemy walls stay.
+func _resolve_snap_wall_break(intent: Dictionary, actor: Dictionary, def: Dictionary, dest: Vector2i, ap_cost: int, mp_cost: int) -> Dictionary:
+	actor["ap"] = int(actor["ap"]) - ap_cost
+	_spend_mp(actor, mp_cost)
+	_remove_snap_wall(dest)
+	var gained := _gain_resource(actor, "aegis", int(def.get("spend_aegis", 2)))
+	_intent_log.append(intent)
+	_last_coach = "%s knocks down the Snap Wall on %s (−%d AP, +%d Aegis)." % [actor["name"], _cell_text(dest), ap_cost, gained]
+	_last_events.append({
+		"type": "snap_wall_break",
+		"spell": SpellKits.SNAP_WALL,
+		"seat": actor["seat"],
+		"caster_cell": actor["pos"],
+		"to": dest,
+		"cells": [dest],
+		"rolled": false,
+		"ap_spent": ap_cost,
+		"mp_spent": mp_cost,
+		"engine_gained": gained,
+		"coach": _last_coach,
+	})
+	_emit_expire("wall", dest, int(actor["seat"]))
+	return _accept()
+
+
+func _own_snap_walls(actor: Dictionary) -> Array[Vector2i]:
+	var out: Array[Vector2i] = []
+	for item in _snap_wall_state:
+		var wall: Dictionary = item
+		if int(wall.get("owner_seat", -1)) == int(actor.get("seat", -2)):
+			out.append(wall["pos"])
+	return out
+
+
+func _is_own_snap_wall(actor: Dictionary, cell: Vector2i) -> bool:
+	return _own_snap_walls(actor).has(cell)
+
+
+func _remove_snap_wall(cell: Vector2i) -> void:
+	var walls: Array = []
+	_snap_wall_cells.clear()
+	for item in _snap_wall_state:
+		var wall: Dictionary = item
+		if wall["pos"] == cell:
+			continue
+		walls.append(wall)
+		_snap_wall_cells.append(wall["pos"])
+	_snap_wall_state = walls
 
 
 func _add_snap_wall(cell: Vector2i, turns: int, owner_seat: int) -> void:
