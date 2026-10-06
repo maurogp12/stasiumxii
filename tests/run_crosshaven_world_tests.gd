@@ -6,6 +6,7 @@ extends SceneTree
 const WORLD := preload("res://scenes/world/crosshaven/crosshaven_world.tscn")
 const Pick := preload("res://scenes/world/crosshaven/crosshaven_pick.gd")
 const Specs := preload("res://units/pc_character_specs.gd")
+const Painted := preload("res://units/painted_looks.gd")
 
 var passed := 0
 var failed := 0
@@ -107,6 +108,16 @@ func _test_hero_pace(w: Node2D) -> void:
 func _test_strips(w: Node2D) -> void:
 	var cls := str(w.walker.class_id)
 	check(Specs.WORLD.has(cls), "the world hero is a painted class (%s)" % cls)
+	check(cls == w.world_hero_class(), "the world hero walks as progress.hero_class (%s)" % cls)
+	# Only the hero's sheets are loaded in the world, not all five classes.
+	var loaded := 0
+	var other := 0
+	for path in Painted._sheets.keys():
+		if Painted._sheets[path] is Texture2D:
+			loaded += 1
+			if not str(path).begins_with("%s%s/" % [Painted.ROOT, cls]):
+				other += 1
+	check(loaded == 4 and other == 0, "the world loads only the hero's walk and idle sheets (%d loaded, %d other)" % [loaded, other])
 	var spec: Dictionary = Specs.WORLD.get(cls, {})
 	for gait in ["walk", "run", "idle"]:
 		for dir in ["n", "e", "s", "w"]:
