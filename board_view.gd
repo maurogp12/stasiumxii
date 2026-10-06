@@ -931,6 +931,24 @@ func _on_elements_requested() -> void:
 
 ## The class whose elements a pre-fight change is most likely for: this
 ## phone's seat online, else the first seat that is not ready yet.
+## Snare Traps only the owner's side may see: this phone's seat online, else
+## the side whose turn it is (hot-seat shares one screen).
+func _own_traps(snap: Dictionary) -> Array:
+	var viewer := CombatHUD.snap_local_seat(snap)
+	if viewer < 0:
+		viewer = int(snap.get("active_seat", -1))
+	var viewer_team := -1
+	for unit in snap.get("units", []):
+		if int(unit.get("seat", -2)) == viewer:
+			viewer_team = CombatHUD.unit_team(unit)
+	var out: Array = []
+	for trap in snap.get("trap_tiles", []):
+		for unit in snap.get("units", []):
+			if int(unit.get("seat", -2)) == int(trap.get("owner_seat", -1)) and CombatHUD.unit_team(unit) == viewer_team:
+				out.append(trap)
+	return out
+
+
 func _deploying_class(snap: Dictionary) -> String:
 	var local := CombatHUD.snap_local_seat(snap)
 	var ready: Dictionary = snap.get("ready", {})
@@ -1955,6 +1973,7 @@ func _refresh() -> void:
 	_hydrate_turn_clock(snap)
 	_maybe_reframe(snap)
 	if _vfx != null and _vfx.has_method("sync_snapshot"):
+		snap["trap_tiles_visible"] = _own_traps(snap)
 		_vfx.sync_snapshot(snap)
 	_track_result(snap)
 

@@ -126,7 +126,7 @@ func _test_pair_keeps_queue_order() -> void:
 	eq(str(class_ids[1]), "ironjaw", "seat 1 is the second queued class")
 	eq(str(_sim.snapshot()["units"][0]["class_id"]), "kestrel", "sim seat 0 is kestrel")
 	eq(str(_sim.snapshot()["units"][1]["class_id"]), "ironjaw", "sim seat 1 is ironjaw")
-	eq(_sim.snapshot()["units"][0]["spells"], ["mark_shot", "detonate"], "seat 0 has the Kestrel kit")
+	eq(_sim.snapshot()["units"][0]["spells"], ["mark_shot", "detonate", "vault", "snare_trap"], "seat 0 has the Kestrel kit")
 	eq(_sim.snapshot()["units"][1]["spells"], ["advance", "strike", "shoulder", "crush"], "seat 1 has the Ironjaw kit")
 	eq(int(_host.server_session("a").get("seat", -2)), 0, "first session is seat 0")
 	eq(int(_host.server_session("b").get("seat", -2)), 1, "second session is seat 1")

@@ -92,7 +92,20 @@ static func plan(sim: Node, seat: int) -> Dictionary:
 	var team_ward := _team_ward(casts, snap, team, here, enemies)
 	if not team_ward.is_empty():
 		return team_ward
-	# 2. Healer and ranged: step out of reach before anything else.
+	# 2. Healer and ranged: step out of reach before anything else. Kestrel's
+	# Vault (Mauro 6 Oct 2026) is the escape when an enemy is right next to her.
+	if role != "melee" and not enemies.is_empty() and _nearest(here, enemies) <= 1:
+		var best_vault := {}
+		var best_gap := 1
+		for intent in casts:
+			if str(intent.get("spell", "")) != SpellKits.VAULT:
+				continue
+			var gap := _nearest(_cell(intent.get("to")), enemies)
+			if gap > best_gap:
+				best_gap = gap
+				best_vault = intent
+		if not best_vault.is_empty():
+			return best_vault
 	if role != "melee" and not moves.is_empty() and not enemies.is_empty() and _nearest(here, enemies) <= DANGER_RANGE:
 		var away := _best_move(moves, here, role, snap, team, enemies, sim, actor, true)
 		if away.is_empty():

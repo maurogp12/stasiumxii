@@ -145,6 +145,7 @@ func _run() -> void:
 	_test_crush_breaks_shields()
 	_test_mender_last_stand()
 	_test_sudden_death_clock()
+	_test_kestrel_vault_and_snare()
 
 
 func _test_reset_and_turn_order() -> void:
@@ -485,7 +486,11 @@ func _test_both_ready_starts_combat() -> void:
 	if opening >= 2 and opening <= 5 and _sim.has_line_of_sight(_unit(0)["pos"], _unit(1)["pos"]):
 		truthy(kinds.has("cast"), "Mark Shot is offered at opening Chebyshev 2–5 with sight")
 	else:
-		eq(kinds.has("cast"), false, "Kestrel has no in-range cast when the opening is outside 2–5")
+		var attack_offered := false
+		for intent in _sim.legal_intents(0):
+			if str(intent.get("spell", "")) in ["mark_shot", "detonate"]:
+				attack_offered = true
+		eq(attack_offered, false, "Kestrel has no in-range attack when the opening is outside 2–5")
 	eq(kinds.has("place"), false, "place is not a combat intent")
 	var events: Array = started.get("events", [])
 	var saw_combat := false
@@ -522,10 +527,10 @@ func _test_kits_still_pass_after_deploy() -> void:
 	_sim.ready_seat(0)
 	_sim.ready_seat(1)
 	eq(_sim.snapshot()["phase"], "TURN_1", "kits run after both ready")
-	eq(_unit(0)["spells"], ["mark_shot", "detonate"], "Kestrel kit is Mark Shot + Detonate after deploy")
+	eq(_unit(0)["spells"], ["mark_shot", "detonate", "vault", "snare_trap"], "Kestrel kit is Mark Shot + Detonate after deploy")
 	eq(_unit(1)["spells"], ["advance", "strike", "shoulder", "crush"], "Ironjaw kit is Advance + Strike + Shoulder + Crush after deploy")
 	var kestrel_offered: Array = CombatHUD.offered_cast_ids(_unit(0), _sim.legal_intents(0))
-	eq(kestrel_offered, ["mark_shot", "detonate"], "Kestrel HUD offers Mark Shot and Detonate after deploy")
+	eq(kestrel_offered, ["mark_shot", "detonate", "vault", "snare_trap"], "Kestrel HUD offers Mark Shot and Detonate after deploy")
 	eq(_has_legal_cast(0, "detonate"), false, "Detonate stays gated at 0 Marks")
 	var end_turn: Dictionary = _sim.submit({"type": "end_turn"})
 	eq(end_turn["ok"], true, "end_turn works after deploy")
@@ -961,7 +966,7 @@ func _test_hazard_push_and_targets() -> void:
 	eq(int(_unit(0).get("slow_remaining", 0)), 0, "water land does not Slow")
 	var silenced_once: Array = _unit(0).get("silenced_spells", [])
 	eq(silenced_once.size(), 1, "water land silences one spell")
-	truthy(["mark_shot", "detonate"].has(str(silenced_once[0])), "the silenced spell is from Kestrel's kit")
+	truthy(SpellKits.class_spells("kestrel").has(str(silenced_once[0])), "the silenced spell is from Kestrel's kit")
 	eq(bool(watered["events"][0].get("silence_applied", false)), true, "water hit records Silence")
 	eq(bool(watered["events"][0].get("burn_applied", false)), false, "water hit does not record Burn")
 	eq(CombatHUD.toast_for_events(watered["events"]), "+1 Impact  Water - Silence", "water land toasts Silence")
@@ -1484,7 +1489,7 @@ func _test_deploy_rejects_lava() -> void:
 	eq(_sim.ready_seat(0)["ok"], true, "Ready P1 still works")
 	eq(_sim.ready_seat(1)["ok"], true, "Ready P2 still works")
 	eq(_sim.snapshot()["phase"], "TURN_1", "deploy+kits path still starts combat after lava paint")
-	eq(_unit(0)["spells"], ["mark_shot", "detonate"], "Kestrel kit still loads after lava deploy")
+	eq(_unit(0)["spells"], ["mark_shot", "detonate", "vault", "snare_trap"], "Kestrel kit still loads after lava deploy")
 	eq(_unit(1)["spells"], ["advance", "strike", "shoulder", "crush"], "Ironjaw kit still loads after lava deploy")
 
 
@@ -3585,7 +3590,7 @@ func _test_class_kits() -> void:
 		"kestrel_pos": Vector2i(0, 0),
 		"ironjaw_pos": Vector2i(1, 0),
 	})
-	eq(_unit(0)["spells"], ["mark_shot", "detonate"], "Kestrel kit is Mark Shot + Detonate")
+	eq(_unit(0)["spells"], ["mark_shot", "detonate", "vault", "snare_trap"], "Kestrel kit is Mark Shot + Detonate")
 	eq(_unit(1)["spells"], ["advance", "strike", "shoulder", "crush"], "Ironjaw kit is Advance + Strike + Shoulder + Crush")
 	_sim.submit({"type": "end_turn"})
 	var result: Dictionary = _sim.submit({"type": "cast", "spell": "mark_shot", "to": Vector2i(0, 0)})
@@ -3666,7 +3671,7 @@ func _test_legal_intents_empty_for_other_seat() -> void:
 	truthy(types.has("face"), "face is legal")
 	truthy(types.has("cast"), "cast is legal")
 	for intent in _sim.legal_intents(0):
-		if str(intent.get("type", "")) == "cast":
+		if str(intent.get("type", "")) == "cast" and not str(intent.get("spell", "")) in ["snare_trap", "vault"]:
 			eq(str(intent.get("spell", "")), "mark_shot", "Kestrel legal casts at 0 Marks are Mark Shot only")
 
 
@@ -3758,7 +3763,7 @@ func _test_blind_attacks_on_invisible() -> void:
 func _test_hud_chrome_kit_gated() -> void:
 	_sim.reset_match({"seed": 1, "skip_deploy": true, "flat_board": true})
 	var kestrel_offered: Array = CombatHUD.offered_cast_ids(_unit(0), _sim.legal_intents(0))
-	eq(kestrel_offered, ["mark_shot", "detonate"], "Kestrel HUD offers Mark Shot and Detonate")
+	eq(kestrel_offered, ["mark_shot", "detonate", "vault", "snare_trap"], "Kestrel HUD offers Mark Shot and Detonate")
 	eq(kestrel_offered.has("advance"), false, "Kestrel HUD does not offer Advance")
 	eq(kestrel_offered.has("shoulder"), false, "Kestrel HUD does not offer Shoulder")
 	eq(kestrel_offered.has("crush"), false, "Kestrel HUD does not offer Crush")
@@ -7856,6 +7861,44 @@ func _test_sudden_death_clock() -> void:
 	_sim._start_turn_timer()
 	eq(float(_sim.snapshot().get("match_time_left", 0.0)), 900.0, "a 3v3 match has 15 minutes")
 	eq(CombatHUD.match_clock_text(170.0, true), "  ·  SUDDEN DEATH 2:50", "the top bar shows sudden death")
+
+
+
+## Mauro 6 Oct 2026: Kestrel's Vault (escape) and Snare Trap (zone control).
+func _test_kestrel_vault_and_snare() -> void:
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "classes": ["kestrel", "gloam"], "positions": [Vector2i(5, 5), Vector2i(9, 9)]})
+	var no_foe: Dictionary = _sim.submit({"type": "cast", "spell": "vault", "to": Vector2i(3, 5), "seat": 0})
+	eq(str(no_foe.get("reason", "")), "no_enemy_adjacent", "Vault needs an enemy right next to Kestrel")
+	_live_unit(1)["pos"] = Vector2i(6, 5)
+	var offered := 0
+	for intent in _sim.legal_intents(0):
+		if str(intent.get("spell", "")) == "vault":
+			offered += 1
+	eq(offered >= 1, true, "Vault is offered with an enemy next to her")
+	var vault: Dictionary = _sim.submit({"type": "cast", "spell": "vault", "to": Vector2i(3, 5), "seat": 0})
+	eq(bool(vault.get("ok", false)), true, "Vault jumps 2 tiles away")
+	eq(_unit(0)["pos"], Vector2i(3, 5), "Kestrel lands 2 tiles away")
+	eq(int(_unit(0)["ap"]), int(_unit(0)["max_ap"]) - 2, "Vault costs 2 AP")
+	_live_unit(1)["pos"] = Vector2i(4, 5)
+	var again: Dictionary = _sim.submit({"type": "cast", "spell": "vault", "to": Vector2i(3, 3), "seat": 0})
+	eq(str(again.get("reason", "")), "vault_limit", "Vault is once per turn")
+	# Snare Trap: hidden tile, first enemy walking in stops, takes 6, Pinned.
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "classes": ["kestrel", "gloam"], "positions": [Vector2i(1, 5), Vector2i(8, 5)]})
+	var trap: Dictionary = _sim.submit({"type": "cast", "spell": "snare_trap", "to": Vector2i(3, 5), "seat": 0})
+	eq(bool(trap.get("ok", false)), true, "Snare Trap is set")
+	eq(str(trap.get("events", [{}])[0].get("coach", "")).contains("(3"), false, "the coach does not reveal the trap tile")
+	_sim.submit({"type": "cast", "spell": "snare_trap", "to": Vector2i(2, 4), "seat": 0})
+	eq(_sim.snapshot()["trap_tiles"].size(), 1, "only 1 trap at a time")
+	_sim.submit({"type": "cast", "spell": "snare_trap", "to": Vector2i(3, 5), "seat": 0})
+	_sim.submit({"type": "end_turn", "seat": 0})
+	var hp0 := int(_unit(1)["hp"])
+	_live_unit(1)["pos"] = Vector2i(4, 5)
+	var walk: Dictionary = _sim.submit({"type": "move", "to": Vector2i(2, 5), "seat": 1})
+	eq(bool(walk.get("ok", false)), true, "the walk resolves")
+	eq(_unit(1)["pos"], Vector2i(3, 5), "the walk stops on the trap")
+	eq(hp0 - int(_unit(1)["hp"]), 6, "the trap deals 6")
+	eq(bool(_unit(1).get("pin_pending", false)), true, "the trapped enemy is Pinned next turn")
+	eq(_sim.snapshot()["trap_tiles"].size(), 0, "the trap is spent")
 
 
 func _walkable_zone_count(seat: int) -> int:

@@ -136,6 +136,8 @@ func sync_snapshot(snapshot: Dictionary) -> void:
 	# Shade bodies are board markers (board_view). A shader ring here was invisible on device.
 	_want_tokens(wanted, snapshot.get("plant_tiles", []), "plant", VfxPalette.BASTION, 0.0)
 	_want_tokens(wanted, snapshot.get("blocked_tiles", []), "wall", VfxPalette.BASTION_BLACK, 0.0)
+	# Kestrel Snare Traps (owner's side only; board_view filters them).
+	_want_tokens(wanted, snapshot.get("trap_tiles_visible", []), "trap", VfxPalette.KESTREL, 0.0)
 	# Elements Step 3: Magma (burning tile) and Steam (sight-blocking tile).
 	var magma: Array = []
 	var steam: Array = []
@@ -812,7 +814,7 @@ func _want_tokens(wanted: Dictionary, raw: Variant, kind: String, tint: Color, s
 			style = "sigil"
 		elif kind == "wall":
 			style = "slab"
-		elif kind == "magma" or kind == "steam":
+		elif kind == "magma" or kind == "steam" or kind == "trap":
 			style = "sigil"
 		wanted[key] = {
 			"pool": "ring",

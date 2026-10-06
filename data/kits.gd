@@ -10,6 +10,10 @@ const ADVANCE := "advance"
 const STRIKE := "strike"
 const MARK_SHOT := "mark_shot"
 const DETONATE := "detonate"
+## Mauro 6 Oct 2026 ("maybe krestel need another spell?" → "Yes"): an escape
+## and a zone tool against divers.
+const VAULT := "vault"
+const SNARE_TRAP := "snare_trap"
 const SHOULDER := "shoulder"
 const CRUSH := "crush"
 
@@ -137,6 +141,35 @@ const SPELLS := {
 		"engine_on_connect": "consume_marks",
 		"requires_marks_on_target": 1,
 		"hit_by_distance": KESTREL_HIT_BY_DISTANCE,
+	},
+	VAULT: {
+		"id": VAULT,
+		"name": "Vault",
+		"class_id": CLASS_KESTREL,
+		"ap": 2,
+		"mp": 0,
+		# Exactly 2 tiles N/S/E/W, only with an enemy next to her, once a turn.
+		"range_mode": "cardinal",
+		"min_range": 2,
+		"max_range": 2,
+		"rolls": false,
+		"element": "neutral",
+		"target": "empty_tile",
+	},
+	SNARE_TRAP: {
+		"id": SNARE_TRAP,
+		"name": "Snare Trap",
+		"class_id": CLASS_KESTREL,
+		"ap": 2,
+		"mp": 0,
+		"range_mode": "chebyshev",
+		"min_range": 1,
+		"max_range": 3,
+		"rolls": false,
+		"element": "neutral",
+		"target": "empty_tile",
+		"trap_turns": 3,
+		"trap_damage": 6,
 	},
 	SHOULDER: {
 		"id": SHOULDER,
@@ -462,7 +495,7 @@ const SPELLS := {
 }
 
 const CLASS_SPELLS := {
-	CLASS_KESTREL: [MARK_SHOT, DETONATE],
+	CLASS_KESTREL: [MARK_SHOT, DETONATE, VAULT, SNARE_TRAP],
 	CLASS_IRONJAW: [ADVANCE, STRIKE, SHOULDER, CRUSH],
 	CLASS_MENDER: [MEND, PULSE_TAP, CLEANSE, HEARTSTOP, REKINDLE],
 	CLASS_GLOAM: [CUT, DROP_SHADE, AMBUSH, FADE, NIGHTFOLD],

@@ -158,6 +158,8 @@ var _snap_wall_state: Array = []
 var _element_tiles: Array = []
 var _shade_tokens: Array = []
 var _plant_tiles: Array = []
+## Kestrel Snare Traps: {pos, owner_seat, turns}. One per owner.
+var _trap_tiles: Array = []
 ## Locked deploy. Live duel starts here; (1,1)/(6,6) are skip_deploy fixtures only.
 var _flow = _MatchFlow.new()
 ## Per-tile integer elevation + terrain. Ship maps load a Koliseo tags file
@@ -212,6 +214,7 @@ func reset_match(config: Dictionary = {}) -> Dictionary:
 	_element_tiles.clear()
 	_shade_tokens.clear()
 	_plant_tiles.clear()
+	_trap_tiles.clear()
 	_active_seat = 0
 	_turn_index = 0
 	_match_over = false
@@ -459,6 +462,12 @@ func legal_intents(seat: int) -> Array:
 		if target_kind == "fallen_ally":
 			for body in _revivable_allies(actor, def):
 				out.append({"type": "cast", "spell": spell_id, "to": body["pos"], "target_seat": body["seat"], "seat": seat})
+			continue
+		if str(spell_id) == SpellKits.VAULT:
+			for dir in FACING_VEC.keys():
+				var vault_dest: Vector2i = from + FACING_VEC[dir] * 2
+				if _validate_vault(actor, vault_dest) == "":
+					out.append({"type": "cast", "spell": spell_id, "to": vault_dest, "seat": seat})
 			continue
 		if target_kind == "empty_tile" and str(spell_id) != SpellKits.ADVANCE:
 			_append_ranged_cells(out, actor, def, str(spell_id), true)
@@ -874,6 +883,7 @@ func snapshot() -> Dictionary:
 		"map_steam": _map_steam_snapshot(),
 		"shade_tokens": _placed_token_snapshot(_shade_tokens, false),
 		"plant_tiles": _placed_token_snapshot(_plant_tiles, true),
+		"trap_tiles": _placed_token_snapshot(_trap_tiles, false),
 		"umbral_cap": SpellKits.UMBRAL_CAP,
 		"umbral_owner": SpellKits.CLASS_GLOAM,
 		"wind": "calm",
@@ -992,6 +1002,7 @@ func apply_host_snapshot(snap: Dictionary) -> void:
 	_snap_wall_state.clear()
 	_shade_tokens.clear()
 	_plant_tiles.clear()
+	_trap_tiles.clear()
 	_element_tiles.clear()
 	for entry in snap.get("element_tiles", []):
 		if typeof(entry) == TYPE_DICTIONARY:
@@ -1000,6 +1011,7 @@ func apply_host_snapshot(snap: Dictionary) -> void:
 		_restore_placed_tokens(_shade_tokens, snap.get("shade_tokens", []))
 	if snap.has("plant_tiles"):
 		_restore_placed_tokens(_plant_tiles, snap.get("plant_tiles", []))
+		_restore_placed_tokens(_trap_tiles, snap.get("trap_tiles", []))
 	_restore_blocked_tiles(snap)
 	_intent_log.clear()
 	_active_seat = int(snap.get("active_seat", 0))
@@ -2633,6 +2645,15 @@ func _submit_move(intent: Dictionary, actor: Dictionary) -> Dictionary:
 	var path: Array = planned.get("path", [])
 	var dist := int(planned.get("cost", 0))
 	var facing_from: String = str(actor["facing"])
+	# A hostile Snare Trap on the path stops the walk on that tile.
+	var snare_at := -1
+	for i in path.size():
+		if _hostile_trap_at(actor, path[i]):
+			snare_at = i
+			break
+	if snare_at >= 0:
+		path = path.slice(0, snare_at + 1)
+		dest = path[snare_at]
 	var facing_hops: Array = _face_along_walk(actor, from, path)
 	actor["pos"] = dest
 	_spend_mp(actor, dist + tax)
@@ -2654,7 +2675,19 @@ func _submit_move(intent: Dictionary, actor: Dictionary) -> Dictionary:
 		"mp_spent": dist + tax,
 		"coach": _last_coach,
 	})
+	if snare_at >= 0:
+		_trigger_trap(actor)
 	return _accept()
+
+
+func _hostile_trap_at(unit: Dictionary, cell: Variant) -> bool:
+	for item in _trap_tiles:
+		if item["pos"] != cell:
+			continue
+		var owner := _unit_by_seat(int(item.get("owner_seat", -1)))
+		if not owner.is_empty() and not _allied(owner, unit):
+			return true
+	return false
 
 
 ## Locked A02: set actor facing from each hop. Final facing is the last hop dir.
@@ -2715,6 +2748,12 @@ func _submit_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
 		if reason != "":
 			return _reject(intent, reason, "REJECT — illegal Advance (%s)." % reason)
 		return _resolve_advance(intent, actor, def, dest, advance_ap, advance_mp)
+
+	if spell_id == SpellKits.VAULT:
+		var vault_reason := _validate_vault(actor, dest)
+		if vault_reason != "":
+			return _reject(intent, vault_reason, _vault_reject_text(vault_reason))
+		return _resolve_vault(intent, actor, def, dest)
 
 	var range_from: Vector2i = actor["pos"]
 	if spell_id == SpellKits.AMBUSH:
@@ -3241,6 +3280,112 @@ func _validate_advance(actor: Dictionary, dest: Vector2i) -> String:
 	if int(actor.get("advance_uses", 0)) >= ADVANCE_USES_PER_TURN:
 		return "advance_limit"
 	return _advance_stand_reason(actor["pos"], dest)
+
+
+## Kestrel Vault (Mauro 6 Oct 2026): exactly 2 tiles N/S/E/W, only while an
+## enemy stands next to her, once per turn, Advance landing rules (no jumping
+## a rock, crate, wall or steam).
+func _validate_vault(actor: Dictionary, dest: Vector2i) -> String:
+	if str(actor.get("class_id", "")) != SpellKits.CLASS_KESTREL:
+		return "spell_not_in_kit"
+	if not _in_bounds(dest):
+		return "out_of_bounds"
+	if not is_advance_cardinal(actor["pos"], dest):
+		return "out_of_range"
+	var def: Dictionary = SpellKits.spell(SpellKits.VAULT)
+	if int(actor["ap"]) < int(def["ap"]):
+		return "insufficient_ap"
+	if bool(actor.get("vault_used", false)):
+		return "vault_limit"
+	var pressed := false
+	for unit in _units:
+		if bool(unit.get("alive", false)) and not _allied(unit, actor) and chebyshev(unit["pos"], actor["pos"]) == 1:
+			pressed = true
+	if not pressed:
+		return "no_enemy_adjacent"
+	return _advance_stand_reason(actor["pos"], dest)
+
+
+func _vault_reject_text(reason: String) -> String:
+	match reason:
+		"no_enemy_adjacent":
+			return "REJECT — Vault only works with an enemy right next to you (refund)."
+		"vault_limit":
+			return "REJECT — Vault is once per turn (refund)."
+		"advance_blocked":
+			return "REJECT — Vault cannot jump over a rock, crate, wall or steam (refund)."
+		"insufficient_ap":
+			return "REJECT — Vault costs 2 AP (refund)."
+		"destination_occupied":
+			return "REJECT — Vault needs an empty tile (refund)."
+	return "REJECT — Vault is exactly 2 tiles in a straight line (refund)."
+
+
+func _resolve_vault(intent: Dictionary, actor: Dictionary, def: Dictionary, dest: Vector2i) -> Dictionary:
+	var from: Vector2i = actor["pos"]
+	var ap_cost := int(def.get("ap", 2))
+	actor["ap"] = int(actor["ap"]) - ap_cost
+	actor["vault_used"] = true
+	actor["pos"] = dest
+	_intent_log.append(intent)
+	_last_coach = "%s vaults to %s (−%d AP)." % [actor["name"], _cell_text(dest), ap_cost]
+	_last_events.append({
+		"type": "cast",
+		"spell": SpellKits.VAULT,
+		"seat": actor["seat"],
+		"caster_cell": from,
+		"from": from,
+		"to": dest,
+		"teleported": true,
+		"rolled": false,
+		"ap_spent": ap_cost,
+		"mp_spent": 0,
+		"coach": _last_coach,
+	})
+	_trigger_trap(actor)
+	return _accept()
+
+
+## A hostile Snare Trap under `unit` springs: 6 damage (a shield soaks it
+## first) and Pinned on its next turn. The trap is spent.
+func _trigger_trap(unit: Dictionary) -> bool:
+	for item in _trap_tiles:
+		if item["pos"] != unit["pos"]:
+			continue
+		var owner := _unit_by_seat(int(item.get("owner_seat", -1)))
+		if owner.is_empty() or _allied(owner, unit):
+			continue
+		_trap_tiles.erase(item)
+		var def: Dictionary = SpellKits.spell(SpellKits.SNARE_TRAP)
+		var report := _mitigate_hit({}, unit, int(def.get("trap_damage", 6)))
+		var damage := int(report["damage"])
+		unit["hp"] = maxi(0, int(unit["hp"]) - damage)
+		if not bool(unit.get("pinned", false)) and not bool(unit.get("pinned_last", false)):
+			unit["pin_pending"] = true
+		_last_events.append({
+			"type": "trap",
+			"seat": int(owner["seat"]),
+			"target_seat": int(unit["seat"]),
+			"to": unit["pos"],
+			"damage": damage,
+			"pin": bool(unit.get("pin_pending", false)),
+			"coach": "SNARE! %s is caught: −%d, Pinned next turn." % [str(unit.get("name", "")), damage],
+		})
+		_check_death(unit)
+		return true
+	return false
+
+
+func _tick_traps(unit: Dictionary) -> void:
+	var kept: Array = []
+	for item in _trap_tiles:
+		if int(item.get("owner_seat", -1)) == int(unit["seat"]):
+			item["turns"] = int(item.get("turns", 0)) - 1
+			if int(item["turns"]) <= 0:
+				_emit_expire("trap", item["pos"], int(unit["seat"]))
+				continue
+		kept.append(item)
+	_trap_tiles = kept
 
 
 func _advance_stand_reason(from: Vector2i, dest: Vector2i) -> String:
@@ -3864,6 +4009,8 @@ func _begin_unit_turn(unit: Dictionary) -> void:
 		unit["grounded"] = false
 		_emit_expire("grounded", unit["pos"], int(unit["seat"]), int(unit["seat"]))
 	unit["advance_uses"] = 0
+	unit["vault_used"] = false
+	_tick_traps(unit)
 	_tick_foe_cooldowns(unit)
 	# Locked Stun (A′): decrement stun at start of that unit's turn.
 	# Stun 1 must cover this incoming (skipped) turn. Decrementing remaining and
@@ -6135,6 +6282,30 @@ func _resolve_empty_tile(intent: Dictionary, actor: Dictionary, def: Dictionary,
 			"ap_spent": ap_cost,
 			"mp_spent": mp_cost,
 			"shades": int(actor.get("shades", 0)),
+			"coach": _last_coach,
+		})
+		return _accept()
+	if spell_id == SpellKits.SNARE_TRAP:
+		actor["ap"] = int(actor["ap"]) - ap_cost
+		_spend_mp(actor, mp_cost)
+		var kept: Array = []
+		for item in _trap_tiles:
+			if int(item.get("owner_seat", -1)) != int(actor["seat"]):
+				kept.append(item)
+		kept.append({"pos": dest, "owner_seat": int(actor["seat"]), "turns": int(def.get("trap_turns", 3))})
+		_trap_tiles = kept
+		_intent_log.append(intent)
+		# No tile in the coach: the trap is hidden from the enemy.
+		_last_coach = "%s sets a Snare Trap (−%d AP)." % [actor["name"], ap_cost]
+		_last_events.append({
+			"type": "cast",
+			"spell": spell_id,
+			"seat": actor["seat"],
+			"caster_cell": caster_cell,
+			"to": dest,
+			"rolled": false,
+			"ap_spent": ap_cost,
+			"mp_spent": mp_cost,
 			"coach": _last_coach,
 		})
 		return _accept()

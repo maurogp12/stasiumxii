@@ -111,6 +111,12 @@ static func simple_lines(spell_id: String, preview: Dictionary = {}) -> PackedSt
 		SpellKits.DETONATE:
 			out.append("Blow up the Marks on an enemy: %d damage + %d more for each Mark (3 Marks = %d)." % [dmg, int(def.get("damage_per_mark", 6)), dmg + 3 * int(def.get("damage_per_mark", 6))])
 			out.append("The enemy needs at least 1 Mark. All their Marks get used up.")
+		SpellKits.VAULT:
+			out.append("Jump exactly 2 tiles in a straight line (up, down, left or right) to get away. Only works when an enemy is right next to you. Once per turn. Never misses.")
+			out.append("You cannot jump over rocks, crates, walls or steam.")
+		SpellKits.SNARE_TRAP:
+			out.append("Hide a trap on an empty tile. Enemies cannot see it. The first enemy who steps on it stops there, takes %d damage and cannot walk on their next turn." % int(def.get("trap_damage", 6)))
+			out.append("You can have 1 trap at a time. It lasts %d of your turns." % int(def.get("trap_turns", 3)))
 		SpellKits.ADVANCE:
 			out.append("Jump exactly 2 tiles in a straight line (up, down, left or right). It never misses.")
 			out.append("Land next to an enemy = +1 Impact. You can jump over water, mud and lava, but not over rocks, crates, walls or steam. Max 2 jumps per turn.")
