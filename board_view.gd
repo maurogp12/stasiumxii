@@ -68,6 +68,7 @@ const VIEW_MOTION := preload("res://units/view_motion.gd")
 const VFX_DIRECTOR := preload("res://vfx/vfx_director.gd")
 const SHADE_MARKER := preload("res://board/shade_marker.gd")
 const AIM_LINE := preload("res://board/aim_line.gd")
+const _TestLoadoutRef := preload("res://backend/test_loadout.gd")
 ## Marker z is this plus the cell, above every tile and pawn, under combat
 ## numbers (z 900) so the "Shade" floater still reads.
 const SHADE_LAYER_Z := 640
@@ -159,6 +160,7 @@ func _ready() -> void:
 	_hud.new_match_requested.connect(_on_new_match)
 	_hud.hub_requested.connect(_on_hub_requested)
 	_hud.unit_card_tapped.connect(_on_unit_card_tapped)
+	_hud.elements_requested.connect(_on_elements_requested)
 	_hud.ready_requested.connect(_on_ready_requested)
 	_hud.aim_dragged.connect(_on_hud_aim_dragged)
 	_hud.zoom_step_requested.connect(_on_zoom_step)
@@ -908,6 +910,61 @@ func _has_turn_change(events: Array) -> bool:
 ## Mauro 5 Oct 2026: "put a option to go back to hub ... in koliseo". Leaves the
 ## fight (an online match closes its connection, like the class picker's back
 ## button) and opens the hub.
+## Mauro 6 Oct 2026: elements can change before the fight (deployment only).
+## The Elements screen keeps its own price (a new pair costs trophies); when it
+## closes, the fighters of that class wear the new pick.
+func _on_elements_requested() -> void:
+	var snap: Dictionary = _sim().snapshot()
+	if not CombatHUD.is_deployment_phase(snap) or _hud == null:
+		return
+	if _hud.get_node_or_null("ElementsScreen") != null:
+		return
+	var screen: ElementsScreen = load("res://scenes/elements_screen.gd").new()
+	screen.name = "ElementsScreen"
+	screen.font = _hud._ui_font
+	_hud.add_child(screen)
+	var class_id := _deploying_class(snap)
+	if class_id != "":
+		screen.pick_class(class_id)
+	screen.closed.connect(_apply_prefight_elements)
+
+
+## The class whose elements a pre-fight change is most likely for: this
+## phone's seat online, else the first seat that is not ready yet.
+func _deploying_class(snap: Dictionary) -> String:
+	var local := CombatHUD.snap_local_seat(snap)
+	var ready: Dictionary = snap.get("ready", {})
+	for unit in snap.get("units", []):
+		var seat := int(unit.get("seat", -1))
+		if local >= 0 and seat != local:
+			continue
+		if local < 0 and bool(ready.get(CombatHUD.unit_team(unit), false)):
+			continue
+		return str(unit.get("class_id", ""))
+	return ""
+
+
+func _apply_prefight_elements() -> void:
+	var snap: Dictionary = _sim().snapshot()
+	if not CombatHUD.is_deployment_phase(snap):
+		return
+	var net := _net()
+	if net != null and net.mode_name() == "client":
+		net.resend_local_gear()
+		return
+	var kit := GearBag.load_saved().fight_gear(true)
+	var local := CombatHUD.snap_local_seat(snap)
+	for unit in snap.get("units", []):
+		var seat := int(unit.get("seat", -1))
+		if local >= 0 and seat != local:
+			continue
+		if local < 0 and not _TestLoadoutRef.ACTIVE:
+			# Plain hot-seat fights without gear or picks.
+			continue
+		_sim().set_seat_gear(seat, kit.duplicate(true))
+	_paint_highlights()
+
+
 func _on_hub_requested() -> void:
 	var net := _net()
 	if net != null and net.mode_name() == "dedicated":

@@ -7,6 +7,9 @@ signal end_turn_requested
 signal new_match_requested
 ## Mauro 5 Oct 2026: "put a option to go back to hub ... in koliseo".
 signal hub_requested
+## Mauro 6 Oct 2026: change elements before the fight (deployment only, the
+## usual trophy price).
+signal elements_requested
 ## Mauro 6 Oct 2026: tap an enemy portrait / card to aim the armed spell at it.
 signal unit_card_tapped(seat: int)
 signal ready_requested(seat: int)
@@ -76,6 +79,7 @@ var _walk_button: Button
 var _end_turn_button: Button
 var _new_match_button: Button
 var _hub_button: Button
+var _elements_button: Button
 var _new_match_holder: Button
 var _ready_p1_button: Button
 var _ready_p2_button: Button
@@ -1319,6 +1323,17 @@ func _build() -> void:
 	_hub_button.clip_text = true
 	_hub_button.pressed.connect(func() -> void: hub_requested.emit())
 
+	_elements_button = Button.new()
+	_elements_button.name = "ElementsButton"
+	_elements_button.text = "Elements"
+	_elements_button.custom_minimum_size = TOUCH.NEW_MATCH_BUTTON_SIZE
+	_elements_button.add_theme_font_size_override("font_size", 15)
+	_elements_button.add_theme_color_override("font_color", CREAM)
+	_style_chrome_button(_elements_button, false)
+	_elements_button.clip_text = true
+	_elements_button.visible = false
+	_elements_button.pressed.connect(func() -> void: elements_requested.emit())
+
 	_coach_label = Label.new()
 	_coach_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_coach_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -1382,6 +1397,8 @@ func _build() -> void:
 		zoom_box.add_child(_new_match_holder)
 	if _hub_button != null:
 		zoom_box.add_child(_hub_button)
+	if _elements_button != null:
+		zoom_box.add_child(_elements_button)
 
 	_handoff_overlay = ColorRect.new()
 	_handoff_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -2688,6 +2705,8 @@ func claims_screen_point(point: Vector2) -> bool:
 		return true
 	if _control_claims(_hub_button, point):
 		return true
+	if _control_claims(_elements_button, point):
+		return true
 	if _control_claims(_new_match_button, point):
 		return true
 	if _control_claims(_ready_p1_button, point):
@@ -2835,6 +2854,8 @@ func clear_deploy_note() -> void:
 
 func _sync_deploy_chrome(snap: Dictionary) -> void:
 	var deploying := is_deployment_phase(snap)
+	if _elements_button != null:
+		_elements_button.visible = deploying
 	var ready: Dictionary = snap.get("ready", {})
 	var local_seat := snap_local_seat(snap)
 	if _ready_p1_button != null:

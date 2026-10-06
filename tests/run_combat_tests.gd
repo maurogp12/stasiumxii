@@ -141,6 +141,7 @@ func _run() -> void:
 	_test_kestrel_aims_better_far()
 	_test_bastion_team_ward_and_thorns()
 	_test_spark_counters_mender()
+	_test_prefight_elements_button()
 
 
 func _test_reset_and_turn_order() -> void:
@@ -7738,6 +7739,23 @@ func _test_spark_counters_mender() -> void:
 	var cleanse: Dictionary = _sim.submit({"type": "cast", "spell": "cleanse", "to": Vector2i(1, 1), "seat": 0})
 	eq(bool(cleanse.get("ok", false)), true, "Cleanse still resolves")
 	eq(bool(mender.get("sparked", false)), true, "Cleanse cannot remove Sparked")
+
+
+
+## Mauro 6 Oct 2026: elements can change before the fight (deployment only).
+func _test_prefight_elements_button() -> void:
+	_sim.reset_match({"seed": 1, "flat_board": true, "classes": ["kestrel", "ironjaw"]})
+	var hud := CombatHUD.new()
+	hud._build()
+	hud.render(_sim.snapshot(), _sim.legal_intents(0))
+	eq(hud._elements_button.visible, true, "the Elements button shows during deployment")
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "classes": ["kestrel", "ironjaw"]})
+	hud.render(_sim.snapshot(), _sim.legal_intents(0))
+	eq(hud._elements_button.visible, false, "the Elements button hides once the fight starts")
+	hud.free()
+	var view := FileAccess.get_file_as_string("res://board_view.gd")
+	truthy(view.contains("_hud.elements_requested.connect(_on_elements_requested)"), "the board opens the Elements screen")
+	truthy(view.contains("set_seat_gear(seat, kit.duplicate(true))"), "closing it re-applies the fighter's pick")
 
 
 func _walkable_zone_count(seat: int) -> int:
