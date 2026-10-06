@@ -635,7 +635,22 @@ static func element_for(unit: Dictionary, spell_id: String) -> String:
 
 
 static func spell_for(unit: Dictionary, spell_id: String) -> Dictionary:
-	return spell_as(spell_id, element_for(unit, spell_id))
+	var def := spell_as(spell_id, element_for(unit, spell_id))
+	if bool(unit.get("last_stand", false)) and LAST_STAND_DAMAGE.has(spell_id):
+		# Mender Last Stand (Mauro 6 Oct 2026): her heals can hit enemies again.
+		def = def.duplicate()
+		def["target"] = "any"
+		def["base_damage"] = int(LAST_STAND_DAMAGE[spell_id])
+		if spell_id == HEARTSTOP:
+			def["enemy_skip_mp"] = true
+		def["last_stand"] = true
+	return def
+
+
+## Mauro 6 Oct 2026: Mender is a support. Only when she is the last fighter
+## of her team standing and can no longer Rekindle anyone (always in a 1v1)
+## do Pulse Tap and Heartstop hit enemies again, with their old numbers.
+const LAST_STAND_DAMAGE := {PULSE_TAP: 10, HEARTSTOP: 22}
 
 
 static func set_element_riders(enabled: bool) -> void:

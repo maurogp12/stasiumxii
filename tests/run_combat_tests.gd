@@ -143,6 +143,7 @@ func _run() -> void:
 	_test_spark_counters_mender()
 	_test_prefight_elements_button()
 	_test_crush_breaks_shields()
+	_test_mender_last_stand()
 
 
 func _test_reset_and_turn_order() -> void:
@@ -7769,6 +7770,50 @@ func _test_crush_breaks_shields() -> void:
 	eq(_sim._connect_base_damage(def, {"shield": 0}), int(def["base_damage"]), "Crush base damage on an unshielded target")
 	eq(_sim._connect_base_damage(def, {"shield": 20}), int(def["base_damage"]) * 2, "Crush doubles on a shielded target")
 	eq(_sim._connect_base_damage(SpellKits.spell(SpellKits.STRIKE), {"shield": 20}), int(SpellKits.spell(SpellKits.STRIKE)["base_damage"]), "Strike does not double")
+
+
+
+## Mauro 6 Oct 2026: Mender only damages enemies as a Last Stand — no living
+## teammate and no Rekindle left to bring one back.
+func _test_mender_last_stand() -> void:
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"team_size": 2,
+		"rolls": [1, 1, 1, 1],
+		"classes": ["mender", "kestrel", "ironjaw", "gloam"],
+		"positions": [Vector2i(3, 3), Vector2i(12, 12), Vector2i(4, 3), Vector2i(13, 13)],
+	})
+	var mender := _live_unit(0)
+	var mate: Dictionary = {}
+	var foe: Dictionary = {}
+	for unit in _sim._units:
+		if unit == mender:
+			continue
+		if _sim._allied(unit, mender):
+			mate = unit
+		elif foe.is_empty():
+			foe = unit
+	foe["pos"] = Vector2i(4, 3)
+	eq(bool(mender.get("last_stand", true)), false, "with a teammate alive, no Last Stand")
+	var def := SpellKits.spell_for(mender, SpellKits.HEARTSTOP)
+	eq(str(def.get("target", "")), "ally", "Heartstop heals only while the team stands")
+	mate["alive"] = false
+	mate["hp"] = 0
+	_sim._refresh_last_stand()
+	eq(bool(mender.get("last_stand", true)), false, "a fallen teammate she can still Rekindle: no Last Stand")
+	mender["used_" + SpellKits.REKINDLE] = true
+	_sim._refresh_last_stand()
+	eq(bool(mender.get("last_stand", false)), true, "last one standing with Rekindle spent: Last Stand")
+	def = SpellKits.spell_for(mender, SpellKits.HEARTSTOP)
+	eq(str(def.get("target", "")), "any", "Last Stand Heartstop can target an enemy")
+	eq(int(def.get("base_damage", 0)), 22, "Last Stand Heartstop deals 22")
+	eq(int(SpellKits.spell_for(mender, SpellKits.PULSE_TAP).get("base_damage", 0)), 10, "Last Stand Pulse Tap deals 10")
+	mate["alive"] = true
+	mate["hp"] = 10
+	_sim._refresh_last_stand()
+	eq(bool(mender.get("last_stand", true)), false, "a teammate back on their feet ends Last Stand")
 
 
 func _walkable_zone_count(seat: int) -> int:

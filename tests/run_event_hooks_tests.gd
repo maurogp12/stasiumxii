@@ -975,10 +975,11 @@ func _test_triage_on_heals() -> void:
 		"mender_pulse": 4,
 		"rolls": [1],
 	})
-	# Mauro 6 Oct 2026: Heartstop no longer hits enemies (Mender full support).
+	# Mauro 6 Oct 2026: a 1v1 Mender is always in Last Stand, so Heartstop hits.
 	var enemy: Dictionary = _sim.submit({"type": "cast", "spell": "heartstop", "to": Vector2i(3, 1), "seat": 0})
-	eq(bool(enemy.get("ok", false)), false, "Heartstop refuses an enemy")
-	eq(int(_sim.snapshot()["units"][1]["hp"]), 30, "a refused enemy Heartstop deals nothing")
+	var enemy_hit := _event_of(enemy.get("events", []), "hit")
+	eq(enemy_hit.has("triage"), false, "Last Stand Heartstop does not stamp triage")
+	eq(int(enemy_hit.get("damage", -1)), 22, "Last Stand Heartstop damage is 22")
 
 	_host.reset_match({
 		"seed": 1,

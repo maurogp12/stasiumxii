@@ -292,6 +292,7 @@ func reset_match(config: Dictionary = {}) -> Dictionary:
 			"coach": _last_coach,
 		}]
 
+	_refresh_last_stand()
 	_broadcast()
 	return snapshot()
 
@@ -3147,6 +3148,7 @@ func _check_death(target: Dictionary, cause: String = "damage") -> void:
 		"cause": cause,
 		"coach": "%s falls." % target["name"],
 	})
+	_refresh_last_stand()
 	# Stasis Room A keeps fighting until the player or every hostile is down.
 	# Koliseo is still one death ends the match.
 	if _stasis_pack:
@@ -3812,7 +3814,28 @@ func _opening_turn_coach(lead: String) -> String:
 	return "%s %s's turn. 6 AP / 3 MP." % [lead, who]
 
 
+## Mender Last Stand (Mauro 6 Oct 2026): on while no teammate is alive and
+## Rekindle cannot bring one back (used this match, or nobody to revive as in
+## a 1v1). A revived teammate turns it off again.
+func _refresh_last_stand() -> void:
+	for unit in _units:
+		if str(unit.get("class_id", "")) != SpellKits.CLASS_MENDER:
+			continue
+		var mates_alive := false
+		var mates_fallen := false
+		for other in _units:
+			if other == unit or not _allied(other, unit):
+				continue
+			if bool(other.get("alive", false)):
+				mates_alive = true
+			else:
+				mates_fallen = true
+		var can_revive := mates_fallen and not bool(unit.get("used_" + SpellKits.REKINDLE, false))
+		unit["last_stand"] = bool(unit.get("alive", false)) and not mates_alive and not can_revive
+
+
 func _begin_unit_turn(unit: Dictionary) -> void:
+	_refresh_last_stand()
 	unit["momentum"] = false
 	_expire_element_tiles(unit)
 	# Earth rider: Grounded lasts until the caster's next turn.
@@ -5696,6 +5719,7 @@ func _resolve_revive(intent: Dictionary, actor: Dictionary, def: Dictionary, des
 			body[key] = 0
 	body["stunned"] = false
 	body["invisible"] = false
+	_refresh_last_stand()
 	_intent_log.append(intent)
 	_last_coach = "%s Rekindles %s (−%d AP): back on their feet with %d HP." % [actor["name"], body["name"], ap_cost, hp]
 	_last_events.append({

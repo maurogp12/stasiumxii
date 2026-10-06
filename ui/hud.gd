@@ -669,6 +669,8 @@ static func element_notes(unit: Dictionary) -> String:
 		out += "  [b]MAGMA[/b] burns where it ends its turn"
 	if bool(unit.get("sparked", false)):
 		out += "  [b]SPARKED[/b] −40% healing"
+	if bool(unit.get("last_stand", false)):
+		out += "  [b]LAST STAND[/b] heals can hit"
 	if bool(unit.get("blend_lock", false)):
 		out += "  [b]BLENDED[/b]"
 	if str(unit.get("infusion", "")) != "":

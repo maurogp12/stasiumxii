@@ -654,11 +654,12 @@ func _test_heartstop() -> void:
 		"mender_pulse": 4,
 		"rolls": [1],
 	})
-	# Mauro 6 Oct 2026: Mender is full support; Heartstop no longer hits enemies.
+	# Mauro 6 Oct 2026: a 1v1 Mender is in Last Stand — Heartstop hits.
 	var enemy: Dictionary = _sim.submit({"type": "cast", "spell": "heartstop", "to": Vector2i(3, 1), "seat": 0})
-	eq(bool(enemy.get("ok", false)), false, "Heartstop no longer hits an enemy")
-	eq(int(_sim.snapshot()["units"][1]["hp"]), 75, "a refused enemy Heartstop deals nothing")
-	eq(int(_sim.snapshot()["units"][0]["pulse"]), 4, "a refused enemy Heartstop spends no Pulse")
+	eq(bool(enemy.get("ok", false)), true, "Last Stand Heartstop hits an enemy")
+	eq(int(_sim.snapshot()["units"][1]["hp"]), 53, "Last Stand Heartstop damage is 22")
+	eq(bool(_sim.snapshot()["units"][1]["skip_next_mp"]), true, "Last Stand Heartstop stops the next walk")
+	eq(int(_sim.snapshot()["units"][0]["pulse"]), 2, "Heartstop spends 2 Pulse")
 	_sim.reset_match({
 		"seed": 1,
 		"flat_board": true,
@@ -691,7 +692,7 @@ func _test_mender_option_b() -> void:
 	for intent in _sim.legal_intents(0):
 		if str(intent.get("spell", "")) in ["pulse_tap", "heartstop"] and int(intent.get("target_seat", -1)) == 1:
 			offered = true
-	eq(offered, false, "Pulse Tap and Heartstop are not offered on an enemy")
+	eq(offered, true, "a 1v1 Mender is in Last Stand: her heals can hit the enemy")
 	var tap: Dictionary = _sim.submit({"type": "cast", "spell": "pulse_tap", "to": Vector2i(2, 2), "seat": 0})
 	eq(bool(tap.get("ok", false)), true, "Pulse Tap heals Mender herself")
 	eq(int(mender["ap"]), 4, "Pulse Tap costs 2 AP")
