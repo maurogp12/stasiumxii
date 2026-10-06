@@ -719,30 +719,23 @@ func _test_expiry_events() -> void:
 	eq(int(wall_expire.get("owner_seat", -2)), 0, "wall expiry names Bastion")
 	eq((_sim.snapshot().get("blocked_tiles", []) as Array).is_empty(), true, "expired wall leaves blocked_tiles")
 
+	# Mauro 6 Oct 2026: Bastion's Ward shield has no clock; it lasts until broken.
 	_sim.reset_match({
 		"seed": 1,
 		"flat_board": true,
 		"skip_deploy": true,
-		"classes": ["mender", "kestrel"],
+		"classes": ["bastion", "kestrel"],
 		"positions": [Vector2i(1, 1), Vector2i(6, 6)],
-		"mender_pulse": 2,
+		"bastion_aegis": 3,
 		"rolls": [1],
 	})
 	var ward: Dictionary = _sim.submit({"type": "cast", "spell": "ward", "to": Vector2i(1, 1), "seat": 0})
-	eq(bool(ward.get("ok", false)), true, "Ward connects before the shield clock")
-	_sim.submit({"type": "end_turn", "seat": 0})
-	var shield_mid: Dictionary = _sim.submit({"type": "end_turn", "seat": 1})
-	eq(_expire(shield_mid.get("events", []), "shield").is_empty(), true, "shield does not expire on its first tick")
-	eq(int(_sim.snapshot()["units"][0]["shield"]), 20, "shield amount stays 20 after one tick")
-	eq(int(_sim.snapshot()["units"][0]["shield_turns"]), 1, "shield turns tick 2 to 1")
-	_sim.submit({"type": "end_turn", "seat": 0})
-	var shield_end: Dictionary = _sim.submit({"type": "end_turn", "seat": 1})
-	var shield_expire := _expire(shield_end.get("events", []), "shield")
-	eq(shield_expire.get("pos"), Vector2i(1, 1), "shield expiry names the unit cell")
-	eq(int(shield_expire.get("target_seat", -2)), 0, "shield expiry names the warded seat")
-	eq(int(_sim.snapshot()["units"][0]["shield"]), 0, "expired shield amount is 0")
-	eq(int(_sim.snapshot()["units"][0]["shield_turns"]), 0, "expired shield turns are 0")
-	eq(int(_sim.snapshot()["units"][0]["hp"]), 85, "shield expiry does not change HP")
+	eq(bool(ward.get("ok", false)), true, "Ward resolves")
+	for i in 3:
+		_sim.submit({"type": "end_turn", "seat": 0})
+		var later: Dictionary = _sim.submit({"type": "end_turn", "seat": 1})
+		eq(_expire(later.get("events", []), "shield").is_empty(), true, "the Ward shield never times out (turn %d)" % (i + 1))
+	eq(int(_sim.snapshot()["units"][0]["shield"]), 20, "the Ward shield is still 20 after 3 rounds")
 
 	_sim.reset_match({
 		"seed": 1,

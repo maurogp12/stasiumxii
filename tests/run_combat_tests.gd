@@ -139,6 +139,7 @@ func _run() -> void:
 	_test_every_spell_explained()
 	_test_enemy_card_tap_and_hold()
 	_test_kestrel_aims_better_far()
+	_test_bastion_team_ward_and_thorns()
 
 
 func _test_reset_and_turn_order() -> void:
@@ -3871,8 +3872,8 @@ func _test_team_match_rules() -> void:
 ## Mauro 3 Oct 2026: Mender's sixth spell, Rekindle. 6 AP, once per match,
 ## revives a fallen teammate (range 1–2) with 30% HP.
 func _test_mender_rekindle() -> void:
-	eq(SpellKits.class_spells(SpellKits.CLASS_MENDER).size(), 6, "Mender has six spells")
-	eq(SpellKits.class_spells(SpellKits.CLASS_MENDER)[5], SpellKits.REKINDLE, "Rekindle is the sixth")
+	eq(SpellKits.class_spells(SpellKits.CLASS_MENDER).size(), 5, "Mender has five spells (Ward went to Bastion, Mauro 6 Oct 2026)")
+	eq(SpellKits.class_spells(SpellKits.CLASS_MENDER)[4], SpellKits.REKINDLE, "Rekindle is the last")
 	var def := SpellKits.spell(SpellKits.REKINDLE)
 	eq(int(def["ap"]), 6, "Rekindle costs 6 AP")
 	eq(bool(def["once_per_match"]), true, "Rekindle is once per match")
@@ -7528,80 +7529,9 @@ func _test_deploy_main_chrome() -> void:
 
 
 func _test_aegis_break_burst() -> void:
-	_sim.reset_match({
-		"seed": 1,
-		"flat_board": true,
-		"skip_deploy": true,
-		"classes": ["bastion", "kestrel"],
-		"positions": [Vector2i(1, 1), Vector2i(3, 1)],
-		"kestrel_facing": "W",
-		"kestrel_marks": 3,
-		"bastion_aegis": 4,
-		"rolls": [1],
-	})
-	var second: Dictionary = _sim._make_unit(1, "kestrel", "Second", "air", Vector2i(1, 3), "N", true)
-	var outside: Dictionary = _sim._make_unit(1, "kestrel", "Outside", "air", Vector2i(4, 2), "W", true)
-	_sim._units.append(second)
-	_sim._units.append(outside)
-	var hit: Dictionary = _sim.submit({"type": "cast", "spell": "aegis_break", "to": Vector2i(3, 1), "seat": 0})
-	eq(hit.get("ok", false), true, "Aegis Break burst resolves")
-	eq(int(_unit(0)["aegis"]), 0, "HIT clears all Aegis")
-	eq(int(_unit(0)["ap"]), 2, "Aegis Break spends 4 AP")
-	eq(int(_unit(1)["hp"]), 49, "aimed body takes 26")
-	eq(_unit(1)["pos"], Vector2i(4, 1), "aimed body is pushed 1")
-	eq(int(_unit(1)["marks"]), 3, "HIT does not clear Marks")
-	eq(int(second["hp"]), 49, "body inside range 1–2 takes 26")
-	eq(second["pos"], Vector2i(1, 4), "body inside range 1–2 is pushed 1")
-	eq(int(outside["hp"]), 75, "body outside range 1–2 is not hit")
-	eq(outside["pos"], Vector2i(4, 2), "body outside range 1–2 is not pushed")
-	var event := _first_event_where(hit["events"], "hit")
-	eq(int(event.get("bodies", 0)), 2, "hit event counts both bodies")
-	eq(int(event.get("aegis_spent", 0)), 4, "HIT reports the cleared Aegis")
-	eq(bool(event.get("stacks_cleared", false)), true, "HIT sets stacks_cleared")
-	var rows: Array = event.get("targets", [])
-	eq(rows.size(), 2, "hit event lists both bodies")
-	eq(int(rows[0].get("damage", -1)), 26, "first body row is 26")
-	eq(bool(rows[0].get("pushed", false)), true, "first body row records the push")
-	eq(int(rows[1].get("damage", -1)), 26, "second body row is 26")
-	eq(bool(rows[1].get("pushed", false)), true, "second body row records the push")
-
-	_sim.reset_match({
-		"seed": 1,
-		"flat_board": true,
-		"skip_deploy": true,
-		"classes": ["bastion", "kestrel"],
-		"positions": [Vector2i(1, 1), Vector2i(3, 1)],
-		"kestrel_facing": "W",
-		"bastion_aegis": 4,
-		"rolls": [100],
-	})
-	var missed_second: Dictionary = _sim._make_unit(1, "kestrel", "Second", "air", Vector2i(1, 3), "N", true)
-	_sim._units.append(missed_second)
-	var missed: Dictionary = _sim.submit({"type": "cast", "spell": "aegis_break", "to": Vector2i(3, 1), "seat": 0})
-	eq(missed.get("ok", false), true, "Aegis Break miss resolves")
-	eq(int(_unit(0)["aegis"]), 4, "MISS spends 0 Aegis")
-	eq(int(_unit(0)["ap"]), 2, "MISS still spends 4 AP")
-	eq(int(_unit(1)["hp"]), 75, "MISS does not damage the aimed body")
-	eq(_unit(1)["pos"], Vector2i(3, 1), "MISS does not push the aimed body")
-	eq(int(missed_second["hp"]), 75, "MISS does not damage the other body")
-	eq(missed_second["pos"], Vector2i(1, 3), "MISS does not push the other body")
-	var miss := _first_event_where(missed["events"], "miss")
-	eq(int(miss.get("aegis_spent", -1)), 0, "MISS event spends 0 Aegis")
-	eq(bool(miss.get("stacks_cleared", true)), false, "MISS does not clear Aegis")
-	eq(int(miss.get("aegis", -1)), 4, "MISS leaves the Aegis stack")
-
-	_sim.reset_match({
-		"seed": 1,
-		"flat_board": true,
-		"skip_deploy": true,
-		"classes": ["bastion", "kestrel"],
-		"positions": [Vector2i(1, 1), Vector2i(3, 1)],
-		"bastion_aegis": 2,
-	})
-	var gated: Dictionary = _sim.submit({"type": "cast", "spell": "aegis_break", "to": Vector2i(3, 1), "seat": 0})
-	eq(str(gated.get("reason", "")), "insufficient_aegis", "Aegis Break requires 3 Aegis")
-	eq(int(_unit(0)["ap"]), 6, "failed gate does not spend AP")
-	eq(int(_unit(0)["aegis"]), 2, "failed gate does not spend Aegis")
+	# Mauro 6 Oct 2026: Aegis Break left Bastion's kit; Ward took its slot.
+	eq(SpellKits.class_spells(SpellKits.CLASS_BASTION).has(SpellKits.AEGIS_BREAK), false, "Aegis Break is no longer in Bastion's kit")
+	eq(SpellKits.class_spells(SpellKits.CLASS_BASTION).has(SpellKits.WARD), true, "Bastion has Ward")
 
 
 func _test_snap_wall_bastion_turns() -> void:
@@ -7725,6 +7655,71 @@ func _test_kestrel_aims_better_far() -> void:
 			eq(_sim._spell_hit_chance(SpellKits.spell(spell_id), dist), want[dist], "%s at %d tiles hits %d%%" % [spell_id, dist, want[dist]])
 	eq(_sim._spell_hit_chance(SpellKits.spell(SpellKits.STRIKE), 1), 90, "other classes keep the shared table")
 	eq(_sim._spell_hit_chance(SpellKits.spell(SpellKits.MEND), 4), 75, "Mender keeps the shared table")
+
+
+
+## Mauro 6 Oct 2026: Ward is Bastion's (3 AP + 3 Aegis, no roll): +20 shield on
+## every ally within 3 tiles including him, stacks to 60, no clock. Thorns:
+## while shielded, an adjacent enemy that hits him takes 6 back.
+func _test_bastion_team_ward_and_thorns() -> void:
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"team_size": 2,
+		"classes": ["bastion", "ironjaw", "kestrel", "gloam"],
+		"positions": [Vector2i(3, 3), Vector2i(10, 10), Vector2i(5, 3), Vector2i(12, 12)],
+		"bastion_aegis": 4,
+	})
+	var bastion := _live_unit(0)
+	var mate: Dictionary = {}
+	var far_mate: Dictionary = {}
+	for unit in _sim._units:
+		if unit != bastion and _sim._allied(unit, bastion):
+			mate = unit
+	if mate.is_empty():
+		eq(true, false, "team fixture has a Bastion teammate")
+		return
+	mate["pos"] = Vector2i(5, 3)
+	var ap0 := int(bastion["ap"])
+	var ward: Dictionary = _sim.submit({"type": "cast", "spell": "ward", "to": bastion["pos"], "seat": int(bastion["seat"])})
+	eq(bool(ward.get("ok", false)), true, "Bastion's Ward resolves")
+	eq(int(bastion["shield"]), 20, "Ward shields Bastion")
+	eq(int(mate["shield"]), 20, "Ward shields a teammate within 3 tiles")
+	eq(int(bastion["aegis"]), 1, "Ward spends 3 Aegis")
+	eq(int(bastion["ap"]), ap0 - 3, "Ward spends 3 AP")
+	for unit in _sim._units:
+		if not _sim._allied(unit, bastion):
+			eq(int(unit.get("shield", 0)), 0, "Ward never shields an enemy")
+	# Stacks to 60, no clock.
+	bastion["aegis"] = 3
+	bastion["ap"] = 12
+	_sim.submit({"type": "cast", "spell": "ward", "to": bastion["pos"], "seat": int(bastion["seat"])})
+	bastion["aegis"] = 3
+	_sim.submit({"type": "cast", "spell": "ward", "to": bastion["pos"], "seat": int(bastion["seat"])})
+	bastion["aegis"] = 3
+	_sim.submit({"type": "cast", "spell": "ward", "to": bastion["pos"], "seat": int(bastion["seat"])})
+	eq(int(bastion["shield"]), 60, "Ward stacks 3 times to 60 and no further")
+	eq(int(bastion["shield_turns"]), 0, "the Ward shield has no clock")
+	# Thorns: 1v1 Ironjaw strikes a shielded Bastion from next to him.
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1, 1], "classes": ["ironjaw", "bastion"], "positions": [Vector2i(3, 3), Vector2i(4, 3)], "bastion_aegis": 3})
+	_live_unit(1)["shield"] = 20
+	var jaw_hp := int(_unit(0)["hp"])
+	var strike: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(4, 3), "seat": 0})
+	eq(bool(strike.get("ok", false)), true, "Strike on Bastion resolves")
+	eq(int(_unit(0)["hp"]), jaw_hp - _sim.THORNS_DAMAGE, "Thorns hits the adjacent attacker for 6")
+	eq(int(_first_event_where(strike.get("events", []), "hit").get("thorns", 0)), 6, "the hit event names Thorns")
+	# No shield, no Thorns.
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1], "classes": ["ironjaw", "bastion"], "positions": [Vector2i(3, 3), Vector2i(4, 3)]})
+	jaw_hp = int(_unit(0)["hp"])
+	_sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(4, 3), "seat": 0})
+	eq(int(_unit(0)["hp"]), jaw_hp, "no shield = no Thorns")
+	# Ranged hits are safe.
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1], "classes": ["kestrel", "bastion"], "positions": [Vector2i(1, 3), Vector2i(5, 3)]})
+	_live_unit(1)["shield"] = 20
+	var kes_hp := int(_unit(0)["hp"])
+	_sim.submit({"type": "cast", "spell": "mark_shot", "to": Vector2i(5, 3), "seat": 0})
+	eq(int(_unit(0)["hp"]), kes_hp, "Thorns does not reach a ranged attacker")
 
 
 func _walkable_zone_count(seat: int) -> int:

@@ -127,7 +127,8 @@ static func simple_lines(spell_id: String, preview: Dictionary = {}) -> PackedSt
 		SpellKits.PULSE_TAP:
 			out.append("Tap a teammate to heal %d HP, or tap an enemy to hit them for %d damage. Uses 1 Pulse." % [heal, dmg])
 		SpellKits.WARD:
-			out.append("Give a teammate a shield of %d for %d turns. Hits break the shield before they hurt. Uses 2 Pulse." % [int(def.get("shield", 20)), int(def.get("shield_turns", 2))])
+			out.append("Give every teammate within %d tiles, you too, a shield of +%d. Cast it again to stack it up to %d. Hits break the shield before they hurt you; it stays until it breaks. Uses %d Aegis." % [int(def.get("ward_radius", 3)), int(def.get("shield", 20)), int(def.get("shield_cap", 60)), int(def.get("spend_aegis", 3))])
+			out.append("Thorns: while Bastion has a shield, enemies who hit him from right next to him take %d damage back." % 6)
 		SpellKits.CLEANSE:
 			out.append("Take away 1 bad effect from a teammate (Stun first). 3 bad effects? Use it 3 times. +1 Pulse.")
 		SpellKits.HEARTSTOP:
@@ -183,6 +184,8 @@ static func simple_lines(spell_id: String, preview: Dictionary = {}) -> PackedSt
 
 static func _reach_words(def: Dictionary, preview: Dictionary) -> String:
 	var target := str(def.get("target", ""))
+	if def.has("ward_radius"):
+		return "you and every teammate within %d tiles" % int(def["ward_radius"])
 	if target == "self":
 		return "only you"
 	if bool(def.get("gated", false)):

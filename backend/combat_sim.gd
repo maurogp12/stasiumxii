@@ -1516,8 +1516,6 @@ func _preview_reason(def: Dictionary, actor: Dictionary, target: Dictionary, fro
 	if ally_cast:
 		if target.is_empty() or not bool(target.get("alive", false)) or not _allied(target, actor):
 			return "no_target"
-		if spell_id == SpellKits.WARD and int(target.get("shield", 0)) > 0:
-			return "open_can_wait"
 		if spell_id == SpellKits.HEARTSTOP and int(target.get("hit_immunity", 0)) > 0:
 			return "open_can_wait"
 		return ""
@@ -1550,6 +1548,8 @@ func _preview_kit_lines(spell_id: String) -> Dictionary:
 			return {"on_connect": "Teleport snap. +1 Impact if adjacent. Facing unchanged.", "on_miss": "No roll."}
 		SpellKits.AEGIS_BREAK:
 			return {"on_connect": "26 Earth per body in range 1–2. Push 1. Clears all Aegis.", "on_miss": "Spends 0 Aegis. Does not clear Aegis."}
+		SpellKits.WARD:
+			return {"on_connect": "+20 shield on every ally within 3 tiles, you too. Stacks to 60. Lasts until broken. Spends 3 Aegis.", "on_miss": "No roll."}
 		SpellKits.SNAP_WALL:
 			return {"on_connect": "Blocked tile for 2 Bastion turn-starts. Spends 2 Aegis. On your own wall: knocks it down, +2 Aegis back.", "on_miss": "No roll."}
 		_:
@@ -2703,11 +2703,9 @@ func _submit_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
 		return _reject(intent, "insufficient_ap", "REJECT — %s costs %d AP (refund)." % [def["name"], ap_cost])
 	if int(actor["mp"]) < mp_cost:
 		return _reject(intent, "insufficient_mp", "REJECT — %s costs %d MP (refund)." % [def["name"], mp_cost])
-	if spell_id == SpellKits.WARD or spell_id == SpellKits.HEARTSTOP:
+	if spell_id == SpellKits.HEARTSTOP:
 		var early := _living_unit_at(dest)
 		if not early.is_empty() and _allied(early, actor):
-			if spell_id == SpellKits.WARD and int(early.get("shield", 0)) > 0:
-				return _reject(intent, "open_can_wait", "REJECT — shield stacking is open (can-wait).")
 			if spell_id == SpellKits.HEARTSTOP and int(early.get("hit_immunity", 0)) > 0:
 				return _reject(intent, "open_can_wait", "REJECT — immunity refresh is open (can-wait).")
 	var wall_break := spell_id == SpellKits.SNAP_WALL and _is_own_snap_wall(actor, dest)
@@ -2725,6 +2723,8 @@ func _submit_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
 	if target_kind == "self":
 		if dest != actor["pos"]:
 			return _reject(intent, "no_target", "REJECT — %s is self only (refund)." % def["name"])
+		if spell_id == SpellKits.WARD:
+			return _resolve_team_ward(intent, actor, def, ap_cost, mp_cost)
 		return _resolve_fade(intent, actor, def, ap_cost, mp_cost)
 	if target_kind == "cone":
 		return _resolve_hold_line(intent, actor, def, ap_cost, mp_cost)
@@ -5445,6 +5445,7 @@ func _mitigate_hit(actor: Dictionary, target: Dictionary, damage: int) -> Dictio
 	if damage > 0:
 		damage = _still_on_hit(actor, target, damage)
 		report["damage"] = damage
+	_bastion_thorns(actor, target, damage, report)
 	if int(target.get("hit_immunity", 0)) > 0:
 		target["hit_immunity"] = int(target["hit_immunity"]) - 1
 		report["immunity_absorbed"] = true
@@ -5469,7 +5470,31 @@ func _mitigate_hit(actor: Dictionary, target: Dictionary, damage: int) -> Dictio
 	return report
 
 
+## Mauro 6 Oct 2026: Bastion Thorns. While Bastion has a shield, an enemy that
+## hits him from an adjacent tile takes THORNS_DAMAGE back (no resist).
+const THORNS_DAMAGE := 6
+
+
+func _bastion_thorns(actor: Dictionary, target: Dictionary, damage: int, report: Dictionary) -> void:
+	if damage <= 0 or actor.is_empty() or target.is_empty() or actor == target:
+		return
+	if str(target.get("class_id", "")) != SpellKits.CLASS_BASTION or int(target.get("shield", 0)) <= 0:
+		return
+	if _allied(actor, target) or not bool(actor.get("alive", false)):
+		return
+	if chebyshev(actor["pos"], target["pos"]) != 1:
+		return
+	actor["hp"] = maxi(0, int(actor["hp"]) - THORNS_DAMAGE)
+	report["thorns"] = THORNS_DAMAGE
+	report["thorns_seat"] = int(actor["seat"])
+	_check_death(actor)
+
+
 func _stamp_mitigation(event: Dictionary, report: Dictionary) -> void:
+	if report.has("thorns"):
+		event["thorns"] = int(report["thorns"])
+		event["thorns_seat"] = int(report["thorns_seat"])
+		event["coach"] = str(event.get("coach", "")) + " Thorns: %d back." % int(report["thorns"])
 	event["immunity_absorbed"] = bool(report.get("immunity_absorbed", false))
 	event["immunity_amount"] = int(report.get("immunity_amount", 0))
 	event["shield_absorbed"] = int(report.get("shield_absorbed", 0))
@@ -5837,6 +5862,52 @@ func _strip_family(unit: Dictionary, family: String) -> void:
 ## through the enemy's next turn, visible from Gloam's turn T+1.
 ## An attack still reveals at once. A fixture with invisible but no
 ## invisible_turns has no clock (tests / old snapshots).
+## Mauro 6 Oct 2026: Bastion's Ward. Every living ally within `ward_radius`
+## (Chebyshev, Bastion included) gains +20 shield, capped at 60 (3 stacks).
+## The shield has no clock: it lasts until hits break it.
+func _resolve_team_ward(intent: Dictionary, actor: Dictionary, def: Dictionary, ap_cost: int, mp_cost: int) -> Dictionary:
+	actor["ap"] = int(actor["ap"]) - ap_cost
+	_spend_mp(actor, mp_cost)
+	var spent := _spend_resource(actor, "aegis", int(def.get("spend_aegis", 3)))
+	var radius := int(def.get("ward_radius", 3))
+	var add := int(def.get("shield", 20))
+	var cap := int(def.get("shield_cap", 60))
+	var shielded: Array = []
+	for unit in _units:
+		if not bool(unit.get("alive", false)) or not bool(unit.get("placed", true)):
+			continue
+		if not _allied(unit, actor) and unit != actor:
+			continue
+		if chebyshev(actor["pos"], unit["pos"]) > radius:
+			continue
+		var before := int(unit.get("shield", 0))
+		unit["shield"] = mini(before + add, cap)
+		unit["shield_turns"] = 0
+		shielded.append({"seat": int(unit["seat"]), "pos": unit["pos"], "shield": int(unit["shield"]), "gained": int(unit["shield"]) - before})
+	_intent_log.append(intent)
+	_last_coach = "%s Ward: +%d shield on %d (−%d AP, −%d Aegis)." % [actor["name"], add, shielded.size(), ap_cost, spent]
+	for row in shielded:
+		_last_events.append({
+			"type": "hit",
+			"seat": actor["seat"],
+			"spell": SpellKits.WARD,
+			"caster_cell": actor["pos"],
+			"target_seat": row["seat"],
+			"to": row["pos"],
+			"rolled": false,
+			"ap_spent": ap_cost if row == shielded[0] else 0,
+			"mp_spent": mp_cost if row == shielded[0] else 0,
+			"healed": 0,
+			"damage": 0,
+			"shield": row["shield"],
+			"shield_gained": row["gained"],
+			"engine": "aegis",
+			"engine_spent": spent if row == shielded[0] else 0,
+			"coach": _last_coach,
+		})
+	return _accept()
+
+
 func _resolve_fade(intent: Dictionary, actor: Dictionary, def: Dictionary, ap_cost: int, mp_cost: int) -> Dictionary:
 	var caster_cell: Vector2i = actor["pos"]
 	actor["ap"] = int(actor["ap"]) - ap_cost

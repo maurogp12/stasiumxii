@@ -196,9 +196,9 @@ func _test_flash_kinds() -> void:
 		"seed": 1,
 		"flat_board": true,
 		"skip_deploy": true,
-		"classes": ["mender", "kestrel"],
+		"classes": ["bastion", "kestrel"],
 		"positions": [Vector2i(1, 1), Vector2i(6, 6)],
-		"mender_pulse": 2,
+		"bastion_aegis": 3,
 		"rolls": [1],
 	})
 	var ward: Dictionary = _sim.submit({"type": "cast", "spell": "ward", "to": Vector2i(1, 1), "seat": 0})

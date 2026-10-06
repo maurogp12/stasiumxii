@@ -214,24 +214,28 @@ const SPELLS := {
 		"spend_pulse": 1,
 		"triage": true,
 	},
+	# Mauro 6 Oct 2026: Ward moves from Mender to Bastion (Aegis Break leaves
+	# the kit): 3 AP + 3 Aegis, no roll, +20 shield on every ally within 3
+	# tiles including Bastion, stacks 3 times (60), lasts until it is broken.
 	WARD: {
 		"id": WARD,
 		"name": "Ward",
-		"class_id": CLASS_MENDER,
+		"class_id": CLASS_BASTION,
 		"ap": 3,
 		"mp": 0,
 		"range_mode": "chebyshev",
 		"min_range": 0,
-		"max_range": 3,
-		"rolls": true,
-		"element": "water",
+		"max_range": 0,
+		"rolls": false,
+		"element": "neutral",
 		"base_heal": 0,
 		"shield": 20,
-		"shield_turns": 2,
-		"target": "ally",
-		"engine_on_connect": "spend_pulse",
-		"requires_pulse": 2,
-		"spend_pulse": 2,
+		"shield_cap": 60,
+		"ward_radius": 3,
+		"target": "self",
+		"engine_on_connect": "spend_aegis",
+		"requires_aegis": 3,
+		"spend_aegis": 3,
 		"no_crit": true,
 	},
 	CLEANSE: {
@@ -462,9 +466,9 @@ const SPELLS := {
 const CLASS_SPELLS := {
 	CLASS_KESTREL: [MARK_SHOT, DETONATE],
 	CLASS_IRONJAW: [ADVANCE, STRIKE, SHOULDER, CRUSH],
-	CLASS_MENDER: [MEND, PULSE_TAP, WARD, CLEANSE, HEARTSTOP, REKINDLE],
+	CLASS_MENDER: [MEND, PULSE_TAP, CLEANSE, HEARTSTOP, REKINDLE],
 	CLASS_GLOAM: [CUT, DROP_SHADE, AMBUSH, FADE, NIGHTFOLD],
-	CLASS_BASTION: [BASH, PLANT, HOLD_LINE, SNAP_WALL, AEGIS_BREAK],
+	CLASS_BASTION: [BASH, PLANT, HOLD_LINE, SNAP_WALL, WARD],
 }
 
 const MARKS_CAP := 5
