@@ -7846,6 +7846,20 @@ func _test_marks_fade_without_attack() -> void:
 	_sim.submit({"type": "end_turn", "seat": 0})
 	for field in ["umbral", "aegis", "pulse"]:
 		eq(int(_unit(0)[field]), 0, "a quiet turn clears %s too" % field)
+	# Mauro 6 Oct 2026: Mender keeps Pulse on a turn she only heals; a turn
+	# with no spell at all drops it.
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "team_size": 2, "rolls": [1, 1, 1, 1],
+		"classes": ["mender", "ironjaw", "kestrel", "gloam"], "positions": [Vector2i(3, 5), Vector2i(10, 5), Vector2i(4, 5), Vector2i(11, 5)]})
+	_sim._active_seat = 0
+	_live_unit(2)["hp"] = int(_live_unit(2)["hp"]) - 20
+	_live_unit(0)["pulse"] = 2
+	var healed: Dictionary = _sim.submit({"type": "cast", "spell": "mend", "to": Vector2i(4, 5), "target_seat": 2, "seat": 0})
+	eq(healed["ok"], true, "Mender heals a teammate")
+	var pulse_after := int(_unit(0)["pulse"])
+	_sim._drop_unattended_marks(_live_unit(0))
+	eq(int(_unit(0)["pulse"]), pulse_after, "a heal-only turn keeps Mender's Pulse")
+	_sim._drop_unattended_marks(_live_unit(0))
+	eq(int(_unit(0)["pulse"]), 0, "a turn with no spell at all drops her Pulse")
 
 
 func _test_element_blends() -> void:

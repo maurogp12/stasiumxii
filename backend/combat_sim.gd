@@ -331,6 +331,7 @@ func submit(intent: Dictionary) -> Dictionary:
 			var cast_result := _submit_cast(normalized, actor)
 			if bool(cast_result.get("ok", false)):
 				_note_attacks(actor)
+				actor["cast_this_turn"] = true
 			return cast_result
 		"place", "reposition", "ready", "confirm":
 			return _reject(normalized, "wrong_phase", "REJECT — deploy is over.")
@@ -2009,12 +2010,17 @@ func _drop_unattended_marks(actor: Dictionary) -> void:
 	# Mauro 5 Oct 2026 ("Why ironjaw even if he does not attack he keeps his
 	# marks?" ... "all of them"): a turn with no attack on an enemy also drops
 	# the fighter's own stacks: Impact, Umbral, Aegis, Pulse.
-	if attacked.is_empty():
-		for field in SELF_STACKS:
-			if int(actor.get(field, 0)) > 0:
-				_clear_resource(actor, field)
-				_emit_expire(field, actor["pos"], me, me)
+	# Mauro 6 Oct 2026: Mender's Pulse stays while she keeps using her spells
+	# ("if he keep healing team mates he does not need to attack an enemy");
+	# only a turn with no spell at all drops it.
+	var cast_any := bool(actor.get("cast_this_turn", false))
+	for field in SELF_STACKS:
+		var kept := cast_any if field == "pulse" else not attacked.is_empty()
+		if not kept and int(actor.get(field, 0)) > 0:
+			_clear_resource(actor, field)
+			_emit_expire(field, actor["pos"], me, me)
 	actor["attacked_this_turn"] = []
+	actor["cast_this_turn"] = false
 
 
 ## An Earth hero's push spell (Shoulder, Aegis Break).
