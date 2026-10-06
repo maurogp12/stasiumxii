@@ -432,6 +432,7 @@ func _test_ambush_hit() -> void:
 		"kestrel_facing": "W",
 		"rolls": [1],
 		"blockers": [Vector2i(5, 2)],
+		"tiles": [{"pos": Vector2i(3, 2), "terrain": "void", "elevation": 0}],
 	})
 	eq(_sim.chebyshev(Vector2i(2, 4), Vector2i(2, 2)), 2, "blocked-back plant is Chebyshev 2 from Gloam")
 	eq(_sim.is_cardinal_exact(Vector2i(2, 2), Vector2i(4, 2), 2), true, "blocked-back plant is Manhattan 2 cardinal from the prey")

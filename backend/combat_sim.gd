@@ -6326,7 +6326,7 @@ func _resolve_ambush(intent: Dictionary, actor: Dictionary, target: Dictionary, 
 	target["hp"] = maxi(0, int(target["hp"]) - damage)
 	# Teleport and the hit are done. The attack ends Invisible after that.
 	_break_invisible_on_attack(actor)
-	_last_coach = "HIT Ambush %d at %s." % [damage, _cell_text(cell)]
+	_last_coach = "HIT Ambush %d at %s%s." % [damage, _cell_text(cell), " (back blocked, front landing)" if bool(landing.get("front", false)) else ""]
 	_last_events.append({
 		"type": "hit",
 		"seat": actor["seat"],
@@ -6345,6 +6345,7 @@ func _resolve_ambush(intent: Dictionary, actor: Dictionary, target: Dictionary, 
 		"struck_from": struck_from,
 		"teleported": true,
 		"backstab": backstab,
+		"front_landing": bool(landing.get("front", false)),
 		"facing": str(actor.get("facing", "")),
 		"facing_mult": facing_mult,
 		"damage": damage,
@@ -6365,7 +6366,8 @@ func _resolve_ambush(intent: Dictionary, actor: Dictionary, target: Dictionary, 
 ## Locked destination is one step past the enemy on the origin axis (the back
 ## tile). Facing-rear is not the landing: when the foe faces away, that tile is
 ## often the cell Gloam already occupies, so the hit reads as a body slash with
-## no teleport. Occupied / OOB / unwalkable back tiles reject. Backstab follows
+## no teleport. An occupied / OOB / unwalkable back tile falls back to the
+## front tile (one step before the enemy); only both blocked rejects. Backstab follows
 ## the rear cone from the landing tile, not from the old body.
 func _ambush_landing(actor: Dictionary, target: Dictionary) -> Dictionary:
 	var pick := _ambush_selected(actor, target, {})
@@ -6381,12 +6383,19 @@ func _ambush_landing_from(origin: Vector2i, actor: Dictionary, target: Dictionar
 	if step == Vector2i.ZERO:
 		return {"ok": false}
 	var back: Vector2i = target["pos"] + step
+	var cell := back
+	var fallback := false
 	if not _ambush_cell_ok(back, actor["pos"]):
-		return {"ok": false}
+		# Mauro 6 Oct 2026: a blocked back tile does not cancel Ambush. Gloam
+		# lands on the front tile (enemy side facing the origin) instead.
+		cell = target["pos"] - step
+		fallback = true
+		if not _ambush_cell_ok(cell, actor["pos"]):
+			return {"ok": false}
 	var facing := str(target.get("facing", ""))
-	var facing_mult := _facing_multiplier(back, target["pos"], facing)
+	var facing_mult := _facing_multiplier(cell, target["pos"], facing)
 	var backstab := facing_mult > FRONT_SIDE_FACING + 0.001
-	return {"ok": true, "cell": back, "backstab": backstab}
+	return {"ok": true, "cell": cell, "backstab": backstab, "front": fallback}
 
 
 ## Unit step from origin toward target when they share a row or column. Zero otherwise.
