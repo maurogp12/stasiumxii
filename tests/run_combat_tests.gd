@@ -140,6 +140,7 @@ func _run() -> void:
 	_test_enemy_card_tap_and_hold()
 	_test_kestrel_aims_better_far()
 	_test_bastion_team_ward_and_thorns()
+	_test_spark_counters_mender()
 
 
 func _test_reset_and_turn_order() -> void:
@@ -7722,6 +7723,23 @@ func _test_bastion_team_ward_and_thorns() -> void:
 	eq(int(_unit(0)["hp"]), kes_hp, "Thorns does not reach a ranged attacker")
 
 
+
+## Mauro 6 Oct 2026: Spark is the Mender counter — a Sparked healer heals 40%
+## less, and Cleanse cannot remove Sparked.
+func _test_spark_counters_mender() -> void:
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1, 1, 1], "classes": ["mender", "kestrel"], "positions": [Vector2i(1, 1), Vector2i(6, 6)], "mender_hp": 20})
+	var mender := _live_unit(0)
+	var def := SpellKits.spell_for(mender, SpellKits.MEND)
+	var normal: int = _sim._support_heal_amount(mender, mender, def)
+	mender["sparked"] = true
+	var sparked: int = _sim._support_heal_amount(mender, mender, def)
+	eq(sparked, roundi(float(normal) * 0.6), "a Sparked Mender's heals are 40% weaker")
+	mender["pulse"] = 2
+	var cleanse: Dictionary = _sim.submit({"type": "cast", "spell": "cleanse", "to": Vector2i(1, 1), "seat": 0})
+	eq(bool(cleanse.get("ok", false)), true, "Cleanse still resolves")
+	eq(bool(mender.get("sparked", false)), true, "Cleanse cannot remove Sparked")
+
+
 func _walkable_zone_count(seat: int) -> int:
 	var n := 0
 	for cell: Vector2i in _sim.deploy_zone_cells(seat):
@@ -8059,10 +8077,14 @@ func _test_element_blends() -> void:
 	_live_unit(1)["residue"] = "fire"
 	_live_unit(1)["residue_seat"] = 0
 	_live_unit(1)["residue_turns"] = 2
+	# Mauro 6 Oct 2026: Air + Fire = Flare (reveals Invisible nearby, + Burn).
+	_live_unit(1)["invisible"] = true
+	_live_unit(1)["invisible_turns"] = 1
 	var air_fire: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(6, 5), "seat": 0})
-	eq(_first_event_where(air_fire.get("events", []), "blend").is_empty(), true, "Air on own Fire makes no Blend")
-	eq(str(_unit(1).get("residue", "")), "air", "the Air hit leaves its own Residue instead")
-	eq(_sim.blend_of("air", "fire"), "", "no Blend for Air + Fire")
+	eq(str(_first_event_where(air_fire.get("events", []), "blend").get("blend", "")), "flare", "Air on own Fire = Flare")
+	eq(_sim.blend_of("air", "fire"), "flare", "Air + Fire is Flare")
+	eq(bool(_unit(1).get("invisible", true)), false, "Flare reveals an Invisible enemy")
+	eq(int(_unit(1).get("burn_stacks", 0)) >= 1, true, "Flare adds a Burn stack")
 
 	# Drift-Pin: slide 1 away. Mauro 6 Oct 2026: only a hit (wall / edge / body) Pins.
 	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1, 1], "classes": ["ironjaw", "kestrel"], "positions": [Vector2i(5, 5), Vector2i(6, 5)]})

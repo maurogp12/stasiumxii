@@ -975,11 +975,10 @@ func _test_triage_on_heals() -> void:
 		"mender_pulse": 4,
 		"rolls": [1],
 	})
+	# Mauro 6 Oct 2026: Heartstop no longer hits enemies (Mender full support).
 	var enemy: Dictionary = _sim.submit({"type": "cast", "spell": "heartstop", "to": Vector2i(3, 1), "seat": 0})
-	var enemy_hit := _event_of(enemy.get("events", []), "hit")
-	eq(enemy_hit.has("triage"), false, "enemy Heartstop does not stamp triage")
-	eq(int(enemy_hit.get("damage", -1)), 22, "enemy Heartstop damage is 22")
-	eq(int(_sim.snapshot()["units"][1]["hp"]), 8, "enemy Heartstop still leaves 8 HP")
+	eq(bool(enemy.get("ok", false)), false, "Heartstop refuses an enemy")
+	eq(int(_sim.snapshot()["units"][1]["hp"]), 30, "a refused enemy Heartstop deals nothing")
 
 	_host.reset_match({
 		"seed": 1,
@@ -1162,53 +1161,7 @@ func _test_fade_and_heartstop_linger() -> void:
 	eq(int(_event_of(_guest.snapshot().get("last_events", []), "hit").get("hit_immunity", -1)), 1, "guest Heartstop hit keeps hit_immunity")
 	eq(int(_unit_in(_guest.snapshot(), 0).get("hit_immunity", -1)), 1, "guest snapshot keeps hit_immunity")
 
-	var enemy_hot: Dictionary = _hot_submit_after({
-		"seed": 1,
-		"flat_board": true,
-		"skip_deploy": true,
-		"classes": ["mender", "kestrel"],
-		"positions": [Vector2i(1, 1), Vector2i(3, 1)],
-		"kestrel_facing": "W",
-		"mender_pulse": 4,
-		"rolls": [1],
-	}, {"type": "cast", "spell": "heartstop", "to": Vector2i(3, 1), "seat": 0})
-	enemy_hot["session"].free()
-	var enemy_hit := _event_of(enemy_hot["result"].get("events", []), "hit")
-	eq(bool(enemy_hit.get("skip_next_mp", false)), true, "hot-seat enemy Heartstop sets skip_next_mp")
-	eq(int(_sim.snapshot()["units"][1]["hp"]), 53, "enemy Heartstop damage is 22")
-	eq(bool(_unit_in(_sim.snapshot(), 1).get("skip_next_mp", false)), true, "snapshot keeps skip_next_mp")
-	eq(_unit_in(_sim.snapshot(), 1).get("pos"), Vector2i(3, 1), "skip_next_mp snapshot keeps the cell")
-	var skipped: Dictionary = _sim.submit({"type": "end_turn", "seat": 0})
-	var skip_end := _expire(skipped.get("events", []), "skip_next_mp")
-	eq(skip_end.get("pos"), Vector2i(3, 1), "skip_next_mp expire names the cell")
-	eq(int(skip_end.get("target_seat", -1)), 1, "skip_next_mp expire names the seat")
-	eq(bool(_unit_in(_sim.snapshot(), 1).get("skip_next_mp", true)), false, "skip_next_mp clears when the turn starts")
-	eq(int(_sim.snapshot()["units"][1]["mp"]), 0, "skipped refill still sets MP to 0")
-	eq(int(_sim.snapshot()["units"][1]["ap"]), 6, "skipped refill still refills AP")
-
-	_host.reset_match({
-		"seed": 1,
-		"flat_board": true,
-		"skip_deploy": true,
-		"classes": ["mender", "kestrel"],
-		"positions": [Vector2i(1, 1), Vector2i(3, 1)],
-		"kestrel_facing": "W",
-		"mender_pulse": 4,
-		"rolls": [1],
-		"fixture": true,
-	})
-	var host_enemy: Dictionary = _host.submit_for_seat({"type": "cast", "spell": "heartstop", "to": Vector2i(3, 1)}, 0)
-	_guest.apply_packed_state(_host.pack_result(host_enemy, 1))
-	eq(bool(_event_of(_guest.snapshot().get("last_events", []), "hit").get("skip_next_mp", false)), true, "guest hit keeps skip_next_mp")
-	eq(bool(_unit_in(_guest.snapshot(), 1).get("skip_next_mp", false)), true, "guest snapshot keeps skip_next_mp")
-	var host_skip: Dictionary = _host.submit_for_seat({"type": "end_turn"}, 0)
-	var skip_packed: Dictionary = _host.pack_result(host_skip, 1)
-	var skip_wire: Variant = _IntentCodec.decode(skip_packed)
-	eq(_expire((skip_wire as Dictionary).get("events", []), "skip_next_mp").get("pos"), Vector2i(3, 1), "packed skip_next_mp expire survives encode")
-	_guest.apply_packed_state(skip_packed)
-	eq(_expire(_guest.snapshot().get("last_events", []), "skip_next_mp").get("pos"), Vector2i(3, 1), "guest skip_next_mp expire matches the host")
-	eq(bool(_unit_in(_guest.snapshot(), 1).get("skip_next_mp", true)), false, "guest snapshot clears skip_next_mp")
-	eq(int(_guest.snapshot()["units"][1]["mp"]), 0, "guest skipped MP matches the host")
+	# Enemy Heartstop (and its skip_next_mp) is gone since Mauro 6 Oct 2026.
 
 	_sim.reset_match({
 		"seed": 1,

@@ -205,10 +205,9 @@ const SPELLS := {
 		"rolls": true,
 		"element": "water",
 		"base_heal": 10,
-		# Mauro 5 Oct 2026: "lets try a and b for mender" — option B: Pulse Tap
-		# can also hit an enemy (2 AP, 10 damage, still spends 1 Pulse).
-		"base_damage": 10,
-		"target": "any",
+		# Mauro 6 Oct 2026: Mender is full support (2v2 / 3v3) — the 5 Oct
+		# option B enemy hit (10 damage) is gone.
+		"target": "ally",
 		"engine_on_connect": "spend_pulse",
 		"requires_pulse": 1,
 		"spend_pulse": 1,
@@ -288,15 +287,14 @@ const SPELLS := {
 		"rolls": true,
 		"element": "water",
 		"base_heal": 32,
-		# Mauro 30 Sep 2026 balance: enemy damage 10 → 18 → 24 → 20; Pulse cost 4 → 2.
-		"base_damage": 22,  # Mauro 1 Oct 2026 balance (was 20)
-		"target": "any",
+		# Mauro 6 Oct 2026: Mender is full support — Heartstop no longer hits
+		# enemies (was 22 damage + no walking next turn).
+		"target": "ally",
 		"engine_on_connect": "spend_pulse",
 		"requires_pulse": 2,
 		"spend_pulse": 2,
 		"triage": true,
 		"ally_immunity_hits": 1,
-		"enemy_skip_mp": true,
 	},
 	CUT: {
 		"id": CUT,

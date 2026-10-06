@@ -213,18 +213,11 @@ func _test_release_timing() -> void:
 	near(MOTION.damage_resolve_sec(SpellKits.MARK_SHOT), MOTION.MARK_WINDUP_SEC + MOTION.MARK_BOLT_SEC, "Mark Shot keeps its bolt timing")
 	near(MOTION.damage_resolve_sec(SpellKits.CUT), StripLibrary.release_sec("gloam", "attack"), "Cut (2 AP since #272) still waits for the painted slash")
 	eq(MOTION.caster_motion(SpellKits.CUT), "attack", "Cut is still a melee attack trigger")
-	# Mender option B (#272): Pulse Tap can hit an enemy, Heartstop 4 AP. He has
-	# no melee spell, so a cast that hurts a foe swings the painted lantern attack.
-	near(MOTION.damage_resolve_sec(SpellKits.HEARTSTOP), StripLibrary.release_sec("mender", "attack"), "the Heartstop flinch waits for the lantern swing")
-	near(MOTION.damage_resolve_sec(SpellKits.PULSE_TAP), StripLibrary.release_sec("mender", "attack"), "the Pulse Tap flinch waits for the lantern swing")
-	var strike_tap := MOTION.chrome_plans([{"type": "hit", "seat": 0, "target_seat": 1, "spell": SpellKits.PULSE_TAP, "damage": 10}])
-	eq(str((strike_tap.get(0, {}) as Dictionary).get("strip", "")), "attack", "Pulse Tap on a foe plays the painted attack")
+	# Mauro 6 Oct 2026: Mender is full support, Pulse Tap / Heartstop heal only.
 	var heal_tap := MOTION.chrome_plans([{"type": "hit", "seat": 0, "target_seat": 2, "spell": SpellKits.PULSE_TAP, "damage": 0, "healed": 10}])
 	eq(str((heal_tap.get(0, {}) as Dictionary).get("strip", "cast")), "cast", "Pulse Tap on an ally keeps the skill")
 	var mend := MOTION.chrome_plans([{"type": "hit", "seat": 0, "target_seat": 2, "spell": SpellKits.MEND, "damage": 0, "healed": 12}])
 	eq(bool((mend.get(0, {}) as Dictionary).get("cast", false)) and str((mend.get(0, {}) as Dictionary).get("strip", "cast")) == "cast", true, "Mend plays the skill")
-	var heart_miss := MOTION.chrome_plans([{"type": "miss", "seat": 0, "target_seat": 1, "spell": SpellKits.HEARTSTOP, "damage": 0}])
-	eq(str((heart_miss.get(0, {}) as Dictionary).get("strip", "")), "attack", "a Heartstop miss still swings the attack")
 
 
 func _unit(class_id: String, facing: String, alive: bool = true) -> Dictionary:

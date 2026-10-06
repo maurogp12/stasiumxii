@@ -228,18 +228,7 @@ func _test_flash_kinds() -> void:
 	})
 	var ally: Dictionary = _sim.submit({"type": "cast", "spell": "heartstop", "to": Vector2i(1, 1), "seat": 0})
 	eq(Pawn.resolve_flash_kind(_first_hit(ally.get("events", []))), "support", "ally Heartstop heals")
-	_sim.reset_match({
-		"seed": 1,
-		"flat_board": true,
-		"skip_deploy": true,
-		"classes": ["mender", "kestrel"],
-		"positions": [Vector2i(1, 1), Vector2i(3, 1)],
-		"kestrel_facing": "W",
-		"mender_pulse": 4,
-		"rolls": [1],
-	})
-	var foe: Dictionary = _sim.submit({"type": "cast", "spell": "heartstop", "to": Vector2i(3, 1), "seat": 0})
-	eq(Pawn.resolve_flash_kind(_first_hit(foe.get("events", []))), "damage", "enemy Heartstop stays damage")
+	# Enemy Heartstop is gone (Mauro 6 Oct 2026, Mender full support).
 
 	eq(Pawn.resolve_flash_kind({"type": "hit", "spell": "mark_shot", "damage": -4}), "support", "negative damage is a heal flash")
 	eq(Pawn.resolve_flash_kind({"type": "hit", "spell": "strike", "damage": 16, "shield": 20}), "damage", "a shield field on real damage stays orange")

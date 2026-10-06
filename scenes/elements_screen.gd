@@ -34,11 +34,22 @@ const ELEMENT_TEXT := {
 	"water": "Flow. Damage takes 1 MP from the enemy at its next turn start. Your heals heal 4 more.",
 }
 
-## The five Blends: [first, second, name, what it does, good for]. Air + Fire
-## has none (Mauro 6 Oct 2026: Sleet removed, Spark moved to Air + Water).
+## The six Blends: [first, second, name, what it does, good for]. Mauro 6 Oct
+## 2026: Sleet removed, Spark moved to Air + Water, Flare fills Air + Fire.
+## Mauro 6 Oct 2026: "the whole point of element is to make the counter have a
+## possibility to win". One line per counter matchup of the approved wheel.
+const COUNTER_TIPS := [
+	["Ironjaw vs Kestrel", "Water hits take 1 MP from her and Mire (Earth + Water) taxes her first step: catch her before she kites away. Air gives you +1 MP after a melee hit."],
+	["Kestrel vs Gloam", "Flare (Air + Fire) reveals him when he dives Invisible; Drift-Pin (Air + Earth) throws him back into a wall."],
+	["Gloam vs Bastion", "Fire: Burn hurts him through his shield and does not trigger Thorns. Strike when his shield is down."],
+	["Bastion vs Ironjaw", "Water slows his approach; Mire (Earth + Water) on Bash or Hold Line keeps him from leaving; Earth keeps you from being pushed."],
+	["Team vs Mender", "Spark (Air + Water) the Mender: her heals get 40% weaker and Cleanse cannot remove it."],
+]
+
 const BLEND_ROWS := [
 	["air", "earth", "Drift-Pin", "Slides the enemy 1 tile away from you. If a wall, the edge or a body is in the way it hits for 8 instead and is Pinned: it cannot walk on its next turn (Advance and Ambush still work). Never twice in a row on the same enemy.", "Ranged fighters keeping melee away; slamming enemies into walls."],
-	["air", "water", "Spark", "Electricity: 10 damage that ignores resist (a shield soaks it first). Until the end of its next turn the enemy gets 40% less healing.", "Finishing low enemies, cracking Mender's Ward, shutting down healing."],
+	["air", "water", "Spark", "Electricity: 10 damage that ignores resist (a shield soaks it first). Until the end of its next turn the enemy gets 40% less healing, and if it is a healer its own heals are 40% weaker. Cleanse cannot remove it.", "Beating Mender: Spark the healer and the team she keeps alive."],
+	["air", "fire", "Flare", "A burst of light: every Invisible enemy within 2 tiles of the target is revealed, and the target gets a Burn stack (4 per stack, up to 3).", "Kestrel against a diving Gloam; burning through Bastion's shield (Burn ignores shields and Thorns)."],
 	["earth", "fire", "Magma", "The tile the enemy ends its next turn on burns: 4 damage to anyone who ends a turn there until your next turn.", "Enemies that are Stunned, Pinned or stuck in a corridor."],
 	["earth", "water", "Mire", "On its next turn, the enemy's first step off its tile costs +1 MP. Being pushed is free. Stacks with Bastion's Hold Line (+2 MP to leave).", "Melee fighters holding an enemy next to them."],
 	["fire", "water", "Steam", "The enemy's tile blocks line of sight until your next turn. The enemy standing there can still be hit; once it moves, nobody can shoot through that tile.", "Blocking enemy archers and casters, covering a retreat."],
@@ -317,12 +328,15 @@ func _refresh() -> void:
 	_section("Guide: the 4 elements")
 	for el in SpellKits.ELEMENTS:
 		_text("%s — %s" % [el.capitalize(), ELEMENT_TEXT[el]], TINT[el])
-	_section("Guide: the 5 Blends (Air + Fire has none)")
+	_section("Guide: the 6 Blends")
 	for blend in BLEND_ROWS:
 		var head := _label("%s + %s = %s" % [str(blend[0]).capitalize(), str(blend[1]).capitalize(), str(blend[2])], 16, TINT[str(blend[0])].lerp(TINT[str(blend[1])], 0.5))
 		_detail.add_child(head)
 		_text(str(blend[3]))
 		_text("Good for: %s" % str(blend[4]), GOLD_DIM)
+	_section("Counter tips: elements that beat your counter")
+	for tip in COUNTER_TIPS:
+		_text("%s — %s" % [str(tip[0]), str(tip[1])], GREEN)
 
 
 func _blend_row(a: String, b: String) -> Array:

@@ -125,15 +125,14 @@ static func simple_lines(spell_id: String, preview: Dictionary = {}) -> PackedSt
 		SpellKits.MEND:
 			out.append("Heal a teammate or yourself for %d HP. Very hurt friends (under 40%% HP) get 25%% more. +1 Pulse." % heal)
 		SpellKits.PULSE_TAP:
-			out.append("Tap a teammate to heal %d HP, or tap an enemy to hit them for %d damage. Uses 1 Pulse." % [heal, dmg])
+			out.append("Tap a teammate (or yourself) to heal %d HP. Uses 1 Pulse." % heal)
 		SpellKits.WARD:
 			out.append("Give every teammate within %d tiles, you too, a shield of +%d. Cast it again to stack it up to %d. Hits break the shield before they hurt you; it stays until it breaks. Uses %d Aegis." % [int(def.get("ward_radius", 3)), int(def.get("shield", 20)), int(def.get("shield_cap", 60)), int(def.get("spend_aegis", 3))])
 			out.append("Thorns: while Bastion has a shield, enemies who hit him from right next to him take %d damage back." % 6)
 		SpellKits.CLEANSE:
 			out.append("Take away 1 bad effect from a teammate (Stun first). 3 bad effects? Use it 3 times. +1 Pulse.")
 		SpellKits.HEARTSTOP:
-			out.append("On a teammate: heal %d HP and the next hit on them does nothing." % heal)
-			out.append("On an enemy: %d damage and they cannot walk on their next turn. Uses 2 Pulse." % dmg)
+			out.append("Heal a teammate (or yourself) %d HP, and the next hit on them does nothing. Uses 2 Pulse." % heal)
 		SpellKits.REKINDLE:
 			out.append("Bring a knocked-out teammate back with %d%% HP. Needs full Pulse (%d) and uses all of it. Once per match." % [int(def.get("revive_pct", 30)), SpellKits.PULSE_CAP])
 		SpellKits.CUT:

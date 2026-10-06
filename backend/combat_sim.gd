@@ -1709,11 +1709,16 @@ const BLENDS := {
 	"earth+fire": "magma",
 	"earth+water": "mire",
 	"fire+water": "steam",
+	# Mauro 6 Oct 2026 ("just do the best option"): Air + Fire fills the last
+	# pair. Flare reveals Invisible enemies near the target and adds a Burn
+	# stack — the ranged answer to a diving Gloam.
+	"air+fire": "flare",
 }
 const BLEND_NAMES := {
 	"drift_pin": "Drift-Pin", "spark": "Spark",
-	"magma": "Magma", "mire": "Mire", "steam": "Steam",
+	"magma": "Magma", "mire": "Mire", "steam": "Steam", "flare": "Flare",
 }
+const FLARE_REVEAL_RADIUS := 2
 const SPARK_CHIP := 10  # Mauro 6 Oct 2026 (was 4)
 const DRIFT_COLLISION_HP := 8
 const MAGMA_TICK_HP := 4
@@ -1772,6 +1777,8 @@ func _try_blend(actor: Dictionary, target: Dictionary, el: String) -> String:
 		"mire":
 			target["mire_cell"] = target["pos"]
 			note = "leaving this tile costs +1 MP on their next turn"
+		"flare":
+			note = _blend_flare(actor, target, event)
 		"steam":
 			_add_element_tile("steam", target["pos"], int(actor["seat"]))
 			note = "this tile blocks line of sight until %s's next turn" % str(actor.get("name", "the caster"))
@@ -1857,6 +1864,31 @@ func _blend_spark(_actor: Dictionary, target: Dictionary, event: Dictionary) -> 
 	target["sparked"] = true
 	event["heal_cut"] = SPARK_HEAL_CUT
 	return "%d damage (ignores resist), -%d%% healing" % [chip, roundi(SPARK_HEAL_CUT * 100.0)]
+
+
+## Flare (Air + Fire): every Invisible enemy of the caster within
+## FLARE_REVEAL_RADIUS of the target is revealed, and the target gains a Burn
+## stack (same Burn as Fire / lava: 4 per stack, cap 3).
+func _blend_flare(actor: Dictionary, target: Dictionary, event: Dictionary) -> String:
+	var revealed: Array = []
+	for unit in _units:
+		if not bool(unit.get("alive", false)) or _allied(unit, actor):
+			continue
+		if not bool(unit.get("invisible", false)):
+			continue
+		if chebyshev(unit["pos"], target["pos"]) > FLARE_REVEAL_RADIUS:
+			continue
+		unit["invisible"] = false
+		unit["invisible_turns"] = 0
+		_emit_expire("invisible", unit["pos"], int(unit["seat"]), int(unit["seat"]))
+		revealed.append(int(unit["seat"]))
+	var burn := _apply_burn(target)
+	event["revealed"] = revealed
+	event["burn_stacks"] = int(target.get("burn_stacks", 0))
+	var note := "Burn %d" % int(burn.get("stacks", target.get("burn_stacks", 0)))
+	if not revealed.is_empty():
+		note += "; Invisible enemies nearby are revealed"
+	return note
 
 
 func _add_element_tile(kind: String, cell: Vector2i, owner_seat: int) -> void:
@@ -5578,6 +5610,10 @@ func _support_heal_amount(actor: Dictionary, target: Dictionary, def: Dictionary
 		passive = SpellKits.TRIAGE_MULT
 	var flex := _flex_bonus(actor, str(def.get("element", "")).to_lower(), false)
 	var raw: float = float(base) * CRIT_MULT * passive * (1.0 + (MASTERY + float(actor.get("mastery", 0))) / 100.0) * (1.0 + flex / 100.0) * facing
+	# Mauro 6 Oct 2026: Spark is the Mender counter — a Sparked healer's heals
+	# are 40% weaker too (on top of the cut on a Sparked target).
+	if bool(actor.get("sparked", false)):
+		raw *= 1.0 - SPARK_HEAL_CUT
 	return roundi(raw)
 
 
@@ -5785,7 +5821,9 @@ func _resolve_support(intent: Dictionary, actor: Dictionary, target: Dictionary,
 
 const CLEANSE_ORDER := ["slow", "breathless", "burn", "frozen", "electrocuted"]
 ## Debuffs Cleanse can take after Stun and the map stacks, in this order.
-const CLEANSE_OTHER := ["sparked", "pinned", "mire", "skip_next_mp", "water_slow", "magma", "residue"]
+## Sparked is not here: Cleanse cannot remove it (Mauro 6 Oct 2026, Spark is
+## the Mender counter).
+const CLEANSE_OTHER := ["pinned", "mire", "skip_next_mp", "water_slow", "magma", "residue"]
 const _FAMILY_KEYS := {
 	"slow": ["slow_stacks", "slow_remaining"],
 	"breathless": ["breathless_stacks", "breathless_remaining"],
