@@ -1080,7 +1080,8 @@ func _draw_flat_faces(ci: Node2D, lifted: PackedVector2Array, steps: int, side: 
 
 ## Northgate crag chunks (design B, data/world/crosshaven/build_crosshaven_crags.py):
 ## the soft terraces are real zone heights and draw with the snow face strips.
-## The only cliff cells left in those chunks are frozen ponds at height 0.
+## Their rims are cliff cells at height 2 (rock, not walkable). Cliff cells at
+## height 0 are frozen ponds.
 ## Cells past this chunk's edge (the plane margin) ask the chunk that owns them,
 ## so a neighbour's ground draws a crag cell the same way the crag chunk does.
 static func _crag_id(zone_id: String) -> bool:
@@ -1088,7 +1089,7 @@ static func _crag_id(zone_id: String) -> bool:
 
 
 func _crag_pond(cell: Vector2i) -> bool:
-	return Art.terrain_seen(zone, cell) == "cliff" and _crag_id(_zone_id_at(cell))
+	return Art.terrain_seen(zone, cell) == "cliff" and Art.height_seen(zone, cell) == 0 and _crag_id(_zone_id_at(cell))
 
 
 ## Trodden snow path: the crag paths are dirt_road in the data, but under the

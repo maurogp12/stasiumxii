@@ -19,11 +19,12 @@ Rewritten:
     read as long diagonal ridges with a snow lip over a stone face. Each
     watchtower stands on its own terrace. Small bumps and notches are merged
     away, so the faces run as continuous walls.
-  - ramps: height 1 cells where the path climbs a terrace and on each terrace
-    edge, so every cell is reachable with a climb of at most 1 per step (and
-    back down), even though the shipped open-world limit is unlimited.
+  - terrace rims: the outer cells of a terrace are rock ("cliff" at height 2,
+    not walkable), so no two walkable neighbours differ by more than 1.
+  - ramps: a rim cell opened at height 1 on each terrace, so every cell is
+    reachable with a climb of at most 1 per step, and back down.
   - frozen ponds: terrain "cliff" at height 0 (not walkable, not water). The
-    ground draws a crag-chunk cliff cell as ice.
+    ground draws a crag-chunk cliff cell at height 0 as ice.
   - a trodden path (dirt_road) between the exits, past the POI and the pond.
     The ground draws crag dirt_road as packed snow with footprints.
   - dressing: pine clusters (tree props, drawn as snow pines) along the
@@ -293,7 +294,32 @@ def build(zone_id: str) -> dict:
         if c not in ch.locked and ch.terrain[c] == "golden_plains" and c not in ch.blocked:
             ch.terrain[c] = "dirt_road"
 
-    # 6. Ramps until every cell is reachable with a climb of 1, and back.
+    # 6. Terrace rims: the outer cells of each terrace are rock (terrain
+    # "cliff" at height 2, not walkable), so no walkable step is ever more
+    # than 1. A tiny top with no room to stand is all rock.
+    rim = {c for c in mask if any(ch.land(n) and ch.height[n] < TERRACE for n in ch.nbrs(c))}
+    top = mask - rim
+    seen: set = set()
+    for c in sorted(top):
+        if c in seen:
+            continue
+        region = []
+        q = deque([c])
+        seen.add(c)
+        while q:
+            cur = q.popleft()
+            region.append(cur)
+            for n in ch.nbrs(cur):
+                if n in top and n not in seen:
+                    seen.add(n)
+                    q.append(n)
+        if len(region) < 4 and not any(r in tower_top for r in region):
+            rim |= set(region)
+    for c in rim:
+        ch.terrain[c] = "cliff"
+
+    # 7. Ramps: a rim cell at height 1 between the ground and the top, until
+    # every cell is reachable with a climb of 1, and back.
     ramps: set = set()
     _ramp_up(ch, ramps, anchors[0])
 
@@ -305,7 +331,7 @@ def build(zone_id: str) -> dict:
             tiles.append({"x": x, "y": y, "terrain": t, "walkable": t not in ("water", "cliff"), "height": ch.height[c]})
     doc["tiles"] = tiles
 
-    # 7. Dressing.
+    # 8. Dressing.
     reserved = set(ch.blocked) | set(anchors)
     for e in doc["exits"]:
         for link in e["links"]:
@@ -325,7 +351,7 @@ def build(zone_id: str) -> dict:
         if min(x, y, ch.w - 1 - x, ch.h - 1 - y) <= 1:
             return False
         # One clear cell beside the path and the ponds.
-        return not any(ch.terrain[n] in ("dirt_road", "cliff") for n in ch.nbrs(c))
+        return not any(ch.terrain[n] == "dirt_road" or n in pond_cells for n in ch.nbrs(c))
 
     blockers: set = set()
     trees = []
@@ -541,28 +567,34 @@ def _all_reach(ch: Chunk, blockers: set, start) -> bool:
 
 
 def _ramp_up(ch: Chunk, ramps: set, start) -> None:
-    """Add a ramp (height 1) on each terrace until every cell is reachable and can get back."""
+    """Open a rim cell as a ramp (walkable, height 1) on each terrace top until
+    every passable cell is reachable from `start` and can walk back."""
     for _ in range(200):
         there = _reach(ch, set(), start, False)
         back = _reach(ch, set(), start, True)
-        lost = [c for c in ch.cells() if _passable(ch, c, set()) and (c not in there or c not in back)]
+        lost = {c for c in ch.cells() if _passable(ch, c, set()) and (c not in there or c not in back)}
         if not lost:
             return
-        # A raised cell beside the reached ground, on the longest open run of
-        # that edge, preferring the south and east lips that face the camera.
+        # A rim cell with reached ground on one side and the lost top straight
+        # across, preferring the south and east lips that face the camera.
         best = None
-        for c in lost:
-            if ch.height[c] != TERRACE or c in ch.locked:
+        for c in ch.cells():
+            if ch.terrain[c] != "cliff" or ch.height[c] != TERRACE or c in ch.locked:
                 continue
             for n in ch.nbrs(c):
+                inner = (2 * c[0] - n[0], 2 * c[1] - n[1])
+                if inner not in lost or ch.height[inner] != TERRACE:
+                    continue
                 if n in there and n in back and ch.height[n] == 0 and _passable(ch, n, set()):
                     score = hash01(c[0], c[1], 29) + (0.5 if n[0] > c[0] or n[1] > c[1] else 0.0)
                     if best is None or score > best[0]:
                         best = (score, c)
         if best is None:
-            raise SystemExit(f"{ch.id}: cannot ramp {lost[:4]}")
-        ch.height[best[1]] = RAMP
-        ramps.add(best[1])
+            raise SystemExit(f"{ch.id}: cannot ramp {sorted(lost)[:4]}")
+        c = best[1]
+        ch.terrain[c] = "golden_plains"
+        ch.height[c] = RAMP
+        ramps.add(c)
     raise SystemExit(f"{ch.id}: ramps did not converge")
 
 
@@ -570,6 +602,12 @@ def _verify(ch: Chunk, doc: dict, blockers: set) -> None:
     spawn = (doc["spawn"]["x"], doc["spawn"]["y"])
     if not _all_reach(ch, blockers, spawn):
         raise SystemExit(f"{ch.id}: some passable cell is cut off with a climb of {CLIMB}")
+    for c in ch.cells():
+        if not ch.walkable(c) or c in ch.locked:
+            continue
+        for n in ch.nbrs(c):
+            if ch.walkable(n) and abs(ch.height[c] - ch.height[n]) > CLIMB:
+                raise SystemExit(f"{ch.id}: walkable step over {CLIMB} at {c} -> {n}")
     for c in ch.locked:
         old = ch.old[c]
         if ch.terrain[c] != old["terrain"] or ch.height[c] != int(old["height"]):
@@ -590,7 +628,9 @@ def ascii_map(doc: dict) -> str:
     g = [[" "] * w for _ in range(h)]
     for t in doc["tiles"]:
         ch = {"water": "~", "cliff": "o", "dirt_road": "="}.get(t["terrain"], ".")
-        if t["height"] > 0:
+        if t["terrain"] == "cliff" and t["height"] > 0:
+            ch = "R"
+        elif t["height"] > 0:
             ch = "/" if t["height"] == RAMP else ("#" if ch == "." else ch)
         g[t["y"]][t["x"]] = ch
     for p in doc["props"]:
