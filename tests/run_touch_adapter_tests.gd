@@ -406,6 +406,13 @@ func _test_ability_icons() -> void:
 	_assert_shown_icon(hud, hud._end_turn_button, "end_turn", false)
 	eq(hud._new_match_button.text, "New Match", "New Match stays a text button")
 	eq(hud._new_match_button.get_node_or_null("AbilityIcon"), null, "New Match does not take an ability icon")
+	# Mauro 5 Oct 2026: a way back to the hub from the Koliseo fight.
+	eq(hud._hub_button.text, "Hub", "the Hub button sits with New Match")
+	eq(hud._hub_button.get_parent(), hud._new_match_button.get_parent(), "Hub is in the left column under New Match")
+	var hub_pressed := [false]
+	hud.hub_requested.connect(func() -> void: hub_pressed[0] = true)
+	hud._hub_button.pressed.emit()
+	truthy(hub_pressed[0], "Hub asks to go back to the hub")
 	for dir in ["N", "E", "S", "W"]:
 		var face: Button = hud._face_buttons[dir]
 		eq(face.text, dir, "Face %s stays text" % dir)

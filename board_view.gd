@@ -157,6 +157,7 @@ func _ready() -> void:
 	_hud.face_requested.connect(_on_face_requested)
 	_hud.end_turn_requested.connect(_on_end_turn_button_pressed)
 	_hud.new_match_requested.connect(_on_new_match)
+	_hud.hub_requested.connect(_on_hub_requested)
 	_hud.ready_requested.connect(_on_ready_requested)
 	_hud.aim_dragged.connect(_on_hud_aim_dragged)
 	_hud.zoom_step_requested.connect(_on_zoom_step)
@@ -869,6 +870,20 @@ func _has_turn_change(events: Array) -> bool:
 		if str(event.get("type", "")) in ["turn_start", "end_turn"]:
 			return true
 	return false
+
+
+## Mauro 5 Oct 2026: "put a option to go back to hub ... in koliseo". Leaves the
+## fight (an online match closes its connection, like the class picker's back
+## button) and opens the hub.
+func _on_hub_requested() -> void:
+	var net := _net()
+	if net != null and net.mode_name() == "dedicated":
+		return
+	_stop_flash_tweens()
+	_stop_walk_tween()
+	if net != null and not net.is_hotseat():
+		net.return_to_hotseat()
+	get_tree().change_scene_to_file(MobileHub.MOBILE_HUB)
 
 
 func _on_new_match() -> void:

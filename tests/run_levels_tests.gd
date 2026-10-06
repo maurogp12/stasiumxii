@@ -220,6 +220,17 @@ func _test_screens() -> void:
 	eq(bool(screen.spend("vitality")["ok"]), true, "spend from the screen")
 	eq(HeroProgress.load_saved().record("ironjaw")["spent"], {"vitality": 1}, "screen saves the spend")
 	truthy((screen.find_child("LevelStats", true, false) as Label).text.contains("HP +18"), "level 3 Ironjaw: 10 growth + 8 Vitality")
+	# Mauro 6 Oct 2026: "do a option to reset level characteristics".
+	screen.spend("mastery")
+	var reset_button := screen.find_child("ResetPoints", true, false) as Button
+	truthy(reset_button != null and not reset_button.disabled, "Reset points is on once points are spent")
+	var reset := screen.reset_points()
+	eq([bool(reset["ok"]), int(reset["refunded"])], [true, 2], "reset gives back both points")
+	eq(HeroProgress.load_saved().record("ironjaw")["spent"], {}, "the reset saves")
+	eq((screen.find_child("FreePoints", true, false) as Label).text, "Free points: 4", "all 4 points are free again")
+	truthy((screen.find_child("ResetPoints", true, false) as Button).disabled, "nothing left to reset")
+	eq(str(screen.reset_points()["reason"]), "nothing_spent", "a second reset does nothing")
+	eq(HeroProgress.new().reset_points("nobody")["ok"], false, "unknown class does not reset")
 	screen.free()
 	var gear: GearScreen = load("res://scenes/gear_screen.gd").new()
 	root.add_child(gear)

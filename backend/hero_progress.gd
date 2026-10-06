@@ -163,6 +163,20 @@ func spend(class_id: String, bucket: String) -> Dictionary:
 	return {"ok": true, "reason": ""}
 
 
+## Mauro 6 Oct 2026: "do a option to reset level characteristics". Every
+## point spent on this class comes back as free points. Free of charge.
+## Returns {ok, refunded}.
+func reset_points(class_id: String) -> Dictionary:
+	if not GROWTH.has(class_id):
+		return {"ok": false, "reason": "unknown_class", "refunded": 0}
+	var rec := record(class_id)
+	var refunded := 0
+	for b in rec["spent"]:
+		refunded += int(rec["spent"][b])
+	rec["spent"] = {}
+	return {"ok": refunded > 0, "reason": "" if refunded > 0 else "nothing_spent", "refunded": refunded}
+
+
 ## What a fight receives: {"class_id", "level", "spent", "elements"}.
 func fight_hero(class_id: String) -> Dictionary:
 	if not GROWTH.has(class_id):
