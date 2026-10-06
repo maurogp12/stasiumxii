@@ -241,7 +241,7 @@ func _followup(sim: Node, seat: int, depth: int) -> float:
 
 
 func _thorns_threat(sim: Node, bastion: Dictionary, foe: Dictionary) -> float:
-	if str(bastion.get("class_id", "")) != "bastion" or int(bastion.get("shield", 0)) <= 0:
+	if str(bastion.get("class_id", "")) != "bastion":
 		return 0.0
 	if not str(foe.get("class_id", "")) in ["ironjaw", "gloam"]:
 		return 0.0

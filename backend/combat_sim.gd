@@ -5536,7 +5536,7 @@ func _mitigate_hit(actor: Dictionary, target: Dictionary, damage: int) -> Dictio
 ## hits him from an adjacent tile takes THORNS_REFLECT of that hit back (no
 ## resist): hard hitters like Gloam pay the most. Was a flat 6, then tested as
 ## a % of his max HP; the simulator showed neither made him Gloam's counter.
-const THORNS_REFLECT := 0.3
+const THORNS_REFLECT := 0.25
 ## Balance tool knob: > 0 overrides the reflect share in % (sim_duels reads
 ## THORNS_PCT).
 static var thorns_pct := 0.0
@@ -5550,7 +5550,9 @@ static func thorns_amount(_bastion: Dictionary, damage: int) -> int:
 func _bastion_thorns(actor: Dictionary, target: Dictionary, damage: int, report: Dictionary) -> void:
 	if damage <= 0 or actor.is_empty() or target.is_empty() or actor == target:
 		return
-	if str(target.get("class_id", "")) != SpellKits.CLASS_BASTION or int(target.get("shield", 0)) <= 0:
+	# Mauro 6 Oct 2026 ("bastion should have the ability to take over gloam in
+	# 1vs1"): Thorns no longer needs a shield; it reflects 25% of every melee hit.
+	if str(target.get("class_id", "")) != SpellKits.CLASS_BASTION:
 		return
 	if _allied(actor, target) or not bool(actor.get("alive", false)):
 		return
