@@ -137,6 +137,7 @@ func _run() -> void:
 	_test_snap_wall_bastion_turns()
 	_test_snap_wall_knock_down()
 	_test_every_spell_explained()
+	_test_enemy_card_tap_and_hold()
 
 
 func _test_reset_and_turn_order() -> void:
@@ -7689,6 +7690,29 @@ func _test_every_spell_explained() -> void:
 				eq(str(lines[0]).begins_with("Costs %d AP" % int(SpellKits.SPELLS[spell_id]["ap"])), true, "%s card names its AP cost" % spell_id)
 	var card := SpellTooltip.card_text(_sim.preview_cast(SpellKits.SNAP_WALL, Vector2i(1, 1), Vector2i(2, 1), 1))
 	truthy(card.contains("knock it down"), "the Snap Wall card explains the knock-down")
+
+
+
+## Mauro 6 Oct 2026: tap an enemy portrait / card to cast the armed spell on
+## it (only when legal: range + line of sight); hold it to read its stats.
+func _test_enemy_card_tap_and_hold() -> void:
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "classes": ["kestrel", "ironjaw"], "positions": [Vector2i(2, 2), Vector2i(5, 2)]})
+	var foe: Dictionary = _sim.snapshot()["units"][1]
+	var info := CombatHUD.unit_info_text(foe)
+	truthy(info.contains("Life (HP): %d / %d" % [int(foe["hp"]), int(foe["max_hp"])]), "the stats card shows life")
+	truthy(info.contains("AP (blue dots)") and info.contains("MP (green dots)"), "the stats card shows AP and MP")
+	truthy(info.contains("Elements: Earth"), "the stats card shows the elements in use")
+	truthy(info.contains("Resist") and info.contains("Mastery"), "the stats card shows resist and damage bonus")
+	truthy(info.contains("Strike: 14 damage (Earth)"), "the stats card lists spell damage and element")
+	var view := FileAccess.get_file_as_string("res://board_view.gd")
+	truthy(view.contains("_hud.unit_card_tapped.connect(_on_unit_card_tapped)"), "the board listens for portrait taps")
+	truthy(view.contains("SNAPSHOT_TILES.cast_dests(legal, spell_id).has(cell)"), "a portrait tap only casts when the sim calls it legal")
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "classes": ["kestrel", "ironjaw"], "positions": [Vector2i(2, 2), Vector2i(5, 2)], "blockers": [Vector2i(3, 2)]})
+	var offered := false
+	for intent in _sim.legal_intents(0):
+		if str(intent.get("spell", "")) == "mark_shot" and intent.get("to") == Vector2i(5, 2):
+			offered = true
+	eq(offered, false, "no line of sight = no legal cast for a portrait tap")
 
 
 func _walkable_zone_count(seat: int) -> int:
