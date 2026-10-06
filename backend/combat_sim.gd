@@ -3898,14 +3898,7 @@ func _connect_base_damage(def: Dictionary, target: Dictionary) -> int:
 	if spell_id == SpellKits.DETONATE:
 		# Locked: 6 + 6×M Air, M = Marks on the target consumed on connect.
 		return int(def.get("base_damage", 6)) + int(def.get("damage_per_mark", 6)) * int(target.get("marks", 0))
-	if spell_id == SpellKits.CRUSH and int(target.get("shield", 0)) > 0:
-		# Mauro 6 Oct 2026: Crush is the shield breaker — double base damage on
-		# a shielded target, so Ironjaw keeps his edge over Bastion.
-		return int(def.get("base_damage", 0)) * CRUSH_SHIELD_MULT
 	return int(def.get("base_damage", 0))
-
-
-const CRUSH_SHIELD_MULT := 2
 
 
 func _connect_extra_note(engine_gained: int, engine_name: String, marks_consumed: int, engine_spent: int, stun_applied: int, push_result: Dictionary) -> String:
@@ -5517,6 +5510,13 @@ func _mitigate_hit(actor: Dictionary, target: Dictionary, damage: int) -> Dictio
 	var transferred := _intercept_transfer(actor, target, damage)
 	report["intercepted"] = transferred
 	var remaining := damage - transferred
+	if str(actor.get("class_id", "")) == SpellKits.CLASS_IRONJAW and int(target.get("shield", 0)) > 0 and damage > 0:
+		# Mauro 6 Oct 2026: Ironjaw is the shield breaker — any hit of his
+		# shatters the whole shield (Bastion's or a teammate's); nothing soaks.
+		target["shield"] = 0
+		target["shield_turns"] = 0
+		report["shield_broken"] = true
+		report["shield_shattered"] = true
 	var shield := int(target.get("shield", 0))
 	if shield > 0 and remaining > 0:
 		var absorbed := mini(shield, remaining)
@@ -5574,6 +5574,9 @@ func _stamp_mitigation(event: Dictionary, report: Dictionary) -> void:
 	event["immunity_amount"] = int(report.get("immunity_amount", 0))
 	event["shield_absorbed"] = int(report.get("shield_absorbed", 0))
 	event["shield_broken"] = bool(report.get("shield_broken", false))
+	if bool(report.get("shield_shattered", false)):
+		event["shield_shattered"] = true
+		event["coach"] = str(event.get("coach", "")) + " Shield shattered!"
 	event["shield_remaining"] = int(report.get("shield_remaining", 0))
 	event["intercepted"] = int(report.get("intercepted", 0))
 

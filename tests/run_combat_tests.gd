@@ -3746,9 +3746,10 @@ func _test_blind_attacks_on_invisible() -> void:
 	eq(_event_type_count(found["events"], "revealed"), 1, "a revealed event fires")
 	eq(_sim.legal_intents(0).any(func(i): return bool(i.get("blind", false))), false, "no blind offers once nobody is hidden")
 	# A hit that does no damage (Ward soaks it) keeps Gloam hidden.
-	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "classes": ["ironjaw", "gloam"], "positions": [Vector2i(5, 5), Vector2i(6, 5)], "gloam_invisible": true, "rolls": [1]})
+	# (Bastion: Ironjaw shatters shields since Mauro 6 Oct 2026.)
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "classes": ["bastion", "gloam"], "positions": [Vector2i(5, 5), Vector2i(6, 5)], "gloam_invisible": true, "rolls": [1]})
 	_live_unit(1)["shield"] = 99
-	_sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(6, 5), "seat": 0})
+	_sim.submit({"type": "cast", "spell": "bash", "to": Vector2i(6, 5), "seat": 0})
 	eq(bool(_unit(1)["invisible"]), true, "no damage, no reveal")
 	_sim.reset_match({"seed": 1, "skip_deploy": true})
 
@@ -7765,17 +7766,22 @@ func _test_prefight_elements_button() -> void:
 
 
 
-## Mauro 6 Oct 2026: Crush does double base damage to a shielded target.
+## Mauro 6 Oct 2026: Ironjaw is the shield breaker — any hit of his shatters
+## the target's whole shield.
 func _test_crush_breaks_shields() -> void:
-	var def := SpellKits.spell(SpellKits.CRUSH)
-	eq(_sim._connect_base_damage(def, {"shield": 0}), int(def["base_damage"]), "Crush base damage on an unshielded target")
-	eq(_sim._connect_base_damage(def, {"shield": 20}), int(def["base_damage"]) * 2, "Crush doubles on a shielded target")
-	eq(_sim._connect_base_damage(SpellKits.spell(SpellKits.STRIKE), {"shield": 20}), int(SpellKits.spell(SpellKits.STRIKE)["base_damage"]), "Strike does not double")
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1], "classes": ["ironjaw", "bastion"], "positions": [Vector2i(3, 3), Vector2i(4, 3)]})
+	_live_unit(1)["shield"] = 60
+	var hp0 := int(_unit(1)["hp"])
+	var hit: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(4, 3), "seat": 0})
+	var ev := _first_event_where(hit.get("events", []), "hit")
+	eq(int(_unit(1)["shield"]), 0, "an Ironjaw hit shatters the whole shield")
+	eq(bool(ev.get("shield_shattered", false)), true, "the hit event names the shattered shield")
+	eq(hp0 - int(_unit(1)["hp"]), int(ev.get("damage", -1)), "nothing of the blow is soaked")
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1], "classes": ["gloam", "bastion"], "positions": [Vector2i(3, 3), Vector2i(4, 3)]})
+	_live_unit(1)["shield"] = 60
+	_sim.submit({"type": "cast", "spell": "cut", "to": Vector2i(4, 3), "seat": 0})
+	eq(int(_unit(1)["shield"]) > 0, true, "other classes only chip the shield")
 
-
-
-## Mauro 6 Oct 2026: Mender only damages enemies as a Last Stand — no living
-## teammate and no Rekindle left to bring one back.
 func _test_mender_last_stand() -> void:
 	_sim.reset_match({
 		"seed": 1,

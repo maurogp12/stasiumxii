@@ -122,7 +122,7 @@ static func simple_lines(spell_id: String, preview: Dictionary = {}) -> PackedSt
 		SpellKits.CRUSH:
 			out.append("A big smash on an enemy next to you for %d damage. Needs 2 Impact and uses 2." % dmg)
 			out.append("If your Impact is full (%d), the enemy is Stunned and skips their next turn, and it uses ALL your Impact." % SpellKits.IMPACT_CAP)
-			out.append("Shield breaker: Crush does double damage to a target that has a shield.")
+
 		SpellKits.MEND:
 			out.append("Heal a teammate or yourself for %d HP. Very hurt friends (under 40%% HP) get 25%% more. +1 Pulse." % heal)
 		SpellKits.PULSE_TAP:
@@ -213,7 +213,7 @@ static func _engine_words(class_id: String, spell_id: String) -> String:
 		SpellKits.CLASS_IRONJAW:
 			if spell_id == SpellKits.ADVANCE:
 				return ""
-			return "Impact = Ironjaw's power dots (max %d). They fade on a turn you do not attack." % SpellKits.IMPACT_CAP
+			return "Impact = Ironjaw's power dots (max %d). They fade on a turn you do not attack. Shield breaker: any Ironjaw hit shatters the target's whole shield." % SpellKits.IMPACT_CAP
 		SpellKits.CLASS_MENDER:
 			return "Pulse = Mender's power dots (max %d). They fade on a turn you cast no spell." % SpellKits.PULSE_CAP
 		SpellKits.CLASS_BASTION:

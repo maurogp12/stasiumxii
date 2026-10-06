@@ -456,34 +456,36 @@ func _test_absorbed_damage_and_intercept() -> void:
 	eq(int(_sim.snapshot()["units"][0]["hp"]), 75, "immunity still prevents HP loss")
 	eq(int(_sim.snapshot()["units"][0]["hit_immunity"]), 0, "immunity charge is still spent")
 
+	# Plain shield soak (Gloam's Cut 13; Ironjaw shatters shields since Mauro
+	# 6 Oct 2026, so he is not the soak fixture any more).
 	_sim.reset_match({
 		"seed": 1,
 		"flat_board": true,
 		"skip_deploy": true,
-		"kestrel_pos": Vector2i(3, 3),
-		"ironjaw_pos": Vector2i(4, 3),
+		"classes": ["kestrel", "gloam"],
+		"positions": [Vector2i(3, 3), Vector2i(4, 3)],
 		"kestrel_facing": "E",
 		"rolls": [1, 1],
 	})
 	_sim.submit({"type": "end_turn", "seat": 0})
 	_live_unit(0)["shield"] = 20
 	_live_unit(0)["shield_turns"] = 2
-	var soaked: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(3, 3), "seat": 1})
+	var soaked: Dictionary = _sim.submit({"type": "cast", "spell": "cut", "to": Vector2i(3, 3), "seat": 1})
 	var soaked_hit := _event_of(soaked.get("events", []), "hit")
-	eq(int(soaked_hit.get("shield_absorbed", -1)), 14, "shield absorbs the 14 Strike")
-	eq(bool(soaked_hit.get("shield_broken", true)), false, "a 20 shield is not broken by 14")
-	eq(int(soaked_hit.get("shield_remaining", -1)), 6, "shield remaining is 6")
+	eq(int(soaked_hit.get("shield_absorbed", -1)), 13, "shield absorbs the 13 Cut")
+	eq(bool(soaked_hit.get("shield_broken", true)), false, "a 20 shield is not broken by 13")
+	eq(int(soaked_hit.get("shield_remaining", -1)), 7, "shield remaining is 7")
 	eq(int(soaked_hit.get("damage", -1)), 0, "full shield leaves HP damage at 0")
 	eq(int(_sim.snapshot()["units"][0]["hp"]), 75, "partial shield still blocks all HP")
-	eq(int(_sim.snapshot()["units"][0]["shield"]), 6, "shield pool is 6")
+	eq(int(_sim.snapshot()["units"][0]["shield"]), 7, "shield pool is 7")
 	_live_unit(0)["shield"] = 10
 	_live_unit(0)["shield_turns"] = 2
-	var broken: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(3, 3), "seat": 1})
+	var broken: Dictionary = _sim.submit({"type": "cast", "spell": "cut", "to": Vector2i(3, 3), "seat": 1})
 	var broken_hit := _event_of(broken.get("events", []), "hit")
 	eq(int(broken_hit.get("shield_absorbed", -1)), 10, "broken shield absorbs its remaining pool")
 	eq(bool(broken_hit.get("shield_broken", false)), true, "shield_broken is set when the pool hits 0")
-	eq(int(broken_hit.get("damage", -1)), 4, "overflow past the shield is still 4")
-	eq(int(_sim.snapshot()["units"][0]["hp"]), 71, "overflow still reduces HP")
+	eq(int(broken_hit.get("damage", -1)), 3, "overflow past the shield is 3")
+	eq(int(_sim.snapshot()["units"][0]["hp"]), 72, "overflow still reduces HP")
 	eq(int(_sim.snapshot()["units"][0]["shield"]), 0, "broken shield pool is 0")
 	eq(int(_sim.snapshot()["units"][0]["shield_turns"]), 0, "broken shield clears its turns")
 
