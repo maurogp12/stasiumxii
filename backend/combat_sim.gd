@@ -72,6 +72,9 @@ const FACING_VEC := {
 ## Guest replicas hydrate remaining from snapshot and must not tick.
 const OPEN_DECISIONS := ["A03", "A04", "A05", "A06", "A07"]
 const TURN_TIME_LIMIT := 30.0
+## Solo PvE rooms (PC dungeons) give the hero a longer clock to aim. PvP,
+## Koliseo and mobile keep TURN_TIME_LIMIT.
+const DUNGEON_TURN_TIME_LIMIT := 60.0
 
 var _units: Array[Dictionary] = []
 var _active_seat: int = 0
@@ -2592,8 +2595,8 @@ func _reject(intent: Dictionary, reason: String, coach: String) -> Dictionary:
 
 
 func _start_turn_timer() -> void:
-	_turn_time_limit = TURN_TIME_LIMIT
-	_turn_time_remaining = TURN_TIME_LIMIT
+	_turn_time_limit = DUNGEON_TURN_TIME_LIMIT if not _dungeon.is_empty() else TURN_TIME_LIMIT
+	_turn_time_remaining = _turn_time_limit
 	_turn_time_running = not _match_over and not _flow.is_deployment()
 
 

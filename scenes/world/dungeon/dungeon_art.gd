@@ -376,7 +376,7 @@ static func _placeholder_monster(monster_id: String) -> Dictionary:
 				var img := Image.create(size.x, size.y, false, Image.FORMAT_RGBA8)
 				img.fill(Color(0, 0, 0, 0))
 				_paint_monster(img, monster_id, face, anim, i, count)
-				frames.add_frame(name, ImageTexture.create_from_image(img))
+				frames.add_frame(name, with_pick_mask(ImageTexture.create_from_image(img), img))
 	return {"frames": frames, "pivot": Vector2(64, 150), "height": 150.0}
 
 
@@ -762,8 +762,41 @@ static func _cut_frames(images: Dictionary, used: Rect2i, actions: Dictionary, f
 		for img in images[name]:
 			var cut := (img as Image).get_region(used)
 			cut.resize(maxi(int(used.size.x * MONSTER_KEEP), 1), maxi(int(used.size.y * MONSTER_KEEP), 1), Image.INTERPOLATE_LANCZOS)
-			frames.add_frame(name, ImageTexture.create_from_image(cut))
+			frames.add_frame(name, with_pick_mask(ImageTexture.create_from_image(cut), cut))
 	return frames
+
+
+## Board picking: each monster frame keeps a 1-bit alpha mask (meta
+## "pick_mask") so a click on the visible pixels picks that monster.
+const PICK_ALPHA := 0.2
+
+
+static func with_pick_mask(tex: Texture2D, img: Image) -> Texture2D:
+	if tex == null or img == null or img.is_empty():
+		return tex
+	var bm := BitMap.new()
+	bm.create_from_image_alpha(img, PICK_ALPHA)
+	tex.set_meta("pick_mask", bm)
+	return tex
+
+
+## The pick mask of a frame texture, built on first use when the frame came
+## without one. Null when the pixels cannot be read (headless dummy renderer).
+static func pick_mask(tex: Texture2D) -> BitMap:
+	if tex == null:
+		return null
+	if tex.has_meta("pick_mask"):
+		return tex.get_meta("pick_mask") as BitMap
+	if tex.has_meta("pick_mask_none"):
+		return null
+	var img: Image = tex.get_image()
+	if img == null or img.is_empty():
+		tex.set_meta("pick_mask_none", true)
+		return null
+	if img.is_compressed():
+		img.decompress()
+	with_pick_mask(tex, img)
+	return tex.get_meta("pick_mask") as BitMap
 
 
 static func _image_at(man: Dictionary, rel: String) -> Image:

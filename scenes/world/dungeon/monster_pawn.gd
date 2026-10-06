@@ -277,3 +277,177 @@ func release_offset() -> Vector2:
 ## Seconds from the attack's start to the release frame.
 func release_sec() -> float:
 	return float((art.get("release", {}) as Dictionary).get("sec", 0.22))
+
+
+# --- Board picking and target chrome -----------------------------------------
+
+## Pick levels: PICK_PIXEL when the point is on the visible pixels of the frame
+## shown, PICK_BOX when it is only inside the generous body box.
+const PICK_NONE := 0
+const PICK_BOX := 1
+const PICK_PIXEL := 2
+## Smallest body box in pawn-local px (around the feet, up the body), so a
+## small rat is still easy to hit. Grown by BOX_PAD on every side.
+const MIN_BOX_HALF_W := 24.0
+const BOX_PAD := 6.0
+const OUTLINE_SHADER := """
+shader_type canvas_item;
+uniform vec4 outline_color : source_color = vec4(1.0, 0.82, 0.3, 1.0);
+uniform float width = 2.0;
+void fragment() {
+	vec4 tint = COLOR;
+	vec4 c = texture(TEXTURE, UV);
+	if (c.a < 0.5 && width > 0.0) {
+		vec2 px = TEXTURE_PIXEL_SIZE * width;
+		float a = texture(TEXTURE, UV + vec2(px.x, 0.0)).a;
+		a = max(a, texture(TEXTURE, UV - vec2(px.x, 0.0)).a);
+		a = max(a, texture(TEXTURE, UV + vec2(0.0, px.y)).a);
+		a = max(a, texture(TEXTURE, UV - vec2(0.0, px.y)).a);
+		a = max(a, texture(TEXTURE, UV + px).a);
+		a = max(a, texture(TEXTURE, UV - px).a);
+		a = max(a, texture(TEXTURE, UV + vec2(px.x, -px.y)).a);
+		a = max(a, texture(TEXTURE, UV + vec2(-px.x, px.y)).a);
+		if (a > 0.5) {
+			COLOR = vec4(outline_color.rgb, outline_color.a * tint.a);
+		} else {
+			COLOR = c * tint;
+		}
+	} else {
+		COLOR = c * tint;
+	}
+}
+"""
+## "" (none), "legal" (in range: gold ring + outline), "hover" (the target
+## under the cursor: bright ring + outline), "dim" (out of range).
+var target_state := ""
+var _ring: Node2D
+var _ring_front: Node2D
+var _outline: ShaderMaterial
+static var _outline_shader: Shader
+
+
+func pickable() -> bool:
+	return alive and visible and not _faded and is_inside_tree() and modulate.a > 0.05
+
+
+## Where a canvas (global) point lands on this monster: PICK_PIXEL, PICK_BOX
+## or PICK_NONE. Uses the frame on screen now, its flip and the motion offset.
+func pick_test(global_point: Vector2) -> int:
+	if not pickable() or _body == null or _body.sprite_frames == null:
+		return PICK_NONE
+	var tex: Texture2D = null
+	if _body.sprite_frames.has_animation(_body.animation):
+		tex = _body.sprite_frames.get_frame_texture(_body.animation, _body.frame)
+	if tex != null:
+		var at: Vector2 = _body.get_global_transform().affine_inverse() * global_point
+		var p := at - _body.offset
+		var w := tex.get_width()
+		var h := tex.get_height()
+		if p.x >= 0.0 and p.y >= 0.0 and p.x < w and p.y < h:
+			var mask := Art.pick_mask(tex)
+			var bx := int(p.x)
+			if _body.flip_h:
+				bx = w - 1 - bx
+			if mask != null and _mask_near(mask, bx, int(p.y), w, h):
+				return PICK_PIXEL
+	if body_box().has_point(to_local(global_point)):
+		return PICK_BOX
+	return PICK_NONE
+
+
+## A set mask bit at (x, y) or within MASK_SLOP texture px of it, so a click on
+## the silhouette's edge still counts as the monster.
+const MASK_SLOP := 2
+
+
+static func _mask_near(mask: BitMap, x: int, y: int, w: int, h: int) -> bool:
+	for dy in [0, -MASK_SLOP, MASK_SLOP]:
+		for dx in [0, -MASK_SLOP, MASK_SLOP]:
+			var px: int = x + int(dx)
+			var py: int = y + int(dy)
+			if px >= 0 and py >= 0 and px < w and py < h and mask.get_bit(px, py):
+				return true
+	return false
+
+
+## The generous body box in pawn-local px: the frame rect on screen, at least
+## MIN_BOX_HALF_W either side of the feet and body_height() tall, plus BOX_PAD.
+func body_box() -> Rect2:
+	var box := Rect2(Vector2(-MIN_BOX_HALF_W, -body_height()), Vector2(MIN_BOX_HALF_W * 2.0, body_height() + 6.0))
+	if _body != null and _body.sprite_frames != null and _body.sprite_frames.has_animation(_body.animation):
+		var tex := _body.sprite_frames.get_frame_texture(_body.animation, _body.frame)
+		if tex != null and _root != null:
+			var r := Rect2(_body.offset, tex.get_size())
+			var a: Vector2 = _root.transform * r.position
+			var b: Vector2 = _root.transform * r.end
+			box = box.merge(Rect2(Vector2(minf(a.x, b.x), minf(a.y, b.y)), (b - a).abs()))
+	return box.grow(BOX_PAD)
+
+
+func set_target_state(state: String) -> void:
+	if state == target_state:
+		return
+	target_state = state
+	_ensure_body()
+	if _root != null:
+		_root.modulate = Color(0.5, 0.5, 0.56, 0.78) if state == "dim" else Color.WHITE
+	if state == "legal" or state == "hover":
+		if _outline == null:
+			if _outline_shader == null:
+				_outline_shader = Shader.new()
+				_outline_shader.code = OUTLINE_SHADER
+			_outline = ShaderMaterial.new()
+			_outline.shader = _outline_shader
+		_outline.set_shader_parameter("outline_color", Color(1.0, 0.95, 0.7, 1.0) if state == "hover" else Color(1.0, 0.74, 0.22, 0.95))
+		_outline.set_shader_parameter("width", 3.0 if state == "hover" else 2.0)
+		if _body != null:
+			_body.material = _outline
+	elif _body != null:
+		_body.material = null
+	if _ring == null:
+		# Back half under the body; front half over the floor tiles in front
+		# (they sort above the unit) but under the units standing there.
+		_ring = TargetRing.new()
+		_ring.name = "TargetRingBack"
+		_ring.z_as_relative = true
+		_ring.z_index = 0
+		add_child(_ring)
+		move_child(_ring, 0)
+		_ring_front = TargetRing.new()
+		_ring_front.name = "TargetRingFront"
+		_ring_front.front = true
+		_ring_front.z_as_relative = true
+		_ring_front.z_index = 7
+		add_child(_ring_front)
+	for ring in [_ring, _ring_front]:
+		ring.state = state
+		ring.radius = clampf(body_box().size.x * 0.36, 20.0, 40.0)
+		ring.visible = state == "legal" or state == "hover"
+		ring.queue_redraw()
+
+
+## A pulsing ellipse under the feet of a legal target (one half per node).
+class TargetRing extends Node2D:
+	var state := ""
+	var radius := 24.0
+	var front := false
+	var _t := 0.0
+
+	func _process(delta: float) -> void:
+		if not visible:
+			return
+		_t += delta
+		queue_redraw()
+
+	func _draw() -> void:
+		var hover := state == "hover"
+		var pulse := 0.5 + 0.5 * sin(_t * 5.0)
+		var col := Color(1.0, 0.95, 0.7, 0.95) if hover else Color(1.0, 0.72, 0.2, 0.6 + 0.35 * pulse)
+		var r := radius * (1.12 if hover else 1.0 + 0.05 * pulse)
+		var from := 0.0 if front else PI
+		draw_set_transform(Vector2(0, 2), 0.0, Vector2(1.0, 0.5))
+		if not front:
+			draw_circle(Vector2.ZERO, r, Color(col.r, col.g, col.b, 0.18 if hover else 0.1))
+		draw_arc(Vector2.ZERO, r, from, from + PI, 32, col, 4.0 if hover else 3.0, true)
+		if hover:
+			draw_arc(Vector2.ZERO, r + 7.0, from, from + PI, 32, Color(col.r, col.g, col.b, 0.5), 2.0, true)
