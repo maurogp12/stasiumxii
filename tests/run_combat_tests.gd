@@ -135,6 +135,7 @@ func _run() -> void:
 	_test_deploy_main_chrome()
 	_test_aegis_break_burst()
 	_test_snap_wall_bastion_turns()
+	_test_snap_wall_knock_down()
 
 
 func _test_reset_and_turn_order() -> void:
@@ -7630,6 +7631,49 @@ func _test_snap_wall_bastion_turns() -> void:
 	eq(int(_first_event_where(expired["events"], "expire", "wall").get("owner_seat", -2)), 0, "expiry names the owning Bastion")
 	var walked: Dictionary = _sim.submit({"type": "move", "to": Vector2i(2, 1), "seat": 0})
 	eq(walked.get("ok", false), true, "the cell is walkable after the wall expires")
+
+
+
+## Mauro 6 Oct 2026: Snap Wall on your own wall knocks it down and gives the
+## 2 Aegis back (1 AP, no Aegis needed). Enemy walls stay.
+func _test_snap_wall_knock_down() -> void:
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["bastion", "kestrel"],
+		"positions": [Vector2i(1, 1), Vector2i(6, 6)],
+		"bastion_aegis": 2,
+	})
+	var ap0 := int(_unit(0)["ap"])
+	eq(_sim.submit({"type": "cast", "spell": "snap_wall", "to": Vector2i(2, 1), "seat": 0}).get("ok", false), true, "Snap Wall places")
+	eq(int(_unit(0)["aegis"]), 0, "the wall spends 2 Aegis")
+	var offered := false
+	for intent in _sim.legal_intents(0):
+		if str(intent.get("spell", "")) == "snap_wall" and intent.get("to") == Vector2i(2, 1):
+			offered = true
+	eq(offered, true, "knocking down your own wall is legal at 0 Aegis")
+	eq(str(_sim.preview_cast("snap_wall", Vector2i(1, 1), Vector2i(2, 1), 1).get("reason", "x")), "", "preview calls the knock-down legal")
+	var broke: Dictionary = _sim.submit({"type": "cast", "spell": "snap_wall", "to": Vector2i(2, 1), "seat": 0})
+	eq(broke.get("ok", false), true, "Snap Wall on your own wall resolves")
+	eq(_sim.snapshot()["blocked_tiles"].size(), 0, "the wall is gone")
+	eq(int(_unit(0)["aegis"]), 2, "knocking it down gives the 2 Aegis back")
+	eq(int(_unit(0)["ap"]), ap0 - 2, "build 1 AP + knock down 1 AP")
+	eq(_first_event_where(broke["events"], "snap_wall_break").get("to"), Vector2i(2, 1), "the event names the wall cell")
+	eq(_sim.submit({"type": "move", "to": Vector2i(2, 1), "seat": 0}).get("ok", false), true, "the cell is walkable again")
+	# Aegis cap 4 still holds.
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "classes": ["bastion", "kestrel"], "positions": [Vector2i(1, 1), Vector2i(6, 6)], "bastion_aegis": 4})
+	_sim.submit({"type": "cast", "spell": "snap_wall", "to": Vector2i(2, 1), "seat": 0})
+	_live_unit(0)["aegis"] = 3
+	_sim.submit({"type": "cast", "spell": "snap_wall", "to": Vector2i(2, 1), "seat": 0})
+	eq(int(_unit(0)["aegis"]), 4, "the refund stops at the Aegis cap")
+	# Someone else's wall is not yours to knock down.
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "classes": ["bastion", "kestrel"], "positions": [Vector2i(1, 1), Vector2i(6, 6)], "bastion_aegis": 2})
+	_sim._add_snap_wall(Vector2i(2, 1), 2, 1)
+	var foreign: Dictionary = _sim.submit({"type": "cast", "spell": "snap_wall", "to": Vector2i(2, 1), "seat": 0})
+	eq(foreign.get("ok", false), false, "Snap Wall cannot knock down another seat's wall")
+	eq(int(_unit(0)["aegis"]), 2, "a refused knock-down keeps the Aegis")
+	eq(_sim.snapshot()["blocked_tiles"].size(), 1, "that wall stays up")
 
 
 func _walkable_zone_count(seat: int) -> int:

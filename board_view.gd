@@ -574,8 +574,9 @@ func _commit_cell(cell: Vector2i) -> void:
 		return
 	if not _in_bounds(cell):
 		return
-	# Snap walls are not a left-click / tap target. Right-click already returned.
-	if _snap_wall_cell(cell):
+	# Snap walls are not a left-click / tap target, except Snap Wall on the
+	# caster's own wall (knock it down, Mauro 6 Oct 2026). Right-click already returned.
+	if _snap_wall_cell(cell) and not _snap_wall_break_cell(cell):
 		return
 	if not _cast_cell_armable(cell):
 		return
@@ -2235,6 +2236,17 @@ func _paint_blocked(snap: Dictionary) -> void:
 
 func _snap_wall_cell(cell: Vector2i) -> bool:
 	return SNAPSHOT_TILES.blocked_cells(_sim().snapshot()).has(cell)
+
+
+## Snap Wall armed and this wall is a legal knock-down for the active seat.
+func _snap_wall_break_cell(cell: Vector2i) -> bool:
+	if _hud == null or _hud.selected_spell() != SpellKits.SNAP_WALL:
+		return false
+	var snap: Dictionary = _sim().snapshot()
+	for intent in _sim().legal_intents(int(snap.get("active_seat", 0))):
+		if str(intent.get("spell", "")) == SpellKits.SNAP_WALL and intent.get("to") == cell:
+			return true
+	return false
 
 
 func _paint_deploy_highlights(snap: Dictionary) -> void:
