@@ -37,7 +37,7 @@ const ELEMENT_TEXT := {
 ## The five Blends: [first, second, name, what it does, good for]. Air + Fire
 ## has none (Mauro 6 Oct 2026: Sleet removed, Spark moved to Air + Water).
 const BLEND_ROWS := [
-	["air", "earth", "Drift-Pin", "Slides the enemy 1 tile away from you. If a wall, the edge or a body is in the way it hits for 8 instead. Pinned: it cannot walk on its next turn (Advance and Ambush still work). Never twice in a row on the same enemy.", "Ranged fighters keeping melee away; slamming enemies into walls."],
+	["air", "earth", "Drift-Pin", "Slides the enemy 1 tile away from you. If a wall, the edge or a body is in the way it hits for 8 instead and is Pinned: it cannot walk on its next turn (Advance and Ambush still work). Never twice in a row on the same enemy.", "Ranged fighters keeping melee away; slamming enemies into walls."],
 	["air", "water", "Spark", "Electricity: 10 damage that ignores resist (a shield soaks it first). Until the end of its next turn the enemy gets 40% less healing.", "Finishing low enemies, cracking Mender's Ward, shutting down healing."],
 	["earth", "fire", "Magma", "The tile the enemy ends its next turn on burns: 4 damage to anyone who ends a turn there until your next turn.", "Enemies that are Stunned, Pinned or stuck in a corridor."],
 	["earth", "water", "Mire", "On its next turn, the enemy's first step off its tile costs +1 MP. Being pushed is free. Stacks with Bastion's Hold Line (+2 MP to leave).", "Melee fighters holding an enemy next to them."],

@@ -1777,27 +1777,35 @@ func _infuse(actor: Dictionary, target: Dictionary, def: Dictionary) -> String:
 
 ## Drift-Pin (Air + Earth): slide 1 away from the caster; a wall or body in
 ## the way hits for 8 instead. Pin: no walking (MP) next turn; Advance and
-## Ambush still work. Never two turns running.
+## Ambush still work. Never two turns running. Mauro 6 Oct 2026: "The pin
+## should only works when he hits something" — a slide, a Grounded / Plant
+## hold or a water / mud / lava landing does not pin; a wall, the edge or a
+## body does.
 func _blend_drift_pin(actor: Dictionary, target: Dictionary, event: Dictionary) -> String:
 	var from: Vector2i = target["pos"]
 	var result := _try_push(actor["pos"], target, 1, true)
 	var note := ""
+	var hit_something := false
 	if bool(result.get("moved", false)):
 		_apply_landing_punishments(target, result)
 		note = "slides 1"
 	elif bool(result.get("bounced", false)):
 		# _try_push(earth) hits a wall for 8 (once per target per turn).
 		note = "slams into the wall (%d)" % int(result.get("stagger_hp", 0))
+		hit_something = true
 	elif str(result.get("reason", "")) == "occupied":
 		target["hp"] = maxi(0, int(target["hp"]) - DRIFT_COLLISION_HP)
 		event["collision_hp"] = DRIFT_COLLISION_HP
 		note = "slams into a body (%d)" % DRIFT_COLLISION_HP
+		hit_something = true
 	else:
 		note = "holds its ground"
 	event["from"] = from
 	event["to"] = target["pos"]
 	event["slide"] = result.duplicate()
-	if bool(target.get("pinned", false)) or bool(target.get("pinned_last", false)):
+	if not hit_something:
+		note += "; no Pin (nothing hit)"
+	elif bool(target.get("pinned", false)) or bool(target.get("pinned_last", false)):
 		note += "; no Pin (Pinned last turn)"
 	else:
 		target["pin_pending"] = true

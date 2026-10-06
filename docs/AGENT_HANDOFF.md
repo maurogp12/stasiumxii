@@ -45,6 +45,7 @@ Version history, reasons and Mauro's exact words are in
 | **Koliseo deploy zones** random every match, all tiles standable, both zones connected on foot. | `MatchFlow.sample_zone_pair(…, cell_ok, pair_ok)`, `CombatSim._zone_cell_ok / _zones_meet` | Mauro 30 Sep |
 | **Stasis star difficulty** ★1–5 (`STAR_SCALE` hp/dmg multipliers are PROVISIONAL). Loot: ★1–2 Normal, ★3–4 + Rare, ★5 + Legendary. | `StasisCatalog.STAR_SCALE`, `GearBag.FAMILIES.min_star` | Mauro 29 Sep |
 | **Fade / Invisible lasts 1 turn.** | `CombatSim.INVISIBLE_TURNS` | Mauro 29 Sep |
+| **Drift-Pin Pins only on a hit**: the Air + Earth push Pins (no walking next turn) only when it hits a wall, the edge or a body (8 damage); a free slide does not Pin. | `CombatSim._blend_drift_pin` | Mauro 6 Oct 2026 |
 | **Ambush front landing**: a blocked back tile does not cancel Ambush; Gloam lands on the front tile (one step before the enemy on the origin side) and still hits. Both blocked rejects `illegal_back`. | `CombatSim._ambush_landing_from` | Mauro 6 Oct 2026 |
 | **Ambush without Invisible**: Gloam's own tile is always an Ambush origin (armed Shades add angles). | `CombatSim.AMBUSH_SELF_ALWAYS / _ambush_self_origin` | Mauro 30 Sep |
 | **Advance max 2 uses per Ironjaw turn** (reject `advance_limit`). | `CombatSim.ADVANCE_USES_PER_TURN`, `advance_uses` reset in `_begin_unit_turn` | Mauro 30 Sep |

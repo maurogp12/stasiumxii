@@ -7974,18 +7974,35 @@ func _test_element_blends() -> void:
 	eq(str(_unit(1).get("residue", "")), "air", "the Air hit leaves its own Residue instead")
 	eq(_sim.blend_of("air", "fire"), "", "no Blend for Air + Fire")
 
-	# Drift-Pin: slide 1 away, Pinned next turn (no walking), never two turns running.
+	# Drift-Pin: slide 1 away. Mauro 6 Oct 2026: only a hit (wall / edge / body) Pins.
 	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1, 1], "classes": ["ironjaw", "kestrel"], "positions": [Vector2i(5, 5), Vector2i(6, 5)]})
 	_live_unit(0)["spell_elements"] = {"strike": "air", "shoulder": "earth", "crush": "earth"}
 	_live_unit(1)["residue"] = "earth"
 	_live_unit(1)["residue_seat"] = 0
 	_live_unit(1)["residue_turns"] = 2
-	var pin: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(6, 5), "seat": 0})
-	eq(str(_first_event_where(pin.get("events", []), "blend").get("blend", "")), "drift_pin", "Air on own Earth = Drift-Pin")
+	var slide: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(6, 5), "seat": 0})
+	var slide_ev := _first_event_where(slide.get("events", []), "blend")
+	eq(str(slide_ev.get("blend", "")), "drift_pin", "Air on own Earth = Drift-Pin")
 	eq(_unit(1)["pos"], Vector2i(7, 5), "Drift-Pin slides the target 1 away")
+	eq(bool(slide_ev.get("pin", false)), false, "a free slide does not Pin")
+	_sim.submit({"type": "end_turn", "seat": 0})
+	eq(bool(_unit(1).get("pinned", false)), false, "a slid target is not Pinned")
+	eq(bool(_sim.submit({"type": "move", "to": Vector2i(8, 5), "seat": 1}).get("ok", false)), true, "a slid target can still walk")
+
+	# Drift-Pin into a wall / body: 8 and Pinned next turn, never two turns running.
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1, 1], "classes": ["ironjaw", "kestrel"], "positions": [Vector2i(13, 5), Vector2i(14, 5)]})
+	_live_unit(0)["spell_elements"] = {"strike": "air", "shoulder": "earth", "crush": "earth"}
+	_live_unit(1)["residue"] = "earth"
+	_live_unit(1)["residue_seat"] = 0
+	_live_unit(1)["residue_turns"] = 2
+	var hp0 := int(_unit(1)["hp"])
+	var slam: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(14, 5), "seat": 0})
+	var strike_dmg := int(_first_event_where(slam.get("events", []), "hit").get("damage", 0))
+	eq(hp0 - int(_unit(1)["hp"]), strike_dmg + 8, "Drift-Pin into the board edge hits for 8")
+	eq(bool(_first_event_where(slam.get("events", []), "blend").get("pin", false)), true, "hitting the edge Pins")
 	_sim.submit({"type": "end_turn", "seat": 0})
 	eq(bool(_unit(1).get("pinned", false)), true, "Pinned on its next turn")
-	var no_walk: Dictionary = _sim.submit({"type": "move", "to": Vector2i(8, 5), "seat": 1})
+	var no_walk: Dictionary = _sim.submit({"type": "move", "to": Vector2i(14, 6), "seat": 1})
 	eq(str(no_walk.get("reason", "")), "pinned", "a Pinned fighter cannot walk")
 	var walks := 0
 	for intent in _sim.legal_intents(1):
@@ -7998,20 +8015,18 @@ func _test_element_blends() -> void:
 	_live_unit(1)["residue_seat"] = 0
 	_live_unit(1)["residue_turns"] = 2
 	_sim._scripted_rolls.append(1)
-	_live_unit(0)["pos"] = Vector2i(6, 5)
-	var pin2: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(7, 5), "seat": 0})
+	var pin2: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(14, 5), "seat": 0})
 	eq(bool(_first_event_where(pin2.get("events", []), "blend").get("pin", false)), false, "no Pin two turns running")
 
-	# Drift-Pin into a wall / body: 8.
-	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1], "classes": ["ironjaw", "kestrel"], "positions": [Vector2i(13, 5), Vector2i(14, 5)]})
+	# Drift-Pin into a body: 8 and Pinned.
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1], "classes": ["ironjaw", "kestrel"], "positions": [Vector2i(5, 5), Vector2i(6, 5)], "blockers": [Vector2i(7, 5)]})
 	_live_unit(0)["spell_elements"] = {"strike": "air", "shoulder": "earth", "crush": "earth"}
 	_live_unit(1)["residue"] = "earth"
 	_live_unit(1)["residue_seat"] = 0
 	_live_unit(1)["residue_turns"] = 2
-	var hp0 := int(_unit(1)["hp"])
-	var slam: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(14, 5), "seat": 0})
-	var strike_dmg := int(_first_event_where(slam.get("events", []), "hit").get("damage", 0))
-	eq(hp0 - int(_unit(1)["hp"]), strike_dmg + 8, "Drift-Pin into the board edge hits for 8")
+	var body: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(6, 5), "seat": 0})
+	eq(_unit(1)["pos"], Vector2i(6, 5), "a blocked Drift-Pin does not move the target")
+	eq(bool(_first_event_where(body.get("events", []), "blend").get("pin", false)), true, "hitting something in the way Pins")
 
 	# Spark (Air + Water, Mauro 6 Oct 2026): 10 damage that ignores resist, 40% less healing.
 	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1], "classes": ["ironjaw", "kestrel"], "positions": [Vector2i(5, 5), Vector2i(6, 5)]})
