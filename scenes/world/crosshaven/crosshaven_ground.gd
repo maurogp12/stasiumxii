@@ -163,6 +163,7 @@ func setup(target: WorldZone) -> void:
 	_foam_rows = {}
 	_runs = {}
 	_anim_items = []
+	_pond_shapes = {}
 	var key := _memo_key()
 	var memo: Dictionary = _memo.get(key, {}) if key != "" else {}
 	if memo.is_empty():
@@ -1034,8 +1035,6 @@ func _draw_cell(ci: Node2D, cell: Vector2i) -> void:
 			_draw_void_sea(ci, cell, 0)
 		return
 	var steps := Art.height_seen(zone, cell)
-	if _north_crag(cell):
-		steps = _terrace(cell)
 	var rank := void_rank(cell)
 	var beach := _beach_at(cell)
 	# A stream that ends inland can still close on a grass bank. Sea, and the
@@ -1079,53 +1078,164 @@ func _draw_flat_faces(ci: Node2D, lifted: PackedVector2Array, steps: int, side: 
 	ci.draw_colored_polygon(PackedVector2Array([lifted[2], lifted[1], lifted[1] + drop, lifted[2] + drop]), side.darkened(0.18))
 
 
-## Northgate crag chunks stay height 1 in the zone data. The terrace is draw-only,
-## so zone tests that forbid a step of more than one stay green.
-func _north_crag(cell: Vector2i) -> bool:
-	if zone == null:
-		return false
-	var id := zone.zone_id
-	if not id.begins_with("crosshaven_northgate_crag") and id != "crosshaven_northgate_pass":
-		return false
-	return Art.terrain_seen(zone, cell) == "cliff"
+## Northgate crag chunks (design B, data/world/crosshaven/build_crosshaven_crags.py):
+## the soft terraces are real zone heights and draw with the snow face strips.
+## The only cliff cells left in those chunks are frozen ponds at height 0.
+## Cells past this chunk's edge (the plane margin) ask the chunk that owns them,
+## so a neighbour's ground draws a crag cell the same way the crag chunk does.
+static func _crag_id(zone_id: String) -> bool:
+	return zone_id.begins_with("crosshaven_northgate_crag") or zone_id == "crosshaven_northgate_pass"
 
 
-func _terrace(cell: Vector2i) -> int:
-	if zone == null:
-		return 0
-	var base := Art.height_seen(zone, cell)
-	if Art.terrain_seen(zone, cell) != "cliff":
-		return base
-	var id := zone.zone_id
-	if not id.begins_with("crosshaven_northgate_crag") and id != "crosshaven_northgate_pass":
-		return base
-	# A step on most edges, so the dotted cliff tops do not sit as one flat grid.
-	var band := posmod(cell.x + cell.y * 2, 3)
-	if Art.h(cell.x, cell.y, 5) == 0:
-		band = mini(band + 1, 2)
-	return base + band
+func _crag_pond(cell: Vector2i) -> bool:
+	return Art.terrain_seen(zone, cell) == "cliff" and _crag_id(_zone_id_at(cell))
 
 
-func _draw_crag_faces(ci: Node2D, cell: Vector2i, south_tip: Vector2) -> void:
-	var elev := _terrace(cell)
-	var tint := _floor_modulate(cell, "cliff")
-	for face in ["left", "right"]:
-		var step := Vector2i(0, 1) if face == "left" else Vector2i(1, 0)
-		var ncell := cell + step
-		var diff := elev - _terrace(ncell)
-		var base_x := -32.0 if face == "left" else 0.0
-		for k in range(maxi(diff, 0)):
-			var variant := "a"
-			if k == 0:
-				variant = "top"
-			elif k % 2 == 0:
-				variant = "b"
-			if k == diff - 1 and k > 0:
-				var below_water := Art.terrain_seen(zone, ncell) == "water"
-				variant = "base_water" if below_water else "base_ground"
-			var tid := _face_id("cliff_side_%s_%s" % [face, variant], cover_at(cell) >= 0.5)
-			if Art.has("tiles", tid):
-				Art.draw_at(ci, Art.texture("tiles", tid), south_tip + Vector2(base_x, -16.0 + 10.0 * float(k)), Color.WHITE if tid.begins_with("snow_") else tint)
+## Trodden snow path: the crag paths are dirt_road in the data, but under the
+## snow they read as packed snow with footprints, not town cobbles.
+func _crag_trodden(cell: Vector2i) -> bool:
+	return Art.terrain_seen(zone, cell) == "dirt_road" and _zone_id_at(cell).begins_with("crosshaven_northgate_crag")
+
+
+const POND_ICE := Color(0.62, 0.80, 0.92)
+const POND_ICE_DEEP := Color(0.45, 0.66, 0.84)
+const POND_RIM := Color(0.97, 0.98, 1.0)
+
+
+## Frozen pond: one soft oval of pale cracked ice per pond, with a bright snow
+## rim. Each pond cell draws the part of the oval inside its own diamond, so
+## the row-by-row ground still covers it in order and the outline is smooth.
+var _pond_shapes: Dictionary = {}
+
+
+func _draw_frozen_pond(ci: Node2D, cell: Vector2i, steps: int) -> void:
+	var shape := _pond_shape(cell)
+	if shape.is_empty():
+		return
+	var d := Pick.diamond(cell, float(steps))
+	var lift := Vector2(0, -float(steps) * BoardVisualSort.ELEVATION_PIXELS)
+	var outline: PackedVector2Array = shape["outline"]
+	var deep: PackedVector2Array = shape["deep"]
+	var moved := Transform2D(0.0, lift)
+	for piece in Geometry2D.intersect_polygons(moved * outline, d):
+		ci.draw_colored_polygon(piece, POND_ICE)
+	for piece in Geometry2D.intersect_polygons(moved * deep, d):
+		ci.draw_colored_polygon(piece, Color(POND_ICE_DEEP, 0.55))
+	var center := (d[0] + d[2]) * 0.5
+	var inside := Geometry2D.is_point_in_polygon(center, moved * deep)
+	var n := _hash(cell + world_origin)
+	if inside or n > 0.55:
+		var crack := Color(0.93, 0.98, 1.0, 0.8)
+		var a := center + Vector2(-9.0 + 5.0 * n, -1.0)
+		var b := center + Vector2(2.0, 2.0 - 4.0 * n)
+		ci.draw_line(a, b, crack, 1.0)
+		ci.draw_line(b, b + Vector2(8.0, -2.0 + 3.0 * n), crack, 1.0)
+	if n < 0.3:
+		ci.draw_line(center + Vector2(-5, -3), center + Vector2(4, -5), Color(1, 1, 1, 0.6), 1.4)
+	# Rim: the outline segments whose midpoint lies on this cell.
+	var count := outline.size()
+	for i in count:
+		var p0: Vector2 = outline[i] + lift
+		var p1: Vector2 = outline[(i + 1) % count] + lift
+		if not Geometry2D.is_point_in_polygon(p0, d) and not Geometry2D.is_point_in_polygon(p1, d):
+			continue
+		ci.draw_line(p0 + Vector2(0, 1.2), p1 + Vector2(0, 1.2), Color(0.62, 0.72, 0.86, 0.9), 3.0)
+		ci.draw_line(p0, p1, POND_RIM, 2.4)
+
+
+## The oval for the pond a cell belongs to, in zone-local pixels at height 0.
+func _pond_shape(cell: Vector2i) -> Dictionary:
+	if _pond_shapes.has(cell):
+		return _pond_shapes[cell]
+	var cells: Array[Vector2i] = []
+	var seen := {cell: true}
+	var queue: Array[Vector2i] = [cell]
+	while not queue.is_empty() and cells.size() < 64:
+		var at: Vector2i = queue.pop_back()
+		cells.append(at)
+		for step in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+			var nb: Vector2i = at + step
+			if not seen.has(nb) and _crag_pond(nb):
+				seen[nb] = true
+				queue.append(nb)
+	var lo := Vector2(cells[0])
+	var hi := Vector2(cells[0])
+	for c in cells:
+		lo = Vector2(minf(lo.x, c.x), minf(lo.y, c.y))
+		hi = Vector2(maxf(hi.x, c.x), maxf(hi.y, c.y))
+	var mid := (lo + hi) * 0.5
+	var radius := (hi - lo) * 0.5 + Vector2(0.38, 0.38)
+	var salt := _hash(cells[0] + world_origin)
+	var outline := PackedVector2Array()
+	var deep := PackedVector2Array()
+	var ring: Array[Vector2] = []
+	for i in 28:
+		var t := TAU * float(i) / 28.0
+		var wob := 1.0 + 0.07 * sin(t * 3.0 + salt * 6.0) + 0.04 * sin(t * 5.0 + salt * 11.0)
+		var p := mid + Vector2(cos(t) * radius.x, sin(t) * radius.y) * wob
+		# Pull the point in until it sits on a pond cell, so the oval never
+		# runs past the cells that draw it.
+		for _k in 20:
+			if seen.has(Vector2i(roundi(p.x), roundi(p.y))):
+				break
+			p = mid + (p - mid) * 0.93
+		ring.append(p)
+	# Smooth the pulled-in outline, then make sure it still sits on the pond.
+	for _pass in 2:
+		var soft: Array[Vector2] = []
+		for i in ring.size():
+			soft.append((ring[i - 1] + ring[i] * 2.0 + ring[(i + 1) % ring.size()]) * 0.25)
+		ring = soft
+	for p in ring:
+		var q := p
+		for _k in 20:
+			if seen.has(Vector2i(roundi(q.x), roundi(q.y))):
+				break
+			q = mid + (q - mid) * 0.93
+		outline.append(_cell_point(q))
+		deep.append(_cell_point(mid + (q - mid) * 0.55 + Vector2(0.15, 0.1)))
+	var shape := {"outline": outline, "deep": deep}
+	for c in cells:
+		_pond_shapes[c] = shape
+	return shape
+
+
+## A fractional cell position as zone-local pixels (height 0).
+static func _cell_point(p: Vector2) -> Vector2:
+	return Vector2((p.x - p.y) * Pick.HALF_W, (p.x + p.y) * Pick.HALF_H)
+
+
+## Packed snow along a crag path: a soft blue-grey band toward each path
+## neighbour, and a few footprints.
+func _draw_trodden(ci: Node2D, cell: Vector2i, steps: int) -> void:
+	var d := Pick.diamond(cell, float(steps))
+	var center := (d[0] + d[2]) * 0.5
+	var sides: Array[Vector2i] = [Vector2i(0, -1), Vector2i(1, 0), Vector2i(0, 1), Vector2i(-1, 0)]
+	var salt := cell + world_origin
+	var band := Color(0.82, 0.86, 0.94)
+	_soft_blob(ci, center, 13.0, 6.5, band, _hash(salt))
+	for k in 4:
+		if not _crag_trodden(cell + sides[k]):
+			continue
+		var mid: Vector2 = (d[k] + d[(k + 1) % 4]) * 0.5
+		var along := (mid - center).normalized()
+		var side := Vector2(-along.y, along.x) * 7.5
+		var wig := (_hash(salt + Vector2i(k, 7)) - 0.5) * 3.0
+		ci.draw_colored_polygon(PackedVector2Array([
+			center + side, mid + side * 0.9 + Vector2(0, wig), mid - side * 0.9 + Vector2(0, wig), center - side,
+		]), band)
+		for j in 2:
+			var t := 0.3 + 0.4 * float(j)
+			var at := center.lerp(mid, t) + side * (0.35 if j == 0 else -0.35)
+			ci.draw_colored_polygon(_ellipse(at, 1.7, 1.0), Color(0.52, 0.58, 0.72, 0.6))
+
+
+func _ellipse(at: Vector2, rx: float, ry: float) -> PackedVector2Array:
+	var pts := PackedVector2Array()
+	for i in 6:
+		var a := TAU * float(i) / 6.0
+		pts.append(at + Vector2(cos(a) * rx, sin(a) * ry))
+	return pts
 
 
 ## Technical Artist kit path: height strips, autotiled floor, corner decals.
@@ -1133,9 +1243,7 @@ func _draw_cell_kit(ci: Node2D, cell: Vector2i, terrain: String, steps: int, ban
 	var center := BoardVisualSort.cell_to_local(cell, float(steps))
 	var south_tip := center + Vector2(0, Pick.HALF_H)
 	var shown := "golden_plains" if bank else terrain
-	if _north_crag(cell):
-		_draw_crag_faces(ci, cell, south_tip)
-	elif steps > 0:
+	if steps > 0:
 		var strips := Art.face_strips(zone, cell)
 		var all_found := true
 		for strip in strips:
@@ -1155,9 +1263,16 @@ func _draw_cell_kit(ci: Node2D, cell: Vector2i, terrain: String, steps: int, ban
 		_draw_named_floor(ci, south_tip, "golden_plains_a", "golden_plains", _floor_modulate(cell, "golden_plains"))
 		return
 	var cover := cover_at(cell)
-	if cover >= 0.999 and terrain != "water":
+	# Crag paths and ponds are always under full snow, even in a neighbour's
+	# thinning margin, so they draw the same from either side of a seam.
+	if (cover >= 0.999 or _crag_pond(cell) or _crag_trodden(cell)) and terrain != "water":
 		# Snow town: the painted snow replaces the floor art outright.
-		_draw_snow_floor(ci, cell, steps, terrain, true)
+		var trodden := _crag_trodden(cell)
+		_draw_snow_floor(ci, cell, steps, "golden_plains" if trodden else terrain, true)
+		if trodden:
+			_draw_trodden(ci, cell, steps)
+		elif _crag_pond(cell):
+			_draw_frozen_pond(ci, cell, steps)
 		var lip_amount := snow_shore_at(cell)
 		if lip_amount > 0.0:
 			_draw_snow_lip(ci, cell, steps, lip_amount)
@@ -1518,10 +1633,8 @@ func _draw_sea_foam(ci: Node2D, cell: Vector2i, steps: int, front: bool) -> void
 		_soft_foam_edge(ci, d[k] + lift, d[(k + 1) % 4] + lift, center + lift, snow_shore_at(nb), front)
 
 
-## Height a cell is drawn at. The Northgate crag terraces sit above their data height.
+## Height a cell is drawn at.
 func _drawn_steps(cell: Vector2i) -> int:
-	if _north_crag(cell):
-		return _terrace(cell)
 	return Art.height_seen(zone, cell)
 
 
@@ -1989,23 +2102,11 @@ func _dust_snow(ci: Node2D, cell: Vector2i, terrain: String, steps: int) -> void
 	var amount := snow_at_cell(cell)
 	if amount <= 0.2:
 		return
-	var diamond := Pick.diamond(cell, float(steps))
 	if terrain == "water":
 		# Sea stays the one map blue. A wash per diamond also drew the grid.
 		if _water_grade(cell) == "sea":
 			return
-		ci.draw_colored_polygon(diamond, Color(0.62, 0.78, 0.90, 0.22 * amount))
-		return
-	if terrain != "cliff" or not _north_crag(cell):
-		return
-	# A lip where the terrace drops. Grass frost is the tint, not a disc per cell.
-	var lip := Color(0.97, 0.98, 1.0, 0.7 * amount)
-	var south := cell + Vector2i(0, 1)
-	var east := cell + Vector2i(1, 0)
-	if _terrace(cell) > _terrace(south):
-		ci.draw_line(diamond[2], diamond[3], lip, 2.2)
-	if _terrace(cell) > _terrace(east):
-		ci.draw_line(diamond[1], diamond[2], lip, 2.2)
+		ci.draw_colored_polygon(Pick.diamond(cell, float(steps)), Color(0.62, 0.78, 0.90, 0.22 * amount))
 
 
 func _draw_ripple(ci: Node2D, anim_id: String, south_tip: Vector2, modulate: Color = Color.WHITE, overlap: float = 0.0) -> bool:
