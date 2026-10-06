@@ -422,8 +422,9 @@ func _fight_clip() -> void:
 	var over := {}
 	board.room_over.connect(func(r): over["result"] = r)
 	await _start_room(int(_arg("--room", "0")), true)
-	var t0 := Time.get_ticks_msec()
-	while over.is_empty() and Time.get_ticks_msec() - t0 < int(float(_arg("--secs", "150")) * 1000.0):
+	# Game time, not wall time: the movie writer renders slower than real time.
+	var limit := get_tree().create_timer(float(_arg("--secs", "150")))
+	while over.is_empty() and limit.time_left > 0.0:
 		await get_tree().process_frame
 	print("FIGHT %s" % str(over.get("result", "timeout")))
 	_stair_label.text = "Victory" if str(over.get("result", "")) == "win" else "Defeat"
