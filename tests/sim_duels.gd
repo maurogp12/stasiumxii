@@ -73,6 +73,10 @@ func _process(_d: float) -> bool:
 			var b: String = CLASSES[j]
 			if _only != "" and a != _only and b != _only:
 				continue
+			# DUEL_VS=gloam,ironjaw: only those opponents of `only_class`.
+			var vs := OS.get_environment("DUEL_VS")
+			if vs != "" and not (vs.split(",").has(a) or vs.split(",").has(b)):
+				continue
 			for g in range(_games * 2):
 				var swap := g % 2 == 1
 				var classes := [b, a] if swap else [a, b]
