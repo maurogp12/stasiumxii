@@ -316,6 +316,7 @@ func _test_ambush_origin_and_destination() -> void:
 		"gloam_invisible": true,
 		"rolls": [1],
 		"blockers": [Vector2i(5, 1), Vector2i(5, 2), Vector2i(5, 3), Vector2i(6, 2), Vector2i(6, 3)],
+		"tiles": [{"pos": Vector2i(3, 2), "terrain": "void", "elevation": 0}],
 	})
 	var shades_blocked := int(_sim.snapshot()["units"][0]["shades"])
 	var blocked: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": prey, "seat": 0})

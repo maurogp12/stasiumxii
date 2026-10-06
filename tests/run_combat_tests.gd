@@ -61,6 +61,7 @@ func _run() -> void:
 	_test_end_turn_refills()
 	_test_illegal_cast_refunds()
 	_test_ambush_destination_locked()
+	_test_ambush_front_landing()
 	_test_ambush_arms_at_zero_mp()
 	_test_ambush_origin_chrome()
 	_test_ambush_shade_label_matches_origin()
@@ -1342,7 +1343,7 @@ func _test_void_gap_not_standable() -> void:
 		"kestrel_facing": "W",
 		"gloam_invisible": true,
 		"rolls": [1],
-		"tiles": [{"pos": Vector2i(5, 2), "terrain": "void", "elevation": 0}],
+		"tiles": [{"pos": Vector2i(5, 2), "terrain": "void", "elevation": 0}, {"pos": Vector2i(3, 2), "terrain": "void", "elevation": 0}],
 	})
 	var ambush: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": Vector2i(4, 2), "seat": 0})
 	eq(str(ambush.get("reason", "")), "illegal_back", "a void back tile rejects Ambush")
@@ -1842,6 +1843,44 @@ func _test_illegal_cast_refunds() -> void:
 	eq(_unit(0)["ap"], 6, "wrong-kit cast refunds")
 
 
+
+## Mauro 6 Oct 2026: "ambush should work even if there is an obstacle just would
+## place him infront of enemy instead of jumping him".
+func _test_ambush_front_landing() -> void:
+	for case in [
+		{"label": "wall back", "gloam": Vector2i(2, 2), "blockers": [Vector2i(5, 2)], "tiles": []},
+		{"label": "void back", "gloam": Vector2i(2, 2), "blockers": [], "tiles": [{"pos": Vector2i(5, 2), "terrain": "void", "elevation": 0}]},
+		{"label": "adjacent wall back", "gloam": Vector2i(3, 2), "blockers": [Vector2i(5, 2)], "tiles": []},
+	]:
+		var label := str(case["label"])
+		_sim.reset_match({
+			"seed": 1,
+			"flat_board": true,
+			"skip_deploy": true,
+			"classes": ["gloam", "kestrel"],
+			"positions": [case["gloam"], Vector2i(4, 2)],
+			"kestrel_facing": "W",
+			"rolls": [1],
+			"blockers": case["blockers"],
+			"tiles": case["tiles"],
+		})
+		eq(_has_legal_cast(0, SpellKits.AMBUSH), true, "%s: Ambush stays legal" % label)
+		var preview: Dictionary = _sim.ambush_landing_preview(0)
+		eq(preview.get("cell"), Vector2i(3, 2), "%s: preview lands in front of the enemy" % label)
+		var hit: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": Vector2i(4, 2), "seat": 0})
+		eq(bool(hit.get("ok", false)), true, "%s: Ambush resolves" % label)
+		eq(_unit(0)["pos"], Vector2i(3, 2), "%s: Gloam lands on the front tile" % label)
+		eq(str(_unit(0).get("facing", "")), "E", "%s: Gloam faces the prey" % label)
+		var ev := {}
+		for e in hit.get("events", []):
+			if str(e.get("type", "")) == "hit":
+				ev = e
+		eq(bool(ev.get("front_landing", false)), true, "%s: the hit names the front landing" % label)
+		eq(bool(ev.get("backstab", true)), false, "%s: a front landing on a W-facing foe is no backstab" % label)
+		eq(int(_unit(1)["hp"]) < 75, true, "%s: the front landing still deals damage" % label)
+		eq(int(_unit(0)["ap"]), 2, "%s: Ambush spends 4 AP" % label)
+
+
 func _test_ambush_destination_locked() -> void:
 	var gloam := Vector2i(2, 2)
 	var prey := Vector2i(4, 2)
@@ -1858,6 +1897,8 @@ func _test_ambush_destination_locked() -> void:
 		"gloam_invisible": true,
 		"rolls": [1],
 		"blockers": [Vector2i(4, 1), Vector2i(4, 2), Vector2i(4, 3), Vector2i(5, 1), Vector2i(5, 3), back, Vector2i(6, 3)],
+		# Mauro 6 Oct 2026: a blocked back falls back to the front tile. Void it too.
+		"tiles": [{"pos": Vector2i(3, 2), "terrain": "void", "elevation": 0}],
 	})
 	var ap_before := int(blocked_setup["units"][0]["ap"])
 	var mp_before := int(blocked_setup["units"][0]["mp"])
@@ -2365,6 +2406,7 @@ func _test_ambush_adjacent_shade_rejects() -> void:
 		"kestrel_facing": "W",
 		"rolls": [1],
 		"blockers": [blocked_back],
+		"tiles": [{"pos": Vector2i(3, 2), "terrain": "void", "elevation": 0}],
 	})
 	eq(_sim.chebyshev(back_gloam, back_shade), 2, "the blocked-back Shade is inside Drop Shade")
 	eq(_sim.is_cardinal_exact(back_shade, back_prey, 2), true, "the blocked-back Shade is Manhattan 2 cardinal")
@@ -2738,6 +2780,7 @@ func _test_ambush_rules_keeper_lock() -> void:
 		"kestrel_facing": "W",
 		"rolls": [1],
 		"blockers": [back],
+		"tiles": [{"pos": Vector2i(3, 2), "terrain": "void", "elevation": 0}],
 	})
 	eq(bool(_sim.submit({"type": "cast", "spell": "drop_shade", "to": shade_at, "seat": 0}).get("ok", false)), true, "Drop Shade plants beside a blocked back tile")
 	_complete_opponent_turn()
@@ -7931,18 +7974,35 @@ func _test_element_blends() -> void:
 	eq(str(_unit(1).get("residue", "")), "air", "the Air hit leaves its own Residue instead")
 	eq(_sim.blend_of("air", "fire"), "", "no Blend for Air + Fire")
 
-	# Drift-Pin: slide 1 away, Pinned next turn (no walking), never two turns running.
+	# Drift-Pin: slide 1 away. Mauro 6 Oct 2026: only a hit (wall / edge / body) Pins.
 	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1, 1], "classes": ["ironjaw", "kestrel"], "positions": [Vector2i(5, 5), Vector2i(6, 5)]})
 	_live_unit(0)["spell_elements"] = {"strike": "air", "shoulder": "earth", "crush": "earth"}
 	_live_unit(1)["residue"] = "earth"
 	_live_unit(1)["residue_seat"] = 0
 	_live_unit(1)["residue_turns"] = 2
-	var pin: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(6, 5), "seat": 0})
-	eq(str(_first_event_where(pin.get("events", []), "blend").get("blend", "")), "drift_pin", "Air on own Earth = Drift-Pin")
+	var slide: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(6, 5), "seat": 0})
+	var slide_ev := _first_event_where(slide.get("events", []), "blend")
+	eq(str(slide_ev.get("blend", "")), "drift_pin", "Air on own Earth = Drift-Pin")
 	eq(_unit(1)["pos"], Vector2i(7, 5), "Drift-Pin slides the target 1 away")
+	eq(bool(slide_ev.get("pin", false)), false, "a free slide does not Pin")
+	_sim.submit({"type": "end_turn", "seat": 0})
+	eq(bool(_unit(1).get("pinned", false)), false, "a slid target is not Pinned")
+	eq(bool(_sim.submit({"type": "move", "to": Vector2i(8, 5), "seat": 1}).get("ok", false)), true, "a slid target can still walk")
+
+	# Drift-Pin into a wall / body: 8 and Pinned next turn, never two turns running.
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1, 1], "classes": ["ironjaw", "kestrel"], "positions": [Vector2i(13, 5), Vector2i(14, 5)]})
+	_live_unit(0)["spell_elements"] = {"strike": "air", "shoulder": "earth", "crush": "earth"}
+	_live_unit(1)["residue"] = "earth"
+	_live_unit(1)["residue_seat"] = 0
+	_live_unit(1)["residue_turns"] = 2
+	var hp0 := int(_unit(1)["hp"])
+	var slam: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(14, 5), "seat": 0})
+	var strike_dmg := int(_first_event_where(slam.get("events", []), "hit").get("damage", 0))
+	eq(hp0 - int(_unit(1)["hp"]), strike_dmg + 8, "Drift-Pin into the board edge hits for 8")
+	eq(bool(_first_event_where(slam.get("events", []), "blend").get("pin", false)), true, "hitting the edge Pins")
 	_sim.submit({"type": "end_turn", "seat": 0})
 	eq(bool(_unit(1).get("pinned", false)), true, "Pinned on its next turn")
-	var no_walk: Dictionary = _sim.submit({"type": "move", "to": Vector2i(8, 5), "seat": 1})
+	var no_walk: Dictionary = _sim.submit({"type": "move", "to": Vector2i(14, 6), "seat": 1})
 	eq(str(no_walk.get("reason", "")), "pinned", "a Pinned fighter cannot walk")
 	var walks := 0
 	for intent in _sim.legal_intents(1):
@@ -7955,20 +8015,18 @@ func _test_element_blends() -> void:
 	_live_unit(1)["residue_seat"] = 0
 	_live_unit(1)["residue_turns"] = 2
 	_sim._scripted_rolls.append(1)
-	_live_unit(0)["pos"] = Vector2i(6, 5)
-	var pin2: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(7, 5), "seat": 0})
+	var pin2: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(14, 5), "seat": 0})
 	eq(bool(_first_event_where(pin2.get("events", []), "blend").get("pin", false)), false, "no Pin two turns running")
 
-	# Drift-Pin into a wall / body: 8.
-	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1], "classes": ["ironjaw", "kestrel"], "positions": [Vector2i(13, 5), Vector2i(14, 5)]})
+	# Drift-Pin into a body: 8 and Pinned.
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1], "classes": ["ironjaw", "kestrel"], "positions": [Vector2i(5, 5), Vector2i(6, 5)], "blockers": [Vector2i(7, 5)]})
 	_live_unit(0)["spell_elements"] = {"strike": "air", "shoulder": "earth", "crush": "earth"}
 	_live_unit(1)["residue"] = "earth"
 	_live_unit(1)["residue_seat"] = 0
 	_live_unit(1)["residue_turns"] = 2
-	var hp0 := int(_unit(1)["hp"])
-	var slam: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(14, 5), "seat": 0})
-	var strike_dmg := int(_first_event_where(slam.get("events", []), "hit").get("damage", 0))
-	eq(hp0 - int(_unit(1)["hp"]), strike_dmg + 8, "Drift-Pin into the board edge hits for 8")
+	var body: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(6, 5), "seat": 0})
+	eq(_unit(1)["pos"], Vector2i(6, 5), "a blocked Drift-Pin does not move the target")
+	eq(bool(_first_event_where(body.get("events", []), "blend").get("pin", false)), true, "hitting something in the way Pins")
 
 	# Spark (Air + Water, Mauro 6 Oct 2026): 10 damage that ignores resist, 40% less healing.
 	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1], "classes": ["ironjaw", "kestrel"], "positions": [Vector2i(5, 5), Vector2i(6, 5)]})
