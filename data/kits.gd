@@ -66,6 +66,9 @@ const OPEN_CAN_WAIT: Array[String] = [
 	"cone_ward_masks",
 ]
 
+## Mauro 6 Oct 2026: Kestrel aims better the farther away she shoots
+## (Mark Shot and Detonate). Other spells keep the shared HitBands.
+const KESTREL_HIT_BY_DISTANCE := {1: 70, 2: 75, 3: 80, 4: 85, 5: 90}
 const SPELLS := {
 	ADVANCE: {
 		"id": ADVANCE,
@@ -114,6 +117,7 @@ const SPELLS := {
 		"base_damage": 8,  # Mauro 1 Oct 2026 balance round 2 (back from 7)
 		"target": "enemy",
 		"engine_on_connect": "mark",
+		"hit_by_distance": KESTREL_HIT_BY_DISTANCE,
 	},
 	DETONATE: {
 		"id": DETONATE,
@@ -132,6 +136,7 @@ const SPELLS := {
 		# A01 Locked: Marks live on the target. Detonate reads/consumes that stack.
 		"engine_on_connect": "consume_marks",
 		"requires_marks_on_target": 1,
+		"hit_by_distance": KESTREL_HIT_BY_DISTANCE,
 	},
 	SHOULDER: {
 		"id": SHOULDER,

@@ -1132,6 +1132,17 @@ static func hit_chance(distance: int) -> int:
 	return _HitBands.chance(distance)
 
 
+## Mauro 6 Oct 2026: "the farther away she should aim better, she is a ranged
+## character". A spell may carry its own `hit_by_distance` table (Kestrel's
+## Mark Shot and Detonate); every other spell uses the shared bands.
+static func _spell_hit_chance(def: Dictionary, distance: int) -> int:
+	var own: Dictionary = def.get("hit_by_distance", {})
+	var key := maxi(distance, 1)
+	if own.has(key):
+		return int(own[key])
+	return hit_chance(distance)
+
+
 ## Presentation helper only. Locked Chebyshev bands; no +5. Advance / walks: show=false.
 func aim_hit_preview(seat: int, spell_id: String, dest: Variant = null) -> Dictionary:
 	var out := {
@@ -1178,7 +1189,7 @@ func aim_hit_preview(seat: int, spell_id: String, dest: Variant = null) -> Dicti
 			aim_from = origin_cell
 	var dist := chebyshev(aim_from, cell)
 	out["range"] = dist
-	var chance := hit_chance(dist)
+	var chance := _spell_hit_chance(def, dist)
 	out["hit_chance"] = chance
 	# No sight behind a wall: no hit % either (the shot cannot be taken).
 	if not _spell_sees(def, aim_from, cell):
@@ -1375,7 +1386,7 @@ func preview_cast(spell_or_intent: Variant, from: Variant = null, to: Variant = 
 		var in_kit := range_dist >= int(def["min_range"]) and range_dist <= int(def["max_range"])
 		out["in_range"] = in_kit and range_dist <= _HitBands.MAX_DISTANCE
 		if bool(def.get("rolls", false)):
-			var chance := hit_chance(range_dist)
+			var chance := _spell_hit_chance(def, range_dist)
 			if chance >= 0:
 				out["hit_chance"] = chance
 
@@ -2797,7 +2808,7 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 	var caster_cell: Vector2i = actor["pos"]
 	actor["ap"] = int(actor["ap"]) - ap_cost
 	_spend_mp(actor, mp_cost)
-	var chance: int = hit_chance(dist)
+	var chance: int = _spell_hit_chance(def, dist)
 	var roll: int = _roll_d100()
 	var connected: bool = roll <= chance
 	var facing_mult: float = _facing_multiplier(actor["pos"], target["pos"], str(target["facing"]))
@@ -5641,7 +5652,7 @@ func _resolve_support(intent: Dictionary, actor: Dictionary, target: Dictionary,
 	var roll := 0
 	var connected := true
 	if bool(def.get("rolls", false)):
-		chance = hit_chance(dist)
+		chance = _spell_hit_chance(def, dist)
 		roll = _roll_d100()
 		connected = roll <= chance
 	_intent_log.append(intent)
