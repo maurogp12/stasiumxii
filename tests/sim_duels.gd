@@ -37,6 +37,8 @@ func _initialize() -> void:
 	# DUEL_RIDERS=0 plays without the element riders (compare before / after).
 	if OS.get_environment("DUEL_RIDERS") == "0":
 		SpellKits.set_element_riders(false)
+	if OS.get_environment("THORNS_PCT") != "":
+		SIM_SCRIPT.thorns_pct = float(OS.get_environment("THORNS_PCT"))
 	if args.size() > 0:
 		_games = int(args[0])
 	if args.size() > 1:

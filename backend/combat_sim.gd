@@ -5473,6 +5473,15 @@ func _mitigate_hit(actor: Dictionary, target: Dictionary, damage: int) -> Dictio
 ## Mauro 6 Oct 2026: Bastion Thorns. While Bastion has a shield, an enemy that
 ## hits him from an adjacent tile takes THORNS_DAMAGE back (no resist).
 const THORNS_DAMAGE := 6
+## Balance tool knob: > 0 makes Thorns this % of Bastion's max HP instead of
+## the flat THORNS_DAMAGE (tests/sim_duels.gd reads THORNS_PCT).
+static var thorns_pct := 0.0
+
+
+static func thorns_amount(bastion: Dictionary) -> int:
+	if thorns_pct > 0.0:
+		return maxi(1, int(round(float(bastion.get("max_hp", 0)) * thorns_pct / 100.0)))
+	return THORNS_DAMAGE
 
 
 func _bastion_thorns(actor: Dictionary, target: Dictionary, damage: int, report: Dictionary) -> void:
@@ -5484,8 +5493,9 @@ func _bastion_thorns(actor: Dictionary, target: Dictionary, damage: int, report:
 		return
 	if chebyshev(actor["pos"], target["pos"]) != 1:
 		return
-	actor["hp"] = maxi(0, int(actor["hp"]) - THORNS_DAMAGE)
-	report["thorns"] = THORNS_DAMAGE
+	var thorns := thorns_amount(target)
+	actor["hp"] = maxi(0, int(actor["hp"]) - thorns)
+	report["thorns"] = thorns
 	report["thorns_seat"] = int(actor["seat"])
 	_check_death(actor)
 
