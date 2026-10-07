@@ -1,0 +1,904 @@
+{
+ "stamps": {
+  "mark_shot_cast": {
+   "path": "res://art/vfx/spells/kestrel/mark_shot_cast.png",
+   "frames": 6,
+   "frame_ms": [
+    70,
+    80,
+    80,
+    50,
+    60,
+    60
+   ],
+   "px": 54,
+   "add": true
+  },
+  "mark_shot_impact": {
+   "path": "res://art/vfx/spells/kestrel/mark_shot_impact.png",
+   "frames": 6,
+   "frame_ms": [
+    50,
+    60,
+    70,
+    90,
+    90,
+    120
+   ],
+   "px": 69,
+   "add": true
+  },
+  "detonate_burst": {
+   "path": "res://art/vfx/spells/kestrel/detonate_burst.png",
+   "frames": 6,
+   "frame_ms": [
+    60,
+    70,
+    80,
+    90,
+    100,
+    120
+   ],
+   "px": 110,
+   "add": true
+  },
+  "strike_axes": {
+   "path": "res://art/vfx/spells/ironjaw/strike_axes.png",
+   "frames": 6,
+   "frame_ms": [
+    60,
+    60,
+    80,
+    80,
+    70,
+    60
+   ],
+   "px": 84,
+   "add": false
+  },
+  "cut_slash": {
+   "path": "res://art/vfx/spells/gloam/cut_slash.png",
+   "frames": 6,
+   "frame_ms": [
+    50,
+    60,
+    70,
+    70,
+    60,
+    50
+   ],
+   "px": 73,
+   "add": false
+  },
+  "ambush_slash": {
+   "path": "res://art/vfx/spells/gloam/ambush_slash.png",
+   "frames": 6,
+   "frame_ms": [
+    80,
+    120,
+    90,
+    50,
+    40,
+    40
+   ],
+   "px": 99,
+   "add": false
+  },
+  "bash_mace": {
+   "path": "res://art/vfx/spells/bastion/bash_mace.png",
+   "frames": 6,
+   "frame_ms": [
+    60,
+    70,
+    80,
+    80,
+    70,
+    60
+   ],
+   "px": 78,
+   "add": false
+  },
+  "hit_flash": {
+   "path": "res://art/vfx/spells/common/hit_flash.png",
+   "frames": 6,
+   "frame_ms": [
+    30,
+    40,
+    50,
+    50,
+    50,
+    50
+   ],
+   "px": 67,
+   "add": true
+  }
+ },
+ "cues": [
+  {
+   "id": "vault_takeoff",
+   "spell": "vault",
+   "types": [
+    "cast"
+   ],
+   "at": "from",
+   "system": "strip",
+   "path": "res://art/vfx/spells/kestrel/vault_takeoff.png",
+   "frames": 3,
+   "fps": 11,
+   "scale": 0.419,
+   "px": 0,
+   "anchor": [
+    96,
+    150
+   ],
+   "add": true,
+   "crossfade": true,
+   "owner_only": false,
+   "z": "ground",
+   "flip": false
+  },
+  {
+   "id": "vault_land",
+   "spell": "vault",
+   "types": [
+    "cast"
+   ],
+   "at": "to",
+   "system": "strip",
+   "path": "res://art/vfx/spells/kestrel/vault_land.png",
+   "frames": 3,
+   "fps": 11,
+   "scale": 0.37,
+   "px": 0,
+   "anchor": [
+    96,
+    150
+   ],
+   "add": true,
+   "crossfade": true,
+   "owner_only": false,
+   "z": "ground",
+   "flip": false
+  },
+  {
+   "id": "snare_set",
+   "spell": "snare_trap",
+   "types": [
+    "cast"
+   ],
+   "at": "to",
+   "system": "strip",
+   "path": "res://art/vfx/spells/kestrel/snare_set.png",
+   "frames": 3,
+   "fps": 10,
+   "scale": 0.347,
+   "px": 0,
+   "anchor": [
+    96,
+    150
+   ],
+   "add": false,
+   "crossfade": true,
+   "owner_only": true,
+   "z": "ground",
+   "flip": false
+  },
+  {
+   "id": "snare_spring",
+   "spell": "snare_trap",
+   "types": [
+    "trap"
+   ],
+   "at": "to",
+   "system": "strip",
+   "path": "res://art/vfx/spells/kestrel/snare_spring.png",
+   "frames": 3,
+   "fps": 12,
+   "scale": 0.356,
+   "px": 0,
+   "anchor": [
+    96,
+    150
+   ],
+   "add": false,
+   "crossfade": true,
+   "owner_only": false,
+   "z": "air",
+   "flip": false
+  },
+  {
+   "id": "strike_axes",
+   "spell": "strike",
+   "types": [
+    "hit",
+    "miss"
+   ],
+   "at": "to",
+   "system": "stamp",
+   "path": "res://art/vfx/spells/ironjaw/strike_axes.png",
+   "frames": 6,
+   "fps": 12,
+   "scale": 0.5,
+   "px": 84,
+   "anchor": [
+    96,
+    96
+   ],
+   "add": false,
+   "crossfade": false,
+   "owner_only": false,
+   "z": "air",
+   "flip": false
+  },
+  {
+   "id": "crush_stamp",
+   "spell": "crush",
+   "types": [
+    "hit"
+   ],
+   "at": "to",
+   "system": "strip",
+   "path": "res://art/vfx/spells/ironjaw/crush_stamp.png",
+   "frames": 6,
+   "fps": 12,
+   "scale": 0.412,
+   "px": 0,
+   "anchor": [
+    96,
+    150
+   ],
+   "add": false,
+   "crossfade": false,
+   "owner_only": false,
+   "z": "air",
+   "flip": false
+  },
+  {
+   "id": "shoulder_shove",
+   "spell": "shoulder",
+   "types": [
+    "hit",
+    "miss"
+   ],
+   "at": "to",
+   "system": "strip",
+   "path": "res://art/vfx/spells/ironjaw/shoulder_shove.png",
+   "frames": 3,
+   "fps": 12,
+   "scale": 0.402,
+   "px": 0,
+   "anchor": [
+    96,
+    150
+   ],
+   "add": false,
+   "crossfade": true,
+   "owner_only": false,
+   "z": "air",
+   "flip": true
+  },
+  {
+   "id": "advance_land",
+   "spell": "advance",
+   "types": [
+    "advance"
+   ],
+   "at": "to",
+   "system": "strip",
+   "path": "res://art/vfx/spells/ironjaw/advance_land.png",
+   "frames": 3,
+   "fps": 12,
+   "scale": 0.409,
+   "px": 0,
+   "anchor": [
+    96,
+    150
+   ],
+   "add": false,
+   "crossfade": false,
+   "owner_only": false,
+   "z": "ground",
+   "flip": false
+  },
+  {
+   "id": "mend_fill",
+   "spell": "mend",
+   "types": [
+    "hit"
+   ],
+   "at": "to",
+   "system": "strip",
+   "path": "res://art/vfx/spells/mender/mend_fill.png",
+   "frames": 6,
+   "fps": 12,
+   "scale": 0.571,
+   "px": 0,
+   "anchor": [
+    96,
+    150
+   ],
+   "add": true,
+   "crossfade": false,
+   "owner_only": false,
+   "z": "air",
+   "flip": false
+  },
+  {
+   "id": "pulse_tap_drop",
+   "spell": "pulse_tap",
+   "types": [
+    "hit"
+   ],
+   "at": "to",
+   "system": "strip",
+   "path": "res://art/vfx/spells/mender/pulse_tap_drop.png",
+   "frames": 3,
+   "fps": 12,
+   "scale": 0.49,
+   "px": 0,
+   "anchor": [
+    96,
+    150
+   ],
+   "add": true,
+   "crossfade": false,
+   "owner_only": false,
+   "z": "air",
+   "flip": false
+  },
+  {
+   "id": "cleanse_wash",
+   "spell": "cleanse",
+   "types": [
+    "hit"
+   ],
+   "at": "to",
+   "system": "strip",
+   "path": "res://art/vfx/spells/mender/cleanse_wash.png",
+   "frames": 3,
+   "fps": 11,
+   "scale": 0.562,
+   "px": 0,
+   "anchor": [
+    96,
+    150
+   ],
+   "add": true,
+   "crossfade": false,
+   "owner_only": false,
+   "z": "air",
+   "flip": false
+  },
+  {
+   "id": "heartstop_shell",
+   "spell": "heartstop",
+   "types": [
+    "hit"
+   ],
+   "at": "to",
+   "system": "strip",
+   "path": "res://art/vfx/spells/mender/heartstop_shell.png",
+   "frames": 6,
+   "fps": 11,
+   "scale": 0.6,
+   "px": 0,
+   "anchor": [
+    96,
+    150
+   ],
+   "add": true,
+   "crossfade": false,
+   "owner_only": false,
+   "z": "air",
+   "flip": false
+  },
+  {
+   "id": "rekindle_rise",
+   "spell": "rekindle",
+   "types": [
+    "hit"
+   ],
+   "at": "to",
+   "system": "strip",
+   "path": "res://art/vfx/spells/mender/rekindle_rise.png",
+   "frames": 6,
+   "fps": 11,
+   "scale": 0.605,
+   "px": 0,
+   "anchor": [
+    96,
+    150
+   ],
+   "add": true,
+   "crossfade": false,
+   "owner_only": false,
+   "z": "air",
+   "flip": false
+  },
+  {
+   "id": "cut_slash",
+   "spell": "cut",
+   "types": [
+    "hit",
+    "miss"
+   ],
+   "at": "to",
+   "system": "stamp",
+   "path": "res://art/vfx/spells/gloam/cut_slash.png",
+   "frames": 6,
+   "fps": 12,
+   "scale": 0.5,
+   "px": 73,
+   "anchor": [
+    96,
+    96
+   ],
+   "add": false,
+   "crossfade": false,
+   "owner_only": false,
+   "z": "air",
+   "flip": false
+  },
+  {
+   "id": "ambush_fold",
+   "spell": "ambush",
+   "types": [
+    "hit"
+   ],
+   "at": "origin",
+   "system": "strip",
+   "path": "res://art/vfx/spells/gloam/ambush_fold.png",
+   "frames": 3,
+   "fps": 12,
+   "scale": 0.491,
+   "px": 0,
+   "anchor": [
+    96,
+    150
+   ],
+   "add": false,
+   "crossfade": false,
+   "owner_only": false,
+   "z": "air",
+   "flip": false
+  },
+  {
+   "id": "ambush_seam",
+   "spell": "ambush",
+   "types": [
+    "hit"
+   ],
+   "at": "to",
+   "system": "strip",
+   "path": "res://art/vfx/spells/gloam/ambush_seam.png",
+   "frames": 3,
+   "fps": 12,
+   "scale": 0.521,
+   "px": 0,
+   "anchor": [
+    96,
+    150
+   ],
+   "add": false,
+   "crossfade": false,
+   "owner_only": false,
+   "z": "air",
+   "flip": false
+  },
+  {
+   "id": "fade_out",
+   "spell": "fade",
+   "types": [
+    "cast"
+   ],
+   "at": "caster",
+   "system": "strip",
+   "path": "res://art/vfx/spells/gloam/fade_out.png",
+   "frames": 3,
+   "fps": 10,
+   "scale": 0.531,
+   "px": 0,
+   "anchor": [
+    96,
+    150
+   ],
+   "add": false,
+   "crossfade": false,
+   "owner_only": false,
+   "z": "air",
+   "flip": false
+  },
+  {
+   "id": "fade_reveal",
+   "spell": "fade",
+   "types": [
+    "hit"
+   ],
+   "at": "caster",
+   "system": "strip",
+   "path": "res://art/vfx/spells/gloam/fade_reveal.png",
+   "frames": 3,
+   "fps": 12,
+   "scale": 0.429,
+   "px": 0,
+   "anchor": [
+    96,
+    150
+   ],
+   "add": false,
+   "crossfade": false,
+   "owner_only": false,
+   "z": "air",
+   "flip": false
+  },
+  {
+   "id": "drop_shade_puff",
+   "spell": "drop_shade",
+   "types": [
+    "cast"
+   ],
+   "at": "to",
+   "system": "strip",
+   "path": "res://art/vfx/spells/gloam/drop_shade_puff.png",
+   "frames": 3,
+   "fps": 11,
+   "scale": 0.385,
+   "px": 0,
+   "anchor": [
+    96,
+    150
+   ],
+   "add": false,
+   "crossfade": false,
+   "owner_only": true,
+   "z": "ground",
+   "flip": false
+  },
+  {
+   "id": "nightfold_blink",
+   "spell": "nightfold",
+   "types": [
+    "cast"
+   ],
+   "at": "to",
+   "system": "strip",
+   "path": "res://art/vfx/spells/gloam/nightfold_blink.png",
+   "frames": 3,
+   "fps": 11,
+   "scale": 0.438,
+   "px": 0,
+   "anchor": [
+    96,
+    96
+   ],
+   "add": false,
+   "crossfade": false,
+   "owner_only": false,
+   "z": "air",
+   "flip": false
+  },
+  {
+   "id": "bash_mace",
+   "spell": "bash",
+   "types": [
+    "hit",
+    "miss"
+   ],
+   "at": "to",
+   "system": "stamp",
+   "path": "res://art/vfx/spells/bastion/bash_mace.png",
+   "frames": 6,
+   "fps": 12,
+   "scale": 0.5,
+   "px": 78,
+   "anchor": [
+    96,
+    96
+   ],
+   "add": false,
+   "crossfade": false,
+   "owner_only": false,
+   "z": "air",
+   "flip": false
+  },
+  {
+   "id": "hold_line_sweep",
+   "spell": "hold_line",
+   "types": [
+    "hit"
+   ],
+   "at": "to",
+   "system": "strip",
+   "path": "res://art/vfx/spells/bastion/hold_line_sweep.png",
+   "frames": 6,
+   "fps": 12,
+   "scale": 0.584,
+   "px": 0,
+   "anchor": [
+    144,
+    96
+   ],
+   "add": false,
+   "crossfade": false,
+   "owner_only": false,
+   "z": "air",
+   "flip": true
+  },
+  {
+   "id": "snap_wall_rise",
+   "spell": "snap_wall",
+   "types": [
+    "snap_wall"
+   ],
+   "at": "to",
+   "system": "strip",
+   "path": "res://art/vfx/spells/bastion/snap_wall_rise.png",
+   "frames": 6,
+   "fps": 12,
+   "scale": 0.759,
+   "px": 0,
+   "anchor": [
+    96,
+    150
+   ],
+   "add": false,
+   "crossfade": false,
+   "owner_only": false,
+   "z": "air",
+   "flip": false
+  },
+  {
+   "id": "ward_spread",
+   "spell": "ward",
+   "types": [
+    "hit",
+    "miss"
+   ],
+   "at": "caster",
+   "system": "strip",
+   "path": "res://art/vfx/spells/bastion/ward_spread.png",
+   "frames": 3,
+   "fps": 10,
+   "scale": 0.699,
+   "px": 0,
+   "anchor": [
+    96,
+    150
+   ],
+   "add": true,
+   "crossfade": true,
+   "owner_only": false,
+   "z": "ground",
+   "flip": false
+  },
+  {
+   "id": "ward_shell",
+   "spell": "ward",
+   "types": [
+    "hit"
+   ],
+   "at": "to",
+   "system": "strip",
+   "path": "res://art/vfx/spells/bastion/ward_shell.png",
+   "frames": 3,
+   "fps": 10,
+   "scale": 0.686,
+   "px": 0,
+   "anchor": [
+    96,
+    150
+   ],
+   "add": true,
+   "crossfade": true,
+   "owner_only": false,
+   "z": "air",
+   "flip": false
+  },
+  {
+   "id": "plant_banner",
+   "spell": "plant",
+   "types": [
+    "cast"
+   ],
+   "at": "to",
+   "system": "strip",
+   "path": "res://art/vfx/spells/bastion/plant_banner.png",
+   "frames": 3,
+   "fps": 11,
+   "scale": 0.56,
+   "px": 0,
+   "anchor": [
+    96,
+    150
+   ],
+   "add": false,
+   "crossfade": false,
+   "owner_only": false,
+   "z": "air",
+   "flip": false
+  },
+  {
+   "id": "plant_glow",
+   "spell": "plant",
+   "types": [
+    "cast"
+   ],
+   "at": "to",
+   "system": "strip",
+   "path": "res://art/vfx/spells/bastion/plant_glow.png",
+   "frames": 3,
+   "fps": 9,
+   "scale": 0.395,
+   "px": 0,
+   "anchor": [
+    96,
+    150
+   ],
+   "add": false,
+   "crossfade": false,
+   "owner_only": false,
+   "z": "ground",
+   "flip": false
+  },
+  {
+   "id": "mark_arrow",
+   "spell": "mark_shot",
+   "types": [
+    "hit"
+   ],
+   "at": "fly",
+   "system": "fly",
+   "path": "res://art/vfx/spells/kestrel/mark_arrow.png",
+   "frames": 1,
+   "scale": 0.217,
+   "anchor": [
+    96,
+    96
+   ],
+   "add": false
+  },
+  {
+   "id": "mend_ribbon",
+   "spell": "mend",
+   "types": [
+    "hit"
+   ],
+   "at": "fly",
+   "system": "fly",
+   "path": "res://art/vfx/spells/mender/mend_ribbon.png",
+   "frames": 1,
+   "scale": 0.233,
+   "anchor": [
+    96,
+    96
+   ],
+   "add": false
+  }
+ ],
+ "lingers": [
+  {
+   "id": "snare_trap_token",
+   "path": "res://art/vfx/spells/kestrel/snare_trap_token.png",
+   "frames": 1,
+   "fps": 1.0,
+   "scale": 0.338,
+   "anchor": [
+    96,
+    150
+   ],
+   "add": false,
+   "z": "ground",
+   "owner_only": true
+  },
+  {
+   "id": "heartstop_shell_loop",
+   "path": "res://art/vfx/spells/mender/heartstop_shell_loop.png",
+   "frames": 1,
+   "fps": 1.0,
+   "scale": 0.6,
+   "anchor": [
+    96,
+    150
+   ],
+   "add": false,
+   "z": "air",
+   "owner_only": false
+  },
+  {
+   "id": "ward_shell_loop",
+   "path": "res://art/vfx/spells/bastion/ward_shell_loop.png",
+   "frames": 1,
+   "fps": 1.0,
+   "scale": 0.643,
+   "anchor": [
+    96,
+    150
+   ],
+   "add": false,
+   "z": "air",
+   "owner_only": false
+  },
+  {
+   "id": "plant_banner_idle",
+   "path": "res://art/vfx/spells/bastion/plant_banner_idle.png",
+   "frames": 1,
+   "fps": 1.0,
+   "scale": 0.594,
+   "anchor": [
+    96,
+    150
+   ],
+   "add": false,
+   "z": "air",
+   "owner_only": false
+  },
+  {
+   "id": "snap_wall_block",
+   "path": "res://art/vfx/spells/bastion/snap_wall_block.png",
+   "frames": 1,
+   "fps": 1.0,
+   "scale": 0.569,
+   "anchor": [
+    96,
+    150
+   ],
+   "add": false,
+   "z": "air",
+   "owner_only": false
+  }
+ ],
+ "elements": [
+  {
+   "id": "element_air",
+   "element": "air",
+   "path": "res://art/vfx/spells/common/element_air.png",
+   "frames": 3,
+   "fps": 14,
+   "scale": 0.381,
+   "anchor": [
+    96,
+    48
+   ],
+   "add": true
+  },
+  {
+   "id": "element_earth",
+   "element": "earth",
+   "path": "res://art/vfx/spells/common/element_earth.png",
+   "frames": 3,
+   "fps": 14,
+   "scale": 0.328,
+   "anchor": [
+    96,
+    48
+   ],
+   "add": true
+  },
+  {
+   "id": "element_water",
+   "element": "water",
+   "path": "res://art/vfx/spells/common/element_water.png",
+   "frames": 3,
+   "fps": 14,
+   "scale": 0.328,
+   "anchor": [
+    96,
+    48
+   ],
+   "add": true
+  },
+  {
+   "id": "element_fire",
+   "element": "fire",
+   "path": "res://art/vfx/spells/common/element_fire.png",
+   "frames": 3,
+   "fps": 14,
+   "scale": 0.351,
+   "anchor": [
+    96,
+    48
+   ],
+   "add": true
+  }
+ ]
+}

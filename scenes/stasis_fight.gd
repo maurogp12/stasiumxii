@@ -18,6 +18,10 @@ var _tonic_button: Button
 var _tonic_note: String = ""
 
 
+func _painted_room_letter() -> String:
+	return StasisCatalog.room
+
+
 func _ready() -> void:
 	super()
 	_build_overlay()

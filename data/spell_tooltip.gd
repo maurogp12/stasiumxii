@@ -121,7 +121,7 @@ static func simple_lines(spell_id: String, preview: Dictionary = {}) -> PackedSt
 			out.append("Jump exactly 2 tiles in a straight line (up, down, left or right). It never misses.")
 			out.append("Land next to an enemy = +1 Impact. You can jump over water, mud and lava, but not over rocks, crates, walls or steam. Max 2 jumps per turn.")
 		SpellKits.STRIKE:
-			out.append("Punch an enemy right next to you for %d damage. Hit = +1 Impact." % dmg)
+			out.append("Chop an enemy right next to you with both axes for %d damage. Hit = +1 Impact." % dmg)
 		SpellKits.SHOULDER:
 			out.append("Shove an enemy next to you: %d damage and push them 1 tile away. Hit = +1 Impact." % dmg)
 			out.append("If they crash into a wall or the edge, you get +2 Impact instead.")

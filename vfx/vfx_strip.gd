@@ -30,6 +30,9 @@ var _to: Vector2 = Vector2.ZERO
 var _arc: float = 0.0
 var _duration: float = 0.3
 var _loop: bool = false
+var _crossfade: bool = false
+var _additive: bool = false
+var _fade: Sprite2D
 
 static var _cache: Dictionary = {}
 
@@ -69,6 +72,10 @@ func _ready() -> void:
 	_sprite = Sprite2D.new()
 	_sprite.centered = false
 	add_child(_sprite)
+	_fade = Sprite2D.new()
+	_fade.centered = false
+	_fade.visible = false
+	add_child(_fade)
 	set_process(false)
 
 
@@ -83,8 +90,15 @@ func play(spec: Dictionary) -> void:
 	_age = 0.0
 	_fly = spec.has("from") and spec.has("to")
 	_loop = bool(spec.get("loop", false))
+	_crossfade = bool(spec.get("crossfade", false)) and _cells.size() > 1
+	_additive = bool(spec.get("add", false))
 	var anchor: Vector2 = spec.get("anchor", Vector2.ZERO)
 	_sprite.offset = -anchor
+	_fade.offset = -anchor
+	var flip := bool(spec.get("flip_h", false))
+	_sprite.flip_h = flip
+	_fade.flip_h = flip
+	_apply_blend()
 	var s := float(spec.get("scale", 1.0))
 	scale = Vector2(s, s)
 	z_as_relative = false
@@ -97,8 +111,10 @@ func play(spec: Dictionary) -> void:
 		position = _from
 	else:
 		position = spec.get("pos", Vector2.ZERO)
-	_sprite.texture = _cells[0]
+	_show_pair(0, 0.0)
 	visible = _wait <= 0.0
+	if _additive:
+		modulate = Color(1, 1, 1, 0.82)
 
 
 ## A lingering (looping) strip leaves when its tile does: quick fade, then free.
@@ -111,6 +127,66 @@ func dismiss() -> void:
 	_tween.tween_callback(release)
 
 
+func retarget(spec: Dictionary) -> void:
+	if spec.has("pos"):
+		position = spec["pos"]
+	if spec.has("z"):
+		z_index = int(spec["z"])
+
+
+func release() -> void:
+	_crossfade = false
+	_additive = false
+	_fly = false
+	_loop = false
+	if _sprite != null:
+		_sprite.texture = null
+		_sprite.flip_h = false
+		_sprite.material = null
+		_sprite.modulate = Color.WHITE
+	if _fade != null:
+		_fade.visible = false
+		_fade.texture = null
+		_fade.flip_h = false
+		_fade.material = null
+		_fade.modulate = Color.WHITE
+	super.release()
+
+
+func _apply_blend() -> void:
+	if _additive:
+		var mat := CanvasItemMaterial.new()
+		mat.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
+		_sprite.material = mat
+		_fade.material = mat
+	else:
+		_sprite.material = null
+		_fade.material = null
+
+
+func _show_pair(index: int, frac: float) -> void:
+	if _cells.is_empty():
+		return
+	var idx := posmod(index, _cells.size()) if _loop or _fly else clampi(index, 0, _cells.size() - 1)
+	_sprite.texture = _cells[idx]
+	if not _crossfade:
+		_sprite.modulate.a = 1.0
+		_fade.visible = false
+		return
+	var nxt := idx + 1
+	var fading := nxt < _cells.size() or _loop or _fly
+	if not fading:
+		_sprite.modulate.a = 1.0
+		_fade.visible = false
+		return
+	if _loop or _fly:
+		nxt = posmod(nxt, _cells.size())
+	_fade.texture = _cells[nxt]
+	_fade.visible = true
+	_sprite.modulate.a = 1.0 - frac
+	_fade.modulate.a = frac
+
+
 func _process(delta: float) -> void:
 	if not in_use:
 		return
@@ -120,7 +196,9 @@ func _process(delta: float) -> void:
 			return
 		visible = true
 	_age += delta
-	var index := int(floor(_age * _fps))
+	var exact := _age * _fps
+	var index := int(floor(exact))
+	var frac := exact - float(index)
 	if _fly:
 		var u := _age / _duration
 		if u >= 1.0:
@@ -131,12 +209,12 @@ func _process(delta: float) -> void:
 		position = here
 		if (ahead - here).length_squared() > 0.0001:
 			rotation = (ahead - here).angle()
-		_sprite.texture = _cells[posmod(index, _cells.size())]
+		_show_pair(index, frac)
 		return
 	if _loop:
-		_sprite.texture = _cells[posmod(index, _cells.size())]
+		_show_pair(index, frac)
 		return
 	if index >= _cells.size():
 		release()
 		return
-	_sprite.texture = _cells[index]
+	_show_pair(index, frac)
