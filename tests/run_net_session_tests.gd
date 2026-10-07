@@ -51,7 +51,9 @@ func _run() -> void:
 	_test_host_timer_broadcast_and_guest_hydrate()
 	_test_local_vs_active_seat_semantics()
 	_test_dedicated_host_core()
+	_test_dedicated_clock_is_authoritative()
 	_test_invisible_hidden_from_opponent()
+	_test_snare_hidden_from_opponent()
 
 
 func _test_source_stamps() -> void:
@@ -528,6 +530,95 @@ func _test_dedicated_host_core() -> void:
 
 ## Opponent wire omits an Invisible unit's tile. The owner pack and the sim stay full.
 ## Ambush MISS ends Invisible and keeps Shade, so the tile is public after the miss.
+func _test_dedicated_clock_is_authoritative() -> void:
+	var sim_script := load("res://backend/combat_sim.gd")
+	var net_script := load("res://backend/net_session.gd")
+	var brain: Node = sim_script.new()
+	var view: Node = sim_script.new()
+	var dedicated: Node = net_script.new()
+	var phone: Node = net_script.new()
+	dedicated.attach_sim(brain)
+	dedicated.enter_dedicated_offline()
+	phone.attach_sim(view)
+	phone.enter_client_offline()
+	dedicated.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"fixture": true,
+		"classes": ["kestrel", "ironjaw"],
+		"positions": [Vector2i(1, 1), Vector2i(6, 6)],
+	})
+	eq(float(brain.snapshot()["match_time_left"]), 600.0, "dedicated match starts at 10 minutes")
+	eq(int(brain.snapshot()["turn_time_seconds"]), 30, "dedicated turn clock starts at 30")
+	var ticked: Dictionary = dedicated.tick_turn_timer(1.0)
+	eq(bool(ticked.get("expired", false)), false, "one second does not end the turn")
+	eq(int(brain.snapshot()["turn_time_seconds"]), 29, "dedicated turn clock counts down")
+	eq(float(brain.snapshot()["match_time_left"]), 599.0, "dedicated match clock counts down")
+	phone.apply_packed_state(dedicated.pack_result(ticked, 1))
+	eq(int(phone.snapshot()["turn_time_seconds"]), 29, "the phone shows the server turn clock")
+	eq(float(phone.snapshot()["match_time_left"]), 599.0, "the phone shows the server match clock")
+	phone.tick_turn_timer(5.0)
+	eq(int(brain.snapshot()["turn_time_seconds"]), 29, "a phone tick does not move the server turn clock")
+	eq(float(brain.snapshot()["match_time_left"]), 599.0, "a phone tick does not move the server match clock")
+	eq(int(phone.snapshot()["turn_time_seconds"]), 29, "the phone does not count down on its own")
+	brain._match_time_left = 181.0
+	dedicated.tick_turn_timer(1.0)
+	eq(bool(brain.snapshot()["sudden_death"]), true, "the last 3 minutes are sudden death on the server")
+	brain._match_time_left = 0.4
+	brain._turn_time_running = true
+	brain._units[0]["hp"] = int(brain._units[0]["max_hp"])
+	brain._units[1]["hp"] = 1
+	var up: Dictionary = dedicated.tick_turn_timer(1.0)
+	eq(bool(up.get("expired", false)), true, "0:00 expires on the server")
+	eq(bool(brain.snapshot()["match_over"]), true, "the server ends the match at 0:00")
+	eq(int(brain.snapshot()["winner_seat"]), 0, "the server awards the side with more HP left")
+	phone.apply_packed_state(dedicated.pack_result(up, 1))
+	eq(bool(phone.snapshot()["match_over"]), true, "the phone hears that time is up")
+	eq(int(phone.snapshot()["winner_seat"]), 0, "the phone shows the server's winner")
+	var net_src := FileAccess.get_file_as_string("res://backend/net_session.gd")
+	var proc_at := net_src.find("func _process")
+	var proc := net_src.substr(proc_at, 280)
+	truthy(proc.contains("is_dedicated()"), "only the dedicated process ticks from _process")
+	truthy(proc.contains("tick_turn_timer"), "that process runs the clocks")
+	var board := FileAccess.get_file_as_string("res://board_view.gd")
+	var board_at := board.find("func _process")
+	var board_proc := board.substr(board_at, board.find("func _hydrate_turn_clock") - board_at)
+	truthy(board_proc.contains("is_dedicated()"), "a board does not also tick on the dedicated process")
+	truthy(board_proc.contains("is_client()"), "a phone board still does not tick")
+	brain.free()
+	view.free()
+	dedicated.free()
+	phone.free()
+
+
+func _test_snare_hidden_from_opponent() -> void:
+	var cell := Vector2i(3, 5)
+	_host.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"fixture": true,
+		"classes": ["kestrel", "ironjaw"],
+		"positions": [Vector2i(1, 5), Vector2i(5, 5)],
+	})
+	var cast: Dictionary = _host.submit_for_seat({"type": "cast", "spell": "snare_trap", "to": cell}, 0)
+	eq(bool(cast.get("ok", false)), true, "the server sets the trap")
+	var owner: Dictionary = IntentCodec.decode(_host.pack_result(cast, 0))
+	var opp: Dictionary = IntentCodec.decode(_host.pack_result(cast, 1))
+	var full: Dictionary = IntentCodec.decode(_host.pack_result(cast, -1))
+	eq((owner.get("snapshot", {}) as Dictionary).get("trap_tiles", []).size(), 1, "the caster's phone keeps the trap")
+	eq(_event_of(owner.get("events", []), "cast").get("to"), cell, "the caster's cast keeps the tile")
+	eq((opp.get("snapshot", {}) as Dictionary).get("trap_tiles", []).size(), 0, "the other phone's snapshot has no trap")
+	eq(_event_of(opp.get("events", []), "cast").has("to"), false, "the other phone's cast hides the tile")
+	eq((full.get("snapshot", {}) as Dictionary).get("trap_tiles", []).size(), 1, "a hot-seat pack stays full")
+	_host.submit_for_seat({"type": "end_turn"}, 0)
+	var sprung: Dictionary = _host.submit_for_seat({"type": "move", "to": Vector2i(2, 5)}, 1)
+	var sprung_opp: Dictionary = IntentCodec.decode(_host.pack_result(sprung, 1))
+	eq(_event_of(sprung_opp.get("events", []), "trap").get("to"), cell, "a sprung trap is visible to the fighter who hit it")
+	eq((sprung_opp.get("snapshot", {}) as Dictionary).get("trap_tiles", []).size(), 0, "the spent trap is gone")
+
+
 func _test_invisible_hidden_from_opponent() -> void:
 	var gloam := Vector2i(2, 2)
 	var prey := Vector2i(4, 2)

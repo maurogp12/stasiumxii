@@ -520,6 +520,15 @@ func tick_turn_timer(delta: float) -> Dictionary:
 	return result
 
 
+## The headless authority never loads the board, so nothing else ticks the
+## clocks there. Only that process ticks here. A listen-host board and a
+## hot-seat already tick, and a phone must not tick a second time.
+func _process(delta: float) -> void:
+	if not is_dedicated():
+		return
+	tick_turn_timer(delta)
+
+
 func mode_name() -> String:
 	match mode:
 		Mode.HOST:
@@ -583,6 +592,7 @@ func _redact_invisible_for_viewer(snap: Dictionary, events: Array, viewer_seat: 
 	if viewer_seat != HOST_SEAT and viewer_seat != GUEST_SEAT:
 		return {"snapshot": out_snap, "events": out_events, "hidden_cells": hidden_cells}
 	_redact_shades_for_viewer(out_snap, out_events, viewer_seat)
+	_redact_traps_for_viewer(out_snap, out_events, viewer_seat)
 	var hidden_seats := {}
 	var secret: Array = []
 	for unit in out_snap.get("units", []):
@@ -634,6 +644,49 @@ func _redact_shades_for_viewer(out_snap: Dictionary, out_events: Array, viewer_s
 				event.erase("to")
 			if str(event.get("type", "")) == "expire" and str(event.get("status", "")) == "shade" and int(event.get("owner_seat", -1)) != viewer_seat:
 				event.erase("pos")
+
+
+## Snare Traps are secret to the side that set them. The other side loses the
+## token and the cast cell. A sprung trap (type "trap") stays, so the fighter
+## who walked into it can see where they stopped.
+func _redact_traps_for_viewer(out_snap: Dictionary, out_events: Array, viewer_seat: int) -> void:
+	var kept: Array = []
+	for token in out_snap.get("trap_tiles", []):
+		if typeof(token) != TYPE_DICTIONARY:
+			continue
+		if _trap_hidden_from(out_snap, int(token.get("owner_seat", -1)), viewer_seat):
+			continue
+		kept.append(token)
+	if out_snap.has("trap_tiles"):
+		out_snap["trap_tiles"] = kept
+	var lists: Array = [out_events]
+	if out_snap.get("last_events", null) is Array:
+		lists.append(out_snap["last_events"])
+	for list in lists:
+		for event in list:
+			if typeof(event) != TYPE_DICTIONARY:
+				continue
+			if str(event.get("type", "")) == "trap":
+				continue
+			if str(event.get("spell", "")) != SpellKits.SNARE_TRAP:
+				continue
+			if _trap_hidden_from(out_snap, int(event.get("seat", -1)), viewer_seat):
+				event.erase("to")
+
+
+func _trap_hidden_from(snap: Dictionary, owner_seat: int, viewer_seat: int) -> bool:
+	if owner_seat < 0:
+		return true
+	return _seat_team(snap, owner_seat) != _seat_team(snap, viewer_seat)
+
+
+func _seat_team(snap: Dictionary, seat: int) -> int:
+	for unit in snap.get("units", []):
+		if typeof(unit) != TYPE_DICTIONARY:
+			continue
+		if int(unit.get("seat", -1)) == seat:
+			return int(unit.get("team", seat))
+	return seat
 
 
 func _redact_events(events: Array, hidden_seats: Dictionary, hidden_cells: Array, secret: Array) -> void:
@@ -940,6 +993,8 @@ func accept_seat_gear(seat: int, payload: Variant) -> bool:
 	if seat < 0:
 		return false
 	var gear := GearBag.clean_fight_gear(payload)
+	# Same Koliseo rule as the first send: parts count as +0; set bonuses stay.
+	gear["flatten_plus"] = true
 	_seat_gear[seat] = gear
 	var host_sim := sim()
 	if host_sim == null or not host_sim.has_method("set_seat_gear"):
@@ -1425,10 +1480,16 @@ func _gate_reject(reason: String) -> Dictionary:
 
 
 func _clock_wire(snap: Dictionary) -> Dictionary:
+	var match_left := float(snap.get("match_time_left", -1.0))
+	var match_sec := -1
+	if match_left >= 0.0:
+		match_sec = int(floor(match_left))
 	return {
 		"seconds": _clock_display_seconds(snap),
 		"running": bool(snap.get("turn_time_running", false)),
 		"active_seat": int(snap.get("active_seat", -1)),
+		"match_sec": match_sec,
+		"sudden_death": bool(snap.get("sudden_death", false)),
 	}
 
 

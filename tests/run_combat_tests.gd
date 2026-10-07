@@ -7670,9 +7670,9 @@ func _test_kestrel_aims_better_far() -> void:
 
 
 
-## Mauro 6 Oct 2026: Ward is Bastion's (3 AP + 3 Aegis, no roll): +20 shield on
-## every ally within 3 tiles including him, stacks to 60, no clock. Thorns:
-## while shielded, an adjacent enemy that hits him takes 6 back.
+## Mauro 7 Oct 2026: Ward is Bastion's (3 AP + 1 Aegis, once per turn): +20
+## shield on every ally within 3 tiles including him, stacks to 40, no clock.
+## Thorns is always on: 20% of an adjacent hit, after that hit lands.
 func _test_bastion_team_ward_and_thorns() -> void:
 	_sim.reset_match({
 		"seed": 1,
@@ -7736,6 +7736,26 @@ func _test_bastion_team_ward_and_thorns() -> void:
 	var kes_hp := int(_unit(0)["hp"])
 	_sim.submit({"type": "cast", "spell": "mark_shot", "to": Vector2i(5, 3), "seat": 0})
 	eq(int(_unit(0)["hp"]), kes_hp, "Thorns does not reach a ranged attacker")
+	# The killing blow lands first. Thorns does not fire, and there is one winner.
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1], "classes": ["gloam", "bastion"], "positions": [Vector2i(3, 3), Vector2i(4, 3)]})
+	_live_unit(0)["hp"] = 1
+	_live_unit(1)["hp"] = 5
+	var trade: Dictionary = _sim.submit({"type": "cast", "spell": "cut", "to": Vector2i(4, 3), "seat": 0})
+	eq(bool(trade.get("ok", false)), true, "Gloam's Cut on a 5 HP Bastion resolves")
+	eq(bool(_unit(1).get("alive", true)), false, "the Cut kills the Bastion")
+	eq(int(_unit(0)["hp"]), 1, "Thorns does not fire after the Bastion dies")
+	eq(int(_first_event_where(trade.get("events", []), "hit").get("thorns", 0)), 0, "the killing hit has no Thorns")
+	eq(_event_type_count(trade.get("events", []), "match_over"), 1, "one blow names one winner")
+	eq(int(_sim.snapshot().get("winner_seat", -2)), 0, "Gloam wins the trade")
+	# A Bastion who lives still reflects, and that can kill the attacker.
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1], "classes": ["gloam", "bastion"], "positions": [Vector2i(3, 3), Vector2i(4, 3)]})
+	_live_unit(0)["hp"] = 1
+	var lived: Dictionary = _sim.submit({"type": "cast", "spell": "cut", "to": Vector2i(4, 3), "seat": 0})
+	eq(bool(_unit(1).get("alive", false)), true, "a healthy Bastion survives the Cut")
+	eq(int(_first_event_where(lived.get("events", []), "hit").get("thorns", 0)) > 0, true, "Thorns still fires when Bastion lives")
+	eq(bool(_unit(0).get("alive", true)), false, "Thorns kills the 1 HP attacker")
+	eq(_event_type_count(lived.get("events", []), "match_over"), 1, "the reflect names one winner")
+	eq(int(_sim.snapshot().get("winner_seat", -2)), 1, "Bastion wins when Thorns kills Gloam")
 
 
 
@@ -7900,6 +7920,28 @@ func _test_kestrel_vault_and_snare() -> void:
 	eq(hp0 - int(_unit(1)["hp"]), 6, "the trap deals 6")
 	eq(bool(_unit(1).get("pin_pending", false)), true, "the trapped enemy is Pinned next turn")
 	eq(_sim.snapshot()["trap_tiles"].size(), 0, "the trap is spent")
+	# Flat ground: walked 2 of a 3-tile path, trap on the second tile. Cost is 2, not 3.
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "classes": ["kestrel", "gloam"], "positions": [Vector2i(1, 5), Vector2i(5, 5)]})
+	_sim.submit({"type": "cast", "spell": "snare_trap", "to": Vector2i(3, 5), "seat": 0})
+	_sim.submit({"type": "end_turn", "seat": 0})
+	var mp_before := int(_unit(1)["mp"])
+	var snared: Dictionary = _sim.submit({"type": "move", "to": Vector2i(2, 5), "seat": 1})
+	var move_ev := _first_event_where(snared.get("events", []), "move")
+	eq(_unit(1)["pos"], Vector2i(3, 5), "the walker stops on the trap")
+	eq(int(move_ev.get("mp_spent", 0)), 2, "two steps taken cost 2 MP, not the whole plan")
+	eq(int(move_ev.get("trap_mp", 0)), 1, "springing the trap is exactly 1 MP")
+	eq(int(_unit(1)["mp"]), mp_before - 2, "the walker is charged only for that")
+	var card := " ".join(SpellTooltip.simple_lines(SpellKits.SNARE_TRAP))
+	truthy(card.contains("1 MP"), "the Snare card tells the player it costs 1 MP")
+	# A climb onto the trap would be 2 MP. The trap still costs 1.
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "classes": ["kestrel", "gloam"], "positions": [Vector2i(6, 5), Vector2i(4, 5)]})
+	_sim.submit({"type": "cast", "spell": "snare_trap", "to": Vector2i(3, 5), "seat": 0})
+	_sim.submit({"type": "end_turn", "seat": 0})
+	_sim.set_tile(Vector2i(3, 5), "ground", 1)
+	var climbed: Dictionary = _sim.submit({"type": "move", "to": Vector2i(3, 5), "seat": 1})
+	eq(_unit(1)["pos"], Vector2i(3, 5), "the walker steps up onto the trap")
+	eq(int(_first_event_where(climbed.get("events", []), "move").get("mp_spent", 0)), 1, "the trap step costs 1 MP, not the climb")
+	eq(int(_unit(1)["mp"]), 2, "3 MP minus that 1")
 
 
 
@@ -7913,6 +7955,48 @@ func _test_bodies_do_not_block() -> void:
 	var walk: Dictionary = _sim.submit({"type": "move", "to": Vector2i(4, 2), "seat": 0})
 	eq(bool(walk.get("ok", false)), true, "a walk passes over a fallen body")
 	eq(_unit(0)["pos"], Vector2i(4, 2), "the walker gets past the body")
+	# A body is not a place for a wall or a trap. Revive refuses a blocked tile and stays put.
+	_sim.reset_match({
+		"seed": 1, "flat_board": true, "skip_deploy": true, "team_size": 2,
+		"classes": ["kestrel", "bastion", "gloam", "ironjaw"],
+		"positions": [Vector2i(2, 2), Vector2i(4, 2), Vector2i(3, 2), Vector2i(12, 12)],
+		"bastion_aegis": 4,
+	})
+	_live_unit(2)["alive"] = false
+	_live_unit(2)["hp"] = 0
+	var ap0 := int(_unit(0)["ap"])
+	var on_body: Dictionary = _sim.submit({"type": "cast", "spell": "snare_trap", "to": Vector2i(3, 2), "seat": 0})
+	eq(str(on_body.get("reason", "")), "body_on_tile", "Snare Trap cannot be placed on a body")
+	eq(int(_unit(0)["ap"]), ap0, "the refused trap refunds AP")
+	var trap_offered := false
+	for intent in _sim.legal_intents(0):
+		if str(intent.get("spell", "")) == "snare_trap" and intent.get("to") == Vector2i(3, 2):
+			trap_offered = true
+	eq(trap_offered, false, "the body's tile is not a legal trap")
+	_sim._active_seat = 1
+	_live_unit(1)["ap"] = 6
+	_live_unit(1)["aegis"] = 2
+	var wall: Dictionary = _sim.submit({"type": "cast", "spell": "snap_wall", "to": Vector2i(3, 2), "seat": 1})
+	eq(str(wall.get("reason", "")), "body_on_tile", "Snap Wall cannot be placed on a body")
+	eq(int(_unit(1)["aegis"]), 2, "the refused wall refunds Aegis")
+	_sim.reset_match({
+		"seed": 1, "flat_board": true, "skip_deploy": true, "team_size": 2,
+		"classes": ["mender", "bastion", "ironjaw", "kestrel"],
+		"positions": [Vector2i(4, 4), Vector2i(12, 12), Vector2i(5, 4), Vector2i(11, 11)],
+	})
+	_live_unit(2)["hp"] = 0
+	_sim._check_death(_live_unit(2))
+	eq(bool(_sim.snapshot().get("match_over", false)), false, "one teammate falling does not end the match")
+	_sim._add_snap_wall(Vector2i(5, 4), 2, 1)
+	_live_unit(0)["ap"] = 6
+	_live_unit(0)["pulse"] = 6
+	var raised: Dictionary = _sim.submit({"type": "cast", "spell": "rekindle", "to": Vector2i(5, 4), "seat": 0})
+	eq(str(raised.get("reason", "")), "revive_blocked", "Rekindle refuses a body inside a wall")
+	eq(bool(_unit(2).get("alive", true)), false, "the body stays down")
+	eq(_unit(2)["pos"], Vector2i(5, 4), "the body is not moved off the wall")
+	eq(int(_unit(0)["ap"]), 6, "the refused Rekindle refunds AP")
+	eq(int(_unit(0)["pulse"]), 6, "the refused Rekindle refunds Pulse")
+	eq(bool(_unit(0).get("used_rekindle", false)), false, "the refused Rekindle is not spent")
 
 
 func _walkable_zone_count(seat: int) -> int:
