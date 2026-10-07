@@ -338,11 +338,15 @@ func _process(delta: float) -> void:
 	if CombatHUD.is_deployment_phase(snap) or bool(snap.get("match_over", false)):
 		_hydrate_turn_clock(snap)
 		return
-	# Authority / hot-seat tick CombatSim. Clients never tick — remaining is snapshot-only.
-	# Dedicated is the authority and is not a client, so this process ticks the host clock.
-	# Keep ticking during walk hop animations. _busy only locks input.
+	# Hot-seat and a listen-host tick here. A phone only shows the server clock.
+	# The headless authority ticks in NetSession (it never loads this board);
+	# skip here too so the two never both run. Keep ticking during walk hops.
 	var result: Dictionary = {}
-	if not (_online() and _net().is_client()):
+	var net := _net()
+	var server_clock := false
+	if _online() and net != null:
+		server_clock = bool(net.is_client()) or bool(net.is_dedicated())
+	if not server_clock:
 		if _sim().has_method("tick_turn_timer"):
 			result = _sim().tick_turn_timer(delta)
 	_hydrate_turn_clock(_sim().snapshot())

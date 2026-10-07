@@ -170,6 +170,8 @@ const SPELLS := {
 		"target": "empty_tile",
 		"trap_turns": 3,
 		"trap_damage": 6,
+		# Springing the trap costs this much MP, not the tile's walk cost.
+		"trap_mp": 1,
 	},
 	SHOULDER: {
 		"id": SHOULDER,
@@ -246,9 +248,9 @@ const SPELLS := {
 		"spend_pulse": 1,
 		"triage": true,
 	},
-	# Mauro 6 Oct 2026: Ward moves from Mender to Bastion (Aegis Break leaves
-	# the kit): 3 AP + 3 Aegis, no roll, +20 shield on every ally within 3
-	# tiles including Bastion, stacks 3 times (60), lasts until it is broken.
+	# Mauro 7 Oct 2026: Ward is Bastion's. 3 AP + 1 Aegis, once per turn, no roll,
+	# +20 shield on every ally within 3 tiles including Bastion, stacks to 40,
+	# lasts until it is broken.
 	WARD: {
 		"id": WARD,
 		"name": "Ward",

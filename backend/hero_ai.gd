@@ -486,6 +486,6 @@ static func _team_ward(casts: Array, snap: Dictionary, team: int, here: Vector2i
 			var cell := _cell(unit.get("pos"))
 			if maxi(absi(cell.x - here.x), absi(cell.y - here.y)) > radius:
 				continue
-			if int(unit.get("shield", 0)) < int(def.get("shield_cap", 60)):
+			if int(unit.get("shield", 0)) < int(def.get("shield_cap", 40)):
 				return intent
 	return {}

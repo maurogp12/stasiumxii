@@ -1526,10 +1526,14 @@ func _preview_reason(def: Dictionary, actor: Dictionary, target: Dictionary, fro
 			return pulse_gate
 		if _fallen_ally_at(actor, to_cell).is_empty():
 			return "no_target"
+		if _revive_tile_blocked(to_cell):
+			return "revive_blocked"
 		return ""
 	if target_kind == "empty_tile":
 		if spell_id == SpellKits.SNAP_WALL and _is_own_snap_wall(actor, to_cell):
 			return ""
+		if (spell_id == SpellKits.SNAP_WALL or spell_id == SpellKits.SNARE_TRAP) and _fallen_body_at(to_cell):
+			return "body_on_tile"
 		if not _is_empty(to_cell):
 			return "destination_occupied"
 		return ""
@@ -2658,13 +2662,21 @@ func _submit_move(intent: Dictionary, actor: Dictionary) -> Dictionary:
 		dest = path[snare_at]
 	var facing_hops: Array = _face_along_walk(actor, from, path)
 	actor["pos"] = dest
-	_spend_mp(actor, dist + tax)
+	# Charge the tiles actually entered. A trap does not bill the rest of
+	# the planned path: steps before it keep their cost, and springing it
+	# costs exactly trap_mp (1), not that tile's terrain or climb cost.
+	var mp_spent := dist + tax
+	if snare_at >= 0:
+		var before: Array = path.slice(0, maxi(path.size() - 1, 0))
+		var trap_mp := int(SpellKits.spell(SpellKits.SNARE_TRAP).get("trap_mp", 1))
+		mp_spent = _path_step_mp(from, before) + trap_mp + tax
+	_spend_mp(actor, mp_spent)
 	if actor.has("mire_cell"):
 		# Mire taxes only the first step off its tile.
 		actor.erase("mire_cell")
 		_emit_expire("mire", dest, int(actor["seat"]), int(actor["seat"]))
 	_intent_log.append(intent)
-	_last_coach = "%s walks to %s (−%d MP)." % [actor["name"], _cell_text(dest), dist + tax]
+	_last_coach = "%s walks to %s (−%d MP)." % [actor["name"], _cell_text(dest), mp_spent]
 	_last_events.append({
 		"type": "move",
 		"seat": actor["seat"],
@@ -2674,10 +2686,11 @@ func _submit_move(intent: Dictionary, actor: Dictionary) -> Dictionary:
 		"facing_from": facing_from,
 		"facing": str(actor["facing"]),
 		"facing_hops": facing_hops.duplicate(),
-		"mp_spent": dist + tax,
+		"mp_spent": mp_spent,
 		"coach": _last_coach,
 	})
 	if snare_at >= 0:
+		_last_events[_last_events.size() - 1]["trap_mp"] = int(SpellKits.spell(SpellKits.SNARE_TRAP).get("trap_mp", 1))
 		_trigger_trap(actor)
 	return _accept()
 
@@ -2690,6 +2703,21 @@ func _hostile_trap_at(unit: Dictionary, cell: Variant) -> bool:
 		if not owner.is_empty() and not _allied(owner, unit):
 			return true
 	return false
+
+
+## MP of the tiles in `path` (not including a trap fee). Each hop uses the
+## same terrain + climb cost the pathfinder charged.
+func _path_step_mp(from: Vector2i, path: Array) -> int:
+	var total := 0
+	var prev := from
+	for cell in path:
+		var step: Dictionary = _board.step_cost(prev, cell, Callable(self, "_walk_occupied"))
+		var cost := int(step.get("cost", 0))
+		if not bool(step.get("ok", false)) or cost <= 0:
+			cost = 1
+		total += cost
+		prev = cell
+	return total
 
 
 ## Locked A02: set actor facing from each hop. Final facing is the last hop dir.
@@ -3179,6 +3207,7 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 		})
 	_emit_immunity_spent(target, mitigation)
 	_check_death(target)
+	_reflect_thorns_after_hit(actor, target, mitigation, hit_event)
 	_break_invisible_on_attack(actor)
 	return _accept()
 
@@ -3236,6 +3265,9 @@ func _check_death(target: Dictionary, cause: String = "damage") -> void:
 
 
 func _finish_match(winner: int) -> void:
+	# A second death in the same blow (Thorns after a kill) must not flip the winner.
+	if _match_over:
+		return
 	_match_over = true
 	_winner_seat = winner
 	_winner_team = team_of_seat(winner) if winner >= 0 else -1
@@ -3351,7 +3383,8 @@ func _resolve_vault(intent: Dictionary, actor: Dictionary, def: Dictionary, dest
 
 
 ## A hostile Snare Trap under `unit` springs: 6 damage (a shield soaks it
-## first) and Pinned on its next turn. The trap is spent.
+## first), exactly 1 MP (charged on the walk that entered the tile), and
+## Pinned on its next turn. The trap is spent.
 func _trigger_trap(unit: Dictionary) -> bool:
 	for item in _trap_tiles:
 		if item["pos"] != unit["pos"]:
@@ -3373,7 +3406,7 @@ func _trigger_trap(unit: Dictionary) -> bool:
 			"to": unit["pos"],
 			"damage": damage,
 			"pin": bool(unit.get("pin_pending", false)),
-			"coach": "SNARE! %s is caught: −%d, Pinned next turn." % [str(unit.get("name", "")), damage],
+			"coach": "SNARE! %s is caught: −%d, −1 MP, Pinned next turn." % [str(unit.get("name", "")), damage],
 		})
 		_check_death(unit)
 		return true
@@ -4989,6 +5022,7 @@ func _submit_foe_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
 			_last_events.append({"type": "status", "status": "frozen", "stacks": int(frozen["stacks"]), "remaining": int(frozen["remaining"]), "paralyzed": bool(frozen["paralyzed"]), "target_seat": target["seat"], "coach": "%s is pinned on the ice (Frozen %d)." % [target["name"], int(frozen["stacks"])]})
 		_emit_immunity_spent(target, mitigation)
 		_check_death(target)
+		_reflect_thorns_after_hit(actor, target, mitigation, event)
 		if _match_over:
 			break
 	if victims.is_empty() and shape == "dash":
@@ -5542,6 +5576,8 @@ func _append_ranged_cells(out: Array, actor: Dictionary, def: Dictionary, spell_
 				continue
 			if empty_only and (not _is_empty(cell) or not _board.is_walkable(cell)):
 				continue
+			if (spell_id == SpellKits.SNAP_WALL or spell_id == SpellKits.SNARE_TRAP) and _fallen_body_at(cell):
+				continue
 			out.append({"type": "cast", "spell": spell_id, "to": cell, "seat": seat})
 
 
@@ -5736,7 +5772,8 @@ func _mitigate_hit(actor: Dictionary, target: Dictionary, damage: int) -> Dictio
 	if damage > 0:
 		damage = _still_on_hit(actor, target, damage)
 		report["damage"] = damage
-	_bastion_thorns(actor, target, damage, report)
+	# Post-stills, pre-shield. Thorns uses this later, after the hit lands.
+	report["thorns_basis"] = damage
 	if int(target.get("hit_immunity", 0)) > 0:
 		target["hit_immunity"] = int(target["hit_immunity"]) - 1
 		report["immunity_absorbed"] = true
@@ -5768,10 +5805,10 @@ func _mitigate_hit(actor: Dictionary, target: Dictionary, damage: int) -> Dictio
 	return report
 
 
-## Mauro 6 Oct 2026: Bastion Thorns. While Bastion has a shield, an enemy that
-## hits him from an adjacent tile takes THORNS_REFLECT of that hit back (no
-## resist): hard hitters like Gloam pay the most. Was a flat 6, then tested as
-## a % of his max HP; the simulator showed neither made him Gloam's counter.
+## Mauro 6 Oct 2026: Bastion Thorns. Always on (no shield needed). An enemy
+## that hits him from an adjacent tile takes THORNS_REFLECT (20%) of that hit
+## back, no resist. The hit lands first: if it kills Bastion, Thorns does not
+## fire, so one blow cannot name two winners.
 const THORNS_REFLECT := 0.2
 ## Balance tool knob: > 0 overrides the reflect share in % (sim_duels reads
 ## THORNS_PCT).
@@ -5786,8 +5823,7 @@ static func thorns_amount(_bastion: Dictionary, damage: int) -> int:
 func _bastion_thorns(actor: Dictionary, target: Dictionary, damage: int, report: Dictionary) -> void:
 	if damage <= 0 or actor.is_empty() or target.is_empty() or actor == target:
 		return
-	# Mauro 6 Oct 2026 ("bastion should have the ability to take over gloam in
-	# 1vs1"): Thorns no longer needs a shield; it reflects 25% of every melee hit.
+	# Always on, adjacent only, 20% of the post-stills hit (THORNS_REFLECT).
 	if str(target.get("class_id", "")) != SpellKits.CLASS_BASTION:
 		return
 	if _allied(actor, target) or not bool(actor.get("alive", false)):
@@ -5799,6 +5835,18 @@ func _bastion_thorns(actor: Dictionary, target: Dictionary, damage: int, report:
 	report["thorns"] = thorns
 	report["thorns_seat"] = int(actor["seat"])
 	_check_death(actor)
+
+
+## Called after the target's HP and _check_death. A dead Bastion does not reflect.
+func _reflect_thorns_after_hit(actor: Dictionary, target: Dictionary, report: Dictionary, event: Dictionary) -> void:
+	if target.is_empty() or not bool(target.get("alive", false)) or _match_over:
+		return
+	_bastion_thorns(actor, target, int(report.get("thorns_basis", 0)), report)
+	if not report.has("thorns") or event.is_empty():
+		return
+	event["thorns"] = int(report["thorns"])
+	event["thorns_seat"] = int(report["thorns_seat"])
+	event["coach"] = str(event.get("coach", "")) + " Thorns: %d back." % int(report["thorns"])
 
 
 func _stamp_mitigation(event: Dictionary, report: Dictionary) -> void:
@@ -5920,7 +5968,7 @@ func _revivable_allies(actor: Dictionary, def: Dictionary) -> Array:
 			continue
 		if not bool(unit.get("placed", true)) or not _in_bounds(unit["pos"]):
 			continue
-		if not _living_unit_at(unit["pos"]).is_empty():
+		if _revive_tile_blocked(unit["pos"]):
 			continue
 		if _in_spell_reach(def, actor["pos"], unit["pos"]):
 			out.append(unit)
@@ -5945,8 +5993,9 @@ func _resolve_revive(intent: Dictionary, actor: Dictionary, def: Dictionary, des
 	var body := _fallen_ally_at(actor, dest)
 	if body.is_empty():
 		return _reject(intent, "no_target", "REJECT — %s needs a fallen ally (refund)." % def["name"])
-	if not _living_unit_at(dest).is_empty():
-		return _reject(intent, "destination_occupied", "REJECT — someone is standing on %s's body (refund)." % body["name"])
+	# Refused and refunded. The body stays where it fell; it is not moved off the blocker.
+	if _revive_tile_blocked(dest):
+		return _reject(intent, "revive_blocked", "REJECT — %s cannot stand up there (refund)." % body["name"])
 	actor["ap"] = int(actor["ap"]) - ap_cost
 	_spend_mp(actor, mp_cost)
 	actor["used_" + spell_id] = true
@@ -6183,9 +6232,9 @@ func _strip_family(unit: Dictionary, family: String) -> void:
 ## through the enemy's next turn, visible from Gloam's turn T+1.
 ## An attack still reveals at once. A fixture with invisible but no
 ## invisible_turns has no clock (tests / old snapshots).
-## Mauro 6 Oct 2026: Bastion's Ward. Every living ally within `ward_radius`
-## (Chebyshev, Bastion included) gains +20 shield, capped at 60 (3 stacks).
-## The shield has no clock: it lasts until hits break it.
+## Mauro 7 Oct 2026: Bastion's Ward. 3 AP + 1 Aegis, once per turn. Every living
+## ally within `ward_radius` (Chebyshev, Bastion included) gains +20 shield,
+## capped at 40. The shield has no clock: it lasts until hits break it.
 func _resolve_team_ward(intent: Dictionary, actor: Dictionary, def: Dictionary, ap_cost: int, mp_cost: int) -> Dictionary:
 	actor["ap"] = int(actor["ap"]) - ap_cost
 	_spend_mp(actor, mp_cost)
@@ -6193,7 +6242,7 @@ func _resolve_team_ward(intent: Dictionary, actor: Dictionary, def: Dictionary, 
 	actor["ward_used"] = true
 	var radius := int(def.get("ward_radius", 3))
 	var add := int(def.get("shield", 20))
-	var cap := int(def.get("shield_cap", 60))
+	var cap := int(def.get("shield_cap", 40))
 	var shielded: Array = []
 	for unit in _units:
 		if not bool(unit.get("alive", false)) or not bool(unit.get("placed", true)):
@@ -6262,6 +6311,8 @@ func _resolve_empty_tile(intent: Dictionary, actor: Dictionary, def: Dictionary,
 	if not _is_empty(dest) or not _board.is_walkable(dest):
 		return _reject(intent, "destination_occupied", "REJECT — %s needs an empty tile (refund)." % def["name"])
 	var spell_id := str(def.get("id", ""))
+	if (spell_id == SpellKits.SNAP_WALL or spell_id == SpellKits.SNARE_TRAP) and _fallen_body_at(dest):
+		return _reject(intent, "body_on_tile", "REJECT — a fallen fighter is on that tile (refund).")
 	if spell_id == SpellKits.DROP_SHADE:
 		if _shade_count(actor) >= SpellKits.SHADE_CAP:
 			return _reject(intent, "shade_cap", "REJECT — Shade cap is %d (refund)." % SpellKits.SHADE_CAP)
@@ -6451,6 +6502,7 @@ func _resolve_aegis_break(intent: Dictionary, actor: Dictionary, def: Dictionary
 		_append_soft_lock_status(target, silence_info, slow_info)
 		_emit_immunity_spent(target, mitigation)
 		_check_death(target)
+		_reflect_thorns_after_hit(actor, target, mitigation, row)
 		if _match_over:
 			break
 	_last_coach = "HIT Aegis Break %d across %d. Aegis cleared (%d)." % [total, hit_bodies, cleared]
@@ -6648,6 +6700,7 @@ func _resolve_hold_line(intent: Dictionary, actor: Dictionary, def: Dictionary, 
 		hit_bodies += 1
 		_emit_immunity_spent(target, mitigation)
 		_check_death(target)
+		_reflect_thorns_after_hit(actor, target, mitigation, row)
 		if _match_over:
 			break
 	var gained := 0
@@ -6801,12 +6854,14 @@ func _resolve_ambush(intent: Dictionary, actor: Dictionary, target: Dictionary, 
 		"shades": int(actor.get("shades", 0)),
 		"coach": _last_coach,
 	})
-	_stamp_mitigation(_last_events[_last_events.size() - 1], mitigation)
+	var ambush_hit: Dictionary = _last_events[_last_events.size() - 1]
+	_stamp_mitigation(ambush_hit, mitigation)
 	var ambush_tags := _flex_target(actor, target, def)
 	ambush_tags.append_array(_flex_caster(actor, def))
-	_stamp_riders(_last_events[_last_events.size() - 1], ambush_tags, def)
+	_stamp_riders(ambush_hit, ambush_tags, def)
 	_emit_immunity_spent(target, mitigation)
 	_check_death(target)
+	_reflect_thorns_after_hit(actor, target, mitigation, ambush_hit)
 	return _accept()
 
 
@@ -7478,6 +7533,34 @@ func _snap_wall_blocks(cell: Vector2i) -> bool:
 	for wall in _snap_wall_cells:
 		if wall == cell:
 			return true
+	return false
+
+
+func _fallen_body_at(cell: Vector2i) -> bool:
+	for unit in _units:
+		if not bool(unit.get("placed", true)):
+			continue
+		if bool(unit.get("alive", true)):
+			continue
+		if unit["pos"] == cell:
+			return true
+	return false
+
+
+## Rekindle stands the fighter up on the tile where they fell. That tile has to
+## be a place they could stand: not a Snap Wall, a blocked cell, ground they
+## cannot walk, or a living fighter. The body itself is not in the way. When
+## the tile is blocked the cast is refused and refunded; the body is not moved.
+func _revive_tile_blocked(cell: Vector2i) -> bool:
+	if _snap_wall_blocks(cell):
+		return true
+	for blocked in _blocked_cells:
+		if blocked == cell:
+			return true
+	if not _board.is_walkable(cell) or _board.is_voluntary_impassable(cell):
+		return true
+	if not _living_unit_at(cell).is_empty():
+		return true
 	return false
 
 

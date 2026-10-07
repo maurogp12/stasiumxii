@@ -1164,7 +1164,23 @@ func _test_fade_and_heartstop_linger() -> void:
 	eq(int(_event_of(_guest.snapshot().get("last_events", []), "hit").get("hit_immunity", -1)), 1, "guest Heartstop hit keeps hit_immunity")
 	eq(int(_unit_in(_guest.snapshot(), 0).get("hit_immunity", -1)), 1, "guest snapshot keeps hit_immunity")
 
-	# Enemy Heartstop (and its skip_next_mp) is gone since Mauro 6 Oct 2026.
+	# Last Stand Heartstop still stops the next walk, and that flag rides the wire.
+	_host.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["mender", "kestrel"],
+		"positions": [Vector2i(1, 1), Vector2i(3, 1)],
+		"kestrel_facing": "W",
+		"mender_pulse": 4,
+		"rolls": [1],
+		"fixture": true,
+	})
+	var host_stop: Dictionary = _host.submit_for_seat({"type": "cast", "spell": "heartstop", "to": Vector2i(3, 1)}, 0)
+	eq(bool(host_stop.get("ok", false)), true, "Last Stand Heartstop hits on the server")
+	_guest.apply_packed_state(_host.pack_result(host_stop, 1))
+	eq(bool(_event_of(_guest.snapshot().get("last_events", []), "hit").get("skip_next_mp", false)), true, "guest Heartstop hit keeps skip_next_mp")
+	eq(bool(_unit_in(_guest.snapshot(), 1).get("skip_next_mp", false)), true, "guest snapshot keeps skip_next_mp")
 
 	_sim.reset_match({
 		"seed": 1,

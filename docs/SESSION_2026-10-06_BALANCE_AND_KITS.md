@@ -3,7 +3,7 @@
 This document is for the next team (people or agents). It explains **every
 gameplay change made in the 6–7 Oct 2026 Claude session**, **why** each one
 was made (with Mauro's own words), **where it lives in the code**, **how it
-is tested**, and **what is still open**. Versions 0.1.133 → 0.1.138.
+is tested**, and **what is still open**. Versions 0.1.133 → 0.1.139.
 
 The short version of the change log is in `docs/CHANGE_LOG_CLAUDE.md` (one
 row per version). The table of approved systems is in
@@ -262,8 +262,10 @@ Each entry: **what**, **why** (Mauro's words), **where** (code), **tests**.
   `SUDDEN_DEATH_SEC`, `_sudden_death_tick`, `_time_up`, snapshot
   `match_time_left` / `sudden_death`; `CombatHUD.match_clock_text`.
 - **Tests:** `_test_sudden_death_clock`.
-- **Note:** the clock is real time on the host / hot-seat; the balance
-  simulators do not tick it.
+- **Note:** the clock is real time. Hot-seat and a listen-host tick it on the
+  board. Online, the headless server (`--dedicated 7777`) is the only clock:
+  phones display that snapshot and do not tick again. The balance simulators
+  do not tick it.
 
 ### 1.13 Kestrel gets Vault and Snare Trap (0.1.136)
 
@@ -272,8 +274,10 @@ Each entry: **what**, **why** (Mauro's words), **where** (code), **tests**.
   crates / walls / steam (Advance rules). AI Kestrels use it to escape.
 - **Snare Trap:** 2 AP, hidden trap on an empty tile 1–3 away, 1 at a time,
   lasts 3 of her turns. The first enemy whose walk crosses it **stops there,
-  takes 6 and is Pinned next turn**. Only the owner's side sees the green
-  marker.
+  takes 6, loses exactly 1 MP (only the steps already taken are charged, plus
+  that 1) and is Pinned next turn**. Online, the other side's phone does not
+  receive the trap tile (snapshot or cast). Hot-seat still shows it only to
+  the side whose turn it is. It cannot be placed on a fallen body.
 - **Why:** Mauro: "Also maybe krestel need another spell?" → "Yes". She had
   2 spells (others 4–5) and no way to escape a diver (her counter is Gloam).
 - **Where:** `SpellKits.VAULT`, `SpellKits.SNARE_TRAP`;
@@ -286,7 +290,10 @@ Each entry: **what**, **why** (Mauro's words), **where** (code), **tests**.
 ### 1.14 Bodies do not block; fairer start zones (0.1.138)
 
 - **What:** a fallen fighter's body is no longer an obstacle (walks, pushes
-  and landings pass over it; Rekindle still needs the tile free). Start
+  and landings pass over it; Rekindle still needs the tile free). 0.1.139:
+  Snap Wall and Snare Trap cannot be placed on that body, and Rekindle is
+  refused and refunded if the tile is a wall or another blocker (the body
+  stays where it fell). Start
   zones are chosen by location among up to 48 valid pairs instead of the
   first pair found, and seats are swapped at random.
 - **Why:** Mauro: "los cuerpos no deberian de bloquear o impedir que alguien
@@ -353,10 +360,11 @@ Results recorded this session (level 15, Rare, no Stills):
 
 ## 4. Operations notes
 
-- **Online server** `68.201.184.207:7777` (Tailscale `100.81.105.11`, user
-  `keru`) must run the same build as the phones. Claude cloud sessions
-  cannot reach it (private network, no SSH). Update on the server:
-  `git pull origin mobile`, then restart `godot --path . -- --dedicated 7777`.
+- **Online server** is `v-server` (Tailscale `100.94.184.28`). systemd unit
+  `stasium-server.service` runs headless Godot 4.7.2 from
+  `/opt/stasium-server/current` with `--dedicated 7777`. Updates are staged
+  into `/opt/stasium-server/<version>/` and the `current` symlink is switched.
+  It must run the same build as the phones. No passwords belong in this repo.
 - **APK publishing:** `build_tools/publish_apk_branch.sh <version> "<notes>"`
   after exporting `builds/android/stasiumxii-mobile-debug.apk`.
   **Always run `apksigner verify --print-certs` first.** On 6 Oct a full
