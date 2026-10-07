@@ -1,5 +1,8 @@
 # STASIUM XII — handoff for other agents
 
+> **6–7 Oct 2026 session (0.1.133–0.1.136):** read `docs/SESSION_2026-10-06_BALANCE_AND_KITS.md` — every change (Bastion shield class + Thorns, Ironjaw shield breaker, Mender full support + Last Stand, Kestrel range table + Vault + Snare Trap, element package, match clock + sudden death), Mauro's reasons, the simulator results and the open items.
+
+
 Written for any Claude / agent session that touches this repo. **Mauro owns
 every rule, number and look below. Do not change, "clean up", rename, retune or
 revert any of it unless Mauro commands it in that session.** Propose first;
