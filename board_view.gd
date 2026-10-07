@@ -343,7 +343,9 @@ func _process(delta: float) -> void:
 	# skip here too so the two never both run. Keep ticking during walk hops.
 	var result: Dictionary = {}
 	var net := _net()
-	var server_clock := _online() and net != null and (net.is_client() or net.is_dedicated())
+	var server_clock := false
+	if _online() and net != null:
+		server_clock = bool(net.is_client()) or bool(net.is_dedicated())
 	if not server_clock:
 		if _sim().has_method("tick_turn_timer"):
 			result = _sim().tick_turn_timer(delta)
