@@ -158,6 +158,8 @@ var _snap_wall_state: Array = []
 var _element_tiles: Array = []
 var _shade_tokens: Array = []
 var _plant_tiles: Array = []
+## Kestrel Snare Traps: {pos, owner_seat, turns}. One per owner.
+var _trap_tiles: Array = []
 ## Locked deploy. Live duel starts here; (1,1)/(6,6) are skip_deploy fixtures only.
 var _flow = _MatchFlow.new()
 ## Per-tile integer elevation + terrain. Ship maps load a Koliseo tags file
@@ -188,6 +190,15 @@ var _demo_map: String = ""
 var _elev_seed: int = 0
 var _elevation_gen: String = "tags"
 var _turn_time_remaining: float = 0.0
+## Mauro 6 Oct 2026: "matches should be max of 10 minutes", "at 3vs3 im
+## willing to do 15 mins", "longer fights just gets boring". Koliseo only.
+## -1 = not started (deployment / Stasis). The last SUDDEN_DEATH_SEC are
+## sudden death; at 0 the team with the higher HP share wins.
+const MATCH_SECONDS := 600.0
+const MATCH_SECONDS_3V3 := 900.0
+const SUDDEN_DEATH_SEC := 180.0
+const SUDDEN_DEATH_STEP_PCT := 5
+var _match_time_left: float = -1.0
 var _turn_time_limit: float = TURN_TIME_LIMIT
 var _turn_time_running: bool = false
 ## True after apply_host_snapshot. Replica may paint; it must not tick or submit.
@@ -195,6 +206,7 @@ var _replica: bool = false
 
 
 func reset_match(config: Dictionary = {}) -> Dictionary:
+	_match_time_left = -1.0
 	_units.clear()
 	_blocked_cells.clear()
 	_snap_wall_cells.clear()
@@ -202,6 +214,7 @@ func reset_match(config: Dictionary = {}) -> Dictionary:
 	_element_tiles.clear()
 	_shade_tokens.clear()
 	_plant_tiles.clear()
+	_trap_tiles.clear()
 	_active_seat = 0
 	_turn_index = 0
 	_match_over = false
@@ -292,6 +305,7 @@ func reset_match(config: Dictionary = {}) -> Dictionary:
 			"coach": _last_coach,
 		}]
 
+	_refresh_last_stand()
 	_broadcast()
 	return snapshot()
 
@@ -349,6 +363,13 @@ func tick_turn_timer(delta: float) -> Dictionary:
 		return _timer_tick_result(false)
 	if not _turn_time_running:
 		return _timer_tick_result(false)
+	if _match_time_left > 0.0:
+		_match_time_left = maxf(_match_time_left - maxf(delta, 0.0), 0.0)
+		if _match_time_left <= 0.0:
+			_time_up()
+			var up := _timer_tick_result(true)
+			up["events"] = _last_events.duplicate(true)
+			return up
 	_turn_time_remaining = maxf(_turn_time_remaining - maxf(delta, 0.0), 0.0)
 	if _turn_time_remaining > 0.0:
 		return _timer_tick_result(false)
@@ -441,6 +462,12 @@ func legal_intents(seat: int) -> Array:
 		if target_kind == "fallen_ally":
 			for body in _revivable_allies(actor, def):
 				out.append({"type": "cast", "spell": spell_id, "to": body["pos"], "target_seat": body["seat"], "seat": seat})
+			continue
+		if str(spell_id) == SpellKits.VAULT:
+			for dir in FACING_VEC.keys():
+				var vault_dest: Vector2i = from + FACING_VEC[dir] * 2
+				if _validate_vault(actor, vault_dest) == "":
+					out.append({"type": "cast", "spell": spell_id, "to": vault_dest, "seat": seat})
 			continue
 		if target_kind == "empty_tile" and str(spell_id) != SpellKits.ADVANCE:
 			_append_ranged_cells(out, actor, def, str(spell_id), true)
@@ -856,6 +883,7 @@ func snapshot() -> Dictionary:
 		"map_steam": _map_steam_snapshot(),
 		"shade_tokens": _placed_token_snapshot(_shade_tokens, false),
 		"plant_tiles": _placed_token_snapshot(_plant_tiles, true),
+		"trap_tiles": _placed_token_snapshot(_trap_tiles, false),
 		"umbral_cap": SpellKits.UMBRAL_CAP,
 		"umbral_owner": SpellKits.CLASS_GLOAM,
 		"wind": "calm",
@@ -943,6 +971,8 @@ func snapshot() -> Dictionary:
 		"turn_time_limit": _turn_time_limit,
 		"turn_time_running": _turn_time_running,
 		"turn_time_seconds": _clock_display_seconds(_turn_time_remaining),
+		"match_time_left": _match_time_left,
+		"sudden_death": sudden_death_active(),
 		"turn_timer": "host",
 		"networking": false,
 		"open_deploy": ["fog", "hidden_enemy", "deploy_timer", "multi_unit"],
@@ -972,6 +1002,7 @@ func apply_host_snapshot(snap: Dictionary) -> void:
 	_snap_wall_state.clear()
 	_shade_tokens.clear()
 	_plant_tiles.clear()
+	_trap_tiles.clear()
 	_element_tiles.clear()
 	for entry in snap.get("element_tiles", []):
 		if typeof(entry) == TYPE_DICTIONARY:
@@ -980,6 +1011,7 @@ func apply_host_snapshot(snap: Dictionary) -> void:
 		_restore_placed_tokens(_shade_tokens, snap.get("shade_tokens", []))
 	if snap.has("plant_tiles"):
 		_restore_placed_tokens(_plant_tiles, snap.get("plant_tiles", []))
+		_restore_placed_tokens(_trap_tiles, snap.get("trap_tiles", []))
 	_restore_blocked_tiles(snap)
 	_intent_log.clear()
 	_active_seat = int(snap.get("active_seat", 0))
@@ -988,6 +1020,7 @@ func apply_host_snapshot(snap: Dictionary) -> void:
 	_winner_seat = int(snap.get("winner_seat", -1))
 	_turn_time_limit = float(snap.get("turn_time_limit", TURN_TIME_LIMIT))
 	_turn_time_remaining = float(snap.get("turn_time_remaining", 0.0))
+	_match_time_left = float(snap.get("match_time_left", -1.0))
 	_turn_time_running = bool(snap.get("turn_time_running", false))
 	_last_coach = str(snap.get("coach", ""))
 	_last_events = []
@@ -1516,8 +1549,6 @@ func _preview_reason(def: Dictionary, actor: Dictionary, target: Dictionary, fro
 	if ally_cast:
 		if target.is_empty() or not bool(target.get("alive", false)) or not _allied(target, actor):
 			return "no_target"
-		if spell_id == SpellKits.WARD and int(target.get("shield", 0)) > 0:
-			return "open_can_wait"
 		if spell_id == SpellKits.HEARTSTOP and int(target.get("hit_immunity", 0)) > 0:
 			return "open_can_wait"
 		return ""
@@ -1550,6 +1581,8 @@ func _preview_kit_lines(spell_id: String) -> Dictionary:
 			return {"on_connect": "Teleport snap. +1 Impact if adjacent. Facing unchanged.", "on_miss": "No roll."}
 		SpellKits.AEGIS_BREAK:
 			return {"on_connect": "26 Earth per body in range 1–2. Push 1. Clears all Aegis.", "on_miss": "Spends 0 Aegis. Does not clear Aegis."}
+		SpellKits.WARD:
+			return {"on_connect": "+20 shield on every ally within 3 tiles, you too. Stacks to 60. Lasts until broken. Spends 3 Aegis.", "on_miss": "No roll."}
 		SpellKits.SNAP_WALL:
 			return {"on_connect": "Blocked tile for 2 Bastion turn-starts. Spends 2 Aegis. On your own wall: knocks it down, +2 Aegis back.", "on_miss": "No roll."}
 		_:
@@ -1709,11 +1742,16 @@ const BLENDS := {
 	"earth+fire": "magma",
 	"earth+water": "mire",
 	"fire+water": "steam",
+	# Mauro 6 Oct 2026 ("just do the best option"): Air + Fire fills the last
+	# pair. Flare reveals Invisible enemies near the target and adds a Burn
+	# stack — the ranged answer to a diving Gloam.
+	"air+fire": "flare",
 }
 const BLEND_NAMES := {
 	"drift_pin": "Drift-Pin", "spark": "Spark",
-	"magma": "Magma", "mire": "Mire", "steam": "Steam",
+	"magma": "Magma", "mire": "Mire", "steam": "Steam", "flare": "Flare",
 }
+const FLARE_REVEAL_RADIUS := 2
 const SPARK_CHIP := 10  # Mauro 6 Oct 2026 (was 4)
 const DRIFT_COLLISION_HP := 8
 const MAGMA_TICK_HP := 4
@@ -1772,6 +1810,8 @@ func _try_blend(actor: Dictionary, target: Dictionary, el: String) -> String:
 		"mire":
 			target["mire_cell"] = target["pos"]
 			note = "leaving this tile costs +1 MP on their next turn"
+		"flare":
+			note = _blend_flare(actor, target, event)
 		"steam":
 			_add_element_tile("steam", target["pos"], int(actor["seat"]))
 			note = "this tile blocks line of sight until %s's next turn" % str(actor.get("name", "the caster"))
@@ -1857,6 +1897,31 @@ func _blend_spark(_actor: Dictionary, target: Dictionary, event: Dictionary) -> 
 	target["sparked"] = true
 	event["heal_cut"] = SPARK_HEAL_CUT
 	return "%d damage (ignores resist), -%d%% healing" % [chip, roundi(SPARK_HEAL_CUT * 100.0)]
+
+
+## Flare (Air + Fire): every Invisible enemy of the caster within
+## FLARE_REVEAL_RADIUS of the target is revealed, and the target gains a Burn
+## stack (same Burn as Fire / lava: 4 per stack, cap 3).
+func _blend_flare(actor: Dictionary, target: Dictionary, event: Dictionary) -> String:
+	var revealed: Array = []
+	for unit in _units:
+		if not bool(unit.get("alive", false)) or _allied(unit, actor):
+			continue
+		if not bool(unit.get("invisible", false)):
+			continue
+		if chebyshev(unit["pos"], target["pos"]) > FLARE_REVEAL_RADIUS:
+			continue
+		unit["invisible"] = false
+		unit["invisible_turns"] = 0
+		_emit_expire("invisible", unit["pos"], int(unit["seat"]), int(unit["seat"]))
+		revealed.append(int(unit["seat"]))
+	var burn := _apply_burn(target)
+	event["revealed"] = revealed
+	event["burn_stacks"] = int(target.get("burn_stacks", 0))
+	var note := "Burn %d" % int(burn.get("stacks", target.get("burn_stacks", 0)))
+	if not revealed.is_empty():
+		note += "; Invisible enemies nearby are revealed"
+	return note
 
 
 func _add_element_tile(kind: String, cell: Vector2i, owner_seat: int) -> void:
@@ -2580,6 +2645,15 @@ func _submit_move(intent: Dictionary, actor: Dictionary) -> Dictionary:
 	var path: Array = planned.get("path", [])
 	var dist := int(planned.get("cost", 0))
 	var facing_from: String = str(actor["facing"])
+	# A hostile Snare Trap on the path stops the walk on that tile.
+	var snare_at := -1
+	for i in path.size():
+		if _hostile_trap_at(actor, path[i]):
+			snare_at = i
+			break
+	if snare_at >= 0:
+		path = path.slice(0, snare_at + 1)
+		dest = path[snare_at]
 	var facing_hops: Array = _face_along_walk(actor, from, path)
 	actor["pos"] = dest
 	_spend_mp(actor, dist + tax)
@@ -2601,7 +2675,19 @@ func _submit_move(intent: Dictionary, actor: Dictionary) -> Dictionary:
 		"mp_spent": dist + tax,
 		"coach": _last_coach,
 	})
+	if snare_at >= 0:
+		_trigger_trap(actor)
 	return _accept()
+
+
+func _hostile_trap_at(unit: Dictionary, cell: Variant) -> bool:
+	for item in _trap_tiles:
+		if item["pos"] != cell:
+			continue
+		var owner := _unit_by_seat(int(item.get("owner_seat", -1)))
+		if not owner.is_empty() and not _allied(owner, unit):
+			return true
+	return false
 
 
 ## Locked A02: set actor facing from each hop. Final facing is the last hop dir.
@@ -2663,6 +2749,12 @@ func _submit_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
 			return _reject(intent, reason, "REJECT — illegal Advance (%s)." % reason)
 		return _resolve_advance(intent, actor, def, dest, advance_ap, advance_mp)
 
+	if spell_id == SpellKits.VAULT:
+		var vault_reason := _validate_vault(actor, dest)
+		if vault_reason != "":
+			return _reject(intent, vault_reason, _vault_reject_text(vault_reason))
+		return _resolve_vault(intent, actor, def, dest)
+
 	var range_from: Vector2i = actor["pos"]
 	if spell_id == SpellKits.AMBUSH:
 		var ambush_enemy := _ambush_focus_enemy(actor, dest)
@@ -2703,11 +2795,9 @@ func _submit_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
 		return _reject(intent, "insufficient_ap", "REJECT — %s costs %d AP (refund)." % [def["name"], ap_cost])
 	if int(actor["mp"]) < mp_cost:
 		return _reject(intent, "insufficient_mp", "REJECT — %s costs %d MP (refund)." % [def["name"], mp_cost])
-	if spell_id == SpellKits.WARD or spell_id == SpellKits.HEARTSTOP:
+	if spell_id == SpellKits.HEARTSTOP:
 		var early := _living_unit_at(dest)
 		if not early.is_empty() and _allied(early, actor):
-			if spell_id == SpellKits.WARD and int(early.get("shield", 0)) > 0:
-				return _reject(intent, "open_can_wait", "REJECT — shield stacking is open (can-wait).")
 			if spell_id == SpellKits.HEARTSTOP and int(early.get("hit_immunity", 0)) > 0:
 				return _reject(intent, "open_can_wait", "REJECT — immunity refresh is open (can-wait).")
 	var wall_break := spell_id == SpellKits.SNAP_WALL and _is_own_snap_wall(actor, dest)
@@ -2725,6 +2815,8 @@ func _submit_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
 	if target_kind == "self":
 		if dest != actor["pos"]:
 			return _reject(intent, "no_target", "REJECT — %s is self only (refund)." % def["name"])
+		if spell_id == SpellKits.WARD:
+			return _resolve_team_ward(intent, actor, def, ap_cost, mp_cost)
 		return _resolve_fade(intent, actor, def, ap_cost, mp_cost)
 	if target_kind == "cone":
 		return _resolve_hold_line(intent, actor, def, ap_cost, mp_cost)
@@ -3115,6 +3207,7 @@ func _check_death(target: Dictionary, cause: String = "damage") -> void:
 		"cause": cause,
 		"coach": "%s falls." % target["name"],
 	})
+	_refresh_last_stand()
 	# Stasis Room A keeps fighting until the player or every hostile is down.
 	# Koliseo is still one death ends the match.
 	if _stasis_pack:
@@ -3187,6 +3280,112 @@ func _validate_advance(actor: Dictionary, dest: Vector2i) -> String:
 	if int(actor.get("advance_uses", 0)) >= ADVANCE_USES_PER_TURN:
 		return "advance_limit"
 	return _advance_stand_reason(actor["pos"], dest)
+
+
+## Kestrel Vault (Mauro 6 Oct 2026): exactly 2 tiles N/S/E/W, only while an
+## enemy stands next to her, once per turn, Advance landing rules (no jumping
+## a rock, crate, wall or steam).
+func _validate_vault(actor: Dictionary, dest: Vector2i) -> String:
+	if str(actor.get("class_id", "")) != SpellKits.CLASS_KESTREL:
+		return "spell_not_in_kit"
+	if not _in_bounds(dest):
+		return "out_of_bounds"
+	if not is_advance_cardinal(actor["pos"], dest):
+		return "out_of_range"
+	var def: Dictionary = SpellKits.spell(SpellKits.VAULT)
+	if int(actor["ap"]) < int(def["ap"]):
+		return "insufficient_ap"
+	if bool(actor.get("vault_used", false)):
+		return "vault_limit"
+	var pressed := false
+	for unit in _units:
+		if bool(unit.get("alive", false)) and not _allied(unit, actor) and chebyshev(unit["pos"], actor["pos"]) == 1:
+			pressed = true
+	if not pressed:
+		return "no_enemy_adjacent"
+	return _advance_stand_reason(actor["pos"], dest)
+
+
+func _vault_reject_text(reason: String) -> String:
+	match reason:
+		"no_enemy_adjacent":
+			return "REJECT — Vault only works with an enemy right next to you (refund)."
+		"vault_limit":
+			return "REJECT — Vault is once per turn (refund)."
+		"advance_blocked":
+			return "REJECT — Vault cannot jump over a rock, crate, wall or steam (refund)."
+		"insufficient_ap":
+			return "REJECT — Vault costs 2 AP (refund)."
+		"destination_occupied":
+			return "REJECT — Vault needs an empty tile (refund)."
+	return "REJECT — Vault is exactly 2 tiles in a straight line (refund)."
+
+
+func _resolve_vault(intent: Dictionary, actor: Dictionary, def: Dictionary, dest: Vector2i) -> Dictionary:
+	var from: Vector2i = actor["pos"]
+	var ap_cost := int(def.get("ap", 2))
+	actor["ap"] = int(actor["ap"]) - ap_cost
+	actor["vault_used"] = true
+	actor["pos"] = dest
+	_intent_log.append(intent)
+	_last_coach = "%s vaults to %s (−%d AP)." % [actor["name"], _cell_text(dest), ap_cost]
+	_last_events.append({
+		"type": "cast",
+		"spell": SpellKits.VAULT,
+		"seat": actor["seat"],
+		"caster_cell": from,
+		"from": from,
+		"to": dest,
+		"teleported": true,
+		"rolled": false,
+		"ap_spent": ap_cost,
+		"mp_spent": 0,
+		"coach": _last_coach,
+	})
+	_trigger_trap(actor)
+	return _accept()
+
+
+## A hostile Snare Trap under `unit` springs: 6 damage (a shield soaks it
+## first) and Pinned on its next turn. The trap is spent.
+func _trigger_trap(unit: Dictionary) -> bool:
+	for item in _trap_tiles:
+		if item["pos"] != unit["pos"]:
+			continue
+		var owner := _unit_by_seat(int(item.get("owner_seat", -1)))
+		if owner.is_empty() or _allied(owner, unit):
+			continue
+		_trap_tiles.erase(item)
+		var def: Dictionary = SpellKits.spell(SpellKits.SNARE_TRAP)
+		var report := _mitigate_hit({}, unit, int(def.get("trap_damage", 6)))
+		var damage := int(report["damage"])
+		unit["hp"] = maxi(0, int(unit["hp"]) - damage)
+		if not bool(unit.get("pinned", false)) and not bool(unit.get("pinned_last", false)):
+			unit["pin_pending"] = true
+		_last_events.append({
+			"type": "trap",
+			"seat": int(owner["seat"]),
+			"target_seat": int(unit["seat"]),
+			"to": unit["pos"],
+			"damage": damage,
+			"pin": bool(unit.get("pin_pending", false)),
+			"coach": "SNARE! %s is caught: −%d, Pinned next turn." % [str(unit.get("name", "")), damage],
+		})
+		_check_death(unit)
+		return true
+	return false
+
+
+func _tick_traps(unit: Dictionary) -> void:
+	var kept: Array = []
+	for item in _trap_tiles:
+		if int(item.get("owner_seat", -1)) == int(unit["seat"]):
+			item["turns"] = int(item.get("turns", 0)) - 1
+			if int(item["turns"]) <= 0:
+				_emit_expire("trap", item["pos"], int(unit["seat"]))
+				continue
+		kept.append(item)
+	_trap_tiles = kept
 
 
 func _advance_stand_reason(from: Vector2i, dest: Vector2i) -> String:
@@ -3780,7 +3979,29 @@ func _opening_turn_coach(lead: String) -> String:
 	return "%s %s's turn. 6 AP / 3 MP." % [lead, who]
 
 
+## Mender Last Stand (Mauro 6 Oct 2026): on while no teammate is alive and
+## Rekindle cannot bring one back (used this match, or nobody to revive as in
+## a 1v1). A revived teammate turns it off again.
+func _refresh_last_stand() -> void:
+	for unit in _units:
+		if str(unit.get("class_id", "")) != SpellKits.CLASS_MENDER:
+			continue
+		var mates_alive := false
+		var mates_fallen := false
+		for other in _units:
+			if other == unit or not _allied(other, unit):
+				continue
+			if bool(other.get("alive", false)):
+				mates_alive = true
+			else:
+				mates_fallen = true
+		var can_revive := mates_fallen and not bool(unit.get("used_" + SpellKits.REKINDLE, false))
+		unit["last_stand"] = bool(unit.get("alive", false)) and not mates_alive and not can_revive
+
+
 func _begin_unit_turn(unit: Dictionary) -> void:
+	_refresh_last_stand()
+	_sudden_death_tick(unit)
 	unit["momentum"] = false
 	_expire_element_tiles(unit)
 	# Earth rider: Grounded lasts until the caster's next turn.
@@ -3788,6 +4009,8 @@ func _begin_unit_turn(unit: Dictionary) -> void:
 		unit["grounded"] = false
 		_emit_expire("grounded", unit["pos"], int(unit["seat"]), int(unit["seat"]))
 	unit["advance_uses"] = 0
+	unit["vault_used"] = false
+	_tick_traps(unit)
 	_tick_foe_cooldowns(unit)
 	# Locked Stun (A′): decrement stun at start of that unit's turn.
 	# Stun 1 must cover this incoming (skipped) turn. Decrementing remaining and
@@ -4852,9 +5075,72 @@ func _reject(intent: Dictionary, reason: String, coach: String) -> Dictionary:
 
 
 func _start_turn_timer() -> void:
+	if _match_time_left < 0.0 and not _stasis_pack and not _flow.is_deployment():
+		_match_time_left = MATCH_SECONDS_3V3 if _team_size >= 3 else MATCH_SECONDS
 	_turn_time_limit = TURN_TIME_LIMIT
 	_turn_time_remaining = TURN_TIME_LIMIT
 	_turn_time_running = not _match_over and not _flow.is_deployment()
+
+
+func sudden_death_active() -> bool:
+	return _match_time_left >= 0.0 and _match_time_left <= SUDDEN_DEATH_SEC
+
+
+## Sudden death: at each fighter's turn start it loses 5% of its max HP, then
+## 10%, 15% … (its own sudden-death turns). Shields do not block it.
+func _sudden_death_tick(unit: Dictionary) -> void:
+	if not sudden_death_active() or _match_over or not bool(unit.get("alive", false)):
+		return
+	unit["sudden_turns"] = int(unit.get("sudden_turns", 0)) + 1
+	var pct := SUDDEN_DEATH_STEP_PCT * int(unit["sudden_turns"])
+	var lost := maxi(1, roundi(float(unit.get("max_hp", 1)) * float(pct) / 100.0))
+	unit["hp"] = maxi(0, int(unit["hp"]) - lost)
+	_last_events.append({
+		"type": "sudden_death",
+		"target_seat": int(unit["seat"]),
+		"damage": lost,
+		"pct": pct,
+		"hp": int(unit["hp"]),
+		"coach": "SUDDEN DEATH: %s loses %d (%d%% of max HP)." % [str(unit.get("name", "")), lost, pct],
+	})
+	_check_death(unit, "sudden_death")
+
+
+## Clock at 0: the team keeping the larger share of its max HP wins.
+func _time_up() -> void:
+	if _match_over:
+		return
+	var share := {}
+	for unit in _units:
+		var team := _team_of(unit)
+		var rec: Array = share.get(team, [0, 0])
+		rec[0] += int(unit.get("hp", 0)) if bool(unit.get("alive", false)) else 0
+		rec[1] += int(unit.get("max_hp", 1))
+		share[team] = rec
+	var best_team := -1
+	var best := -1.0
+	var tie := false
+	for team in share:
+		var pct: float = float(share[team][0]) / maxf(1.0, float(share[team][1]))
+		if pct > best + 0.0001:
+			best = pct
+			best_team = int(team)
+			tie = false
+		elif absf(pct - best) <= 0.0001:
+			tie = true
+	_last_events.append({"type": "time_up", "coach": "Time! The team with more HP left wins."})
+	if tie or best_team < 0:
+		_match_over = true
+		_winner_seat = -1
+		_winner_team = -1
+		_stop_turn_timer()
+		_last_coach = "Time! It is a draw."
+		_last_events.append({"type": "match_over", "winner_seat": -1, "coach": _last_coach})
+		return
+	for unit in _units:
+		if _team_of(unit) == best_team:
+			_finish_match(int(unit["seat"]))
+			return
 
 
 func _stop_turn_timer() -> void:
@@ -5445,6 +5731,7 @@ func _mitigate_hit(actor: Dictionary, target: Dictionary, damage: int) -> Dictio
 	if damage > 0:
 		damage = _still_on_hit(actor, target, damage)
 		report["damage"] = damage
+	_bastion_thorns(actor, target, damage, report)
 	if int(target.get("hit_immunity", 0)) > 0:
 		target["hit_immunity"] = int(target["hit_immunity"]) - 1
 		report["immunity_absorbed"] = true
@@ -5454,6 +5741,13 @@ func _mitigate_hit(actor: Dictionary, target: Dictionary, damage: int) -> Dictio
 	var transferred := _intercept_transfer(actor, target, damage)
 	report["intercepted"] = transferred
 	var remaining := damage - transferred
+	if str(actor.get("class_id", "")) == SpellKits.CLASS_IRONJAW and int(target.get("shield", 0)) > 0 and damage > 0:
+		# Mauro 6 Oct 2026: Ironjaw is the shield breaker — any hit of his
+		# shatters the whole shield (Bastion's or a teammate's); nothing soaks.
+		target["shield"] = 0
+		target["shield_turns"] = 0
+		report["shield_broken"] = true
+		report["shield_shattered"] = true
 	var shield := int(target.get("shield", 0))
 	if shield > 0 and remaining > 0:
 		var absorbed := mini(shield, remaining)
@@ -5469,11 +5763,51 @@ func _mitigate_hit(actor: Dictionary, target: Dictionary, damage: int) -> Dictio
 	return report
 
 
+## Mauro 6 Oct 2026: Bastion Thorns. While Bastion has a shield, an enemy that
+## hits him from an adjacent tile takes THORNS_REFLECT of that hit back (no
+## resist): hard hitters like Gloam pay the most. Was a flat 6, then tested as
+## a % of his max HP; the simulator showed neither made him Gloam's counter.
+const THORNS_REFLECT := 0.2
+## Balance tool knob: > 0 overrides the reflect share in % (sim_duels reads
+## THORNS_PCT).
+static var thorns_pct := 0.0
+
+
+static func thorns_amount(_bastion: Dictionary, damage: int) -> int:
+	var share := thorns_pct / 100.0 if thorns_pct > 0.0 else THORNS_REFLECT
+	return maxi(1, roundi(float(damage) * share))
+
+
+func _bastion_thorns(actor: Dictionary, target: Dictionary, damage: int, report: Dictionary) -> void:
+	if damage <= 0 or actor.is_empty() or target.is_empty() or actor == target:
+		return
+	# Mauro 6 Oct 2026 ("bastion should have the ability to take over gloam in
+	# 1vs1"): Thorns no longer needs a shield; it reflects 25% of every melee hit.
+	if str(target.get("class_id", "")) != SpellKits.CLASS_BASTION:
+		return
+	if _allied(actor, target) or not bool(actor.get("alive", false)):
+		return
+	if chebyshev(actor["pos"], target["pos"]) != 1:
+		return
+	var thorns := thorns_amount(target, damage)
+	actor["hp"] = maxi(0, int(actor["hp"]) - thorns)
+	report["thorns"] = thorns
+	report["thorns_seat"] = int(actor["seat"])
+	_check_death(actor)
+
+
 func _stamp_mitigation(event: Dictionary, report: Dictionary) -> void:
+	if report.has("thorns"):
+		event["thorns"] = int(report["thorns"])
+		event["thorns_seat"] = int(report["thorns_seat"])
+		event["coach"] = str(event.get("coach", "")) + " Thorns: %d back." % int(report["thorns"])
 	event["immunity_absorbed"] = bool(report.get("immunity_absorbed", false))
 	event["immunity_amount"] = int(report.get("immunity_amount", 0))
 	event["shield_absorbed"] = int(report.get("shield_absorbed", 0))
 	event["shield_broken"] = bool(report.get("shield_broken", false))
+	if bool(report.get("shield_shattered", false)):
+		event["shield_shattered"] = true
+		event["coach"] = str(event.get("coach", "")) + " Shield shattered!"
 	event["shield_remaining"] = int(report.get("shield_remaining", 0))
 	event["intercepted"] = int(report.get("intercepted", 0))
 
@@ -5543,6 +5877,10 @@ func _support_heal_amount(actor: Dictionary, target: Dictionary, def: Dictionary
 		passive = SpellKits.TRIAGE_MULT
 	var flex := _flex_bonus(actor, str(def.get("element", "")).to_lower(), false)
 	var raw: float = float(base) * CRIT_MULT * passive * (1.0 + (MASTERY + float(actor.get("mastery", 0))) / 100.0) * (1.0 + flex / 100.0) * facing
+	# Mauro 6 Oct 2026: Spark is the Mender counter — a Sparked healer's heals
+	# are 40% weaker too (on top of the cut on a Sparked target).
+	if bool(actor.get("sparked", false)):
+		raw *= 1.0 - SPARK_HEAL_CUT
 	return roundi(raw)
 
 
@@ -5617,6 +5955,7 @@ func _resolve_revive(intent: Dictionary, actor: Dictionary, def: Dictionary, des
 			body[key] = 0
 	body["stunned"] = false
 	body["invisible"] = false
+	_refresh_last_stand()
 	_intent_log.append(intent)
 	_last_coach = "%s Rekindles %s (−%d AP): back on their feet with %d HP." % [actor["name"], body["name"], ap_cost, hp]
 	_last_events.append({
@@ -5750,7 +6089,9 @@ func _resolve_support(intent: Dictionary, actor: Dictionary, target: Dictionary,
 
 const CLEANSE_ORDER := ["slow", "breathless", "burn", "frozen", "electrocuted"]
 ## Debuffs Cleanse can take after Stun and the map stacks, in this order.
-const CLEANSE_OTHER := ["sparked", "pinned", "mire", "skip_next_mp", "water_slow", "magma", "residue"]
+## Sparked is not here: Cleanse cannot remove it (Mauro 6 Oct 2026, Spark is
+## the Mender counter).
+const CLEANSE_OTHER := ["pinned", "mire", "skip_next_mp", "water_slow", "magma", "residue"]
 const _FAMILY_KEYS := {
 	"slow": ["slow_stacks", "slow_remaining"],
 	"breathless": ["breathless_stacks", "breathless_remaining"],
@@ -5837,6 +6178,52 @@ func _strip_family(unit: Dictionary, family: String) -> void:
 ## through the enemy's next turn, visible from Gloam's turn T+1.
 ## An attack still reveals at once. A fixture with invisible but no
 ## invisible_turns has no clock (tests / old snapshots).
+## Mauro 6 Oct 2026: Bastion's Ward. Every living ally within `ward_radius`
+## (Chebyshev, Bastion included) gains +20 shield, capped at 60 (3 stacks).
+## The shield has no clock: it lasts until hits break it.
+func _resolve_team_ward(intent: Dictionary, actor: Dictionary, def: Dictionary, ap_cost: int, mp_cost: int) -> Dictionary:
+	actor["ap"] = int(actor["ap"]) - ap_cost
+	_spend_mp(actor, mp_cost)
+	var spent := _spend_resource(actor, "aegis", int(def.get("spend_aegis", 3)))
+	var radius := int(def.get("ward_radius", 3))
+	var add := int(def.get("shield", 20))
+	var cap := int(def.get("shield_cap", 60))
+	var shielded: Array = []
+	for unit in _units:
+		if not bool(unit.get("alive", false)) or not bool(unit.get("placed", true)):
+			continue
+		if not _allied(unit, actor) and unit != actor:
+			continue
+		if chebyshev(actor["pos"], unit["pos"]) > radius:
+			continue
+		var before := int(unit.get("shield", 0))
+		unit["shield"] = mini(before + add, cap)
+		unit["shield_turns"] = 0
+		shielded.append({"seat": int(unit["seat"]), "pos": unit["pos"], "shield": int(unit["shield"]), "gained": int(unit["shield"]) - before})
+	_intent_log.append(intent)
+	_last_coach = "%s Ward: +%d shield on %d (−%d AP, −%d Aegis)." % [actor["name"], add, shielded.size(), ap_cost, spent]
+	for row in shielded:
+		_last_events.append({
+			"type": "hit",
+			"seat": actor["seat"],
+			"spell": SpellKits.WARD,
+			"caster_cell": actor["pos"],
+			"target_seat": row["seat"],
+			"to": row["pos"],
+			"rolled": false,
+			"ap_spent": ap_cost if row == shielded[0] else 0,
+			"mp_spent": mp_cost if row == shielded[0] else 0,
+			"healed": 0,
+			"damage": 0,
+			"shield": row["shield"],
+			"shield_gained": row["gained"],
+			"engine": "aegis",
+			"engine_spent": spent if row == shielded[0] else 0,
+			"coach": _last_coach,
+		})
+	return _accept()
+
+
 func _resolve_fade(intent: Dictionary, actor: Dictionary, def: Dictionary, ap_cost: int, mp_cost: int) -> Dictionary:
 	var caster_cell: Vector2i = actor["pos"]
 	actor["ap"] = int(actor["ap"]) - ap_cost
@@ -5895,6 +6282,30 @@ func _resolve_empty_tile(intent: Dictionary, actor: Dictionary, def: Dictionary,
 			"ap_spent": ap_cost,
 			"mp_spent": mp_cost,
 			"shades": int(actor.get("shades", 0)),
+			"coach": _last_coach,
+		})
+		return _accept()
+	if spell_id == SpellKits.SNARE_TRAP:
+		actor["ap"] = int(actor["ap"]) - ap_cost
+		_spend_mp(actor, mp_cost)
+		var kept: Array = []
+		for item in _trap_tiles:
+			if int(item.get("owner_seat", -1)) != int(actor["seat"]):
+				kept.append(item)
+		kept.append({"pos": dest, "owner_seat": int(actor["seat"]), "turns": int(def.get("trap_turns", 3))})
+		_trap_tiles = kept
+		_intent_log.append(intent)
+		# No tile in the coach: the trap is hidden from the enemy.
+		_last_coach = "%s sets a Snare Trap (−%d AP)." % [actor["name"], ap_cost]
+		_last_events.append({
+			"type": "cast",
+			"spell": spell_id,
+			"seat": actor["seat"],
+			"caster_cell": caster_cell,
+			"to": dest,
+			"rolled": false,
+			"ap_spent": ap_cost,
+			"mp_spent": mp_cost,
 			"coach": _last_coach,
 		})
 		return _accept()

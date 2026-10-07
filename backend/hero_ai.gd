@@ -88,7 +88,24 @@ static func plan(sim: Node, seat: int) -> Dictionary:
 		var ward := _front_ward(casts, snap, team, enemies)
 		if not ward.is_empty():
 			return ward
-	# 2. Healer and ranged: step out of reach before anything else.
+	# Bastion's team Ward (Mauro 6 Oct 2026): raise it when a fight is close.
+	var team_ward := _team_ward(casts, snap, team, here, enemies)
+	if not team_ward.is_empty():
+		return team_ward
+	# 2. Healer and ranged: step out of reach before anything else. Kestrel's
+	# Vault (Mauro 6 Oct 2026) is the escape when an enemy is right next to her.
+	if role != "melee" and not enemies.is_empty() and _nearest(here, enemies) <= 1:
+		var best_vault := {}
+		var best_gap := 1
+		for intent in casts:
+			if str(intent.get("spell", "")) != SpellKits.VAULT:
+				continue
+			var gap := _nearest(_cell(intent.get("to")), enemies)
+			if gap > best_gap:
+				best_gap = gap
+				best_vault = intent
+		if not best_vault.is_empty():
+			return best_vault
 	if role != "melee" and not moves.is_empty() and not enemies.is_empty() and _nearest(here, enemies) <= DANGER_RANGE:
 		var away := _best_move(moves, here, role, snap, team, enemies, sim, actor, true)
 		if away.is_empty():
@@ -451,3 +468,24 @@ static func _cell(value: Variant) -> Vector2i:
 
 static func _cheb(a: Vector2i, b: Vector2i) -> int:
 	return maxi(absi(a.x - b.x), absi(a.y - b.y))
+
+
+## Bastion's Ward (self cast, shields every ally within `ward_radius`): cast it
+## when an enemy is within 3 tiles and someone in reach is below the cap.
+static func _team_ward(casts: Array, snap: Dictionary, team: int, here: Vector2i, enemies: Array) -> Dictionary:
+	for intent in casts:
+		var def := SpellKits.spell(str(intent.get("spell", "")))
+		if not def.has("ward_radius"):
+			continue
+		if enemies.is_empty() or _nearest(here, enemies) > 3:
+			return {}
+		var radius := int(def["ward_radius"])
+		for unit in snap.get("units", []):
+			if int(unit.get("team", 0)) != team or not bool(unit.get("alive", false)) or unit.get("pos") == null:
+				continue
+			var cell := _cell(unit.get("pos"))
+			if maxi(absi(cell.x - here.x), absi(cell.y - here.y)) > radius:
+				continue
+			if int(unit.get("shield", 0)) < int(def.get("shield_cap", 60)):
+				return intent
+	return {}

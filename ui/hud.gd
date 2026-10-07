@@ -7,6 +7,9 @@ signal end_turn_requested
 signal new_match_requested
 ## Mauro 5 Oct 2026: "put a option to go back to hub ... in koliseo".
 signal hub_requested
+## Mauro 6 Oct 2026: change elements before the fight (deployment only, the
+## usual trophy price).
+signal elements_requested
 ## Mauro 6 Oct 2026: tap an enemy portrait / card to aim the armed spell at it.
 signal unit_card_tapped(seat: int)
 signal ready_requested(seat: int)
@@ -76,6 +79,9 @@ var _walk_button: Button
 var _end_turn_button: Button
 var _new_match_button: Button
 var _hub_button: Button
+var _elements_button: Button
+var _match_left: float = -1.0
+var _sudden: bool = false
 var _new_match_holder: Button
 var _ready_p1_button: Button
 var _ready_p2_button: Button
@@ -665,6 +671,8 @@ static func element_notes(unit: Dictionary) -> String:
 		out += "  [b]MAGMA[/b] burns where it ends its turn"
 	if bool(unit.get("sparked", false)):
 		out += "  [b]SPARKED[/b] −40% healing"
+	if bool(unit.get("last_stand", false)):
+		out += "  [b]LAST STAND[/b] heals can hit"
 	if bool(unit.get("blend_lock", false)):
 		out += "  [b]BLENDED[/b]"
 	if str(unit.get("infusion", "")) != "":
@@ -673,6 +681,9 @@ static func element_notes(unit: Dictionary) -> String:
 
 
 static func toast_for_events(events: Array) -> String:
+	for event in events:
+		if typeof(event) == TYPE_DICTIONARY and str(event.get("type", "")) in ["time_up", "sudden_death"]:
+			return str(event.get("coach", "SUDDEN DEATH"))
 	# Elements Step 3: a Blend is the headline of its cast.
 	for event in events:
 		if typeof(event) == TYPE_DICTIONARY and str(event.get("type", "")) == "blend":
@@ -982,6 +993,8 @@ func render(snap: Dictionary, legal: Array) -> void:
 	var clock_sec := turn_clock_seconds(snap)
 	if clock_sec >= 0:
 		_clock_seconds = clock_sec
+	_match_left = float(snap.get("match_time_left", -1.0))
+	_sudden = bool(snap.get("sudden_death", false))
 	if snap.get("match_over", false):
 		var winner := _unit(units, int(snap.get("winner_seat", -1)))
 		if int(snap.get("team_size", 1)) > 1:
@@ -1319,6 +1332,17 @@ func _build() -> void:
 	_hub_button.clip_text = true
 	_hub_button.pressed.connect(func() -> void: hub_requested.emit())
 
+	_elements_button = Button.new()
+	_elements_button.name = "ElementsButton"
+	_elements_button.text = "Elements"
+	_elements_button.custom_minimum_size = TOUCH.NEW_MATCH_BUTTON_SIZE
+	_elements_button.add_theme_font_size_override("font_size", 15)
+	_elements_button.add_theme_color_override("font_color", CREAM)
+	_style_chrome_button(_elements_button, false)
+	_elements_button.clip_text = true
+	_elements_button.visible = false
+	_elements_button.pressed.connect(func() -> void: elements_requested.emit())
+
 	_coach_label = Label.new()
 	_coach_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_coach_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -1382,6 +1406,8 @@ func _build() -> void:
 		zoom_box.add_child(_new_match_holder)
 	if _hub_button != null:
 		zoom_box.add_child(_hub_button)
+	if _elements_button != null:
+		zoom_box.add_child(_elements_button)
 
 	_handoff_overlay = ColorRect.new()
 	_handoff_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -2688,6 +2714,8 @@ func claims_screen_point(point: Vector2) -> bool:
 		return true
 	if _control_claims(_hub_button, point):
 		return true
+	if _control_claims(_elements_button, point):
+		return true
 	if _control_claims(_new_match_button, point):
 		return true
 	if _control_claims(_ready_p1_button, point):
@@ -2835,6 +2863,8 @@ func clear_deploy_note() -> void:
 
 func _sync_deploy_chrome(snap: Dictionary) -> void:
 	var deploying := is_deployment_phase(snap)
+	if _elements_button != null:
+		_elements_button.visible = deploying
 	var ready: Dictionary = snap.get("ready", {})
 	var local_seat := snap_local_seat(snap)
 	if _ready_p1_button != null:
@@ -2923,7 +2953,16 @@ func _apply_turn_label_clock() -> void:
 	if _deploying or _turn_label_base.begins_with("Match over"):
 		_turn_label.text = _turn_label_base
 		return
-	_turn_label.text = "%s  ·  %ds" % [_turn_label_base, _clock_seconds]
+	_turn_label.text = "%s  ·  %ds%s" % [_turn_label_base, _clock_seconds, match_clock_text(_match_left, _sudden)]
+
+
+## Match clock (Mauro 6 Oct 2026: 10 min, 3v3 15 min, sudden death at the end).
+static func match_clock_text(left: float, sudden: bool) -> String:
+	if left < 0.0:
+		return ""
+	var sec := int(ceil(left))
+	var text := "%d:%02d" % [sec / 60, sec % 60]
+	return "  ·  %s %s" % ["SUDDEN DEATH" if sudden else "Match", text]
 
 
 func _sync_stun_badge(active: Dictionary, _units: Array, match_over: bool) -> void:

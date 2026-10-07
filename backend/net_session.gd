@@ -978,6 +978,12 @@ func _authority_gear_config(config: Dictionary) -> Dictionary:
 	return out
 
 
+## Mauro 6 Oct 2026: a pre-fight element change sends this seat's gear again.
+func resend_local_gear() -> void:
+	_gear_sent_seat = -1
+	_send_local_gear()
+
+
 func _send_local_gear() -> void:
 	if mode != Mode.CLIENT or local_seat < 0 or _gear_sent_seat == local_seat:
 		return

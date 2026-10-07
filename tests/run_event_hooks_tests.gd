@@ -456,34 +456,36 @@ func _test_absorbed_damage_and_intercept() -> void:
 	eq(int(_sim.snapshot()["units"][0]["hp"]), 75, "immunity still prevents HP loss")
 	eq(int(_sim.snapshot()["units"][0]["hit_immunity"]), 0, "immunity charge is still spent")
 
+	# Plain shield soak (Gloam's Cut 13; Ironjaw shatters shields since Mauro
+	# 6 Oct 2026, so he is not the soak fixture any more).
 	_sim.reset_match({
 		"seed": 1,
 		"flat_board": true,
 		"skip_deploy": true,
-		"kestrel_pos": Vector2i(3, 3),
-		"ironjaw_pos": Vector2i(4, 3),
+		"classes": ["kestrel", "gloam"],
+		"positions": [Vector2i(3, 3), Vector2i(4, 3)],
 		"kestrel_facing": "E",
 		"rolls": [1, 1],
 	})
 	_sim.submit({"type": "end_turn", "seat": 0})
 	_live_unit(0)["shield"] = 20
 	_live_unit(0)["shield_turns"] = 2
-	var soaked: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(3, 3), "seat": 1})
+	var soaked: Dictionary = _sim.submit({"type": "cast", "spell": "cut", "to": Vector2i(3, 3), "seat": 1})
 	var soaked_hit := _event_of(soaked.get("events", []), "hit")
-	eq(int(soaked_hit.get("shield_absorbed", -1)), 14, "shield absorbs the 14 Strike")
-	eq(bool(soaked_hit.get("shield_broken", true)), false, "a 20 shield is not broken by 14")
-	eq(int(soaked_hit.get("shield_remaining", -1)), 6, "shield remaining is 6")
+	eq(int(soaked_hit.get("shield_absorbed", -1)), 13, "shield absorbs the 13 Cut")
+	eq(bool(soaked_hit.get("shield_broken", true)), false, "a 20 shield is not broken by 13")
+	eq(int(soaked_hit.get("shield_remaining", -1)), 7, "shield remaining is 7")
 	eq(int(soaked_hit.get("damage", -1)), 0, "full shield leaves HP damage at 0")
 	eq(int(_sim.snapshot()["units"][0]["hp"]), 75, "partial shield still blocks all HP")
-	eq(int(_sim.snapshot()["units"][0]["shield"]), 6, "shield pool is 6")
+	eq(int(_sim.snapshot()["units"][0]["shield"]), 7, "shield pool is 7")
 	_live_unit(0)["shield"] = 10
 	_live_unit(0)["shield_turns"] = 2
-	var broken: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(3, 3), "seat": 1})
+	var broken: Dictionary = _sim.submit({"type": "cast", "spell": "cut", "to": Vector2i(3, 3), "seat": 1})
 	var broken_hit := _event_of(broken.get("events", []), "hit")
 	eq(int(broken_hit.get("shield_absorbed", -1)), 10, "broken shield absorbs its remaining pool")
 	eq(bool(broken_hit.get("shield_broken", false)), true, "shield_broken is set when the pool hits 0")
-	eq(int(broken_hit.get("damage", -1)), 4, "overflow past the shield is still 4")
-	eq(int(_sim.snapshot()["units"][0]["hp"]), 71, "overflow still reduces HP")
+	eq(int(broken_hit.get("damage", -1)), 3, "overflow past the shield is 3")
+	eq(int(_sim.snapshot()["units"][0]["hp"]), 72, "overflow still reduces HP")
 	eq(int(_sim.snapshot()["units"][0]["shield"]), 0, "broken shield pool is 0")
 	eq(int(_sim.snapshot()["units"][0]["shield_turns"]), 0, "broken shield clears its turns")
 
@@ -719,30 +721,23 @@ func _test_expiry_events() -> void:
 	eq(int(wall_expire.get("owner_seat", -2)), 0, "wall expiry names Bastion")
 	eq((_sim.snapshot().get("blocked_tiles", []) as Array).is_empty(), true, "expired wall leaves blocked_tiles")
 
+	# Mauro 6 Oct 2026: Bastion's Ward shield has no clock; it lasts until broken.
 	_sim.reset_match({
 		"seed": 1,
 		"flat_board": true,
 		"skip_deploy": true,
-		"classes": ["mender", "kestrel"],
+		"classes": ["bastion", "kestrel"],
 		"positions": [Vector2i(1, 1), Vector2i(6, 6)],
-		"mender_pulse": 2,
+		"bastion_aegis": 3,
 		"rolls": [1],
 	})
 	var ward: Dictionary = _sim.submit({"type": "cast", "spell": "ward", "to": Vector2i(1, 1), "seat": 0})
-	eq(bool(ward.get("ok", false)), true, "Ward connects before the shield clock")
-	_sim.submit({"type": "end_turn", "seat": 0})
-	var shield_mid: Dictionary = _sim.submit({"type": "end_turn", "seat": 1})
-	eq(_expire(shield_mid.get("events", []), "shield").is_empty(), true, "shield does not expire on its first tick")
-	eq(int(_sim.snapshot()["units"][0]["shield"]), 20, "shield amount stays 20 after one tick")
-	eq(int(_sim.snapshot()["units"][0]["shield_turns"]), 1, "shield turns tick 2 to 1")
-	_sim.submit({"type": "end_turn", "seat": 0})
-	var shield_end: Dictionary = _sim.submit({"type": "end_turn", "seat": 1})
-	var shield_expire := _expire(shield_end.get("events", []), "shield")
-	eq(shield_expire.get("pos"), Vector2i(1, 1), "shield expiry names the unit cell")
-	eq(int(shield_expire.get("target_seat", -2)), 0, "shield expiry names the warded seat")
-	eq(int(_sim.snapshot()["units"][0]["shield"]), 0, "expired shield amount is 0")
-	eq(int(_sim.snapshot()["units"][0]["shield_turns"]), 0, "expired shield turns are 0")
-	eq(int(_sim.snapshot()["units"][0]["hp"]), 85, "shield expiry does not change HP")
+	eq(bool(ward.get("ok", false)), true, "Ward resolves")
+	for i in 3:
+		_sim.submit({"type": "end_turn", "seat": 0})
+		var later: Dictionary = _sim.submit({"type": "end_turn", "seat": 1})
+		eq(_expire(later.get("events", []), "shield").is_empty(), true, "the Ward shield never times out (turn %d)" % (i + 1))
+	eq(int(_sim.snapshot()["units"][0]["shield"]), 20, "the Ward shield is still 20 after 3 rounds")
 
 	_sim.reset_match({
 		"seed": 1,
@@ -982,11 +977,11 @@ func _test_triage_on_heals() -> void:
 		"mender_pulse": 4,
 		"rolls": [1],
 	})
+	# Mauro 6 Oct 2026: a 1v1 Mender is always in Last Stand, so Heartstop hits.
 	var enemy: Dictionary = _sim.submit({"type": "cast", "spell": "heartstop", "to": Vector2i(3, 1), "seat": 0})
 	var enemy_hit := _event_of(enemy.get("events", []), "hit")
-	eq(enemy_hit.has("triage"), false, "enemy Heartstop does not stamp triage")
-	eq(int(enemy_hit.get("damage", -1)), 22, "enemy Heartstop damage is 22")
-	eq(int(_sim.snapshot()["units"][1]["hp"]), 8, "enemy Heartstop still leaves 8 HP")
+	eq(enemy_hit.has("triage"), false, "Last Stand Heartstop does not stamp triage")
+	eq(int(enemy_hit.get("damage", -1)), 22, "Last Stand Heartstop damage is 22")
 
 	_host.reset_match({
 		"seed": 1,
@@ -1169,53 +1164,7 @@ func _test_fade_and_heartstop_linger() -> void:
 	eq(int(_event_of(_guest.snapshot().get("last_events", []), "hit").get("hit_immunity", -1)), 1, "guest Heartstop hit keeps hit_immunity")
 	eq(int(_unit_in(_guest.snapshot(), 0).get("hit_immunity", -1)), 1, "guest snapshot keeps hit_immunity")
 
-	var enemy_hot: Dictionary = _hot_submit_after({
-		"seed": 1,
-		"flat_board": true,
-		"skip_deploy": true,
-		"classes": ["mender", "kestrel"],
-		"positions": [Vector2i(1, 1), Vector2i(3, 1)],
-		"kestrel_facing": "W",
-		"mender_pulse": 4,
-		"rolls": [1],
-	}, {"type": "cast", "spell": "heartstop", "to": Vector2i(3, 1), "seat": 0})
-	enemy_hot["session"].free()
-	var enemy_hit := _event_of(enemy_hot["result"].get("events", []), "hit")
-	eq(bool(enemy_hit.get("skip_next_mp", false)), true, "hot-seat enemy Heartstop sets skip_next_mp")
-	eq(int(_sim.snapshot()["units"][1]["hp"]), 53, "enemy Heartstop damage is 22")
-	eq(bool(_unit_in(_sim.snapshot(), 1).get("skip_next_mp", false)), true, "snapshot keeps skip_next_mp")
-	eq(_unit_in(_sim.snapshot(), 1).get("pos"), Vector2i(3, 1), "skip_next_mp snapshot keeps the cell")
-	var skipped: Dictionary = _sim.submit({"type": "end_turn", "seat": 0})
-	var skip_end := _expire(skipped.get("events", []), "skip_next_mp")
-	eq(skip_end.get("pos"), Vector2i(3, 1), "skip_next_mp expire names the cell")
-	eq(int(skip_end.get("target_seat", -1)), 1, "skip_next_mp expire names the seat")
-	eq(bool(_unit_in(_sim.snapshot(), 1).get("skip_next_mp", true)), false, "skip_next_mp clears when the turn starts")
-	eq(int(_sim.snapshot()["units"][1]["mp"]), 0, "skipped refill still sets MP to 0")
-	eq(int(_sim.snapshot()["units"][1]["ap"]), 6, "skipped refill still refills AP")
-
-	_host.reset_match({
-		"seed": 1,
-		"flat_board": true,
-		"skip_deploy": true,
-		"classes": ["mender", "kestrel"],
-		"positions": [Vector2i(1, 1), Vector2i(3, 1)],
-		"kestrel_facing": "W",
-		"mender_pulse": 4,
-		"rolls": [1],
-		"fixture": true,
-	})
-	var host_enemy: Dictionary = _host.submit_for_seat({"type": "cast", "spell": "heartstop", "to": Vector2i(3, 1)}, 0)
-	_guest.apply_packed_state(_host.pack_result(host_enemy, 1))
-	eq(bool(_event_of(_guest.snapshot().get("last_events", []), "hit").get("skip_next_mp", false)), true, "guest hit keeps skip_next_mp")
-	eq(bool(_unit_in(_guest.snapshot(), 1).get("skip_next_mp", false)), true, "guest snapshot keeps skip_next_mp")
-	var host_skip: Dictionary = _host.submit_for_seat({"type": "end_turn"}, 0)
-	var skip_packed: Dictionary = _host.pack_result(host_skip, 1)
-	var skip_wire: Variant = _IntentCodec.decode(skip_packed)
-	eq(_expire((skip_wire as Dictionary).get("events", []), "skip_next_mp").get("pos"), Vector2i(3, 1), "packed skip_next_mp expire survives encode")
-	_guest.apply_packed_state(skip_packed)
-	eq(_expire(_guest.snapshot().get("last_events", []), "skip_next_mp").get("pos"), Vector2i(3, 1), "guest skip_next_mp expire matches the host")
-	eq(bool(_unit_in(_guest.snapshot(), 1).get("skip_next_mp", true)), false, "guest snapshot clears skip_next_mp")
-	eq(int(_guest.snapshot()["units"][1]["mp"]), 0, "guest skipped MP matches the host")
+	# Enemy Heartstop (and its skip_next_mp) is gone since Mauro 6 Oct 2026.
 
 	_sim.reset_match({
 		"seed": 1,

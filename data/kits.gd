@@ -10,6 +10,10 @@ const ADVANCE := "advance"
 const STRIKE := "strike"
 const MARK_SHOT := "mark_shot"
 const DETONATE := "detonate"
+## Mauro 6 Oct 2026 ("maybe krestel need another spell?" → "Yes"): an escape
+## and a zone tool against divers.
+const VAULT := "vault"
+const SNARE_TRAP := "snare_trap"
 const SHOULDER := "shoulder"
 const CRUSH := "crush"
 
@@ -138,6 +142,35 @@ const SPELLS := {
 		"requires_marks_on_target": 1,
 		"hit_by_distance": KESTREL_HIT_BY_DISTANCE,
 	},
+	VAULT: {
+		"id": VAULT,
+		"name": "Vault",
+		"class_id": CLASS_KESTREL,
+		"ap": 2,
+		"mp": 0,
+		# Exactly 2 tiles N/S/E/W, only with an enemy next to her, once a turn.
+		"range_mode": "cardinal",
+		"min_range": 2,
+		"max_range": 2,
+		"rolls": false,
+		"element": "neutral",
+		"target": "empty_tile",
+	},
+	SNARE_TRAP: {
+		"id": SNARE_TRAP,
+		"name": "Snare Trap",
+		"class_id": CLASS_KESTREL,
+		"ap": 2,
+		"mp": 0,
+		"range_mode": "chebyshev",
+		"min_range": 1,
+		"max_range": 3,
+		"rolls": false,
+		"element": "neutral",
+		"target": "empty_tile",
+		"trap_turns": 3,
+		"trap_damage": 6,
+	},
 	SHOULDER: {
 		"id": SHOULDER,
 		"name": "Shoulder",
@@ -205,33 +238,36 @@ const SPELLS := {
 		"rolls": true,
 		"element": "water",
 		"base_heal": 10,
-		# Mauro 5 Oct 2026: "lets try a and b for mender" — option B: Pulse Tap
-		# can also hit an enemy (2 AP, 10 damage, still spends 1 Pulse).
-		"base_damage": 10,
-		"target": "any",
+		# Mauro 6 Oct 2026: Mender is full support (2v2 / 3v3) — the 5 Oct
+		# option B enemy hit (10 damage) is gone.
+		"target": "ally",
 		"engine_on_connect": "spend_pulse",
 		"requires_pulse": 1,
 		"spend_pulse": 1,
 		"triage": true,
 	},
+	# Mauro 6 Oct 2026: Ward moves from Mender to Bastion (Aegis Break leaves
+	# the kit): 3 AP + 3 Aegis, no roll, +20 shield on every ally within 3
+	# tiles including Bastion, stacks 3 times (60), lasts until it is broken.
 	WARD: {
 		"id": WARD,
 		"name": "Ward",
-		"class_id": CLASS_MENDER,
+		"class_id": CLASS_BASTION,
 		"ap": 3,
 		"mp": 0,
 		"range_mode": "chebyshev",
 		"min_range": 0,
-		"max_range": 3,
-		"rolls": true,
-		"element": "water",
+		"max_range": 0,
+		"rolls": false,
+		"element": "neutral",
 		"base_heal": 0,
 		"shield": 20,
-		"shield_turns": 2,
-		"target": "ally",
-		"engine_on_connect": "spend_pulse",
-		"requires_pulse": 2,
-		"spend_pulse": 2,
+		"shield_cap": 60,
+		"ward_radius": 3,
+		"target": "self",
+		"engine_on_connect": "spend_aegis",
+		"requires_aegis": 3,
+		"spend_aegis": 3,
 		"no_crit": true,
 	},
 	CLEANSE: {
@@ -284,15 +320,14 @@ const SPELLS := {
 		"rolls": true,
 		"element": "water",
 		"base_heal": 32,
-		# Mauro 30 Sep 2026 balance: enemy damage 10 → 18 → 24 → 20; Pulse cost 4 → 2.
-		"base_damage": 22,  # Mauro 1 Oct 2026 balance (was 20)
-		"target": "any",
+		# Mauro 6 Oct 2026: Mender is full support — Heartstop no longer hits
+		# enemies (was 22 damage + no walking next turn).
+		"target": "ally",
 		"engine_on_connect": "spend_pulse",
 		"requires_pulse": 2,
 		"spend_pulse": 2,
 		"triage": true,
 		"ally_immunity_hits": 1,
-		"enemy_skip_mp": true,
 	},
 	CUT: {
 		"id": CUT,
@@ -460,11 +495,11 @@ const SPELLS := {
 }
 
 const CLASS_SPELLS := {
-	CLASS_KESTREL: [MARK_SHOT, DETONATE],
+	CLASS_KESTREL: [MARK_SHOT, DETONATE, VAULT, SNARE_TRAP],
 	CLASS_IRONJAW: [ADVANCE, STRIKE, SHOULDER, CRUSH],
-	CLASS_MENDER: [MEND, PULSE_TAP, WARD, CLEANSE, HEARTSTOP, REKINDLE],
+	CLASS_MENDER: [MEND, PULSE_TAP, CLEANSE, HEARTSTOP, REKINDLE],
 	CLASS_GLOAM: [CUT, DROP_SHADE, AMBUSH, FADE, NIGHTFOLD],
-	CLASS_BASTION: [BASH, PLANT, HOLD_LINE, SNAP_WALL, AEGIS_BREAK],
+	CLASS_BASTION: [BASH, PLANT, HOLD_LINE, SNAP_WALL, WARD],
 }
 
 const MARKS_CAP := 5
@@ -633,7 +668,22 @@ static func element_for(unit: Dictionary, spell_id: String) -> String:
 
 
 static func spell_for(unit: Dictionary, spell_id: String) -> Dictionary:
-	return spell_as(spell_id, element_for(unit, spell_id))
+	var def := spell_as(spell_id, element_for(unit, spell_id))
+	if bool(unit.get("last_stand", false)) and LAST_STAND_DAMAGE.has(spell_id):
+		# Mender Last Stand (Mauro 6 Oct 2026): her heals can hit enemies again.
+		def = def.duplicate()
+		def["target"] = "any"
+		def["base_damage"] = int(LAST_STAND_DAMAGE[spell_id])
+		if spell_id == HEARTSTOP:
+			def["enemy_skip_mp"] = true
+		def["last_stand"] = true
+	return def
+
+
+## Mauro 6 Oct 2026: Mender is a support. Only when she is the last fighter
+## of her team standing and can no longer Rekindle anyone (always in a 1v1)
+## do Pulse Tap and Heartstop hit enemies again, with their old numbers.
+const LAST_STAND_DAMAGE := {PULSE_TAP: 10, HEARTSTOP: 22}
 
 
 static func set_element_riders(enabled: bool) -> void:

@@ -111,6 +111,12 @@ static func simple_lines(spell_id: String, preview: Dictionary = {}) -> PackedSt
 		SpellKits.DETONATE:
 			out.append("Blow up the Marks on an enemy: %d damage + %d more for each Mark (3 Marks = %d)." % [dmg, int(def.get("damage_per_mark", 6)), dmg + 3 * int(def.get("damage_per_mark", 6))])
 			out.append("The enemy needs at least 1 Mark. All their Marks get used up.")
+		SpellKits.VAULT:
+			out.append("Jump exactly 2 tiles in a straight line (up, down, left or right) to get away. Only works when an enemy is right next to you. Once per turn. Never misses.")
+			out.append("You cannot jump over rocks, crates, walls or steam.")
+		SpellKits.SNARE_TRAP:
+			out.append("Hide a trap on an empty tile. Enemies cannot see it. The first enemy who steps on it stops there, takes %d damage and cannot walk on their next turn." % int(def.get("trap_damage", 6)))
+			out.append("You can have 1 trap at a time. It lasts %d of your turns." % int(def.get("trap_turns", 3)))
 		SpellKits.ADVANCE:
 			out.append("Jump exactly 2 tiles in a straight line (up, down, left or right). It never misses.")
 			out.append("Land next to an enemy = +1 Impact. You can jump over water, mud and lava, but not over rocks, crates, walls or steam. Max 2 jumps per turn.")
@@ -122,17 +128,20 @@ static func simple_lines(spell_id: String, preview: Dictionary = {}) -> PackedSt
 		SpellKits.CRUSH:
 			out.append("A big smash on an enemy next to you for %d damage. Needs 2 Impact and uses 2." % dmg)
 			out.append("If your Impact is full (%d), the enemy is Stunned and skips their next turn, and it uses ALL your Impact." % SpellKits.IMPACT_CAP)
+
 		SpellKits.MEND:
 			out.append("Heal a teammate or yourself for %d HP. Very hurt friends (under 40%% HP) get 25%% more. +1 Pulse." % heal)
 		SpellKits.PULSE_TAP:
-			out.append("Tap a teammate to heal %d HP, or tap an enemy to hit them for %d damage. Uses 1 Pulse." % [heal, dmg])
+			out.append("Tap a teammate (or yourself) to heal %d HP. Uses 1 Pulse." % heal)
+			out.append("Last Stand: when you are the last one alive and cannot Rekindle anyone, it can also hit an enemy for %d." % int(SpellKits.LAST_STAND_DAMAGE[SpellKits.PULSE_TAP]))
 		SpellKits.WARD:
-			out.append("Give a teammate a shield of %d for %d turns. Hits break the shield before they hurt. Uses 2 Pulse." % [int(def.get("shield", 20)), int(def.get("shield_turns", 2))])
+			out.append("Give every teammate within %d tiles, you too, a shield of +%d. Cast it again to stack it up to %d. Hits break the shield before they hurt you; it stays until it breaks. Uses %d Aegis." % [int(def.get("ward_radius", 3)), int(def.get("shield", 20)), int(def.get("shield_cap", 60)), int(def.get("spend_aegis", 3))])
+			out.append("Thorns (always on): enemies who hit Bastion from right next to him take 20% of that hit back.")
 		SpellKits.CLEANSE:
 			out.append("Take away 1 bad effect from a teammate (Stun first). 3 bad effects? Use it 3 times. +1 Pulse.")
 		SpellKits.HEARTSTOP:
-			out.append("On a teammate: heal %d HP and the next hit on them does nothing." % heal)
-			out.append("On an enemy: %d damage and they cannot walk on their next turn. Uses 2 Pulse." % dmg)
+			out.append("Heal a teammate (or yourself) %d HP, and the next hit on them does nothing. Uses 2 Pulse." % heal)
+			out.append("Last Stand: when you are the last one alive and cannot Rekindle anyone, it can also hit an enemy for %d and stop them walking next turn." % int(SpellKits.LAST_STAND_DAMAGE[SpellKits.HEARTSTOP]))
 		SpellKits.REKINDLE:
 			out.append("Bring a knocked-out teammate back with %d%% HP. Needs full Pulse (%d) and uses all of it. Once per match." % [int(def.get("revive_pct", 30)), SpellKits.PULSE_CAP])
 		SpellKits.CUT:
@@ -183,6 +192,8 @@ static func simple_lines(spell_id: String, preview: Dictionary = {}) -> PackedSt
 
 static func _reach_words(def: Dictionary, preview: Dictionary) -> String:
 	var target := str(def.get("target", ""))
+	if def.has("ward_radius"):
+		return "you and every teammate within %d tiles" % int(def["ward_radius"])
 	if target == "self":
 		return "only you"
 	if bool(def.get("gated", false)):
@@ -208,7 +219,7 @@ static func _engine_words(class_id: String, spell_id: String) -> String:
 		SpellKits.CLASS_IRONJAW:
 			if spell_id == SpellKits.ADVANCE:
 				return ""
-			return "Impact = Ironjaw's power dots (max %d). They fade on a turn you do not attack." % SpellKits.IMPACT_CAP
+			return "Impact = Ironjaw's power dots (max %d). They fade on a turn you do not attack. Shield breaker: any Ironjaw hit shatters the target's whole shield." % SpellKits.IMPACT_CAP
 		SpellKits.CLASS_MENDER:
 			return "Pulse = Mender's power dots (max %d). They fade on a turn you cast no spell." % SpellKits.PULSE_CAP
 		SpellKits.CLASS_BASTION:

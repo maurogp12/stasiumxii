@@ -236,11 +236,11 @@ func _eval(sim: Node, seat: int) -> float:
 		var mine := int(u.get("team", 0)) == my_team
 		var hp := float(u.get("hp", 0)) if bool(u.get("alive", false)) else 0.0
 		if mine:
-			s += hp + float(u.get("shield", 0)) * 0.8
+			s += hp + float(u.get("shield", 0))
 			if not bool(u.get("alive", false)):
 				s -= 120.0
 		else:
-			s -= hp * 1.1 + float(u.get("shield", 0)) * 0.8
+			s -= hp * 1.1 + float(u.get("shield", 0))
 			if not bool(u.get("alive", false)):
 				s += 140.0
 			else:

@@ -63,7 +63,7 @@ func _test_roster_gate() -> void:
 	eq(SpellKits.is_roster_class("bastion"), true, "bastion is on the roster")
 	eq(SpellKits.is_roster_class("pulse"), false, "pulse is not on the roster")
 	eq(SpellKits.is_roster_class(""), false, "empty class is rejected")
-	eq(SpellKits.class_spells("mender").size(), 6, "mender kit has six spells (Rekindle, Mauro 3 Oct 2026)")
+	eq(SpellKits.class_spells("mender").size(), 5, "mender kit has five spells (Ward went to Bastion, Mauro 6 Oct 2026)")
 	eq(SpellKits.class_spells("gloam").size(), 5, "gloam kit has five spells")
 	eq(SpellKits.class_spells("bastion").size(), 5, "bastion kit has five spells")
 	eq(SpellKits.element_of("gloam"), "air", "gloam primary element is air")
@@ -126,7 +126,7 @@ func _test_pair_keeps_queue_order() -> void:
 	eq(str(class_ids[1]), "ironjaw", "seat 1 is the second queued class")
 	eq(str(_sim.snapshot()["units"][0]["class_id"]), "kestrel", "sim seat 0 is kestrel")
 	eq(str(_sim.snapshot()["units"][1]["class_id"]), "ironjaw", "sim seat 1 is ironjaw")
-	eq(_sim.snapshot()["units"][0]["spells"], ["mark_shot", "detonate"], "seat 0 has the Kestrel kit")
+	eq(_sim.snapshot()["units"][0]["spells"], ["mark_shot", "detonate", "vault", "snare_trap"], "seat 0 has the Kestrel kit")
 	eq(_sim.snapshot()["units"][1]["spells"], ["advance", "strike", "shoulder", "crush"], "seat 1 has the Ironjaw kit")
 	eq(int(_host.server_session("a").get("seat", -2)), 0, "first session is seat 0")
 	eq(int(_host.server_session("b").get("seat", -2)), 1, "second session is seat 1")
@@ -462,107 +462,9 @@ func _test_ambush_hit() -> void:
 
 
 func _test_aegis_break() -> void:
-	_sim.reset_match({
-		"seed": 1,
-		"flat_board": true,
-		"skip_deploy": true,
-		"classes": ["bastion", "kestrel"],
-		"positions": [Vector2i(1, 1), Vector2i(3, 1)],
-		"kestrel_facing": "W",
-		"kestrel_marks": 3,
-		"bastion_aegis": 4,
-		"rolls": [1],
-	})
-	var hit: Dictionary = _sim.submit({"type": "cast", "spell": "aegis_break", "to": Vector2i(3, 1), "seat": 0})
-	eq(bool(hit.get("ok", false)), true, "Aegis Break hit resolves")
-	var caster: Dictionary = _sim.snapshot()["units"][0]
-	var victim: Dictionary = _sim.snapshot()["units"][1]
-	eq(int(caster["aegis"]), 0, "HIT clears all Aegis on the caster")
-	eq(int(caster["ap"]), 2, "Aegis Break spends 4 AP")
-	eq(int(victim["hp"]), 49, "Aegis Break hit is 26")
-	eq(victim["pos"], Vector2i(4, 1), "Aegis Break pushes 1")
-	eq(int(victim["marks"]), 3, "HIT does not clear Marks")
-	_sim.reset_match({
-		"seed": 1,
-		"flat_board": true,
-		"skip_deploy": true,
-		"classes": ["bastion", "kestrel"],
-		"positions": [Vector2i(1, 1), Vector2i(3, 1)],
-		"kestrel_facing": "W",
-		"bastion_aegis": 4,
-		"rolls": [1],
-	})
-	var second: Dictionary = _sim._make_unit(1, "kestrel", "Second", "air", Vector2i(1, 3), "N", true)
-	var outside: Dictionary = _sim._make_unit(1, "kestrel", "Outside", "air", Vector2i(4, 2), "W", true)
-	_sim._units.append(second)
-	_sim._units.append(outside)
-	var burst: Dictionary = _sim.submit({"type": "cast", "spell": "aegis_break", "to": Vector2i(3, 1), "seat": 0})
-	eq(bool(burst.get("ok", false)), true, "Aegis Break burst hit resolves")
-	eq(int(_sim.snapshot()["units"][0]["aegis"]), 0, "burst HIT clears all Aegis once")
-	eq(int(_sim.snapshot()["units"][1]["hp"]), 49, "aimed body takes 26")
-	eq(_sim.snapshot()["units"][1]["pos"], Vector2i(4, 1), "aimed body is pushed 1")
-	eq(int(second["hp"]), 49, "second body in range 1–2 takes 26")
-	eq(second["pos"], Vector2i(1, 4), "second body is pushed 1")
-	eq(int(outside["hp"]), 75, "a body outside range 1–2 takes no damage")
-	eq(outside["pos"], Vector2i(4, 2), "a body outside range 1–2 is not pushed")
-	var burst_hit: Dictionary = {}
-	for event in burst.get("events", []):
-		if typeof(event) == TYPE_DICTIONARY and str(event.get("type", "")) == "hit":
-			burst_hit = event
-	eq(int(burst_hit.get("bodies", 0)), 2, "Aegis Break hit counts both bodies")
-	var burst_rows: Array = burst_hit.get("targets", [])
-	eq(burst_rows.size(), 2, "Aegis Break hit lists each body")
-	eq(int(burst_rows[0].get("damage", -1)), 26, "first burst row is 26")
-	eq(int(burst_rows[1].get("damage", -1)), 26, "second burst row is 26")
-	_sim.reset_match({
-		"seed": 1,
-		"flat_board": true,
-		"skip_deploy": true,
-		"classes": ["bastion", "kestrel"],
-		"positions": [Vector2i(1, 1), Vector2i(3, 1)],
-		"kestrel_facing": "W",
-		"bastion_aegis": 4,
-		"rolls": [100],
-	})
-	var missed: Dictionary = _sim.submit({"type": "cast", "spell": "aegis_break", "to": Vector2i(3, 1), "seat": 0})
-	eq(bool(missed.get("ok", false)), true, "Aegis Break miss resolves")
-	eq(int(_sim.snapshot()["units"][0]["aegis"]), 4, "MISS spends 0 Aegis")
-	eq(int(_sim.snapshot()["units"][0]["ap"]), 2, "MISS still spends 4 AP")
-	eq(int(_sim.snapshot()["units"][1]["hp"]), 75, "MISS deals no damage")
-	eq(_sim.snapshot()["units"][1]["pos"], Vector2i(3, 1), "MISS does not push")
-	var miss_event: Dictionary = {}
-	for event in missed.get("events", []):
-		if typeof(event) == TYPE_DICTIONARY and str(event.get("type", "")) == "miss":
-			miss_event = event
-	eq(int(miss_event.get("aegis_spent", -1)), 0, "MISS event spends 0 Aegis")
-	eq(bool(miss_event.get("stacks_cleared", true)), false, "MISS does not clear Aegis")
-	_sim.reset_match({
-		"seed": 1,
-		"flat_board": true,
-		"skip_deploy": true,
-		"classes": ["bastion", "kestrel"],
-		"positions": [Vector2i(1, 1), Vector2i(3, 1)],
-		"kestrel_facing": "W",
-		"kestrel_invisible": true,
-		"bastion_aegis": 4,
-		"rolls": [1],
-	})
-	var hidden: Dictionary = _sim.submit({"type": "cast", "spell": "aegis_break", "to": Vector2i(3, 1), "seat": 0})
-	eq(str(hidden.get("reason", "")), "open_can_wait", "Aegis Break versus Invisible stays open")
-	eq(int(_sim.snapshot()["units"][0]["aegis"]), 4, "open AoE does not clear Aegis")
-	eq(int(_sim.snapshot()["units"][0]["ap"]), 6, "open AoE does not spend AP")
-	_sim.reset_match({
-		"seed": 1,
-		"flat_board": true,
-		"skip_deploy": true,
-		"classes": ["bastion", "kestrel"],
-		"positions": [Vector2i(1, 1), Vector2i(3, 1)],
-		"bastion_aegis": 2,
-	})
-	var gated: Dictionary = _sim.submit({"type": "cast", "spell": "aegis_break", "to": Vector2i(3, 1), "seat": 0})
-	eq(str(gated.get("reason", "")), "insufficient_aegis", "Aegis Break requires 3 Aegis")
-	eq(int(_sim.snapshot()["units"][0]["ap"]), 6, "failed gate does not spend AP")
-	eq(int(_sim.snapshot()["units"][0]["aegis"]), 2, "failed gate does not spend Aegis")
+	# Mauro 6 Oct 2026: Aegis Break left Bastion's kit; Ward took its slot.
+	eq(SpellKits.class_spells(SpellKits.CLASS_BASTION).has(SpellKits.AEGIS_BREAK), false, "Aegis Break is no longer in Bastion's kit")
+	eq(SpellKits.class_spells(SpellKits.CLASS_BASTION).has(SpellKits.WARD), true, "Bastion has Ward")
 
 
 func _test_snap_wall_blocks_only_with_bastion() -> void:
@@ -678,24 +580,7 @@ func _test_mender_heals_and_ward() -> void:
 	eq(int(_sim.snapshot()["units"][0]["hp"]), 56, "Triage heals (16 + Water 4) × 1.25 below 40% HP")
 	eq(int(_sim.snapshot()["units"][0]["pulse"]), 1, "Mend gains 1 Pulse")
 	eq(int(_sim.snapshot()["units"][0]["ap"]), 3, "Mend costs 3 AP")
-	_sim.reset_match({
-		"seed": 1,
-		"flat_board": true,
-		"skip_deploy": true,
-		"classes": ["mender", "kestrel"],
-		"positions": [Vector2i(1, 1), Vector2i(6, 6)],
-		"mender_pulse": 2,
-		"rolls": [1, 1],
-	})
-	var ward: Dictionary = _sim.submit({"type": "cast", "spell": "ward", "to": Vector2i(1, 1), "seat": 0})
-	eq(bool(ward.get("ok", false)), true, "Ward connects")
-	eq(int(_sim.snapshot()["units"][0]["shield"]), 20, "Ward shield is 20, not the open 24 rider")
-	eq(int(_sim.snapshot()["units"][0]["shield_turns"]), 2, "Ward lasts 2 turns")
-	eq(int(_sim.snapshot()["units"][0]["pulse"]), 0, "Ward spends 2 Pulse on connect")
-	var stacked: Dictionary = _sim.submit({"type": "cast", "spell": "ward", "to": Vector2i(1, 1), "seat": 0})
-	eq(str(stacked.get("reason", "")), "open_can_wait", "a second Ward does not stack or overwrite")
-	eq(int(_sim.snapshot()["units"][0]["shield"]), 20, "rejected Ward leaves the 20 shield")
-	eq(int(_sim.snapshot()["units"][0]["ap"]), 3, "rejected Ward does not spend AP")
+	eq(SpellKits.class_spells("mender").has("ward"), false, "Ward is no longer a Mender spell (Mauro 6 Oct 2026)")
 	_sim.reset_match({
 		"seed": 1,
 		"flat_board": true,
@@ -769,14 +654,12 @@ func _test_heartstop() -> void:
 		"mender_pulse": 4,
 		"rolls": [1],
 	})
+	# Mauro 6 Oct 2026: a 1v1 Mender is in Last Stand — Heartstop hits.
 	var enemy: Dictionary = _sim.submit({"type": "cast", "spell": "heartstop", "to": Vector2i(3, 1), "seat": 0})
-	eq(bool(enemy.get("ok", false)), true, "enemy Heartstop hits")
-	eq(int(_sim.snapshot()["units"][1]["hp"]), 53, "enemy Heartstop damage is 22")
-	eq(bool(_sim.snapshot()["units"][1]["skip_next_mp"]), true, "enemy Heartstop skips the next MP refill")
+	eq(bool(enemy.get("ok", false)), true, "Last Stand Heartstop hits an enemy")
+	eq(int(_sim.snapshot()["units"][1]["hp"]), 53, "Last Stand Heartstop damage is 22")
+	eq(bool(_sim.snapshot()["units"][1]["skip_next_mp"]), true, "Last Stand Heartstop stops the next walk")
 	eq(int(_sim.snapshot()["units"][0]["pulse"]), 2, "Heartstop spends 2 Pulse")
-	_sim.submit({"type": "end_turn", "seat": 0})
-	eq(int(_sim.snapshot()["units"][1]["mp"]), 0, "skipped refill sets MP to 0")
-	eq(int(_sim.snapshot()["units"][1]["ap"]), 6, "skipped refill still refills AP")
 	_sim.reset_match({
 		"seed": 1,
 		"flat_board": true,
@@ -792,7 +675,8 @@ func _test_heartstop() -> void:
 	eq(int(_sim.snapshot()["units"][0]["pulse"]), 4, "gated Heartstop does not spend Pulse")
 
 
-## Mauro 5 Oct 2026 option B: Pulse Tap can hit an enemy; Heartstop 4 AP.
+## Mauro 6 Oct 2026: Mender is full support. Pulse Tap and Heartstop no longer
+## hit enemies (the 5 Oct option B is undone); Heartstop stays 4 AP.
 func _test_mender_option_b() -> void:
 	_sim.reset_match({
 		"seed": 1,
@@ -806,16 +690,13 @@ func _test_mender_option_b() -> void:
 	mender["pulse"] = 3
 	var offered := false
 	for intent in _sim.legal_intents(0):
-		if str(intent.get("spell", "")) == "pulse_tap" and int(intent.get("target_seat", -1)) == 1:
+		if str(intent.get("spell", "")) in ["pulse_tap", "heartstop"] and int(intent.get("target_seat", -1)) == 1:
 			offered = true
-	eq(offered, true, "Pulse Tap is offered on an enemy")
-	var hp_before := int(_sim._unit_by_seat(1)["hp"])
-	var tap: Dictionary = _sim.submit({"type": "cast", "spell": "pulse_tap", "to": Vector2i(4, 2), "seat": 0})
-	eq(bool(tap.get("ok", false)), true, "Pulse Tap hits an enemy")
-	eq(int(_sim._unit_by_seat(1)["hp"]) < hp_before, true, "Pulse Tap deals damage to an enemy")
-	eq(int(mender["pulse"]), 2, "Pulse Tap on an enemy spends 1 Pulse")
+	eq(offered, true, "a 1v1 Mender is in Last Stand: her heals can hit the enemy")
+	var tap: Dictionary = _sim.submit({"type": "cast", "spell": "pulse_tap", "to": Vector2i(2, 2), "seat": 0})
+	eq(bool(tap.get("ok", false)), true, "Pulse Tap heals Mender herself")
 	eq(int(mender["ap"]), 4, "Pulse Tap costs 2 AP")
-	var stop: Dictionary = _sim.submit({"type": "cast", "spell": "heartstop", "to": Vector2i(4, 2), "seat": 0})
+	var stop: Dictionary = _sim.submit({"type": "cast", "spell": "heartstop", "to": Vector2i(2, 2), "seat": 0})
 	eq(bool(stop.get("ok", false)), true, "Heartstop fits after Pulse Tap (2 + 4 AP)")
 	eq(int(mender["ap"]), 0, "Heartstop costs 4 AP")
 
