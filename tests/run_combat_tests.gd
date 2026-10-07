@@ -146,6 +146,7 @@ func _run() -> void:
 	_test_mender_last_stand()
 	_test_sudden_death_clock()
 	_test_kestrel_vault_and_snare()
+	_test_bodies_do_not_block()
 
 
 func _test_reset_and_turn_order() -> void:
@@ -7899,6 +7900,19 @@ func _test_kestrel_vault_and_snare() -> void:
 	eq(hp0 - int(_unit(1)["hp"]), 6, "the trap deals 6")
 	eq(bool(_unit(1).get("pin_pending", false)), true, "the trapped enemy is Pinned next turn")
 	eq(_sim.snapshot()["trap_tiles"].size(), 0, "the trap is spent")
+
+
+
+## Mauro 7 Oct 2026: a fallen fighter's body does not block walking.
+func _test_bodies_do_not_block() -> void:
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "team_size": 2, "classes": ["kestrel", "ironjaw", "gloam", "bastion"], "positions": [Vector2i(2, 2), Vector2i(10, 10), Vector2i(3, 2), Vector2i(12, 12)]})
+	var fallen := _live_unit(2)
+	fallen["alive"] = false
+	fallen["hp"] = 0
+	eq(_sim._is_empty(Vector2i(3, 2)), true, "a body's tile counts as empty")
+	var walk: Dictionary = _sim.submit({"type": "move", "to": Vector2i(4, 2), "seat": 0})
+	eq(bool(walk.get("ok", false)), true, "a walk passes over a fallen body")
+	eq(_unit(0)["pos"], Vector2i(4, 2), "the walker gets past the body")
 
 
 func _walkable_zone_count(seat: int) -> int:

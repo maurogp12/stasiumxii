@@ -517,6 +517,13 @@ static func sample_zone_pair(seed: int, board_size: int = BOARD_SIZE, cell_ok: C
 	rng.seed = seed
 	var acceptable: Dictionary = {}
 	var tries := 4000 if cell_ok.is_valid() else 320
+	# Mauro 7 Oct 2026: "los combates empiezan casi siempre en la misma area".
+	# Taking the first valid pair favoured the open parts of each map (they
+	# pass the checks most often). Collect many valid preferred pairs, then
+	# pick by LOCATION: every distinct first-zone centre has the same chance,
+	# and the two seats are swapped at random.
+	var by_centre := {}
+	var found := 0
 	for _i in range(tries):
 		var blob_a: Array[Vector2i] = _generate_blob(rng, board_size)
 		if cell_ok.is_valid() and not _blob_ok(blob_a, cell_ok):
@@ -539,9 +546,22 @@ static func sample_zone_pair(seed: int, board_size: int = BOARD_SIZE, cell_ok: C
 			"fallback": false,
 		}
 		if bool(candidate["preferred"]):
-			return candidate
-		if acceptable.is_empty():
+			var key := _blob_centre(blob_a)
+			if not by_centre.has(key):
+				by_centre[key] = []
+			(by_centre[key] as Array).append(candidate)
+			found += 1
+			if found >= ZONE_CANDIDATES:
+				break
+		elif acceptable.is_empty():
 			acceptable = candidate
+	if not by_centre.is_empty():
+		var keys := by_centre.keys()
+		var pool: Array = by_centre[keys[rng.randi_range(0, keys.size() - 1)]]
+		var pick: Dictionary = pool[rng.randi_range(0, pool.size() - 1)]
+		if rng.randi_range(0, 1) == 1:
+			pick["zones"] = {0: pick["zones"][1], 1: pick["zones"][0]}
+		return pick
 	if not acceptable.is_empty():
 		return acceptable
 	var fallback_a: Array[Vector2i] = _rect_blob(Vector2i(0, 2), 2, 3)
@@ -555,6 +575,16 @@ static func sample_zone_pair(seed: int, board_size: int = BOARD_SIZE, cell_ok: C
 		"fallback": true,
 	}
 
+
+## Valid preferred zone pairs gathered before the location-fair pick.
+const ZONE_CANDIDATES := 48
+
+
+static func _blob_centre(blob: Array[Vector2i]) -> Vector2i:
+	var sum := Vector2i.ZERO
+	for cell in blob:
+		sum += cell
+	return sum / maxi(blob.size(), 1)
 
 static func _blob_ok(blob: Array[Vector2i], cell_ok: Callable) -> bool:
 	if blob.size() != BLOB_SIZE:

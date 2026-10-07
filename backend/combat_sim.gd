@@ -7492,6 +7492,10 @@ func _is_empty(cell: Vector2i) -> bool:
 	for unit in _units:
 		if not bool(unit.get("placed", true)):
 			continue
+		# Mauro 7 Oct 2026: "los cuerpos no deberian de bloquear o impedir que
+		# alguien camine por ahi" — a fallen fighter's body is not in the way.
+		if not bool(unit.get("alive", true)):
+			continue
 		if unit["pos"] == cell:
 			return false
 	return true
