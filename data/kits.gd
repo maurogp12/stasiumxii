@@ -262,12 +262,14 @@ const SPELLS := {
 		"element": "neutral",
 		"base_heal": 0,
 		"shield": 20,
-		"shield_cap": 60,
+		# Mauro 7 Oct 2026 (option A): 1 Aegis, once per turn, max 40 (was 3 Aegis, max 60).
+		"shield_cap": 40,
 		"ward_radius": 3,
+		"once_per_turn": true,
 		"target": "self",
 		"engine_on_connect": "spend_aegis",
-		"requires_aegis": 3,
-		"spend_aegis": 3,
+		"requires_aegis": 1,
+		"spend_aegis": 1,
 		"no_crit": true,
 	},
 	CLEANSE: {

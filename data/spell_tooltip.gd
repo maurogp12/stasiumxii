@@ -135,7 +135,7 @@ static func simple_lines(spell_id: String, preview: Dictionary = {}) -> PackedSt
 			out.append("Tap a teammate (or yourself) to heal %d HP. Uses 1 Pulse." % heal)
 			out.append("Last Stand: when you are the last one alive and cannot Rekindle anyone, it can also hit an enemy for %d." % int(SpellKits.LAST_STAND_DAMAGE[SpellKits.PULSE_TAP]))
 		SpellKits.WARD:
-			out.append("Give every teammate within %d tiles, you too, a shield of +%d. Cast it again to stack it up to %d. Hits break the shield before they hurt you; it stays until it breaks. Uses %d Aegis." % [int(def.get("ward_radius", 3)), int(def.get("shield", 20)), int(def.get("shield_cap", 60)), int(def.get("spend_aegis", 3))])
+			out.append("Give every teammate within %d tiles, you too, a shield of +%d. Cast it again to stack it up to %d. Hits break the shield before they hurt you; it stays until it breaks. Uses %d Aegis. Once per turn." % [int(def.get("ward_radius", 3)), int(def.get("shield", 20)), int(def.get("shield_cap", 40)), int(def.get("spend_aegis", 1))])
 			out.append("Thorns (always on): enemies who hit Bastion from right next to him take 20% of that hit back.")
 		SpellKits.CLEANSE:
 			out.append("Take away 1 bad effect from a teammate (Stun first). 3 bad effects? Use it 3 times. +1 Pulse.")
