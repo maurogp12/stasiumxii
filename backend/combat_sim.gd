@@ -457,6 +457,8 @@ func legal_intents(seat: int) -> Array:
 			continue
 		var target_kind := str(def.get("target", "enemy"))
 		if target_kind == "self":
+			if bool(def.get("once_per_turn", false)) and bool(actor.get("ward_used", false)):
+				continue
 			out.append({"type": "cast", "spell": spell_id, "to": from, "seat": seat})
 			continue
 		if target_kind == "fallen_ally":
@@ -1582,7 +1584,7 @@ func _preview_kit_lines(spell_id: String) -> Dictionary:
 		SpellKits.AEGIS_BREAK:
 			return {"on_connect": "26 Earth per body in range 1–2. Push 1. Clears all Aegis.", "on_miss": "Spends 0 Aegis. Does not clear Aegis."}
 		SpellKits.WARD:
-			return {"on_connect": "+20 shield on every ally within 3 tiles, you too. Stacks to 60. Lasts until broken. Spends 3 Aegis.", "on_miss": "No roll."}
+			return {"on_connect": "+20 shield on every ally within 3 tiles, you too. Stacks to 40. Lasts until broken. Spends 1 Aegis. Once per turn.", "on_miss": "No roll."}
 		SpellKits.SNAP_WALL:
 			return {"on_connect": "Blocked tile for 2 Bastion turn-starts. Spends 2 Aegis. On your own wall: knocks it down, +2 Aegis back.", "on_miss": "No roll."}
 		_:
@@ -2816,6 +2818,8 @@ func _submit_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
 		if dest != actor["pos"]:
 			return _reject(intent, "no_target", "REJECT — %s is self only (refund)." % def["name"])
 		if spell_id == SpellKits.WARD:
+			if bool(actor.get("ward_used", false)):
+				return _reject(intent, "once_per_turn", "REJECT — Ward is once per turn (refund).")
 			return _resolve_team_ward(intent, actor, def, ap_cost, mp_cost)
 		return _resolve_fade(intent, actor, def, ap_cost, mp_cost)
 	if target_kind == "cone":
@@ -4010,6 +4014,7 @@ func _begin_unit_turn(unit: Dictionary) -> void:
 		_emit_expire("grounded", unit["pos"], int(unit["seat"]), int(unit["seat"]))
 	unit["advance_uses"] = 0
 	unit["vault_used"] = false
+	unit["ward_used"] = false
 	_tick_traps(unit)
 	_tick_foe_cooldowns(unit)
 	# Locked Stun (A′): decrement stun at start of that unit's turn.
@@ -6184,7 +6189,8 @@ func _strip_family(unit: Dictionary, family: String) -> void:
 func _resolve_team_ward(intent: Dictionary, actor: Dictionary, def: Dictionary, ap_cost: int, mp_cost: int) -> Dictionary:
 	actor["ap"] = int(actor["ap"]) - ap_cost
 	_spend_mp(actor, mp_cost)
-	var spent := _spend_resource(actor, "aegis", int(def.get("spend_aegis", 3)))
+	var spent := _spend_resource(actor, "aegis", int(def.get("spend_aegis", 1)))
+	actor["ward_used"] = true
 	var radius := int(def.get("ward_radius", 3))
 	var add := int(def.get("shield", 20))
 	var cap := int(def.get("shield_cap", 60))

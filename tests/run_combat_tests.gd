@@ -7697,20 +7697,20 @@ func _test_bastion_team_ward_and_thorns() -> void:
 	eq(bool(ward.get("ok", false)), true, "Bastion's Ward resolves")
 	eq(int(bastion["shield"]), 20, "Ward shields Bastion")
 	eq(int(mate["shield"]), 20, "Ward shields a teammate within 3 tiles")
-	eq(int(bastion["aegis"]), 1, "Ward spends 3 Aegis")
+	eq(int(bastion["aegis"]), 3, "Ward spends 1 Aegis (Mauro 7 Oct 2026, option A)")
 	eq(int(bastion["ap"]), ap0 - 3, "Ward spends 3 AP")
 	for unit in _sim._units:
 		if not _sim._allied(unit, bastion):
 			eq(int(unit.get("shield", 0)), 0, "Ward never shields an enemy")
-	# Stacks to 60, no clock.
-	bastion["aegis"] = 3
+	# Once per turn; stacks to 40, no clock.
 	bastion["ap"] = 12
-	_sim.submit({"type": "cast", "spell": "ward", "to": bastion["pos"], "seat": int(bastion["seat"])})
-	bastion["aegis"] = 3
-	_sim.submit({"type": "cast", "spell": "ward", "to": bastion["pos"], "seat": int(bastion["seat"])})
-	bastion["aegis"] = 3
-	_sim.submit({"type": "cast", "spell": "ward", "to": bastion["pos"], "seat": int(bastion["seat"])})
-	eq(int(bastion["shield"]), 60, "Ward stacks 3 times to 60 and no further")
+	var twice: Dictionary = _sim.submit({"type": "cast", "spell": "ward", "to": bastion["pos"], "seat": int(bastion["seat"])})
+	eq(str(twice.get("reason", "")), "once_per_turn", "Ward is once per turn")
+	for i in 3:
+		bastion["ward_used"] = false
+		bastion["aegis"] = 1
+		_sim.submit({"type": "cast", "spell": "ward", "to": bastion["pos"], "seat": int(bastion["seat"])})
+	eq(int(bastion["shield"]), 40, "Ward stacks to 40 and no further")
 	eq(int(bastion["shield_turns"]), 0, "the Ward shield has no clock")
 	# Thorns: 1v1 Ironjaw strikes a shielded Bastion from next to him.
 	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1, 1], "classes": ["ironjaw", "bastion"], "positions": [Vector2i(3, 3), Vector2i(4, 3)], "bastion_aegis": 3})

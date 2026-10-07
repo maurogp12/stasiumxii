@@ -3,7 +3,7 @@
 This document is for the next team (people or agents). It explains **every
 gameplay change made in the 6–7 Oct 2026 Claude session**, **why** each one
 was made (with Mauro's own words), **where it lives in the code**, **how it
-is tested**, and **what is still open**. Versions 0.1.133 → 0.1.136.
+is tested**, and **what is still open**. Versions 0.1.133 → 0.1.137.
 
 The short version of the change log is in `docs/CHANGE_LOG_CLAUDE.md` (one
 row per version). The table of approved systems is in
@@ -151,9 +151,14 @@ Each entry: **what**, **why** (Mauro's words), **where** (code), **tests**.
 
 - **What:** **Ward moved from Mender to Bastion; Aegis Break left Bastion's
   kit.** Bastion: Bash, Plant, Hold Line, Snap Wall, Ward.
-  Ward = 3 AP + 3 Aegis, never misses, **+20 shield on every ally within 3
-  tiles including Bastion**, stacks to 60 (3 casts), **no timer** (lasts
-  until hits break it).
+  Ward = 3 AP + **1 Aegis**, **once per turn**, never misses, **+20 shield
+  on every ally within 3 tiles including Bastion**, stacks to **40** (2
+  casts), **no timer** (lasts until hits break it).
+  *First version (0.1.136): 3 Aegis, stack 60. Changed in 0.1.137 (7 Oct
+  2026, Mauro picked option A): at 3 Aegis Bastion could only Ward about
+  every 3 turns (he earns ~1 Aegis per attacking turn), so his support job
+  rarely happened; at 1 Aegis he can Ward every turn, and the cap drops to
+  40 so no team sits on 60 shield. Ironjaw still shatters it.*
 - **Why:** Mauro: "bastions feels useless at team fights ... take out ward
   from mender and give it to bastion and delete his aegis break and ward now
   will give all allies 20 shield can be stack 3 times and requires 3 aegis
@@ -311,7 +316,9 @@ Results recorded this session (level 15, Rare, no Stills):
 
 ## 3. Open items / next steps (in priority order)
 
-1. **Thorns 22%** vs Gloam (target Bastion 55–60%).
+1. **Bastion vs Gloam with the 0.1.137 Ward** (1 Aegis, once per turn, cap
+   40) and Thorns 20%. The cheaper Ward may lift Bastion to 55–60% on its
+   own; only if not, try **Thorns 22%**.
 2. **Ironjaw vs Bastion** with the shield breaker (target Ironjaw 55–60%).
    If Bastion still wins: Ironjaw ignores Thorns.
 3. **2v2 team simulator** with the new Mender / Bastion (target Mender teams
