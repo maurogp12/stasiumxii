@@ -586,15 +586,6 @@ func _test_gear_in_fights() -> void:
 	sim.reset_match({"classes": ["kestrel", "ironjaw"]})
 	eq(sim.set_seat_gear(1, {"worn": _worn("sheaf", ["head", "chest"])}), true, "gear applies during deployment")
 	eq(int(sim._unit_by_seat(1)["max_hp"]), 174, "late gear raised seat 1 HP to (90+28+40)×1.10")
-	# A phone sending gear again (deployment, or after an element change) uses the same +0 rule.
-	sim.reset_match({"classes": ["kestrel", "ironjaw"]})
-	var resend: Node = (load("res://backend/net_session.gd") as Script).new()
-	resend.attach_sim(sim)
-	resend.mode = resend.Mode.DEDICATED
-	eq(resend.accept_seat_gear(0, {"worn": [{"item_id": "sheaf.head", "plus": 5}]}), true, "gear sent again applies while deploying")
-	eq(bool(resend._seat_gear[0].get("flatten_plus", false)), true, "the resend is marked Koliseo +0")
-	eq(int(sim._unit_by_seat(0)["max_hp"]), 103, "a resent +5 helm counts as +0 (75+28, not 125)")
-	resend.free()
 	# Authority: a reset config cannot smuggle gear; each seat's own gear is used.
 	var net: Node = (load("res://backend/net_session.gd") as Script).new()
 	net.mode = net.Mode.DEDICATED

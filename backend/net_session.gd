@@ -993,8 +993,6 @@ func accept_seat_gear(seat: int, payload: Variant) -> bool:
 	if seat < 0:
 		return false
 	var gear := GearBag.clean_fight_gear(payload)
-	# Same Koliseo rule as the first send: parts count as +0; set bonuses stay.
-	gear["flatten_plus"] = true
 	_seat_gear[seat] = gear
 	var host_sim := sim()
 	if host_sim == null or not host_sim.has_method("set_seat_gear"):
