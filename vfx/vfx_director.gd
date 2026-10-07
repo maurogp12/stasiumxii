@@ -18,6 +18,7 @@ const _Ring := preload("res://vfx/vfx_ring.gd")
 const _Status := preload("res://vfx/vfx_status.gd")
 const _Stamp := preload("res://vfx/vfx_stamp.gd")
 const _Strip := preload("res://vfx/vfx_strip.gd")
+const _SpellArt := preload("res://vfx/spell_art.gd")
 const _BossSheets := preload("res://units/boss_sheets.gd")
 
 @export var reduce_shake: bool = false
@@ -181,6 +182,9 @@ func sync_snapshot(snapshot: Dictionary) -> void:
 			wanted["skip_next_mp:%d" % seat] = {"pool": "status", "status": "skip_next_mp", "seat": seat, "cell": cell, "tint": VfxPalette.MENDER_DEEP}
 		if bool(rec.get("invisible", false)):
 			wanted["invisible:%d" % seat] = {"pool": "status", "status": "invisible", "seat": seat, "cell": cell, "tint": VfxPalette.GLOAM_RIM}
+	var painted: Dictionary = _SpellArt.linger_specs(snapshot)
+	for key in painted.keys():
+		wanted[key] = painted[key]
 	var stale: Array = []
 	for key in _linger.keys():
 		if not wanted.has(key):
@@ -262,6 +266,8 @@ func _spawn(spec: Dictionary, ghost_motion: bool) -> void:
 			_play_burst("spark", spec, true)
 		"stamp":
 			_play_stamp(spec)
+		"spell_fx":
+			_play_spell_fx(spec)
 		"boss_fx":
 			_play_boss_fx(spec)
 		"blend_fx":
@@ -364,11 +370,56 @@ func _play_stamp(spec: Dictionary) -> void:
 	}
 	if hand and not spec.has("pos"):
 		payload["follow"] = _hand_pos.bind(seat, cell)
-	if spec.has("aim"):
+	if spec.has("flip_h"):
+		payload["flip_h"] = bool(spec.get("flip_h", false))
+	elif spec.has("aim"):
 		var aim := _Router.cell_of(spec.get("aim"))
 		var delta := _pos_cell(aim) - _pos_cell(cell)
 		payload["flip_h"] = delta.x < -0.5
 	node.play(payload)
+
+
+func _play_spell_fx(spec: Dictionary) -> void:
+	if bool(spec.get("owner_only", false)) and not _seat_is_local(int(spec.get("seat", -1))):
+		return
+	var cell := _Router.cell_of(spec.get("cell", Vector2i.ZERO))
+	var air := str(spec.get("z", "ground")) == "air"
+	var at := _pos_cell(cell)
+	if air:
+		var pawn := _pawn(int(spec.get("seat", -1)))
+		if pawn != null and _pawn_stands_on(pawn, cell):
+			at = pawn.position
+	var payload := {
+		"path": str(spec.get("path", "")),
+		"frames": int(spec.get("frames", 1)),
+		"anchor": spec.get("anchor", Vector2.ZERO),
+		"fps": float(spec.get("fps", 12.0)),
+		"scale": float(spec.get("scale", 1.0)),
+		"delay": float(spec.get("delay", 0.0)),
+		"z": _z_air(cell) if air else _z_floor(cell),
+		"crossfade": bool(spec.get("crossfade", false)),
+		"add": bool(spec.get("add", false)),
+		"flip_h": bool(spec.get("flip_h", false)),
+	}
+	if str(spec.get("system", "")) == "fly":
+		payload["from"] = _pos_cell(_Router.cell_of(spec.get("from", cell)))
+		payload["to"] = _pos_cell(_Router.cell_of(spec.get("to", cell)))
+		payload["arc"] = float(spec.get("arc", 0.0))
+		payload["duration"] = float(spec.get("duration", 0.24))
+	else:
+		payload["pos"] = at
+	_acquire("strip").play(payload)
+
+
+## Hot-seat and tests (local seat unset) show owner-only art. A guest does not.
+func _seat_is_local(seat: int) -> bool:
+	var net := get_node_or_null("/root/NetSession")
+	if net == null or not ("local_seat" in net):
+		return true
+	var local := int(net.get("local_seat"))
+	if local < 0:
+		return true
+	return local == seat
 
 
 ## Air boss effects (cannonball, explosion) draw over the area tile rings in
@@ -727,7 +778,12 @@ func _ensure_linger(key: String, spec: Dictionary) -> void:
 	payload["pos"] = _body_pos(int(spec.get("seat", -1)), cell, false) if pool_name == "status" else _pos_cell(cell)
 	var style := str(spec.get("style", ""))
 	var standing := pool_name == "status" or style == "slab" or style == "figure"
-	payload["z"] = _z_air(cell) if standing else (_z_floor(cell) if pool_name == "strip" else _z_ground(cell))
+	if pool_name == "strip" and str(spec.get("z_kind", "")) == "air":
+		payload["z"] = _z_air(cell)
+	elif pool_name == "strip":
+		payload["z"] = _z_floor(cell)
+	else:
+		payload["z"] = _z_air(cell) if standing else _z_ground(cell)
 	payload["linger"] = true
 	if _linger.has(key):
 		var existing: Node = _linger[key]

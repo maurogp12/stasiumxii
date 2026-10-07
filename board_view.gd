@@ -59,6 +59,7 @@ const RESULT_DELAY := 1.1
 const KOLISEO_LIFE := preload("res://board/koliseo_life.gd")
 const ARENA_SKY := preload("res://board/arena_sky.gd")
 const ARENA_LOOK := preload("res://board/arena_look.gd")
+const PAINTED := preload("res://board/painted_room.gd")
 const SPELL_FLOURISH := preload("res://vfx/spell_flourish.gd")
 const PAWN_SCENE: PackedScene = preload("res://units/pawn.tscn")
 const COMBAT_SIM_SCRIPT := preload("res://backend/combat_sim.gd")
@@ -2611,17 +2612,25 @@ func _apply_board_tiles(snap: Dictionary) -> void:
 		tile.set_walk_blocked(SNAPSHOT_TILES.walk_block_kind(rec))
 		tile.position = VISUAL_SORT.cell_to_local(cell, float(rec.get("elevation", 0.0)))
 		tile.z_index = VISUAL_SORT.tile_z_index(cell, float(rec.get("elevation", 0.0)))
-		if ARENA_LOOK.centerpiece_for(map_key, cell, _paint_props_at(paint, cell)) != null:
-			# A big centrepiece (Brinewake wreck, volcano, tower) spills over the
-			# row of tiles in front: draw it above them, still under the fighters
-			# standing in that row.
-			tile.z_index += VISUAL_SORT.TILE_Z_SCALE + 1
+	var painted := PAINTED.bind($Tiles, PAINTED.room_id_for(map_key, _painted_room_letter()), tiles)
+	if not painted:
+		for cell in tiles.keys():
+			if ARENA_LOOK.centerpiece_for(map_key, cell, _paint_props_at(paint, cell)) != null:
+				# A big centrepiece (Brinewake wreck, volcano, tower) spills over the
+				# row of tiles in front: draw it above them, still under the fighters
+				# standing in that row. Painted occluders sort on their own.
+				_tile_at(cell).z_index += VISUAL_SORT.TILE_Z_SCALE + 1
 	_apply_edge_glow(map_key)
 	_ensure_koliseo_life()
 	if _koliseo_life != null:
 		_koliseo_life.bind(map_key, _board_size)
 	_ensure_arena_sky()
 	_arena_sky.bind(map_key, _board_size)
+
+
+## Koliseo leaves this empty. The dungeon fight overrides it with its room letter.
+func _painted_room_letter() -> String:
+	return ""
 
 
 func _paint_props_at(paint: Dictionary, cell: Vector2i) -> Array:

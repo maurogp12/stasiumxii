@@ -24,31 +24,52 @@ extends "res://vfx/vfx_pooled.gd"
 ## CombatSim never reads this file.
 
 const SHEETS := {
-	"ambush_slash": "res://art/vfx/scenario/ambush_slash.png",
-	"mark_shot_impact": "res://art/vfx/scenario/mark_shot_impact.png",
-	"mark_shot_cast": "res://art/vfx/scenario/mark_shot_cast.png",
-	"detonate_burst": "res://art/vfx/scenario/detonate_burst.png",
-	"hit_flash": "res://art/vfx/scenario/hit_flash.png",
+	"ambush_slash": "res://art/vfx/spells/gloam/ambush_slash.png",
+	"mark_shot_impact": "res://art/vfx/spells/kestrel/mark_shot_impact.png",
+	"mark_shot_cast": "res://art/vfx/spells/kestrel/mark_shot_cast.png",
+	"detonate_burst": "res://art/vfx/spells/kestrel/detonate_burst.png",
+	"hit_flash": "res://art/vfx/spells/common/hit_flash.png",
+	"strike_axes": "res://art/vfx/spells/ironjaw/strike_axes.png",
+	"cut_slash": "res://art/vfx/spells/gloam/cut_slash.png",
+	"bash_mace": "res://art/vfx/spells/bastion/bash_mace.png",
 	"damage_float": "res://art/vfx/scenario/damage_float.png",
 	"footstep_dust": "res://art/vfx/scenario/footstep_dust.png",
 	"melee_windup": "res://art/vfx/scenario/melee_windup.png",
 }
 
-## Equal grids. Punch-v2 strips are not equal cells, so they live in STRIPS.
-## Mark Shot cast is four equal cells across the plate.
+## Equal grids. The older dust / float / melee plates are unequal, so they stay in STRIPS.
 ## A sheet missing from both maps is one hero plate.
 const GRIDS := {
-	"mark_shot_cast": Vector2i(4, 1),
+	"mark_shot_cast": Vector2i(6, 1),
+	"mark_shot_impact": Vector2i(6, 1),
+	"detonate_burst": Vector2i(6, 1),
+	"ambush_slash": Vector2i(6, 1),
+	"hit_flash": Vector2i(6, 1),
+	"strike_axes": Vector2i(6, 1),
+	"cut_slash": Vector2i(6, 1),
+	"bash_mace": Vector2i(6, 1),
 }
 
-## Bow windup, in milliseconds. 70 + 80 + 80 + 70 = 300.
-## Integers so the snap does not drift past 0.30s. Not tile time, not the body clip.
-## The draw is not stretched out to the contact.
-## Ambush slash: 80 + 120 + 90 + 50 + 40 = 380. Anticipate and wind are the
-## 200ms before contact. The SNAP cell is the third hold. Inside 0.2–0.4s.
+## Authored holds, in milliseconds. The sum is the strip life.
+## Mark Shot release is frame index 3 (lead_sec), then two follow-through cells.
+## Ambush SNAP is still index 2 (80+120). A sixth fade cell follows.
 const FRAME_MS := {
-	"ambush_slash": [80, 120, 90, 50, 40],
-	"mark_shot_cast": [70, 80, 80, 70],
+	"ambush_slash": [80, 120, 90, 50, 40, 40],
+	"mark_shot_cast": [70, 80, 80, 50, 60, 60],
+	"mark_shot_impact": [50, 60, 70, 90, 90, 120],
+	"detonate_burst": [60, 70, 80, 90, 100, 120],
+	"hit_flash": [30, 40, 50, 50, 50, 50],
+	"strike_axes": [60, 60, 80, 80, 70, 60],
+	"cut_slash": [50, 60, 70, 70, 60, 50],
+	"bash_mace": [60, 70, 80, 80, 70, 60],
+}
+
+## Soft additive glow on the light plates. Ink strikes stay normal.
+const ADD_SHEETS := {
+	"mark_shot_cast": true,
+	"mark_shot_impact": true,
+	"detonate_burst": true,
+	"hit_flash": true,
 }
 
 ## Texture pixels added to the hand anchor. v4 sits on the cell center, so the
@@ -61,22 +82,6 @@ const INK_OFFSET := {
 ## shrinking frame stays planted instead of drifting. Padding keeps the
 ## linear filter off the neighboring cell.
 const STRIPS := {
-	# Five equal windows. The gray cell frame and the black field sit outside.
-	"ambush_slash": [
-		Rect2(7, 238, 244, 243),
-		Rect2(263, 238, 244, 243),
-		Rect2(519, 238, 244, 243),
-		Rect2(775, 238, 244, 243),
-		Rect2(1031, 238, 244, 243),
-	],
-	"hit_flash": [
-		Rect2(76, 232, 64, 222),
-		Rect2(215, 232, 193, 222),
-		Rect2(428, 232, 209, 222),
-		Rect2(661, 232, 204, 222),
-		Rect2(891, 232, 186, 222),
-		Rect2(1135, 232, 84, 222),
-	],
 	"damage_float": [
 		Rect2(22, 177, 160, 312),
 		Rect2(203, 177, 166, 312),
@@ -92,30 +97,11 @@ const STRIPS := {
 		Rect2(659, 265, 202, 184),
 		Rect2(892, 265, 160, 184),
 	],
-	# Full-height divider columns are clear in v3b and are not frames.
-	"detonate_burst": [
-		Rect2(42, 165, 133, 353),
-		Rect2(221, 165, 199, 353),
-		Rect2(429, 165, 208, 353),
-		Rect2(644, 165, 205, 353),
-		Rect2(865, 165, 191, 353),
-		Rect2(1109, 165, 135, 353),
-	],
 	"melee_windup": [
 		Rect2(30, 165, 252, 355),
 		Rect2(337, 165, 279, 355),
 		Rect2(656, 165, 271, 355),
 		Rect2(964, 165, 312, 355),
-	],
-	# Floor rings opening into the burst, then closing. Not the sigil row.
-	"mark_shot_impact": [
-		Rect2(42, 112, 105, 211),
-		Rect2(183, 112, 129, 211),
-		Rect2(348, 112, 145, 211),
-		Rect2(524, 112, 159, 211),
-		Rect2(708, 112, 151, 211),
-		Rect2(889, 112, 120, 211),
-		Rect2(1044, 112, 97, 211),
 	],
 }
 
@@ -280,6 +266,7 @@ func play(spec: Dictionary) -> void:
 	z_as_relative = false
 	z_index = int(spec.get("z", 40))
 	_peak = clampf(float(spec.get("alpha", 1.0)), 0.0, 1.0)
+	_apply_sheet_blend()
 	_holds = holds_for(_sheet)
 	var locked := windup_sec(_sheet)
 	# Authored holds win. A cast window or a tile time must not stretch the snap.
@@ -303,6 +290,18 @@ func play(spec: Dictionary) -> void:
 		_sprite.visible = false
 		return
 	_kick()
+
+
+func _apply_sheet_blend() -> void:
+	if ADD_SHEETS.has(_sheet):
+		var mat := _sprite.material as CanvasItemMaterial
+		if mat == null:
+			mat = CanvasItemMaterial.new()
+			_sprite.material = mat
+		mat.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
+		_peak = minf(_peak, 0.85)
+	elif _sprite != null:
+		_sprite.material = null
 
 
 func _apply_frame(index: int) -> void:
@@ -378,6 +377,7 @@ func release() -> void:
 		_sprite.offset = Vector2.ZERO
 		_sprite.region_enabled = false
 		_sprite.texture = null
+		_sprite.material = null
 	_wait = 0.0
 	_life = 0.0
 	_holds = []

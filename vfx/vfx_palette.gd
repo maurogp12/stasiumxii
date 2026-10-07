@@ -5,11 +5,11 @@ class_name VfxPalette
 ## Damage is orange-red, heals are green, absorbed and shield values are grey-blue.
 
 const OUTLINE := Color("1A1016")
-const NUMBER_OUTLINE := Color("1a0c06")
+const NUMBER_OUTLINE := Color("1a120c")
 const NUMBER_SHADOW := Color(0.08, 0.04, 0.03, 0.45)
 
-const DAMAGE_TOP := Color(1.0, 0.745098, 0.27451)
-const DAMAGE_BOTTOM := Color(0.941176, 0.203922, 0.094118)
+const DAMAGE_TOP := Color("f4e2c4")
+const DAMAGE_BOTTOM := Color("3a2418")
 const HEAL_TOP := Color(0.882353, 1.0, 0.54902)
 const HEAL_BOTTOM := Color(0.180392, 0.745098, 0.235294)
 const SHIELD_TOP := Color(0.78, 0.84, 0.90)

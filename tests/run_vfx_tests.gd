@@ -339,10 +339,10 @@ func _test_budgets() -> void:
 	eq(BUDGET.POOL_SPARK, 4, "sparks are pooled")
 	eq(BUDGET.POOL_NUMBER, 6, "numbers are pooled")
 	eq(BUDGET.NUMBER_STACK_PX, 22.0, "hits stack 22px apart")
-	eq(BUDGET.NUMBER_RISE_PX, 28.0, "numbers rise 28px")
+	eq(BUDGET.NUMBER_RISE_PX, 36.0, "numbers rise 36px")
 	eq(is_equal_approx(BUDGET.NUMBER_POP_SEC, 0.12), true, "number pop is 0.12s")
-	eq(BUDGET.NUMBER_LIFE <= 0.8, true, "a number finishes as a tail")
-	eq(PALETTE.number_colors("damage")["bottom"], PALETTE.DAMAGE_BOTTOM, "damage numbers are orange-red")
+	eq(BUDGET.NUMBER_LIFE <= 0.95, true, "a number finishes as a tail")
+	eq(PALETTE.number_colors("damage")["bottom"], PALETTE.DAMAGE_BOTTOM, "damage numbers fade to ink")
 	eq(PALETTE.number_colors("heal")["bottom"], PALETTE.HEAL_BOTTOM, "heal numbers are green")
 	eq(PALETTE.number_colors("shield")["top"], PALETTE.SHIELD_TOP, "shield numbers are grey-blue")
 	eq(PALETTE.number_colors("absorb")["bottom"], PALETTE.SHIELD_BOTTOM, "absorbed numbers are grey-blue")
@@ -1091,7 +1091,7 @@ func _test_live_director() -> void:
 			"skip_next_mp": false,
 		}],
 	})
-	eq(director.linger_count(), 3, "snapshot marks, invisible, and immunity linger")
+	eq(director.linger_count(), 4, "snapshot marks, invisible, immunity, and the painted shell linger")
 	director.play([], {"units": [{"seat": 1, "pos": Vector2i(4, 3), "alive": true}]})
 	eq(director.linger_count(), 0, "a cleared snapshot drops those tells")
 	DIRECTOR.set_reduce_shake(true)
@@ -1157,8 +1157,8 @@ func _test_stamp_playback() -> void:
 	eq(flash.offset, Vector2.ZERO, "the centered bow ink stays on the hand anchor")
 	stamp._sample(0.0)
 	eq(flash.region_rect.position.x, 0.0, "the draw is the left cell")
-	stamp._sample(0.23 / stamp_script.windup_sec("mark_shot_cast"))
-	eq(flash.region_rect.position.x, float(flash.texture.get_width()) * 0.75, "the arrow-tip release is the last cell")
+	stamp._sample(stamp_script.lead_sec("mark_shot_cast", 3) / stamp_script.windup_sec("mark_shot_cast"))
+	eq(flash.region_rect.position.x, float(flash.texture.get_width()) * 0.5, "the arrow-tip release is frame 3 of 6")
 	stamp.free()
 
 
@@ -1192,8 +1192,8 @@ func _test_class_choreography() -> void:
 	eq(_first(marked, "status_on")["cell"], foe, "Mark cells stay Vector2i")
 	eq(_has(marked, "shake"), false, "Mark Shot does not shake")
 	eq(bool(_first(marked, "projectile").get("hand", false)), true, "Mark Shot emits from the hand")
-	var windup := preload("res://vfx/vfx_stamp.gd").windup_sec("mark_shot_cast")
-	eq(is_equal_approx(float(_first(marked, "projectile").get("delay", 0.0)), windup), true, "Mark Shot bolt leaves when the windup ends")
+	var release := preload("res://vfx/vfx_stamp.gd").lead_sec("mark_shot_cast", 3)
+	eq(is_equal_approx(float(_first(marked, "projectile").get("delay", 0.0)), release), true, "Mark Shot bolt leaves on the release cell")
 	eq(float(_first(marked, "projectile").get("delay", 0.0)) > 0.07, true, "Mark Shot bolt does not leave on the spark frame")
 	eq(_has(marked, "puff"), false, "Mark Shot does not puff from the feet")
 	var cast_wind := _sheet(marked, "mark_shot_cast")
@@ -1505,8 +1505,9 @@ func _catalogue() -> Array:
 
 func _test_scenario_overlays() -> void:
 	var stamp_script := preload("res://vfx/vfx_stamp.gd")
-	for sheet in ["ambush_slash", "mark_shot_impact", "mark_shot_cast", "detonate_burst", "hit_flash", "damage_float", "footstep_dust", "melee_windup"]:
+	for sheet in ["damage_float", "footstep_dust", "melee_windup"]:
 		truthy(FileAccess.file_exists("res://art/vfx/scenario/%s.png" % sheet), "scenario plate %s is on disk" % sheet)
+	for sheet in ["ambush_slash", "mark_shot_impact", "mark_shot_cast", "detonate_burst", "hit_flash", "damage_float", "footstep_dust", "melee_windup"]:
 		var tex: Texture2D = stamp_script.texture_for(sheet)
 		truthy(tex != null, "%s imports as a texture" % sheet)
 		var img := tex.get_image()
@@ -1525,9 +1526,9 @@ func _test_scenario_overlays() -> void:
 	eq(stamp_script.frame_count("hit_flash"), 6, "hit flash is a 6-frame punch-v3 strip")
 	eq(stamp_script.frame_count("damage_float"), 6, "damage float is a 6-frame punch-v3 strip")
 	eq(stamp_script.frame_count("footstep_dust"), 5, "footstep dust is a 5-frame punch-v3 plant strip")
-	eq(stamp_script.frame_count("ambush_slash"), 5, "ambush slash is a 5-cell v5 strip")
-	eq(stamp_script.frame_count("mark_shot_impact"), 7, "Mark Shot impact is a 7-frame floor strip")
-	eq(stamp_script.frame_count("mark_shot_cast"), 4, "Mark Shot cast is a 4-frame bow strip")
+	eq(stamp_script.frame_count("ambush_slash"), 6, "ambush slash is a 6-cell strip")
+	eq(stamp_script.frame_count("mark_shot_impact"), 6, "Mark Shot impact is a 6-frame floor strip")
+	eq(stamp_script.frame_count("mark_shot_cast"), 6, "Mark Shot cast is a 6-frame bow strip")
 	eq(stamp_script.frame_count("detonate_burst"), 6, "Detonate burst is a 6-frame punch-v3 strip")
 	eq(stamp_script.frame_count("melee_windup"), 4, "melee windup is a 4-frame anticipation strip")
 	for sheet in ["ambush_slash", "hit_flash", "damage_float", "footstep_dust", "detonate_burst", "melee_windup", "mark_shot_impact", "mark_shot_cast"]:
@@ -1593,33 +1594,25 @@ func _test_scenario_overlays() -> void:
 	var contact_sec := preload("res://units/view_motion.gd").ambush_contact_sec()
 	var slash_lead := stamp_script.lead_sec("ambush_slash", 2)
 	var slash_life := stamp_script.windup_sec("ambush_slash")
-	eq(stamp_script.holds_for("ambush_slash"), [0.08, 0.12, 0.09, 0.05, 0.04], "slash frames are anticipate, wind, snap, settle, fade")
+	eq(stamp_script.holds_for("ambush_slash"), [0.08, 0.12, 0.09, 0.05, 0.04, 0.04], "slash frames are anticipate, wind, snap, settle, fade, fade")
 	eq(is_equal_approx(slash_lead, contact_sec), true, "anticipate and wind fill the beat before contact")
 	eq(is_equal_approx(float(slash_sheet["delay"]), contact_sec - slash_lead), true, "the snap opens on the slash contact")
 	eq(is_equal_approx(float(slash_sheet["life"]), slash_life), true, "the strip lasts the locked holds")
-	eq(slash_life >= 0.20 and slash_life <= 0.40, true, "the slash finishes inside 0.2-0.4s")
+	eq(slash_life >= 0.20 and slash_life <= 0.45, true, "the slash finishes inside 0.45s")
 	eq(stamp_script.frame_at("ambush_slash", 0.0), 0, "anticipate is the first cell")
 	eq(stamp_script.frame_at("ambush_slash", 0.08), 1, "the wind starts when anticipate ends")
 	eq(stamp_script.frame_at("ambush_slash", contact_sec), 2, "the SNAP cell is up when the hit resolves")
 	eq(stamp_script.frame_at("ambush_slash", 0.29), 3, "settle trails follow the snap")
-	eq(stamp_script.frame_at("ambush_slash", 0.34), 4, "fade is the last cell")
+	eq(stamp_script.frame_at("ambush_slash", 0.34), 4, "the first fade cell follows settle")
+	eq(stamp_script.frame_at("ambush_slash", 0.38), 5, "the last fade cell follows")
 	var slash_tex: Texture2D = stamp_script.texture_for("ambush_slash")
-	eq(slash_tex.get_width(), 1280, "the ambush strip is 1280 wide")
-	eq(slash_tex.get_height(), 720, "the ambush strip is 720 tall")
+	eq(slash_tex.get_height(), 192, "the ambush strip cells are 192 tall")
+	eq(slash_tex.get_width(), 192 * stamp_script.frame_count("ambush_slash"), "the ambush strip is one row of equal cells")
 	var slash_img := slash_tex.get_image()
-	eq(slash_img.get_pixel(12, 360).a < 0.08, true, "the gray cell frame is not drawn")
-	eq(slash_img.get_pixel(128, 221).a < 0.08, true, "the outer guide line is not drawn")
-	eq(slash_img.get_pixel(128, 499).a < 0.08, true, "the lower guide line is not drawn")
-	eq(slash_img.get_pixel(640, 360).a > 0.8, true, "the snap core stays opaque")
-	var slash_cells: Array[Rect2] = [
-		Rect2(7, 238, 244, 243),
-		Rect2(263, 238, 244, 243),
-		Rect2(519, 238, 244, 243),
-		Rect2(775, 238, 244, 243),
-		Rect2(1031, 238, 244, 243),
-	]
-	for i in slash_cells.size():
-		eq(stamp_script.region_for("ambush_slash", i, slash_tex), slash_cells[i], "ambush cell %d crops inside the gray frame" % i)
+	eq(slash_img.get_pixel(0, 0).a < 0.08, true, "the ambush corner stays transparent")
+	var slash_w := float(slash_tex.get_width()) / float(stamp_script.frame_count("ambush_slash"))
+	for i in stamp_script.frame_count("ambush_slash"):
+		eq(stamp_script.region_for("ambush_slash", i, slash_tex), Rect2(slash_w * float(i), 0, slash_w, float(slash_tex.get_height())), "ambush cell %d is an equal slice" % i)
 	eq(_sheet(ambush, "hit_flash")["cell"], Vector2i(4, 4), "Ambush damage still flashes the body")
 	var ambush_miss: Array = ROUTER.recipes_for([{
 		"type": "miss", "spell": "ambush", "seat": 0, "target_seat": 1,
@@ -1633,7 +1626,8 @@ func _test_scenario_overlays() -> void:
 		"caster_cell": Vector2i(2, 3), "to": Vector2i(4, 3), "damage": 8,
 	}])
 	var windup := stamp_script.windup_sec("mark_shot_cast")
-	var impact_delay := windup + ROUTER.MARK_FLIGHT_SEC
+	var release := stamp_script.lead_sec("mark_shot_cast", 3)
+	var impact_delay := release + ROUTER.MARK_FLIGHT_SEC
 	var cast_sheet := _sheet(marked, "mark_shot_cast")
 	eq(cast_sheet["cell"], Vector2i(2, 3), "Mark Shot windup stays on the caster cell")
 	eq(cast_sheet["cell"] == Vector2i(4, 3), false, "Mark Shot windup is not the target")
@@ -1642,22 +1636,22 @@ func _test_scenario_overlays() -> void:
 	eq(bool(cast_sheet.get("ground", false)), false, "Mark Shot windup is not a floor ring")
 	eq(is_equal_approx(float(cast_sheet.get("delay", 1.0)), 0.0), true, "Mark Shot windup plays from the first cast frame")
 	var holds: Array = stamp_script.holds_for("mark_shot_cast")
-	eq(holds, [0.07, 0.08, 0.08, 0.07], "bow frames are draw, snap, reticle, release")
-	eq(windup >= 0.28 and windup <= 0.32, true, "the bow windup is a 280-320ms snap")
-	eq(windup <= 0.30, true, "the bow windup stays at or under 0.30s including the release")
+	eq(holds, [0.07, 0.08, 0.08, 0.05, 0.06, 0.06], "bow frames are draw, snap, reticle, release, and two follow-throughs")
+	eq(is_equal_approx(release, 0.23), true, "the arrow leaves at 230ms")
+	eq(is_equal_approx(windup, 0.40), true, "follow-through keeps the strip to 400ms")
 	eq(is_equal_approx(float(cast_sheet.get("life", 0.0)), windup), true, "the bow strip lasts the locked holds")
 	eq(is_equal_approx(float(cast_sheet.get("life", 0.0)), impact_delay), false, "the bow draw is not stretched out to the contact")
-	eq(stamp_script.frame_at("mark_shot_cast", windup - 0.001), 3, "frame 4 is still the release when the bolt leaves")
+	eq(stamp_script.frame_at("mark_shot_cast", windup - 0.001), 5, "the last follow-through is up as the strip ends")
 	eq(stamp_script.frame_at("mark_shot_cast", 0.0), 0, "the draw is the first cell")
 	eq(stamp_script.frame_at("mark_shot_cast", 0.07), 1, "the snap burst starts when the draw ends")
 	eq(stamp_script.frame_at("mark_shot_cast", 0.15), 2, "the reticle peak starts after the snap")
-	eq(stamp_script.frame_at("mark_shot_cast", 0.23), 3, "the arrow-tip release is the last cell")
+	eq(stamp_script.frame_at("mark_shot_cast", 0.23), 3, "the arrow-tip release is frame 3")
 	var bolt_delay := float(_first(marked, "projectile").get("delay", 0.0))
-	eq(is_equal_approx(bolt_delay, windup), true, "the bolt leaves on the tick after the arrow-tip release")
+	eq(is_equal_approx(bolt_delay, release), true, "the bolt leaves on the tick after the arrow-tip release")
 	eq(bolt_delay > float(holds[0]), true, "the bolt does not spawn on the draw frame")
 	eq(bolt_delay > 0.23 - 0.001, true, "the bolt waits until the arrow-tip release")
 	eq(ROUTER.MARK_FLIGHT_SEC >= 0.20 and ROUTER.MARK_FLIGHT_SEC <= 0.40, true, "contact lands 0.2-0.4s after the arrow leaves")
-	eq(is_equal_approx(impact_delay - windup, ROUTER.MARK_FLIGHT_SEC), true, "the flight is the gap after release, not a stretched draw")
+	eq(is_equal_approx(impact_delay - release, ROUTER.MARK_FLIGHT_SEC), true, "the flight is the gap after release, not a stretched draw")
 	var float_delay := float(_first_kind(marked, "damage").get("delay", 0.0))
 	eq(is_equal_approx(float_delay, impact_delay), true, "the damage float waits for bolt contact")
 	eq(float_delay > 0.23, true, "the damage float is not during the draw")
@@ -1665,10 +1659,10 @@ func _test_scenario_overlays() -> void:
 	eq(float(cast_sheet.get("px", 0.0)), BUDGET.STAMP_MARK_CAST_PX, "the bow windup stays smaller than the floor impact")
 	eq(BUDGET.STAMP_MARK_CAST_PX < BUDGET.STAMP_MARK_PX, true, "the bow windup is smaller than the floor impact")
 	var cast_tex: Texture2D = stamp_script.texture_for("mark_shot_cast")
-	var cell_w := float(cast_tex.get_width()) / 4.0
+	var cell_w := float(cast_tex.get_width()) / 6.0
 	var cell_h := float(cast_tex.get_height())
 	eq(is_equal_approx(cell_w, cell_h), true, "Mark Shot cast cells are equal squares")
-	for i in 4:
+	for i in 6:
 		var cel: Rect2 = stamp_script.region_for("mark_shot_cast", i, cast_tex)
 		eq(cel.position, Vector2(cell_w * float(i), 0.0), "Mark Shot cast cell %d is an equal slice" % i)
 		eq(cel.size, Vector2(cell_w, cell_h), "Mark Shot cast cell %d fills its slice" % i)
@@ -1680,7 +1674,7 @@ func _test_scenario_overlays() -> void:
 			if plate.get_pixel(x, y).a > 16.0 / 255.0:
 				ink_y += float(y)
 				ink_n += 1
-	eq(ink_n > 0 and ink_y / float(ink_n) < cell_h * 0.5, true, "the bow ink sits in the upper half of the cell")
+	eq(ink_n > 0 and ink_y / float(ink_n) > cell_h * 0.15 and ink_y / float(ink_n) < cell_h * 0.85, true, "the bow ink sits in the cell")
 	eq(_sheet(marked, "mark_shot_impact")["cell"], Vector2i(4, 3), "Mark Shot impact sits on the target")
 	eq(bool(_sheet(marked, "mark_shot_impact").get("ground", false)), true, "Mark Shot aim rings stay on the floor")
 	eq(bool(_sheet(marked, "mark_shot_impact").get("chest", true)), false, "Mark Shot impact is not a chest overlay")
@@ -1698,7 +1692,7 @@ func _test_scenario_overlays() -> void:
 	eq(_sheet(mark_miss, "melee_windup").is_empty(), true, "a Mark Shot miss does not play the melee strip")
 	eq(_sheet(mark_miss, "mark_shot_cast")["cell"], Vector2i(2, 3), "a Mark Shot miss still winds the bow")
 	eq(bool(_sheet(mark_miss, "mark_shot_cast").get("hand", false)), true, "a Mark Shot miss still lifts the windup to the bow")
-	eq(is_equal_approx(float(_first(mark_miss, "projectile").get("delay", 0.0)), windup), true, "a Mark Shot miss still waits for the arrow-tip release")
+	eq(is_equal_approx(float(_first(mark_miss, "projectile").get("delay", 0.0)), release), true, "a Mark Shot miss still waits for the arrow-tip release")
 	var boom: Array = ROUTER.recipes_for([{
 		"type": "hit", "spell": "detonate", "seat": 0, "target_seat": 1,
 		"caster_cell": Vector2i(2, 3), "to": Vector2i(4, 3), "damage": 24,
@@ -1710,28 +1704,13 @@ func _test_scenario_overlays() -> void:
 	eq(is_equal_approx(float(_sheet(boom, "detonate_burst")["life"]), BUDGET.STAMP_SPELL_LIFE), true, "Detonate keeps the spell overlay life")
 	eq(BUDGET.STAMP_SPELL_LIFE >= 0.20 and BUDGET.STAMP_SPELL_LIFE <= 0.40, true, "Detonate burst finishes inside 0.2-0.4s")
 	var boom_tex: Texture2D = stamp_script.texture_for("detonate_burst")
-	eq(boom_tex.get_width(), 1280, "the detonate strip is 1280 wide")
-	eq(boom_tex.get_height(), 720, "the detonate strip is 720 tall")
+	eq(boom_tex.get_height(), 192, "the detonate strip cells are 192 tall")
+	eq(boom_tex.get_width(), 192 * stamp_script.frame_count("detonate_burst"), "the detonate strip is one row of equal cells")
 	var boom_img := boom_tex.get_image()
-	var divider_xs: Array[int] = [212, 213, 426, 639, 640, 852, 853, 1066]
-	for x in divider_xs:
-		eq(boom_img.get_pixel(x, 0).a < 0.02, true, "detonate divider x=%d is clear at the top" % x)
-		eq(boom_img.get_pixel(x, 360).a < 0.02, true, "detonate divider x=%d is clear at mid" % x)
-		eq(boom_img.get_pixel(x, 719).a < 0.02, true, "detonate divider x=%d is clear at the bottom" % x)
-	eq(boom_img.get_pixel(528, 360).a > 0.8, true, "the shock core stays opaque")
-	var boom_cells: Array[Rect2] = [
-		Rect2(42, 165, 133, 353),
-		Rect2(221, 165, 199, 353),
-		Rect2(429, 165, 208, 353),
-		Rect2(644, 165, 205, 353),
-		Rect2(865, 165, 191, 353),
-		Rect2(1109, 165, 135, 353),
-	]
-	for i in boom_cells.size():
-		var cel: Rect2 = stamp_script.region_for("detonate_burst", i, boom_tex)
-		eq(cel, boom_cells[i], "detonate cell %d crops off the divider columns" % i)
-		for x in divider_xs:
-			eq(float(x) < cel.position.x or float(x) >= cel.end.x, true, "detonate cell %d does not include divider x=%d" % [i, x])
+	eq(boom_img.get_pixel(0, 0).a < 0.08, true, "the detonate corner stays transparent")
+	var boom_w := float(boom_tex.get_width()) / float(stamp_script.frame_count("detonate_burst"))
+	for i in stamp_script.frame_count("detonate_burst"):
+		eq(stamp_script.region_for("detonate_burst", i, boom_tex), Rect2(boom_w * float(i), 0, boom_w, float(boom_tex.get_height())), "detonate cell %d is an equal slice" % i)
 	var kept: Array = ROUTER.recipes_for([{
 		"type": "miss", "spell": "detonate", "seat": 0, "target_seat": 1,
 		"caster_cell": Vector2i(2, 3), "to": Vector2i(4, 3), "damage": 0, "marks_retained": true,

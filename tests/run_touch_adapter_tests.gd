@@ -380,8 +380,9 @@ func _test_ability_icons() -> void:
 		truthy(ResourceLoader.exists(enabled_path), "%s enabled icon is a resource" % spell_id)
 		truthy(ResourceLoader.exists(disabled_path), "%s disabled icon is a resource" % spell_id)
 	eq(CombatHUD._ability_icon_path("mend", false), "res://art/ui/mobile/abilities/mend_icon.png", "future spells share the path contract")
-	eq(ResourceLoader.exists(CombatHUD._ability_icon_path("mend", false)), false, "Mend has no stub yet")
-	eq(FileAccess.file_exists(CombatHUD._ability_icon_path("bash", false)), false, "Bastion has no stub yet")
+	eq(CombatHUD._ability_icon_path("mend", false, true), "res://art/ui/mobile/abilities/slim/mend_icon.png", "arc buttons use the slim frame")
+	truthy(FileAccess.file_exists(CombatHUD._ability_icon_path("mend", false)), "Mend icon is in the repo")
+	truthy(FileAccess.file_exists(CombatHUD._ability_icon_path("bash", false)), "Bastion icon is in the repo")
 
 	var sim_script := load("res://backend/combat_sim.gd")
 	var sim: Node = sim_script.new()
@@ -450,8 +451,10 @@ func _test_ability_icons() -> void:
 	for spell_id in hud._spell_buttons.keys():
 		_assert_ability_chrome(hud, hud._spell_buttons[spell_id], str(spell_id))
 		var button: Button = hud._spell_buttons[spell_id]
-		var spell_name := str(SpellKits.spell(str(spell_id)).get("name", ""))
-		truthy(spell_name != "" and button.text.contains(spell_name), "%s keeps its text label" % spell_id)
+		var icon := button.get_node_or_null("AbilityIcon") as TextureRect
+		if icon == null or not icon.visible:
+			var spell_name := str(SpellKits.spell(str(spell_id)).get("name", ""))
+			truthy(spell_name != "" and button.text.contains(spell_name), "%s keeps its text label" % spell_id)
 	eq(hud._new_match_button.text, "New Match", "New Match stays text on a kit without stubs")
 	for dir in ["N", "E", "S", "W"]:
 		eq((hud._face_buttons[dir] as Button).text, dir, "Face %s stays text on Mender" % dir)
@@ -486,7 +489,8 @@ func _assert_ability_chrome(hud: CombatHUD, button: Button, spell_id: String) ->
 
 
 func _assert_shown_icon(hud: CombatHUD, button: Button, spell_id: String, disabled: bool) -> void:
-	var expected := hud._ability_icon_path(spell_id, disabled)
+	var slim := button.has_meta("ability_slim") and bool(button.get_meta("ability_slim"))
+	var expected := hud._ability_icon_path(spell_id, disabled, slim)
 	var loaded: Variant = load(expected)
 	if not (loaded is Texture2D):
 		return

@@ -10,14 +10,14 @@ const LOCK_MAX := 0.6
 const SHAKE_PX := 4.0
 const SHAKE_SEC := 0.16
 
-const NUMBER_SIZE := 42
-const NUMBER_SIZE_SMALL := 28
-const NUMBER_RISE_PX := 28.0
+const NUMBER_SIZE := 26
+const NUMBER_SIZE_SMALL := 15
+const NUMBER_RISE_PX := 36.0
 const NUMBER_STACK_PX := 22.0
 const NUMBER_POP_SEC := 0.12
-const NUMBER_RISE_SEC := 0.55
-const NUMBER_FADE_SEC := 0.20
-const NUMBER_TILT_DEG := 6.0
+const NUMBER_RISE_SEC := 0.65
+const NUMBER_FADE_SEC := 0.25
+const NUMBER_TILT_DEG := 0.0
 
 const SPARK_AMOUNT := 12
 const SPARK_CAP := 24
@@ -38,7 +38,7 @@ const POOL_STAMP := 6
 ## Painted boss effect strips (cannonball, explosion, eruption).
 ## Boss effects plus Blend effects, the looping Magma / Steam tiles and
 ## Slagcrown's seven steaming water tiles.
-const POOL_STRIP := 18
+const POOL_STRIP := 32
 
 ## Authored overlays, in pixels on the board (before camera zoom).
 ## A phone tile is 64px wide. These stay on the body, not the screen.
@@ -77,4 +77,4 @@ const HAND_OFFSET := Vector2(0, -46)
 const MARK_RELEASE_DELAY := 0.25
 const MELEE_IMPACT_DELAY := 0.25
 const STAGGER_DELAY := 0.12
-const NUMBER_LIFE := 0.75
+const NUMBER_LIFE := 0.9

@@ -9,9 +9,11 @@ const STRIPS := preload("res://units/strip_library.gd")
 ## Camera shake on heavy connects. Crush and Aegis Break always shake.
 const HEAVY_HIT_DAMAGE := 20
 ## Bolt travel after the arrow leaves. Contact is this gap later, inside 0.2–0.4s.
-## Not a kit number. The cast strip itself stays the 300ms holds.
+## Not a kit number. The bolt leaves on the release cell. Follow-through frames
+## keep playing on the caster after that. The body loose stays on ViewMotion.
 const MARK_FLIGHT_SEC := 0.24
 const STAMP := preload("res://vfx/vfx_stamp.gd")
+const _SpellArt := preload("res://vfx/spell_art.gd")
 
 
 ## Departure dust for a successful Ambush. The board plays this when the
@@ -881,9 +883,11 @@ static func _choreography(event: Dictionary, snapshot: Dictionary) -> Array:
 		out.append(_ring(dest, VfxPalette.IRONJAW_DUST, false, 0.22, 0.0, "crack"))
 		if int(event.get("impact_gained", 0)) > 0:
 			out.append(_status_on("impact", caster, dest, _stack_count(snapshot, caster, "impact", int(event.get("impact_gained", 1)))))
+		out.append_array(_SpellArt.recipes_for(event))
 		return out
 	if typ == "intercept":
 		out.append(_ring(cell_of(event.get("interceptor_cell", Vector2i.ZERO)), VfxPalette.BASTION, false, 0.24, 0.0))
+		out.append_array(_SpellArt.recipes_for(event))
 		return out
 	if (typ == "hit" or typ == "miss") and _shows_melee_windup(spell_id):
 		# Anticipation on the caster. Life meets the contact instant so the
@@ -1074,6 +1078,7 @@ static func _choreography(event: Dictionary, snapshot: Dictionary) -> Array:
 					out.append(_status_off("aegis", caster, caster_cell))
 			elif typ == "miss":
 				out.append(_ring(caster_cell, VfxPalette.BASTION, false, 0.18, 0.0))
+	out.append_array(_SpellArt.recipes_for(event))
 	return out
 
 
@@ -1268,17 +1273,23 @@ static func _removed_stun(event: Dictionary) -> bool:
 	return removed is Array and removed.has("stun")
 
 
+## Release cell (index 3). The bolt leaves here. The strip still plays the
+## two follow-through frames. The body loose stays at ViewMotion.MARK_WINDUP_SEC.
+static func _mark_release_sec() -> float:
+	return STAMP.lead_sec("mark_shot_cast", 3)
+
+
 static func _mark_windup_sec() -> float:
-	return STAMP.windup_sec("mark_shot_cast")
+	return _mark_release_sec()
 
 
 static func _mark_impact_delay() -> float:
 	return _mark_windup_sec() + MARK_FLIGHT_SEC
 
 
-## The four holds, including the arrow-tip release. The bolt is the next tick.
+## Full strip, including follow-through after the arrow leaves.
 static func _mark_cast_life() -> float:
-	return _mark_windup_sec()
+	return STAMP.windup_sec("mark_shot_cast")
 
 
 static func _mark_cast_stamp(seat: int, cell: Vector2i, aim: Vector2i) -> Dictionary:

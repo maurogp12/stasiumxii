@@ -3,3 +3,4 @@
 
 # PKCS12 keystore. Keep bytes intact (no EOL conversion).
 build_tools/mobile/*.keystore binary
+*.webpbin binary

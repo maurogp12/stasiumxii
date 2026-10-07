@@ -1019,6 +1019,7 @@ func render(snap: Dictionary, legal: Array) -> void:
 
 	_render_pips(_ap_pips, int(active.get("ap", 0)), int(active.get("max_ap", 6)), DOFUS_AP)
 	_render_pips(_mp_pips, int(active.get("mp", 0)), int(active.get("max_mp", 3)), DOFUS_MP)
+	_append_engine_pips(_ap_pips, active)
 	if _deploy_note != "" and _deploying:
 		_coach_label.text = _deploy_note
 	else:
@@ -1592,22 +1593,85 @@ func _render_pips(row: HBoxContainer, current: int, maximum: int, fill: Color) -
 		var child := row.get_child(row.get_child_count() - 1)
 		row.remove_child(child)
 		child.free()
+	var kind := "ap" if fill == DOFUS_AP else "mp"
+	var lit_tex := _load_pip("pip_%s_32.png" % kind)
+	var empty_tex := _load_pip("pip_empty_32.png")
+	if lit_tex == null or empty_tex == null:
+		for i in range(maximum):
+			# Round gem: lit fill with a bright rim when available, a dark socket when spent.
+			var pip := Panel.new()
+			pip.custom_minimum_size = Vector2(16, 16)
+			pip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			var gem := StyleBoxFlat.new()
+			var lit := i < current
+			gem.bg_color = fill if lit else Color(0.08, 0.09, 0.13, 0.95)
+			gem.border_color = fill.lightened(0.45) if lit else Color(fill.r, fill.g, fill.b, 0.35)
+			gem.set_border_width_all(2)
+			gem.set_corner_radius_all(8)
+			if lit:
+				gem.shadow_color = Color(fill.r, fill.g, fill.b, 0.55)
+				gem.shadow_size = 3
+			pip.add_theme_stylebox_override("panel", gem)
+			row.add_child(pip)
+		return
 	for i in range(maximum):
-		# Round gem: lit fill with a bright rim when available, a dark socket when spent.
-		var pip := Panel.new()
-		pip.custom_minimum_size = Vector2(16, 16)
-		pip.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		var gem := StyleBoxFlat.new()
-		var lit := i < current
-		gem.bg_color = fill if lit else Color(0.08, 0.09, 0.13, 0.95)
-		gem.border_color = fill.lightened(0.45) if lit else Color(fill.r, fill.g, fill.b, 0.35)
-		gem.set_border_width_all(2)
-		gem.set_corner_radius_all(8)
-		if lit:
-			gem.shadow_color = Color(fill.r, fill.g, fill.b, 0.55)
-			gem.shadow_size = 3
-		pip.add_theme_stylebox_override("panel", gem)
-		row.add_child(pip)
+		row.add_child(_pip_icon(lit_tex if i < current else empty_tex, i < current))
+
+
+func _append_engine_pips(row: HBoxContainer, unit: Dictionary) -> void:
+	var field := ""
+	var cap := 0
+	match str(unit.get("class_id", "")):
+		"kestrel":
+			field = "marks"
+			cap = int(unit.get("marks_cap", SpellKits.MARKS_CAP))
+		"ironjaw":
+			field = "impact"
+			cap = int(unit.get("impact_cap", SpellKits.IMPACT_CAP))
+		"gloam":
+			field = "umbral"
+			cap = int(unit.get("umbral_cap", SpellKits.UMBRAL_CAP))
+		"bastion":
+			field = "aegis"
+			cap = int(unit.get("aegis_cap", SpellKits.AEGIS_CAP))
+		"mender":
+			field = "pulse"
+			cap = int(unit.get("pulse_cap", SpellKits.PULSE_CAP))
+		_:
+			return
+	var lit_tex := _load_pip("pip_%s_32.png" % field)
+	var empty_tex := _load_pip("pip_empty_32.png")
+	if lit_tex == null or empty_tex == null:
+		return
+	var current := int(unit.get(field, 0))
+	for i in range(maxi(cap, 0)):
+		row.add_child(_pip_icon(lit_tex if i < current else empty_tex, i < current))
+
+
+func _pip_icon(tex: Texture2D, lit: bool) -> TextureRect:
+	var icon := TextureRect.new()
+	icon.custom_minimum_size = Vector2(18, 18)
+	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	icon.texture = tex
+	if not lit:
+		icon.modulate = Color(1, 1, 1, 0.45)
+	return icon
+
+
+func _load_pip(file_name: String) -> Texture2D:
+	var path := "res://art/ui/mobile/pips/%s" % file_name
+	if _ability_textures.has(path):
+		var cached: Variant = _ability_textures[path]
+		return cached as Texture2D if cached is Texture2D else null
+	var tex: Texture2D = null
+	if ResourceLoader.exists(path):
+		var res: Resource = ResourceLoader.load(path)
+		if res is Texture2D:
+			tex = res as Texture2D
+	_ability_textures[path] = tex
+	return tex
 
 
 func _sync_turn_strip(snap: Dictionary) -> void:
@@ -2108,6 +2172,7 @@ func _place_spell_host(spell_id: String, center: Vector2, primary: bool, arc_cou
 	host.position = center - size * 0.5
 	host.set_meta("cluster_primary", primary)
 	var button: Button = _spell_buttons[spell_id]
+	button.set_meta("ability_slim", not primary)
 	button.add_theme_font_size_override("font_size", 15 if primary else 12)
 	button.set_meta("ability_fallback_text", _spell_button_text(_spell_def(spell_id)))
 	_apply_circle_style(button, size.x, primary)
@@ -2168,9 +2233,11 @@ func _set_spell_button_clickable(button: Button, clickable: bool) -> void:
 	_sync_ability_icon(button)
 
 
+## Full frame on the primary. Slim frame on the arc.
 ## res://art/ui/mobile/abilities/<spell_id>_icon.png and _icon_disabled.png.
-static func _ability_icon_path(spell_id: String, disabled: bool) -> String:
-	return "res://art/ui/mobile/abilities/%s_icon%s.png" % [spell_id, "_disabled" if disabled else ""]
+static func _ability_icon_path(spell_id: String, disabled: bool, slim: bool = false) -> String:
+	var folder := "res://art/ui/mobile/abilities/slim/" if slim else "res://art/ui/mobile/abilities/"
+	return "%s%s_icon%s.png" % [folder, spell_id, "_disabled" if disabled else ""]
 
 
 func _bind_ability_icon(button: Button, spell_id: String, fallback_text: String) -> void:
@@ -2200,8 +2267,8 @@ func _ensure_ability_icon(button: Button) -> TextureRect:
 	return icon
 
 
-func _load_ability_texture(spell_id: String, disabled: bool) -> Texture2D:
-	var path := _ability_icon_path(spell_id, disabled)
+func _load_ability_texture(spell_id: String, disabled: bool, slim: bool = false) -> Texture2D:
+	var path := _ability_icon_path(spell_id, disabled, slim)
 	if path == "":
 		return null
 	if _ability_textures.has(path):
@@ -2218,12 +2285,20 @@ func _load_ability_texture(spell_id: String, disabled: bool) -> Texture2D:
 
 ## Disabled / illegal uses the _disabled stub. If that file is missing, keep the
 ## enabled texture and let the button modulate grey it.
-func _ability_texture_for_state(spell_id: String, disabled: bool) -> Texture2D:
+func _ability_texture_for_state(spell_id: String, disabled: bool, slim: bool = false) -> Texture2D:
+	if slim:
+		if disabled:
+			var slim_off := _load_ability_texture(spell_id, true, true)
+			if slim_off != null:
+				return slim_off
+		var slim_on := _load_ability_texture(spell_id, false, true)
+		if slim_on != null:
+			return slim_on
 	if disabled:
-		var off := _load_ability_texture(spell_id, true)
+		var off := _load_ability_texture(spell_id, true, false)
 		if off != null:
 			return off
-	return _load_ability_texture(spell_id, false)
+	return _load_ability_texture(spell_id, false, false)
 
 
 func _sync_ability_icon(button: Button) -> void:
@@ -2231,8 +2306,9 @@ func _sync_ability_icon(button: Button) -> void:
 		return
 	var spell_id := str(button.get_meta("ability_spell_id"))
 	var fallback := str(button.get_meta("ability_fallback_text", ""))
+	var slim := button.has_meta("ability_slim") and bool(button.get_meta("ability_slim"))
 	var icon := _ensure_ability_icon(button)
-	var tex := _ability_texture_for_state(spell_id, button.disabled)
+	var tex := _ability_texture_for_state(spell_id, button.disabled, slim)
 	if tex == null:
 		icon.texture = null
 		icon.visible = false

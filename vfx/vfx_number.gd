@@ -1,6 +1,7 @@
 extends "res://vfx/vfx_pooled.gd"
 
-## Chunky outlined combat number. Pops, then floats. Does not lock input.
+## Calm combat number. Rises and fades. Does not lock input.
+const _FONT := preload("res://art/ui/hub/Cinzel-Semibold.ttf")
 
 var _text: String = ""
 var _top: Color = VfxPalette.DAMAGE_TOP
@@ -32,8 +33,8 @@ func play(spec: Dictionary) -> void:
 	var pop := float(spec.get("scale", 1.0))
 	_pop = pop
 	lift = 0.0
-	rotation = deg_to_rad(randf_range(-VfxBudget.NUMBER_TILT_DEG, VfxBudget.NUMBER_TILT_DEG))
-	scale = Vector2(0.6, 0.6) * pop
+	rotation = 0.0
+	scale = Vector2.ONE * pop
 	modulate.a = 0.0
 	z_as_relative = false
 	z_index = 900
@@ -46,17 +47,10 @@ func play(spec: Dictionary) -> void:
 	if delay > 0.0:
 		_tween.tween_interval(delay)
 	_tween.tween_callback(_show_pop)
-	_tween.tween_property(self, "scale", Vector2(1.45, 1.45) * pop, VfxBudget.NUMBER_POP_SEC * 0.5).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	if pop >= 1.25:
-		_tween.tween_property(self, "scale", Vector2(0.86, 0.86) * pop, 0.08).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	_tween.tween_property(self, "scale", Vector2.ONE * pop, VfxBudget.NUMBER_POP_SEC * 0.5).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	_rise = create_tween()
 	if delay > 0.0:
 		_rise.tween_interval(delay)
-	# Dofus bounce: jump up past the rise, drop back, then drift to rest.
-	var hop := position + drift * 1.6
-	_rise.tween_property(self, "position", hop, VfxBudget.NUMBER_RISE_SEC * 0.35).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	_rise.tween_property(self, "position", risen, VfxBudget.NUMBER_RISE_SEC * 0.65).set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
+	_rise.tween_property(self, "position", risen, VfxBudget.NUMBER_RISE_SEC).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	_rise.tween_property(self, "modulate:a", 0.0, VfxBudget.NUMBER_FADE_SEC)
 	_rise.finished.connect(release, CONNECT_ONE_SHOT)
 	queue_redraw()
@@ -82,18 +76,18 @@ func _show_pop() -> void:
 func _draw() -> void:
 	if _text == "":
 		return
-	var font := ThemeDB.fallback_font
+	var font := _FONT if _FONT != null else ThemeDB.fallback_font
 	if font == null:
 		return
 	var width := font.get_string_size(_text, HORIZONTAL_ALIGNMENT_LEFT, -1, _font_size).x
 	var baseline := Vector2(-width * 0.5, _font_size * 0.35 - lift)
-	font.draw_string(get_canvas_item(), baseline + Vector2(2, 3), _text, HORIZONTAL_ALIGNMENT_LEFT, -1, _font_size, VfxPalette.NUMBER_SHADOW)
-	for ox in range(-4, 5, 2):
-		for oy in range(-4, 5, 2):
+	font.draw_string(get_canvas_item(), baseline + Vector2(1, 2), _text, HORIZONTAL_ALIGNMENT_LEFT, -1, _font_size, VfxPalette.NUMBER_SHADOW)
+	for ox in [-2, 0, 2]:
+		for oy in [-2, 0, 2]:
 			if ox == 0 and oy == 0:
 				continue
 			font.draw_string(get_canvas_item(), baseline + Vector2(ox, oy), _text, HORIZONTAL_ALIGNMENT_LEFT, -1, _font_size, _outline)
-	font.draw_string(get_canvas_item(), baseline + Vector2(0, -3), _text, HORIZONTAL_ALIGNMENT_LEFT, -1, _font_size, _top)
+	font.draw_string(get_canvas_item(), baseline + Vector2(0, -2), _text, HORIZONTAL_ALIGNMENT_LEFT, -1, _font_size, _top)
 	font.draw_string(get_canvas_item(), baseline, _text, HORIZONTAL_ALIGNMENT_LEFT, -1, _font_size, _bottom)
 	if _kind == "miss":
 		var slash_y := baseline.y - float(_font_size) * 0.28
@@ -105,18 +99,16 @@ func is_minor() -> bool:
 	return _kind in ["resource", "mp"]
 
 
-## Where the number sits on screen (parent space). It covers the whole
-## flight: the 1.45× pop and the Dofus bounce that jumps 1.6× the rise before
-## settling, so a status line (+1 Impact) is placed clear of the peak and the
-## big damage number never climbs into it.
+## Where the number sits on screen (parent space). The rise is a single
+## ease-out, so a status line sits clear of that path.
 func footprint() -> Rect2:
-	var font := ThemeDB.fallback_font
+	var font: Font = _FONT if _FONT != null else ThemeDB.fallback_font
 	var width := 40.0
 	if font != null and _text != "":
 		width = font.get_string_size(_text, HORIZONTAL_ALIGNMENT_LEFT, -1, _font_size).x
-	var s := maxf(_pop, 0.5) * (1.45 if not is_minor() else 1.0)
+	var s := maxf(_pop, 0.5)
 	var h := float(_font_size) * 1.05 * s
-	var bounce := VfxBudget.NUMBER_RISE_PX * 0.6 if not is_minor() else 0.0
+	var bounce := 0.0
 	var top := position.y - (lift + float(_font_size) * 0.8) * s - bounce
 	return Rect2(Vector2(position.x - width * 0.5 * s - 4.0, top), Vector2(width * s + 8.0, h + bounce))
 

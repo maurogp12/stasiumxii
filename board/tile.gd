@@ -68,6 +68,12 @@ var _look_map: String = ""
 ## Animated surface (lava, runes...) drawn by a child behind the tile's props.
 var _surface: SurfaceFx
 var _surface_stamp: Texture2D
+## Painted room: the background carries the floor and props. This tile keeps
+## edge glow, walk-block glow, grid ink, and highlights.
+var painted_floor: bool = false
+var _painted_surface: Texture2D
+var _painted_mode: int = 0
+var _painted_gain: float = 1.0
 ## Bits 0..3: edges (W-N, N-E, E-S, S-W) that touch the arena's glowing terrain.
 var _edge_glow_mask: int = 0
 var _grid_on: bool = false
@@ -123,40 +129,63 @@ func _ready() -> void:
 	_ensure_overlay()
 
 
+func set_painted_floor(on: bool, crop: Texture2D = null, mode: int = 0, gain: float = 1.0) -> void:
+	if painted_floor == on and _painted_surface == crop and _painted_mode == mode and is_equal_approx(_painted_gain, gain):
+		return
+	painted_floor = on
+	_painted_surface = crop
+	_painted_mode = mode
+	_painted_gain = gain
+	_request_paint()
+
+
 func _draw() -> void:
 	var points := _diamond_points()
-	var look := _ArenaLook.stamp_for(_look_map, terrain_type, grid_position) if _look_map != "" else null
-	var tex := _KoliseoArt.terrain_texture_at(terrain_type, elevation, _dress, grid_position)
-	if look != null:
-		_paint_look(look)
-		if not (grid_style().get("no_grid", []) as Array).has(terrain_type):
-			_paint_depth_rim()
-	elif tex == null:
-		_hide_surface()
-		draw_colored_polygon(points, fill_color())
-		var outline := PackedVector2Array(points)
-		outline.append(points[0])
-		draw_polyline(outline, Color(0.25, 0.15, 0.25), 1.0, true)
+	if painted_floor:
+		var style := grid_style()
+		if _painted_surface != null:
+			var surface := _ArenaLook.surface_for(_look_map, terrain_type) if _look_map != "" else []
+			if surface.is_empty():
+				_show_surface(_painted_surface, _painted_mode, _painted_gain)
+			else:
+				_show_surface(_painted_surface, int(surface[0]), float(surface[1]))
+		else:
+			_hide_surface()
+		_paint_edge_glow(style)
 	else:
-		_hide_surface()
-		_paint_terrain(tex)
-		_paint_depth_rim()
+		var look := _ArenaLook.stamp_for(_look_map, terrain_type, grid_position) if _look_map != "" else null
+		var tex := _KoliseoArt.terrain_texture_at(terrain_type, elevation, _dress, grid_position)
+		if look != null:
+			_paint_look(look)
+			if not (grid_style().get("no_grid", []) as Array).has(terrain_type):
+				_paint_depth_rim()
+		elif tex == null:
+			_hide_surface()
+			draw_colored_polygon(points, fill_color())
+			var outline := PackedVector2Array(points)
+			outline.append(points[0])
+			draw_polyline(outline, Color(0.25, 0.15, 0.25), 1.0, true)
+		else:
+			_hide_surface()
+			_paint_terrain(tex)
+			_paint_depth_rim()
 	# Obstacle glow sits on the floor, under the obstacle drawn below.
 	if walk_block_kind == "block":
 		_paint_walk_blocked(self)
-	var piece: Texture2D = _ArenaLook.centerpiece_for(_look_map, grid_position, _paint_props) if _look_map != "" else null
-	if piece != null:
-		# Centred on the cell, base a little below the diamond so it sits in the lava.
-		var size := piece.get_size()
-		draw_texture(piece, Vector2(-size.x * 0.5, float(TILE_HEIGHT) * 0.5 + 6.0 - size.y))
-	for prop_name in _paint_props:
-		if _look_map != "" and not _ArenaLook.prop_shown_at(_look_map, str(prop_name), grid_position):
-			continue
-		var prop_tex: Texture2D = _ArenaLook.prop_for(_look_map, str(prop_name)) if _look_map != "" else null
-		if prop_tex == null:
-			prop_tex = _KoliseoArt.prop_texture(str(prop_name), _dress)
-		if prop_tex != null:
-			_paint_prop(prop_tex)
+	if not painted_floor:
+		var piece: Texture2D = _ArenaLook.centerpiece_for(_look_map, grid_position, _paint_props) if _look_map != "" else null
+		if piece != null:
+			# Centred on the cell, base a little below the diamond so it sits in the lava.
+			var size := piece.get_size()
+			draw_texture(piece, Vector2(-size.x * 0.5, float(TILE_HEIGHT) * 0.5 + 6.0 - size.y))
+		for prop_name in _paint_props:
+			if _look_map != "" and not _ArenaLook.prop_shown_at(_look_map, str(prop_name), grid_position):
+				continue
+			var prop_tex: Texture2D = _ArenaLook.prop_for(_look_map, str(prop_name)) if _look_map != "" else null
+			if prop_tex == null:
+				prop_tex = _KoliseoArt.prop_texture(str(prop_name), _dress)
+			if prop_tex != null:
+				_paint_prop(prop_tex)
 	var label := drawn_label()
 	if label == "":
 		return
