@@ -3,7 +3,7 @@
 This document is for the next team (people or agents). It explains **every
 gameplay change made in the 6–7 Oct 2026 Claude session**, **why** each one
 was made (with Mauro's own words), **where it lives in the code**, **how it
-is tested**, and **what is still open**. Versions 0.1.133 → 0.1.137.
+is tested**, and **what is still open**. Versions 0.1.133 → 0.1.138.
 
 The short version of the change log is in `docs/CHANGE_LOG_CLAUDE.md` (one
 row per version). The table of approved systems is in
@@ -282,6 +282,21 @@ Each entry: **what**, **why** (Mauro's words), **where** (code), **tests**.
   `trap` token; `HeroAI` Vault escape.
 - **Tests:** `_test_kestrel_vault_and_snare`.
 - **Art:** both use generic effects for now (no painted VFX yet).
+
+### 1.14 Bodies do not block; fairer start zones (0.1.138)
+
+- **What:** a fallen fighter's body is no longer an obstacle (walks, pushes
+  and landings pass over it; Rekindle still needs the tile free). Start
+  zones are chosen by location among up to 48 valid pairs instead of the
+  first pair found, and seats are swapped at random.
+- **Why:** Mauro: "los cuerpos no deberian de bloquear o impedir que alguien
+  camine por ahi"; "los combates empiezan casi siempre en la misma area".
+  Measured: zones were random but the open parts of each map won most
+  draws (one Stormspire spot 45 of 600). After: 31 of 600, more distinct
+  spots. Leftover imbalance between quarters is the terrain itself.
+- **Where:** `CombatSim._is_empty`, `MatchFlow.sample_zone_pair`
+  (`ZONE_CANDIDATES`, `_blob_centre`).
+- **Tests:** `_test_bodies_do_not_block`.
 
 ---
 
