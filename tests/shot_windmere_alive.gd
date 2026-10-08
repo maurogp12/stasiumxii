@@ -1,8 +1,12 @@
 extends SceneTree
 
-## Phone shots of the three Windmere rooms: match camera, zoomed-out crowd,
-## and a 2s Koliseo frame sequence. Not a test suite.
+## Phone shots: Windmere Koliseo (crowd) and the dungeon crypt on rooms A/B.
+## Also a few aspect ratios, to check the crypt does not gap or stretch.
+## Not a test suite.
 ## xvfb-run godot --path . --rendering-driver opengl3 -s res://tests/shot_windmere_alive.gd -- <out_dir> --mobile-frame
+
+const WIDE_ZOOM := 1525.0 / 960.0
+const ASPECTS := [Vector2i(1920, 1080), Vector2i(2560, 1080), Vector2i(2400, 1200)]
 
 var _out := "user://"
 var _phase := "boot"
@@ -10,7 +14,7 @@ var _frames := 0
 var _hold := 0
 var _clock := 0.0
 var _shot := 0
-var _seq := 0
+var _aspect := 0
 var _zoom_saved := 1.0
 
 
@@ -39,6 +43,8 @@ func _process(delta: float) -> bool:
 		return _koliseo(board, delta)
 	if _phase == "stasis":
 		return _stasis(board, delta)
+	if _phase == "aspects":
+		return _aspects(board, delta)
 	return true
 
 
@@ -54,29 +60,10 @@ func _koliseo(board: Node, delta: float) -> bool:
 		return false
 	if _shot == 0:
 		_save(board, "koliseo_windmere_match.png")
-		_shot = 1
-		_zoom_out(board)
-		_clock = 0.0
-		return false
-	_clock += delta
-	if _shot == 1 and _clock >= 0.35:
-		_save(board, "koliseo_windmere_wide.png")
-		_shot = 2
-		_clock = 0.0
-		_seq = 0
-		return false
-	if _shot == 2:
-		var step := 2.0 / 12.0
-		if _clock >= float(_seq) * step:
-			_save(board, "koliseo_windmere_f%02d.png" % _seq)
-			_seq += 1
-			if _seq >= 12:
-				_zoom_restore(board)
-				_phase = "stasis"
-				_hold = 0
-				_shot = 0
-				_frames = 0
-		return false
+		_phase = "stasis"
+		_hold = 0
+		_shot = 0
+		_frames = 0
 	return false
 
 
@@ -97,12 +84,21 @@ func _stasis(board: Node, delta: float) -> bool:
 		return false
 	if _hold == 1:
 		_save(board, "stasis_windmere_%s_match.png" % rooms[_shot])
-		_zoom_out(board)
-		_hold = 2
-		_clock = 0.0
+		if rooms[_shot] == "a":
+			_set_zoom(board, WIDE_ZOOM)
+			_hold = 2
+			_clock = 0.0
+			return false
+		_shot += 1
+		_hold = 0
+		if _shot >= rooms.size():
+			_phase = "aspects"
+			_hold = 0
+			_aspect = 0
+			_frames = 0
 		return false
 	if _clock >= 0.35:
-		_save(board, "stasis_windmere_%s_wide.png" % rooms[_shot])
+		_save(board, "stasis_windmere_a_wide.png")
 		_zoom_restore(board)
 		_shot += 1
 		_hold = 0
@@ -134,13 +130,45 @@ func _open_stasis(letter: String) -> void:
 	change_scene_to_file(StasisCatalog.FIGHT_SCENE)
 
 
-func _zoom_out(board: Node) -> void:
+func _aspects(board: Node, delta: float) -> bool:
+	if _aspect >= ASPECTS.size():
+		_set_window(Vector2i(2400, 1080))
+		return true
+	if _hold == 0:
+		_set_window(ASPECTS[_aspect])
+		_hold = 1
+		_frames = 0
+		_clock = 0.0
+		return false
+	_clock += delta
+	if _frames < 8:
+		return false
+	if _hold == 1:
+		if board.has_method("_fit_board_camera"):
+			board._fit_board_camera()
+		_hold = 2
+		_clock = 0.0
+		return false
+	if _clock < 0.4:
+		return false
+	var size: Vector2i = ASPECTS[_aspect]
+	_save(board, "dungeon_%dx%d.png" % [size.x, size.y])
+	_aspect += 1
+	_hold = 0
+	return false
+
+
+func _set_window(size: Vector2i) -> void:
+	DisplayServer.window_set_size(size)
+	root.size = size
+
+
+func _set_zoom(board: Node, zoom: float) -> void:
 	var cam: Camera2D = board.get("_camera")
 	if cam == null:
 		return
 	_zoom_saved = cam.zoom.x
-	var z := _zoom_saved * 0.58
-	cam.zoom = Vector2(z, z)
+	cam.zoom = Vector2(zoom, zoom)
 	if board.has_method("_flush_camera"):
 		board._flush_camera()
 

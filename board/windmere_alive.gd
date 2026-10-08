@@ -1,15 +1,20 @@
 extends RefCounted
 
-## Windmere decoration (Mauro, option C + frozen-colosseum crowd).
-## Nothing here changes a cell, a rule, or the camera. The plate already
-## carries the shaded snow and the ice; these sprites sharpen the flat cells
-## and hang the crowd, props, and weather around the board.
+## Windmere decoration (Mauro, option C). Koliseo keeps the frozen crowd.
+## The dungeon rooms use the frozen-crypt cave instead. Nothing here changes
+## a cell, a rule, or the camera. The plate already carries the shaded snow
+## and the ice; these sprites sharpen the flat cells and hang the backdrop,
+## props, and weather around the board.
 
 const ROOT := "res://art/windmere/alive/"
 const VISUAL_SORT := preload("res://board/visual_sort.gd")
 const BOARD_SCALE := 960.0 / 2625.0
 ## 2400x1080 crowd, centered, mapped so image (1199, 619.5) is world (0, 224).
 const CROWD_POS := Vector2(BOARD_SCALE, 224.0 + (540.0 - 619.5) * BOARD_SCALE)
+## Frozen crypt, wide layer. Board L(438) R(1963) spans the 960-wide diamond.
+## Image (1200.5, 584.5) is the board centre, world (0, 224).
+const CRYPT_SCALE := 960.0 / 1525.0
+const CRYPT_POS := Vector2((1200.0 - 1200.5) * CRYPT_SCALE, 224.0 + (540.0 - 584.5) * CRYPT_SCALE)
 const ICICLE_FPS := 5.0
 
 const BOB_CODE := "shader_type canvas_item;
@@ -34,6 +39,17 @@ const FLICKER_CODE := "shader_type canvas_item;
 void fragment() {
 	float flick = sin(TIME * 9.0) * sin(TIME * 3.7);
 	COLOR.rgb *= 1.0 + 0.12 * flick;
+}
+"
+
+## Blue wall sconces only. The stone stays put so the snow board stays brightest.
+const CRYPT_GLOW_CODE := "shader_type canvas_item;
+void fragment() {
+	vec4 tex = texture(TEXTURE, UV);
+	float blue = clamp((tex.b - max(tex.r, tex.g) - 0.05) * 4.0, 0.0, 1.0);
+	float wave = sin(TIME * 1.5 + UV.x * 16.0) * sin(TIME * 0.65 + UV.y * 10.0);
+	float gain = 1.0 + blue * wave * 0.18;
+	COLOR = vec4(tex.rgb * gain, tex.a);
 }
 "
 
@@ -62,7 +78,10 @@ static func attach(host: Node2D, room_id: String) -> void:
 	_ensure()
 	var cells := _cells(room_id)
 	var shade := _shade_for(room_id)
-	_add_crowd(host)
+	if room_id.begins_with("stasis_"):
+		_add_crypt(host)
+	else:
+		_add_crowd(host)
 	_add_props(host)
 	_add_floors(host, cells, shade)
 	_add_mist(host)
@@ -183,6 +202,29 @@ static func _add_crowd(host: Node2D) -> void:
 		sprite.z_as_relative = true
 		sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 		host.add_child(sprite)
+
+
+## Dungeon rooms only. One world-space layer, so a taller or wider phone
+## crops it instead of stretching it, and the cut-out stays on the diamond.
+static func _add_crypt(host: Node2D) -> void:
+	var tex := _load(ROOT + "crypt_wide.webpbin")
+	if tex == null:
+		return
+	var sprite := Sprite2D.new()
+	sprite.name = "FrozenCrypt"
+	sprite.texture = tex
+	sprite.centered = true
+	sprite.position = CRYPT_POS
+	sprite.scale = Vector2(CRYPT_SCALE, CRYPT_SCALE)
+	sprite.z_index = -197
+	sprite.z_as_relative = true
+	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	var shader := Shader.new()
+	shader.code = CRYPT_GLOW_CODE
+	var mat := ShaderMaterial.new()
+	mat.shader = shader
+	sprite.material = mat
+	host.add_child(sprite)
 
 
 static func _add_props(host: Node2D) -> void:
