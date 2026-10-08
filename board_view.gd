@@ -87,6 +87,7 @@ const PAN_LIMIT := 220.0
 ## Seat whose next-turn walk is painted. -1 when nothing is inspected.
 ## Client only: the cells come from CombatSim.foe_reach_preview. No wire field.
 var _foe_reach_seat: int = -1
+var _foe_mp_badge: PanelContainer
 var _foe_mp_label: Label
 var _fight_started_msec: int = 0
 var _result_shown: bool = false
@@ -2341,8 +2342,8 @@ func _sync_shade_chrome(events: Array) -> void:
 
 
 ## Tap an enemy with nothing armed: paint the cells they can reach on their
-## next turn, and a small "MP n" label. Arming a spell or tapping elsewhere
-## clears it. A hidden enemy never gets here.
+## next turn, and an "MP n" badge in that fighter's team color. Arming a
+## spell or tapping elsewhere clears it. A hidden enemy never gets here.
 func show_enemy_reach(seat: int) -> void:
 	_arm_enemy_reach(seat)
 
@@ -2404,26 +2405,46 @@ func _visible_enemy_seat(cell: Vector2i) -> int:
 	return -1
 
 
-func _enemy_reach_label() -> Label:
-	if _foe_mp_label != null and is_instance_valid(_foe_mp_label):
-		return _foe_mp_label
+## Same family as the name plate: a filled plate, light letters, sitting above
+## the fighter. Font is a step up from the 12px name so "MP n" reads on a phone.
+## The fill is the seat color (blue / red), the same tint as the pawn ring.
+const ENEMY_REACH_FONT := 20
+
+
+func _enemy_reach_badge() -> PanelContainer:
+	if _foe_mp_badge != null and is_instance_valid(_foe_mp_badge):
+		return _foe_mp_badge
+	var panel := PanelContainer.new()
+	panel.name = "EnemyReachMp"
+	panel.z_index = 960
+	panel.visible = false
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var style := StyleBoxFlat.new()
+	style.bg_color = BoardTile.TEAM_RED
+	style.border_color = Color(0.99, 0.97, 0.94, 1.0)
+	style.set_border_width_all(3)
+	style.set_corner_radius_all(8)
+	style.content_margin_left = 14
+	style.content_margin_right = 14
+	style.content_margin_top = 6
+	style.content_margin_bottom = 6
+	panel.add_theme_stylebox_override("panel", style)
 	var label := Label.new()
-	label.name = "EnemyReachMp"
-	label.z_index = 960
-	label.visible = false
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	label.add_theme_font_size_override("font_size", 22)
-	label.add_theme_color_override("font_color", Color(1.0, 0.93, 0.9))
-	label.add_theme_color_override("font_outline_color", Color(0.32, 0.04, 0.05))
-	label.add_theme_constant_override("outline_size", 8)
-	($Tiles as Node2D).add_child(label)
+	label.add_theme_font_size_override("font_size", ENEMY_REACH_FONT)
+	label.add_theme_color_override("font_color", Color(0.99, 0.97, 0.94))
+	label.add_theme_color_override("font_outline_color", Color(0.08, 0.03, 0.03))
+	label.add_theme_constant_override("outline_size", 6)
+	panel.add_child(label)
+	($Tiles as Node2D).add_child(panel)
+	_foe_mp_badge = panel
 	_foe_mp_label = label
-	return label
+	return panel
 
 
 func _hide_enemy_reach_label() -> void:
-	if _foe_mp_label != null and is_instance_valid(_foe_mp_label):
-		_foe_mp_label.visible = false
+	if _foe_mp_badge != null and is_instance_valid(_foe_mp_badge):
+		_foe_mp_badge.visible = false
 
 
 func _paint_enemy_reach(snap: Dictionary) -> void:
@@ -2449,10 +2470,18 @@ func _paint_enemy_reach(snap: Dictionary) -> void:
 	if unit.is_empty() or not _in_bounds(stand):
 		_hide_enemy_reach_label()
 		return
-	var label := _enemy_reach_label()
-	label.text = "MP %d" % int(preview.get("mp", 0))
-	label.position = _cell_to_local(stand) + Vector2(-34, -84)
-	label.visible = true
+	var badge := _enemy_reach_badge()
+	var style := badge.get_theme_stylebox("panel") as StyleBoxFlat
+	if style != null:
+		var tint: Color = BoardTile.TEAM_RED if CombatHUD.unit_team(unit) == 1 else BoardTile.TEAM_BLUE
+		style.bg_color = Color(tint.r, tint.g, tint.b, 0.94)
+	_foe_mp_label.text = "MP %d" % int(preview.get("mp", 0))
+	badge.reset_size()
+	var badge_size := badge.get_combined_minimum_size()
+	badge.size = badge_size
+	# Above the name plate. The cell origin is the feet diamond.
+	badge.position = _cell_to_local(stand) + Vector2(-badge_size.x * 0.5, -176)
+	badge.visible = true
 
 
 func _paint_highlights() -> void:
