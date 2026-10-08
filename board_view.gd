@@ -1907,7 +1907,7 @@ func _puff_footstep(pawn: Pawn, cell: Vector2i) -> void:
 
 func _set_pawn_cell(pawn: Pawn, cell: Vector2i) -> void:
 	pawn.grid_position = cell
-	pawn.z_index = VISUAL_SORT.unit_z_index(cell, _elev_at(cell))
+	pawn.z_index = _pawn_z(cell)
 
 
 func _stop_walk_tween() -> void:
@@ -1925,7 +1925,7 @@ func _track_step_sort(t: float, pawn: Pawn, src: Vector2i, dst: Vector2i) -> voi
 	if t <= 0.001:
 		toward_dst = false
 	var cell := dst if toward_dst else src
-	pawn.z_index = VISUAL_SORT.unit_z_index(cell, _elev_at(cell))
+	pawn.z_index = _pawn_z(cell)
 
 
 func _dying_seats(events: Array) -> Dictionary:
@@ -2610,7 +2610,11 @@ func _paint_ambush_chrome(snap: Dictionary, spell_id: String) -> void:
 ## Shade cloaks sit on a layer above every unit z. A plant onto that tile used
 ## to slash under the cloak, which read as a body hit with no relocate.
 func _pawn_z(cell: Vector2i) -> int:
-	var z := VISUAL_SORT.unit_z_index(cell, _elev_at(cell))
+	var elev := _elev_at(cell)
+	var z := VISUAL_SORT.unit_z_index(cell, elev)
+	# The storm tower is lifted over the blocks around its base. A fighter on
+	# the near side stays in front of that shaft; one behind it stays behind.
+	z = PAINTED.adjust_unit_z(cell, elev, z)
 	if _shade_markers.has(cell):
 		z = maxi(z, SHADE_LAYER_Z + cell.x + cell.y + 2)
 	return z

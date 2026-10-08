@@ -51,6 +51,10 @@ void fragment() {
 
 static var _tex: Dictionary = {}
 static var _bound_room: String = ""
+## Tall centrepiece. Neighbouring floor tiles and raised blocks stay under the
+## shaft. Fighters on the near side are lifted back above it in BoardView.
+static var _tower_cell := Vector2i(-999, -999)
+static var _tower_z := -1
 
 
 static func room_id_for(map_id: String, stasis_letter: String) -> String:
@@ -107,6 +111,8 @@ static func bind(parent: Node2D, room_id: String, tiles: Dictionary) -> bool:
 		for child in host.get_children():
 			host.remove_child(child)
 			child.free()
+	_tower_cell = Vector2i(-999, -999)
+	_tower_z = -1
 	parent.move_child(host, 0)
 	for cell in tiles.keys():
 		var tile: Node = tiles[cell]
@@ -164,6 +170,12 @@ static func bind(parent: Node2D, room_id: String, tiles: Dictionary) -> bool:
 		sprite.position = VISUAL_SORT.cell_to_local(cell, 0.0) + Vector2(float(off[0]), float(off[1])) * 0.5
 		sprite.z_index = VISUAL_SORT.occluder_z_index(cell, elev)
 		sprite.z_as_relative = true
+		var whats: Array = occ.get("what", [])
+		var what := str(whats[0]) if whats.size() > 0 else ""
+		sprite.set_meta("what", what)
+		sprite.set_meta("cell", cell)
+		sprite.set_meta("elev", elev)
+		sprite.set_meta("rect", _occluder_rect(cell, occ))
 		host.add_child(sprite)
 		var raised := elev > 0.05
 		if tile == null:
@@ -173,6 +185,8 @@ static func bind(parent: Node2D, room_id: String, tiles: Dictionary) -> bool:
 			tile.set_raised_top(true)
 		elif tile.has_method("set_occluder_covers_grid"):
 			tile.set_occluder_covers_grid(true)
+	_lift_tower(host, place, tiles)
+	_add_pit_glow(host, tiles)
 	var surfaced := {}
 	for raw in place.get("surfaces", []):
 		if typeof(raw) != TYPE_DICTIONARY:
@@ -301,8 +315,134 @@ static func _add_brine_rain(host: Node2D, background: Sprite2D, tex: Texture2D, 
 	host.add_child(rain)
 
 
+## A fighter whose cell is on the near side of the tower (same row or in front)
+## paints above the lifted shaft. Elevation still breaks ties on that row.
+## Cells behind the tower keep their own z, so they stay behind the stone.
+static func adjust_unit_z(cell: Vector2i, elevation: float, z: int) -> int:
+	if _tower_z < 0:
+		return z
+	var ahead := cell.x + cell.y - (_tower_cell.x + _tower_cell.y)
+	if ahead < 0:
+		return z
+	var lifted := _tower_z + 1 + ahead * VISUAL_SORT.TILE_Z_SCALE
+	lifted += int(round(elevation * float(VISUAL_SORT.ELEVATION_Z_SCALE)))
+	return maxi(z, lifted)
+
+
+static func _lift_tower(host: Node2D, _place: Dictionary, tiles: Dictionary) -> void:
+	var tower: Sprite2D = null
+	var blocks: Array = []
+	for child in host.get_children():
+		if not (child is Sprite2D) or not child.has_meta("what"):
+			continue
+		var what := str(child.get_meta("what"))
+		if what == "tower":
+			tower = child
+		elif what.begins_with("elevation"):
+			blocks.append(child)
+	if tower == null:
+		return
+	var tower_cell: Vector2i = tower.get_meta("cell")
+	var tower_elev := float(tower.get_meta("elev"))
+	var tower_rect: Rect2 = tower.get_meta("rect")
+	var cover := VISUAL_SORT.occluder_z_index(tower_cell, tower_elev)
+	var grown := tower_rect.grow(6.0)
+	for block in blocks:
+		var block_cell: Vector2i = block.get_meta("cell")
+		var rect: Rect2 = block.get_meta("rect")
+		var near := maxi(absi(block_cell.x - tower_cell.x), absi(block_cell.y - tower_cell.y)) <= 2
+		if not near and not grown.intersects(rect):
+			continue
+		cover = maxi(cover, VISUAL_SORT.occluder_z_index(block_cell, float(block.get_meta("elev"))))
+	for key in tiles.keys():
+		var cell: Vector2i = key
+		var tile: Node = tiles[key]
+		if tile == null:
+			continue
+		if maxi(absi(cell.x - tower_cell.x), absi(cell.y - tower_cell.y)) > 2:
+			continue
+		var elev := float(tile.elevation) if "elevation" in tile else 0.0
+		# Grid ink and the walk wash sit a few steps above the tile node.
+		cover = maxi(cover, VISUAL_SORT.tile_z_index(cell, elev) + 3)
+	tower.z_index = cover + 1
+	_tower_cell = tower_cell
+	_tower_z = tower.z_index
+	print("tower sort ", tower_cell, " z ", tower.z_index)
+
+
+static func _occluder_rect(cell: Vector2i, occ: Dictionary) -> Rect2:
+	var off: Array = occ.get("offset", [0.0, 0.0])
+	var size: Array = occ.get("size", [0.0, 0.0])
+	var origin := VISUAL_SORT.cell_to_local(cell, 0.0) + Vector2(float(off[0]), float(off[1])) * 0.5
+	return Rect2(origin, Vector2(float(size[0]), float(size[1])) * 0.5)
+
+
+const PIT_GLOW_CODE := "shader_type canvas_item; uniform float phase = 0.0; void fragment() { float pulse = 0.86 + 0.14 * sin(TIME * 1.5 + phase); COLOR = texture(TEXTURE, UV); COLOR.rgb *= pulse; COLOR.a *= pulse; }"
+static var _pit_glow_tex: Texture2D
+static var _pit_glow_shader: Shader
+
+
+static func _glow_texture() -> Texture2D:
+	if _pit_glow_tex != null:
+		return _pit_glow_tex
+	var size := 256
+	var image := Image.create(size, size, false, Image.FORMAT_RGBA8)
+	var center := float(size) * 0.5
+	for y in size:
+		for x in size:
+			var dx := (float(x) + 0.5 - center) / center
+			var dy := (float(y) + 0.5 - center) / center
+			var dist := sqrt(dx * dx + dy * dy)
+			var fall := clampf(1.0 - dist, 0.0, 1.0)
+			fall = pow(fall, 1.45)
+			var alpha := fall * 0.82
+			image.set_pixel(x, y, Color(0.86, 0.42, 1.0, alpha))
+	_pit_glow_tex = ImageTexture.create_from_image(image)
+	return _pit_glow_tex
+
+
+static func _glow_shader() -> Shader:
+	if _pit_glow_shader == null:
+		_pit_glow_shader = Shader.new()
+		_pit_glow_shader.code = PIT_GLOW_CODE
+	return _pit_glow_shader
+
+
+## Soft violet pool on the floor around each pit beside the tower. Above the
+## plate, under the raised blocks and the shaft. Not a flat neon disc.
+static func _add_pit_glow(host: Node2D, tiles: Dictionary) -> void:
+	if _tower_z < 0:
+		return
+	var tex := _glow_texture()
+	var n := 0
+	for key in tiles.keys():
+		var cell: Vector2i = key
+		var tile: Node = tiles[key]
+		if tile == null or str(tile.terrain_type) != "mud":
+			continue
+		if maxi(absi(cell.x - _tower_cell.x), absi(cell.y - _tower_cell.y)) > 2:
+			continue
+		var sprite := Sprite2D.new()
+		sprite.name = "PitGlow"
+		sprite.texture = tex
+		sprite.centered = true
+		sprite.position = VISUAL_SORT.cell_to_local(cell, 0.0)
+		# Iso pool: wider than the cell so the light spills onto the bronze flags.
+		sprite.scale = Vector2(176.0 / 256.0, 88.0 / 256.0)
+		sprite.z_index = -188
+		sprite.z_as_relative = true
+		var mat := ShaderMaterial.new()
+		mat.shader = _glow_shader()
+		mat.set_shader_parameter("phase", float(n) * 1.8)
+		sprite.material = mat
+		host.add_child(sprite)
+		n += 1
+
+
 static func _clear(host: Node2D, tiles: Dictionary) -> void:
 	_bound_room = ""
+	_tower_cell = Vector2i(-999, -999)
+	_tower_z = -1
 	if host != null and is_instance_valid(host):
 		var parent_node := host.get_parent()
 		if parent_node != null:

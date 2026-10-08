@@ -1,6 +1,6 @@
 extends SceneTree
 
-## Phone shots of the Koliseo Stormspire tower after the slate-plinth pass.
+## Phone shots of the Koliseo Stormspire bronze dais, plus dungeon room A.
 ## Match zoom is the fitted phone camera. Wide is the pinch zoom-out floor.
 ## One fighter stands on a raised block (6, 6); the other stands beside the pit (5, 6).
 ## xvfb-run godot --path . --rendering-driver opengl3 -s res://tests/shot_stormspire_tower.gd -- <out_dir> --mobile-frame
@@ -31,7 +31,7 @@ func _process(_delta: float) -> bool:
 	var board := current_scene.get_node_or_null("BoardView")
 	if board == null or not bool(board.get("_booted")):
 		return false
-	if _hold == 0:
+	if _shot < 2 and _hold == 0:
 		_open(board)
 		_hold = _frames
 		return false
@@ -44,9 +44,31 @@ func _process(_delta: float) -> bool:
 		_shot = 1
 		_hold = _frames
 		return false
-	if age < 24:
+	if _shot == 1:
+		if age < 24:
+			return false
+		_save("koliseo_stormspire_wide.png")
+		_shot = 2
+		_hold = 0
+		_frames = 0
 		return false
-	_save("koliseo_stormspire_wide.png")
+	return _stasis(board)
+
+
+func _stasis(board: Node) -> bool:
+	if _hold == 0:
+		StasisCatalog.clear_run()
+		MobileHub.pending_biome_id = "stormspire"
+		StasisCatalog.begin("stormspire")
+		StasisCatalog.class_id = "kestrel"
+		StasisCatalog.room = "a"
+		change_scene_to_file(StasisCatalog.FIGHT_SCENE)
+		_hold = 1
+		_frames = 0
+		return false
+	if _frames < 80:
+		return false
+	_save("stasis_stormspire_a.png")
 	return true
 
 

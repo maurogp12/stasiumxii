@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-"""Install Stormspire tower option A on the Koliseo room only.
+"""Install Stormspire tower option B on the Koliseo room only.
 
-Mauro picked the slate plinths and violet wells for the raised blocks, pits,
-and broken slabs around the storm tower. Lightning cells and the tower sprite
-stay as they are. Cell layout, elevation, offsets, and walk data are untouched.
+Mauro rejected the slate plinths. The tower ring is the bronze dais: grey
+stone with aged-bronze trim, and the two pits are bronze-lipped wells with a
+violet glow in the opening. Lightning cells and the tower sprite stay as they
+are. Cell layout, elevation, offsets, and walk data are untouched.
 
-Floors use (x + 2y) % 4 so orthogonal neighbours differ. Blocks use (x + y) % 2
-(a checkerboard; (x + 2y) % 2 is only a column stripe). The two pits share that
-parity, so they take (x + y + x // 4) % 2 and do not repeat.
+Floors use (x + 2y) % 4 so orthogonal neighbours differ. Blocks use (x + y) % 2.
+The two pits share that parity, so they take (x + y + x // 4) % 2.
 """
 import json
 import os
@@ -16,7 +16,7 @@ import numpy as np
 from PIL import Image
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-PACK = "/tmp/tower_a/slots/A"
+PACK = "/tmp/tower_b/slots/B"
 ROOM = "koliseo_stormspire"
 # Top face of every elevation block: point-up diamond, same as the Windmere pass.
 BLOCK_CX = 65
@@ -24,13 +24,11 @@ BLOCK_CY = 32
 # Soft bottom of the authored silhouette. Elev 2 is exactly 19px deeper, which
 # is the extra offset (-73 vs -53) so both plinths still meet the floor.
 SOFT_BOTTOM = {1: 80, 2: 99}
-# Opaque median of the four floor slots, and the median of the ground cells
-# that share an edge with this ring. 70% of the way keeps the dais a little
-# darker than the outer flags; the soft diamond edge hides the remaining step.
-ART_MED = np.array([54.0, 54.25, 59.5], np.float32)
-BORDER_MED = np.array([64.5, 60.0, 65.0], np.float32)
-BLEND = 0.70
-FLOOR_RATIO = (ART_MED + BLEND * (BORDER_MED - ART_MED)) / ART_MED
+# Median of the ground cells that share an edge with this ring, measured on
+# the plate from before the slate pass. The bronze slots are a little lighter;
+# halfway toward the flags keeps the inlay and hides the seam.
+BORDER_MED = np.array([64.5, 61.0, 67.5], np.float32)
+BLEND = 0.55
 
 
 def cell_center(x, y):
@@ -101,25 +99,57 @@ def load_rgba(path):
     return np.array(Image.open(path).convert("RGBA")).astype(np.float32)
 
 
+def floor_ratio(floors):
+    meds = []
+    for img in floors:
+        solid = img[:, :, 3] > 200
+        meds.append(np.median(img[:, :, :3][solid], axis=0))
+    art = np.mean(meds, axis=0).astype(np.float32)
+    target = art + BLEND * (BORDER_MED - art)
+    return target / np.maximum(art, 1.0), target
+
+
+def paint_violet_well(img):
+    """Round violet well inside the bronze lip. The grate bars stay on top."""
+    height, width = img.shape[:2]
+    yy, xx = np.mgrid[0:height, 0:width]
+    nx = (xx + 0.5 - width / 2.0) / (width / 2.0)
+    ny = (yy + 0.5 - height / 2.0) / (height / 2.0)
+    radius = np.sqrt(nx * nx + ny * ny)
+    opening = np.clip((0.56 - radius) / 0.20, 0.0, 1.0)
+    glow = np.clip(1.0 - radius / 0.52, 0.0, 1.0) ** 1.35
+    core = np.array([228.0, 140.0, 255.0], np.float32)
+    edge = np.array([96.0, 28.0, 168.0], np.float32)
+    well = edge + (core - edge) * glow[:, :, None]
+    lum = img[:, :, :3].mean(axis=2) / 255.0
+    bars = np.clip((lum - 0.18) / 0.40, 0.0, 1.0)
+    # Mostly the glowing well; bronze bars remain visible over it.
+    mix = opening * (0.90 - 0.38 * bars) * (img[:, :, 3] / 255.0)
+    out = img.copy()
+    out[:, :, :3] = img[:, :, :3] * (1.0 - mix[:, :, None]) + well * mix[:, :, None]
+    return out
+
+
 def load_floors():
     # The 128×64 slots are the plate's pixel size. Hires downscales smear alpha
     # into the square corners, and those corners are the next cell's interior.
-    floors, pits = [], []
+    raw = []
     for index in range(1, 5):
-        floors.append(clamp_diamond(tint(load_rgba(
-            os.path.join(PACK, "floor_A_v%d.png" % index)
-        ), FLOOR_RATIO)))
+        raw.append(load_rgba(os.path.join(PACK, "floor_B_v%d.png" % index)))
+    ratio, target = floor_ratio(raw)
+    print("floor ratio", np.round(ratio, 3), "target", np.round(target, 1))
+    floors = [clamp_diamond(tint(img, ratio)) for img in raw]
+    pits = []
     for index in range(1, 3):
-        pits.append(clamp_diamond(tint(load_rgba(
-            os.path.join(PACK, "pit_A_v%d.png" % index)
-        ), FLOOR_RATIO)))
+        lip = tint(load_rgba(os.path.join(PACK, "pit_B_v%d.png" % index)), ratio)
+        pits.append(clamp_diamond(paint_violet_well(lip)))
     return floors, pits
 
 
 def load_blocks():
     """Scale the footprint to 128px. Side median is pulled halfway to the floor."""
     raw = []
-    for index, name in enumerate(("block_A_v1_512w.png", "block_A_v2_512w.png"), start=1):
+    for index, name in enumerate(("block_B_v1_512w.png", "block_B_v2_512w.png"), start=1):
         src = Image.open(os.path.join(PACK, "hires", name))
         width = 128
         height = int(round(src.size[1] * (width / float(src.size[0]))))
@@ -132,11 +162,10 @@ def load_blocks():
         side = (img[:, :, 3] > 200) & ~top
         sides.append(np.median(img[:, :, :3][side], axis=0))
     side_med = np.mean(sides, axis=0).astype(np.float32)
-    floor_target = ART_MED * FLOOR_RATIO
-    block_target = side_med + 0.5 * (floor_target - side_med)
-    ratio = block_target / np.maximum(side_med, 1.0)
-    print("floor ratio", np.round(FLOOR_RATIO, 3), "block ratio", np.round(ratio, 3), "side", np.round(side_med, 1))
-    return [tint(img, ratio) for img in raw]
+    # Leave the bronze. A colour multiply toward the grey flags turns the
+    # trim purple. The skirt only has to meet the existing elevation.
+    print("block side", np.round(side_med, 1), "untinted")
+    return raw
 
 
 def paste_diamond(plate, sprite, x, y):
@@ -313,7 +342,8 @@ def write_preview(plate, place, room):
         cx, cy = cell_center(cell[0], cell[1])
         off = occ["offset"]
         kind = str((occ.get("what") or [""])[0])
-        elev_flag = 1 if kind.startswith("elevation") else 0
+        # Tower draws after the blocks it stands on, matching the runtime sort.
+        elev_flag = 2 if kind == "tower" else (1 if kind.startswith("elevation") else 0)
         draws.append((cell[0] + cell[1], elev_flag, int(cx) + int(off[0]), int(cy) + int(off[1]), occ))
     draws.sort()
     base = Image.fromarray(crop).convert("RGBA")
