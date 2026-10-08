@@ -97,8 +97,6 @@ var _clock_bar_max_width: float = 220.0
 var _clock_seconds: int = int(TurnClock.DURATION_SEC)
 var _locked: bool = false
 var _aim_hit_label: Label
-var _zoom_in_button: Button
-var _zoom_out_button: Button
 var _aim_hit_chance: int = -1
 var _stunned: bool = false
 var _stun_badge: Label
@@ -1320,7 +1318,7 @@ func _build() -> void:
 	_style_chrome_button(_new_match_button, false)
 	_new_match_button.clip_text = true
 	_new_match_button.pressed.connect(func() -> void: new_match_requested.emit())
-	# Kept off the map (Mauro): New Match lives in the left column under Zoom.
+	# Kept off the map (Mauro): New Match, Hub, and Elements share the left column.
 	_new_match_holder = _new_match_button
 
 	_hub_button = Button.new()
@@ -1393,22 +1391,18 @@ func _build() -> void:
 	_tooltip_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_tooltip_panel.add_child(_tooltip_label)
 
-	var zoom_box := VBoxContainer.new()
-	zoom_box.name = "ZoomControls"
-	zoom_box.position = Vector2(16, 152)
-	zoom_box.add_theme_constant_override("separation", 8)
-	zoom_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	root.add_child(zoom_box)
-	_zoom_in_button = _make_zoom_button("ZoomIn", "Zoom +", 1)
-	_zoom_out_button = _make_zoom_button("ZoomOut", "Zoom −", -1)
-	zoom_box.add_child(_zoom_in_button)
-	zoom_box.add_child(_zoom_out_button)
+	var side_column := VBoxContainer.new()
+	side_column.name = "SideColumn"
+	side_column.position = Vector2(16, 152)
+	side_column.add_theme_constant_override("separation", 8)
+	side_column.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.add_child(side_column)
 	if _new_match_holder != null:
-		zoom_box.add_child(_new_match_holder)
+		side_column.add_child(_new_match_holder)
 	if _hub_button != null:
-		zoom_box.add_child(_hub_button)
+		side_column.add_child(_hub_button)
 	if _elements_button != null:
-		zoom_box.add_child(_elements_button)
+		side_column.add_child(_elements_button)
 
 	_handoff_overlay = ColorRect.new()
 	_handoff_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -1434,27 +1428,6 @@ func _build() -> void:
 	_handoff_panel.add_child(_handoff_label)
 
 	_update_selected_label()
-
-
-func set_zoom_buttons(can_in: bool, can_out: bool) -> void:
-	if _zoom_in_button != null:
-		_zoom_in_button.disabled = not can_in
-	if _zoom_out_button != null:
-		_zoom_out_button.disabled = not can_out
-
-
-func _make_zoom_button(node_name: String, label: String, direction: int) -> Button:
-	var button := Button.new()
-	button.name = node_name
-	button.text = label
-	button.focus_mode = Control.FOCUS_ALL
-	button.custom_minimum_size = Vector2(128, 72)
-	button.add_theme_font_size_override("font_size", 18)
-	button.add_theme_color_override("font_color", CREAM)
-	_apply_display_font(button)
-	_style_chrome_button(button, true)
-	button.pressed.connect(func() -> void: zoom_step_requested.emit(direction))
-	return button
 
 
 func _show_new_match(snap: Dictionary) -> bool:

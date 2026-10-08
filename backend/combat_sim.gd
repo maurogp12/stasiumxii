@@ -353,26 +353,44 @@ func submit(intent: Dictionary) -> Dictionary:
 			return _reject(normalized, "unknown_intent", "REJECT — unknown intent.")
 
 
+## Integer seconds plus the flags a host compares so it can skip a snapshot
+## when the displayed clock did not change.
+func clock_marker() -> Dictionary:
+	var match_sec := -1
+	if _match_time_left >= 0.0:
+		match_sec = int(floor(_match_time_left))
+	return {
+		"seconds": _clock_display_seconds(_turn_time_remaining),
+		"running": _turn_time_running,
+		"active_seat": _active_seat,
+		"match_sec": match_sec,
+		"sudden_death": sudden_death_active(),
+		"match_over": _match_over,
+	}
+
+
 ## Host / hot-seat only. Guest replicas no-op. On expiry, submit the same
 ## end_turn Intent as the HUD button for the active seat.
+## A tick that does not expire omits the snapshot. Callers that need the
+## board build it themselves when clock_marker() changes.
 func tick_turn_timer(delta: float) -> Dictionary:
 	if _replica:
-		return _timer_tick_result(false)
+		return _timer_tick_result(false, false)
 	if _match_over or _flow.is_deployment():
 		_stop_turn_timer()
-		return _timer_tick_result(false)
+		return _timer_tick_result(false, false)
 	if not _turn_time_running:
-		return _timer_tick_result(false)
+		return _timer_tick_result(false, false)
 	if _match_time_left > 0.0:
 		_match_time_left = maxf(_match_time_left - maxf(delta, 0.0), 0.0)
 		if _match_time_left <= 0.0:
 			_time_up()
-			var up := _timer_tick_result(true)
+			var up := _timer_tick_result(true, true)
 			up["events"] = _last_events.duplicate(true)
 			return up
 	_turn_time_remaining = maxf(_turn_time_remaining - maxf(delta, 0.0), 0.0)
 	if _turn_time_remaining > 0.0:
-		return _timer_tick_result(false)
+		return _timer_tick_result(false, false)
 	_turn_time_running = false
 	_turn_time_remaining = 0.0
 	var result: Dictionary = submit({
@@ -5188,15 +5206,17 @@ func _stop_turn_timer() -> void:
 	_turn_time_limit = TURN_TIME_LIMIT
 
 
-func _timer_tick_result(expired: bool) -> Dictionary:
-	return {
+func _timer_tick_result(expired: bool, with_snapshot: bool = true) -> Dictionary:
+	var out := {
 		"ok": true,
 		"expired": expired,
 		"illegal": false,
 		"reason": "",
 		"events": [],
-		"snapshot": snapshot(),
 	}
+	if with_snapshot:
+		out["snapshot"] = snapshot()
+	return out
 
 
 static func _clock_display_seconds(remaining: float) -> int:

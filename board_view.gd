@@ -56,6 +56,8 @@ const KOLISEO_ART := preload("res://board/koliseo_art.gd")
 const COMBAT_RESULT := preload("res://ui/combat_result.gd")
 ## Death / finisher reads before the end-of-fight window opens.
 const RESULT_DELAY := 1.1
+## How long an online result stays up before both phones go back to the hub.
+const RESULT_READ_SEC := 4.0
 const KOLISEO_LIFE := preload("res://board/koliseo_life.gd")
 const ARENA_SKY := preload("res://board/arena_sky.gd")
 const ARENA_LOOK := preload("res://board/arena_look.gd")
@@ -84,6 +86,7 @@ const PAN_LIMIT := 220.0
 
 var _fight_started_msec: int = 0
 var _result_shown: bool = false
+var _online_home_pending: bool = false
 var _result_layer: CanvasLayer
 var tiles: Dictionary = {}
 var selected_tile: BoardTile = null
@@ -419,9 +422,6 @@ func _input(event: InputEvent) -> void:
 			_camera.zoom = Vector2(z, z)
 			_pan_limit = TOUCH.pan_room(_board_px.x, _board_px.y, view, z, true)
 			_clamp_camera()
-			var limits := TOUCH.player_zoom_limits(_board_px.x, _board_px.y, view, true)
-			if _hud != null and _hud.has_method("set_zoom_buttons"):
-				_hud.set_zoom_buttons(z < limits.y - 0.02, z > limits.x + 0.02)
 			get_viewport().set_input_as_handled()
 
 
@@ -2021,7 +2021,37 @@ func _show_koliseo_result(snap: Dictionary, secs: int) -> void:
 	if net != null and net.is_online():
 		local_seat = int(net.local_seat)
 		payout = net.koliseo_last_payout
-	show_result(CombatResult.koliseo_result(snap, local_seat, payout, secs, _portrait_of))
+	var window := show_result(CombatResult.koliseo_result(snap, local_seat, payout, secs, _portrait_of))
+	if net != null and net.is_client():
+		_schedule_online_home(window)
+
+
+## After the result can be read, an online phone returns to the hub.
+## CLOSE goes immediately. A normal match end never shows "server disconnected".
+func _schedule_online_home(window: CombatResult) -> void:
+	if _online_home_pending or not is_inside_tree():
+		return
+	_online_home_pending = true
+	var net := _net()
+	if net != null and net.has_method("note_match_finished"):
+		net.note_match_finished()
+	if window != null and not window.closed.is_connected(_go_hub_after_online_match):
+		window.closed.connect(_go_hub_after_online_match)
+	get_tree().create_timer(RESULT_READ_SEC).timeout.connect(_go_hub_after_online_match)
+
+
+func _go_hub_after_online_match() -> void:
+	if not _online_home_pending or not is_inside_tree():
+		return
+	_online_home_pending = false
+	_stop_flash_tweens()
+	_stop_walk_tween()
+	var net := _net()
+	if net != null and net.has_method("leave_after_match"):
+		net.leave_after_match()
+	elif net != null and not net.is_hotseat():
+		net.return_to_hotseat()
+	get_tree().change_scene_to_file(MobileHub.MOBILE_HUB)
 
 
 func _portrait_of(unit: Dictionary) -> Texture2D:
@@ -2785,9 +2815,6 @@ func _fit_board_camera(glide: bool = false) -> void:
 	else:
 		_camera.position = goal
 		_clamp_camera()
-	var limits := TOUCH.player_zoom_limits(board_w, board_h, viewport, mobile)
-	if _hud != null and _hud.has_method("set_zoom_buttons"):
-		_hud.set_zoom_buttons(zoom < limits.y - 0.02, zoom > limits.x + 0.02)
 
 
 func _on_zoom_step(direction: int) -> void:

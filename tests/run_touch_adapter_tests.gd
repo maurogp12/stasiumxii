@@ -696,21 +696,18 @@ func _test_player_zoom() -> void:
 	TOUCH.reset_player_zoom()
 	var hud := CombatHUD.new()
 	hud._build()
-	var zoom_in := hud.find_child("ZoomIn", true, false) as Button
-	var zoom_out := hud.find_child("ZoomOut", true, false) as Button
-	truthy(zoom_in != null and zoom_out != null, "combat HUD has zoom in and zoom out")
-	eq(zoom_in.text, "Zoom +", "zoom in reads Zoom +")
-	eq(zoom_out.text, "Zoom −", "zoom out reads Zoom −")
-	eq(zoom_in.custom_minimum_size.y >= 64.0, true, "zoom in is a fat target")
-	eq(zoom_out.custom_minimum_size.y >= 64.0, true, "zoom out is a fat target")
-	var steps: Array = []
-	hud.zoom_step_requested.connect(func(direction: int) -> void: steps.append(direction))
-	zoom_in.pressed.emit()
-	zoom_out.pressed.emit()
-	eq(steps, [1, -1], "the buttons request zoom in then zoom out")
-	hud.set_zoom_buttons(false, true)
-	eq(zoom_in.disabled, true, "zoom in disables at the close cap")
-	eq(zoom_out.disabled, false, "zoom out stays available at the close cap")
+	eq(hud.find_child("ZoomIn", true, false), null, "Zoom + is gone; pinch zooms")
+	eq(hud.find_child("ZoomOut", true, false), null, "Zoom − is gone; pinch zooms")
+	var column := hud.find_child("SideColumn", true, false) as VBoxContainer
+	truthy(column != null, "New Match, Hub, and Elements stay in the left column")
+	eq(column.position, Vector2(16, 152), "the left column stays where the zoom buttons were")
+	eq(column.get_child_count() >= 3, true, "New Match, Hub, and Elements are all in that column")
+	eq(column.get_child(0), hud._new_match_button, "New Match is the first control, so nothing is left above it")
+	eq(hud._hub_button.get_parent(), column, "Hub stays under New Match")
+	eq(hud._elements_button.get_parent(), column, "Elements stays under Hub")
+	eq(hud._new_match_button.text, "New Match", "New Match is still on the HUD")
+	eq(hud._hub_button.text, "Hub", "Hub is still on the HUD")
+	eq(hud._elements_button.text, "Elements", "Elements is still on the HUD")
 	hud.free()
 
 
