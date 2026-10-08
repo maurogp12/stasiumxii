@@ -111,7 +111,11 @@ func _wait_report(path: String, timeout_ms: int) -> Dictionary:
 	var deadline := Time.get_ticks_msec() + timeout_ms
 	while Time.get_ticks_msec() < deadline:
 		if FileAccess.file_exists(path):
-			return _parse_report(FileAccess.get_file_as_string(path))
+			# The bot opens the report before it writes it. An empty file is
+			# not a disconnect; wait until the match_over line is there.
+			var text := FileAccess.get_file_as_string(path)
+			if text.contains("match_over="):
+				return _parse_report(text)
 		await process_frame
 	return {"missing": true}
 
