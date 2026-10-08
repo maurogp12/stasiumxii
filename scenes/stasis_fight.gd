@@ -412,30 +412,60 @@ func _shows_turn_chrome(seat: int) -> bool:
 	return seat == StasisCatalog.PLAYER_SEAT
 
 
+## Room line sits in the gap beside the player card, under the old top row.
+## A wide player card used to cover this ribbon. The result panel drops
+## under the ally chips so the buttons stay clear of the card.
+func _ribbon_origin(tall: bool) -> Vector2:
+	var origin := Vector2(248, 142)
+	if _hud == null or _hud._banner_panels.is_empty():
+		return origin
+	var left: Control = _hud._banner_panels[0]
+	var right_of := left.position.x + left.size.x + 8.0
+	var below := left.position.y + left.size.y + 8.0
+	if _hud._party_row != null and _hud._party_row.visible:
+		below = _hud._party_row.position.y + _hud._party_row.size.y + 8.0
+	if tall:
+		return Vector2(left.position.x, below)
+	var center := _hud._resource_panel
+	var gap := 540.0
+	if center != null:
+		gap = center.position.x - 8.0 - right_of
+	if gap >= 220.0:
+		return Vector2(right_of, origin.y)
+	return Vector2(left.position.x, below)
+
+
 func _layout_overlay(fighting: bool) -> void:
 	if _overlay_panel == null:
 		return
+	var origin := _ribbon_origin(not fighting)
+	var width := 464.0
+	if _hud != null and _hud._resource_panel != null and fighting:
+		var room := _hud._resource_panel.position.x - 8.0 - origin.x
+		if room > 0.0:
+			width = minf(width, room)
+	width = maxf(width, 180.0)
 	if fighting:
-		_overlay_panel.position = Vector2(248, 142)
-		_overlay_panel.size = Vector2(464, 32)
-		_overlay_status.position = Vector2(256, 142)
-		_overlay_status.size = Vector2(448, 32)
+		_overlay_panel.position = origin
+		_overlay_panel.size = Vector2(width, 32)
+		_overlay_status.position = origin + Vector2(8, 0)
+		_overlay_status.size = Vector2(maxf(width - 16.0, 1.0), 32)
 		_overlay_status.add_theme_font_size_override("font_size", 14)
 		if _overlay_back != null:
 			_overlay_back.visible = false
 	else:
-		_overlay_panel.position = Vector2(248, 142)
-		_overlay_panel.size = Vector2(464, 132)
-		_overlay_status.position = Vector2(256, 148)
-		_overlay_status.size = Vector2(448, 58)
+		_overlay_panel.position = origin
+		_overlay_panel.size = Vector2(width, 132)
+		_overlay_status.position = origin + Vector2(8, 6)
+		_overlay_status.size = Vector2(maxf(width - 16.0, 1.0), 58)
 		_overlay_status.add_theme_font_size_override("font_size", 16)
 		if _overlay_back != null:
 			_overlay_back.visible = true
-			_overlay_back.position = Vector2(256, 210)
+			_overlay_back.position = origin + Vector2(8, 68)
 		if _continue_button != null:
-			_continue_button.position = Vector2(476, 210)
+			_continue_button.position = origin + Vector2(228, 68)
 		if _tonic_button != null:
-			_tonic_button.position = Vector2(256, 280)
+			_tonic_button.position = origin + Vector2(8, 138)
 
 
 func _sync_overlay(snap: Dictionary) -> void:
