@@ -73,6 +73,9 @@ func _test_grid_and_occluders() -> void:
 	var room_src := FileAccess.get_file_as_string("res://board/painted_room.gd")
 	truthy(room_src.contains("occluder_z_index"), "painted walls use the occluder z")
 	truthy(room_src.contains("set_occluder_covers_grid"), "a wall or prop cell hides its grid ink")
+	truthy(room_src.contains("cell_to_local(cell, 0.0)"), "occluders anchor on the plate, not a second elevation lift")
+	truthy(room_src.contains("set_raised_top"), "a raised block keeps its diamond on the painted top")
+	eq(CombatHUD.coach_hint("REJECT — that path needs 5 MP (you have 1)."), "Needs 5 MP (have 1)", "the path reject is one short line")
 
 
 func _test_class_select_copy() -> void:
@@ -82,6 +85,7 @@ func _test_class_select_copy() -> void:
 	truthy(src.contains("Advanced"), "Advanced stays")
 	truthy(src.contains("Cinzel-Semibold.ttf"), "class select uses the hub font")
 	truthy(src.contains("func _stone_style"), "class cards use the stone panel")
+	truthy(src.contains("painted_cells"), "class cards use the match idle, not the old select plate")
 
 
 func _test_hud_does_not_overlap() -> void:

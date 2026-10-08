@@ -60,33 +60,19 @@ func _test_roles_and_art() -> void:
 		for facing in ["n", "e", "s", "w"]:
 			var path := "res://art/characters/%s/%s_%s.png" % [class_id, class_id, facing]
 			truthy(FileAccess.file_exists(path), "sprite exists %s" % path)
-		var plate := "res://art/ui/select/%s_select.png" % class_id
-		eq(_script.portrait_path(class_id), plate, "%s card uses the select plate" % class_id)
-		truthy(FileAccess.file_exists(plate), "%s select plate is on disk" % class_id)
+		var painted := "res://art/characters/%s/idle/%s_idle_s.pngbin" % [class_id, class_id]
+		eq(_script.portrait_path(class_id), painted, "%s card uses the match idle" % class_id)
+		var cells: Array = StripLibrary.painted_cells(class_id, "idle", "s")
+		truthy(cells.size() > 0, "%s idle sheet slices" % class_id)
 		var tex: Texture2D = _script.load_portrait(class_id)
-		truthy(tex != null, "%s select plate loads" % class_id)
-		if tex != null:
-			eq(tex.get_width(), 512, "%s plate width" % class_id)
-			eq(tex.get_height(), 768, "%s plate height" % class_id)
+		truthy(tex != null, "%s portrait loads" % class_id)
+		if tex != null and cells.size() > 0:
+			eq(tex, cells[0], "%s card is the standing cell the match draws" % class_id)
+			eq(tex.get_width() == 512 and tex.get_height() == 768, false, "%s card is not the old select plate" % class_id)
 			var fresh := tex.get_image()
-			truthy(fresh != null and not fresh.is_empty(), "%s plate decodes" % class_id)
-			if fresh != null:
-				var opaque := 0
-				var samples := 0
-				var y := 0
-				while y < fresh.get_height():
-					var x := 0
-					while x < fresh.get_width():
-						samples += 1
-						if fresh.get_pixel(x, y).a > 0.08:
-							opaque += 1
-						x += 24
-					y += 24
-				truthy(opaque > samples / 10, "%s plate is not blank" % class_id)
+			truthy(fresh != null and not fresh.is_empty(), "%s portrait decodes" % class_id)
 		var imp := FileAccess.get_file_as_string("res://art/characters/%s/%s_s.png.import" % [class_id, class_id])
 		truthy(imp.contains("mipmaps/generate=false"), "%s import mipmaps off" % class_id)
-		var plate_imp := FileAccess.get_file_as_string(plate + ".import")
-		truthy(plate_imp.contains("mipmaps/generate=false"), "%s plate mipmaps off" % class_id)
 	var hud_src := FileAccess.get_file_as_string("res://ui/hud.gd")
 	truthy(hud_src.contains("StripLibrary.idle_portrait"), "turn chips use the locked idle")
 

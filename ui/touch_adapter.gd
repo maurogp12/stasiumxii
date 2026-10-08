@@ -102,7 +102,9 @@ const MOBILE_CLEAR_BOTTOM := 150.0
 ## ~50px diamonds, the full 15×15 width, ~80% of the height, and a ~56px
 ## side gutter. The 0.1.25 keep of 0.62 was zoom 2.0 (64px diamonds) and
 ## cropped the arena down to the fighters.
-const MOBILE_BOARD_KEEP := 0.80
+## 0.68 is a closer phone default than the 0.80 overview (~1.82 on 20:9,
+## ~58px diamonds) so a fighter is readable without pinching in.
+const MOBILE_BOARD_KEEP := 0.68
 ## Session camera. 1.0 is the overview default. Each press multiplies this.
 ## 1.55 * 0.90 sits on the 1.40 zoom-out floor. 1.55 * 1.46 reaches the
 ## 2.25 zoom-in cap. Zoom out stays above the contain fit. Zoom in stays
@@ -113,7 +115,9 @@ const MOBILE_BOARD_KEEP := 0.80
 const PLAYER_ZOOM_STEP := 1.12
 const PLAYER_ZOOM_BIAS_MIN := 0.5
 const PLAYER_ZOOM_BIAS_MAX := 2.6
-const PLAYER_ZOOM_MIN := 0.8
+## Zoom-out floor. 1.5 keeps a 48px diamond (32 * 1.5). The old 0.8 floor
+## let a pinch shrink fighters until a tap could not land on one.
+const PLAYER_ZOOM_MIN := 1.5
 const PLAYER_ZOOM_MAX := 3.0
 static var player_zoom_bias: float = 1.0
 ## A short finger slide still picks a cell. A longer drag pans the cropped map.
@@ -449,7 +453,7 @@ static func cluster_button_rect(center: Vector2, primary: bool, arc_count: int =
 ## One body, or the clearly nearer body. A tie returns (-1, -1) so the ground
 ## cell can stay empty and Soft Lock can refuse two neighbors.
 ## body true: the drawing. body false: the diamond that fighter stands on.
-static func _pick_pawn_hit(point: Vector2, living_pawns: Array, mobile: bool, body: bool) -> Vector2i:
+static func _pick_pawn_hit(point: Vector2, living_pawns: Array, mobile: bool, body: bool, wide: bool = false) -> Vector2i:
 	var best_cell := Vector2i(-1, -1)
 	var best_d := 0.0
 	var second_d := 0.0
@@ -462,7 +466,7 @@ static func _pick_pawn_hit(point: Vector2, living_pawns: Array, mobile: bool, bo
 		var origin: Vector2 = pawn.get("origin", Vector2.ZERO)
 		var dist := point.distance_to(origin)
 		if body:
-			if not hits_pawn_body(point, origin, mobile, true):
+			if not hits_pawn_body(point, origin, mobile, wide):
 				continue
 		elif not hits_unit_diamond(point, origin, mobile):
 			continue
@@ -502,22 +506,79 @@ static func front_cell(point: Vector2, tile_positions: Dictionary) -> Vector2i:
 	return best
 
 
+## Name plate grown so the shorter side is at least the 48px hit floor.
+static func hits_name_plate(point: Vector2, plate: Rect2) -> bool:
+	if plate.size.x < 1.0 or plate.size.y < 1.0:
+		return false
+	var need := float(HIT_FLOOR)
+	var grow_x := maxf(0.0, (need - plate.size.x) * 0.5)
+	var grow_y := maxf(0.0, (need - plate.size.y) * 0.5)
+	return plate.grow_individual(grow_x, grow_y, grow_x, grow_y).has_point(point)
+
+
+## living_pawns may carry "plate": Rect2 in board space. One plate wins.
+## Two plates under the same tap stay unresolved so the body or the ground can.
+static func _pick_name_plate(point: Vector2, living_pawns: Array) -> Vector2i:
+	var best_cell := Vector2i(-1, -1)
+	var best_d := 0.0
+	var second_d := 0.0
+	var hits := 0
+	var have_second := false
+	for entry in living_pawns:
+		if typeof(entry) != TYPE_DICTIONARY:
+			continue
+		var pawn: Dictionary = entry
+		var plate: Variant = pawn.get("plate", null)
+		if not (plate is Rect2):
+			continue
+		var rect: Rect2 = plate
+		if not hits_name_plate(point, rect):
+			continue
+		var origin: Vector2 = pawn.get("origin", rect.get_center())
+		var dist := point.distance_to(origin)
+		hits += 1
+		if hits == 1 or dist < best_d:
+			if hits > 1:
+				second_d = best_d
+				have_second = true
+			best_d = dist
+			best_cell = pawn.get("cell", Vector2i(-1, -1))
+		elif not have_second or dist < second_d:
+			second_d = dist
+			have_second = true
+	if hits == 1:
+		return best_cell
+	if hits > 1 and have_second and best_d + BODY_PICK_TIE_PX < second_d:
+		return best_cell
+	return Vector2i(-1, -1)
+
+
 ## mobile: the front painted diamond first (elevation aware).
 ## Desktop: nearest tile inside CELL_PICK_RADIUS, else the flat iso cell.
 ## mobile: a living body uses the fatter capsule; otherwise the painted diamond
 ## (side tips included). A tap just off the board uses MOBILE_CELL_PICK_RADIUS.
 ## prefer_unit: the drawing wins over empty ground, then the fighter's own
 ## diamond wins over the neighbor iso_cell would steal. A tie stays ground.
-## prefer_unit does not change walk picks. living_pawns entries:
-## {cell: Vector2i, origin: Vector2, sort: int}.
+## A tap on the sprite or its name plate selects that fighter either way.
+## prefer_unit widens the body pad and also takes the fighter's diamond.
+## living_pawns entries: {cell, origin, sort, plate}.
 static func pick_board_cell(point: Vector2, tile_positions: Dictionary, living_pawns: Array, prefer_unit: bool, mobile: bool = false) -> Vector2i:
+	var plate := _pick_name_plate(point, living_pawns)
+	if plate.x >= 0:
+		return plate
 	if prefer_unit:
-		var body := _pick_pawn_hit(point, living_pawns, mobile, true)
+		var body := _pick_pawn_hit(point, living_pawns, mobile, true, true)
 		if body.x >= 0:
 			return body
 		var stood := _pick_pawn_hit(point, living_pawns, mobile, false)
 		if stood.x >= 0:
 			return stood
+	else:
+		# The sprite itself selects that fighter. The wider finger pad stays
+		# on an armed unit spell, so a walk can still land on a neighbor tile.
+		var body := _pick_pawn_hit(point, living_pawns, false, true, false)
+		if body.x >= 0:
+			return body
 	if mobile:
 		# The top face drawn in front wins (raised tiles cover the tile behind
 		# them; the flat iso_cell used to hand those taps to the hidden tile).

@@ -131,8 +131,8 @@ func _test_pawn_body_cast_pick() -> void:
 	var foe_origin: Vector2 = tiles[foe]
 	var chest := foe_origin + Vector2(0, -72)
 	var pawns := [{"cell": foe, "origin": foe_origin, "sort": foe.x + foe.y}]
-	var behind := TOUCH.pick_board_cell(chest, tiles, pawns, false)
-	eq(behind, Vector2i(4, 4), "diamond pick of the sprite chest is the empty tile behind")
+	var behind := Vector2i(4, 4)
+	eq(TOUCH.pick_board_cell(chest, tiles, pawns, false), foe, "a tap on the sprite chest selects that fighter")
 	eq(TOUCH.hits_pawn_body(chest, foe_origin), true, "sprite chest hits the pawn body")
 	var resolved := TOUCH.pick_board_cell(chest, tiles, pawns, true)
 	eq(resolved, foe, "unit-targeted pick of the sprite chest is the living foe")
@@ -217,7 +217,7 @@ func _test_mobile_target_pick() -> void:
 	eq(TOUCH.pick_board_cell(east, tiles, pawns, false, true), Vector2i(7, 6), "a walk tap on the east diamond stays that tile")
 	eq(TOUCH.pick_board_cell(east, tiles, pawns, true, true), foe, "a unit cast on the east diamond selects the foe")
 	var overlap: Vector2 = tiles[Vector2i(4, 4)]
-	eq(TOUCH.pick_board_cell(overlap, tiles, pawns, false), Vector2i(4, 4), "the diamond behind the foe is empty ground")
+	eq(TOUCH.pick_board_cell(overlap, tiles, pawns, false), foe, "a tap on the sprite over the tile behind selects the fighter")
 	eq(TOUCH.hits_pawn_body(overlap, foe_origin), true, "that ground center sits on the sprite")
 	eq(TOUCH.pick_board_cell(overlap, tiles, pawns, true), foe, "the body wins when the tap overlaps the sprite and that ground cell")
 	# (B) The drawing, including the edge that sits on empty ground two tiles away.
@@ -264,18 +264,17 @@ func _test_mobile_target_pick() -> void:
 	eq(phone_band.y, 720.0 - TOUCH.MOBILE_FRAME_BOTTOM, "phone frame keeps a slim bottom inset")
 	var phone := TOUCH.board_zoom(960.0, 500.0, phone_view, true)
 	eq(phone > desktop_zoom, true, "a landscape phone zooms in past the tiny desktop fit")
-	eq(phone > 1.45 and phone < 1.70, true, "a landscape phone opens on a Koliseo overview, not the 2.0 close crop")
+	eq(phone > 1.75 and phone < 1.95, true, "a landscape phone opens closer so fighters are readable")
 	var phone_span_y := phone_band.y - phone_band.x
 	var phone_vis_h := phone_span_y / phone
 	var phone_vis_w := phone_view.x / phone
-	eq(phone_vis_h / 500.0 > 0.75 and phone_vis_h / 500.0 < 0.90, true, "most of the diamond height is on screen")
-	eq(phone_vis_w / 960.0 >= 1.0 and phone_vis_w / 960.0 < 1.20, true, "the width fits with a modest gutter, not postage-stamp wings")
-	eq(TOUCH.DIAMOND_H * phone >= 48.0, true, "a landscape diamond stays at least the 48px hit floor")
-	eq(TOUCH.DIAMOND_H * phone < 56.0, true, "a landscape diamond is under the 64px close crop")
-	near(phone, 1.55, "20:9 phone overview zoom")
+	eq(phone_vis_h / 500.0 > 0.60 and phone_vis_h / 500.0 < 0.80, true, "the closer default still shows most of the diamond height")
+	eq(phone_vis_w / 960.0 > 0.85 and phone_vis_w / 960.0 < 1.05, true, "the width stays near the diamond; the edges pan")
+	eq(TOUCH.DIAMOND_H * phone >= 56.0, true, "a landscape diamond is past the old 50px overview")
+	eq(TOUCH.DIAMOND_H * phone < 64.0, true, "a landscape diamond stays under the 64px close crop")
 	var room := TOUCH.pan_room(960.0, 500.0, phone_view, phone, true)
-	eq(room.x < 1.0, true, "the overview width fits, so there is no side crop to pan")
-	eq(room.y > 30.0 and room.y < 70.0, true, "vertical pan is only the diamond tips")
+	eq(room.x > 20.0 and room.x < 80.0, true, "the closer default can pan to the side edges")
+	eq(room.y > 60.0 and room.y < 110.0, true, "vertical pan reaches the diamond tips")
 	# Mauro 4 Oct 2026: "the map focus whoever turn it is, also move the screen
 	# by touching it in the direction we want". Even the overview can be dragged.
 	var roam := TOUCH.free_room(960.0, 500.0, room)
@@ -670,15 +669,13 @@ func _test_player_zoom() -> void:
 	eq(limits.x < overview, true, "zoom out can show more of the diamond")
 	eq(limits.y > overview, true, "zoom in can move closer")
 	near(limits.y, TOUCH.PLAYER_ZOOM_MAX, "zoom in reaches the 3.0 close view")
-	# Mauro (29 Sep): zoom out must fit the whole diamond clear of the menus.
-	var clear := TOUCH.clear_band_for(phone)
-	eq(500.0 * limits.x <= (clear.y - clear.x) + 0.5, true, "zoom out fits the diamond height between the menus")
+	eq(TOUCH.DIAMOND_H * limits.x >= 48.0, true, "zoom out keeps a diamond at least 48px")
 	eq(limits.x + 0.001 >= TOUCH.PLAYER_ZOOM_MIN, true, "zoom out stays above the player floor")
 	for _i in 12:
 		TOUCH.nudge_player_zoom(-1)
 	var pulled := TOUCH.player_board_zoom(960.0, 500.0, phone, true)
 	eq(pulled < overview, true, "zoom out is wider than the default")
-	near(pulled, limits.x, "zoom out presses rest on the clear-band fit")
+	near(pulled, limits.x, "zoom out rests on the fighter-readable floor")
 	near(TOUCH.player_board_zoom(960.0, 500.0, phone, true), pulled, "the chosen zoom sticks for the session")
 	TOUCH.set_player_zoom(2.0, 960.0, 500.0, phone)
 	near(TOUCH.player_board_zoom(960.0, 500.0, phone, true), 2.0, "pinch sets a continuous zoom")

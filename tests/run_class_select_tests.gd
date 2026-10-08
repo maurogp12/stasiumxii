@@ -171,8 +171,8 @@ func _test_hud_paints_snapshot() -> void:
 	var card := hud._kestrel_body.text
 	truthy(card.contains("HP 85/85"), "card prints snapshot HP")
 	truthy(card.contains("Pulse 0/6"), "Pulse meter uses the snapshot cap")
-	truthy(card.contains("Mastery 0"), "proto mastery is 0")
-	truthy(card.contains("Resist 0"), "proto resist is 0")
+	eq(card.contains("Mastery"), false, "the side card does not repeat Mastery")
+	eq(card.contains("Resist"), false, "the side card does not repeat Resist")
 	eq(card.contains("Marks"), false, "mender card does not invent Marks")
 	truthy(hud._ironjaw_body.text.contains("Aegis 0/4"), "Aegis meter uses the snapshot cap")
 	var gloam_sim: Node = sim_script.new()
