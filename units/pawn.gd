@@ -24,7 +24,8 @@ class_name Pawn
 ## (texture_pivot_offset).
 ## `art/characters/<class>/<class>_<n|e|s|w>.png` stays the fallback when that
 ## sheet is missing. It is not the combat idle under a walk sheet, and it is
-## not the class card. Select uses `art/ui/select/<class>_select.png`. Mirrors are baked into
+## not the class card. Select uses the painted idle south cell the match draws.
+## Mirrors are baked into
 ## the files — never set flip_h.
 ## Bastion _n/_w turnarounds are placeholder back views on those filenames.
 ## Mobile-track chrome. Batch 1 strips load from
@@ -3033,7 +3034,7 @@ func _draw_ground_mark_on(canvas: CanvasItem) -> void:
 	_draw_ellipse_ring_on(canvas, foot + Vector2(0.0, 0.8), SEAT_RING_RX - 3.0, SEAT_RING_RY - 1.6, Color(1.0, 1.0, 1.0, 0.35), 1.0)
 	if target_marked:
 		var pulse := 0.5 + 0.5 * sin(_target_pulse * TAU)
-		_draw_ellipse_ring_on(canvas, foot, 28.0 + 3.0 * pulse, 11.0 + 1.2 * pulse, Color(1.0, 0.62, 0.18, 0.9), 2.8)
+		_draw_ellipse_ring_on(canvas, foot, 40.0 + 5.0 * pulse, 16.0 + 2.0 * pulse, Color(1.0, 0.72, 0.18, 0.95), 4.0)
 	if burning:
 		_draw_ellipse_ring_on(canvas, foot, 27.0, 10.5, Color(0.95, 0.32, 0.1, 0.95), 2.0)
 	if stunned:
@@ -3053,7 +3054,7 @@ func _paint_status(canvas: CanvasItem) -> void:
 		return
 	if target_marked:
 		var pulse := 0.5 + 0.5 * sin(_target_pulse * TAU)
-		_paint_ellipse_ring(canvas, SPRITE_OFFSET, 36.0 + 6.0 * pulse, 46.0 + 4.0 * pulse, Color(1.0, 0.78, 0.28, 0.4 + 0.5 * pulse), 3.6)
+		_paint_ellipse_ring(canvas, SPRITE_OFFSET, 58.0 + 8.0 * pulse, 78.0 + 8.0 * pulse, Color(1.0, 0.86, 0.28, 0.9), 6.0)
 	_paint_unit_chrome(canvas, head_hp_y(), name_baseline())
 
 
@@ -3064,6 +3065,12 @@ func name_baseline() -> float:
 
 
 ## The name plate box in pawn space, before any nudge (board spacing pass).
+func name_plate_world_rect() -> Rect2:
+	var rect := name_plate_rect()
+	rect.position += position + name_nudge
+	return rect
+
+
 func name_plate_rect() -> Rect2:
 	var font := ThemeDB.fallback_font
 	var size := font.get_string_size(unit_name, HORIZONTAL_ALIGNMENT_CENTER, -1, NAME_FONT_SIZE)

@@ -605,6 +605,28 @@ func set_occluder_covers_grid(on: bool) -> void:
 		_grid.queue_redraw()
 
 
+## A painted raised block already shows its top in the plate. The diamond
+## and the range wash draw above that top. Walls still hide their ink.
+func set_raised_top(on: bool) -> void:
+	_ensure_grid()
+	_ensure_overlay()
+	if on:
+		occluder_covers_grid = false
+		if _grid != null:
+			_grid.z_index = 3
+		if _overlay != null:
+			_overlay.z_index = 2
+	else:
+		if _grid != null:
+			_grid.z_index = 0
+		if _overlay != null:
+			_overlay.z_index = OVERLAY_Z
+	if _grid != null and is_instance_valid(_grid):
+		_grid.queue_redraw()
+	if _overlay != null and is_instance_valid(_overlay):
+		_overlay.queue_redraw()
+
+
 func diamond_points() -> PackedVector2Array:
 	return _diamond_points()
 

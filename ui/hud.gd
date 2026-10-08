@@ -81,6 +81,7 @@ var _clock_track: ColorRect
 var _head_cache: Dictionary = {}
 var _coach_label: Label
 var _selected_label: Label
+var _hint_bar: Panel
 var _ap_pips: HBoxContainer
 var _mp_pips: HBoxContainer
 var _walk_button: Button
@@ -1066,9 +1067,10 @@ func render(snap: Dictionary, legal: Array) -> void:
 	_render_pips(_ap_pips, int(active.get("ap", 0)), int(active.get("max_ap", 6)), DOFUS_AP, active)
 	_render_pips(_mp_pips, int(active.get("mp", 0)), int(active.get("max_mp", 3)), DOFUS_MP)
 	if _deploy_note != "" and _deploying:
-		_coach_label.text = _deploy_note
+		_coach_label.text = coach_hint(_deploy_note)
 	else:
-		_coach_label.text = str(snap.get("coach", ""))
+		_coach_label.text = coach_hint(str(snap.get("coach", "")))
+	_coach_label.visible = _coach_label.text != ""
 
 	var offered: Array = [] if _deploying else offered_cast_ids(chrome, legal)
 	_sync_spell_buttons(offered)
@@ -1247,7 +1249,11 @@ func _build() -> void:
 	bottom.offset_left = 16
 	bottom.offset_right = -16
 	bottom.offset_bottom = -8
-	bottom.offset_top = TOUCH.HUD_BOTTOM_OFFSET
+	# The hint line used to be the first child and sat on the board.
+	# Buttons start where that line was. The hint itself is the bottom edge.
+	bottom.offset_top = TOUCH.HUD_BOTTOM_OFFSET + 26.0
+	# Sit above the hint bar so Face / Walk never share pixels with that line.
+	bottom.offset_bottom = -40.0
 	bottom.add_theme_constant_override("separation", 4)
 	bottom.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(bottom)
@@ -1258,16 +1264,6 @@ func _build() -> void:
 	_aim_hit_label.add_theme_color_override("font_color", Color(0.72, 0.22, 0.16))
 	_aim_hit_label.visible = false
 	bottom.add_child(_aim_hit_label)
-
-	_selected_label = Label.new()
-	_selected_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_selected_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_selected_label.custom_minimum_size = Vector2(0, 22)
-	_selected_label.add_theme_font_size_override("font_size", 13)
-	_selected_label.add_theme_color_override("font_color", CREAM)
-	_selected_label.add_theme_color_override("font_outline_color", Color(0.04, 0.03, 0.05))
-	_selected_label.add_theme_constant_override("outline_size", 5)
-	bottom.add_child(_selected_label)
 
 	# Face cross beside the action bar so 72px buttons and a 48px pad both fit.
 	var combat_row := HBoxContainer.new()
@@ -1412,14 +1408,35 @@ func _build() -> void:
 	_elements_button.visible = false
 	_elements_button.pressed.connect(func() -> void: elements_requested.emit())
 
+	# Solid strip under the buttons. The line used to float on the tiles.
+	var hint := Panel.new()
+	_hint_bar = hint
+	hint.name = "HintBar"
+	hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var hint_box := StyleBoxFlat.new()
+	hint_box.bg_color = NAVY
+	hint_box.border_color = GOLD
+	hint_box.border_width_top = 1
+	hint.add_theme_stylebox_override("panel", hint_box)
+	root.add_child(hint)
+	_selected_label = Label.new()
+	_selected_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_selected_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_selected_label.clip_text = true
+	_selected_label.position = Vector2(16, 1)
+	_selected_label.add_theme_font_size_override("font_size", 14)
+	_selected_label.add_theme_color_override("font_color", CREAM)
+	_apply_display_font(_selected_label)
+	hint.add_child(_selected_label)
 	_coach_label = Label.new()
 	_coach_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_coach_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_coach_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_coach_label.clip_text = true
+	_coach_label.position = Vector2(16, 17)
 	_coach_label.add_theme_font_size_override("font_size", 14)
-	_coach_label.add_theme_color_override("font_color", CREAM)
-	_coach_label.add_theme_color_override("font_outline_color", Color(0.04, 0.03, 0.05))
-	_coach_label.add_theme_constant_override("outline_size", 4)
-	bottom.add_child(_coach_label)
+	_coach_label.add_theme_color_override("font_color", Color(0.95, 0.62, 0.42))
+	_apply_display_font(_coach_label)
+	hint.add_child(_coach_label)
 
 	_ability_cluster = Control.new()
 	_ability_cluster.name = "AbilityCluster"
@@ -1427,7 +1444,7 @@ func _build() -> void:
 	_ability_cluster.offset_left = -(TOUCH.CLUSTER_SIZE.x + TOUCH.CLUSTER_EDGE)
 	_ability_cluster.offset_top = -(TOUCH.CLUSTER_SIZE.y + TOUCH.CLUSTER_EDGE)
 	_ability_cluster.offset_right = -TOUCH.CLUSTER_EDGE
-	_ability_cluster.offset_bottom = -TOUCH.CLUSTER_EDGE
+	_ability_cluster.offset_bottom = -(TOUCH.CLUSTER_EDGE + 36.0)
 	_ability_cluster.custom_minimum_size = TOUCH.CLUSTER_SIZE
 	_ability_cluster.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_ability_cluster.visible = false
@@ -1542,7 +1559,7 @@ func _apply_seat_banner(seat: int, unit: Dictionary, acting: bool = false) -> vo
 func _make_banner(is_kestrel: bool) -> Panel:
 	var panel := Panel.new()
 	panel.position = Vector2(8, 8) if is_kestrel else Vector2(712, 8)
-	panel.size = Vector2(240, 128)
+	panel.size = Vector2(240, 100)
 	panel.clip_contents = true
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var color := KESTREL_GREEN if is_kestrel else IRONJAW_RED
@@ -1550,7 +1567,7 @@ func _make_banner(is_kestrel: bool) -> Panel:
 	var accent := ColorRect.new()
 	accent.name = "Accent"
 	accent.position = Vector2(0, 8)
-	accent.size = Vector2(4, 112)
+	accent.size = Vector2(4, 84)
 	accent.color = color
 	accent.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	panel.add_child(accent)
@@ -1583,7 +1600,7 @@ func _make_banner(is_kestrel: bool) -> Panel:
 	track.add_child(fill)
 	var body := RichTextLabel.new()
 	body.position = Vector2(14, 46)
-	body.size = Vector2(214, 76)
+	body.size = Vector2(214, 52)
 	body.bbcode_enabled = true
 	body.scroll_active = false
 	body.fit_content = true
@@ -1934,39 +1951,34 @@ func _placeholder_mark(unit: Dictionary) -> String:
 	return unit_name.substr(0, mini(4, unit_name.length()))
 
 
-func _unit_card_text(unit: Dictionary, active: bool, snap: Dictionary = {}) -> String:
+func _unit_card_text(unit: Dictionary, _active: bool, snap: Dictionary = {}) -> String:
 	if unit.is_empty():
 		return "[color=#ffffff]—[/color]"
-	var status := "[color=#f2d48a][b]ACTIVE[/b][/color]" if active and unit["alive"] else ("[color=#d07068]DOWN[/color]" if not unit["alive"] else "[color=#b7a88a]waiting[/color]")
+	var head := "HP %d/%d" % [int(unit["hp"]), int(unit["max_hp"])]
 	if is_deployment_phase(snap):
 		var ready: Dictionary = snap.get("ready", {})
+		var status := "[color=#cbb892]open[/color]"
 		if bool(ready.get(int(unit.get("seat", -1)), false)) or bool(unit.get("locked", false)):
 			status = "[color=#f2d48a][b]READY[/b][/color]"
 		elif bool(unit.get("placed", false)):
 			status = "[color=#e6d7b0]placed[/color]"
-		else:
-			status = "[color=#cbb892]open[/color]"
-	# Locked Stun (A′): STUN badge on the unit card while remaining or stunned-this-turn.
-	var stun_note := ""
+		head = "%s  %s" % [status, head]
+	elif not bool(unit.get("alive", true)):
+		head = "[color=#d07068]DOWN[/color]  %s" % head
+	var notes := ""
 	if unit_is_stunned(unit):
-		stun_note = "  [b]STUN[/b]"
-	# Soft Lock Burn: stacks and turns left are the snapshot fields host replicas carry.
-	var burn_note := ""
+		notes += "  [b]STUN[/b]"
 	if unit_is_burning(unit):
-		burn_note = "  [b]BURN[/b] ×%d %d" % [unit_burn_stacks(unit), unit_burn_remaining(unit)]
-	burn_note += push_stack_notes(unit)
-	# Spell ids stay on the bottom bar. The card keeps HP, AP, MP, facing, and meters.
-	return "%s   HP %d/%d%s%s\nAP %d    MP %d    Face %s\n%s" % [
-		status,
-		int(unit["hp"]),
-		int(unit["max_hp"]),
-		stun_note,
-		burn_note,
-		int(unit["ap"]),
-		int(unit["mp"]),
-		str(unit["facing"]),
-		_resource_meter_line(unit, snap),
-	]
+		notes += "  [b]BURN[/b] ×%d %d" % [unit_burn_stacks(unit), unit_burn_remaining(unit)]
+	notes += push_stack_notes(unit)
+	var meter := _resource_meter_line(unit, snap)
+	var text := "%s\nAP %d  MP %d" % [head, int(unit["ap"]), int(unit["mp"])]
+	var extra := notes.strip_edges()
+	if extra != "":
+		text += "\n%s" % extra
+	if meter != "":
+		text += "\n%s" % meter
+	return text
 
 
 func _unit(units: Array, seat: int) -> Dictionary:
@@ -1978,21 +1990,17 @@ func _unit(units: Array, seat: int) -> Dictionary:
 ## Marks pips follow `marks_holder` so a connect on the foe fills Kestrel's row.
 func _resource_meter_line(unit: Dictionary, snap: Dictionary = {}) -> String:
 	var class_id := str(unit.get("class_id", ""))
-	var mastery := int(unit.get("mastery", 0))
-	var resist := int(unit.get("resist", 0))
 	if class_id == SpellKits.CLASS_MENDER:
-		return "%s %d/%d  Mastery %d  Resist %d" % [
+		return "%s %d/%d" % [
 			SpellKits.resource_label("pulse"),
 			_resource_current(unit, "pulse"),
 			int(unit.get("pulse_cap", SpellKits.PULSE_CAP)),
-			mastery,
-			resist,
 		]
 	if class_id == SpellKits.CLASS_GLOAM:
 		var hidden := ""
 		if bool(unit.get("invisible", false)) and int(unit.get("invisible_turns", 0)) > 0:
 			hidden = "  Invisible %d" % int(unit.get("invisible_turns", 0))
-		return "%s %d/%d  %s %d/%d%s  Mastery %d  Resist %d" % [
+		return "%s %d/%d  %s %d/%d%s" % [
 			SpellKits.resource_label("umbral"),
 			_resource_current(unit, "umbral"),
 			int(unit.get("umbral_cap", SpellKits.UMBRAL_CAP)),
@@ -2000,16 +2008,12 @@ func _resource_meter_line(unit: Dictionary, snap: Dictionary = {}) -> String:
 			shade_count(unit, snap),
 			int(unit.get("shades_cap", SpellKits.SHADE_CAP)),
 			hidden,
-			mastery,
-			resist,
 		]
 	if class_id == SpellKits.CLASS_BASTION:
-		return "%s %d/%d  Mastery %d  Resist %d" % [
+		return "%s %d/%d" % [
 			SpellKits.resource_label("aegis"),
 			_resource_current(unit, "aegis"),
 			int(unit.get("aegis_cap", SpellKits.AEGIS_CAP)),
-			mastery,
-			resist,
 		]
 	var marked := marks_holder(unit, snap)
 	return "Marks %s  Impact %s" % [
@@ -2549,11 +2553,27 @@ func _refresh_walk_button() -> void:
 		_walk_button.modulate = Color.WHITE
 
 
+## Screen copy for the sim's coach string. The snapshot text stays so tests
+## and the wire keep the locked sentence. The bar shows the short form.
+static func coach_hint(raw: String) -> String:
+	var text := raw.strip_edges()
+	if text == "":
+		return ""
+	var mp := RegEx.new()
+	if mp.compile("needs (\\d+) MP \\(you have (\\d+)\\)") == OK:
+		var found := mp.search(text)
+		if found != null:
+			return "Needs %s MP (have %s)" % [found.get_string(1), found.get_string(2)]
+	if text.begins_with("REJECT — "):
+		return text.substr("REJECT — ".length())
+	return text
+
+
 func _update_selected_label() -> void:
 	if _selected_label == null:
 		return
 	if _deploying:
-		_selected_label.text = "Place on your deploy zone  ·  Ready when placed"
+		_selected_label.text = "deploy zone · Ready when placed"
 		return
 	if snap_local_seat(_last_snap) >= 0 and not is_local_turn(_last_snap):
 		_selected_label.text = "Opponent's turn — watching"
@@ -2562,21 +2582,13 @@ func _update_selected_label() -> void:
 		_selected_label.text = "Stunned — turn auto-ends"
 		return
 	if _selected_spell == "":
-		_selected_label.text = _with_shade_tip("Selected: Walk  ·  tap a destination  ·  Face pad turns")
+		_selected_label.text = _with_shade_tip("Walk · tap a cell")
 		return
 	var def: Dictionary = _spell_def(_selected_spell)
-	var text := "Selected: %s  ·  %d AP / %d MP  ·  %s" % [
-		def.get("name", _selected_spell),
-		int(def.get("ap", 0)),
-		int(def.get("mp", 0)),
-		SpellKits.range_text(def),
-	]
-	var el := str(def.get("element", "neutral"))
-	if SpellKits.is_flex(_selected_spell):
-		text += "  ·  %s" % (el.capitalize() if el != "neutral" else "no element (pick in Elements)")
-	if bool(def.get("rolls", false)) and _aim_hit_chance >= 0:
-		text += "  ·  %s" % aim_hit_caption(_aim_hit_chance)
-	text += "  ·  tap a cell  ·  Walk / Esc to cancel"
+	var text := "%s · %d AP" % [def.get("name", _selected_spell), int(def.get("ap", 0))]
+	if int(def.get("mp", 0)) > 0:
+		text += " · %d MP" % int(def.get("mp", 0))
+	text += " · tap a cell"
 	_selected_label.text = _with_shade_tip(text)
 
 
@@ -3029,7 +3041,8 @@ func stun_badge_visible() -> bool:
 func set_deploy_note(text: String) -> void:
 	_deploy_note = text
 	if _coach_label != null and text != "":
-		_coach_label.text = text
+		_coach_label.text = coach_hint(text)
+		_coach_label.visible = true
 
 
 func clear_deploy_note() -> void:
@@ -3142,8 +3155,11 @@ func _layout_chrome(forced: Vector2 = Vector2.ZERO) -> void:
 		return
 	var margin := 8.0
 	var gap := 8.0
-	var top_h := minf(128.0, view.y - margin * 2.0)
-	top_h = maxf(top_h, 1.0)
+	var banner_h := minf(100.0, view.y - margin * 2.0)
+	var center_h := minf(128.0, view.y - margin * 2.0)
+	banner_h = maxf(banner_h, 1.0)
+	center_h = maxf(center_h, 1.0)
+	var top_h := center_h
 	var banner_w := 240.0
 	var center_w := 448.0
 	var inner := view.x - margin * 2.0 - gap * 2.0
@@ -3163,9 +3179,13 @@ func _layout_chrome(forced: Vector2 = Vector2.ZERO) -> void:
 		center_w = maxf(right_start - center_x, 1.0)
 	if _banner_panels.size() >= 2:
 		_banner_panels[0].position = Vector2(left_x, margin)
-		_banner_panels[0].size = Vector2(banner_w, top_h)
+		_banner_panels[0].size = Vector2(banner_w, banner_h)
 		_banner_panels[1].position = Vector2(right_x, margin)
-		_banner_panels[1].size = Vector2(banner_w, top_h)
+		_banner_panels[1].size = Vector2(banner_w, banner_h)
+		for panel in _banner_panels:
+			var accent := panel.get_node_or_null("Accent") as ColorRect
+			if accent != null:
+				accent.size.y = maxf(banner_h - 16.0, 1.0)
 	if _resource_panel != null:
 		_resource_panel.position = Vector2(center_x, margin)
 		_resource_panel.size = Vector2(center_w, top_h)
@@ -3221,6 +3241,17 @@ func _layout_chrome(forced: Vector2 = Vector2.ZERO) -> void:
 			cluster_scale = minf(cluster_scale, clampf((view.y - 160.0) / TOUCH.CLUSTER_SIZE.y, 0.4, 1.0))
 		_ability_cluster.pivot_offset = TOUCH.CLUSTER_SIZE
 		_ability_cluster.scale = Vector2(cluster_scale, cluster_scale)
+	if _hint_bar != null:
+		var bar_h := 36.0
+		_hint_bar.position = Vector2(0, view.y - bar_h)
+		_hint_bar.size = Vector2(view.x, bar_h)
+		var hint_w := maxf(view.x - 32.0, 1.0)
+		if _selected_label != null:
+			_selected_label.position = Vector2(16, 1)
+			_selected_label.size = Vector2(hint_w, 16)
+		if _coach_label != null:
+			_coach_label.position = Vector2(16, 18)
+			_coach_label.size = Vector2(hint_w, 16)
 
 
 func _apply_turn_label_clock() -> void:

@@ -673,11 +673,14 @@ func _living_pawns_for_pick(spell: String = "") -> Array:
 		if not body.visible:
 			continue
 		var cell: Vector2i = body.grid_position
-		out.append({
+		var entry := {
 			"cell": cell,
 			"origin": body.position,
 			"sort": cell.x + cell.y,
-		})
+		}
+		if body.unit_name != "":
+			entry["plate"] = body.name_plate_world_rect()
+		out.append(entry)
 	return out
 
 
@@ -689,21 +692,25 @@ func select_tile(cell: Vector2i) -> void:
 	_sync_target_marks()
 
 
-## Pulse the living fighter on the selected cell while a unit spell is armed.
+## Large ring on every living fighter a unit spell can legally hit.
 ## Walks and empty-tile spells leave the ring off. Rules are unchanged.
 func _sync_target_marks() -> void:
-	var cell := Vector2i(-999, -999)
-	if selected_tile != null and is_instance_valid(selected_tile):
-		cell = selected_tile.grid_position
 	var spell := ""
 	if _hud != null:
 		spell = _hud.selected_spell()
 	var show := spell != "" and TOUCH.spell_targets_unit(spell)
+	var legal_cells := {}
+	if show:
+		var sim := _sim()
+		if sim != null:
+			var legal: Array = sim.legal_intents(CombatHUD.kit_seat(sim.snapshot()))
+			for dest in SNAPSHOT_TILES.cast_dests(legal, spell):
+				legal_cells[dest] = true
 	for pawn in pawns_by_seat.values():
 		if pawn == null or not is_instance_valid(pawn):
 			continue
 		var body: Pawn = pawn
-		var marked := show and body.alive and body.visible and body.grid_position == cell
+		var marked := show and body.alive and body.visible and legal_cells.has(body.grid_position)
 		body.set_target_marked(marked)
 
 

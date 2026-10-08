@@ -134,27 +134,26 @@ static func role_line(class_id: String) -> String:
 	return str(ROLE_LINES.get(key, ""))
 
 
-## Locked select plates. Hot-seat and Online share these cards.
-## 512×768 RGBA, no chrome. Not the old `art/characters` turnarounds
-## and not a walk-strip cell.
-const SELECT_PORTRAIT_DIR := "res://art/ui/select/"
+## The standing cell the match draws (south idle, frame 0). The old
+## art/ui/select plates are a different costume and are not shown here.
+const STRIP_LIBRARY := preload("res://units/strip_library.gd")
 
 
 static func portrait_path(class_id: String) -> String:
 	var key := SpellKits.normalize_class_id(class_id)
 	if not SpellKits.is_roster_class(key):
 		return ""
-	return "%s%s_select.png" % [SELECT_PORTRAIT_DIR, key]
+	return STRIP_LIBRARY.painted_path(key, "idle", "s")
 
 
 static func load_portrait(class_id: String) -> Texture2D:
-	var path := portrait_path(class_id)
-	if path == "" or not ResourceLoader.exists(path):
+	var key := SpellKits.normalize_class_id(class_id)
+	if not SpellKits.is_roster_class(key):
 		return null
-	var res: Resource = ResourceLoader.load(path)
-	if res is Texture2D:
-		return res as Texture2D
-	return null
+	var cells := STRIP_LIBRARY.painted_cells(key, "idle", "s")
+	if not cells.is_empty():
+		return cells[0]
+	return STRIP_LIBRARY.idle_portrait(key)
 
 
 func _ready() -> void:

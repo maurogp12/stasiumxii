@@ -68,6 +68,8 @@ static func bind(parent: Node2D, room_id: String, tiles: Dictionary) -> bool:
 		var tile: Node = tiles[cell]
 		if tile != null and tile.has_method("set_occluder_covers_grid"):
 			tile.set_occluder_covers_grid(false)
+		if tile != null and tile.has_method("set_raised_top"):
+			tile.set_raised_top(false)
 		if tile != null and tile.has_method("set_painted_floor"):
 			tile.set_painted_floor(false)
 	var bg := texture_from_webpbin("%s%s/%s" % [ROOT, room_id, str(place.get("background", ""))])
@@ -97,11 +99,20 @@ static func bind(parent: Node2D, room_id: String, tiles: Dictionary) -> bool:
 		sprite.centered = false
 		sprite.scale = Vector2(0.5, 0.5)
 		var off: Array = occ.get("offset", [0.0, 0.0])
-		sprite.position = VISUAL_SORT.cell_to_local(cell, elev) + Vector2(float(off[0]), float(off[1])) * 0.5
+		# The plate already contains this cut. The offset was measured from the
+		# flat cell, and it already lifts the top face onto the raised diamond.
+		# Anchoring at the cell elevation paints a second block above the plate.
+		sprite.position = VISUAL_SORT.cell_to_local(cell, 0.0) + Vector2(float(off[0]), float(off[1])) * 0.5
 		sprite.z_index = VISUAL_SORT.occluder_z_index(cell, elev)
 		sprite.z_as_relative = true
 		host.add_child(sprite)
-		if tile != null and tile.has_method("set_occluder_covers_grid"):
+		var raised := elev > 0.05
+		if tile == null:
+			continue
+		if raised and tile.has_method("set_raised_top"):
+			# Walkable top: one block, grid diamond on that top.
+			tile.set_raised_top(true)
+		elif tile.has_method("set_occluder_covers_grid"):
 			tile.set_occluder_covers_grid(true)
 	var surfaced := {}
 	for raw in place.get("surfaces", []):
@@ -138,6 +149,8 @@ static func _clear(host: Node2D, tiles: Dictionary) -> void:
 		var tile: Node = tiles[cell]
 		if tile != null and tile.has_method("set_occluder_covers_grid"):
 			tile.set_occluder_covers_grid(false)
+		if tile != null and tile.has_method("set_raised_top"):
+			tile.set_raised_top(false)
 		if tile != null and tile.has_method("set_painted_floor"):
 			tile.set_painted_floor(false)
 
