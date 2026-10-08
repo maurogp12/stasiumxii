@@ -103,8 +103,10 @@ const MOBILE_CLEAR_BOTTOM := 150.0
 ## full size. Pan toward the bottom still reaches the far edge of the board.
 ## 250 put the top names under the turn bar's clearance and shoved the
 ## bottom spawns under the thumb HUD (Stasis Stormspire A, Kestrel).
-## 110 keeps the top names in the clear band and leaves the far team on screen.
-const PORTRAIT_BAR_INSET := 110.0
+## 110 still left both corner fighters on the Face pad and the thumb cluster.
+## 48 lifts the diamond so those start cells sit above that bottom chrome
+## while the top-row names stay under the turn bar. Zoom is unchanged.
+const PORTRAIT_BAR_INSET := 48.0
 ## Share of the limiting board axis kept on screen at the default zoom.
 ## 1.0 is a pure contain (the postage-stamp board: ~1.24 on 20:9, ~40px
 ## diamonds, ~205px black wings). 0.80 is a Koliseo overview: zoom 1.55,

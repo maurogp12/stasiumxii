@@ -556,13 +556,242 @@ def repaint_crystals():
     return n
 
 
+def _warm_line(pix):
+    r = pix[:, :, 0].astype(np.int16)
+    g = pix[:, :, 1].astype(np.int16)
+    b = pix[:, :, 2].astype(np.int16)
+    return (r > 95) & (g > 70) & (r > b + 18) & (g > b + 6) & (r + g > b * 2 + 40)
+
+
+def quiet_storm_grid(arr, cells, water):
+    """Pull gold cell-lines back into the stone. Water cells are repainted after."""
+    water_set = set(water)
+    h, w = arr.shape[:2]
+    stone = np.array([58.0, 50.0, 46.0], np.float32)
+    for x, y in cells:
+        x0, x1, y0, y1, d = _cell_window(arr, x, y)
+        inner = d <= 0.48
+        if not inner.any():
+            continue
+        base = arr[y0:y1, x0:x1].astype(np.float32)
+        if (x, y) in water_set:
+            fill = stone
+        else:
+            fill = np.median(base[inner], axis=0)
+        rim = (d > 0.78) & (d <= 1.06)
+        yy, xx = np.mgrid[y0:y1, x0:x1]
+        n = value_noise(xx.astype(np.float32), yy.astype(np.float32), 18.0, 17 + x + y * 3)
+        tint = fill * (0.94 + 0.10 * n)[..., None]
+        base[rim] = tint[rim]
+        # Any warmer line left inside the diamond goes too.
+        warm = _warm_line(base) & (d <= 1.06)
+        base[warm] = tint[warm]
+        arr[y0:y1, x0:x1] = np.clip(base, 0, 255).astype(np.uint8)
+
+
+def paint_charged_grate(arr, cells):
+    """Electrified floor: dark metal grate and one bolt. Not a blue or purple tile."""
+    for i, (x, y) in enumerate(cells):
+        x0, x1, y0, y1, d = _cell_window(arr, x, y)
+        inside = d <= 0.90
+        if not inside.any():
+            continue
+        yy, xx = np.mgrid[y0:y1, x0:x1]
+        cx, cy = cell_center(x, y)
+        u = (xx - cx) / HW
+        v = (yy - cy) / HH
+        n = value_noise(xx.astype(np.float32), yy.astype(np.float32), 36.0, 8 + i)
+        iron = np.array([44.0, 42.0, 50.0], np.float32)
+        shade = iron * (0.82 + 0.28 * n)[..., None]
+        # Grate bars sit in the metal. They are not the cell outline.
+        bar = (np.abs(np.mod(u * 3.2 + 0.5, 1.0) - 0.5) < 0.045) | (
+            np.abs(np.mod(v * 2.6 + 0.5, 1.0) - 0.5) < 0.055
+        )
+        grate = np.array([86.0, 92.0, 108.0], np.float32)
+        shade[bar] = grate
+        base = arr[y0:y1, x0:x1].astype(np.float32)
+        base[inside] = shade[inside]
+        arr[y0:y1, x0:x1] = np.clip(base, 0, 255).astype(np.uint8)
+        held = arr[y0:y1, x0:x1].copy()
+        paths = (
+            jagged(cx - 36, cy + 4, cx + 34, cy - 2, 20 + i * 5, 8),
+            jagged(cx - 8, cy - 14, cx + 6, cy + 16, 70 + i * 3, 6),
+        )
+        for path in paths:
+            stroke(arr, path, (28, 36, 64), 6.5)
+            stroke(arr, path, (120, 156, 210), 3.4)
+            stroke(arr, path, (236, 244, 255), 1.6)
+        painted = arr[y0:y1, x0:x1]
+        painted[d > 0.88] = held[d > 0.88]
+
+
+def paint_open_sea(arr, outside):
+    """Dark blue-green water. Swells are wide, with thin crests. Not a noise stripe."""
+    h, w = arr.shape[:2]
+    yy, xx = np.mgrid[0:h, 0:w].astype(np.float32)
+    swell = np.sin(yy * 0.011 + np.sin(xx * 0.0028) * 1.3)
+    ripple = np.sin(yy * 0.023 + xx * 0.0011 + 1.4)
+    broad = value_noise(xx, yy, 120.0, 5)
+    deep = np.array([5.0, 20.0, 30.0], np.float32)
+    mid = np.array([12.0, 46.0, 54.0], np.float32)
+    t = np.clip(swell * 0.5 + 0.5, 0, 1)
+    col = deep * (1.0 - t)[..., None] + mid * t[..., None]
+    col = col * (0.90 + 0.18 * broad)[..., None]
+    crest = (swell > 0.62) & (swell < 0.78)
+    foam = np.array([176.0, 196.0, 184.0], np.float32)
+    col[crest] = col[crest] * 0.28 + foam * 0.72
+    glint = (np.abs(ripple) < 0.05) & (swell > 0.15)
+    col[glint] = col[glint] * 0.62 + np.array([210.0, 224.0, 214.0], np.float32) * 0.38
+    base = arr.astype(np.float32)
+    base[outside] = col[outside]
+    arr[...] = np.clip(base, 0, 255).astype(np.uint8)
+
+
+def paint_listing_hull(arr, deck, outside):
+    """Timber gunwale, and sea lapping the near (low) edge of the deck."""
+    h, w = arr.shape[:2]
+    edge = deck & shift_any(outside)
+    if not edge.any():
+        return
+    ys = np.where(deck)[0]
+    y_low = float(np.percentile(ys, 62))
+    yy, xx = np.mgrid[0:h, 0:w]
+    # Sea climbs onto the near side of the hull.
+    lap = dilate_bool(outside, 16) & deck & (yy > y_low)
+    sea = np.array([14.0, 52.0, 60.0], np.float32)
+    foam = np.array([186.0, 204.0, 192.0], np.float32)
+    base = arr.astype(np.float32)
+    if lap.any():
+        base[lap] = sea
+        lip = lap & shift_any(deck & ~lap)
+        base[lip] = foam
+    band = dilate_bool(edge, 6) & ~lap
+    if band.any():
+        plank = (np.mod(yy, 14) < 8) & band
+        wood = np.array([62.0, 40.0, 24.0], np.float32)
+        dark = np.array([36.0, 24.0, 16.0], np.float32)
+        base[band] = dark
+        base[plank] = wood
+        base[edge & ~lap] = np.array([108.0, 78.0, 46.0], np.float32)
+    arr[...] = np.clip(base, 0, 255).astype(np.uint8)
+
+
+def paint_broken_mast(arr, x, y):
+    cx, cy = cell_center(x, y)
+    # Listing a little, snapped partway up.
+    stroke(arr, [(cx - 6, cy + 18), (cx + 10, cy - 78)], (48, 32, 18), 6.0)
+    stroke(arr, [(cx + 12, cy - 78), (cx + 28, cy - 118)], (64, 42, 24), 4.2)
+    stroke(arr, [(cx - 48, cy - 8), (cx + 54, cy - 28)], (78, 56, 32), 2.4)
+    stroke(arr, jagged(cx + 4, cy - 70, cx - 78, cy + 16, 4, 6), (32, 24, 16), 1.3)
+    stroke(arr, jagged(cx + 14, cy - 100, cx + 86, cy - 6, 9, 6), (32, 24, 16), 1.3)
+    # A short run of railing posts along the near side.
+    for k in range(-3, 4):
+        px = cx + k * 22
+        py = cy + 26 + abs(k) * 2
+        stroke(arr, [(px, py), (px + 3, py - 16)], (88, 64, 36), 1.8)
+
+
+def paint_sea_holes(arr, cells):
+    """Water cells: blue-green sea, a foam rim, a few broken planks. Not stripes."""
+    for i, (x, y) in enumerate(cells):
+        x0, x1, y0, y1, d = _cell_window(arr, x, y)
+        inside = d <= 0.98
+        if not inside.any():
+            continue
+        yy, xx = np.mgrid[y0:y1, x0:x1].astype(np.float32)
+        cx, cy = cell_center(x, y)
+        swell = np.sin((yy - cy) * 0.09 + 0.4 * i)
+        n = value_noise(xx, yy, 22.0, 11 + i)
+        deep = np.array([8.0, 36.0, 46.0], np.float32)
+        mid = np.array([18.0, 72.0, 78.0], np.float32)
+        t = np.clip(swell * 0.35 + 0.55 + (n - 0.5) * 0.2, 0, 1)
+        col = deep * (1.0 - t)[..., None] + mid * t[..., None]
+        foam_band = (d > 0.62) & (d < 0.86) & (n > 0.42)
+        col[foam_band] = np.array([190.0, 208.0, 196.0], np.float32)
+        # Two short planks near the rim, broken so the sea shows between them.
+        u = (xx - cx) / HW
+        v = (yy - cy) / HH
+        plank = ((np.abs(v - 0.35) < 0.08) & (np.abs(u) < 0.55) & (n > 0.25)) | (
+            (np.abs(u + 0.25) < 0.07) & (v > -0.2) & (v < 0.45) & (n > 0.3)
+        )
+        wood = np.array([86.0, 58.0, 34.0], np.float32)
+        col[plank & (d < 0.9)] = wood
+        base = arr[y0:y1, x0:x1].astype(np.float32)
+        base[inside] = col[inside]
+        arr[y0:y1, x0:x1] = np.clip(base, 0, 255).astype(np.uint8)
+
+
+def paint_flooded_hold(arr, outside, deck):
+    """Below deck: planked hull, ribs, a few lanterns. Sea stays in the holes."""
+    h, w = arr.shape[:2]
+    yy, xx = np.mgrid[0:h, 0:w]
+    plank = np.mod(yy, 16) < 10
+    rib = np.mod(xx + (yy // 16) * 3, 84) < 7
+    timber = np.array([54.0, 36.0, 22.0], np.float32)
+    gap = np.array([22.0, 16.0, 12.0], np.float32)
+    rib_c = np.array([78.0, 54.0, 32.0], np.float32)
+    col = np.where(plank[..., None], timber, gap)
+    col[rib] = rib_c
+    base = arr.astype(np.float32)
+    base[outside] = col[outside]
+    arr[...] = np.clip(base, 0, 255).astype(np.uint8)
+    # Lanterns in the margin, not on the deck.
+    for lx, ly, salt in ((420, 280, 1), (1980, 360, 2), (360, 1500, 3), (2060, 1480, 4)):
+        if outside[min(ly, h - 1), min(lx, w - 1)]:
+            paint_disc(arr, lx, ly, 18, 14, (255, 186, 90), 0.85)
+            paint_disc(arr, lx, ly, 46, 36, (180, 110, 40), 0.28)
+    # The deck stays timber, a little wet, not open sea.
+    if deck.any():
+        wet = arr.astype(np.float32)
+        wet[deck] = wet[deck] * 0.9 + np.array([18.0, 22.0, 20.0], np.float32) * 0.1
+        arr[...] = np.clip(wet, 0, 255).astype(np.uint8)
+
+
+def ship_room(room_id, biome, tags_path, write):
+    path = os.path.join(ROOT, ROOMS, room_id, "background_board_2x.webpbin")
+    tags = json.load(open(os.path.join(ROOT, tags_path)))
+    arr = np.array(Image.open(path).convert("RGB"))
+    h, w = arr.shape[:2]
+    all_cells = [(c["x"], c["y"]) for c in tags["cells"]]
+    water = [(c["x"], c["y"]) for c in tags["cells"] if c["terrain"] == "water"]
+    deck = cell_mask(all_cells, h, w)
+    outside = ~deck
+    note = "skipped"
+    if biome == "stormspire":
+        quiet_storm_grid(arr, all_cells, water)
+        paint_charged_grate(arr, water)
+        note = "grid scrubbed, charged grate"
+    elif biome == "brinewake":
+        if room_id.startswith("koliseo_"):
+            paint_open_sea(arr, outside)
+            paint_listing_hull(arr, deck, outside)
+            paint_broken_mast(arr, 7, 7)
+            note = "open sea, listing hull"
+        else:
+            paint_flooded_hold(arr, outside, deck)
+            note = "flooded hold"
+        paint_sea_holes(arr, water)
+    if write and note != "skipped":
+        Image.fromarray(arr).save(path, "WEBP", quality=90, method=4)
+    return {"room": room_id, "water": len(water), "note": note}
+
+
 def main():
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("--write", action="store_true")
     parser.add_argument("--punch", action="store_true",
                         help="readability pass: ice sheet, clipped lightning, filled lava only")
+    parser.add_argument("--ship", action="store_true",
+                        help="stormspire grid/grate and brinewake sea only")
     args = parser.parse_args()
+    if args.ship:
+        for room_id, biome, tags in ROOMS_FOR:
+            if biome not in ("stormspire", "brinewake"):
+                continue
+            info = ship_room(room_id, biome, tags, args.write)
+            print(info["room"], "water", info["water"], info["note"])
+        return
     if args.punch:
         for room_id, biome, tags in ROOMS_FOR:
             if biome == "brinewake":
