@@ -35,6 +35,9 @@ const GOLD_DIM := Color(0.62, 0.49, 0.28)
 
 ## Biome id for the stub scene. Empty until a Stasis door is pressed.
 static var pending_biome_id: String = ""
+## Set by NetSession before it opens this scene after an online match.
+## A `--queue` process would otherwise bounce straight back into Koliseo.
+static var stay_on_hub: bool = false
 
 var _auto_launch: bool = true
 var _doors: Array[Button] = []
@@ -104,6 +107,10 @@ func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_TOUCH.lock_landscape_frame(get_window())
 	resized.connect(_on_resized)
+	if stay_on_hub:
+		stay_on_hub = false
+		_build()
+		return
 	if _auto_launch and boot_route(OS.get_cmdline_user_args()) != "picker":
 		call_deferred("open_koliseo")
 		return
