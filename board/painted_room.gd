@@ -192,8 +192,79 @@ static func bind(parent: Node2D, room_id: String, tiles: Dictionary) -> bool:
 		var tile: Node = tiles[cell]
 		if tile != null and tile.has_method("set_painted_floor"):
 			tile.set_painted_floor(true)
+	_add_slag_lava(host, room_id)
 	_bound_room = room_id
 	return true
+
+
+## Slagcrown lava, set B. Four shared frame strips, one sprite per lava cell.
+## Ping-pong f1-f2-f3-f2 at 180 ms. Neighbours take different variants and phases.
+const LAVA_ROOT := "res://art/lava/slagcrown_b/"
+const LAVA_FRAME_SEC := 0.18
+static var _lava_frames: SpriteFrames
+
+
+static func _ensure_lava_frames() -> SpriteFrames:
+	if _lava_frames != null:
+		return _lava_frames
+	var book := SpriteFrames.new()
+	for variant in 4:
+		var anim := "v%d" % variant
+		book.add_animation(anim)
+		book.set_animation_loop(anim, true)
+		book.set_animation_speed(anim, 1.0 / LAVA_FRAME_SEC)
+		var steps: Array = []
+		for frame in 3:
+			steps.append(texture_from_webpbin("%sv%d_f%d.webpbin" % [LAVA_ROOT, variant + 1, frame + 1]))
+		for index in [0, 1, 2, 1]:
+			if steps[index] != null:
+				book.add_frame(anim, steps[index])
+	_lava_frames = book
+	return book
+
+
+static func _lava_tags_path(room_id: String) -> String:
+	if room_id.begins_with("stasis_"):
+		return "res://art/maps/stasis_v1/%s_15x15_tags.json" % room_id.trim_prefix("stasis_")
+	return "res://art/maps/arena_colosseum_v2/tiled/%s_15x15_tags.json" % room_id.trim_prefix("koliseo_")
+
+
+static func _add_slag_lava(host: Node2D, room_id: String) -> void:
+	if not room_id.contains("slagcrown"):
+		return
+	var path := _lava_tags_path(room_id)
+	if not FileAccess.file_exists(path):
+		return
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
+	if typeof(parsed) != TYPE_DICTIONARY:
+		return
+	var book := _ensure_lava_frames()
+	for raw in (parsed as Dictionary).get("cells", []):
+		if typeof(raw) != TYPE_DICTIONARY:
+			continue
+		var rec: Dictionary = raw
+		if str(rec.get("terrain", "")) != "lava":
+			continue
+		var cell := Vector2i(int(rec.get("x", 0)), int(rec.get("y", 0)))
+		var variant := posmod(cell.x + cell.y * 2, 4)
+		var anim := "v%d" % variant
+		if book.get_frame_count(anim) < 4:
+			continue
+		var sprite := AnimatedSprite2D.new()
+		sprite.name = "Lava_%d_%d" % [cell.x, cell.y]
+		sprite.sprite_frames = book
+		sprite.centered = true
+		# 256x128 art covers the 64x32 world diamond. Sharper than the 128x64 slot on a phone.
+		sprite.scale = Vector2(0.25, 0.25)
+		sprite.position = VISUAL_SORT.cell_to_local(cell, 0.0)
+		sprite.z_index = VISUAL_SORT.tile_z_index(cell, 0.0)
+		sprite.z_as_relative = true
+		sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+		host.add_child(sprite)
+		sprite.play(anim)
+		# Eight starts across the 0.72 s loop, so a row does not pulse as one.
+		var into := float(posmod(cell.x * 13 + cell.y * 29, 8)) * (LAVA_FRAME_SEC * 0.5)
+		sprite.set_frame_and_progress(int(into / LAVA_FRAME_SEC) % 4, fmod(into, LAVA_FRAME_SEC) / LAVA_FRAME_SEC)
 
 
 ## Light rain over the flooding hold. Above the plate, under tiles and fighters.
