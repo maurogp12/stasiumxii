@@ -29,13 +29,80 @@ def cell_center(x, y):
 
 def save_webp(path, image):
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    image.save(path, "WEBP", quality=90, method=4)
-    print("wrote", path, image.size)
+    # Lossy WebP posterizes soft alpha. Props stay lossless; opaque seas stay lossy.
+    partial = image.mode == "RGBA" and image.getextrema()[3][0] < 255
+    if partial:
+        image.save(path, "WEBP", lossless=True, quality=100, method=4)
+    else:
+        image.convert("RGB").save(path, "WEBP", quality=90, method=4)
+    print("wrote", path, image.size, "lossless" if partial else "lossy")
+
+
+# Per-room volcano files. One PNG each, already at that room's canvas size.
+VOLCANO_ROOM = {
+    "slagcrown_volcano_koliseo": "koliseo_slagcrown",
+    "slagcrown_volcano_stasis_a": "stasis_slagcrown_room_a",
+    "slagcrown_volcano_stasis_b": "stasis_slagcrown_room_b",
+}
+# Ground cells with no prop and no elevation. Visual only.
+FROST_CELLS = {
+    "koliseo_windmere": [(5, 1), (2, 9), (13, 5)],
+    "stasis_windmere_room_a": [(2, 6), (8, 8), (4, 12)],
+    "stasis_windmere_room_b": [(3, 1), (8, 2), (10, 6)],
+}
 
 
 def fit(image, size, transparent):
+    """Lanczos only. Soft anti-aliased alpha stays; nothing is thresholded."""
     mode = "RGBA" if transparent else "RGB"
-    return image.convert(mode).resize((int(size[0]), int(size[1])), Image.Resampling.LANCZOS)
+    image = image.convert(mode)
+    size = (int(size[0]), int(size[1]))
+    if image.size == size:
+        return image
+    return image.resize(size, Image.Resampling.LANCZOS)
+
+
+def contain_bottom(image, size):
+    """Fit the opaque art inside size, centred, base on the bottom edge."""
+    image = image.convert("RGBA")
+    alpha = np.array(image.getchannel("A"))
+    ys, xs = np.where(alpha > 8)
+    if len(xs) == 0:
+        return fit(image, size, True)
+    crop = image.crop((int(xs.min()), int(ys.min()), int(xs.max()) + 1, int(ys.max()) + 1))
+    tw, th = int(size[0]), int(size[1])
+    scale = min(tw / crop.size[0], th / crop.size[1])
+    resized = crop.resize((max(1, int(round(crop.size[0] * scale))), max(1, int(round(crop.size[1] * scale)))), Image.Resampling.LANCZOS)
+    canvas = Image.new("RGBA", (tw, th), (0, 0, 0, 0))
+    canvas.paste(resized, ((tw - resized.size[0]) // 2, th - resized.size[1]), resized)
+    return canvas
+
+
+def bottom_offset(image, drop):
+    """Top-left offset, in plate pixels, that puts the opaque base on the cell."""
+    alpha = np.array(image.getchannel("A"))
+    ys, xs = np.where(alpha > 8)
+    if len(xs) == 0:
+        return [-(image.size[0] // 2), drop - image.size[1]]
+    base_x = int(round((int(xs.min()) + int(xs.max())) / 2.0))
+    base_y = int(ys.max())
+    return [int(-base_x), int(drop - base_y)]
+
+
+def write_occluder(room, kind, image, drop):
+    place_path = os.path.join(ROOT, "art", "rooms", room, "place.json")
+    place = json.load(open(place_path))
+    written = 0
+    for occ in place["occluders"]:
+        if (occ.get("what") or [""])[0] != kind:
+            continue
+        path = os.path.join(ROOT, "art", "rooms", room, occ["file"])
+        save_webp(path, image)
+        occ["size"] = [image.size[0], image.size[1]]
+        occ["offset"] = bottom_offset(image, drop)
+        written += 1
+    json.dump(place, open(place_path, "w"), separators=(",", ":"), ensure_ascii=False)
+    print("placed", kind, room, written, image.size)
 
 
 def stamp_lava(image):
@@ -60,21 +127,122 @@ def stamp_lava(image):
     save_webp(plate_path, Image.fromarray(np.clip(plate, 0, 255).astype(np.uint8)))
 
 
+def install_volcano_room(path, room):
+    slot = next(item for item in SLOTS if item["id"] == "slagcrown_volcano")
+    inst = next(item for item in slot["instances"] if item["room"] == room)
+    image = Image.open(path)
+    # Koliseo grows to about 1.5 cells (192 plate px) from the full-res cone
+    # when that file is beside the slot. Stasis rooms keep their slot canvas.
+    full = os.path.join(os.path.dirname(os.path.dirname(path)), "slagcrown", "centre_volcano.png")
+    if room == "koliseo_slagcrown" and os.path.isfile(full):
+        src = Image.open(full)
+        width = 192
+        height = max(1, int(round(src.size[1] * (width / float(src.size[0])))))
+        image = src.convert("RGBA").resize((width, height), Image.Resampling.LANCZOS)
+        placed = image
+        write_occluder(room, "volcano", placed, 8)
+        return
+    placed = fit(image, inst["size"], True)
+    dest = os.path.join(ROOT, inst["dest"])
+    save_webp(dest, placed)
+    write_occluder(room, "volcano", placed, 8)
+
+
 def install_one(path, slot):
     image = Image.open(path)
     if slot["id"] == "slagcrown_lava_cell":
-        stamp_lava(image)
+        print("skip lava cell (busier than the plate lava)")
         return
     if slot["id"] == "windmere_frost_tuft":
         ready = os.path.join(ROOT, "art/scenario/windmere_frost_tuft.webpbin")
         save_webp(ready, fit(image, slot["size"], True))
-        print("frost tuft stored. Pass cells with --frost <room> <x> <y> to place it.")
+        for room, cells in FROST_CELLS.items():
+            for x, y in cells:
+                place_frost(room, x, y)
         return
     if "instances" in slot:
         for inst in slot["instances"]:
             save_webp(os.path.join(ROOT, inst["dest"]), fit(image, inst["size"], slot.get("transparent", True)))
         return
     save_webp(os.path.join(ROOT, slot["dest"]), fit(image, slot["size"], slot.get("transparent", True)))
+
+
+def install_crystal_variants(paths):
+    slot = next(item for item in SLOTS if item["id"] == "windmere_crystal")
+    instances = slot["instances"]
+    arts = [contain_bottom(Image.open(path), slot["size"]) for path in paths]
+    by_room = {}
+    for index, inst in enumerate(instances):
+        art = arts[index % len(arts)]
+        by_room.setdefault(inst["room"], []).append((inst, art))
+    for room, items in by_room.items():
+        place_path = os.path.join(ROOT, "art", "rooms", room, "place.json")
+        place = json.load(open(place_path))
+        for inst, art in items:
+            dest = os.path.join(ROOT, inst["dest"])
+            save_webp(dest, art)
+            offset = bottom_offset(art, 12)
+            rel = "occluders_2x/" + os.path.basename(inst["dest"])
+            for occ in place["occluders"]:
+                if occ.get("file") == rel and occ.get("cell") == inst["cell"]:
+                    occ["size"] = [art.size[0], art.size[1]]
+                    occ["offset"] = offset
+        json.dump(place, open(place_path, "w"), separators=(",", ":"), ensure_ascii=False)
+        print("crystals", room, len(items))
+
+
+def install_spire(full_slim):
+    """Slim spire, a little taller than the 44x92 slot, still inside its cell."""
+    art = contain_bottom(Image.open(full_slim), (52, 110))
+    for room in ("koliseo_stormspire", "stasis_stormspire_room_a", "stasis_stormspire_room_b"):
+        write_occluder(room, "tower", art, 10)
+
+
+def install_pack(root):
+    """A Scenario drop: slots/*.png plus the full-res sources next to it."""
+    slots_dir = root if os.path.isdir(os.path.join(root, "slots")) is False and os.path.basename(root) == "slots" else os.path.join(root, "slots")
+    if not os.path.isdir(slots_dir):
+        slots_dir = root
+    pack = os.path.dirname(slots_dir) if os.path.basename(slots_dir) == "slots" else slots_dir
+    by_id = {slot["id"]: slot for slot in SLOTS}
+    for name in sorted(os.listdir(slots_dir)):
+        if not name.lower().endswith(".png"):
+            continue
+        stem = os.path.splitext(name)[0]
+        path = os.path.join(slots_dir, name)
+        if stem == "slagcrown_lava_cell":
+            print("skip", name, "(lava tile is busier than the plate)")
+            continue
+        if stem in ("windmere_crystal", "stormspire_spire", "slagcrown_volcano_koliseo"):
+            continue
+        if stem in VOLCANO_ROOM:
+            install_volcano_room(path, VOLCANO_ROOM[stem])
+            continue
+        slot = by_id.get(stem)
+        if slot is None:
+            print("skip", name)
+            continue
+        install_one(path, slot)
+    variants = [os.path.join(pack, "windmere", "prop_ice_crystal_%s.png" % letter) for letter in ("a", "b", "c")]
+    if all(os.path.isfile(path) for path in variants):
+        install_crystal_variants(variants)
+    else:
+        crystal = os.path.join(slots_dir, "windmere_crystal.png")
+        if os.path.isfile(crystal):
+            install_one(crystal, by_id["windmere_crystal"])
+    slim = os.path.join(pack, "stormspire", "centre_lightning_spire_slim.png")
+    if os.path.isfile(slim):
+        install_spire(slim)
+    else:
+        spire = os.path.join(slots_dir, "stormspire_spire.png")
+        if os.path.isfile(spire):
+            install_one(spire, by_id["stormspire_spire"])
+    volcano = os.path.join(slots_dir, "slagcrown_volcano_koliseo.png")
+    full = os.path.join(pack, "slagcrown", "centre_volcano.png")
+    if os.path.isfile(full):
+        install_volcano_room(volcano if os.path.isfile(volcano) else full, "koliseo_slagcrown")
+    elif os.path.isfile(volcano):
+        install_volcano_room(volcano, "koliseo_slagcrown")
 
 
 def place_frost(room, x, y):
@@ -109,6 +277,13 @@ def main(argv):
         args = args[4:]
     files = []
     for arg in args:
+        if os.path.isdir(arg) and (
+            os.path.isdir(os.path.join(arg, "slots"))
+            or os.path.isfile(os.path.join(arg, "slagcrown_volcano_koliseo.png"))
+            or os.path.isfile(os.path.join(arg, "brinewake_room_a_sea.png"))
+        ):
+            install_pack(arg)
+            continue
         if os.path.isdir(arg):
             for name in sorted(os.listdir(arg)):
                 if name.lower().endswith(".png"):

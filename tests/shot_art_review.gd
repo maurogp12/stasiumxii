@@ -24,6 +24,7 @@ var _clock := 0.0
 var _bar_saved := false
 var _cast_sent := false
 var _sample := false
+var _rooms_only := false
 
 
 func _initialize() -> void:
@@ -31,9 +32,12 @@ func _initialize() -> void:
 	for arg in args:
 		if str(arg) == "--sample":
 			_sample = true
+		elif str(arg) == "--rooms-only":
+			_rooms_only = true
 		elif not str(arg).begins_with("--"):
 			_out = str(arg)
 	DirAccess.make_dir_recursive_absolute(_out)
+	DisplayServer.window_set_size(Vector2i(2400, 1080))
 	root.size = Vector2i(2400, 1080)
 	var cs: GDScript = load("res://scenes/class_select.gd")
 	cs.set("hotseat_classes", ["kestrel", "ironjaw"])
@@ -66,6 +70,8 @@ func _rooms(board: Node, stasis: bool) -> bool:
 		_frames = 0
 		_hold = 0
 		if stasis:
+			if _rooms_only:
+				return true
 			_phase = "casts"
 			_opened = -1
 			_show_hud(true)
