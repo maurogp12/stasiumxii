@@ -2615,9 +2615,10 @@ func _handoff_seat(actor: Dictionary, auto_skip: bool, skip_reason: String = "")
 	_invisible_wore_off = false
 	_begin_unit_turn(next_unit)
 	next_unit["ap"] = int(next_unit.get("max_ap", MAX_AP))
-	# Turn start replaces leftover MP with max. Fade's 1 MP is spent on the
-	# cast turn only; it does not carry into later turns, including the turns
-	# Gloam is still Invisible. Heartstop, Water, and Slow still cut after this.
+	# Turn start replaces leftover MP with max. Fade spends 0 MP, so a walk
+	# before the cast is the only MP missing on that turn. The next own turn,
+	# including while he is still Invisible, starts at max. Heartstop, Water,
+	# and Slow still cut after this.
 	next_unit["mp"] = int(next_unit.get("max_mp", MAX_MP))
 	if bool(next_unit.get("skip_next_mp", false)):
 		next_unit["mp"] = 0
@@ -6563,8 +6564,8 @@ func _resolve_team_ward(intent: Dictionary, actor: Dictionary, def: Dictionary, 
 func _resolve_fade(intent: Dictionary, actor: Dictionary, def: Dictionary, ap_cost: int, mp_cost: int) -> Dictionary:
 	var caster_cell: Vector2i = actor["pos"]
 	actor["ap"] = int(actor["ap"]) - ap_cost
-	# Spent now. The next own turn start refills to max MP, including the
-	# turn he is still Invisible. Do not lock or zero MP for Invisible.
+	# Kit MP is 0. Do not lock or zero MP for Invisible. The next own turn
+	# start still refills to max MP, including the turn he is still hidden.
 	_spend_mp(actor, mp_cost)
 	var gained := _gain_resource(actor, "umbral", 1)
 	actor["invisible"] = true

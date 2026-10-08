@@ -1097,7 +1097,7 @@ func _test_fade_and_heartstop_linger() -> void:
 	eq(faded.get("pos"), gloam, "snapshot Invisible names the cell")
 	eq(int(_sim.snapshot()["units"][0]["umbral"]), 1, "Fade still gains 1 Umbral")
 	eq(int(_sim.snapshot()["units"][0]["ap"]), 4, "Fade still spends 2 AP")
-	eq(int(_sim.snapshot()["units"][0]["mp"]), 2, "Fade still spends 1 MP")
+	eq(int(_sim.snapshot()["units"][0]["mp"]), 3, "Fade spends 0 MP")
 	_sim.submit({"type": "end_turn", "seat": 0})
 	var mid: Dictionary = _sim.submit({"type": "end_turn", "seat": 1})
 	# Fade lasts 2 turns (Mauro 8 Oct 2026): still up when his next turn starts.

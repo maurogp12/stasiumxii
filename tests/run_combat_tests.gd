@@ -2038,13 +2038,13 @@ func _test_ambush_arms_at_zero_mp() -> void:
 	_complete_opponent_turn()
 	eq(int(SpellKits.spell(SpellKits.AMBUSH)["ap"]), 4, "Ambush cost stays 4 AP")
 	eq(int(SpellKits.spell(SpellKits.AMBUSH)["mp"]), 0, "Ambush cost stays 0 MP")
-	eq(int(SpellKits.spell(SpellKits.FADE)["mp"]), 1, "Fade still costs 1 MP")
+	eq(int(SpellKits.spell(SpellKits.FADE)["mp"]), 0, "Fade costs 0 MP")
 	var actor := _live_unit(0)
 	actor["mp"] = 0
 	actor["ap"] = 4
 	actor["exit_tax"] = 1
 	eq(_has_legal_move(0), false, "MP 0 with exit tax offers no walk")
-	eq(_has_legal_cast(0, SpellKits.FADE), false, "Fade stays blocked on its own 1 MP")
+	eq(_has_legal_cast(0, SpellKits.FADE), true, "Fade is legal at 0 MP")
 	eq(_has_legal_cast(0, SpellKits.AMBUSH), true, "Ambush is legal at MP 0 with 4 AP and a Shade")
 	eq(_has_legal_cast_to(0, SpellKits.AMBUSH, prey), true, "Ambush dest is the enemy, not a walk tile")
 	var hud := CombatHUD.new()
@@ -9064,7 +9064,7 @@ func _test_invisible_wears_off() -> void:
 	eq(CombatSim.INVISIBLE_TURNS, 2, "Fade lasts 2 turns")
 	eq(int(SpellKits.spell(SpellKits.FADE).get("cooldown", 0)), 1, "Fade cooldown is 1 turn")
 	eq(int(SpellKits.spell(SpellKits.FADE)["ap"]), 2, "Fade still costs 2 AP")
-	eq(int(SpellKits.spell(SpellKits.FADE)["mp"]), 1, "Fade still costs 1 MP")
+	eq(int(SpellKits.spell(SpellKits.FADE)["mp"]), 0, "Fade costs 0 MP")
 	eq(int(_unit(0)["invisible_turns"]), 2, "Fade starts the 2-turn clock")
 	eq(_fade_cd(0), 0, "Fade does not start its cooldown at cast")
 	eq(bool(_unit(0).get("fade_cd_skip", false)), false, "no skip flag while he is hidden")
@@ -9126,8 +9126,8 @@ func _test_invisible_wears_off() -> void:
 	_assert_fade_button("", false)
 
 
-## Fade spends 1 MP on the cast. The next own turn, still Invisible, starts
-## at full MP. Walking first makes the leftover lower than the cast alone.
+## Fade costs 0 MP. A walk before it leaves that spent MP. The next own turn,
+## still Invisible, starts at full MP.
 func _test_invisible_turn_starts_at_full_mp() -> void:
 	_sim.reset_match({
 		"seed": 3,
@@ -9138,18 +9138,36 @@ func _test_invisible_turn_starts_at_full_mp() -> void:
 	})
 	var max_mp := int(_unit(0)["max_mp"])
 	eq(int(_unit(0)["mp"]), max_mp, "Gloam starts at full MP")
+	eq(int(SpellKits.spell(SpellKits.FADE)["ap"]), 2, "Fade still costs 2 AP")
+	eq(int(SpellKits.spell(SpellKits.FADE)["mp"]), 0, "Fade costs 0 MP")
+	eq(int(SpellKits.spell(SpellKits.FADE).get("cooldown", 0)), 1, "Fade cooldown is still 1 turn after reveal")
+	eq(CombatSim.INVISIBLE_TURNS, 2, "Fade duration is still 2 turns")
+	var hold := SpellTooltip.card_text(_sim.preview_cast(SpellKits.FADE, Vector2i(2, 2), Vector2i(2, 2), 0))
+	truthy(hold.contains("2 AP / 0 MP"), "the Fade hold card says 2 AP / 0 MP")
 	var walked: Dictionary = _sim.submit({"type": "move", "to": Vector2i(3, 2), "seat": 0})
 	eq(bool(walked.get("ok", false)), true, "the step before Fade resolves")
 	eq(int(_unit(0)["mp"]), max_mp - 1, "the step spends 1 MP")
+	var before_fade := int(_unit(0)["mp"])
 	var faded: Dictionary = _sim.submit({"type": "cast", "spell": "fade", "to": Vector2i(3, 2), "seat": 0})
 	eq(bool(faded.get("ok", false)), true, "Fade after the step resolves")
-	eq(int(SpellKits.spell(SpellKits.FADE)["mp"]), 1, "Fade still costs 1 MP")
-	eq(int(_unit(0)["mp"]), max_mp - 2, "the cast spends that 1 MP on top of the step")
+	eq(int(_unit(0)["mp"]), before_fade, "Fade leaves MP unchanged on the cast turn")
+	eq(int(_first_event_where(faded.get("events", []), "cast").get("mp_spent", -1)), 0, "the Fade event spends 0 MP")
+	eq(int(_unit(0)["ap"]), int(_unit(0)["max_ap"]) - 2, "Fade still spends 2 AP")
 	eq(bool(_unit(0)["invisible"]), true, "he is Invisible after the cast")
 	eq(int(_unit(0)["invisible_turns"]), CombatSim.INVISIBLE_TURNS, "Fade duration is unchanged")
 	var card := " ".join(SpellTooltip.simple_lines(SpellKits.FADE))
+	truthy(card.contains("Costs 2 AP"), "the Fade card still names 2 AP")
+	truthy(card.contains("no MP"), "the Fade card says it costs no MP")
+	eq(card.contains("and 1 MP"), false, "the Fade card no longer charges 1 MP")
 	truthy(card.contains("all your MP"), "the Fade card says the next turn starts with all his MP")
-	truthy(card.contains("does not carry over"), "the Fade card says the spent MP does not carry")
+	var hud := CombatHUD.new()
+	hud._build()
+	hud.render(_sim.snapshot(), _sim.legal_intents(0))
+	var fade_button: Button = hud._spell_buttons[SpellKits.FADE]
+	var button_text := str(fade_button.get_meta("ability_fallback_text", fade_button.text))
+	truthy(button_text.contains("2 AP"), "the Fade button still lists 2 AP")
+	eq(button_text.contains("MP"), false, "the Fade button does not list an MP cost")
+	hud.free()
 	_sim.submit({"type": "end_turn", "seat": 0})
 	_sim.submit({"type": "end_turn", "seat": 1})
 	eq(bool(_unit(0)["invisible"]), true, "he is still Invisible on the next own turn")
