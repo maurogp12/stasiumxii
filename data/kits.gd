@@ -394,7 +394,9 @@ const SPELLS := {
 		"name": "Fade",
 		"class_id": CLASS_GLOAM,
 		"ap": 2,
-		"mp": 1,
+		# Mauro 8 Oct 2026: Fade spends no MP. AP, the 2-turn Invisible
+		# clock, and the cooldown that starts when Invisible ends stay as they are.
+		"mp": 0,
 		"range_mode": "chebyshev",
 		"min_range": 0,
 		"max_range": 0,

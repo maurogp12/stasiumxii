@@ -617,7 +617,7 @@ func _test_shades_cap_and_fade() -> void:
 	eq(bool(_sim.snapshot()["units"][0]["invisible"]), true, "Fade sets Invisible")
 	eq(int(_sim.snapshot()["units"][0]["umbral"]), 1, "Fade gains 1 Umbral")
 	eq(int(_sim.snapshot()["units"][0]["ap"]), 1, "Fade costs 2 AP")
-	eq(int(_sim.snapshot()["units"][0]["mp"]), 2, "Fade costs 1 MP")
+	eq(int(_sim.snapshot()["units"][0]["mp"]), 3, "Fade costs 0 MP")
 
 
 func _test_hold_line_exit_tax() -> void:
