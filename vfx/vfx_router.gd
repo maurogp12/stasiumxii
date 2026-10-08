@@ -241,7 +241,7 @@ const BLEND_FX := {
 ## (build_tools/art/steam_plume.py), no floor puff so the pool shows.
 const MAP_STEAM := {
 	"path": BLEND_FX_DIR + "map_steam_plume.png", "frames": 12, "fps": 9.0,
-	"anchor": Vector2(48, 214), "scale": 0.9,
+	"anchor": Vector2(48, 214), "scale": 0.36,
 }
 
 
