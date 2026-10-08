@@ -14,6 +14,9 @@ var _host_port: LineEdit
 var _join_ip: LineEdit
 var _join_port: LineEdit
 var _queue_btn: Button
+var _advanced_row: HBoxContainer
+var _retry_btn: Button
+var _advanced_open: bool = false
 var _class_buttons: Dictionary = {}
 
 
@@ -28,10 +31,12 @@ func _ready() -> void:
 			_status.text = NetSession.lobby_text
 		else:
 			_status.text = "Dedicated host. This window has no seat."
+	elif NetSession.is_auto_dialing():
+		_status.text = "Connecting…"
 	elif NetSession.is_queue_client():
-		_status.text = "Connecting as %s…" % SpellKits.display_name(NetSession.selected_class_id)
+		_status.text = "Searching for opponent…"
 	else:
-		_status.text = "Pick a Locked class, then join the queue. Listen-host below stays Kestrel vs Ironjaw."
+		_status.text = "Pick a Locked class, then Play Online. Listen-host below stays Kestrel vs Ironjaw."
 	_sync_class_buttons()
 
 
@@ -55,7 +60,7 @@ func _build() -> void:
 
 	_blurb = Label.new()
 	_blurb.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_blurb.text = "Locked roster: Kestrel, Ironjaw, Mender, Gloam, Bastion. Choose one before Join queue. The dedicated host stores that class_id on your session and starts the match with each seat's choice."
+	_blurb.text = "Locked roster: Kestrel, Ironjaw, Mender, Gloam, Bastion. Choose one before Play Online. The dedicated host stores that class_id on your session and starts the match with each seat's choice."
 	_blurb.add_theme_color_override("font_color", Color(0.78, 0.74, 0.7))
 	col.add_child(_blurb)
 
@@ -84,16 +89,31 @@ func _build() -> void:
 	var join_row := HBoxContainer.new()
 	join_row.add_theme_constant_override("separation", 8)
 	col.add_child(join_row)
-	_join_ip = _field(NetSession.DEFAULT_SERVER)
-	_join_ip.custom_minimum_size = Vector2(180, 32)
-	_join_port = _field("7777")
-	join_row.add_child(_label("Join IP"))
-	join_row.add_child(_join_ip)
-	join_row.add_child(_label("Port"))
-	join_row.add_child(_join_port)
-	_queue_btn = _button("Join queue", _on_queue)
+	_queue_btn = _button("Play Online", _on_queue)
+	_queue_btn.custom_minimum_size = Vector2(280, 56)
+	_queue_btn.add_theme_font_size_override("font_size", 22)
 	_queue_btn.disabled = true
 	join_row.add_child(_queue_btn)
+	var advanced := _button("Advanced", _toggle_advanced)
+	advanced.flat = true
+	advanced.custom_minimum_size = Vector2(88, 28)
+	advanced.add_theme_font_size_override("font_size", 12)
+	join_row.add_child(advanced)
+	_retry_btn = _button("Retry", _on_queue)
+	_retry_btn.visible = false
+	join_row.add_child(_retry_btn)
+
+	_advanced_row = HBoxContainer.new()
+	_advanced_row.add_theme_constant_override("separation", 8)
+	_advanced_row.visible = false
+	col.add_child(_advanced_row)
+	_join_ip = _field("")
+	_join_ip.placeholder_text = "Address"
+	_join_ip.custom_minimum_size = Vector2(220, 32)
+	_join_port = _field("7777")
+	_join_port.placeholder_text = "7777"
+	_advanced_row.add_child(_join_ip)
+	_advanced_row.add_child(_join_port)
 
 	_status = Label.new()
 	_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -143,7 +163,7 @@ func _pick(class_id: String) -> void:
 		_sync_class_buttons()
 		return
 	_class_label.text = "Class: %s" % SpellKits.display_name(str(result.get("class_id", "")))
-	_status.text = "Class confirmed. Join queue, or host a dedicated match in another window."
+	_status.text = "Class confirmed. Play Online, or host a dedicated match in another window."
 	_sync_class_buttons()
 
 
@@ -167,13 +187,56 @@ func _on_dedicated() -> void:
 
 func _on_queue() -> void:
 	if not SpellKits.is_roster_class(NetSession.selected_class_id):
-		_status.text = "Pick a Locked class before joining the queue."
+		_status.text = "Pick a Locked class before Play Online."
 		return
-	var result: Dictionary = NetSession.start_queue_client(_join_ip.text.strip_edges(), int(_join_port.text))
+	if NetSession.is_auto_dialing():
+		_status.text = "Connecting…"
+		_retry_btn.visible = false
+		return
+	_status.text = "Connecting…"
+	_retry_btn.visible = false
+	var result: Dictionary = NetSession.begin_auto_queue(_override_address(), _override_port())
 	if not bool(result.get("ok", false)):
-		_status.text = "Queue failed: %s" % str(result.get("reason", "class_required"))
+		if str(result.get("reason", "")) == "class_required":
+			_status.text = "Pick a Locked class before Play Online."
+		else:
+			_status.text = "Could not reach server"
+			_retry_btn.visible = true
 		return
-	_status.text = "Connecting as %s…" % SpellKits.display_name(NetSession.selected_class_id)
+
+
+func _toggle_advanced() -> void:
+	_advanced_open = not _advanced_open
+	if _advanced_row != null:
+		_advanced_row.visible = _advanced_open
+
+
+func _override_address() -> String:
+	if not _advanced_open or _join_ip == null:
+		return ""
+	return _join_ip.text.strip_edges()
+
+
+func _override_port() -> int:
+	if not _advanced_open or _join_port == null:
+		return -1
+	var port := int(_join_port.text.strip_edges())
+	return port if port > 0 else -1
+
+
+func _direct_address() -> String:
+	var override := _override_address()
+	if override != "":
+		return override
+	var saved := ServerDial.remembered()
+	if saved != "":
+		return saved
+	return NetSession.DEFAULT_SERVER
+
+
+func _direct_port() -> int:
+	var override := _override_port()
+	return override if override > 0 else NetSession.DEFAULT_PORT
 
 
 func _on_host() -> void:
@@ -187,11 +250,11 @@ func _on_host() -> void:
 
 
 func _on_join() -> void:
-	var result: Dictionary = NetSession.start_client(_join_ip.text.strip_edges(), int(_join_port.text))
+	var result: Dictionary = NetSession.start_client(_direct_address(), _direct_port())
 	if not bool(result.get("ok", false)):
-		_status.text = "Join failed: %s" % str(result.get("reason", "connect_failed"))
+		_status.text = "Could not reach server"
 		return
-	_status.text = "Connecting to %s:%s…" % [_join_ip.text, _join_port.text]
+	_status.text = "Connecting…"
 	_go_main()
 
 
@@ -201,13 +264,30 @@ func _on_hotseat() -> void:
 
 
 func _on_connection(status: String) -> void:
+	if NetSession.is_dedicated():
+		if NetSession.lobby_text != "":
+			_status.text = NetSession.lobby_text
+		return
 	if status == "matched" and NetSession.is_queue_client():
-		_status.text = "Matched as %s (seat %d). Opening the board…" % [SpellKits.display_name(NetSession.selected_class_id), NetSession.local_seat]
+		_status.text = "Opponent found"
 		_go_main()
 		return
-	if NetSession.lobby_text != "":
+	if status == "connecting":
+		_status.text = "Connecting…"
+		_retry_btn.visible = false
+		return
+	if status == "joined" or status == "waiting":
+		if NetSession.is_queue_client() or NetSession.is_auto_dialing():
+			_status.text = "Searching for opponent…"
+			_retry_btn.visible = false
+			return
+	if status == "join_failed":
+		_status.text = "Could not reach server"
+		_retry_btn.visible = true
+		return
+	if NetSession.lobby_text != "" and not NetSession.is_queue_client():
 		_status.text = NetSession.lobby_text
-	else:
+	elif status != "":
 		_status.text = status
 
 

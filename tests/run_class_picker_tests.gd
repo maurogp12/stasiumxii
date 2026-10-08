@@ -96,7 +96,7 @@ func _test_launch_cards() -> void:
 	eq(picker.phase_name(), "mode", "launch waits for a mode")
 	eq(picker.prompt_text(), "Choose Hot-seat or Online.", "launch prompt names both modes")
 	eq(picker.class_cards_visible(), true, "five cards are on the launch screen")
-	eq(picker.queue_button_text(), "Queue", "online control is Queue")
+	eq(picker.queue_button_text(), "Play Online", "online control is Play Online")
 	for class_id in SpellKits.LOCKED_ROSTER:
 		eq(picker.card_title(class_id), SpellKits.display_name(class_id), "%s card uses the display name" % class_id)
 		eq(picker.card_role(class_id), _script.role_line(class_id), "%s card uses the role line" % class_id)
@@ -171,6 +171,7 @@ func _test_online_select_class() -> void:
 	var picker := _picker()
 	picker.choose_mode("online")
 	eq(picker.phase_name(), "online", "online mode")
+	eq(picker.address_field_visible(), false, "online hides the address field")
 	var early: Dictionary = picker.request_queue()
 	eq(bool(early.get("ok", true)), false, "queue before a class is rejected")
 	eq(str(early.get("reason", "")), "class_required", "queue reason is class_required")
@@ -187,7 +188,7 @@ func _test_online_select_class() -> void:
 	truthy(picker.reject_text().contains("pulse"), "screen shows the reject")
 	var src := FileAccess.get_file_as_string("res://scenes/class_select.gd")
 	truthy(src.contains("NetSession.select_class"), "online pick goes through select_class")
-	truthy(src.contains("start_queue_client"), "Queue joins through start_queue_client")
+	truthy(src.contains("begin_auto_queue"), "Play Online joins through begin_auto_queue")
 	truthy(src.contains("select_class"), "select_class stays the class RPC path")
 	picker.free()
 	net.selected_class_id = ""

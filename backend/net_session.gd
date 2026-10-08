@@ -13,8 +13,8 @@ extends Node
 enum Mode { HOTSEAT, HOST, CLIENT, DEDICATED }
 
 const DEFAULT_PORT := 7777
-## Mauro's game server (1 Oct 2026). Online screens start with this host;
-## the player can still type another one.
+## Public game server. Play Online tries the last working address, then this
+## host, then Tailscale, then LAN (ServerDial). CLI --join / --queue stay direct.
 const DEFAULT_SERVER := "68.201.184.207"
 const HOST_SEAT := 0
 const GUEST_SEAT := 1
@@ -22,6 +22,7 @@ const LISTEN_HOST_CLIENTS := 1
 const DEDICATED_CLIENTS := 2
 const TRANSPORT := "enet"
 const _MatchQueueScript := preload("res://backend/matchmaking.gd")
+const _ServerDial := preload("res://backend/server_dial.gd")
 
 signal state_changed(events: Array, snapshot: Dictionary)
 signal connection_changed(status: String)
@@ -51,6 +52,15 @@ var _seat_held: Array[bool] = [false, false]
 var selected_class_id: String = ""
 var lobby_text: String = ""
 var _queue_client: bool = false
+## Play Online walks ServerDial.address_order. One probe at a time.
+var _dial_order: Array[String] = []
+var _dial_index: int = 0
+var _dial_active: bool = false
+var _dial_attempt: int = 0
+var _dial_live_attempt: int = -1
+var _dial_port: int = DEFAULT_PORT
+## True while a peer is being closed so its failure cannot advance the chain.
+var _dial_suppress: bool = false
 var _match_queue: MatchQueue
 var _match_class_ids: Array[String] = []
 var _cli_class: String = ""
@@ -176,6 +186,8 @@ func enter_client_unassigned() -> void:
 
 
 func return_to_hotseat() -> void:
+	_dial_active = false
+	_dial_live_attempt = -1
 	_close_peer()
 	mode = Mode.HOTSEAT
 	local_seat = -1
@@ -220,7 +232,8 @@ func start_client(address: String, port: int = DEFAULT_PORT) -> Dictionary:
 	var peer := ENetMultiplayerPeer.new()
 	var err := peer.create_client(address, port)
 	if err != OK:
-		connection_changed.emit("join_failed")
+		if not _dial_active:
+			connection_changed.emit("join_failed")
 		return {"ok": false, "reason": "connect_failed", "address": address, "port": port}
 	_close_peer()
 	multiplayer.multiplayer_peer = peer
@@ -255,6 +268,10 @@ func _open_server(port: int, max_clients: int, next_mode: int, seat: int, status
 
 func is_queue_client() -> bool:
 	return _queue_client
+
+
+func is_auto_dialing() -> bool:
+	return _dial_active
 
 
 func match_is_live() -> bool:
@@ -293,6 +310,72 @@ func start_queue_client(address: String, port: int = DEFAULT_PORT) -> Dictionary
 		_queue_client = false
 		return opened
 	return opened
+
+
+## Play Online. override_address replaces the remembered head when non-empty
+## (the hidden Advanced field). Empty uses the saved address, then the chain.
+## Does not add an RPC. Each hop is still start_queue_client.
+func begin_auto_queue(override_address: String = "", override_port: int = -1) -> Dictionary:
+	if not SpellKits.is_roster_class(selected_class_id):
+		return {"ok": false, "illegal": true, "reason": "class_required", "class_id": selected_class_id}
+	var head := override_address.strip_edges()
+	if head == "":
+		head = _ServerDial.remembered()
+	_dial_order = _ServerDial.address_order(head)
+	_dial_index = 0
+	_dial_port = override_port if override_port > 0 else DEFAULT_PORT
+	_dial_active = true
+	_dial_live_attempt = -1
+	_close_peer()
+	return _dial_open_current()
+
+
+func _dial_open_current() -> Dictionary:
+	if _dial_index < 0 or _dial_index >= _dial_order.size():
+		_dial_active = false
+		_dial_live_attempt = -1
+		_queue_client = false
+		connection_changed.emit("join_failed")
+		return {"ok": false, "reason": "unreachable", "address": "", "port": _dial_port}
+	_dial_attempt += 1
+	var attempt := _dial_attempt
+	_dial_live_attempt = attempt
+	var address := _dial_order[_dial_index]
+	var opened: Dictionary = start_queue_client(address, _dial_port)
+	if not bool(opened.get("ok", false)):
+		return _dial_advance()
+	if is_inside_tree():
+		var timer := get_tree().create_timer(_ServerDial.PROBE_SEC, true, true)
+		timer.timeout.connect(_on_dial_timeout.bind(attempt), CONNECT_ONE_SHOT)
+	return opened
+
+
+func _dial_advance() -> Dictionary:
+	_dial_live_attempt = -1
+	_close_peer()
+	_dial_index += 1
+	if _dial_index >= _dial_order.size():
+		_dial_active = false
+		_queue_client = false
+		connection_changed.emit("join_failed")
+		return {"ok": false, "reason": "unreachable", "address": "", "port": _dial_port}
+	connection_changed.emit("connecting")
+	return _dial_open_current()
+
+
+func _dial_fail_attempt(attempt: int) -> void:
+	if not _dial_active or attempt != _dial_live_attempt:
+		return
+	_dial_advance()
+
+
+func _on_dial_timeout(attempt: int) -> void:
+	if not _dial_active or attempt != _dial_live_attempt:
+		return
+	var peer := multiplayer.multiplayer_peer
+	if peer != null and peer.get_connection_status() == MultiplayerPeer.CONNECTION_CONNECTED:
+		return
+	_dial_advance()
 
 
 func server_select_class(session_id: String, class_id: String) -> Dictionary:
@@ -1394,6 +1477,10 @@ func _on_peer_disconnected(id: int) -> void:
 
 func _on_connected_to_server() -> void:
 	if mode == Mode.CLIENT:
+		if _dial_active:
+			_ServerDial.remember(join_address)
+			_dial_active = false
+			_dial_live_attempt = -1
 		connection_changed.emit("joined")
 		print("STASIUM XII client connected to %s:%d" % [join_address, listen_port])
 		if _queue_client and SpellKits.is_roster_class(selected_class_id):
@@ -1403,8 +1490,16 @@ func _on_connected_to_server() -> void:
 
 
 func _on_connection_failed() -> void:
-	connection_changed.emit("join_failed")
+	if _dial_suppress:
+		return
 	print("STASIUM XII client join failed for %s:%d" % [join_address, listen_port])
+	if _dial_active:
+		if _dial_live_attempt >= 0:
+			call_deferred("_dial_fail_attempt", _dial_live_attempt)
+		return
+	if mode != Mode.CLIENT:
+		return
+	connection_changed.emit("join_failed")
 
 
 func _on_server_disconnected() -> void:
@@ -1416,9 +1511,13 @@ func _on_server_disconnected() -> void:
 
 
 func _close_peer() -> void:
+	var restore := not _dial_suppress
+	_dial_suppress = true
 	if multiplayer.multiplayer_peer != null:
 		multiplayer.multiplayer_peer.close()
 		multiplayer.multiplayer_peer = null
+	if restore:
+		_dial_suppress = false
 
 
 static func plan_from_args(args: PackedStringArray) -> Dictionary:
