@@ -103,6 +103,8 @@ var _clock_expired_pending: bool = false
 var _walk_tween: Tween
 ## Seat whose body is mid hop. Refresh must not snap it to the destination.
 var _hop_seat: int = -1
+var _step_src: Vector2i = Vector2i(-999, -999)
+var _step_dst: Vector2i = Vector2i(-999, -999)
 var _shade_markers: Dictionary = {}
 var _aim_line: Node2D
 ## Last hovered cell while a spell is armed. Ambush ignores it and aims from the Shade.
@@ -348,7 +350,7 @@ func _process(delta: float) -> void:
 		return
 	_apply_pending_pan()
 	_pulse_target_marks(delta)
-	_space_name_plates()
+	_sync_unit_readability()
 	var snap: Dictionary = _sim().snapshot()
 	if CombatHUD.is_deployment_phase(snap) or bool(snap.get("match_over", false)):
 		_hydrate_turn_clock(snap)
@@ -732,9 +734,85 @@ func _pulse_target_marks(delta: float) -> void:
 			body.advance_target_pulse(delta)
 
 
-## Name plates of neighbours are spread apart (Pawn.spread_name_plates).
-func _space_name_plates() -> void:
-	Pawn.spread_name_plates(pawns_by_seat.values())
+## Depth from the drawn feet, then a stable order, then the occluded rim and
+## the name/HP spread. Facing does not enter this. The class does not either.
+func _sync_unit_readability() -> void:
+	var bodies: Array = []
+	for pawn in pawns_by_seat.values():
+		if pawn == null or not is_instance_valid(pawn):
+			continue
+		var body: Pawn = pawn
+		_publish_pawn_depth(body)
+		bodies.append(body)
+	if not _busy:
+		_step_src = Vector2i(-999, -999)
+		_step_dst = Vector2i(-999, -999)
+	_raise_nearer_units(bodies)
+	for body in bodies:
+		_raise_shade_unit(body)
+	_order_unit_nodes(bodies)
+	Pawn.assign_occlusion(bodies)
+	Pawn.spread_name_plates(bodies)
+
+
+## A taller tile behind the camera must not paint its fighter over the
+## fighter whose feet are lower on screen. Base z is left in place when it
+## is already in camera order, so a unit stays above its own tile.
+func _raise_nearer_units(bodies: Array) -> void:
+	var items: Array = []
+	for body in bodies:
+		var pawn: Pawn = body
+		items.append({"z": pawn.z_index, "pos": pawn.position, "seat": pawn.seat})
+	VISUAL_SORT.resolve_camera_z(items)
+	for i in bodies.size():
+		(bodies[i] as Pawn).z_index = int(items[i]["z"])
+
+
+func _raise_shade_unit(pawn: Pawn) -> void:
+	if not _shade_markers.has(pawn.grid_position):
+		return
+	pawn.z_index = maxi(pawn.z_index, SHADE_LAYER_Z + pawn.grid_position.x + pawn.grid_position.y + 2)
+
+
+func _publish_pawn_depth(pawn: Pawn) -> void:
+	var sort_cell := pawn.grid_position
+	var elev := _elev_at(sort_cell)
+	if _busy and pawn.seat == _hop_seat and _step_src.x > -900:
+		var src_at := _cell_to_local(_step_src)
+		var dst_at := _cell_to_local(_step_dst)
+		var span := dst_at - src_at
+		var along := 0.0
+		if span.length_squared() > 0.01:
+			along = clampf((pawn.position - src_at).dot(span) / span.length_squared(), 0.0, 1.0)
+		elev = lerpf(_elev_at(_step_src), _elev_at(_step_dst), along)
+		# The tower shaft uses the cell the feet are nearer to. Neighbour
+		# order still follows the continuous foot position.
+		sort_cell = _step_dst if along >= 0.5 else _step_src
+	var z := VISUAL_SORT.unit_z_from_local(pawn.position, elev)
+	z = PAINTED.adjust_unit_z(sort_cell, elev, z)
+	pawn.z_index = z
+
+
+func _order_unit_nodes(bodies: Array) -> void:
+	var layer := $Units
+	var ordered: Array = bodies.duplicate()
+	ordered.sort_custom(func(a: Pawn, b: Pawn) -> bool:
+		return VISUAL_SORT.draws_behind(a.z_index, a.position, a.seat, b.z_index, b.position, b.seat)
+	)
+	var current: Array = []
+	for child in layer.get_children():
+		if child is Pawn:
+			current.append(child)
+	var same := current.size() == ordered.size()
+	if same:
+		for i in current.size():
+			if current[i] != ordered[i]:
+				same = false
+				break
+	if same:
+		return
+	for i in ordered.size():
+		layer.move_child(ordered[i], i)
 
 
 func _handle_left_click(cell: Vector2i) -> void:
@@ -1916,16 +1994,15 @@ func _stop_walk_tween() -> void:
 	_walk_tween = null
 
 
-func _track_step_sort(t: float, pawn: Pawn, src: Vector2i, dst: Vector2i) -> void:
+func _track_step_sort(_t: float, pawn: Pawn, src: Vector2i, dst: Vector2i) -> void:
 	if pawn == null or not is_instance_valid(pawn):
 		return
-	var src_at := _cell_to_local(src)
-	var dst_at := _cell_to_local(dst)
-	var toward_dst := pawn.position.distance_squared_to(dst_at) <= pawn.position.distance_squared_to(src_at)
-	if t <= 0.001:
-		toward_dst = false
-	var cell := dst if toward_dst else src
-	pawn.z_index = _pawn_z(cell)
+	# Sort from the drawn feet, not the nearer cell centre. A facing change
+	# does not come through here and does not touch z. The storm-tower lift
+	# is applied inside _publish_pawn_depth.
+	_step_src = src
+	_step_dst = dst
+	_publish_pawn_depth(pawn)
 
 
 func _dying_seats(events: Array) -> Dictionary:
