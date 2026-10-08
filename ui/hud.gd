@@ -69,7 +69,15 @@ var _banner_titles: Array[Label] = []
 var _seat_panels: Array[Panel] = []
 var _seat_titles: Array[Label] = []
 var _turn_label: Label
+var _you_label: Label
+var _opp_label: Label
 var _turn_strip: HBoxContainer
+var _turn_strip_sig: String = ""
+var _pip_sig: Dictionary = {}
+var _resource_panel: Panel
+var _ui_root: Control
+var _side_column: VBoxContainer
+var _clock_track: ColorRect
 var _head_cache: Dictionary = {}
 var _coach_label: Label
 var _selected_label: Label
@@ -232,6 +240,50 @@ static func turn_status_text(snap: Dictionary) -> String:
 	if is_local_turn(snap):
 		return "Your Turn"
 	return "Opponent's Turn"
+
+
+## Hot-seat has no local seat: the person who must act is YOU, so the line is YOUR TURN.
+## Online: YOUR TURN when active_seat is the local seat, otherwise OPPONENT'S TURN.
+static func turn_banner_text(snap: Dictionary) -> String:
+	if snap_local_seat(snap) < 0 or is_local_turn(snap):
+		return "YOUR TURN"
+	return "OPPONENT'S TURN"
+
+
+## you seat, opponent seat. Hot-seat YOU is the active fighter.
+static func you_opp_seats(snap: Dictionary) -> Vector2i:
+	var local_seat := snap_local_seat(snap)
+	var active := snap_active_seat(snap)
+	var you := local_seat if local_seat >= 0 else active
+	var opp := -1
+	if active != you:
+		opp = active
+	for unit in snap.get("units", []):
+		if typeof(unit) != TYPE_DICTIONARY:
+			continue
+		var seat := int(unit.get("seat", -1))
+		if seat < 0 or seat == you:
+			continue
+		if opp < 0 or seat == active:
+			opp = seat
+			if seat == active:
+				break
+	return Vector2i(you, opp)
+
+
+static func seat_caption(unit: Dictionary) -> String:
+	if unit.is_empty():
+		return "—"
+	var class_id := str(unit.get("class_id", ""))
+	var klass := SpellKits.display_name(class_id)
+	var unit_name := str(unit.get("name", ""))
+	if unit_name == "":
+		unit_name = klass
+	if unit_name == "":
+		unit_name = "—"
+	if klass != "" and klass != unit_name:
+		return "%s · %s" % [unit_name, klass]
+	return unit_name
 
 
 ## Visible countdown. Prefer host turn_time_seconds (ceil). Missing fields → -1.
@@ -918,7 +970,6 @@ func set_turn_clock(seconds_left: int, running: bool, fraction: float) -> void:
 	if _clock_bar == null:
 		return
 	var width := _clock_bar_max_width * clampf(fraction, 0.0, 1.0)
-	_clock_bar.custom_minimum_size = Vector2(width, 8)
 	_clock_bar.size = Vector2(width, 8)
 	if not running:
 		_clock_bar.color = GOLD_DIM
@@ -987,7 +1038,6 @@ func render(snap: Dictionary, legal: Array) -> void:
 
 	var active := _unit(units, active_seat)
 	var chrome := _unit(units, kit_seat(snap))
-	var active_name := str(active.get("name", "—"))
 	var clock_sec := turn_clock_seconds(snap)
 	if clock_sec >= 0:
 		_clock_seconds = clock_sec
@@ -1002,10 +1052,8 @@ func render(snap: Dictionary, legal: Array) -> void:
 	elif _deploying:
 		_turn_label_base = "DEPLOYMENT  ·  place every fighter" if int(snap.get("team_size", 1)) > 1 else "DEPLOYMENT  ·  place both fighters"
 	else:
-		var whose := turn_status_text(snap)
-		if whose == "":
-			whose = active_name
-		_turn_label_base = "Turn %d  ·  %s" % [int(snap.get("turn_index", 1)), whose]
+		_turn_label_base = "Turn %d  ·  %s" % [int(snap.get("turn_index", 1)), turn_banner_text(snap)]
+	_sync_matchup(snap)
 	var net_prefix := _net_prefix(snap)
 	if net_prefix != "":
 		_turn_label_base = "%s%s" % [net_prefix, _turn_label_base]
@@ -1015,9 +1063,8 @@ func render(snap: Dictionary, legal: Array) -> void:
 		_apply_turn_label_clock()
 	_sync_turn_strip(snap)
 
-	_render_pips(_ap_pips, int(active.get("ap", 0)), int(active.get("max_ap", 6)), DOFUS_AP)
+	_render_pips(_ap_pips, int(active.get("ap", 0)), int(active.get("max_ap", 6)), DOFUS_AP, active)
 	_render_pips(_mp_pips, int(active.get("mp", 0)), int(active.get("max_mp", 3)), DOFUS_MP)
-	_append_engine_pips(_ap_pips, active)
 	if _deploy_note != "" and _deploying:
 		_coach_label.text = _deploy_note
 	else:
@@ -1100,6 +1147,7 @@ func _apply_controls(match_over: bool) -> void:
 
 func _build() -> void:
 	var root := Control.new()
+	_ui_root = root
 	root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(root)
@@ -1109,16 +1157,38 @@ func _build() -> void:
 	root.add_child(_make_banner(false))
 
 	var resource_panel := Panel.new()
+	_resource_panel = resource_panel
 	resource_panel.position = Vector2(256, 8)
 	resource_panel.size = Vector2(448, 128)
+	resource_panel.clip_contents = true
 	resource_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	resource_panel.add_theme_stylebox_override("panel", _fighter_frame(true, GOLD))
 	root.add_child(resource_panel)
 
+	_you_label = Label.new()
+	_you_label.name = "YouLabel"
+	_you_label.position = Vector2(8, 2)
+	_you_label.size = Vector2(210, 18)
+	_you_label.clip_text = true
+	_you_label.add_theme_font_size_override("font_size", 12)
+	_you_label.add_theme_color_override("font_color", GOLD_BRIGHT)
+	_apply_display_font(_you_label)
+	resource_panel.add_child(_you_label)
+	_opp_label = Label.new()
+	_opp_label.name = "OppLabel"
+	_opp_label.position = Vector2(222, 2)
+	_opp_label.size = Vector2(218, 18)
+	_opp_label.clip_text = true
+	_opp_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_opp_label.add_theme_font_size_override("font_size", 12)
+	_opp_label.add_theme_color_override("font_color", GOLD)
+	_apply_display_font(_opp_label)
+	resource_panel.add_child(_opp_label)
+
 	_turn_strip = HBoxContainer.new()
 	_turn_strip.name = "TurnStrip"
-	_turn_strip.position = Vector2(8, 4)
-	_turn_strip.size = Vector2(432, 48)
+	_turn_strip.position = Vector2(8, 22)
+	_turn_strip.size = Vector2(432, 28)
 	_turn_strip.alignment = BoxContainer.ALIGNMENT_CENTER
 	_turn_strip.add_theme_constant_override("separation", 8)
 	_turn_strip.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -1392,6 +1462,7 @@ func _build() -> void:
 	_tooltip_panel.add_child(_tooltip_label)
 
 	var side_column := VBoxContainer.new()
+	_side_column = side_column
 	side_column.name = "SideColumn"
 	side_column.position = Vector2(16, 152)
 	side_column.add_theme_constant_override("separation", 8)
@@ -1428,6 +1499,9 @@ func _build() -> void:
 	_handoff_panel.add_child(_handoff_label)
 
 	_update_selected_label()
+	if not root.resized.is_connected(_layout_chrome):
+		root.resized.connect(_layout_chrome)
+	call_deferred("_layout_chrome")
 
 
 func _show_new_match(snap: Dictionary) -> bool:
@@ -1469,6 +1543,7 @@ func _make_banner(is_kestrel: bool) -> Panel:
 	var panel := Panel.new()
 	panel.position = Vector2(8, 8) if is_kestrel else Vector2(712, 8)
 	panel.size = Vector2(240, 128)
+	panel.clip_contents = true
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var color := KESTREL_GREEN if is_kestrel else IRONJAW_RED
 	panel.add_theme_stylebox_override("panel", _fighter_frame(false, color))
@@ -1553,20 +1628,58 @@ func _make_clock_row() -> HBoxContainer:
 	_clock_label.add_theme_font_size_override("font_size", 14)
 	_clock_label.add_theme_color_override("font_color", CREAM)
 	row.add_child(_clock_label)
+	_clock_track = ColorRect.new()
+	_clock_track.custom_minimum_size = Vector2(_clock_bar_max_width, 8)
+	_clock_track.size = Vector2(_clock_bar_max_width, 8)
+	_clock_track.color = Color(0.08, 0.07, 0.06, 0.9)
+	_clock_track.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_clock_bar = ColorRect.new()
-	_clock_bar.custom_minimum_size = Vector2(_clock_bar_max_width, 8)
+	_clock_bar.position = Vector2.ZERO
 	_clock_bar.size = Vector2(_clock_bar_max_width, 8)
 	_clock_bar.color = GOLD
-	row.add_child(_clock_bar)
+	_clock_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_clock_track.add_child(_clock_bar)
+	row.add_child(_clock_track)
 	return row
 
 
-func _render_pips(row: HBoxContainer, current: int, maximum: int, fill: Color) -> void:
+func _engine_pip_sig(unit: Dictionary) -> String:
+	var class_id := str(unit.get("class_id", ""))
+	var field := ""
+	var cap_field := ""
+	match class_id:
+		"kestrel":
+			field = "marks"
+			cap_field = "marks_cap"
+		"ironjaw":
+			field = "impact"
+			cap_field = "impact_cap"
+		"gloam":
+			field = "umbral"
+			cap_field = "umbral_cap"
+		"bastion":
+			field = "aegis"
+			cap_field = "aegis_cap"
+		"mender":
+			field = "pulse"
+			cap_field = "pulse_cap"
+		_:
+			return ""
+	return "%s:%d:%d" % [field, int(unit.get(field, 0)), int(unit.get(cap_field, 0))]
+
+
+func _render_pips(row: HBoxContainer, current: int, maximum: int, fill: Color, unit: Dictionary = {}) -> void:
+	var kind := "ap" if fill == DOFUS_AP else "mp"
+	var engine := _engine_pip_sig(unit) if fill == DOFUS_AP else ""
+	var sig := "%d:%d:%s:%s" % [current, maximum, kind, engine]
+	var row_id := row.get_instance_id()
+	if str(_pip_sig.get(row_id, "")) == sig and row.get_child_count() > 1:
+		return
+	_pip_sig[row_id] = sig
 	while row.get_child_count() > 1:
 		var child := row.get_child(row.get_child_count() - 1)
 		row.remove_child(child)
 		child.free()
-	var kind := "ap" if fill == DOFUS_AP else "mp"
 	var lit_tex := _load_pip("pip_%s_32.png" % kind)
 	var empty_tex := _load_pip("pip_empty_32.png")
 	if lit_tex == null or empty_tex == null:
@@ -1586,9 +1699,13 @@ func _render_pips(row: HBoxContainer, current: int, maximum: int, fill: Color) -
 				gem.shadow_size = 3
 			pip.add_theme_stylebox_override("panel", gem)
 			row.add_child(pip)
+		if fill == DOFUS_AP and not unit.is_empty():
+			_append_engine_pips(row, unit)
 		return
 	for i in range(maximum):
 		row.add_child(_pip_icon(lit_tex if i < current else empty_tex, i < current))
+	if fill == DOFUS_AP and not unit.is_empty():
+		_append_engine_pips(row, unit)
 
 
 func _append_engine_pips(row: HBoxContainer, unit: Dictionary) -> void:
@@ -1650,13 +1767,22 @@ func _load_pip(file_name: String) -> Texture2D:
 func _sync_turn_strip(snap: Dictionary) -> void:
 	if _turn_strip == null:
 		return
+	var active := snap_active_seat(snap)
+	var deploying := is_deployment_phase(snap)
+	var over := bool(snap.get("match_over", false))
+	var parts: PackedStringArray = PackedStringArray()
+	for unit in turn_order(snap):
+		var seat := int(unit.get("seat", -1))
+		var acting := (not deploying) and (not over) and seat == active
+		parts.append("%d:%s:%s" % [seat, str(unit.get("class_id", "")), "1" if acting else "0"])
+	var sig := "|".join(parts)
+	if sig == _turn_strip_sig and _turn_strip.get_child_count() > 0:
+		return
+	_turn_strip_sig = sig
 	while _turn_strip.get_child_count() > 0:
 		var child := _turn_strip.get_child(0)
 		_turn_strip.remove_child(child)
 		child.free()
-	var active := snap_active_seat(snap)
-	var deploying := is_deployment_phase(snap)
-	var over := bool(snap.get("match_over", false))
 	for unit in turn_order(snap):
 		var seat := int(unit.get("seat", -1))
 		var acting := (not deploying) and (not over) and seat == active
@@ -1672,7 +1798,7 @@ func _sync_turn_strip(snap: Dictionary) -> void:
 
 
 func _turn_chip(unit: Dictionary, acting: bool) -> Control:
-	var side := 46 if acting else 36
+	var side := 26 if acting else 22
 	var host := Panel.new()
 	host.custom_minimum_size = Vector2(side, side)
 	host.size = Vector2(side, side)
@@ -2994,6 +3120,107 @@ func _net_prefix(snap: Dictionary) -> String:
 	if seat == 1:
 		return "GUEST · "
 	return ""
+
+
+func _sync_matchup(snap: Dictionary) -> void:
+	if _you_label == null or _opp_label == null:
+		return
+	var seats := you_opp_seats(snap)
+	var units: Array = snap.get("units", [])
+	_you_label.text = "YOU  %s" % seat_caption(unit_for_seat(units, seats.x))
+	_opp_label.text = "OPPONENT  %s" % seat_caption(unit_for_seat(units, seats.y))
+
+
+func _layout_chrome(forced: Vector2 = Vector2.ZERO) -> void:
+	var view := forced
+	if view.x < 2.0 or view.y < 2.0:
+		var vp := get_viewport()
+		if vp == null:
+			return
+		view = vp.get_visible_rect().size
+	if view.x < 2.0 or view.y < 2.0:
+		return
+	var margin := 8.0
+	var gap := 8.0
+	var top_h := minf(128.0, view.y - margin * 2.0)
+	top_h = maxf(top_h, 1.0)
+	var banner_w := 240.0
+	var center_w := 448.0
+	var inner := view.x - margin * 2.0 - gap * 2.0
+	var need := banner_w * 2.0 + center_w
+	if inner < need:
+		var scale := inner / need
+		banner_w *= scale
+		center_w *= scale
+	var left_x := margin
+	var right_x := view.x - margin - banner_w
+	var center_x := (view.x - center_w) * 0.5
+	var left_end := left_x + banner_w + gap
+	var right_start := right_x - gap
+	if center_x < left_end:
+		center_x = left_end
+	if center_x + center_w > right_start:
+		center_w = maxf(right_start - center_x, 1.0)
+	if _banner_panels.size() >= 2:
+		_banner_panels[0].position = Vector2(left_x, margin)
+		_banner_panels[0].size = Vector2(banner_w, top_h)
+		_banner_panels[1].position = Vector2(right_x, margin)
+		_banner_panels[1].size = Vector2(banner_w, top_h)
+	if _resource_panel != null:
+		_resource_panel.position = Vector2(center_x, margin)
+		_resource_panel.size = Vector2(center_w, top_h)
+	for title in _banner_titles:
+		title.size.x = maxf(banner_w - 24.0, 1.0)
+	if _you_label != null:
+		var half := maxf((center_w - 24.0) * 0.5, 1.0)
+		_you_label.size = Vector2(half, 18)
+		_opp_label.position = Vector2(8.0 + half, 2)
+		_opp_label.size = Vector2(half, 18)
+	if _turn_strip != null:
+		_turn_strip.size.x = maxf(center_w - 16.0, 1.0)
+	if _turn_label != null:
+		_turn_label.size.x = maxf(center_w - 16.0, 1.0)
+	_clock_bar_max_width = clampf(center_w - 120.0, 48.0, 220.0)
+	if _clock_track != null:
+		_clock_track.custom_minimum_size = Vector2(_clock_bar_max_width, 8)
+		_clock_track.size = Vector2(_clock_bar_max_width, 8)
+	var bottom_top := view.y + TOUCH.HUD_BOTTOM_OFFSET
+	if _side_column != null:
+		var side_y := margin + top_h + 8.0
+		var room := bottom_top - side_y - 8.0
+		_side_column.position = Vector2(margin, side_y)
+		_side_column.scale = Vector2.ONE
+		if room < 220.0 and room > 8.0:
+			var fit := clampf(room / 232.0, 0.35, 1.0)
+			_side_column.scale = Vector2(fit, fit)
+	if _stun_badge != null:
+		_stun_badge.position = Vector2(center_x + maxf(center_w - 110.0, 0.0), margin + top_h + 4.0)
+	if _toast_label != null:
+		var toast_w := minf(520.0, maxf(view.x - 16.0, 1.0))
+		_toast_label.size = Vector2(toast_w, 32)
+		_toast_label.position = Vector2((view.x - toast_w) * 0.5, clampf(view.y * 0.72, margin + top_h + 8.0, maxf(view.y - 40.0, margin)))
+	if _tooltip_panel != null:
+		var tip_w := minf(560.0, maxf(view.x - 16.0, 1.0))
+		var tip_h := minf(248.0, maxf(view.y * 0.4, 48.0))
+		_tooltip_panel.size = Vector2(tip_w, tip_h)
+		_tooltip_panel.position = Vector2((view.x - tip_w) * 0.5, maxf(margin + top_h + 8.0, view.y - tip_h - 16.0))
+		if _tooltip_label != null:
+			_tooltip_label.size = Vector2(tip_w - 24.0, tip_h - 16.0)
+	if _handoff_panel != null:
+		var hand_w := minf(500.0, maxf(view.x - 32.0, 1.0))
+		var hand_h := minf(140.0, maxf(view.y * 0.28, 36.0))
+		_handoff_panel.size = Vector2(hand_w, hand_h)
+		_handoff_panel.position = Vector2((view.x - hand_w) * 0.5, (view.y - hand_h) * 0.5)
+		if _handoff_label != null:
+			_handoff_label.size = Vector2(hand_w - 32.0, hand_h - 24.0)
+	if _ability_cluster != null:
+		var cluster_scale := 1.0
+		if view.x < 900.0:
+			cluster_scale = clampf((view.x - 380.0) / TOUCH.CLUSTER_SIZE.x, 0.45, 1.0)
+		if view.y < 520.0:
+			cluster_scale = minf(cluster_scale, clampf((view.y - 160.0) / TOUCH.CLUSTER_SIZE.y, 0.4, 1.0))
+		_ability_cluster.pivot_offset = TOUCH.CLUSTER_SIZE
+		_ability_cluster.scale = Vector2(cluster_scale, cluster_scale)
 
 
 func _apply_turn_label_clock() -> void:

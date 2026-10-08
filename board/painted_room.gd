@@ -66,6 +66,8 @@ static func bind(parent: Node2D, room_id: String, tiles: Dictionary) -> bool:
 	parent.move_child(host, 0)
 	for cell in tiles.keys():
 		var tile: Node = tiles[cell]
+		if tile != null and tile.has_method("set_occluder_covers_grid"):
+			tile.set_occluder_covers_grid(false)
 		if tile != null and tile.has_method("set_painted_floor"):
 			tile.set_painted_floor(false)
 	var bg := texture_from_webpbin("%s%s/%s" % [ROOT, room_id, str(place.get("background", ""))])
@@ -96,9 +98,11 @@ static func bind(parent: Node2D, room_id: String, tiles: Dictionary) -> bool:
 		sprite.scale = Vector2(0.5, 0.5)
 		var off: Array = occ.get("offset", [0.0, 0.0])
 		sprite.position = VISUAL_SORT.cell_to_local(cell, elev) + Vector2(float(off[0]), float(off[1])) * 0.5
-		sprite.z_index = VISUAL_SORT.tile_z_index(cell, elev)
+		sprite.z_index = VISUAL_SORT.occluder_z_index(cell, elev)
 		sprite.z_as_relative = true
 		host.add_child(sprite)
+		if tile != null and tile.has_method("set_occluder_covers_grid"):
+			tile.set_occluder_covers_grid(true)
 	var surfaced := {}
 	for raw in place.get("surfaces", []):
 		if typeof(raw) != TYPE_DICTIONARY:
@@ -132,6 +136,8 @@ static func _clear(host: Node2D, tiles: Dictionary) -> void:
 		host.free()
 	for cell in tiles.keys():
 		var tile: Node = tiles[cell]
+		if tile != null and tile.has_method("set_occluder_covers_grid"):
+			tile.set_occluder_covers_grid(false)
 		if tile != null and tile.has_method("set_painted_floor"):
 			tile.set_painted_floor(false)
 

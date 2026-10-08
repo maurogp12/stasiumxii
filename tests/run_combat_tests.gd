@@ -4596,10 +4596,10 @@ func _test_turn_clock_auto_end_turn() -> void:
 	var hud_node := CombatHUD.new()
 	hud_node._build()
 	hud_node.render(guest_snap, _sim.legal_intents(1))
-	truthy(hud_node._turn_label.text.contains("Your Turn"), "rendered guest label names Your Turn")
+	truthy(hud_node._turn_label.text.contains("YOUR TURN"), "rendered guest label names YOUR TURN")
 	eq(hud_node.end_turn_enabled(), true, "guest End Turn is on during their turn")
 	hud_node.render(host_snap, _sim.legal_intents(0))
-	truthy(hud_node._turn_label.text.contains("Opponent's Turn"), "rendered host label names Opponent's Turn")
+	truthy(hud_node._turn_label.text.contains("OPPONENT'S TURN"), "rendered host label names OPPONENT'S TURN")
 	eq(hud_node.end_turn_enabled(), false, "host End Turn is off during the guest turn")
 	eq(hud_node._spell_buttons.has("mark_shot"), true, "host still shows Kestrel kit on opponent turn")
 	eq(hud_node.clock_visible(), true, "TIME stays visible on the watching host")
@@ -4647,7 +4647,7 @@ func _test_turn_clock_auto_end_turn() -> void:
 	hud_node.render(guest_watch, _sim.legal_intents(1))
 	eq(hud_node._spell_buttons.has("advance"), true, "guest keeps Ironjaw spells during Kestrel's turn")
 	eq(hud_node._spell_buttons.has("mark_shot"), false, "guest does not swap to Kestrel spells")
-	truthy(hud_node._turn_label.text.contains("Opponent's Turn"), "guest label is Opponent's Turn on seat 0")
+	truthy(hud_node._turn_label.text.contains("OPPONENT'S TURN"), "guest label is OPPONENT'S TURN on seat 0")
 	eq(hud_node.clock_visible(), true, "guest TIME is visible while watching")
 	truthy(hud_node._turn_label.text.contains("%ds" % int(guest_watch.get("turn_time_seconds", 30))), "guest turn line paints turn_time_seconds")
 	hud_node.free()
@@ -7023,16 +7023,16 @@ func _test_spell_tooltip_cards() -> void:
 	eq(mark_preview["range_text"], "range 2–5", "Mark Shot preview_cast range_text is player-facing")
 	truthy(mark.contains("range 2–5"), "Mark Shot card names range from preview")
 	eq(mark.contains("Chebyshev"), false, "Mark Shot card does not name Chebyshev")
-	truthy(mark.contains("On hit: 8 Air. +1 Mark on the target."), "Mark Shot hit line is preview kit text")
-	truthy(mark.contains("On miss: AP/MP stay spent. No Mark."), "Mark Shot miss line is preview kit text")
-	truthy(mark.contains("HIT 90% (Locked)"), "Mark Shot card uses preview hit_chance")
-	truthy(mark.contains("sample 9"), "Mark Shot card uses preview sample_damage")
-	truthy(mark.contains("CritMult(1.0) × live Facing"), "Mark Shot sample names CritMult 1.0 and live Facing")
+	truthy(mark.contains("Dmg 9"), "Mark Shot card uses preview sample_damage")
+	truthy(mark.contains("+1 Mark"), "Mark Shot card names the Mark")
+	eq(mark.contains("On hit:"), false, "Mark Shot card drops the hit essay")
+	eq(mark.contains("HIT "), false, "Mark Shot card drops the hit percent")
+	eq(mark.contains("CritMult"), false, "Mark Shot card drops CritMult")
 	eq(mark.contains("+5"), false, "Mark Shot card does not invent +5")
 	eq(mark.contains("longshot"), false, "Mark Shot card does not invent longshot")
 	eq(mark.contains("WindMod"), false, "tooltip does not invent WindMod")
 	eq(mark.contains("Mastery"), false, "tooltip omits Mastery 0")
-	truthy(mark.contains("Resist 0 (provisional Open A05)"), "Resist is preview's provisional Open note")
+	eq(mark.contains("Resist"), false, "Mark Shot card drops the Resist note")
 	eq(mark.contains("Step-shot"), false, "tooltip does not invent Step-shot")
 	eq(mark.contains("Gust"), false, "tooltip does not invent Gust")
 	eq(mark.contains("crit roll"), false, "tooltip does not turn crit roll ON")
@@ -7045,8 +7045,7 @@ func _test_spell_tooltip_cards() -> void:
 		"ironjaw_facing": "E",
 	})
 	var mark_back := SpellTooltip.card_text(_sim.preview_cast(SpellKits.MARK_SHOT, Vector2i(0, 0), Vector2i(2, 0), 1))
-	truthy(mark_back.contains("HIT 75% (Locked)"), "Mark Shot back preview uses Kestrel 75% at range 2")
-	truthy(mark_back.contains("sample 10"), "Mark Shot back preview samples 8 × 1.20 = 10")
+	truthy(mark_back.contains("Dmg 10"), "Mark Shot back preview samples 8 × 1.20 = 10")
 
 	_sim.reset_match({
 		"seed": 1,
@@ -7064,11 +7063,9 @@ func _test_spell_tooltip_cards() -> void:
 	eq(detonate_preview["range_text"], "range 1–5", "Detonate preview_cast range_text is player-facing")
 	truthy(detonate.contains("range 1–5"), "Detonate card names range from preview")
 	eq(detonate.contains("Chebyshev"), false, "Detonate card does not name Chebyshev")
-	truthy(detonate.contains("On hit: 6+6×M Air. Consumes Marks on the target."), "Detonate hit line is preview kit text")
-	truthy(detonate.contains("On miss: Marks stay. AP/MP stay spent."), "Detonate miss line is preview kit text")
-	truthy(detonate.contains("HIT 75% (Locked)"), "Detonate card uses preview hit_chance")
-	truthy(detonate.contains("sample 24"), "Detonate card uses current-M sample")
-	truthy(detonate.contains("M=3 (6+6*M)"), "Detonate card names current Marks and formula")
+	truthy(detonate.contains("Dmg 24"), "Detonate card uses current-M sample")
+	truthy(detonate.contains("Uses Marks"), "Detonate card says it uses Marks")
+	eq(detonate.contains("On hit:"), false, "Detonate card drops the hit essay")
 	eq(detonate.contains("+5"), false, "Detonate card does not invent +5")
 
 	_sim.reset_match({
@@ -7086,7 +7083,7 @@ func _test_spell_tooltip_cards() -> void:
 	eq(detonate_m0.contains("sample 6"), false, "Detonate M=0 card does not lead with sample 6")
 	eq(detonate_m0.contains("sample %d" % 6), false, "Detonate M=0 card has no numeric sample 6")
 	truthy(detonate_m0.contains("6+6×M"), "Detonate M=0 card still explains 6+6×M")
-	truthy(detonate_m0.contains("Needs 1+ Marks"), "Detonate M=0 card names the Marks gate")
+	eq(detonate_m0.split("\n")[1], "needs Marks", "Detonate M=0 card names the Marks gate")
 
 	_sim.reset_match({"seed": 1, "flat_board": true, "kestrel_pos": Vector2i(7, 7), "ironjaw_pos": Vector2i(3, 3)})
 	_sim.submit({"type": "end_turn"})
@@ -7098,8 +7095,8 @@ func _test_spell_tooltip_cards() -> void:
 	truthy(advance.contains("Advance"), "Advance card names the spell")
 	truthy(advance.contains("3 AP / 0 MP"), "Advance card names 3 AP / 0 MP from preview")
 	truthy(advance.contains("exactly 2 cardinal"), "Advance card names the 2-cardinal range from preview")
-	truthy(advance.contains("Facing unchanged"), "Advance card uses preview facing note")
-	truthy(advance.contains("Teleport"), "Advance card uses preview teleport text")
+	truthy(advance.contains("Jump"), "Advance card says Jump")
+	eq(advance.contains("Teleport"), false, "Advance card drops the teleport essay")
 	eq(advance.contains("HIT "), false, "Advance card has no HIT %")
 	eq(advance.contains("sample "), false, "Advance card has no damage sample")
 
@@ -7114,17 +7111,16 @@ func _test_spell_tooltip_cards() -> void:
 	var strike := SpellTooltip.card_text(_sim.preview_cast(SpellKits.STRIKE, Vector2i(3, 3), Vector2i(4, 3), 0))
 	truthy(strike.contains("range 1–1"), "Strike card names range 1 from preview")
 	eq(strike.contains("Chebyshev"), false, "Strike card does not name Chebyshev")
-	truthy(strike.contains("On hit: 14 Earth. +1 Impact."), "Strike hit line is preview kit text")
-	truthy(strike.contains("HIT 90% (Locked)"), "Strike card uses preview melee 90%")
-	truthy(strike.contains("sample 14"), "Strike card uses preview sample_damage")
+	truthy(strike.contains("Dmg 14"), "Strike card uses preview sample_damage")
+	truthy(strike.contains("+1 Impact"), "Strike card names Impact")
+	eq(strike.contains("HIT "), false, "Strike card drops the hit percent")
 
 	var shoulder_preview: Dictionary = _sim.preview_cast(SpellKits.SHOULDER, Vector2i(3, 3), Vector2i(4, 3), 0)
 	var shoulder := SpellTooltip.card_text(shoulder_preview)
-	truthy(shoulder.contains("On hit: 6 Earth. +1 Impact. Push 1."), "Shoulder hit line is preview kit text")
-	truthy(shoulder.contains("Director Locked Shoulder"), "Shoulder card passes through Locked Shoulder note")
-	eq(shoulder.contains("Open Push"), false, "Shoulder Push wording is Locked, not Open")
-	truthy(shoulder.contains("HIT 90% (Locked)"), "Shoulder card uses preview melee 90%")
-	truthy(shoulder.contains("sample 6"), "Shoulder card uses preview sample_damage")
+	truthy(shoulder.contains("Dmg 6"), "Shoulder card uses preview sample_damage")
+	truthy(shoulder.contains("Push 1"), "Shoulder card names the push")
+	eq(shoulder.contains("Open Push"), false, "Shoulder card does not say Open Push")
+	eq(shoulder.contains("Director Locked"), false, "Shoulder card drops the director note")
 
 	_sim.reset_match({
 		"seed": 1,
@@ -7139,12 +7135,10 @@ func _test_spell_tooltip_cards() -> void:
 	var crush := SpellTooltip.card_text(crush_preview)
 	eq(crush_preview["would_stun"], true, "Crush preview flags stun at Impact 4")
 	truthy(crush.contains("4 AP / 0 MP"), "Crush card names AP/MP from preview")
-	truthy(crush.contains("On hit: 12 Earth. Spends 2 Impact. Stun 1 if Impact was full (5); a stunning Crush spends all."), "Crush hit line is preview kit text")
-	truthy(crush.contains("On miss: Impact retained. AP/MP stay spent."), "Crush miss line is preview kit text")
-	truthy(crush.contains("Stun 1 (Locked A′) this cast."), "Crush card shows stun flag when preview would_stun")
-	eq(crush.contains("Stun 1 (Open"), false, "Crush Stun wording is Locked, not Open")
-	truthy(crush.contains("HIT 90% (Locked)"), "Crush card uses preview melee 90%")
-	truthy(crush.contains("sample 12"), "Crush card uses preview sample_damage")
+	truthy(crush.contains("Dmg 12"), "Crush card uses preview sample_damage")
+	truthy(crush.contains("Stun"), "Crush card shows stun when preview would_stun")
+	eq(crush.contains("Stun 1 (Open"), false, "Crush card does not say Open stun")
+	eq(crush.contains("On hit:"), false, "Crush card drops the hit essay")
 
 	_sim.reset_match({
 		"seed": 1,
@@ -7156,7 +7150,7 @@ func _test_spell_tooltip_cards() -> void:
 	})
 	_sim.submit({"type": "end_turn"})
 	var crush_no_stun := SpellTooltip.card_text(_sim.preview_cast(SpellKits.CRUSH, Vector2i(4, 3), Vector2i(3, 3), 0))
-	eq(crush_no_stun.contains("Stun 1 (Locked A′) this cast."), false, "Crush stun flag stays off when Impact is 2")
+	eq(crush_no_stun.contains("\nStun"), false, "Crush stun flag stays off when Impact is 2")
 
 	_sim.reset_match({
 		"seed": 1,
@@ -7194,16 +7188,16 @@ func _test_spell_tooltip_cards() -> void:
 	eq((hud._spell_buttons[SpellKits.CRUSH] as Button).mouse_filter, Control.MOUSE_FILTER_IGNORE, "grey Crush still lets the host receive hover")
 	hud._on_spell_hover(SpellKits.CRUSH)
 	eq(hud.tooltip_visible(), true, "grey Crush still shows its card")
-	eq(hud.tooltip_caption().contains("Stun 1 (Locked A′) this cast."), false, "grey Crush at 0 Impact does not flag this-cast Stun")
+	eq(hud.tooltip_caption().contains("\nStun"), false, "grey Crush at 0 Impact does not flag Stun")
 	eq((hud._spell_buttons[SpellKits.ADVANCE] as Button).disabled, false, "Advance is enabled on Ironjaw")
 	eq((hud._spell_buttons[SpellKits.ADVANCE] as Button).mouse_entered.get_connections().is_empty(), false, "enabled Advance button wires hover to preview_cast")
 	hud._on_spell_hover(SpellKits.ADVANCE)
 	eq(hud.tooltip_caption().contains("HIT "), false, "Advance hover still has no HIT %")
 	eq(hud.preview_for_spell(SpellKits.ADVANCE)["sample_damage"], null, "Advance hover preview has no sample")
 	truthy(hud.tooltip_caption().contains("exactly 2 cardinal"), "Advance hover names the 2-cardinal range from preview")
-	truthy(hud.tooltip_caption().contains("Teleport"), "Advance hover uses preview teleport text")
+	truthy(hud.tooltip_caption().contains("Jump"), "Advance hover says Jump")
 	hud._on_spell_hover(SpellKits.SHOULDER)
-	truthy(hud.tooltip_caption().contains("Director Locked Shoulder"), "Shoulder hover names Director Locked Shoulder from preview")
+	truthy(hud.tooltip_caption().contains("Push 1"), "Shoulder hover names the push from the kit")
 
 	_sim.reset_match({
 		"seed": 1,
@@ -7226,7 +7220,7 @@ func _test_spell_tooltip_cards() -> void:
 	truthy(gated_card.contains("3 AP / 0 MP"), "M=0 Detonate card keeps costs")
 	truthy(gated_card.contains("range 1–5"), "M=0 Detonate card keeps range")
 	eq(gated_card.contains("Chebyshev"), false, "M=0 Detonate card does not name Chebyshev")
-	truthy(gated_card.contains("HIT "), "M=0 Detonate card keeps HIT%")
+	eq(gated_card.contains("HIT "), false, "M=0 Detonate card drops HIT%")
 	eq(gated_card.contains("sample 6"), false, "M=0 Detonate card does not lead with sample 6")
 	var sample_first := SpellTooltip.card_text({
 		"name": "Detonate",
@@ -7249,13 +7243,13 @@ func _test_spell_tooltip_cards() -> void:
 
 	var tooltip_src := FileAccess.get_file_as_string("res://data/spell_tooltip.gd")
 	truthy(tooltip_src.contains("preview_cast"), "tooltip helper is wired to preview_cast")
-	truthy(tooltip_src.contains("CritMult(1.0)"), "tooltip sample names CritMult(1.0)")
+	eq(tooltip_src.contains("CritMult(1.0)"), false, "the hold card no longer prints CritMult")
 	eq(tooltip_src.contains("WindMod"), false, "tooltip source does not invent WindMod")
 	eq(tooltip_src.contains("Step-shot"), false, "tooltip source does not invent Step-shot")
 	eq(tooltip_src.contains("Gust"), false, "tooltip source does not invent Gust")
 	eq(tooltip_src.contains("longshot"), false, "tooltip source does not invent longshot")
 	eq(tooltip_src.contains("+5"), false, "tooltip source does not invent +5")
-	truthy(tooltip_src.contains("Locked A"), "tooltip source stamps Locked Stun A")
+	eq(tooltip_src.contains("Locked A"), false, "the hold card no longer prints the Locked Stun essay")
 	eq(tooltip_src.contains("OPEN A05"), false, "tooltip source does not hardcode OPEN A05")
 	eq(tooltip_src.contains("Chebyshev"), false, "tooltip formatter does not name Chebyshev")
 	truthy(tooltip_src.contains("range_text"), "tooltip formatter reads preview range_text")
@@ -7421,7 +7415,7 @@ func _test_playtest_warning_hush() -> void:
 	var hud_src := FileAccess.get_file_as_string("res://ui/hud.gd")
 	var view := FileAccess.get_file_as_string("res://board_view.gd")
 	eq(tooltip_src.contains("var connect :="), false, "spell_tooltip does not shadow Object.connect")
-	truthy(tooltip_src.contains("var on_connect :="), "spell_tooltip renamed the connect local")
+	eq(tooltip_src.contains("var on_connect :="), false, "the short card does not keep the hit essay local")
 	eq(hud_src.contains("var show :="), false, "hud does not shadow CanvasLayer.show")
 	truthy(hud_src.contains("var stun_visible :="), "hud renamed the show local")
 	truthy(view.contains("COMBAT_SIM_SCRIPT.facing_from_step"), "walk hops call facing_from_step on the script type")
@@ -7631,8 +7625,10 @@ func _test_every_spell_explained() -> void:
 			eq(lines.size() >= 2, true, "%s has a plain-words card" % spell_id)
 			if lines.size() > 0:
 				eq(str(lines[0]).begins_with("Costs %d AP" % int(SpellKits.SPELLS[spell_id]["ap"])), true, "%s card names its AP cost" % spell_id)
-	var card := SpellTooltip.card_text(_sim.preview_cast(SpellKits.SNAP_WALL, Vector2i(1, 1), Vector2i(2, 1), 1))
-	truthy(card.contains("knock it down"), "the Snap Wall card explains the knock-down")
+	var card := " ".join(SpellTooltip.simple_lines(SpellKits.SNAP_WALL))
+	truthy(card.contains("knock it down"), "the Snap Wall plain card explains the knock-down")
+	var short_wall := SpellTooltip.card_text(_sim.preview_cast(SpellKits.SNAP_WALL, Vector2i(1, 1), Vector2i(2, 1), 1))
+	truthy(short_wall.contains("Dur "), "the Snap Wall hold card names the duration")
 
 
 

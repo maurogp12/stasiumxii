@@ -25,8 +25,7 @@ static func card_lines(preview: Dictionary) -> PackedStringArray:
 	# Presentation only: preview_cast reason / marks_on_target. No client kit math.
 	var needs_marks := _preview_needs_marks(preview)
 	if needs_marks:
-		var gate := str(preview.get("gate_text", "")).strip_edges()
-		lines.append(gate if gate != "" else "needs Marks")
+		lines.append("needs Marks")
 	var range_line := str(preview.get("range_text", "")).strip_edges()
 	if range_line == "":
 		range_line = SpellKits.range_text(preview)
@@ -35,43 +34,53 @@ static func card_lines(preview: Dictionary) -> PackedStringArray:
 		int(preview.get("mp", 0)),
 		range_line,
 	])
-	# Mauro 6 Oct 2026: every spell explained on hold so "even a 5 year old
-	# can understand" — cost, reach and what it does, in plain words.
-	var simple := simple_lines(str(preview.get("spell_id", "")), preview)
-	if not simple.is_empty():
-		lines.append_array(simple)
-		lines.append("— Details —")
-	var on_connect := str(preview.get("on_connect_text", "")).strip_edges()
-	if on_connect != "":
-		lines.append("On hit: %s" % on_connect)
-	var miss := str(preview.get("on_miss_text", "")).strip_edges()
-	if miss != "":
-		lines.append("On miss: %s" % miss)
-	if preview.get("hit_chance", null) != null:
-		lines.append("HIT %d%% (Locked)" % int(preview["hit_chance"]))
 	if preview.get("sample_damage", null) != null and int(preview["sample_damage"]) > 0 and not needs_marks:
-		var sample := "sample %d  ·  CritMult(1.0) × live Facing" % int(preview["sample_damage"])
-		if preview.has("marks_on_target"):
-			var formula := str(preview.get("formula", "6+6*M"))
-			sample += "  ·  M=%d (%s)" % [int(preview["marks_on_target"]), formula]
-		lines.append(sample)
-	if str(preview.get("reason", "")) == "needs_marks":
-		# Do not lead with a fake sample 6 when M=0; on_connect already has 6+6×M.
-		lines.append("Needs 1+ Marks. 6+6×M when Marks exist.")
+		lines.append("Dmg %d" % int(preview["sample_damage"]))
+	var effect := _short_effect(preview, needs_marks)
+	if effect != "":
+		lines.append(effect)
+	var duration := _duration_line(str(preview.get("spell_id", "")))
+	if duration != "":
+		lines.append(duration)
 	if bool(preview.get("would_stun", false)):
-		lines.append("Stun 1 (Locked A′) this cast.")
-	for note in preview.get("notes", []):
-		var text := str(note)
-		if text == "":
-			continue
-		if text.contains("Push") or text.contains("push_blocked") or text.contains("bounce") or text.contains("stagger"):
-			lines.append(text)
-		elif text.contains("Resist"):
-			lines.append(text)
-		elif text.contains("teleport") or text.contains("Facing unchanged"):
-			if not on_connect.contains("Teleport") and not on_connect.contains("Facing unchanged"):
-				lines.append(text)
+		lines.append("Stun")
 	return lines
+
+
+## One short effect line. Numbers come from the preview and the kit, not a paragraph.
+static func _short_effect(preview: Dictionary, needs_marks: bool) -> String:
+	var spell_id := str(preview.get("spell_id", ""))
+	var def: Dictionary = SpellKits.SPELLS.get(spell_id, {})
+	if needs_marks or str(preview.get("reason", "")) == "needs_marks":
+		var per := int(def.get("damage_per_mark", 0))
+		var base := int(def.get("base_damage", 0))
+		if per > 0:
+			return "%d+%d×M" % [base, per]
+		return ""
+	if int(def.get("base_heal", 0)) > 0 and int(def.get("base_damage", 0)) <= 0:
+		return "Heal %d" % int(def.get("base_heal", 0))
+	var bits: PackedStringArray = PackedStringArray()
+	if int(def.get("gain_marks", 0)) > 0 or spell_id == SpellKits.MARK_SHOT:
+		bits.append("+1 Mark")
+	if int(def.get("gain_impact", 0)) > 0 or spell_id == SpellKits.STRIKE or spell_id == SpellKits.SHOULDER:
+		bits.append("+1 Impact")
+	if spell_id == SpellKits.SHOULDER or int(def.get("push_cells", 0)) > 0:
+		bits.append("Push %d" % maxi(int(def.get("push_cells", 1)), 1))
+	if spell_id == SpellKits.ADVANCE or spell_id == SpellKits.VAULT:
+		bits.append("Jump")
+	if spell_id == SpellKits.DETONATE:
+		bits.append("Uses Marks")
+	if bits.is_empty():
+		return ""
+	return " · ".join(bits)
+
+
+static func _duration_line(spell_id: String) -> String:
+	var def: Dictionary = SpellKits.SPELLS.get(spell_id, {})
+	for key in ["trap_turns", "shade_turns", "plant_turns", "wall_turns"]:
+		if def.has(key):
+			return "Dur %d turns" % int(def[key])
+	return ""
 
 
 static func _preview_needs_marks(preview: Dictionary) -> bool:
