@@ -92,7 +92,7 @@ const DIAMOND_H := 32.0
 const MOBILE_FRAME_TOP := 36.0
 const MOBILE_FRAME_BOTTOM := 64.0
 ## Mauro (29 Sep): the menus must not sit on the map. The clear band is the
-## space between the top plaques and the bottom thumb row. Zoom − reaches a
+## space between the top plaques and the bottom thumb row. Pinch zoom-out reaches a
 ## view that fits the whole diamond inside it, and the board centres in it.
 const MOBILE_CLEAR_TOP := 124.0
 const MOBILE_CLEAR_BOTTOM := 150.0
@@ -259,7 +259,7 @@ static func board_zoom(board_w: float, board_h: float, viewport_size: Vector2, m
 
 
 ## (min, max) the player may reach. Phone zoom-out rests at PLAYER_ZOOM_MIN
-## (1.40 on a 20:9 phone) when that is still under the overview, so Zoom −
+## (1.40 on a 20:9 phone) when that is still under the overview, so a pinch zoom-out
 ## shows the diamond tips without the contain fit's black wings. Desktop
 ## min is the desk fit. Max is 2.25, a closer view, not the 2.5 crop or the 3.0 cover.
 static func player_zoom_limits(board_w: float, board_h: float, viewport_size: Vector2, mobile: bool = false) -> Vector2:

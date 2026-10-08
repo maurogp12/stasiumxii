@@ -751,6 +751,8 @@ func _on_connection(status: String) -> void:
 		_queue_panel.visible = false
 	elif status == "host_left":
 		_status.text = "Server disconnected."
+	elif status == "match_finished":
+		return_to_hub()
 
 
 func _show_waiting() -> void:

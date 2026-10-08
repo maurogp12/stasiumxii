@@ -7,7 +7,8 @@ extends Node
 ## Transport: Godot 4 MultiplayerAPI + ENet (direct IP). RPC only; no scene sync.
 ## Another machine is a different --join address on this same host core.
 ## Hot-seat is the default (mode HOTSEAT → CombatSim.submit directly).
-## Dedicated disconnect is a stub: the seat stays reserved. No reconnect.
+## Dedicated: a seat stays reserved only while that match is being played.
+## A drop before the match, or after it ends, frees the seat. No mid-fight reconnect.
 
 enum Mode { HOTSEAT, HOST, CLIENT, DEDICATED }
 
@@ -44,7 +45,7 @@ var _cli_dedicated: bool = false
 var _signals_wired: bool = false
 ## peer id per seat. 0 means no live peer. Server peer id is 1 and is never stored.
 var _seat_peer: Array[int] = [0, 0]
-## True once a seat has been given out. Dedicated keeps this after disconnect.
+## True once a seat has been given out. Dedicated keeps this only while the match is live.
 var _seat_held: Array[bool] = [false, false]
 ## SELECT_CLASS on the dedicated queue. Listen-host ignores this and stays fixed.
 var selected_class_id: String = ""
@@ -57,6 +58,10 @@ var _cli_queue: bool = false
 var _local_queued: bool = false
 var _opponent_queued: bool = false
 var _match_live: bool = false
+## Set when a dedicated match reaches match_over. The peers stay up for the result.
+var _match_finished: bool = false
+## Client is leaving after a finished match, so the close is not "server disconnected".
+var _quiet_leave: bool = false
 var _prematch_phase: String = "MATCH"
 ## Koliseo payout (Blueprint §9/§15). One payout per finished match.
 var _koliseo_result_noted: bool = false
@@ -182,6 +187,17 @@ func return_to_hotseat() -> void:
 	_update_window_title()
 
 
+## The fight already ended. Closing the socket must not surface as a drop.
+func note_match_finished() -> void:
+	_quiet_leave = true
+
+
+## Online client: close the socket, then the caller opens the hub.
+func leave_after_match() -> void:
+	_quiet_leave = true
+	return_to_hotseat()
+
+
 func start_host(port: int = DEFAULT_PORT) -> Dictionary:
 	return _open_server(port, LISTEN_HOST_CLIENTS, Mode.HOST, HOST_SEAT, "host_listening")
 
@@ -190,10 +206,13 @@ func start_dedicated(port: int = DEFAULT_PORT) -> Dictionary:
 	var opened := _open_server(port, DEDICATED_CLIENTS, Mode.DEDICATED, -1, "dedicated_listening")
 	if bool(opened.get("ok", false)):
 		_match_live = false
+		_match_finished = false
 		_match_class_ids = []
 		_prematch_phase = "SELECT_CLASS"
 		lobby_text = "Dedicated queue listening on UDP %d. Pick a Locked class, then join." % port
-		print("STASIUM XII dedicated host listening on UDP %d" % port)
+		print("STASIUM server: listening port=%d" % port)
+	else:
+		print("STASIUM server: error bind_failed port=%d" % port)
 	return opened
 
 
@@ -315,6 +334,7 @@ func reset_match(config: Dictionary = {}) -> Dictionary:
 		if chosen.size() == 2:
 			_match_class_ids = chosen
 			_match_live = true
+			_match_finished = false
 			_prematch_phase = "MATCH"
 	var fixture := bool(config.get("fixture", false)) or bool(config.get("skip_deploy", false)) or config.has("rolls")
 	var gate: Dictionary = HostValidate.validate_match_config(config, fixture)
@@ -491,27 +511,28 @@ func decorate_snapshot(snap: Dictionary) -> Dictionary:
 ## Host / hot-seat: tick CombatSim. Client: no-op (hydrate from snapshot only).
 ## Host broadcasts events + snapshot + seat-filtered legal_intents when the
 ## displayed remaining seconds change, and again on expiry auto end_turn.
+## A quiet tick (same displayed second, no expiry) does not build a snapshot.
 func tick_turn_timer(delta: float) -> Dictionary:
 	if mode == Mode.CLIENT:
 		return last_view_result()
 	var host_sim := sim()
 	if host_sim == null or not host_sim.has_method("tick_turn_timer"):
 		return _fail("no_sim")
-	var before := _clock_wire(host_sim.snapshot())
+	var before := _clock_marker(host_sim)
 	var result: Dictionary = host_sim.tick_turn_timer(delta)
 	if not is_authority():
 		return result
-	var after := _clock_wire(host_sim.snapshot())
 	var expired := bool(result.get("expired", false))
+	var after := _clock_marker(host_sim)
 	if expired or before != after:
-		if not expired:
-			result = {
-				"ok": true,
-				"illegal": false,
-				"reason": "",
-				"events": [],
-				"snapshot": host_sim.snapshot(),
-			}
+		var snap: Dictionary = result.get("snapshot", {})
+		if snap.is_empty():
+			result["snapshot"] = host_sim.snapshot()
+			result["ok"] = true
+			result["illegal"] = false
+			result["reason"] = ""
+			if not result.has("events"):
+				result["events"] = []
 		_cache_and_broadcast(result)
 		var view: Dictionary = last_view_result()
 		view["expired"] = expired
@@ -520,11 +541,20 @@ func tick_turn_timer(delta: float) -> Dictionary:
 	return result
 
 
+func _clock_marker(host_sim: Node) -> Dictionary:
+	if host_sim != null and host_sim.has_method("clock_marker"):
+		return host_sim.clock_marker()
+	return _clock_wire(host_sim.snapshot())
+
+
 ## The headless authority never loads the board, so nothing else ticks the
-## clocks there. Only that process ticks here. A listen-host board and a
-## hot-seat already tick, and a phone must not tick a second time.
+## clocks there. Only that process ticks here, and only while a match is live.
+## A listen-host board and a hot-seat already tick, and a phone must not tick
+## a second time. Idle (no match) returns before any snapshot work.
 func _process(delta: float) -> void:
 	if not is_dedicated():
+		return
+	if not _match_live:
 		return
 	tick_turn_timer(delta)
 
@@ -1185,7 +1215,28 @@ func _cache_and_broadcast(result: Dictionary) -> Dictionary:
 	# Host caches packed state for the guest; do not hydrate over the live brain.
 	apply_packed_state(packed, mode == Mode.CLIENT)
 	_push_viewers(result)
+	if mode == Mode.DEDICATED and _match_live and not _match_finished:
+		var snap: Dictionary = packed.get("snapshot", {})
+		if bool(snap.get("match_over", false)):
+			_finish_dedicated_match(snap)
 	return last_view_result()
+
+
+## The peers stay connected so both phones can read the result. Seats with
+## nobody left are freed now; a peer that is still here frees its seat on disconnect.
+func _finish_dedicated_match(snap: Dictionary) -> void:
+	_match_finished = true
+	_match_live = false
+	_match_class_ids = []
+	_prematch_phase = "SELECT_CLASS"
+	_seat_gear.clear()
+	for seat in [HOST_SEAT, GUEST_SEAT]:
+		var peer_id := int(_seat_peer[seat])
+		if peer_id > 1:
+			_queue().forget(_session_for_peer(peer_id))
+		else:
+			_seat_held[seat] = false
+	print("STASIUM server: match end winner=%d" % int(snap.get("winner_seat", -1)))
 
 
 func _push_viewers(result: Dictionary) -> void:
@@ -1239,13 +1290,13 @@ func assign_peer_seat(peer_id: int) -> int:
 	return -1
 
 
-## Listen-host frees the guest slot. Dedicated keeps the seat reserved (stub).
+## Listen-host frees the guest slot. Dedicated keeps the seat only during a live match.
 func release_peer(peer_id: int) -> int:
 	for seat in [HOST_SEAT, GUEST_SEAT]:
 		if int(_seat_peer[seat]) != peer_id or peer_id == 0:
 			continue
 		_seat_peer[seat] = 0
-		if mode == Mode.HOST:
+		if mode != Mode.DEDICATED or not _match_live or _match_finished:
 			_seat_held[seat] = false
 		if guest_peer_id == peer_id:
 			guest_peer_id = int(_seat_peer[GUEST_SEAT])
@@ -1306,11 +1357,12 @@ func _on_peer_connected(id: int) -> void:
 		return
 	var seat := assign_peer_seat(id)
 	if seat < 0:
+		print("STASIUM server: player refused peer=%d reason=seats_full" % id)
 		multiplayer.multiplayer_peer.disconnect_peer(id)
 		connection_changed.emit("seat_refused")
 		return
 	connection_changed.emit("seat_%d_joined" % seat)
-	print("STASIUM XII seat %d joined (peer %d)" % [seat, id])
+	print("STASIUM server: player connected seat=%d peer=%d" % [seat, id])
 	if mode == Mode.HOST:
 		connection_changed.emit("guest_joined")
 	if sim() == null and last_packed.is_empty():
@@ -1329,12 +1381,13 @@ func _on_peer_connected(id: int) -> void:
 func _on_peer_disconnected(id: int) -> void:
 	if not is_authority():
 		return
+	if mode == Mode.DEDICATED:
+		_queue().forget(_session_for_peer(id))
 	var seat := release_peer(id)
 	if seat < 0:
 		return
-	# Dedicated: seat stays reserved. Listen-host: guest slot can be taken again.
 	connection_changed.emit("seat_%d_left" % seat)
-	print("STASIUM XII seat %d left (peer %d)" % [seat, id])
+	print("STASIUM server: player disconnected seat=%d peer=%d reason=left" % [seat, id])
 	if mode == Mode.HOST:
 		connection_changed.emit("guest_left")
 
@@ -1355,6 +1408,10 @@ func _on_connection_failed() -> void:
 
 
 func _on_server_disconnected() -> void:
+	if _quiet_leave or bool(last_snapshot.get("match_over", false)):
+		_quiet_leave = true
+		connection_changed.emit("match_finished")
+		return
 	connection_changed.emit("host_left")
 
 
@@ -1565,6 +1622,7 @@ func _boot_dedicated_match(match: Dictionary) -> void:
 	var ids: Array[String] = [str(raw[0]), str(raw[1])]
 	var match_id := str(match.get("id", ""))
 	lobby_text = "Match %s — seat 0 %s, seat 1 %s" % [match_id, SpellKits.display_name(ids[0]), SpellKits.display_name(ids[1])]
+	print("STASIUM server: match start id=%s seat0=%s seat1=%s" % [match_id, ids[0], ids[1]])
 	reset_match({"classes": ids})
 	if not _rpc_ready():
 		connection_changed.emit("matched")

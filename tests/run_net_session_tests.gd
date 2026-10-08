@@ -52,6 +52,7 @@ func _run() -> void:
 	_test_local_vs_active_seat_semantics()
 	_test_dedicated_host_core()
 	_test_dedicated_clock_is_authoritative()
+	_test_dedicated_next_match_can_join()
 	_test_invisible_hidden_from_opponent()
 	_test_snare_hidden_from_opponent()
 
@@ -396,10 +397,12 @@ func _test_dedicated_host_core() -> void:
 	eq(dedicated.assign_peer_seat(2), 0, "first dedicated peer is seat 0")
 	eq(dedicated.assign_peer_seat(3), 1, "second dedicated peer is seat 1")
 	eq(dedicated.assign_peer_seat(4), -1, "third dedicated peer is refused")
-	eq(dedicated.release_peer(2), 0, "dedicated stub records seat 0 leaving")
+	eq(dedicated.release_peer(2), 0, "pre-match drop records seat 0 leaving")
 	eq(dedicated.peer_for_seat(0), 0, "left dedicated peer is cleared")
-	eq(dedicated.seat_reserved(0), true, "dedicated seat stays reserved")
-	eq(dedicated.assign_peer_seat(5), -1, "reserved dedicated seat is not reassigned")
+	eq(dedicated.seat_reserved(0), false, "a pre-match drop frees the dedicated seat")
+	eq(dedicated.assign_peer_seat(5), 0, "the freed seat can be taken again")
+	dedicated.release_peer(5)
+	dedicated.release_peer(3)
 
 	_host.enter_host_offline()
 	eq(_host.assign_peer_seat(2), 1, "listen-host guest is seat 1")
@@ -580,6 +583,7 @@ func _test_dedicated_clock_is_authoritative() -> void:
 	var proc_at := net_src.find("func _process")
 	var proc := net_src.substr(proc_at, 280)
 	truthy(proc.contains("is_dedicated()"), "only the dedicated process ticks from _process")
+	truthy(proc.contains("_match_live"), "an idle dedicated server does not tick")
 	truthy(proc.contains("tick_turn_timer"), "that process runs the clocks")
 	var board := FileAccess.get_file_as_string("res://board_view.gd")
 	var board_at := board.find("func _process")
@@ -588,6 +592,88 @@ func _test_dedicated_clock_is_authoritative() -> void:
 	truthy(board_proc.contains("is_client()"), "a phone board still does not tick")
 	brain.free()
 	view.free()
+	dedicated.free()
+	phone.free()
+
+
+## A finished dedicated match frees its seats. The next pair can join the same process.
+## A normal match end is match_finished, not host_left.
+func _test_dedicated_next_match_can_join() -> void:
+	var sim_script := load("res://backend/combat_sim.gd")
+	var net_script := load("res://backend/net_session.gd")
+	var brain: Node = sim_script.new()
+	var dedicated: Node = net_script.new()
+	dedicated.attach_sim(brain)
+	dedicated.enter_dedicated_offline()
+	eq(dedicated.assign_peer_seat(2), 0, "first peer takes seat 0")
+	eq(dedicated.assign_peer_seat(3), 1, "second peer takes seat 1")
+	dedicated.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"fixture": true,
+		"classes": ["kestrel", "ironjaw"],
+		"positions": [Vector2i(1, 1), Vector2i(6, 6)],
+	})
+	eq(dedicated.match_is_live(), true, "the dedicated match is live")
+	eq(dedicated.release_peer(2), 0, "a mid-match drop records the seat")
+	eq(dedicated.seat_reserved(0), true, "a mid-match drop keeps the seat")
+	eq(dedicated.assign_peer_seat(9), -1, "the reserved seat is not given away mid-match")
+	var started := Time.get_ticks_usec()
+	for _i in 40:
+		dedicated.tick_turn_timer(0.01)
+	var quiet_us := Time.get_ticks_usec() - started
+	truthy(quiet_us < 200000, "a live clock does not snapshot every frame (%d us)" % quiet_us)
+	brain._match_time_left = 0.4
+	brain._turn_time_running = true
+	brain._units[0]["hp"] = int(brain._units[0]["max_hp"])
+	brain._units[1]["hp"] = 1
+	var up: Dictionary = dedicated.tick_turn_timer(1.0)
+	eq(bool(up.get("expired", false)), true, "time up still ends the match")
+	eq(bool(brain.snapshot().get("match_over", false)), true, "the server snapshot is match_over")
+	eq(dedicated.match_is_live(), false, "match end clears the live flag so the process can queue again")
+	eq(dedicated.seat_reserved(0), false, "a seat that already left is free when the match ends")
+	eq(dedicated.seat_reserved(1), true, "a peer still connected keeps its seat through the result")
+	eq(dedicated.release_peer(3), 1, "the remaining peer can leave")
+	eq(dedicated.seat_reserved(1), false, "leaving after the match frees the seat")
+	eq(dedicated.assign_peer_seat(4), 0, "the next player can take seat 0")
+	eq(dedicated.assign_peer_seat(5), 1, "the next player can take seat 1")
+	var picked: Dictionary = dedicated.server_select_class("peer:4", "mender")
+	eq(bool(picked.get("ok", false)), true, "the next queue accepts a class")
+	dedicated._queue().forget("peer:4")
+	eq(dedicated.server_session("peer:4").is_empty(), true, "forget drops the session so that peer id can queue again")
+	var phone: Node = net_script.new()
+	phone.enter_client_offline()
+	var notices: Array = []
+	phone.connection_changed.connect(func(status: String) -> void: notices.append(status))
+	phone._on_server_disconnected()
+	eq(str(notices[-1]), "host_left", "a real drop is still host_left")
+	phone.last_snapshot = {"match_over": true}
+	phone._on_server_disconnected()
+	eq(str(notices[-1]), "match_finished", "a drop after match_over is not host_left")
+	phone.note_match_finished()
+	phone.last_snapshot = {}
+	phone._on_server_disconnected()
+	eq(str(notices[-1]), "match_finished", "leaving after the result is not host_left")
+	var net_src := FileAccess.get_file_as_string("res://backend/net_session.gd")
+	truthy(net_src.contains("STASIUM server: listening port="), "the server logs that it is listening")
+	truthy(net_src.contains("STASIUM server: player connected seat="), "the server logs a player connecting")
+	truthy(net_src.contains("STASIUM server: player disconnected seat="), "the server logs a player leaving")
+	truthy(net_src.contains("STASIUM server: player refused peer="), "the server logs a refused player")
+	truthy(net_src.contains("STASIUM server: match start id="), "the server logs match start")
+	truthy(net_src.contains("STASIUM server: match end winner="), "the server logs match end")
+	truthy(net_src.contains("STASIUM server: error bind_failed port="), "the server logs a bind error")
+	var board := FileAccess.get_file_as_string("res://board_view.gd")
+	truthy(board.contains("RESULT_READ_SEC"), "the result stays up long enough to read")
+	truthy(board.contains("leave_after_match"), "an online result returns to the hub")
+	var select := FileAccess.get_file_as_string("res://scenes/class_select.gd")
+	truthy(select.contains("Server disconnected."), "a real queue drop still says server disconnected")
+	truthy(select.contains("match_finished"), "a finished match does not use that string")
+	var hud := FileAccess.get_file_as_string("res://ui/hud.gd")
+	eq(hud.contains("Zoom +"), false, "the combat HUD source has no Zoom + button")
+	eq(hud.contains("Zoom −"), false, "the combat HUD source has no Zoom − button")
+	truthy(hud.contains("SideColumn"), "New Match, Hub, and Elements stay in the left column")
+	brain.free()
 	dedicated.free()
 	phone.free()
 

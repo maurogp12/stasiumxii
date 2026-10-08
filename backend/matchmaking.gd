@@ -133,6 +133,14 @@ func queued_count() -> int:
 	return _queue.size()
 
 
+## Drop every trace of a session so a reused peer id can queue again.
+func forget(session_id: String) -> void:
+	var id := str(session_id)
+	_queue.erase(id)
+	_sessions.erase(id)
+	_bound_seats.erase(id)
+
+
 func drop(session_id: String) -> void:
 	var id := str(session_id)
 	if not _sessions.has(id):

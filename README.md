@@ -167,7 +167,7 @@ The `--queue` / `--class` lines above stay the dev shortcut and skip the screen.
 
 Buttons: Machine B presses **Host dedicated**. Machine A and Machine C press a class, then **Join queue** (`127.0.0.1` / `7777`). **Host match** / **Join match** are the old listen-host duel and ignore the class pick.
 
-Same computer: `127.0.0.1`. On a LAN, use Machine B’s IP. UDP **7777** must be reachable. Seat 0’s **New Match** asks the server to reset with those same class ids. A dropped client is a stub: that seat stays reserved. No reconnect.
+Same computer: `127.0.0.1`. On a LAN, use Machine B’s IP. UDP **7777** must be reachable. Seat 0’s **New Match** asks the server to reset with those same class ids. A drop during a live match keeps that seat reserved (no reconnect). A drop before the match, or after it ends, frees the seat for the next queue.
 
 Verify:
 
