@@ -31,8 +31,12 @@ func _test_source_contract() -> void:
 	eq(hud.contains("return Vector2(1, 1)"), false, "turn portraits are never built at 1×1")
 
 
+func _sim() -> Node:
+	return root.get_node("CombatSim")
+
+
 func _test_turn_strip_stays_readable() -> void:
-	CombatSim.reset_match({
+	_sim().reset_match({
 		"seed": 3,
 		"flat_board": true,
 		"skip_deploy": true,
@@ -46,14 +50,14 @@ func _test_turn_strip_stays_readable() -> void:
 	# The band has not been given a real height yet. A rebuild here used to
 	# store 1×1 chips and leave the plaque empty until the next layout.
 	hud._turn_strip.size = Vector2(272, 4)
-	var snap: Dictionary = CombatSim.snapshot()
-	hud.render(snap, CombatSim.legal_intents(0))
+	var snap: Dictionary = _sim().snapshot()
+	hud.render(snap, _sim().legal_intents(0))
 	_assert_cards(hud, "unready strip")
 	_assert_chips(hud, "unready strip")
 	hud._fit_turn_chips()
 	_assert_chips(hud, "fit while the band is still short")
 	snap["active_seat"] = 1 if int(snap.get("active_seat", 0)) == 0 else 0
-	hud.render(snap, CombatSim.legal_intents(int(snap["active_seat"])))
+	hud.render(snap, _sim().legal_intents(int(snap["active_seat"])))
 	_assert_cards(hud, "turn flip")
 	_assert_chips(hud, "turn flip")
 	truthy(hud._spell_buttons.size() >= 1, "turn flip keeps a spell button")
@@ -93,7 +97,7 @@ func _test_live_updates() -> void:
 	var board: Node = main.get_node("BoardView")
 	var hud: CombatHUD = main.get_node("HUD")
 	truthy(bool(board.get("_booted")), "board finished boot")
-	CombatSim.reset_match({
+	_sim().reset_match({
 		"seed": 4,
 		"flat_board": true,
 		"skip_deploy": true,
@@ -110,7 +114,7 @@ func _test_live_updates() -> void:
 	board._submit({"type": "move", "to": step})
 	await _watch(board, hud, "hot-seat walk", false, 0)
 	var fade_at := _seat_pos(0)
-	var faded: Dictionary = CombatSim.legal_intents(int(CombatSim.snapshot().get("active_seat", 0)))
+	var faded: Array = _sim().legal_intents(int(_sim().snapshot().get("active_seat", 0)))
 	var fade_ok := false
 	for intent in faded:
 		if typeof(intent) == TYPE_DICTIONARY and str(intent.get("type", "")) == "cast" and str(intent.get("spell", "")) == "fade":
@@ -131,26 +135,44 @@ func _test_live_updates() -> void:
 	net.local_seat = 0
 	var enemy_step := _legal_step()
 	truthy(enemy_step.x >= 0, "the snapshot walker has a legal step")
-	var walked: Dictionary = CombatSim.submit({"type": "move", "to": enemy_step})
+	var walked: Dictionary = _sim().submit({"type": "move", "to": enemy_step})
 	eq(bool(walked.get("ok", false)), true, "snapshot walk is legal (%s)" % str(walked.get("reason", "")))
 	board._on_net_state(walked.get("events", []), {})
 	await _watch(board, hud, "snapshot enemy walk", false, 0)
-	var follow := mobile and int(CombatSim.snapshot().get("active_seat", -1)) == int(net.local_seat)
-	net.local_seat = int(CombatSim.snapshot().get("active_seat", 0))
-	follow = mobile and int(net.local_seat) == int(CombatSim.snapshot().get("active_seat", -1))
+	var follow := mobile and int(_sim().snapshot().get("active_seat", -1)) == int(net.local_seat)
+	net.local_seat = int(_sim().snapshot().get("active_seat", 0))
+	follow = mobile and int(net.local_seat) == int(_sim().snapshot().get("active_seat", -1))
 	var local_step := _legal_step()
 	if local_step.x >= 0:
-		var local_walk: Dictionary = CombatSim.submit({"type": "move", "to": local_step})
+		var local_walk: Dictionary = _sim().submit({"type": "move", "to": local_step})
 		eq(bool(local_walk.get("ok", false)), true, "local snapshot walk is legal")
 		board._on_net_state(local_walk.get("events", []), {})
 		await _watch(board, hud, "snapshot local walk", follow, 0)
-	var ended: Dictionary = CombatSim.submit({"type": "end_turn"})
+		if follow:
+			await _drain_focus_glide(board, hud)
+	var ended: Dictionary = _sim().submit({"type": "end_turn"})
 	eq(bool(ended.get("ok", false)), true, "snapshot end turn is legal")
 	board._on_net_state(ended.get("events", []), {})
 	await _watch(board, hud, "snapshot turn change", false, 0, true)
 	net.mode = prev_mode
 	net.local_seat = prev_seat
 	main.free()
+
+
+func _drain_focus_glide(board: Node, hud: CombatHUD) -> void:
+	var prev := _cam_sample(board)
+	for _i in 180:
+		var tw: Variant = board.get("_focus_tween")
+		var running := tw is Tween and (tw as Tween).is_valid() and (tw as Tween).is_running()
+		if not running:
+			return
+		await process_frame
+		if not _assert_hud(hud, "snapshot focus glide"):
+			return
+		var cur := _cam_sample(board)
+		if not _assert_cam(prev, prev, cur, true, "snapshot focus glide"):
+			return
+		prev = cur
 
 
 func _watch(board: Node, hud: CombatHUD, label: String, allow_motion: bool, extra_frames: int, expect_banner: bool = false) -> void:
@@ -245,9 +267,9 @@ func _cam_sample(board: Node) -> Dictionary:
 
 
 func _legal_step() -> Vector2i:
-	var snap: Dictionary = CombatSim.snapshot()
+	var snap: Dictionary = _sim().snapshot()
 	var seat := int(snap.get("active_seat", 0))
-	for intent in CombatSim.legal_intents(seat):
+	for intent in _sim().legal_intents(seat):
 		if typeof(intent) != TYPE_DICTIONARY:
 			continue
 		if str(intent.get("type", "")) != "move":
@@ -259,7 +281,7 @@ func _legal_step() -> Vector2i:
 
 
 func _seat_pos(seat: int) -> Vector2i:
-	for unit in CombatSim.snapshot().get("units", []):
+	for unit in _sim().snapshot().get("units", []):
 		if typeof(unit) == TYPE_DICTIONARY and int(unit.get("seat", -2)) == seat:
 			var pos: Variant = unit.get("pos", Vector2i(-1, -1))
 			if pos is Vector2i:
