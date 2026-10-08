@@ -76,6 +76,7 @@ func _test_grid_and_occluders() -> void:
 	truthy(room_src.contains("cell_to_local(cell, 0.0)"), "occluders anchor on the plate, not a second elevation lift")
 	truthy(room_src.contains("set_raised_top"), "a raised block keeps its diamond on the painted top")
 	eq(CombatHUD.coach_hint("REJECT — that path needs 5 MP (you have 1)."), "Needs 5 MP (have 1)", "the path reject is one short line")
+	truthy(CombatHUD.PORTRAIT_CHIP.y >= 96.0, "turn portraits are at least 96px tall")
 
 
 func _test_class_select_copy() -> void:

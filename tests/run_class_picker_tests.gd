@@ -67,14 +67,29 @@ func _test_roles_and_art() -> void:
 		var tex: Texture2D = _script.load_portrait(class_id)
 		truthy(tex != null, "%s portrait loads" % class_id)
 		if tex != null and cells.size() > 0:
-			eq(tex, cells[0], "%s card is the standing cell the match draws" % class_id)
+			eq(tex == cells[0], false, "%s card is the fitted standing figure, not the padded cell" % class_id)
 			eq(tex.get_width() == 512 and tex.get_height() == 768, false, "%s card is not the old select plate" % class_id)
+			eq(tex.get_width(), 260, "%s card canvas width" % class_id)
+			eq(tex.get_height(), 248, "%s card canvas height" % class_id)
 			var fresh := tex.get_image()
 			truthy(fresh != null and not fresh.is_empty(), "%s portrait decodes" % class_id)
 		var imp := FileAccess.get_file_as_string("res://art/characters/%s/%s_s.png.import" % [class_id, class_id])
 		truthy(imp.contains("mipmaps/generate=false"), "%s import mipmaps off" % class_id)
+	var feet := {}
+	var heights := {}
+	for class_id in SpellKits.LOCKED_ROSTER:
+		var fitted: Texture2D = _script.load_portrait(class_id)
+		var img := fitted.get_image()
+		var used := StripLibrary.opaque_rect(img)
+		feet[class_id] = used.position.y + used.size.y
+		heights[class_id] = used.size.y
+	var bast_h := int(heights["bastion"])
+	var bast_feet := int(feet["bastion"])
+	for class_id in SpellKits.LOCKED_ROSTER:
+		truthy(absi(int(heights[class_id]) - bast_h) <= 2, "%s stands as tall as bastion" % class_id)
+		truthy(absi(int(feet[class_id]) - bast_feet) <= 2, "%s feet share bastion's baseline" % class_id)
 	var hud_src := FileAccess.get_file_as_string("res://ui/hud.gd")
-	truthy(hud_src.contains("StripLibrary.idle_portrait"), "turn chips use the locked idle")
+	truthy(hud_src.contains("StripLibrary.card_portrait"), "turn chips use the standing card portrait")
 
 
 func _test_launch_cards() -> void:

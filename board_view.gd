@@ -629,7 +629,9 @@ func _pick_local(local: Vector2, mobile: bool = false) -> Vector2i:
 	if _hud != null:
 		spell = _hud.selected_spell()
 	var prefer := TOUCH.spell_targets_unit(spell)
-	var pawns: Array = _living_pawns_for_pick(spell) if prefer else []
+	# Walks use the sprite too (tight body, and the whole drawing when it is
+	# not another tile). Unit spells still take the wide pad and the cell.
+	var pawns: Array = _living_pawns_for_pick(spell)
 	var cell := TOUCH.pick_board_cell(local, _tile_positions(), pawns, prefer, mobile or TOUCH.use_mobile_pick())
 	return _soft_lock_cell(cell, spell, prefer)
 
@@ -768,6 +770,8 @@ func _handle_left_click(cell: Vector2i) -> void:
 ## Mauro 6 Oct 2026: with a spell armed, tapping a fighter's portrait or card
 ## in the top bar casts on that fighter, only when the sim says the cast is
 ## legal (range + line of sight). Same submit as tapping its tile.
+## Tapping the acting fighter selects that cell and centers the camera.
+## It does not walk and it does not cast.
 func _on_unit_card_tapped(seat: int) -> void:
 	if _busy or _view_locked or _hud == null:
 		return
@@ -776,24 +780,54 @@ func _on_unit_card_tapped(seat: int) -> void:
 		return
 	if not _can_control_seat(int(snap.get("active_seat", 0))) or _active_is_stunned():
 		return
-	var spell_id := _hud.selected_spell()
-	if spell_id == "":
-		return
 	var target := {}
 	for unit in snap.get("units", []):
 		if int(unit.get("seat", -1)) == seat:
 			target = unit
 	if target.is_empty() or not bool(target.get("alive", false)):
 		return
+	var cell := _as_cell(target.get("pos", null))
+	if not _in_bounds(cell):
+		return
 	var actor := _active_unit(snap)
+	if int(actor.get("seat", -2)) == seat:
+		select_tile(cell)
+		_center_on_cell(cell)
+		return
+	var spell_id := _hud.selected_spell()
+	if spell_id == "":
+		select_tile(cell)
+		return
 	var hidden := bool(target.get("invisible", false)) and CombatHUD.unit_team(target) != CombatHUD.unit_team(actor)
-	var cell: Vector2i = target["pos"]
 	var legal: Array = _sim().legal_intents(CombatHUD.kit_seat(snap))
 	if hidden or not SNAPSHOT_TILES.cast_dests(legal, spell_id).has(cell):
 		_hud.show_toast("%s can't reach %s: too far or no line of sight." % [SpellKits.spell(spell_id).get("name", "That spell"), SpellKits.display_name(str(target.get("class_id", "")))])
 		return
 	select_tile(cell)
 	_handle_left_click(cell)
+
+
+func _center_on_cell(cell: Vector2i) -> void:
+	if _camera == null or not _in_bounds(cell):
+		return
+	var n := _board_size
+	if n < 1:
+		return
+	var half_w := 32.0
+	var half_h := 16.0
+	var lift := 20.0
+	var min_x := float(0 - (n - 1)) * 32.0 - half_w
+	var max_x := float((n - 1)) * 32.0 + half_w
+	var min_y := -half_h - lift
+	var max_y := float((n - 1) + (n - 1)) * 16.0 + half_h
+	var center := Vector2((min_x + max_x) * 0.5, (min_y + max_y) * 0.5)
+	var look := _cell_to_local(cell)
+	var goal := _fit_camera_pos + (look - center)
+	var dx := clampf(goal.x - _fit_camera_pos.x, -_pan_limit.x, _pan_limit.x)
+	var dy := clampf(goal.y - _fit_camera_pos.y, -_pan_limit.y, _pan_limit.y)
+	if _focus_tween != null and _focus_tween.is_valid():
+		_focus_tween.kill()
+	_camera.position = _fit_camera_pos + Vector2(dx, dy)
 
 
 func _advance_click_accepted(cell: Vector2i, spell_id: String) -> bool:

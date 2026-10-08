@@ -579,6 +579,14 @@ static func pick_board_cell(point: Vector2, tile_positions: Dictionary, living_p
 		var body := _pick_pawn_hit(point, living_pawns, false, true, false)
 		if body.x >= 0:
 			return body
+		if mobile:
+			# Whole painted drawing when it is not standing on another tile.
+			# A neighbor diamond (the north face the figure covers) stays a walk.
+			var drawn := _pick_pawn_hit(point, living_pawns, false, true, true)
+			if drawn.x >= 0:
+				var stood := front_cell(point, tile_positions)
+				if stood.x < 0 or stood == drawn:
+					return drawn
 	if mobile:
 		# The top face drawn in front wins (raised tiles cover the tile behind
 		# them; the flat iso_cell used to hand those taps to the hidden tile).

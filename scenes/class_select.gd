@@ -151,9 +151,11 @@ static func load_portrait(class_id: String) -> Texture2D:
 	if not SpellKits.is_roster_class(key):
 		return null
 	var cells := STRIP_LIBRARY.painted_cells(key, "idle", "s")
-	if not cells.is_empty():
-		return cells[0]
-	return STRIP_LIBRARY.idle_portrait(key)
+	if cells.is_empty():
+		return STRIP_LIBRARY.idle_portrait(key)
+	# Same idle-south cell, cropped so every fighter shares one height and baseline.
+	var fitted := STRIP_LIBRARY.card_portrait(key)
+	return fitted if fitted != null else cells[0]
 
 
 func _ready() -> void:
@@ -611,7 +613,7 @@ func _mode_button(text: String, mode_id: String) -> Button:
 
 func _make_card(class_id: String) -> Panel:
 	var panel := Panel.new()
-	panel.custom_minimum_size = Vector2(168, 280)
+	panel.custom_minimum_size = Vector2(204, 300)
 	panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	panel.focus_mode = Control.FOCUS_ALL
 	panel.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
@@ -628,8 +630,8 @@ func _make_card(class_id: String) -> Panel:
 	if portrait != null:
 		var tex := TextureRect.new()
 		tex.texture = portrait
-		# 512×768 plates. The slot stays near that 2:3 so the figure is not cropped.
-		tex.custom_minimum_size = Vector2(144, 200)
+		# Fitted standing cell (shared height, shared feet). The slot matches that plate.
+		tex.custom_minimum_size = Vector2(188, 180)
 		tex.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		tex.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		tex.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR

@@ -70,8 +70,9 @@ var _look_map: String = ""
 ## Animated surface (lava, runes...) drawn by a child behind the tile's props.
 var _surface: SurfaceFx
 var _surface_stamp: Texture2D
-## Painted room: the background carries the floor and props. This tile keeps
-## edge glow, walk-block glow, grid ink, and highlights.
+## Painted room: the plate is the floor. No stamped water/lava tile, no black
+## block fill, no thick glow rings. A liquid keeps a faint tint and a thin edge.
+## Grid ink is a light line, and only on a walkable cell.
 var painted_floor: bool = false
 var _painted_surface: Texture2D
 var _painted_mode: int = 0
@@ -99,7 +100,17 @@ class GridInk extends Node2D:
 		# Walls, voids, and other blocks keep the painting. Grid ink stays on the floor.
 		if host.walk_block_kind == "block" or host.occluder_covers_grid:
 			return
-		draw_polyline(loop, style.get("ink", KoliseoLife.GRID_INK), float(style.get("ink_px", KoliseoLife.GRID_INK_PX)), true)
+		# A painted hazard is the painting. Ink only on cells a fighter can walk.
+		if host.painted_floor and host.walk_block_kind != "":
+			return
+		var ink: Color = style.get("ink", KoliseoLife.GRID_INK)
+		var ink_px := float(style.get("ink_px", KoliseoLife.GRID_INK_PX))
+		if host.painted_floor:
+			ink.a = minf(ink.a * 0.35, 0.28)
+			ink_px = minf(ink_px, 1.2)
+			draw_polyline(loop, ink, ink_px, true)
+			return
+		draw_polyline(loop, ink, ink_px, true)
 		draw_polyline(loop, style.get("gleam", KoliseoLife.GRID_GLEAM), float(style.get("gleam_px", KoliseoLife.GRID_GLEAM_PX)), true)
 
 
@@ -147,16 +158,9 @@ func set_painted_floor(on: bool, crop: Texture2D = null, mode: int = 0, gain: fl
 func _draw() -> void:
 	var points := _diamond_points()
 	if painted_floor:
-		var style := grid_style()
-		if _painted_surface != null:
-			var surface := _ArenaLook.surface_for(_look_map, terrain_type) if _look_map != "" else []
-			if surface.is_empty():
-				_show_surface(_painted_surface, _painted_mode, _painted_gain)
-			else:
-				_show_surface(_painted_surface, int(surface[0]), float(surface[1]))
-		else:
-			_hide_surface()
-		_paint_edge_glow(style)
+		# The plate already paints water, lava, and stone. A second stamp
+		# (cyan caustics, molten flow, rune tiles) covers that painting.
+		_hide_surface()
 	else:
 		var look := _ArenaLook.stamp_for(_look_map, terrain_type, grid_position) if _look_map != "" else null
 		var tex := _KoliseoArt.terrain_texture_at(terrain_type, elevation, _dress, grid_position)
@@ -175,7 +179,9 @@ func _draw() -> void:
 			_paint_terrain(tex)
 			_paint_depth_rim()
 	# Obstacle glow sits on the floor, under the obstacle drawn below.
-	if walk_block_kind == "block":
+	# A painted block is already in the plate. The shade was a black diamond
+	# under every prop, and the rings were the gold boxes on the deck.
+	if walk_block_kind == "block" and not painted_floor:
 		_paint_walk_blocked(self)
 	if not painted_floor:
 		var piece: Texture2D = _ArenaLook.centerpiece_for(_look_map, grid_position, _paint_props) if _look_map != "" else null
@@ -423,6 +429,16 @@ func walk_glow_color() -> Color:
 	return BLOCK_GLOW.get(_look_map, BLOCK_GLOW_DEFAULT)
 
 
+## Faint mark so a painted hazard stays readable without covering the plate.
+func _paint_painted_hazard(canvas: CanvasItem) -> void:
+	var points := _diamond_points()
+	var glow := walk_glow_color()
+	canvas.draw_colored_polygon(points, Color(glow.r, glow.g, glow.b, 0.14))
+	var line := PackedVector2Array(points)
+	line.append(points[0])
+	canvas.draw_polyline(line, Color(glow.r, glow.g, glow.b, 0.45), 1.2, true)
+
+
 ## A soft inner glow: rings fading toward the middle of the diamond.
 func _paint_walk_blocked(canvas: CanvasItem) -> void:
 	var points := _diamond_points()
@@ -513,7 +529,10 @@ func paint_highlight_overlay(canvas: CanvasItem) -> void:
 	# Water / mud / lava glow above their animated surface; obstacles glow
 	# in the tile's own draw, under the obstacle (see _draw).
 	if walk_block_kind == "liquid":
-		_paint_walk_blocked(canvas)
+		if painted_floor:
+			_paint_painted_hazard(canvas)
+		else:
+			_paint_walk_blocked(canvas)
 	var color := overlay_color()
 	if color.a <= 0.0:
 		return
