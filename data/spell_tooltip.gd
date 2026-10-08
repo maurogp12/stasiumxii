@@ -125,7 +125,7 @@ static func simple_lines(spell_id: String, preview: Dictionary = {}) -> PackedSt
 			out.append("You cannot jump over rocks, crates, walls or steam.")
 		SpellKits.SNARE_TRAP:
 			out.append("Hide a trap on an empty tile. Enemies cannot see it. The first enemy who steps on it stops there, takes %d damage, loses %d MP and cannot walk on their next turn." % [int(def.get("trap_damage", 6)), int(def.get("trap_mp", 1))])
-			out.append("You can have 1 trap at a time. It lasts %d of your turns." % int(def.get("trap_turns", 3)))
+			out.append("You can have %d traps at a time. Setting another removes the oldest. Each lasts %d of your turns." % [int(def.get("trap_cap", 2)), int(def.get("trap_turns", 3))])
 		SpellKits.ADVANCE:
 			out.append("Jump exactly 2 tiles in a straight line (up, down, left or right). It never misses.")
 			out.append("Land next to an enemy = +1 Impact. You can jump over water, mud and lava, but not over rocks, crates, walls or steam. Max 2 jumps per turn.")

@@ -660,14 +660,23 @@ func _resolve_whiff(intent: Dictionary, actor: Dictionary, def: Dictionary, dest
 func _reveal_if_hurt(target: Dictionary, damage: int) -> void:
 	if damage <= 0 or not bool(target.get("invisible", false)):
 		return
-	target["invisible"] = false
-	target["invisible_turns"] = 0
-	_emit_expire("invisible", target["pos"], int(target["seat"]), int(target["seat"]))
+	_clear_invisible(target)
+
+
+## Getting hurt ends Invisible: flag off, clock cleared, expire + revealed.
+## Packing happens after the flag is false, so the opponent receives the tile
+## (no pos_hidden) and the expire cell. The step-out flourish is that expire.
+func _clear_invisible(unit: Dictionary) -> void:
+	if not bool(unit.get("invisible", false)):
+		return
+	unit["invisible"] = false
+	unit["invisible_turns"] = 0
+	_emit_expire("invisible", unit["pos"], int(unit["seat"]), int(unit["seat"]))
 	_last_events.append({
 		"type": "revealed",
-		"seat": int(target["seat"]),
-		"cell": target["pos"],
-		"coach": "%s is hit and revealed!" % str(target.get("name", "Unit")),
+		"seat": int(unit["seat"]),
+		"cell": unit["pos"],
+		"coach": "%s is hit and revealed!" % str(unit.get("name", "Unit")),
 	})
 
 
@@ -3417,7 +3426,9 @@ func _resolve_vault(intent: Dictionary, actor: Dictionary, def: Dictionary, dest
 
 ## A hostile Snare Trap under `unit` springs: 6 damage (a shield soaks it
 ## first), exactly 1 MP (charged on the walk that entered the tile), and
-## Pinned on its next turn. The trap is spent.
+## Pinned on its next turn. The trap is spent. An Invisible victim is revealed
+## the same way damage reveals them, even when a shield or immunity soaks the
+## hit: stepping on the trap is the break.
 func _trigger_trap(unit: Dictionary) -> bool:
 	for item in _trap_tiles:
 		if item["pos"] != unit["pos"]:
@@ -3432,6 +3443,7 @@ func _trigger_trap(unit: Dictionary) -> bool:
 		unit["hp"] = maxi(0, int(unit["hp"]) - damage)
 		if not bool(unit.get("pinned", false)) and not bool(unit.get("pinned_last", false)):
 			unit["pin_pending"] = true
+		_clear_invisible(unit)
 		_last_events.append({
 			"type": "trap",
 			"seat": int(owner["seat"]),
@@ -3444,6 +3456,37 @@ func _trigger_trap(unit: Dictionary) -> bool:
 		_check_death(unit)
 		return true
 	return false
+
+
+## Mauro 8 Oct 2026: each Kestrel keeps trap_cap snares (2). Snare Trap is the
+## only trap spell; this list is per owner, so a later Kestrel trap shares the
+## cap. Casting on a tile that already holds hers refreshes that one and leaves
+## the other. A cast past the cap drops the oldest (first placed) with no
+## expire event — the same silent replace the one-trap rule used.
+func _retain_owner_trap(actor: Dictionary, dest: Vector2i, turns: int) -> void:
+	var owner := int(actor["seat"])
+	var cap := int(SpellKits.spell(SpellKits.SNARE_TRAP).get("trap_cap", 2))
+	var drop := -1
+	var oldest := -1
+	var owned := 0
+	for i in _trap_tiles.size():
+		var item: Dictionary = _trap_tiles[i]
+		if int(item.get("owner_seat", -1)) != owner:
+			continue
+		if oldest < 0:
+			oldest = i
+		owned += 1
+		if item["pos"] == dest:
+			drop = i
+	if drop < 0 and owned >= cap and oldest >= 0:
+		drop = oldest
+	var kept: Array = []
+	for i in _trap_tiles.size():
+		if i == drop:
+			continue
+		kept.append(_trap_tiles[i])
+	kept.append({"pos": dest, "owner_seat": owner, "turns": turns})
+	_trap_tiles = kept
 
 
 func _tick_traps(unit: Dictionary) -> void:
@@ -6380,12 +6423,7 @@ func _resolve_empty_tile(intent: Dictionary, actor: Dictionary, def: Dictionary,
 	if spell_id == SpellKits.SNARE_TRAP:
 		actor["ap"] = int(actor["ap"]) - ap_cost
 		_spend_mp(actor, mp_cost)
-		var kept: Array = []
-		for item in _trap_tiles:
-			if int(item.get("owner_seat", -1)) != int(actor["seat"]):
-				kept.append(item)
-		kept.append({"pos": dest, "owner_seat": int(actor["seat"]), "turns": int(def.get("trap_turns", 3))})
-		_trap_tiles = kept
+		_retain_owner_trap(actor, dest, int(def.get("trap_turns", 3)))
 		_intent_log.append(intent)
 		# No tile in the coach: the trap is hidden from the enemy.
 		_last_coach = "%s sets a Snare Trap (−%d AP)." % [actor["name"], ap_cost]

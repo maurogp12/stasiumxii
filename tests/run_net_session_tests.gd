@@ -55,6 +55,7 @@ func _run() -> void:
 	_test_dedicated_next_match_can_join()
 	_test_invisible_hidden_from_opponent()
 	_test_snare_hidden_from_opponent()
+	_test_stealthed_trap_reveals_to_opponent()
 
 
 func _test_source_stamps() -> void:
@@ -713,6 +714,62 @@ func _test_snare_hidden_from_opponent() -> void:
 	var sprung_opp: Dictionary = IntentCodec.decode(_host.pack_result(sprung, 1))
 	eq(_event_of(sprung_opp.get("events", []), "trap").get("to"), cell, "a sprung trap is visible to the fighter who hit it")
 	eq((sprung_opp.get("snapshot", {}) as Dictionary).get("trap_tiles", []).size(), 0, "the spent trap is gone")
+
+
+## A stealthed step onto a trap uses the same reveal the opponent already
+## applies for a damaging hit: Invisible ends, the tile is on the wire, and
+## the unsprung trap stays hidden from that phone.
+func _test_stealthed_trap_reveals_to_opponent() -> void:
+	var gloam := Vector2i(5, 5)
+	var near := Vector2i(4, 5)
+	var far := Vector2i(3, 5)
+	_host.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"fixture": true,
+		"classes": ["kestrel", "gloam"],
+		"positions": [Vector2i(1, 5), gloam],
+	})
+	eq(bool(_host.submit_for_seat({"type": "cast", "spell": "snare_trap", "to": near}, 0).get("ok", false)), true, "the server sets the near trap")
+	eq(bool(_host.submit_for_seat({"type": "cast", "spell": "snare_trap", "to": far}, 0).get("ok", false)), true, "the server keeps a second trap")
+	_host.submit_for_seat({"type": "end_turn"}, 0)
+	var faded: Dictionary = _host.submit_for_seat({"type": "cast", "spell": "fade", "to": gloam}, 1)
+	eq(bool(faded.get("ok", false)), true, "the server resolves Fade")
+	var hidden: Dictionary = IntentCodec.decode(_host.pack_result(faded, 0))
+	eq(_unit_in(hidden.get("snapshot", {}), 1).get("pos"), null, "Kestrel's phone still hides Invisible Gloam")
+	eq(bool(_unit_in(hidden.get("snapshot", {}), 1).get("pos_hidden", false)), true, "Kestrel's phone marks the tile hidden")
+	eq((hidden.get("snapshot", {}) as Dictionary).get("trap_tiles", []).size(), 2, "Kestrel's phone still has both traps")
+	var hp_before := int(_sim.snapshot()["units"][1]["hp"])
+	var walked: Dictionary = _host.submit_for_seat({"type": "move", "to": far}, 1)
+	eq(bool(walked.get("ok", false)), true, "the server resolves the stealthed step")
+	eq(_sim.snapshot()["units"][1]["pos"], near, "the authority stops him on the trap")
+	eq(bool(_sim.snapshot()["units"][1]["invisible"]), false, "the authority ends Invisible")
+	eq(hp_before - int(_sim.snapshot()["units"][1]["hp"]), 6, "the authority still deals 6")
+	var kestrel_pack: Dictionary = _host.pack_result(walked, 0)
+	var gloam_pack: Dictionary = _host.pack_result(walked, 1)
+	var seen: Dictionary = IntentCodec.decode(kestrel_pack)
+	var hider: Dictionary = IntentCodec.decode(gloam_pack)
+	var seen_unit := _unit_in(seen.get("snapshot", {}), 1)
+	eq(seen_unit.get("pos"), near, "Kestrel's phone shows the tile he stopped on")
+	eq(bool(seen_unit.get("invisible", true)), false, "Kestrel's phone shows him Visible")
+	eq(bool(seen_unit.get("pos_hidden", false)), false, "Kestrel's phone does not mark him hidden")
+	eq(int(seen_unit.get("invisible_turns", -1)), 0, "Kestrel's phone clears the Invisible clock")
+	var expire := _event_of(seen.get("events", []), "expire")
+	eq(str(expire.get("status", "")), "invisible", "Kestrel's phone receives expire invisible")
+	eq(expire.get("pos"), near, "the expire cell is the trap tile")
+	eq(_event_of(seen.get("events", []), "revealed").get("cell"), near, "Kestrel's phone receives the revealed event")
+	eq(_event_of(seen.get("events", []), "trap").get("to"), near, "Kestrel's phone sees the sprung trap")
+	eq(int(_event_of(seen.get("events", []), "trap").get("damage", 0)), 6, "the sprung trap is still 6")
+	eq(_event_of(seen.get("events", []), "move").get("to"), near, "the stopped walk is visible once he is revealed")
+	var seen_traps: Array = (seen.get("snapshot", {}) as Dictionary).get("trap_tiles", [])
+	eq(seen_traps.size(), 1, "Kestrel's phone keeps the unsprung trap")
+	eq(seen_traps[0].get("pos"), far, "the unsprung trap is the farther one")
+	eq((hider.get("snapshot", {}) as Dictionary).get("trap_tiles", []).size(), 0, "Gloam's phone still does not receive the unsprung trap")
+	_guest.apply_packed_state(kestrel_pack)
+	eq(_unit_in(_guest.snapshot(), 1).get("pos"), near, "the client view stores the revealed tile")
+	eq(bool(_unit_in(_guest.snapshot(), 1).get("invisible", true)), false, "the client view is Visible")
+	eq(_view.snapshot()["units"][1]["pos"], near, "the replica stores the revealed tile")
 
 
 func _test_invisible_hidden_from_opponent() -> void:

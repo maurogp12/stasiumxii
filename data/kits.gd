@@ -172,6 +172,10 @@ const SPELLS := {
 		"trap_damage": 6,
 		# Springing the trap costs this much MP, not the tile's walk cost.
 		"trap_mp": 1,
+		# Mauro 8 Oct 2026: two live traps per Kestrel. A third drops the oldest.
+		# Snare Trap is the only Kestrel trap; CombatSim applies this cap to
+		# every trap that Kestrel owns, so a later trap spell shares it.
+		"trap_cap": 2,
 	},
 	SHOULDER: {
 		"id": SHOULDER,
