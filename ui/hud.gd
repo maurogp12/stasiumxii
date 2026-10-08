@@ -414,6 +414,23 @@ static func gloam_has_live_shade(snap: Dictionary) -> bool:
 	return int(unit.get("shades", 0)) > 0
 
 
+## Number drawn on a kit button. Fade shows nothing while Invisible (the
+## button is grey because the cast is illegal — a 0 would look ready) and
+## shows the post-reveal cooldown while that one turn is locked.
+static func spell_cooldown_badge(unit: Dictionary, spell_id: String) -> String:
+	if str(spell_id) != SpellKits.FADE or unit.is_empty():
+		return ""
+	if bool(unit.get("invisible", false)):
+		return ""
+	var cds: Variant = unit.get("spell_cd", {})
+	if typeof(cds) != TYPE_DICTIONARY:
+		return ""
+	var left := int((cds as Dictionary).get(spell_id, 0))
+	if left <= 0:
+		return ""
+	return str(left)
+
+
 static func legal_cast_ids(legal: Array) -> Dictionary:
 	var out := {}
 	for intent in legal:
@@ -2615,20 +2632,39 @@ func _refresh_spell_buttons() -> void:
 func _apply_spell_modulate(spell_id: String, button: Button, can_submit: bool) -> void:
 	if _stunned:
 		button.modulate = STUN_GREY
-		return
-	if spell_id == SpellKits.AMBUSH and not legal_cast_ids(_last_legal).has(SpellKits.AMBUSH):
+	elif spell_id == SpellKits.AMBUSH and not legal_cast_ids(_last_legal).has(SpellKits.AMBUSH):
 		button.modulate = AMBUSH_DISARMED_MODULATE
-		return
-	if _selected_spell == spell_id:
+	elif _selected_spell == spell_id:
 		button.modulate = Color(1.15, 1.1, 0.7)
-		return
-	if spell_id == SpellKits.AMBUSH and can_submit:
+	elif spell_id == SpellKits.AMBUSH and can_submit:
 		button.modulate = AMBUSH_SHADE_MODULATE
-		return
-	if can_submit:
+	elif can_submit:
 		button.modulate = Color(1, 1, 1, 1)
+	else:
+		button.modulate = Color(1, 1, 1, 0.72)
+	_sync_cooldown_badge(button, spell_id)
+
+
+func _sync_cooldown_badge(button: Button, spell_id: String) -> void:
+	if button == null or not is_instance_valid(button):
 		return
-	button.modulate = Color(1, 1, 1, 0.72)
+	var badge := button.get_node_or_null("CooldownBadge") as Label
+	if badge == null:
+		badge = Label.new()
+		badge.name = "CooldownBadge"
+		badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		badge.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		badge.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		badge.add_theme_font_size_override("font_size", 28)
+		badge.add_theme_color_override("font_color", Color(1, 0.96, 0.82))
+		badge.add_theme_color_override("font_outline_color", Color(0.05, 0.04, 0.08))
+		badge.add_theme_constant_override("outline_size", 8)
+		_apply_display_font(badge)
+		button.add_child(badge)
+	var unit := unit_for_seat(_last_snap.get("units", []), kit_seat(_last_snap))
+	badge.text = spell_cooldown_badge(unit, spell_id)
+	badge.visible = badge.text != ""
 
 
 func _drop_illegal_ambush_selection() -> void:

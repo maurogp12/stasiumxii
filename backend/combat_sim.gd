@@ -13,6 +13,8 @@ extends Node
 ## The clock ticks at his own turn start. With 2: cast on turn T, still hidden
 ## when turn T+1 starts, revealed when turn T+2 starts (two enemy turns).
 ## Was 1 (Mauro 29 Sep 2026). An attack, getting hurt, or a trap still reveals at once.
+## Fade's 1-turn cooldown starts when Invisible ends, not at cast. See
+## _start_fade_cooldown.
 const INVISIBLE_TURNS := 2
 const RULES_VERSION := "phase-a-gdd-0.2"
 const UNPLACED := Vector2i(-1, -1)
@@ -137,6 +139,8 @@ const TURN_TIME_LIMIT := 30.0
 
 ## Set by _tick_invisible during a turn start; the handoff coach names it.
 var _invisible_wore_off := false
+## Set when Invisible ends and Fade's cooldown arms. _accept appends it to the coach.
+var _fade_cd_log := ""
 var _units: Array[Dictionary] = []
 var _active_seat: int = 0
 var _turn_index: int = 1
@@ -329,6 +333,7 @@ func reset_match(config: Dictionary = {}) -> Dictionary:
 
 func submit(intent: Dictionary) -> Dictionary:
 	_last_events = []
+	_fade_cd_log = ""
 	var normalized := _normalize_intent(intent)
 	if _match_over:
 		return _reject(normalized, "match_over", "REJECT — match is over.")
@@ -540,7 +545,7 @@ func legal_intents(seat: int) -> Array:
 					"seat": seat,
 					"dismiss": true,
 				})
-		if str(spell_id) == SpellKits.FADE and not _player_cd_ready(actor, SpellKits.FADE):
+		if str(spell_id) == SpellKits.FADE and _fade_cast_block(actor) != "":
 			continue
 		if ap < int(def["ap"]):
 			continue
@@ -733,16 +738,14 @@ func _reveal_if_hurt(target: Dictionary, damage: int) -> void:
 ## Packing happens after the flag is false, so the opponent receives the tile
 ## (no pos_hidden) and the expire cell. The step-out flourish is that expire.
 func _clear_invisible(unit: Dictionary) -> void:
-	if not bool(unit.get("invisible", false)):
+	if not _end_invisible(unit, false):
 		return
-	unit["invisible"] = false
-	unit["invisible_turns"] = 0
 	_emit_expire("invisible", unit["pos"], int(unit["seat"]), int(unit["seat"]))
 	_last_events.append({
 		"type": "revealed",
 		"seat": int(unit["seat"]),
 		"cell": unit["pos"],
-		"coach": "%s is hit and revealed!" % str(unit.get("name", "Unit")),
+		"coach": "%s is hit and revealed! Fade cooldown 1." % str(unit.get("name", "Unit")),
 	})
 
 
@@ -2025,8 +2028,7 @@ func _blend_flare(actor: Dictionary, target: Dictionary, event: Dictionary) -> S
 			continue
 		if chebyshev(unit["pos"], target["pos"]) > FLARE_REVEAL_RADIUS:
 			continue
-		unit["invisible"] = false
-		unit["invisible_turns"] = 0
+		_end_invisible(unit, false)
 		_emit_expire("invisible", unit["pos"], int(unit["seat"]), int(unit["seat"]))
 		revealed.append(int(unit["seat"]))
 	var burn := _apply_burn(target)
@@ -2281,8 +2283,12 @@ func _make_unit(seat: int, class_id: String, unit_name: String, element: String,
 		"shades": 0,
 		"invisible": false,
 		"invisible_turns": 0,
-		# Player-spell cooldowns (Fade). Foe kits use foe_cd. See _arm_spell_cooldown.
+		# Player-spell cooldowns. Fade arms spell_cd["fade"] when Invisible
+		# ends (not at cast). fade_cd_skip keeps that charge through the next
+		# own turn-start when the reveal was not itself that turn start.
+		# Foe kits use foe_cd.
 		"spell_cd": {},
+		"fade_cd_skip": false,
 		"shield": 0,
 		"shield_turns": 0,
 		"hit_immunity": 0,
@@ -2871,8 +2877,12 @@ func _submit_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
 	# that same tile is not a second token.
 	if spell_id == SpellKits.DROP_SHADE and not _shade_token_at(actor, dest).is_empty():
 		return _resolve_shade_dismiss(intent, actor, dest)
-	if spell_id == SpellKits.FADE and not _player_cd_ready(actor, spell_id):
-		return _reject(intent, "cooldown", "REJECT — %s is still cooling down (refund)." % def["name"])
+	if spell_id == SpellKits.FADE:
+		var fade_block := _fade_cast_block(actor)
+		if fade_block == "invisible":
+			return _reject(intent, "invisible", "REJECT — Fade cannot be cast while Invisible (refund).")
+		if fade_block == "cooldown":
+			return _reject(intent, "cooldown", "REJECT — %s is still cooling down (refund)." % def["name"])
 
 	if spell_id == SpellKits.ADVANCE:
 		# Dest-click teleport. Ignore client intent.path. No MP spend.
@@ -4231,7 +4241,9 @@ func _tick_invisible(unit: Dictionary) -> void:
 	left -= 1
 	unit["invisible_turns"] = left
 	if left <= 0:
-		unit["invisible"] = false
+		# Turn-start tick of spell cooldowns already ran, so this window is
+		# the locked Fade turn (counter 1, no skip).
+		_end_invisible(unit, true)
 		_emit_expire("invisible", unit["pos"], int(unit["seat"]), int(unit["seat"]))
 		_invisible_wore_off = true
 
@@ -4803,6 +4815,7 @@ func _accept() -> Dictionary:
 		_last_events.append_array(_blend_queue)
 		_blend_queue.clear()
 	_skip_fallen_active()
+	_flush_fade_cd_log()
 	_broadcast()
 	return {
 		"ok": true,
@@ -4818,10 +4831,12 @@ func _accept() -> Dictionary:
 ## every offer comes from _foe_casts and a submit must match one of them.
 
 
-## Kit field `cooldown` is how many of the caster's own turns the spell stays
-## locked after the cast. Foe kits store `cd` and tick it at each later turn
-## start, before the action, so a stored 2 skips one turn. Player spells use
-## the same tick: the stored counter is cooldown + 1.
+## Cast-time clock for a player spell that locks on the cast itself.
+## Foe kits store `cd` and tick it at each later turn start, before the
+## action, so a stored 2 skips one turn. This helper stores cooldown + 1
+## for that same tick. Fade does not use it: its cooldown starts when
+## Invisible ends (_start_fade_cooldown), and the stored number is the
+## kit cooldown, which is also the number on the button.
 func _arm_spell_cooldown(actor: Dictionary, def: Dictionary) -> void:
 	var wait := int(def.get("cooldown", 0))
 	if wait <= 0:
@@ -4834,11 +4849,78 @@ func _arm_spell_cooldown(actor: Dictionary, def: Dictionary) -> void:
 
 
 func _tick_spell_cooldowns(unit: Dictionary) -> void:
+	var skip_fade := bool(unit.get("fade_cd_skip", false))
+	if skip_fade:
+		# Reveal was not this turn start. Keep Fade's charge so this action
+		# window is the one locked turn. The start after this one consumes it.
+		unit["fade_cd_skip"] = false
 	var cds: Variant = unit.get("spell_cd", null)
 	if typeof(cds) != TYPE_DICTIONARY:
 		return
 	for id in (cds as Dictionary).keys():
+		if skip_fade and str(id) == SpellKits.FADE:
+			continue
 		cds[id] = maxi(int(cds[id]) - 1, 0)
+
+
+## Fade cannot be cast while Invisible, and cannot be cast while its
+## post-reveal cooldown is up. Invisible is checked first so a hidden Gloam
+## is rejected as invisible even when the cooldown counter is still 0.
+func _fade_cast_block(actor: Dictionary) -> String:
+	if bool(actor.get("invisible", false)):
+		return "invisible"
+	if not _player_cd_ready(actor, SpellKits.FADE):
+		return "cooldown"
+	return ""
+
+
+## One of Gloam's own action windows with Fade unavailable after he is visible.
+## The stored counter is the kit cooldown (1), shown on the button. It is not
+## the cast-time "cooldown + 1" value.
+## at_turn_start: timer wear-off inside _tick_invisible, which runs after
+## _tick_spell_cooldowns. This window is the locked turn; the next own turn
+## start decrements the counter. Cast on T, hidden on T+1, blocked on T+2,
+## legal on T+3.
+## Otherwise (attack, hurt, trap, or any reveal on the enemy's turn): the
+## next own turn-start must not consume the charge, so that next full turn
+## is the locked window and the one after is legal. The rest of the reveal
+## turn is blocked too. The badge stays "1" for both, not "2".
+func _start_fade_cooldown(unit: Dictionary, at_turn_start: bool) -> void:
+	if not SpellKits.has_spell(str(unit.get("class_id", "")), SpellKits.FADE):
+		return
+	var cool := int(SpellKits.spell(SpellKits.FADE).get("cooldown", 0))
+	if cool <= 0:
+		return
+	var cds: Dictionary = {}
+	if unit.get("spell_cd", {}) is Dictionary:
+		cds = unit["spell_cd"]
+	cds[SpellKits.FADE] = cool
+	unit["spell_cd"] = cds
+	unit["fade_cd_skip"] = not at_turn_start
+	_fade_cd_log = "Fade cooldown %d." % cool
+
+
+## True when Invisible was up. Clears the flag and the clock, then arms Fade.
+func _end_invisible(unit: Dictionary, at_turn_start: bool) -> bool:
+	if not bool(unit.get("invisible", false)):
+		return false
+	unit["invisible"] = false
+	unit["invisible_turns"] = 0
+	_start_fade_cooldown(unit, at_turn_start)
+	return true
+
+
+func _flush_fade_cd_log() -> void:
+	if _fade_cd_log == "":
+		return
+	if not _last_coach.contains("Fade cooldown"):
+		_last_coach = ("%s %s" % [_last_coach.strip_edges(), _fade_cd_log]).strip_edges()
+	if not _last_events.is_empty() and _last_events[_last_events.size() - 1] is Dictionary:
+		var last: Dictionary = _last_events[_last_events.size() - 1]
+		var coach := str(last.get("coach", ""))
+		if coach != "" and not coach.contains("Fade cooldown"):
+			last["coach"] = "%s %s" % [coach.strip_edges(), _fade_cd_log]
+	_fade_cd_log = ""
 
 
 func _player_cd_ready(actor: Dictionary, spell_id: String) -> bool:
@@ -6190,7 +6272,10 @@ func _resolve_revive(intent: Dictionary, actor: Dictionary, def: Dictionary, des
 		if body.has(key):
 			body[key] = 0
 	body["stunned"] = false
-	body["invisible"] = false
+	if bool(body.get("invisible", false)):
+		_end_invisible(body, false)
+	else:
+		body["invisible"] = false
 	_refresh_last_stand()
 	_intent_log.append(intent)
 	_last_coach = "%s Rekindles %s (−%d AP): back on their feet with %d HP." % [actor["name"], body["name"], ap_cost, hp]
@@ -6411,9 +6496,10 @@ func _strip_family(unit: Dictionary, family: String) -> void:
 ## Invisible lasts INVISIBLE_TURNS of Gloam's own turns.
 ## Fade sets invisible_turns; each Gloam turn start counts one down and at 0
 ## Gloam is revealed (expire "invisible"). With 2: cast on turn T, still
-## hidden at turn T+1, visible when turn T+2 starts.
-## An attack still reveals at once. A fixture with invisible but no
-## invisible_turns has no clock (tests / old snapshots).
+## hidden at turn T+1, visible when turn T+2 starts. Fade's cooldown starts
+## then: T+2 is locked, T+3 is legal. An attack, a hurt, or a trap reveals
+## at once and starts the same one-turn cooldown. A fixture with invisible
+## but no invisible_turns has no clock (tests / old snapshots).
 ## Mauro 7 Oct 2026: Bastion's Ward. 3 AP + 1 Aegis, once per turn. Every living
 ## ally within `ward_radius` (Chebyshev, Bastion included) gains +20 shield,
 ## capped at 40. The shield has no clock: it lasts until hits break it.
@@ -6468,13 +6554,16 @@ func _resolve_fade(intent: Dictionary, actor: Dictionary, def: Dictionary, ap_co
 	var gained := _gain_resource(actor, "umbral", 1)
 	actor["invisible"] = true
 	actor["invisible_turns"] = INVISIBLE_TURNS
-	_arm_spell_cooldown(actor, def)
+	# Cooldown starts when Invisible ends, not while he is hidden.
+	actor["fade_cd_skip"] = false
+	var cds: Dictionary = {}
+	if actor.get("spell_cd", {}) is Dictionary:
+		cds = actor["spell_cd"]
+	cds.erase(SpellKits.FADE)
+	actor["spell_cd"] = cds
 	_intent_log.append(intent)
 	var cool := int(def.get("cooldown", 0))
-	var cool_text := ""
-	if cool > 0:
-		cool_text = " Cooldown %d turn%s." % [cool, "" if cool == 1 else "s"]
-	_last_coach = "%s Fade (−%d AP / −%d MP). Invisible for %d turn%s.%s +%d Umbral." % [actor["name"], ap_cost, mp_cost, INVISIBLE_TURNS, "" if INVISIBLE_TURNS == 1 else "s", cool_text, gained]
+	_last_coach = "%s Fade (−%d AP / −%d MP). Invisible for %d turn%s, cooldown %d turn%s after reveal. +%d Umbral." % [actor["name"], ap_cost, mp_cost, INVISIBLE_TURNS, "" if INVISIBLE_TURNS == 1 else "s", cool, "" if cool == 1 else "s", gained]
 	_last_events.append({
 		"type": "cast",
 		"spell": SpellKits.FADE,
@@ -6928,9 +7017,8 @@ static func ambush_damage_if_planted(struck_from: Vector2i, landing: Vector2i, d
 ## Soft Lock 2026-09-26: a resolved attack ends Invisible, hit or miss.
 ## Drop Shade, Fade, walks, and a rejected cast do not. Fade still grants it.
 func _break_invisible_on_attack(actor: Dictionary) -> void:
-	if bool(actor.get("invisible", false)):
-		actor["invisible"] = false
-	actor["invisible_turns"] = 0
+	if not _end_invisible(actor, false):
+		actor["invisible_turns"] = 0
 
 
 func _resolve_ambush(intent: Dictionary, actor: Dictionary, target: Dictionary, def: Dictionary, dest: Vector2i, dist: int, ap_cost: int, mp_cost: int) -> Dictionary:
