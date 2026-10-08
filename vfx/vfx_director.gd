@@ -152,25 +152,10 @@ func sync_snapshot(snapshot: Dictionary) -> void:
 		if not spec.is_empty():
 			wanted["%s:%d,%d" % [kind, cell.x, cell.y]] = spec
 	# Slagcrown's boiling water steams for the whole match (it blocks sight).
-	# The columns were a grey thicket. One plume per orthogonal clump: a cell
-	# yields the plume to a neighbour that sorts earlier.
-	var steam_cells: Array[Vector2i] = []
 	for tile in snapshot.get("map_steam", []):
 		if typeof(tile) != TYPE_DICTIONARY:
 			continue
-		steam_cells.append(_Router.cell_of(tile.get("pos", Vector2i(int(tile.get("x", 0)), int(tile.get("y", 0))))))
-	var steam_at := {}
-	for steam_cell in steam_cells:
-		steam_at[steam_cell] = true
-	for steam_cell in steam_cells:
-		var quieter := false
-		for step in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
-			var beside: Vector2i = steam_cell + step
-			if steam_at.has(beside) and (beside.y < steam_cell.y or (beside.y == steam_cell.y and beside.x < steam_cell.x)):
-				quieter = true
-				break
-		if quieter:
-			continue
+		var steam_cell := _Router.cell_of(tile.get("pos", Vector2i(int(tile.get("x", 0)), int(tile.get("y", 0)))))
 		wanted["map_steam:%d,%d" % [steam_cell.x, steam_cell.y]] = _Router.map_steam_spec(steam_cell)
 	for unit in snapshot.get("units", []):
 		if typeof(unit) != TYPE_DICTIONARY:
