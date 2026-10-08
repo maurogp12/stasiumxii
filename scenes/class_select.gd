@@ -20,6 +20,16 @@ const SEAT_P1 := Color("#2E5A3C")
 const SEAT_P2 := Color("#8B2E2E")
 const SEAT_P1_TEXT := Color("#B7E0C4")
 const SEAT_P2_TEXT := Color("#F0B4B4")
+const HUB_FONT := "res://art/ui/hub/Cinzel-Semibold.ttf"
+const GOLD := Color(0.855, 0.69, 0.4)
+const GOLD_BRIGHT := Color(0.95, 0.82, 0.52)
+const GOLD_DIM := Color(0.62, 0.49, 0.28)
+const NAVY := Color(0.008, 0.028, 0.07, 1)
+const STONE := Color(0.11, 0.10, 0.09, 0.96)
+const STONE_HI := Color(0.18, 0.15, 0.11, 0.98)
+const CREAM := Color(0.96, 0.92, 0.84)
+
+var _ui_font: Font
 
 ## Short roles derived from the Locked cards (kits.gd + workbook v0.6).
 ## Kestrel: Mark Shot range 2–7. Ironjaw: Strike / Shoulder / Crush at range 1.
@@ -410,7 +420,7 @@ func _connect_net() -> void:
 func _build() -> void:
 	var bg := ColorRect.new()
 	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	bg.color = Color(0.09, 0.08, 0.08)
+	bg.color = NAVY
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(bg)
 
@@ -430,15 +440,8 @@ func _build() -> void:
 
 	var title := Label.new()
 	title.text = "STASIUM XII"
-	title.add_theme_font_size_override("font_size", 28)
-	title.add_theme_color_override("font_color", Color(0.95, 0.9, 0.82))
+	_apply_ui_font(title, 28, GOLD_BRIGHT)
 	col.add_child(title)
-
-	var blurb := Label.new()
-	blurb.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	blurb.text = "Locked roster: Kestrel, Ironjaw, Mender, Gloam, Bastion. Hot-seat picks classes; the arena is a random Koliseo map. Online queues on the dedicated host (Crosshaven)."
-	blurb.add_theme_color_override("font_color", Color(0.78, 0.74, 0.7))
-	col.add_child(blurb)
 
 	var mode_row := HBoxContainer.new()
 	mode_row.add_theme_constant_override("separation", 12)
@@ -450,9 +453,10 @@ func _build() -> void:
 	var hub_button := Button.new()
 	hub_button.text = "Back to hub"
 	hub_button.custom_minimum_size = Vector2(160, 48)
-	hub_button.add_theme_font_size_override("font_size", 18)
-	hub_button.add_theme_color_override("font_color", Color(0.98, 0.96, 0.92))
+	_apply_ui_font(hub_button, 18, CREAM)
 	hub_button.add_theme_stylebox_override("normal", _hub_return_style())
+	hub_button.add_theme_stylebox_override("hover", _hub_return_style())
+	hub_button.add_theme_stylebox_override("pressed", _stone_style(true))
 	hub_button.pressed.connect(return_to_hub)
 	mode_row.add_child(hub_button)
 
@@ -470,7 +474,7 @@ func _build() -> void:
 		_size_row.add_child(b)
 
 	_prompt = Label.new()
-	_prompt.add_theme_font_size_override("font_size", 22)
+	_apply_ui_font(_prompt, 22, CREAM)
 	col.add_child(_prompt)
 
 	_p1_chip = PanelContainer.new()
@@ -498,14 +502,17 @@ func _build() -> void:
 	_queue_button = Button.new()
 	_queue_button.text = "Play Online"
 	_queue_button.custom_minimum_size = Vector2(280, 56)
-	_queue_button.add_theme_font_size_override("font_size", 22)
+	_apply_ui_font(_queue_button, 22, Color(0.12, 0.09, 0.04))
+	_queue_button.add_theme_stylebox_override("normal", _play_style())
+	_queue_button.add_theme_stylebox_override("hover", _play_style())
+	_queue_button.add_theme_stylebox_override("pressed", _play_style())
 	_queue_button.pressed.connect(request_queue)
 	_join_row.add_child(_queue_button)
 	_advanced_button = Button.new()
 	_advanced_button.text = "Advanced"
 	_advanced_button.flat = true
 	_advanced_button.custom_minimum_size = Vector2(88, 28)
-	_advanced_button.add_theme_font_size_override("font_size", 12)
+	_apply_ui_font(_advanced_button, 12, GOLD_DIM)
 	_advanced_button.pressed.connect(_toggle_advanced)
 	_join_row.add_child(_advanced_button)
 	_retry_button = Button.new()
@@ -538,8 +545,7 @@ func _build() -> void:
 
 	_status = Label.new()
 	_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_status.add_theme_font_size_override("font_size", 16)
-	_status.add_theme_color_override("font_color", Color(0.9, 0.82, 0.5))
+	_apply_ui_font(_status, 16, GOLD)
 	col.add_child(_status)
 
 	_queue_panel = PanelContainer.new()
@@ -599,7 +605,7 @@ func _mode_button(text: String, mode_id: String) -> Button:
 	var button := Button.new()
 	button.text = text
 	button.custom_minimum_size = Vector2(200, 44)
-	button.add_theme_font_size_override("font_size", 20)
+	_apply_ui_font(button, 20, CREAM)
 	button.pressed.connect(choose_mode.bind(mode_id))
 	return button
 
@@ -635,8 +641,7 @@ func _make_card(class_id: String) -> Panel:
 	var name_label := Label.new()
 	name_label.text = SpellKits.display_name(class_id)
 	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	name_label.add_theme_font_size_override("font_size", 18)
-	name_label.add_theme_color_override("font_color", Color(0.98, 0.96, 0.92))
+	_apply_ui_font(name_label, 18, GOLD_BRIGHT)
 	name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	box.add_child(name_label)
 	_name_labels[class_id] = name_label
@@ -644,8 +649,7 @@ func _make_card(class_id: String) -> Panel:
 	var role := Label.new()
 	role.text = role_line(class_id)
 	role.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	role.add_theme_font_size_override("font_size", 13)
-	role.add_theme_color_override("font_color", Color(0.78, 0.74, 0.7))
+	_apply_ui_font(role, 13, GOLD)
 	role.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	box.add_child(role)
 	_role_labels[class_id] = role
@@ -859,34 +863,45 @@ func _go_main() -> void:
 	get_tree().change_scene_to_file(MAIN_SCENE)
 
 
-func _card_style(selected: bool) -> StyleBoxFlat:
+func _apply_ui_font(control: Control, size: int, color: Color) -> void:
+	if _ui_font == null:
+		_ui_font = load(HUB_FONT) as Font
+	if _ui_font != null:
+		control.add_theme_font_override("font", _ui_font)
+	control.add_theme_font_size_override("font_size", size)
+	control.add_theme_color_override("font_color", color)
+
+
+func _stone_style(selected: bool) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.22, 0.2, 0.16) if selected else Color(0.15, 0.14, 0.13)
+	style.bg_color = STONE_HI if selected else STONE
+	style.border_color = GOLD_BRIGHT if selected else GOLD_DIM
 	style.set_border_width_all(3 if selected else 1)
-	style.border_color = Color(0.93, 0.78, 0.42) if selected else Color(0.38, 0.34, 0.3)
-	style.set_corner_radius_all(8)
+	style.set_corner_radius_all(6)
+	style.shadow_color = Color(0, 0, 0, 0.45)
+	style.shadow_size = 4
 	return style
+
+
+func _card_style(selected: bool) -> StyleBoxFlat:
+	return _stone_style(selected)
 
 
 func _hub_return_style() -> StyleBoxFlat:
+	return _stone_style(false)
+
+
+func _play_style() -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.18, 0.16, 0.14)
-	style.border_color = Color(0.93, 0.78, 0.42)
-	style.set_border_width_all(1)
-	style.set_corner_radius_all(8)
+	style.bg_color = GOLD
+	style.border_color = GOLD_BRIGHT
+	style.set_border_width_all(2)
+	style.set_corner_radius_all(6)
 	return style
 
 
-func _mode_style(mode_id: String, active: bool) -> StyleBoxFlat:
-	var style := StyleBoxFlat.new()
-	if mode_id == "hotseat":
-		style.bg_color = SEAT_P1 if active else Color(0.16, 0.2, 0.17)
-	else:
-		style.bg_color = Color("#2E4A6E") if active else Color(0.14, 0.16, 0.2)
-	style.set_border_width_all(2 if active else 1)
-	style.border_color = Color(0.93, 0.78, 0.42) if active else Color(0.35, 0.32, 0.28)
-	style.set_corner_radius_all(8)
-	return style
+func _mode_style(_mode_id: String, active: bool) -> StyleBoxFlat:
+	return _stone_style(active)
 
 
 func _seat_chip_style(color: Color) -> StyleBoxFlat:
@@ -901,10 +916,7 @@ func _seat_chip_style(color: Color) -> StyleBoxFlat:
 
 
 func _waiting_style() -> StyleBoxFlat:
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.28, 0.22, 0.12)
-	style.border_color = Color(0.93, 0.78, 0.42)
-	style.set_border_width_all(2)
+	var style := _stone_style(true)
 	style.set_corner_radius_all(8)
 	style.content_margin_left = 16
 	style.content_margin_right = 16

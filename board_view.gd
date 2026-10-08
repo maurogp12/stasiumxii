@@ -126,6 +126,9 @@ var _pinch_zoom := 0.0
 var _board_px := Vector2(960, 500)
 var _fit_camera_pos := Vector2.ZERO
 var _pan_limit := Vector2(PAN_LIMIT, PAN_LIMIT)
+## Screen-space pan accumulated during input. Applied once per frame so a
+## gesture does not move the camera on every motion event.
+var _pan_pending := Vector2.ZERO
 ## Turn focus glide (Mauro 4 Oct 2026: "the map focus whoever turn it is").
 const FOCUS_GLIDE_SEC := 0.45
 var _focus_tween: Tween
@@ -336,6 +339,7 @@ func local_to_grid(point: Vector2) -> Vector2i:
 func _process(delta: float) -> void:
 	if not _booted:
 		return
+	_apply_pending_pan()
 	_pulse_target_marks(delta)
 	_space_name_plates()
 	var snap: Dictionary = _sim().snapshot()
@@ -444,6 +448,12 @@ func _cancel_touch_aim() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton:
+		var wheel := event as InputEventMouseButton
+		if wheel.pressed and (wheel.button_index == MOUSE_BUTTON_WHEEL_UP or wheel.button_index == MOUSE_BUTTON_WHEEL_DOWN):
+			_apply_wheel_zoom(1 if wheel.button_index == MOUSE_BUTTON_WHEEL_UP else -1)
+			get_viewport().set_input_as_handled()
+			return
 	if BoardTile.consume_debug_label_key(event):
 		for tile in tiles.values():
 			(tile as BoardTile).queue_redraw()
@@ -490,8 +500,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		var motion := event as InputEventMouseMotion
 		var delta := motion.position - _pan_origin
 		_pan_origin = motion.position
-		_camera.position -= delta / _camera.zoom
-		_clamp_camera()
+		_queue_pan(delta)
 		get_viewport().set_input_as_handled()
 		return
 	if _hud_claims_pointer(event):
@@ -1788,7 +1797,12 @@ func _sample_glide_step(t: float, pawn: Pawn, src: Vector2i, dst: Vector2i, firs
 ## zoomed in, the camera drifts after the walking fighter, inside the pan
 ## limits. Fit-to-screen (no pan room) does not move.
 func _follow_walker(pawn: Pawn) -> void:
-	if _camera == null or _panning or _touch_panning:
+	if _camera == null or _panning or _touch_panning or pawn == null:
+		return
+	var snap: Dictionary = _sim().snapshot()
+	if not _follow_local_fighter(snap):
+		return
+	if pawn.seat != CombatHUD.snap_local_seat(snap):
 		return
 	if _pan_limit.x <= 1.0 and _pan_limit.y <= 1.0:
 		return
@@ -2812,13 +2826,9 @@ func _fit_board_camera(glide: bool = false) -> void:
 	_camera.zoom = Vector2(zoom, zoom)
 	var center := Vector2((min_x + max_x) * 0.5, (min_y + max_y) * 0.5)
 	var room := TOUCH.pan_room(board_w, board_h, viewport, zoom, mobile)
-	if mobile:
-		room = TOUCH.free_room(board_w, board_h, room)
-		_pan_limit = room
-	else:
-		_pan_limit = Vector2(maxf(room.x, PAN_LIMIT), maxf(room.y, PAN_LIMIT))
+	_pan_limit = room
 	var look := center
-	if mobile:
+	if mobile and _follow_local_fighter(_sim().snapshot()):
 		var focus := _frame_focus_local()
 		if focus.x < 1.0e8:
 			look = TOUCH.focus_point(center, focus, room)
@@ -2866,6 +2876,8 @@ func _frame_focus_local() -> Vector2:
 func _maybe_reframe(snap: Dictionary) -> void:
 	if not TOUCH.use_mobile_pick():
 		return
+	if not _follow_local_fighter(snap):
+		return
 	var actor := _active_unit(snap)
 	if actor.is_empty():
 		return
@@ -2902,10 +2914,45 @@ func _pan_board_drag(event: InputEvent) -> bool:
 		return true
 	var delta := pos - _pan_origin
 	_pan_origin = pos
-	_camera.position -= delta / _camera.zoom
-	_clamp_camera()
+	_queue_pan(delta)
 	get_viewport().set_input_as_handled()
 	return true
+
+
+func _follow_local_fighter(snap: Dictionary) -> bool:
+	var local_seat := CombatHUD.snap_local_seat(snap)
+	if local_seat < 0:
+		return false
+	return local_seat == CombatHUD.snap_active_seat(snap)
+
+
+func _queue_pan(screen_delta: Vector2) -> void:
+	if _camera == null:
+		return
+	var z := _camera.zoom.x
+	if is_zero_approx(z):
+		return
+	_pan_pending -= screen_delta / z
+
+
+func _apply_pending_pan() -> void:
+	if _camera == null or _pan_pending == Vector2.ZERO:
+		return
+	_camera.position += _pan_pending
+	_pan_pending = Vector2.ZERO
+	_clamp_camera()
+
+
+func _apply_wheel_zoom(direction: int) -> void:
+	if _camera == null:
+		return
+	var mobile := TOUCH.use_mobile_pick()
+	var view := get_viewport_rect().size if mobile else Vector2(VIEW_W, VIEW_H)
+	TOUCH.nudge_player_zoom(direction)
+	var z := TOUCH.player_board_zoom(_board_px.x, _board_px.y, view, mobile)
+	_camera.zoom = Vector2(z, z)
+	_pan_limit = TOUCH.pan_room(_board_px.x, _board_px.y, view, z, mobile)
+	_clamp_camera()
 
 
 func _clamp_camera() -> void:

@@ -34,6 +34,8 @@ var terrain_type: String = "ground"
 ## "block" (hole / solid obstacle): a shade plus a soft glow in the map accent.
 var walk_blocked: bool = false
 var walk_block_kind: String = ""
+## View only. A painted wall or prop on this cell hides the diamond ink.
+var occluder_covers_grid: bool = false
 const LIQUID_GLOW := {
 	"water": Color(0.45, 0.85, 1.0),
 	"mud": Color(0.78, 0.62, 0.36),
@@ -93,6 +95,9 @@ class GridInk extends Node2D:
 		loop.append(pts[0])
 		var style: Dictionary = host.grid_style()
 		if (style.get("no_grid", []) as Array).has(host.terrain_type):
+			return
+		# Walls, voids, and other blocks keep the painting. Grid ink stays on the floor.
+		if host.walk_block_kind == "block" or host.occluder_covers_grid:
 			return
 		draw_polyline(loop, style.get("ink", KoliseoLife.GRID_INK), float(style.get("ink_px", KoliseoLife.GRID_INK_PX)), true)
 		draw_polyline(loop, style.get("gleam", KoliseoLife.GRID_GLEAM), float(style.get("gleam_px", KoliseoLife.GRID_GLEAM_PX)), true)
@@ -589,6 +594,15 @@ func _request_paint() -> void:
 
 func grid_ink_on() -> bool:
 	return _grid_on
+
+
+func set_occluder_covers_grid(on: bool) -> void:
+	if occluder_covers_grid == on:
+		return
+	occluder_covers_grid = on
+	_ensure_grid()
+	if _grid != null and is_instance_valid(_grid):
+		_grid.queue_redraw()
 
 
 func diamond_points() -> PackedVector2Array:

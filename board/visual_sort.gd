@@ -11,6 +11,8 @@ const ELEVATION_PIXELS := 10.0
 const TILE_Z_SCALE := 10
 const ELEVATION_Z_SCALE := 8
 const UNIT_Z_BIAS := 4
+## Above the tile grid (child z 0) and the highlight overlay (z 1), under the fighter.
+const OCCLUDER_Z_BIAS := 2
 
 
 static func cell_to_local(cell: Vector2i, elevation: float = 0.0) -> Vector2:
@@ -25,3 +27,7 @@ static func tile_z_index(cell: Vector2i, elevation: float = 0.0) -> int:
 
 static func unit_z_index(cell: Vector2i, elevation: float = 0.0) -> int:
 	return tile_z_index(cell, elevation) + UNIT_Z_BIAS
+
+
+static func occluder_z_index(cell: Vector2i, elevation: float = 0.0) -> int:
+	return tile_z_index(cell, elevation) + OCCLUDER_Z_BIAS
