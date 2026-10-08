@@ -137,6 +137,8 @@ var _pan_pending := Vector2.ZERO
 ## Turn focus glide (Mauro 4 Oct 2026: "the map focus whoever turn it is").
 const FOCUS_GLIDE_SEC := 0.45
 var _focus_tween: Tween
+var _focus_goal := Vector2.ZERO
+var _focus_from := Vector2.ZERO
 var _framed_cell := Vector2i(-999, -999)
 var _panning := false
 var _touch_panning := false
@@ -849,6 +851,7 @@ func _center_on_cell(cell: Vector2i) -> void:
 	if _focus_tween != null and _focus_tween.is_valid():
 		_focus_tween.kill()
 	_camera.position = _fit_camera_pos + _clamp_pan_delta(goal - _fit_camera_pos)
+	_flush_camera()
 
 
 func _advance_click_accepted(cell: Vector2i, spell_id: String) -> bool:
@@ -1675,7 +1678,9 @@ func _play_walk(seat: int, path: Array, origin: Vector2i = Vector2i(-1, -1)) -> 
 	_hop_seat = seat
 	_hud.set_locked(true)
 	var snap: Dictionary = _sim().snapshot()
-	_hud.render(snap, [])
+	# Lock input, but keep the plaques, portraits, and spell art. An empty
+	# legal list used to free the cluster for the whole hop.
+	_hud.render(snap, _sim().legal_intents(CombatHUD.kit_seat(snap)))
 	for tile in tiles.values():
 		(tile as BoardTile).set_highlight("")
 	for step in path:
@@ -1873,6 +1878,7 @@ func _follow_walker(pawn: Pawn) -> void:
 	var target := (pawn.global_position - global_position)
 	_camera.position = _camera.position.lerp(target, 0.08)
 	_clamp_camera()
+	_flush_camera()
 
 
 func _snap_walk_facing(pawn: Pawn, dir: String) -> void:
@@ -2989,8 +2995,12 @@ func _ensure_camera() -> void:
 		return
 	_camera = Camera2D.new()
 	_camera.name = "BoardCamera"
+	_camera.enabled = true
+	_camera.position_smoothing_enabled = false
+	_camera.ignore_rotation = true
 	add_child(_camera)
 	_camera.make_current()
+	_flush_camera()
 
 
 func _rebuild_grid(size: int) -> void:
@@ -3038,9 +3048,13 @@ func _fit_board_camera(glide: bool = false) -> void:
 	var viewport := Vector2(VIEW_W, VIEW_H)
 	if mobile:
 		viewport = get_viewport_rect().size
+		# A collapsed or not-yet-ready window used to refit zoom and position
+		# for one frame (board jumps down, more of the map shows) and the
+		# next size_changed snapped it back.
+		if viewport.x < 240.0 or viewport.y < 240.0:
+			return
 	var band := TOUCH.play_band_for(viewport, mobile)
 	var zoom := TOUCH.player_board_zoom(board_w, board_h, viewport, mobile)
-	_camera.zoom = Vector2(zoom, zoom)
 	var center := Vector2((min_x + max_x) * 0.5, (min_y + max_y) * 0.5)
 	var room := TOUCH.pan_room(board_w, board_h, viewport, zoom, mobile)
 	_pan_limit = room
@@ -3059,18 +3073,33 @@ func _fit_board_camera(glide: bool = false) -> void:
 	var world_center := global_position + center
 	var camera_world := world_center - (play_center - view_center) / zoom
 	_fit_camera_pos = camera_world - global_position
+	var zoom_changed := not is_equal_approx(_camera.zoom.x, zoom)
+	# Clamp reads the live zoom (portrait-bar room). Publish it before the
+	# pan clamp, then write position and force the canvas transform so the
+	# frame does not draw the new zoom on the old center.
+	if zoom_changed:
+		_camera.zoom = Vector2(zoom, zoom)
 	var goal := _fit_camera_pos + (look - center)
 	var delta := _clamp_pan_delta(goal - _fit_camera_pos)
 	goal = _fit_camera_pos + delta
+	var same_glide := glide and _focus_goal.is_equal_approx(goal) and not zoom_changed and _focus_tween != null and _focus_tween.is_valid() and _focus_tween.is_running()
+	if same_glide:
+		_flush_camera()
+		return
 	if _focus_tween != null and _focus_tween.is_valid():
 		_focus_tween.kill()
 	if glide and is_inside_tree() and not _touch_panning and not _panning:
 		# Turn focus: glide to the fighter whose turn it is.
+		_focus_from = _camera.position
+		_focus_goal = goal
 		_focus_tween = create_tween()
-		_focus_tween.tween_property(_camera, "position", goal, FOCUS_GLIDE_SEC).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+		_focus_tween.tween_method(_glide_camera_to, 0.0, 1.0, FOCUS_GLIDE_SEC).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+		_flush_camera()
 	else:
+		_focus_goal = goal
 		_camera.position = goal
 		_clamp_camera()
+		_flush_camera()
 
 
 func _on_zoom_step(direction: int) -> void:
@@ -3158,6 +3187,7 @@ func _apply_pending_pan() -> void:
 	_camera.position += _pan_pending
 	_pan_pending = Vector2.ZERO
 	_clamp_camera()
+	_flush_camera()
 
 
 func _apply_wheel_zoom(direction: int) -> void:
@@ -3170,12 +3200,25 @@ func _apply_wheel_zoom(direction: int) -> void:
 	_camera.zoom = Vector2(z, z)
 	_pan_limit = TOUCH.pan_room(_board_px.x, _board_px.y, view, z, mobile)
 	_clamp_camera()
+	_flush_camera()
 
 
 func _clamp_camera() -> void:
 	if _camera == null:
 		return
 	_camera.position = _fit_camera_pos + _clamp_pan_delta(_camera.position - _fit_camera_pos)
+
+
+func _glide_camera_to(t: float) -> void:
+	if _camera == null:
+		return
+	_camera.position = _focus_from.lerp(_focus_goal, clampf(t, 0.0, 1.0))
+	_flush_camera()
+
+
+func _flush_camera() -> void:
+	if _camera != null and is_instance_valid(_camera) and _camera.has_method("force_update_scroll"):
+		_camera.force_update_scroll()
 
 
 ## Pan room. The fit already drops the frame by the portrait-bar inset, so
