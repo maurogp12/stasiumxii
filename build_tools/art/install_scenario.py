@@ -192,10 +192,10 @@ def install_crystal_variants(paths):
 
 
 def install_spire(full_slim):
-    """Slim spire, a little taller than the 44x92 slot, still inside its cell."""
-    art = contain_bottom(Image.open(full_slim), (52, 110))
+    """Slim spire at about 2x the old slot, base on the centre of (7,7)."""
+    art = contain_bottom(Image.open(full_slim), (104, 220))
     for room in ("koliseo_stormspire", "stasis_stormspire_room_a", "stasis_stormspire_room_b"):
-        write_occluder(room, "tower", art, 10)
+        write_occluder(room, "tower", art, 0)
 
 
 def install_pack(root):

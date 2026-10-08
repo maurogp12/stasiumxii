@@ -25,6 +25,7 @@ var _bar_saved := false
 var _cast_sent := false
 var _sample := false
 var _rooms_only := false
+var _biomes: Array = []
 
 
 func _initialize() -> void:
@@ -34,6 +35,8 @@ func _initialize() -> void:
 			_sample = true
 		elif str(arg) == "--rooms-only":
 			_rooms_only = true
+		elif str(arg).begins_with("--biomes="):
+			_biomes = str(arg).trim_prefix("--biomes=").split(",", false)
 		elif not str(arg).begins_with("--"):
 			_out = str(arg)
 	DirAccess.make_dir_recursive_absolute(_out)
@@ -63,8 +66,20 @@ func _process(delta: float) -> bool:
 	return true
 
 
+func _wanted(biome: String) -> bool:
+	return _biomes.is_empty() or _biomes.has(biome)
+
+
 func _rooms(board: Node, stasis: bool) -> bool:
-	var steps := _stasis_steps() if stasis else KOLISEO
+	var steps: Array = []
+	if stasis:
+		for step in _stasis_steps():
+			if _wanted(str(step[0])):
+				steps.append(step)
+	else:
+		for biome in KOLISEO:
+			if _wanted(str(biome)):
+				steps.append(biome)
 	if _index >= steps.size():
 		_index = 0
 		_frames = 0
