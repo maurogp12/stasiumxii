@@ -56,9 +56,9 @@ const LIQUID_GLOW_BY_MAP := {
 	# A slate hint on the snow. A teal fill read as a colored square.
 	"windmere": {"water": Color(0.40, 0.48, 0.55)},
 	# Etched stone, not a glowing purple box.
-	"stormspire": {"water": Color(0.30, 0.26, 0.36)},
+	"stormspire": {"water": Color(0.45, 0.50, 0.62)},
 	"brinewake": {"water": Color(0.16, 0.26, 0.30)},
-	"slagcrown": {"lava": Color(0.48, 0.18, 0.05), "water": Color(0.32, 0.22, 0.16)},
+	"slagcrown": {"lava": Color(0.32, 0.12, 0.04), "water": Color(0.32, 0.22, 0.16)},
 }
 ## Light floors: a soft tint fills the blocked diamond so the glow still shows
 ## around the base of a tall obstacle (alpha of the fill).
@@ -435,10 +435,10 @@ func walk_glow_color() -> Color:
 func _paint_painted_hazard(canvas: CanvasItem) -> void:
 	var points := _diamond_points()
 	var glow := walk_glow_color()
-	canvas.draw_colored_polygon(points, Color(glow.r, glow.g, glow.b, 0.10))
+	canvas.draw_colored_polygon(points, Color(glow.r, glow.g, glow.b, 0.05))
 	var line := PackedVector2Array(points)
 	line.append(points[0])
-	canvas.draw_polyline(line, Color(glow.r, glow.g, glow.b, 0.38), 1.0, true)
+	canvas.draw_polyline(line, Color(glow.r, glow.g, glow.b, 0.22), 1.0, true)
 
 
 ## A soft inner glow: rings fading toward the middle of the diamond.

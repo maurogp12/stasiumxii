@@ -38,11 +38,15 @@ const STYLES := {
 		"centerpiece": {"cell": Vector2i(7, 7), "prop": "wreck", "needs_prop": "wreck_side"},
 	},
 	"stormspire": {
-		"ink": Color(0.10, 0.07, 0.02, 0.85), "ink_px": 2.4,
-		"gleam": Color(1.0, 0.80, 0.30, 0.85), "gleam_px": 1.3,
+		# The gold gleam was a thick box around every cell. Painted floors
+		# draw their own faint ink; this keeps the same weight if a stamp shows.
+		"ink": Color(0.12, 0.10, 0.09, 0.28), "ink_px": 1.0,
+		"gleam": Color(0.12, 0.10, 0.09, 0.0), "gleam_px": 1.0,
 		"face_left": Color(0.24, 0.22, 0.32), "face_right": Color(0.15, 0.14, 0.22),
-		"lip": Color(1.0, 0.80, 0.30, 0.9),
-		"surfaces": {"water": [3, 1.0], "ground": [4, 1.15], "mud": [4, 1.0]},
+		"lip": Color(0.55, 0.50, 0.42, 0.35),
+		# Water is lightning painted into the plate. Mode 3 was a glowing
+		# purple tile on top of that painting.
+		"surfaces": {"ground": [4, 1.15], "mud": [4, 1.0]},
 		# Mauro (29 Sep): too many obstacles. Decoration props only draw on these
 		# cells; the rest are hidden (paint only, walk data unchanged). The
 		# blocking rock pillars and arcs stay. One tower stands in the centre.
