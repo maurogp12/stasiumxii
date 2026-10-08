@@ -960,6 +960,10 @@ func show_turn_banner(unit_name: String, class_id: String, caption: String = "")
 	_handoff_label.text = caption if caption != "" else "%s's turn" % unit_name
 	var fill := _banner_color(class_id)
 	_handoff_panel.add_theme_stylebox_override("panel", _fighter_frame(true, fill))
+	# Size the plaque before it is shown. A resize that lands while it is
+	# already visible used to squash the caption into a thin bar.
+	if _ui_root != null and _ui_root.size.y >= 240.0:
+		_layout_chrome(_ui_root.size)
 	_handoff_overlay.visible = true
 	_handoff_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
 
@@ -1626,7 +1630,9 @@ func _make_banner(is_kestrel: bool) -> Panel:
 	body.size = Vector2(214, 52)
 	body.bbcode_enabled = true
 	body.scroll_active = false
-	body.fit_content = true
+	# Size is set above. fit_content rewrites the minimum size when the text
+	# changes and the card draws empty until the next layout.
+	body.fit_content = false
 	body.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	body.add_theme_color_override("default_color", CREAM)
 	body.add_theme_font_size_override("normal_font_size", 13)
@@ -1716,12 +1722,9 @@ func _render_pips(row: HBoxContainer, current: int, maximum: int, fill: Color, u
 	if str(_pip_sig.get(row_id, "")) == sig and row.get_child_count() > 1:
 		return
 	_pip_sig[row_id] = sig
-	while row.get_child_count() > 1:
-		var child := row.get_child(row.get_child_count() - 1)
-		row.remove_child(child)
-		child.free()
 	var lit_tex := _load_pip("pip_%s_32.png" % kind)
 	var empty_tex := _load_pip("pip_empty_32.png")
+	var fresh: Array = []
 	if lit_tex == null or empty_tex == null:
 		for i in range(maximum):
 			# Round gem: lit fill with a bright rim when available, a dark socket when spent.
@@ -1738,17 +1741,25 @@ func _render_pips(row: HBoxContainer, current: int, maximum: int, fill: Color, u
 				gem.shadow_color = Color(fill.r, fill.g, fill.b, 0.55)
 				gem.shadow_size = 3
 			pip.add_theme_stylebox_override("panel", gem)
-			row.add_child(pip)
-		if fill == DOFUS_AP and not unit.is_empty():
-			_append_engine_pips(row, unit)
-		return
-	for i in range(maximum):
-		row.add_child(_pip_icon(lit_tex if i < current else empty_tex, i < current))
+			fresh.append(pip)
+	else:
+		for i in range(maximum):
+			fresh.append(_pip_icon(lit_tex if i < current else empty_tex, i < current))
 	if fill == DOFUS_AP and not unit.is_empty():
-		_append_engine_pips(row, unit)
+		_append_engine_pips_to(fresh, unit)
+	# Parent the new gems before freeing the old ones so the row is never
+	# just the "AP" caption for a frame.
+	var doomed: Array = []
+	for i in range(1, row.get_child_count()):
+		doomed.append(row.get_child(i))
+	for icon in fresh:
+		row.add_child(icon)
+	for child in doomed:
+		row.remove_child(child)
+		child.free()
 
 
-func _append_engine_pips(row: HBoxContainer, unit: Dictionary) -> void:
+func _append_engine_pips_to(bucket: Array, unit: Dictionary) -> void:
 	var field := ""
 	var cap := 0
 	match str(unit.get("class_id", "")):
@@ -1775,7 +1786,7 @@ func _append_engine_pips(row: HBoxContainer, unit: Dictionary) -> void:
 		return
 	var current := int(unit.get(field, 0))
 	for i in range(maxi(cap, 0)):
-		row.add_child(_pip_icon(lit_tex if i < current else empty_tex, i < current))
+		bucket.append(_pip_icon(lit_tex if i < current else empty_tex, i < current))
 
 
 func _pip_icon(tex: Texture2D, lit: bool) -> TextureRect:
@@ -1812,30 +1823,68 @@ func _sync_turn_strip(snap: Dictionary) -> void:
 	var over := bool(snap.get("match_over", false))
 	var order: Array = turn_order(snap)
 	var px := _chip_px(order.size())
+	var you := you_opp_seats(snap).x
 	var parts: PackedStringArray = PackedStringArray()
 	parts.append("spell:%s" % _selected_spell)
-	parts.append("px:%d" % int(px.y))
+	var wanted: Array = []
 	for unit in order:
 		var seat := int(unit.get("seat", -1))
 		var acting := (not deploying) and (not over) and seat == active
 		var targeted := _chip_targeted(unit)
+		var is_you := seat == you
 		parts.append("%d:%s:%s:%s" % [seat, str(unit.get("class_id", "")), "1" if acting else "0", "T" if targeted else "-"])
+		wanted.append({
+			"unit": unit,
+			"seat": seat,
+			"class_id": str(unit.get("class_id", "")),
+			"acting": acting,
+			"targeted": targeted,
+			"you": is_you,
+		})
 	var sig := "|".join(parts)
-	if sig == _turn_strip_sig and _turn_strip.get_child_count() > 0:
+	if sig == _turn_strip_sig and _turn_strip.get_child_count() == wanted.size() and wanted.size() > 0:
 		return
 	_turn_strip_sig = sig
-	while _turn_strip.get_child_count() > 0:
-		var child := _turn_strip.get_child(0)
+	# Same fighters: restyle the chips that are already on screen.
+	if _turn_strip.get_child_count() == wanted.size() and wanted.size() > 0:
+		var same := true
+		for i in wanted.size():
+			var existing := _turn_strip.get_child(i)
+			var rec: Dictionary = wanted[i]
+			if int(existing.get_meta("chip_seat", -2)) != int(rec["seat"]):
+				same = false
+				break
+			if str(existing.get_meta("chip_class", "")) != str(rec["class_id"]):
+				same = false
+				break
+		if same:
+			for i in wanted.size():
+				var row: Dictionary = wanted[i]
+				_restyle_turn_chip(_turn_strip.get_child(i), row["unit"], bool(row["acting"]), bool(row["targeted"]), bool(row["you"]), px)
+			return
+	# Build the new row first, then drop the old chips, so the plaque is
+	# never an empty dark box for a frame.
+	var fresh: Array = []
+	for entry in wanted:
+		var spec: Dictionary = entry
+		var fighter: Dictionary = spec["unit"]
+		var chip := _turn_chip(fighter, bool(spec["acting"]), bool(spec["targeted"]), bool(spec["you"]), px)
+		chip.set_meta("chip_seat", int(spec["seat"]))
+		chip.set_meta("chip_class", str(spec["class_id"]))
+		_make_unit_pressable(chip, int(spec["seat"]))
+		fresh.append(chip)
+	for chip in fresh:
+		_turn_strip.add_child(chip)
+	var keep := {}
+	for chip in fresh:
+		keep[chip.get_instance_id()] = true
+	var doomed: Array = []
+	for child in _turn_strip.get_children():
+		if not keep.has(child.get_instance_id()):
+			doomed.append(child)
+	for child in doomed:
 		_turn_strip.remove_child(child)
 		child.free()
-	var you := you_opp_seats(snap).x
-	for unit in order:
-		var seat := int(unit.get("seat", -1))
-		var acting := (not deploying) and (not over) and seat == active
-		var targeted := _chip_targeted(unit)
-		var chip := _turn_chip(unit, acting, targeted, seat == you, px)
-		_make_unit_pressable(chip, seat)
-		_turn_strip.add_child(chip)
 
 
 func _fit_turn_chips() -> void:
@@ -1843,6 +1892,10 @@ func _fit_turn_chips() -> void:
 		return
 	var count := _turn_strip.get_child_count()
 	if count <= 0:
+		return
+	# A resize that has not landed yet (or a one-frame 0-height viewport)
+	# must not collapse the portraits to a dot inside the still-drawn plaque.
+	if _turn_strip.size.y < 8.0:
 		return
 	var px := _chip_px(count)
 	for child in _turn_strip.get_children():
@@ -1861,7 +1914,7 @@ func _chip_px(count: int) -> Vector2:
 	var band_w := _turn_strip.size.x
 	var band_h := _turn_strip.size.y
 	if band_h < 8.0:
-		return Vector2(1, 1)
+		return px
 	var h := minf(px.y, band_h)
 	var w := minf(px.x, h * (px.x / px.y))
 	var fit_w := (band_w - gap * float(maxi(count - 1, 0))) / float(count)
@@ -1932,6 +1985,7 @@ func _turn_chip(unit: Dictionary, acting: bool, targeted: bool, is_you: bool, px
 		bar.offset_top = -(4.0 + tag_h)
 		host.add_child(bar)
 		var tag := Label.new()
+		tag.name = "SeatTag"
 		tag.text = "YOU" if is_you else "FOE"
 		tag.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		tag.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -1940,7 +1994,21 @@ func _turn_chip(unit: Dictionary, acting: bool, targeted: bool, is_you: bool, px
 		tag.add_theme_color_override("font_color", Color(0.98, 0.96, 0.9))
 		tag.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		bar.add_child(tag)
+	host.set_meta("chip_seat", int(unit.get("seat", -1)))
+	host.set_meta("chip_class", str(unit.get("class_id", "")))
 	return host
+
+
+func _restyle_turn_chip(host: Control, unit: Dictionary, acting: bool, targeted: bool, is_you: bool, px: Vector2) -> void:
+	if host == null:
+		return
+	var team := TEAM_RED if unit_team(unit) == 1 else TEAM_BLUE
+	host.custom_minimum_size = px
+	host.size = px
+	host.add_theme_stylebox_override("panel", _chip_frame(acting, targeted, team))
+	var tag := host.find_child("SeatTag", true, false) as Label
+	if tag != null:
+		tag.text = "YOU" if is_you else "FOE"
 
 
 func _chip_frame(acting: bool, targeted: bool = false, team_color: Color = GOLD) -> StyleBoxFlat:
@@ -2324,15 +2392,6 @@ func _sync_spell_buttons(offered: Array) -> void:
 	for spell_id in _spell_buttons.keys():
 		if not offered_ids.has(spell_id):
 			stale.append(spell_id)
-	for spell_id in stale:
-		var host: Control = _spell_hosts.get(spell_id)
-		_spell_buttons.erase(spell_id)
-		_spell_hosts.erase(spell_id)
-		if is_instance_valid(host):
-			var parent := host.get_parent()
-			if parent != null:
-				parent.remove_child(host)
-			host.free()
 	var primary := TOUCH.primary_spell_id(offered_ids)
 	var arc: Array = []
 	for spell_id in offered_ids:
@@ -2344,6 +2403,16 @@ func _sync_spell_buttons(offered: Array) -> void:
 			continue
 		if not _spell_buttons.has(spell_id):
 			_create_spell_button(spell_id, def)
+	# Drop spells that left the kit only after the new ones are parented.
+	for spell_id in stale:
+		var host: Control = _spell_hosts.get(spell_id)
+		_spell_buttons.erase(spell_id)
+		_spell_hosts.erase(spell_id)
+		if is_instance_valid(host):
+			var parent := host.get_parent()
+			if parent != null:
+				parent.remove_child(host)
+			host.free()
 	_layout_ability_cluster(primary, arc)
 	_sync_bottom_inset()
 
@@ -3292,6 +3361,10 @@ func _layout_chrome(forced: Vector2 = Vector2.ZERO) -> void:
 			return
 		view = vp.get_visible_rect().size
 	if view.x < 2.0 or view.y < 2.0:
+		return
+	# A one-frame viewport collapse (walk, Fade, turn change) used to squash
+	# every plaque and clip the captions. Keep the last good layout.
+	if forced.x < 2.0 and (view.x < 240.0 or view.y < 240.0):
 		return
 	var margin := 8.0
 	var gap := 8.0
