@@ -84,6 +84,10 @@ const VIEW_W: float = TOUCH.VIEW_W
 const VIEW_H: float = TOUCH.VIEW_H
 const PAN_LIMIT := 220.0
 
+## Seat whose next-turn walk is painted. -1 when nothing is inspected.
+## Client only: the cells come from CombatSim.foe_reach_preview. No wire field.
+var _foe_reach_seat: int = -1
+var _foe_mp_label: Label
 var _fight_started_msec: int = 0
 var _result_shown: bool = false
 var _online_home_pending: bool = false
@@ -740,10 +744,16 @@ func _handle_left_click(cell: Vector2i) -> void:
 		return
 	var spell_id := _hud.selected_spell()
 	if spell_id == "":
+		var foe := _visible_enemy_seat(cell)
+		if foe >= 0:
+			_arm_enemy_reach(foe)
+			return
 		# Dest-click only. Do not send a client path.
 		# MP 0 still submits a walk. The coach says there is no MP to walk.
+		_clear_enemy_reach()
 		_submit({"type": "move", "to": cell})
 		return
+	_clear_enemy_reach()
 	var actor := _active_unit(_sim().snapshot())
 	if actor.is_empty() or not CombatHUD.offered_cast_ids(actor).has(spell_id):
 		_hud.clear_spell()
@@ -752,6 +762,7 @@ func _handle_left_click(cell: Vector2i) -> void:
 	if spell_id == SpellKits.DROP_SHADE and not _advance_click_accepted(cell, spell_id):
 		# Out of range and other illegal Drop Shade cells are not a cast.
 		# Do not arm them and do not flash the refund coach.
+		_paint_highlights()
 		return
 	if spell_id == SpellKits.ADVANCE and not _advance_click_accepted(cell, spell_id):
 		# Not a highlighted dest. Still submit so CombatSim / NetSession reject
@@ -786,19 +797,30 @@ func _on_unit_card_tapped(seat: int) -> void:
 			target = unit
 	if target.is_empty() or not bool(target.get("alive", false)):
 		return
+	var actor := _active_unit(snap)
+	var hidden := bool(target.get("invisible", false)) and CombatHUD.unit_team(target) != CombatHUD.unit_team(actor)
+	# A hidden enemy is not selectable. No reach, and no cell from the sim.
+	if hidden:
+		return
 	var cell := _as_cell(target.get("pos", null))
 	if not _in_bounds(cell):
 		return
-	var actor := _active_unit(snap)
 	if int(actor.get("seat", -2)) == seat:
+		_clear_enemy_reach()
 		select_tile(cell)
 		_center_on_cell(cell)
+		_paint_highlights()
 		return
 	var spell_id := _hud.selected_spell()
 	if spell_id == "":
+		if CombatHUD.unit_team(target) != CombatHUD.unit_team(actor):
+			_arm_enemy_reach(seat)
+			_center_on_cell(cell)
+			return
+		_clear_enemy_reach()
 		select_tile(cell)
+		_paint_highlights()
 		return
-	var hidden := bool(target.get("invisible", false)) and CombatHUD.unit_team(target) != CombatHUD.unit_team(actor)
 	var legal: Array = _sim().legal_intents(CombatHUD.kit_seat(snap))
 	if hidden or not SNAPSHOT_TILES.cast_dests(legal, spell_id).has(cell):
 		_hud.show_toast("%s can't reach %s: too far or no line of sight." % [SpellKits.spell(spell_id).get("name", "That spell"), SpellKits.display_name(str(target.get("class_id", "")))])
@@ -861,7 +883,9 @@ func _face_toward(cell: Vector2i) -> void:
 	_submit({"type": "face", "dir": dir})
 
 
-func _on_spell_selected(_spell_id: String) -> void:
+func _on_spell_selected(spell_id: String) -> void:
+	if spell_id != "":
+		_clear_enemy_reach()
 	if _busy or _view_locked:
 		return
 	_paint_highlights()
@@ -2316,22 +2340,140 @@ func _sync_shade_chrome(events: Array) -> void:
 		_hud.render(snap, _sim().legal_intents(CombatHUD.kit_seat(snap)))
 
 
+## Tap an enemy with nothing armed: paint the cells they can reach on their
+## next turn, and a small "MP n" label. Arming a spell or tapping elsewhere
+## clears it. A hidden enemy never gets here.
+func show_enemy_reach(seat: int) -> void:
+	_arm_enemy_reach(seat)
+
+
+func _arm_enemy_reach(seat: int) -> void:
+	var snap: Dictionary = _sim().snapshot()
+	var target := {}
+	for unit in snap.get("units", []):
+		if int(unit.get("seat", -1)) == seat:
+			target = unit
+	if target.is_empty() or not bool(target.get("alive", false)):
+		_clear_enemy_reach()
+		_paint_highlights()
+		return
+	var actor := _active_unit(snap)
+	var enemy_team := actor.is_empty() or CombatHUD.unit_team(target) != CombatHUD.unit_team(actor)
+	if bool(target.get("invisible", false)) and enemy_team:
+		_clear_enemy_reach()
+		_paint_highlights()
+		return
+	var cell := _as_cell(target.get("pos", null))
+	if not _in_bounds(cell):
+		_clear_enemy_reach()
+		_paint_highlights()
+		return
+	_foe_reach_seat = seat
+	if tiles.has(cell):
+		select_tile(cell)
+	_paint_highlights()
+
+
+func _clear_enemy_reach() -> void:
+	_foe_reach_seat = -1
+	_hide_enemy_reach_label()
+
+
+func _visible_enemy_seat(cell: Vector2i) -> int:
+	var snap: Dictionary = _sim().snapshot()
+	var actor := _active_unit(snap)
+	if actor.is_empty():
+		return -1
+	for raw_seat in pawns_by_seat.keys():
+		var body: Pawn = pawns_by_seat[raw_seat]
+		if body == null or not is_instance_valid(body) or not body.visible or body.invisible:
+			continue
+		if not body.alive or body.grid_position != cell:
+			continue
+		if int(raw_seat) == int(actor.get("seat", -2)):
+			continue
+		var unit := {}
+		for raw in snap.get("units", []):
+			if int(raw.get("seat", -1)) == int(raw_seat):
+				unit = raw
+		if unit.is_empty() or bool(unit.get("invisible", false)):
+			continue
+		if CombatHUD.unit_team(unit) == CombatHUD.unit_team(actor):
+			continue
+		return int(raw_seat)
+	return -1
+
+
+func _enemy_reach_label() -> Label:
+	if _foe_mp_label != null and is_instance_valid(_foe_mp_label):
+		return _foe_mp_label
+	var label := Label.new()
+	label.name = "EnemyReachMp"
+	label.z_index = 960
+	label.visible = false
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	label.add_theme_font_size_override("font_size", 22)
+	label.add_theme_color_override("font_color", Color(1.0, 0.93, 0.9))
+	label.add_theme_color_override("font_outline_color", Color(0.32, 0.04, 0.05))
+	label.add_theme_constant_override("outline_size", 8)
+	($Tiles as Node2D).add_child(label)
+	_foe_mp_label = label
+	return label
+
+
+func _hide_enemy_reach_label() -> void:
+	if _foe_mp_label != null and is_instance_valid(_foe_mp_label):
+		_foe_mp_label.visible = false
+
+
+func _paint_enemy_reach(snap: Dictionary) -> void:
+	if _foe_reach_seat < 0 or (_hud != null and _hud.selected_spell() != ""):
+		_hide_enemy_reach_label()
+		return
+	if not _sim().has_method("foe_reach_preview"):
+		_hide_enemy_reach_label()
+		return
+	var preview: Dictionary = _sim().foe_reach_preview(_foe_reach_seat)
+	if bool(preview.get("hidden", false)):
+		_foe_reach_seat = -1
+		_hide_enemy_reach_label()
+		return
+	for cell in preview.get("cells", []):
+		if tiles.has(cell):
+			_tile_at(cell).set_highlight("foe_reach")
+	var unit := {}
+	for raw in snap.get("units", []):
+		if int(raw.get("seat", -1)) == _foe_reach_seat:
+			unit = raw
+	var stand := _as_cell(unit.get("pos", null))
+	if unit.is_empty() or not _in_bounds(stand):
+		_hide_enemy_reach_label()
+		return
+	var label := _enemy_reach_label()
+	label.text = "MP %d" % int(preview.get("mp", 0))
+	label.position = _cell_to_local(stand) + Vector2(-34, -84)
+	label.visible = true
+
+
 func _paint_highlights() -> void:
 	for tile in tiles.values():
 		(tile as BoardTile).set_highlight("")
 	var snap: Dictionary = _sim().snapshot()
 	if snap.get("match_over", false) or _busy:
+		_hide_enemy_reach_label()
 		_paint_blocked(snap)
 		_sync_aim_line()
 		_sync_target_marks()
 		return
 	if CombatHUD.is_deployment_phase(snap):
+		_hide_enemy_reach_label()
 		_paint_deploy_highlights(snap)
 		_paint_blocked(snap)
 		_sync_target_marks()
 		return
 	if not _shows_turn_chrome(CombatHUD.kit_seat(snap)):
 		# A computer-run seat (Stasis monsters): no walk / range tiles on its turn.
+		_hide_enemy_reach_label()
 		_paint_blocked(snap)
 		_sync_aim_line()
 		_sync_target_marks()
@@ -2397,6 +2539,13 @@ func _paint_highlights() -> void:
 		for dest in shade_dests:
 			if tiles.has(dest):
 				_tile_at(dest).set_highlight("target")
+		for intent in legal:
+			if str(intent.get("spell", "")) != SpellKits.DROP_SHADE or not bool(intent.get("dismiss", false)):
+				continue
+			var dismiss_cell: Vector2i = _as_cell(intent.get("to", Vector2i(-1, -1)))
+			if tiles.has(dismiss_cell):
+				_tile_at(dismiss_cell).set_highlight("dismiss")
+	_paint_enemy_reach(snap)
 	_sync_aim_preview()
 	_sync_target_marks()
 

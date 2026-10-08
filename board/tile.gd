@@ -552,6 +552,9 @@ func paint_highlight_overlay(canvas: CanvasItem) -> void:
 	if highlight == "blocked":
 		canvas.draw_line(Vector2(-14, -6), Vector2(14, 6), Color(0.55, 0.52, 0.48), 2.0, true)
 		canvas.draw_line(Vector2(14, -6), Vector2(-14, 6), Color(0.55, 0.52, 0.48), 2.0, true)
+	elif highlight == "dismiss":
+		canvas.draw_line(Vector2(-12, -8), Vector2(12, 8), Color(0.96, 0.92, 1.0), 2.4, true)
+		canvas.draw_line(Vector2(12, -8), Vector2(-12, 8), Color(0.96, 0.92, 1.0), 2.4, true)
 
 
 ## Bastion Snap Wall: a charcoal rampart with gold trim and a glowing shield
@@ -712,6 +715,12 @@ func _highlight_flat_color() -> Color:
 		"grey":
 			# Illegal Drop Shade cells. Dim, and a selection does not arm them gold.
 			color = Color(0.34, 0.33, 0.36, 1.0)
+		"dismiss":
+			# Own shadow while Drop Shade is armed. Violet, not the orange place tile.
+			color = Color(0.58, 0.32, 0.86, 1.0)
+		"foe_reach":
+			# Enemy walk range. Red, so it does not read as your green walk cells.
+			color = Color(0.93, 0.24, 0.28, 1.0)
 	if is_selected and highlight != "blocked" and highlight != "grey":
 		color = Color(1.0, 0.85, 0.2, 1.0)
 	return color

@@ -56,6 +56,7 @@ func _run() -> void:
 	_test_invisible_hidden_from_opponent()
 	_test_snare_hidden_from_opponent()
 	_test_stealthed_trap_reveals_to_opponent()
+	_test_shade_dismiss_hidden_from_opponent()
 
 
 func _test_source_stamps() -> void:
@@ -714,6 +715,30 @@ func _test_snare_hidden_from_opponent() -> void:
 	var sprung_opp: Dictionary = IntentCodec.decode(_host.pack_result(sprung, 1))
 	eq(_event_of(sprung_opp.get("events", []), "trap").get("to"), cell, "a sprung trap is visible to the fighter who hit it")
 	eq((sprung_opp.get("snapshot", {}) as Dictionary).get("trap_tiles", []).size(), 0, "the spent trap is gone")
+
+
+## Dismissing a Shade is a cast with a cell. The other phone must not receive it.
+func _test_shade_dismiss_hidden_from_opponent() -> void:
+	var cell := Vector2i(3, 4)
+	_host.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"fixture": true,
+		"classes": ["gloam", "kestrel"],
+		"positions": [Vector2i(2, 4), Vector2i(10, 10)],
+	})
+	var placed: Dictionary = _host.submit_for_seat({"type": "cast", "spell": "drop_shade", "to": cell}, 0)
+	eq(bool(placed.get("ok", false)), true, "the server places the Shade")
+	var dismissed: Dictionary = _host.submit_for_seat({"type": "cast", "spell": "drop_shade", "to": cell}, 0)
+	eq(bool(dismissed.get("ok", false)), true, "the server removes that Shade")
+	var owner: Dictionary = IntentCodec.decode(_host.pack_result(dismissed, 0))
+	var opp: Dictionary = IntentCodec.decode(_host.pack_result(dismissed, 1))
+	eq(_event_of(owner.get("events", []), "cast").get("to"), cell, "the owner's dismiss keeps the tile")
+	eq((owner.get("snapshot", {}) as Dictionary).get("shade_tokens", []).size(), 0, "the owner's snapshot drops the Shade")
+	eq(_event_of(opp.get("events", []), "cast").has("to"), false, "the other phone's dismiss hides the tile")
+	eq(_event_of(opp.get("events", []), "expire").has("pos"), false, "the other phone's Shade expire hides the tile")
+	eq((opp.get("snapshot", {}) as Dictionary).get("shade_tokens", []).size(), 0, "the other phone never holds the Shade")
 
 
 ## A stealthed step onto a trap uses the same reveal the opponent already

@@ -9,9 +9,11 @@ extends Node
 ## Locked walk: per-tile elevation + terrain_type; dest-click weighted pathfinder.
 ## Proto/elevation stays reference — this file does not import it.
 
-## Mauro (29 Sep): Invisible from Fade lasts this many of Gloam's turns.
-## Was 2; Mauro 29 Sep 2026: "make fade last 1 turn".
-const INVISIBLE_TURNS := 1
+## Mauro 8 Oct 2026: Invisible from Fade lasts this many of Gloam's turns.
+## The clock ticks at his own turn start. With 2: cast on turn T, still hidden
+## when turn T+1 starts, revealed when turn T+2 starts (two enemy turns).
+## Was 1 (Mauro 29 Sep 2026). An attack, getting hurt, or a trap still reveals at once.
+const INVISIBLE_TURNS := 2
 const RULES_VERSION := "phase-a-gdd-0.2"
 const UNPLACED := Vector2i(-1, -1)
 const _MatchFlow := preload("res://backend/match_flow.gd")
@@ -422,6 +424,56 @@ func turn_time_seconds() -> int:
 	return _clock_display_seconds(_turn_time_remaining)
 
 
+## Where a fighter can walk on their next turn, and the MP that walk spends.
+## The board paints this when you tap an enemy with no spell armed.
+## The pool is the refill at their turn start (max MP), then the cuts already
+## waiting: a stunned skip, Heartstop's skip, pin, water, Slow, exit tax, Mire.
+## Leftover MP from the turn they just finished is replaced at that refill, so
+## it is not the number on the label.
+## A hidden fighter returns no cells. Invisible bodies also do not block the
+## preview: a hole on their tile would show where they stand.
+func foe_reach_preview(seat: int) -> Dictionary:
+	var unit := _unit_by_seat(seat)
+	if unit.is_empty() or not bool(unit.get("alive", false)) or not bool(unit.get("placed", true)):
+		return {"mp": 0, "cells": [], "hidden": false}
+	if bool(unit.get("invisible", false)):
+		return {"mp": 0, "cells": [], "hidden": true}
+	var mp := _projected_turn_mp(unit)
+	var cells: Array = []
+	if mp > 0:
+		var from: Vector2i = unit["pos"]
+		if from != UNPLACED:
+			cells = _cell_list(_board.reachable_dests(from, mp, Callable(self, "_preview_walk_occupied")))
+	return {"mp": mp, "cells": cells, "hidden": false}
+
+
+func _projected_turn_mp(unit: Dictionary) -> int:
+	# stun_remaining is the skip still ahead. The stunned flag is the turn
+	# they are in or just finished, and that one is already over.
+	if int(unit.get("stun_remaining", 0)) > 0:
+		return 0
+	if bool(unit.get("pinned", false)) or bool(unit.get("pin_pending", false)) or bool(unit.get("skip_next_mp", false)):
+		return 0
+	var mp := int(unit.get("max_mp", MAX_MP))
+	if bool(unit.get("water_slow", false)):
+		mp = maxi(mp - 1, 0)
+	if int(unit.get("slow_remaining", 0)) > 0:
+		mp = maxi(mp - SLOW_MP * maxi(int(unit.get("slow_stacks", 1)), 1), 0)
+	var tax := 1 if int(unit.get("exit_tax", 0)) > 0 else 0
+	if unit.has("mire_cell") and unit["mire_cell"] == unit["pos"]:
+		tax += 1
+	return maxi(mp - tax, 0)
+
+
+func _preview_walk_occupied(cell: Vector2i, ignore: Vector2i) -> bool:
+	if cell == ignore:
+		return false
+	var body := _living_unit_at(cell)
+	if not body.is_empty() and bool(body.get("invisible", false)):
+		return false
+	return not _is_empty(cell)
+
+
 func legal_intents(seat: int) -> Array:
 	var out: Array = []
 	if _match_over:
@@ -475,6 +527,20 @@ func legal_intents(seat: int) -> Array:
 		# walk budget is consulted. MP 0 is legal when AP covers the card.
 		if str(spell_id) == SpellKits.AMBUSH:
 			_append_ambush_cast(out, actor, def)
+			continue
+		# Drop Shade on one of your own shadows removes it for 0 AP, even at
+		# the cap and even when that shadow is outside the current cast ring.
+		if str(spell_id) == SpellKits.DROP_SHADE:
+			for token in _live_shades(actor):
+				var shade: Dictionary = token
+				out.append({
+					"type": "cast",
+					"spell": str(spell_id),
+					"to": shade["pos"],
+					"seat": seat,
+					"dismiss": true,
+				})
+		if str(spell_id) == SpellKits.FADE and not _player_cd_ready(actor, SpellKits.FADE):
 			continue
 		if ap < int(def["ap"]):
 			continue
@@ -2215,6 +2281,8 @@ func _make_unit(seat: int, class_id: String, unit_name: String, element: String,
 		"shades": 0,
 		"invisible": false,
 		"invisible_turns": 0,
+		# Player-spell cooldowns (Fade). Foe kits use foe_cd. See _arm_spell_cooldown.
+		"spell_cd": {},
 		"shield": 0,
 		"shield_turns": 0,
 		"hit_immunity": 0,
@@ -2799,6 +2867,12 @@ func _submit_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
 	var dest: Vector2i = intent["to"]
 	if not _in_bounds(dest):
 		return _reject(intent, "out_of_bounds", "REJECT — %s target is off the board (refund)." % def["name"])
+	# Own shadow: remove it. No AP, no range check, no cap. A new shadow on
+	# that same tile is not a second token.
+	if spell_id == SpellKits.DROP_SHADE and not _shade_token_at(actor, dest).is_empty():
+		return _resolve_shade_dismiss(intent, actor, dest)
+	if spell_id == SpellKits.FADE and not _player_cd_ready(actor, spell_id):
+		return _reject(intent, "cooldown", "REJECT — %s is still cooling down (refund)." % def["name"])
 
 	if spell_id == SpellKits.ADVANCE:
 		# Dest-click teleport. Ignore client intent.path. No MP spend.
@@ -4126,6 +4200,7 @@ func _begin_unit_turn(unit: Dictionary) -> void:
 	unit["ward_used"] = false
 	_tick_traps(unit)
 	_tick_foe_cooldowns(unit)
+	_tick_spell_cooldowns(unit)
 	# Locked Stun (A′): decrement stun at start of that unit's turn.
 	# Stun 1 must cover this incoming (skipped) turn. Decrementing remaining and
 	# then checking remaining would expire Stun 1 before the auto end_turn.
@@ -4741,6 +4816,34 @@ func _accept() -> Dictionary:
 ## ---- Stasis monster kits (FoeKits) ----------------------------------------
 ## Mauro's Stasis kit sheets (29 Sep 2026). Monsters cast from `foe_kit`;
 ## every offer comes from _foe_casts and a submit must match one of them.
+
+
+## Kit field `cooldown` is how many of the caster's own turns the spell stays
+## locked after the cast. Foe kits store `cd` and tick it at each later turn
+## start, before the action, so a stored 2 skips one turn. Player spells use
+## the same tick: the stored counter is cooldown + 1.
+func _arm_spell_cooldown(actor: Dictionary, def: Dictionary) -> void:
+	var wait := int(def.get("cooldown", 0))
+	if wait <= 0:
+		return
+	var cds: Dictionary = {}
+	if actor.get("spell_cd", {}) is Dictionary:
+		cds = actor["spell_cd"]
+	cds[str(def.get("id", ""))] = wait + 1
+	actor["spell_cd"] = cds
+
+
+func _tick_spell_cooldowns(unit: Dictionary) -> void:
+	var cds: Variant = unit.get("spell_cd", null)
+	if typeof(cds) != TYPE_DICTIONARY:
+		return
+	for id in (cds as Dictionary).keys():
+		cds[id] = maxi(int(cds[id]) - 1, 0)
+
+
+func _player_cd_ready(actor: Dictionary, spell_id: String) -> bool:
+	var cds: Variant = actor.get("spell_cd", {})
+	return typeof(cds) != TYPE_DICTIONARY or int((cds as Dictionary).get(spell_id, 0)) <= 0
 
 
 func _tick_foe_cooldowns(unit: Dictionary) -> void:
@@ -5505,8 +5608,6 @@ func _resource_gate(actor: Dictionary, def: Dictionary) -> String:
 	if int(def.get("requires_umbral", 0)) > int(actor.get("umbral", 0)):
 		return "insufficient_umbral"
 	var spell_id := str(def.get("id", ""))
-	if spell_id == SpellKits.DROP_SHADE and _shade_count(actor) >= SpellKits.SHADE_CAP:
-		return "shade_cap"
 	if spell_id == SpellKits.AMBUSH and not _ambush_self_origin(actor) and _shade_count(actor) <= 0:
 		return "no_shade"
 	return ""
@@ -5653,6 +5754,9 @@ func _append_ranged_cells(out: Array, actor: Dictionary, def: Dictionary, spell_
 			if not _in_spell_reach(def, from_cell, cell):
 				continue
 			if empty_only and (not _is_empty(cell) or not _board.is_walkable(cell)):
+				continue
+			# That tile is a dismiss, not a second shadow.
+			if spell_id == SpellKits.DROP_SHADE and not _shade_token_at(actor, cell).is_empty():
 				continue
 			if (spell_id == SpellKits.SNAP_WALL or spell_id == SpellKits.SNARE_TRAP) and _fallen_body_at(cell):
 				continue
@@ -6304,10 +6408,10 @@ func _strip_family(unit: Dictionary, family: String) -> void:
 		unit["silenced_spells"] = []
 
 
-## Mauro (29 Sep): Invisible lasts INVISIBLE_TURNS of Gloam's own turns.
+## Invisible lasts INVISIBLE_TURNS of Gloam's own turns.
 ## Fade sets invisible_turns; each Gloam turn start counts one down and at 0
-## Gloam is revealed (expire "invisible"). With 1: cast on turn T, hidden
-## through the enemy's next turn, visible from Gloam's turn T+1.
+## Gloam is revealed (expire "invisible"). With 2: cast on turn T, still
+## hidden at turn T+1, visible when turn T+2 starts.
 ## An attack still reveals at once. A fixture with invisible but no
 ## invisible_turns has no clock (tests / old snapshots).
 ## Mauro 7 Oct 2026: Bastion's Ward. 3 AP + 1 Aegis, once per turn. Every living
@@ -6364,8 +6468,13 @@ func _resolve_fade(intent: Dictionary, actor: Dictionary, def: Dictionary, ap_co
 	var gained := _gain_resource(actor, "umbral", 1)
 	actor["invisible"] = true
 	actor["invisible_turns"] = INVISIBLE_TURNS
+	_arm_spell_cooldown(actor, def)
 	_intent_log.append(intent)
-	_last_coach = "%s Fade (−%d AP / −%d MP). Invisible for %d turn%s. +%d Umbral." % [actor["name"], ap_cost, mp_cost, INVISIBLE_TURNS, "" if INVISIBLE_TURNS == 1 else "s", gained]
+	var cool := int(def.get("cooldown", 0))
+	var cool_text := ""
+	if cool > 0:
+		cool_text = " Cooldown %d turn%s." % [cool, "" if cool == 1 else "s"]
+	_last_coach = "%s Fade (−%d AP / −%d MP). Invisible for %d turn%s.%s +%d Umbral." % [actor["name"], ap_cost, mp_cost, INVISIBLE_TURNS, "" if INVISIBLE_TURNS == 1 else "s", cool_text, gained]
 	_last_events.append({
 		"type": "cast",
 		"spell": SpellKits.FADE,
@@ -6392,8 +6501,10 @@ func _resolve_empty_tile(intent: Dictionary, actor: Dictionary, def: Dictionary,
 	if (spell_id == SpellKits.SNAP_WALL or spell_id == SpellKits.SNARE_TRAP) and _fallen_body_at(dest):
 		return _reject(intent, "body_on_tile", "REJECT — a fallen fighter is on that tile (refund).")
 	if spell_id == SpellKits.DROP_SHADE:
+		# At the cap the new shadow replaces the oldest. Same silent drop as
+		# a third Snare Trap: no expire, the marker just goes.
 		if _shade_count(actor) >= SpellKits.SHADE_CAP:
-			return _reject(intent, "shade_cap", "REJECT — Shade cap is %d (refund)." % SpellKits.SHADE_CAP)
+			_drop_oldest_shade(actor)
 		actor["ap"] = int(actor["ap"]) - ap_cost
 		_spend_mp(actor, mp_cost)
 		_shade_tokens.append({
@@ -7255,6 +7366,45 @@ func _first_shade(actor: Dictionary) -> Dictionary:
 		if int(token.get("owner_seat", -1)) == int(actor["seat"]) and int(token.get("turns", 0)) > 0:
 			return token
 	return {}
+
+
+func _shade_token_at(actor: Dictionary, cell: Vector2i) -> Dictionary:
+	for item in _live_shades(actor):
+		var token: Dictionary = item
+		if token.get("pos") == cell:
+			return token
+	return {}
+
+
+## Oldest live shadow of this owner (placement order). No expire event.
+func _drop_oldest_shade(actor: Dictionary) -> void:
+	var live: Array = _live_shades(actor)
+	if live.is_empty():
+		return
+	var oldest: Dictionary = live[0]
+	_remove_shade_at(oldest["pos"], int(actor["seat"]))
+
+
+func _resolve_shade_dismiss(intent: Dictionary, actor: Dictionary, dest: Vector2i) -> Dictionary:
+	_remove_shade_at(dest, int(actor["seat"]))
+	_sync_shade_flags()
+	_intent_log.append(intent)
+	_last_coach = "%s removes a Shade." % str(actor.get("name", "Gloam"))
+	_last_events.append({
+		"type": "cast",
+		"spell": SpellKits.DROP_SHADE,
+		"seat": actor["seat"],
+		"caster_cell": actor["pos"],
+		"to": dest,
+		"dismiss": true,
+		"rolled": false,
+		"ap_spent": 0,
+		"mp_spent": 0,
+		"shades": int(actor.get("shades", 0)),
+		"coach": _last_coach,
+	})
+	_emit_expire("shade", dest, int(actor["seat"]))
+	return _accept()
 
 
 func _remove_shade_at(cell: Vector2i, seat: int) -> void:
