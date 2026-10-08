@@ -13,8 +13,8 @@ extends Node
 enum Mode { HOTSEAT, HOST, CLIENT, DEDICATED }
 
 const DEFAULT_PORT := 7777
-## Mauro's game server (1 Oct 2026). Online screens start with this host;
-## the player can still type another one.
+## Public game server. Play Online tries the last working address, then this
+## host, then Tailscale, then LAN (ServerDial). CLI --join / --queue stay direct.
 const DEFAULT_SERVER := "68.201.184.207"
 const HOST_SEAT := 0
 const GUEST_SEAT := 1
@@ -22,6 +22,7 @@ const LISTEN_HOST_CLIENTS := 1
 const DEDICATED_CLIENTS := 2
 const TRANSPORT := "enet"
 const _MatchQueueScript := preload("res://backend/matchmaking.gd")
+const _ServerDial := preload("res://backend/server_dial.gd")
 
 signal state_changed(events: Array, snapshot: Dictionary)
 signal connection_changed(status: String)
@@ -51,6 +52,15 @@ var _seat_held: Array[bool] = [false, false]
 var selected_class_id: String = ""
 var lobby_text: String = ""
 var _queue_client: bool = false
+## Play Online walks ServerDial.address_order. One probe at a time.
+var _dial_order: Array[String] = []
+var _dial_index: int = 0
+var _dial_active: bool = false
+var _dial_attempt: int = 0
+var _dial_live_attempt: int = -1
+var _dial_port: int = DEFAULT_PORT
+## True while a peer is being closed so its failure cannot advance the chain.
+var _dial_suppress: bool = false
 var _match_queue: MatchQueue
 var _match_class_ids: Array[String] = []
 var _cli_class: String = ""
@@ -176,6 +186,14 @@ func enter_client_unassigned() -> void:
 
 
 func return_to_hotseat() -> void:
+	_dial_active = false
+	_dial_live_attempt = -1
+	_cancel_hub_return()
+	_client_in_match = false
+	_queue_client = false
+	_local_queued = false
+	_opponent_queued = false
+	_match_live = false
 	_close_peer()
 	mode = Mode.HOTSEAT
 	local_seat = -1
@@ -183,6 +201,7 @@ func return_to_hotseat() -> void:
 	last_snapshot = {}
 	last_events = []
 	last_result = {}
+	last_packed = {}
 	connection_changed.emit("hotseat")
 	_update_window_title()
 
@@ -196,6 +215,74 @@ func note_match_finished() -> void:
 func leave_after_match() -> void:
 	_quiet_leave = true
 	return_to_hotseat()
+
+
+const HUB_SCENE := "res://scenes/mobile_hub.tscn"
+## Fallback if the result window never arms its own 4s read. The window restarts this.
+const HUB_FALLBACK_SEC := 5.0
+var _client_in_match: bool = false
+var _hub_return_pending: bool = false
+var _hub_return_token: int = 0
+var _hub_gone: bool = false
+
+
+func is_hub_return_pending() -> bool:
+	return _hub_return_pending
+
+
+## True only after rpc_match_assigned for this connection. A later match_over
+## from a previous fight (the server used to push that to the next peer) is ignored.
+func client_in_match() -> bool:
+	return _client_in_match
+
+
+func _cancel_hub_return() -> void:
+	_hub_return_token += 1
+	_hub_return_pending = false
+
+
+func _auto_hub_allowed() -> bool:
+	if not is_inside_tree():
+		return false
+	var scene := get_tree().current_scene
+	if scene != null and str(scene.scene_file_path).ends_with("main.tscn"):
+		return true
+	return OS.get_cmdline_user_args().has("--rematch")
+
+
+## Start (or restart) the post-match return. The scene change is deferred on
+## this autoload so it still runs if the board node is already going away.
+func arm_hub_return(after_sec: float = HUB_FALLBACK_SEC) -> void:
+	if mode != Mode.CLIENT or not _client_in_match or _hub_gone:
+		return
+	if not _auto_hub_allowed():
+		return
+	_hub_return_token += 1
+	var token := _hub_return_token
+	_hub_return_pending = true
+	note_match_finished()
+	var timer := get_tree().create_timer(maxf(after_sec, 0.1), true, true)
+	timer.timeout.connect(_on_hub_return_timer.bind(token), CONNECT_ONE_SHOT)
+
+
+func _on_hub_return_timer(token: int) -> void:
+	if token != _hub_return_token or not _hub_return_pending:
+		return
+	return_to_hub_now()
+
+
+## CLOSE, Back, and Hub. Closes and nulls the peer, then opens the hub.
+func return_to_hub_now() -> void:
+	if _hub_gone:
+		return
+	_hub_gone = true
+	_hub_return_pending = false
+	_hub_return_token += 1
+	_client_in_match = false
+	if is_inside_tree():
+		MobileHub.stay_on_hub = true
+		get_tree().call_deferred("change_scene_to_file", HUB_SCENE)
+	leave_after_match()
 
 
 func start_host(port: int = DEFAULT_PORT) -> Dictionary:
@@ -217,12 +304,26 @@ func start_dedicated(port: int = DEFAULT_PORT) -> Dictionary:
 
 
 func start_client(address: String, port: int = DEFAULT_PORT) -> Dictionary:
+	# Drop the previous socket before opening another. A Queue after a match
+	# must not reuse the finished ENet peer.
+	_quiet_leave = false
+	_hub_gone = false
+	_client_in_match = false
+	_match_live = false
+	_local_queued = false
+	_opponent_queued = false
+	_cancel_hub_return()
+	_close_peer()
+	last_snapshot = {}
+	last_events = []
+	last_result = {}
+	last_packed = {}
 	var peer := ENetMultiplayerPeer.new()
 	var err := peer.create_client(address, port)
 	if err != OK:
-		connection_changed.emit("join_failed")
+		if not _dial_active:
+			connection_changed.emit("join_failed")
 		return {"ok": false, "reason": "connect_failed", "address": address, "port": port}
-	_close_peer()
 	multiplayer.multiplayer_peer = peer
 	mode = Mode.CLIENT
 	# Seat comes from the authority packet (listen-host guest = 1, dedicated = join order).
@@ -255,6 +356,10 @@ func _open_server(port: int, max_clients: int, next_mode: int, seat: int, status
 
 func is_queue_client() -> bool:
 	return _queue_client
+
+
+func is_auto_dialing() -> bool:
+	return _dial_active
 
 
 func match_is_live() -> bool:
@@ -293,6 +398,72 @@ func start_queue_client(address: String, port: int = DEFAULT_PORT) -> Dictionary
 		_queue_client = false
 		return opened
 	return opened
+
+
+## Play Online. override_address replaces the remembered head when non-empty
+## (the hidden Advanced field). Empty uses the saved address, then the chain.
+## Does not add an RPC. Each hop is still start_queue_client.
+func begin_auto_queue(override_address: String = "", override_port: int = -1) -> Dictionary:
+	if not SpellKits.is_roster_class(selected_class_id):
+		return {"ok": false, "illegal": true, "reason": "class_required", "class_id": selected_class_id}
+	var head := override_address.strip_edges()
+	if head == "":
+		head = _ServerDial.remembered()
+	_dial_order = _ServerDial.address_order(head)
+	_dial_index = 0
+	_dial_port = override_port if override_port > 0 else DEFAULT_PORT
+	_dial_active = true
+	_dial_live_attempt = -1
+	_close_peer()
+	return _dial_open_current()
+
+
+func _dial_open_current() -> Dictionary:
+	if _dial_index < 0 or _dial_index >= _dial_order.size():
+		_dial_active = false
+		_dial_live_attempt = -1
+		_queue_client = false
+		connection_changed.emit("join_failed")
+		return {"ok": false, "reason": "unreachable", "address": "", "port": _dial_port}
+	_dial_attempt += 1
+	var attempt := _dial_attempt
+	_dial_live_attempt = attempt
+	var address := _dial_order[_dial_index]
+	var opened: Dictionary = start_queue_client(address, _dial_port)
+	if not bool(opened.get("ok", false)):
+		return _dial_advance()
+	if is_inside_tree():
+		var timer := get_tree().create_timer(_ServerDial.PROBE_SEC, true, true)
+		timer.timeout.connect(_on_dial_timeout.bind(attempt), CONNECT_ONE_SHOT)
+	return opened
+
+
+func _dial_advance() -> Dictionary:
+	_dial_live_attempt = -1
+	_close_peer()
+	_dial_index += 1
+	if _dial_index >= _dial_order.size():
+		_dial_active = false
+		_queue_client = false
+		connection_changed.emit("join_failed")
+		return {"ok": false, "reason": "unreachable", "address": "", "port": _dial_port}
+	connection_changed.emit("connecting")
+	return _dial_open_current()
+
+
+func _dial_fail_attempt(attempt: int) -> void:
+	if not _dial_active or attempt != _dial_live_attempt:
+		return
+	_dial_advance()
+
+
+func _on_dial_timeout(attempt: int) -> void:
+	if not _dial_active or attempt != _dial_live_attempt:
+		return
+	var peer := multiplayer.multiplayer_peer
+	if peer != null and peer.get_connection_status() == MultiplayerPeer.CONNECTION_CONNECTED:
+		return
+	_dial_advance()
 
 
 func server_select_class(session_id: String, class_id: String) -> Dictionary:
@@ -533,8 +704,7 @@ func tick_turn_timer(delta: float) -> Dictionary:
 			result["reason"] = ""
 			if not result.has("events"):
 				result["events"] = []
-		_cache_and_broadcast(result)
-		var view: Dictionary = last_view_result()
+		var view: Dictionary = _cache_and_broadcast(result)
 		view["expired"] = expired
 		return view
 	result["expired"] = expired
@@ -892,6 +1062,14 @@ func apply_packed_state(packed: Dictionary, hydrate: bool = true) -> Dictionary:
 	}
 	last_events = last_result["events"]
 	last_snapshot = last_result["snapshot"]
+	if mode == Mode.CLIENT:
+		var filtered := _filter_client_snapshot(last_snapshot, last_events)
+		last_snapshot = filtered["snapshot"]
+		last_events = filtered["events"]
+		last_result["snapshot"] = last_snapshot
+		last_result["events"] = last_events
+		if bool(filtered.get("finished", false)):
+			arm_hub_return(HUB_FALLBACK_SEC)
 	var legal_raw: Dictionary = decoded.get("legal_intents", {})
 	last_legal = {
 		0: legal_raw.get(0, legal_raw.get("0", [])),
@@ -923,6 +1101,24 @@ func apply_packed_state(packed: Dictionary, hydrate: bool = true) -> Dictionary:
 ## Hot-seat, dedicated and Stasis pay nothing.
 func koliseo_pays() -> bool:
 	return (mode == Mode.HOST or mode == Mode.CLIENT) and local_seat >= 0
+
+
+## A match_over packet counts only for a match this connection was assigned.
+## Anything else is the previous fight still sitting on the server.
+func _filter_client_snapshot(snap: Dictionary, events: Array) -> Dictionary:
+	if typeof(snap) != TYPE_DICTIONARY or not bool(snap.get("match_over", false)):
+		return {"snapshot": snap, "events": events, "finished": false}
+	if not _client_in_match:
+		var clean: Dictionary = snap.duplicate(true)
+		clean["match_over"] = false
+		clean["winner_seat"] = -1
+		var kept: Array = []
+		for event in events:
+			if typeof(event) == TYPE_DICTIONARY and str(event.get("type", "")) == "match_over":
+				continue
+			kept.append(event)
+		return {"snapshot": clean, "events": kept, "finished": false}
+	return {"snapshot": snap, "events": events, "finished": true}
 
 
 func _note_koliseo_result(snap: Dictionary) -> void:
@@ -1094,6 +1290,8 @@ func rpc_select_class(class_id: String) -> void:
 		return
 	var seat := seat_for_peer(peer_id)
 	if seat < 0:
+		seat = assign_peer_seat(peer_id)
+	if seat < 0:
 		_send_class_result(peer_id, false, class_id, "no_seat")
 		return
 	var session_id := _session_for_peer(peer_id)
@@ -1132,6 +1330,8 @@ func rpc_enqueue() -> void:
 		_send_queue_result(peer_id, "rejected", "not_dedicated")
 		return
 	var seat := seat_for_peer(peer_id)
+	if seat < 0:
+		seat = assign_peer_seat(peer_id)
 	if seat < 0:
 		_send_queue_result(peer_id, "rejected", "no_seat")
 		return
@@ -1187,6 +1387,7 @@ func rpc_match_assigned(payload: Dictionary) -> void:
 	_local_queued = true
 	_opponent_queued = true
 	_match_live = true
+	_client_in_match = true
 	_prematch_phase = "MATCH"
 	connection_changed.emit("matched")
 	_update_window_title()
@@ -1215,15 +1416,20 @@ func _cache_and_broadcast(result: Dictionary) -> Dictionary:
 	# Host caches packed state for the guest; do not hydrate over the live brain.
 	apply_packed_state(packed, mode == Mode.CLIENT)
 	_push_viewers(result)
+	# The phones already have this fight. Clearing the lobby must not replace
+	# the result this call returns (the dedicated brain itself is now a lobby).
+	var shown := last_view_result()
 	if mode == Mode.DEDICATED and _match_live and not _match_finished:
 		var snap: Dictionary = packed.get("snapshot", {})
-		if bool(snap.get("match_over", false)):
+		if typeof(snap) == TYPE_DICTIONARY and bool(snap.get("match_over", false)):
 			_finish_dedicated_match(snap)
+			return shown
 	return last_view_result()
 
 
-## The peers stay connected so both phones can read the result. Seats with
-## nobody left are freed now; a peer that is still here frees its seat on disconnect.
+## Both seats are free immediately, even if those phones are still connected
+## long enough to read the result. The sim is cleared so the next peer is not
+## handed this fight's match_over snapshot.
 func _finish_dedicated_match(snap: Dictionary) -> void:
 	_match_finished = true
 	_match_live = false
@@ -1234,9 +1440,32 @@ func _finish_dedicated_match(snap: Dictionary) -> void:
 		var peer_id := int(_seat_peer[seat])
 		if peer_id > 1:
 			_queue().forget(_session_for_peer(peer_id))
-		else:
-			_seat_held[seat] = false
+		_seat_peer[seat] = 0
+		_seat_held[seat] = false
+	guest_peer_id = 0
+	_reset_lobby_state()
 	print("STASIUM server: match end winner=%d" % int(snap.get("winner_seat", -1)))
+
+
+func _lobby_snapshot() -> Dictionary:
+	return {
+		"match_over": false,
+		"winner_seat": -1,
+		"phase": "SELECT_CLASS",
+		"units": [],
+		"lobby": true,
+		"active_seat": -1,
+	}
+
+
+func _reset_lobby_state() -> void:
+	last_events = []
+	last_result = {}
+	last_packed = {}
+	last_snapshot = _lobby_snapshot()
+	var host_sim := sim()
+	if host_sim != null and host_sim.has_method("clear_to_lobby"):
+		host_sim.clear_to_lobby()
 
 
 func _push_viewers(result: Dictionary) -> void:
@@ -1365,10 +1594,13 @@ func _on_peer_connected(id: int) -> void:
 	print("STASIUM server: player connected seat=%d peer=%d" % [seat, id])
 	if mode == Mode.HOST:
 		connection_changed.emit("guest_joined")
-	if sim() == null and last_packed.is_empty():
+	if sim() == null and last_packed.is_empty() and _match_live:
 		return
 	var snap: Dictionary = sim().snapshot() if sim() != null else last_snapshot
 	var events: Array = last_events if not last_events.is_empty() else snap.get("last_events", [])
+	if mode == Mode.DEDICATED and not _match_live:
+		snap = _lobby_snapshot()
+		events = []
 	rpc_push_state.rpc_id(id, pack_result({
 		"ok": true,
 		"illegal": false,
@@ -1394,6 +1626,10 @@ func _on_peer_disconnected(id: int) -> void:
 
 func _on_connected_to_server() -> void:
 	if mode == Mode.CLIENT:
+		if _dial_active:
+			_ServerDial.remember(join_address)
+			_dial_active = false
+			_dial_live_attempt = -1
 		connection_changed.emit("joined")
 		print("STASIUM XII client connected to %s:%d" % [join_address, listen_port])
 		if _queue_client and SpellKits.is_roster_class(selected_class_id):
@@ -1403,8 +1639,16 @@ func _on_connected_to_server() -> void:
 
 
 func _on_connection_failed() -> void:
-	connection_changed.emit("join_failed")
+	if _dial_suppress:
+		return
 	print("STASIUM XII client join failed for %s:%d" % [join_address, listen_port])
+	if _dial_active:
+		if _dial_live_attempt >= 0:
+			call_deferred("_dial_fail_attempt", _dial_live_attempt)
+		return
+	if mode != Mode.CLIENT:
+		return
+	connection_changed.emit("join_failed")
 
 
 func _on_server_disconnected() -> void:
@@ -1416,9 +1660,13 @@ func _on_server_disconnected() -> void:
 
 
 func _close_peer() -> void:
+	var restore := not _dial_suppress
+	_dial_suppress = true
 	if multiplayer.multiplayer_peer != null:
 		multiplayer.multiplayer_peer.close()
 		multiplayer.multiplayer_peer = null
+	if restore:
+		_dial_suppress = false
 
 
 static func plan_from_args(args: PackedStringArray) -> Dictionary:

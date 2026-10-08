@@ -341,6 +341,10 @@ func _process(delta: float) -> void:
 	var snap: Dictionary = _sim().snapshot()
 	if CombatHUD.is_deployment_phase(snap) or bool(snap.get("match_over", false)):
 		_hydrate_turn_clock(snap)
+		# A net update dropped while _busy still has to open the result.
+		# _refresh is the other caller; this covers the early return above.
+		if bool(snap.get("match_over", false)):
+			_track_result(snap)
 		return
 	# Hot-seat and a listen-host tick here. A phone only shows the server clock.
 	# The headless authority ticks in NetSession (it never loads this board);
@@ -444,6 +448,15 @@ func _unhandled_input(event: InputEvent) -> void:
 		for tile in tiles.values():
 			(tile as BoardTile).queue_redraw()
 		return
+	# Android Back is ui_cancel. After the fight it must leave for the hub
+	# even while a result tween still has the board marked busy.
+	if event.is_action_pressed("ui_cancel"):
+		var cancel_net := _net()
+		if cancel_net != null and cancel_net.is_client() and bool(_sim().snapshot().get("match_over", false)):
+			if cancel_net.has_method("return_to_hub_now"):
+				cancel_net.return_to_hub_now()
+			get_viewport().set_input_as_handled()
+			return
 	if _busy or _view_locked:
 		# Watching an AI or monster turn: a finger can still drag the map.
 		_pan_while_watching(event)
@@ -994,6 +1007,9 @@ func _on_hub_requested() -> void:
 		return
 	_stop_flash_tweens()
 	_stop_walk_tween()
+	if net != null and net.is_client() and net.has_method("return_to_hub_now"):
+		net.return_to_hub_now()
+		return
 	if net != null and not net.is_hotseat():
 		net.return_to_hotseat()
 	get_tree().change_scene_to_file(MobileHub.MOBILE_HUB)
@@ -2033,20 +2049,33 @@ func _schedule_online_home(window: CombatResult) -> void:
 		return
 	_online_home_pending = true
 	var net := _net()
-	if net != null and net.has_method("note_match_finished"):
+	# The wait lives on the autoload. Closing the socket used to run first, and
+	# change_scene on this node then no-op'd (tree busy, or this node already
+	# leaving). CLOSE still returns immediately.
+	if net != null and net.has_method("arm_hub_return"):
+		net.arm_hub_return(RESULT_READ_SEC)
+	elif net != null and net.has_method("note_match_finished"):
 		net.note_match_finished()
-	if window != null and not window.closed.is_connected(_go_hub_after_online_match):
+	if window != null and net != null and net.has_method("return_to_hub_now"):
+		if not window.closed.is_connected(net.return_to_hub_now):
+			window.closed.connect(net.return_to_hub_now)
+	elif window != null and not window.closed.is_connected(_go_hub_after_online_match):
 		window.closed.connect(_go_hub_after_online_match)
-	get_tree().create_timer(RESULT_READ_SEC).timeout.connect(_go_hub_after_online_match)
+		get_tree().create_timer(RESULT_READ_SEC).timeout.connect(_go_hub_after_online_match)
 
 
 func _go_hub_after_online_match() -> void:
-	if not _online_home_pending or not is_inside_tree():
+	if not _online_home_pending:
 		return
 	_online_home_pending = false
+	var net := _net()
+	if net != null and net.has_method("return_to_hub_now"):
+		net.return_to_hub_now()
+		return
+	if not is_inside_tree():
+		return
 	_stop_flash_tweens()
 	_stop_walk_tween()
-	var net := _net()
 	if net != null and net.has_method("leave_after_match"):
 		net.leave_after_match()
 	elif net != null and not net.is_hotseat():

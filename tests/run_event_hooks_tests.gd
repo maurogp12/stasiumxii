@@ -24,6 +24,8 @@ func _initialize() -> void:
 	_guest.attach_sim(_view)
 	_host.enter_host_offline()
 	_guest.enter_client_offline()
+	# This guest stands in for a phone that was assigned the fight.
+	_guest._client_in_match = true
 	_run()
 	print("Event-hook tests: %d passed, %d failed" % [_passed, _failed])
 	_host.free()

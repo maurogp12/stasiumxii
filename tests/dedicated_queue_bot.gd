@@ -9,6 +9,8 @@ var _status := ""
 var _dropped := false
 var _winner := -1
 var _match_over := false
+var _on_hub := false
+var _second_match := false
 
 
 func _initialize() -> void:
@@ -47,6 +49,9 @@ func _play() -> void:
 			_match_over = true
 			_winner = int(snap.get("winner_seat", -1))
 			print("BOT MATCH_OVER winner=%d status=%s" % [_winner, _status])
+			if _rematch_requested():
+				await _requeue(net)
+				return
 			var watch := Time.get_ticks_msec() + 2000
 			while not _dropped and Time.get_ticks_msec() < watch:
 				await process_frame
@@ -134,6 +139,46 @@ func _deploy(net: Node, seat: int) -> void:
 		await process_frame
 
 
+## Same process: wait until the autoload has opened the hub, then queue again.
+func _requeue(net: Node) -> void:
+	var hub_deadline := Time.get_ticks_msec() + 12000
+	while not _dropped and Time.get_ticks_msec() < hub_deadline:
+		await process_frame
+		var scene := current_scene
+		if scene != null and str(scene.scene_file_path).ends_with("mobile_hub.tscn"):
+			_on_hub = true
+			break
+	print("BOT HUB %s dropped=%s" % [str(_on_hub), str(_dropped)])
+	if not _on_hub or _dropped:
+		_finish(4 if _dropped else 5)
+		return
+	var opened: Dictionary = net.begin_auto_queue("127.0.0.1", _queue_port())
+	print("BOT REQUEUE ok=%s reason=%s" % [str(opened.get("ok", "")), str(opened.get("reason", ""))])
+	if not bool(opened.get("ok", false)):
+		_finish(6)
+		return
+	var until := Time.get_ticks_msec() + 25000
+	while not _dropped and Time.get_ticks_msec() < until:
+		await process_frame
+		if bool(net.match_assigned()):
+			_second_match = true
+			break
+	print("BOT SECOND %s dropped=%s status=%s" % [str(_second_match), str(_dropped), _status])
+	_finish(0 if _second_match and not _dropped else 7)
+
+
+func _rematch_requested() -> bool:
+	return OS.get_cmdline_user_args().has("--rematch")
+
+
+func _queue_port() -> int:
+	var args := OS.get_cmdline_user_args()
+	var i := args.find("--queue")
+	if i >= 0 and i + 1 < args.size() and str(args[i + 1]).contains(":"):
+		return int(str(args[i + 1]).split(":")[1])
+	return 7777
+
+
 func _on_connection(status: String) -> void:
 	_status = status
 	print("BOT STATUS %s" % status)
@@ -147,13 +192,18 @@ func _finish(code: int) -> void:
 	if path != "":
 		var file := FileAccess.open(path, FileAccess.WRITE)
 		if file != null:
-			file.store_string("match_over=%d\ndropped=%d\nwinner=%d\nstatus=%s\ncode=%d\n" % [
+			file.store_string("match_over=%d\ndropped=%d\nwinner=%d\nstatus=%s\ncode=%d\nhub=%d\nsecond_match=%d\n" % [
 				1 if _match_over else 0,
 				1 if _dropped else 0,
 				_winner,
 				_status,
 				code,
+				1 if _on_hub else 0,
+				1 if _second_match else 0,
 			])
+	var dial := load("res://backend/server_dial.gd")
+	if dial != null and dial.has_method("forget"):
+		dial.forget()
 	quit(code)
 
 

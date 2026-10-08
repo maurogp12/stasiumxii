@@ -7,7 +7,8 @@ const _TestLoadout := preload("res://backend/test_loadout.gd")
 ## The mobile hub is the branch entry; this scene opens from the Koliseo door.
 ## Online pick calls NetSession.select_class (rpc_select_class once connected).
 ## Online stays on Crosshaven; the dedicated host does not share a map pick.
-## Queue calls start_queue_client, which sends rpc_enqueue. Queue is the Find Match control.
+## Play Online calls begin_auto_queue. That is the Find Match control.
+## NetSession still sends rpc_enqueue. The wire is unchanged.
 ## Results arrive on connection_changed from rpc_class_result / rpc_queue_result /
 ## rpc_match_assigned: class_selected, class_rejected, waiting, queue_rejected, matched.
 ## Locked roster: Kestrel, Ironjaw, Mender, Gloam, Bastion.
@@ -54,9 +55,13 @@ var _p1_chip: PanelContainer
 var _p1_chip_label: Label
 var _cards_row: HBoxContainer
 var _join_row: HBoxContainer
+var _advanced_row: HBoxContainer
 var _join_ip: LineEdit
 var _join_port: LineEdit
 var _queue_button: Button
+var _advanced_button: Button
+var _retry_button: Button
+var _advanced_open: bool = false
 var _queue_panel: PanelContainer
 var _queue_label: Label
 var _back_button: Button
@@ -172,7 +177,7 @@ func choose_mode(which: String) -> void:
 		_status.text = ""
 	elif which == "online":
 		_phase = "online"
-		_status.text = "Pick a class, then Queue. Online plays Crosshaven."
+		_status.text = "Pick a class, then Play Online."
 	else:
 		return
 	_reject.text = ""
@@ -251,19 +256,58 @@ func request_queue() -> Dictionary:
 	if not SpellKits.is_roster_class(NetSession.selected_class_id):
 		_show_reject("class_required", _picked)
 		return {"ok": false, "illegal": true, "reason": "class_required", "class_id": NetSession.selected_class_id}
-	_status.text = "Entering queue…"
+	if NetSession.is_auto_dialing():
+		_status.text = "Connecting…"
+		_set_retry_visible(false)
+		return {"ok": true, "reason": "", "status": "connecting"}
 	if NetSession.is_queue_client() and NetSession.is_client():
-		_show_waiting()
+		_show_searching()
 		return {"ok": true, "reason": "", "status": "waiting"}
-	var address := _join_ip.text.strip_edges() if _join_ip != null else NetSession.DEFAULT_SERVER
-	var port := int(_join_port.text) if _join_port != null else NetSession.DEFAULT_PORT
-	var result: Dictionary = NetSession.start_queue_client(address, port)
+	_status.text = "Connecting…"
+	_reject.text = ""
+	_set_retry_visible(false)
+	var result: Dictionary = NetSession.begin_auto_queue(_override_address(), _override_port())
 	if not bool(result.get("ok", false)):
-		_show_reject(str(result.get("reason", "class_required")), NetSession.selected_class_id)
+		if str(result.get("reason", "")) == "class_required":
+			_show_reject("class_required", NetSession.selected_class_id)
+		else:
+			_status.text = "Could not reach server"
+			_set_retry_visible(true)
 		return result
-	_status.text = "Connecting as %s…" % SpellKits.display_name(NetSession.selected_class_id)
 	_refresh_all()
 	return result
+
+
+func address_field_visible() -> bool:
+	return _advanced_row != null and _advanced_row.visible and _join_ip != null and _join_ip.visible
+
+
+func retry_button_visible() -> bool:
+	return _retry_button != null and _retry_button.visible
+
+
+func _override_address() -> String:
+	if not _advanced_open or _join_ip == null:
+		return ""
+	return _join_ip.text.strip_edges()
+
+
+func _override_port() -> int:
+	if not _advanced_open or _join_port == null:
+		return -1
+	var port := int(_join_port.text.strip_edges())
+	return port if port > 0 else -1
+
+
+func _toggle_advanced() -> void:
+	_advanced_open = not _advanced_open
+	if _advanced_row != null:
+		_advanced_row.visible = _phase == "online" and _advanced_open
+
+
+func _set_retry_visible(show: bool) -> void:
+	if _retry_button != null:
+		_retry_button.visible = show
 
 
 func return_to_hub() -> void:
@@ -451,26 +495,41 @@ func _build() -> void:
 	_join_row.add_theme_constant_override("separation", 8)
 	_join_row.visible = false
 	col.add_child(_join_row)
-	var host_label := Label.new()
-	host_label.text = "Host"
-	host_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_join_row.add_child(host_label)
-	_join_ip = LineEdit.new()
-	_join_ip.text = NetSession.join_address if NetSession.join_address != "" else NetSession.DEFAULT_SERVER
-	_join_ip.custom_minimum_size = Vector2(180, 36)
-	_join_ip.placeholder_text = "127.0.0.1"
-	_join_row.add_child(_join_ip)
-	_join_port = LineEdit.new()
-	_join_port.text = str(NetSession.listen_port if NetSession.listen_port > 0 else NetSession.DEFAULT_PORT)
-	_join_port.custom_minimum_size = Vector2(90, 36)
-	_join_port.placeholder_text = "7777"
-	_join_row.add_child(_join_port)
 	_queue_button = Button.new()
-	_queue_button.text = "Queue"
-	_queue_button.custom_minimum_size = Vector2(160, 40)
-	_queue_button.add_theme_font_size_override("font_size", 18)
+	_queue_button.text = "Play Online"
+	_queue_button.custom_minimum_size = Vector2(280, 56)
+	_queue_button.add_theme_font_size_override("font_size", 22)
 	_queue_button.pressed.connect(request_queue)
 	_join_row.add_child(_queue_button)
+	_advanced_button = Button.new()
+	_advanced_button.text = "Advanced"
+	_advanced_button.flat = true
+	_advanced_button.custom_minimum_size = Vector2(88, 28)
+	_advanced_button.add_theme_font_size_override("font_size", 12)
+	_advanced_button.pressed.connect(_toggle_advanced)
+	_join_row.add_child(_advanced_button)
+	_retry_button = Button.new()
+	_retry_button.text = "Retry"
+	_retry_button.visible = false
+	_retry_button.custom_minimum_size = Vector2(120, 56)
+	_retry_button.add_theme_font_size_override("font_size", 18)
+	_retry_button.pressed.connect(request_queue)
+	_join_row.add_child(_retry_button)
+
+	_advanced_row = HBoxContainer.new()
+	_advanced_row.add_theme_constant_override("separation", 8)
+	_advanced_row.visible = false
+	col.add_child(_advanced_row)
+	_join_ip = LineEdit.new()
+	_join_ip.text = ""
+	_join_ip.custom_minimum_size = Vector2(220, 36)
+	_join_ip.placeholder_text = "Address"
+	_advanced_row.add_child(_join_ip)
+	_join_port = LineEdit.new()
+	_join_port.text = "7777"
+	_join_port.custom_minimum_size = Vector2(90, 36)
+	_join_port.placeholder_text = "7777"
+	_advanced_row.add_child(_join_port)
 
 	_reject = Label.new()
 	_reject.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -521,7 +580,7 @@ func _build_dedicated() -> void:
 
 	var blurb := Label.new()
 	blurb.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	blurb.text = "This window has no seat. Players pick a class on their own screen, then Queue."
+	blurb.text = "This window has no seat. Players pick a class on their own screen, then Play Online."
 	blurb.add_theme_color_override("font_color", Color(0.78, 0.74, 0.7))
 	col.add_child(blurb)
 
@@ -654,6 +713,8 @@ func _apply_prompt() -> void:
 	if show_chip:
 		_p1_chip_label.text = "P1 locked in: %s" % SpellKits.display_name(_p1)
 	_join_row.visible = _phase == "online"
+	if _advanced_row != null:
+		_advanced_row.visible = _phase == "online" and _advanced_open
 	if _cards_row != null:
 		_cards_row.visible = true
 	if _size_row != null:
@@ -729,11 +790,14 @@ func _on_connection(status: String) -> void:
 		_refresh_all()
 	elif status == "class_rejected":
 		_show_reject("invalid_class", _picked)
-	elif status == "waiting":
+	elif status == "connecting":
 		_reject.text = ""
-		_show_waiting()
-		if NetSession.lobby_text != "":
-			_status.text = NetSession.lobby_text
+		_status.text = "Connecting…"
+		_set_retry_visible(false)
+		_refresh_all()
+	elif status == "joined" or status == "waiting":
+		_reject.text = ""
+		_show_searching()
 		_refresh_all()
 	elif status == "queue_rejected":
 		_show_reject("class_required", NetSession.selected_class_id)
@@ -741,26 +805,29 @@ func _on_connection(status: String) -> void:
 	elif status == "matched":
 		if not NetSession.is_queue_client():
 			return
-		_status.text = "Match assigned."
+		_status.text = "Opponent found"
 		_queue_panel.visible = false
+		_set_retry_visible(false)
 		if NetSession.match_assigned():
 			_go_main()
 	elif status == "join_failed":
-		_status.text = "Join failed."
-		_reject.text = "Could not reach the server."
+		_status.text = "Could not reach server"
+		_reject.text = ""
 		_queue_panel.visible = false
+		_set_retry_visible(true)
 	elif status == "host_left":
 		_status.text = "Server disconnected."
 	elif status == "match_finished":
 		return_to_hub()
 
 
-func _show_waiting() -> void:
-	if _queue_panel == null:
-		return
-	_queue_label.text = "Queued. Waiting for an opponent."
-	_queue_panel.visible = true
-	_status.text = "Queued. Waiting for an opponent."
+func _show_searching() -> void:
+	if _queue_panel != null:
+		_queue_label.text = "Searching for opponent…"
+		_queue_panel.visible = true
+	_set_retry_visible(false)
+	if _status != null:
+		_status.text = "Searching for opponent…"
 
 
 func _show_reject(reason: String, class_id: String) -> void:

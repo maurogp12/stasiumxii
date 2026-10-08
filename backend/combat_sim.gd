@@ -205,6 +205,21 @@ var _turn_time_running: bool = false
 var _replica: bool = false
 
 
+## Drop a finished fight so the next connection is a lobby, not match_over.
+func clear_to_lobby() -> void:
+	_match_over = false
+	_winner_seat = -1
+	_winner_team = -1
+	_units.clear()
+	_last_events.clear()
+	_last_coach = ""
+	_turn_time_running = false
+	_match_time_left = -1.0
+	_turn_time_remaining = 0.0
+	_active_seat = 0
+	_turn_index = 0
+
+
 func reset_match(config: Dictionary = {}) -> Dictionary:
 	_match_time_left = -1.0
 	_units.clear()
