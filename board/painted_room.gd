@@ -8,6 +8,7 @@ class_name PaintedRoom
 const ROOT := "res://art/rooms/"
 const VISUAL_SORT := preload("res://board/visual_sort.gd")
 const ARENA_LOOK := preload("res://board/arena_look.gd")
+const WINDMERE := preload("res://board/windmere_alive.gd")
 
 ## Stasis Brinewake only. One scrolling layer, above the plate and under the cells.
 const RAIN_CODE := "shader_type canvas_item;
@@ -193,6 +194,7 @@ static func bind(parent: Node2D, room_id: String, tiles: Dictionary) -> bool:
 		if tile != null and tile.has_method("set_painted_floor"):
 			tile.set_painted_floor(true)
 	_add_slag_lava(host, room_id)
+	_add_windmere(host, room_id)
 	_bound_room = room_id
 	return true
 
@@ -265,6 +267,10 @@ static func _add_slag_lava(host: Node2D, room_id: String) -> void:
 		# Eight starts across the 0.72 s loop, so a row does not pulse as one.
 		var into := float(posmod(cell.x * 13 + cell.y * 29, 8)) * (LAVA_FRAME_SEC * 0.5)
 		sprite.set_frame_and_progress(int(into / LAVA_FRAME_SEC) % 4, fmod(into, LAVA_FRAME_SEC) / LAVA_FRAME_SEC)
+
+
+static func _add_windmere(host: Node2D, room_id: String) -> void:
+	WINDMERE.attach(host, room_id)
 
 
 ## Light rain over the flooding hold. Above the plate, under tiles and fighters.
