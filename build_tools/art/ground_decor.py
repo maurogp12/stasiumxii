@@ -475,15 +475,6 @@ def repaint_plates(write):
         print(room_id, note)
 
 
-def quiet_steam():
-    path = os.path.join(ROOT, "art", "vfx", "blends", "map_steam_plume.png")
-    im = Image.open(path).convert("RGBA")
-    arr = np.array(im).astype(np.float32)
-    arr[:, :, 3] *= 0.42
-    Image.fromarray(np.clip(arr, 0, 255).astype(np.uint8)).save(path, optimize=True)
-    print("steam alpha", path)
-
-
 def main():
     import argparse
     parser = argparse.ArgumentParser()
@@ -493,8 +484,6 @@ def main():
         notes = ground_room(room_id, args.write)
         print(room_id, "props", len(notes))
     repaint_plates(args.write)
-    if args.write:
-        quiet_steam()
 
 
 if __name__ == "__main__":
