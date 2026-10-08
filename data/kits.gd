@@ -172,6 +172,10 @@ const SPELLS := {
 		"trap_damage": 6,
 		# Springing the trap costs this much MP, not the tile's walk cost.
 		"trap_mp": 1,
+		# Mauro 8 Oct 2026: two live traps per Kestrel. A third drops the oldest.
+		# Snare Trap is the only Kestrel trap; CombatSim applies this cap to
+		# every trap that Kestrel owns, so a later trap spell shares it.
+		"trap_cap": 2,
 	},
 	SHOULDER: {
 		"id": SHOULDER,
@@ -393,6 +397,10 @@ const SPELLS := {
 		"element": "neutral",
 		"target": "self",
 		"engine_on_connect": "umbral",
+		# Own turns Fade stays locked after the cast. The sim stores this plus
+		# one because the clock ticks at the next turn start, before he acts.
+		# He can cast it again on the turn Invisible ends.
+		"cooldown": 1,
 	},
 	# Nightfold's miss/Shade refund is open_can_wait. Gated: not resolved.
 	NIGHTFOLD: {

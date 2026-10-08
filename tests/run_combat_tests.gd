@@ -146,6 +146,9 @@ func _run() -> void:
 	_test_mender_last_stand()
 	_test_sudden_death_clock()
 	_test_kestrel_vault_and_snare()
+	_test_two_snares_and_stealth_reveal()
+	_test_shade_replace_and_dismiss()
+	_test_enemy_reach_preview()
 	_test_bodies_do_not_block()
 
 
@@ -7905,9 +7908,6 @@ func _test_kestrel_vault_and_snare() -> void:
 	var trap: Dictionary = _sim.submit({"type": "cast", "spell": "snare_trap", "to": Vector2i(3, 5), "seat": 0})
 	eq(bool(trap.get("ok", false)), true, "Snare Trap is set")
 	eq(str(trap.get("events", [{}])[0].get("coach", "")).contains("(3"), false, "the coach does not reveal the trap tile")
-	_sim.submit({"type": "cast", "spell": "snare_trap", "to": Vector2i(2, 4), "seat": 0})
-	eq(_sim.snapshot()["trap_tiles"].size(), 1, "only 1 trap at a time")
-	_sim.submit({"type": "cast", "spell": "snare_trap", "to": Vector2i(3, 5), "seat": 0})
 	_sim.submit({"type": "end_turn", "seat": 0})
 	var hp0 := int(_unit(1)["hp"])
 	_live_unit(1)["pos"] = Vector2i(4, 5)
@@ -7940,6 +7940,227 @@ func _test_kestrel_vault_and_snare() -> void:
 	eq(int(_first_event_where(climbed.get("events", []), "move").get("mp_spent", 0)), 1, "the trap step costs 1 MP, not the climb")
 	eq(int(_unit(1)["mp"]), 2, "3 MP minus that 1")
 
+
+## Mauro 8 Oct 2026: two Snare Traps at once; a third drops the oldest.
+## A stealthed Gloam who steps on one is revealed and still takes the snare.
+func _test_two_snares_and_stealth_reveal() -> void:
+	var snare: Dictionary = SpellKits.spell(SpellKits.SNARE_TRAP)
+	eq(int(snare.get("ap", 0)), 2, "Snare Trap still costs 2 AP")
+	eq(int(snare.get("mp", 0)), 0, "Snare Trap still costs 0 MP")
+	eq(int(snare.get("trap_damage", 0)), 6, "Snare Trap still deals 6")
+	eq(int(snare.get("trap_mp", 0)), 1, "springing a trap still costs 1 MP")
+	eq(int(snare.get("trap_turns", 0)), 3, "a trap still lasts 3 of her turns")
+	eq(int(snare.get("min_range", 0)), 1, "Snare Trap range still starts at 1")
+	eq(int(snare.get("max_range", 0)), 3, "Snare Trap range still ends at 3")
+	eq(int(snare.get("trap_cap", 0)), 2, "each Kestrel may keep 2 traps")
+	var trap_spells := 0
+	for spell_id in SpellKits.CLASS_SPELLS[SpellKits.CLASS_KESTREL]:
+		if SpellKits.spell(str(spell_id)).has("trap_turns"):
+			trap_spells += 1
+	eq(trap_spells, 1, "Snare Trap is Kestrel's only trap")
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "classes": ["kestrel", "gloam"], "positions": [Vector2i(4, 4), Vector2i(10, 10)]})
+	# Chebyshev 1–3 from (4,4). (3,5) from (1,1) is range 4 and is refused.
+	var first := Vector2i(5, 4)
+	var second := Vector2i(6, 4)
+	var third := Vector2i(4, 6)
+	eq(bool(_sim.submit({"type": "cast", "spell": "snare_trap", "to": first, "seat": 0}).get("ok", false)), true, "the first trap is set")
+	eq(bool(_sim.submit({"type": "cast", "spell": "snare_trap", "to": second, "seat": 0}).get("ok", false)), true, "the second trap is set")
+	eq(_trap_cells_of(0), [first, second], "two traps coexist, oldest first")
+	eq(int(_trap_owned(0)[0].get("turns", 0)), 3, "the first trap keeps its 3 turns")
+	eq(int(_trap_owned(0)[1].get("turns", 0)), 3, "the second trap starts at 3 turns")
+	# Another owner's trap is not part of her cap.
+	_sim._trap_tiles.append({"pos": Vector2i(7, 7), "owner_seat": 1, "turns": 2})
+	var offered := false
+	for intent in _sim.legal_intents(0):
+		if str(intent.get("spell", "")) == "snare_trap" and intent.get("to") == third:
+			offered = true
+	eq(offered, true, "a third trap is still a legal cast")
+	var ap_before := int(_unit(0)["ap"])
+	var replaced: Dictionary = _sim.submit({"type": "cast", "spell": "snare_trap", "to": third, "seat": 0})
+	eq(bool(replaced.get("ok", false)), true, "the third trap resolves")
+	eq(int(_unit(0)["ap"]), ap_before - 2, "the third trap still costs 2 AP")
+	eq(_trap_cells_of(0), [second, third], "the third trap replaces the oldest")
+	eq(_trap_cells_of(1), [Vector2i(7, 7)], "the other owner's trap stays")
+	eq(int(_trap_owned(1)[0].get("turns", 0)), 2, "the other owner's duration is untouched")
+	eq(_first_event_where(replaced.get("events", []), "expire", "trap").is_empty(), true, "dropping the oldest does not play a trap expire")
+	# Recasting one of her own tiles refreshes that trap and keeps the other.
+	_live_unit(0)["ap"] = 2
+	eq(bool(_sim.submit({"type": "cast", "spell": "snare_trap", "to": second, "seat": 0}).get("ok", false)), true, "recasting her own trap tile resolves")
+	eq(_trap_cells_of(0), [third, second], "the recast trap is refreshed in place")
+	eq(int(_trap_owned(0)[0].get("turns", 0)), 3, "the trap she did not recast still has 3 turns")
+	eq(int(_trap_owned(0)[1].get("turns", 0)), 3, "the recast trap is back to 3 turns")
+	var card := " ".join(SpellTooltip.simple_lines(SpellKits.SNARE_TRAP))
+	truthy(card.contains("2 traps"), "the Snare card says 2 traps")
+	eq(card.contains("1 trap at a time"), false, "the Snare card no longer says 1 trap")
+	# Stealthed Gloam walks onto the nearer trap. The walk stops. He is revealed
+	# and takes the snare. The farther trap stays hidden and unspent.
+	var gloam := Vector2i(5, 5)
+	var near := Vector2i(4, 5)
+	var far := Vector2i(3, 5)
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "classes": ["kestrel", "gloam"], "positions": [Vector2i(1, 5), gloam]})
+	eq(bool(_sim.submit({"type": "cast", "spell": "snare_trap", "to": near, "seat": 0}).get("ok", false)), true, "the near trap is set")
+	eq(bool(_sim.submit({"type": "cast", "spell": "snare_trap", "to": far, "seat": 0}).get("ok", false)), true, "the far trap stays beside it")
+	_sim.submit({"type": "end_turn", "seat": 0})
+	var faded: Dictionary = _sim.submit({"type": "cast", "spell": "fade", "to": gloam, "seat": 1})
+	eq(bool(faded.get("ok", false)), true, "Fade resolves before the walk")
+	eq(bool(_unit(1)["invisible"]), true, "Gloam is Invisible when he steps")
+	eq(int(_unit(1)["invisible_turns"]), CombatSim.INVISIBLE_TURNS, "Fade still starts the Invisible clock")
+	var hp0 := int(_unit(1)["hp"])
+	var walked: Dictionary = _sim.submit({"type": "move", "to": far, "seat": 1})
+	eq(bool(walked.get("ok", false)), true, "the stealthed walk resolves")
+	eq(_unit(1)["pos"], near, "the walk stops on the first trap")
+	eq(hp0 - int(_unit(1)["hp"]), 6, "the stealthed step still takes 6")
+	eq(bool(_unit(1).get("pin_pending", false)), true, "the stealthed step is still Pinned next turn")
+	eq(int(_first_event_where(walked.get("events", []), "move").get("trap_mp", 0)), 1, "the stealthed spring is still 1 MP")
+	eq(int(_first_event_where(walked.get("events", []), "move").get("mp_spent", 0)), 1, "the stealthed walk is not billed past the trap")
+	eq(bool(_unit(1)["invisible"]), false, "stepping on the trap ends Invisible")
+	eq(int(_unit(1)["invisible_turns"]), 0, "stepping on the trap clears the Invisible clock")
+	var expired := _first_event_where(walked.get("events", []), "expire", "invisible")
+	eq(expired.is_empty(), false, "the reveal emits expire invisible")
+	eq(expired.get("pos"), near, "the expire names the trap tile")
+	eq(_event_type_count(walked.get("events", []), "revealed"), 1, "the reveal emits the same revealed event as a hit")
+	eq(_trap_cells_of(0), [far], "the trap he did not reach is still out")
+	# A shield that soaks the 6 still breaks stealth. The snare itself is unchanged.
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "classes": ["kestrel", "gloam"], "positions": [Vector2i(1, 5), gloam]})
+	_sim.submit({"type": "cast", "spell": "snare_trap", "to": near, "seat": 0})
+	_sim.submit({"type": "end_turn", "seat": 0})
+	_sim.submit({"type": "cast", "spell": "fade", "to": gloam, "seat": 1})
+	_live_unit(1)["shield"] = 20
+	var soaked_hp := int(_unit(1)["hp"])
+	var soaked: Dictionary = _sim.submit({"type": "move", "to": far, "seat": 1})
+	eq(_unit(1)["pos"], near, "a shielded Invisible step still stops on the trap")
+	eq(int(_unit(1)["hp"]), soaked_hp, "a shield soaks the trap damage")
+	eq(int(_unit(1)["shield"]), 14, "the shield loses the 6")
+	eq(bool(_unit(1).get("pin_pending", false)), true, "a soaked trap still Pins")
+	eq(bool(_unit(1)["invisible"]), false, "a soaked trap still reveals")
+	eq(_event_type_count(soaked.get("events", []), "revealed"), 1, "a soaked trap still emits revealed")
+	# Visible Gloam: same stop, damage, Pin, and MP. No reveal events.
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "classes": ["kestrel", "gloam"], "positions": [Vector2i(1, 5), gloam]})
+	_sim.submit({"type": "cast", "spell": "snare_trap", "to": near, "seat": 0})
+	_sim.submit({"type": "end_turn", "seat": 0})
+	var plain_hp := int(_unit(1)["hp"])
+	var plain: Dictionary = _sim.submit({"type": "move", "to": far, "seat": 1})
+	eq(_unit(1)["pos"], near, "a visible walk still stops on the trap")
+	eq(plain_hp - int(_unit(1)["hp"]), 6, "a visible walk still takes 6")
+	eq(bool(_unit(1).get("pin_pending", false)), true, "a visible walk is still Pinned next turn")
+	eq(int(_first_event_where(plain.get("events", []), "move").get("mp_spent", 0)), 1, "a visible spring is still 1 MP")
+	eq(bool(_unit(1)["invisible"]), false, "a visible walker stays visible")
+	eq(_first_event_where(plain.get("events", []), "expire", "invisible").is_empty(), true, "a visible spring does not expire Invisible")
+	eq(_event_type_count(plain.get("events", []), "revealed"), 0, "a visible spring does not emit revealed")
+	eq(_sim.snapshot()["trap_tiles"].size(), 0, "the visible spring still spends the trap")
+
+
+func _trap_owned(seat: int) -> Array:
+	var out: Array = []
+	for item in _sim.snapshot()["trap_tiles"]:
+		if int(item.get("owner_seat", -1)) == seat:
+			out.append(item)
+	return out
+
+
+func _test_shade_replace_and_dismiss() -> void:
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["gloam", "kestrel"],
+		"positions": [Vector2i(4, 4), Vector2i(12, 12)],
+	})
+	var first := Vector2i(5, 4)
+	var second := Vector2i(6, 4)
+	var third := Vector2i(4, 5)
+	eq(bool(_sim.submit({"type": "cast", "spell": "drop_shade", "to": first, "seat": 0}).get("ok", false)), true, "the first Shade places")
+	eq(bool(_sim.submit({"type": "cast", "spell": "drop_shade", "to": second, "seat": 0}).get("ok", false)), true, "the second Shade places")
+	eq(int(_unit(0)["shades"]), 2, "two Shades are live")
+	eq(int(_unit(0)["ap"]), 4, "two Shades cost 1 AP each")
+	var replaced: Dictionary = _sim.submit({"type": "cast", "spell": "drop_shade", "to": third, "seat": 0})
+	eq(bool(replaced.get("ok", false)), true, "a third Shade still resolves")
+	eq(int(_unit(0)["ap"]), 3, "the third Shade still costs 1 AP")
+	eq(int(_unit(0)["shades"]), 2, "the cap stays at 2")
+	eq(_shade_cells(), [second, third], "the third Shade replaces the oldest")
+	eq(_first_event_where(replaced.get("events", []), "expire", "shade").is_empty(), true, "replacing the oldest does not play a Shade expire")
+	# Out of the cast ring, tapping that shadow still removes it for 0 AP.
+	_live_unit(0)["pos"] = Vector2i(1, 1)
+	eq(_sim.chebyshev(Vector2i(1, 1), second) > 3, true, "the remaining Shade is outside Drop Shade range")
+	var ap_before := int(_unit(0)["ap"])
+	eq(_has_legal_cast_to(0, "drop_shade", second), true, "dismiss is legal outside the cast ring")
+	var dismissed: Dictionary = _sim.submit({"type": "cast", "spell": "drop_shade", "to": second, "seat": 0})
+	eq(bool(dismissed.get("ok", false)), true, "dismissing a Shade resolves")
+	eq(int(_unit(0)["ap"]), ap_before, "dismiss costs 0 AP")
+	eq(_shade_cells(), [third], "the tapped Shade is gone and the other stays")
+	var dismiss_cast := _first_event_where(dismissed.get("events", []), "cast")
+	eq(bool(dismiss_cast.get("dismiss", false)), true, "the cast is a dismiss")
+	eq(int(dismiss_cast.get("ap_spent", -1)), 0, "the dismiss event spends 0 AP")
+	eq(_first_event_where(dismissed.get("events", []), "expire", "shade").get("pos"), second, "dismiss expires that Shade")
+	_live_unit(0)["ap"] = 0
+	eq(_has_legal_cast_to(0, "drop_shade", third), true, "dismiss is legal at 0 AP")
+	eq(_has_legal_cast_to(0, "drop_shade", Vector2i(4, 2)), false, "a new Shade is not legal at 0 AP")
+	eq(bool(_sim.submit({"type": "cast", "spell": "drop_shade", "to": third, "seat": 0}).get("ok", false)), true, "the last Shade can be removed at 0 AP")
+	eq(int(_unit(0)["shades"]), 0, "no Shades remain")
+	eq(int(_unit(0)["ap"]), 0, "the 0 AP dismiss stays at 0 AP")
+	var shade_card := " ".join(SpellTooltip.simple_lines(SpellKits.DROP_SHADE))
+	truthy(shade_card.contains("removes the oldest"), "the Shade card says a new one replaces the oldest")
+	truthy(shade_card.contains("costs nothing"), "the Shade card says dismiss is free")
+
+
+func _shade_cells() -> Array:
+	var out: Array = []
+	for item in _sim.snapshot().get("shade_tokens", []):
+		out.append(item.get("pos"))
+	return out
+
+
+func _test_enemy_reach_preview() -> void:
+	# Leftover MP is 0. The overlay uses the refill they get on their turn.
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["kestrel", "ironjaw"],
+		"positions": [Vector2i(2, 2), Vector2i(8, 8)],
+	})
+	_live_unit(1)["mp"] = 0
+	var preview: Dictionary = _sim.foe_reach_preview(1)
+	eq(int(preview.get("mp", -1)), 3, "reach MP is the next-turn refill, not leftover MP")
+	eq(bool(preview.get("hidden", true)), false, "a visible enemy is not hidden")
+	var cells: Array = preview.get("cells", [])
+	eq(cells.has(Vector2i(8, 8)), false, "the tile they stand on is not a dest")
+	eq(cells.has(Vector2i(9, 8)), true, "one step is inside 3 MP")
+	eq(cells.has(Vector2i(8, 12)), false, "Manhattan 4 is outside 3 MP")
+	_live_unit(1)["slow_remaining"] = 1
+	_live_unit(1)["slow_stacks"] = 1
+	eq(int(_sim.foe_reach_preview(1).get("mp", -1)), 2, "Slow cuts the next-turn MP")
+	_live_unit(1)["pin_pending"] = true
+	var pinned: Dictionary = _sim.foe_reach_preview(1)
+	eq(int(pinned.get("mp", -1)), 0, "a pending pin is no walk")
+	eq((pinned.get("cells", []) as Array).is_empty(), true, "a pending pin has no cells")
+	_live_unit(1)["pin_pending"] = false
+	_live_unit(1)["stun_remaining"] = 1
+	eq(int(_sim.foe_reach_preview(1).get("mp", -1)), 0, "a stun still ahead is no walk")
+	_live_unit(1)["stun_remaining"] = 0
+	_live_unit(1)["invisible"] = true
+	var hidden: Dictionary = _sim.foe_reach_preview(1)
+	eq(bool(hidden.get("hidden", false)), true, "an Invisible enemy is not selectable")
+	eq((hidden.get("cells", []) as Array).is_empty(), true, "an Invisible enemy has no reach cells")
+	eq(hidden.has("pos"), false, "the preview does not name the hidden tile")
+	# A visible body blocks. A hidden body must not punch a hole.
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["kestrel", "ironjaw"],
+		"positions": [Vector2i(9, 8), Vector2i(8, 8)],
+	})
+	eq((_sim.foe_reach_preview(1).get("cells", []) as Array).has(Vector2i(9, 8)), false, "a visible fighter blocks that tile")
+	_live_unit(0)["invisible"] = true
+	eq((_sim.foe_reach_preview(1).get("cells", []) as Array).has(Vector2i(9, 8)), true, "a hidden fighter does not carve a hole in the reach")
+
+
+func _trap_cells_of(seat: int) -> Array:
+	var out: Array = []
+	for item in _trap_owned(seat):
+		out.append(item.get("pos"))
+	return out
 
 
 ## Mauro 7 Oct 2026: a fallen fighter's body does not block walking.
@@ -8758,9 +8979,10 @@ func _test_ambush_obstacle_ray() -> void:
 
 
 func _test_invisible_wears_off() -> void:
-	# Mauro (29 Sep): Fade's Invisible lasts 1 of Gloam's turns ("make fade
-	# last 1 turn"; was 2). Cast on turn T: hidden through the enemy's turn,
-	# visible again when Gloam's turn T+1 starts.
+	# Mauro 8 Oct 2026: Invisible lasts 2 of Gloam's turns, and Fade has a
+	# cooldown of 1 own turn after the cast. Cast on turn T: still hidden
+	# when T+1 starts, revealed when T+2 starts. The cooldown uses the same
+	# tick-first clock as foe kits, so he can Fade again on that reveal turn.
 	_sim.reset_match({
 		"seed": 3,
 		"flat_board": true,
@@ -8771,14 +8993,30 @@ func _test_invisible_wears_off() -> void:
 	var faded: Dictionary = _sim.submit({"type": "cast", "spell": "fade", "to": Vector2i(2, 2), "seat": 0})
 	eq(bool(faded.get("ok", false)), true, "Fade resolves")
 	eq(bool(_unit(0)["invisible"]), true, "Fade makes Gloam invisible")
-	eq(CombatSim.INVISIBLE_TURNS, 1, "Fade lasts 1 turn")
-	eq(int(_unit(0)["invisible_turns"]), 1, "Fade starts the 1-turn clock")
-	truthy(str(_sim.snapshot().get("coach", "")).contains("Invisible for 1 turn."), "the coach says 1 turn")
+	eq(CombatSim.INVISIBLE_TURNS, 2, "Fade lasts 2 turns")
+	eq(int(SpellKits.spell(SpellKits.FADE).get("cooldown", 0)), 1, "Fade cooldown is 1 turn")
+	eq(int(_unit(0)["invisible_turns"]), 2, "Fade starts the 2-turn clock")
+	truthy(str(_sim.snapshot().get("coach", "")).contains("Invisible for 2 turns."), "the coach says 2 turns")
+	truthy(str(_sim.snapshot().get("coach", "")).contains("Cooldown 1 turn."), "the coach says the cooldown")
+	var card := " ".join(SpellTooltip.simple_lines(SpellKits.FADE))
+	truthy(card.contains("for 2 turns"), "the Fade card says 2 turns")
+	truthy(card.contains("Cooldown: 1 turn"), "the Fade card says the cooldown")
+	eq(card.contains("until your next turn"), false, "the Fade card no longer says until your next turn")
 	_sim.submit({"type": "end_turn", "seat": 0})
 	eq(bool(_unit(0)["invisible"]), true, "still invisible through the enemy turn")
 	_sim.submit({"type": "end_turn", "seat": 1})
-	eq(bool(_unit(0)["invisible"]), false, "Invisible wears off at Gloam's next turn start")
+	eq(bool(_unit(0)["invisible"]), true, "still invisible at Gloam's next turn start")
+	eq(int(_unit(0)["invisible_turns"]), 1, "one turn of the clock is left")
+	eq(_has_legal_cast(0, SpellKits.FADE), false, "Fade is on cooldown that turn")
+	var cooled: Dictionary = _sim.submit({"type": "cast", "spell": "fade", "to": Vector2i(2, 2), "seat": 0})
+	eq(bool(cooled.get("ok", false)), false, "a Fade during the cooldown is rejected")
+	eq(str(cooled.get("reason", "")), "cooldown", "the reject reason is cooldown")
+	eq(int(_unit(0)["ap"]), 6, "the rejected Fade refunds AP")
+	_sim.submit({"type": "end_turn", "seat": 0})
+	_sim.submit({"type": "end_turn", "seat": 1})
+	eq(bool(_unit(0)["invisible"]), false, "Invisible wears off at Gloam's second turn start")
 	eq(int(_unit(0)["invisible_turns"]), 0, "the clock is spent")
+	eq(_has_legal_cast(0, SpellKits.FADE), true, "Fade is ready again the turn he appears")
 	var expired := false
 	for ev in _sim.snapshot().get("last_events", []):
 		if str(ev.get("type", "")) == "expire" and str(ev.get("status", "")) == "invisible":

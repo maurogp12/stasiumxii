@@ -609,14 +609,14 @@ func _test_shades_cap_and_fade() -> void:
 	eq(bool(_sim.submit({"type": "cast", "spell": "drop_shade", "to": Vector2i(2, 1), "seat": 0}).get("ok", false)), true, "first Shade places")
 	eq(bool(_sim.submit({"type": "cast", "spell": "drop_shade", "to": Vector2i(2, 2), "seat": 0}).get("ok", false)), true, "second Shade places")
 	var capped: Dictionary = _sim.submit({"type": "cast", "spell": "drop_shade", "to": Vector2i(3, 1), "seat": 0})
-	eq(str(capped.get("reason", "")), "shade_cap", "third Shade is rejected")
+	eq(bool(capped.get("ok", false)), true, "third Shade replaces the oldest")
 	eq(int(_sim.snapshot()["units"][0]["shades"]), 2, "Shade count stays at 2")
-	eq(int(_sim.snapshot()["units"][0]["ap"]), 4, "rejected Shade does not spend AP")
+	eq(int(_sim.snapshot()["units"][0]["ap"]), 3, "the third Shade spends 1 AP")
 	var fade: Dictionary = _sim.submit({"type": "cast", "spell": "fade", "to": Vector2i(1, 1), "seat": 0})
 	eq(bool(fade.get("ok", false)), true, "Fade resolves")
 	eq(bool(_sim.snapshot()["units"][0]["invisible"]), true, "Fade sets Invisible")
 	eq(int(_sim.snapshot()["units"][0]["umbral"]), 1, "Fade gains 1 Umbral")
-	eq(int(_sim.snapshot()["units"][0]["ap"]), 2, "Fade costs 2 AP")
+	eq(int(_sim.snapshot()["units"][0]["ap"]), 1, "Fade costs 2 AP")
 	eq(int(_sim.snapshot()["units"][0]["mp"]), 2, "Fade costs 1 MP")
 
 
