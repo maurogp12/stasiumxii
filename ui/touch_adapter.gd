@@ -96,6 +96,12 @@ const MOBILE_FRAME_BOTTOM := 64.0
 ## view that fits the whole diamond inside it, and the board centres in it.
 const MOBILE_CLEAR_TOP := 124.0
 const MOBILE_CLEAR_BOTTOM := 150.0
+## Canvas pixels the phone camera keeps clear under the top portrait bar.
+## A fighter on the top rows stands about 90px above the cell; at the phone
+## zoom that name was landing inside the 128px turn bar (Kestrel's plate sat
+## on y=-6 at 2400×1080). This drops the fit by that margin. The chips stay
+## full size. Pan toward the bottom still reaches the far edge of the board.
+const PORTRAIT_BAR_INSET := 250.0
 ## Share of the limiting board axis kept on screen at the default zoom.
 ## 1.0 is a pure contain (the postage-stamp board: ~1.24 on 20:9, ~40px
 ## diamonds, ~205px black wings). 0.80 is a Koliseo overview: zoom 1.55,

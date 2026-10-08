@@ -84,6 +84,8 @@ var _class_buttons: Dictionary = {}
 var _name_labels: Dictionary = {}
 var _role_labels: Dictionary = {}
 var _portraits: Dictionary = {}
+var _portrait_layout_queued: bool = false
+var _portrait_layout_tries: int = 0
 
 
 static func route_for_plan(plan: Dictionary) -> String:
@@ -490,6 +492,8 @@ func _build() -> void:
 	_cards_row = HBoxContainer.new()
 	_cards_row.add_theme_constant_override("separation", 12)
 	_cards_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_cards_row.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_cards_row.resized.connect(_layout_cards)
 	col.add_child(_cards_row)
 	for class_id in SpellKits.LOCKED_ROSTER:
 		var card := _make_card(str(class_id))
@@ -613,50 +617,132 @@ func _mode_button(text: String, mode_id: String) -> Button:
 
 func _make_card(class_id: String) -> Panel:
 	var panel := Panel.new()
-	panel.custom_minimum_size = Vector2(204, 300)
+	panel.custom_minimum_size = Vector2(180, 320)
+	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	panel.focus_mode = Control.FOCUS_ALL
 	panel.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	panel.gui_input.connect(_on_card_gui.bind(class_id))
 	panel.add_theme_stylebox_override("panel", _card_style(false))
 
-	var box := VBoxContainer.new()
-	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	box.position = Vector2(8, 8)
-	box.add_theme_constant_override("separation", 4)
-	panel.add_child(box)
+	# Top 80% is the figure. Name and the one-line role share the bottom.
+	var slot := Control.new()
+	slot.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	slot.clip_contents = true
+	slot.anchor_left = 0.0
+	slot.anchor_right = 1.0
+	slot.anchor_top = 0.0
+	slot.anchor_bottom = 0.80
+	slot.offset_left = 6.0
+	slot.offset_right = -6.0
+	slot.offset_top = 6.0
+	slot.offset_bottom = -2.0
+	panel.add_child(slot)
 
 	var portrait := load_portrait(class_id)
 	if portrait != null:
 		var tex := TextureRect.new()
-		tex.texture = portrait
-		# Fitted standing cell (shared height, shared feet). The slot matches that plate.
-		tex.custom_minimum_size = Vector2(188, 180)
+		tex.texture = _body_texture(portrait)
 		tex.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		tex.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		tex.stretch_mode = TextureRect.STRETCH_SCALE
 		tex.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 		tex.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		box.add_child(tex)
+		slot.add_child(tex)
 		_portraits[class_id] = tex
 
 	var name_label := Label.new()
 	name_label.text = SpellKits.display_name(class_id)
 	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	name_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_apply_ui_font(name_label, 18, GOLD_BRIGHT)
 	name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	box.add_child(name_label)
+	name_label.anchor_left = 0.0
+	name_label.anchor_right = 1.0
+	name_label.anchor_top = 0.80
+	name_label.anchor_bottom = 0.91
+	name_label.offset_left = 4.0
+	name_label.offset_right = -4.0
+	panel.add_child(name_label)
 	_name_labels[class_id] = name_label
 
 	var role := Label.new()
 	role.text = role_line(class_id)
 	role.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	role.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_apply_ui_font(role, 13, GOLD)
 	role.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	box.add_child(role)
+	role.anchor_left = 0.0
+	role.anchor_right = 1.0
+	role.anchor_top = 0.90
+	role.anchor_bottom = 1.0
+	role.offset_left = 4.0
+	role.offset_right = -4.0
+	role.offset_bottom = -4.0
+	panel.add_child(role)
 	_role_labels[class_id] = role
 
 	_class_buttons[class_id] = panel
 	return panel
+
+
+## Opaque body of the fitted plate, so the slot height is the figure height.
+func _body_texture(plate: Texture2D) -> Texture2D:
+	var image := plate.get_image()
+	if image == null or image.is_empty():
+		return plate
+	var used := STRIP_LIBRARY.opaque_rect(image)
+	if used.size.x < 2 or used.size.y < 2:
+		return plate
+	var atlas := AtlasTexture.new()
+	atlas.atlas = plate
+	atlas.region = Rect2(used)
+	return atlas
+
+
+## Every figure shares the slot height (80% of the card) and the same foot line.
+## A wider pose is clipped at the card edge rather than shrinking the row.
+## The row's resized signal fires before the card slots have their anchor size,
+## so the scale is applied one frame later.
+func _layout_cards() -> void:
+	if not is_inside_tree():
+		_apply_portrait_layout()
+		return
+	if _portrait_layout_queued:
+		return
+	_portrait_layout_queued = true
+	call_deferred("_apply_portrait_layout")
+
+
+func _apply_portrait_layout() -> void:
+	_portrait_layout_queued = false
+	var waiting := false
+	for class_id in _portraits.keys():
+		var tex: TextureRect = _portraits[class_id]
+		var slot := tex.get_parent() as Control
+		if slot == null or tex.texture == null:
+			continue
+		var slot_w := slot.size.x
+		var slot_h := slot.size.y
+		if slot_w < 8.0 or slot_h < 8.0:
+			waiting = true
+			continue
+		var src := tex.texture.get_size()
+		if src.y < 1.0:
+			continue
+		var draw_h := slot_h
+		var draw_w := draw_h * (src.x / src.y)
+		tex.anchor_left = 0.0
+		tex.anchor_top = 0.0
+		tex.anchor_right = 0.0
+		tex.anchor_bottom = 0.0
+		tex.position = Vector2((slot_w - draw_w) * 0.5, 0.0)
+		tex.size = Vector2(draw_w, draw_h)
+	if not waiting:
+		_portrait_layout_tries = 0
+	elif _portrait_layout_tries < 8:
+		_portrait_layout_tries += 1
+		_layout_cards()
 
 
 func _on_card_gui(event: InputEvent, class_id: String) -> void:

@@ -823,11 +823,9 @@ func _center_on_cell(cell: Vector2i) -> void:
 	var center := Vector2((min_x + max_x) * 0.5, (min_y + max_y) * 0.5)
 	var look := _cell_to_local(cell)
 	var goal := _fit_camera_pos + (look - center)
-	var dx := clampf(goal.x - _fit_camera_pos.x, -_pan_limit.x, _pan_limit.x)
-	var dy := clampf(goal.y - _fit_camera_pos.y, -_pan_limit.y, _pan_limit.y)
 	if _focus_tween != null and _focus_tween.is_valid():
 		_focus_tween.kill()
-	_camera.position = _fit_camera_pos + Vector2(dx, dy)
+	_camera.position = _fit_camera_pos + _clamp_pan_delta(goal - _fit_camera_pos)
 
 
 func _advance_click_accepted(cell: Vector2i, spell_id: String) -> bool:
@@ -2875,17 +2873,17 @@ func _fit_board_camera(glide: bool = false) -> void:
 			look = TOUCH.focus_point(center, focus, room)
 	var play_center := Vector2(viewport.x * 0.5, (band.x + band.y) * 0.5)
 	if mobile:
-		# Centre the diamond in the clear space between the menus.
+		# Centre the diamond in the clear space between the menus, then
+		# drop it by the portrait bar so top-row fighters stay visible.
 		var clear := TOUCH.clear_band_for(viewport)
-		play_center.y = (clear.x + clear.y) * 0.5
+		play_center.y = (clear.x + clear.y) * 0.5 + TOUCH.PORTRAIT_BAR_INSET
 	var view_center := Vector2(viewport.x * 0.5, viewport.y * 0.5)
 	var world_center := global_position + center
 	var camera_world := world_center - (play_center - view_center) / zoom
 	_fit_camera_pos = camera_world - global_position
 	var goal := _fit_camera_pos + (look - center)
-	var dx := clampf(goal.x - _fit_camera_pos.x, -_pan_limit.x, _pan_limit.x)
-	var dy := clampf(goal.y - _fit_camera_pos.y, -_pan_limit.y, _pan_limit.y)
-	goal = _fit_camera_pos + Vector2(dx, dy)
+	var delta := _clamp_pan_delta(goal - _fit_camera_pos)
+	goal = _fit_camera_pos + delta
 	if _focus_tween != null and _focus_tween.is_valid():
 		_focus_tween.kill()
 	if glide and is_inside_tree() and not _touch_panning and not _panning:
@@ -2999,10 +2997,21 @@ func _apply_wheel_zoom(direction: int) -> void:
 func _clamp_camera() -> void:
 	if _camera == null:
 		return
-	var delta := _camera.position - _fit_camera_pos
+	_camera.position = _fit_camera_pos + _clamp_pan_delta(_camera.position - _fit_camera_pos)
+
+
+## Pan room. The fit already drops the frame by the portrait-bar inset, so
+## the resting view keeps top-row names below the turn bar. Positive pan
+## adds that inset back on top of the geometric room, which puts the far
+## edge of the board back in reach.
+func _clamp_pan_delta(delta: Vector2) -> Vector2:
 	delta.x = clampf(delta.x, -_pan_limit.x, _pan_limit.x)
-	delta.y = clampf(delta.y, -_pan_limit.y, _pan_limit.y)
-	_camera.position = _fit_camera_pos + delta
+	var y_max := _pan_limit.y
+	if TOUCH.use_mobile_pick() and _camera != null:
+		var zoom := maxf(_camera.zoom.x, 0.001)
+		y_max += TOUCH.PORTRAIT_BAR_INSET / zoom
+	delta.y = clampf(delta.y, -_pan_limit.y, y_max)
+	return delta
 
 
 func _as_cell(value: Variant) -> Vector2i:
