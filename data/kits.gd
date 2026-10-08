@@ -149,6 +149,11 @@ const SPELLS := {
 		"ap": 2,
 		"mp": 0,
 		# Exactly 2 tiles N/S/E/W, only with an enemy next to her, once a turn.
+		# Cast-time clock. _arm_spell_cooldown stores cooldown + 1 because the
+		# counter ticks at each later own turn start, before the action. 2 means
+		# her next two turns are locked: cast on N, legal again on N+3.
+		# A foe kit's cd 2 is a different store (it skips one turn, legal on N+2).
+		"cooldown": 2,
 		"range_mode": "cardinal",
 		"min_range": 2,
 		"max_range": 2,

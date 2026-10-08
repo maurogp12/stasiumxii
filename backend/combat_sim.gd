@@ -2615,6 +2615,9 @@ func _handoff_seat(actor: Dictionary, auto_skip: bool, skip_reason: String = "")
 	_invisible_wore_off = false
 	_begin_unit_turn(next_unit)
 	next_unit["ap"] = int(next_unit.get("max_ap", MAX_AP))
+	# Turn start replaces leftover MP with max. Fade's 1 MP is spent on the
+	# cast turn only; it does not carry into later turns, including the turns
+	# Gloam is still Invisible. Heartstop, Water, and Slow still cut after this.
 	next_unit["mp"] = int(next_unit.get("max_mp", MAX_MP))
 	if bool(next_unit.get("skip_next_mp", false)):
 		next_unit["mp"] = 0
@@ -3447,6 +3450,11 @@ func _validate_advance(actor: Dictionary, dest: Vector2i) -> String:
 ## Kestrel Vault (Mauro 6 Oct 2026): exactly 2 tiles N/S/E/W, only while an
 ## enemy stands next to her, once per turn, Advance landing rules (no jumping
 ## a rock, crate, wall or steam).
+## Mauro 8 Oct 2026: also a 2-turn cast-time cooldown. _arm_spell_cooldown
+## stores cooldown + 1, and the turn-start tick runs before the action, so
+## cast on N is locked on N+1 and N+2 and legal on N+3. vault_used is checked
+## first so a second Vault on a legal turn (including the cast turn) stays
+## vault_limit.
 func _validate_vault(actor: Dictionary, dest: Vector2i) -> String:
 	if str(actor.get("class_id", "")) != SpellKits.CLASS_KESTREL:
 		return "spell_not_in_kit"
@@ -3459,6 +3467,8 @@ func _validate_vault(actor: Dictionary, dest: Vector2i) -> String:
 		return "insufficient_ap"
 	if bool(actor.get("vault_used", false)):
 		return "vault_limit"
+	if not _player_cd_ready(actor, SpellKits.VAULT):
+		return "cooldown"
 	var pressed := false
 	for unit in _units:
 		if bool(unit.get("alive", false)) and not _allied(unit, actor) and chebyshev(unit["pos"], actor["pos"]) == 1:
@@ -3474,6 +3484,8 @@ func _vault_reject_text(reason: String) -> String:
 			return "REJECT — Vault only works with an enemy right next to you (refund)."
 		"vault_limit":
 			return "REJECT — Vault is once per turn (refund)."
+		"cooldown":
+			return "REJECT — Vault is still cooling down (refund)."
 		"advance_blocked":
 			return "REJECT — Vault cannot jump over a rock, crate, wall or steam (refund)."
 		"insufficient_ap":
@@ -3489,8 +3501,9 @@ func _resolve_vault(intent: Dictionary, actor: Dictionary, def: Dictionary, dest
 	actor["ap"] = int(actor["ap"]) - ap_cost
 	actor["vault_used"] = true
 	actor["pos"] = dest
+	_arm_spell_cooldown(actor, def)
 	_intent_log.append(intent)
-	_last_coach = "%s vaults to %s (−%d AP)." % [actor["name"], _cell_text(dest), ap_cost]
+	_last_coach = "%s vaults to %s (−%d AP). Cooldown: next %d turns." % [actor["name"], _cell_text(dest), ap_cost, int(def.get("cooldown", 0))]
 	_last_events.append({
 		"type": "cast",
 		"spell": SpellKits.VAULT,
@@ -6550,6 +6563,8 @@ func _resolve_team_ward(intent: Dictionary, actor: Dictionary, def: Dictionary, 
 func _resolve_fade(intent: Dictionary, actor: Dictionary, def: Dictionary, ap_cost: int, mp_cost: int) -> Dictionary:
 	var caster_cell: Vector2i = actor["pos"]
 	actor["ap"] = int(actor["ap"]) - ap_cost
+	# Spent now. The next own turn start refills to max MP, including the
+	# turn he is still Invisible. Do not lock or zero MP for Invisible.
 	_spend_mp(actor, mp_cost)
 	var gained := _gain_resource(actor, "umbral", 1)
 	actor["invisible"] = true

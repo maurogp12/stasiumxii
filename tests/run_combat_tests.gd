@@ -71,6 +71,7 @@ func _run() -> void:
 	_test_ambush_snap_wall_ray()
 	_test_ambush_obstacle_ray()
 	_test_invisible_wears_off()
+	_test_invisible_turn_starts_at_full_mp()
 	_test_fade_cooldown_after_reveal()
 	_test_instant_invisible_ambush_relocates_before_damage()
 	_test_invisible_shade_origin_ambush()
@@ -147,6 +148,7 @@ func _run() -> void:
 	_test_mender_last_stand()
 	_test_sudden_death_clock()
 	_test_kestrel_vault_and_snare()
+	_test_vault_two_turn_cooldown()
 	_test_two_snares_and_stealth_reveal()
 	_test_shade_replace_and_dismiss()
 	_test_enemy_reach_preview()
@@ -7944,6 +7946,69 @@ func _test_kestrel_vault_and_snare() -> void:
 	eq(int(_unit(1)["mp"]), 2, "3 MP minus that 1")
 
 
+## Mauro 8 Oct 2026: Vault's cast-time cooldown is 2 of Kestrel's later turns.
+## The helper stores cooldown + 1, so the button reads 3 on the cast turn,
+## 2 on N+1, 1 on N+2, and blank on N+3 when it is legal again. A second
+## Vault on a legal turn is still once-per-turn.
+func _test_vault_two_turn_cooldown() -> void:
+	var owners := 0
+	for class_id in SpellKits.CLASS_SPELLS:
+		for spell_id in SpellKits.CLASS_SPELLS[class_id]:
+			if str(spell_id) != SpellKits.VAULT:
+				continue
+			owners += 1
+			eq(str(class_id), SpellKits.CLASS_KESTREL, "Vault belongs to Kestrel")
+	eq(owners, 1, "only Kestrel has Vault")
+	eq(int(SpellKits.spell(SpellKits.VAULT).get("cooldown", 0)), 2, "Vault cooldown is 2 turns")
+	var card := " ".join(SpellTooltip.simple_lines(SpellKits.VAULT))
+	truthy(card.contains("Once per turn"), "the Vault card still says once per turn")
+	truthy(card.contains("Cooldown: 2 turns"), "the Vault card says the 2-turn cooldown")
+	truthy(card.contains("next two turns"), "the Vault card says the next two turns are locked")
+	truthy(card.contains("the turn after those"), "the Vault card says it is ready the turn after those")
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "classes": ["kestrel", "gloam"], "positions": [Vector2i(5, 5), Vector2i(6, 5)]})
+	var vault: Dictionary = _sim.submit({"type": "cast", "spell": "vault", "to": Vector2i(3, 5), "seat": 0})
+	eq(bool(vault.get("ok", false)), true, "the cooldown Vault still jumps")
+	eq(_unit(0)["pos"], Vector2i(3, 5), "she lands 2 tiles west")
+	eq(_spell_cd(0, SpellKits.VAULT), 3, "the cast stores cooldown + 1")
+	eq(CombatHUD.spell_cooldown_badge(_unit(0), SpellKits.VAULT), "3", "the cast turn shows 3")
+	_assert_kit_button(SpellKits.VAULT, "3", true)
+	truthy(str(_sim.snapshot().get("coach", "")).contains("Cooldown: next 2 turns"), "the coach names the 2-turn cooldown")
+	_live_unit(1)["pos"] = Vector2i(4, 5)
+	var same: Dictionary = _sim.submit({"type": "cast", "spell": "vault", "to": Vector2i(3, 3), "seat": 0})
+	eq(str(same.get("reason", "")), "vault_limit", "the cast turn is still once per turn, not cooldown")
+	_sim.submit({"type": "end_turn", "seat": 0})
+	_sim.submit({"type": "end_turn", "seat": 1})
+	eq(_spell_cd(0, SpellKits.VAULT), 2, "N+1 ticks the clock to 2")
+	eq(CombatHUD.spell_cooldown_badge(_unit(0), SpellKits.VAULT), "2", "N+1 shows 2")
+	eq(_has_legal_cast(0, SpellKits.VAULT), false, "Vault is not offered on N+1")
+	_live_unit(1)["pos"] = Vector2i(4, 5)
+	var n1: Dictionary = _sim.submit({"type": "cast", "spell": "vault", "to": Vector2i(3, 3), "seat": 0})
+	eq(str(n1.get("reason", "")), "cooldown", "N+1 rejects Vault as cooldown")
+	eq(int(_unit(0)["ap"]), int(_unit(0)["max_ap"]), "the rejected Vault refunds AP")
+	_assert_kit_button(SpellKits.VAULT, "2", true)
+	_sim.submit({"type": "end_turn", "seat": 0})
+	_sim.submit({"type": "end_turn", "seat": 1})
+	eq(_spell_cd(0, SpellKits.VAULT), 1, "N+2 ticks the clock to 1")
+	eq(CombatHUD.spell_cooldown_badge(_unit(0), SpellKits.VAULT), "1", "N+2 shows 1")
+	_live_unit(1)["pos"] = Vector2i(4, 5)
+	var n2: Dictionary = _sim.submit({"type": "cast", "spell": "vault", "to": Vector2i(3, 3), "seat": 0})
+	eq(str(n2.get("reason", "")), "cooldown", "N+2 rejects Vault as cooldown")
+	eq(int(_unit(0)["ap"]), int(_unit(0)["max_ap"]), "N+2 refunds AP")
+	_sim.submit({"type": "end_turn", "seat": 0})
+	_sim.submit({"type": "end_turn", "seat": 1})
+	eq(_spell_cd(0, SpellKits.VAULT), 0, "N+3 spends the clock")
+	eq(CombatHUD.spell_cooldown_badge(_unit(0), SpellKits.VAULT), "", "N+3 shows no cooldown number")
+	_live_unit(1)["pos"] = Vector2i(4, 5)
+	eq(_has_legal_cast_to(0, SpellKits.VAULT, Vector2i(3, 3)), true, "Vault is offered again on N+3")
+	var ready: Dictionary = _sim.submit({"type": "cast", "spell": "vault", "to": Vector2i(3, 3), "seat": 0})
+	eq(bool(ready.get("ok", false)), true, "Vault resolves on N+3")
+	eq(_unit(0)["pos"], Vector2i(3, 3), "she lands on the ready turn")
+	eq(_spell_cd(0, SpellKits.VAULT), 3, "the ready cast arms the clock again")
+	_live_unit(1)["pos"] = Vector2i(3, 4)
+	var twice: Dictionary = _sim.submit({"type": "cast", "spell": "vault", "to": Vector2i(3, 1), "seat": 0})
+	eq(str(twice.get("reason", "")), "vault_limit", "the ready turn is still once per turn")
+
+
 ## Mauro 8 Oct 2026: two Snare Traps at once; a third drops the oldest.
 ## A stealthed Gloam who steps on one is revealed and still takes the snare.
 func _test_two_snares_and_stealth_reveal() -> void:
@@ -9061,6 +9126,42 @@ func _test_invisible_wears_off() -> void:
 	_assert_fade_button("", false)
 
 
+## Fade spends 1 MP on the cast. The next own turn, still Invisible, starts
+## at full MP. Walking first makes the leftover lower than the cast alone.
+func _test_invisible_turn_starts_at_full_mp() -> void:
+	_sim.reset_match({
+		"seed": 3,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["gloam", "kestrel"],
+		"positions": [Vector2i(2, 2), Vector2i(9, 9)],
+	})
+	var max_mp := int(_unit(0)["max_mp"])
+	eq(int(_unit(0)["mp"]), max_mp, "Gloam starts at full MP")
+	var walked: Dictionary = _sim.submit({"type": "move", "to": Vector2i(3, 2), "seat": 0})
+	eq(bool(walked.get("ok", false)), true, "the step before Fade resolves")
+	eq(int(_unit(0)["mp"]), max_mp - 1, "the step spends 1 MP")
+	var faded: Dictionary = _sim.submit({"type": "cast", "spell": "fade", "to": Vector2i(3, 2), "seat": 0})
+	eq(bool(faded.get("ok", false)), true, "Fade after the step resolves")
+	eq(int(SpellKits.spell(SpellKits.FADE)["mp"]), 1, "Fade still costs 1 MP")
+	eq(int(_unit(0)["mp"]), max_mp - 2, "the cast spends that 1 MP on top of the step")
+	eq(bool(_unit(0)["invisible"]), true, "he is Invisible after the cast")
+	eq(int(_unit(0)["invisible_turns"]), CombatSim.INVISIBLE_TURNS, "Fade duration is unchanged")
+	var card := " ".join(SpellTooltip.simple_lines(SpellKits.FADE))
+	truthy(card.contains("all your MP"), "the Fade card says the next turn starts with all his MP")
+	truthy(card.contains("does not carry over"), "the Fade card says the spent MP does not carry")
+	_sim.submit({"type": "end_turn", "seat": 0})
+	_sim.submit({"type": "end_turn", "seat": 1})
+	eq(bool(_unit(0)["invisible"]), true, "he is still Invisible on the next own turn")
+	eq(int(_unit(0)["invisible_turns"]), 1, "one Invisible turn remains")
+	eq(int(_unit(0)["mp"]), max_mp, "that Invisible turn starts at full MP")
+	eq(int(_unit(0)["ap"]), int(_unit(0)["max_ap"]), "that Invisible turn also refills AP")
+	_sim.submit({"type": "end_turn", "seat": 0})
+	_sim.submit({"type": "end_turn", "seat": 1})
+	eq(bool(_unit(0)["invisible"]), false, "he appears when the second own turn starts")
+	eq(int(_unit(0)["mp"]), max_mp, "the reveal turn also starts at full MP")
+
+
 func _test_fade_cooldown_after_reveal() -> void:
 	# Early reveals start the same one-turn lock: the next own turn that
 	# starts after the reveal is blocked, and the one after is legal.
@@ -9234,10 +9335,27 @@ func _fade_team_and_stasis_clock() -> void:
 
 
 func _fade_cd(seat: int) -> int:
+	return _spell_cd(seat, SpellKits.FADE)
+
+
+func _spell_cd(seat: int, spell_id: String) -> int:
 	var cds: Variant = _unit(seat).get("spell_cd", {})
 	if typeof(cds) != TYPE_DICTIONARY:
 		return 0
-	return int((cds as Dictionary).get(SpellKits.FADE, 0))
+	return int((cds as Dictionary).get(spell_id, 0))
+
+
+func _assert_kit_button(spell_id: String, badge_text: String, disabled: bool) -> void:
+	var hud := CombatHUD.new()
+	hud._build()
+	hud.render(_sim.snapshot(), _sim.legal_intents(int(_sim.snapshot()["active_seat"])))
+	var button: Button = hud._spell_buttons[spell_id]
+	eq(button.disabled, disabled, "%s button disabled=%s" % [spell_id, str(disabled)])
+	var badge := button.get_node_or_null("CooldownBadge") as Label
+	var shown := "" if badge == null else badge.text
+	eq(shown, badge_text, "%s button badge is '%s'" % [spell_id, badge_text])
+	eq(shown != "0", true, "the %s button never shows 0" % spell_id)
+	hud.free()
 
 
 func _assert_fade_button(badge_text: String, disabled: bool) -> void:
