@@ -45,7 +45,7 @@ const BLOCKING_PROPS := {
 const SIGHT_PROPS := {
 	"crosshaven": ["ruins", "hay", "rubble"],
 	"brinewake": ["ruins"],
-	"windmere": ["crystal", "ice_shard", "spark"],
+	"windmere": ["crystal"],
 	"stormspire": ["conduit"],
 }
 ## Stormspire thins its decoration (board/arena_look.gd prop_keep): only the

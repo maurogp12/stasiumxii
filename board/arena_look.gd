@@ -50,10 +50,9 @@ const STYLES := {
 		# Mauro (29 Sep): too many obstacles. Decoration props only draw on these
 		# cells; the rest are hidden (paint only, walk data unchanged). The
 		# blocking rock pillars and arcs stay. One tower stands in the centre.
+		# Shards, arcs, and the corner sparks are off the board. Conduits stay.
 		"prop_keep": {
 			"conduit": [Vector2i(7, 2), Vector2i(7, 12), Vector2i(2, 7), Vector2i(12, 7)],
-			"spark": [Vector2i(14, 0), Vector2i(0, 14)],
-			"crystal_bolt": [Vector2i(0, 0), Vector2i(14, 14)],
 		},
 		"centerpiece": {"cell": Vector2i(7, 7), "prop": "tower"},
 	},

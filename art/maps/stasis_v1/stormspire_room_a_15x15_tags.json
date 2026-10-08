@@ -388,18 +388,14 @@
       "y": 3,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": [
-        "spark"
-      ]
+      "paint_only": []
     },
     {
       "x": 7,
       "y": 3,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": [
-        "arc"
-      ]
+      "paint_only": []
     },
     {
       "x": 8,
@@ -532,9 +528,7 @@
       "y": 4,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": [
-        "rock_pillar"
-      ]
+      "paint_only": []
     },
     {
       "x": 12,
@@ -590,9 +584,7 @@
       "y": 5,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": [
-        "rock_pillar"
-      ]
+      "paint_only": []
     },
     {
       "x": 5,
@@ -741,9 +733,7 @@
       "y": 6,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": [
-        "arc"
-      ]
+      "paint_only": []
     },
     {
       "x": 11,
@@ -1121,9 +1111,7 @@
       "y": 10,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": [
-        "rock_pillar"
-      ]
+      "paint_only": []
     },
     {
       "x": 5,
@@ -1256,9 +1244,7 @@
       "y": 11,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": [
-        "rock_pillar"
-      ]
+      "paint_only": []
     },
     {
       "x": 9,

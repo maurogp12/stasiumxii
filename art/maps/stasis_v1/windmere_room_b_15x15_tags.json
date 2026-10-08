@@ -1332,9 +1332,7 @@
       "y": 12,
       "terrain": "ground",
       "elevation": 2,
-      "paint_only": [
-        "ice_shard"
-      ]
+      "paint_only": []
     },
     {
       "x": 8,

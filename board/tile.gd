@@ -110,7 +110,11 @@ class GridInk extends Node2D:
 		if host.painted_floor:
 			# Neutral and faint. The arena gleam (gold on Stormspire, teal on
 			# the ice) is the thick colored grid and stays off the plate.
-			draw_polyline(loop, Color(0.12, 0.10, 0.09, 0.18), 1.0, true)
+			# Windmere snow reads a dark stroke as a bevel, so the line stays cool and thin.
+			if host._look_map == "windmere":
+				draw_polyline(loop, Color(0.45, 0.55, 0.66, 0.22), 1.0, true)
+			else:
+				draw_polyline(loop, Color(0.12, 0.10, 0.09, 0.18), 1.0, true)
 			return
 		draw_polyline(loop, ink, ink_px, true)
 		draw_polyline(loop, style.get("gleam", KoliseoLife.GRID_GLEAM), float(style.get("gleam_px", KoliseoLife.GRID_GLEAM_PX)), true)

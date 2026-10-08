@@ -1,0 +1,437 @@
+{
+  "how": "python3 build_tools/art/install_scenario.py <png-or-dir> [<more>]. A file is matched by its name (brinewake_room_a_sea.png, windmere_crystal.png, ...).",
+  "plate": {
+    "size": [
+      2440,
+      1960
+    ],
+    "world_scale": 0.5,
+    "origin": [
+      -610,
+      -366
+    ]
+  },
+  "slots": [
+    {
+      "id": "windmere_crystal",
+      "size": [
+        43,
+        84
+      ],
+      "transparent": true,
+      "fit": "Faceted ice crystal cluster, transparent background.",
+      "note": "One PNG is copied onto every crystal slot. Keep the cluster's base on the bottom edge of the canvas.",
+      "anchor": "offset is the sprite's top-left in 2x plate pixels, from the cell centre. The sprite is not centred. World position is cell_to_local(cell) + offset * 0.5, scale 0.5.",
+      "instances": [
+        {
+          "room": "koliseo_windmere",
+          "dest": "art/rooms/koliseo_windmere/occluders_2x/prop_3_3.webpbin",
+          "cell": [
+            3,
+            3
+          ],
+          "offset": [
+            -13,
+            -57
+          ],
+          "size": [
+            43,
+            84
+          ]
+        },
+        {
+          "room": "koliseo_windmere",
+          "dest": "art/rooms/koliseo_windmere/occluders_2x/prop_7_0.webpbin",
+          "cell": [
+            7,
+            0
+          ],
+          "offset": [
+            -13,
+            -57
+          ],
+          "size": [
+            43,
+            84
+          ]
+        },
+        {
+          "room": "koliseo_windmere",
+          "dest": "art/rooms/koliseo_windmere/occluders_2x/prop_11_3.webpbin",
+          "cell": [
+            11,
+            3
+          ],
+          "offset": [
+            -8,
+            -95
+          ],
+          "size": [
+            43,
+            84
+          ]
+        },
+        {
+          "room": "koliseo_windmere",
+          "dest": "art/rooms/koliseo_windmere/occluders_2x/prop_11_11.webpbin",
+          "cell": [
+            11,
+            11
+          ],
+          "offset": [
+            -23,
+            -95
+          ],
+          "size": [
+            43,
+            84
+          ]
+        },
+        {
+          "room": "koliseo_windmere",
+          "dest": "art/rooms/koliseo_windmere/occluders_2x/prop_7_7.webpbin",
+          "cell": [
+            14,
+            14
+          ],
+          "offset": [
+            -41,
+            -78
+          ],
+          "size": [
+            43,
+            84
+          ]
+        },
+        {
+          "room": "stasis_windmere_room_a",
+          "dest": "art/rooms/stasis_windmere_room_a/occluders_2x/prop_3_9.webpbin",
+          "cell": [
+            3,
+            9
+          ],
+          "offset": [
+            -42,
+            -57
+          ],
+          "size": [
+            43,
+            84
+          ]
+        },
+        {
+          "room": "stasis_windmere_room_a",
+          "dest": "art/rooms/stasis_windmere_room_a/occluders_2x/prop_11_5.webpbin",
+          "cell": [
+            11,
+            5
+          ],
+          "offset": [
+            -25,
+            -32
+          ],
+          "size": [
+            43,
+            84
+          ]
+        },
+        {
+          "room": "stasis_windmere_room_a",
+          "dest": "art/rooms/stasis_windmere_room_a/occluders_2x/prop_10_9.webpbin",
+          "cell": [
+            10,
+            9
+          ],
+          "offset": [
+            -18,
+            -32
+          ],
+          "size": [
+            43,
+            84
+          ]
+        },
+        {
+          "room": "stasis_windmere_room_a",
+          "dest": "art/rooms/stasis_windmere_room_a/occluders_2x/prop_5_4.webpbin",
+          "cell": [
+            14,
+            14
+          ],
+          "offset": [
+            -34,
+            -32
+          ],
+          "size": [
+            43,
+            84
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stormspire_spire",
+      "size": [
+        44,
+        92
+      ],
+      "transparent": true,
+      "fit": "Compact lightning spire: stone base, metal or crystal conductor, soft cyan glow.",
+      "note": "One PNG fills every centre spire. Base on the bottom edge.",
+      "anchor": "offset is the sprite's top-left in 2x plate pixels, from the cell centre. The sprite is not centred. World position is cell_to_local(cell) + offset * 0.5, scale 0.5.",
+      "instances": [
+        {
+          "room": "koliseo_stormspire",
+          "dest": "art/rooms/koliseo_stormspire/occluders_2x/centre_tower.webpbin",
+          "cell": [
+            7,
+            7
+          ],
+          "offset": [
+            -22,
+            -82
+          ],
+          "size": [
+            44,
+            92
+          ]
+        },
+        {
+          "room": "stasis_stormspire_room_a",
+          "dest": "art/rooms/stasis_stormspire_room_a/occluders_2x/centre_tower.webpbin",
+          "cell": [
+            7,
+            7
+          ],
+          "offset": [
+            -22,
+            -82
+          ],
+          "size": [
+            44,
+            92
+          ]
+        },
+        {
+          "room": "stasis_stormspire_room_b",
+          "dest": "art/rooms/stasis_stormspire_room_b/occluders_2x/centre_tower.webpbin",
+          "cell": [
+            7,
+            7
+          ],
+          "offset": [
+            -22,
+            -82
+          ],
+          "size": [
+            44,
+            92
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stormspire_conduit",
+      "size": [
+        30,
+        52
+      ],
+      "transparent": true,
+      "fit": "Small clean conduit or rod. Base on the bottom edge.",
+      "note": "Koliseo only has these four rods. One PNG is copied onto each.",
+      "anchor": "offset is the sprite's top-left in 2x plate pixels, from the cell centre. The sprite is not centred. World position is cell_to_local(cell) + offset * 0.5, scale 0.5.",
+      "instances": [
+        {
+          "room": "koliseo_stormspire",
+          "dest": "art/rooms/koliseo_stormspire/occluders_2x/prop_2_7.webpbin",
+          "cell": [
+            2,
+            7
+          ],
+          "offset": [
+            -15,
+            -44
+          ],
+          "size": [
+            30,
+            52
+          ]
+        },
+        {
+          "room": "koliseo_stormspire",
+          "dest": "art/rooms/koliseo_stormspire/occluders_2x/prop_7_2.webpbin",
+          "cell": [
+            7,
+            2
+          ],
+          "offset": [
+            -15,
+            -44
+          ],
+          "size": [
+            30,
+            52
+          ]
+        },
+        {
+          "room": "koliseo_stormspire",
+          "dest": "art/rooms/koliseo_stormspire/occluders_2x/prop_7_12.webpbin",
+          "cell": [
+            7,
+            12
+          ],
+          "offset": [
+            -15,
+            -44
+          ],
+          "size": [
+            30,
+            52
+          ]
+        },
+        {
+          "room": "koliseo_stormspire",
+          "dest": "art/rooms/koliseo_stormspire/occluders_2x/prop_12_7.webpbin",
+          "cell": [
+            12,
+            7
+          ],
+          "offset": [
+            -15,
+            -44
+          ],
+          "size": [
+            30,
+            52
+          ]
+        }
+      ]
+    },
+    {
+      "id": "slagcrown_volcano",
+      "size": [
+        83,
+        81
+      ],
+      "transparent": true,
+      "fit": "Compact basalt cone, molten crater, lava trickling to the bottom edge, small see-through smoke.",
+      "note": "Sizes differ per room. The Koliseo phone shot is centre_volcano at 83x81. Match each instance size, or send one file and it is resized per instance.",
+      "anchor": "offset is the sprite's top-left in 2x plate pixels, from the cell centre. The sprite is not centred. World position is cell_to_local(cell) + offset * 0.5, scale 0.5.",
+      "instances": [
+        {
+          "room": "koliseo_slagcrown",
+          "dest": "art/rooms/koliseo_slagcrown/occluders_2x/centre_volcano.webpbin",
+          "cell": [
+            7,
+            7
+          ],
+          "offset": [
+            -14,
+            -37
+          ],
+          "size": [
+            83,
+            81
+          ]
+        },
+        {
+          "room": "stasis_slagcrown_room_a",
+          "dest": "art/rooms/stasis_slagcrown_room_a/occluders_2x/centre_volcano.webpbin",
+          "cell": [
+            7,
+            7
+          ],
+          "offset": [
+            -70,
+            -46
+          ],
+          "size": [
+            106,
+            98
+          ]
+        },
+        {
+          "room": "stasis_slagcrown_room_b",
+          "dest": "art/rooms/stasis_slagcrown_room_b/occluders_2x/centre_volcano.webpbin",
+          "cell": [
+            7,
+            7
+          ],
+          "offset": [
+            -15,
+            -65
+          ],
+          "size": [
+            64,
+            66
+          ]
+        }
+      ]
+    },
+    {
+      "id": "brinewake_room_a_sea",
+      "size": [
+        2440,
+        1960
+      ],
+      "transparent": false,
+      "dest": "art/rooms/stasis_brinewake_room_a/surround.webpbin",
+      "fit": "Full plate. The board deck is a separate layer drawn on top, so paint the sea across the whole frame. Stormy night, open water, distinct from Koliseo Brinewake.",
+      "anchor": {
+        "position": [
+          -610,
+          -366
+        ],
+        "scale": 0.5,
+        "centered": false,
+        "z": -200
+      }
+    },
+    {
+      "id": "brinewake_room_b_sea",
+      "size": [
+        2440,
+        1960
+      ],
+      "transparent": false,
+      "dest": "art/rooms/stasis_brinewake_room_b/surround.webpbin",
+      "fit": "Full plate, same contract as room A, but a different swell, flip, and tint.",
+      "anchor": {
+        "position": [
+          -610,
+          -366
+        ],
+        "scale": 0.5,
+        "centered": false,
+        "z": -200
+      }
+    },
+    {
+      "id": "slagcrown_lava_cell",
+      "optional": true,
+      "size": [
+        128,
+        64
+      ],
+      "transparent": true,
+      "dest_plate": "art/rooms/koliseo_slagcrown/background_board_2x.webpbin",
+      "fit": "One diamond cell at 2x (128 wide, 64 tall), point up, transparent outside the diamond. Stamped onto every Koliseo Slagcrown lava cell. Gameplay lava is already painted, so this file is optional.",
+      "anchor": "Centred on each lava cell. Cell centre in the plate is ((x-y)*32+610)*2, ((x+y)*16+366)*2."
+    },
+    {
+      "id": "windmere_frost_tuft",
+      "optional": true,
+      "size": [
+        48,
+        28
+      ],
+      "transparent": true,
+      "offset": [
+        -24,
+        -18
+      ],
+      "fit": "Not placed yet. Base on the bottom edge. Send the PNG plus the cells (room, x, y) and it will be added as an occluder with this offset.",
+      "anchor": "offset [-24, -18] from the cell centre, top-left, scale 0.5. Bottom of the canvas sits 5 world px below the cell centre."
+    }
+  ]
+}

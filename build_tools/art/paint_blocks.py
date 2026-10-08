@@ -159,10 +159,9 @@ def stylize(rgb, top, biome, cell, elev):
         noise = box_mean(noise, 4)
         snow = np.array([234.0, 240.0, 246.0], np.float32)
         amount = np.zeros((h, w), np.float32)
-        amount += np.clip(0.22 * (0.55 - yn), 0, 0.22)
-        amount = np.maximum(amount, np.where(noise > 0.62, 0.16, 0.0))
-        amount = np.maximum(amount, np.where(noise > 0.74, 0.40, 0.0))
-        amount = np.clip(amount, 0, 0.48)
+        amount += np.clip(0.38 * (0.48 - yn), 0, 0.38)
+        amount = np.maximum(amount, np.where(noise > 0.70, 0.22, 0.0))
+        amount = np.clip(amount, 0, 0.46)
         out = out * (1.0 - amount[..., None]) + snow * amount[..., None]
     elif biome == "stormspire":
         out = out * 1.18 + 7.0
@@ -210,8 +209,15 @@ def paint_block(bg, donor, path, cell, offset, biome, elev):
     out[top, :3] = np.clip(color[top], 0, 255).astype(np.uint8)
     out[top, 3] = 255
 
-    side_h = 16 if elev >= 2 else 12
-    shadow_h = 8
+    if biome == "windmere":
+        # A snow cap on a pale stone lip. The dark skirt was reading as a box.
+        side_h = 14 if elev >= 2 else 9
+        shadow_h = 5
+        shadow_peak = 34.0
+    else:
+        side_h = 16 if elev >= 2 else 12
+        shadow_h = 8
+        shadow_peak = 88.0
     side_rgb = np.zeros((h, w, 3), np.float32)
     side = np.zeros((h, w), dtype=bool)
     shadow_a = np.zeros((h, w), np.float32)
@@ -225,7 +231,10 @@ def paint_block(bg, donor, path, cell, offset, biome, elev):
             y = yb + k
             if y >= h or top[y, x]:
                 break
-            shade = 0.70 - 0.34 * (k / float(side_h))
+            if biome == "windmere":
+                shade = 0.96 - 0.14 * (k / float(side_h))
+            else:
+                shade = 0.70 - 0.34 * (k / float(side_h))
             if biome == "brinewake" and (x + cell[0]) % 16 == 0:
                 shade *= 0.62
             elif biome == "stormspire" and k % 6 == 0:
@@ -244,11 +253,12 @@ def paint_block(bg, donor, path, cell, offset, biome, elev):
             if y >= h or top[y, x] or side[y, x]:
                 continue
             fade = (1.0 - k / float(shadow_h + 1)) ** 1.35
-            shadow_a[y, x] = max(shadow_a[y, x], 88.0 * fade)
+            shadow_a[y, x] = max(shadow_a[y, x], shadow_peak * fade)
+            spill = shadow_peak * 0.45 * fade
             if x > 0:
-                shadow_a[y, x - 1] = max(shadow_a[y, x - 1], 40.0 * fade)
+                shadow_a[y, x - 1] = max(shadow_a[y, x - 1], spill)
             if x + 1 < w:
-                shadow_a[y, x + 1] = max(shadow_a[y, x + 1], 40.0 * fade)
+                shadow_a[y, x + 1] = max(shadow_a[y, x + 1], spill)
     out[side, :3] = np.clip(side_rgb[side], 0, 255).astype(np.uint8)
     out[side, 3] = 255
     shade_px = ~top & ~side & (shadow_a > 2)

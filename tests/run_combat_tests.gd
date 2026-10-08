@@ -1195,7 +1195,9 @@ func _test_solid_props_block_walk_paths() -> void:
 		var paint: Dictionary = tags.get("paint_only", {})
 		var blocked: Array[Vector2i] = []
 		for cell in paint.keys():
-			if CellTagMap.props_block_move(paint[cell]):
+			# Stormspire's arcs and rock pillars are gone. Conduits and the
+			# centre spire still block, and those need the map id.
+			if CellTagMap.props_block_move(paint[cell], map_id, cell):
 				blocked.append(cell)
 		truthy(blocked.size() > 0, "%s tags include a solid prop" % map_id)
 		var stand := Vector2i(-1, -1)
@@ -1233,7 +1235,7 @@ func _test_solid_props_block_walk_paths() -> void:
 		var live_paint: Dictionary = _sim.snapshot().get("paint_only", {})
 		for cell in blocked:
 			eq(bool(_sim.tile_at(cell).get("walkable", true)), false, "%s %s is not walkable" % [map_id, str(cell)])
-			eq(CellTagMap.props_block_move(live_paint.get(cell, [])), true, "%s keeps the solid prop tag" % map_id)
+			eq(CellTagMap.props_block_move(live_paint.get(cell, []), map_id, cell), true, "%s keeps the solid prop tag" % map_id)
 		var onto: Dictionary = _sim.submit({"type": "move", "to": obstacle, "seat": 0})
 		eq(bool(onto.get("ok", true)), false, "%s walk onto the solid prop is rejected" % map_id)
 		eq(str(onto.get("reason", "")), "not_walkable", "%s solid prop reason is not_walkable" % map_id)
