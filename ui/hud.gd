@@ -414,13 +414,14 @@ static func gloam_has_live_shade(snap: Dictionary) -> bool:
 	return int(unit.get("shades", 0)) > 0
 
 
-## Number drawn on a kit button. Fade shows nothing while Invisible (the
-## button is grey because the cast is illegal — a 0 would look ready) and
-## shows the post-reveal cooldown while that one turn is locked.
+## Number drawn on a kit button: the stored spell_cd counter, blank at 0.
+## Fade shows nothing while Invisible (the button is grey because the cast
+## is illegal — a 0 would look ready). Vault shows the cast-time clock
+## (cooldown + 1 on the cast turn, then the two locked turns).
 static func spell_cooldown_badge(unit: Dictionary, spell_id: String) -> String:
-	if str(spell_id) != SpellKits.FADE or unit.is_empty():
+	if unit.is_empty() or str(spell_id) == "":
 		return ""
-	if bool(unit.get("invisible", false)):
+	if str(spell_id) == SpellKits.FADE and bool(unit.get("invisible", false)):
 		return ""
 	var cds: Variant = unit.get("spell_cd", {})
 	if typeof(cds) != TYPE_DICTIONARY:

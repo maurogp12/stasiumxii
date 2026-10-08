@@ -122,6 +122,7 @@ static func simple_lines(spell_id: String, preview: Dictionary = {}) -> PackedSt
 			out.append("The enemy needs at least 1 Mark. All their Marks get used up.")
 		SpellKits.VAULT:
 			out.append("Jump exactly 2 tiles in a straight line (up, down, left or right) to get away. Only works when an enemy is right next to you. Once per turn. Never misses.")
+			out.append("Cooldown: %d turns. After you cast it, your next two turns cannot, and the turn after those can. Still once on the turn it is ready." % int(def.get("cooldown", 2)))
 			out.append("You cannot jump over rocks, crates, walls or steam.")
 		SpellKits.SNARE_TRAP:
 			out.append("Hide a trap on an empty tile. Enemies cannot see it. The first enemy who steps on it stops there, takes %d damage, loses %d MP and cannot walk on their next turn." % [int(def.get("trap_damage", 6)), int(def.get("trap_mp", 1))])
@@ -164,6 +165,7 @@ static func simple_lines(spell_id: String, preview: Dictionary = {}) -> PackedSt
 			out.append("The enemy must be 1-2 tiles away in a straight line from you or from your Shade. Behind them blocked? You land in front. Their back = 35% more damage. Miss = you stay put.")
 		SpellKits.FADE:
 			out.append("Turn invisible for %d turns. You stay hidden through the enemy's next two turns, and you appear again when your second turn after this one starts. Getting hurt, attacking, or a trap shows you again. +1 Umbral." % CombatSim.INVISIBLE_TURNS)
+			out.append("The cast spends its MP this turn only. It does not carry over: your next turn starts with all your MP, including while you are still invisible.")
 			out.append("Cooldown: %d turn after Invisible ends. You cannot cast it while invisible. When the timer ends, that turn is locked; the next one you can." % int(def.get("cooldown", 1)))
 		SpellKits.NIGHTFOLD:
 			out.append("Not ready yet. This spell comes later.")
