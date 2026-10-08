@@ -54,6 +54,7 @@ func _run() -> void:
 	_test_dedicated_clock_is_authoritative()
 	_test_dedicated_next_match_can_join()
 	_test_invisible_hidden_from_opponent()
+	_test_fade_cooldown_snapshot()
 	_test_snare_hidden_from_opponent()
 	_test_stealthed_trap_reveals_to_opponent()
 	_test_shade_dismiss_hidden_from_opponent()
@@ -795,6 +796,79 @@ func _test_stealthed_trap_reveals_to_opponent() -> void:
 	eq(_unit_in(_guest.snapshot(), 1).get("pos"), near, "the client view stores the revealed tile")
 	eq(bool(_unit_in(_guest.snapshot(), 1).get("invisible", true)), false, "the client view is Visible")
 	eq(_view.snapshot()["units"][1]["pos"], near, "the replica stores the revealed tile")
+
+
+## The dedicated server is the same CombatSim. Phones read Fade's cooldown
+## from the unit snapshot (and legal_intents), including after a JSON roundtrip.
+func _test_fade_cooldown_snapshot() -> void:
+	var gloam := Vector2i(2, 2)
+	_host.reset_match({
+		"seed": 3,
+		"flat_board": true,
+		"skip_deploy": true,
+		"fixture": true,
+		"classes": ["gloam", "kestrel"],
+		"positions": [gloam, Vector2i(9, 9)],
+	})
+	var faded: Dictionary = _host.submit_for_seat({"type": "cast", "spell": "fade", "to": gloam}, 0)
+	eq(bool(faded.get("ok", false)), true, "the server resolves Fade")
+	var hidden: Dictionary = _wire_roundtrip(_host.pack_result(faded, 0))
+	var hidden_unit := _unit_in(hidden.get("snapshot", {}), 0)
+	eq(bool(hidden_unit.get("invisible", false)), true, "Gloam's phone snapshot is Invisible")
+	eq(_fade_cd_of(hidden_unit), 0, "the snapshot does not carry a spent cooldown while he is hidden")
+	eq(CombatHUD.spell_cooldown_badge(hidden_unit, SpellKits.FADE), "", "the phone badge is blank while Invisible")
+	eq(_pack_offers_fade(hidden, 0), false, "the phone's legal intents omit Fade while Invisible")
+	_host.submit_for_seat({"type": "end_turn"}, 0)
+	var mid: Dictionary = _host.submit_for_seat({"type": "end_turn"}, 1)
+	var mid_unit := _unit_in(_wire_roundtrip(_host.pack_result(mid, 0)).get("snapshot", {}), 0)
+	eq(bool(mid_unit.get("invisible", false)), true, "T+1 snapshot is still Invisible")
+	eq(_fade_cd_of(mid_unit), 0, "T+1 snapshot still has no Fade cooldown")
+	_host.submit_for_seat({"type": "end_turn"}, 0)
+	var revealed: Dictionary = _host.submit_for_seat({"type": "end_turn"}, 1)
+	var packed: Dictionary = _host.pack_result(revealed, 0)
+	var seen: Dictionary = _wire_roundtrip(packed)
+	var seen_unit := _unit_in(seen.get("snapshot", {}), 0)
+	eq(bool(seen_unit.get("invisible", true)), false, "the reveal snapshot is visible")
+	eq(_fade_cd_of(seen_unit), 1, "the reveal snapshot carries Fade cooldown 1")
+	eq(bool(seen_unit.get("fade_cd_skip", true)), false, "the timer reveal snapshot does not skip the next tick")
+	eq(CombatHUD.spell_cooldown_badge(seen_unit, SpellKits.FADE), "1", "the phone badge reads 1 on the blocked turn")
+	eq(_pack_offers_fade(seen, 0), false, "the phone's legal intents omit Fade on the blocked turn")
+	truthy(str(seen.get("snapshot", {}).get("coach", "")).contains("Fade cooldown 1"), "the phone coach names the cooldown")
+	_guest.apply_packed_state(packed)
+	var guest_unit := _unit_in(_guest.snapshot(), 0)
+	eq(_fade_cd_of(guest_unit), 1, "the client view keeps Fade cooldown 1")
+	eq(bool(guest_unit.get("invisible", true)), false, "the client view is visible")
+	eq(_fade_cd_of(_view.snapshot()["units"][0]), 1, "the replica keeps Fade cooldown 1")
+	_host.submit_for_seat({"type": "end_turn"}, 0)
+	var ready: Dictionary = _host.submit_for_seat({"type": "end_turn"}, 1)
+	var ready_state: Dictionary = _wire_roundtrip(_host.pack_result(ready, 0))
+	var ready_unit := _unit_in(ready_state.get("snapshot", {}), 0)
+	eq(_fade_cd_of(ready_unit), 0, "the following own turn snapshot clears the cooldown")
+	eq(_pack_offers_fade(ready_state, 0), true, "the phone can cast Fade on that turn")
+	eq(CombatHUD.spell_cooldown_badge(ready_unit, SpellKits.FADE), "", "the phone badge is blank once Fade is legal")
+
+
+func _fade_cd_of(unit: Dictionary) -> int:
+	var cds: Variant = unit.get("spell_cd", {})
+	if typeof(cds) != TYPE_DICTIONARY:
+		return 0
+	return int((cds as Dictionary).get("fade", (cds as Dictionary).get(SpellKits.FADE, 0)))
+
+
+func _pack_offers_fade(state: Dictionary, seat: int) -> bool:
+	var legal: Dictionary = state.get("legal_intents", {})
+	var rows: Array = legal.get(seat, legal.get(str(seat), []))
+	for intent in rows:
+		if typeof(intent) == TYPE_DICTIONARY and str(intent.get("spell", "")) == "fade":
+			return true
+	return false
+
+
+func _wire_roundtrip(packed: Dictionary) -> Dictionary:
+	var decoded: Variant = IntentCodec.from_json(IntentCodec.to_json(IntentCodec.decode(packed)))
+	if typeof(decoded) != TYPE_DICTIONARY:
+		return {}
+	return decoded
 
 
 func _test_invisible_hidden_from_opponent() -> void:

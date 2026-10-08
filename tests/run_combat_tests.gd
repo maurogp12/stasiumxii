@@ -71,6 +71,7 @@ func _run() -> void:
 	_test_ambush_snap_wall_ray()
 	_test_ambush_obstacle_ray()
 	_test_invisible_wears_off()
+	_test_fade_cooldown_after_reveal()
 	_test_instant_invisible_ambush_relocates_before_damage()
 	_test_invisible_shade_origin_ambush()
 	_test_invisible_breaks_on_attack()
@@ -8979,10 +8980,10 @@ func _test_ambush_obstacle_ray() -> void:
 
 
 func _test_invisible_wears_off() -> void:
-	# Mauro 8 Oct 2026: Invisible lasts 2 of Gloam's turns, and Fade has a
-	# cooldown of 1 own turn after the cast. Cast on turn T: still hidden
-	# when T+1 starts, revealed when T+2 starts. The cooldown uses the same
-	# tick-first clock as foe kits, so he can Fade again on that reveal turn.
+	# Mauro 8 Oct 2026, revised the same day: Invisible lasts 2 of Gloam's
+	# turns. Cast on T, still hidden when T+1 starts, revealed when T+2
+	# starts. The 1-turn cooldown starts at that reveal, so T+2 is the one
+	# locked action window and T+3 is legal. It does not tick while he is hidden.
 	_sim.reset_match({
 		"seed": 3,
 		"flat_board": true,
@@ -8995,36 +8996,256 @@ func _test_invisible_wears_off() -> void:
 	eq(bool(_unit(0)["invisible"]), true, "Fade makes Gloam invisible")
 	eq(CombatSim.INVISIBLE_TURNS, 2, "Fade lasts 2 turns")
 	eq(int(SpellKits.spell(SpellKits.FADE).get("cooldown", 0)), 1, "Fade cooldown is 1 turn")
+	eq(int(SpellKits.spell(SpellKits.FADE)["ap"]), 2, "Fade still costs 2 AP")
+	eq(int(SpellKits.spell(SpellKits.FADE)["mp"]), 1, "Fade still costs 1 MP")
 	eq(int(_unit(0)["invisible_turns"]), 2, "Fade starts the 2-turn clock")
-	truthy(str(_sim.snapshot().get("coach", "")).contains("Invisible for 2 turns."), "the coach says 2 turns")
-	truthy(str(_sim.snapshot().get("coach", "")).contains("Cooldown 1 turn."), "the coach says the cooldown")
+	eq(_fade_cd(0), 0, "Fade does not start its cooldown at cast")
+	eq(bool(_unit(0).get("fade_cd_skip", false)), false, "no skip flag while he is hidden")
+	var coach := str(_sim.snapshot().get("coach", ""))
+	truthy(coach.contains("Invisible for 2 turns"), "the coach says 2 turns")
+	truthy(coach.contains("cooldown 1 turn after reveal"), "the coach says the cooldown starts after the reveal")
 	var card := " ".join(SpellTooltip.simple_lines(SpellKits.FADE))
 	truthy(card.contains("for 2 turns"), "the Fade card says 2 turns")
 	truthy(card.contains("Cooldown: 1 turn"), "the Fade card says the cooldown")
+	truthy(card.contains("while invisible"), "the Fade card says it cannot be cast while invisible")
 	eq(card.contains("until your next turn"), false, "the Fade card no longer says until your next turn")
+	eq(card.contains("on the turn you appear"), false, "the Fade card no longer says he can cast it on the turn he appears")
+	eq(_has_legal_cast(0, SpellKits.FADE), false, "Fade cannot be cast while Invisible")
+	var hidden: Dictionary = _sim.submit({"type": "cast", "spell": "fade", "to": Vector2i(2, 2), "seat": 0})
+	eq(bool(hidden.get("ok", false)), false, "a second Fade while Invisible is rejected")
+	eq(str(hidden.get("reason", "")), "invisible", "the reject reason is invisible, not cooldown")
+	eq(int(_unit(0)["ap"]), 4, "the rejected Fade refunds AP")
+	eq(CombatHUD.spell_cooldown_badge(_unit(0), SpellKits.FADE), "", "while Invisible the button shows no cooldown number")
+	_assert_fade_button("", true)
 	_sim.submit({"type": "end_turn", "seat": 0})
 	eq(bool(_unit(0)["invisible"]), true, "still invisible through the enemy turn")
+	eq(_fade_cd(0), 0, "the enemy turn does not start the cooldown")
 	_sim.submit({"type": "end_turn", "seat": 1})
 	eq(bool(_unit(0)["invisible"]), true, "still invisible at Gloam's next turn start")
 	eq(int(_unit(0)["invisible_turns"]), 1, "one turn of the clock is left")
-	eq(_has_legal_cast(0, SpellKits.FADE), false, "Fade is on cooldown that turn")
+	eq(_fade_cd(0), 0, "T+1 is still hidden, so the cooldown has not started")
+	eq(_has_legal_cast(0, SpellKits.FADE), false, "Fade stays illegal while Invisible on T+1")
+	var still_hidden: Dictionary = _sim.submit({"type": "cast", "spell": "fade", "to": Vector2i(2, 2), "seat": 0})
+	eq(str(still_hidden.get("reason", "")), "invisible", "T+1 rejects Fade because he is Invisible")
+	eq(int(_unit(0)["ap"]), 6, "the rejected Fade refunds the refilled AP")
+	eq(CombatHUD.spell_cooldown_badge(_unit(0), SpellKits.FADE), "", "T+1 still shows no cooldown number")
+	_sim.submit({"type": "end_turn", "seat": 0})
+	var revealed: Dictionary = _sim.submit({"type": "end_turn", "seat": 1})
+	eq(bool(_unit(0)["invisible"]), false, "Invisible wears off at Gloam's second turn start")
+	eq(int(_unit(0)["invisible_turns"]), 0, "the clock is spent")
+	eq(_fade_cd(0), 1, "the reveal turn stores cooldown 1")
+	eq(bool(_unit(0).get("fade_cd_skip", true)), false, "the timer reveal does not skip the tick; this window is the locked turn")
+	eq(_has_legal_cast(0, SpellKits.FADE), false, "Fade is blocked on the turn he appears")
+	var expired := false
+	for ev in revealed.get("events", []):
+		if str(ev.get("type", "")) == "expire" and str(ev.get("status", "")) == "invisible":
+			expired = true
+	eq(expired, true, "the reveal emits expire invisible")
+	var reveal_coach := str(revealed.get("snapshot", {}).get("coach", ""))
+	truthy(reveal_coach.contains("Invisible wore off"), "the coach names the reveal")
+	truthy(reveal_coach.contains("Fade cooldown 1"), "the coach names the Fade cooldown")
+	eq(CombatHUD.spell_cooldown_badge(_unit(0), SpellKits.FADE), "1", "the reveal turn shows cooldown 1")
+	_assert_fade_button("1", true)
 	var cooled: Dictionary = _sim.submit({"type": "cast", "spell": "fade", "to": Vector2i(2, 2), "seat": 0})
-	eq(bool(cooled.get("ok", false)), false, "a Fade during the cooldown is rejected")
+	eq(bool(cooled.get("ok", false)), false, "a Fade on the reveal turn is rejected")
 	eq(str(cooled.get("reason", "")), "cooldown", "the reject reason is cooldown")
 	eq(int(_unit(0)["ap"]), 6, "the rejected Fade refunds AP")
 	_sim.submit({"type": "end_turn", "seat": 0})
 	_sim.submit({"type": "end_turn", "seat": 1})
-	eq(bool(_unit(0)["invisible"]), false, "Invisible wears off at Gloam's second turn start")
-	eq(int(_unit(0)["invisible_turns"]), 0, "the clock is spent")
-	eq(_has_legal_cast(0, SpellKits.FADE), true, "Fade is ready again the turn he appears")
-	var expired := false
-	for ev in _sim.snapshot().get("last_events", []):
-		if str(ev.get("type", "")) == "expire" and str(ev.get("status", "")) == "invisible":
-			expired = true
-	eq(expired, true, "the reveal emits expire invisible")
-	truthy(str(_sim.snapshot().get("coach", "")).contains("Invisible wore off"), "the coach names the reveal")
-	# An attack still reveals at once and clears the clock.
-	_sim.submit({"type": "cast", "spell": "fade", "to": Vector2i(2, 2), "seat": 0})
-	_sim._break_invisible_on_attack(_sim._unit_by_seat(0))
+	eq(bool(_unit(0)["invisible"]), false, "he stays visible on the following own turn")
+	eq(_fade_cd(0), 0, "the cooldown is spent on that following own turn")
+	eq(_has_legal_cast(0, SpellKits.FADE), true, "Fade is legal the own turn after the reveal turn")
+	eq(CombatHUD.spell_cooldown_badge(_unit(0), SpellKits.FADE), "", "the legal turn shows no cooldown number")
+	_assert_fade_button("", false)
+
+
+func _test_fade_cooldown_after_reveal() -> void:
+	# Early reveals start the same one-turn lock: the next own turn that
+	# starts after the reveal is blocked, and the one after is legal.
+	# A teammate's turn and a Stasis foe's turn do not tick it.
+	_fade_attack_reveal()
+	_fade_hurt_reveal()
+	_fade_trap_reveal()
+	_fade_team_and_stasis_clock()
+
+
+func _fade_attack_reveal() -> void:
+	_sim.reset_match({
+		"seed": 4,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["gloam", "kestrel"],
+		"positions": [Vector2i(5, 5), Vector2i(6, 5)],
+		"kestrel_facing": "W",
+		"rolls": [1],
+	})
+	eq(bool(_sim.submit({"type": "cast", "spell": "fade", "to": Vector2i(5, 5), "seat": 0}).get("ok", false)), true, "attack-reveal Fade resolves")
+	var cut: Dictionary = _sim.submit({"type": "cast", "spell": "cut", "to": Vector2i(6, 5), "seat": 0})
+	eq(bool(cut.get("ok", false)), true, "Cut while Invisible resolves and reveals him")
 	eq(bool(_unit(0)["invisible"]), false, "an attack reveals immediately")
 	eq(int(_unit(0)["invisible_turns"]), 0, "an attack clears the clock")
+	eq(_fade_cd(0), 1, "the attack arms cooldown 1")
+	eq(bool(_unit(0).get("fade_cd_skip", false)), true, "a mid-turn reveal waits for the next own turn-start")
+	eq(int(_unit(0)["ap"]), 2, "Fade 2 plus Cut 2 leaves 2 AP")
+	eq(int(_unit(0)["mp"]) >= 1, true, "enough MP remains that another Fade would fit")
+	eq(_has_legal_cast(0, SpellKits.FADE), false, "he cannot Fade again on the turn the attack revealed him")
+	truthy(str(_sim.snapshot().get("coach", "")).contains("Fade cooldown 1"), "the attack log names the Fade cooldown")
+	eq(CombatHUD.spell_cooldown_badge(_unit(0), SpellKits.FADE), "1", "the attack reveal shows cooldown 1, not 2")
+	_sim.submit({"type": "end_turn", "seat": 0})
+	_sim.submit({"type": "end_turn", "seat": 1})
+	eq(_fade_cd(0), 1, "his next own turn is the locked turn")
+	eq(bool(_unit(0).get("fade_cd_skip", true)), false, "that turn-start consumed the skip")
+	eq(_has_legal_cast(0, SpellKits.FADE), false, "Fade is blocked on the own turn after the attack")
+	eq(CombatHUD.spell_cooldown_badge(_unit(0), SpellKits.FADE), "1", "the locked turn still shows 1")
+	_sim.submit({"type": "end_turn", "seat": 0})
+	_sim.submit({"type": "end_turn", "seat": 1})
+	eq(_fade_cd(0), 0, "the turn after the locked turn clears the cooldown")
+	eq(_has_legal_cast(0, SpellKits.FADE), true, "Fade is legal the own turn after the locked turn")
+
+
+func _fade_hurt_reveal() -> void:
+	_sim.reset_match({
+		"seed": 5,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["gloam", "ironjaw"],
+		"positions": [Vector2i(6, 5), Vector2i(5, 5)],
+		"rolls": [1],
+	})
+	eq(bool(_sim.submit({"type": "cast", "spell": "fade", "to": Vector2i(6, 5), "seat": 0}).get("ok", false)), true, "hurt-reveal Fade resolves")
+	_sim.submit({"type": "end_turn", "seat": 0})
+	var strike: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(6, 5), "seat": 1})
+	eq(bool(strike.get("ok", false)), true, "Ironjaw's punch on the hidden tile resolves")
+	eq(bool(_unit(0)["invisible"]), false, "getting hurt reveals Gloam")
+	eq(_fade_cd(0), 1, "a hurt during the enemy turn arms cooldown 1")
+	eq(bool(_unit(0).get("fade_cd_skip", false)), true, "the enemy-turn reveal skips the next tick")
+	truthy(str(_sim.snapshot().get("coach", "")).contains("Fade cooldown 1"), "the hurt log names the Fade cooldown")
+	var revealed := false
+	for ev in strike.get("events", []):
+		if str(ev.get("type", "")) == "revealed":
+			revealed = true
+			truthy(str(ev.get("coach", "")).contains("Fade cooldown 1"), "the revealed event names the Fade cooldown")
+	eq(revealed, true, "the hurt emits revealed")
+	_sim.submit({"type": "end_turn", "seat": 1})
+	eq(int(_sim.snapshot()["active_seat"]), 0, "the hurt hands Gloam his next own turn")
+	eq(_fade_cd(0), 1, "that next own turn is blocked")
+	eq(_has_legal_cast(0, SpellKits.FADE), false, "Fade is blocked on the own turn after the enemy-turn reveal")
+	eq(CombatHUD.spell_cooldown_badge(_unit(0), SpellKits.FADE), "1", "the hurt cooldown shows 1")
+	_sim.submit({"type": "end_turn", "seat": 0})
+	_sim.submit({"type": "end_turn", "seat": 1})
+	eq(_fade_cd(0), 0, "the following own turn clears the hurt cooldown")
+	eq(_has_legal_cast(0, SpellKits.FADE), true, "Fade is legal the own turn after the hurt lock")
+
+
+func _fade_trap_reveal() -> void:
+	var gloam := Vector2i(5, 5)
+	var trap := Vector2i(4, 5)
+	_sim.reset_match({
+		"seed": 6,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["kestrel", "gloam"],
+		"positions": [Vector2i(1, 5), gloam],
+	})
+	eq(bool(_sim.submit({"type": "cast", "spell": "snare_trap", "to": trap, "seat": 0}).get("ok", false)), true, "the trap is set")
+	_sim.submit({"type": "end_turn", "seat": 0})
+	eq(bool(_sim.submit({"type": "cast", "spell": "fade", "to": gloam, "seat": 1}).get("ok", false)), true, "trap-reveal Fade resolves")
+	var walked: Dictionary = _sim.submit({"type": "move", "to": trap, "seat": 1})
+	eq(bool(walked.get("ok", false)), true, "the stealthed step resolves")
+	eq(bool(_unit(1)["invisible"]), false, "the trap reveals Gloam")
+	eq(_fade_cd(1), 1, "the trap arms cooldown 1")
+	eq(bool(_unit(1).get("fade_cd_skip", false)), true, "a trap on his turn waits for the next own turn-start")
+	truthy(str(_sim.snapshot().get("coach", "")).contains("Fade cooldown 1"), "the trap log names the Fade cooldown")
+	eq(_has_legal_cast(1, SpellKits.FADE), false, "he cannot Fade on the turn the trap revealed him")
+	_sim.submit({"type": "end_turn", "seat": 1})
+	_sim.submit({"type": "end_turn", "seat": 0})
+	eq(_fade_cd(1), 1, "his next own turn stays on cooldown after the trap")
+	eq(_has_legal_cast(1, SpellKits.FADE), false, "Fade is blocked on the own turn after the trap")
+	_sim.submit({"type": "end_turn", "seat": 1})
+	_sim.submit({"type": "end_turn", "seat": 0})
+	eq(_fade_cd(1), 0, "the following own turn clears the trap cooldown")
+	eq(_has_legal_cast(1, SpellKits.FADE), true, "Fade is legal the own turn after the trap lock")
+
+
+func _fade_team_and_stasis_clock() -> void:
+	# 2v2: seats 0,2 vs 1,3. Only Gloam's own turn start ticks Invisible and Fade.
+	_sim.reset_match({
+		"seed": 7,
+		"flat_board": true,
+		"skip_deploy": true,
+		"team_size": 2,
+		"classes": ["gloam", "kestrel", "ironjaw", "mender"],
+		"positions": [Vector2i(1, 1), Vector2i(8, 8), Vector2i(2, 1), Vector2i(9, 8)],
+	})
+	eq(_sim.turn_order(), [0, 1, 2, 3] as Array[int], "2v2 still alternates teams")
+	eq(bool(_sim.submit({"type": "cast", "spell": "fade", "to": Vector2i(1, 1), "seat": 0}).get("ok", false)), true, "2v2 Fade resolves")
+	_sim.submit({"type": "end_turn", "seat": 0})
+	_sim.submit({"type": "end_turn", "seat": 1})
+	eq(int(_sim.snapshot()["active_seat"]), 2, "the teammate acts before Gloam's next turn")
+	eq(bool(_unit(0)["invisible"]), true, "a teammate's turn does not wear Invisible off")
+	eq(int(_unit(0)["invisible_turns"]), 2, "a teammate's turn does not tick the Invisible clock")
+	eq(_fade_cd(0), 0, "a teammate's turn does not arm Fade")
+	_sim.submit({"type": "end_turn", "seat": 2})
+	_sim.submit({"type": "end_turn", "seat": 3})
+	eq(bool(_unit(0)["invisible"]), true, "2v2 T+1 is still hidden")
+	eq(int(_unit(0)["invisible_turns"]), 1, "2v2 T+1 ticks the clock once")
+	for seat in [0, 1, 2, 3]:
+		_sim.submit({"type": "end_turn", "seat": seat})
+	eq(bool(_unit(0)["invisible"]), false, "2v2 reveals on Gloam's own T+2")
+	eq(_fade_cd(0), 1, "2v2 blocks Fade on the reveal turn")
+	eq(_has_legal_cast(0, SpellKits.FADE), false, "2v2 Fade is illegal on the reveal turn")
+	_sim.submit({"type": "end_turn", "seat": 0})
+	_sim.submit({"type": "end_turn", "seat": 1})
+	eq(int(_sim.snapshot()["active_seat"]), 2, "the teammate acts during the cooldown")
+	eq(_fade_cd(0), 1, "the teammate does not spend Fade's cooldown")
+	_sim.submit({"type": "end_turn", "seat": 2})
+	_sim.submit({"type": "end_turn", "seat": 3})
+	eq(_fade_cd(0), 0, "2v2 Fade is ready on Gloam's next own turn")
+	eq(_has_legal_cast(0, SpellKits.FADE), true, "2v2 Fade is legal the own turn after the reveal")
+	# Stasis uses the same CombatSim turn start. A foe's turn is not Gloam's.
+	_sim.reset_match({
+		"seed": 8,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["gloam", "ironjaw"],
+		"positions": [Vector2i(2, 2), Vector2i(9, 9)],
+		"stasis_roster": [
+			{"seat": 0, "name": "Gloam"},
+			{"seat": 1, "name": "Hound", "foe_kit": ["foe.skirmish_poke"], "hp": 40, "max_hp": 40},
+		],
+	})
+	eq(bool(_unit(1).get("foe_kit", []) is Array), true, "the Stasis foe keeps its kit")
+	eq(bool(_sim.submit({"type": "cast", "spell": "fade", "to": Vector2i(2, 2), "seat": 0}).get("ok", false)), true, "Stasis Fade resolves")
+	_sim.submit({"type": "end_turn", "seat": 0})
+	_sim.submit({"type": "end_turn", "seat": 1})
+	eq(bool(_unit(0)["invisible"]), true, "a Stasis foe's turn leaves him hidden on T+1")
+	eq(_fade_cd(0), 0, "a Stasis foe's turn does not start the cooldown")
+	_sim.submit({"type": "end_turn", "seat": 0})
+	_sim.submit({"type": "end_turn", "seat": 1})
+	eq(bool(_unit(0)["invisible"]), false, "Stasis reveals on his own T+2")
+	eq(_fade_cd(0), 1, "Stasis blocks Fade on the reveal turn")
+	eq(_has_legal_cast(0, SpellKits.FADE), false, "Stasis Fade is illegal on the reveal turn")
+	_sim.submit({"type": "end_turn", "seat": 0})
+	_sim.submit({"type": "end_turn", "seat": 1})
+	eq(_fade_cd(0), 0, "Stasis Fade is ready on the following own turn")
+	eq(_has_legal_cast(0, SpellKits.FADE), true, "Stasis Fade is legal the own turn after the reveal")
+
+
+func _fade_cd(seat: int) -> int:
+	var cds: Variant = _unit(seat).get("spell_cd", {})
+	if typeof(cds) != TYPE_DICTIONARY:
+		return 0
+	return int((cds as Dictionary).get(SpellKits.FADE, 0))
+
+
+func _assert_fade_button(badge_text: String, disabled: bool) -> void:
+	var hud := CombatHUD.new()
+	hud._build()
+	hud.render(_sim.snapshot(), _sim.legal_intents(int(_sim.snapshot()["active_seat"])))
+	var button: Button = hud._spell_buttons[SpellKits.FADE]
+	eq(button.disabled, disabled, "Fade button disabled=%s" % str(disabled))
+	var badge := button.get_node_or_null("CooldownBadge") as Label
+	var shown := "" if badge == null else badge.text
+	eq(shown, badge_text, "Fade button badge is '%s'" % badge_text)
+	eq(shown != "0", true, "the Fade button never shows 0")
+	hud.free()

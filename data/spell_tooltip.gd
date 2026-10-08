@@ -163,8 +163,8 @@ static func simple_lines(spell_id: String, preview: Dictionary = {}) -> PackedSt
 			out.append("Teleport behind an enemy and stab them for %d damage." % dmg)
 			out.append("The enemy must be 1-2 tiles away in a straight line from you or from your Shade. Behind them blocked? You land in front. Their back = 35% more damage. Miss = you stay put.")
 		SpellKits.FADE:
-			out.append("Turn invisible for %d turns. You stay hidden through the enemy's next two turns, and you appear again when your second turn after this one starts. Getting hurt or attacking shows you again. +1 Umbral." % CombatSim.INVISIBLE_TURNS)
-			out.append("Cooldown: %d turn. You can cast it again on the turn you appear." % int(def.get("cooldown", 1)))
+			out.append("Turn invisible for %d turns. You stay hidden through the enemy's next two turns, and you appear again when your second turn after this one starts. Getting hurt, attacking, or a trap shows you again. +1 Umbral." % CombatSim.INVISIBLE_TURNS)
+			out.append("Cooldown: %d turn after Invisible ends. You cannot cast it while invisible. When the timer ends, that turn is locked; the next one you can." % int(def.get("cooldown", 1)))
 		SpellKits.NIGHTFOLD:
 			out.append("Not ready yet. This spell comes later.")
 		SpellKits.BASH:

@@ -397,9 +397,9 @@ const SPELLS := {
 		"element": "neutral",
 		"target": "self",
 		"engine_on_connect": "umbral",
-		# Own turns Fade stays locked after the cast. The sim stores this plus
-		# one because the clock ticks at the next turn start, before he acts.
-		# He can cast it again on the turn Invisible ends.
+		# One of Gloam's own turns with Fade unavailable after he is visible.
+		# The sim stores this number when Invisible ends (not at cast, and
+		# not cooldown+1). While he is Invisible the spell is simply illegal.
 		"cooldown": 1,
 	},
 	# Nightfold's miss/Shade refund is open_can_wait. Gated: not resolved.
