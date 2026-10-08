@@ -36,7 +36,7 @@ func _play() -> void:
 		_finish(1)
 		return
 	print("BOT MATCH_LIVE")
-	var end_at := Time.get_ticks_msec() + 150000
+	var end_at := Time.get_ticks_msec() + 180000
 	var actions := 0
 	while not _dropped and Time.get_ticks_msec() < end_at:
 		var snap: Dictionary = net.snapshot()

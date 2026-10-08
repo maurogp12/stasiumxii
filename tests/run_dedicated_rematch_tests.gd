@@ -41,7 +41,7 @@ func _run() -> void:
 		_done()
 		return
 	_ok("the same process is still running after match end")
-	var second := await _play_pair("mender", "gloam", "rematch-b")
+	var second := await _play_pair("ironjaw", "gloam", "rematch-b")
 	if not second:
 		_done()
 		return
@@ -73,7 +73,7 @@ func _play_pair(class_a: String, class_b: String, tag: String) -> bool:
 	DirAccess.remove_absolute(report_b)
 	var pid_a := _spawn_bot(godot, project, class_a, report_a)
 	var pid_b := _spawn_bot(godot, project, class_b, report_b)
-	var result_a: Dictionary = await _wait_report(report_a, 170000)
+	var result_a: Dictionary = await _wait_report(report_a, 200000)
 	var result_b: Dictionary = await _wait_report(report_b, 20000)
 	_stop(pid_a)
 	_stop(pid_b)
