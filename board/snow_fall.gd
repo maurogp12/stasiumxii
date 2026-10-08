@@ -7,8 +7,9 @@ extends Node2D
 ## flakes pass close to the camera for depth. Presentation only: its own RNG,
 ## never the sim.
 
-const FLAKES := 280
-const NEAR_FLAKES := 22
+## Fewer, smaller flakes. A dense fall was reading as spots on the ice.
+const FLAKES := 96
+const NEAR_FLAKES := 12
 const FALL_MIN := 26.0
 const FALL_MAX := 58.0
 const DROP_MIN := 260.0
@@ -62,8 +63,8 @@ func _new_flake(near: bool) -> Dictionary:
 		"drop": drop,
 		"drop0": drop,
 		"speed": _rng.randf_range(FALL_MIN, FALL_MAX) * (1.9 if near else 1.0),
-		"r": _rng.randf_range(4.5, 7.0) if near else _rng.randf_range(1.6, 3.0),
-		"a": _rng.randf_range(0.45, 0.65) if near else _rng.randf_range(0.75, 1.0),
+		"r": _rng.randf_range(2.2, 3.4) if near else _rng.randf_range(0.7, 1.25),
+		"a": _rng.randf_range(0.28, 0.42) if near else _rng.randf_range(0.35, 0.55),
 		"phase": _rng.randf_range(0.0, TAU),
 		"sway": _rng.randf_range(6.0, 16.0) * (2.0 if near else 1.0),
 		"melt": 0.0,
@@ -104,10 +105,8 @@ func _draw() -> void:
 			continue
 		var r := float(flake["r"])
 		if bool(flake["near"]):
-			draw_circle(pos, r * 1.8, Color(0.85, 0.92, 1.0, a * 0.25))
-		# Soft blue-grey edge so white flakes still read over white ice.
-		draw_circle(pos + Vector2(0.6, 0.9), r * 1.35, Color(0.22, 0.32, 0.48, a * 0.35))
-		draw_circle(pos, r * 1.7, Color(0.80, 0.90, 1.0, a * 0.18))
+			draw_circle(pos, r * 1.6, Color(0.90, 0.95, 1.0, a * 0.18))
+		draw_circle(pos, r * 1.45, Color(0.86, 0.93, 1.0, a * 0.12))
 		draw_circle(pos, r, Color(0.98, 0.99, 1.0, a))
 		if drop <= 0.0:
 			# Settled flake: a tiny flat glint on the ice.

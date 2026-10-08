@@ -472,9 +472,7 @@
       "y": 4,
       "terrain": "ground",
       "elevation": 1,
-      "paint_only": [
-        "ice_shard"
-      ]
+      "paint_only": []
     },
     {
       "x": 4,
@@ -716,9 +714,7 @@
       "y": 6,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": [
-        "ice_shard"
-      ]
+      "paint_only": []
     },
     {
       "x": 8,
@@ -935,9 +931,7 @@
       "y": 8,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": [
-        "ice_shard"
-      ]
+      "paint_only": []
     },
     {
       "x": 9,

@@ -237,11 +237,11 @@ const BLEND_FX := {
 	"mire": {"frames": 12, "fps": 15.0, "ground": true},
 	"steam": {"frames": 12, "fps": 13.0, "ground": false},
 }
-## Slagcrown's boiling pools steam all match long: a tall thin plume
-## (build_tools/art/steam_plume.py), no floor puff so the pool shows.
+## Slagcrown's boiling pools. A short soft plume (build_tools/art/steam_plume.py),
+## no floor puff, so the pool stays visible. One plume per clump on screen.
 const MAP_STEAM := {
 	"path": BLEND_FX_DIR + "map_steam_plume.png", "frames": 12, "fps": 9.0,
-	"anchor": Vector2(48, 214), "scale": 0.9,
+	"anchor": Vector2(48, 150), "scale": 0.24,
 }
 
 

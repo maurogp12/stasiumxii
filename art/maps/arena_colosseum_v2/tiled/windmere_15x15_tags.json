@@ -264,9 +264,7 @@
       "y": 2,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": [
-        "spark"
-      ]
+      "paint_only": []
     },
     {
       "x": 6,
@@ -294,9 +292,7 @@
       "y": 2,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": [
-        "spark"
-      ]
+      "paint_only": []
     },
     {
       "x": 10,
@@ -503,9 +499,7 @@
       "y": 4,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": [
-        "ice_shard"
-      ]
+      "paint_only": []
     },
     {
       "x": 9,
@@ -715,9 +709,7 @@
       "y": 6,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": [
-        "ice_shard"
-      ]
+      "paint_only": []
     },
     {
       "x": 9,
@@ -928,9 +920,7 @@
       "y": 8,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": [
-        "ice_shard"
-      ]
+      "paint_only": []
     },
     {
       "x": 7,
@@ -1075,11 +1065,9 @@
     {
       "x": 12,
       "y": 9,
-      "terrain": "ground",
+      "terrain": "water",
       "elevation": 0,
-      "paint_only": [
-        "spark"
-      ]
+      "paint_only": []
     },
     {
       "x": 13,
@@ -1228,9 +1216,7 @@
       "y": 11,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": [
-        "ice_shard"
-      ]
+      "paint_only": []
     },
     {
       "x": 4,
@@ -1351,9 +1337,7 @@
       "y": 12,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": [
-        "spark"
-      ]
+      "paint_only": []
     },
     {
       "x": 6,
@@ -1381,9 +1365,7 @@
       "y": 12,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": [
-        "spark"
-      ]
+      "paint_only": []
     },
     {
       "x": 10,

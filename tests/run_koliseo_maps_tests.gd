@@ -609,6 +609,18 @@ func _test_slag_punch() -> void:
 		at[Vector2i(int(cell["x"]), int(cell["y"]))] = cell
 	eq(int(at[Vector2i(5, 4)]["elevation"]), 2, "Slagcrown high platform cell stays elevation 2")
 	eq(str(at[Vector2i(7, 7)]["terrain"]), "lava", "Slagcrown lava river stays lava")
+	# Mauro: the ring touching the centre volcano is lava. Two east cells stay
+	# ground: (8, 7) is the only walk east of the cone, and (8, 6) keeps that
+	# gap from being a dead end one body can cork. 40 + 4 = 44.
+	var lava_n := 0
+	for cell in tags["cells"]:
+		if str(cell.get("terrain", "")) == "lava":
+			lava_n += 1
+	eq(lava_n, 44, "Slagcrown Koliseo has 44 lava cells")
+	for cell in [Vector2i(6, 6), Vector2i(7, 6), Vector2i(6, 7), Vector2i(6, 8), Vector2i(7, 8), Vector2i(8, 8)]:
+		eq(str(at[cell]["terrain"]), "lava", "volcano ring is lava at %s" % str(cell))
+	for cell in [Vector2i(8, 6), Vector2i(8, 7)]:
+		eq(str(at[cell]["terrain"]), "ground", "volcano ring stays walkable at %s" % str(cell))
 	# Mauro 5 Oct 2026 steam corner: (1, 12) became the path; (2, 10) is a pool.
 	eq(str(at[Vector2i(2, 10)]["terrain"]), "water", "Slagcrown boiling pool tag stays water")
 	eq(str((at[Vector2i(0, 0)]["paint_only"] as Array)[0]), "basalt_pillar", "Slagcrown corner prop stays the basalt pillar")

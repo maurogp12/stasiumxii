@@ -51,9 +51,7 @@
       "y": 0,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": [
-        "spark"
-      ]
+      "paint_only": []
     },
     {
       "x": 5,
@@ -81,9 +79,7 @@
       "y": 0,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": [
-        "spark"
-      ]
+      "paint_only": []
     },
     {
       "x": 9,
@@ -153,9 +149,7 @@
       "y": 1,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": [
-        "spark"
-      ]
+      "paint_only": []
     },
     {
       "x": 4,
@@ -211,9 +205,7 @@
       "y": 1,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": [
-        "spark"
-      ]
+      "paint_only": []
     },
     {
       "x": 12,
@@ -283,9 +275,7 @@
       "y": 2,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": [
-        "spark"
-      ]
+      "paint_only": []
     },
     {
       "x": 7,
@@ -313,9 +303,7 @@
       "y": 2,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": [
-        "spark"
-      ]
+      "paint_only": []
     },
     {
       "x": 11,
@@ -343,9 +331,7 @@
       "y": 2,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": [
-        "spark"
-      ]
+      "paint_only": []
     },
     {
       "x": 0,
@@ -359,9 +345,7 @@
       "y": 3,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": [
-        "spark"
-      ]
+      "paint_only": []
     },
     {
       "x": 2,
@@ -389,9 +373,7 @@
       "y": 3,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": [
-        "spark"
-      ]
+      "paint_only": []
     },
     {
       "x": 6,
@@ -419,9 +401,7 @@
       "y": 3,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": [
-        "spark"
-      ]
+      "paint_only": []
     },
     {
       "x": 10,
@@ -449,9 +429,7 @@
       "y": 3,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": [
-        "spark"
-      ]
+      "paint_only": []
     },
     {
       "x": 14,
@@ -465,9 +443,7 @@
       "y": 4,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": [
-        "spark"
-      ]
+      "paint_only": []
     },
     {
       "x": 1,
@@ -495,9 +471,7 @@
       "y": 4,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": [
-        "spark"
-      ]
+      "paint_only": []
     },
     {
       "x": 5,
@@ -525,9 +499,7 @@
       "y": 4,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": [
-        "spark"
-      ]
+      "paint_only": []
     },
     {
       "x": 9,
@@ -555,9 +527,7 @@
       "y": 4,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": [
-        "spark"
-      ]
+      "paint_only": []
     },
     {
       "x": 13,
@@ -599,9 +569,7 @@
       "y": 5,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": [
-        "spark"
-      ]
+      "paint_only": []
     },
     {
       "x": 4,
@@ -657,9 +625,7 @@
       "y": 5,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": [
-        "spark"
-      ]
+      "paint_only": []
     },
     {
       "x": 12,
@@ -701,9 +667,7 @@
       "y": 6,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": [
-        "spark"
-      ]
+      "paint_only": []
     },
     {
       "x": 3,
@@ -759,9 +723,7 @@
       "y": 6,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": [
-        "spark"
-      ]
+      "paint_only": []
     },
     {
       "x": 11,
@@ -789,9 +751,7 @@
       "y": 6,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": [
-        "spark"
-      ]
+      "paint_only": []
     },
     {
       "x": 0,
@@ -903,9 +863,7 @@
       "y": 8,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": [
-        "spark"
-      ]
+      "paint_only": []
     },
     {
       "x": 1,
@@ -991,9 +949,7 @@
       "y": 8,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": [
-        "spark"
-      ]
+      "paint_only": []
     },
     {
       "x": 13,
@@ -1035,9 +991,7 @@
       "y": 9,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": [
-        "spark"
-      ]
+      "paint_only": []
     },
     {
       "x": 4,
@@ -1093,9 +1047,7 @@
       "y": 9,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": [
-        "spark"
-      ]
+      "paint_only": []
     },
     {
       "x": 12,
@@ -1137,9 +1089,7 @@
       "y": 10,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": [
-        "spark"
-      ]
+      "paint_only": []
     },
     {
       "x": 3,
@@ -1195,9 +1145,7 @@
       "y": 10,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": [
-        "spark"
-      ]
+      "paint_only": []
     },
     {
       "x": 11,
@@ -1225,9 +1173,7 @@
       "y": 10,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": [
-        "spark"
-      ]
+      "paint_only": []
     },
     {
       "x": 0,
@@ -1241,9 +1187,7 @@
       "y": 11,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": [
-        "spark"
-      ]
+      "paint_only": []
     },
     {
       "x": 2,
@@ -1271,9 +1215,7 @@
       "y": 11,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": [
-        "spark"
-      ]
+      "paint_only": []
     },
     {
       "x": 6,
@@ -1301,9 +1243,7 @@
       "y": 11,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": [
-        "spark"
-      ]
+      "paint_only": []
     },
     {
       "x": 10,
@@ -1331,9 +1271,7 @@
       "y": 11,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": [
-        "spark"
-      ]
+      "paint_only": []
     },
     {
       "x": 14,
@@ -1347,9 +1285,7 @@
       "y": 12,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": [
-        "spark"
-      ]
+      "paint_only": []
     },
     {
       "x": 1,
@@ -1377,9 +1313,7 @@
       "y": 12,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": [
-        "spark"
-      ]
+      "paint_only": []
     },
     {
       "x": 5,
@@ -1407,9 +1341,7 @@
       "y": 12,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": [
-        "spark"
-      ]
+      "paint_only": []
     },
     {
       "x": 9,
@@ -1479,9 +1411,7 @@
       "y": 13,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": [
-        "spark"
-      ]
+      "paint_only": []
     },
     {
       "x": 4,
@@ -1537,9 +1467,7 @@
       "y": 13,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": [
-        "spark"
-      ]
+      "paint_only": []
     },
     {
       "x": 12,
@@ -1581,9 +1509,7 @@
       "y": 14,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": [
-        "spark"
-      ]
+      "paint_only": []
     },
     {
       "x": 3,
@@ -1611,9 +1537,7 @@
       "y": 14,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": [
-        "spark"
-      ]
+      "paint_only": []
     },
     {
       "x": 7,
@@ -1641,9 +1565,7 @@
       "y": 14,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": [
-        "spark"
-      ]
+      "paint_only": []
     },
     {
       "x": 11,
