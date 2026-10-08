@@ -37,9 +37,9 @@ var walk_block_kind: String = ""
 ## View only. A painted wall or prop on this cell hides the diamond ink.
 var occluder_covers_grid: bool = false
 const LIQUID_GLOW := {
-	"water": Color(0.45, 0.85, 1.0),
-	"mud": Color(0.78, 0.62, 0.36),
-	"lava": Color(1.0, 0.55, 0.18),
+	"water": Color(0.20, 0.32, 0.36),
+	"mud": Color(0.45, 0.36, 0.22),
+	"lava": Color(0.50, 0.20, 0.06),
 }
 ## Map accent for holes / obstacles (ArenaLook ids).
 const BLOCK_GLOW := {
@@ -53,10 +53,12 @@ const BLOCK_GLOW := {
 const BLOCK_GLOW_DEFAULT := Color(0.95, 0.85, 0.6)
 ## Per-map liquid glow where the default disappears on a light floor.
 const LIQUID_GLOW_BY_MAP := {
-	"windmere": {"water": Color(0.0, 0.42, 0.55)},
-	# Mauro 5 Oct 2026: "This tiles are not supposed to be water its
-	# electricity" - Stormspire's charged pools glow electric violet.
-	"stormspire": {"water": Color(0.78, 0.5, 1.0)},
+	# A slate hint on the snow. A teal fill read as a colored square.
+	"windmere": {"water": Color(0.40, 0.48, 0.55)},
+	# Etched stone, not a glowing purple box.
+	"stormspire": {"water": Color(0.30, 0.26, 0.36)},
+	"brinewake": {"water": Color(0.16, 0.26, 0.30)},
+	"slagcrown": {"lava": Color(0.48, 0.18, 0.05), "water": Color(0.32, 0.22, 0.16)},
 }
 ## Light floors: a soft tint fills the blocked diamond so the glow still shows
 ## around the base of a tall obstacle (alpha of the fill).
@@ -106,9 +108,9 @@ class GridInk extends Node2D:
 		var ink: Color = style.get("ink", KoliseoLife.GRID_INK)
 		var ink_px := float(style.get("ink_px", KoliseoLife.GRID_INK_PX))
 		if host.painted_floor:
-			ink.a = minf(ink.a * 0.35, 0.28)
-			ink_px = minf(ink_px, 1.2)
-			draw_polyline(loop, ink, ink_px, true)
+			# Neutral and faint. The arena gleam (gold on Stormspire, teal on
+			# the ice) is the thick colored grid and stays off the plate.
+			draw_polyline(loop, Color(0.12, 0.10, 0.09, 0.18), 1.0, true)
 			return
 		draw_polyline(loop, ink, ink_px, true)
 		draw_polyline(loop, style.get("gleam", KoliseoLife.GRID_GLEAM), float(style.get("gleam_px", KoliseoLife.GRID_GLEAM_PX)), true)
@@ -433,10 +435,10 @@ func walk_glow_color() -> Color:
 func _paint_painted_hazard(canvas: CanvasItem) -> void:
 	var points := _diamond_points()
 	var glow := walk_glow_color()
-	canvas.draw_colored_polygon(points, Color(glow.r, glow.g, glow.b, 0.14))
+	canvas.draw_colored_polygon(points, Color(glow.r, glow.g, glow.b, 0.10))
 	var line := PackedVector2Array(points)
 	line.append(points[0])
-	canvas.draw_polyline(line, Color(glow.r, glow.g, glow.b, 0.45), 1.2, true)
+	canvas.draw_polyline(line, Color(glow.r, glow.g, glow.b, 0.38), 1.0, true)
 
 
 ## A soft inner glow: rings fading toward the middle of the diamond.
