@@ -66,6 +66,9 @@ var grid_position: Vector2i = Vector2i.ZERO
 var unit_name: String = ""
 ## Set by the board when this name plate would cover a neighbour's.
 var name_nudge: Vector2 = Vector2.ZERO
+var _occluded := false
+var _cover_z := 0
+var _occlude_rim: Sprite2D
 var class_id: String = ""
 var facing: String = "E"
 ## Fade's Neutral Invisible. The solid body stays off; status chrome is the read.
@@ -220,6 +223,9 @@ const SEAT_RING_CENTER := Vector2(0, 3)
 const SEAT_RING_RX := 18.0
 const SEAT_RING_RY := 7.0
 const NAME_GAP_ABOVE_HP := 2.0
+## How far a crowded name may step. Past this it stays with its fighter.
+const NAME_NUDGE_CAP := 36.0
+const OCCLUDE_RIM_SHADER := preload("res://units/occlude_rim.gdshader")
 
 static var _sprite_cache: Dictionary = {}
 
@@ -3080,39 +3086,227 @@ func name_plate_rect() -> Rect2:
 	return Rect2(Vector2(-size.x * 0.5 - 4.0, base - ascent - 1.0), Vector2(size.x + 8.0, ascent + descent + 2.0))
 
 
-## Two champions side by side used to print their name plates on top of
-## each other. Plates that would overlap are pushed apart: sideways when the
-## pawns stand side by side, the rear plate up when one stands behind.
+## Name plates and HP bars that would overlap are pushed apart. Side by side
+## they step sideways. One behind the other, the rear stack steps up. The
+## result is computed from positions, so it does not drift frame to frame.
 static func spread_name_plates(pawns: Array) -> void:
 	var bodies: Array = []
 	for pawn in pawns:
 		if pawn != null and is_instance_valid(pawn) and pawn is Pawn and (pawn as Pawn).visible and (pawn as Pawn).unit_name != "":
 			bodies.append(pawn)
+	bodies.sort_custom(func(a: Pawn, b: Pawn) -> bool:
+		if a.seat != b.seat:
+			return a.seat < b.seat
+		if not is_equal_approx(a.position.y, b.position.y):
+			return a.position.y < b.position.y
+		return a.position.x < b.position.x
+	)
 	var nudges := {}
 	for body in bodies:
 		nudges[body] = Vector2.ZERO
-	for i in bodies.size():
-		for j in range(i + 1, bodies.size()):
-			var a: Pawn = bodies[i]
-			var b: Pawn = bodies[j]
-			var ra := a.name_plate_rect()
-			ra.position += a.position + nudges[a]
-			var rb := b.name_plate_rect()
-			rb.position += b.position + nudges[b]
-			var both := ra.intersection(rb)
-			if both.size.x <= 0.0 or both.size.y <= 0.0:
-				continue
-			var dx := b.position.x - a.position.x
-			if absf(dx) >= 8.0:
-				var half := both.size.x * 0.5 + 2.0
-				var lean := signf(dx)
-				nudges[a] += Vector2(-half * lean, 0.0)
-				nudges[b] += Vector2(half * lean, 0.0)
-			else:
-				var rear: Pawn = a if a.position.y < b.position.y else b
-				nudges[rear] += Vector2(0.0, -(both.size.y + 2.0))
+	for _pass in 2:
+		for i in bodies.size():
+			for j in range(i + 1, bodies.size()):
+				_separate_chrome(bodies[i], bodies[j], nudges)
+		for i in bodies.size():
+			for j in bodies.size():
+				if i == j:
+					continue
+				_lift_chrome_off_body(bodies[i], bodies[j], nudges)
+	_clamp_name_nudges(nudges)
+	# The lift cap can park a stack back on top of the other name. Step
+	# sideways until the measured plates and bars are clear.
+	for _repair in 3:
+		for i in bodies.size():
+			for j in range(i + 1, bodies.size()):
+				_separate_chrome(bodies[i], bodies[j], nudges)
+		_clamp_name_nudges(nudges)
 	for body in bodies:
 		(body as Pawn).set_name_nudge(nudges[body])
+
+
+static func _clamp_name_nudges(nudges: Dictionary) -> void:
+	for body in nudges.keys():
+		var nudge: Vector2 = nudges[body]
+		nudge.y = clampf(nudge.y, -NAME_NUDGE_CAP, NAME_NUDGE_CAP)
+		nudge.x = clampf(nudge.x, -NAME_NUDGE_CAP, NAME_NUDGE_CAP)
+		nudges[body] = nudge
+
+
+static func _separate_chrome(a: Pawn, b: Pawn, nudges: Dictionary) -> void:
+	var ra := a.chrome_stack_rect()
+	ra.position += a.position + nudges[a]
+	var rb := b.chrome_stack_rect()
+	rb.position += b.position + nudges[b]
+	var both := ra.intersection(rb)
+	if both.size.x <= 0.5 or both.size.y <= 0.5:
+		return
+	var dx := b.position.x - a.position.x
+	if absf(dx) >= 8.0:
+		var half := both.size.x * 0.5 + 2.0
+		var lean := signf(dx)
+		nudges[a] += Vector2(-half * lean, 0.0)
+		nudges[b] += Vector2(half * lean, 0.0)
+	else:
+		var rear: Pawn = a if a.position.y <= b.position.y else b
+		if is_equal_approx(a.position.y, b.position.y) and a.seat > b.seat:
+			rear = b
+		nudges[rear] += Vector2(0.0, -(both.size.y + 2.0))
+
+
+static func _lift_chrome_off_body(mover: Pawn, other: Pawn, nudges: Dictionary) -> void:
+	var chrome := mover.chrome_stack_rect()
+	chrome.position += mover.position + nudges[mover]
+	var body := other.body_rect()
+	body.position += other.position
+	var hit := chrome.intersection(body)
+	if hit.size.x <= 0.5 or hit.size.y <= 0.5:
+		return
+	nudges[mover] += Vector2(0.0, -(hit.size.y + 2.0))
+
+
+## Name plate plus the HP bar, before the nudge. A few pixels of pad so two
+## stacks that would touch still step apart.
+func chrome_stack_rect() -> Rect2:
+	var name_r := name_plate_rect()
+	var hp_y := head_hp_y() if _sprite_ready() else -28.0
+	var hp := Rect2(Vector2(-16.0, hp_y - 1.0), Vector2(32.0, 6.0))
+	return name_r.merge(hp).grow(3.0)
+
+
+func chrome_stack_world_rect() -> Rect2:
+	var rect := chrome_stack_rect()
+	rect.position += position + name_nudge
+	return rect
+
+
+## Torso used to keep a neighbour's name off the body. Feet are left alone.
+func body_rect() -> Rect2:
+	var top := head_hp_y() if _sprite_ready() else -28.0
+	return Rect2(Vector2(-22.0, top), Vector2(44.0, -top * 0.72))
+
+
+func body_world_rect() -> Rect2:
+	var rect := body_rect()
+	rect.position += position
+	return rect
+
+
+func is_occluded() -> bool:
+	return _occluded
+
+
+func occlude_cover_z() -> int:
+	return _cover_z
+
+
+## The fighter behind draws a class-coloured edge above the one in front.
+## `cover_z` is that front pawn's z. Several neighbours keep the highest.
+static func assign_occlusion(pawns: Array) -> void:
+	var live: Array = []
+	for pawn in pawns:
+		if pawn == null or not is_instance_valid(pawn) or not (pawn is Pawn):
+			continue
+		var body: Pawn = pawn
+		body.set_occluded(false, 0)
+		if body.visible and body.alive:
+			live.append(body)
+	for i in live.size():
+		for j in range(i + 1, live.size()):
+			var a: Pawn = live[i]
+			var b: Pawn = live[j]
+			if not a.body_world_rect().intersects(b.body_world_rect()):
+				continue
+			var a_behind := BoardVisualSort.draws_behind(a.z_index, a.position, a.seat, b.z_index, b.position, b.seat)
+			var rear: Pawn = a if a_behind else b
+			var front: Pawn = b if a_behind else a
+			rear.set_occluded(true, front.z_index)
+
+
+func set_occluded(occluded: bool, cover_z: int) -> void:
+	if not occluded:
+		_occluded = false
+		_cover_z = 0
+	elif _occluded:
+		_cover_z = maxi(_cover_z, cover_z)
+	else:
+		_occluded = true
+		_cover_z = cover_z
+	_sync_occlude_rim()
+
+
+func _ensure_occlude_rim() -> Sprite2D:
+	if _occlude_rim != null and is_instance_valid(_occlude_rim):
+		return _occlude_rim
+	var existing := get_node_or_null("OccludeRim") as Sprite2D
+	if existing != null:
+		_occlude_rim = existing
+		return existing
+	var node := Sprite2D.new()
+	node.name = "OccludeRim"
+	node.centered = true
+	node.z_as_relative = true
+	node.visible = false
+	node.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	var mat := ShaderMaterial.new()
+	mat.shader = OCCLUDE_RIM_SHADER
+	node.material = mat
+	add_child(node)
+	_occlude_rim = node
+	return node
+
+
+func _sync_occlude_rim() -> void:
+	var rim := _ensure_occlude_rim()
+	if not _occluded or not visible or not alive:
+		rim.visible = false
+		return
+	var src := _drawn_body()
+	var tex := _body_texture(src)
+	if src == null or tex == null:
+		rim.visible = false
+		return
+	rim.texture = tex
+	rim.position = src.position
+	rim.scale = src.scale
+	rim.flip_h = src.flip_h
+	if src is Sprite2D:
+		rim.offset = (src as Sprite2D).offset
+	else:
+		rim.offset = (src as AnimatedSprite2D).offset
+	# Relative to this pawn so the edge sits just above the fighter in front
+	# and still under that fighter's name.
+	rim.z_as_relative = true
+	rim.z_index = _cover_z - z_index + 1
+	var mat := rim.material as ShaderMaterial
+	if mat != null:
+		mat.set_shader_parameter("ink", _body_color())
+		mat.set_shader_parameter("px", 3.0)
+	rim.visible = true
+
+
+func _drawn_body() -> Node2D:
+	if _walk_draw != null and is_instance_valid(_walk_draw) and _walk_draw.visible and _walk_draw.texture != null:
+		return _walk_draw
+	if _sprite != null and is_instance_valid(_sprite) and _sprite.visible and _sprite.texture != null:
+		return _sprite
+	if _active_strip != null and is_instance_valid(_active_strip) and _active_strip.visible:
+		return _active_strip
+	return null
+
+
+func _body_texture(src: Node2D) -> Texture2D:
+	if src == null:
+		return null
+	if src is Sprite2D:
+		return (src as Sprite2D).texture
+	if src is AnimatedSprite2D:
+		var strip := src as AnimatedSprite2D
+		var frames := strip.sprite_frames
+		if frames == null or not frames.has_animation(strip.animation):
+			return null
+		return frames.get_frame_texture(strip.animation, strip.frame)
+	return null
 
 
 func set_name_nudge(nudge: Vector2) -> void:
@@ -3154,7 +3348,9 @@ func _draw_legacy_token() -> void:
 
 
 func _paint_unit_chrome(canvas: CanvasItem, hp_y: float, name_y: float) -> void:
-	var bar_origin := Vector2(-14, hp_y)
+	hp_y += name_nudge.y
+	name_y += name_nudge.y
+	var bar_origin := Vector2(-14.0 + name_nudge.x, hp_y)
 	canvas.draw_rect(Rect2(bar_origin, Vector2(28, 4)), Color(0.12, 0.1, 0.12))
 	var ratio := 0.0 if max_hp <= 0 else clampf(float(maxi(hp, 0)) / float(max_hp), 0.0, 1.0)
 	var hp_color := _body_color().lightened(0.25)
@@ -3164,7 +3360,6 @@ func _paint_unit_chrome(canvas: CanvasItem, hp_y: float, name_y: float) -> void:
 	var label := unit_name
 	var size := font.get_string_size(label, HORIZONTAL_ALIGNMENT_CENTER, -1, NAME_FONT_SIZE)
 	var label_x := -size.x * 0.5 + name_nudge.x
-	name_y += name_nudge.y
 	var name_color := Color(0.1, 0.08, 0.1)
 	if name_y < hp_y:
 		var ascent := font.get_ascent(NAME_FONT_SIZE)
@@ -3177,9 +3372,10 @@ func _paint_unit_chrome(canvas: CanvasItem, hp_y: float, name_y: float) -> void:
 	if stunned:
 		var stun_size := font.get_string_size("STUN", HORIZONTAL_ALIGNMENT_CENTER, -1, 10)
 		var stun_y := badge_bottom - 12.0
-		var badge := Rect2(Vector2(-stun_size.x * 0.5 - 3, stun_y), Vector2(stun_size.x + 6, 12))
+		var stun_x := -stun_size.x * 0.5 + name_nudge.x
+		var badge := Rect2(Vector2(stun_x - 3, stun_y), Vector2(stun_size.x + 6, 12))
 		canvas.draw_rect(badge, Color(0.95, 0.78, 0.18, 0.95))
-		canvas.draw_string(font, Vector2(-stun_size.x * 0.5, stun_y + 10), "STUN", HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color(0.12, 0.08, 0.1))
+		canvas.draw_string(font, Vector2(stun_x, stun_y + 10), "STUN", HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color(0.12, 0.08, 0.1))
 		badge_bottom = stun_y - 2.0
 	if burning:
 		var burn_label := burn_badge_label()
@@ -3187,10 +3383,11 @@ func _paint_unit_chrome(canvas: CanvasItem, hp_y: float, name_y: float) -> void:
 			burn_label = "BURN"
 		var burn_size := font.get_string_size(burn_label, HORIZONTAL_ALIGNMENT_CENTER, -1, 10)
 		var burn_y := badge_bottom - 12.0
-		var burn_badge := Rect2(Vector2(-burn_size.x * 0.5 - 3, burn_y), Vector2(burn_size.x + 6, 12))
+		var burn_x := -burn_size.x * 0.5 + name_nudge.x
+		var burn_badge := Rect2(Vector2(burn_x - 3, burn_y), Vector2(burn_size.x + 6, 12))
 		canvas.draw_rect(burn_badge, Color(0.92, 0.28, 0.1, 0.95))
 		_paint_flame(canvas, Vector2(burn_badge.position.x - 8.0, burn_y + 6.0))
-		canvas.draw_string(font, Vector2(-burn_size.x * 0.5, burn_y + 10), burn_label, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color(0.99, 0.94, 0.88))
+		canvas.draw_string(font, Vector2(burn_x, burn_y + 10), burn_label, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color(0.99, 0.94, 0.88))
 
 
 ## Bottom edge of the next overhead badge. Above the name when the name sits

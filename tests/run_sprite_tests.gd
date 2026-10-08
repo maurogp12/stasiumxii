@@ -26,6 +26,7 @@ func _run() -> void:
 	_test_flash_kinds()
 	_test_view_wires_flash_without_rules()
 	_test_name_sits_above_the_sprite()
+	_test_adjacent_units_stay_readable()
 	_test_foe_bodies()
 	_test_boss_sheets()
 
@@ -288,6 +289,84 @@ func _test_name_sits_above_the_sprite() -> void:
 		var stun_bottom: float = pawn._badge_stack_bottom(font, Pawn.HEAD_HP_Y, pawn.name_baseline())
 		eq(stun_bottom <= name_top, true, "%s stun badge stays above the name" % class_id)
 		pawn.free()
+
+
+## Depth follows the cell, not the class. Adjacent name and HP stacks do not overlap.
+func _test_adjacent_units_stay_readable() -> void:
+	var far := Vector2i(4, 4)
+	var near := Vector2i(5, 4)
+	var far_at := BoardVisualSort.cell_to_local(far, 0.0)
+	var near_at := BoardVisualSort.cell_to_local(near, 0.0)
+	eq(BoardVisualSort.unit_z_index(near, 0.0) > BoardVisualSort.unit_z_index(far, 0.0), true, "the nearer cell draws in front")
+	eq(BoardVisualSort.unit_z_from_local(far_at, 0.0), BoardVisualSort.unit_z_index(far, 0.0), "standing feet use the cell depth")
+	eq(BoardVisualSort.unit_z_from_local(BoardVisualSort.cell_to_local(far, 2.0), 2.0), BoardVisualSort.unit_z_index(far, 2.0), "elevation depth matches the cell")
+	var mid := far_at.lerp(near_at, 0.8)
+	var mid_z := BoardVisualSort.unit_z_from_local(mid, 0.0)
+	eq(mid_z > BoardVisualSort.unit_z_index(far, 0.0), true, "a walk past the far cell sorts in front of it")
+	eq(mid_z <= BoardVisualSort.unit_z_index(near, 0.0), true, "the walk has not jumped past the near cell")
+	# Same depth line: screen-right is in front. Seat does not override depth.
+	var left := BoardVisualSort.cell_to_local(Vector2i(4, 6), 0.0)
+	var right := BoardVisualSort.cell_to_local(Vector2i(6, 4), 0.0)
+	eq(BoardVisualSort.unit_z_index(Vector2i(4, 6), 0.0), BoardVisualSort.unit_z_index(Vector2i(6, 4), 0.0), "a shared depth line ties on z")
+	eq(BoardVisualSort.draws_behind(10, left, 0, 10, right, 1), true, "on a tie the left-hand fighter is behind")
+	eq(BoardVisualSort.draws_behind(20, far_at, 1, 10, near_at, 0), false, "a higher depth stays in front of a lower seat")
+	# Two levels of height used to outrank one step toward the camera.
+	var high_far := {"z": BoardVisualSort.unit_z_index(Vector2i(7, 6), 2.0), "pos": BoardVisualSort.cell_to_local(Vector2i(7, 6), 2.0), "seat": 0}
+	var low_near := {"z": BoardVisualSort.unit_z_index(Vector2i(8, 6), 0.0), "pos": BoardVisualSort.cell_to_local(Vector2i(8, 6), 0.0), "seat": 1}
+	var back_z := int(high_far["z"])
+	var front_z := int(low_near["z"])
+	eq(back_z > front_z, true, "tile height alone would put the back fighter in front")
+	var raised: Array = [high_far, low_near]
+	BoardVisualSort.resolve_camera_z(raised)
+	eq(int(raised[0]["z"]), back_z, "the back fighter is not dropped under their tile")
+	eq(int(raised[1]["z"]) > int(raised[0]["z"]), true, "the nearer cell still draws in front of a taller tile")
+	var flat_back := {"z": 154, "pos": BoardVisualSort.cell_to_local(Vector2i(8, 7), 0.0), "seat": 0}
+	var flat_front := {"z": 164, "pos": BoardVisualSort.cell_to_local(Vector2i(9, 7), 0.0), "seat": 1}
+	var flat: Array = [flat_back, flat_front]
+	BoardVisualSort.resolve_camera_z(flat)
+	eq(int(flat[0]["z"]), 154, "an already-ordered back fighter keeps its z")
+	eq(int(flat[1]["z"]), 164, "an already-ordered front fighter keeps its z")
+	var kestrel := Pawn.new()
+	var gloam := Pawn.new()
+	get_root().add_child(kestrel)
+	get_root().add_child(gloam)
+	kestrel.apply_snapshot(_unit_dict("kestrel", "W", 0), 0)
+	gloam.apply_snapshot(_unit_dict("gloam", "E", 1), 1)
+	kestrel.position = far_at
+	gloam.position = near_at
+	kestrel.z_index = BoardVisualSort.unit_z_index(far, 0.0)
+	gloam.z_index = BoardVisualSort.unit_z_index(near, 0.0)
+	var kestrel_z := kestrel.z_index
+	kestrel.set_facing("N")
+	kestrel.set_facing("W")
+	eq(kestrel.z_index, kestrel_z, "facing does not change draw depth")
+	Pawn.assign_occlusion([kestrel, gloam])
+	eq(kestrel.is_occluded(), true, "Kestrel behind Gloam is the occluded one")
+	eq(gloam.is_occluded(), false, "Gloam on the near cell is not forced behind")
+	eq(kestrel.occlude_cover_z(), gloam.z_index, "the rim sits on the fighter in front")
+	kestrel.position = near_at
+	gloam.position = far_at
+	kestrel.z_index = BoardVisualSort.unit_z_index(near, 0.0)
+	gloam.z_index = BoardVisualSort.unit_z_index(far, 0.0)
+	Pawn.assign_occlusion([gloam, kestrel])
+	eq(gloam.is_occluded(), true, "Gloam behind is occluded")
+	eq(kestrel.is_occluded(), false, "Kestrel is not forced on top when she stands behind")
+	kestrel.position = BoardVisualSort.cell_to_local(Vector2i(5, 5), 0.0)
+	gloam.position = BoardVisualSort.cell_to_local(Vector2i(6, 5), 0.0)
+	Pawn.spread_name_plates([gloam, kestrel])
+	eq(kestrel.chrome_stack_world_rect().intersects(gloam.chrome_stack_world_rect()), false, "adjacent name and HP stacks do not overlap")
+	var once := kestrel.name_nudge
+	Pawn.spread_name_plates([kestrel, gloam])
+	eq(kestrel.name_nudge, once, "the spread does not depend on list order")
+	kestrel.position = BoardVisualSort.cell_to_local(Vector2i(7, 6), 2.0)
+	gloam.position = BoardVisualSort.cell_to_local(Vector2i(8, 6), 0.0)
+	Pawn.spread_name_plates([kestrel, gloam])
+	eq(kestrel.chrome_stack_world_rect().intersects(gloam.chrome_stack_world_rect()), false, "a raised back cell does not leave the name stacks overlapping")
+	var raised_nudge := kestrel.name_nudge
+	Pawn.spread_name_plates([gloam, kestrel])
+	eq(kestrel.name_nudge, raised_nudge, "the raised-cell spread stays put")
+	kestrel.free()
+	gloam.free()
 
 
 ## Idle, the face snap, and the walk clip are one sheet. The soft plant is not shown.
