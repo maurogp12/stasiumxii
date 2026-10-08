@@ -35,6 +35,9 @@ const DOFUS_AP := Color(0.28, 0.62, 1.0)
 const DOFUS_MP := Color(0.36, 0.86, 0.34)
 const TEAM_BLUE := Color(0.26, 0.54, 1.0)
 const TEAM_RED := Color(0.94, 0.28, 0.26)
+## Turn-bar portrait. 118px chip, ~96px of class art inside the frame at the
+## 2400×1080 phone window. Two of these fit the center panel without growing it.
+const PORTRAIT_CHIP := Vector2(124, 118)
 const HUB_FONT := "res://art/ui/hub/Cinzel-Semibold.ttf"
 const STUN_GREY := Color(0.58, 0.58, 0.62, 0.82)
 const AMBUSH_SHADE_TIP := "Ambush from Shade"
@@ -1062,8 +1065,6 @@ func render(snap: Dictionary, legal: Array) -> void:
 		set_turn_clock(clock_sec if clock_sec >= 0 else _clock_seconds, turn_clock_running(snap), turn_clock_fraction(snap))
 	else:
 		_apply_turn_label_clock()
-	_sync_turn_strip(snap)
-
 	_render_pips(_ap_pips, int(active.get("ap", 0)), int(active.get("max_ap", 6)), DOFUS_AP, active)
 	_render_pips(_mp_pips, int(active.get("mp", 0)), int(active.get("max_mp", 3)), DOFUS_MP)
 	if _deploy_note != "" and _deploying:
@@ -1119,6 +1120,8 @@ func render(snap: Dictionary, legal: Array) -> void:
 	_apply_controls(match_over)
 	_sync_deploy_chrome(snap)
 	_sync_stun_badge(chrome, units, match_over)
+	# After the armed spell settles, so a legal target lights the portrait.
+	_sync_turn_strip(snap)
 
 
 func _apply_controls(match_over: bool) -> void:
@@ -1175,6 +1178,8 @@ func _build() -> void:
 	_you_label.add_theme_font_size_override("font_size", 12)
 	_you_label.add_theme_color_override("font_color", GOLD_BRIGHT)
 	_apply_display_font(_you_label)
+	# Names live on the side banners. The center bar is the two portraits.
+	_you_label.visible = false
 	resource_panel.add_child(_you_label)
 	_opp_label = Label.new()
 	_opp_label.name = "OppLabel"
@@ -1185,21 +1190,22 @@ func _build() -> void:
 	_opp_label.add_theme_font_size_override("font_size", 12)
 	_opp_label.add_theme_color_override("font_color", GOLD)
 	_apply_display_font(_opp_label)
+	_opp_label.visible = false
 	resource_panel.add_child(_opp_label)
 
 	_turn_strip = HBoxContainer.new()
 	_turn_strip.name = "TurnStrip"
-	_turn_strip.position = Vector2(8, 22)
-	_turn_strip.size = Vector2(432, 28)
-	_turn_strip.alignment = BoxContainer.ALIGNMENT_CENTER
+	_turn_strip.position = Vector2(4, 4)
+	_turn_strip.size = Vector2(272, 120)
+	_turn_strip.alignment = BoxContainer.ALIGNMENT_BEGIN
 	_turn_strip.add_theme_constant_override("separation", 8)
 	_turn_strip.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	resource_panel.add_child(_turn_strip)
 
 	_turn_label = Label.new()
-	_turn_label.position = Vector2(8, 52)
-	_turn_label.size = Vector2(432, 16)
-	_turn_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_turn_label.position = Vector2(280, 6)
+	_turn_label.size = Vector2(160, 20)
+	_turn_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	_turn_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_turn_label.clip_text = true
 	_turn_label.add_theme_font_size_override("font_size", 11)
@@ -1208,8 +1214,8 @@ func _build() -> void:
 	resource_panel.add_child(_turn_label)
 
 	var res_box := VBoxContainer.new()
-	res_box.position = Vector2(18, 70)
-	res_box.size = Vector2(412, 52)
+	res_box.position = Vector2(280, 28)
+	res_box.size = Vector2(160, 92)
 	res_box.add_theme_constant_override("separation", 4)
 	res_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	resource_panel.add_child(res_box)
@@ -1787,11 +1793,16 @@ func _sync_turn_strip(snap: Dictionary) -> void:
 	var active := snap_active_seat(snap)
 	var deploying := is_deployment_phase(snap)
 	var over := bool(snap.get("match_over", false))
+	var order: Array = turn_order(snap)
+	var px := _chip_px(order.size())
 	var parts: PackedStringArray = PackedStringArray()
-	for unit in turn_order(snap):
+	parts.append("spell:%s" % _selected_spell)
+	parts.append("px:%d" % int(px.y))
+	for unit in order:
 		var seat := int(unit.get("seat", -1))
 		var acting := (not deploying) and (not over) and seat == active
-		parts.append("%d:%s:%s" % [seat, str(unit.get("class_id", "")), "1" if acting else "0"])
+		var targeted := _chip_targeted(unit)
+		parts.append("%d:%s:%s:%s" % [seat, str(unit.get("class_id", "")), "1" if acting else "0", "T" if targeted else "-"])
 	var sig := "|".join(parts)
 	if sig == _turn_strip_sig and _turn_strip.get_child_count() > 0:
 		return
@@ -1800,39 +1811,85 @@ func _sync_turn_strip(snap: Dictionary) -> void:
 		var child := _turn_strip.get_child(0)
 		_turn_strip.remove_child(child)
 		child.free()
-	for unit in turn_order(snap):
+	var you := you_opp_seats(snap).x
+	for unit in order:
 		var seat := int(unit.get("seat", -1))
 		var acting := (not deploying) and (not over) and seat == active
-		var chip := _turn_chip(unit, acting)
+		var targeted := _chip_targeted(unit)
+		var chip := _turn_chip(unit, acting, targeted, seat == you, px)
 		_make_unit_pressable(chip, seat)
-		# Dofus timeline: each portrait framed in its team color.
-		var frame := _chip_frame(acting)
-		frame.border_color = TEAM_RED if unit_team(unit) == 1 else TEAM_BLUE
-		if acting:
-			frame.shadow_color = Color(frame.border_color.r, frame.border_color.g, frame.border_color.b, 0.75)
-		(chip as Panel).add_theme_stylebox_override("panel", frame)
 		_turn_strip.add_child(chip)
 
 
-func _turn_chip(unit: Dictionary, acting: bool) -> Control:
-	var side := 26 if acting else 22
+func _fit_turn_chips() -> void:
+	if _turn_strip == null:
+		return
+	var count := _turn_strip.get_child_count()
+	if count <= 0:
+		return
+	var px := _chip_px(count)
+	for child in _turn_strip.get_children():
+		var host := child as Control
+		if host == null:
+			continue
+		host.custom_minimum_size = px
+		host.size = px
+
+
+func _chip_px(count: int) -> Vector2:
+	var px := PORTRAIT_CHIP
+	if _turn_strip == null or count <= 0:
+		return px
+	var gap := 8.0
+	var band_w := _turn_strip.size.x
+	var band_h := _turn_strip.size.y
+	if band_h < 8.0:
+		return Vector2(1, 1)
+	var h := minf(px.y, band_h)
+	var w := minf(px.x, h * (px.x / px.y))
+	var fit_w := (band_w - gap * float(maxi(count - 1, 0))) / float(count)
+	if fit_w < w:
+		w = maxf(fit_w, 1.0)
+		h = minf(h, w * (px.y / px.x))
+	if count <= 2 and band_h >= px.y and band_w >= px.x * 2.0 + gap:
+		return px
+	return Vector2(w, h)
+
+
+## Armed unit spell can legally land on this fighter. View only.
+func _chip_targeted(unit: Dictionary) -> bool:
+	if _selected_spell == "" or not TOUCH.spell_targets_unit(_selected_spell):
+		return false
+	if not bool(unit.get("alive", true)):
+		return false
+	var pos: Variant = unit.get("pos", null)
+	if not (pos is Vector2i):
+		return false
+	return SNAPSHOT_TILES.cast_dests(_last_legal, _selected_spell).has(pos)
+
+
+func _turn_chip(unit: Dictionary, acting: bool, targeted: bool, is_you: bool, px: Vector2) -> Control:
+	var team := TEAM_RED if unit_team(unit) == 1 else TEAM_BLUE
 	var host := Panel.new()
-	host.custom_minimum_size = Vector2(side, side)
-	host.size = Vector2(side, side)
+	host.custom_minimum_size = px
+	host.size = px
 	host.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	host.add_theme_stylebox_override("panel", _chip_frame(acting))
+	host.clip_contents = true
+	host.add_theme_stylebox_override("panel", _chip_frame(acting, targeted, team))
 	var tex := _portrait_for(unit)
+	var tag_h := 16.0 if px.y >= 80.0 else 0.0
 	if tex != null:
 		var plate := TextureRect.new()
 		plate.texture = tex
 		plate.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		plate.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+		plate.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		plate.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 		plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		plate.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		plate.offset_left = 3
-		plate.offset_top = 3
-		plate.offset_right = -3
-		plate.offset_bottom = -3
+		plate.offset_left = 4
+		plate.offset_top = 4
+		plate.offset_right = -4
+		plate.offset_bottom = -(4.0 + tag_h)
 		host.add_child(plate)
 	else:
 		var label := Label.new()
@@ -1840,27 +1897,55 @@ func _turn_chip(unit: Dictionary, acting: bool) -> Control:
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		label.add_theme_font_size_override("font_size", 10)
+		label.add_theme_font_size_override("font_size", 14)
 		label.add_theme_color_override("font_color", CREAM)
 		label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		host.add_child(label)
-	if not acting:
-		host.modulate = Color(0.72, 0.7, 0.64, 1)
+	if tag_h > 0.0:
+		var bar := ColorRect.new()
+		bar.color = team
+		bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		bar.anchor_left = 0.0
+		bar.anchor_right = 1.0
+		bar.anchor_top = 1.0
+		bar.anchor_bottom = 1.0
+		bar.offset_left = 4
+		bar.offset_right = -4
+		bar.offset_bottom = -4
+		bar.offset_top = -(4.0 + tag_h)
+		host.add_child(bar)
+		var tag := Label.new()
+		tag.text = "YOU" if is_you else "FOE"
+		tag.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		tag.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		tag.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		tag.add_theme_font_size_override("font_size", 11)
+		tag.add_theme_color_override("font_color", Color(0.98, 0.96, 0.9))
+		tag.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		bar.add_child(tag)
 	return host
 
 
-func _chip_frame(acting: bool) -> StyleBoxFlat:
+func _chip_frame(acting: bool, targeted: bool = false, team_color: Color = GOLD) -> StyleBoxFlat:
 	var box := StyleBoxFlat.new()
-	box.bg_color = NAVY_ACTIVE if acting else NAVY
-	box.border_color = GOLD_BRIGHT if acting else GOLD_DIM
-	box.set_border_width_all(3 if acting else 1)
-	box.corner_radius_top_left = 4
-	box.corner_radius_top_right = 4
-	box.corner_radius_bottom_left = 4
-	box.corner_radius_bottom_right = 4
-	if acting:
-		box.shadow_color = Color(0.95, 0.78, 0.38, 0.7)
-		box.shadow_size = 5
+	box.bg_color = Color(0.03, 0.035, 0.05, 0.94)
+	box.corner_radius_top_left = 6
+	box.corner_radius_top_right = 6
+	box.corner_radius_bottom_left = 6
+	box.corner_radius_bottom_right = 6
+	if targeted:
+		box.border_color = Color(1.0, 0.93, 0.5)
+		box.set_border_width_all(5)
+		box.shadow_color = Color(1.0, 0.84, 0.28, 0.95)
+		box.shadow_size = 8
+	elif acting:
+		box.border_color = Color(0.98, 0.86, 0.45)
+		box.set_border_width_all(4)
+		box.shadow_color = Color(team_color.r, team_color.g, team_color.b, 0.9)
+		box.shadow_size = 6
+	else:
+		box.border_color = team_color
+		box.set_border_width_all(3)
 	return box
 
 
@@ -1871,16 +1956,35 @@ func _portrait_for(unit: Dictionary) -> Texture2D:
 	var class_id := SpellKits.normalize_class_id(str(unit.get("class_id", "")))
 	if not SpellKits.is_roster_class(class_id):
 		return null
-	var key := "idle:%s" % class_id
+	var key := "card:%s" % class_id
 	if _head_cache.has(key) and _head_cache[key] is Texture2D:
 		return _head_cache[key]
-	var body := StripLibrary.idle_portrait(class_id)
-	if body == null:
-		return _head_crop("res://art/characters/%s/%s_s.png" % [class_id, class_id])
-	var head := _head_region(body)
-	if head != null:
-		_head_cache[key] = head
-	return head
+	var fitted := StripLibrary.card_portrait(class_id)
+	if fitted == null:
+		var body := StripLibrary.idle_portrait(class_id)
+		if body == null:
+			return _head_crop("res://art/characters/%s/%s_s.png" % [class_id, class_id])
+		fitted = body
+	var shown := _opaque_atlas(fitted)
+	if shown != null:
+		_head_cache[key] = shown
+	return shown
+
+
+## The standing card keeps a shared baseline margin. The turn chip fills with the body.
+func _opaque_atlas(tex: Texture2D) -> Texture2D:
+	if tex == null:
+		return null
+	var img := tex.get_image()
+	if img == null or img.is_empty():
+		return tex
+	var used := StripLibrary.opaque_rect(img)
+	if used.size.x < 2 or used.size.y < 2:
+		return tex
+	var atlas := AtlasTexture.new()
+	atlas.atlas = tex
+	atlas.region = Rect2(used)
+	return atlas
 
 
 func _head_crop(path: String) -> Texture2D:
@@ -3197,10 +3301,24 @@ func _layout_chrome(forced: Vector2 = Vector2.ZERO) -> void:
 		_opp_label.position = Vector2(8.0 + half, 2)
 		_opp_label.size = Vector2(half, 18)
 	if _turn_strip != null:
-		_turn_strip.size.x = maxf(center_w - 16.0, 1.0)
+		var portrait_w := 272.0 if center_w >= 420.0 else minf(272.0, maxf(center_w * 0.62, 1.0))
+		_turn_strip.position = Vector2(4, 4)
+		_turn_strip.size = Vector2(portrait_w, maxf(center_h - 8.0, 1.0))
+		_fit_turn_chips()
+	if _turn_label != null and _turn_strip != null:
+		var text_x := _turn_strip.position.x + _turn_strip.size.x + 6.0
+		_turn_label.position = Vector2(text_x, 6)
+		_turn_label.size = Vector2(maxf(center_w - text_x - 8.0, 1.0), 20)
+		_turn_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+		if _ap_pips != null:
+			var res_box := _ap_pips.get_parent() as Control
+			if res_box != null:
+				res_box.position = Vector2(text_x, 28)
+				res_box.size = Vector2(maxf(center_w - text_x - 8.0, 1.0), maxf(center_h - 36.0, 1.0))
+	var text_w := center_w - 16.0
 	if _turn_label != null:
-		_turn_label.size.x = maxf(center_w - 16.0, 1.0)
-	_clock_bar_max_width = clampf(center_w - 120.0, 48.0, 220.0)
+		text_w = _turn_label.size.x
+	_clock_bar_max_width = clampf(text_w - 4.0, 48.0, 168.0)
 	if _clock_track != null:
 		_clock_track.custom_minimum_size = Vector2(_clock_bar_max_width, 8)
 		_clock_track.size = Vector2(_clock_bar_max_width, 8)

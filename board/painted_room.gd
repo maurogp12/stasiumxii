@@ -31,6 +31,10 @@ static func texture_from_webpbin(path: String) -> Texture2D:
 	if FileAccess.file_exists(path):
 		var image := Image.new()
 		if image.load_webp_from_buffer(FileAccess.get_file_as_bytes(path)) == OK:
+			# Transparent texels are near-black. Linear filtering was drawing
+			# that as a dark fringe around every prop. Bleed the opaque color out.
+			if image.detect_alpha() != Image.ALPHA_NONE:
+				image.fix_alpha_edges()
 			tex = ImageTexture.create_from_image(image)
 	_tex[path] = tex
 	return tex

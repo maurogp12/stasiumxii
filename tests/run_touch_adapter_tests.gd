@@ -225,6 +225,7 @@ func _test_mobile_target_pick() -> void:
 	eq(TOUCH.hits_pawn_body(drawing, foe_origin), false, "the drawing edge misses the 34px desktop capsule")
 	eq(TOUCH.hits_pawn_body(drawing, foe_origin, false, true), true, "a unit cast covers that drawing edge")
 	eq(TOUCH.pick_board_cell(drawing, tiles, pawns, false) == foe, false, "without a unit cast the drawing edge is empty ground")
+	eq(TOUCH.pick_board_cell(drawing, tiles, pawns, false, true) == foe, false, "a walk on the diamond under the drawing stays that tile")
 	eq(TOUCH.pick_board_cell(drawing, tiles, pawns, true), foe, "the drawing wins over the empty ground under it")
 	eq(TOUCH.pick_board_cell(drawing, tiles, pawns, true, true), foe, "a finger on the drawing selects the foe")
 	# (C) Not only the center. A rim past the painted diamond still selects the foe.

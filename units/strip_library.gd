@@ -84,6 +84,8 @@ const PAINTED_ACTION_MAX_SEC := 0.6
 
 static var _cache: Dictionary = {}
 static var _painted_cells: Dictionary = {}
+## Fitted standing cards. Keyed by class and the canvas the caller asked for.
+static var _card_portraits: Dictionary = {}
 
 
 static func set_painted_looks(enabled: bool) -> void:
@@ -100,6 +102,7 @@ const LEGACY_STAND_ROW := 150
 static func clear_cache() -> void:
 	_cache.clear()
 	_painted_cells.clear()
+	_card_portraits.clear()
 	_idle_cache.clear()
 	_walk_contact.clear()
 
@@ -232,6 +235,84 @@ static func painted_cells(class_id: String, kind: String, face: String) -> Array
 		out.append(tex)
 	_painted_cells[path] = out
 	return out
+
+
+## Opaque pixels of a cell. Alpha at or below `alpha_min` (0–255) is padding.
+static func opaque_rect(image: Image, alpha_min: int = 16) -> Rect2i:
+	if image == null or image.is_empty():
+		return Rect2i()
+	var w := image.get_width()
+	var h := image.get_height()
+	var min_x := w
+	var min_y := h
+	var max_x := -1
+	var max_y := -1
+	for y in h:
+		for x in w:
+			if int(image.get_pixel(x, y).a * 255.0) <= alpha_min:
+				continue
+			if x < min_x:
+				min_x = x
+			if y < min_y:
+				min_y = y
+			if x > max_x:
+				max_x = x
+			if y > max_y:
+				max_y = y
+	if max_x < min_x or max_y < min_y:
+		return Rect2i()
+	return Rect2i(min_x, min_y, max_x - min_x + 1, max_y - min_y + 1)
+
+
+## Standing idle, cropped to the opaque body and scaled to one shared height.
+## Feet sit on one baseline. A figure wider than the canvas (Gloam) is the
+## only one that shrinks, and only enough to stay inside the card.
+## Default canvas is the class-select plate. Linear sample, same as the match.
+static func card_portrait(class_id: String, canvas_size: Vector2i = Vector2i(260, 248), height_frac: float = 0.78, feet_frac: float = 0.92) -> Texture2D:
+	var cls := SpellKits.normalize_class_id(class_id)
+	if not SpellKits.is_roster_class(cls):
+		return null
+	var canvas := canvas_size
+	if canvas.x < 8 or canvas.y < 8:
+		canvas = Vector2i(260, 248)
+	var key := "%s:%d:%d:%.3f:%.3f" % [cls, canvas.x, canvas.y, height_frac, feet_frac]
+	if _card_portraits.has(key):
+		var hit: Variant = _card_portraits[key]
+		return hit as Texture2D if hit is Texture2D else null
+	var cells := painted_cells(cls, "idle", "s")
+	if cells.is_empty() or cells[0] == null:
+		_card_portraits[key] = null
+		return null
+	var image := cells[0].get_image()
+	if image == null or image.is_empty():
+		_card_portraits[key] = cells[0]
+		return cells[0]
+	if image.get_format() != Image.FORMAT_RGBA8:
+		image.convert(Image.FORMAT_RGBA8)
+	var used := opaque_rect(image)
+	if used.size.x < 2 or used.size.y < 2:
+		_card_portraits[key] = cells[0]
+		return cells[0]
+	var target_h := int(round(float(canvas.y) * clampf(height_frac, 0.5, 0.98)))
+	var scale := float(target_h) / float(used.size.y)
+	var target_w := int(round(float(used.size.x) * scale))
+	var cap := int(round(float(canvas.x) * 0.92))
+	if target_w > cap and target_w > 0:
+		var fit := float(cap) / float(target_w)
+		target_w = cap
+		target_h = maxi(int(round(float(target_h) * fit)), 1)
+	var cropped := image.get_region(used)
+	cropped.resize(maxi(target_w, 1), maxi(target_h, 1), Image.INTERPOLATE_BILINEAR)
+	var plate := Image.create(canvas.x, canvas.y, false, Image.FORMAT_RGBA8)
+	plate.fill(Color(0, 0, 0, 0))
+	var feet_y := int(round(float(canvas.y) * clampf(feet_frac, 0.5, 1.0)))
+	var dest := Vector2i(int((canvas.x - cropped.get_width()) / 2.0), feet_y - cropped.get_height())
+	if dest.y < 0:
+		dest.y = 0
+	plate.blit_rect(cropped, Rect2i(0, 0, cropped.get_width(), cropped.get_height()), dest)
+	var tex := ImageTexture.create_from_image(plate)
+	_card_portraits[key] = tex
+	return tex
 
 
 ## Painted walk cells crossed by one board tile of travel, or 0 when this
