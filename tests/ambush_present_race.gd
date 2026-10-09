@@ -52,7 +52,7 @@ static func run(host: SceneTree) -> void:
 	host.eq(bool(resolved.get("ok", false)), true, "ambush race hit resolves")
 	var sim_hit := _ambush_hit(resolved.get("events", []))
 	host.eq(str(sim_hit.get("type", "")), "hit", "ambush race connects")
-	host.eq(int(sim_hit.get("damage", 0)), 26, "front Ambush is 26")
+	host.eq(int(sim_hit.get("damage", 0)), 29, "front Ambush is 26 + Fade's 1 Umbral")
 	host.eq(bool(sim_hit.get("teleported", false)), true, "the sim still marks the hit as teleported")
 	host.eq(sim_hit.get("destination", Vector2i(-1, -1)), back_cell, "the sim lands on the back tile")
 	# A second presenter (net echo, coach from last_events) can drop the flag.
@@ -132,7 +132,7 @@ static func run(host: SceneTree) -> void:
 	host.eq(slashed_on_back, true, "the slash plays only after the back-tile plant")
 	host.eq(gloam.grid_position, back_cell, "contact grid is the back tile")
 	host.eq(str(gloam.facing), "E", "contact facing is toward Kestrel")
-	host.eq(int(kestrel.hp), hp_before - 26, "front Ambush deals 26 only after the plant")
+	host.eq(int(kestrel.hp), hp_before - 29, "front Ambush deals 26 + Fade's 1 Umbral only after the plant")
 	board._settle_motions()
 	host.eq(bool(stripped_hit.get("teleported", false)), false, "contact does not write teleported back onto the presented event")
 	host.eq(board._as_cell("nope"), Vector2i(-1, -1), "a failed cell read is not the origin tile")

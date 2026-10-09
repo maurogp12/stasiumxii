@@ -1427,7 +1427,7 @@ func _ambush_aim_feel(seat: int, actor: Dictionary, def: Dictionary) -> Dictiona
 	if not bool(landing.get("ok", false)):
 		return _aim_hidden()
 	var mult := SpellKits.BACKSTAB_MULT if bool(landing.get("backstab", false)) else FRONT_SIDE_FACING
-	var amount := _phase_a_damage(int(def.get("base_damage", 22)), mult, actor, enemy, str(def.get("element", "")))
+	var amount := _phase_a_damage(_ambush_strike_base(def, actor), mult, actor, enemy, str(def.get("element", "")))
 	if amount <= 0:
 		return _aim_hidden()
 	return {
@@ -1545,9 +1545,16 @@ func preview_cast(spell_or_intent: Variant, from: Variant = null, to: Variant = 
 		out["hit_chance"] = null
 	else:
 		var facing_mult := FRONT_SIDE_FACING
-		if not target.is_empty() and bool(target.get("alive", true)):
-			facing_mult = _facing_multiplier(from_cell, target["pos"], str(target.get("facing", "")))
 		var base := _connect_base_damage(def, target)
+		if spell_id == SpellKits.AMBUSH and not actor.is_empty():
+			# Bonus is on the base, then the landing's back/front multiplier.
+			base = _ambush_strike_base(def, actor)
+			if not target.is_empty() and bool(target.get("alive", true)):
+				var ambush_land: Dictionary = _ambush_landing(actor, target)
+				if bool(ambush_land.get("ok", false)):
+					facing_mult = SpellKits.BACKSTAB_MULT if bool(ambush_land.get("backstab", false)) else FRONT_SIDE_FACING
+		elif not target.is_empty() and bool(target.get("alive", true)):
+			facing_mult = _facing_multiplier(from_cell, target["pos"], str(target.get("facing", "")))
 		# Same replacement as _resolve_rolling_cast. A foe sample must not
 		# show the stand-in card's Locked base while the hit uses the
 		# provisional attack. Facing stays the Locked Phase A product.
@@ -1567,6 +1574,10 @@ func preview_cast(spell_or_intent: Variant, from: Variant = null, to: Variant = 
 			# notes / on_connect still explain 6+6×M for when Marks exist.
 			out["sample_damage"] = null
 			notes.append("Needs 1+ Marks. 6+6×M Air when Marks exist.")
+	elif spell_id == SpellKits.AMBUSH:
+		var umbral_now := mini(maxi(int(actor.get("umbral", 0)), 0), SpellKits.UMBRAL_CAP)
+		out["umbral"] = umbral_now
+		notes.append("Hit spends all Umbral, +3 each.")
 	elif spell_id == SpellKits.CRUSH:
 		var impact_before := int(actor.get("impact", 0))
 		var spend := int(def.get("spend_impact", 2))
@@ -1697,6 +1708,8 @@ func _preview_kit_lines(spell_id: String) -> Dictionary:
 			return {"on_connect": "%d Earth. Spends 2 Impact. Stun 1 if Impact was full (5); a stunning Crush spends all." % int(SpellKits.spell(SpellKits.CRUSH).get("base_damage", 0)), "on_miss": "Impact retained. AP/MP stay spent."}
 		SpellKits.ADVANCE:
 			return {"on_connect": "Teleport snap. +1 Impact if adjacent. Facing unchanged.", "on_miss": "No roll."}
+		SpellKits.AMBUSH:
+			return {"on_connect": "Hit spends all Umbral, +3 each.", "on_miss": "Miss keeps Umbral."}
 		SpellKits.AEGIS_BREAK:
 			return {"on_connect": "26 Earth per body in range 1–2. Push 1. Clears all Aegis.", "on_miss": "Spends 0 Aegis. Does not clear Aegis."}
 		SpellKits.WARD:
@@ -2176,8 +2189,10 @@ func _note_attacks(actor: Dictionary) -> void:
 	actor["attacked_this_turn"] = seen
 
 
-## Stacks a fighter keeps on itself; lost on a turn without an attack.
-const SELF_STACKS := ["impact", "umbral", "aegis", "pulse"]
+## Stacks a fighter keeps on itself. Impact and Aegis drop on a turn with no
+## attack. Pulse drops on a turn with no spell. Umbral is not in this list:
+## it stays until a connecting Ambush spends it.
+const SELF_STACKS := ["impact", "aegis", "pulse"]
 
 
 func _drop_unattended_marks(actor: Dictionary) -> void:
@@ -2195,7 +2210,7 @@ func _drop_unattended_marks(actor: Dictionary) -> void:
 			_emit_expire("residue", unit["pos"], me, int(unit["seat"]))
 	# Mauro 5 Oct 2026 ("Why ironjaw even if he does not attack he keeps his
 	# marks?" ... "all of them"): a turn with no attack on an enemy also drops
-	# the fighter's own stacks: Impact, Umbral, Aegis, Pulse.
+	# Impact and Aegis. Umbral stays (Ambush spends it on a hit).
 	# Mauro 6 Oct 2026: Mender's Pulse stays while she keeps using her spells
 	# ("if he keep healing team mates he does not need to attack an enemy");
 	# only a turn with no spell at all drops it.
@@ -4283,6 +4298,13 @@ func _connect_base_damage(def: Dictionary, target: Dictionary) -> int:
 		# Locked: 6 + 6×M Air, M = Marks on the target consumed on connect.
 		return int(def.get("base_damage", 6)) + int(def.get("damage_per_mark", 6)) * int(target.get("marks", 0))
 	return int(def.get("base_damage", 0))
+
+
+## Ambush: 26 + 3×Umbral, capped at 4 stacks (+12), before the back/front multiplier.
+## The caster's Umbral, not a stack on the target. A miss does not call this to spend.
+func _ambush_strike_base(def: Dictionary, actor: Dictionary) -> int:
+	var stacks := mini(maxi(int(actor.get("umbral", 0)), 0), SpellKits.UMBRAL_CAP)
+	return int(def.get("base_damage", 26)) + int(def.get("damage_per_umbral", 3)) * stacks
 
 
 func _connect_extra_note(engine_gained: int, engine_name: String, marks_consumed: int, engine_spent: int, stun_applied: int, push_result: Dictionary) -> String:
@@ -7069,6 +7091,9 @@ func _resolve_ambush(intent: Dictionary, actor: Dictionary, target: Dictionary, 
 			notes += " Shade stays."
 		if was_invisible:
 			notes += " Invisible ends."
+		var umbral_kept := int(actor.get("umbral", 0))
+		if umbral_kept > 0:
+			notes += " Umbral stays."
 		_last_coach = "MISS — Ambush (%d vs %d%%). %s −%d AP." % [roll, chance, notes, ap_cost]
 		_last_events.append({
 			"type": "miss",
@@ -7086,6 +7111,8 @@ func _resolve_ambush(intent: Dictionary, actor: Dictionary, target: Dictionary, 
 			"teleported": false,
 			"shade_retained": bool(actor.get("shade", false)),
 			"invisible_retained": bool(actor.get("invisible", false)),
+			"umbral_retained": true,
+			"umbral": umbral_kept,
 			"damage": 0,
 			"coach": _last_coach,
 		})
@@ -7104,7 +7131,9 @@ func _resolve_ambush(intent: Dictionary, actor: Dictionary, target: Dictionary, 
 		_remove_shade_at(origin_cell, int(actor["seat"]))
 		_sync_shade_flags()
 	var facing_mult := SpellKits.BACKSTAB_MULT if backstab else FRONT_SIDE_FACING
-	var pre_mitigation := _phase_a_damage(int(def.get("base_damage", 22)), facing_mult, actor, target, str(def.get("element", "")), true)
+	var umbral_before := int(actor.get("umbral", 0))
+	var base := _ambush_strike_base(def, actor)
+	var pre_mitigation := _phase_a_damage(base, facing_mult, actor, target, str(def.get("element", "")), true)
 	var mitigation := _mitigate_hit(actor, target, pre_mitigation)
 	var damage := int(mitigation["damage"])
 	# Pos was assigned above. Damage is the strike from that tile. A reorder
@@ -7113,9 +7142,13 @@ func _resolve_ambush(intent: Dictionary, actor: Dictionary, target: Dictionary, 
 	var struck_from: Vector2i = actor["pos"]
 	damage = ambush_damage_if_planted(struck_from, cell, damage)
 	target["hp"] = maxi(0, int(target["hp"]) - damage)
+	# A connecting hit spends every Umbral. The bonus was already on the base.
+	var umbral_spent := _clear_resource(actor, "umbral")
 	# Teleport and the hit are done. The attack ends Invisible after that.
 	_break_invisible_on_attack(actor)
 	_last_coach = "HIT Ambush %d at %s%s." % [damage, _cell_text(cell), " (back blocked, front landing)" if bool(landing.get("front", false)) else ""]
+	if umbral_spent > 0:
+		_last_coach += " Umbral spent (%d), +%d." % [umbral_spent, int(def.get("damage_per_umbral", 3)) * mini(umbral_before, SpellKits.UMBRAL_CAP)]
 	_last_events.append({
 		"type": "hit",
 		"seat": actor["seat"],
@@ -7137,6 +7170,9 @@ func _resolve_ambush(intent: Dictionary, actor: Dictionary, target: Dictionary, 
 		"front_landing": bool(landing.get("front", false)),
 		"facing": str(actor.get("facing", "")),
 		"facing_mult": facing_mult,
+		"base_damage": base,
+		"umbral_spent": umbral_spent,
+		"umbral": int(actor.get("umbral", 0)),
 		"damage": damage,
 		"shade_retained": not from_shade and bool(actor.get("shade", false)),
 		"invisible_retained": bool(actor.get("invisible", false)),

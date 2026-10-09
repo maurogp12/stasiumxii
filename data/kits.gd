@@ -386,6 +386,8 @@ const SPELLS := {
 		"rolls": true,
 		"element": "air",
 		"base_damage": 26,  # Mauro 1 Oct 2026 balance (was 22)
+		# Hit spends every Umbral and adds this much per stack before facing.
+		"damage_per_umbral": 3,
 		"target": "enemy",
 		"engine_on_connect": "ambush",
 	},

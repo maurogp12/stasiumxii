@@ -62,6 +62,7 @@ func _run() -> void:
 	_test_illegal_cast_refunds()
 	_test_ambush_destination_locked()
 	_test_ambush_front_landing()
+	_test_ambush_umbral_payoff()
 	_test_ambush_arms_at_zero_mp()
 	_test_ambush_origin_chrome()
 	_test_ambush_shade_label_matches_origin()
@@ -1905,6 +1906,134 @@ func _test_ambush_front_landing() -> void:
 		eq(int(_unit(0)["ap"]), 2, "%s: Ambush spends 4 AP" % label)
 
 
+func _test_ambush_umbral_payoff() -> void:
+	# Hit spends every Umbral for +3 each, added before the back/front multiplier.
+	# 0 Umbral stays the old 26 / 35. Miss keeps the stack. A quiet turn keeps it.
+	eq(int(SpellKits.spell(SpellKits.AMBUSH)["base_damage"]), 26, "Ambush base stays 26")
+	eq(int(SpellKits.spell(SpellKits.AMBUSH).get("damage_per_umbral", 0)), 3, "Ambush adds 3 per Umbral")
+	eq(SpellKits.spell(SpellKits.AMBUSH).has("requires_umbral"), false, "Ambush has no Umbral requirement")
+	eq(SpellKits.UMBRAL_CAP, 4, "Umbral cap stays 4")
+	var front_dmg := {0: 26, 2: 32, 4: 38}
+	var back_dmg := {0: 35, 2: 43, 4: 51}
+	var gloam := Vector2i(2, 2)
+	var prey := Vector2i(4, 2)
+	for stacks in [0, 2, 4]:
+		_sim.reset_match({
+			"seed": 1,
+			"flat_board": true,
+			"skip_deploy": true,
+			"classes": ["gloam", "kestrel"],
+			"positions": [gloam, prey],
+			"kestrel_facing": "W",
+			"gloam_umbral": stacks,
+			"rolls": [1],
+			"blockers": [Vector2i(5, 2)],
+		})
+		eq(int(_unit(0)["umbral"]), stacks, "%d Umbral is on Gloam before the front hit" % stacks)
+		eq(_has_legal_cast(0, SpellKits.AMBUSH), true, "Ambush is legal at %d Umbral" % stacks)
+		var front_aim: Dictionary = _sim.aim_feel(0, SpellKits.AMBUSH)
+		eq(str(front_aim.get("float_text", "")), "-%d" % int(front_dmg[stacks]), "front aim at %d Umbral" % stacks)
+		var front_preview: Dictionary = _sim.preview_cast(SpellKits.AMBUSH, gloam, prey, 1)
+		eq(int(front_preview.get("sample_damage", -1)), int(front_dmg[stacks]), "front preview at %d Umbral" % stacks)
+		var front: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": prey, "seat": 0})
+		eq(bool(front.get("ok", false)), true, "front Ambush at %d Umbral resolves" % stacks)
+		var front_hit: Dictionary = front["events"][0]
+		eq(int(front_hit.get("damage", -1)), int(front_dmg[stacks]), "front damage at %d Umbral" % stacks)
+		eq(bool(front_hit.get("backstab", true)), false, "front landing at %d Umbral is not a backstab" % stacks)
+		eq(int(_unit(1)["hp"]), 75 - int(front_dmg[stacks]), "front HP at %d Umbral" % stacks)
+		eq(int(front_hit.get("umbral_spent", -1)), stacks, "front hit spends %d Umbral" % stacks)
+		eq(int(_unit(0)["umbral"]), 0, "front hit leaves 0 Umbral")
+		_sim.reset_match({
+			"seed": 1,
+			"flat_board": true,
+			"skip_deploy": true,
+			"classes": ["gloam", "kestrel"],
+			"positions": [gloam, prey],
+			"kestrel_facing": "W",
+			"gloam_umbral": stacks,
+			"rolls": [1],
+		})
+		var back_aim: Dictionary = _sim.aim_feel(0, SpellKits.AMBUSH)
+		eq(str(back_aim.get("float_text", "")), "-%d" % int(back_dmg[stacks]), "back aim at %d Umbral" % stacks)
+		var back_preview: Dictionary = _sim.preview_cast(SpellKits.AMBUSH, gloam, prey, 1)
+		eq(int(back_preview.get("sample_damage", -1)), int(back_dmg[stacks]), "back preview at %d Umbral" % stacks)
+		var back: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": prey, "seat": 0})
+		eq(bool(back.get("ok", false)), true, "back Ambush at %d Umbral resolves" % stacks)
+		var back_hit: Dictionary = back["events"][0]
+		eq(int(back_hit.get("damage", -1)), int(back_dmg[stacks]), "back damage at %d Umbral" % stacks)
+		eq(bool(back_hit.get("backstab", false)), true, "empty back at %d Umbral is a backstab" % stacks)
+		eq(int(_unit(1)["hp"]), 75 - int(back_dmg[stacks]), "back HP at %d Umbral" % stacks)
+		eq(int(back_hit.get("umbral_spent", -1)), stacks, "back hit spends %d Umbral" % stacks)
+		eq(int(_unit(0)["umbral"]), 0, "back hit leaves 0 Umbral")
+		if stacks > 0:
+			truthy(str(back_hit.get("coach", "")).contains("Umbral spent"), "back coach names the Umbral spend")
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["gloam", "kestrel"],
+		"positions": [gloam, prey],
+		"kestrel_facing": "W",
+		"gloam_umbral": 3,
+		"rolls": [100],
+	})
+	var missed: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": prey, "seat": 0})
+	eq(bool(missed.get("ok", false)), true, "Ambush miss with Umbral resolves")
+	eq(int(_unit(1)["hp"]), 75, "Ambush miss still deals no damage")
+	eq(int(_unit(0)["umbral"]), 3, "Ambush miss keeps Umbral")
+	eq(bool(missed["events"][0].get("umbral_retained", false)), true, "Ambush miss flags Umbral retained")
+	eq(int(missed["events"][0].get("umbral", -1)), 3, "Ambush miss event keeps the count")
+	truthy(str(missed["events"][0].get("coach", "")).contains("Umbral stays"), "miss coach says Umbral stays")
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["gloam", "kestrel"],
+		"positions": [gloam, Vector2i(8, 2)],
+		"gloam_umbral": 4,
+	})
+	eq(int(_unit(0)["umbral"]), 4, "a full stack is 4 before a quiet turn")
+	var quiet: Dictionary = _sim.submit({"type": "end_turn", "seat": 0})
+	eq(int(_unit(0)["umbral"]), 4, "Umbral survives a turn with no attack")
+	var wiped := 0
+	for e in quiet.get("events", []):
+		if str(e.get("type", "")) == "expire" and str(e.get("status", "")) == "umbral":
+			wiped += 1
+	eq(wiped, 0, "a quiet turn does not expire Umbral")
+	_sim.submit({"type": "end_turn", "seat": 1})
+	eq(int(_unit(0)["umbral"]), 4, "Umbral is still there on Gloam's next turn")
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["gloam", "kestrel"],
+		"positions": [gloam, Vector2i(8, 2)],
+		"gloam_umbral": 2,
+	})
+	eq(bool(_sim.submit({"type": "cast", "spell": "drop_shade", "to": Vector2i(3, 2), "seat": 0}).get("ok", false)), true, "Drop Shade is not an attack")
+	_sim.submit({"type": "end_turn", "seat": 0})
+	eq(int(_unit(0)["umbral"]), 2, "a Shade-only turn keeps Umbral")
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["gloam", "kestrel"],
+		"positions": [gloam, prey],
+		"kestrel_facing": "W",
+		"gloam_umbral": 9,
+		"rolls": [1],
+	})
+	eq(int(_unit(0)["umbral"]), 4, "setup clamps Umbral to 4")
+	var capped: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": prey, "seat": 0})
+	eq(int(capped["events"][0].get("damage", -1)), 51, "cap 4 is +12 before the backstab")
+	eq(int(_unit(0)["umbral"]), 0, "the capped hit still spends all Umbral")
+	var card := " ".join(SpellTooltip.simple_lines(SpellKits.AMBUSH))
+	truthy(card.contains("+3"), "Ambush tooltip names +3")
+	truthy(card.contains("Umbral"), "Ambush tooltip names Umbral")
+	var net := FileAccess.get_file_as_string("res://backend/net_session.gd")
+	truthy(net.contains("host_sim.submit"), "the dedicated authority submits through the same CombatSim")
+
+
 func _test_ambush_destination_locked() -> void:
 	var gloam := Vector2i(2, 2)
 	var prey := Vector2i(4, 2)
@@ -2773,7 +2902,7 @@ func _test_ambush_rules_keeper_lock() -> void:
 	eq(east_hit["events"][0].get("caster_cell"), Vector2i(6, 0), "east cast cell stays the pre-blink tile")
 	eq(bool(east_hit["events"][0].get("teleported", false)), true, "east Invisible hit teleports")
 	eq(bool(east_hit["events"][0].get("backstab", true)), false, "east landing in front is not a backstab")
-	eq(int(_unit(1)["hp"]), 49, "east front Ambush is 26 FLEX")
+	eq(int(_unit(1)["hp"]), 46, "east front Ambush is 26 + Fade's 1 Umbral")
 	eq(bool(_unit(0)["invisible"]), false, "east hit ends Invisible")
 	_sim.reset_match({
 		"seed": 1,
@@ -2900,7 +3029,7 @@ func _test_invisible_shade_origin_ambush() -> void:
 	eq(jumped["events"][0].get("caster_cell"), gloam, "caster_cell stays the pre-blink body")
 	eq(int(_unit(0)["shades"]), 0, "the Shade jump spends the Shade")
 	eq(bool(_unit(0)["invisible"]), false, "the Shade jump ends Invisible")
-	eq(int(_unit(1)["hp"]), 49, "the Shade jump front hit is 26")
+	eq(int(_unit(1)["hp"]), 46, "the Shade jump front hit is 26 + Fade's 1 Umbral")
 
 	_sim.reset_match({
 		"seed": 1,
@@ -3038,7 +3167,7 @@ func _test_invisible_breaks_on_attack() -> void:
 	eq(bool(hit.get("ok", false)), true, "Invisible Ambush hit resolves")
 	eq(_unit(0)["pos"], back, "Invisible Ambush hit relocates to the back tile")
 	eq(hit["events"][0].get("struck_from"), back, "Invisible Ambush damage is struck after the relocate")
-	eq(int(_unit(1)["hp"]), 40, "Invisible Ambush hit is 26 × 1.35")
+	eq(int(_unit(1)["hp"]), 36, "Invisible Ambush hit is (26 + Fade's 1 Umbral) × 1.35")
 	eq(bool(_unit(0)["invisible"]), false, "Invisible Ambush hit ends Invisible")
 	eq(bool(hit["events"][0].get("invisible_retained", true)), false, "Invisible Ambush hit does not retain Invisible")
 
@@ -3118,7 +3247,7 @@ func _test_instant_invisible_ambush_relocates_before_damage() -> void:
 	var event: Dictionary = hit.get("events", [{}])[0]
 	var dealt := hp_before - int(_unit(1)["hp"])
 	eq(dealt > 0, true, "Instant Invisible Ambush deals damage")
-	eq(dealt, 26, "Instant Invisible front hit is the locked 22")
+	eq(dealt, 29, "Instant Invisible front hit is 26 + Fade's 1 Umbral")
 	eq(int(event.get("damage", 0)), dealt, "Instant Invisible damage is the HP drop")
 	eq(_unit(0)["pos"], back, "Instant Invisible Ambush relocates to the back tile")
 	eq(_unit(0)["pos"] == cast, false, "Instant Invisible Ambush does not stay on the cast cell")
@@ -3176,7 +3305,7 @@ func _test_instant_invisible_ambush_relocates_before_damage() -> void:
 	eq(far_hit["events"][0].get("struck_from"), far_back, "distant Invisible damage is struck after the plant")
 	eq(far_hit["events"][0].get("caster_cell"), far, "distant Invisible cast cell stays the pre-blink tile")
 	eq(bool(far_hit["events"][0].get("teleported", false)), true, "distant Invisible Shade Ambush teleports")
-	eq(int(_unit(1)["hp"]), 49, "front Shade Ambush while Invisible is 26")
+	eq(int(_unit(1)["hp"]), 46, "front Shade Ambush while Invisible is 26 + Fade's 1 Umbral")
 	eq(int(_unit(0)["shades"]), 0, "Shade origin spends the Shade while Invisible")
 	eq(bool(_unit(0)["invisible"]), false, "Shade Ambush while Invisible ends Invisible")
 
@@ -8580,11 +8709,13 @@ func _test_marks_fade_without_attack() -> void:
 		if str(e.get("type", "")) == "expire" and str(e.get("status", "")) == "impact":
 			gone += 1
 	eq(gone, 1, "the board is told the Impact is gone")
-	for field in ["umbral", "aegis", "pulse"]:
+	for field in ["aegis", "pulse"]:
 		_live_unit(0)[field] = 2
+	_live_unit(0)["umbral"] = 2
 	_sim.submit({"type": "end_turn", "seat": 0})
-	for field in ["umbral", "aegis", "pulse"]:
+	for field in ["aegis", "pulse"]:
 		eq(int(_unit(0)[field]), 0, "a quiet turn clears %s too" % field)
+	eq(int(_unit(0)["umbral"]), 2, "a quiet turn keeps Umbral")
 	# Mauro 6 Oct 2026: Mender keeps Pulse on a turn she only heals; a turn
 	# with no spell at all drops it.
 	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "team_size": 2, "rolls": [1, 1, 1, 1],
