@@ -210,12 +210,14 @@ func _test_mobile_target_pick() -> void:
 	eq(TOUCH.hits_pawn_body(beside, foe_origin), false, "a tap beside the chest misses the desktop body")
 	eq(TOUCH.hits_pawn_body(beside, foe_origin, true), true, "a tap beside the chest hits the finger body")
 	eq(TOUCH.pick_board_cell(beside, tiles, pawns, true) == foe, false, "desktop unit pick of that slop is not the foe")
-	eq(TOUCH.pick_board_cell(beside, tiles, pawns, true, true), foe, "finger unit pick of that slop is the foe")
+	var beside_cell := TOUCH.front_cell(beside, tiles)
+	eq(beside_cell.x >= 0, true, "the chest slop sits on a painted cell")
+	eq(TOUCH.pick_board_cell(beside, tiles, pawns, true, true), beside_cell, "a finger on the cell beside the chest selects that cell")
 	var east: Vector2 = tiles[Vector2i(7, 6)]
 	eq(TOUCH.hits_pawn_body(east, foe_origin, true), false, "the east neighbor diamond stays outside the walk capsule")
 	eq(TOUCH.hits_pawn_body(east, foe_origin, true, true), true, "a unit-cast pad reaches the east neighbor diamond")
 	eq(TOUCH.pick_board_cell(east, tiles, pawns, false, true), Vector2i(7, 6), "a walk tap on the east diamond stays that tile")
-	eq(TOUCH.pick_board_cell(east, tiles, pawns, true, true), foe, "a unit cast on the east diamond selects the foe")
+	eq(TOUCH.pick_board_cell(east, tiles, pawns, true, true), Vector2i(7, 6), "a unit cast on an empty neighbor diamond stays that cell")
 	var overlap: Vector2 = tiles[Vector2i(4, 4)]
 	eq(TOUCH.pick_board_cell(overlap, tiles, pawns, false), foe, "a tap on the sprite over the tile behind selects the fighter")
 	eq(TOUCH.hits_pawn_body(overlap, foe_origin), true, "that ground center sits on the sprite")
@@ -227,19 +229,22 @@ func _test_mobile_target_pick() -> void:
 	eq(TOUCH.pick_board_cell(drawing, tiles, pawns, false) == foe, false, "without a unit cast the drawing edge is empty ground")
 	eq(TOUCH.pick_board_cell(drawing, tiles, pawns, false, true) == foe, false, "a walk on the diamond under the drawing stays that tile")
 	eq(TOUCH.pick_board_cell(drawing, tiles, pawns, true), foe, "the drawing wins over the empty ground under it")
-	eq(TOUCH.pick_board_cell(drawing, tiles, pawns, true, true), foe, "a finger on the drawing selects the foe")
+	var drawing_cell := TOUCH.front_cell(drawing, tiles)
+	eq(TOUCH.pick_board_cell(drawing, tiles, pawns, true, true), drawing_cell, "a finger on the empty diamond under a drawing selects that cell")
 	# (C) Not only the center. A rim past the painted diamond still selects the foe.
 	var rim := foe_origin + Vector2(40, 0)
 	eq(TOUCH.hits_unit_diamond(rim, foe_origin), false, "40px off center is outside the painted diamond")
 	eq(TOUCH.hits_unit_diamond(rim, foe_origin, true), true, "the finger pad still includes that rim")
-	eq(TOUCH.pick_board_cell(rim, tiles, pawns, true, true), foe, "a finger on the enemy tile rim selects the foe")
-	eq(TOUCH.pick_board_cell(rim, tiles, pawns, false, true) == foe, false, "a walk tap on that rim is not forced onto the foe")
+	var rim_cell := TOUCH.front_cell(rim, tiles)
+	eq(rim_cell.x >= 0 and rim_cell != foe, true, "that rim sits on a neighboring painted cell")
+	eq(TOUCH.pick_board_cell(rim, tiles, pawns, true, true), rim_cell, "a finger on the painted cell at the rim selects that cell")
+	eq(TOUCH.pick_board_cell(rim, tiles, pawns, false, true), rim_cell, "a walk tap on that rim selects the same cell")
 	var nearer := foe_origin + Vector2(10, -72)
 	var pair := [
 		{"cell": foe, "origin": foe_origin, "sort": 1},
 		{"cell": Vector2i(8, 8), "origin": foe_origin + Vector2(50, 0), "sort": 50},
 	]
-	eq(TOUCH.pick_board_cell(nearer, tiles, pair, true, true), foe, "the nearer sprite wins when both pads contain the tap")
+	eq(TOUCH.pick_board_cell(nearer, tiles, pair, true, true), Vector2i(4, 4), "an empty cell under two sprites stays that cell")
 	var tied := [
 		{"cell": foe, "origin": foe_origin, "sort": 1},
 		{"cell": Vector2i(7, 6), "origin": foe_origin, "sort": 2},
@@ -250,6 +255,16 @@ func _test_mobile_target_pick() -> void:
 	eq(TOUCH.hits_pawn_body(north, foe_origin), false, "the north diamond stays outside the desktop body")
 	eq(TOUCH.hits_pawn_body(north, foe_origin, true), true, "the figure covers the north diamond, so a finger cast hits the unit")
 	eq(TOUCH.pick_board_cell(north, tiles, pawns, false, true), Vector2i(6, 5), "a walk tap on the north diamond stays that tile")
+	var beside_a := Vector2i(5, 6)
+	var beside_b := Vector2i(7, 6)
+	var gap := Vector2i(6, 6)
+	var cluster := [
+		{"cell": beside_a, "origin": tiles[beside_a], "sort": 11},
+		{"cell": beside_b, "origin": tiles[beside_b], "sort": 13},
+	]
+	eq(TOUCH.pick_board_cell(tiles[gap], tiles, cluster, false, true), gap, "a walk between two fighters selects the empty cell")
+	eq(TOUCH.pick_board_cell(tiles[gap], tiles, cluster, true, true), gap, "an attack tap on the empty cell between fighters stays that cell")
+	eq(TOUCH.pick_board_cell(tiles[beside_a], tiles, cluster, true, true), beside_a, "a tap on a fighter's own diamond still selects that fighter")
 	var outside := Vector2(0, -22)
 	eq(TOUCH.pick_board_cell(outside, tiles, [], false).x < 0, true, "desktop misses a tap 22px past the corner")
 	eq(TOUCH.pick_board_cell(outside, tiles, [], false, true), Vector2i(0, 0), "a finger just off the corner still selects the edge tile")
@@ -325,11 +340,22 @@ func _test_mobile_target_pick() -> void:
 	var far_pawns := [{"cell": far_cell, "origin": far_origin, "sort": 16}]
 	eq(TOUCH.pick_board_cell(far_slop, _tile_map(sort), far_pawns, true) == far_cell, false, "desktop slop beside a far sprite is not that unit")
 	var far_pick := TOUCH.pick_board_cell(far_slop, _tile_map(sort), far_pawns, true, true)
-	eq(far_pick, far_cell, "finger slop beside a far sprite still resolves to that unit")
-	var out_of_range: Dictionary = far.submit({"type": "cast", "spell": SpellKits.MARK_SHOT, "to": far_pick})
+	eq(far_pick == far_cell, false, "a finger on the cell beside a far sprite selects that cell")
+	var missed: Dictionary = far.submit({"type": "cast", "spell": SpellKits.MARK_SHOT, "to": far_pick})
+	eq(missed.get("ok", true), false, "the cell beside the sprite is not a hit on that fighter")
+	eq(int(far.snapshot()["units"][1]["hp"]), 90, "picking the neighboring cell does not damage the foe")
+	eq(int(far.snapshot()["units"][0]["ap"]), 6, "that rejected cast refunds AP")
+	eq(int(far.snapshot()["active_seat"]), 0, "a rejected cast does not end the turn")
+	var out_of_range: Dictionary = far.submit({"type": "cast", "spell": SpellKits.MARK_SHOT, "to": far_cell})
 	eq(out_of_range.get("ok", true), false, "a fatter pick does not extend Mark Shot range")
 	eq(str(out_of_range.get("reason", "")), "out_of_range", "the reject stays the locked range rule")
 	eq(int(far.snapshot()["units"][0]["ap"]), 6, "the out-of-range finger pick refunds AP")
+	var mp_before := int(far.snapshot()["units"][0]["mp"])
+	var onto: Dictionary = far.submit({"type": "move", "to": far_cell})
+	eq(onto.get("ok", true), false, "a walk onto the fighter is refused")
+	eq(int(far.snapshot()["units"][0]["mp"]), mp_before, "that mis-tap does not spend MP")
+	eq(int(far.snapshot()["units"][0]["ap"]), 6, "that mis-tap does not spend AP")
+	eq(int(far.snapshot()["active_seat"]), 0, "that mis-tap does not end the turn")
 	far.free()
 
 

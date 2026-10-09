@@ -572,8 +572,15 @@ static func _pick_name_plate(point: Vector2, living_pawns: Array) -> Vector2i:
 ## diamond wins over the neighbor iso_cell would steal. A tie stays ground.
 ## A tap on the sprite or its name plate selects that fighter either way.
 ## prefer_unit widens the body pad and also takes the fighter's diamond.
+## On a phone the painted diamond under the finger wins first, for a walk,
+## a jump, a wall, or an attack. A sprite drawn across that tile does not
+## take it. Off the diamonds, the body and the name plate still select.
 ## living_pawns entries: {cell, origin, sort, plate}.
 static func pick_board_cell(point: Vector2, tile_positions: Dictionary, living_pawns: Array, prefer_unit: bool, mobile: bool = false) -> Vector2i:
+	if mobile:
+		var painted := front_cell(point, tile_positions)
+		if painted.x >= 0:
+			return painted
 	var plate := _pick_name_plate(point, living_pawns)
 	if plate.x >= 0:
 		return plate

@@ -19,7 +19,9 @@ extends Node2D
 ## Walk is a dedicated action-bar mode (Walk button / Esc). Right-click still faces.
 ## Touch: finger press/drag previews aim hit %; release commits the cell (walk,
 ## Advance, cast). The Face pad is the tap path for facing. Hover stays desktop.
-## Unit-targeted casts resolve a tap on the fighter sprite to that living cell.
+## A phone tap uses the painted diamond under the finger. The press paints that
+## cell before the release commits. A refused walk or cast refunds and does not
+## end the turn. Off the diamonds, a unit cast can still land on the sprite.
 ## Mouse diamond pick stays 22px. A finger uses the painted diamond and a fatter
 ## sprite capsule. A phone shows most of the Koliseo diamond at a modest
 ## zoom, with the HUD over the edges. A walk-mode drag pans.
@@ -95,6 +97,7 @@ var _online_home_pending: bool = false
 var _result_layer: CanvasLayer
 var tiles: Dictionary = {}
 var selected_tile: BoardTile = null
+var _pick_ring: PickRing
 var pawns_by_seat: Dictionary = {}
 var _hud: CombatHUD
 var _booted: bool = false
@@ -700,7 +703,28 @@ func select_tile(cell: Vector2i) -> void:
 		selected_tile.set_selected(false)
 	selected_tile = tiles[cell] as BoardTile
 	selected_tile.set_selected(true)
+	_show_pick_ring(selected_tile)
 	_sync_target_marks()
+
+
+## Bright diamond above the sprites. The press shows it; the release commits.
+func _show_pick_ring(tile: BoardTile) -> void:
+	var ring := _ensure_pick_ring()
+	ring.position = tile.position
+	ring.visible = true
+	ring.queue_redraw()
+
+
+func _ensure_pick_ring() -> PickRing:
+	if _pick_ring != null and is_instance_valid(_pick_ring):
+		return _pick_ring
+	var ring := PickRing.new()
+	ring.name = "PickRing"
+	ring.z_index = 900
+	ring.visible = false
+	add_child(ring)
+	_pick_ring = ring
+	return ring
 
 
 ## Large ring on every living fighter a unit spell can legally hit.
@@ -3094,6 +3118,8 @@ func _rebuild_grid(size: int) -> void:
 		child.free()
 	tiles.clear()
 	selected_tile = null
+	if _pick_ring != null and is_instance_valid(_pick_ring):
+		_pick_ring.visible = false
 	for y in range(next):
 		for x in range(next):
 			var tile := TILE_SCENE.instantiate() as BoardTile
@@ -3332,3 +3358,19 @@ func _as_cell(value: Variant) -> Vector2i:
 		return Vector2i(int(value[0]), int(value[1]))
 	# A failed read must not become the origin. (0, 0) is a real tile.
 	return Vector2i(-1, -1)
+
+
+## The cell under the finger, drawn over the fighters so a cluster cannot hide it.
+class PickRing extends Node2D:
+	func _draw() -> void:
+		var pts := PackedVector2Array([
+			Vector2(0, -16),
+			Vector2(32, 0),
+			Vector2(0, 16),
+			Vector2(-32, 0),
+		])
+		draw_colored_polygon(pts, Color(1.0, 0.88, 0.16, 0.82))
+		var line := PackedVector2Array(pts)
+		line.append(pts[0])
+		draw_polyline(line, Color(1.0, 0.98, 0.9), 6.0, true)
+		draw_polyline(line, Color(0.12, 0.06, 0.02), 2.2, true)
