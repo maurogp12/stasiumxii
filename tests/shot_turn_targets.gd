@@ -17,7 +17,7 @@ func _initialize() -> void:
 		var text := str(arg)
 		if text.begins_with("-"):
 			continue
-		if text == "dungeon" or text == "koliseo" or text == "full_dungeon" or text == "full_koliseo":
+		if text == "dungeon" or text == "koliseo" or text == "full_dungeon" or text == "full_koliseo" or text == "shrink_koliseo" or text == "shrink_dungeon" or text == "rows_koliseo" or text == "rows_dungeon":
 			_mode = text
 			continue
 		_path = text
@@ -39,10 +39,11 @@ func _process(_delta: float) -> bool:
 		return false
 	var sim: Node = root.get_node("CombatSim")
 	if _phase == 0:
-		if _mode == "full_dungeon":
+		_apply_bar_layout(board)
+		if _mode == "full_dungeon" or _mode == "shrink_dungeon" or _mode == "rows_dungeon":
 			if not _boot_full_dungeon(sim):
 				return true
-		elif _mode == "full_koliseo":
+		elif _mode == "full_koliseo" or _mode == "shrink_koliseo" or _mode == "rows_koliseo":
 			if not _boot_full_koliseo(sim):
 				return true
 		elif _mode == "dungeon":
@@ -63,6 +64,8 @@ func _process(_delta: float) -> bool:
 			})
 		board._rebuild_pawns()
 		board._refresh()
+		if board._hud != null:
+			board._hud._layout_chrome()
 		# A foe card tap selects that enemy: reach tiles on the board, no confirm.
 		var foe_seat := 3 if _mode == "koliseo" else _first_foe_seat(sim)
 		if foe_seat >= 0 and board.pawns_by_seat.has(foe_seat):
@@ -213,6 +216,16 @@ func _first_foe_seat(sim: Node) -> int:
 	return -1
 
 
+func _apply_bar_layout(board: Node) -> void:
+	var hud: CombatHUD = board._hud
+	if hud == null:
+		return
+	if _mode.begins_with("shrink"):
+		hud.turn_bar_layout = CombatHUD.TURN_BAR_SHRINK
+	elif _mode.begins_with("rows"):
+		hud.turn_bar_layout = CombatHUD.TURN_BAR_ROWS
+
+
 func _aim(board: Node) -> void:
 	var cam: Camera2D = board._camera
 	if cam == null:
@@ -226,7 +239,11 @@ func _aim(board: Node) -> void:
 	if n == 0:
 		return
 	cam.zoom = Vector2(1.7, 1.7)
-	cam.position = sum / float(n) + Vector2(20, -10)
+	var drop := 0.0
+	var hud: CombatHUD = board._hud
+	if hud != null and hud._resource_panel != null:
+		drop = maxf(hud._resource_panel.size.y - 168.0, 0.0) * 0.5 / cam.zoom.x
+	cam.position = sum / float(n) + Vector2(20, -10.0 - drop)
 
 
 func _cluster_n(sim: Node, want: int) -> Array:

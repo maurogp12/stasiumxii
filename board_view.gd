@@ -3149,7 +3149,10 @@ func _fit_board_camera(glide: bool = false) -> void:
 		# Centre the diamond in the clear space between the menus, then
 		# drop it by the portrait bar so top-row fighters stay visible.
 		var clear := TOUCH.clear_band_for(viewport)
-		play_center.y = (clear.x + clear.y) * 0.5 + TOUCH.PORTRAIT_BAR_INSET
+		var bar_extra := 0.0
+		if _hud != null and _hud._resource_panel != null:
+			bar_extra = maxf(_hud._resource_panel.size.y - 168.0, 0.0)
+		play_center.y = (clear.x + clear.y) * 0.5 + TOUCH.PORTRAIT_BAR_INSET + bar_extra * 0.5
 	var view_center := Vector2(viewport.x * 0.5, viewport.y * 0.5)
 	var world_center := global_position + center
 	var camera_world := world_center - (play_center - view_center) / zoom

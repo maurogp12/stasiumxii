@@ -38,6 +38,13 @@ const TEAM_RED := Color(0.94, 0.28, 0.26)
 ## Turn-bar portrait. A wide phone shows this as a large finger card: the
 ## head and chest fill it. The row never collapses back into a tall empty slot.
 const PORTRAIT_CHIP := Vector2(168, 156)
+## What happens when a full party does not fit one row of large cards.
+## "scroll" keeps the large cards and peeks the next one.
+## "shrink" scales every card so all ten sit on one row.
+## "rows" puts allies on top and monsters underneath, cards as large as the board allows.
+const TURN_BAR_SCROLL := "scroll"
+const TURN_BAR_SHRINK := "shrink"
+const TURN_BAR_ROWS := "rows"
 const HUB_FONT := "res://art/ui/hub/Cinzel-Semibold.ttf"
 const STUN_GREY := Color(0.58, 0.58, 0.62, 0.82)
 const AMBUSH_SHADE_TIP := "Ambush from Shade"
@@ -75,10 +82,16 @@ var _turn_label: Label
 var _you_label: Label
 var _opp_label: Label
 var _turn_scroll: ScrollContainer
+var _turn_stack: VBoxContainer
 var _turn_strip: HBoxContainer
+var _turn_foe_strip: HBoxContainer
 var _turn_strip_sig: String = ""
+## Overflow layout. Two rows stay finger-sized; shrinking all ten does not.
+var turn_bar_layout: String = TURN_BAR_ROWS
 ## Portrait column before the scroll window is narrowed to peek the next card.
 var _turn_band := Vector2.ZERO
+var _turn_view_y := 720.0
+var _turn_single_h := 168.0
 var _pip_sig: Dictionary = {}
 var _resource_panel: Panel
 var _ui_root: Control
@@ -1233,6 +1246,11 @@ func _build() -> void:
 	_turn_scroll.clip_contents = true
 	_turn_scroll.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
 	resource_panel.add_child(_turn_scroll)
+	_turn_stack = VBoxContainer.new()
+	_turn_stack.name = "TurnStack"
+	_turn_stack.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_turn_stack.add_theme_constant_override("separation", 6)
+	_turn_scroll.add_child(_turn_stack)
 	_turn_strip = HBoxContainer.new()
 	_turn_strip.name = "TurnStrip"
 	_turn_strip.position = Vector2.ZERO
@@ -1240,7 +1258,14 @@ func _build() -> void:
 	_turn_strip.alignment = BoxContainer.ALIGNMENT_BEGIN
 	_turn_strip.add_theme_constant_override("separation", 8)
 	_turn_strip.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_turn_scroll.add_child(_turn_strip)
+	_turn_stack.add_child(_turn_strip)
+	_turn_foe_strip = HBoxContainer.new()
+	_turn_foe_strip.name = "FoeStrip"
+	_turn_foe_strip.visible = false
+	_turn_foe_strip.alignment = BoxContainer.ALIGNMENT_BEGIN
+	_turn_foe_strip.add_theme_constant_override("separation", 8)
+	_turn_foe_strip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_turn_stack.add_child(_turn_foe_strip)
 
 	_turn_label = Label.new()
 	_turn_label.position = Vector2(280, 6)
@@ -1860,16 +1885,20 @@ func _sync_turn_strip(snap: Dictionary) -> void:
 			"targeted": targeted,
 			"you": is_you,
 		})
+	var layout := _resolved_layout(wanted.size())
+	parts.append("layout:%s" % layout)
+	var visual := _visual_rows(wanted, layout)
 	var sig := "|".join(parts)
-	if sig == _turn_strip_sig and _turn_strip.get_child_count() == wanted.size() and wanted.size() > 0:
+	var shown := _turn_chips()
+	if sig == _turn_strip_sig and shown.size() == visual.size() and visual.size() > 0:
 		return
 	_turn_strip_sig = sig
 	# Same fighters: restyle the chips that are already on screen.
-	if _turn_strip.get_child_count() == wanted.size() and wanted.size() > 0:
+	if shown.size() == visual.size() and visual.size() > 0:
 		var same := true
-		for i in wanted.size():
-			var existing := _turn_strip.get_child(i)
-			var rec: Dictionary = wanted[i]
+		for i in visual.size():
+			var existing: Control = shown[i]
+			var rec: Dictionary = visual[i]
 			if int(existing.get_meta("chip_seat", -2)) != int(rec["seat"]):
 				same = false
 				break
@@ -1877,34 +1906,95 @@ func _sync_turn_strip(snap: Dictionary) -> void:
 				same = false
 				break
 		if same:
-			for i in wanted.size():
-				var row: Dictionary = wanted[i]
-				_restyle_turn_chip(_turn_strip.get_child(i), row["unit"], bool(row["acting"]), bool(row["targeted"]), bool(row["you"]), px)
-			return
+			for i in visual.size():
+				var row: Dictionary = visual[i]
+				var host := _turn_foe_strip if layout == TURN_BAR_ROWS and unit_team(row["unit"]) == 1 else _turn_strip
+				if shown[i].get_parent() != host:
+					same = false
+					break
+			if same:
+				for i in visual.size():
+					var row: Dictionary = visual[i]
+					_restyle_turn_chip(shown[i], row["unit"], bool(row["acting"]), bool(row["targeted"]), bool(row["you"]), px)
+				_layout_turn_row()
+				return
 	# Build the new row first, then drop the old chips, so the plaque is
 	# never an empty dark box for a frame.
 	var fresh: Array = []
-	for entry in wanted:
+	for entry in visual:
 		var spec: Dictionary = entry
 		var fighter: Dictionary = spec["unit"]
 		var chip := _turn_chip(fighter, bool(spec["acting"]), bool(spec["targeted"]), bool(spec["you"]), px)
 		chip.set_meta("chip_seat", int(spec["seat"]))
 		chip.set_meta("chip_class", str(spec["class_id"]))
+		chip.set_meta("chip_team", unit_team(fighter))
 		_make_unit_pressable(chip, int(spec["seat"]))
 		fresh.append(chip)
-	for chip in fresh:
-		_turn_strip.add_child(chip)
 	var keep := {}
-	for chip in fresh:
+	for i in visual.size():
+		var chip: Control = fresh[i]
+		var row: Dictionary = visual[i]
 		keep[chip.get_instance_id()] = true
-	var doomed: Array = []
-	for child in _turn_strip.get_children():
-		if not keep.has(child.get_instance_id()):
-			doomed.append(child)
-	for child in doomed:
-		_turn_strip.remove_child(child)
-		child.free()
+		var host := _turn_foe_strip if layout == TURN_BAR_ROWS and unit_team(row["unit"]) == 1 else _turn_strip
+		host.add_child(chip)
+	_drop_turn_chips(keep)
 	_layout_turn_row()
+
+
+func _turn_chips() -> Array:
+	var out: Array = []
+	if _turn_strip != null:
+		for child in _turn_strip.get_children():
+			out.append(child)
+	if _turn_foe_strip != null:
+		for child in _turn_foe_strip.get_children():
+			out.append(child)
+	return out
+
+
+func _drop_turn_chips(keep: Dictionary) -> void:
+	for strip in [_turn_strip, _turn_foe_strip]:
+		if strip == null:
+			continue
+		var doomed: Array = []
+		for child in strip.get_children():
+			if not keep.has(child.get_instance_id()):
+				doomed.append(child)
+		for child in doomed:
+			strip.remove_child(child)
+			child.free()
+
+
+func _visual_rows(wanted: Array, layout: String) -> Array:
+	if layout != TURN_BAR_ROWS:
+		return wanted
+	var allies: Array = []
+	var foes: Array = []
+	for entry in wanted:
+		var row: Dictionary = entry
+		if unit_team(row["unit"]) == 1:
+			foes.append(row)
+		else:
+			allies.append(row)
+	return allies + foes
+
+
+func _row_overflows(count: int) -> bool:
+	if count <= 1 or _turn_band.x < 32.0:
+		return false
+	var gap := _chip_gap()
+	var fit_six := ( _turn_band.x - gap * 5.0 ) / 6.0
+	var card_w := minf(PORTRAIT_CHIP.x, fit_six)
+	var content := card_w * float(count) + gap * float(count - 1)
+	return content > _turn_band.x + 1.0
+
+
+func _resolved_layout(count: int) -> String:
+	if not _row_overflows(count):
+		return "fit"
+	if turn_bar_layout == TURN_BAR_SHRINK or turn_bar_layout == TURN_BAR_ROWS:
+		return turn_bar_layout
+	return TURN_BAR_SCROLL
 
 
 func _layout_turn_row() -> void:
@@ -1912,40 +2002,84 @@ func _layout_turn_row() -> void:
 		return
 	if _turn_band.x < 32.0 or _turn_band.y < 32.0:
 		return
-	var count := _turn_strip.get_child_count()
+	var count := _turn_chips().size()
+	var layout := _resolved_layout(count)
+	if _turn_foe_strip != null:
+		_turn_foe_strip.visible = layout == TURN_BAR_ROWS and _turn_foe_strip.get_child_count() > 0
 	var card := _chip_px(count) if count > 0 else PORTRAIT_CHIP
-	var view_w := _scroll_view_width(count, card.x, _turn_band.x) if count > 0 else _turn_band.x
-	var content_w := card.x * float(count) + _chip_gap() * float(maxi(count - 1, 0))
-	_turn_scroll.position = Vector2(4, 4)
-	_turn_scroll.size = Vector2(view_w, _turn_band.y)
-	_turn_strip.position = Vector2.ZERO
-	_turn_strip.custom_minimum_size = Vector2(maxf(content_w, view_w), _turn_band.y)
-	_turn_strip.size = Vector2(maxf(content_w, view_w), _turn_band.y)
+	var gap := _chip_gap()
+	if layout == TURN_BAR_ROWS:
+		var row_gap := 6.0
+		var row_n := maxi(_turn_strip.get_child_count(), _turn_foe_strip.get_child_count() if _turn_foe_strip != null else 0)
+		var row_w := card.x * float(maxi(row_n, 1)) + gap * float(maxi(row_n - 1, 0))
+		var two := _turn_foe_strip != null and _turn_foe_strip.visible
+		var stack_h := card.y * 2.0 + row_gap if two else card.y
+		_apply_turn_window(row_w, stack_h, false)
+		_size_strip(_turn_strip, row_w, card.y)
+		_size_strip(_turn_foe_strip, row_w, card.y)
+		if _resource_panel != null:
+			_resource_panel.size.y = stack_h + 8.0
+	elif layout == TURN_BAR_SHRINK:
+		var content_w := card.x * float(count) + gap * float(maxi(count - 1, 0))
+		_apply_turn_window(minf(content_w, _turn_band.x), card.y, false)
+		_size_strip(_turn_strip, maxf(content_w, 1.0), card.y)
+		if _resource_panel != null:
+			_resource_panel.size.y = _turn_single_h
+	else:
+		var view_w := _scroll_view_width(count, card.x, _turn_band.x) if count > 0 else _turn_band.x
+		var content_w := card.x * float(count) + gap * float(maxi(count - 1, 0))
+		_apply_turn_window(view_w, _turn_band.y, true)
+		_size_strip(_turn_strip, maxf(content_w, view_w), _turn_band.y)
+		if _resource_panel != null:
+			_resource_panel.size.y = _turn_single_h
 	_fit_turn_chips()
-	if _turn_label != null and _resource_panel != null:
-		var text_x := _turn_scroll.position.x + _turn_scroll.size.x + 6.0
-		var center_w := _resource_panel.size.x
-		_turn_label.position = Vector2(text_x, 6)
-		_turn_label.size = Vector2(maxf(center_w - text_x - 8.0, 1.0), 20)
-		if _ap_pips != null:
-			var res_box := _ap_pips.get_parent() as Control
-			if res_box != null:
-				res_box.position = Vector2(text_x, 28)
-				res_box.size = Vector2(maxf(center_w - text_x - 8.0, 1.0), maxf(_turn_band.y - 28.0, 1.0))
+	_place_turn_readout()
+	if _side_column != null and _resource_panel != null:
+		_side_column.position.y = _resource_panel.position.y + _resource_panel.size.y + 8.0
+
+
+func _apply_turn_window(view_w: float, view_h: float, scrolling: bool) -> void:
+	_turn_scroll.position = Vector2(4, 4)
+	_turn_scroll.size = Vector2(maxf(view_w, 1.0), maxf(view_h, 1.0))
+	_turn_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER if scrolling else ScrollContainer.SCROLL_MODE_DISABLED
+	if not scrolling:
+		_turn_scroll.scroll_horizontal = 0
+	if _turn_stack != null:
+		_turn_stack.custom_minimum_size = Vector2(maxf(view_w, 1.0), maxf(view_h, 1.0))
+		_turn_stack.size = _turn_stack.custom_minimum_size
+
+
+func _size_strip(strip: HBoxContainer, width: float, height: float) -> void:
+	if strip == null:
+		return
+	strip.custom_minimum_size = Vector2(maxf(width, 1.0), maxf(height, 1.0))
+	strip.size = strip.custom_minimum_size
+
+
+func _place_turn_readout() -> void:
+	if _turn_label == null or _turn_scroll == null or _resource_panel == null:
+		return
+	var text_x := _turn_scroll.position.x + _turn_scroll.size.x + 6.0
+	var center_w := _resource_panel.size.x
+	_turn_label.position = Vector2(text_x, 6)
+	_turn_label.size = Vector2(maxf(center_w - text_x - 8.0, 1.0), 20)
+	if _ap_pips != null:
+		var res_box := _ap_pips.get_parent() as Control
+		if res_box != null:
+			res_box.position = Vector2(text_x, 28)
+			res_box.size = Vector2(maxf(center_w - text_x - 8.0, 1.0), maxf(_turn_scroll.size.y - 24.0, 1.0))
 
 
 func _fit_turn_chips() -> void:
-	if _turn_strip == null:
-		return
-	var count := _turn_strip.get_child_count()
-	if count <= 0:
+	var chips := _turn_chips()
+	if chips.is_empty() or _turn_strip == null:
 		return
 	# A resize that has not landed yet (or a one-frame 0-height viewport)
 	# must not collapse the portraits to a dot inside the still-drawn plaque.
-	if _turn_strip.size.y < 8.0:
+	if _turn_strip.size.y < 8.0 and (_turn_foe_strip == null or not _turn_foe_strip.visible):
 		return
-	var px := _chip_px(count)
-	for child in _turn_strip.get_children():
+	var px := _chip_px(chips.size())
+	for child in chips:
 		var host := child as Control
 		if host == null:
 			continue
@@ -1970,18 +2104,38 @@ func _chip_px(count: int) -> Vector2:
 	var band_h := _turn_band.y if _turn_band.y >= 32.0 else _turn_strip.size.y
 	if band_h < 32.0 or band_w < 32.0:
 		return px
+	var layout := _resolved_layout(count)
+	if layout == TURN_BAR_ROWS:
+		return _rows_card()
 	var gap := _chip_gap()
 	var h := minf(px.y, band_h)
 	var fit_w := (band_w - gap * float(maxi(count - 1, 0))) / float(maxi(count, 1))
 	var w := minf(px.x, fit_w)
-	# A fuller fight keeps the six-card size and scrolls. It does not shrink the portraits.
-	if count > 6:
+	# Scroll keeps the six-card size. Shrink uses the width that fits every fighter.
+	if layout == TURN_BAR_SCROLL:
 		var fit_six := (band_w - gap * 5.0) / 6.0
 		w = minf(px.x, maxf(fit_w, fit_six))
 	# Narrower than the card is tall: stay a card, not a tall empty slot.
 	if w + 8.0 < h:
 		h = maxf(w, 1.0)
 	return Vector2(maxf(w, 1.0), maxf(h, 1.0))
+
+
+## Allies on top, monsters underneath. The pair stays under about 42% of
+## the phone so the second row does not sit on the fighters.
+func _rows_card() -> Vector2:
+	var row_n := 1
+	if _turn_strip != null:
+		row_n = maxi(row_n, _turn_strip.get_child_count())
+	if _turn_foe_strip != null:
+		row_n = maxi(row_n, _turn_foe_strip.get_child_count())
+	var gap := _chip_gap()
+	var w := (_turn_band.x - gap * float(maxi(row_n - 1, 0))) / float(row_n)
+	w = minf(PORTRAIT_CHIP.x, w)
+	var max_panel := minf(maxf(_turn_view_y, 240.0) * 0.42, 340.0)
+	var max_card := (max_panel - 8.0 - 6.0) / 2.0
+	w = minf(w, max_card)
+	return Vector2(maxf(w, 48.0), maxf(w, 48.0))
 
 
 ## Visible width of the row. When the cards do not fit, stop on a clear
@@ -3630,8 +3784,12 @@ func _layout_chrome(forced: Vector2 = Vector2.ZERO) -> void:
 	if _turn_strip != null and _turn_scroll != null:
 		var text_col := 180.0 if center_w >= 420.0 else maxf(center_w * 0.38, 1.0)
 		var portrait_w := maxf(center_w - text_col - 12.0, 1.0)
+		_turn_view_y = view.y
+		_turn_single_h = center_h
 		_turn_band = Vector2(portrait_w, maxf(center_h - 8.0, 1.0))
 		_layout_turn_row()
+		if _resource_panel != null:
+			top_h = _resource_panel.size.y
 	if _turn_label != null and _turn_scroll != null:
 		var text_x := _turn_scroll.position.x + _turn_scroll.size.x + 6.0
 		_turn_label.position = Vector2(text_x, 6)
@@ -3641,7 +3799,8 @@ func _layout_chrome(forced: Vector2 = Vector2.ZERO) -> void:
 			var res_box := _ap_pips.get_parent() as Control
 			if res_box != null:
 				res_box.position = Vector2(text_x, 28)
-				res_box.size = Vector2(maxf(center_w - text_x - 8.0, 1.0), maxf(center_h - 36.0, 1.0))
+				var read_h := maxf(_turn_scroll.size.y - 24.0, center_h - 36.0)
+				res_box.size = Vector2(maxf(center_w - text_x - 8.0, 1.0), maxf(read_h, 1.0))
 	var text_w := center_w - 16.0
 	if _turn_label != null:
 		text_w = _turn_label.size.x

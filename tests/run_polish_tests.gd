@@ -19,6 +19,7 @@ func _initialize() -> void:
 	_test_hud_does_not_overlap()
 	_test_turn_targets_are_cards()
 	_test_full_party_scrolls()
+	_test_turn_bar_options()
 	_test_clock_and_pips_stay_put()
 	_audit_rooms()
 	print("Polish tests: %d passed, %d failed" % [_passed, _failed])
@@ -146,6 +147,7 @@ func _test_full_party_scrolls() -> void:
 	var hud := CombatHUD.new()
 	root.add_child(hud)
 	hud._build()
+	hud.turn_bar_layout = CombatHUD.TURN_BAR_SCROLL
 	hud._layout_chrome(Vector2(1600, 720))
 	var names := ["ironjaw", "bastion", "kestrel", "mender", "gloam"]
 	var units: Array = []
@@ -177,6 +179,55 @@ func _test_full_party_scrolls() -> void:
 	truthy(peek >= chip.size.x * 0.25, "the next card peeks (%s of %s)" % [peek, chip.size.x])
 	truthy(peek <= chip.size.x * 0.55, "the peek is a cut-off card (%s of %s)" % [peek, chip.size.x])
 	eq(hud._turn_scroll.position.x + hud._turn_scroll.size.x <= hud._resource_panel.size.x + 1.0, true, "the scrolled row stays inside the turn plaque")
+	hud.free()
+
+
+func _test_turn_bar_options() -> void:
+	var hud := CombatHUD.new()
+	root.add_child(hud)
+	hud._build()
+	var names := ["ironjaw", "bastion", "kestrel", "mender", "gloam"]
+	var units: Array = []
+	for i in 10:
+		units.append({
+			"seat": i,
+			"team": 0 if i < 5 else 1,
+			"class_id": names[i % 5],
+			"name": names[i % 5],
+			"alive": true,
+			"hp": 100,
+			"max_hp": 100,
+			"ap": 6,
+			"mp": 3,
+		})
+	var snap := {"team_size": 1, "party_size": 5, "active_seat": 0, "units": units}
+	hud.turn_bar_layout = CombatHUD.TURN_BAR_SHRINK
+	hud._layout_chrome(Vector2(1600, 720))
+	hud.render(snap, [])
+	hud._layout_chrome(Vector2(1600, 720))
+	eq(hud._turn_strip.get_child_count(), 10, "shrink keeps every fighter on one row")
+	eq(hud._turn_foe_strip.get_child_count(), 0, "shrink has no second row")
+	var chip := hud._turn_strip.get_child(0) as Control
+	truthy(chip.size.x < 120.0 and chip.size.y < 120.0, "shrink cards scale down (%s)" % chip.size)
+	truthy(chip.size.x >= 48.0, "a shrunk card stays a tap target (%s)" % chip.size)
+	var gap := hud._chip_gap()
+	var content := chip.size.x * 10.0 + gap * 9.0
+	truthy(content <= hud._turn_scroll.size.x + 4.0, "all ten shrunk cards fit the window (%s vs %s)" % [content, hud._turn_scroll.size.x])
+	eq(hud._turn_scroll.horizontal_scroll_mode, ScrollContainer.SCROLL_MODE_DISABLED, "shrink turns scrolling off")
+	hud.turn_bar_layout = CombatHUD.TURN_BAR_ROWS
+	hud._turn_strip_sig = ""
+	hud.render(snap, [])
+	hud._layout_chrome(Vector2(1600, 720))
+	eq(hud._turn_strip.get_child_count(), 5, "the top row is the five allies")
+	eq(hud._turn_foe_strip.get_child_count(), 5, "the second row is the five monsters")
+	var ally := hud._turn_strip.get_child(0) as Control
+	var foe := hud._turn_foe_strip.get_child(0) as Control
+	truthy(ally.size.x >= 100.0 and ally.size.y >= 100.0, "two-row cards stay large (%s)" % ally.size)
+	near(foe.size.x, ally.size.x, "both rows use the same card size")
+	truthy(hud._resource_panel.size.y > 200.0, "two rows grow the plaque (%s)" % hud._resource_panel.size.y)
+	var bottom := hud._resource_panel.position.y + hud._resource_panel.size.y
+	truthy(bottom < 360.0, "the second row stays in the top half (%s)" % bottom)
+	eq(hud._turn_scroll.horizontal_scroll_mode, ScrollContainer.SCROLL_MODE_DISABLED, "two rows do not scroll")
 	hud.free()
 
 
