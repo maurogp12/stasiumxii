@@ -35,6 +35,17 @@ const DOFUS_AP := Color(0.28, 0.62, 1.0)
 const DOFUS_MP := Color(0.36, 0.86, 0.34)
 const TEAM_BLUE := Color(0.26, 0.54, 1.0)
 const TEAM_RED := Color(0.94, 0.28, 0.26)
+## Portrait stack discs. Each class resource has its own fill so a glance
+## tells the stacks apart. 22 viewport px is
+## about 33 px on the 108 px phone card.
+const STACK_BADGE := 22.0
+const BADGE_INK := Color(0.07, 0.04, 0.02)
+const BADGE_MARKS := Color(1.0, 0.78, 0.12)
+const BADGE_IMPACT := Color(1.0, 0.46, 0.1)
+const BADGE_AEGIS := Color(0.22, 0.86, 1.0)
+const BADGE_PULSE := Color(0.12, 0.9, 0.52)
+const BADGE_UMBRAL := Color(0.58, 0.32, 1.0)
+const BADGE_SHADES := Color(0.84, 0.78, 1.0)
 ## Turn-bar portrait. A wide phone shows this as a large finger card: the
 ## head and chest fill it. The row never collapses back into a tall empty slot.
 const PORTRAIT_CHIP := Vector2(168, 156)
@@ -417,13 +428,30 @@ static func marks_holder(unit: Dictionary, snap: Dictionary) -> Dictionary:
 	if str(unit.get("class_id", "")) != SpellKits.CLASS_KESTREL:
 		return unit
 	var seat := int(unit.get("seat", -1))
+	var owned: Dictionary = {}
+	var owned_n := -1
+	var foe: Dictionary = {}
+	var foe_n := -1
+	var fallback: Dictionary = {}
 	for other in snap.get("units", []):
 		if typeof(other) != TYPE_DICTIONARY:
 			continue
 		if int(other.get("seat", -1)) == seat:
 			continue
-		return other
-	return unit
+		if fallback.is_empty():
+			fallback = other
+		var n := int(other.get("marks", 0))
+		if int(other.get("marks_seat", -1)) == seat and n >= owned_n:
+			owned = other
+			owned_n = n
+		elif unit_team(other) != unit_team(unit) and n > foe_n:
+			foe = other
+			foe_n = n
+	if not owned.is_empty():
+		return owned
+	if not foe.is_empty():
+		return foe
+	return fallback if not fallback.is_empty() else unit
 
 
 ## Chrome only. A live Shade on the acting Gloam is the cue that Ambush relocates.
@@ -1813,7 +1841,10 @@ func _engine_pip_sig(unit: Dictionary) -> String:
 			cap_field = "pulse_cap"
 		_:
 			return ""
-	return "%s:%d:%d" % [field, int(unit.get(field, 0)), int(unit.get(cap_field, 0))]
+	var current := int(unit.get(field, 0))
+	if field == "marks":
+		current = int(marks_holder(unit, _last_snap).get("marks", current))
+	return "%s:%d:%d" % [field, current, int(unit.get(cap_field, 0))]
 
 
 func _render_pips(row: HBoxContainer, current: int, maximum: int, fill: Color, unit: Dictionary = {}) -> void:
@@ -1887,6 +1918,8 @@ func _append_engine_pips_to(bucket: Array, unit: Dictionary) -> void:
 	if lit_tex == null or empty_tex == null:
 		return
 	var current := int(unit.get(field, 0))
+	if field == "marks":
+		current = int(marks_holder(unit, _last_snap).get("marks", current))
 	for i in range(maxi(cap, 0)):
 		bucket.append(_pip_icon(lit_tex if i < current else empty_tex, i < current))
 
@@ -1934,7 +1967,18 @@ func _sync_turn_strip(snap: Dictionary) -> void:
 		var acting := (not deploying) and (not over) and seat == active
 		var targeted := _chip_targeted(unit)
 		var is_you := seat == you
-		parts.append("%d:%s:%s:%s" % [seat, str(unit.get("class_id", "")), "1" if acting else "0", "T" if targeted else "-"])
+		parts.append("%d:%s:%s:%s:%d:%d:%d:%d:%d:%d" % [
+			seat,
+			str(unit.get("class_id", "")),
+			"1" if acting else "0",
+			"T" if targeted else "-",
+			int(unit.get("marks", 0)),
+			int(unit.get("impact", 0)),
+			int(unit.get("aegis", 0)),
+			int(unit.get("pulse", 0)),
+			int(unit.get("umbral", 0)),
+			int(unit.get("shades", 0)),
+		])
 		wanted.append({
 			"unit": unit,
 			"seat": seat,
@@ -2313,6 +2357,7 @@ func _turn_chip(unit: Dictionary, acting: bool, targeted: bool, _is_you: bool, p
 		label.add_theme_color_override("font_color", CREAM)
 		label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		host.add_child(label)
+	_sync_marks_badge(host, unit, px)
 	host.set_meta("chip_seat", int(unit.get("seat", -1)))
 	host.set_meta("chip_class", str(unit.get("class_id", "")))
 	return host
@@ -2327,6 +2372,86 @@ func _restyle_turn_chip(host: Control, unit: Dictionary, acting: bool, targeted:
 	host.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	host.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	host.add_theme_stylebox_override("panel", _chip_frame(acting, targeted, team))
+	_sync_marks_badge(host, unit, px)
+
+
+## Solid number discs. Own stack sits top-right. Received Marks sit beside
+## it (or take that corner when this fighter has no stack of their own).
+## Hidden at 0. Kestrel's Marks live on the target, so her portrait stays clear.
+func _sync_marks_badge(host: Control, unit: Dictionary, px: Vector2) -> void:
+	var own := _own_stack_badge(unit)
+	var marks_n := int(unit.get("marks", 0))
+	var marks_slot := 0 if own.is_empty() else 1
+	_place_count_badge(host, "StackBadge", int(own.get("n", 0)), own.get("fill", Color.WHITE) as Color, own.get("ink", BADGE_INK) as Color, px, 0)
+	_place_count_badge(host, "MarksBadge", marks_n, BADGE_MARKS, BADGE_INK, px, marks_slot)
+
+
+## The stack this fighter spends. Dungeon foes keep the Ironjaw id only so
+## Strike is in the kit; that is not Impact, so they get no disc of their own.
+func _own_stack_badge(unit: Dictionary) -> Dictionary:
+	if str(unit.get("stasis_sprite", "")) != "":
+		return {}
+	match str(unit.get("class_id", "")):
+		SpellKits.CLASS_IRONJAW:
+			return _stack_spec(int(unit.get("impact", 0)), BADGE_IMPACT, BADGE_INK)
+		SpellKits.CLASS_BASTION:
+			return _stack_spec(_resource_current(unit, "aegis"), BADGE_AEGIS, BADGE_INK)
+		SpellKits.CLASS_MENDER:
+			return _stack_spec(_resource_current(unit, "pulse"), BADGE_PULSE, BADGE_INK)
+		SpellKits.CLASS_GLOAM:
+			var umbral := _resource_current(unit, "umbral")
+			if umbral > 0:
+				return _stack_spec(umbral, BADGE_UMBRAL, Color.WHITE)
+			var shades := shade_count(unit, _last_snap)
+			return _stack_spec(shades, BADGE_SHADES, BADGE_INK)
+		_:
+			return {}
+
+
+func _stack_spec(n: int, fill: Color, ink: Color) -> Dictionary:
+	if n <= 0:
+		return {}
+	return {"n": n, "fill": fill, "ink": ink}
+
+
+func _place_count_badge(host: Control, node_name: String, n: int, fill: Color, ink: Color, px: Vector2, slot: int) -> void:
+	var badge := host.get_node_or_null(node_name) as Panel
+	if badge == null:
+		badge = Panel.new()
+		badge.name = node_name
+		badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		badge.clip_contents = false
+		var num := Label.new()
+		num.name = "Count"
+		num.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		num.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		num.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		num.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		badge.add_child(num)
+		host.add_child(badge)
+	badge.visible = n > 0
+	if n <= 0:
+		return
+	var side := clampf(round(px.x * STACK_BADGE / SLIM_CHIP), 20.0, 24.0)
+	badge.custom_minimum_size = Vector2(side, side)
+	badge.size = Vector2(side, side)
+	badge.position = Vector2(maxf(px.x - side - 2.0 - float(slot) * (side + 2.0), 1.0), 2.0)
+	badge.z_index = 2
+	var box := _circle_style(fill, side, Color(0.05, 0.03, 0.02), 2)
+	box.content_margin_left = 0
+	box.content_margin_right = 0
+	box.content_margin_top = 0
+	box.content_margin_bottom = 0
+	badge.add_theme_stylebox_override("panel", box)
+	var count := badge.get_node_or_null("Count") as Label
+	if count == null:
+		return
+	count.text = str(n)
+	# Same-color outline fattens the default font into a bold digit.
+	count.add_theme_font_size_override("font_size", int(round(side * 0.72)))
+	count.add_theme_color_override("font_color", ink)
+	count.add_theme_color_override("font_outline_color", ink)
+	count.add_theme_constant_override("outline_size", 4)
 
 
 func _chip_frame(acting: bool, targeted: bool = false, team_color: Color = GOLD) -> StyleBoxFlat:
@@ -2610,9 +2735,6 @@ func _unit_card_text(unit: Dictionary, _active: bool, snap: Dictionary = {}) -> 
 		text += "\n%s" % extra
 	if meter != "":
 		text += "\n%s" % meter
-	if meter.find("Marks") < 0:
-		var marked := marks_holder(unit, snap)
-		text += "\nMarks %d" % int(marked.get("marks", 0))
 	return text
 
 
@@ -2620,22 +2742,26 @@ func _unit(units: Array, seat: int) -> Dictionary:
 	return unit_for_seat(units, seat)
 
 
-## Kestrel / Ironjaw keep Marks / Impact. Card classes paint snapshot fields.
-## `unit.resources` mirrors pulse / umbral / shades / aegis when the field is absent.
-## Marks pips follow `marks_holder` so a connect on the foe fills Kestrel's row.
+## Each hero's own stack, by the name already in the kit data.
+## Kestrel's Marks are the stack on the fighter she marked (`marks_holder`).
+## Impact stays Ironjaw's pips. The other hero meters keep their kit label and N/cap.
+## A dungeon foe wears the Ironjaw id for Strike only, so that card does not
+## grow an Impact row. Marks she lands on someone else are a second line.
 func _resource_meter_line(unit: Dictionary, snap: Dictionary = {}) -> String:
 	var class_id := str(unit.get("class_id", ""))
-	if class_id == SpellKits.CLASS_MENDER:
-		return "%s %d/%d" % [
+	var foe := str(unit.get("stasis_sprite", "")) != ""
+	var lines: PackedStringArray = PackedStringArray()
+	if not foe and class_id == SpellKits.CLASS_MENDER:
+		lines.append("%s %d/%d" % [
 			SpellKits.resource_label("pulse"),
 			_resource_current(unit, "pulse"),
 			int(unit.get("pulse_cap", SpellKits.PULSE_CAP)),
-		]
-	if class_id == SpellKits.CLASS_GLOAM:
+		])
+	elif not foe and class_id == SpellKits.CLASS_GLOAM:
 		var hidden := ""
 		if bool(unit.get("invisible", false)) and int(unit.get("invisible_turns", 0)) > 0:
 			hidden = "  Invisible %d" % int(unit.get("invisible_turns", 0))
-		return "%s %d/%d  %s %d/%d%s" % [
+		lines.append("%s %d/%d  %s %d/%d%s" % [
 			SpellKits.resource_label("umbral"),
 			_resource_current(unit, "umbral"),
 			int(unit.get("umbral_cap", SpellKits.UMBRAL_CAP)),
@@ -2643,18 +2769,23 @@ func _resource_meter_line(unit: Dictionary, snap: Dictionary = {}) -> String:
 			shade_count(unit, snap),
 			int(unit.get("shades_cap", SpellKits.SHADE_CAP)),
 			hidden,
-		]
-	if class_id == SpellKits.CLASS_BASTION:
-		return "%s %d/%d" % [
+		])
+	elif not foe and class_id == SpellKits.CLASS_BASTION:
+		lines.append("%s %d/%d" % [
 			SpellKits.resource_label("aegis"),
 			_resource_current(unit, "aegis"),
 			int(unit.get("aegis_cap", SpellKits.AEGIS_CAP)),
-		]
-	var marked := marks_holder(unit, snap)
-	return "Marks %s  Impact %s" % [
-		engine_pips(int(marked.get("marks", 0)), int(marked.get("marks_cap", SpellKits.MARKS_CAP))),
-		engine_pips(int(unit.get("impact", 0)), int(unit.get("impact_cap", SpellKits.IMPACT_CAP))),
-	]
+		])
+	elif not foe and class_id == SpellKits.CLASS_IRONJAW:
+		lines.append("Impact %s" % engine_pips(int(unit.get("impact", 0)), int(unit.get("impact_cap", SpellKits.IMPACT_CAP))))
+	elif class_id == SpellKits.CLASS_KESTREL:
+		var marked := marks_holder(unit, snap)
+		lines.append("Marks %d" % int(marked.get("marks", 0)))
+	if class_id != SpellKits.CLASS_KESTREL:
+		var received := int(unit.get("marks", 0))
+		if received > 0:
+			lines.append("Marks %d" % received)
+	return "\n".join(lines)
 
 
 func _resource_current(unit: Dictionary, id: String) -> int:
