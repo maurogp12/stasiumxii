@@ -18,6 +18,7 @@ func _initialize() -> void:
 	_test_class_select_copy()
 	_test_hud_does_not_overlap()
 	_test_turn_targets_are_cards()
+	_test_full_party_scrolls()
 	_test_clock_and_pips_stay_put()
 	_audit_rooms()
 	print("Polish tests: %d passed, %d failed" % [_passed, _failed])
@@ -137,7 +138,45 @@ func _test_turn_targets_are_cards() -> void:
 		truthy(chip.size.x >= 120.0 and chip.size.y >= 120.0, "each turn target is a large finger card (%s)" % chip.size)
 		truthy(chip.size.y <= chip.size.x + 16.0, "a turn target is not a tall empty bar (%s)" % chip.size)
 	eq(_overlap(hud._banner_panels[0].get_rect(), hud._resource_panel.get_rect()), false, "the wider turn row stays off the player plaque")
-	eq(hud._turn_strip.position.x + hud._turn_strip.size.x <= hud._resource_panel.size.x + 1.0, true, "portraits stay inside the turn plaque")
+	eq(hud._turn_scroll.position.x + hud._turn_scroll.size.x <= hud._resource_panel.size.x + 1.0, true, "portraits stay inside the turn plaque")
+	hud.free()
+
+
+func _test_full_party_scrolls() -> void:
+	var hud := CombatHUD.new()
+	root.add_child(hud)
+	hud._build()
+	hud._layout_chrome(Vector2(1600, 720))
+	var names := ["ironjaw", "bastion", "kestrel", "mender", "gloam"]
+	var units: Array = []
+	for i in 10:
+		units.append({
+			"seat": i,
+			"team": 0 if i < 5 else 1,
+			"class_id": names[i % 5],
+			"name": names[i % 5],
+			"alive": true,
+			"hp": 100,
+			"max_hp": 100,
+			"ap": 6,
+			"mp": 3,
+		})
+	hud.render({"team_size": 1, "party_size": 5, "active_seat": 0, "units": units}, [])
+	hud._layout_chrome(Vector2(1600, 720))
+	eq(hud._turn_strip.get_child_count(), 10, "a full party and a full pack both sit on the bar")
+	var chip := hud._turn_strip.get_child(0) as Control
+	truthy(chip.size.x >= 140.0 and chip.size.y >= 140.0, "a full party keeps the large card (%s)" % chip.size)
+	truthy(hud._turn_scroll.size.x + 8.0 < hud._turn_strip.custom_minimum_size.x, "ten cards scroll instead of shrinking")
+	var gap := hud._chip_gap()
+	var stride := chip.size.x + gap
+	var shown := hud._turn_scroll.size.x
+	var used := 0.0
+	while used + chip.size.x <= shown + 0.5:
+		used += stride
+	var peek := shown - used
+	truthy(peek >= chip.size.x * 0.25, "the next card peeks (%s of %s)" % [peek, chip.size.x])
+	truthy(peek <= chip.size.x * 0.55, "the peek is a cut-off card (%s of %s)" % [peek, chip.size.x])
+	eq(hud._turn_scroll.position.x + hud._turn_scroll.size.x <= hud._resource_panel.size.x + 1.0, true, "the scrolled row stays inside the turn plaque")
 	hud.free()
 
 

@@ -74,8 +74,11 @@ var _seat_titles: Array[Label] = []
 var _turn_label: Label
 var _you_label: Label
 var _opp_label: Label
+var _turn_scroll: ScrollContainer
 var _turn_strip: HBoxContainer
 var _turn_strip_sig: String = ""
+## Portrait column before the scroll window is narrowed to peek the next card.
+var _turn_band := Vector2.ZERO
 var _pip_sig: Dictionary = {}
 var _resource_panel: Panel
 var _ui_root: Control
@@ -136,6 +139,9 @@ var _long_press_touch: bool = false
 var _unit_press_seat: int = -1
 var _unit_press_elapsed: float = 0.0
 var _unit_info_shown: bool = false
+var _unit_press_dragged: bool = false
+var _unit_press_global := Vector2.ZERO
+var _unit_press_scroll: int = 0
 ## Finger contact. Desktop hover must not open the card during a tap.
 var _hover_suppressed: bool = false
 var _last_snap: Dictionary = {}
@@ -864,7 +870,7 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
-	if _unit_press_seat >= 0 and not _unit_info_shown:
+	if _unit_press_seat >= 0 and not _unit_info_shown and not _unit_press_dragged:
 		_unit_press_elapsed += delta
 		if _unit_press_elapsed >= SpellTooltip.LONG_PRESS_SEC:
 			show_unit_info(_unit_press_seat)
@@ -886,6 +892,8 @@ func _process(delta: float) -> void:
 
 func _input(event: InputEvent) -> void:
 	if TOUCH.is_emulated_mouse(event):
+		return
+	if _scroll_turn_drag(event):
 		return
 	if event is InputEventMouseButton and (event as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT and not event.pressed:
 		_finish_unit_press()
@@ -1215,14 +1223,24 @@ func _build() -> void:
 	_opp_label.visible = false
 	resource_panel.add_child(_opp_label)
 
+	_turn_scroll = ScrollContainer.new()
+	_turn_scroll.name = "TurnScroll"
+	_turn_scroll.position = Vector2(4, 4)
+	_turn_scroll.size = Vector2(272, 120)
+	_turn_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER
+	_turn_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_turn_scroll.mouse_filter = Control.MOUSE_FILTER_STOP
+	_turn_scroll.clip_contents = true
+	_turn_scroll.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
+	resource_panel.add_child(_turn_scroll)
 	_turn_strip = HBoxContainer.new()
 	_turn_strip.name = "TurnStrip"
-	_turn_strip.position = Vector2(4, 4)
+	_turn_strip.position = Vector2.ZERO
 	_turn_strip.size = Vector2(272, 120)
 	_turn_strip.alignment = BoxContainer.ALIGNMENT_BEGIN
 	_turn_strip.add_theme_constant_override("separation", 8)
 	_turn_strip.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	resource_panel.add_child(_turn_strip)
+	_turn_scroll.add_child(_turn_strip)
 
 	_turn_label = Label.new()
 	_turn_label.position = Vector2(280, 6)
@@ -1886,6 +1904,34 @@ func _sync_turn_strip(snap: Dictionary) -> void:
 	for child in doomed:
 		_turn_strip.remove_child(child)
 		child.free()
+	_layout_turn_row()
+
+
+func _layout_turn_row() -> void:
+	if _turn_strip == null or _turn_scroll == null:
+		return
+	if _turn_band.x < 32.0 or _turn_band.y < 32.0:
+		return
+	var count := _turn_strip.get_child_count()
+	var card := _chip_px(count) if count > 0 else PORTRAIT_CHIP
+	var view_w := _scroll_view_width(count, card.x, _turn_band.x) if count > 0 else _turn_band.x
+	var content_w := card.x * float(count) + _chip_gap() * float(maxi(count - 1, 0))
+	_turn_scroll.position = Vector2(4, 4)
+	_turn_scroll.size = Vector2(view_w, _turn_band.y)
+	_turn_strip.position = Vector2.ZERO
+	_turn_strip.custom_minimum_size = Vector2(maxf(content_w, view_w), _turn_band.y)
+	_turn_strip.size = Vector2(maxf(content_w, view_w), _turn_band.y)
+	_fit_turn_chips()
+	if _turn_label != null and _resource_panel != null:
+		var text_x := _turn_scroll.position.x + _turn_scroll.size.x + 6.0
+		var center_w := _resource_panel.size.x
+		_turn_label.position = Vector2(text_x, 6)
+		_turn_label.size = Vector2(maxf(center_w - text_x - 8.0, 1.0), 20)
+		if _ap_pips != null:
+			var res_box := _ap_pips.get_parent() as Control
+			if res_box != null:
+				res_box.position = Vector2(text_x, 28)
+				res_box.size = Vector2(maxf(center_w - text_x - 8.0, 1.0), maxf(_turn_band.y - 28.0, 1.0))
 
 
 func _fit_turn_chips() -> void:
@@ -1907,23 +1953,55 @@ func _fit_turn_chips() -> void:
 		host.size = px
 
 
+func _chip_gap() -> float:
+	if _turn_strip == null:
+		return 8.0
+	return float(_turn_strip.get_theme_constant("separation"))
+
+
 func _chip_px(count: int) -> Vector2:
 	var px := PORTRAIT_CHIP
 	if _turn_strip == null or count <= 0:
 		return px
-	var gap := 6.0
-	var band_w := _turn_strip.size.x
-	var band_h := _turn_strip.size.y
 	# A one-frame 0-height band must not bake postage-stamp chips.
+	if _turn_strip.size.y < 32.0:
+		return px
+	var band_w := _turn_band.x if _turn_band.x >= 32.0 else _turn_strip.size.x
+	var band_h := _turn_band.y if _turn_band.y >= 32.0 else _turn_strip.size.y
 	if band_h < 32.0 or band_w < 32.0:
 		return px
+	var gap := _chip_gap()
 	var h := minf(px.y, band_h)
 	var fit_w := (band_w - gap * float(maxi(count - 1, 0))) / float(maxi(count, 1))
 	var w := minf(px.x, fit_w)
+	# A fuller fight keeps the six-card size and scrolls. It does not shrink the portraits.
+	if count > 6:
+		var fit_six := (band_w - gap * 5.0) / 6.0
+		w = minf(px.x, maxf(fit_w, fit_six))
 	# Narrower than the card is tall: stay a card, not a tall empty slot.
 	if w + 8.0 < h:
 		h = maxf(w, 1.0)
 	return Vector2(maxf(w, 1.0), maxf(h, 1.0))
+
+
+## Visible width of the row. When the cards do not fit, stop on a clear
+## slice of the next portrait instead of a one-pixel sliver.
+func _scroll_view_width(count: int, card_w: float, band_w: float) -> float:
+	if count <= 0 or card_w < 2.0:
+		return band_w
+	var gap := _chip_gap()
+	var content := card_w * float(count) + gap * float(maxi(count - 1, 0))
+	if content <= band_w + 1.0:
+		return band_w
+	var stride := card_w + gap
+	var peek := clampf(card_w * 0.38, 36.0, card_w * 0.48)
+	var full := int((band_w + gap) / stride)
+	while full > 0:
+		var view := float(full) * card_w + gap * float(maxi(full - 1, 0)) + peek
+		if view <= band_w + 0.5 and full < count:
+			return view
+		full -= 1
+	return minf(band_w, content)
 
 
 ## Armed unit spell can legally land on this fighter. View only.
@@ -2952,10 +3030,10 @@ func _ambush_has_shade_origin() -> bool:
 
 func _make_unit_pressable(control: Control, seat: int) -> void:
 	control.mouse_filter = Control.MOUSE_FILTER_STOP
-	control.gui_input.connect(_on_unit_card_input.bind(seat))
+	control.gui_input.connect(_on_unit_card_input.bind(control, seat))
 
 
-func _on_unit_card_input(event: InputEvent, seat: int) -> void:
+func _on_unit_card_input(event: InputEvent, control: Control, seat: int) -> void:
 	if TOUCH.is_emulated_mouse(event):
 		return
 	var pressed := false
@@ -2970,6 +3048,10 @@ func _on_unit_card_input(event: InputEvent, seat: int) -> void:
 	_unit_press_seat = seat
 	_unit_press_elapsed = 0.0
 	_unit_info_shown = false
+	_unit_press_dragged = false
+	# gui_input positions are local. Drag events in _input are viewport pixels, same as scroll_horizontal.
+	_unit_press_global = control.get_global_position() + event.position
+	_unit_press_scroll = int(_turn_scroll.scroll_horizontal) if _turn_scroll != null else 0
 	set_process(true)
 	accept_event_safe()
 
@@ -2982,14 +3064,43 @@ func accept_event_safe() -> void:
 
 ## Finger / button up after a portrait press: a short tap aims the armed
 ## spell at that fighter; a hold showed the stats card, so drop it.
+func _scroll_turn_drag(event: InputEvent) -> bool:
+	if _unit_press_seat < 0 or _turn_scroll == null or _turn_strip == null:
+		return false
+	if event is InputEventMouseButton or event is InputEventScreenTouch:
+		return false
+	var pos := Vector2.ZERO
+	var moving := false
+	if event is InputEventScreenDrag:
+		pos = (event as InputEventScreenDrag).position
+		moving = true
+	elif event is InputEventMouseMotion and Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
+		pos = (event as InputEventMouseMotion).position
+		moving = true
+	if not moving:
+		return false
+	var dx := pos.x - _unit_press_global.x
+	if absf(dx) < 12.0 and not _unit_press_dragged:
+		return false
+	_unit_press_dragged = true
+	var max_scroll := maxi(int(round(_turn_strip.size.x - _turn_scroll.size.x)), 0)
+	_turn_scroll.scroll_horizontal = clampi(_unit_press_scroll - int(round(dx)), 0, max_scroll)
+	accept_event_safe()
+	return true
+
+
 func _finish_unit_press() -> void:
 	if _unit_press_seat < 0:
 		return
+	var dragged := _unit_press_dragged
 	var seat := _unit_press_seat
 	var shown := _unit_info_shown
 	_unit_press_seat = -1
 	_unit_press_elapsed = 0.0
 	_unit_info_shown = false
+	_unit_press_dragged = false
+	if dragged:
+		return
 	if shown:
 		hide_spell_tooltip()
 		return
@@ -3224,10 +3335,8 @@ func claims_screen_point(point: Vector2) -> bool:
 	for panel in _banner_panels:
 		if _control_claims(panel, point):
 			return true
-	if _turn_strip != null:
-		for chip in _turn_strip.get_children():
-			if _control_claims(chip as Control, point):
-				return true
+	if _turn_scroll != null and _control_claims(_turn_scroll, point):
+		return true
 	for button in _face_buttons.values():
 		if _control_claims(button, point):
 			return true
@@ -3518,14 +3627,13 @@ func _layout_chrome(forced: Vector2 = Vector2.ZERO) -> void:
 		_you_label.size = Vector2(half, 18)
 		_opp_label.position = Vector2(8.0 + half, 2)
 		_opp_label.size = Vector2(half, 18)
-	if _turn_strip != null:
+	if _turn_strip != null and _turn_scroll != null:
 		var text_col := 180.0 if center_w >= 420.0 else maxf(center_w * 0.38, 1.0)
 		var portrait_w := maxf(center_w - text_col - 12.0, 1.0)
-		_turn_strip.position = Vector2(4, 4)
-		_turn_strip.size = Vector2(portrait_w, maxf(center_h - 8.0, 1.0))
-		_fit_turn_chips()
-	if _turn_label != null and _turn_strip != null:
-		var text_x := _turn_strip.position.x + _turn_strip.size.x + 6.0
+		_turn_band = Vector2(portrait_w, maxf(center_h - 8.0, 1.0))
+		_layout_turn_row()
+	if _turn_label != null and _turn_scroll != null:
+		var text_x := _turn_scroll.position.x + _turn_scroll.size.x + 6.0
 		_turn_label.position = Vector2(text_x, 6)
 		_turn_label.size = Vector2(maxf(center_w - text_x - 8.0, 1.0), 20)
 		_turn_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
