@@ -1911,20 +1911,20 @@ func _chip_px(count: int) -> Vector2:
 	var px := PORTRAIT_CHIP
 	if _turn_strip == null or count <= 0:
 		return px
-	var gap := 8.0
+	var gap := 6.0
 	var band_w := _turn_strip.size.x
 	var band_h := _turn_strip.size.y
-	if band_h < 8.0:
+	# A one-frame 0-height band must not bake postage-stamp chips.
+	if band_h < 32.0 or band_w < 32.0:
 		return px
 	var h := minf(px.y, band_h)
-	var w := minf(px.x, h * (px.x / px.y))
-	var fit_w := (band_w - gap * float(maxi(count - 1, 0))) / float(count)
-	if fit_w < w:
-		w = maxf(fit_w, 1.0)
-		h = minf(h, w * (px.y / px.x))
-	if count <= 2 and band_h >= px.y and band_w >= px.x * 2.0 + gap:
-		return px
-	return Vector2(w, h)
+	var fit_w := (band_w - gap * float(maxi(count - 1, 0))) / float(maxi(count, 1))
+	var w := minf(px.x, fit_w) if count <= 2 else fit_w
+	w = minf(w, 140.0)
+	# Narrower than the card is tall: stay a card, not a tall empty slot.
+	if w + 8.0 < h:
+		h = maxf(w, 1.0)
+	return Vector2(maxf(w, 1.0), maxf(h, 1.0))
 
 
 ## Armed unit spell can legally land on this fighter. View only.
@@ -1939,28 +1939,30 @@ func _chip_targeted(unit: Dictionary) -> bool:
 	return SNAPSHOT_TILES.cast_dests(_last_legal, _selected_spell).has(pos)
 
 
-func _turn_chip(unit: Dictionary, acting: bool, targeted: bool, is_you: bool, px: Vector2) -> Control:
+func _turn_chip(unit: Dictionary, acting: bool, targeted: bool, _is_you: bool, px: Vector2) -> Control:
 	var team := TEAM_RED if unit_team(unit) == 1 else TEAM_BLUE
 	var host := Panel.new()
 	host.custom_minimum_size = px
 	host.size = px
+	# The row must not stretch a card into a tall empty bar.
+	host.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	host.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	host.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	host.clip_contents = true
 	host.add_theme_stylebox_override("panel", _chip_frame(acting, targeted, team))
 	var tex := _portrait_for(unit)
-	var tag_h := 16.0 if px.y >= 80.0 else 0.0
 	if tex != null:
 		var plate := TextureRect.new()
 		plate.texture = tex
 		plate.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		plate.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		plate.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 		plate.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 		plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		plate.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 		plate.offset_left = 4
 		plate.offset_top = 4
 		plate.offset_right = -4
-		plate.offset_bottom = -(4.0 + tag_h)
+		plate.offset_bottom = -4
 		host.add_child(plate)
 	else:
 		var label := Label.new()
@@ -1972,44 +1974,20 @@ func _turn_chip(unit: Dictionary, acting: bool, targeted: bool, is_you: bool, px
 		label.add_theme_color_override("font_color", CREAM)
 		label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		host.add_child(label)
-	if tag_h > 0.0:
-		var bar := ColorRect.new()
-		bar.color = team
-		bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		bar.anchor_left = 0.0
-		bar.anchor_right = 1.0
-		bar.anchor_top = 1.0
-		bar.anchor_bottom = 1.0
-		bar.offset_left = 4
-		bar.offset_right = -4
-		bar.offset_bottom = -4
-		bar.offset_top = -(4.0 + tag_h)
-		host.add_child(bar)
-		var tag := Label.new()
-		tag.name = "SeatTag"
-		tag.text = "YOU" if is_you else "FOE"
-		tag.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		tag.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		tag.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		tag.add_theme_font_size_override("font_size", 11)
-		tag.add_theme_color_override("font_color", Color(0.98, 0.96, 0.9))
-		tag.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		bar.add_child(tag)
 	host.set_meta("chip_seat", int(unit.get("seat", -1)))
 	host.set_meta("chip_class", str(unit.get("class_id", "")))
 	return host
 
 
-func _restyle_turn_chip(host: Control, unit: Dictionary, acting: bool, targeted: bool, is_you: bool, px: Vector2) -> void:
+func _restyle_turn_chip(host: Control, unit: Dictionary, acting: bool, targeted: bool, _is_you: bool, px: Vector2) -> void:
 	if host == null:
 		return
 	var team := TEAM_RED if unit_team(unit) == 1 else TEAM_BLUE
 	host.custom_minimum_size = px
 	host.size = px
+	host.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	host.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	host.add_theme_stylebox_override("panel", _chip_frame(acting, targeted, team))
-	var tag := host.find_child("SeatTag", true, false) as Label
-	if tag != null:
-		tag.text = "YOU" if is_you else "FOE"
 
 
 func _chip_frame(acting: bool, targeted: bool = false, team_color: Color = GOLD) -> StyleBoxFlat:
@@ -3377,6 +3355,12 @@ func _layout_chrome(forced: Vector2 = Vector2.ZERO) -> void:
 	var banner_w := 240.0
 	var center_w := 448.0
 	var inner := view.x - margin * 2.0 - gap * 2.0
+	# Phone: the turn row needs room for wide portrait cards. Side plaques stay 240.
+	if view.x >= 1400.0:
+		var room := inner - banner_w * 2.0
+		var wanted := 8.0 * 104.0 + 7.0 * 6.0 + 168.0 + 16.0
+		if room >= 448.0:
+			center_w = minf(wanted, room)
 	var need := banner_w * 2.0 + center_w
 	if inner < need:
 		var scale := inner / need
@@ -3411,7 +3395,8 @@ func _layout_chrome(forced: Vector2 = Vector2.ZERO) -> void:
 		_opp_label.position = Vector2(8.0 + half, 2)
 		_opp_label.size = Vector2(half, 18)
 	if _turn_strip != null:
-		var portrait_w := 272.0 if center_w >= 420.0 else minf(272.0, maxf(center_w * 0.62, 1.0))
+		var text_col := 168.0 if center_w >= 420.0 else maxf(center_w * 0.38, 1.0)
+		var portrait_w := maxf(center_w - text_col - 12.0, 1.0)
 		_turn_strip.position = Vector2(4, 4)
 		_turn_strip.size = Vector2(portrait_w, maxf(center_h - 8.0, 1.0))
 		_fit_turn_chips()

@@ -17,6 +17,7 @@ func _initialize() -> void:
 	_test_grid_and_occluders()
 	_test_class_select_copy()
 	_test_hud_does_not_overlap()
+	_test_turn_targets_are_cards()
 	_test_clock_and_pips_stay_put()
 	_audit_rooms()
 	print("Polish tests: %d passed, %d failed" % [_passed, _failed])
@@ -105,6 +106,39 @@ func _test_hud_does_not_overlap() -> void:
 		eq(left.end.x <= size.x + 0.5 and right.end.x <= size.x + 0.5, true, "banners stay inside %s" % size)
 		eq(left.position.y >= 0.0 and left.end.y <= size.y + 0.5, true, "left banner stays inside the height at %s" % size)
 		hud.free()
+
+
+func _test_turn_targets_are_cards() -> void:
+	root.size = Vector2i(2400, 1080)
+	var hud := CombatHUD.new()
+	root.add_child(hud)
+	hud._build()
+	hud._layout_chrome(Vector2(2400, 1080))
+	near(hud._banner_panels[0].size.x, 240.0, "the player plaque stays 240 wide")
+	near(hud._banner_panels[0].size.y, 100.0, "the player plaque stays 100 tall")
+	var classes := ["ironjaw", "bastion", "kestrel", "gloam", "mender", "kestrel"]
+	var units: Array = []
+	for i in classes.size():
+		units.append({
+			"seat": i,
+			"team": 0 if i < 3 else 1,
+			"class_id": classes[i],
+			"name": classes[i],
+			"alive": true,
+			"hp": 100,
+			"max_hp": 100,
+			"ap": 6,
+			"mp": 3,
+		})
+	hud.render({"team_size": 3, "active_seat": 0, "units": units}, [])
+	eq(hud._turn_strip.get_child_count(), 6, "a full fight lists every fighter")
+	for child in hud._turn_strip.get_children():
+		var chip := child as Control
+		truthy(chip.size.x >= 88.0 and chip.size.y >= 88.0, "each turn target is a finger card (%s)" % chip.size)
+		truthy(chip.size.y <= chip.size.x + 16.0, "a turn target is not a tall empty bar (%s)" % chip.size)
+	eq(_overlap(hud._banner_panels[0].get_rect(), hud._resource_panel.get_rect()), false, "the wider turn row stays off the player plaque")
+	eq(hud._turn_strip.position.x + hud._turn_strip.size.x <= hud._resource_panel.size.x + 1.0, true, "portraits stay inside the turn plaque")
+	hud.free()
 
 
 func _test_clock_and_pips_stay_put() -> void:
