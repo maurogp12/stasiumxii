@@ -388,13 +388,30 @@ static func marks_holder(unit: Dictionary, snap: Dictionary) -> Dictionary:
 	if str(unit.get("class_id", "")) != SpellKits.CLASS_KESTREL:
 		return unit
 	var seat := int(unit.get("seat", -1))
+	var owned: Dictionary = {}
+	var owned_n := -1
+	var foe: Dictionary = {}
+	var foe_n := -1
+	var fallback: Dictionary = {}
 	for other in snap.get("units", []):
 		if typeof(other) != TYPE_DICTIONARY:
 			continue
 		if int(other.get("seat", -1)) == seat:
 			continue
-		return other
-	return unit
+		if fallback.is_empty():
+			fallback = other
+		var n := int(other.get("marks", 0))
+		if int(other.get("marks_seat", -1)) == seat and n >= owned_n:
+			owned = other
+			owned_n = n
+		elif unit_team(other) != unit_team(unit) and n > foe_n:
+			foe = other
+			foe_n = n
+	if not owned.is_empty():
+		return owned
+	if not foe.is_empty():
+		return foe
+	return fallback if not fallback.is_empty() else unit
 
 
 ## Chrome only. A live Shade on the acting Gloam is the cue that Ambush relocates.
@@ -1712,7 +1729,10 @@ func _engine_pip_sig(unit: Dictionary) -> String:
 			cap_field = "pulse_cap"
 		_:
 			return ""
-	return "%s:%d:%d" % [field, int(unit.get(field, 0)), int(unit.get(cap_field, 0))]
+	var current := int(unit.get(field, 0))
+	if field == "marks":
+		current = int(marks_holder(unit, _last_snap).get("marks", current))
+	return "%s:%d:%d" % [field, current, int(unit.get(cap_field, 0))]
 
 
 func _render_pips(row: HBoxContainer, current: int, maximum: int, fill: Color, unit: Dictionary = {}) -> void:
@@ -1786,6 +1806,8 @@ func _append_engine_pips_to(bucket: Array, unit: Dictionary) -> void:
 	if lit_tex == null or empty_tex == null:
 		return
 	var current := int(unit.get(field, 0))
+	if field == "marks":
+		current = int(marks_holder(unit, _last_snap).get("marks", current))
 	for i in range(maxi(cap, 0)):
 		bucket.append(_pip_icon(lit_tex if i < current else empty_tex, i < current))
 
@@ -1833,7 +1855,7 @@ func _sync_turn_strip(snap: Dictionary) -> void:
 		var acting := (not deploying) and (not over) and seat == active
 		var targeted := _chip_targeted(unit)
 		var is_you := seat == you
-		parts.append("%d:%s:%s:%s" % [seat, str(unit.get("class_id", "")), "1" if acting else "0", "T" if targeted else "-"])
+		parts.append("%d:%s:%s:%s:%d" % [seat, str(unit.get("class_id", "")), "1" if acting else "0", "T" if targeted else "-", int(unit.get("marks", 0))])
 		wanted.append({
 			"unit": unit,
 			"seat": seat,
@@ -1861,7 +1883,7 @@ func _sync_turn_strip(snap: Dictionary) -> void:
 		if same:
 			for i in wanted.size():
 				var row: Dictionary = wanted[i]
-				_restyle_turn_chip(_turn_strip.get_child(i), row["unit"], bool(row["acting"]), bool(row["targeted"]), bool(row["you"]), px)
+				_restyle_turn_chip(_turn_strip.get_child(i), row["unit"], bool(row["acting"]), bool(row["targeted"]), bool(row["you"]), px, snap)
 			return
 	# Build the new row first, then drop the old chips, so the plaque is
 	# never an empty dark box for a frame.
@@ -1869,7 +1891,7 @@ func _sync_turn_strip(snap: Dictionary) -> void:
 	for entry in wanted:
 		var spec: Dictionary = entry
 		var fighter: Dictionary = spec["unit"]
-		var chip := _turn_chip(fighter, bool(spec["acting"]), bool(spec["targeted"]), bool(spec["you"]), px)
+		var chip := _turn_chip(fighter, bool(spec["acting"]), bool(spec["targeted"]), bool(spec["you"]), px, snap)
 		chip.set_meta("chip_seat", int(spec["seat"]))
 		chip.set_meta("chip_class", str(spec["class_id"]))
 		_make_unit_pressable(chip, int(spec["seat"]))
@@ -1939,7 +1961,7 @@ func _chip_targeted(unit: Dictionary) -> bool:
 	return SNAPSHOT_TILES.cast_dests(_last_legal, _selected_spell).has(pos)
 
 
-func _turn_chip(unit: Dictionary, acting: bool, targeted: bool, is_you: bool, px: Vector2) -> Control:
+func _turn_chip(unit: Dictionary, acting: bool, targeted: bool, is_you: bool, px: Vector2, snap: Dictionary = {}) -> Control:
 	var team := TEAM_RED if unit_team(unit) == 1 else TEAM_BLUE
 	var host := Panel.new()
 	host.custom_minimum_size = px
@@ -1995,12 +2017,37 @@ func _turn_chip(unit: Dictionary, acting: bool, targeted: bool, is_you: bool, px
 		tag.add_theme_color_override("font_color", Color(0.98, 0.96, 0.9))
 		tag.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		bar.add_child(tag)
+	_add_marks_badge(host, unit, snap, px)
 	host.set_meta("chip_seat", int(unit.get("seat", -1)))
 	host.set_meta("chip_class", str(unit.get("class_id", "")))
 	return host
 
 
-func _restyle_turn_chip(host: Control, unit: Dictionary, acting: bool, targeted: bool, is_you: bool, px: Vector2) -> void:
+func _add_marks_badge(host: Control, unit: Dictionary, snap: Dictionary, px: Vector2) -> void:
+	var n := chip_marks(unit, snap)
+	var badge := Label.new()
+	badge.name = "MarksBadge"
+	badge.text = "Marks %d" % n
+	badge.visible = n > 0
+	badge.position = Vector2(4, 2)
+	badge.size = Vector2(maxf(px.x - 8.0, 1.0), 18)
+	badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	badge.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	badge.add_theme_font_size_override("font_size", 12)
+	badge.add_theme_color_override("font_color", GOLD_BRIGHT)
+	badge.add_theme_color_override("font_outline_color", Color(0.04, 0.03, 0.02))
+	badge.add_theme_constant_override("outline_size", 5)
+	host.add_child(badge)
+
+
+## The stack stored on this fighter. Kestrel's chip shows the stack she can
+## spend (it lives on her target). Everyone else shows the Marks on themselves.
+static func chip_marks(unit: Dictionary, snap: Dictionary) -> int:
+	return int(marks_holder(unit, snap).get("marks", 0))
+
+
+func _restyle_turn_chip(host: Control, unit: Dictionary, acting: bool, targeted: bool, is_you: bool, px: Vector2, snap: Dictionary = {}) -> void:
 	if host == null:
 		return
 	var team := TEAM_RED if unit_team(unit) == 1 else TEAM_BLUE
@@ -2010,6 +2057,12 @@ func _restyle_turn_chip(host: Control, unit: Dictionary, acting: bool, targeted:
 	var tag := host.find_child("SeatTag", true, false) as Label
 	if tag != null:
 		tag.text = "YOU" if is_you else "FOE"
+	var n := chip_marks(unit, snap)
+	var badge := host.find_child("MarksBadge", true, false) as Label
+	if badge != null:
+		badge.text = "Marks %d" % n
+		badge.visible = n > 0
+		badge.size = Vector2(maxf(px.x - 8.0, 1.0), 18)
 
 
 func _chip_frame(acting: bool, targeted: bool = false, team_color: Color = GOLD) -> StyleBoxFlat:
@@ -2206,8 +2259,8 @@ func _resource_meter_line(unit: Dictionary, snap: Dictionary = {}) -> String:
 			int(unit.get("aegis_cap", SpellKits.AEGIS_CAP)),
 		]
 	var marked := marks_holder(unit, snap)
-	return "Marks %s  Impact %s" % [
-		engine_pips(int(marked.get("marks", 0)), int(marked.get("marks_cap", SpellKits.MARKS_CAP))),
+	return "[b]Marks %d[/b]  Impact %s" % [
+		int(marked.get("marks", 0)),
 		engine_pips(int(unit.get("impact", 0)), int(unit.get("impact_cap", SpellKits.IMPACT_CAP))),
 	]
 
