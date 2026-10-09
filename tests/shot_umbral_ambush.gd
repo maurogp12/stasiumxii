@@ -47,7 +47,11 @@ func _process(_delta: float) -> bool:
 	var feel: Dictionary = sim.aim_feel(0, SpellKits.AMBUSH)
 	var coach := str(sim.snapshot().get("coach", ""))
 	var badge := _badge_text(board)
-	print("UMBRAL %s %dx%d err=%s float=%s badge=%s coach=%s umbral=%s" % [path, image.get_width(), image.get_height(), err, feel.get("float_text", ""), badge, coach, sim.snapshot()["units"][0].get("umbral", -1)])
+	var aim := board.get_node_or_null("AimLine/AimFloat")
+	var aim_text := ""
+	if aim != null:
+		aim_text = "%s vis=%s at=%s" % [aim.text, aim.visible, aim.global_position]
+	print("UMBRAL %s %dx%d err=%s float=%s aim=%s badge=%s coach=%s umbral=%s" % [path, image.get_width(), image.get_height(), err, feel.get("float_text", ""), aim_text, badge, coach, sim.snapshot()["units"][0].get("umbral", -1)])
 	_step += 1
 	if _step > 1:
 		return true
@@ -84,17 +88,25 @@ func _boot(sim: Node, board: Node, step: int) -> bool:
 		board._hud._refresh_spell_buttons()
 		board._on_spell_selected(SpellKits.AMBUSH)
 		board._refresh()
+	if board._camera != null:
+		board._camera.zoom = Vector2(2.4, 2.4)
+		board._center_on_cell(_stand[1])
 	return true
 
 
 func _backstab_line(sim: Node, board: Node) -> Array:
 	var cells: Array = board.tiles.keys()
+	var best: Array = []
+	var best_score := -1
 	for cell in cells:
 		var gloam: Vector2i = cell
 		var foe: Vector2i = gloam + Vector2i(2, 0)
 		var back: Vector2i = gloam + Vector2i(3, 0)
 		var gap: Vector2i = gloam + Vector2i(1, 0)
 		if not board.tiles.has(foe) or not board.tiles.has(back) or not board.tiles.has(gap):
+			continue
+		# Keep the pair off the map rim so the damage float is not under the menus.
+		if gloam.x < 4 or gloam.y < 4 or foe.x > 14 or foe.y > 12:
 			continue
 		sim.reset_match({
 			"seed": 1,
@@ -109,10 +121,15 @@ func _backstab_line(sim: Node, board: Node) -> Array:
 		if sim.snapshot()["units"][0]["pos"] != gloam or sim.snapshot()["units"][1]["pos"] != foe:
 			continue
 		var feel: Dictionary = sim.aim_feel(0, SpellKits.AMBUSH)
-		if str(feel.get("float_text", "")) == "-51":
-			print("UMBRAL stand gloam=%s foe=%s" % [gloam, foe])
-			return [gloam, foe, back]
-	return []
+		if str(feel.get("float_text", "")) != "-51":
+			continue
+		var score := 100 - absi(gloam.x - 8) - absi(gloam.y - 6)
+		if score > best_score:
+			best_score = score
+			best = [gloam, foe, back]
+	if not best.is_empty():
+		print("UMBRAL stand gloam=%s foe=%s" % [best[0], best[1]])
+	return best
 
 
 func _badge_text(board: Node) -> String:
