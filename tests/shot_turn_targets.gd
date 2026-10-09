@@ -1,9 +1,10 @@
 extends SceneTree
 
-## Phone frame of a crowded turn-order bar.
-## godot --path . --rendering-driver opengl3 -s res://tests/shot_turn_targets.gd -- <out.png> --mobile-frame
+## Phone frame of the turn-order cards.
+## godot --rendering-driver opengl3 -s res://tests/shot_turn_targets.gd -- <out.png> [koliseo|dungeon] --mobile-frame
 
 var _path := "/tmp/turn_targets.png"
+var _mode := "koliseo"
 var _frames := 0
 var _phase := 0
 
@@ -13,6 +14,9 @@ func _initialize() -> void:
 	for arg in args:
 		var text := str(arg)
 		if text.begins_with("-"):
+			continue
+		if text == "dungeon" or text == "koliseo":
+			_mode = text
 			continue
 		_path = text
 	var folder := _path.get_base_dir()
@@ -33,23 +37,28 @@ func _process(_delta: float) -> bool:
 		return false
 	var sim: Node = root.get_node("CombatSim")
 	if _phase == 0:
-		var cells := _cluster(sim)
-		if cells.size() < 6:
-			push_error("no cluster of six ground cells")
-			return true
-		sim.reset_match({
-			"seed": 4,
-			"map_id": "slagcrown",
-			"skip_deploy": true,
-			"team_size": 3,
-			"classes": ["ironjaw", "bastion", "kestrel", "gloam", "mender", "kestrel"],
-			"positions": cells,
-		})
+		if _mode == "dungeon":
+			if not _boot_dungeon(sim):
+				return true
+		else:
+			var cells := _cluster(sim)
+			if cells.size() < 6:
+				push_error("no cluster of six ground cells")
+				return true
+			sim.reset_match({
+				"seed": 4,
+				"map_id": "slagcrown",
+				"skip_deploy": true,
+				"team_size": 3,
+				"classes": ["ironjaw", "bastion", "kestrel", "gloam", "mender", "kestrel"],
+				"positions": cells,
+			})
 		board._rebuild_pawns()
 		board._refresh()
 		# A foe card tap selects that enemy: reach tiles on the board, no confirm.
-		if board.pawns_by_seat.has(3):
-			board._arm_enemy_reach(3)
+		var foe_seat := 3 if _mode != "dungeon" else _first_foe_seat(sim)
+		if foe_seat >= 0 and board.pawns_by_seat.has(foe_seat):
+			board._arm_enemy_reach(foe_seat)
 		_phase = 1
 		_frames = 0
 		return false
@@ -64,6 +73,31 @@ func _process(_delta: float) -> bool:
 	var chip: Vector2 = hud._turn_strip.get_child(0).size if hud._turn_strip.get_child_count() > 0 else Vector2.ZERO
 	print("TURN_TARGETS %s %dx%d err=%s chips=%d chip=%s strip=%s" % [_path, image.get_width(), image.get_height(), err, hud._turn_strip.get_child_count(), chip, hud._turn_strip.size])
 	return true
+
+
+func _boot_dungeon(sim: Node) -> bool:
+	StasisCatalog.clear_run()
+	if not StasisCatalog.begin("slagcrown"):
+		push_error("Slagcrown dungeon did not begin")
+		return false
+	StasisCatalog.set_star(1)
+	# Two heroes plus Room A's pack keeps each card at the Koliseo size.
+	StasisCatalog.set_party(["ironjaw", "kestrel"])
+	var config: Dictionary = StasisCatalog.fight_config()
+	if config.is_empty():
+		push_error("Slagcrown Room A fight config was empty")
+		return false
+	sim.reset_match(config)
+	return true
+
+
+func _first_foe_seat(sim: Node) -> int:
+	for unit in sim.snapshot().get("units", []):
+		if typeof(unit) != TYPE_DICTIONARY:
+			continue
+		if int(unit.get("team", 0)) == 1:
+			return int(unit.get("seat", -1))
+	return -1
 
 
 func _aim(board: Node) -> void:

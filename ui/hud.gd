@@ -2028,34 +2028,149 @@ func _portrait_for(unit: Dictionary) -> Texture2D:
 		if body == null:
 			return _head_crop("res://art/characters/%s/%s_s.png" % [class_id, class_id])
 		fitted = body
-	var shown := _bust_atlas(fitted)
+	var shown := _filled_bust(_source_image(fitted))
 	if shown != null:
 		_head_cache[key] = shown
 	return shown
 
 
-## Head and chest, from the top of the opaque figure. A full-body plate left
-## a small fighter standing in an empty card.
-func _bust_atlas(tex: Texture2D) -> Texture2D:
+func _source_image(tex: Texture2D) -> Image:
 	if tex == null:
 		return null
 	var img := tex.get_image()
 	if img == null or img.is_empty():
-		return tex
+		return null
+	img = img.duplicate()
 	if img.is_compressed():
 		img.decompress()
+	if tex is AtlasTexture:
+		var region: Rect2 = (tex as AtlasTexture).region
+		if region.size.x >= 2.0 and region.size.y >= 2.0:
+			img = img.get_region(Rect2i(region))
+	return img
+
+
+## Head and chest, scaled so the figure covers the card. A loose square
+## around the sprite leaves navy padding; this crop does not.
+const _BUST_SIDE := 192
+
+
+func _filled_bust(img: Image) -> Texture2D:
+	if img == null or img.is_empty():
+		return null
+	img = img.duplicate()
+	if img.is_compressed():
+		img.decompress()
+	if img.get_format() != Image.FORMAT_RGBA8:
+		img.convert(Image.FORMAT_RGBA8)
 	var used := StripLibrary.opaque_rect(img)
 	if used.size.x < 2 or used.size.y < 2:
-		return tex
-	var side := minf(float(used.size.x), float(used.size.y) * 0.62)
-	side = maxf(side, 8.0)
-	var region := Rect2(float(used.position.x) + (float(used.size.x) - side) * 0.5, float(used.position.y), side, side)
-	region.position.x = clampf(region.position.x, 0.0, maxf(float(img.get_width()) - side, 0.0))
-	region.position.y = clampf(region.position.y, 0.0, maxf(float(img.get_height()) - side, 0.0))
-	var atlas := AtlasTexture.new()
-	atlas.atlas = tex
-	atlas.region = region
-	return atlas
+		return ImageTexture.create_from_image(img)
+	var src := _bust_rect(img, used)
+	if src.size.x < 2 or src.size.y < 2:
+		return ImageTexture.create_from_image(img)
+	return ImageTexture.create_from_image(_cover_bust(img, src))
+
+
+## The solid mass of the upper body. A spear or a thin cape is not the torso.
+func _bust_rect(img: Image, used: Rect2i) -> Rect2i:
+	var y0 := used.position.y
+	var band_h := clampi(int(round(float(used.size.y) * 0.58)), 8, used.size.y)
+	var min_col := maxi(int(round(float(band_h) * 0.40)), 3)
+	var x0 := used.position.x
+	var n := used.size.x
+	var counts := PackedInt32Array()
+	counts.resize(n)
+	for i in n:
+		var count := 0
+		var x := x0 + i
+		for y in range(y0, y0 + band_h):
+			if img.get_pixel(x, y).a > 0.14:
+				count += 1
+		counts[i] = count
+	var best_l := 0
+	var best_r := n - 1
+	var best_rank := -1
+	var i := 0
+	while i < n:
+		if counts[i] < min_col:
+			i += 1
+			continue
+		var j := i
+		var gap := 0
+		var score := 0
+		var last := i
+		while j < n:
+			if counts[j] >= min_col:
+				score += counts[j]
+				last = j
+				gap = 0
+			else:
+				gap += 1
+				if gap > 2:
+					break
+			j += 1
+		var width := last - i + 1
+		var rank := score + width * width
+		if rank > best_rank:
+			best_rank = rank
+			best_l = i
+			best_r = last
+		i = last + 1
+	var left := x0 + best_l
+	var right := x0 + best_r
+	var y_limit := mini(y0 + clampi(int(round(float(used.size.y) * 0.66)), band_h, used.size.y), used.position.y + used.size.y)
+	var top := y_limit
+	var bot := -1
+	var pix_l := right
+	var pix_r := left
+	for y in range(y0, y_limit):
+		for x in range(left, right + 1):
+			if img.get_pixel(x, y).a <= 0.14:
+				continue
+			top = mini(top, y)
+			bot = y
+			pix_l = mini(pix_l, x)
+			pix_r = maxi(pix_r, x)
+	if bot < top or pix_r < pix_l:
+		return Rect2i(x0, y0, used.size.x, band_h)
+	return Rect2i(pix_l, top, pix_r - pix_l + 1, bot - top + 1)
+
+
+## Scale the bust until the head spans the frame, then crop the waist.
+func _cover_bust(img: Image, src: Rect2i) -> Image:
+	var side := _BUST_SIDE
+	var crop := img.get_region(src)
+	var head_w := _head_span(crop)
+	var scale_cover := maxf(float(side) / float(crop.get_width()), float(side) / float(crop.get_height()))
+	var scale_head := (float(side) * 0.92) / float(maxi(head_w, 1))
+	var scale := clampf(maxf(scale_head, scale_cover), scale_cover, scale_cover * 1.7)
+	var dw := maxi(int(ceil(float(crop.get_width()) * scale)), side)
+	var dh := maxi(int(ceil(float(crop.get_height()) * scale)), side)
+	crop.resize(dw, dh, Image.INTERPOLATE_LANCZOS)
+	var out := Image.create(side, side, false, Image.FORMAT_RGBA8)
+	var sx := clampi(int(round((float(dw) - float(side)) * 0.5)), 0, dw - side)
+	out.blit_rect(crop, Rect2i(sx, 0, side, side), Vector2i.ZERO)
+	return out
+
+
+func _head_span(crop: Image) -> int:
+	var band := clampi(int(round(float(crop.get_height()) * 0.42)), 4, crop.get_height())
+	var min_col := maxi(int(round(float(band) * 0.28)), 2)
+	var left := crop.get_width()
+	var right := -1
+	for x in crop.get_width():
+		var count := 0
+		for y in band:
+			if crop.get_pixel(x, y).a > 0.14:
+				count += 1
+		if count < min_col:
+			continue
+		left = mini(left, x)
+		right = maxi(right, x)
+	if right < left:
+		return crop.get_width()
+	return right - left + 1
 
 
 ## The standing card keeps a shared baseline margin. The turn chip fills with the body.
@@ -2088,9 +2203,8 @@ func _head_crop(path: String) -> Texture2D:
 	return head
 
 
-## Monster paintings sit in a padded frame: frame the whole visible creature
-## (square around its opaque pixels, top-weighted) so the turn chip shows the
-## monster, not an empty corner or its feet.
+## Dungeon paintings keep a wide matte. The card gets the creature's head
+## and chest, the same fill as a Koliseo fighter.
 func _foe_crop(path: String) -> Texture2D:
 	var key := "foe:%s" % path
 	if _head_cache.has(key) and _head_cache[key] is Texture2D:
@@ -2098,24 +2212,11 @@ func _foe_crop(path: String) -> Texture2D:
 	var tex := load(path) as Texture2D
 	if tex == null:
 		return null
-	var img := tex.get_image()
-	if img == null:
+	var shown := _filled_bust(_source_image(tex))
+	if shown == null:
 		return _head_crop(path)
-	if img.is_compressed():
-		img.decompress()
-	var used := img.get_used_rect()
-	if used.size.x <= 0 or used.size.y <= 0:
-		return _head_crop(path)
-	var side := float(maxi(used.size.x, mini(used.size.y, int(used.size.x * 1.15))))
-	var cx := float(used.position.x) + float(used.size.x) * 0.5
-	var top := float(used.position.y)
-	var region := Rect2(cx - side * 0.5, top, side, side)
-	region.position.x = clampf(region.position.x, 0.0, maxf(float(img.get_width()) - side, 0.0))
-	var atlas := AtlasTexture.new()
-	atlas.atlas = tex
-	atlas.region = region
-	_head_cache[key] = atlas
-	return atlas
+	_head_cache[key] = shown
+	return shown
 
 
 ## Top of the body. Same crop the turn chip used on the old south turnaround.
