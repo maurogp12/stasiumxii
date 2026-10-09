@@ -35,17 +35,15 @@ const DOFUS_AP := Color(0.28, 0.62, 1.0)
 const DOFUS_MP := Color(0.36, 0.86, 0.34)
 const TEAM_BLUE := Color(0.26, 0.54, 1.0)
 const TEAM_RED := Color(0.94, 0.28, 0.26)
-## Portrait stack discs. Each class resource has its own fill so a glance
-## tells the stacks apart. 22 viewport px is
-## about 33 px on the 108 px phone card.
-const STACK_BADGE := 22.0
-const BADGE_INK := Color(0.07, 0.04, 0.02)
+## Corner-card stack names. The number stays the cream of the HP line.
 const BADGE_MARKS := Color(1.0, 0.78, 0.12)
 const BADGE_IMPACT := Color(1.0, 0.46, 0.1)
 const BADGE_AEGIS := Color(0.22, 0.86, 1.0)
 const BADGE_PULSE := Color(0.12, 0.9, 0.52)
 const BADGE_UMBRAL := Color(0.58, 0.32, 1.0)
 const BADGE_SHADES := Color(0.84, 0.78, 1.0)
+## HP, AP/MP, one status line, the class stack, and a Marks line, at font 13.
+const CORNER_CARD_H := 168.0
 ## Turn-bar portrait. A wide phone shows this as a large finger card: the
 ## head and chest fill it. The row never collapses back into a tall empty slot.
 const PORTRAIT_CHIP := Vector2(168, 156)
@@ -1707,7 +1705,7 @@ func _focused_corner_unit(units: Array, side: int, fallback: Dictionary) -> Dict
 func _make_banner(is_kestrel: bool) -> Panel:
 	var panel := Panel.new()
 	panel.position = Vector2(8, 8) if is_kestrel else Vector2(712, 8)
-	panel.size = Vector2(240, 100)
+	panel.size = Vector2(240, CORNER_CARD_H)
 	panel.clip_contents = true
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var color := KESTREL_GREEN if is_kestrel else IRONJAW_RED
@@ -1760,6 +1758,7 @@ func _make_banner(is_kestrel: bool) -> Panel:
 	body.size = Vector2(214, 52)
 	body.bbcode_enabled = true
 	body.scroll_active = false
+	body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	# Size is set above. fit_content rewrites the minimum size when the text
 	# changes and the card draws empty until the next layout.
 	body.fit_content = false
@@ -2357,7 +2356,7 @@ func _turn_chip(unit: Dictionary, acting: bool, targeted: bool, _is_you: bool, p
 		label.add_theme_color_override("font_color", CREAM)
 		label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		host.add_child(label)
-	_sync_marks_badge(host, unit, px)
+	_clear_portrait_discs(host)
 	host.set_meta("chip_seat", int(unit.get("seat", -1)))
 	host.set_meta("chip_class", str(unit.get("class_id", "")))
 	return host
@@ -2372,86 +2371,17 @@ func _restyle_turn_chip(host: Control, unit: Dictionary, acting: bool, targeted:
 	host.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	host.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	host.add_theme_stylebox_override("panel", _chip_frame(acting, targeted, team))
-	_sync_marks_badge(host, unit, px)
+	_clear_portrait_discs(host)
 
 
-## Solid number discs. Own stack sits top-right. Received Marks sit beside
-## it (or take that corner when this fighter has no stack of their own).
-## Hidden at 0. Kestrel's Marks live on the target, so her portrait stays clear.
-func _sync_marks_badge(host: Control, unit: Dictionary, px: Vector2) -> void:
-	var own := _own_stack_badge(unit)
-	var marks_n := int(unit.get("marks", 0))
-	var marks_slot := 0 if own.is_empty() else 1
-	_place_count_badge(host, "StackBadge", int(own.get("n", 0)), own.get("fill", Color.WHITE) as Color, own.get("ink", BADGE_INK) as Color, px, 0)
-	_place_count_badge(host, "MarksBadge", marks_n, BADGE_MARKS, BADGE_INK, px, marks_slot)
-
-
-## The stack this fighter spends. Dungeon foes keep the Ironjaw id only so
-## Strike is in the kit; that is not Impact, so they get no disc of their own.
-func _own_stack_badge(unit: Dictionary) -> Dictionary:
-	if str(unit.get("stasis_sprite", "")) != "":
-		return {}
-	match str(unit.get("class_id", "")):
-		SpellKits.CLASS_IRONJAW:
-			return _stack_spec(int(unit.get("impact", 0)), BADGE_IMPACT, BADGE_INK)
-		SpellKits.CLASS_BASTION:
-			return _stack_spec(_resource_current(unit, "aegis"), BADGE_AEGIS, BADGE_INK)
-		SpellKits.CLASS_MENDER:
-			return _stack_spec(_resource_current(unit, "pulse"), BADGE_PULSE, BADGE_INK)
-		SpellKits.CLASS_GLOAM:
-			var umbral := _resource_current(unit, "umbral")
-			if umbral > 0:
-				return _stack_spec(umbral, BADGE_UMBRAL, Color.WHITE)
-			var shades := shade_count(unit, _last_snap)
-			return _stack_spec(shades, BADGE_SHADES, BADGE_INK)
-		_:
-			return {}
-
-
-func _stack_spec(n: int, fill: Color, ink: Color) -> Dictionary:
-	if n <= 0:
-		return {}
-	return {"n": n, "fill": fill, "ink": ink}
-
-
-func _place_count_badge(host: Control, node_name: String, n: int, fill: Color, ink: Color, px: Vector2, slot: int) -> void:
-	var badge := host.get_node_or_null(node_name) as Panel
-	if badge == null:
-		badge = Panel.new()
-		badge.name = node_name
-		badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		badge.clip_contents = false
-		var num := Label.new()
-		num.name = "Count"
-		num.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		num.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		num.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		num.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		badge.add_child(num)
-		host.add_child(badge)
-	badge.visible = n > 0
-	if n <= 0:
+## Stacks are text on the corner cards. A restyle must not leave a disc up.
+func _clear_portrait_discs(host: Control) -> void:
+	if host == null:
 		return
-	var side := clampf(round(px.x * STACK_BADGE / SLIM_CHIP), 20.0, 24.0)
-	badge.custom_minimum_size = Vector2(side, side)
-	badge.size = Vector2(side, side)
-	badge.position = Vector2(maxf(px.x - side - 2.0 - float(slot) * (side + 2.0), 1.0), 2.0)
-	badge.z_index = 2
-	var box := _circle_style(fill, side, Color(0.05, 0.03, 0.02), 2)
-	box.content_margin_left = 0
-	box.content_margin_right = 0
-	box.content_margin_top = 0
-	box.content_margin_bottom = 0
-	badge.add_theme_stylebox_override("panel", box)
-	var count := badge.get_node_or_null("Count") as Label
-	if count == null:
-		return
-	count.text = str(n)
-	# Same-color outline fattens the default font into a bold digit.
-	count.add_theme_font_size_override("font_size", int(round(side * 0.72)))
-	count.add_theme_color_override("font_color", ink)
-	count.add_theme_color_override("font_outline_color", ink)
-	count.add_theme_constant_override("outline_size", 4)
+	for node_name in ["StackBadge", "MarksBadge"]:
+		var badge := host.get_node_or_null(node_name) as CanvasItem
+		if badge != null:
+			badge.visible = false
 
 
 func _chip_frame(acting: bool, targeted: bool = false, team_color: Color = GOLD) -> StyleBoxFlat:
@@ -2742,9 +2672,8 @@ func _unit(units: Array, seat: int) -> Dictionary:
 	return unit_for_seat(units, seat)
 
 
-## Each hero's own stack, by the name already in the kit data.
+## Each hero's own stack, named and capped from the kit.
 ## Kestrel's Marks are the stack on the fighter she marked (`marks_holder`).
-## Impact stays Ironjaw's pips. The other hero meters keep their kit label and N/cap.
 ## A dungeon foe wears the Ironjaw id for Strike only, so that card does not
 ## grow an Impact row. Marks she lands on someone else are a second line.
 func _resource_meter_line(unit: Dictionary, snap: Dictionary = {}) -> String:
@@ -2752,40 +2681,72 @@ func _resource_meter_line(unit: Dictionary, snap: Dictionary = {}) -> String:
 	var foe := str(unit.get("stasis_sprite", "")) != ""
 	var lines: PackedStringArray = PackedStringArray()
 	if not foe and class_id == SpellKits.CLASS_MENDER:
-		lines.append("%s %d/%d" % [
+		lines.append(_colored_stack(
 			SpellKits.resource_label("pulse"),
 			_resource_current(unit, "pulse"),
-			int(unit.get("pulse_cap", SpellKits.PULSE_CAP)),
-		])
+			_stack_cap(unit, "pulse_cap", SpellKits.PULSE_CAP),
+			BADGE_PULSE,
+		))
 	elif not foe and class_id == SpellKits.CLASS_GLOAM:
 		var hidden := ""
 		if bool(unit.get("invisible", false)) and int(unit.get("invisible_turns", 0)) > 0:
 			hidden = "  Invisible %d" % int(unit.get("invisible_turns", 0))
-		lines.append("%s %d/%d  %s %d/%d%s" % [
-			SpellKits.resource_label("umbral"),
-			_resource_current(unit, "umbral"),
-			int(unit.get("umbral_cap", SpellKits.UMBRAL_CAP)),
-			SpellKits.resource_label("shades"),
-			shade_count(unit, snap),
-			int(unit.get("shades_cap", SpellKits.SHADE_CAP)),
+		lines.append("%s  %s%s" % [
+			_colored_stack(
+				SpellKits.resource_label("umbral"),
+				_resource_current(unit, "umbral"),
+				_stack_cap(unit, "umbral_cap", SpellKits.UMBRAL_CAP),
+				BADGE_UMBRAL,
+			),
+			_colored_stack(
+				SpellKits.resource_label("shades"),
+				shade_count(unit, snap),
+				_stack_cap(unit, "shades_cap", SpellKits.SHADE_CAP),
+				BADGE_SHADES,
+			),
 			hidden,
 		])
 	elif not foe and class_id == SpellKits.CLASS_BASTION:
-		lines.append("%s %d/%d" % [
+		lines.append(_colored_stack(
 			SpellKits.resource_label("aegis"),
 			_resource_current(unit, "aegis"),
-			int(unit.get("aegis_cap", SpellKits.AEGIS_CAP)),
-		])
+			_stack_cap(unit, "aegis_cap", SpellKits.AEGIS_CAP),
+			BADGE_AEGIS,
+		))
 	elif not foe and class_id == SpellKits.CLASS_IRONJAW:
-		lines.append("Impact %s" % engine_pips(int(unit.get("impact", 0)), int(unit.get("impact_cap", SpellKits.IMPACT_CAP))))
+		lines.append(_colored_stack(
+			"Impact",
+			int(unit.get("impact", 0)),
+			_stack_cap(unit, "impact_cap", SpellKits.IMPACT_CAP),
+			BADGE_IMPACT,
+		))
 	elif class_id == SpellKits.CLASS_KESTREL:
 		var marked := marks_holder(unit, snap)
-		lines.append("Marks %d" % int(marked.get("marks", 0)))
+		lines.append(_colored_stack(
+			"Marks",
+			int(marked.get("marks", 0)),
+			_stack_cap(marked, "marks_cap", SpellKits.MARKS_CAP),
+			BADGE_MARKS,
+		))
 	if class_id != SpellKits.CLASS_KESTREL:
 		var received := int(unit.get("marks", 0))
 		if received > 0:
-			lines.append("Marks %d" % received)
+			lines.append(_colored_stack(
+				"Marks",
+				received,
+				_stack_cap(unit, "marks_cap", SpellKits.MARKS_CAP),
+				BADGE_MARKS,
+			))
 	return "\n".join(lines)
+
+
+func _colored_stack(label: String, current: int, cap: int, fill: Color) -> String:
+	return "[color=#%s]%s[/color] %d/%d" % [fill.to_html(false), label, current, cap]
+
+
+func _stack_cap(unit: Dictionary, field: String, fallback: int) -> int:
+	var cap := int(unit.get(field, fallback))
+	return cap if cap > 0 else fallback
 
 
 func _resource_current(unit: Dictionary, id: String) -> int:
@@ -3977,7 +3938,7 @@ func _layout_chrome(forced: Vector2 = Vector2.ZERO) -> void:
 		return
 	var margin := 8.0
 	var gap := 8.0
-	var banner_h := minf(100.0, view.y - margin * 2.0)
+	var banner_h := minf(CORNER_CARD_H, view.y - margin * 2.0)
 	var center_h := minf(168.0 if view.x >= 1400.0 else 128.0, view.y - margin * 2.0)
 	banner_h = maxf(banner_h, 1.0)
 	center_h = maxf(center_h, 1.0)

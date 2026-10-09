@@ -117,7 +117,7 @@ func _test_turn_targets_are_cards() -> void:
 	hud._build()
 	hud._layout_chrome(Vector2(2400, 1080))
 	near(hud._banner_panels[0].size.x, 240.0, "the player plaque stays 240 wide")
-	near(hud._banner_panels[0].size.y, 100.0, "the player plaque stays 100 tall")
+	near(hud._banner_panels[0].size.y, CombatHUD.CORNER_CARD_H, "the player plaque fits the stack lines")
 	var classes := ["ironjaw", "bastion", "kestrel", "gloam", "mender", "kestrel"]
 	var units: Array = []
 	for i in classes.size():
@@ -252,16 +252,14 @@ func _test_turn_bar_options() -> void:
 	truthy(hud._ironjaw_body.text.contains("HP"), "a tapped foe fills the right corner card")
 	truthy(hud._ironjaw_body.text.contains("AP") and hud._ironjaw_body.text.contains("MP"), "the right card shows AP and MP")
 	truthy(hud._ironjaw_body.text.contains("Aegis"), "the right card shows that foe's own Aegis")
-	truthy(hud._ironjaw_body.text.contains("Marks 4"), "the right card shows that foe's Marks")
-	var marked := false
+	truthy(hud._ironjaw_body.text.contains("Marks") and hud._ironjaw_body.text.contains("4/5"), "the right card shows that foe's Marks")
+	var disc := false
 	for child in hud._turn_chips():
-		if int(child.get_meta("chip_seat", -2)) != 6:
-			continue
-		var badge := child.get_node_or_null("MarksBadge") as Control
-		var count := badge.get_node_or_null("Count") as Label if badge != null else null
-		marked = badge != null and badge.visible and count != null and count.text == "4"
-		truthy(badge != null and badge.size.x >= 20.0 and badge.size.x <= 24.0, "the marks circle fits the slim card (%s)" % (badge.size if badge != null else Vector2.ZERO))
-	truthy(marked, "the slim portrait of a marked foe shows 4")
+		for node_name in ["StackBadge", "MarksBadge"]:
+			var badge := child.get_node_or_null(node_name) as CanvasItem
+			if badge != null and badge.visible:
+				disc = true
+	eq(disc, false, "slim portraits have no stack discs")
 	var bust := hud._banner_panels[1].get_node_or_null("Bust") as TextureRect
 	truthy(bust != null and bust.texture != null, "the right card shows that foe's portrait")
 	hud.free()

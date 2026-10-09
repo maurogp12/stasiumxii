@@ -4988,10 +4988,12 @@ func _test_drop_shade_range() -> void:
 		var meter_hud := CombatHUD.new()
 		meter_hud._build()
 		meter_hud.render(_sim.snapshot(), _sim.legal_intents(0))
-		truthy(str(meter_hud._kestrel_body.text).contains("Shades 1/2"), "Drop Shade updates the Shades meter to 1/2 at range %d" % dist)
+		var shade_card := str(meter_hud._kestrel_body.text)
+		truthy(shade_card.contains("Shades") and shade_card.contains("1/2"), "Drop Shade updates the Shades meter to 1/2 at range %d" % dist)
 		var stale_unit: Dictionary = _unit(0).duplicate(true)
 		stale_unit["shades"] = 0
-		truthy(meter_hud._unit_card_text(stale_unit, true, _sim.snapshot()).contains("Shades 1/2"), "Shades meter follows the token when the unit field is stale")
+		var stale_card := meter_hud._unit_card_text(stale_unit, true, _sim.snapshot())
+		truthy(stale_card.contains("Shades") and stale_card.contains("1/2"), "Shades meter follows the token when the unit field is stale")
 		meter_hud.free()
 		eq(int(_unit(0)["ap"]), 5, "Drop Shade spends 1 AP at range %d" % dist)
 		eq(int(_unit(0)["mp"]), 3, "Drop Shade spends 0 MP at range %d" % dist)
@@ -6339,9 +6341,9 @@ func _test_hud_marks_and_impact_pips() -> void:
 	eq(int(_unit(0)["marks"]), 0, "Kestrel's own marks field stays 0")
 	hud = _hud_from_snap(_sim.snapshot())
 	eq(_marks_row(hud, 0), "1", "Kestrel Marks row shows 1 after the hit")
-	eq(_chip_marks(hud, 1), "1", "Gloam's chip shows the Mark stored on her")
+	eq(_chip_marks(hud, 1), "", "Gloam's portrait has no Marks disc")
 	eq(_marks_row(hud, 1), "1", "Gloam's card shows the Marks she received")
-	eq(_chip_marks(hud, 0), "", "Kestrel's chip stays clear while the stack is on Gloam")
+	eq(_chip_marks(hud, 0), "", "Kestrel's portrait has no Marks disc")
 	hud.free()
 	var stacked: Dictionary = _sim.submit({"type": "cast", "spell": "mark_shot", "to": Vector2i(4, 0)})
 	eq(stacked["ok"], true, "second Mark Shot connects")
@@ -6360,7 +6362,7 @@ func _test_hud_marks_and_impact_pips() -> void:
 	eq(int(_unit(1)["marks"]), 0, "Detonate clears target Marks")
 	hud = _hud_from_snap(_sim.snapshot())
 	eq(_marks_row(hud, 0), "0", "Kestrel Marks row clears when Detonate spends the stack")
-	eq(_chip_marks(hud, 1), "", "the chip badge leaves when the stack is spent")
+	eq(_chip_marks(hud, 1), "", "the portrait stays clear when the stack is spent")
 	hud.free()
 
 	_sim.reset_match({
@@ -6390,7 +6392,7 @@ func _test_hud_marks_and_impact_pips() -> void:
 	hud = _hud_from_snap(_sim.snapshot())
 	eq(_marks_row(hud, 0), "1", "Kestrel row shows the Mark on Ironjaw")
 	eq(_marks_row(hud, 1), "1", "Ironjaw row shows the Mark stored on him")
-	eq(_chip_marks(hud, 1), "1", "Ironjaw's chip shows the Mark stored on him")
+	eq(_chip_marks(hud, 1), "", "Ironjaw's portrait has no Marks disc")
 	truthy(str(hud._ironjaw_body.text).contains("Impact"), "Ironjaw's card keeps his own Impact")
 	var party := {
 		"units": [
@@ -6417,7 +6419,7 @@ func _test_hud_marks_and_impact_pips() -> void:
 	_sim.submit({"type": "end_turn"})
 	eq(_sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(3, 3)})["ok"], true, "Strike grants Impact")
 	hud = _hud_from_snap(_sim.snapshot())
-	eq(_impact_row(hud, 1), "●○○○○", "Ironjaw Impact row shows 1/5 after Strike")
+	eq(_impact_row(hud, 1), "1/5", "Ironjaw Impact row shows 1/5 after Strike")
 	eq(_impact_row(hud, 0), "", "Kestrel's card shows Marks, not Impact")
 	hud.free()
 	_sim.reset_match({
@@ -6433,7 +6435,7 @@ func _test_hud_marks_and_impact_pips() -> void:
 	eq(_sim.submit({"type": "cast", "spell": "crush", "to": Vector2i(3, 3)})["ok"], true, "Crush spends Impact")
 	eq(int(_unit(1)["impact"]), 1, "3-2 leaves 1 Impact")
 	hud = _hud_from_snap(_sim.snapshot())
-	eq(_impact_row(hud, 1), "●○○○○", "Ironjaw Impact row shows the stack left after Crush")
+	eq(_impact_row(hud, 1), "1/5", "Ironjaw Impact row shows the stack left after Crush")
 	hud.free()
 
 
@@ -6446,17 +6448,19 @@ func _hud_from_snap(snap: Dictionary) -> CombatHUD:
 
 func _marks_row(hud: CombatHUD, seat: int) -> String:
 	var body := str(hud._kestrel_body.text) if seat == 0 else str(hud._ironjaw_body.text)
-	var label := "Marks "
-	var at := body.find(label)
+	var at := body.find("Marks")
 	if at < 0:
 		return ""
-	var rest := body.substr(at + label.length())
+	var rest := body.substr(at + "Marks".length())
 	var digits := ""
+	var started := false
 	for i in rest.length():
 		var ch := rest.substr(i, 1)
-		if ch < "0" or ch > "9":
+		if ch >= "0" and ch <= "9":
+			digits += ch
+			started = true
+		elif started:
 			break
-		digits += ch
 	return digits
 
 
@@ -6475,7 +6479,22 @@ func _chip_marks(hud: CombatHUD, seat: int) -> String:
 
 
 func _impact_row(hud: CombatHUD, seat: int) -> String:
-	return _pip_row(hud, seat, "Impact ")
+	var body := str(hud._kestrel_body.text) if seat == 0 else str(hud._ironjaw_body.text)
+	var at := body.find("Impact")
+	if at < 0:
+		return ""
+	var rest := body.substr(at + "Impact".length())
+	var token := ""
+	var started := false
+	for i in rest.length():
+		var ch := rest.substr(i, 1)
+		var digit := ch >= "0" and ch <= "9"
+		if digit or (started and ch == "/"):
+			token += ch
+			started = true
+		elif started:
+			break
+	return token
 
 
 func _pip_row(hud: CombatHUD, seat: int, label: String) -> String:

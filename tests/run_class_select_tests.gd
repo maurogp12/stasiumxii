@@ -170,11 +170,11 @@ func _test_hud_paints_snapshot() -> void:
 	eq(hud._spell_buttons.has("nightfold"), false, "gated Nightfold is not a button")
 	var card := hud._kestrel_body.text
 	truthy(card.contains("HP 85/85"), "card prints snapshot HP")
-	truthy(card.contains("Pulse 0/6"), "Pulse meter uses the snapshot cap")
+	truthy(card.contains("0/6") and card.contains(SpellKits.resource_label("pulse")), "Pulse meter uses the snapshot cap")
 	eq(card.contains("Mastery"), false, "the side card does not repeat Mastery")
 	eq(card.contains("Resist"), false, "the side card does not repeat Resist")
 	eq(card.contains("Marks"), false, "mender card does not invent Marks")
-	truthy(hud._ironjaw_body.text.contains("Aegis 0/4"), "Aegis meter uses the snapshot cap")
+	truthy(hud._ironjaw_body.text.contains("Aegis") and hud._ironjaw_body.text.contains("0/4"), "Aegis meter uses the snapshot cap")
 	var gloam_sim: Node = sim_script.new()
 	gloam_sim.reset_match({
 		"seed": 4,
@@ -183,8 +183,8 @@ func _test_hud_paints_snapshot() -> void:
 		"classes": ["gloam", "kestrel"],
 	})
 	var gloam_card := hud._unit_card_text(gloam_sim.snapshot()["units"][0], true, gloam_sim.snapshot())
-	truthy(gloam_card.contains("Umbral 0/4"), "Umbral meter uses the snapshot cap")
-	truthy(gloam_card.contains("Shades 0/2"), "Shades meter uses the snapshot cap")
+	truthy(gloam_card.contains("Umbral") and gloam_card.contains("0/4"), "Umbral meter uses the snapshot cap")
+	truthy(gloam_card.contains("Shades") and gloam_card.contains("0/2"), "Shades meter uses the snapshot cap")
 	eq(CombatHUD.offered_cast_ids(gloam_sim.snapshot()["units"][0]).has("nightfold"), false, "Nightfold stays off the gloam bar")
 	eq(CombatHUD.offered_cast_ids(gloam_sim.snapshot()["units"][0]).has("cut"), true, "Cut stays on the gloam bar")
 	hud.free()

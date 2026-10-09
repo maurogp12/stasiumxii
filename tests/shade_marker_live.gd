@@ -42,7 +42,8 @@ static func run(host: SceneTree) -> void:
 	# Accept presentation syncs the marker. No second action and no extra refresh.
 	board._present_resolve(result.get("events", []))
 	var meter: Node = main.get_node("HUD")
-	host.truthy(str(meter.get("_kestrel_body").text).contains("Shades 1/2"), "Drop Shade updates the Shades counter to 1/2")
+	var shade_card := str(meter.get("_kestrel_body").text)
+	host.truthy(shade_card.contains("Shades") and shade_card.contains("1/2"), "Drop Shade updates the Shades counter to 1/2")
 	var marker: Node = board._shade_markers.get(dest)
 	host.truthy(marker != null and is_instance_valid(marker), "accept syncs a live Shade marker without another action")
 	host.eq(marker.get_parent().name, "ShadeMarkers", "the marker is on the ShadeMarkers layer")
