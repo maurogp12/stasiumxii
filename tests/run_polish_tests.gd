@@ -136,10 +136,13 @@ func _test_turn_targets_are_cards() -> void:
 	eq(hud._turn_strip.get_child_count(), 6, "a full fight lists every fighter")
 	for child in hud._turn_strip.get_children():
 		var chip := child as Control
-		truthy(chip.size.x >= 120.0 and chip.size.y >= 120.0, "each turn target is a large finger card (%s)" % chip.size)
-		truthy(chip.size.y <= chip.size.x + 16.0, "a turn target is not a tall empty bar (%s)" % chip.size)
-	eq(_overlap(hud._banner_panels[0].get_rect(), hud._resource_panel.get_rect()), false, "the wider turn row stays off the player plaque")
-	eq(hud._turn_scroll.position.x + hud._turn_scroll.size.x <= hud._resource_panel.size.x + 1.0, true, "portraits stay inside the turn plaque")
+		truthy(chip.size.y <= CombatHUD.SLIM_CHIP + 0.5, "a small fight stays inside the thin strip (%s)" % chip.size)
+		truthy(chip.size.x >= 48.0 and chip.size.y >= 48.0, "a thin-strip card stays tappable (%s)" % chip.size)
+		near(chip.size.x, chip.size.y, "a thin-strip card stays square")
+	truthy(hud._resource_panel.size.y <= CombatHUD.SLIM_CHIP + 1.0, "the strip has no plaque under the portraits (%s)" % hud._resource_panel.size.y)
+	eq(hud._turn_scroll.horizontal_scroll_mode, ScrollContainer.SCROLL_MODE_DISABLED, "a row that fits does not scroll")
+	eq(_overlap(hud._banner_panels[0].get_rect(), hud._resource_panel.get_rect()), false, "the thin strip stays off the player plaque")
+	eq(hud._turn_scroll.position.x + hud._turn_scroll.size.x <= hud._resource_panel.size.x + 1.0, true, "portraits stay inside the strip")
 	hud.free()
 
 
@@ -228,6 +231,28 @@ func _test_turn_bar_options() -> void:
 	var bottom := hud._resource_panel.position.y + hud._resource_panel.size.y
 	truthy(bottom < 360.0, "the second row stays in the top half (%s)" % bottom)
 	eq(hud._turn_scroll.horizontal_scroll_mode, ScrollContainer.SCROLL_MODE_DISABLED, "two rows do not scroll")
+	hud.turn_bar_layout = CombatHUD.TURN_BAR_SLIM
+	hud._turn_strip_sig = ""
+	hud._layout_chrome(Vector2(1600, 720))
+	hud.render(snap, [])
+	hud._layout_chrome(Vector2(1600, 720))
+	eq(hud._turn_strip.get_child_count(), 10, "the slim strip keeps all ten on one row")
+	eq(hud._turn_foe_strip.get_child_count(), 0, "the slim strip has no second row")
+	var slim := hud._turn_strip.get_child(0) as Control
+	near(slim.size.x, CombatHUD.SLIM_CHIP, "ten fighters use the thin-strip card")
+	near(slim.size.y, slim.size.x, "the thin card stays square")
+	truthy(hud._resource_panel.size.y <= CombatHUD.SLIM_CHIP + 1.0, "slim has no panel under the row (%s)" % hud._resource_panel.size.y)
+	var slim_gap := hud._chip_gap()
+	var slim_content := slim.size.x * 10.0 + slim_gap * 9.0
+	truthy(slim_content <= hud._turn_scroll.size.x + 2.0, "all ten slim cards fit without scrolling")
+	eq(hud._turn_scroll.horizontal_scroll_mode, ScrollContainer.SCROLL_MODE_DISABLED, "slim turns scrolling off")
+	eq(_overlap(hud._banner_panels[0].get_rect(), hud._resource_panel.get_rect()), false, "the slim row stays between the corner cards")
+	hud.focus_fighter(6)
+	truthy(hud._ironjaw_body.text.contains("HP"), "a tapped foe fills the right corner card")
+	truthy(hud._ironjaw_body.text.contains("AP") and hud._ironjaw_body.text.contains("MP"), "the right card shows AP and MP")
+	truthy(hud._ironjaw_body.text.contains("Marks"), "the right card shows Marks")
+	var bust := hud._banner_panels[1].get_node_or_null("Bust") as TextureRect
+	truthy(bust != null and bust.texture != null, "the right card shows that foe's portrait")
 	hud.free()
 
 

@@ -17,7 +17,7 @@ func _initialize() -> void:
 		var text := str(arg)
 		if text.begins_with("-"):
 			continue
-		if text == "dungeon" or text == "koliseo" or text == "full_dungeon" or text == "full_koliseo" or text == "shrink_koliseo" or text == "shrink_dungeon" or text == "rows_koliseo" or text == "rows_dungeon":
+		if text == "dungeon" or text == "koliseo" or text == "full_dungeon" or text == "full_koliseo" or text == "shrink_koliseo" or text == "shrink_dungeon" or text == "rows_koliseo" or text == "rows_dungeon" or text == "slim_koliseo" or text == "slim_dungeon" or text == "slim_tapped":
 			_mode = text
 			continue
 		_path = text
@@ -40,10 +40,10 @@ func _process(_delta: float) -> bool:
 	var sim: Node = root.get_node("CombatSim")
 	if _phase == 0:
 		_apply_bar_layout(board)
-		if _mode == "full_dungeon" or _mode == "shrink_dungeon" or _mode == "rows_dungeon":
+		if _mode == "full_dungeon" or _mode == "shrink_dungeon" or _mode == "rows_dungeon" or _mode == "slim_dungeon":
 			if not _boot_full_dungeon(sim):
 				return true
-		elif _mode == "full_koliseo" or _mode == "shrink_koliseo" or _mode == "rows_koliseo":
+		elif _mode == "full_koliseo" or _mode == "shrink_koliseo" or _mode == "rows_koliseo" or _mode == "slim_koliseo" or _mode == "slim_tapped":
 			if not _boot_full_koliseo(sim):
 				return true
 		elif _mode == "dungeon":
@@ -67,9 +67,16 @@ func _process(_delta: float) -> bool:
 		if board._hud != null:
 			board._hud._layout_chrome()
 		# A foe card tap selects that enemy: reach tiles on the board, no confirm.
-		var foe_seat := 3 if _mode == "koliseo" else _first_foe_seat(sim)
-		if foe_seat >= 0 and board.pawns_by_seat.has(foe_seat):
-			board._arm_enemy_reach(foe_seat)
+		if _mode == "slim_tapped":
+			var tapped := _nth_foe_seat(sim, 1)
+			if board._hud != null:
+				board._hud.focus_fighter(tapped)
+			if tapped >= 0 and board.pawns_by_seat.has(tapped):
+				board._arm_enemy_reach(tapped)
+		elif not _mode.begins_with("slim"):
+			var foe_seat := 3 if _mode == "koliseo" else _first_foe_seat(sim)
+			if foe_seat >= 0 and board.pawns_by_seat.has(foe_seat):
+				board._arm_enemy_reach(foe_seat)
 		_phase = 1
 		_frames = 0
 		return false
@@ -210,11 +217,19 @@ func _boot_dungeon(sim: Node) -> bool:
 
 
 func _first_foe_seat(sim: Node) -> int:
+	return _nth_foe_seat(sim, 0)
+
+
+func _nth_foe_seat(sim: Node, index: int) -> int:
+	var seen := 0
 	for unit in sim.snapshot().get("units", []):
 		if typeof(unit) != TYPE_DICTIONARY:
 			continue
-		if int(unit.get("team", 0)) == 1:
+		if int(unit.get("team", 0)) != 1:
+			continue
+		if seen == index:
 			return int(unit.get("seat", -1))
+		seen += 1
 	return -1
 
 
@@ -226,6 +241,8 @@ func _apply_bar_layout(board: Node) -> void:
 		hud.turn_bar_layout = CombatHUD.TURN_BAR_SHRINK
 	elif _mode.begins_with("rows"):
 		hud.turn_bar_layout = CombatHUD.TURN_BAR_ROWS
+	elif _mode.begins_with("slim"):
+		hud.turn_bar_layout = CombatHUD.TURN_BAR_SLIM
 
 
 func _aim(board: Node) -> void:
