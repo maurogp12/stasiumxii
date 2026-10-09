@@ -6210,7 +6210,8 @@ func _test_hud_marks_and_impact_pips() -> void:
 	eq(int(_unit(0)["marks"]), 0, "Kestrel's own marks field stays 0")
 	hud = _hud_from_snap(_sim.snapshot())
 	eq(_marks_row(hud, 0), "1", "Kestrel Marks row shows 1 after the hit")
-	eq(_chip_marks(hud, 1), "Marks 1", "Gloam's chip shows the Mark stored on her")
+	eq(_chip_marks(hud, 1), "1", "Gloam's chip shows the Mark stored on her")
+	eq(_marks_row(hud, 1), "1", "Gloam's card shows the Marks she received")
 	eq(_chip_marks(hud, 0), "", "Kestrel's chip stays clear while the stack is on Gloam")
 	hud.free()
 	var stacked: Dictionary = _sim.submit({"type": "cast", "spell": "mark_shot", "to": Vector2i(4, 0)})
@@ -6260,7 +6261,8 @@ func _test_hud_marks_and_impact_pips() -> void:
 	hud = _hud_from_snap(_sim.snapshot())
 	eq(_marks_row(hud, 0), "1", "Kestrel row shows the Mark on Ironjaw")
 	eq(_marks_row(hud, 1), "1", "Ironjaw row shows the Mark stored on him")
-	eq(_chip_marks(hud, 1), "Marks 1", "Ironjaw's chip shows the Mark stored on him")
+	eq(_chip_marks(hud, 1), "1", "Ironjaw's chip shows the Mark stored on him")
+	truthy(str(hud._ironjaw_body.text).contains("Impact"), "Ironjaw's card keeps his own Impact")
 	var party := {
 		"units": [
 			{"seat": 0, "class_id": "kestrel", "team": 0, "marks": 0},
@@ -6287,7 +6289,7 @@ func _test_hud_marks_and_impact_pips() -> void:
 	eq(_sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(3, 3)})["ok"], true, "Strike grants Impact")
 	hud = _hud_from_snap(_sim.snapshot())
 	eq(_impact_row(hud, 1), "●○○○○", "Ironjaw Impact row shows 1/5 after Strike")
-	eq(_impact_row(hud, 0), "○○○○○", "Kestrel does not display Ironjaw's Impact")
+	eq(_impact_row(hud, 0), "", "Kestrel's card shows Marks, not Impact")
 	hud.free()
 	_sim.reset_match({
 		"seed": 1,
@@ -6335,10 +6337,11 @@ func _chip_marks(hud: CombatHUD, seat: int) -> String:
 	for child in hud._turn_chips():
 		if int(child.get_meta("chip_seat", -2)) != seat:
 			continue
-		var badge := child.get_node_or_null("MarksBadge") as Label
+		var badge := child.get_node_or_null("MarksBadge") as Control
 		if badge == null or not badge.visible:
 			return ""
-		return str(badge.text)
+		var count := badge.get_node_or_null("Count") as Label
+		return "" if count == null else str(count.text)
 	return ""
 
 

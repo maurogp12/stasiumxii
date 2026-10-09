@@ -251,14 +251,17 @@ func _test_turn_bar_options() -> void:
 	hud.focus_fighter(6)
 	truthy(hud._ironjaw_body.text.contains("HP"), "a tapped foe fills the right corner card")
 	truthy(hud._ironjaw_body.text.contains("AP") and hud._ironjaw_body.text.contains("MP"), "the right card shows AP and MP")
+	truthy(hud._ironjaw_body.text.contains("Aegis"), "the right card shows that foe's own Aegis")
 	truthy(hud._ironjaw_body.text.contains("Marks 4"), "the right card shows that foe's Marks")
 	var marked := false
 	for child in hud._turn_chips():
 		if int(child.get_meta("chip_seat", -2)) != 6:
 			continue
-		var badge := child.get_node_or_null("MarksBadge") as Label
-		marked = badge != null and badge.visible and badge.text == "Marks 4"
-	truthy(marked, "the slim portrait of a marked foe shows Marks 4")
+		var badge := child.get_node_or_null("MarksBadge") as Control
+		var count := badge.get_node_or_null("Count") as Label if badge != null else null
+		marked = badge != null and badge.visible and count != null and count.text == "4"
+		truthy(badge != null and badge.size.x >= 20.0 and badge.size.x <= 24.0, "the marks circle fits the slim card (%s)" % (badge.size if badge != null else Vector2.ZERO))
+	truthy(marked, "the slim portrait of a marked foe shows 4")
 	var bust := hud._banner_panels[1].get_node_or_null("Bust") as TextureRect
 	truthy(bust != null and bust.texture != null, "the right card shows that foe's portrait")
 	hud.free()

@@ -17,7 +17,7 @@ func _initialize() -> void:
 		var text := str(arg)
 		if text.begins_with("-"):
 			continue
-		if text == "dungeon" or text == "koliseo" or text == "full_dungeon" or text == "full_koliseo" or text == "shrink_koliseo" or text == "shrink_dungeon" or text == "rows_koliseo" or text == "rows_dungeon" or text == "slim_koliseo" or text == "slim_dungeon" or text == "slim_tapped" or text == "marks_koliseo" or text == "marks_dungeon":
+		if text == "dungeon" or text == "koliseo" or text == "full_dungeon" or text == "full_koliseo" or text == "shrink_koliseo" or text == "shrink_dungeon" or text == "rows_koliseo" or text == "rows_dungeon" or text == "slim_koliseo" or text == "slim_dungeon" or text == "slim_tapped" or text == "marks_koliseo" or text == "marks_dungeon" or text == "classes_resources":
 			_mode = text
 			continue
 		_path = text
@@ -40,11 +40,13 @@ func _process(_delta: float) -> bool:
 	var sim: Node = root.get_node("CombatSim")
 	if _phase == 0:
 		_apply_bar_layout(board)
-		if _mode == "marks_dungeon" or _mode == "full_dungeon" or _mode == "shrink_dungeon" or _mode == "rows_dungeon" or _mode == "slim_dungeon":
+		if _mode == "marks_dungeon" or _mode == "classes_resources" or _mode == "full_dungeon" or _mode == "shrink_dungeon" or _mode == "rows_dungeon" or _mode == "slim_dungeon":
 			if not _boot_full_dungeon(sim):
 				return true
 			if _mode == "marks_dungeon":
 				_stamp_dungeon_marks(sim)
+			elif _mode == "classes_resources":
+				_stamp_class_resources(sim)
 		elif _mode == "marks_koliseo":
 			if not _boot_marks_koliseo(sim):
 				return true
@@ -72,8 +74,12 @@ func _process(_delta: float) -> bool:
 		if board._hud != null:
 			board._hud._layout_chrome()
 		# A foe card tap selects that enemy: reach tiles on the board, no confirm.
-		if _mode == "slim_tapped" or _mode == "marks_dungeon":
-			var tapped := _marked_foe_seat(sim) if _mode == "marks_dungeon" else _nth_foe_seat(sim, 1)
+		if _mode == "slim_tapped" or _mode == "marks_dungeon" or _mode == "classes_resources":
+			var tapped := _nth_foe_seat(sim, 1)
+			if _mode == "marks_dungeon" or _mode == "classes_resources":
+				tapped = _marked_foe_seat(sim)
+			if board._hud != null and _mode == "classes_resources":
+				board._hud.focus_fighter(_class_seat(sim, "bastion"))
 			if board._hud != null:
 				board._hud.focus_fighter(tapped)
 			if tapped >= 0 and board.pawns_by_seat.has(tapped):
@@ -106,13 +112,18 @@ func _process(_delta: float) -> bool:
 	var foe_chips := hud._turn_foe_strip.get_child_count() if hud._turn_foe_strip != null else 0
 	var panel: Vector2 = hud._resource_panel.size if hud._resource_panel != null else Vector2.ZERO
 	print("TURN_TARGETS %s %dx%d err=%s chips=%d foe_chips=%d allies=%d foes=%d chip=%s scroll=%s content=%s panel=%s layout=%s" % [_path, image.get_width(), image.get_height(), err, hud._turn_strip.get_child_count(), foe_chips, allies, foes, chip, hud._turn_scroll.size, hud._turn_strip.custom_minimum_size, panel, hud.turn_bar_layout])
-	if _mode.begins_with("marks"):
+	if _mode.begins_with("marks") or _mode == "classes_resources":
 		var badges: PackedStringArray = PackedStringArray()
 		for child in hud._turn_chips():
-			var badge := child.get_node_or_null("MarksBadge") as Label
-			if badge != null and badge.visible:
-				badges.append("%s:%s" % [str(child.get_meta("chip_seat", -1)), badge.text])
+			for node_name in ["StackBadge", "MarksBadge"]:
+				var badge := child.get_node_or_null(node_name) as Control
+				if badge == null or not badge.visible:
+					continue
+				var count := badge.get_node_or_null("Count") as Label
+				badges.append("%s:%s=%s" % [str(child.get_meta("chip_seat", -1)), node_name, "" if count == null else count.text])
 		print("MARKS left=%s right=%s badges=%s" % [hud._kestrel_body.text.replace("\n", " | "), hud._ironjaw_body.text.replace("\n", " | "), " ".join(badges)])
+		if _mode == "marks_dungeon":
+			_save_badge_zoom(image, hud)
 	return true
 
 
@@ -146,6 +157,67 @@ func _stamp_dungeon_marks(sim: Node) -> void:
 	var owner := _class_seat(sim, "kestrel")
 	_give_marks(sim, foes[0], 2, owner)
 	_give_marks(sim, foes[1], 4, owner)
+
+
+func _stamp_class_resources(sim: Node) -> void:
+	_set_stack(sim, "ironjaw", "impact", 3)
+	_set_stack(sim, "bastion", "aegis", 2)
+	_set_stack(sim, "mender", "pulse", 4)
+	_set_stack(sim, "gloam", "umbral", 1)
+	var foes: Array[int] = []
+	for unit in sim.snapshot().get("units", []):
+		if typeof(unit) != TYPE_DICTIONARY:
+			continue
+		if int(unit.get("team", 0)) == 1:
+			foes.append(int(unit.get("seat", -1)))
+	if foes.is_empty():
+		push_error("class resource shot has no foe to mark")
+		return
+	_give_marks(sim, foes[0], 3, _class_seat(sim, "kestrel"))
+
+
+func _set_stack(sim: Node, class_id: String, field: String, count: int) -> void:
+	for unit in sim._units:
+		if str(unit.get("class_id", "")) != class_id:
+			continue
+		if str(unit.get("stasis_sprite", "")) != "":
+			continue
+		unit[field] = count
+		var bag: Variant = unit.get("resources", null)
+		if typeof(bag) == TYPE_DICTIONARY:
+			(bag as Dictionary)[field] = count
+		return
+
+
+func _save_badge_zoom(image: Image, hud: CombatHUD) -> void:
+	var vp := root.get_visible_rect().size
+	if vp.x < 1.0 or vp.y < 1.0:
+		return
+	var scale := Vector2(float(image.get_width()) / vp.x, float(image.get_height()) / vp.y)
+	var union := Rect2()
+	var any := false
+	for child in hud._turn_chips():
+		var badge := child.get_node_or_null("MarksBadge") as Control
+		if badge == null or not badge.visible:
+			continue
+		var chip := child as Control
+		union = chip.get_global_rect() if not any else union.merge(chip.get_global_rect())
+		any = true
+	if not any:
+		push_error("no marks badge to crop")
+		return
+	union = union.grow(6.0)
+	var origin := Vector2i(union.position * scale)
+	var size := Vector2i(union.size * scale)
+	var crop_rect := Rect2i(origin, size).intersection(Rect2i(Vector2i.ZERO, image.get_size()))
+	if crop_rect.size.x < 2 or crop_rect.size.y < 2:
+		push_error("marks badge crop was empty")
+		return
+	var zoom_path := _path.get_base_dir().path_join("marks_badge_zoom_v2.png")
+	var crop := image.get_region(crop_rect)
+	crop.resize(crop.get_width() * 2, crop.get_height() * 2, Image.INTERPOLATE_LANCZOS)
+	var err := crop.save_png(zoom_path)
+	print("BADGE_ZOOM %s %dx%d err=%s" % [zoom_path, crop.get_width(), crop.get_height(), err])
 
 
 func _give_marks(sim: Node, seat: int, count: int, owner: int) -> void:
