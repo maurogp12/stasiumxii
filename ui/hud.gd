@@ -417,13 +417,30 @@ static func marks_holder(unit: Dictionary, snap: Dictionary) -> Dictionary:
 	if str(unit.get("class_id", "")) != SpellKits.CLASS_KESTREL:
 		return unit
 	var seat := int(unit.get("seat", -1))
+	var owned: Dictionary = {}
+	var owned_n := -1
+	var foe: Dictionary = {}
+	var foe_n := -1
+	var fallback: Dictionary = {}
 	for other in snap.get("units", []):
 		if typeof(other) != TYPE_DICTIONARY:
 			continue
 		if int(other.get("seat", -1)) == seat:
 			continue
-		return other
-	return unit
+		if fallback.is_empty():
+			fallback = other
+		var n := int(other.get("marks", 0))
+		if int(other.get("marks_seat", -1)) == seat and n >= owned_n:
+			owned = other
+			owned_n = n
+		elif unit_team(other) != unit_team(unit) and n > foe_n:
+			foe = other
+			foe_n = n
+	if not owned.is_empty():
+		return owned
+	if not foe.is_empty():
+		return foe
+	return fallback if not fallback.is_empty() else unit
 
 
 ## Chrome only. A live Shade on the acting Gloam is the cue that Ambush relocates.
@@ -1813,7 +1830,10 @@ func _engine_pip_sig(unit: Dictionary) -> String:
 			cap_field = "pulse_cap"
 		_:
 			return ""
-	return "%s:%d:%d" % [field, int(unit.get(field, 0)), int(unit.get(cap_field, 0))]
+	var current := int(unit.get(field, 0))
+	if field == "marks":
+		current = int(marks_holder(unit, _last_snap).get("marks", current))
+	return "%s:%d:%d" % [field, current, int(unit.get(cap_field, 0))]
 
 
 func _render_pips(row: HBoxContainer, current: int, maximum: int, fill: Color, unit: Dictionary = {}) -> void:
@@ -1887,6 +1907,8 @@ func _append_engine_pips_to(bucket: Array, unit: Dictionary) -> void:
 	if lit_tex == null or empty_tex == null:
 		return
 	var current := int(unit.get(field, 0))
+	if field == "marks":
+		current = int(marks_holder(unit, _last_snap).get("marks", current))
 	for i in range(maxi(cap, 0)):
 		bucket.append(_pip_icon(lit_tex if i < current else empty_tex, i < current))
 
@@ -1934,7 +1956,7 @@ func _sync_turn_strip(snap: Dictionary) -> void:
 		var acting := (not deploying) and (not over) and seat == active
 		var targeted := _chip_targeted(unit)
 		var is_you := seat == you
-		parts.append("%d:%s:%s:%s" % [seat, str(unit.get("class_id", "")), "1" if acting else "0", "T" if targeted else "-"])
+		parts.append("%d:%s:%s:%s:%d" % [seat, str(unit.get("class_id", "")), "1" if acting else "0", "T" if targeted else "-", int(unit.get("marks", 0))])
 		wanted.append({
 			"unit": unit,
 			"seat": seat,
@@ -2313,6 +2335,7 @@ func _turn_chip(unit: Dictionary, acting: bool, targeted: bool, _is_you: bool, p
 		label.add_theme_color_override("font_color", CREAM)
 		label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		host.add_child(label)
+	_sync_marks_badge(host, unit, px)
 	host.set_meta("chip_seat", int(unit.get("seat", -1)))
 	host.set_meta("chip_class", str(unit.get("class_id", "")))
 	return host
@@ -2327,6 +2350,28 @@ func _restyle_turn_chip(host: Control, unit: Dictionary, acting: bool, targeted:
 	host.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	host.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	host.add_theme_stylebox_override("panel", _chip_frame(acting, targeted, team))
+	_sync_marks_badge(host, unit, px)
+
+
+## Count only. Hidden when this fighter is carrying none.
+func _sync_marks_badge(host: Control, unit: Dictionary, px: Vector2) -> void:
+	var n := int(unit.get("marks", 0))
+	var badge := host.get_node_or_null("MarksBadge") as Label
+	if badge == null:
+		badge = Label.new()
+		badge.name = "MarksBadge"
+		badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		badge.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		badge.add_theme_font_size_override("font_size", 11)
+		badge.add_theme_color_override("font_color", GOLD_BRIGHT)
+		badge.add_theme_color_override("font_outline_color", Color(0.04, 0.03, 0.02))
+		badge.add_theme_constant_override("outline_size", 4)
+		host.add_child(badge)
+	badge.text = "Marks %d" % n
+	badge.visible = n > 0
+	badge.position = Vector2(2, maxf(px.y - 16.0, 0.0))
+	badge.size = Vector2(maxf(px.x - 4.0, 1.0), 14)
 
 
 func _chip_frame(acting: bool, targeted: bool = false, team_color: Color = GOLD) -> StyleBoxFlat:
@@ -2611,8 +2656,9 @@ func _unit_card_text(unit: Dictionary, _active: bool, snap: Dictionary = {}) -> 
 	if meter != "":
 		text += "\n%s" % meter
 	if meter.find("Marks") < 0:
-		var marked := marks_holder(unit, snap)
-		text += "\nMarks %d" % int(marked.get("marks", 0))
+		var stacked := int(marks_holder(unit, snap).get("marks", 0))
+		if stacked > 0:
+			text += "\nMarks %d" % stacked
 	return text
 
 
@@ -2651,8 +2697,8 @@ func _resource_meter_line(unit: Dictionary, snap: Dictionary = {}) -> String:
 			int(unit.get("aegis_cap", SpellKits.AEGIS_CAP)),
 		]
 	var marked := marks_holder(unit, snap)
-	return "Marks %s  Impact %s" % [
-		engine_pips(int(marked.get("marks", 0)), int(marked.get("marks_cap", SpellKits.MARKS_CAP))),
+	return "Marks %d  Impact %s" % [
+		int(marked.get("marks", 0)),
 		engine_pips(int(unit.get("impact", 0)), int(unit.get("impact_cap", SpellKits.IMPACT_CAP))),
 	]
 

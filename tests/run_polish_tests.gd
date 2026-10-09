@@ -202,6 +202,7 @@ func _test_turn_bar_options() -> void:
 			"max_hp": 100,
 			"ap": 6,
 			"mp": 3,
+			"marks": 4 if i == 6 else 0,
 		})
 	var snap := {"team_size": 1, "party_size": 5, "active_seat": 0, "units": units}
 	hud.turn_bar_layout = CombatHUD.TURN_BAR_SHRINK
@@ -250,7 +251,14 @@ func _test_turn_bar_options() -> void:
 	hud.focus_fighter(6)
 	truthy(hud._ironjaw_body.text.contains("HP"), "a tapped foe fills the right corner card")
 	truthy(hud._ironjaw_body.text.contains("AP") and hud._ironjaw_body.text.contains("MP"), "the right card shows AP and MP")
-	truthy(hud._ironjaw_body.text.contains("Marks"), "the right card shows Marks")
+	truthy(hud._ironjaw_body.text.contains("Marks 4"), "the right card shows that foe's Marks")
+	var marked := false
+	for child in hud._turn_chips():
+		if int(child.get_meta("chip_seat", -2)) != 6:
+			continue
+		var badge := child.get_node_or_null("MarksBadge") as Label
+		marked = badge != null and badge.visible and badge.text == "Marks 4"
+	truthy(marked, "the slim portrait of a marked foe shows Marks 4")
 	var bust := hud._banner_panels[1].get_node_or_null("Bust") as TextureRect
 	truthy(bust != null and bust.texture != null, "the right card shows that foe's portrait")
 	hud.free()
