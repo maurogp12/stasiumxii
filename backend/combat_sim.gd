@@ -1713,7 +1713,7 @@ func _preview_kit_lines(spell_id: String) -> Dictionary:
 		SpellKits.AEGIS_BREAK:
 			return {"on_connect": "26 Earth per body in range 1–2. Push 1. Clears all Aegis.", "on_miss": "Spends 0 Aegis. Does not clear Aegis."}
 		SpellKits.WARD:
-			return {"on_connect": "+20 shield on every ally within 3 tiles, you too. Stacks to 40. Lasts until broken. Spends 1 Aegis. Once per turn.", "on_miss": "No roll."}
+			return {"on_connect": "+20 shield on every ally within 3 tiles, you too. Stacks to 40. Lasts until broken. Spends %d Aegis. Once per turn." % int(SpellKits.spell(SpellKits.WARD).get("spend_aegis", 2)), "on_miss": "No roll."}
 		SpellKits.SNAP_WALL:
 			return {"on_connect": "Blocked tile for 2 Bastion turn-starts. Spends 2 Aegis. On your own wall: knocks it down, +2 Aegis back.", "on_miss": "No roll."}
 		_:
@@ -6537,13 +6537,13 @@ func _strip_family(unit: Dictionary, family: String) -> void:
 ## then: T+2 is locked, T+3 is legal. An attack, a hurt, or a trap reveals
 ## at once and starts the same one-turn cooldown. A fixture with invisible
 ## but no invisible_turns has no clock (tests / old snapshots).
-## Mauro 7 Oct 2026: Bastion's Ward. 3 AP + 1 Aegis, once per turn. Every living
+## Mauro 9 Oct 2026: Bastion's Ward. 2 AP + 2 Aegis, once per turn. Every living
 ## ally within `ward_radius` (Chebyshev, Bastion included) gains +20 shield,
 ## capped at 40. The shield has no clock: it lasts until hits break it.
 func _resolve_team_ward(intent: Dictionary, actor: Dictionary, def: Dictionary, ap_cost: int, mp_cost: int) -> Dictionary:
 	actor["ap"] = int(actor["ap"]) - ap_cost
 	_spend_mp(actor, mp_cost)
-	var spent := _spend_resource(actor, "aegis", int(def.get("spend_aegis", 1)))
+	var spent := _spend_resource(actor, "aegis", int(def.get("spend_aegis", 2)))
 	actor["ward_used"] = true
 	var radius := int(def.get("ward_radius", 3))
 	var add := int(def.get("shield", 20))

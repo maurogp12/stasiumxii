@@ -29,11 +29,13 @@ static func card_lines(preview: Dictionary) -> PackedStringArray:
 	var range_line := str(preview.get("range_text", "")).strip_edges()
 	if range_line == "":
 		range_line = SpellKits.range_text(preview)
-	lines.append("%d AP / %d MP · %s" % [
-		int(preview.get("ap", 0)),
-		int(preview.get("mp", 0)),
-		range_line,
-	])
+	var spell_id := str(preview.get("spell_id", ""))
+	var kit: Dictionary = SpellKits.SPELLS.get(spell_id, {})
+	var cost := "%d AP / %d MP" % [int(preview.get("ap", 0)), int(preview.get("mp", 0))]
+	if spell_id == SpellKits.WARD:
+		cost = "%d AP / %d Aegis" % [int(preview.get("ap", 0)), int(kit.get("spend_aegis", 2))]
+		range_line = "you and every teammate within %d tiles" % int(kit.get("ward_radius", 3))
+	lines.append("%s · %s" % [cost, range_line])
 	if preview.get("sample_damage", null) != null and int(preview["sample_damage"]) > 0 and not needs_marks:
 		lines.append("Dmg %d" % int(preview["sample_damage"]))
 	var effect := _short_effect(preview, needs_marks)
@@ -147,7 +149,7 @@ static func simple_lines(spell_id: String, preview: Dictionary = {}) -> PackedSt
 			out.append("Tap a teammate (or yourself) to heal %d HP. Uses 1 Pulse." % heal)
 			out.append("Last Stand: when you are the last one alive and cannot Rekindle anyone, it can also hit an enemy for %d." % int(SpellKits.LAST_STAND_DAMAGE[SpellKits.PULSE_TAP]))
 		SpellKits.WARD:
-			out.append("Give every teammate within %d tiles, you too, a shield of +%d. Cast it again to stack it up to %d. Hits break the shield before they hurt you; it stays until it breaks. Uses %d Aegis. Once per turn." % [int(def.get("ward_radius", 3)), int(def.get("shield", 20)), int(def.get("shield_cap", 40)), int(def.get("spend_aegis", 1))])
+			out.append("Give every teammate within %d tiles, you too, a shield of +%d. Cast it again to stack it up to %d. Hits break the shield before they hurt you; it stays until it breaks. Uses %d Aegis. Once per turn." % [int(def.get("ward_radius", 3)), int(def.get("shield", 20)), int(def.get("shield_cap", 40)), int(def.get("spend_aegis", 2))])
 			out.append("Thorns (always on): enemies who hit Bastion from right next to him take 20% of that hit back.")
 		SpellKits.CLEANSE:
 			out.append("Take away 1 bad effect from a teammate (Stun first). 3 bad effects? Use it 3 times. +1 Pulse.")

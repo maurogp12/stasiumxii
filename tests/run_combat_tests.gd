@@ -7866,9 +7866,9 @@ func _test_kestrel_aims_better_far() -> void:
 
 
 
-## Mauro 7 Oct 2026: Ward is Bastion's (3 AP + 1 Aegis, once per turn): +20
+## Mauro 9 Oct 2026: Ward is Bastion's (2 AP + 2 Aegis, once per turn): +20
 ## shield on every ally within 3 tiles including him, stacks to 40, no clock.
-## Thorns is always on: 20% of an adjacent hit, after that hit lands.
+## Illegal at 1 Aegis, legal at 2. Thorns is always on: 20% of an adjacent hit.
 func _test_bastion_team_ward_and_thorns() -> void:
 	_sim.reset_match({
 		"seed": 1,
@@ -7894,8 +7894,9 @@ func _test_bastion_team_ward_and_thorns() -> void:
 	eq(bool(ward.get("ok", false)), true, "Bastion's Ward resolves")
 	eq(int(bastion["shield"]), 20, "Ward shields Bastion")
 	eq(int(mate["shield"]), 20, "Ward shields a teammate within 3 tiles")
-	eq(int(bastion["aegis"]), 3, "Ward spends 1 Aegis (Mauro 7 Oct 2026, option A)")
-	eq(int(bastion["ap"]), ap0 - 3, "Ward spends 3 AP")
+	eq(int(bastion["aegis"]), 2, "Ward spends 2 Aegis (Mauro 9 Oct 2026)")
+	eq(int(bastion["ap"]), ap0 - 2, "Ward spends 2 AP")
+	truthy(str(ward.get("events", [{}])[0].get("coach", "")).contains("−2 AP") and str(ward.get("events", [{}])[0].get("coach", "")).contains("−2 Aegis"), "Ward coach names the 2 AP and 2 Aegis spend")
 	for unit in _sim._units:
 		if not _sim._allied(unit, bastion):
 			eq(int(unit.get("shield", 0)), 0, "Ward never shields an enemy")
@@ -7905,10 +7906,51 @@ func _test_bastion_team_ward_and_thorns() -> void:
 	eq(str(twice.get("reason", "")), "once_per_turn", "Ward is once per turn")
 	for i in 3:
 		bastion["ward_used"] = false
-		bastion["aegis"] = 1
+		bastion["aegis"] = 2
 		_sim.submit({"type": "cast", "spell": "ward", "to": bastion["pos"], "seat": int(bastion["seat"])})
 	eq(int(bastion["shield"]), 40, "Ward stacks to 40 and no further")
 	eq(int(bastion["shield_turns"]), 0, "the Ward shield has no clock")
+	# 1 Aegis cannot pay the new cost. 2 Aegis can, and it spends both.
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["bastion", "kestrel"],
+		"positions": [Vector2i(1, 1), Vector2i(6, 6)],
+		"bastion_aegis": 1,
+	})
+	var short_ap := int(_unit(0)["ap"])
+	var short: Dictionary = _sim.submit({"type": "cast", "spell": "ward", "to": Vector2i(1, 1), "seat": 0})
+	eq(bool(short.get("ok", false)), false, "Ward is illegal at 1 Aegis")
+	eq(str(short.get("reason", "")), "insufficient_aegis", "Ward at 1 Aegis names the Aegis gate")
+	eq(int(_unit(0)["aegis"]), 1, "a refused Ward keeps the 1 Aegis")
+	eq(int(_unit(0)["ap"]), short_ap, "a refused Ward refunds the AP")
+	var offered_short := false
+	for intent in _sim.legal_intents(0):
+		if str(intent.get("spell", "")) == "ward":
+			offered_short = true
+	eq(offered_short, false, "Ward is not offered at 1 Aegis")
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["bastion", "kestrel"],
+		"positions": [Vector2i(1, 1), Vector2i(6, 6)],
+		"bastion_aegis": 2,
+	})
+	var paid_ap := int(_unit(0)["ap"])
+	var paid: Dictionary = _sim.submit({"type": "cast", "spell": "ward", "to": Vector2i(1, 1), "seat": 0})
+	eq(bool(paid.get("ok", false)), true, "Ward is legal at 2 Aegis")
+	eq(int(_unit(0)["aegis"]), 0, "Ward at 2 Aegis spends 2")
+	eq(int(_unit(0)["ap"]), paid_ap - 2, "Ward at 2 Aegis costs 2 AP")
+	eq(int(_unit(0)["shield"]), 20, "Ward at 2 Aegis still shields for 20")
+	var card := SpellTooltip.card_text(_sim.preview_cast(SpellKits.WARD, Vector2i(1, 1), Vector2i(1, 1), 0))
+	truthy(card.contains("2 AP / 2 Aegis"), "the Ward tooltip shows 2 AP / 2 Aegis")
+	var plain := " ".join(SpellTooltip.simple_lines(SpellKits.WARD))
+	truthy(plain.contains("Costs 2 AP") and plain.contains("Uses 2 Aegis"), "the Ward plain card names 2 AP and 2 Aegis")
+	eq(str(_sim.preview_cast(SpellKits.WARD, Vector2i(1, 1), Vector2i(1, 1), 0).get("on_connect_text", "")).contains("Spends 2 Aegis"), true, "Ward preview says it spends 2 Aegis")
+	var net_src := FileAccess.get_file_as_string("res://backend/net_session.gd")
+	truthy(net_src.contains("host_sim.submit"), "the dedicated server submits through the same CombatSim")
 	# Thorns: 1v1 Ironjaw strikes a shielded Bastion from next to him.
 	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1, 1], "classes": ["ironjaw", "bastion"], "positions": [Vector2i(3, 3), Vector2i(4, 3)], "bastion_aegis": 3})
 	_live_unit(1)["shield"] = 20

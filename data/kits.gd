@@ -257,14 +257,14 @@ const SPELLS := {
 		"spend_pulse": 1,
 		"triage": true,
 	},
-	# Mauro 7 Oct 2026: Ward is Bastion's. 3 AP + 1 Aegis, once per turn, no roll,
-	# +20 shield on every ally within 3 tiles including Bastion, stacks to 40,
-	# lasts until it is broken.
+	# Mauro 9 Oct 2026: Ward is 2 AP + 2 Aegis (was 3 AP + 1 Aegis). Once per turn,
+	# no roll, +20 shield on every ally within 3 tiles including Bastion, stacks
+	# to 40, lasts until it is broken.
 	WARD: {
 		"id": WARD,
 		"name": "Ward",
 		"class_id": CLASS_BASTION,
-		"ap": 3,
+		"ap": 2,
 		"mp": 0,
 		"range_mode": "chebyshev",
 		"min_range": 0,
@@ -273,14 +273,14 @@ const SPELLS := {
 		"element": "neutral",
 		"base_heal": 0,
 		"shield": 20,
-		# Mauro 7 Oct 2026 (option A): 1 Aegis, once per turn, max 40 (was 3 Aegis, max 60).
+		# Mauro 9 Oct 2026: requires 2 Aegis and spends 2. Cap stays 40.
 		"shield_cap": 40,
 		"ward_radius": 3,
 		"once_per_turn": true,
 		"target": "self",
 		"engine_on_connect": "spend_aegis",
-		"requires_aegis": 1,
-		"spend_aegis": 1,
+		"requires_aegis": 2,
+		"spend_aegis": 2,
 		"no_crit": true,
 	},
 	CLEANSE: {
