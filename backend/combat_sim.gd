@@ -252,7 +252,8 @@ func reset_match(config: Dictionary = {}) -> Dictionary:
 	_demo_map = ""
 	_stasis_pack = false
 	_team_size = clampi(int(config.get("team_size", 1)), 1, 3)
-	_party_size = clampi(int(config.get("party_size", 1)), 1, 4) if config.has("stasis_roster") else 1
+	# The door still sends at most four. Five is the whole roster, for a full party against a dungeon pack.
+	_party_size = clampi(int(config.get("party_size", 1)), 1, 5) if config.has("stasis_roster") else 1
 	_turn_order.clear()
 	_winner_team = -1
 	_first_by_init = bool(config.get("first_by_init", false))

@@ -35,9 +35,21 @@ const DOFUS_AP := Color(0.28, 0.62, 1.0)
 const DOFUS_MP := Color(0.36, 0.86, 0.34)
 const TEAM_BLUE := Color(0.26, 0.54, 1.0)
 const TEAM_RED := Color(0.94, 0.28, 0.26)
-## Turn-bar portrait. 118px chip, ~96px of class art inside the frame at the
-## 2400×1080 phone window. Two of these fit the center panel without growing it.
-const PORTRAIT_CHIP := Vector2(124, 118)
+## Turn-bar portrait. A wide phone shows this as a large finger card: the
+## head and chest fill it. The row never collapses back into a tall empty slot.
+const PORTRAIT_CHIP := Vector2(168, 156)
+## Thin strip between the corner cards. 72 viewport px is about 108 px
+## on the 2400-wide phone frame (inside the 90–110 px band).
+const SLIM_CHIP := 72.0
+## What happens when a full party does not fit one row of large cards.
+## "slim" is a single thin row between the corner cards, no plaque under it.
+## "scroll" keeps the large cards and peeks the next one.
+## "shrink" scales every card so all ten sit on one row.
+## "rows" puts allies on top and monsters underneath.
+const TURN_BAR_SLIM := "slim"
+const TURN_BAR_SCROLL := "scroll"
+const TURN_BAR_SHRINK := "shrink"
+const TURN_BAR_ROWS := "rows"
 const HUB_FONT := "res://art/ui/hub/Cinzel-Semibold.ttf"
 const STUN_GREY := Color(0.58, 0.58, 0.62, 0.82)
 const AMBUSH_SHADE_TIP := "Ambush from Shade"
@@ -74,8 +86,22 @@ var _seat_titles: Array[Label] = []
 var _turn_label: Label
 var _you_label: Label
 var _opp_label: Label
+var _turn_scroll: ScrollContainer
+var _turn_stack: VBoxContainer
 var _turn_strip: HBoxContainer
+var _turn_foe_strip: HBoxContainer
 var _turn_strip_sig: String = ""
+## Slim is the default: one thin row, the board keeps its space.
+var turn_bar_layout: String = TURN_BAR_SLIM
+## Portrait column before the scroll window is narrowed to peek the next card.
+var _turn_band := Vector2.ZERO
+var _turn_gap_x := 0.0
+var _turn_gap_y := 8.0
+var _turn_gap_w := 0.0
+var _turn_view_y := 720.0
+var _turn_single_h := 168.0
+## Tapped fighter shown in the left (ally) or right (foe) corner card. -1 keeps the acting fighter.
+var _corner_focus: Array[int] = [-1, -1]
 var _pip_sig: Dictionary = {}
 var _resource_panel: Panel
 var _ui_root: Control
@@ -136,6 +162,9 @@ var _long_press_touch: bool = false
 var _unit_press_seat: int = -1
 var _unit_press_elapsed: float = 0.0
 var _unit_info_shown: bool = false
+var _unit_press_dragged: bool = false
+var _unit_press_global := Vector2.ZERO
+var _unit_press_scroll: int = 0
 ## Finger contact. Desktop hover must not open the card during a tap.
 var _hover_suppressed: bool = false
 var _last_snap: Dictionary = {}
@@ -864,7 +893,7 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
-	if _unit_press_seat >= 0 and not _unit_info_shown:
+	if _unit_press_seat >= 0 and not _unit_info_shown and not _unit_press_dragged:
 		_unit_press_elapsed += delta
 		if _unit_press_elapsed >= SpellTooltip.LONG_PRESS_SEC:
 			show_unit_info(_unit_press_seat)
@@ -886,6 +915,8 @@ func _process(delta: float) -> void:
 
 func _input(event: InputEvent) -> void:
 	if TOUCH.is_emulated_mouse(event):
+		return
+	if _scroll_turn_drag(event):
 		return
 	if event is InputEventMouseButton and (event as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT and not event.pressed:
 		_finish_unit_press()
@@ -1057,6 +1088,10 @@ func render(snap: Dictionary, legal: Array) -> void:
 					break
 		if not shown.is_empty():
 			seat1 = shown
+	seat0 = _focused_corner_unit(units, 0, seat0)
+	seat1 = _focused_corner_unit(units, 1, seat1)
+	card_active[0] = (not _deploying) and int(seat0.get("seat", -2)) == active_seat
+	card_active[1] = (not _deploying) and int(seat1.get("seat", -2)) == active_seat
 	_apply_seat_banner(0, seat0, bool(card_active[0]) and not _deploying)
 	_apply_seat_banner(1, seat1, bool(card_active[1]) and not _deploying)
 	_kestrel_body.text = _unit_card_text(seat0, bool(card_active[0]), snap)
@@ -1215,14 +1250,36 @@ func _build() -> void:
 	_opp_label.visible = false
 	resource_panel.add_child(_opp_label)
 
+	_turn_scroll = ScrollContainer.new()
+	_turn_scroll.name = "TurnScroll"
+	_turn_scroll.position = Vector2(4, 4)
+	_turn_scroll.size = Vector2(272, 120)
+	_turn_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER
+	_turn_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_turn_scroll.mouse_filter = Control.MOUSE_FILTER_STOP
+	_turn_scroll.clip_contents = true
+	_turn_scroll.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
+	resource_panel.add_child(_turn_scroll)
+	_turn_stack = VBoxContainer.new()
+	_turn_stack.name = "TurnStack"
+	_turn_stack.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_turn_stack.add_theme_constant_override("separation", 6)
+	_turn_scroll.add_child(_turn_stack)
 	_turn_strip = HBoxContainer.new()
 	_turn_strip.name = "TurnStrip"
-	_turn_strip.position = Vector2(4, 4)
+	_turn_strip.position = Vector2.ZERO
 	_turn_strip.size = Vector2(272, 120)
 	_turn_strip.alignment = BoxContainer.ALIGNMENT_BEGIN
 	_turn_strip.add_theme_constant_override("separation", 8)
 	_turn_strip.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	resource_panel.add_child(_turn_strip)
+	_turn_stack.add_child(_turn_strip)
+	_turn_foe_strip = HBoxContainer.new()
+	_turn_foe_strip.name = "FoeStrip"
+	_turn_foe_strip.visible = false
+	_turn_foe_strip.alignment = BoxContainer.ALIGNMENT_BEGIN
+	_turn_foe_strip.add_theme_constant_override("separation", 8)
+	_turn_foe_strip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_turn_stack.add_child(_turn_foe_strip)
 
 	_turn_label = Label.new()
 	_turn_label.position = Vector2(280, 6)
@@ -1581,7 +1638,42 @@ func _apply_seat_banner(seat: int, unit: Dictionary, acting: bool = false) -> vo
 	var accent := _seat_panels[seat].get_node_or_null("Accent")
 	if accent is ColorRect:
 		(accent as ColorRect).color = color
+	var bust := _seat_panels[seat].get_node_or_null("Bust") as TextureRect
+	if bust != null:
+		bust.texture = _portrait_for(unit)
 	_paint_hp_bar(_seat_panels[seat], unit)
+
+
+## A portrait tap keeps that fighter in the matching corner card
+## (left for an ally, right for a foe) until another tap replaces them.
+func focus_fighter(seat: int) -> void:
+	var units: Array = _last_snap.get("units", [])
+	var unit := _unit(units, seat)
+	if unit.is_empty():
+		return
+	var side := 1 if unit_team(unit) == 1 else 0
+	_corner_focus[side] = seat
+	var acting := (not _deploying) and snap_active_seat(_last_snap) == seat
+	_apply_seat_banner(side, unit, acting)
+	var body := _ironjaw_body if side == 1 else _kestrel_body
+	if body != null:
+		body.text = _unit_card_text(unit, acting, _last_snap)
+
+
+func _focused_corner_unit(units: Array, side: int, fallback: Dictionary) -> Dictionary:
+	if side < 0 or side >= _corner_focus.size():
+		return fallback
+	var seat := _corner_focus[side]
+	if seat < 0:
+		return fallback
+	var unit := _unit(units, seat)
+	if unit.is_empty() or not bool(unit.get("alive", true)):
+		_corner_focus[side] = -1
+		return fallback
+	var foe := unit_team(unit) == 1
+	if foe != (side == 1):
+		return fallback
+	return unit
 
 
 func _make_banner(is_kestrel: bool) -> Panel:
@@ -1599,6 +1691,15 @@ func _make_banner(is_kestrel: bool) -> Panel:
 	accent.color = color
 	accent.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	panel.add_child(accent)
+	var bust := TextureRect.new()
+	bust.name = "Bust"
+	bust.position = Vector2(8, 8)
+	bust.size = Vector2(84, 84)
+	bust.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	bust.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	bust.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	bust.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.add_child(bust)
 	var title := Label.new()
 	title.text = "Kestrel" if is_kestrel else "Ironjaw"
 	_seat_panels.append(panel)
@@ -1842,16 +1943,20 @@ func _sync_turn_strip(snap: Dictionary) -> void:
 			"targeted": targeted,
 			"you": is_you,
 		})
+	var layout := _resolved_layout(wanted.size())
+	parts.append("layout:%s" % layout)
+	var visual := _visual_rows(wanted, layout)
 	var sig := "|".join(parts)
-	if sig == _turn_strip_sig and _turn_strip.get_child_count() == wanted.size() and wanted.size() > 0:
+	var shown := _turn_chips()
+	if sig == _turn_strip_sig and shown.size() == visual.size() and visual.size() > 0:
 		return
 	_turn_strip_sig = sig
 	# Same fighters: restyle the chips that are already on screen.
-	if _turn_strip.get_child_count() == wanted.size() and wanted.size() > 0:
+	if shown.size() == visual.size() and visual.size() > 0:
 		var same := true
-		for i in wanted.size():
-			var existing := _turn_strip.get_child(i)
-			var rec: Dictionary = wanted[i]
+		for i in visual.size():
+			var existing: Control = shown[i]
+			var rec: Dictionary = visual[i]
 			if int(existing.get_meta("chip_seat", -2)) != int(rec["seat"]):
 				same = false
 				break
@@ -1859,47 +1964,219 @@ func _sync_turn_strip(snap: Dictionary) -> void:
 				same = false
 				break
 		if same:
-			for i in wanted.size():
-				var row: Dictionary = wanted[i]
-				_restyle_turn_chip(_turn_strip.get_child(i), row["unit"], bool(row["acting"]), bool(row["targeted"]), bool(row["you"]), px)
-			return
+			for i in visual.size():
+				var row: Dictionary = visual[i]
+				var host := _turn_foe_strip if layout == TURN_BAR_ROWS and unit_team(row["unit"]) == 1 else _turn_strip
+				if shown[i].get_parent() != host:
+					same = false
+					break
+			if same:
+				for i in visual.size():
+					var row: Dictionary = visual[i]
+					_restyle_turn_chip(shown[i], row["unit"], bool(row["acting"]), bool(row["targeted"]), bool(row["you"]), px)
+				_layout_turn_row()
+				return
 	# Build the new row first, then drop the old chips, so the plaque is
 	# never an empty dark box for a frame.
 	var fresh: Array = []
-	for entry in wanted:
+	for entry in visual:
 		var spec: Dictionary = entry
 		var fighter: Dictionary = spec["unit"]
 		var chip := _turn_chip(fighter, bool(spec["acting"]), bool(spec["targeted"]), bool(spec["you"]), px)
 		chip.set_meta("chip_seat", int(spec["seat"]))
 		chip.set_meta("chip_class", str(spec["class_id"]))
+		chip.set_meta("chip_team", unit_team(fighter))
 		_make_unit_pressable(chip, int(spec["seat"]))
 		fresh.append(chip)
-	for chip in fresh:
-		_turn_strip.add_child(chip)
 	var keep := {}
-	for chip in fresh:
+	for i in visual.size():
+		var chip: Control = fresh[i]
+		var row: Dictionary = visual[i]
 		keep[chip.get_instance_id()] = true
-	var doomed: Array = []
-	for child in _turn_strip.get_children():
-		if not keep.has(child.get_instance_id()):
-			doomed.append(child)
-	for child in doomed:
-		_turn_strip.remove_child(child)
-		child.free()
+		var host := _turn_foe_strip if layout == TURN_BAR_ROWS and unit_team(row["unit"]) == 1 else _turn_strip
+		host.add_child(chip)
+	_drop_turn_chips(keep)
+	_layout_turn_row()
+
+
+func _turn_chips() -> Array:
+	var out: Array = []
+	if _turn_strip != null:
+		for child in _turn_strip.get_children():
+			out.append(child)
+	if _turn_foe_strip != null:
+		for child in _turn_foe_strip.get_children():
+			out.append(child)
+	return out
+
+
+func _drop_turn_chips(keep: Dictionary) -> void:
+	for strip in [_turn_strip, _turn_foe_strip]:
+		if strip == null:
+			continue
+		var doomed: Array = []
+		for child in strip.get_children():
+			if not keep.has(child.get_instance_id()):
+				doomed.append(child)
+		for child in doomed:
+			strip.remove_child(child)
+			child.free()
+
+
+func _visual_rows(wanted: Array, layout: String) -> Array:
+	if layout != TURN_BAR_ROWS:
+		return wanted
+	var allies: Array = []
+	var foes: Array = []
+	for entry in wanted:
+		var row: Dictionary = entry
+		if unit_team(row["unit"]) == 1:
+			foes.append(row)
+		else:
+			allies.append(row)
+	return allies + foes
+
+
+func _row_overflows(count: int) -> bool:
+	if count <= 1 or _turn_band.x < 32.0:
+		return false
+	var gap := _chip_gap()
+	var fit_six := ( _turn_band.x - gap * 5.0 ) / 6.0
+	var card_w := minf(PORTRAIT_CHIP.x, fit_six)
+	var content := card_w * float(count) + gap * float(count - 1)
+	return content > _turn_band.x + 1.0
+
+
+func _resolved_layout(count: int) -> String:
+	if turn_bar_layout == TURN_BAR_SLIM:
+		return TURN_BAR_SLIM
+	if not _row_overflows(count):
+		return "fit"
+	if turn_bar_layout == TURN_BAR_SHRINK or turn_bar_layout == TURN_BAR_ROWS:
+		return turn_bar_layout
+	return TURN_BAR_SCROLL
+
+
+func _layout_turn_row() -> void:
+	if _turn_strip == null or _turn_scroll == null:
+		return
+	if _turn_band.x < 32.0 or _turn_band.y < 32.0:
+		return
+	var count := _turn_chips().size()
+	var layout := _resolved_layout(count)
+	if _turn_strip != null:
+		_turn_strip.add_theme_constant_override("separation", 4 if layout == TURN_BAR_SLIM else 8)
+	if _turn_foe_strip != null:
+		_turn_foe_strip.visible = layout == TURN_BAR_ROWS and _turn_foe_strip.get_child_count() > 0
+	var card := _chip_px(count) if count > 0 else (Vector2(SLIM_CHIP, SLIM_CHIP) if layout == TURN_BAR_SLIM else PORTRAIT_CHIP)
+	var gap := _chip_gap()
+	_apply_panel_chrome(layout == TURN_BAR_SLIM)
+	_set_turn_readout_visible(layout != TURN_BAR_SLIM)
+	if layout == TURN_BAR_SLIM:
+		var content_w := card.x * float(count) + gap * float(maxi(count - 1, 0)) if count > 0 else _turn_band.x
+		var window_w := content_w if count > 0 else _turn_band.x
+		_apply_turn_window(window_w, card.y, false, Vector2.ZERO)
+		_size_strip(_turn_strip, maxf(content_w, 1.0), card.y)
+		if _resource_panel != null:
+			var x := _turn_gap_x
+			if count > 0:
+				x = _turn_gap_x + maxf(_turn_gap_w - content_w, 0.0) * 0.5
+			_resource_panel.position = Vector2(x, _turn_gap_y)
+			_resource_panel.size = Vector2(maxf(window_w, 1.0), card.y)
+	elif layout == TURN_BAR_ROWS:
+		var row_gap := 6.0
+		var row_n := maxi(_turn_strip.get_child_count(), _turn_foe_strip.get_child_count() if _turn_foe_strip != null else 0)
+		var row_w := card.x * float(maxi(row_n, 1)) + gap * float(maxi(row_n - 1, 0))
+		var two := _turn_foe_strip != null and _turn_foe_strip.visible
+		var stack_h := card.y * 2.0 + row_gap if two else card.y
+		_apply_turn_window(row_w, stack_h, false)
+		_size_strip(_turn_strip, row_w, card.y)
+		_size_strip(_turn_foe_strip, row_w, card.y)
+		if _resource_panel != null:
+			_resource_panel.size.y = stack_h + 8.0
+	elif layout == TURN_BAR_SHRINK:
+		var content_w := card.x * float(count) + gap * float(maxi(count - 1, 0))
+		_apply_turn_window(minf(content_w, _turn_band.x), card.y, false)
+		_size_strip(_turn_strip, maxf(content_w, 1.0), card.y)
+		if _resource_panel != null:
+			_resource_panel.size.y = _turn_single_h
+	else:
+		var view_w := _scroll_view_width(count, card.x, _turn_band.x) if count > 0 else _turn_band.x
+		var content_w := card.x * float(count) + gap * float(maxi(count - 1, 0))
+		_apply_turn_window(view_w, _turn_band.y, true)
+		_size_strip(_turn_strip, maxf(content_w, view_w), _turn_band.y)
+		if _resource_panel != null:
+			_resource_panel.size.y = _turn_single_h
+	_fit_turn_chips()
+	if layout != TURN_BAR_SLIM:
+		_place_turn_readout()
+	if _side_column != null and _resource_panel != null:
+		var below := _resource_panel.position.y + _resource_panel.size.y + 8.0
+		if not _banner_panels.is_empty():
+			below = maxf(below, _banner_panels[0].position.y + _banner_panels[0].size.y + 8.0)
+		_side_column.position.y = below
+
+
+func _apply_panel_chrome(slim: bool) -> void:
+	if _resource_panel == null:
+		return
+	if slim:
+		_resource_panel.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
+	else:
+		_resource_panel.add_theme_stylebox_override("panel", _fighter_frame(true, GOLD))
+
+
+func _set_turn_readout_visible(shown: bool) -> void:
+	if _turn_label != null:
+		_turn_label.visible = shown
+	if _ap_pips != null:
+		var box := _ap_pips.get_parent() as Control
+		if box != null:
+			box.visible = shown
+
+
+func _apply_turn_window(view_w: float, view_h: float, scrolling: bool, origin: Vector2 = Vector2(4, 4)) -> void:
+	_turn_scroll.position = origin
+	_turn_scroll.size = Vector2(maxf(view_w, 1.0), maxf(view_h, 1.0))
+	_turn_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER if scrolling else ScrollContainer.SCROLL_MODE_DISABLED
+	if not scrolling:
+		_turn_scroll.scroll_horizontal = 0
+	if _turn_stack != null:
+		_turn_stack.custom_minimum_size = Vector2(maxf(view_w, 1.0), maxf(view_h, 1.0))
+		_turn_stack.size = _turn_stack.custom_minimum_size
+
+
+func _size_strip(strip: HBoxContainer, width: float, height: float) -> void:
+	if strip == null:
+		return
+	strip.custom_minimum_size = Vector2(maxf(width, 1.0), maxf(height, 1.0))
+	strip.size = strip.custom_minimum_size
+
+
+func _place_turn_readout() -> void:
+	if _turn_label == null or _turn_scroll == null or _resource_panel == null:
+		return
+	var text_x := _turn_scroll.position.x + _turn_scroll.size.x + 6.0
+	var center_w := _resource_panel.size.x
+	_turn_label.position = Vector2(text_x, 6)
+	_turn_label.size = Vector2(maxf(center_w - text_x - 8.0, 1.0), 20)
+	if _ap_pips != null:
+		var res_box := _ap_pips.get_parent() as Control
+		if res_box != null:
+			res_box.position = Vector2(text_x, 28)
+			res_box.size = Vector2(maxf(center_w - text_x - 8.0, 1.0), maxf(_turn_scroll.size.y - 24.0, 1.0))
 
 
 func _fit_turn_chips() -> void:
-	if _turn_strip == null:
-		return
-	var count := _turn_strip.get_child_count()
-	if count <= 0:
+	var chips := _turn_chips()
+	if chips.is_empty() or _turn_strip == null:
 		return
 	# A resize that has not landed yet (or a one-frame 0-height viewport)
 	# must not collapse the portraits to a dot inside the still-drawn plaque.
-	if _turn_strip.size.y < 8.0:
+	if _turn_strip.size.y < 8.0 and (_turn_foe_strip == null or not _turn_foe_strip.visible):
 		return
-	var px := _chip_px(count)
-	for child in _turn_strip.get_children():
+	var px := _chip_px(chips.size())
+	for child in chips:
 		var host := child as Control
 		if host == null:
 			continue
@@ -1907,24 +2184,86 @@ func _fit_turn_chips() -> void:
 		host.size = px
 
 
+func _chip_gap() -> float:
+	if _turn_strip == null:
+		return 8.0
+	return float(_turn_strip.get_theme_constant("separation"))
+
+
+func _slim_card(count: int) -> Vector2:
+	var n := maxi(count, 1)
+	var gap := _chip_gap()
+	var cap := minf(SLIM_CHIP, maxf(_turn_band.y, 1.0))
+	var fit := (_turn_band.x - gap * float(n - 1)) / float(n)
+	var side := minf(fit, cap)
+	return Vector2(maxf(side, 1.0), maxf(side, 1.0))
+
+
 func _chip_px(count: int) -> Vector2:
 	var px := PORTRAIT_CHIP
 	if _turn_strip == null or count <= 0:
 		return px
-	var gap := 8.0
-	var band_w := _turn_strip.size.x
-	var band_h := _turn_strip.size.y
-	if band_h < 8.0:
+	if _resolved_layout(count) == TURN_BAR_SLIM:
+		return _slim_card(count)
+	# A one-frame 0-height band must not bake postage-stamp chips.
+	if _turn_strip.size.y < 32.0:
 		return px
+	var band_w := _turn_band.x if _turn_band.x >= 32.0 else _turn_strip.size.x
+	var band_h := _turn_band.y if _turn_band.y >= 32.0 else _turn_strip.size.y
+	if band_h < 32.0 or band_w < 32.0:
+		return px
+	var layout := _resolved_layout(count)
+	if layout == TURN_BAR_ROWS:
+		return _rows_card()
+	var gap := _chip_gap()
 	var h := minf(px.y, band_h)
-	var w := minf(px.x, h * (px.x / px.y))
-	var fit_w := (band_w - gap * float(maxi(count - 1, 0))) / float(count)
-	if fit_w < w:
-		w = maxf(fit_w, 1.0)
-		h = minf(h, w * (px.y / px.x))
-	if count <= 2 and band_h >= px.y and band_w >= px.x * 2.0 + gap:
-		return px
-	return Vector2(w, h)
+	var fit_w := (band_w - gap * float(maxi(count - 1, 0))) / float(maxi(count, 1))
+	var w := minf(px.x, fit_w)
+	# Scroll keeps the six-card size. Shrink uses the width that fits every fighter.
+	if layout == TURN_BAR_SCROLL:
+		var fit_six := (band_w - gap * 5.0) / 6.0
+		w = minf(px.x, maxf(fit_w, fit_six))
+	# Narrower than the card is tall: stay a card, not a tall empty slot.
+	if w + 8.0 < h:
+		h = maxf(w, 1.0)
+	return Vector2(maxf(w, 1.0), maxf(h, 1.0))
+
+
+## Allies on top, monsters underneath. The pair stays under about 42% of
+## the phone so the second row does not sit on the fighters.
+func _rows_card() -> Vector2:
+	var row_n := 1
+	if _turn_strip != null:
+		row_n = maxi(row_n, _turn_strip.get_child_count())
+	if _turn_foe_strip != null:
+		row_n = maxi(row_n, _turn_foe_strip.get_child_count())
+	var gap := _chip_gap()
+	var w := (_turn_band.x - gap * float(maxi(row_n - 1, 0))) / float(row_n)
+	w = minf(PORTRAIT_CHIP.x, w)
+	var max_panel := minf(maxf(_turn_view_y, 240.0) * 0.42, 340.0)
+	var max_card := (max_panel - 8.0 - 6.0) / 2.0
+	w = minf(w, max_card)
+	return Vector2(maxf(w, 48.0), maxf(w, 48.0))
+
+
+## Visible width of the row. When the cards do not fit, stop on a clear
+## slice of the next portrait instead of a one-pixel sliver.
+func _scroll_view_width(count: int, card_w: float, band_w: float) -> float:
+	if count <= 0 or card_w < 2.0:
+		return band_w
+	var gap := _chip_gap()
+	var content := card_w * float(count) + gap * float(maxi(count - 1, 0))
+	if content <= band_w + 1.0:
+		return band_w
+	var stride := card_w + gap
+	var peek := clampf(card_w * 0.38, 36.0, card_w * 0.48)
+	var full := int((band_w + gap) / stride)
+	while full > 0:
+		var view := float(full) * card_w + gap * float(maxi(full - 1, 0)) + peek
+		if view <= band_w + 0.5 and full < count:
+			return view
+		full -= 1
+	return minf(band_w, content)
 
 
 ## Armed unit spell can legally land on this fighter. View only.
@@ -1939,28 +2278,30 @@ func _chip_targeted(unit: Dictionary) -> bool:
 	return SNAPSHOT_TILES.cast_dests(_last_legal, _selected_spell).has(pos)
 
 
-func _turn_chip(unit: Dictionary, acting: bool, targeted: bool, is_you: bool, px: Vector2) -> Control:
+func _turn_chip(unit: Dictionary, acting: bool, targeted: bool, _is_you: bool, px: Vector2) -> Control:
 	var team := TEAM_RED if unit_team(unit) == 1 else TEAM_BLUE
 	var host := Panel.new()
 	host.custom_minimum_size = px
 	host.size = px
+	# The row must not stretch a card into a tall empty bar.
+	host.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	host.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	host.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	host.clip_contents = true
 	host.add_theme_stylebox_override("panel", _chip_frame(acting, targeted, team))
 	var tex := _portrait_for(unit)
-	var tag_h := 16.0 if px.y >= 80.0 else 0.0
 	if tex != null:
 		var plate := TextureRect.new()
 		plate.texture = tex
 		plate.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		plate.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		plate.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 		plate.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 		plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		plate.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 		plate.offset_left = 4
 		plate.offset_top = 4
 		plate.offset_right = -4
-		plate.offset_bottom = -(4.0 + tag_h)
+		plate.offset_bottom = -4
 		host.add_child(plate)
 	else:
 		var label := Label.new()
@@ -1972,44 +2313,20 @@ func _turn_chip(unit: Dictionary, acting: bool, targeted: bool, is_you: bool, px
 		label.add_theme_color_override("font_color", CREAM)
 		label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		host.add_child(label)
-	if tag_h > 0.0:
-		var bar := ColorRect.new()
-		bar.color = team
-		bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		bar.anchor_left = 0.0
-		bar.anchor_right = 1.0
-		bar.anchor_top = 1.0
-		bar.anchor_bottom = 1.0
-		bar.offset_left = 4
-		bar.offset_right = -4
-		bar.offset_bottom = -4
-		bar.offset_top = -(4.0 + tag_h)
-		host.add_child(bar)
-		var tag := Label.new()
-		tag.name = "SeatTag"
-		tag.text = "YOU" if is_you else "FOE"
-		tag.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		tag.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		tag.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		tag.add_theme_font_size_override("font_size", 11)
-		tag.add_theme_color_override("font_color", Color(0.98, 0.96, 0.9))
-		tag.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		bar.add_child(tag)
 	host.set_meta("chip_seat", int(unit.get("seat", -1)))
 	host.set_meta("chip_class", str(unit.get("class_id", "")))
 	return host
 
 
-func _restyle_turn_chip(host: Control, unit: Dictionary, acting: bool, targeted: bool, is_you: bool, px: Vector2) -> void:
+func _restyle_turn_chip(host: Control, unit: Dictionary, acting: bool, targeted: bool, _is_you: bool, px: Vector2) -> void:
 	if host == null:
 		return
 	var team := TEAM_RED if unit_team(unit) == 1 else TEAM_BLUE
 	host.custom_minimum_size = px
 	host.size = px
+	host.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	host.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	host.add_theme_stylebox_override("panel", _chip_frame(acting, targeted, team))
-	var tag := host.find_child("SeatTag", true, false) as Label
-	if tag != null:
-		tag.text = "YOU" if is_you else "FOE"
 
 
 func _chip_frame(acting: bool, targeted: bool = false, team_color: Color = GOLD) -> StyleBoxFlat:
@@ -2051,10 +2368,149 @@ func _portrait_for(unit: Dictionary) -> Texture2D:
 		if body == null:
 			return _head_crop("res://art/characters/%s/%s_s.png" % [class_id, class_id])
 		fitted = body
-	var shown := _opaque_atlas(fitted)
+	var shown := _filled_bust(_source_image(fitted))
 	if shown != null:
 		_head_cache[key] = shown
 	return shown
+
+
+func _source_image(tex: Texture2D) -> Image:
+	if tex == null:
+		return null
+	var img := tex.get_image()
+	if img == null or img.is_empty():
+		return null
+	img = img.duplicate()
+	if img.is_compressed():
+		img.decompress()
+	if tex is AtlasTexture:
+		var region: Rect2 = (tex as AtlasTexture).region
+		if region.size.x >= 2.0 and region.size.y >= 2.0:
+			img = img.get_region(Rect2i(region))
+	return img
+
+
+## Head and chest, scaled so the figure covers the card. A loose square
+## around the sprite leaves navy padding; this crop does not.
+const _BUST_SIDE := 192
+
+
+func _filled_bust(img: Image) -> Texture2D:
+	if img == null or img.is_empty():
+		return null
+	img = img.duplicate()
+	if img.is_compressed():
+		img.decompress()
+	if img.get_format() != Image.FORMAT_RGBA8:
+		img.convert(Image.FORMAT_RGBA8)
+	var used := StripLibrary.opaque_rect(img)
+	if used.size.x < 2 or used.size.y < 2:
+		return ImageTexture.create_from_image(img)
+	var src := _bust_rect(img, used)
+	if src.size.x < 2 or src.size.y < 2:
+		return ImageTexture.create_from_image(img)
+	return ImageTexture.create_from_image(_cover_bust(img, src))
+
+
+## The solid mass of the upper body. A spear or a thin cape is not the torso.
+func _bust_rect(img: Image, used: Rect2i) -> Rect2i:
+	var y0 := used.position.y
+	var band_h := clampi(int(round(float(used.size.y) * 0.58)), 8, used.size.y)
+	var min_col := maxi(int(round(float(band_h) * 0.40)), 3)
+	var x0 := used.position.x
+	var n := used.size.x
+	var counts := PackedInt32Array()
+	counts.resize(n)
+	for i in n:
+		var count := 0
+		var x := x0 + i
+		for y in range(y0, y0 + band_h):
+			if img.get_pixel(x, y).a > 0.14:
+				count += 1
+		counts[i] = count
+	var best_l := 0
+	var best_r := n - 1
+	var best_rank := -1
+	var i := 0
+	while i < n:
+		if counts[i] < min_col:
+			i += 1
+			continue
+		var j := i
+		var gap := 0
+		var score := 0
+		var last := i
+		while j < n:
+			if counts[j] >= min_col:
+				score += counts[j]
+				last = j
+				gap = 0
+			else:
+				gap += 1
+				if gap > 2:
+					break
+			j += 1
+		var width := last - i + 1
+		var rank := score + width * width
+		if rank > best_rank:
+			best_rank = rank
+			best_l = i
+			best_r = last
+		i = last + 1
+	var left := x0 + best_l
+	var right := x0 + best_r
+	var y_limit := mini(y0 + clampi(int(round(float(used.size.y) * 0.66)), band_h, used.size.y), used.position.y + used.size.y)
+	var top := y_limit
+	var bot := -1
+	var pix_l := right
+	var pix_r := left
+	for y in range(y0, y_limit):
+		for x in range(left, right + 1):
+			if img.get_pixel(x, y).a <= 0.14:
+				continue
+			top = mini(top, y)
+			bot = y
+			pix_l = mini(pix_l, x)
+			pix_r = maxi(pix_r, x)
+	if bot < top or pix_r < pix_l:
+		return Rect2i(x0, y0, used.size.x, band_h)
+	return Rect2i(pix_l, top, pix_r - pix_l + 1, bot - top + 1)
+
+
+## Scale the bust until the head spans the frame, then crop the waist.
+func _cover_bust(img: Image, src: Rect2i) -> Image:
+	var side := _BUST_SIDE
+	var crop := img.get_region(src)
+	var head_w := _head_span(crop)
+	var scale_cover := maxf(float(side) / float(crop.get_width()), float(side) / float(crop.get_height()))
+	var scale_head := (float(side) * 0.92) / float(maxi(head_w, 1))
+	var scale := clampf(maxf(scale_head, scale_cover), scale_cover, scale_cover * 1.7)
+	var dw := maxi(int(ceil(float(crop.get_width()) * scale)), side)
+	var dh := maxi(int(ceil(float(crop.get_height()) * scale)), side)
+	crop.resize(dw, dh, Image.INTERPOLATE_LANCZOS)
+	var out := Image.create(side, side, false, Image.FORMAT_RGBA8)
+	var sx := clampi(int(round((float(dw) - float(side)) * 0.5)), 0, dw - side)
+	out.blit_rect(crop, Rect2i(sx, 0, side, side), Vector2i.ZERO)
+	return out
+
+
+func _head_span(crop: Image) -> int:
+	var band := clampi(int(round(float(crop.get_height()) * 0.42)), 4, crop.get_height())
+	var min_col := maxi(int(round(float(band) * 0.28)), 2)
+	var left := crop.get_width()
+	var right := -1
+	for x in crop.get_width():
+		var count := 0
+		for y in band:
+			if crop.get_pixel(x, y).a > 0.14:
+				count += 1
+		if count < min_col:
+			continue
+		left = mini(left, x)
+		right = maxi(right, x)
+	if right < left:
+		return crop.get_width()
+	return right - left + 1
 
 
 ## The standing card keeps a shared baseline margin. The turn chip fills with the body.
@@ -2087,9 +2543,8 @@ func _head_crop(path: String) -> Texture2D:
 	return head
 
 
-## Monster paintings sit in a padded frame: frame the whole visible creature
-## (square around its opaque pixels, top-weighted) so the turn chip shows the
-## monster, not an empty corner or its feet.
+## Dungeon paintings keep a wide matte. The card gets the creature's head
+## and chest, the same fill as a Koliseo fighter.
 func _foe_crop(path: String) -> Texture2D:
 	var key := "foe:%s" % path
 	if _head_cache.has(key) and _head_cache[key] is Texture2D:
@@ -2097,24 +2552,11 @@ func _foe_crop(path: String) -> Texture2D:
 	var tex := load(path) as Texture2D
 	if tex == null:
 		return null
-	var img := tex.get_image()
-	if img == null:
+	var shown := _filled_bust(_source_image(tex))
+	if shown == null:
 		return _head_crop(path)
-	if img.is_compressed():
-		img.decompress()
-	var used := img.get_used_rect()
-	if used.size.x <= 0 or used.size.y <= 0:
-		return _head_crop(path)
-	var side := float(maxi(used.size.x, mini(used.size.y, int(used.size.x * 1.15))))
-	var cx := float(used.position.x) + float(used.size.x) * 0.5
-	var top := float(used.position.y)
-	var region := Rect2(cx - side * 0.5, top, side, side)
-	region.position.x = clampf(region.position.x, 0.0, maxf(float(img.get_width()) - side, 0.0))
-	var atlas := AtlasTexture.new()
-	atlas.atlas = tex
-	atlas.region = region
-	_head_cache[key] = atlas
-	return atlas
+	_head_cache[key] = shown
+	return shown
 
 
 ## Top of the body. Same crop the turn chip used on the old south turnaround.
@@ -2168,6 +2610,9 @@ func _unit_card_text(unit: Dictionary, _active: bool, snap: Dictionary = {}) -> 
 		text += "\n%s" % extra
 	if meter != "":
 		text += "\n%s" % meter
+	if meter.find("Marks") < 0:
+		var marked := marks_holder(unit, snap)
+		text += "\nMarks %d" % int(marked.get("marks", 0))
 	return text
 
 
@@ -2850,10 +3295,10 @@ func _ambush_has_shade_origin() -> bool:
 
 func _make_unit_pressable(control: Control, seat: int) -> void:
 	control.mouse_filter = Control.MOUSE_FILTER_STOP
-	control.gui_input.connect(_on_unit_card_input.bind(seat))
+	control.gui_input.connect(_on_unit_card_input.bind(control, seat))
 
 
-func _on_unit_card_input(event: InputEvent, seat: int) -> void:
+func _on_unit_card_input(event: InputEvent, control: Control, seat: int) -> void:
 	if TOUCH.is_emulated_mouse(event):
 		return
 	var pressed := false
@@ -2868,6 +3313,10 @@ func _on_unit_card_input(event: InputEvent, seat: int) -> void:
 	_unit_press_seat = seat
 	_unit_press_elapsed = 0.0
 	_unit_info_shown = false
+	_unit_press_dragged = false
+	# gui_input positions are local. Drag events in _input are viewport pixels, same as scroll_horizontal.
+	_unit_press_global = control.get_global_position() + event.position
+	_unit_press_scroll = int(_turn_scroll.scroll_horizontal) if _turn_scroll != null else 0
 	set_process(true)
 	accept_event_safe()
 
@@ -2880,17 +3329,47 @@ func accept_event_safe() -> void:
 
 ## Finger / button up after a portrait press: a short tap aims the armed
 ## spell at that fighter; a hold showed the stats card, so drop it.
+func _scroll_turn_drag(event: InputEvent) -> bool:
+	if _unit_press_seat < 0 or _turn_scroll == null or _turn_strip == null:
+		return false
+	if event is InputEventMouseButton or event is InputEventScreenTouch:
+		return false
+	var pos := Vector2.ZERO
+	var moving := false
+	if event is InputEventScreenDrag:
+		pos = (event as InputEventScreenDrag).position
+		moving = true
+	elif event is InputEventMouseMotion and Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
+		pos = (event as InputEventMouseMotion).position
+		moving = true
+	if not moving:
+		return false
+	var dx := pos.x - _unit_press_global.x
+	if absf(dx) < 12.0 and not _unit_press_dragged:
+		return false
+	_unit_press_dragged = true
+	var max_scroll := maxi(int(round(_turn_strip.size.x - _turn_scroll.size.x)), 0)
+	_turn_scroll.scroll_horizontal = clampi(_unit_press_scroll - int(round(dx)), 0, max_scroll)
+	accept_event_safe()
+	return true
+
+
 func _finish_unit_press() -> void:
 	if _unit_press_seat < 0:
 		return
+	var dragged := _unit_press_dragged
 	var seat := _unit_press_seat
 	var shown := _unit_info_shown
 	_unit_press_seat = -1
 	_unit_press_elapsed = 0.0
 	_unit_info_shown = false
+	_unit_press_dragged = false
+	if dragged:
+		return
 	if shown:
 		hide_spell_tooltip()
 		return
+	focus_fighter(seat)
 	unit_card_tapped.emit(seat)
 
 
@@ -3122,10 +3601,8 @@ func claims_screen_point(point: Vector2) -> bool:
 	for panel in _banner_panels:
 		if _control_claims(panel, point):
 			return true
-	if _turn_strip != null:
-		for chip in _turn_strip.get_children():
-			if _control_claims(chip as Control, point):
-				return true
+	if _turn_scroll != null and _control_claims(_turn_scroll, point):
+		return true
 	for button in _face_buttons.values():
 		if _control_claims(button, point):
 			return true
@@ -3370,13 +3847,19 @@ func _layout_chrome(forced: Vector2 = Vector2.ZERO) -> void:
 	var margin := 8.0
 	var gap := 8.0
 	var banner_h := minf(100.0, view.y - margin * 2.0)
-	var center_h := minf(128.0, view.y - margin * 2.0)
+	var center_h := minf(168.0 if view.x >= 1400.0 else 128.0, view.y - margin * 2.0)
 	banner_h = maxf(banner_h, 1.0)
 	center_h = maxf(center_h, 1.0)
 	var top_h := center_h
 	var banner_w := 240.0
 	var center_w := 448.0
 	var inner := view.x - margin * 2.0 - gap * 2.0
+	# Phone: the turn row needs room for wide portrait cards. Side plaques stay 240.
+	if view.x >= 1400.0:
+		var room := inner - banner_w * 2.0
+		var wanted := 8.0 * 156.0 + 7.0 * 6.0 + 180.0 + 16.0
+		if room >= 448.0:
+			center_w = minf(wanted, room)
 	var need := banner_w * 2.0 + center_w
 	if inner < need:
 		var scale := inner / need
@@ -3400,23 +3883,36 @@ func _layout_chrome(forced: Vector2 = Vector2.ZERO) -> void:
 			var accent := panel.get_node_or_null("Accent") as ColorRect
 			if accent != null:
 				accent.size.y = maxf(banner_h - 16.0, 1.0)
+	var between := maxf(right_start - left_end, 1.0)
+	var slim := turn_bar_layout == TURN_BAR_SLIM
+	var slim_h := minf(SLIM_CHIP, maxf(minf(banner_h, view.y - margin * 2.0), 1.0))
 	if _resource_panel != null:
-		_resource_panel.position = Vector2(center_x, margin)
-		_resource_panel.size = Vector2(center_w, top_h)
-	for title in _banner_titles:
-		title.size.x = maxf(banner_w - 24.0, 1.0)
+		if slim:
+			_resource_panel.position = Vector2(left_end, margin)
+			_resource_panel.size = Vector2(between, slim_h)
+		else:
+			_resource_panel.position = Vector2(center_x, margin)
+			_resource_panel.size = Vector2(center_w, top_h)
+	_layout_corner_innards(banner_w, banner_h)
 	if _you_label != null:
 		var half := maxf((center_w - 24.0) * 0.5, 1.0)
 		_you_label.size = Vector2(half, 18)
 		_opp_label.position = Vector2(8.0 + half, 2)
 		_opp_label.size = Vector2(half, 18)
-	if _turn_strip != null:
-		var portrait_w := 272.0 if center_w >= 420.0 else minf(272.0, maxf(center_w * 0.62, 1.0))
-		_turn_strip.position = Vector2(4, 4)
-		_turn_strip.size = Vector2(portrait_w, maxf(center_h - 8.0, 1.0))
-		_fit_turn_chips()
-	if _turn_label != null and _turn_strip != null:
-		var text_x := _turn_strip.position.x + _turn_strip.size.x + 6.0
+	if _turn_strip != null and _turn_scroll != null:
+		var text_col := 0.0 if slim else (180.0 if center_w >= 420.0 else maxf(center_w * 0.38, 1.0))
+		var portrait_w := between if slim else maxf(center_w - text_col - 12.0, 1.0)
+		_turn_view_y = view.y
+		_turn_single_h = slim_h if slim else center_h
+		_turn_gap_x = left_end
+		_turn_gap_y = margin
+		_turn_gap_w = between
+		_turn_band = Vector2(portrait_w, slim_h if slim else maxf(center_h - 8.0, 1.0))
+		_layout_turn_row()
+		if _resource_panel != null:
+			top_h = _resource_panel.size.y
+	if _turn_label != null and _turn_scroll != null:
+		var text_x := _turn_scroll.position.x + _turn_scroll.size.x + 6.0
 		_turn_label.position = Vector2(text_x, 6)
 		_turn_label.size = Vector2(maxf(center_w - text_x - 8.0, 1.0), 20)
 		_turn_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
@@ -3424,7 +3920,8 @@ func _layout_chrome(forced: Vector2 = Vector2.ZERO) -> void:
 			var res_box := _ap_pips.get_parent() as Control
 			if res_box != null:
 				res_box.position = Vector2(text_x, 28)
-				res_box.size = Vector2(maxf(center_w - text_x - 8.0, 1.0), maxf(center_h - 36.0, 1.0))
+				var read_h := maxf(_turn_scroll.size.y - 24.0, center_h - 36.0)
+				res_box.size = Vector2(maxf(center_w - text_x - 8.0, 1.0), maxf(read_h, 1.0))
 	var text_w := center_w - 16.0
 	if _turn_label != null:
 		text_w = _turn_label.size.x
@@ -3434,7 +3931,7 @@ func _layout_chrome(forced: Vector2 = Vector2.ZERO) -> void:
 		_clock_track.size = Vector2(_clock_bar_max_width, 8)
 	var bottom_top := view.y + TOUCH.HUD_BOTTOM_OFFSET
 	if _side_column != null:
-		var side_y := margin + top_h + 8.0
+		var side_y := margin + maxf(banner_h, top_h) + 8.0
 		var room := bottom_top - side_y - 8.0
 		_side_column.position = Vector2(margin, side_y)
 		_side_column.scale = Vector2.ONE
@@ -3480,6 +3977,31 @@ func _layout_chrome(forced: Vector2 = Vector2.ZERO) -> void:
 		if _coach_label != null:
 			_coach_label.position = Vector2(16, 18)
 			_coach_label.size = Vector2(hint_w, 16)
+
+
+func _layout_corner_innards(banner_w: float, banner_h: float) -> void:
+	var bust_side := minf(84.0, maxf(banner_h - 12.0, 1.0))
+	if banner_w < bust_side + 110.0:
+		bust_side = clampf(banner_w * 0.36, 1.0, bust_side)
+	var text_x := bust_side + 14.0
+	var text_w := maxf(banner_w - text_x - 8.0, 1.0)
+	var bodies: Array[RichTextLabel] = [_kestrel_body, _ironjaw_body]
+	for i in _banner_panels.size():
+		var panel := _banner_panels[i]
+		var bust := panel.get_node_or_null("Bust") as TextureRect
+		if bust != null:
+			bust.position = Vector2(6, maxf((banner_h - bust_side) * 0.5, 0.0))
+			bust.size = Vector2(bust_side, bust_side)
+		if i < _banner_titles.size():
+			_banner_titles[i].position = Vector2(text_x, 4)
+			_banner_titles[i].size = Vector2(text_w, 22)
+		var track := panel.get_node_or_null("HpTrack") as Control
+		if track != null:
+			track.position = Vector2(text_x, 28)
+			track.size.x = text_w
+		if i < bodies.size() and bodies[i] != null:
+			bodies[i].position = Vector2(text_x - 2.0, 40)
+			bodies[i].size = Vector2(text_w + 4.0, maxf(banner_h - 44.0, 1.0))
 
 
 func _apply_turn_label_clock() -> void:
