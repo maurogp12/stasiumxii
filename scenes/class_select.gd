@@ -443,7 +443,7 @@ func _build() -> void:
 
 	var title := Label.new()
 	title.text = "STASIUM XII"
-	_apply_ui_font(title, 28, GOLD_BRIGHT)
+	_apply_ui_font(title, 20, GOLD_BRIGHT)
 	col.add_child(title)
 
 	var mode_row := HBoxContainer.new()
@@ -455,8 +455,8 @@ func _build() -> void:
 	mode_row.add_child(_mode_buttons["online"])
 	var hub_button := Button.new()
 	hub_button.text = "Back to hub"
-	hub_button.custom_minimum_size = Vector2(160, 48)
-	_apply_ui_font(hub_button, 18, CREAM)
+	hub_button.custom_minimum_size = Vector2(156, 48)
+	_apply_ui_font(hub_button, 16, CREAM)
 	hub_button.add_theme_stylebox_override("normal", _hub_return_style())
 	hub_button.add_theme_stylebox_override("hover", _hub_return_style())
 	hub_button.add_theme_stylebox_override("pressed", _stone_style(true))
@@ -477,7 +477,7 @@ func _build() -> void:
 		_size_row.add_child(b)
 
 	_prompt = Label.new()
-	_apply_ui_font(_prompt, 22, CREAM)
+	_apply_ui_font(_prompt, 16, CREAM)
 	col.add_child(_prompt)
 
 	_p1_chip = PanelContainer.new()
@@ -489,15 +489,19 @@ func _build() -> void:
 	_p1_chip_label.add_theme_color_override("font_color", Color(0.98, 0.96, 0.92))
 	_p1_chip.add_child(_p1_chip_label)
 
+	# The row sits in the leftover space so the shorter cards stay centered,
+	# with navy around them instead of stretching to the screen edge.
+	var cards_host := CenterContainer.new()
+	cards_host.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	cards_host.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	col.add_child(cards_host)
 	_cards_row = HBoxContainer.new()
-	_cards_row.add_theme_constant_override("separation", 12)
-	_cards_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_cards_row.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_cards_row.add_theme_constant_override("separation", 18)
+	_cards_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	_cards_row.resized.connect(_layout_cards)
-	col.add_child(_cards_row)
+	cards_host.add_child(_cards_row)
 	for class_id in SpellKits.LOCKED_ROSTER:
 		var card := _make_card(str(class_id))
-		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		_cards_row.add_child(card)
 
 	_join_row = HBoxContainer.new()
@@ -609,17 +613,18 @@ func _build_dedicated() -> void:
 func _mode_button(text: String, mode_id: String) -> Button:
 	var button := Button.new()
 	button.text = text
-	button.custom_minimum_size = Vector2(200, 44)
-	_apply_ui_font(button, 20, CREAM)
+	button.custom_minimum_size = Vector2(168, 48)
+	_apply_ui_font(button, 16, CREAM)
 	button.pressed.connect(choose_mode.bind(mode_id))
 	return button
 
 
 func _make_card(class_id: String) -> Panel:
 	var panel := Panel.new()
-	panel.custom_minimum_size = Vector2(180, 320)
-	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	# About 65% of the 475px height these cards grew to on a 2400x1080 phone.
+	panel.custom_minimum_size = Vector2(220, 310)
+	panel.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	panel.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	panel.focus_mode = Control.FOCUS_ALL
 	panel.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
@@ -655,7 +660,7 @@ func _make_card(class_id: String) -> Panel:
 	name_label.text = SpellKits.display_name(class_id)
 	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	name_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_apply_ui_font(name_label, 18, GOLD_BRIGHT)
+	_apply_ui_font(name_label, 16, GOLD_BRIGHT)
 	name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	name_label.anchor_left = 0.0
 	name_label.anchor_right = 1.0
