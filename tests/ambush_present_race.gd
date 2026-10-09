@@ -132,7 +132,7 @@ static func run(host: SceneTree) -> void:
 	host.eq(slashed_on_back, true, "the slash plays only after the back-tile plant")
 	host.eq(gloam.grid_position, back_cell, "contact grid is the back tile")
 	host.eq(str(gloam.facing), "E", "contact facing is toward Kestrel")
-	host.eq(int(kestrel.hp), hp_before - 26, "front Ambush deals 26 only after the plant")
+	host.eq(int(kestrel.hp), hp_before - 29, "front Ambush deals 26 + Fade's 1 Umbral only after the plant")
 	board._settle_motions()
 	host.eq(bool(stripped_hit.get("teleported", false)), false, "contact does not write teleported back onto the presented event")
 	host.eq(board._as_cell("nope"), Vector2i(-1, -1), "a failed cell read is not the origin tile")
