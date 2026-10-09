@@ -109,8 +109,16 @@ var _turn_gap_y := 8.0
 var _turn_gap_w := 0.0
 var _turn_view_y := 720.0
 var _turn_single_h := 168.0
-## Tapped fighter shown in the left (ally) or right (foe) corner card. -1 keeps the acting fighter.
+## Right-card seat for the team that is not acting. -1 keeps the first living opponent.
 var _corner_focus: Array[int] = [-1, -1]
+## Same-team peek on the left card. Cleared on the next turn and after an action.
+var _ally_peek: int = -1
+var _ally_peek_sig: String = ""
+## Seat painted in each corner after the last render. Index 0 is the left card.
+var _corner_seats: Array[int] = [-1, -1]
+## Corner plaques stay at least CORNER_CARD_H and grow when the text needs it.
+var _corner_card_h: float = CORNER_CARD_H
+var _layout_view := Vector2.ZERO
 var _pip_sig: Dictionary = {}
 var _resource_panel: Panel
 var _ui_root: Control
@@ -1074,55 +1082,8 @@ func render(snap: Dictionary, legal: Array) -> void:
 	_last_legal = legal.duplicate()
 	_deploying = is_deployment_phase(snap)
 	var units: Array = snap.get("units", [])
-	var seat0 := _unit(units, 0)
-	var seat1 := _unit(units, 1)
 	var active_seat := snap_active_seat(snap)
-	var card_active := [active_seat == 0, active_seat == 1]
-	if int(snap.get("team_size", 1)) > 1:
-		# Teams: each side card shows that team's acting fighter, else its
-		# first fighter still standing.
-		var active_unit := _unit(units, active_seat)
-		for team in 2:
-			var pick: Dictionary = {}
-			if not active_unit.is_empty() and unit_team(active_unit) == team:
-				pick = active_unit
-			if pick.is_empty():
-				for unit in units:
-					if typeof(unit) == TYPE_DICTIONARY and unit_team(unit) == team and bool(unit.get("alive", false)):
-						pick = unit
-						break
-			if not pick.is_empty():
-				if team == 0:
-					seat0 = pick
-				else:
-					seat1 = pick
-			card_active[team] = not active_unit.is_empty() and unit_team(active_unit) == team
-	# Stasis Room A has more than the Koliseo pair. The right card follows the
-	# living hostile whose turn it is, then the first one still standing.
-	if units.size() > 2 and int(snap.get("team_size", 1)) <= 1:
-		var shown: Dictionary = {}
-		var acting := _unit(units, active_seat)
-		if not acting.is_empty() and unit_team(acting) == 1:
-			shown = acting
-		if shown.is_empty() or not bool(shown.get("alive", false)):
-			for unit in units:
-				if typeof(unit) != TYPE_DICTIONARY:
-					continue
-				# A dungeon party's heroes are team 0: the right card is a foe.
-				if unit_team(unit) == 1 and bool(unit.get("alive", false)):
-					shown = unit
-					break
-		if not shown.is_empty():
-			seat1 = shown
-	seat0 = _focused_corner_unit(units, 0, seat0)
-	seat1 = _focused_corner_unit(units, 1, seat1)
-	card_active[0] = (not _deploying) and int(seat0.get("seat", -2)) == active_seat
-	card_active[1] = (not _deploying) and int(seat1.get("seat", -2)) == active_seat
-	_apply_seat_banner(0, seat0, bool(card_active[0]) and not _deploying)
-	_apply_seat_banner(1, seat1, bool(card_active[1]) and not _deploying)
-	_kestrel_body.text = _unit_card_text(seat0, bool(card_active[0]), snap)
-	_ironjaw_body.text = _unit_card_text(seat1, bool(card_active[1]), snap)
-
+	_apply_corner_cards(snap)
 	var active := _unit(units, active_seat)
 	var chrome := _unit(units, kit_seat(snap))
 	var clock_sec := turn_clock_seconds(snap)
@@ -1205,6 +1166,7 @@ func render(snap: Dictionary, legal: Array) -> void:
 	_sync_stun_badge(chrome, units, match_over)
 	# After the armed spell settles, so a legal target lights the portrait.
 	_sync_turn_strip(snap)
+	_fit_corner_cards()
 
 
 func _apply_controls(match_over: bool) -> void:
@@ -1670,20 +1632,257 @@ func _apply_seat_banner(seat: int, unit: Dictionary, acting: bool = false) -> vo
 	_paint_hp_bar(_seat_panels[seat], unit)
 
 
-## A portrait tap keeps that fighter in the matching corner card
-## (left for an ally, right for a foe) until another tap replaces them.
+## A tap on the active fighter's team peeks that ally on the left card.
+## The peek lasts until the next turn, until an action resolves, or until
+## the active portrait is tapped again. The other team stays on the right.
 func focus_fighter(seat: int) -> void:
 	var units: Array = _last_snap.get("units", [])
 	var unit := _unit(units, seat)
 	if unit.is_empty():
 		return
-	var side := 1 if unit_team(unit) == 1 else 0
-	_corner_focus[side] = seat
-	var acting := (not _deploying) and snap_active_seat(_last_snap) == seat
-	_apply_seat_banner(side, unit, acting)
-	var body := _ironjaw_body if side == 1 else _kestrel_body
-	if body != null:
-		body.text = _unit_card_text(unit, acting, _last_snap)
+	if _deploying or is_deployment_phase(_last_snap):
+		var side := 1 if unit_team(unit) == 1 else 0
+		_corner_focus[side] = seat
+		_apply_corner_cards(_last_snap)
+		return
+	var active_seat := snap_active_seat(_last_snap)
+	var active := _unit(units, active_seat)
+	if active.is_empty() or seat == active_seat:
+		_ally_peek = -1
+		_ally_peek_sig = ""
+		if active.is_empty():
+			var side := 1 if unit_team(unit) == 1 else 0
+			_corner_focus[side] = seat
+	elif unit_team(unit) == unit_team(active):
+		_ally_peek = seat
+		_ally_peek_sig = _corner_action_sig(_last_snap)
+	else:
+		_corner_focus[1] = seat
+	_apply_corner_cards(_last_snap)
+	_fit_corner_cards()
+
+
+## Hot-seat and online both land here. The left card is whoever is acting,
+## including an enemy turn. Deployment keeps the seat 0 / seat 1 plaques.
+func _apply_corner_cards(snap: Dictionary) -> void:
+	var units: Array = snap.get("units", [])
+	var pair: Array = _deployment_corner_units(units, snap) if is_deployment_phase(snap) else _combat_corner_units(units, snap)
+	var seat0: Dictionary = pair[0]
+	var seat1: Dictionary = pair[1]
+	var active_seat := snap_active_seat(snap)
+	var deploying := is_deployment_phase(snap)
+	var card_active := [
+		(not deploying) and int(seat0.get("seat", -2)) == active_seat,
+		(not deploying) and int(seat1.get("seat", -2)) == active_seat,
+	]
+	_corner_seats[0] = int(seat0.get("seat", -1))
+	_corner_seats[1] = int(seat1.get("seat", -1))
+	_apply_seat_banner(0, seat0, bool(card_active[0]))
+	_apply_seat_banner(1, seat1, bool(card_active[1]))
+	if _kestrel_body != null:
+		_kestrel_body.text = _unit_card_text(seat0, bool(card_active[0]), snap)
+	if _ironjaw_body != null:
+		_ironjaw_body.text = _unit_card_text(seat1, bool(card_active[1]), snap)
+
+
+func _deployment_corner_units(units: Array, snap: Dictionary) -> Array:
+	var seat0 := _unit(units, 0)
+	var seat1 := _unit(units, 1)
+	var active_seat := snap_active_seat(snap)
+	if int(snap.get("team_size", 1)) > 1:
+		var active_unit := _unit(units, active_seat)
+		for team in 2:
+			var pick: Dictionary = {}
+			if not active_unit.is_empty() and unit_team(active_unit) == team:
+				pick = active_unit
+			if pick.is_empty():
+				for unit in units:
+					if typeof(unit) == TYPE_DICTIONARY and unit_team(unit) == team and bool(unit.get("alive", false)):
+						pick = unit
+						break
+			if not pick.is_empty():
+				if team == 0:
+					seat0 = pick
+				else:
+					seat1 = pick
+	if units.size() > 2 and int(snap.get("team_size", 1)) <= 1:
+		var shown: Dictionary = {}
+		var acting := _unit(units, active_seat)
+		if not acting.is_empty() and unit_team(acting) == 1:
+			shown = acting
+		if shown.is_empty() or not bool(shown.get("alive", false)):
+			for unit in units:
+				if typeof(unit) != TYPE_DICTIONARY:
+					continue
+				if unit_team(unit) == 1 and bool(unit.get("alive", false)):
+					shown = unit
+					break
+		if not shown.is_empty():
+			seat1 = shown
+	seat0 = _focused_corner_unit(units, 0, seat0)
+	seat1 = _focused_corner_unit(units, 1, seat1)
+	return [seat0, seat1]
+
+
+func _combat_corner_units(units: Array, snap: Dictionary) -> Array:
+	var active_seat := snap_active_seat(snap)
+	var active := _unit(units, active_seat)
+	var sig := _corner_action_sig(snap)
+	if _ally_peek >= 0 and sig != _ally_peek_sig:
+		_ally_peek = -1
+		_ally_peek_sig = ""
+	var left := active
+	if left.is_empty():
+		left = _unit(units, 0)
+	if _ally_peek >= 0:
+		var peek := _unit(units, _ally_peek)
+		var same_team := not active.is_empty() and not peek.is_empty() and unit_team(peek) == unit_team(active)
+		if peek.is_empty() or not bool(peek.get("alive", true)) or not same_team or int(peek.get("seat", -2)) == active_seat:
+			_ally_peek = -1
+			_ally_peek_sig = ""
+		else:
+			left = peek
+	var right := _right_corner_unit(units, left, active)
+	return [left, right]
+
+
+func _right_corner_unit(units: Array, left: Dictionary, active: Dictionary) -> Dictionary:
+	var left_seat := int(left.get("seat", -2))
+	var active_team := unit_team(active) if not active.is_empty() else unit_team(left)
+	var focused_seat := _corner_focus[1] if _corner_focus.size() > 1 else -1
+	if focused_seat >= 0:
+		var focused := _unit(units, focused_seat)
+		if focused.is_empty() or not bool(focused.get("alive", true)):
+			_corner_focus[1] = -1
+		elif int(focused.get("seat", -2)) != left_seat and unit_team(focused) != active_team:
+			return focused
+	for unit in units:
+		if typeof(unit) != TYPE_DICTIONARY:
+			continue
+		if int(unit.get("seat", -2)) == left_seat or not bool(unit.get("alive", false)):
+			continue
+		if not active.is_empty() and unit_team(unit) == active_team:
+			continue
+		return unit
+	for unit in units:
+		if typeof(unit) == TYPE_DICTIONARY and int(unit.get("seat", -2)) != left_seat and bool(unit.get("alive", false)):
+			return unit
+	var fallback := _unit(units, 1 if left_seat != 1 else 0)
+	return fallback
+
+
+## Changes when a turn starts or an action resolves. A clock tick does not.
+func _corner_action_sig(snap: Dictionary) -> String:
+	var parts := PackedStringArray()
+	parts.append(str(snap_active_seat(snap)))
+	parts.append(str(int(snap.get("turn_index", 0))))
+	parts.append(str(snap.get("phase", snap.get("phase_name", ""))))
+	var rows: Array = []
+	for unit in snap.get("units", []):
+		if typeof(unit) == TYPE_DICTIONARY:
+			rows.append(unit)
+	rows.sort_custom(func(a, b) -> bool:
+		return int(a.get("seat", 0)) < int(b.get("seat", 0))
+	)
+	for unit in rows:
+		var row: Dictionary = unit
+		parts.append("%s:%s:%s:%s:%s:%s:%s" % [
+			int(row.get("seat", -1)),
+			str(row.get("pos", "")),
+			int(row.get("hp", 0)),
+			int(row.get("ap", 0)),
+			int(row.get("mp", 0)),
+			1 if bool(row.get("alive", true)) else 0,
+			str(row.get("facing", "")),
+		])
+	return "|".join(parts)
+
+
+func _chrome_view() -> Vector2:
+	if _ui_root != null and _ui_root.size.x >= 240.0 and _ui_root.size.y >= 240.0:
+		return _ui_root.size
+	var vp := get_viewport()
+	if vp != null:
+		var seen := vp.get_visible_rect().size
+		if seen.x >= 240.0 and seen.y >= 240.0:
+			return seen
+	if _layout_view.x >= 240.0 and _layout_view.y >= 240.0:
+		return _layout_view
+	return Vector2.ZERO
+
+
+## Grow both plaques together so the taller card's last line stays inside.
+func _fit_corner_cards() -> void:
+	if _kestrel_body == null or _ironjaw_body == null:
+		return
+	var view := _chrome_view()
+	if view.x >= 2.0 and view.y >= 2.0:
+		_layout_chrome(view)
+	var needed := CORNER_CARD_H
+	for body in [_kestrel_body, _ironjaw_body]:
+		var text_h := _corner_text_height(body)
+		if text_h > 1.0:
+			needed = maxf(needed, 40.0 + text_h + 16.0)
+	if view.y > 32.0:
+		needed = minf(needed, view.y - 16.0)
+	if absf(needed - _corner_card_h) < 1.0 and _banner_panels.size() > 0 and absf(_banner_panels[0].size.y - needed) < 1.0:
+		return
+	_corner_card_h = needed
+	if view.x >= 2.0 and view.y >= 2.0:
+		_layout_chrome(view)
+	elif _banner_panels.size() >= 1:
+		var width := maxf(_banner_panels[0].size.x, 240.0)
+		for panel in _banner_panels:
+			panel.size.y = needed
+		_layout_corner_innards(width, needed)
+
+
+func _corner_text_height(body: RichTextLabel) -> float:
+	if body == null:
+		return 0.0
+	var estimated := _estimate_wrapped_height(body)
+	var live := 0.0
+	if body.is_inside_tree():
+		live = body.get_content_height()
+	if live > 1.0 and estimated > 1.0:
+		return maxf(live, estimated)
+	if live > 1.0:
+		return live
+	# Bold bbcode is wider than the parsed string. Leave room for the wrap.
+	return estimated * 1.12
+
+
+func _estimate_wrapped_height(body: RichTextLabel) -> float:
+	var text := body.get_parsed_text()
+	if text.strip_edges() == "":
+		text = _strip_bbcode(body.text)
+	if text.strip_edges() == "":
+		return 0.0
+	var width := body.size.x - 4.0
+	if width < 40.0:
+		width = 136.0
+	var font := body.get_theme_font("normal_font")
+	if font == null:
+		font = ThemeDB.fallback_font
+	var font_size := body.get_theme_font_size("normal_font_size")
+	if font_size <= 0:
+		font_size = 13
+	var line_h := maxf(font.get_height(font_size), 1.0)
+	var total := 0.0
+	var paragraphs := text.split("\n")
+	for i in paragraphs.size():
+		var paragraph := paragraphs[i]
+		var block := font.get_multiline_string_size(paragraph, HORIZONTAL_ALIGNMENT_LEFT, width, font_size)
+		total += maxf(block.y, line_h)
+		if i < paragraphs.size() - 1:
+			total += 2.0
+	return total
+
+
+func _strip_bbcode(raw: String) -> String:
+	var regex := RegEx.new()
+	regex.compile("\\[[^\\]]*\\]")
+	return regex.sub(raw, "", true)
 
 
 func _focused_corner_unit(units: Array, side: int, fallback: Dictionary) -> Dictionary:
@@ -3936,9 +4135,10 @@ func _layout_chrome(forced: Vector2 = Vector2.ZERO) -> void:
 	# every plaque and clip the captions. Keep the last good layout.
 	if forced.x < 2.0 and (view.x < 240.0 or view.y < 240.0):
 		return
+	_layout_view = view
 	var margin := 8.0
 	var gap := 8.0
-	var banner_h := minf(CORNER_CARD_H, view.y - margin * 2.0)
+	var banner_h := minf(_corner_card_h, view.y - margin * 2.0)
 	var center_h := minf(168.0 if view.x >= 1400.0 else 128.0, view.y - margin * 2.0)
 	banner_h = maxf(banner_h, 1.0)
 	center_h = maxf(center_h, 1.0)

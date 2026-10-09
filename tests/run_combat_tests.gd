@@ -18,6 +18,7 @@ func _initialize() -> void:
 func _finish_shade_board() -> void:
 	await _test_shade_markers_survive_rebuild()
 	await _test_ambush_present_race()
+	await _test_corner_card_live_fit()
 	print("Combat tests: %d passed, %d failed" % [_passed, _failed])
 	_sim.free()
 	quit(1 if _failed > 0 else 0)
@@ -125,6 +126,7 @@ func _run() -> void:
 	_test_aim_hit_preview()
 	_test_aim_feel_chrome()
 	_test_hud_marks_and_impact_pips()
+	_test_active_card_resets_to_actor()
 	_test_preview_cast()
 	_test_legal_moves_after_advance()
 	_test_walk_facing_follows_last_hop()
@@ -5382,7 +5384,7 @@ func _test_shoulder_lava_burn_locked() -> void:
 	var hud := CombatHUD.new()
 	hud._build()
 	hud.render(result["snapshot"], [])
-	truthy(str(hud._kestrel_body.text).contains("[b]BURN[/b] ×1 2"), "Kestrel card shows Burn stack and turns")
+	truthy(_card_text(hud, 0).contains("[b]BURN[/b] ×1 2"), "Kestrel card shows Burn stack and turns")
 	hud.free()
 	var pawn := Pawn.new()
 	pawn.apply_snapshot(_unit(0), 1)
@@ -5826,7 +5828,7 @@ func _test_stun_hud_greys_walk_face_spells() -> void:
 	hud._build()
 	hud.render(_sim.snapshot(), _sim.legal_intents(1))
 	eq(hud.stun_badge_visible(), false, "center STUN badge follows the active seat")
-	truthy(str(hud._kestrel_body.text).contains("[b]STUN[/b]"), "Kestrel card shows STUN after the skipped turn")
+	truthy(_card_text(hud, 0).contains("[b]STUN[/b]"), "Kestrel card shows STUN after the skipped turn")
 	eq(hud.walk_suppressed(), false, "Ironjaw Walk is not greyed after the skip")
 	eq(hud.face_suppressed(), false, "Ironjaw Face is not greyed after the skip")
 	eq(hud.end_turn_enabled(), true, "Ironjaw End Turn stays enabled")
@@ -6062,7 +6064,7 @@ func _test_shoulder_impact_lava_burn_chrome() -> void:
 	hud.show_toast(lava_toast)
 	eq(hud.toast_caption(), "+1 Impact  Lava - Burn", "HUD shows the lava Burn toast")
 	hud.render(lava["snapshot"], [])
-	truthy(str(hud._kestrel_body.text).contains("[b]BURN[/b] ×1 2"), "host card shows Burn stack and duration")
+	truthy(_card_text(hud, 0).contains("[b]BURN[/b] ×1 2"), "host card shows Burn stack and duration")
 	var replica_script := load("res://backend/combat_sim.gd")
 	var replica = replica_script.new()
 	replica.apply_host_snapshot(lava["snapshot"])
@@ -6070,7 +6072,7 @@ func _test_shoulder_impact_lava_burn_chrome() -> void:
 	var guest_hud := CombatHUD.new()
 	guest_hud._build()
 	guest_hud.render(guest_snap, [])
-	eq(str(guest_hud._kestrel_body.text), str(hud._kestrel_body.text), "guest card matches the host Burn line")
+	eq(_card_text(guest_hud, 0), _card_text(hud, 0), "guest card matches the host Burn line")
 	var host_pawn := Pawn.new()
 	host_pawn.apply_snapshot(lava["snapshot"]["units"][0], 1, lava["snapshot"]["last_events"])
 	var guest_pawn := Pawn.new()
@@ -6439,6 +6441,162 @@ func _test_hud_marks_and_impact_pips() -> void:
 	hud.free()
 
 
+## Mauro 9 Oct 2026: the left card follows the active fighter. An ally tap is a
+## peek that dies on the next turn and after an action. Works for hot-seat,
+## online, and the enemy team's turn. The corner plaque grows to fit Gloam.
+func _test_active_card_resets_to_actor() -> void:
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"team_size": 3,
+		"classes": ["ironjaw", "gloam", "mender", "kestrel", "bastion", "bastion"],
+	})
+	var iron := _class_seat_of("ironjaw", 0)
+	var mender := _class_seat_of("mender", 0)
+	var gloam := _class_seat_of("gloam", 1)
+	eq(iron >= 0 and mender >= 0 and gloam >= 0, true, "the 3v3 fixture has Ironjaw, Mender, and Gloam")
+	var guard := 0
+	while int(_sim.snapshot()["active_seat"]) != iron and guard < 8:
+		eq(_sim.submit({"type": "end_turn"})["ok"], true, "advance to Ironjaw")
+		guard += 1
+	eq(int(_sim.snapshot()["active_seat"]), iron, "Ironjaw is the active fighter")
+	var hud := CombatHUD.new()
+	hud._build()
+	hud.render(_sim.snapshot(), [])
+	eq(hud._banner_titles[0].text, "Ironjaw", "the left card opens on the active fighter")
+	truthy(_card_text(hud, iron).contains("Impact"), "Ironjaw's card keeps Impact")
+	hud.focus_fighter(mender)
+	eq(hud._banner_titles[0].text, "Mender", "tapping an ally peeks that ally on the left card")
+	truthy(_card_text(hud, mender).contains(SpellKits.resource_label("pulse")), "the peek shows Mender's stack")
+	hud.render(_sim.snapshot(), [])
+	eq(hud._banner_titles[0].text, "Mender", "a refresh of the same snapshot keeps the peek")
+	var facing := str(_unit(iron).get("facing", "S"))
+	var turned := "N" if facing != "N" else "E"
+	eq(_sim.submit({"type": "face", "dir": turned, "seat": iron})["ok"], true, "Ironjaw can face")
+	hud.render(_sim.snapshot(), [])
+	eq(int(_sim.snapshot()["active_seat"]), iron, "facing does not hand the turn off")
+	eq(hud._banner_titles[0].text, "Ironjaw", "a resolved action puts the active fighter back on the left card")
+	hud.focus_fighter(mender)
+	eq(hud._banner_titles[0].text, "Mender", "the ally peek can be opened again")
+	hud.focus_fighter(iron)
+	eq(hud._banner_titles[0].text, "Ironjaw", "tapping the active portrait returns immediately")
+	hud.focus_fighter(mender)
+	eq(_sim.submit({"type": "end_turn", "seat": iron})["ok"], true, "Ironjaw ends the turn")
+	hud.render(_sim.snapshot(), [])
+	var nxt := int(_sim.snapshot()["active_seat"])
+	eq(nxt != iron, true, "the turn moved on")
+	eq(hud._banner_titles[0].text, str(_unit(nxt).get("name", "")), "the next turn starts on that fighter's card")
+	eq(hud._banner_titles[0].text == "Mender" and nxt != mender, false, "the previous peek does not survive the turn start")
+	# Enemy turn: the left card is whoever is acting, hot-seat and online.
+	var enemy_snap: Dictionary = _sim.snapshot().duplicate(true)
+	enemy_snap["active_seat"] = gloam
+	enemy_snap["turn_index"] = int(enemy_snap.get("turn_index", 1)) + 1
+	hud.render(enemy_snap, [])
+	eq(hud._banner_titles[0].text, "Gloam", "an enemy turn fills the left card with that fighter")
+	eq(int(hud._corner_seats[0]), gloam, "the left seat is the acting foe")
+	eq(int(hud._corner_seats[1]) != gloam, true, "the right card is the other side")
+	var online: Dictionary = enemy_snap.duplicate(true)
+	online["local_seat"] = iron
+	online["net"] = {"mode": "client", "dedicated": true, "local_seat": iron, "active_seat": gloam}
+	hud.render(online, [])
+	eq(hud._banner_titles[0].text, "Gloam", "an online enemy turn still shows the active fighter on the left")
+	eq(CombatHUD.is_local_turn(online), false, "the online snapshot is the opponent's turn")
+	hud.free()
+
+	var grown := CombatHUD.new()
+	grown._build()
+	grown._layout_chrome(Vector2(1600, 720))
+	var worst: Dictionary = _sim.snapshot().duplicate(true)
+	worst["active_seat"] = iron
+	worst.erase("shade_tokens")
+	for unit in worst["units"]:
+		if typeof(unit) != TYPE_DICTIONARY or int(unit.get("seat", -1)) != gloam:
+			continue
+		unit["umbral"] = 2
+		unit["shades"] = 2
+		unit["invisible"] = true
+		unit["invisible_turns"] = 2
+		unit["marks"] = 5
+		unit["stunned"] = true
+		unit["stun_remaining"] = 1
+		unit["burn_stacks"] = 2
+		unit["burn_remaining"] = 3
+		unit["slow_stacks"] = 1
+		unit["slow_remaining"] = 2
+		unit["breathless_stacks"] = 1
+		unit["breathless_remaining"] = 2
+		unit["frozen_stacks"] = 1
+		unit["frozen_remaining"] = 1
+		unit["electro_stacks"] = 1
+		unit["electro_remaining"] = 1
+		unit["residue"] = "air"
+		unit["residue_turns"] = 2
+		unit["grounded"] = true
+		unit["water_slow"] = true
+		unit["pinned"] = true
+		unit["sparked"] = true
+	grown.render(worst, [])
+	var gloam_body := grown._ironjaw_body if int(grown._corner_seats[1]) == gloam else grown._kestrel_body
+	var parsed := gloam_body.get_parsed_text()
+	truthy(parsed.contains("Umbral") and parsed.contains("2/4"), "the worst-case card shows Umbral 2/4")
+	truthy(parsed.contains("Shades") and parsed.contains("2/2"), "the worst-case card shows Shades 2/2")
+	truthy(parsed.contains("Marks") and parsed.contains("5/5"), "the worst-case card shows Marks")
+	truthy(parsed.contains("AIR") and parsed.contains("residue"), "the worst-case card shows the element line")
+	truthy(parsed.contains("STUN") and parsed.contains("BURN"), "the worst-case card shows the status lines")
+	var text_h := grown._corner_text_height(gloam_body)
+	truthy(gloam_body.size.y + 1.0 >= text_h, "Gloam's lines fit the card body (%s vs %s)" % [text_h, gloam_body.size.y])
+	truthy(grown._banner_panels[0].size.y + 1.0 >= 40.0 + text_h, "the plaque grows to cover the text (%s)" % grown._banner_panels[0].size.y)
+	truthy(grown._banner_panels[0].size.y > CombatHUD.CORNER_CARD_H, "a stacked Gloam card grows past the short plaque")
+	eq(grown._banner_panels[0].size.y, grown._banner_panels[1].size.y, "both corner cards share the grown height")
+	grown.free()
+
+
+func _test_corner_card_live_fit() -> void:
+	var hud := CombatHUD.new()
+	root.add_child(hud)
+	hud._build()
+	var iron := {
+		"seat": 0, "team": 0, "class_id": "ironjaw", "name": "Ironjaw",
+		"alive": true, "hp": 90, "max_hp": 90, "ap": 6, "mp": 3, "impact": 1,
+	}
+	var gloam := {
+		"seat": 1, "team": 1, "class_id": "gloam", "name": "Gloam",
+		"alive": true, "hp": 70, "max_hp": 70, "ap": 4, "mp": 2,
+		"umbral": 2, "shades": 2, "invisible": true, "invisible_turns": 2, "marks": 5,
+		"stunned": true, "stun_remaining": 1,
+		"burn_stacks": 2, "burn_remaining": 3,
+		"slow_stacks": 1, "slow_remaining": 2,
+		"breathless_stacks": 1, "breathless_remaining": 2,
+		"frozen_stacks": 1, "frozen_remaining": 1,
+		"electro_stacks": 1, "electro_remaining": 1,
+		"residue": "air", "residue_turns": 2,
+		"grounded": true, "water_slow": true, "pinned": true, "sparked": true,
+	}
+	var snap := {"team_size": 1, "active_seat": 0, "turn_index": 1, "phase": "TURN_1", "units": [iron, gloam]}
+	hud._layout_chrome(Vector2(1600, 720))
+	hud.render(snap, [])
+	await process_frame
+	await process_frame
+	hud._fit_corner_cards()
+	var body := hud._ironjaw_body
+	var live := body.get_content_height()
+	truthy(live > 1.0, "the Gloam card measured its text (%s)" % live)
+	truthy(live <= body.size.y + 1.0, "live Gloam text fits the body (%s vs %s)" % [live, body.size.y])
+	truthy(body.get_parsed_text().contains("Umbral") and body.get_parsed_text().contains("Shades"), "live card keeps Umbral and Shades")
+	truthy(hud._banner_panels[1].size.y > CombatHUD.CORNER_CARD_H, "live plaque grew for the stacked Gloam card")
+	hud.free()
+
+
+func _class_seat_of(class_id: String, team: int) -> int:
+	for unit in _sim.snapshot().get("units", []):
+		if typeof(unit) != TYPE_DICTIONARY:
+			continue
+		if str(unit.get("class_id", "")) == class_id and int(unit.get("team", -1)) == team:
+			return int(unit.get("seat", -1))
+	return -1
+
+
 func _hud_from_snap(snap: Dictionary) -> CombatHUD:
 	var hud := CombatHUD.new()
 	hud._build()
@@ -6446,8 +6604,16 @@ func _hud_from_snap(snap: Dictionary) -> CombatHUD:
 	return hud
 
 
+func _card_text(hud: CombatHUD, seat: int) -> String:
+	if hud._corner_seats.size() > 0 and int(hud._corner_seats[0]) == seat:
+		return str(hud._kestrel_body.text)
+	if hud._corner_seats.size() > 1 and int(hud._corner_seats[1]) == seat:
+		return str(hud._ironjaw_body.text)
+	return str(hud._kestrel_body.text) if seat == 0 else str(hud._ironjaw_body.text)
+
+
 func _marks_row(hud: CombatHUD, seat: int) -> String:
-	var body := str(hud._kestrel_body.text) if seat == 0 else str(hud._ironjaw_body.text)
+	var body := _card_text(hud, seat)
 	var at := body.find("Marks")
 	if at < 0:
 		return ""
@@ -6479,7 +6645,7 @@ func _chip_marks(hud: CombatHUD, seat: int) -> String:
 
 
 func _impact_row(hud: CombatHUD, seat: int) -> String:
-	var body := str(hud._kestrel_body.text) if seat == 0 else str(hud._ironjaw_body.text)
+	var body := _card_text(hud, seat)
 	var at := body.find("Impact")
 	if at < 0:
 		return ""
@@ -6498,7 +6664,7 @@ func _impact_row(hud: CombatHUD, seat: int) -> String:
 
 
 func _pip_row(hud: CombatHUD, seat: int, label: String) -> String:
-	var body := str(hud._kestrel_body.text) if seat == 0 else str(hud._ironjaw_body.text)
+	var body := _card_text(hud, seat)
 	var at := body.find(label)
 	if at < 0:
 		return ""
