@@ -2362,7 +2362,7 @@ func _turn_chip(unit: Dictionary, acting: bool, targeted: bool, _is_you: bool, p
 	return host
 
 
-func _restyle_turn_chip(host: Control, _unit: Dictionary, acting: bool, targeted: bool, _is_you: bool, _px: Vector2) -> void:
+func _restyle_turn_chip(host: Control, unit: Dictionary, acting: bool, targeted: bool, _is_you: bool, px: Vector2) -> void:
 	if host == null:
 		return
 	var team := TEAM_RED if unit_team(unit) == 1 else TEAM_BLUE
