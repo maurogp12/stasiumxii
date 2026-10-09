@@ -52,7 +52,7 @@ static func run(host: SceneTree) -> void:
 	host.eq(bool(resolved.get("ok", false)), true, "ambush race hit resolves")
 	var sim_hit := _ambush_hit(resolved.get("events", []))
 	host.eq(str(sim_hit.get("type", "")), "hit", "ambush race connects")
-	host.eq(int(sim_hit.get("damage", 0)), 26, "front Ambush is 26")
+	host.eq(int(sim_hit.get("damage", 0)), 29, "front Ambush is 26 + Fade's 1 Umbral")
 	host.eq(bool(sim_hit.get("teleported", false)), true, "the sim still marks the hit as teleported")
 	host.eq(sim_hit.get("destination", Vector2i(-1, -1)), back_cell, "the sim lands on the back tile")
 	# A second presenter (net echo, coach from last_events) can drop the flag.
