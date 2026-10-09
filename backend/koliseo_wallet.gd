@@ -65,6 +65,8 @@ static func now_unix() -> int:
 
 
 static func load_saved() -> KoliseoWallet:
+	# The epoch wipes hero / gear / Stills once. This wallet file is not part of that.
+	ProgressEpoch.ensure()
 	var wallet := KoliseoWallet.new()
 	if not FileAccess.file_exists(save_path):
 		return wallet

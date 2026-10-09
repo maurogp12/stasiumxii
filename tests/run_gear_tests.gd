@@ -236,50 +236,161 @@ func _test_loot_by_star() -> void:
 	eq(a == GearBag.icon("sheaf.chest"), true, "icons are cached so result/inventory draws keep them alive")
 
 
-## TEMPORARY balance-test kit (Mauro 30 Sep 2026). Grant: every piece at +5,
-## 99 fragments of every Still, once. Revoke: only the tagged pieces / granted
-## fragments go, real loot stays.
+## The balance-test kit stays off. ProgressEpoch is the one-time fresh start.
 func _test_temporary_kit() -> void:
 	var TL := preload("res://backend/test_loadout.gd")
+	eq(TL.ACTIVE, false, "the test kit is off")
+	var plain_hero := HeroProgress.new()
+	eq(TL.sync_hero(plain_hero), false, "kit off does not grant levels")
+	eq(plain_hero.classes.is_empty(), true, "no class rows are invented")
+	eq(plain_hero.test_grant, false, "no hero grant flag")
+	var kept_level := HeroProgress.new()
+	kept_level.test_grant = true
+	kept_level.test_backup = {"kestrel": {"xp": 10, "level": 4, "spent": {}}}
+	kept_level.record("kestrel")["level"] = 30
+	eq(TL.sync_hero(kept_level), true, "a leftover grant flag is cleared")
+	eq(kept_level.level_of("kestrel"), 30, "test_backup is not copied back onto classes")
+	eq(kept_level.test_grant, false, "hero grant flag cleared")
+	eq(kept_level.test_backup, {}, "hero backup discarded")
+	eq(TL.sync_hero(kept_level), false, "a second hero sync does not grant")
 	var bag := GearBag.new()
 	var real := bag.add_item("sheaf", "head", 1)
-	if TL.ACTIVE:
-		eq(TL.sync_bag(bag), true, "the kit is granted")
-		eq(bag.items.size(), 1 + GearBag.FAMILY_ORDER.size() * GearBag.SLOTS.size(), "every family × slot is added")
-		eq(bag.items.filter(func(it): return bool(it.get("test", false)) and int(it["plus"]) == GearBag.PLUS_CAP).size(), GearBag.FAMILY_ORDER.size() * GearBag.SLOTS.size(), "all granted pieces are max fusion +5")
-		eq(TL.sync_bag(bag), false, "granted only once")
-		var round := GearBag.new()
-		round.from_dict(bag.to_dict())
-		eq(round.test_grant and round.items.filter(func(it): return bool(it.get("test", false))).size() == 30, true, "the grant survives a save")
-		var vault := StillVault.new()
-		TL.sync_vault(vault)
-		eq(vault.count("mercy"), TL.STILL_FRAGMENTS, "every Still gets 99 fragments")
-		var hero := HeroProgress.new()
-		hero.add_xp("kestrel", 500)
-		var before_level := hero.level_of("kestrel")
-		TL.sync_hero(hero)
-		for cid in HeroProgress.GROWTH:
-			eq(hero.level_of(cid), 30, "%s is level 30" % cid)
-			if TL.SPEND_DUEL_BUILDS:
-				eq(hero.points_free(cid), 0, "%s spent all 58 points on the duel build" % cid)
-				eq(hero.record(cid)["spent"], TL.DUEL_BUILDS[cid], "%s spent the sim_duels BUILDS row" % cid)
-			else:
-				eq(hero.points_free(cid), 58, "%s has all 58 characteristic points free" % cid)
-		eq(int(hero.test_backup["kestrel"]["level"]), before_level, "the real progress is backed up")
-	# Revoke path (what ACTIVE = false does on the next load).
+	eq(TL.sync_bag(bag), false, "kit off does not grant gear")
+	eq(bag.items.size(), 1, "the real piece is the only one")
 	bag.test_grant = true
 	for slot in GearBag.SLOTS:
 		var uid := bag.add_item("duskbrand", slot, 5)
 		bag.items[bag.find(uid)]["test"] = true
 		bag.equip(uid)
-	var kept: Array = bag.items.filter(func(it): return not bool(it.get("test", false)))
-	for slot in bag.equipped.keys():
-		var idx := bag.find(int(bag.equipped[slot]))
-		if idx != -1 and bool(bag.items[idx].get("test", false)):
-			bag.equipped.erase(slot)
-	bag.items = bag.items.filter(func(it): return not bool(it.get("test", false)))
-	eq(bag.find(real) != -1 and bag.items.size() == kept.size(), true, "revoking keeps the real loot")
+	eq(TL.sync_bag(bag), true, "tagged pieces are stripped")
+	eq(bag.find(real) != -1 and bag.items.size() == 1, true, "revoking keeps the real loot")
 	eq(bag.equipped.is_empty(), true, "revoking unequips the test pieces")
+	eq(bag.test_grant, false, "bag grant flag cleared")
+	eq(TL.sync_bag(bag), false, "a second bag sync does not grant")
+	var tagged := GearBag.new()
+	var test_uid := tagged.add_item("duskbrand", "weapon", 5)
+	tagged.items[tagged.find(test_uid)]["test"] = true
+	tagged.equip(test_uid)
+	var real_uid := tagged.add_item("sheaf", "head", 0)
+	tagged.equip(real_uid)
+	var worn: Array = tagged.fight_gear()["worn"]
+	eq(worn.size(), 1, "fight gear omits test pieces")
+	eq(str(worn[0]["item_id"]), "sheaf.head", "the real worn piece is sent")
+	eq(worn[0].has("test"), false, "the sent piece has no test flag")
+	var cleaned := GearBag.clean_fight_gear({"worn": [
+		{"item_id": "sheaf.head", "plus": 5, "test": true},
+		{"item_id": "sheaf.chest", "plus": 1},
+	]})
+	eq(cleaned["worn"].size(), 1, "clean_fight_gear drops test pieces")
+	eq(str(cleaned["worn"][0]["item_id"]), "sheaf.chest", "clean_fight_gear keeps the real piece")
+	var vault := StillVault.new()
+	eq(TL.sync_vault(vault), false, "kit off does not grant Stills")
+	vault.fragments["cut"] = 20
+	vault.test_grant["cut"] = 5
+	eq(TL.sync_vault(vault), true, "granted fragments are taken back")
+	eq(vault.count("cut"), 15, "fragments the player earned stay")
+	eq(vault.test_grant, {}, "still grant cleared")
+	eq(TL.sync_vault(vault), false, "a second vault sync does not grant")
+	_test_progress_epoch()
+
+
+func _remove_save(path: String) -> void:
+	if FileAccess.file_exists(path):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
+
+
+func _test_progress_epoch() -> void:
+	var marker := "user://test_progress_epoch.json"
+	var wallet_path := "user://test_epoch_wallet.json"
+	_remove_save(marker)
+	_remove_save(wallet_path)
+	var prev_marker := ProgressEpoch.marker_path
+	var prev_wallet := KoliseoWallet.save_path
+	ProgressEpoch.marker_path = marker
+	ProgressEpoch.enforce_real_paths = true
+	var hero := HeroProgress.new()
+	for cid in HeroProgress.GROWTH:
+		hero.record(cid)["level"] = 30
+		hero.record(cid)["spent"] = {"mastery": 4}
+		hero.record(cid)["elements"] = {"pair": ["air", "fire"], "spells": {}}
+	hero.test_grant = true
+	hero.test_backup = {"kestrel": {"level": 4, "xp": 1, "spent": {}}}
+	hero.save()
+	var bag := GearBag.new()
+	var uid := bag.add_item("sheaf", "head", 5)
+	bag.equip(uid)
+	bag.attune["sheaf"] = "Fire"
+	bag.test_grant = true
+	bag.loot_day = 4242
+	bag.loot_clears_today = 9
+	bag.save()
+	var vault := StillVault.new()
+	vault.fragments = {"mercy": 99}
+	vault.socket = "mercy"
+	vault.mode = "overwound"
+	vault.test_grant = {"mercy": 99}
+	vault.save()
+	KoliseoWallet.save_path = wallet_path
+	var wallet := KoliseoWallet.new()
+	wallet.coins = 12
+	wallet.trophies = 40
+	wallet.tonics = 2
+	wallet.day = 7
+	wallet.wins_today = 1
+	wallet.total_wins = 9
+	wallet.owned = {"pet.mote": 1, "cos.frame.iron": 1, "food.hearth": 3}
+	wallet.save()
+	var wallet_before: Dictionary = wallet.to_dict()
+	eq(ProgressEpoch.ensure(), false, "redirected test paths do not run the epoch")
+	eq(HeroProgress.load_saved().level_of("kestrel"), 30, "a skipped epoch leaves the seeded level")
+	ProgressEpoch.enforce_real_paths = false
+	eq(ProgressEpoch.ensure(), true, "the first launch applies the epoch")
+	eq(ProgressEpoch.saved_epoch(), ProgressEpoch.EPOCH, "the marker records the epoch")
+	eq(ProgressEpoch.ensure(), false, "the marker blocks a second pass")
+	var wiped := HeroProgress.load_saved()
+	for cid in HeroProgress.GROWTH:
+		eq(wiped.level_of(cid), 1, "%s is the level floor (1)" % cid)
+		eq(wiped.xp_of(cid), 0, "%s xp is 0" % cid)
+		eq(wiped.record(cid)["spent"], {}, "%s has no spent points" % cid)
+		eq(wiped.points_free(cid), 0, "%s has no free points at level 1" % cid)
+		eq(wiped.elements_of(cid), {}, "%s elements are unset" % cid)
+	eq(wiped.test_grant, false, "epoch clears the hero grant")
+	eq(wiped.test_backup, {}, "epoch discards the hero backup")
+	var bag_back := GearBag.load_saved()
+	eq(bag_back.items.is_empty(), true, "epoch wipes gear")
+	eq(bag_back.equipped.is_empty(), true, "epoch wipes equipped")
+	eq(bag_back.attune.is_empty(), true, "epoch wipes attune")
+	eq(bag_back.test_grant, false, "epoch clears the bag grant")
+	eq(bag_back.loot_day, 4242, "loot day is kept")
+	eq(bag_back.loot_clears_today, GearBag.LOOT_CLEARS_PER_DAY, "loot clears clamp to the daily cap")
+	eq(bag_back.next_uid, 1, "uids restart after the wipe")
+	var still_back := StillVault.load_saved()
+	eq(still_back.fragments.is_empty(), true, "epoch wipes Still fragments")
+	eq(still_back.socket, "", "epoch clears the socket")
+	eq(still_back.mode, "intact", "epoch resets the Still mode")
+	eq(still_back.test_grant, {}, "epoch clears the Still grant")
+	eq(KoliseoWallet.load_saved().to_dict(), wallet_before, "wallet coins, trophies, tonics, and cosmetics stay")
+	bag_back.loot_day = -8
+	bag_back.loot_clears_today = -3
+	bag_back.save()
+	eq(ProgressEpoch.reset_saves(), true, "reset_saves writes the three files")
+	var sane := GearBag.load_saved()
+	eq(sane.loot_day, -1, "a nonsense loot day becomes unset")
+	eq(sane.loot_clears_today, 0, "negative loot clears become 0")
+	eq(KoliseoWallet.load_saved().to_dict(), wallet_before, "reset_saves does not write the wallet")
+	var earned := HeroProgress.load_saved()
+	earned.add_xp("ironjaw", 40)
+	earned.save()
+	eq(ProgressEpoch.ensure(), false, "xp earned after the marker is not wiped")
+	eq(HeroProgress.load_saved().xp_of("ironjaw"), 40, "post-epoch xp stays")
+	eq(HeroProgress.load_saved().level_of("ironjaw"), 1, "40 xp is still level 1")
+	ProgressEpoch.enforce_real_paths = true
+	ProgressEpoch.marker_path = prev_marker
+	KoliseoWallet.save_path = prev_wallet
+	_remove_save(marker)
+	_remove_save(wallet_path)
+	_remove_save(HeroProgress.save_path)
+	_remove_save(StillVault.save_path)
 
 
 func _test_save_roundtrip() -> void:
@@ -593,6 +704,14 @@ func _test_gear_in_fights() -> void:
 	var cfg: Dictionary = net._authority_gear_config({"seat_gear": {0: {"worn": _worn("duskbrand", GearBag.SLOTS)}}})
 	eq(cfg["seat_gear"].has(0), false, "smuggled seat 0 gear is dropped")
 	eq(cfg["seat_gear"][1]["worn"].size(), 2, "seat 1 keeps the gear it sent")
+	net.accept_seat_gear(1, {"worn": [
+		{"item_id": "sheaf.head", "plus": 5, "test": true},
+		{"item_id": "sheaf.chest", "plus": 0},
+	]})
+	eq((net._seat_gear[1]["worn"] as Array).size(), 1, "dedicated server drops test-tagged gear")
+	eq(str(net._seat_gear[1]["worn"][0]["item_id"]), "sheaf.chest", "dedicated server keeps the real piece")
+	net.accept_seat_gear(0, {"worn": [{"item_id": "duskbrand.weapon", "plus": 5, "test": true}]})
+	eq((net._seat_gear[0]["worn"] as Array).size(), 0, "a seat of only test gear arrives empty")
 	net.mode = net.Mode.HOTSEAT
 	net._seat_gear.clear()
 	net.free()

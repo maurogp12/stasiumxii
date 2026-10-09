@@ -112,6 +112,7 @@ static func is_id(id: String) -> bool:
 
 
 static func load_saved() -> StillVault:
+	ProgressEpoch.ensure()
 	var vault := StillVault.new()
 	if not FileAccess.file_exists(save_path):
 		return _with_test_loadout(vault)

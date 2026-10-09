@@ -42,8 +42,8 @@ const _TestLoadout := preload("res://backend/test_loadout.gd")
 
 ## class_id → {"xp": int (inside the current level), "level": int, "spent": {bucket: n}}
 var classes: Dictionary = {}
-## TEMPORARY balance-test kit: the real progress before the level-30 grant
-## (restored when the kit is turned off). Empty = no grant.
+## Leftover balance-test kit bookkeeping. The kit no longer grants, and
+## sync_hero does not copy test_backup back (ProgressEpoch owns the fresh start).
 var test_backup: Dictionary = {}
 var test_grant: bool = false
 
@@ -62,6 +62,7 @@ static func total_xp_to(level: int) -> int:
 
 
 static func load_saved() -> HeroProgress:
+	ProgressEpoch.ensure()
 	var hero := HeroProgress.new()
 	if not FileAccess.file_exists(save_path):
 		return _with_test_loadout(hero)

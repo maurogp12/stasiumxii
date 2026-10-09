@@ -1,26 +1,17 @@
 extends RefCounted
 
-## TEMPORARY balance-test kit (Mauro 30 Sep 2026: "for now give all character
-## full sets with the maximum fusion and all the stills, i want to equip them
-## fully and do koliseo in order to see the balance, note this as temporary
-## once i say its good and go back to normal you shall remove all sets and put
-## it as the regular game is designed").
+## Balance-test kit (Mauro 30 Sep 2026). OFF for the gear rework.
+## ACTIVE stays false: load_saved does not grant levels, gear, or Stills,
+## and hot-seat fights get no kit loadout. The grant blocks below are dead
+## while ACTIVE is false. They are not deleted yet because GearBag,
+## StillVault, and HeroProgress still call sync_* on the real save paths.
 ##
-## ACTIVE = true: every class is level 30 (Mauro: "make all characters lvl 30
-## with all the characteristic points"). SPEND_DUEL_BUILDS spends those 58
-## points the same way tests/sim_duels.gd BUILDS does (Ward 0). Set that flag
-## false to leave all 58 free again. The phone's gear bag holds every set
-## piece (6 families × 5 slots) at max fusion +5, the Still vault holds 99
-## fragments of every Still, and hot-seat Koliseo seats wear the equipped
-## loadout (normal game: no gear in hot-seat). Granted pieces are tagged
-## `test`; the grant is recorded so it is added once and can be taken back.
-##
-## TO GO BACK TO NORMAL (only when Mauro says so): set ACTIVE = false. On the
-## next load every tagged piece is removed (and unequipped) and the granted
-## fragments / forged test Still are taken back, every class's real level /
-## XP / points from before the grant are restored; hot-seat has no gear again.
-## Then delete this file and its hooks (see docs/AGENT_HANDOFF.md).
-const ACTIVE := true
+## Turning the kit off does NOT copy test_backup back onto classes. That
+## would undo the fresh start. ProgressEpoch (user://progress_epoch.json)
+## is the one-time wipe to level 1 / empty bag / empty Stills. sync_* only
+## strips a leftover test_grant so nothing re-grants tagged pieces.
+## The Koliseo wallet was never written by this kit.
+const ACTIVE := false
 ## TEMPORARY (Mauro 30 Sep 2026 follow-up). true = spend the 58 level-30
 ## points like tests/sim_duels.gd BUILDS. false = all 58 free, as in 0.1.80.
 const SPEND_DUEL_BUILDS := true
@@ -92,8 +83,9 @@ static func sync_hero(hero) -> bool:
 			rec["spent"] = DUEL_BUILDS[class_id].duplicate() if SPEND_DUEL_BUILDS else {}
 		hero.test_grant = true
 		return true
+	# Do not restore test_backup. Epoch 1 already set the level floor, and
+	# copying the backup would put the pre-kit levels back on the next load.
 	if not ACTIVE and hero.test_grant:
-		hero.classes = hero.test_backup.duplicate(true)
 		hero.test_backup = {}
 		hero.test_grant = false
 		return true
