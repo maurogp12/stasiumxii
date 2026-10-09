@@ -47,6 +47,9 @@ func _process(_delta: float) -> bool:
 		})
 		board._rebuild_pawns()
 		board._refresh()
+		# A foe card tap selects that enemy: reach tiles on the board, no confirm.
+		if board.pawns_by_seat.has(3):
+			board._arm_enemy_reach(3)
 		_phase = 1
 		_frames = 0
 		return false

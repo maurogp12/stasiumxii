@@ -35,9 +35,9 @@ const DOFUS_AP := Color(0.28, 0.62, 1.0)
 const DOFUS_MP := Color(0.36, 0.86, 0.34)
 const TEAM_BLUE := Color(0.26, 0.54, 1.0)
 const TEAM_RED := Color(0.94, 0.28, 0.26)
-## Turn-bar portrait. 118px chip, ~96px of class art inside the frame at the
-## 2400×1080 phone window. Two of these fit the center panel without growing it.
-const PORTRAIT_CHIP := Vector2(124, 118)
+## Turn-bar portrait. A wide phone shows this as a large finger card: the
+## head and chest fill it. The row never collapses back into a tall empty slot.
+const PORTRAIT_CHIP := Vector2(168, 156)
 const HUB_FONT := "res://art/ui/hub/Cinzel-Semibold.ttf"
 const STUN_GREY := Color(0.58, 0.58, 0.62, 0.82)
 const AMBUSH_SHADE_TIP := "Ambush from Shade"
@@ -1919,8 +1919,7 @@ func _chip_px(count: int) -> Vector2:
 		return px
 	var h := minf(px.y, band_h)
 	var fit_w := (band_w - gap * float(maxi(count - 1, 0))) / float(maxi(count, 1))
-	var w := minf(px.x, fit_w) if count <= 2 else fit_w
-	w = minf(w, 140.0)
+	var w := minf(px.x, fit_w)
 	# Narrower than the card is tall: stay a card, not a tall empty slot.
 	if w + 8.0 < h:
 		h = maxf(w, 1.0)
@@ -2029,10 +2028,34 @@ func _portrait_for(unit: Dictionary) -> Texture2D:
 		if body == null:
 			return _head_crop("res://art/characters/%s/%s_s.png" % [class_id, class_id])
 		fitted = body
-	var shown := _opaque_atlas(fitted)
+	var shown := _bust_atlas(fitted)
 	if shown != null:
 		_head_cache[key] = shown
 	return shown
+
+
+## Head and chest, from the top of the opaque figure. A full-body plate left
+## a small fighter standing in an empty card.
+func _bust_atlas(tex: Texture2D) -> Texture2D:
+	if tex == null:
+		return null
+	var img := tex.get_image()
+	if img == null or img.is_empty():
+		return tex
+	if img.is_compressed():
+		img.decompress()
+	var used := StripLibrary.opaque_rect(img)
+	if used.size.x < 2 or used.size.y < 2:
+		return tex
+	var side := minf(float(used.size.x), float(used.size.y) * 0.62)
+	side = maxf(side, 8.0)
+	var region := Rect2(float(used.position.x) + (float(used.size.x) - side) * 0.5, float(used.position.y), side, side)
+	region.position.x = clampf(region.position.x, 0.0, maxf(float(img.get_width()) - side, 0.0))
+	region.position.y = clampf(region.position.y, 0.0, maxf(float(img.get_height()) - side, 0.0))
+	var atlas := AtlasTexture.new()
+	atlas.atlas = tex
+	atlas.region = region
+	return atlas
 
 
 ## The standing card keeps a shared baseline margin. The turn chip fills with the body.
@@ -3348,7 +3371,7 @@ func _layout_chrome(forced: Vector2 = Vector2.ZERO) -> void:
 	var margin := 8.0
 	var gap := 8.0
 	var banner_h := minf(100.0, view.y - margin * 2.0)
-	var center_h := minf(128.0, view.y - margin * 2.0)
+	var center_h := minf(168.0 if view.x >= 1400.0 else 128.0, view.y - margin * 2.0)
 	banner_h = maxf(banner_h, 1.0)
 	center_h = maxf(center_h, 1.0)
 	var top_h := center_h
@@ -3358,7 +3381,7 @@ func _layout_chrome(forced: Vector2 = Vector2.ZERO) -> void:
 	# Phone: the turn row needs room for wide portrait cards. Side plaques stay 240.
 	if view.x >= 1400.0:
 		var room := inner - banner_w * 2.0
-		var wanted := 8.0 * 104.0 + 7.0 * 6.0 + 168.0 + 16.0
+		var wanted := 8.0 * 156.0 + 7.0 * 6.0 + 180.0 + 16.0
 		if room >= 448.0:
 			center_w = minf(wanted, room)
 	var need := banner_w * 2.0 + center_w
@@ -3395,7 +3418,7 @@ func _layout_chrome(forced: Vector2 = Vector2.ZERO) -> void:
 		_opp_label.position = Vector2(8.0 + half, 2)
 		_opp_label.size = Vector2(half, 18)
 	if _turn_strip != null:
-		var text_col := 168.0 if center_w >= 420.0 else maxf(center_w * 0.38, 1.0)
+		var text_col := 180.0 if center_w >= 420.0 else maxf(center_w * 0.38, 1.0)
 		var portrait_w := maxf(center_w - text_col - 12.0, 1.0)
 		_turn_strip.position = Vector2(4, 4)
 		_turn_strip.size = Vector2(portrait_w, maxf(center_h - 8.0, 1.0))

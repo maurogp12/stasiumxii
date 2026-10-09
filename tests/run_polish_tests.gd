@@ -134,7 +134,7 @@ func _test_turn_targets_are_cards() -> void:
 	eq(hud._turn_strip.get_child_count(), 6, "a full fight lists every fighter")
 	for child in hud._turn_strip.get_children():
 		var chip := child as Control
-		truthy(chip.size.x >= 88.0 and chip.size.y >= 88.0, "each turn target is a finger card (%s)" % chip.size)
+		truthy(chip.size.x >= 120.0 and chip.size.y >= 120.0, "each turn target is a large finger card (%s)" % chip.size)
 		truthy(chip.size.y <= chip.size.x + 16.0, "a turn target is not a tall empty bar (%s)" % chip.size)
 	eq(_overlap(hud._banner_panels[0].get_rect(), hud._resource_panel.get_rect()), false, "the wider turn row stays off the player plaque")
 	eq(hud._turn_strip.position.x + hud._turn_strip.size.x <= hud._resource_panel.size.x + 1.0, true, "portraits stay inside the turn plaque")
