@@ -2,7 +2,7 @@ extends SceneTree
 
 ## Locked painted looks on PC (4 Oct 2026): the world hero's walk, run and
 ## idle, and the dungeon hero's painted idle, walk, attack, skill, hit and
-## death, for all five classes. Run:
+## death, for all five classes, on the dungeon and the Koliseo board. Run:
 ##   godot --headless --path . -s res://tests/run_locked_s_walk_tests.gd
 ## (The old locked-S east walks this suite pinned are retired.)
 
@@ -52,6 +52,7 @@ func _run() -> void:
 	for cls in CLASSES:
 		await _test_dungeon_pawn(cls)
 	await _test_mirror_and_plain_pawn()
+	await _test_koliseo_board()
 	MOTION.clear_reduce_motion()
 	print("locked looks tests: %d passed, %d failed" % [passed, failed])
 	quit(1 if failed > 0 else 0)
@@ -276,3 +277,24 @@ func _test_mirror_and_plain_pawn() -> void:
 	check(plain._sprite.offset == Pawn.SPRITE_OFFSET, "a Koliseo pawn keeps the static pivot")
 	plain.queue_free()
 	await _frames(1)
+
+
+## The Koliseo board (main.tscn) draws its fighters on the painted look too.
+func _test_koliseo_board() -> void:
+	var main: Node = load("res://main.tscn").instantiate()
+	root.add_child(main)
+	await _frames(8)
+	var board = main.get_node("BoardView")
+	var sim: Node = root.get_node("CombatSim")
+	sim.reset_match({"seed": 1, "skip_deploy": true})
+	board._finish_boot()
+	await _frames(4)
+	var seen := 0
+	for seat in board.pawns_by_seat.keys():
+		var pawn: Pawn = board.pawns_by_seat[seat]
+		check(pawn.uses_painted_look(), "Koliseo %s pawn uses the painted look" % pawn.class_id)
+		check(Painted.is_painted_cell(pawn._sprite.texture), "Koliseo %s stands on a painted idle cell" % pawn.class_id)
+		seen += 1
+	check(seen >= 2, "the Koliseo board has its two fighters (%d)" % seen)
+	main.queue_free()
+	await _frames(2)

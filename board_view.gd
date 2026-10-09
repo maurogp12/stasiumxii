@@ -1144,6 +1144,8 @@ func _rebuild_pawns() -> void:
 	pawns_by_seat.clear()
 	for unit in _sim().snapshot().get("units", []):
 		var pawn := PAWN_SCENE.instantiate() as Pawn
+		# Fighters draw the locked painted class look (units/painted_looks.gd).
+		pawn.painted_look = true
 		$Units.add_child(pawn)
 		pawns_by_seat[int(unit["seat"])] = pawn
 
