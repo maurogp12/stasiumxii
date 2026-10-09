@@ -669,6 +669,13 @@ var _assist := {}
 var _keep_out_sig := ""
 var _card_key := ""
 var _card_at := 0
+## Game-time clock for the note / assist windows (follows the frame delta,
+## so a slow frame or a recorded movie keeps the same windows).
+var _game_ms := 0.0
+
+
+func _now_ms() -> int:
+	return int(_game_ms)
 var _keep_out_check := 0.0
 
 
@@ -802,6 +809,7 @@ func _input(event: InputEvent) -> void:
 
 func _process(delta: float) -> void:
 	super._process(delta)
+	_game_ms += delta * 1000.0
 	_keep_out_check -= delta
 	if _keep_out_check <= 0.0 and is_inside_tree():
 		_keep_out_check = 0.25
@@ -874,9 +882,12 @@ func card_text() -> String:
 
 
 func _card_seat() -> int:
-	if not _note.is_empty() and Time.get_ticks_msec() < int(_note.get("until", 0)):
+	# A hovered monster wins; the note stays on its monster while nothing else is hovered.
+	if _hover_seat >= 0:
+		return _hover_seat
+	if not _note.is_empty() and _now_ms() < int(_note.get("until", 0)):
 		return int(_note.get("seat", -1))
-	return _hover_seat
+	return -1
 
 
 func _sync_card() -> void:
@@ -891,7 +902,7 @@ func _sync_card() -> void:
 			_card.visible = false
 		return
 	_ensure_card()
-	var now := Time.get_ticks_msec()
+	var now := _now_ms()
 	var key := "%d|%s|%s" % [seat, _hud.selected_spell() if _hud != null else "", str(_note.get("until", 0))]
 	if key != _card_key or now - _card_at > 200 or not _card.visible:
 		_card_key = key
@@ -926,7 +937,7 @@ func _card_lines(seat: int) -> String:
 			lines.append("  ·  ".join(parts))
 		else:
 			lines.append("%s: %s" % [name, _reason_text(str(pv.get("reason", "")))])
-	if not _note.is_empty() and int(_note.get("seat", -1)) == seat and Time.get_ticks_msec() < int(_note.get("until", 0)):
+	if not _note.is_empty() and int(_note.get("seat", -1)) == seat and _now_ms() < int(_note.get("until", 0)):
 		lines.append(str(_note.get("text", "")))
 	return "\n".join(lines)
 
@@ -1007,21 +1018,21 @@ func _handle_left_click(cell: Vector2i) -> void:
 	var reason := str(pv.get("reason", ""))
 	if reason == "out_of_range":
 		var plan := walk_strike_plan(spell, seat)
-		if not plan.is_empty() and int(_assist.get("seat", -1)) == seat and str(_assist.get("spell", "")) == spell and Time.get_ticks_msec() < int(_assist.get("until", 0)):
+		if not plan.is_empty() and int(_assist.get("seat", -1)) == seat and str(_assist.get("spell", "")) == spell and _now_ms() < int(_assist.get("until", 0)):
 			_assist = {}
 			_note = {}
 			_walk_then_cast(plan)
 			return
 		var name := str(SpellKits.spell(spell).get("name", spell))
 		var hint := "Click again: walk + %s" % name if not plan.is_empty() else ""
-		_assist = {"seat": seat, "spell": spell, "until": Time.get_ticks_msec() + 4000} if not plan.is_empty() else {}
+		_assist = {"seat": seat, "spell": spell, "until": _now_ms() + 4000} if not plan.is_empty() else {}
 		_hud.show_toast(OUT_OF_RANGE_TEXT)
-		_note = {"seat": seat, "text": OUT_OF_RANGE_TEXT + ("\n" + hint if hint != "" else ""), "until": Time.get_ticks_msec() + int(NOTE_SEC * 1000.0) + (1800 if hint != "" else 0)}
+		_note = {"seat": seat, "text": OUT_OF_RANGE_TEXT + ("\n" + hint if hint != "" else ""), "until": _now_ms() + int(NOTE_SEC * 1000.0) + (1800 if hint != "" else 0)}
 		return
 	_assist = {}
 	var short := _reason_text(reason)
 	_hud.show_toast("%s: %s" % [str(SpellKits.spell(spell).get("name", spell)), short if short != "" else "can't target"])
-	_note = {"seat": seat, "text": short.capitalize() if short != "" else "", "until": Time.get_ticks_msec() + int(NOTE_SEC * 1000.0)}
+	_note = {"seat": seat, "text": short.capitalize() if short != "" else "", "until": _now_ms() + int(NOTE_SEC * 1000.0)}
 
 
 ## Melee (range 1) only: the free cell next to the target that a legal walk
