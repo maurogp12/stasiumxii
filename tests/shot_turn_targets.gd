@@ -91,7 +91,9 @@ func _process(_delta: float) -> bool:
 			foes += 1
 		else:
 			allies += 1
-	print("TURN_TARGETS %s %dx%d err=%s chips=%d allies=%d foes=%d chip=%s scroll=%s content=%s" % [_path, image.get_width(), image.get_height(), err, hud._turn_strip.get_child_count(), allies, foes, chip, hud._turn_scroll.size, hud._turn_strip.custom_minimum_size])
+	var foe_chips := hud._turn_foe_strip.get_child_count() if hud._turn_foe_strip != null else 0
+	var panel: Vector2 = hud._resource_panel.size if hud._resource_panel != null else Vector2.ZERO
+	print("TURN_TARGETS %s %dx%d err=%s chips=%d foe_chips=%d allies=%d foes=%d chip=%s scroll=%s content=%s panel=%s layout=%s" % [_path, image.get_width(), image.get_height(), err, hud._turn_strip.get_child_count(), foe_chips, allies, foes, chip, hud._turn_scroll.size, hud._turn_strip.custom_minimum_size, panel, hud.turn_bar_layout])
 	return true
 
 
