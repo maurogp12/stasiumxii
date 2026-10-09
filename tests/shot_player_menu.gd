@@ -1,7 +1,7 @@
 extends SceneTree
 
-## Phone frame of Threshgate Room A with the party player menu.
-## godot --path . --rendering-driver opengl3 -s res://tests/shot_player_menu.gd -- <out.png> --mobile-frame
+## Phone frame of Threshgate Room A. The side cards stay the small menu and
+## read Marks as a number. godot --rendering-driver opengl3 -s res://tests/shot_player_menu.gd -- <out.png> --mobile-frame
 
 var _path := "/tmp/player_menu_proposed.png"
 var _frames := 0
@@ -25,7 +25,7 @@ func _initialize() -> void:
 
 func _process(_delta: float) -> bool:
 	_frames += 1
-	if _frames > 240:
+	if _frames > 180:
 		push_error("player menu shot timed out")
 		return true
 	var board := current_scene.get_node_or_null("BoardView") if current_scene != null else null
@@ -44,22 +44,39 @@ func _process(_delta: float) -> bool:
 			push_error("Threshgate fight config was empty")
 			return true
 		sim.reset_match(config)
+		_grant_marks(sim)
 		board._rebuild_pawns()
 		board._refresh()
 		_phase = 1
 		_frames = 0
 		return false
-	if _frames < 10:
+	if _frames < 12:
 		return false
 	_aim(board)
-	if _frames < 14:
+	if _frames < 16:
 		return false
 	var image := root.get_texture().get_image()
 	var err := image.save_png(_path)
 	var hud: CombatHUD = board._hud
 	var left: Vector2 = hud._banner_panels[0].size
-	print("PLAYER_MENU %s %dx%d err=%s left=%s party=%s chips=%d" % [_path, image.get_width(), image.get_height(), err, left, hud._party_row.visible, hud._party_row.get_child_count()])
+	print("PLAYER_MENU %s %dx%d err=%s left=%s body=%s" % [_path, image.get_width(), image.get_height(), err, left, hud._kestrel_body.text])
 	return true
+
+
+func _grant_marks(sim: Node) -> void:
+	var kestrel_seat := -1
+	for unit in sim._units:
+		if str(unit.get("class_id", "")) == "kestrel":
+			kestrel_seat = int(unit.get("seat", -1))
+			break
+	var foe_marked := false
+	for unit in sim._units:
+		var class_id := str(unit.get("class_id", ""))
+		if class_id == "ironjaw":
+			sim._gain_marks(unit, 2, kestrel_seat)
+		elif not foe_marked and int(unit.get("team", 0)) == 1:
+			sim._gain_marks(unit, 2, kestrel_seat)
+			foe_marked = true
 
 
 func _aim(board: Node) -> void:

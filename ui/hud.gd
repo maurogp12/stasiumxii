@@ -69,13 +69,6 @@ var _ironjaw_body: RichTextLabel
 ## Left card is seat 0, right card is seat 1. Titles follow units[].class_id.
 var _banner_panels: Array[Panel] = []
 var _banner_titles: Array[Label] = []
-## Seat currently drawn on each side card. Party turns change who that is.
-var _banner_units: Array = [{}, {}]
-var _banner_bound: Array[Callable] = []
-## Ally chips under the player card. Hidden in a 1v1.
-var _party_row: HBoxContainer
-var _party_sig: String = ""
-var _chrome_view := Vector2.ZERO
 var _seat_panels: Array[Panel] = []
 var _seat_titles: Array[Label] = []
 var _turn_label: Label
@@ -395,13 +388,30 @@ static func marks_holder(unit: Dictionary, snap: Dictionary) -> Dictionary:
 	if str(unit.get("class_id", "")) != SpellKits.CLASS_KESTREL:
 		return unit
 	var seat := int(unit.get("seat", -1))
+	var owned: Dictionary = {}
+	var owned_n := -1
+	var foe: Dictionary = {}
+	var foe_n := -1
+	var fallback: Dictionary = {}
 	for other in snap.get("units", []):
 		if typeof(other) != TYPE_DICTIONARY:
 			continue
 		if int(other.get("seat", -1)) == seat:
 			continue
-		return other
-	return unit
+		if fallback.is_empty():
+			fallback = other
+		var n := int(other.get("marks", 0))
+		if int(other.get("marks_seat", -1)) == seat and n >= owned_n:
+			owned = other
+			owned_n = n
+		elif unit_team(other) != unit_team(unit) and n > foe_n:
+			foe = other
+			foe_n = n
+	if not owned.is_empty():
+		return owned
+	if not foe.is_empty():
+		return foe
+	return fallback if not fallback.is_empty() else unit
 
 
 ## Chrome only. A live Shade on the acting Gloam is the cue that Ambush relocates.
@@ -1068,7 +1078,6 @@ func render(snap: Dictionary, legal: Array) -> void:
 	_apply_seat_banner(1, seat1, bool(card_active[1]) and not _deploying)
 	_kestrel_body.text = _unit_card_text(seat0, bool(card_active[0]), snap)
 	_ironjaw_body.text = _unit_card_text(seat1, bool(card_active[1]), snap)
-	_sync_party_row(snap, seat0)
 
 	var active := _unit(units, active_seat)
 	var chrome := _unit(units, kit_seat(snap))
@@ -1190,12 +1199,6 @@ func _build() -> void:
 
 	root.add_child(_make_banner(true))
 	root.add_child(_make_banner(false))
-	_party_row = HBoxContainer.new()
-	_party_row.name = "PartyRow"
-	_party_row.visible = false
-	_party_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_party_row.add_theme_constant_override("separation", 8)
-	root.add_child(_party_row)
 
 	var resource_panel := Panel.new()
 	_resource_panel = resource_panel
@@ -1595,200 +1598,7 @@ func _apply_seat_banner(seat: int, unit: Dictionary, acting: bool = false) -> vo
 	var accent := _seat_panels[seat].get_node_or_null("Accent")
 	if accent is ColorRect:
 		(accent as ColorRect).color = color
-	while _banner_units.size() <= seat:
-		_banner_units.append({})
-	_banner_units[seat] = unit
-	_fit_one_banner(seat)
 	_paint_hp_bar(_seat_panels[seat], unit)
-	_retarget_banner(seat, int(unit.get("seat", seat)))
-
-
-## Phone player card. Wide screens get a tall readable plaque; narrow ones
-## keep the old footprint so the center turn bar still fits.
-func _player_banner_size(view: Vector2) -> Vector2:
-	if view.x >= 1400.0:
-		return Vector2(420.0, 176.0)
-	return Vector2(240.0, 100.0)
-
-
-func _foe_banner_size(view: Vector2) -> Vector2:
-	if view.x >= 1400.0:
-		return Vector2(280.0, 120.0)
-	return Vector2(220.0, 100.0)
-
-
-func _fit_one_banner(slot: int) -> void:
-	if slot < 0 or slot >= _banner_panels.size() or slot >= _banner_titles.size():
-		return
-	var panel := _banner_panels[slot]
-	var title := _banner_titles[slot]
-	var wide := slot == 0 and panel.size.x >= 300.0 and panel.size.y >= 140.0
-	var title_h := 36.0 if wide else 24.0
-	title.position = Vector2(18, 8)
-	title.size = Vector2(maxf(panel.size.x - 32.0, 1.0), title_h)
-	title.add_theme_font_size_override("font_size", 28 if wide else 18)
-	var bar_h := 16.0 if wide else 8.0
-	var track := panel.get_node_or_null("HpTrack") as Control
-	var bar_y := 8.0 + title_h + 6.0
-	if track != null:
-		track.position = Vector2(18, bar_y)
-		track.size = Vector2(maxf(panel.size.x - 36.0, 1.0), bar_h)
-	var body := _kestrel_body if slot == 0 else _ironjaw_body
-	if body != null:
-		var body_y := bar_y + bar_h + 8.0
-		body.position = Vector2(16, body_y)
-		body.size = Vector2(maxf(panel.size.x - 28.0, 1.0), maxf(panel.size.y - body_y - 8.0, 1.0))
-		body.add_theme_font_size_override("normal_font_size", 22 if wide else 13)
-	var accent := panel.get_node_or_null("Accent") as ColorRect
-	if accent != null:
-		accent.size.y = maxf(panel.size.y - 16.0, 1.0)
-
-
-func _retarget_banner(slot: int, unit_seat: int) -> void:
-	if slot < 0 or slot >= _banner_panels.size():
-		return
-	var panel: Control = _banner_panels[slot]
-	while _banner_bound.size() <= slot:
-		_banner_bound.append(Callable())
-	var prev := _banner_bound[slot]
-	if prev.is_valid() and panel.gui_input.is_connected(prev):
-		panel.gui_input.disconnect(prev)
-	panel.mouse_filter = Control.MOUSE_FILTER_STOP
-	var bound := _on_unit_card_input.bind(unit_seat)
-	panel.gui_input.connect(bound)
-	_banner_bound[slot] = bound
-
-
-## Living allies on the player's side. A duel has one fighter, so the row stays off.
-func _party_allies(snap: Dictionary) -> Array:
-	var party := int(snap.get("party_size", 1))
-	var teams := int(snap.get("team_size", 1))
-	if party <= 1 and teams <= 1:
-		return []
-	var units: Array = snap.get("units", [])
-	var team := 0
-	if party <= 1:
-		var local := snap_local_seat(snap)
-		var mine := _unit(units, local if local >= 0 else snap_active_seat(snap))
-		if not mine.is_empty():
-			team = unit_team(mine)
-	var allies: Array = []
-	for unit in units:
-		if typeof(unit) != TYPE_DICTIONARY:
-			continue
-		if unit_team(unit) != team:
-			continue
-		if str(unit.get("stasis_sprite", "")) != "":
-			continue
-		allies.append(unit)
-	allies.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
-		return int(a.get("seat", 0)) < int(b.get("seat", 0))
-	)
-	if allies.size() < 2:
-		return []
-	return allies
-
-
-func _sync_party_row(snap: Dictionary, shown: Dictionary) -> void:
-	if _party_row == null:
-		return
-	var allies := _party_allies(snap)
-	if allies.size() < 2:
-		_party_row.visible = false
-		_party_sig = ""
-		_place_party_row()
-		return
-	var shown_seat := int(shown.get("seat", -1))
-	var parts: PackedStringArray = PackedStringArray()
-	for unit in allies:
-		parts.append("%d:%s:%s" % [int(unit.get("seat", -1)), str(unit.get("name", "")), "1" if int(unit.get("seat", -1)) == shown_seat else "0"])
-	var sig := "|".join(parts)
-	_party_row.visible = true
-	if sig != _party_sig or _party_row.get_child_count() != allies.size():
-		_party_sig = sig
-		for child in _party_row.get_children():
-			_party_row.remove_child(child)
-			child.free()
-		for unit in allies:
-			var seat := int(unit.get("seat", -1))
-			var chip := _party_chip(unit, seat == shown_seat)
-			_make_unit_pressable(chip, seat)
-			_party_row.add_child(chip)
-	else:
-		for i in allies.size():
-			var unit: Dictionary = allies[i]
-			var seat := int(unit.get("seat", -1))
-			var chip := _party_row.get_child(i) as Panel
-			if chip == null:
-				continue
-			chip.add_theme_stylebox_override("panel", _fighter_frame(seat == shown_seat, _banner_color(str(unit.get("class_id", "")))))
-			chip.modulate = Color.WHITE if bool(unit.get("alive", true)) else Color(0.55, 0.55, 0.55, 0.85)
-	_place_party_row()
-
-
-func _party_chip(unit: Dictionary, selected: bool) -> Panel:
-	var chip := Panel.new()
-	chip.custom_minimum_size = Vector2(100, 84)
-	chip.size = Vector2(100, 84)
-	chip.clip_contents = true
-	chip.mouse_filter = Control.MOUSE_FILTER_STOP
-	var color := _banner_color(str(unit.get("class_id", "")))
-	chip.add_theme_stylebox_override("panel", _fighter_frame(selected, color))
-	chip.modulate = Color.WHITE if bool(unit.get("alive", true)) else Color(0.55, 0.55, 0.55, 0.85)
-	var tex := _portrait_for(unit)
-	if tex != null:
-		var plate := TextureRect.new()
-		plate.texture = tex
-		plate.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		plate.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		plate.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
-		plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		plate.position = Vector2(6, 4)
-		plate.size = Vector2(88, 52)
-		chip.add_child(plate)
-	var name := str(unit.get("name", ""))
-	if name == "":
-		name = SpellKits.display_name(str(unit.get("class_id", "")))
-	var label := Label.new()
-	label.text = name
-	label.position = Vector2(4, 58)
-	label.size = Vector2(92, 22)
-	label.clip_text = true
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.add_theme_font_size_override("font_size", 14)
-	label.add_theme_color_override("font_color", GOLD_BRIGHT if selected else CREAM)
-	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_apply_display_font(label)
-	chip.add_child(label)
-	return chip
-
-
-func _place_party_row() -> void:
-	if _party_row == null or _banner_panels.is_empty():
-		return
-	var left := _banner_panels[0]
-	var show := _party_row.visible and _party_row.get_child_count() >= 2
-	_party_row.position = Vector2(left.position.x, left.position.y + left.size.y + 6.0)
-	var count := _party_row.get_child_count()
-	var sep := 8.0
-	var chip_w := 100.0
-	var gaps := sep * float(maxi(count - 1, 0))
-	if count > 0 and chip_w * float(count) + gaps > left.size.x:
-		chip_w = maxf((left.size.x - gaps) / float(count), 44.0)
-	for child in _party_row.get_children():
-		var chip := child as Control
-		if chip == null:
-			continue
-		chip.custom_minimum_size = Vector2(chip_w, 84.0)
-		chip.size = Vector2(chip_w, 84.0)
-	var row_w := chip_w * float(count) + gaps
-	_party_row.size = Vector2(minf(maxf(row_w, 1.0), maxf(left.size.x, 1.0)), 84.0)
-	if _side_column == null:
-		return
-	var drop := left.size.y + 8.0
-	if show:
-		drop += _party_row.size.y + 8.0
-	_side_column.position = Vector2(left.position.x, left.position.y + drop)
 
 
 func _make_banner(is_kestrel: bool) -> Panel:
@@ -1818,7 +1628,7 @@ func _make_banner(is_kestrel: bool) -> Panel:
 	panel.add_child(title)
 	_banner_panels.append(panel)
 	_banner_titles.append(title)
-	_retarget_banner(_banner_panels.size() - 1, _banner_panels.size() - 1)
+	_make_unit_pressable(panel, _banner_panels.size() - 1)
 	var track := ColorRect.new()
 	track.name = "HpTrack"
 	track.position = Vector2(16, 34)
@@ -1919,7 +1729,10 @@ func _engine_pip_sig(unit: Dictionary) -> String:
 			cap_field = "pulse_cap"
 		_:
 			return ""
-	return "%s:%d:%d" % [field, int(unit.get(field, 0)), int(unit.get(cap_field, 0))]
+	var current := int(unit.get(field, 0))
+	if field == "marks":
+		current = int(marks_holder(unit, _last_snap).get("marks", current))
+	return "%s:%d:%d" % [field, current, int(unit.get(cap_field, 0))]
 
 
 func _render_pips(row: HBoxContainer, current: int, maximum: int, fill: Color, unit: Dictionary = {}) -> void:
@@ -1993,6 +1806,8 @@ func _append_engine_pips_to(bucket: Array, unit: Dictionary) -> void:
 	if lit_tex == null or empty_tex == null:
 		return
 	var current := int(unit.get(field, 0))
+	if field == "marks":
+		current = int(marks_holder(unit, _last_snap).get("marks", current))
 	for i in range(maxi(cap, 0)):
 		bucket.append(_pip_icon(lit_tex if i < current else empty_tex, i < current))
 
@@ -2040,7 +1855,7 @@ func _sync_turn_strip(snap: Dictionary) -> void:
 		var acting := (not deploying) and (not over) and seat == active
 		var targeted := _chip_targeted(unit)
 		var is_you := seat == you
-		parts.append("%d:%s:%s:%s" % [seat, str(unit.get("class_id", "")), "1" if acting else "0", "T" if targeted else "-"])
+		parts.append("%d:%s:%s:%s:%d" % [seat, str(unit.get("class_id", "")), "1" if acting else "0", "T" if targeted else "-", int(unit.get("marks", 0))])
 		wanted.append({
 			"unit": unit,
 			"seat": seat,
@@ -2068,7 +1883,7 @@ func _sync_turn_strip(snap: Dictionary) -> void:
 		if same:
 			for i in wanted.size():
 				var row: Dictionary = wanted[i]
-				_restyle_turn_chip(_turn_strip.get_child(i), row["unit"], bool(row["acting"]), bool(row["targeted"]), bool(row["you"]), px)
+				_restyle_turn_chip(_turn_strip.get_child(i), row["unit"], bool(row["acting"]), bool(row["targeted"]), bool(row["you"]), px, snap)
 			return
 	# Build the new row first, then drop the old chips, so the plaque is
 	# never an empty dark box for a frame.
@@ -2076,7 +1891,7 @@ func _sync_turn_strip(snap: Dictionary) -> void:
 	for entry in wanted:
 		var spec: Dictionary = entry
 		var fighter: Dictionary = spec["unit"]
-		var chip := _turn_chip(fighter, bool(spec["acting"]), bool(spec["targeted"]), bool(spec["you"]), px)
+		var chip := _turn_chip(fighter, bool(spec["acting"]), bool(spec["targeted"]), bool(spec["you"]), px, snap)
 		chip.set_meta("chip_seat", int(spec["seat"]))
 		chip.set_meta("chip_class", str(spec["class_id"]))
 		_make_unit_pressable(chip, int(spec["seat"]))
@@ -2146,7 +1961,7 @@ func _chip_targeted(unit: Dictionary) -> bool:
 	return SNAPSHOT_TILES.cast_dests(_last_legal, _selected_spell).has(pos)
 
 
-func _turn_chip(unit: Dictionary, acting: bool, targeted: bool, is_you: bool, px: Vector2) -> Control:
+func _turn_chip(unit: Dictionary, acting: bool, targeted: bool, is_you: bool, px: Vector2, snap: Dictionary = {}) -> Control:
 	var team := TEAM_RED if unit_team(unit) == 1 else TEAM_BLUE
 	var host := Panel.new()
 	host.custom_minimum_size = px
@@ -2202,12 +2017,37 @@ func _turn_chip(unit: Dictionary, acting: bool, targeted: bool, is_you: bool, px
 		tag.add_theme_color_override("font_color", Color(0.98, 0.96, 0.9))
 		tag.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		bar.add_child(tag)
+	_add_marks_badge(host, unit, snap, px)
 	host.set_meta("chip_seat", int(unit.get("seat", -1)))
 	host.set_meta("chip_class", str(unit.get("class_id", "")))
 	return host
 
 
-func _restyle_turn_chip(host: Control, unit: Dictionary, acting: bool, targeted: bool, is_you: bool, px: Vector2) -> void:
+func _add_marks_badge(host: Control, unit: Dictionary, snap: Dictionary, px: Vector2) -> void:
+	var n := chip_marks(unit, snap)
+	var badge := Label.new()
+	badge.name = "MarksBadge"
+	badge.text = "Marks %d" % n
+	badge.visible = n > 0
+	badge.position = Vector2(4, 2)
+	badge.size = Vector2(maxf(px.x - 8.0, 1.0), 18)
+	badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	badge.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	badge.add_theme_font_size_override("font_size", 12)
+	badge.add_theme_color_override("font_color", GOLD_BRIGHT)
+	badge.add_theme_color_override("font_outline_color", Color(0.04, 0.03, 0.02))
+	badge.add_theme_constant_override("outline_size", 5)
+	host.add_child(badge)
+
+
+## The stack stored on this fighter. Kestrel's chip shows the stack she can
+## spend (it lives on her target). Everyone else shows the Marks on themselves.
+static func chip_marks(unit: Dictionary, snap: Dictionary) -> int:
+	return int(marks_holder(unit, snap).get("marks", 0))
+
+
+func _restyle_turn_chip(host: Control, unit: Dictionary, acting: bool, targeted: bool, is_you: bool, px: Vector2, snap: Dictionary = {}) -> void:
 	if host == null:
 		return
 	var team := TEAM_RED if unit_team(unit) == 1 else TEAM_BLUE
@@ -2217,6 +2057,12 @@ func _restyle_turn_chip(host: Control, unit: Dictionary, acting: bool, targeted:
 	var tag := host.find_child("SeatTag", true, false) as Label
 	if tag != null:
 		tag.text = "YOU" if is_you else "FOE"
+	var n := chip_marks(unit, snap)
+	var badge := host.find_child("MarksBadge", true, false) as Label
+	if badge != null:
+		badge.text = "Marks %d" % n
+		badge.visible = n > 0
+		badge.size = Vector2(maxf(px.x - 8.0, 1.0), 18)
 
 
 func _chip_frame(acting: bool, targeted: bool = false, team_color: Color = GOLD) -> StyleBoxFlat:
@@ -2413,8 +2259,8 @@ func _resource_meter_line(unit: Dictionary, snap: Dictionary = {}) -> String:
 			int(unit.get("aegis_cap", SpellKits.AEGIS_CAP)),
 		]
 	var marked := marks_holder(unit, snap)
-	return "Marks %s  Impact %s" % [
-		engine_pips(int(marked.get("marks", 0)), int(marked.get("marks_cap", SpellKits.MARKS_CAP))),
+	return "[b]Marks %d[/b]  Impact %s" % [
+		int(marked.get("marks", 0)),
 		engine_pips(int(unit.get("impact", 0)), int(unit.get("impact_cap", SpellKits.IMPACT_CAP))),
 	]
 
@@ -3574,30 +3420,25 @@ func _layout_chrome(forced: Vector2 = Vector2.ZERO) -> void:
 	# every plaque and clip the captions. Keep the last good layout.
 	if forced.x < 2.0 and (view.x < 240.0 or view.y < 240.0):
 		return
-	_chrome_view = view
 	var margin := 8.0
 	var gap := 8.0
+	var banner_h := minf(100.0, view.y - margin * 2.0)
 	var center_h := minf(128.0, view.y - margin * 2.0)
+	banner_h = maxf(banner_h, 1.0)
 	center_h = maxf(center_h, 1.0)
 	var top_h := center_h
-	var left_box := _player_banner_size(view)
-	var right_box := _foe_banner_size(view)
-	var left_w := left_box.x
-	var left_h := minf(left_box.y, maxf(view.y - margin * 2.0, 1.0))
-	var right_w := right_box.x
-	var right_h := minf(right_box.y, maxf(view.y - margin * 2.0, 1.0))
+	var banner_w := 240.0
 	var center_w := 448.0
 	var inner := view.x - margin * 2.0 - gap * 2.0
-	var need := left_w + right_w + center_w
+	var need := banner_w * 2.0 + center_w
 	if inner < need:
 		var scale := inner / need
-		left_w *= scale
-		right_w *= scale
+		banner_w *= scale
 		center_w *= scale
 	var left_x := margin
-	var right_x := view.x - margin - right_w
+	var right_x := view.x - margin - banner_w
 	var center_x := (view.x - center_w) * 0.5
-	var left_end := left_x + left_w + gap
+	var left_end := left_x + banner_w + gap
 	var right_start := right_x - gap
 	if center_x < left_end:
 		center_x = left_end
@@ -3605,18 +3446,18 @@ func _layout_chrome(forced: Vector2 = Vector2.ZERO) -> void:
 		center_w = maxf(right_start - center_x, 1.0)
 	if _banner_panels.size() >= 2:
 		_banner_panels[0].position = Vector2(left_x, margin)
-		_banner_panels[0].size = Vector2(left_w, left_h)
+		_banner_panels[0].size = Vector2(banner_w, banner_h)
 		_banner_panels[1].position = Vector2(right_x, margin)
-		_banner_panels[1].size = Vector2(right_w, right_h)
-		_fit_one_banner(0)
-		_fit_one_banner(1)
-		if _banner_units.size() > 0 and not (_banner_units[0] as Dictionary).is_empty():
-			_paint_hp_bar(_banner_panels[0], _banner_units[0])
-		if _banner_units.size() > 1 and not (_banner_units[1] as Dictionary).is_empty():
-			_paint_hp_bar(_banner_panels[1], _banner_units[1])
+		_banner_panels[1].size = Vector2(banner_w, banner_h)
+		for panel in _banner_panels:
+			var accent := panel.get_node_or_null("Accent") as ColorRect
+			if accent != null:
+				accent.size.y = maxf(banner_h - 16.0, 1.0)
 	if _resource_panel != null:
 		_resource_panel.position = Vector2(center_x, margin)
 		_resource_panel.size = Vector2(center_w, top_h)
+	for title in _banner_titles:
+		title.size.x = maxf(banner_w - 24.0, 1.0)
 	if _you_label != null:
 		var half := maxf((center_w - 24.0) * 0.5, 1.0)
 		_you_label.size = Vector2(half, 18)
@@ -3645,10 +3486,10 @@ func _layout_chrome(forced: Vector2 = Vector2.ZERO) -> void:
 		_clock_track.custom_minimum_size = Vector2(_clock_bar_max_width, 8)
 		_clock_track.size = Vector2(_clock_bar_max_width, 8)
 	var bottom_top := view.y + TOUCH.HUD_BOTTOM_OFFSET
-	_place_party_row()
 	if _side_column != null:
-		var side_y := _side_column.position.y
+		var side_y := margin + top_h + 8.0
 		var room := bottom_top - side_y - 8.0
+		_side_column.position = Vector2(margin, side_y)
 		_side_column.scale = Vector2.ONE
 		if room < 220.0 and room > 8.0:
 			var fit := clampf(room / 232.0, 0.35, 1.0)

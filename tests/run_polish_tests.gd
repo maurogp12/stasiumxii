@@ -17,7 +17,6 @@ func _initialize() -> void:
 	_test_grid_and_occluders()
 	_test_class_select_copy()
 	_test_hud_does_not_overlap()
-	_test_player_menu_is_large()
 	_test_clock_and_pips_stay_put()
 	_audit_rooms()
 	print("Polish tests: %d passed, %d failed" % [_passed, _failed])
@@ -106,43 +105,6 @@ func _test_hud_does_not_overlap() -> void:
 		eq(left.end.x <= size.x + 0.5 and right.end.x <= size.x + 0.5, true, "banners stay inside %s" % size)
 		eq(left.position.y >= 0.0 and left.end.y <= size.y + 0.5, true, "left banner stays inside the height at %s" % size)
 		hud.free()
-
-
-func _test_player_menu_is_large() -> void:
-	root.size = Vector2i(2400, 1080)
-	var hud := CombatHUD.new()
-	root.add_child(hud)
-	hud._build()
-	hud._layout_chrome(Vector2(2400, 1080))
-	var left: Vector2 = hud._banner_panels[0].size
-	truthy(left.x >= 400.0 and left.y >= 160.0, "phone player card is large (%s)" % left)
-	var title: Label = hud._banner_titles[0]
-	truthy(title.get_theme_font_size("font_size") >= 26, "player name is a large type size")
-	var body_size := int(hud._kestrel_body.get_theme_font_size("normal_font_size"))
-	truthy(body_size >= 20, "HP / AP / MP type is large (%d)" % body_size)
-	var snap := {
-		"party_size": 4,
-		"team_size": 1,
-		"active_seat": 0,
-		"units": [
-			{"seat": 0, "team": 0, "name": "Ironjaw", "class_id": "ironjaw", "alive": true, "hp": 554, "max_hp": 554, "ap": 8, "mp": 4},
-			{"seat": 1, "team": 0, "name": "Bastion", "class_id": "bastion", "alive": true, "hp": 400, "max_hp": 400, "ap": 6, "mp": 3},
-			{"seat": 2, "team": 0, "name": "Kestrel", "class_id": "kestrel", "alive": true, "hp": 320, "max_hp": 320, "ap": 6, "mp": 3},
-			{"seat": 3, "team": 0, "name": "Mender", "class_id": "mender", "alive": true, "hp": 280, "max_hp": 280, "ap": 6, "mp": 3},
-			{"seat": 4, "team": 1, "name": "Scribe Bolt", "class_id": "ironjaw", "alive": true, "hp": 335, "max_hp": 335, "ap": 0, "mp": 3, "stasis_sprite": "bolt"},
-		],
-	}
-	hud.render(snap, [])
-	truthy(hud._party_row.visible, "a party shows the ally row")
-	eq(hud._party_row.get_child_count(), 4, "one chip per ally")
-	var row: Rect2 = hud._party_row.get_rect()
-	var mid: Rect2 = hud._resource_panel.get_rect()
-	eq(_overlap(row, mid), false, "ally chips stay out of the turn bar")
-	eq(row.end.x <= hud._banner_panels[0].get_rect().end.x + 1.0, true, "ally chips stay in the player column")
-	var duel := {"party_size": 1, "team_size": 1, "active_seat": 0, "units": snap["units"].slice(0, 2)}
-	hud.render(duel, [])
-	eq(hud._party_row.visible, false, "a duel has no ally row")
-	hud.free()
 
 
 func _test_clock_and_pips_stay_put() -> void:
