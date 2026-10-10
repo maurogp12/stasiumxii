@@ -179,11 +179,14 @@ static func pack_for(spec: Dictionary, for_star: int) -> Array:
 
 
 ## A line of the run file's `text` block (stairs, victory, return, ...),
-## with {dungeon}, {boss} and {town} filled in. `fallback` when absent.
+## with {dungeon}, {boss} (text.boss_star5 at ★5), {town} and {star} filled in. `fallback` when absent.
 func text(key: String, fallback: String = "") -> String:
 	var block: Dictionary = run_doc.get("text", {}) if typeof(run_doc.get("text", {})) == TYPE_DICTIONARY else {}
 	var line := str(block.get(key, fallback))
-	return line.format({"dungeon": str(dungeon.get("name", "")), "boss": str(dungeon.get("boss", "")), "town": str(block.get("town", "")), "star": star})
+	var boss := str(dungeon.get("boss", ""))
+	if star >= MAX_STAR and str(block.get("boss_star5", "")) != "":
+		boss = str(block["boss_star5"])
+	return line.format({"dungeon": str(dungeon.get("name", "")), "boss": boss, "town": str(block.get("town", "")), "star": star})
 
 
 ## Room won: step on. Returns true when another room follows.

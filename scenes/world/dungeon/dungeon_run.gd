@@ -454,6 +454,8 @@ func _rewards_still() -> void:
 	await _start_room(1, true)
 	board.end_room()
 	run.result = "win"
+	# The capture pays a hero of the run's level (a fresh save is level 1).
+	progress.level = maxi(int(progress.level), int(ctx.get("level", 1)))
 	summary = run.pay_out(progress, missions, RandomNumberGenerator.new(), false)
 	_show_result("win", summary)
 	await get_tree().create_timer(0.8).timeout

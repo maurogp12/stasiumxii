@@ -254,7 +254,7 @@ func _draw_pool(pts: PackedVector2Array) -> void:
 	ring.append(pts[0])
 	var edge := _style_color(pool_style, "ring", Color(0.6, 1.0, 0.3))
 	edge.a = 0.75 + 0.25 * pulse
-	draw_polyline(ring, edge, 2.0)
+	draw_polyline(ring, edge, float(pool_style.get("ring_width", 2.0)))
 	if pool_turns > 0:
 		var font := ThemeDB.fallback_font
 		draw_string(font, Vector2(-4, 5), str(pool_turns), HORIZONTAL_ALIGNMENT_LEFT, -1, 11, _style_color(pool_style, "text_color", Color(0.1, 0.2, 0.05)))
