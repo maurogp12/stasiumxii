@@ -121,7 +121,25 @@ The board uses the same `board_view.gd` math as the Granary: `cell_to_local(x,y)
 
 **Turnarounds and contact sheets:** `_mock/<id>_turnaround.png` shows the S and E paintings each rig is cut from. `_mock/<id>_contact.png` shows every frame of every action. `_mock/monsters_clip.mp4` plays every action in all four facings.
 
-STAR5_SECTION
+## 4. Star 5: The Gravebound Abbess (`star5/`), **rigs pending Mauro's approval**
+
+At ★5 the boss is **The Gravebound Abbess**, the Mire Abbess risen from a sealed grave. The S painting `asset_8hH8iMsYz6gSqnT9eSZcLKPU` was sent to Mauro for approval (side-by-side `build_tools/dungeons/abbey_src/_star5_gate_gravebound_abbess.jpg`, runners-up `asset_PytbLYLvgz4SKK6mDZo8UCvN`, `asset_jQtJww3BxXk8sTPVwsDYGEYd`). **Until he answers, the ★5 monster rigs are not built** and the manifest lists them as `"status": "pending"` with their planned cells and frame counts. Her look:
+- grave-black and ash-grey robes bound in rusted bog-iron grave chains and padlocks;
+- glowing pale-jade soulfire in her cracked mask and eyes, the black-iron cross halo and the grave runes on the chains and hem;
+- a black-iron skull censer pouring pale-jade ghost smoke, ghost-flame candles, and drowned skeletal hands clutching the hem.
+
+| id | cell | pivot | actions |
+|---|---|---|---|
+| `star5/monsters/gravebound_abbess` | 768x540 | (384,494) | as `mire_abbess`, summon 14 (same rig, timing, signature frames and rite_point) |
+| `star5/monsters/gravebound_bog_dead` | 512x360 | (256,329) | as `bog_dead` (chained grave-black robe, jade soulfire face, runes) |
+| `star5/monsters/gravebound_mire_leech` | 512x360 | (256,329) | as `mire_leech`, release f07 (chained grave-black hide, jade pustules and maw) |
+
+- The S and E paintings for all three are already in `abbey_src/` (`gravebound_*`). They are edits of the base paintings with mask overlap 0.94–0.98, so they reuse the base rigs: `python3 abbey_monsters.py gravebound_abbess gravebound_bog_dead gravebound_mire_leech`, then rebuild the manifest and run `mock_rooms.py drowned_abbey --star5`, `mock_turnarounds.py --dungeon drowned_abbey` and `mock_monsters.py --dungeon drowned_abbey --clip5 ...`.
+- **Glow maps:** every ★5 frame will get a same-size additive `<frame>_glow.png` (the pale-jade paint bloomed, `jade_glow`). Draw it on top of the frame with the same offset, scale and flip, using an add blend.
+
+**Other ★5 pieces (built):**
+- `star5/board/grasping_mire.png` is the ★5 hazard "Grasping Mire": a 1-cell, 64x32 pool of black bog water with drowned skeletal hands and roots reaching up, with a 128x64 `_2x/` master and `grasping_mire_glow.png` (96x56, additive). It is centred on the cell, on the ground layer. Only the visual is here; the rule is CombatSim's.
+- `star5/board/projectiles/gravebound_bile.png` (+ `_glow`) is the pale-jade soul bile of the Gravebound Mire Leech.
 
 ## Pipeline (`build_tools/dungeons/`)
 
