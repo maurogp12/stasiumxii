@@ -1026,9 +1026,22 @@ func _test_monster_click_sweep() -> void:
 	var before := root.size
 	var total := 0
 	var misses := 0
+	var by_size := {}
+	var miss_by_size := {}
 	var monsters_seen := 0
 	var mask_points := 0
-	for class_id in CLASSES:
+	# Every class with Performance mode off, then Ironjaw and Kestrel with it on
+	# (1x art, still props).
+	var passes: Array = []
+	for c in CLASSES:
+		passes.append([c, false])
+	passes.append(["ironjaw", true])
+	passes.append(["kestrel", true])
+	for pass_row in passes:
+		var class_id: String = pass_row[0]
+		var perf: bool = pass_row[1]
+		VisualSettings._note_still(perf)
+		Art._cache.clear()
 		var spells: Array = []
 		for spell_id in SpellKits.class_spells(class_id):
 			if view_script.spell_target_kind(str(spell_id)) in ["enemy", "burst", "any"]:
@@ -1053,7 +1066,8 @@ func _test_monster_click_sweep() -> void:
 				await process_frame
 				board._fit_board_camera()
 				await process_frame
-				var label := "%s %s at %dx%d" % [class_id, "room A" if room_index == 0 else "room B", size.x, size.y]
+				var label := "%s%s %s at %dx%d" % [class_id, " (performance)" if perf else "", "room A" if room_index == 0 else "room B", size.x, size.y]
+				var per_size_key := "%dx%d" % [size.x, size.y]
 				for spell_id in spells:
 					hud._selected_spell = spell_id
 					var kind: String = view_script.spell_target_kind(spell_id)
@@ -1078,9 +1092,11 @@ func _test_monster_click_sweep() -> void:
 							tap.position = pt
 							tried += 1
 							total += 1
+							by_size[per_size_key] = int(by_size.get(per_size_key, 0)) + 1
 							var got: Vector2i = board._cell_under_pointer(tap)
 							if got != want:
 								misses += 1
+								miss_by_size[per_size_key] = int(miss_by_size.get(per_size_key, 0)) + 1
 								if misses <= 12:
 									var gp: Vector2 = board.get_viewport().get_canvas_transform().affine_inverse() * pt
 									var lv := []
@@ -1104,8 +1120,12 @@ func _test_monster_click_sweep() -> void:
 					eq(board._cell_under_pointer(tap2), behind, "%s a walk tap on the hero's sprite picks the floor behind" % label)
 		scene.queue_free()
 		await process_frame
+	VisualSettings._note_still(false)
+	Art._cache.clear()
 	root.size = before
 	print("  monster click sweep: %d clicks, %d on pixel masks, %d monster views" % [total, mask_points, monsters_seen])
+	for key in by_size.keys():
+		print("  click sweep %s: %d clicks, %d misses" % [key, int(by_size[key]), int(miss_by_size.get(key, 0))])
 	eq(total > 1000, true, "the sweep clicks every monster body many times (%d)" % total)
 	eq(misses, 0, "every click on a monster's body picks that monster's cell")
 
