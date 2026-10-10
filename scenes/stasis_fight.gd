@@ -249,7 +249,10 @@ static func stasis_result(player: Dictionary, chest: Dictionary, victory: bool, 
 ## Stasis 1 clear: one loot roll, 5 per UTC day across all doors (GearBag).
 func open_chest() -> Dictionary:
 	var bag := GearBag.load_saved()
-	var loot := bag.record_stasis_clear(int(Time.get_unix_time_from_system()), StasisCatalog.star)
+	# Room B is the door boss. The chest uses the 50/30/20 table. Room A
+	# does not open a chest; a call while the room is still A stays on the star table.
+	var boss := StasisCatalog.room == "b"
+	var loot := bag.record_stasis_clear(int(Time.get_unix_time_from_system()), StasisCatalog.star, Callable(), boss)
 	bag.save()
 	# XII Still fragments (Mauro, 29 Sep): only a loot-paying chest rolls them.
 	if bool(loot.get("chest", false)):

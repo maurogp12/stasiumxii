@@ -16,6 +16,9 @@ extends RefCounted
 ## ★1 is 100% Normal. ★3 is 70/30 Normal/Rare. ★5 is 60/30/10. A boss chest
 ## is 50/30/20. ★2 uses the ★1 table and ★4 uses the ★3 table. 5 clears a
 ## day; clear 6+ is empty. Ultra sets are not on this ladder and never drop.
+## They are sold in the Koliseo shop. Their special lines and set bonuses
+## apply only in online Koliseo (the fight's flatten_plus flag). A dungeon
+## or hot-seat fight keeps the plain HP / Mastery / Resist / Init.
 
 const _TestLoadout := preload("res://backend/test_loadout.gd")
 const SLOTS: Array[String] = ["weapon", "head", "chest", "legs", "boots"]
@@ -144,6 +147,58 @@ const FAMILIES := {
 		"bonus": {2: "+4% crit", 4: "+6 Mastery", 5: "+1 AP +1 MP"},
 		"stats": {2: {"crit": 4}, 4: {"mastery": 6}, 5: {"ap": 1, "mp": 1}},
 	},
+	# Ultra. pvp_only: special lines and these bonuses need online Koliseo.
+	# Plain HP / Mastery / Resist / Init always apply. They never drop.
+	"gatewarden": {
+		"name": "Gatewarden", "rarity": "Ultra", "owner": "bastion", "resist_all": true, "pvp_only": true,
+		"source": "Koliseo shop", "min_star": 99,
+		"bonus": {
+			2: "Pushes on you deal no extra damage (you are still moved)",
+			4: "The first back hit on you each turn gets no back bonus",
+			5: "+1 AP +1 MP. Once per turn, a crit on you or an ally within 3 tiles deals normal damage",
+		},
+		"stats": {2: {"push_guard": 1}, 4: {"no_back": 1}, 5: {"ap": 1, "mp": 1, "crit_ward": 1}},
+	},
+	"sandhawk": {
+		"name": "Sandhawk", "rarity": "Ultra", "owner": "kestrel", "resist_all": true, "pvp_only": true,
+		"source": "Koliseo shop", "min_star": 99,
+		"bonus": {
+			2: "Once per match, when an enemy steps next to you, your next Vault is free",
+			4: "Fade on an enemy with 2+ of your Marks lasts 1 turn",
+			5: "+1 AP +1 MP. Once per turn, Detonate removes 1 class stack",
+		},
+		"stats": {2: {"free_vault": 1}, 4: {"fade_cut": 1}, 5: {"ap": 1, "mp": 1, "detonate_strip": 1}},
+	},
+	"pitmaw": {
+		"name": "Pitmaw", "rarity": "Ultra", "owner": "ironjaw", "resist_all": true, "pvp_only": true,
+		"source": "Koliseo shop", "min_star": 99,
+		"bonus": {
+			2: "Once per fight below 35% HP: Berserk (+15% melee, +1 MP) for your next 2 turns, and you take +5% damage",
+			4: "Your first hit each turn gives the target −1 MP next turn (a Slow)",
+			5: "+1 AP +1 MP. A Shoulder hit removes 1 class stack, at most once every 2 turns",
+		},
+		"stats": {2: {"berserk": 1}, 4: {"hit_slow": 1}, 5: {"ap": 1, "mp": 1, "shoulder_strip": 1}},
+	},
+	"hushring": {
+		"name": "Hushring", "rarity": "Ultra", "owner": "gloam", "resist_all": true, "pvp_only": true,
+		"source": "Koliseo shop", "min_star": 99,
+		"bonus": {
+			2: "Enemies you hit heal 25% less until their next turn",
+			4: "Your first hit each turn deals +50% damage to shields",
+			5: "+1 AP +1 MP. Your Fade lasts 3 of your turns",
+		},
+		"stats": {2: {"heal_suppress": 1}, 4: {"shield_burst": 1}, 5: {"ap": 1, "mp": 1, "long_fade": 1}},
+	},
+	"mercywell": {
+		"name": "Mercywell", "rarity": "Ultra", "owner": "mender", "resist_all": true, "pvp_only": true,
+		"source": "Koliseo shop", "min_star": 99,
+		"bonus": {
+			2: "Cleanse also removes Stun",
+			4: "Once per fight, a lethal hit leaves you at 1 HP",
+			5: "+1 AP +1 MP. Rekindle costs 5 AP and 4 Pulse, range 3, revives at 40% HP plus a 10 shield",
+		},
+		"stats": {2: {"cleanse_stun": 1}, 4: {"cheat_death": 1}, 5: {"ap": 1, "mp": 1, "rekindle_ultra": 1}},
+	},
 }
 ## +0 part numbers. Crit% is not on the fuse ladder. Resist on these sets
 ## counts against every element (resist_all). Point budgets are on FAMILIES.
@@ -233,6 +288,31 @@ const PARTS := {
 	"brightedge.chest": {"name": "Gleam Coat", "hp": 20, "mastery": 7, "resist": 2, "init": 0, "crit": 0},
 	"brightedge.legs": {"name": "Gleam Guards", "hp": 12, "mastery": 2, "resist": 2, "init": 0, "crit": 0},
 	"brightedge.boots": {"name": "Gleam Treads", "hp": 8, "mastery": 2, "resist": 0, "init": 10, "crit": 1},
+	"gatewarden.weapon": {"name": "Gatebreaker Mace", "hp": 0, "mastery": 6, "resist": 1, "init": 0, "crit": 0, "ward_shield": 25},
+	"gatewarden.head": {"name": "Grille Helm", "hp": 16, "mastery": 0, "resist": 2, "init": 0, "crit": 0},
+	"gatewarden.chest": {"name": "Gate Plate", "hp": 32, "mastery": 0, "resist": 3, "init": 0, "crit": 0},
+	"gatewarden.legs": {"name": "Gate Greaves", "hp": 14, "mastery": 0, "resist": 4, "init": 0, "crit": 0},
+	"gatewarden.boots": {"name": "Gate Sabatons", "hp": 9, "mastery": 0, "resist": 1, "init": 2, "crit": 0},
+	"sandhawk.weapon": {"name": "Sandhawk Recurve", "hp": 0, "mastery": 6, "resist": 0, "init": 0, "crit": 3, "bow_range": 1},
+	"sandhawk.head": {"name": "Hawk Hood", "hp": 16, "mastery": 0, "resist": 0, "init": 0, "crit": 2, "extra_mark": 1},
+	"sandhawk.chest": {"name": "Sandhawk Jerkin", "hp": 22, "mastery": 3, "resist": 2, "init": 0, "crit": 0},
+	"sandhawk.legs": {"name": "Sash Guards", "hp": 12, "mastery": 2, "resist": 3, "init": 0, "crit": 0},
+	"sandhawk.boots": {"name": "Sand Striders", "hp": 6, "mastery": 1, "resist": 1, "init": 6, "crit": 0, "unbound": 1},
+	"pitmaw.weapon": {"name": "Pitmaw Axes", "hp": 0, "mastery": 4, "resist": 0, "init": 0, "crit": 3, "melee_pct": 8},
+	"pitmaw.head": {"name": "Jaw-Guard Helm", "hp": 22, "mastery": 0, "resist": 2, "init": 0, "crit": 0, "crit_dmg": 10},
+	"pitmaw.chest": {"name": "Pit Hide", "hp": 30, "mastery": 2, "resist": 3, "init": 0, "crit": 0},
+	"pitmaw.legs": {"name": "Chain Wraps", "hp": 12, "mastery": 0, "resist": 4, "init": 0, "crit": 0},
+	"pitmaw.boots": {"name": "Pit Treads", "hp": 6, "mastery": 0, "resist": 1, "init": 0, "crit": 0, "push_flat": 2},
+	"hushring.weapon": {"name": "Hush Knives", "hp": 0, "mastery": 14, "resist": 0, "init": 0, "crit": 4, "back_pct": 10},
+	"hushring.head": {"name": "Half-Mask Hood", "hp": 16, "mastery": 3, "resist": 0, "init": 0, "crit": 2, "crit_dmg": 10},
+	"hushring.chest": {"name": "Hushsilk Vest", "hp": 24, "mastery": 4, "resist": 0, "init": 4, "crit": 0},
+	"hushring.legs": {"name": "Silk Wraps", "hp": 14, "mastery": 1, "resist": 0, "init": 2, "crit": 0},
+	"hushring.boots": {"name": "Hush Steps", "hp": 8, "mastery": 1, "resist": 0, "init": 8, "crit": 0},
+	"mercywell.weapon": {"name": "Mercywell Censer", "hp": 0, "mastery": 5, "resist": 0, "init": 0, "crit": 0, "crit_heal": 3, "heal_pct": 8},
+	"mercywell.head": {"name": "Shell Circlet", "hp": 20, "mastery": 2, "resist": 2, "init": 0, "crit": 0},
+	"mercywell.chest": {"name": "Mercy Vestments", "hp": 28, "mastery": 2, "resist": 3, "init": 0, "crit": 0},
+	"mercywell.legs": {"name": "Linen Robe-Skirt", "hp": 12, "mastery": 0, "resist": 4, "init": 0, "crit": 0},
+	"mercywell.boots": {"name": "Linen Treads", "hp": 8, "mastery": 0, "resist": 1, "init": 6, "crit": 0},
 }
 ## Fuse ladder: plus 0..5 multiplies HP / Mastery / Resist / Init. Not crit.
 const FUSE_MULT: Array[float] = [1.00, 1.12, 1.26, 1.41, 1.58, 1.78]
@@ -248,6 +328,15 @@ const FAMILY_ORDER: Array[String] = [
 	"ironveil", "gallowsight", "maulgrave", "stillcut", "sheaf",
 	"oathgrave", "ravenmourn", "tyrantjaw", "gravewhisper", "hallowmourn", "brightedge",
 ]
+## Koliseo-only sets. Kept out of FAMILY_ORDER so loot never rolls them.
+const ULTRA_ORDER: Array[String] = ["gatewarden", "sandhawk", "pitmaw", "hushring", "mercywell"]
+const ULTRA_BY_CLASS := {
+	"bastion": "gatewarden",
+	"kestrel": "sandhawk",
+	"ironjaw": "pitmaw",
+	"gloam": "hushring",
+	"mender": "mercywell",
+}
 const RARITIES: Array[String] = ["Normal", "Rare", "Legendary"]
 ## Chest tier weights, out of 100. ★2 reads 1, ★4 reads 3. Boss is its own row.
 const DROP_WEIGHTS := {
@@ -356,6 +445,7 @@ static func is_valid_item_id(item_id: String) -> bool:
 ## Ironjaw axes, Mender staff, Gloam daggers, Bastion mace + shield); with no
 ## class it shows the Ironjaw axes.
 const ICON_ROOT := "res://art/items/gear/"
+const ICON_ULTRA := "res://art/items/ultra/"
 
 
 static func icon_path(item_id: String, class_id: String = "") -> String:
@@ -363,6 +453,10 @@ static func icon_path(item_id: String, class_id: String = "") -> String:
 	var slot := slot_of(item_id)
 	if not FAMILIES.has(fam) or not SLOTS.has(slot):
 		return ""
+	if bool(FAMILIES[fam].get("pvp_only", false)):
+		if slot == "weapon":
+			return "%s%s/%s_weapon.png" % [ICON_ULTRA, fam, fam]
+		return "%s%s/%s_%s.png" % [ICON_ULTRA, fam, fam, slot]
 	var art := str(ICON_ALIAS.get(fam, fam))
 	if slot == "weapon":
 		var cls := class_id if CLASS_IDS.has(class_id) else "ironjaw"
@@ -407,13 +501,46 @@ static func part_stats(item_id: String, plus: int) -> Dictionary:
 
 
 ## Short stat line for a part, e.g. "HP 28 · Mastery 2 · Resist 2".
+## Ultra specials are appended with a PvP tag. They are not fuse-scaled.
 static func part_line(item_id: String, plus: int) -> String:
 	var st := part_stats(item_id, plus)
 	var bits: Array[String] = []
 	for key in ["hp", "mastery", "resist", "init", "crit"]:
 		if int(st[key]) > 0:
 			bits.append("%s %d" % [{"hp": "HP", "mastery": "Mastery", "resist": "Resist", "init": "Init", "crit": "Crit"}[key], int(st[key])])
+	var special := special_line(item_id)
+	if special != "":
+		bits.append(special)
 	return " · ".join(bits)
+
+
+## The PvP-only rider on one Ultra part. Empty for ladder sets.
+static func special_line(item_id: String) -> String:
+	var part: Dictionary = PARTS.get(item_id, {})
+	var bits: Array[String] = []
+	if int(part.get("ward_shield", 0)) > 0:
+		bits.append("Ward %d" % int(part["ward_shield"]))
+	if int(part.get("bow_range", 0)) > 0:
+		bits.append("+1 range")
+	if int(part.get("extra_mark", 0)) > 0:
+		bits.append("+1 Mark on first hit")
+	if int(part.get("unbound", 0)) > 0:
+		bits.append("Unbound")
+	if int(part.get("melee_pct", 0)) > 0:
+		bits.append("Melee +%d%%" % int(part["melee_pct"]))
+	if int(part.get("crit_dmg", 0)) > 0:
+		bits.append("Crit dmg +%d%%" % int(part["crit_dmg"]))
+	if int(part.get("push_flat", 0)) > 0:
+		bits.append("Push +%d" % int(part["push_flat"]))
+	if int(part.get("back_pct", 0)) > 0:
+		bits.append("Back +%d%%" % int(part["back_pct"]))
+	if int(part.get("heal_pct", 0)) > 0:
+		bits.append("Heal +%d%%" % int(part["heal_pct"]))
+	if int(part.get("crit_heal", 0)) > 0:
+		bits.append("Crit heal %d%%" % int(part["crit_heal"]))
+	if bits.is_empty():
+		return ""
+	return "%s  PvP" % " · ".join(bits)
 
 
 ## The element a family's attune gives while 2+ pieces are worn: the
@@ -728,7 +855,10 @@ func attune_active(family: String) -> String:
 func active_bonuses() -> Array:
 	var out: Array = []
 	var counts := set_counts()
-	for fam in FAMILY_ORDER:
+	var order: Array = []
+	order.append_array(FAMILY_ORDER)
+	order.append_array(ULTRA_ORDER)
+	for fam in order:
 		var pieces := int(counts.get(fam, 0))
 		var bonus: Dictionary = FAMILIES[fam]["bonus"]
 		for tier in [2, 4, 5]:
@@ -793,10 +923,15 @@ static func worn_counts(worn: Array) -> Dictionary:
 	return counts
 
 
-static func stats_of_worn(worn: Array) -> Dictionary:
+## `pvp` includes Ultra set bonuses. Ladder bonuses always apply.
+static func stats_of_worn(worn: Array, pvp: bool = true) -> Dictionary:
 	var total := {}
 	var counts := worn_counts(worn)
-	for fam in FAMILY_ORDER:
+	var order: Array = []
+	order.append_array(FAMILY_ORDER)
+	if pvp:
+		order.append_array(ULTRA_ORDER)
+	for fam in order:
 		var pieces := int(counts.get(fam, 0))
 		var stats: Dictionary = FAMILIES[fam]["stats"]
 		for tier in [2, 4, 5]:
@@ -825,8 +960,8 @@ static func gate_of_worn(worn: Array) -> Dictionary:
 	return out
 
 
-static func ap_mp_of_worn(worn: Array) -> Dictionary:
-	var stats := stats_of_worn(worn)
+static func ap_mp_of_worn(worn: Array, pvp: bool = true) -> Dictionary:
+	var stats := stats_of_worn(worn, pvp)
 	var gate := gate_of_worn(worn)
 	var raw_ap := BASE_AP + int(stats.get("ap", 0)) + int(gate["ap"])
 	var raw_mp := BASE_MP + int(stats.get("mp", 0)) + int(gate["mp"])
@@ -841,7 +976,8 @@ static func ap_mp_of_worn(worn: Array) -> Dictionary:
 ## crit), plus set bonuses. resist_all families add part resist to the
 ## universal resist, which hits every element. A class_id drops pieces
 ## that class cannot wear. `flatten_plus`: Koliseo arena — parts count as
-## +0, so the Rare +5 gates do not; set bonuses still apply.
+## +0, so the Rare +5 gates do not. It is also the Ultra switch: special
+## lines and Ultra set bonuses apply only when it is set.
 static func combat_stats(raw_worn: Variant, attune_map: Dictionary = {}, flatten_plus: bool = false, class_id: String = "", drop_debug: bool = false) -> Dictionary:
 	var worn := clean_worn(raw_worn, drop_debug)
 	if class_id != "":
@@ -853,8 +989,17 @@ static func combat_stats(raw_worn: Variant, attune_map: Dictionary = {}, flatten
 	if flatten_plus:
 		for entry in worn:
 			entry["plus"] = 0
-	var stats := stats_of_worn(worn)
-	var apmp := ap_mp_of_worn(worn)
+	return _sum_worn(worn, attune_map, flatten_plus)
+
+
+## Gear-screen numbers. Same sum as a fight, without flattening +plus.
+static func sheet_stats(raw_worn: Variant, attune_map: Dictionary = {}, pvp: bool = true) -> Dictionary:
+	return _sum_worn(clean_worn(raw_worn, false), attune_map, pvp)
+
+
+static func _sum_worn(worn: Array, attune_map: Dictionary, pvp: bool) -> Dictionary:
+	var stats := stats_of_worn(worn, pvp)
+	var apmp := ap_mp_of_worn(worn, pvp)
 	var counts := worn_counts(worn)
 	var hp_flat := 0
 	var mastery_flat := int(stats.get("mastery", 0))
@@ -862,6 +1007,16 @@ static func combat_stats(raw_worn: Variant, attune_map: Dictionary = {}, flatten
 	var resist_all := int(stats.get("resist", 0))
 	var crit := int(stats.get("crit", 0))
 	var resist_elem := {}
+	var crit_dmg := 0
+	var melee_pct := 0
+	var heal_pct := 0
+	var crit_heal := 0
+	var bow_range := 0
+	var extra_mark := 0
+	var unbound := 0
+	var push_flat := 0
+	var ward_part := 0
+	var back_part := 0
 	for entry in worn:
 		var item_id := str(entry["item_id"])
 		var fam := family_of(item_id)
@@ -869,7 +1024,20 @@ static func combat_stats(raw_worn: Variant, attune_map: Dictionary = {}, flatten
 		hp_flat += int(st["hp"])
 		mastery_flat += int(st["mastery"])
 		init += int(st["init"])
-		crit += int(st["crit"])
+		var ultra := bool(FAMILIES.get(fam, {}).get("pvp_only", false))
+		if pvp or not ultra:
+			crit += int(st["crit"])
+			var part: Dictionary = PARTS.get(item_id, {})
+			crit_dmg += int(part.get("crit_dmg", 0))
+			melee_pct += int(part.get("melee_pct", 0))
+			heal_pct += int(part.get("heal_pct", 0))
+			crit_heal += int(part.get("crit_heal", 0))
+			bow_range += int(part.get("bow_range", 0))
+			extra_mark += int(part.get("extra_mark", 0))
+			unbound += int(part.get("unbound", 0))
+			push_flat += int(part.get("push_flat", 0))
+			ward_part += int(part.get("ward_shield", 0))
+			back_part += int(part.get("back_pct", 0))
 		if bool(FAMILIES.get(fam, {}).get("resist_all", false)):
 			resist_all += int(st["resist"])
 		else:
@@ -901,14 +1069,37 @@ static func combat_stats(raw_worn: Variant, attune_map: Dictionary = {}, flatten
 		"init": init,
 		"ap": int(apmp["ap"]),
 		"mp": int(apmp["mp"]),
-		"back_pct": int(stats.get("back_pct", 0)),
+		"back_pct": int(stats.get("back_pct", 0)) + back_part,
 		"first_hit": int(stats.get("first_hit", 0)),
 		"melee": int(stats.get("melee", 0)),
 		"heal_flat": int(stats.get("heal_flat", 0)),
 		"first_back": int(stats.get("first_back", 0)),
 		"guard_flat": int(stats.get("guard_flat", 0)),
-		"ward_shield": int(stats.get("ward_shield", 0)),
+		"ward_shield": int(stats.get("ward_shield", 0)) + ward_part,
 		"start_aegis": int(stats.get("start_aegis", 0)),
+		"crit_dmg": crit_dmg,
+		"melee_pct": melee_pct,
+		"heal_pct": heal_pct,
+		"crit_heal": crit_heal,
+		"bow_range": bow_range,
+		"extra_mark": extra_mark,
+		"unbound": unbound,
+		"push_flat": push_flat,
+		"push_guard": int(stats.get("push_guard", 0)),
+		"no_back": int(stats.get("no_back", 0)),
+		"crit_ward": int(stats.get("crit_ward", 0)),
+		"free_vault": int(stats.get("free_vault", 0)),
+		"fade_cut": int(stats.get("fade_cut", 0)),
+		"detonate_strip": int(stats.get("detonate_strip", 0)),
+		"berserk": int(stats.get("berserk", 0)),
+		"hit_slow": int(stats.get("hit_slow", 0)),
+		"shoulder_strip": int(stats.get("shoulder_strip", 0)),
+		"heal_suppress": int(stats.get("heal_suppress", 0)),
+		"shield_burst": int(stats.get("shield_burst", 0)),
+		"long_fade": int(stats.get("long_fade", 0)),
+		"cleanse_stun": int(stats.get("cleanse_stun", 0)),
+		"cheat_death": int(stats.get("cheat_death", 0)),
+		"rekindle_ultra": int(stats.get("rekindle_ultra", 0)),
 	}
 
 
@@ -922,9 +1113,9 @@ func rare_gate(class_id: String = "") -> Dictionary:
 	return gate_of_worn(worn_list(class_id))
 
 
-## AP/MP after gear, clamped 8/5.
-func ap_mp(class_id: String = "") -> Dictionary:
-	return ap_mp_of_worn(worn_list(class_id))
+## AP/MP after gear, clamped 8/5. `pvp` includes an Ultra 5pc +1/+1.
+func ap_mp(class_id: String = "", pvp: bool = true) -> Dictionary:
+	return ap_mp_of_worn(worn_list(class_id), pvp)
 
 
 ## Sanitised fight gear from any source (a peer, a save): worn + attune.

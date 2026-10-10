@@ -8303,7 +8303,7 @@ func _test_kestrel_vault_and_snare() -> void:
 	var vault: Dictionary = _sim.submit({"type": "cast", "spell": "vault", "to": Vector2i(3, 5), "seat": 0})
 	eq(bool(vault.get("ok", false)), true, "Vault jumps 2 tiles away")
 	eq(_unit(0)["pos"], Vector2i(3, 5), "Kestrel lands 2 tiles away")
-	eq(int(_unit(0)["ap"]), int(_unit(0)["max_ap"]) - 2, "Vault costs 2 AP")
+	eq(int(_unit(0)["ap"]), int(_unit(0)["max_ap"]) - 3, "Vault costs 3 AP")
 	_live_unit(1)["pos"] = Vector2i(4, 5)
 	var again: Dictionary = _sim.submit({"type": "cast", "spell": "vault", "to": Vector2i(3, 3), "seat": 0})
 	eq(str(again.get("reason", "")), "vault_limit", "Vault is once per turn")

@@ -11,6 +11,8 @@ signal closed
 const GOLD := Color(0.855, 0.69, 0.4)
 const GOLD_BRIGHT := Color(0.95, 0.82, 0.52)
 const GOLD_DIM := Color(0.62, 0.49, 0.28)
+const PVP_OFF := Color(0.42, 0.42, 0.46)
+const PVP_OFF_DIM := Color(0.32, 0.32, 0.36)
 const ROW_HEIGHT := 48
 const RARITY_TINT := {
 	"Normal": Color(0.86, 0.84, 0.78),
@@ -27,6 +29,8 @@ var _slots_box: VBoxContainer
 var _bag_box: VBoxContainer
 var _sets_box: VBoxContainer
 var _class_buttons: Dictionary = {}
+## Hub shows Ultra lines in gold. A dungeon preview greys them.
+var _pvp_lines := true
 
 
 func _ready() -> void:
@@ -47,6 +51,13 @@ func status_text() -> String:
 
 func header_text() -> String:
 	return _header.text if _header != null else ""
+
+
+## Gold PvP tags, or the same lines greyed for a dungeon / hot-seat sheet.
+func set_pvp_lines(on: bool) -> void:
+	_pvp_lines = on
+	if is_inside_tree():
+		_refresh()
 
 
 func wear(uid: int) -> Dictionary:
@@ -197,11 +208,11 @@ func _refresh() -> void:
 	for cid in _class_buttons:
 		var tab: Button = _class_buttons[cid]
 		tab.disabled = cid == _bag.focus_class
-	var apmp := _bag.ap_mp()
+	var apmp := _bag.ap_mp(_bag.focus_class, _pvp_lines)
 	var grey := ""
 	if int(apmp["ap_greyed"]) > 0 or int(apmp["mp_greyed"]) > 0:
 		grey = "   (extra greyed out)"
-	var st := GearBag.combat_stats(_bag.worn_list(), _bag.attune)
+	var st := GearBag.sheet_stats(_bag.worn_list(), _bag.attune, _pvp_lines)
 	var base_hp := int(preload("res://backend/combat_sim.gd").class_base_hp(_bag.focus_class))
 	var hp := roundi(float(base_hp + int(st["hp_flat"])) * (1.0 + float(st["hp_pct"]) / 100.0))
 	_header.text = "%s   HP %d   Mastery %d   Init %d   Crit %d%%   AP %d/%d   MP %d/%d%s   Loot today %d/%d" % [
@@ -255,17 +266,37 @@ func _refresh() -> void:
 	_clear(_sets_box)
 	var counts := _bag.set_counts()
 	var any := false
-	for fam in GearBag.FAMILY_ORDER:
+	var families: Array = []
+	families.append_array(GearBag.FAMILY_ORDER)
+	families.append_array(GearBag.ULTRA_ORDER)
+	for fam in families:
 		var pieces := int(counts.get(fam, 0))
 		if pieces <= 0:
 			continue
 		any = true
 		var spec: Dictionary = GearBag.FAMILIES[fam]
+		var pvp_fam := bool(spec.get("pvp_only", false))
 		var title := _label("%s (%s) — %d/5" % [str(spec["name"]), str(spec["rarity"]), pieces], 15, RARITY_TINT.get(str(spec["rarity"]), GOLD_BRIGHT))
 		_sets_box.add_child(title)
+		if pvp_fam:
+			for slot in GearBag.SLOTS:
+				var worn := _bag.equipped_item(slot)
+				if worn.is_empty() or GearBag.family_of(str(worn["item_id"])) != fam:
+					continue
+				var special := GearBag.special_line(str(worn["item_id"]))
+				if special == "":
+					continue
+				var part_tint := GOLD_BRIGHT if _pvp_lines else PVP_OFF
+				_sets_box.add_child(_label("  %s" % special, 13, part_tint))
 		for tier in [2, 4, 5]:
 			var on: bool = pieces >= int(tier)
-			var line := _label("  %dpc: %s" % [tier, str(spec["bonus"][tier])], 13, GOLD_BRIGHT if on else GOLD_DIM)
+			var suffix := "  PvP" if pvp_fam else ""
+			var tint := GOLD_DIM
+			if pvp_fam and not _pvp_lines:
+				tint = PVP_OFF if on else PVP_OFF_DIM
+			elif on:
+				tint = GOLD_BRIGHT
+			var line := _label("  %dpc: %s%s" % [tier, str(spec["bonus"][tier]), suffix], 13, tint)
 			_sets_box.add_child(line)
 		if pieces >= GearBag.ATTUNE_PIECES and bool(spec.get("can_attune", false)):
 			var row := HBoxContainer.new()
@@ -288,10 +319,13 @@ func _refresh() -> void:
 			_sets_box.add_child(row)
 	if not any:
 		_sets_box.add_child(_label("Wear 2 pieces of one family for its first bonus.", 14, GOLD_DIM))
-	_sets_box.add_child(_label("Gear counts in Stasis and online Koliseo (Koliseo counts every part as +0). Set bonuses are active, including Legendary 5pc +1 AP +1 MP. Caps stay 8 AP / 5 MP.", 12, GOLD_DIM))
+	_sets_box.add_child(_label("Gear counts in Stasis and online Koliseo (Koliseo counts every part as +0). Set bonuses are active, including Legendary 5pc +1 AP +1 MP. Ultra specials and set bonuses work only in online Koliseo; a dungeon keeps plain HP, Mastery, Resist and Init. Caps stay 8 AP / 5 MP.", 12, GOLD_DIM))
 	if OS.is_debug_build():
 		_sets_box.add_child(_label("Debug review — not in a release build, never sent online.", 12, GOLD_DIM))
-		for fam in GearBag.FAMILY_ORDER:
+		var review_order: Array = []
+		review_order.append_array(GearBag.FAMILY_ORDER)
+		review_order.append_array(GearBag.ULTRA_ORDER)
+		for fam in review_order:
 			var review := _button("Equip %s" % str(GearBag.FAMILIES[fam]["name"]))
 			review.name = "DebugSet_%s" % fam
 			review.pressed.connect(_debug_equip.bind(fam))
