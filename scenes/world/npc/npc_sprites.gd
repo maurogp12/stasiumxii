@@ -58,14 +58,22 @@ static func load_role(role: String) -> Dictionary:
 	var folder := folder_for(role)
 	if folder == "":
 		return {}
-	if _cache.has(folder):
-		return _cache[folder]
-	var built := _build(folder)
-	_cache[folder] = built
+	# Performance mode loads idle and talk only: NPCs keep their posts, so
+	# the walk and work sheets (half the role's memory) are never shown.
+	var lite := VisualSettings.still()
+	var key := folder + ("|lite" if lite else "")
+	if _cache.has(key):
+		return _cache[key]
+	var built := _build(folder, LITE_ANIMS if lite else [])
+	_cache[key] = built
 	return built
 
 
-static func _build(folder: String) -> Dictionary:
+## The anims performance mode loads.
+const LITE_ANIMS: Array = ["idle", "talk"]
+
+
+static func _build(folder: String, only: Array = []) -> Dictionary:
 	var root := ROOT + folder + "/"
 	var meta_path := root + folder + ".json"
 	if not FileAccess.file_exists(meta_path):
@@ -81,6 +89,8 @@ static func _build(folder: String) -> Dictionary:
 	var anims := {}
 	var raw_anims: Dictionary = meta.get("anims", {})
 	for anim_name in raw_anims.keys():
+		if not only.is_empty() and not only.has(str(anim_name)):
+			continue
 		var spec: Dictionary = raw_anims[anim_name]
 		var texs := {}
 		for src in ["s", "n"]:

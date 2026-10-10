@@ -14,6 +14,9 @@ var target := 0.0
 ## World camera position and zoom, for a little parallax as the hero walks.
 var camera_pos := Vector2.ZERO
 var camera_zoom := 1.0
+## Performance mode: `level` still follows the town (the grade reads it) but
+## no flake is drawn.
+var still := false
 
 # Per flake: x, y (0..1 of the screen), depth (0..1), phase.
 var _flakes: PackedFloat32Array = PackedFloat32Array()
@@ -43,13 +46,13 @@ func flake_count() -> int:
 ## Jump straight to the target, for stills and zone loads.
 func snap() -> void:
 	level = target
-	visible = level > 0.01
+	visible = level > 0.01 and not still
 	queue_redraw()
 
 
 func step(delta: float) -> void:
 	level = move_toward(level, target, delta * FADE_RATE)
-	visible = level > 0.01
+	visible = level > 0.01 and not still
 	if not visible:
 		return
 	_time += delta
