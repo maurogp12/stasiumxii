@@ -26,7 +26,7 @@ ROOMS = {
                         ("frozen_chest", (11, 6)), ("frozen_bookshelf", (6, 9)), ("ice_crystals", (2, 8)), ("book_pile", (13, 11)),
                         ("reading_desk", (9, 13)), ("frozen_chest", (1, 13))],
               "units": [("ice_construct", "S", (7, 6)), ("book_wraith", "S", (9, 3)), ("book_wraith", "S", (4, 7)),
-                        ("ice_construct", "E", (9, 8)), ("hero:kestrel", "E", (8, 11)), ("hero:bastion", "E", (5, 12))]},
+                        ("ice_construct", "E", (11, 9)), ("hero:kestrel", "E", (8, 11)), ("hero:bastion", "E", (5, 12))]},
         "b": {"title": "Room B: the Pale Archivist's reading hall (15x15)", "backdrop": "room_b_hall_15x15",
               "pads": [(2, 7), (12, 7), (7, 12)],
               "decals": [("rune_circle", (6, 6))],

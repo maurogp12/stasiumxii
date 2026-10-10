@@ -249,12 +249,13 @@ def frost_emissive(im):
     """Weight map of the glowing ice-cyan paint (runes, eyes, crystal cores) in a frame."""
     a = im[..., 3] > 0
     r, g, b = [im[..., i].astype(np.float32) for i in range(3)]
-    em = a & (b > 175) & (b - r > 55) & (g > 120)
-    return em.astype(np.float32) * np.clip((b + g - 300) / 180.0, 0.25, 1.0)
+    # Only the saturated, bright cyan (runes, eyes, crystal cores), not the pale ice around it.
+    em = a & (b > 215) & (b - r > 100) & (g > 130)
+    return em.astype(np.float32) * np.clip((b - r - 100) / 80.0, 0.35, 1.0)
 
 
 def frost_glow(im, big):
-    return monster_kit.glow_from_mask(im, frost_emissive(im), big, ICE_GLOW, core=(4, 1.5), halo=(13, 1.1), aura=(16, 0.09))
+    return monster_kit.glow_from_mask(im, frost_emissive(im), big, ICE_GLOW, core=(4, 1.3), halo=(13, 0.9), aura=(16, 0.07))
 
 
 # Tome glow for the summon: ramps up f01-f03, holds and pulses to f09 (burst), fades by f12.
@@ -298,7 +299,36 @@ def build(mid, check=False):
     return monster_kit.build(mid, MONSTERS[mid], check)
 
 
+def regen_glows(mid):
+    """Rewrite only the _glow maps of an already built monster from its frames (no re-render)."""
+    from PIL import Image
+    spec = MONSTERS[mid]
+    root = os.path.join(gkit.OUT, "star5" if spec.get("star5") else "", "monsters", mid)
+    big = spec["cell"] == CELL_BIG
+    n = 0
+    for act in sorted(os.listdir(root)):
+        d = os.path.join(root, act)
+        if not os.path.isdir(d):
+            continue
+        for fn in sorted(os.listdir(d)):
+            if not fn.endswith(".png") or fn.endswith("_glow.png"):
+                continue
+            im = np.asarray(Image.open(os.path.join(d, fn)).convert("RGBA")).copy()
+            if spec.get("glow"):
+                g = frost_glow(im, big)
+            elif act in spec.get("action_glow", {}):
+                g = spec["action_glow"][act](im, int(fn[-6:-4]), big)
+            else:
+                continue
+            gkit.save_png(os.path.join(d, fn[:-4] + "_glow.png"), g)
+            n += 1
+    print(mid, "glows rewritten:", n)
+
+
 if __name__ == "__main__":
     args = [a for a in sys.argv[1:] if not a.startswith("--")]
     for mid in (args or list(BASE)):
-        build(mid, check="--check" in sys.argv)
+        if "--glow-only" in sys.argv:
+            regen_glows(mid)
+        else:
+            build(mid, check="--check" in sys.argv)

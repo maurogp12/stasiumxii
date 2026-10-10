@@ -152,7 +152,31 @@ The Granary scripts were generalised into shared modules. Each dungeon script is
 
 ## Known issues / what I'd change
 
-KNOWN_ISSUES
+- **No painted lying-down keys** (same as the Granary):
+  - Every death is the standing painting rotated about 80° and lifted inside the cell.
+  - The Ice Construct's E death lies with its arms sticking out stiffly.
+  - Painting a lying key per monster and facing would read better.
+- **Ice Construct attack:** the wind-up raises both arms out to the sides, a rigid rotation about the shoulders, rather than truly overhead. It still reads as a heave and a slam at f06, but it is the weakest motion in the set.
+- **Ice Construct E walk:** a small sliver of the far leg shows between the feet on some frames, because the legs overlap in the E painting and the back-fill can't fully separate them.
+- **Book Wraith pages:**
+  - The loose pages floating around the wraith are part of its body cut, so they move with the body and do not flutter on their own.
+  - Magenta spill in the page holes is removed by `despill_magenta`. A faint violet tint may remain in the frost glow of the casting hand.
+- **Book Wraith release point:** `release.point_px` is the casting hand at f07. In S the hand is still high at release (about (250,100) in the cell), so the bolt starts near head height. That is by design for a thrown spell, but fly it slightly downward.
+- **Pale Archivist summon:**
+  - The tome is a rigid painted piece lifted and slightly rotated. His holding arm stays on the robe, so the raised tome floats a little above his hand on f03–f09.
+  - The pages "burst" is the glow peak on f09 only; the spawning wraiths or a page particle effect should sell it in game.
+  - The Frozen Archivist uses the same frames with his constant frost glow, but without the extra summon tome glow ramp.
+- **Frozen Archivist:** the left edge of his E robe is painted with a few more crystal spikes than the base (IoU 0.96), so some spikes outside the base's part cuts stay on the body.
+- **★5 glow strength:**
+  - The glow maps bloom only saturated bright cyan.
+  - The Frozen Book Wraith's rune pages are cyan all over, so its glow covers more of the body than the others'. Lower its glow modulate (for example 0.7) if it reads too bright.
+- **Backdrops are 1x only**, as for the Granary (the shells are about 1536 px previews). The room B fit has a 15 px residual at the corners (12 px at 12x12), hidden by the floor apron. The room B shell's raised dais and throne are painted in the back corner behind the board. The `ice_throne` prop is a second throne for the board itself; skip it if the painted one is enough.
+- **Town door:**
+  - The footprint (3x3, cell 200 px in the painting) was measured by eye from the building's base diamond.
+  - The tower is tall (312 px at 1x) next to the 110 px snow cottage. That suits a landmark, but scale it to 0.85 if it towers too much in Northgate.
+  - The door cell is origin+(2,3), not the Granary's (1,3).
+- **Props are slightly graded** (cooled, saturation 0.92) to sit in the darker archive. In-game lighting should finish the match.
+- **Hero stand-ins in the mocks** are the painted idle strips scaled 0.9 by eye, not the game's pawn scale.
 
 ## Scenario source assets (project "stasium")
 
