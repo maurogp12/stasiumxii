@@ -382,6 +382,7 @@ func _showcase() -> void:
 		var p := MonsterPawn.new()
 		if typeof(light) == TYPE_ARRAY:
 			p.light = Color(float(light[0]), float(light[1]), float(light[2]), float(light[3]) if (light as Array).size() > 3 else 1.0)
+		p.glow_strength = float((run.run_doc.get("view", {}) as Dictionary).get("monster_glow", 1.0))
 		p.bind_art(manifest, str(row[0]), bool(row[2]))
 		stage.add_child(p)
 		var stats: Dictionary = run.monsters.stats_at(str(row[0]), 1)

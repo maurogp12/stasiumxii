@@ -202,6 +202,9 @@ func _dress_room() -> void:
 			for gc in grate_cells:
 				var t = tiles[gc]
 				t.set_decal(grate["tex"], grate.get("glow", null), Rect2(at - _cell_to_local(gc), size))
+				# Every cell of the decal pulses its glow piece in step (a
+				# kerb cell that is not a pad too).
+				t.set_process(true)
 	if _backdrop != null and is_instance_valid(_backdrop):
 		_backdrop.free()
 	_backdrop = Props.make_backdrop(kit.get("backdrop", {}), room_id, _board_size)
@@ -489,6 +492,7 @@ func _add_pawn(unit: Dictionary) -> Pawn:
 		var mp := MonsterPawn.new()
 		if view_cfg.has("light"):
 			mp.light = _cfg_color(view_cfg["light"], MonsterPawn.WARM)
+		mp.glow_strength = float(view_cfg.get("monster_glow", 1.0))
 		mp.bind_art(manifest, str(unit["monster"]), bool(unit.get("boss", false)), str(unit.get("variant_of", "")))
 		pawn = mp
 	else:

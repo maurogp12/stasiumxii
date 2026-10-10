@@ -67,7 +67,7 @@ func set_pool(on: bool, turns: int, man: Dictionary, hazard: String = "toxic_poo
 			add_child(_pool_glow)
 	if _pool_glow != null:
 		_pool_glow.visible = on
-	set_process(pool or self.pad)
+	set_process(pool or self.pad or _decal_glow_node != null)
 	queue_redraw()
 
 
@@ -143,6 +143,10 @@ func _process(delta: float) -> void:
 			_glow.modulate.a = 0.6 + 0.4 * sin(_t * 2.4 + float(grid_position.x + grid_position.y))
 		elif pad_tex == null:
 			queue_redraw()
+	elif _decal_glow_node != null:
+		# A decal cell that is not a pad (the whirlpool's kerb) pulses with it.
+		_t += delta
+		_decal_glow_node.modulate.a = 0.65 + 0.35 * sin(_t * 2.2)
 
 
 func _draw() -> void:

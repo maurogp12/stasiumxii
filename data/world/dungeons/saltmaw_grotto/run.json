@@ -44,6 +44,7 @@
       1.04,
       1.0
     ],
+    "monster_glow": 0.7,
     "pads": {
       "coral_pad": {
         "color": [
