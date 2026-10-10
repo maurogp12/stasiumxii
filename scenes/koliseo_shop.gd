@@ -3,9 +3,8 @@ class_name KoliseoShop
 
 ## Hub overlay for the Koliseo wallet (Blueprint §9 and §15).
 ## Left: trophy shop (hub food, frames, titles, tints, pets).
-## Right: Duskbrand stall (60 coins per +0 part).
-## Trophy purchases are stored in the wallet; Duskbrand parts go to the
-## GearBag (wear them on the Gear screen). Cosmetic visuals are not built yet.
+## Right: Room Tonics. The Duskbrand stall is retired.
+## Trophy purchases are stored in the wallet. Cosmetic visuals are not built yet.
 
 signal closed
 signal wallet_changed
@@ -144,19 +143,6 @@ func _build() -> void:
 	columns.add_child(shop_col)
 	var stall_col := VBoxContainer.new()
 	stall_col.add_theme_constant_override("separation", 6)
-	stall_col.add_child(_label("Duskbrand stall", 16, GOLD))
-	for slot in _Wallet.DUSKBRAND_SLOTS:
-		var button := _button("")
-		button.name = "Duskbrand_" + slot
-		button.custom_minimum_size.x = 260
-		var art := GearBag.icon(GearBag.item_id_for("duskbrand", slot))
-		if art != null:
-			button.icon = art
-			button.expand_icon = true
-			button.add_theme_constant_override("icon_max_width", 34)
-		button.pressed.connect(buy_duskbrand.bind(slot))
-		stall_col.add_child(button)
-		_slot_buttons[slot] = button
 	stall_col.add_child(_label("Consumables", 16, GOLD))
 	_tonic_button = _button("")
 	_tonic_button.name = "BuyTonic"
@@ -192,12 +178,6 @@ func _refresh() -> void:
 			button.text = "%s — %d trophies%s" % [str(entry["name"]), int(entry["cost"]), have]
 		button.tooltip_text = str(entry["what"])
 		button.disabled = not bool(gate.get("ok", false))
-	for slot in _slot_buttons:
-		var button: Button = _slot_buttons[slot]
-		var count := GearBag.load_saved().count_of(GearBag.item_id_for("duskbrand", slot))
-		var have := "  (x%d)" % count if count > 0 else ""
-		button.text = "%s +0 — %d coins%s" % [slot.capitalize(), _Wallet.DUSKBRAND_PART_COST, have]
-		button.disabled = not bool(_wallet.can_buy_duskbrand(slot).get("ok", false))
 	if _tonic_button != null:
 		_tonic_button.text = "Room Tonic — %d coin  (%d/%d)" % [_Wallet.TONIC_COST, _wallet.tonics, _Wallet.TONIC_CARRY]
 		_tonic_button.disabled = not bool(_wallet.can_buy_tonic().get("ok", false))
@@ -213,6 +193,8 @@ static func _reason_text(reason: String) -> String:
 			return "Already owned."
 		"tonic_full":
 			return "You already carry 3 Room Tonics."
+		"retired":
+			return "That stall is closed."
 	return "Cannot buy."
 
 

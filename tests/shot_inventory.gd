@@ -20,7 +20,7 @@ func _initialize() -> void:
 	StillVault.save_path = "user://shot_inv_still.json"
 	var bag := GearBag.new()
 	var head := bag.add_item("sheaf", "head", 1)
-	var wpn := bag.add_item("duskbrand", "weapon", 0)
+	var wpn := bag.add_item("brightedge", "weapon", 0)
 	bag.add_item("stillcut", "boots", 0)
 	bag.add_item("stillcut", "boots", 0)
 	bag.add_item("ironveil", "chest", 2)

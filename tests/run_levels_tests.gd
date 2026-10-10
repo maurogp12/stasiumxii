@@ -89,14 +89,12 @@ func _test_inherent_table() -> void:
 	var dump := HeroProgress.combat_stats({"level": 30, "spent": {"swift": 58}}, "bastion")
 	eq([dump["init"], dump["ap"]], [29 + 58, 1], "58 points into Swift: Init 87; AP only from level 20")
 	# How to gain Init (spec §7): boots +0 and the two set bonuses.
-	var boots := {"sheaf": 3, "undertow": 8, "ironveil": 3, "stillcut": 8, "brightedge": 4, "duskbrand": 6}
+	var boots := {"sheaf": 4, "undertow": 12, "ironveil": 2, "stillcut": 20, "brightedge": 10, "ravenmourn": 14}
 	for fam in boots:
 		eq(GearBag.part_stats("%s.boots" % fam, 0)["init"], boots[fam], "%s boots +0 = %d Init" % [fam, boots[fam]])
-	eq(GearBag.stats_of_worn([{"item_id": "undertow.head", "plus": 0}, {"item_id": "undertow.chest", "plus": 0}]).get("init", 0), 8, "Undertow 2-piece +8 Init")
-	var dusk4 := []
-	for slot in ["weapon", "head", "chest", "legs"]:
-		dusk4.append({"item_id": "duskbrand.%s" % slot, "plus": 0})
-	eq(GearBag.stats_of_worn(dusk4).get("init", 0), 6, "Duskbrand 4-piece +6 Init")
+	eq(GearBag.stats_of_worn([{"item_id": "undertow.head", "plus": 0}, {"item_id": "undertow.chest", "plus": 0}]).get("init", 0), 4, "Undertow 2-piece +4 Init")
+	var raven2 := [{"item_id": "ravenmourn.head", "plus": 0}, {"item_id": "ravenmourn.chest", "plus": 0}]
+	eq(GearBag.stats_of_worn(raven2).get("init", 0), 6, "Ravenmourn 2-piece +6 Init")
 	var cheat := HeroProgress.combat_stats({"level": 99, "spent": {"mastery": 500}}, "kestrel")
 	eq([cheat["level"], cheat["mastery"]], [30, 58 + 58 * 2], "a forged level caps at 30 and 58 points")
 
@@ -125,7 +123,7 @@ func _test_levels_in_fights() -> void:
 	var heroes := {"bastion": {"level": 30, "spent": {}}, "kestrel": {"level": 20, "spent": {"swift": 3}}}
 	sim.reset_match({"classes": ["kestrel", "bastion"], "skip_deploy": true, "seat_gear": {
 		0: {"worn": [], "heroes": heroes},
-		1: {"worn": [{"item_id": "sheaf.head", "plus": 0}, {"item_id": "sheaf.chest", "plus": 0}], "heroes": heroes},
+		1: {"worn": [{"item_id": "ironveil.head", "plus": 0}, {"item_id": "ironveil.chest", "plus": 0}], "heroes": heroes},
 	}})
 	var k: Dictionary = sim._unit_by_seat(0)
 	var b: Dictionary = sim._unit_by_seat(1)
@@ -134,11 +132,12 @@ func _test_levels_in_fights() -> void:
 	eq(int(k["mastery"]), 38, "Kestrel 20: 19 × 2 Mastery")
 	eq(int(k["init"]), 19 + 3, "Kestrel 20: 19 Init + 3 Swift")
 	eq(int(k["max_ap"]), 7, "Kestrel 20: +1 AP")
-	eq(int(b["max_hp"]), roundi((110 + 203 + 68) * 1.10), "Bastion 30 + Sheaf helm/coat: (110+203+68)×1.10")
-	eq(int(b["resist_elem"].get("earth", 0)), 5 + 58, "Ward 58 lands on the active Sheaf Earth attune")
+	eq(int(b["max_hp"]), roundi((110 + 203 + 54) * 1.10), "Bastion 30 + Ironveil helm/coat: (110+203+54)×1.10")
+	eq(int(b["resist"]), 7, "Ironveil head+chest resist counts against every element")
+	eq(int(b["resist_elem"].get("earth", 0)), 0, "an elementless set does not attune Ward")
 	# Koliseo flattens plus-rank gear only — never level growth or Swift.
-	sim.reset_match({"classes": ["kestrel", "bastion"], "skip_deploy": true, "seat_gear": {0: {"worn": [{"item_id": "stillcut.boots", "plus": 5}], "heroes": heroes, "flatten_plus": true}}})
-	eq(int(sim._unit_by_seat(0)["init"]), 8 + 19 + 3, "flattened: Stride +5 counts 8, level 20 growth 19 + Swift 3 stay")
+	sim.reset_match({"classes": ["kestrel", "bastion"], "skip_deploy": true, "seat_gear": {0: {"worn": [{"item_id": "undertow.boots", "plus": 5}], "heroes": heroes, "flatten_plus": true}}})
+	eq(int(sim._unit_by_seat(0)["init"]), 12 + 19 + 3, "flattened: Undertow boots +5 count as Init 12, level 20 growth 19 + Swift 3 stay")
 	sim.reset_match({"classes": ["kestrel", "bastion"], "skip_deploy": true, "seat_gear": {1: {"worn": [], "heroes": heroes}}})
 	eq(sim._unit_by_seat(1)["resist_elem"], {}, "no 2-piece attune: Ward does nothing")
 

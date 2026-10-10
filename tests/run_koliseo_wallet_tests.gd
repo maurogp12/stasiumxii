@@ -98,19 +98,13 @@ func _test_trophy_shop() -> void:
 func _test_duskbrand_stall() -> void:
 	var w := KoliseoWallet.new()
 	var bag := GearBag.new()
-	w.coins = 59
-	eq(str(w.buy_duskbrand("weapon", bag)["reason"]), "not_enough_coins", "59 coins cannot buy a part")
 	w.coins = 120
 	var bought := w.buy_duskbrand("weapon", bag)
-	eq(bool(bought["ok"]), true, "60 coins buys a part")
-	eq(str(bought["part"]["item_id"]), "duskbrand.weapon", "the stall sells Duskbrand parts")
-	eq(int(bought["part"]["plus"]), 0, "the stall sells +0 parts")
-	eq(bool(w.buy_duskbrand("weapon", bag)["ok"]), true, "duplicates allowed for fuse")
-	eq(w.coins, 0, "two parts cost 120 coins")
-	eq(bag.count_of("duskbrand.weapon"), 2, "two weapon parts land in the gear bag")
-	eq(str(w.buy_duskbrand("cape", bag)["reason"]), "unknown_slot", "only the 5 slots")
-	eq(KoliseoWallet.DUSKBRAND_SLOTS, ["weapon", "head", "chest", "legs", "boots"], "five gear slots")
-	eq(w.trophies, 0, "coins never turn into trophies")
+	eq(bool(bought["ok"]), false, "the Duskbrand stall is closed")
+	eq(str(bought["reason"]), "retired", "buy_duskbrand reports retired")
+	eq(w.coins, 120, "a retired buy does not spend coins")
+	eq(bag.items.is_empty(), true, "a retired buy adds nothing")
+	eq(str(w.buy_duskbrand("cape", bag)["reason"]), "retired", "every slot is retired")
 
 
 func _test_save_roundtrip() -> void:
@@ -226,11 +220,12 @@ func _test_hub_shop() -> void:
 	eq(shop.sku_button("food.hearth").disabled, false, "loaf is buyable at 10 trophies")
 	shop.buy_sku("food.hearth")
 	eq(label.text, "Coins 60  ·  Trophies 7", "buying updates the hub wallet")
-	shop.buy_duskbrand("head")
-	eq(label.text, "Coins 0  ·  Trophies 7", "stall spends coins")
-	eq(shop.slot_button("chest").disabled, true, "stall greys out at 0 coins")
-	eq(GearBag.load_saved().count_of("duskbrand.head"), 1, "stall part saved in the gear bag")
-	eq(shop.tonic_button().disabled, true, "tonic greys out at 0 coins")
+	var retired := shop.buy_duskbrand("head")
+	eq(bool(retired["ok"]), false, "the stall is closed")
+	eq(label.text, "Coins 60  ·  Trophies 7", "a retired stall does not spend coins")
+	eq(shop.slot_button("chest"), null, "the stall has no slot buttons")
+	eq(GearBag.load_saved().items.is_empty(), true, "no Duskbrand piece is saved")
+	eq(shop.tonic_button().disabled, false, "the tonic is buyable at 60 coins")
 	var rich := KoliseoWallet.load_saved()
 	rich.coins = 1
 	rich.save()

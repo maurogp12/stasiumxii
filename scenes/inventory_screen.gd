@@ -68,9 +68,9 @@ func stats() -> Dictionary:
 ## champion: Mauro 30 Sep 2026 class base HP, 6 AP / 3 MP, plus worn gear,
 ## plus the class level.
 static func champion_stats(gear: GearBag, hero: HeroProgress, class_id: String) -> Dictionary:
-	var st := GearBag.combat_stats(gear.worn_list(), gear.attune)
+	var st := GearBag.combat_stats(gear.worn_list(class_id), gear.attune, false, class_id)
 	var lv := HeroProgress.combat_stats(hero.fight_hero(class_id), class_id)
-	var apmp := gear.ap_mp()
+	var apmp := gear.ap_mp(class_id)
 	var base_hp := preload("res://backend/combat_sim.gd").class_base_hp(class_id)
 	return {
 		"level": int(lv["level"]),
@@ -87,6 +87,7 @@ static func champion_stats(gear: GearBag, hero: HeroProgress, class_id: String) 
 func pick_champion(class_id: String) -> void:
 	if SpellKits.is_roster_class(class_id):
 		champion = class_id
+		_bag.set_focus(class_id)
 		_refresh()
 
 
@@ -104,13 +105,13 @@ func select(sel: Dictionary) -> void:
 
 
 func wear(uid: int) -> Dictionary:
-	var result := _bag.equip(uid)
+	var result := _bag.equip(uid, champion)
 	_after_gear(result, "Wearing %s." % GearBag.item_label(_bag.item(uid)))
 	return result
 
 
 func take_off(slot: String) -> Dictionary:
-	var result := _bag.unequip(slot)
+	var result := _bag.unequip(slot, champion)
 	_after_gear(result, "Took off the %s." % slot)
 	if bool(result.get("ok", false)):
 		picked = {}
@@ -179,6 +180,8 @@ func _reload() -> void:
 	_hero = HeroProgress.load_saved()
 	_wallet = KoliseoWallet.load_saved()
 	_vault = StillVault.load_saved()
+	if SpellKits.is_roster_class(champion):
+		_bag.set_focus(champion)
 
 
 func _after_gear(result: Dictionary, ok_text: String) -> void:
@@ -445,7 +448,7 @@ func _refresh_grid() -> void:
 				t.picked = str(picked.get("kind", "")) == "item" and int(picked.get("uid", -1)) == uid
 				t.pressed.connect(select.bind({"kind": "item", "uid": uid}))
 			if sorted.is_empty():
-				_grid_note("Empty. Clear a Stasis door or buy Duskbrand in the Shop.")
+				_grid_note("Empty. Clear a Stasis door.")
 		"consumables":
 			var any := false
 			for sku in CONSUMABLES:

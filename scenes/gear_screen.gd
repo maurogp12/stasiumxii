@@ -26,6 +26,7 @@ var _status: Label
 var _slots_box: VBoxContainer
 var _bag_box: VBoxContainer
 var _sets_box: VBoxContainer
+var _class_buttons: Dictionary = {}
 
 
 func _ready() -> void:
@@ -49,13 +50,13 @@ func header_text() -> String:
 
 
 func wear(uid: int) -> Dictionary:
-	var result := _bag.equip(uid)
+	var result := _bag.equip(uid, _bag.focus_class)
 	_after(result, "Wearing %s." % GearBag.item_label(_bag.item(uid)))
 	return result
 
 
 func take_off(slot: String) -> Dictionary:
-	var result := _bag.unequip(slot)
+	var result := _bag.unequip(slot, _bag.focus_class)
 	_after(result, "Took off the %s." % slot)
 	return result
 
@@ -142,6 +143,15 @@ func _build() -> void:
 	close_button.name = "CloseGear"
 	close_button.pressed.connect(close)
 	top.add_child(close_button)
+	var classes := HBoxContainer.new()
+	classes.add_theme_constant_override("separation", 6)
+	body.add_child(classes)
+	for cid in GearBag.CLASS_IDS:
+		var tab := _button(SpellKits.display_name(cid))
+		tab.name = "ClassGear_%s" % cid
+		tab.pressed.connect(_focus_class.bind(cid))
+		classes.add_child(tab)
+		_class_buttons[cid] = tab
 	var columns := HBoxContainer.new()
 	columns.add_theme_constant_override("separation", 18)
 	columns.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -172,15 +182,30 @@ func _column(parent: Control, title: String, stretch: float) -> VBoxContainer:
 	return list
 
 
+func _focus_class(class_id: String) -> void:
+	_bag.set_focus(class_id)
+	_bag.save()
+	_refresh()
+
+
+func _debug_equip(family: String) -> void:
+	var result := _bag.debug_equip_set(_bag.focus_class, family)
+	_after(result, "Debug: full %s on %s." % [str(GearBag.FAMILIES.get(family, {}).get("name", family)), _bag.focus_class])
+
+
 func _refresh() -> void:
+	for cid in _class_buttons:
+		var tab: Button = _class_buttons[cid]
+		tab.disabled = cid == _bag.focus_class
 	var apmp := _bag.ap_mp()
 	var grey := ""
 	if int(apmp["ap_greyed"]) > 0 or int(apmp["mp_greyed"]) > 0:
 		grey = "   (extra greyed out)"
 	var st := GearBag.combat_stats(_bag.worn_list(), _bag.attune)
-	var hp := roundi(float(80 + int(st["hp_flat"])) * (1.0 + float(st["hp_pct"]) / 100.0))
-	_header.text = "Gear   HP %d   Mastery %d   Init %d   AP %d/%d   MP %d/%d%s   Loot today %d/%d" % [
-		hp, int(st["mastery"]), int(st["init"]),
+	var base_hp := int(preload("res://backend/combat_sim.gd").class_base_hp(_bag.focus_class))
+	var hp := roundi(float(base_hp + int(st["hp_flat"])) * (1.0 + float(st["hp_pct"]) / 100.0))
+	_header.text = "%s   HP %d   Mastery %d   Init %d   Crit %d%%   AP %d/%d   MP %d/%d%s   Loot today %d/%d" % [
+		SpellKits.display_name(_bag.focus_class), hp, int(st["mastery"]), int(st["init"]), int(st["crit"]),
 		int(apmp["ap"]), GearBag.AP_CAP, int(apmp["mp"]), GearBag.MP_CAP, grey,
 		_bag.loot_clears_left(int(Time.get_unix_time_from_system())), GearBag.LOOT_CLEARS_PER_DAY,
 	]
@@ -226,7 +251,7 @@ func _refresh() -> void:
 		_bag_box.add_child(row)
 		shown += 1
 	if shown == 0:
-		_bag_box.add_child(_label("Empty. Clear a Stasis door or buy Duskbrand in the Shop.", 14, GOLD_DIM))
+		_bag_box.add_child(_label("Empty. Clear a Stasis door.", 14, GOLD_DIM))
 	_clear(_sets_box)
 	var counts := _bag.set_counts()
 	var any := false
@@ -242,7 +267,7 @@ func _refresh() -> void:
 			var on: bool = pieces >= int(tier)
 			var line := _label("  %dpc: %s" % [tier, str(spec["bonus"][tier])], 13, GOLD_BRIGHT if on else GOLD_DIM)
 			_sets_box.add_child(line)
-		if pieces >= GearBag.ATTUNE_PIECES:
+		if pieces >= GearBag.ATTUNE_PIECES and bool(spec.get("can_attune", false)):
 			var row := HBoxContainer.new()
 			row.add_theme_constant_override("separation", 4)
 			for element in GearBag.ELEMENTS:
@@ -263,7 +288,14 @@ func _refresh() -> void:
 			_sets_box.add_child(row)
 	if not any:
 		_sets_box.add_child(_label("Wear 2 pieces of one family for its first bonus.", 14, GOLD_DIM))
-	_sets_box.add_child(_label("Gear counts in Stasis and online Koliseo (Koliseo counts every part as +0). Init turn order and the Undertow / Ironveil / Brightedge 5pc effects are not active yet.", 12, GOLD_DIM))
+	_sets_box.add_child(_label("Gear counts in Stasis and online Koliseo (Koliseo counts every part as +0). Set bonuses are active, including Legendary 5pc +1 AP +1 MP. Caps stay 8 AP / 5 MP.", 12, GOLD_DIM))
+	if OS.is_debug_build():
+		_sets_box.add_child(_label("Debug review — not in a release build, never sent online.", 12, GOLD_DIM))
+		for fam in GearBag.FAMILY_ORDER:
+			var review := _button("Equip %s" % str(GearBag.FAMILIES[fam]["name"]))
+			review.name = "DebugSet_%s" % fam
+			review.pressed.connect(_debug_equip.bind(fam))
+			_sets_box.add_child(review)
 
 
 static func _reason_text(reason: String) -> String:
@@ -276,6 +308,12 @@ static func _reason_text(reason: String) -> String:
 			return "Attune needs 2 worn pieces of that family."
 		"empty_slot":
 			return "Nothing worn there."
+		"wrong_class":
+			return "That set belongs to another class. Ashmantle and Brightedge fit anyone."
+		"no_attune":
+			return "This set has no attune. Its resist counts against every element."
+		"not_debug":
+			return "Debug sets are not in this build."
 	return "Cannot do that."
 
 

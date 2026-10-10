@@ -171,7 +171,7 @@ func _test_reset_and_turn_order() -> void:
 	eq(snap["units"][1]["hp"], 90, "Ironjaw starts at 90 HP")
 	eq(snap["units"][0]["ap"], 6, "Kestrel 6 AP")
 	eq(snap["units"][0]["mp"], 3, "Kestrel 3 MP")
-	eq(snap["crit_roll"], false, "crit roll off")
+	eq(snap["crit_roll"], true, "gear crits are on")
 	eq(snap["gust"], false, "Gust off")
 	eq(snap["momentum"], true, "Momentum on (Mauro 29 Sep 2026)")
 	eq(snap["walk"], "weighted", "walk is Locked weighted pathfinder")
@@ -3785,8 +3785,8 @@ func _test_crit_mult_held() -> void:
 	})
 	var result: Dictionary = _sim.submit({"type": "cast", "spell": "mark_shot", "to": Vector2i(2, 0)})
 	eq(result["events"][0]["crit_mult"], 1.0, "CritMult stays 1.0 even on a connect")
-	eq(_sim.snapshot()["crit_mult"], 1.0, "snapshot exposes CritMult 1.0")
-	eq(_sim.snapshot()["crit_roll"], false, "crit roll stays OFF")
+	eq(_sim.snapshot()["crit_mult"], 1.3, "snapshot exposes CritMult 1.3")
+	eq(_sim.snapshot()["crit_roll"], true, "gear crits are on")
 
 
 func _test_wind_mod_omitted() -> void:
@@ -4717,7 +4717,7 @@ func _test_turn_clock_auto_end_turn() -> void:
 	eq(hud.contains("WindMod"), false, "clock patch does not add WindMod")
 	eq(sim_src.contains("WIND_MOD"), false, "CombatSim still has no WIND_MOD constant")
 	eq(sim_src.contains("* WindMod"), false, "CombatSim still does not multiply by WindMod")
-	eq(_sim.snapshot()["crit_roll"], false, "crit roll stays OFF")
+	eq(_sim.snapshot()["crit_roll"], true, "gear crits are on")
 	eq(sim_src.contains("dedicated"), false, "CombatSim does not invent a dedicated server")
 
 	var host_snap: Dictionary = _sim.snapshot().duplicate(true)
@@ -5958,7 +5958,7 @@ func _test_push_blocked_client_toast_no_hop() -> void:
 	var pawn_src := FileAccess.get_file_as_string("res://units/pawn.gd")
 	truthy(pawn_src.contains("flash_hit"), "pawn can flash on hit")
 	truthy(pawn_src.contains("flash_impact"), "pawn can flash Impact")
-	eq(occupied["crit_roll"], false, "crit roll stays OFF")
+	eq(occupied["crit_roll"], true, "gear crits are on")
 	truthy(view.contains("_present_resolve"), "hot-seat and online share resolve chrome")
 	eq(view.split("_present_resolve(").size() >= 3, true, "net state and submit both present resolve chrome")
 	eq(view.contains("hp"), false, "board_view still does not mention hp")
@@ -6313,7 +6313,7 @@ func _test_kit_class_exclusions() -> void:
 	eq(_sim.snapshot()["advance_ap"], 3, "Advance stays 3 AP")
 	eq(_sim.snapshot()["advance_mp"], "none", "Advance stays 0 MP")
 	eq(_sim.snapshot()["walk"], "weighted", "Walk stays weighted")
-	eq(_sim.snapshot()["crit_roll"], false, "crit roll stays OFF")
+	eq(_sim.snapshot()["crit_roll"], true, "gear crits are on")
 	var sim_src := FileAccess.get_file_as_string("res://backend/combat_sim.gd")
 	eq(sim_src.contains("WIND_MOD"), false, "CombatSim still has no WIND_MOD constant")
 	eq(sim_src.contains("wind_mod"), false, "CombatSim still has no wind_mod term")
@@ -6833,7 +6833,7 @@ func _test_aim_feel_chrome() -> void:
 
 func _test_preview_cast() -> void:
 	# Read-only Locked kit preview. Crit roll stays OFF. No kit number changes.
-	eq(_sim.snapshot().get("crit_roll", true), false, "crit roll stays OFF before preview tests")
+	eq(_sim.snapshot().get("crit_roll", false), true, "gear crits are on before preview tests")
 
 	# Mark Shot: Chebyshev 5 → Locked 75%, sample 8 Air front, rolling.
 	_sim.reset_match({
@@ -7044,7 +7044,7 @@ func _test_preview_cast() -> void:
 	eq(_unit(1)["impact"], 0, "Advance preview does not grant Impact")
 	eq(_unit(1)["facing"], "W", "Advance preview does not change facing")
 
-	eq(_sim.snapshot()["crit_roll"], false, "crit roll stays OFF after preview_cast")
+	eq(_sim.snapshot()["crit_roll"], true, "gear crits are on after preview_cast")
 	var sim_src := FileAccess.get_file_as_string("res://backend/combat_sim.gd")
 	truthy(sim_src.contains("func preview_cast"), "CombatSim exposes preview_cast")
 	truthy(sim_src.contains("func chebyshev"), "CombatSim still keeps the chebyshev metric")
@@ -7078,7 +7078,7 @@ func _assert_preview_did_not_mutate(before: Dictionary, msg: String) -> void:
 	eq(after["snap"]["units"], before["snap"]["units"], "%s (units)" % msg)
 	eq(after["snap"]["match_over"], before["snap"]["match_over"], "%s (match_over)" % msg)
 	eq(after["snap"]["seed"], before["snap"]["seed"], "%s (seed)" % msg)
-	eq(after["snap"]["crit_roll"], false, "%s (crit roll stays OFF)" % msg)
+	eq(after["snap"]["crit_roll"], true, "%s (gear crits are on)" % msg)
 
 
 func _notes_has(notes: Variant, needle: String) -> bool:
@@ -7095,7 +7095,7 @@ func _test_legal_moves_after_advance() -> void:
 	# Manhattan walks — including 0 AP / 3 MP. Client clears spell + repaints
 	# from legal_intents. Crit roll stays OFF; this patch does not invent Stun/push.
 	_sim.reset_match({"seed": 1, "flat_board": true, "kestrel_pos": Vector2i(7, 7), "ironjaw_pos": Vector2i(3, 3)})
-	eq(_sim.snapshot()["crit_roll"], false, "crit roll stays OFF")
+	eq(_sim.snapshot()["crit_roll"], true, "gear crits are on")
 	_sim.submit({"type": "end_turn"})
 	eq(_unit(1)["ap"], 6, "Ironjaw starts at 6 AP")
 	eq(_unit(1)["mp"], 3, "Ironjaw starts at 3 MP")
@@ -7156,7 +7156,7 @@ func _test_legal_moves_after_advance() -> void:
 	truthy(click_src.contains("_paint_highlights()"), "any dest-click cast repaints chrome from legal_intents")
 	eq(click_src.contains("stun_remaining"), false, "walk-after-cast dest-click does not invent Stun")
 	eq(click_src.contains("push_blocked"), false, "walk-after-cast dest-click does not invent push")
-	eq(_sim.snapshot()["crit_roll"], false, "crit roll stays OFF after walk-after-cast checks")
+	eq(_sim.snapshot()["crit_roll"], true, "gear crits are on after walk-after-cast checks")
 
 
 func _test_walk_facing_follows_last_hop() -> void:
@@ -7229,7 +7229,7 @@ func _test_walk_facing_follows_last_hop() -> void:
 	truthy(pawn.contains("func set_facing"), "pawn can update facing mid-hop")
 	eq(anim_src.contains("stun_remaining"), false, "last-hop face anim does not invent Stun")
 	eq(anim_src.contains("push_blocked"), false, "last-hop face anim does not invent push")
-	eq(_sim.snapshot()["crit_roll"], false, "crit roll stays OFF")
+	eq(_sim.snapshot()["crit_roll"], true, "gear crits are on")
 
 
 func _test_advance_facing_unchanged() -> void:
@@ -7309,8 +7309,8 @@ func _test_advance_facing_unchanged() -> void:
 	eq(resolve_src.contains('actor["facing"]'), false, "Advance submit does not write actor facing")
 	var view := FileAccess.get_file_as_string("res://board_view.gd")
 	eq(view.contains('kind == "move" or kind == "advance"'), false, "Advance teleport is not hop-played")
-	eq(_sim.snapshot()["crit_roll"], false, "crit roll stays OFF")
-	eq(_sim.snapshot()["crit_mult"], 1.0, "CritMult stays 1.0")
+	eq(_sim.snapshot()["crit_roll"], true, "gear crits are on")
+	eq(_sim.snapshot()["crit_mult"], 1.3, "CritMult is 1.3")
 
 
 func _test_walk_mode_cancel() -> void:
@@ -7365,13 +7365,13 @@ func _test_walk_mode_cancel() -> void:
 	truthy(unhandled.contains("_return_to_walk"), "Esc cancel is in the same input path")
 	eq(unhandled.find("ui_cancel") < unhandled.find("_face_toward"), true, "Esc cancel does not steal right-click face")
 	eq(hud_src.contains("Detonate"), false, "Walk-mode patch does not hardcode Detonate")
-	eq(_sim.snapshot()["crit_roll"], false, "crit roll stays OFF")
+	eq(_sim.snapshot()["crit_roll"], true, "gear crits are on")
 
 
 func _test_spell_tooltip_cards() -> void:
 	# Proposed hover/long-press chrome. Cards format preview_cast only.
 	eq(SpellTooltip.card_text({}), "", "empty preview has no card")
-	eq(_sim.snapshot()["crit_roll"], false, "crit roll stays OFF")
+	eq(_sim.snapshot()["crit_roll"], true, "gear crits are on")
 
 	_sim.reset_match({
 		"seed": 1,
@@ -7634,7 +7634,7 @@ func _test_spell_tooltip_cards() -> void:
 	var readme := FileAccess.get_file_as_string("res://README.md")
 	truthy(readme.contains("attack cards"), "README documents Proposed attack cards")
 	truthy(readme.contains("preview_cast"), "README says cards read preview_cast")
-	eq(_sim.snapshot()["crit_roll"], false, "crit roll still OFF after tooltip tests")
+	eq(_sim.snapshot()["crit_roll"], true, "gear crits are on after tooltip tests")
 	truthy(tooltip_src.contains("needs Marks"), "tooltip formatter can lead with needs Marks")
 	eq(tooltip_src.contains("var connect :="), false, "tooltip no longer shadows Object.connect")
 	truthy(hud_src.contains("_bind_spell_hover"), "HUD binds hover on enabled spell buttons")

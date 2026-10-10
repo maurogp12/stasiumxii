@@ -399,7 +399,8 @@ static func _damage_hit_recipes(event: Dictionary) -> Array:
 		var number_delay := float(spark.get("delay", 0.0))
 		out.append(_hit_flash(target_seat, cell, number_delay))
 		out.append(_damage_float(target_seat, cell, number_delay))
-		out.append(_number(target_seat, cell, str(damage), "damage", number_delay, _back_scale(event), _back_text(event, str(damage)), _back_tint(event)))
+		var damage_text := "%d CRIT" % damage if bool(event.get("crit", false)) else str(damage)
+		out.append(_number(target_seat, cell, damage_text, "damage", number_delay, _back_scale(event), _back_text(event, damage_text), _back_tint(event)))
 		var back := _back_tag(event)
 		if not back.is_empty():
 			out.append(_chevron(target_seat, cell, event))
@@ -423,7 +424,7 @@ static func _heal_recipes(event: Dictionary) -> Array:
 	var healed := int(event.get("healed", 0))
 	return [
 		{"id": "motes", "block": 0.0, "seat": target_seat, "cell": cell, "tint": VfxPalette.MENDER_CREAM, "chest": true},
-		_number(target_seat, cell, "+%d" % healed, "heal", 0.0, 1.0, "", Color(0, 0, 0, 0)),
+		_number(target_seat, cell, ("+%d CRIT" % healed) if bool(event.get("crit", false)) else ("+%d" % healed), "heal", 0.0, 1.0, "", Color(0, 0, 0, 0)),
 	]
 
 

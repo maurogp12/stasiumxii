@@ -46,7 +46,8 @@ static func class_base_hp(class_id: String) -> int:
 		return int(CLASS_BASE_HP[id])
 	# A body with no roster class (before a Stasis HP override) is not one of the five.
 	return 80
-const CRIT_MULT := 1.0
+const CRIT_MULT := 1.3
+const CRIT_CAP := 20
 const MASTERY := 0.0
 const RESIST := 0.0
 const PASSIVE := 1.0
@@ -149,6 +150,8 @@ var _winner_seat: int = -1
 var _seed: int = 0
 var _rng := RandomNumberGenerator.new()
 var _scripted_rolls: Array[int] = []
+var _last_crit := false
+var _last_crit_mult := 1.0
 var _last_events: Array = []
 var _last_coach: String = ""
 var _intent_log: Array = []
@@ -1001,7 +1004,7 @@ func snapshot() -> Dictionary:
 		"umbral_cap": SpellKits.UMBRAL_CAP,
 		"umbral_owner": SpellKits.CLASS_GLOAM,
 		"wind": "calm",
-		"crit_roll": false,
+		"crit_roll": true,
 		"crit_mult": CRIT_MULT,
 		"mastery": MASTERY,
 		"momentum": true,
@@ -1720,11 +1723,13 @@ func _preview_kit_lines(spell_id: String) -> Dictionary:
 			return {"on_connect": "", "on_miss": ""}
 
 
-## Locked Phase A damage sample/resolve. CritMult 1.0, Passive 1.
+## Locked Phase A damage sample/resolve. Passive 1.
 ## WindMod omitted (not invented as 1.0). Mastery / Resist are 0 on the
-## proto body; worn gear set bonuses raise them (Mauro 29 Sep 2026: gear
-## counts in Koliseo and Stasis). Ironveil attuned resist only against
-## hits of the attuned element.
+## proto body; worn gear raises them. Universal resist (gear resist_all)
+## counts against every element; resist_elem still adds for a matching hit.
+## Gear crits (CRIT_MULT) apply only when resolve is true, the actor is the
+## active fighter, they have not crit yet this turn, and the roll lands.
+## A preview and a 0% chance leave the hit unchanged and do not roll.
 func _phase_a_damage(base: int, facing_mult: float, actor: Dictionary = {}, target: Dictionary = {}, element: String = "", resolve: bool = false) -> int:
 	var mastery: float = MASTERY + float(actor.get("mastery", 0))
 	var el := element.to_lower()
@@ -1734,8 +1739,60 @@ func _phase_a_damage(base: int, facing_mult: float, actor: Dictionary = {}, targ
 		resist += float((by_elem as Dictionary).get(el, 0))
 	var flex := _flex_bonus(actor, el, resolve)
 	var passive := PASSIVE * _class_passive(actor, target)
-	var raw: float = float(base) * CRIT_MULT * passive * (1.0 + mastery / 100.0) * (1.0 + flex / 100.0) * (1.0 - clampf(resist, 0.0, RESIST_CAP) / 100.0) * facing_mult
+	var crit_mult := _gear_crit_mult(actor, resolve, false)
+	var raw: float = float(base) * crit_mult * passive * (1.0 + mastery / 100.0) * (1.0 + flex / 100.0) * (1.0 - clampf(resist, 0.0, RESIST_CAP) / 100.0) * facing_mult
 	return roundi(raw)
+
+
+## Gear crit. Chance is capped at CRIT_CAP. One success per fighter per turn.
+## Heal crits are Mender only (`heals`).
+func _gear_crit_mult(actor: Dictionary, resolve: bool, heals: bool) -> float:
+	_last_crit = false
+	_last_crit_mult = 1.0
+	if not resolve or actor.is_empty():
+		return 1.0
+	if heals and str(actor.get("class_id", "")) != SpellKits.CLASS_MENDER:
+		return 1.0
+	if int(actor.get("seat", -99)) != _active_seat:
+		return 1.0
+	if bool(actor.get("crit_landed", false)):
+		return 1.0
+	var chance := mini(maxi(int(actor.get("crit", 0)), 0), CRIT_CAP)
+	if chance <= 0:
+		return 1.0
+	var roll := _roll_d100()
+	if roll > chance:
+		return 1.0
+	actor["crit_landed"] = true
+	_last_crit = true
+	_last_crit_mult = CRIT_MULT
+	return CRIT_MULT
+
+
+## Set bonuses that sit on top of the resist formula: back %, melee, the
+## first hit of the turn, the first back hit, and the first hit taken.
+## Flats are not run through resist, so +4 stays +4. Flags are spent only
+## when the hit is resolved.
+func _gear_strike_damage(actor: Dictionary, target: Dictionary, damage: int, dist: int, is_back: bool, resolve: bool) -> int:
+	var out := damage
+	var back_pct := int(actor.get("back_pct", 0))
+	if is_back and back_pct > 0 and out > 0:
+		out = roundi(float(out) * (1.0 + float(back_pct) / 100.0))
+	if dist <= 1 and int(actor.get("melee", 0)) > 0 and out > 0:
+		out += int(actor["melee"])
+	if bool(actor.get("first_hit_ready", false)) and int(actor.get("first_hit", 0)) > 0 and out > 0:
+		out += int(actor["first_hit"])
+		if resolve:
+			actor["first_hit_ready"] = false
+	if is_back and bool(actor.get("first_back_ready", false)) and int(actor.get("first_back", 0)) > 0 and out > 0:
+		out += int(actor["first_back"])
+		if resolve:
+			actor["first_back_ready"] = false
+	if bool(target.get("guard_ready", false)) and int(target.get("guard_flat", 0)) > 0 and out > 0:
+		out = maxi(0, out - int(target["guard_flat"]))
+		if resolve:
+			target["guard_ready"] = false
+	return out
 
 
 ## Mauro 29 Sep 2026 (Characteristics sheet): Kestrel Longshot ×1.15 when the
@@ -2314,6 +2371,19 @@ func _make_unit(seat: int, class_id: String, unit_name: String, element: String,
 		# Locked Stun (A′): stun_remaining + stunned-this-turn. Blocks move + cast + face.
 		"stun_remaining": 0,
 		"stunned": false,
+		"stun_immune": false,
+		"crit": 0,
+		"crit_landed": false,
+		"back_pct": 0,
+		"first_hit": 0,
+		"first_hit_ready": false,
+		"melee": 0,
+		"first_back": 0,
+		"first_back_ready": false,
+		"guard_flat": 0,
+		"guard_ready": false,
+		"heal_flat": 0,
+		"ward_shield": 0,
 		# Soft Lock lava Burn. Stacks 0–3 and turns left. Both 0 means not burning.
 		"burn_stacks": 0,
 		"burn_remaining": 0,
@@ -2620,6 +2690,10 @@ func _handoff_seat(actor: Dictionary, auto_skip: bool, skip_reason: String = "")
 		_finish_match(_active_seat)
 		return {}
 
+	# Stun immunity covers the skipped turn and the next real turn. Clear it
+	# only when that real turn ends (the body is no longer stunned).
+	if bool(actor.get("stun_immune", false)) and not bool(actor.get("stunned", false)):
+		actor["stun_immune"] = false
 	if int(actor.get("exit_tax", 0)) > 0:
 		actor["exit_tax"] = int(actor["exit_tax"]) - 1
 	_expire_turn_statuses(actor)
@@ -3107,7 +3181,7 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 			"engine_refunded": true,
 			"engine_gained": 0,
 			"damage": 0,
-			"crit_mult": CRIT_MULT,
+			"crit_mult": 1.0,
 			"coach": _last_coach,
 		}
 		if spell_id == SpellKits.DETONATE:
@@ -3123,6 +3197,8 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 		return _accept()
 
 	var base := _connect_base_damage(def, target)
+	var gear_crit := false
+	var gear_crit_mult := 1.0
 	# Mobile Stasis foes only. Koliseo units never set stasis_attack_base.
 	# This replaces the stand-in card's Locked base for that foe. The facing
 	# multiplier below stays the Locked Phase A formula. Player casts do not
@@ -3130,6 +3206,9 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 	if int(actor.get("stasis_attack_base", -1)) >= 0:
 		base = int(actor["stasis_attack_base"])
 	var pre_mitigation := _phase_a_damage(base, facing_mult, actor, target, str(def.get("element", "")), true)
+	gear_crit = _last_crit
+	gear_crit_mult = _last_crit_mult
+	pre_mitigation = _gear_strike_damage(actor, target, pre_mitigation, dist, is_back, true)
 	var mitigation := _mitigate_hit(actor, target, pre_mitigation)
 	var damage := int(mitigation["damage"])
 	target["hp"] = int(target["hp"]) - damage
@@ -3216,6 +3295,8 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 	if int(actor.get("stasis_attack_base", -1)) >= 0 and str(actor.get("stasis_attack_name", "")) != "":
 		strike_name = str(actor["stasis_attack_name"])
 	_last_coach = "HIT %d %s — %s vs %s (%d vs %d%%) %s.%s" % [damage, str(def["element"]).capitalize(), strike_name, target["name"], roll, chance, facing_note, extra_note]
+	if gear_crit:
+		_last_coach += " CRIT"
 	var hit_event := {
 		"type": "hit",
 		"seat": actor["seat"],
@@ -3231,7 +3312,8 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 		"base_damage": base,
 		"facing_mult": facing_mult,
 		"back": is_back,
-		"crit_mult": CRIT_MULT,
+		"crit": gear_crit,
+		"crit_mult": gear_crit_mult,
 		"damage": damage,
 		"element": def["element"],
 		"engine": engine_name.to_lower(),
@@ -3913,9 +3995,9 @@ func _apply_gear(unit: Dictionary, raw: Variant) -> void:
 		return
 	var gear: Dictionary = raw
 	var attune_raw: Variant = gear.get("attune", {})
-	var stats := GearBag.combat_stats(gear.get("worn", []), attune_raw if typeof(attune_raw) == TYPE_DICTIONARY else {}, bool(gear.get("flatten_plus", false)))
-	# Levels (HeroProgress): inherent growth + spent points, recomputed here.
 	var class_id := str(unit.get("class_id", ""))
+	var stats := GearBag.combat_stats(gear.get("worn", []), attune_raw if typeof(attune_raw) == TYPE_DICTIONARY else {}, bool(gear.get("flatten_plus", false)), class_id, false)
+	# Levels (HeroProgress): inherent growth + spent points, recomputed here.
 	var hero_raw: Variant = gear.get("hero", {})
 	var heroes: Variant = gear.get("heroes", {})
 	if typeof(heroes) == TYPE_DICTIONARY and (heroes as Dictionary).has(class_id):
@@ -3944,9 +4026,23 @@ func _apply_gear(unit: Dictionary, raw: Variant) -> void:
 	unit["first_flex_pct"] = int(stats["first_flex_pct"])
 	unit["first_flex_ready"] = int(stats["first_flex_pct"]) > 0
 	unit["init"] = int(stats["init"]) + int(hero["init"])
+	unit["crit"] = int(stats["crit"])
+	unit["crit_landed"] = false
+	unit["back_pct"] = int(stats["back_pct"])
+	unit["first_hit"] = int(stats["first_hit"])
+	unit["first_hit_ready"] = int(stats["first_hit"]) > 0
+	unit["melee"] = int(stats["melee"])
+	unit["first_back"] = int(stats["first_back"])
+	unit["first_back_ready"] = int(stats["first_back"]) > 0
+	unit["guard_flat"] = int(stats["guard_flat"])
+	unit["guard_ready"] = int(stats["guard_flat"]) > 0
+	unit["heal_flat"] = int(stats["heal_flat"])
+	unit["ward_shield"] = int(stats["ward_shield"])
+	if int(stats["start_aegis"]) > 0:
+		unit["aegis"] = maxi(int(unit.get("aegis", 0)), int(stats["start_aegis"]))
 	unit["max_ap"] = mini(int(stats["ap"]) + int(hero["ap"]), GearBag.AP_CAP)
 	unit["max_mp"] = int(stats["mp"])
-	unit["gear"] = GearBag.clean_worn(gear.get("worn", []))
+	unit["gear"] = GearBag.clean_worn(gear.get("worn", []), false)
 	# XII Still (one fight). Ready flags arm the one-shot effects.
 	var still := StillVault.clean(gear.get("still", {}))
 	unit["still"] = str(still.get("id", ""))
@@ -4250,9 +4346,17 @@ func _begin_unit_turn(unit: Dictionary) -> void:
 	unit["stunned"] = remaining > 0
 	if remaining > 0:
 		unit["stun_remaining"] = remaining - 1
+		# The skip that spends the last stun point arms immunity through the
+		# next real turn. Do not clear it at the end of this skipped turn.
+		if int(unit["stun_remaining"]) == 0:
+			unit["stun_immune"] = true
 	elif was_stunned:
 		# Stun 1 covers the skipped turn. The effect ends on the next turn start.
 		_emit_expire("stun", unit["pos"], int(unit["seat"]), int(unit["seat"]))
+	unit["crit_landed"] = false
+	unit["first_hit_ready"] = int(unit.get("first_hit", 0)) > 0
+	unit["first_back_ready"] = int(unit.get("first_back", 0)) > 0
+	unit["guard_ready"] = int(unit.get("guard_flat", 0)) > 0
 	# Shade / Plant / Snap Wall share the owner turn-start clock. An enemy
 	# turn-start must not burn a duration turn (Mauro: Shade must read as 3).
 	_decay_board_durations(unit)
@@ -4379,7 +4483,9 @@ func _consume_marks(unit: Dictionary) -> int:
 
 func _apply_stun(unit: Dictionary, remaining: int) -> int:
 	# Locked Stun (A′): store stun_remaining. Blocks move + cast + face; auto end_turn.
-	if remaining <= 0:
+	# A body that just finished a stun cannot be stunned again until the end
+	# of its next real turn.
+	if remaining <= 0 or bool(unit.get("stun_immune", false)):
 		return 0
 	unit["stun_remaining"] = maxi(int(unit.get("stun_remaining", 0)), remaining)
 	return remaining
@@ -5291,7 +5397,9 @@ func _submit_foe_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
 			_last_events.append(event)
 			continue
 		var facing_mult := _facing_multiplier(actor["pos"], target["pos"], str(target.get("facing", "")))
+		var foe_back := facing_mult > FRONT_SIDE_FACING + 0.001
 		var pre := _phase_a_damage(_foe_base_damage(actor, def), facing_mult, actor, target, _foe_element(actor, def), true)
+		pre = _gear_strike_damage(actor, target, pre, dist, foe_back, true)
 		var mitigation := _mitigate_hit(actor, target, pre)
 		var damage := int(mitigation["damage"])
 		target["hp"] = maxi(int(target["hp"]) - damage, 0)
@@ -6219,7 +6327,7 @@ func _intercept_transfer(actor: Dictionary, target: Dictionary, damage: int) -> 
 	return dealt
 
 
-func _support_heal_amount(actor: Dictionary, target: Dictionary, def: Dictionary) -> int:
+func _support_heal_amount(actor: Dictionary, target: Dictionary, def: Dictionary, resolve: bool = false) -> int:
 	var base := int(def.get("base_heal", 0))
 	if base <= 0:
 		return 0
@@ -6230,11 +6338,13 @@ func _support_heal_amount(actor: Dictionary, target: Dictionary, def: Dictionary
 	if _triage_applied(target, def):
 		passive = SpellKits.TRIAGE_MULT
 	var flex := _flex_bonus(actor, str(def.get("element", "")).to_lower(), false)
-	var raw: float = float(base) * CRIT_MULT * passive * (1.0 + (MASTERY + float(actor.get("mastery", 0))) / 100.0) * (1.0 + flex / 100.0) * facing
+	var crit_mult := _gear_crit_mult(actor, resolve, true)
+	var raw: float = float(base) * crit_mult * passive * (1.0 + (MASTERY + float(actor.get("mastery", 0))) / 100.0) * (1.0 + flex / 100.0) * facing
 	# Mauro 6 Oct 2026: Spark is the Mender counter — a Sparked healer's heals
 	# are 40% weaker too (on top of the cut on a Sparked target).
 	if bool(actor.get("sparked", false)):
 		raw *= 1.0 - SPARK_HEAL_CUT
+	raw += float(actor.get("heal_flat", 0))
 	return roundi(raw)
 
 
@@ -6374,10 +6484,14 @@ func _resolve_support(intent: Dictionary, actor: Dictionary, target: Dictionary,
 		return _accept()
 	var healed := 0
 	var triage := false
+	var heal_crit := false
+	var heal_crit_mult := 1.0
 	if spell_id != SpellKits.WARD and spell_id != SpellKits.CLEANSE:
 		# Read Triage before the heal so the threshold sees pre-heal HP.
 		triage = _triage_applied(target, def)
-		var heal_amount := _support_heal_amount(actor, target, def)
+		var heal_amount := _support_heal_amount(actor, target, def, true)
+		heal_crit = _last_crit
+		heal_crit_mult = _last_crit_mult
 		if str(actor.get("still", "")) == "mercy" and bool(actor.get("still_ready", false)):
 			# Mercy Still: first heal +8 (Overwound +16 and Cleanse).
 			actor["still_ready"] = false
@@ -6412,6 +6526,8 @@ func _resolve_support(intent: Dictionary, actor: Dictionary, target: Dictionary,
 	if spell_id == SpellKits.HEARTSTOP:
 		target["hit_immunity"] = int(def.get("ally_immunity_hits", 1))
 	_last_coach = "HIT %s on %s." % [def["name"], target["name"]]
+	if heal_crit:
+		_last_coach += " CRIT"
 	var hit_event := {
 		"type": "hit",
 		"seat": actor["seat"],
@@ -6426,6 +6542,8 @@ func _resolve_support(intent: Dictionary, actor: Dictionary, target: Dictionary,
 		"mp_spent": mp_cost,
 		"healed": healed,
 		"damage": 0,
+		"crit": heal_crit,
+		"crit_mult": heal_crit_mult,
 		"shield": int(target.get("shield", 0)),
 		"engine_gained": engine_gained,
 		"engine_spent": engine_spent,
@@ -6547,6 +6665,8 @@ func _resolve_team_ward(intent: Dictionary, actor: Dictionary, def: Dictionary, 
 	actor["ward_used"] = true
 	var radius := int(def.get("ward_radius", 3))
 	var add := int(def.get("shield", 20))
+	if int(actor.get("ward_shield", 0)) > 0:
+		add = int(actor["ward_shield"])
 	var cap := int(def.get("shield_cap", 40))
 	var shielded: Array = []
 	for unit in _units:
@@ -6781,6 +6901,7 @@ func _resolve_aegis_break(intent: Dictionary, actor: Dictionary, def: Dictionary
 		var facing_mult := _facing_multiplier(actor["pos"], target["pos"], str(target.get("facing", "E")))
 		var is_back := facing_mult > FRONT_SIDE_FACING + 0.001
 		var pre_mitigation := _phase_a_damage(int(def.get("base_damage", 26)), facing_mult, actor, target, str(def.get("element", "")), true)
+		pre_mitigation = _gear_strike_damage(actor, target, pre_mitigation, chebyshev(actor["pos"], target["pos"]), is_back, true)
 		var mitigation := _mitigate_hit(actor, target, pre_mitigation)
 		var damage := int(mitigation["damage"])
 		target["hp"] = maxi(0, int(target["hp"]) - damage)
@@ -6992,6 +7113,7 @@ func _resolve_hold_line(intent: Dictionary, actor: Dictionary, def: Dictionary, 
 		if str(actor.get("class_id", "")) == SpellKits.CLASS_GLOAM and is_back:
 			facing_mult = SpellKits.BACKSTAB_MULT
 		var pre_mitigation := _phase_a_damage(int(def.get("base_damage", 7)), facing_mult, actor, target, str(def.get("element", "")), true)
+		pre_mitigation = _gear_strike_damage(actor, target, pre_mitigation, chebyshev(actor["pos"], target["pos"]), is_back, true)
 		var mitigation := _mitigate_hit(actor, target, pre_mitigation)
 		var damage := int(mitigation["damage"])
 		target["hp"] = maxi(0, int(target["hp"]) - damage)
@@ -7134,6 +7256,8 @@ func _resolve_ambush(intent: Dictionary, actor: Dictionary, target: Dictionary, 
 	var umbral_before := int(actor.get("umbral", 0))
 	var base := _ambush_strike_base(def, actor)
 	var pre_mitigation := _phase_a_damage(base, facing_mult, actor, target, str(def.get("element", "")), true)
+	var ambush_crit := _last_crit
+	pre_mitigation = _gear_strike_damage(actor, target, pre_mitigation, 1, backstab, true)
 	var mitigation := _mitigate_hit(actor, target, pre_mitigation)
 	var damage := int(mitigation["damage"])
 	# Pos was assigned above. Damage is the strike from that tile. A reorder
@@ -7147,6 +7271,8 @@ func _resolve_ambush(intent: Dictionary, actor: Dictionary, target: Dictionary, 
 	# Teleport and the hit are done. The attack ends Invisible after that.
 	_break_invisible_on_attack(actor)
 	_last_coach = "HIT Ambush %d at %s%s." % [damage, _cell_text(cell), " (back blocked, front landing)" if bool(landing.get("front", false)) else ""]
+	if ambush_crit:
+		_last_coach += " CRIT"
 	if umbral_spent > 0:
 		_last_coach += " Umbral spent (%d), +%d." % [umbral_spent, int(def.get("damage_per_umbral", 3)) * mini(umbral_before, SpellKits.UMBRAL_CAP)]
 	_last_events.append({
@@ -7171,6 +7297,8 @@ func _resolve_ambush(intent: Dictionary, actor: Dictionary, target: Dictionary, 
 		"facing": str(actor.get("facing", "")),
 		"facing_mult": facing_mult,
 		"base_damage": base,
+		"crit": ambush_crit,
+		"crit_mult": CRIT_MULT if ambush_crit else 1.0,
 		"umbral_spent": umbral_spent,
 		"umbral": int(actor.get("umbral", 0)),
 		"damage": damage,

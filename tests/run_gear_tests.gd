@@ -34,34 +34,51 @@ func _run() -> void:
 	_test_stasis_chest_wiring()
 	_test_combat_result()
 	_test_gear_in_fights()
+	_test_loadouts()
+	_test_crit_cap_and_stun()
 	_wipe()
 	print("Gear tests: %d passed, %d failed" % [_passed, _failed])
 	quit(1 if _failed > 0 else 0)
 
 
 func _test_families_and_slots() -> void:
-	eq(GearBag.FAMILY_ORDER, ["sheaf", "undertow", "ironveil", "stillcut", "brightedge", "duskbrand"], "exactly the six families")
-	eq(GearBag.FAMILIES.size(), 6, "no seventh family")
+	eq(GearBag.FAMILY_ORDER.size(), 17, "five classes × 3 plus Ashmantle and Brightedge")
+	eq(GearBag.FAMILIES.size(), 17, "seventeen families")
+	eq(GearBag.FAMILIES.has("duskbrand"), false, "Duskbrand is gone")
+	eq(GearBag.is_valid_item_id("duskbrand.weapon"), false, "Duskbrand is not a valid item")
 	eq(GearBag.SLOTS, ["weapon", "head", "chest", "legs", "boots"], "five slots")
 	eq(GearBag.ELEMENTS, ["Air", "Earth", "Fire", "Water"], "four attune elements")
-	eq(str(GearBag.FAMILIES["duskbrand"]["source"]), "Koliseo 60 coins", "Duskbrand comes from Koliseo")
-	eq(str(GearBag.FAMILIES["brightedge"]["rarity"]), "Legendary", "Brightedge is Legendary")
+	eq(str(GearBag.FAMILIES["ashmantle"]["rarity"]), "Normal", "Ashmantle is the shared Normal")
+	eq(str(GearBag.FAMILIES["ashmantle"]["owner"]), "", "Ashmantle fits any class")
+	eq(str(GearBag.FAMILIES["brightedge"]["rarity"]), "Legendary", "Brightedge is the shared Legendary")
+	eq(str(GearBag.FAMILIES["oathgrave"]["owner"]), "bastion", "Oathgrave is Bastion")
+	eq(str(GearBag.FAMILIES["ravenmourn"]["owner"]), "kestrel", "Ravenmourn is Kestrel")
+	eq(str(GearBag.FAMILIES["tyrantjaw"]["owner"]), "ironjaw", "Tyrantjaw is Ironjaw")
+	eq(str(GearBag.FAMILIES["gravewhisper"]["owner"]), "gloam", "Gravewhisper is Gloam")
+	eq(str(GearBag.FAMILIES["hallowmourn"]["owner"]), "mender", "Hallowmourn is Mender")
 	eq(GearBag.is_valid_item_id("sheaf.head"), true, "sheaf.head is valid")
 	eq(GearBag.is_valid_item_id("wheat.head"), false, "unknown family rejected")
 	eq(GearBag.is_valid_item_id("sheaf.cape"), false, "unknown slot rejected")
+	for fam in GearBag.FAMILY_ORDER:
+		var rarity := str(GearBag.FAMILIES[fam]["rarity"])
+		var budget := 60 if rarity == "Normal" else (70 if rarity == "Rare" else 77)
+		eq(GearBag.budget_points(fam), budget, "%s %s budget is %d" % [fam, rarity, budget])
 
 
 func _test_equip() -> void:
 	var bag := GearBag.new()
-	var a := bag.add_item("sheaf", "head")
-	var b := bag.add_item("undertow", "head")
+	var a := bag.add_item("undertow", "head")
+	var b := bag.add_item("gallowsight", "head")
 	eq(bool(bag.equip(a)["ok"]), true, "wear a head")
 	eq(int(bag.equipped["head"]), a, "head slot holds it")
 	bag.equip(b)
 	eq(int(bag.equipped["head"]), b, "a new head replaces the old one")
 	eq(bag.is_equipped(a), false, "old head back in the bag")
-	eq(bool(bag.unequip("head")["ok"]), true, "take off the head")
-	eq(str(bag.unequip("head")["reason"]), "empty_slot", "nothing left to take off")
+	var foreign := bag.add_item("sheaf", "chest")
+	eq(str(bag.equip(foreign, "kestrel")["reason"]), "wrong_class", "Sheaf will not equip on Kestrel")
+	eq(bool(bag.equip(bag.add_item("brightedge", "weapon"), "bastion")["ok"]), true, "Brightedge fits Bastion")
+	eq(bool(bag.unequip("head", "kestrel")["ok"]), true, "take off the head")
+	eq(str(bag.unequip("head", "kestrel")["reason"]), "empty_slot", "nothing left to take off")
 	eq(str(bag.equip(999)["reason"]), "no_item", "unknown item")
 
 
@@ -108,19 +125,10 @@ func _test_fuse() -> void:
 
 func _test_attune() -> void:
 	var bag := GearBag.new()
-	var h := bag.add_item("ironveil", "head")
-	var c := bag.add_item("ironveil", "chest")
-	bag.equip(h)
-	eq(str(bag.set_attune("ironveil", "Fire")["reason"]), "needs_2_pieces", "attune needs 2 worn pieces")
-	bag.equip(c)
-	eq(str(bag.set_attune("ironveil", "Ice")["reason"]), "unknown_element", "only the four elements")
-	eq(bool(bag.set_attune("ironveil", "Fire")["ok"]), true, "attune at 2 pieces")
-	eq(bag.attune_active("ironveil"), "Fire", "Fire is active")
-	bag.unequip("chest")
-	eq(bag.attune_active("ironveil"), "", "attune rests under 2 pieces")
-	eq(str(bag.attune.get("ironveil", "")), "Fire", "the choice is kept")
-	bag.equip(c)
-	eq(bag.attune_active("ironveil"), "Fire", "attune back at 2 pieces")
+	bag.equip(bag.add_item("ironveil", "head"))
+	bag.equip(bag.add_item("ironveil", "chest"))
+	eq(str(bag.set_attune("ironveil", "Fire")["reason"]), "no_attune", "the ladder has no attune")
+	eq(bag.attune_active("ironveil"), "", "no element is active")
 
 
 func _test_set_bonuses() -> void:
@@ -130,10 +138,10 @@ func _test_set_bonuses() -> void:
 	var tiers: Array = []
 	for bonus in bag.active_bonuses():
 		tiers.append([bonus["family"], bonus["tier"], bonus["text"]])
-	eq(tiers, [["sheaf", 2, "+10% HP"], ["sheaf", 4, "+8 Mastery"]], "4 Sheaf pieces give the 2pc and 4pc bonuses")
-	eq(bag.bonus_stats(), {"hp_pct": 10, "mastery": 8}, "Sheaf 4pc stats stack")
+	eq(tiers, [["sheaf", 2, "+10% HP"], ["sheaf", 4, "Heals +6"]], "4 Sheaf pieces give the 2pc and 4pc bonuses")
+	eq(bag.bonus_stats(), {"hp_pct": 10, "heal_flat": 6}, "Sheaf 4pc stats stack")
 	bag.equip(bag.add_item("sheaf", "boots"))
-	eq(bag.bonus_stats(), {"hp_pct": 10, "mastery": 8, "resist_pct": 8}, "Sheaf 5pc adds +8% all resist")
+	eq(bag.bonus_stats(), {"hp_pct": 10, "heal_flat": 6, "resist": 4}, "Sheaf 5pc adds +4 Resist")
 	var mixed := GearBag.new()
 	mixed.equip(mixed.add_item("sheaf", "weapon"))
 	mixed.equip(mixed.add_item("undertow", "head"))
@@ -145,23 +153,26 @@ func _test_ap_mp_clamp() -> void:
 	eq(bag.ap_mp()["ap"], 6, "base 6 AP")
 	eq(bag.ap_mp()["mp"], 3, "base 3 MP")
 	for slot in GearBag.SLOTS:
-		bag.equip(bag.add_item("duskbrand", slot))
-	eq(bag.ap_mp()["ap"], 7, "Duskbrand 5pc +1 AP")
-	eq(bag.ap_mp()["mp"], 4, "Duskbrand 5pc +1 MP")
-	# Rare gate: 4 Stillcut pieces all ≥+4 → +1 MP.
+		bag.equip(bag.add_item("brightedge", slot))
+	eq(bag.ap_mp()["ap"], 7, "Brightedge 5pc +1 AP")
+	eq(bag.ap_mp()["mp"], 4, "Brightedge 5pc +1 MP")
+	# Rare gate: +5 weapon → +1 AP, +5 boots → +1 MP. +4 does nothing.
 	var rare := GearBag.new()
-	for slot in ["weapon", "head", "chest", "legs"]:
-		rare.equip(rare.add_item("stillcut", slot, 4))
-	eq(rare.rare_gate(), {"ap": 0, "mp": 1}, "4 rare pieces at +4 → +1 MP")
+	rare.equip(rare.add_item("stillcut", "weapon", 4))
 	rare.equip(rare.add_item("stillcut", "boots", 4))
-	eq(rare.rare_gate(), {"ap": 0, "mp": 1}, "5 pieces not all +5 → no AP")
-	for slot in GearBag.SLOTS:
-		rare.equip(rare.add_item("stillcut", slot, 5))
-	eq(rare.rare_gate(), {"ap": 1, "mp": 1}, "5 rare pieces at +5 → +1 AP and +1 MP")
+	eq(rare.rare_gate(), {"ap": 0, "mp": 0}, "+4 rare pieces do not open the gate")
+	rare.equip(rare.add_item("stillcut", "weapon", 5))
+	eq(rare.rare_gate(), {"ap": 1, "mp": 0}, "Rare +5 weapon → +1 AP")
+	rare.equip(rare.add_item("stillcut", "boots", 5))
+	eq(rare.rare_gate(), {"ap": 1, "mp": 1}, "Rare +5 boots → +1 MP")
 	var normal := GearBag.new()
-	for slot in GearBag.SLOTS:
-		normal.equip(normal.add_item("sheaf", slot, 5))
-	eq(normal.rare_gate(), {"ap": 0, "mp": 0}, "the rare gate is Ironveil/Stillcut only")
+	normal.equip(normal.add_item("nightglass", "weapon", 5))
+	normal.equip(normal.add_item("nightglass", "boots", 5))
+	eq(normal.rare_gate(), {"ap": 0, "mp": 0}, "a Normal +5 does not open the gate")
+	var flat := GearBag.combat_stats(_worn("stillcut", ["weapon", "boots"], 5), {}, true, "gloam")
+	eq([int(flat["ap"]), int(flat["mp"])], [6, 3], "Koliseo flatten closes the +5 gates")
+	var legend := GearBag.combat_stats(_worn("gravewhisper", GearBag.SLOTS), {}, true, "gloam")
+	eq([int(legend["ap"]), int(legend["mp"])], [7, 4], "Legendary 5pc +1/+1 survives flatten")
 	eq(GearBag.AP_CAP, 8, "AP clamp 8")
 	eq(GearBag.MP_CAP, 5, "MP clamp 5")
 	var over := rare.ap_mp()
@@ -180,17 +191,17 @@ func _test_stasis_loot() -> void:
 	var first := bag.record_stasis_clear(T0, 1, pick)
 	eq(bool(first["chest"]), true, "first clear opens a chest")
 	eq(first["items"].size(), 1, "Stasis 1 chest holds one piece")
-	eq(str(first["items"][0]["item_id"]), "sheaf.weapon", "pick 0,0 = Sheaf weapon")
+	eq(str(first["items"][0]["item_id"]), "ashmantle.weapon", "pick 0,0 = Ashmantle weapon")
 	eq(int(first["items"][0]["plus"]), 0, "drops are +0")
 	var second := bag.record_stasis_clear(T0 + 10, 1, pick)
-	eq(str(second["items"][0]["item_id"]), "undertow.boots", "pick .99,.99 = Undertow boots")
+	eq(str(second["items"][0]["item_id"]), "vesperwell.boots", "pick .99,.99 = Vesperwell boots")
 	var seen := {}
 	for n in 3:
 		var loot := bag.record_stasis_clear(T0 + 20 + n, 1, pick)
 		for it in loot["items"]:
 			seen[GearBag.family_of(str(it["item_id"]))] = true
 	for fam in seen:
-		eq(["sheaf", "undertow"].has(fam), true, "★1 drops only ★1+ families (%s)" % fam)
+		eq(GearBag.families_for_star(1).has(fam), true, "★1 drops only Normals (%s)" % fam)
 	eq(bag.loot_clears_left(T0 + 60), 0, "5 used")
 	var sixth := bag.record_stasis_clear(T0 + 70, 1, pick)
 	eq(bool(sixth["chest"]), false, "clear 6 is allowed but the chest is empty")
@@ -202,33 +213,37 @@ func _test_stasis_loot() -> void:
 	for n in 50:
 		never.record_stasis_clear(T0 + n * DAY, 5)
 	for it in never.items:
+		eq(GearBag.FAMILIES.has(GearBag.family_of(str(it["item_id"]))), true, "Stasis only drops ladder families")
 		eq(GearBag.family_of(str(it["item_id"])) != "duskbrand", true, "Stasis never drops Duskbrand")
 
 
 ## Mauro 29 Sep 2026: "dungs with 1 star should only loot normal gear, above
 ## 3 star is when start looting rare and only 5 legendary".
 func _test_loot_by_star() -> void:
-	var want := {
-		1: ["sheaf", "undertow"],
-		2: ["sheaf", "undertow"],
-		3: ["ironveil", "sheaf", "stillcut", "undertow"],
-		4: ["ironveil", "sheaf", "stillcut", "undertow"],
-		5: ["brightedge", "ironveil", "sheaf", "stillcut", "undertow"],
-	}
-	for star in want:
+	var normals: Array = ["ashmantle", "rustward", "undertow", "cragmaw", "nightglass", "vesperwell"]
+	var rares: Array = ["ironveil", "gallowsight", "maulgrave", "stillcut", "sheaf"]
+	var legends: Array = ["oathgrave", "ravenmourn", "tyrantjaw", "gravewhisper", "hallowmourn", "brightedge"]
+	eq(GearBag.families_for_star(1), normals, "★1 drops the Normals")
+	eq(GearBag.families_for_star(2), normals, "★2 stays on the Normals")
+	var up_to_rare: Array = normals.duplicate()
+	up_to_rare.append_array(rares)
+	eq(GearBag.families_for_star(3), up_to_rare, "★3 adds the Rares")
+	eq(GearBag.families_for_star(4), up_to_rare, "★4 stays on Normal + Rare")
+	var all: Array = up_to_rare.duplicate()
+	all.append_array(legends)
+	eq(GearBag.families_for_star(5), all, "★5 / boss adds the Legendaries")
+	for star in [1, 3, 5]:
 		var bag := GearBag.new()
+		var pool: Array = GearBag.families_for_star(int(star))
 		var n := [0]
 		var pick := func() -> float:
 			n[0] += 1
 			return fposmod(float(n[0]) * 0.1373, 1.0)
-		var seen := {}
-		for d in 40:
+		for d in 24:
 			for it in bag.record_stasis_clear(T0 + d * DAY, int(star), pick)["items"]:
-				seen[GearBag.family_of(str(it["item_id"]))] = true
-		var got: Array = seen.keys()
-		got.sort()
-		eq(got, want[star], "★%d drops exactly %s" % [star, ", ".join(want[star])])
-	eq(str(GearBag.FAMILIES["sheaf"]["rarity"]), "Normal", "Sheaf is Normal")
+				var fam := GearBag.family_of(str(it["item_id"]))
+				eq(pool.has(fam), true, "★%d drop %s is in the pool" % [star, fam])
+	eq(str(GearBag.FAMILIES["sheaf"]["rarity"]), "Rare", "Sheaf is Rare")
 	eq(str(GearBag.FAMILIES["ironveil"]["rarity"]), "Rare", "Ironveil is Rare")
 	eq(str(GearBag.FAMILIES["brightedge"]["rarity"]), "Legendary", "Brightedge is Legendary")
 	var a := GearBag.icon("sheaf.chest")
@@ -259,7 +274,7 @@ func _test_temporary_kit() -> void:
 	eq(bag.items.size(), 1, "the real piece is the only one")
 	bag.test_grant = true
 	for slot in GearBag.SLOTS:
-		var uid := bag.add_item("duskbrand", slot, 5)
+		var uid := bag.add_item("brightedge", slot, 5)
 		bag.items[bag.find(uid)]["test"] = true
 		bag.equip(uid)
 	eq(TL.sync_bag(bag), true, "tagged pieces are stripped")
@@ -268,7 +283,7 @@ func _test_temporary_kit() -> void:
 	eq(bag.test_grant, false, "bag grant flag cleared")
 	eq(TL.sync_bag(bag), false, "a second bag sync does not grant")
 	var tagged := GearBag.new()
-	var test_uid := tagged.add_item("duskbrand", "weapon", 5)
+	var test_uid := tagged.add_item("brightedge", "weapon", 5)
 	tagged.items[tagged.find(test_uid)]["test"] = true
 	tagged.equip(test_uid)
 	var real_uid := tagged.add_item("sheaf", "head", 0)
@@ -418,9 +433,9 @@ func _test_save_roundtrip() -> void:
 func _test_gear_screen() -> void:
 	_wipe()
 	var seed := GearBag.new()
-	var h1 := seed.add_item("sheaf", "head")
-	var h2 := seed.add_item("sheaf", "head")
-	var c := seed.add_item("sheaf", "chest")
+	var h1 := seed.add_item("undertow", "head")
+	var h2 := seed.add_item("undertow", "head")
+	var c := seed.add_item("undertow", "chest")
 	seed.save()
 	var hub: Node = (load("res://scenes/mobile_hub.tscn") as PackedScene).instantiate()
 	hub._auto_launch = false
@@ -435,15 +450,16 @@ func _test_gear_screen() -> void:
 	truthy(screen.header_text().contains("AP 6/8"), "header shows AP against the 8 cap")
 	truthy(screen.header_text().contains("MP 3/5"), "header shows MP against the 5 cap")
 	eq(bool(screen.fuse(h1)["ok"]), true, "Fuse from the screen")
-	eq(screen.bag().count_of("sheaf.head"), 1, "two heads became one")
+	eq(screen.bag().count_of("undertow.head"), 1, "two heads became one")
 	eq(int(screen.bag().item(h1)["plus"]), 1, "fused head is +1")
 	screen.wear(h1)
 	screen.wear(c)
-	eq(screen.bag().set_counts(), {"sheaf": 2}, "two Sheaf pieces worn")
-	truthy(screen.find_child("Attune_sheaf_Air", true, false) != null, "attune buttons appear at 2 pieces")
-	eq(bool(screen.choose_attune("sheaf", "Earth")["ok"]), true, "attune from the screen")
+	eq(screen.bag().set_counts(), {"undertow": 2}, "two Undertow pieces worn")
+	eq(screen.find_child("Attune_undertow_Air", true, false), null, "no attune buttons")
+	eq(int(screen.bag().bonus_stats().get("init", 0)), 4, "Undertow 2pc +4 Init shows in the set stats")
+	eq(str(screen.choose_attune("undertow", "Earth")["reason"]), "no_attune", "attune is refused")
 	var saved := GearBag.load_saved()
-	eq(saved.attune_active("sheaf"), "Earth", "screen saves the bag")
+	eq(saved.attune_active("undertow"), "", "screen did not save an attune")
 	eq(saved.find(h2), -1, "burned copy stays gone after save")
 	screen.take_off("chest")
 	eq(GearBag.load_saved().equipped.has("chest"), false, "take off saves")
@@ -459,9 +475,9 @@ func _test_inventory_screen() -> void:
 		if FileAccess.file_exists(p):
 			DirAccess.remove_absolute(ProjectSettings.globalize_path(p))
 	var seed := GearBag.new()
-	var a := seed.add_item("sheaf", "head")
-	var b := seed.add_item("sheaf", "head")
-	var w := seed.add_item("duskbrand", "weapon")
+	var a := seed.add_item("undertow", "head")
+	var b := seed.add_item("undertow", "head")
+	var w := seed.add_item("brightedge", "weapon")
 	seed.save()
 	var wallet := KoliseoWallet.new()
 	wallet.tonics = 2
@@ -484,9 +500,9 @@ func _test_inventory_screen() -> void:
 	eq(int(inv.bag().item(a)["plus"]), 1, "fused head is +1")
 	eq(GearBag.load_saved().find(b), -1, "fuse is saved")
 	eq(bool(inv.wear(a)["ok"]), true, "wear from the inventory")
-	eq(inv.stats()["hp"], 75 + int(GearBag.part_stats("sheaf.head", 1)["hp"]), "worn head adds its HP")
+	eq(inv.stats()["hp"], 75 + int(GearBag.part_stats("undertow.head", 1)["hp"]), "worn head adds its HP")
 	inv.wear(w)
-	eq(inv.stats()["mastery"], int(GearBag.part_stats("duskbrand.weapon", 0)["mastery"]) + int(GearBag.part_stats("sheaf.head", 1)["mastery"]), "worn weapon adds Mastery")
+	eq(inv.stats()["mastery"], int(GearBag.part_stats("brightedge.weapon", 0)["mastery"]), "worn weapon adds Mastery")
 	inv.select({"kind": "slot", "slot": "head"})
 	truthy(inv.find_child("TakeOff", true, false) != null, "a worn slot offers Take off")
 	eq(bool(inv.take_off("head")["ok"]), true, "take off from the doll")
@@ -513,11 +529,13 @@ func _test_inventory_screen() -> void:
 	stage.settle()
 	eq(stage.facing(), "w", "turning left wraps to the left side")
 	truthy(stage.find_child("TurnLeft", true, false) != null and stage.find_child("TurnRight", true, false) != null, "stage has ◀ ▶ turn buttons")
-	eq(stage.rune_tint, GearScreen.RARITY_TINT["Ultra"], "runes glow with the rarest worn piece (Duskbrand = Ultra)")
+	eq(stage.rune_tint, GearScreen.RARITY_TINT["Legendary"], "runes glow with the rarest worn piece (Brightedge = Legendary)")
 	inv.pick_champion("bastion")
 	eq(inv.champion, "bastion", "pick another champion")
 	eq(stage.class_id, "bastion", "the stage shows the picked champion")
 	eq(stage.facing(), "s", "a new champion faces you")
+	eq(inv.bag().equipped_item("weapon", "bastion").is_empty(), true, "Bastion does not inherit Kestrel's weapon")
+	eq(str(inv.bag().equipped_item("weapon", "kestrel").get("item_id", "")), "brightedge.weapon", "the Kestrel piece stays on Kestrel")
 	for f in ChampionStage.FACINGS:
 		truthy(ResourceLoader.exists("res://art/characters/bastion/bastion_%s.png" % f), "bastion has the %s facing" % f)
 	# Set art icons (Blueprint set sheets): every family / slot, weapon per class.
@@ -533,10 +551,10 @@ func _test_inventory_screen() -> void:
 	var tile := inv.find_child("Item_%d" % w, true, false)
 	truthy(tile != null and tile.icon_tex != null, "bag tiles draw the set art")
 	var weapon_slot := inv.find_child("Slot_weapon", true, false)
-	eq(weapon_slot.icon_tex.resource_path.get_file(), "duskbrand_weapon_bastion.png", "the worn weapon shows the picked champion's weapon")
+	eq(weapon_slot.icon_tex, null, "Bastion's weapon slot is empty")
 	inv.pick_champion("kestrel")
 	weapon_slot = inv.find_child("Slot_weapon", true, false)
-	eq(weapon_slot.icon_tex.resource_path.get_file(), "duskbrand_weapon_kestrel.png", "switching champion swaps the weapon art")
+	eq(weapon_slot.icon_tex.resource_path.get_file(), "brightedge_weapon_kestrel.png", "Kestrel still shows the Brightedge bow")
 	inv.pick_champion("bastion")
 	var levels := inv.open_levels()
 	eq(levels.selected, "bastion", "Levels opens on the picked champion")
@@ -623,30 +641,39 @@ func _test_gear_in_fights() -> void:
 	sim.reset_match({"classes": ["kestrel", "ironjaw"], "skip_deploy": true})
 	var plain: Dictionary = sim._unit_by_seat(0)
 	eq([int(plain["max_hp"]), int(plain["max_ap"]), int(plain["max_mp"]), int(plain["mastery"]), int(plain["resist"])], [75, 6, 3, 0, 0], "no gear = Kestrel 75 HP, 6/3, Mastery 0, Resist 0")
-	# Sheaf 5pc on seat 0, Duskbrand 5pc on seat 1.
+	# Undertow (Kestrel) on seat 0. Sheaf on that seat does nothing (wrong class).
+	# Tyrantjaw (Ironjaw) on seat 1.
 	sim.reset_match({"classes": ["kestrel", "ironjaw"], "skip_deploy": true, "seat_gear": {
 		0: {"worn": _worn("sheaf", GearBag.SLOTS)},
-		1: {"worn": _worn("duskbrand", GearBag.SLOTS)},
+		1: {"worn": _worn("tyrantjaw", GearBag.SLOTS)},
 	}})
-	var sheaf: Dictionary = sim._unit_by_seat(0)
-	var dusk: Dictionary = sim._unit_by_seat(1)
-	eq(int(sheaf["max_hp"]), 190, "Sheaf 5: (75 + 98 part HP) × 1.10 = 190")
-	eq(int(sheaf["hp"]), 190, "fight starts at full geared HP")
-	eq(int(sheaf["mastery"]), 18, "Sheaf 5: 10 part Mastery + 8 (4pc) = 18")
-	eq(int(sheaf["resist"]), 8, "Sheaf 5pc +8% all resist")
-	eq(sheaf["resist_elem"], {"earth": 15}, "Sheaf part resist 15 goes to its default Earth attune")
-	eq(sheaf["flex_riders"], {"earth": 10}, "Sheaf 2-piece rider +10% Earth FLEX")
-	eq(int(sheaf["init"]), 3, "Sheaf boots Init 3")
-	eq(int(dusk["max_ap"]), 7, "Duskbrand 5pc → 7 AP")
-	eq(int(dusk["max_mp"]), 4, "Duskbrand 5pc → 4 MP")
-	eq(int(dusk["max_hp"]), 160, "Duskbrand: (90 + 58) × 1.08 = 160")
-	eq(int(dusk["mastery"]), 27, "Duskbrand: 24 part Mastery × 1.12 = 27")
-	eq(dusk["resist_elem"], {"neutral": 9}, "Duskbrand has no attune — resist stays Neutral")
-	eq(int(dusk["init"]), 18, "Duskbrand Init 12 parts + 6 (4pc) = 18")
+	eq(int(sim._unit_by_seat(0)["max_hp"]), 75, "Sheaf on a Kestrel seat adds nothing")
+	sim.reset_match({"classes": ["kestrel", "ironjaw"], "skip_deploy": true, "seat_gear": {
+		0: {"worn": _worn("undertow", GearBag.SLOTS)},
+		1: {"worn": _worn("tyrantjaw", GearBag.SLOTS)},
+	}})
+	var kite: Dictionary = sim._unit_by_seat(0)
+	var jaw: Dictionary = sim._unit_by_seat(1)
+	eq(int(kite["max_hp"]), 115, "Undertow: 75 + 40 part HP")
+	eq(int(kite["hp"]), 115, "fight starts at full geared HP")
+	eq(int(kite["mastery"]), 22, "Undertow part Mastery 22")
+	eq(int(kite["resist"]), 1, "Undertow part resist counts against every element")
+	eq(kite["resist_elem"], {}, "elementless resist is not stored as Neutral")
+	eq(int(kite["init"]), 16, "Undertow Init 12 parts + 4 (2pc)")
+	eq(int(kite["crit"]), 14, "Undertow crit 10 parts + 4 (4pc)")
+	eq(int(kite["first_hit"]), 4, "Undertow 5pc first hit +4")
+	eq(int(jaw["max_ap"]), 7, "Tyrantjaw 5pc → 7 AP")
+	eq(int(jaw["max_mp"]), 4, "Tyrantjaw 5pc → 4 MP")
+	eq(int(jaw["max_hp"]), 184, "Tyrantjaw: (90 + 74) × 1.12 = 184")
+	eq(int(jaw["mastery"]), 14, "Tyrantjaw part Mastery 14")
+	eq(int(jaw["resist"]), 9, "Tyrantjaw part resist is universal")
+	eq(jaw["resist_elem"], {}, "Tyrantjaw has no attuned element")
+	eq(int(jaw["init"]), 2, "Tyrantjaw Init 2")
+	eq(int(jaw["crit"]), 11, "Tyrantjaw crit 7 parts + 4 (4pc)")
 	var snap: Dictionary = sim.snapshot()
 	sim.submit({"type": "end_turn", "seat": int(snap["active_seat"])})
 	var after: Dictionary = sim._unit_by_seat(1)
-	eq([int(after["ap"]), int(after["mp"])], [7, 4], "Duskbrand refills 7 AP / 4 MP at turn start")
+	eq([int(after["ap"]), int(after["mp"])], [7, 4], "Tyrantjaw refills 7 AP / 4 MP at turn start")
 	# Damage formula: (1 + Mastery/100) × (1 − Resist/100).
 	eq(sim._phase_a_damage(20, 1.0, {}, {}), 20, "base damage unchanged without gear")
 	eq(sim._phase_a_damage(20, 1.0, {"mastery": 8}, {}), 22, "+8 Mastery → 21.6 → 22")
@@ -661,42 +688,53 @@ func _test_gear_in_fights() -> void:
 	sim._phase_a_damage(20, 1.0, first, {}, "air", true)
 	eq(bool(first["first_flex_ready"]), false, "a resolved hit spends it")
 	eq(sim._phase_a_damage(20, 1.0, first, {}, "air"), 20, "only the first FLEX hit")
-	var att := GearBag.combat_stats(_worn("ironveil", ["head", "chest"]), {"ironveil": "Fire"})
-	eq(att["resist_elem"], {"fire": 19}, "Ironveil pick Fire: parts 5+6 plus 2pc +8 = 19 vs fire")
-	eq(att["riders"], {"fire": 10}, "Ironveil Fire rider +10%")
-	var neutral := GearBag.combat_stats(_worn("ironveil", ["head"]), {"ironveil": "Fire"})
-	eq(neutral["resist_elem"], {"neutral": 5}, "1 piece: attune grey, resist Neutral")
-	var still := GearBag.combat_stats(_worn("stillcut", ["head", "chest"]), {})
-	eq(still["riders"], {}, "Stillcut has no default element — player must pick")
-	# Sheet page 23 "Same parts, same numbers": full +0 set part totals.
-	var sheet := {"sheaf": [98, 10, 15, 3], "undertow": [64, 17, 9, 18], "ironveil": [90, 8, 27, 3], "stillcut": [92, 32, 18, 8], "brightedge": [54, 32, 7, 4], "duskbrand": [58, 24, 9, 12]}
+	var att := GearBag.combat_stats(_worn("ironveil", ["head", "chest"]), {"ironveil": "Fire"}, false, "bastion")
+	eq(int(att["resist"]), 7, "Ironveil head+chest resist 3+4 counts against every element")
+	eq(att["resist_elem"], {}, "resist_all does not fill resist_elem")
+	eq(att["riders"], {}, "no attune rider")
+	eq(int(att["hp_pct"]), 10, "Ironveil 2pc +10% HP")
+	var one := GearBag.combat_stats(_worn("ironveil", ["head"]), {}, false, "bastion")
+	eq(int(one["resist"]), 3, "one piece of resist still counts")
+	eq(one["resist_elem"], {}, "one piece does not park resist on Neutral")
+	var capped_crit := GearBag.combat_stats(_worn("stillcut", GearBag.SLOTS), {}, false, "gloam")
+	eq(int(capped_crit["crit"]), 20, "Stillcut 17% + 4pc 4% caps at 20")
+	# +0 part totals (HP, Mastery, Resist, Init, Crit).
+	var sheet := {
+		"ashmantle": [60, 14, 6, 4, 2], "rustward": [70, 4, 10, 2, 0], "ironveil": [78, 6, 12, 2, 0],
+		"oathgrave": [84, 6, 14, 2, 0], "undertow": [40, 22, 1, 12, 10], "gallowsight": [44, 26, 2, 12, 12],
+		"ravenmourn": [44, 31, 2, 16, 12], "cragmaw": [62, 12, 6, 2, 4], "maulgrave": [70, 12, 8, 2, 6],
+		"tyrantjaw": [74, 14, 9, 2, 7], "nightglass": [36, 18, 0, 18, 15], "stillcut": [40, 18, 1, 26, 17],
+		"gravewhisper": [36, 23, 1, 28, 20], "vesperwell": [62, 13, 7, 2, 1], "sheaf": [68, 14, 9, 4, 2],
+		"hallowmourn": [70, 16, 10, 4, 4], "brightedge": [56, 29, 4, 10, 7],
+	}
 	for fam in sheet:
-		var tot := [0, 0, 0, 0]
+		var tot := [0, 0, 0, 0, 0]
 		for slot in GearBag.SLOTS:
 			var st := GearBag.part_stats("%s.%s" % [fam, slot], 0)
-			tot = [tot[0] + int(st["hp"]), tot[1] + int(st["mastery"]), tot[2] + int(st["resist"]), tot[3] + int(st["init"])]
-		eq(tot, sheet[fam], "%s part totals match the sheet (HP, Mastery, Resist, Init)" % fam)
-	# Fuse ladder multipliers.
-	eq(GearBag.part_stats("sheaf.head", 5)["hp"], 50, "Sheaf Helm 28 HP × 1.78 at +5 = 50")
-	eq(GearBag.part_stats("stillcut.weapon", 3)["mastery"], 20, "Second-Edge 14 × 1.41 at +3 = 20")
-	var flat := GearBag.combat_stats(_worn("sheaf", ["head"], 5), {}, true)
-	eq(int(flat["hp_flat"]), 28, "Koliseo flatten: a +5 helm counts as +0")
-	eq(GearBag.item_label({"item_id": "stillcut.chest", "plus": 2}), "Hourplate +2", "items use the sheet names")
+			tot = [tot[0] + int(st["hp"]), tot[1] + int(st["mastery"]), tot[2] + int(st["resist"]), tot[3] + int(st["init"]), tot[4] + int(st["crit"])]
+		eq(tot, sheet[fam], "%s part totals (HP, Mastery, Resist, Init, Crit)" % fam)
+	eq(GearBag.part_stats("sheaf.head", 5)["hp"], 32, "Sheaf Helm 18 HP × 1.78 at +5 = 32")
+	eq(GearBag.part_stats("sheaf.head", 5)["crit"], 0, "crit% does not fuse")
+	eq(GearBag.part_stats("stillcut.weapon", 3)["mastery"], 17, "Stillcut Edge 12 × 1.41 at +3 = 17")
+	eq(GearBag.part_stats("stillcut.weapon", 3)["crit"], 10, "Stillcut Edge crit stays 10 at +3")
+	var flat := GearBag.combat_stats(_worn("sheaf", ["head"], 5), {}, true, "mender")
+	eq(int(flat["hp_flat"]), 18, "Koliseo flatten: a +5 helm counts as +0")
+	eq(GearBag.item_label({"item_id": "stillcut.chest", "plus": 2}), "Stillcut Plate +2", "items use the part names")
 	eq(GearBag.weighted_slot(0.0), "weapon", "slot roll 0 → weapon")
 	eq(GearBag.weighted_slot(0.17), "weapon", "weapon is the first 18%")
 	eq(GearBag.weighted_slot(0.19), "head", "then head")
 	eq(GearBag.weighted_slot(0.999), "boots", "boots last")
 	# Cheats and junk are cleaned: bad ids, duplicate slots, +9, AP cap.
 	var junk := GearBag.combat_stats([{"item_id": "duskbrand.head", "plus": 9}, {"item_id": "duskbrand.head"}, {"item_id": "wheat.legs"}, "x"])
-	eq([junk["ap"], junk["mp"], junk["hp_pct"]], [6, 3, 0], "one Duskbrand head gives nothing")
+	eq([junk["ap"], junk["mp"], junk["hp_pct"]], [6, 3, 0], "a retired Duskbrand head gives nothing")
 	var capped := GearBag.ap_mp_of_worn(_worn("stillcut", GearBag.SLOTS, 5))
-	eq([capped["ap"], capped["mp"]], [7, 4], "rare gate +1/+1 at full +5 Stillcut")
-	eq(int(GearBag.ap_mp_of_worn(_worn("duskbrand", GearBag.SLOTS))["ap"]) <= 8, true, "AP never above 8")
+	eq([capped["ap"], capped["mp"]], [7, 4], "rare +5 weapon and boots → +1 AP +1 MP")
+	eq(int(GearBag.ap_mp_of_worn(_worn("brightedge", GearBag.SLOTS))["ap"]) <= 8, true, "AP never above 8")
 	# Mid-combat gear is refused; deployment accepts it.
 	eq(sim.set_seat_gear(0, {"worn": _worn("sheaf", ["head", "chest"])}), false, "gear cannot change mid-combat")
 	sim.reset_match({"classes": ["kestrel", "ironjaw"]})
-	eq(sim.set_seat_gear(1, {"worn": _worn("sheaf", ["head", "chest"])}), true, "gear applies during deployment")
-	eq(int(sim._unit_by_seat(1)["max_hp"]), 174, "late gear raised seat 1 HP to (90+28+40)×1.10")
+	eq(sim.set_seat_gear(1, {"worn": _worn("cragmaw", ["head", "chest"])}), true, "gear applies during deployment")
+	eq(int(sim._unit_by_seat(1)["max_hp"]), 143, "late gear raised seat 1 HP to (90+18+24)×1.08")
 	# Authority: a reset config cannot smuggle gear; each seat's own gear is used.
 	var net: Node = (load("res://backend/net_session.gd") as Script).new()
 	net.mode = net.Mode.DEDICATED
@@ -727,12 +765,187 @@ func _test_gear_in_fights() -> void:
 	var player_rec: Dictionary = fight_cfg["stasis_roster"][0]
 	eq(player_rec["gear"]["worn"].size(), 2, "Stasis fight carries the worn gear")
 	sim.reset_match(fight_cfg)
-	eq(int(sim._unit_by_seat(0)["max_hp"]), 168, "Stasis player gets helm + coat HP and Sheaf 2pc +10%")
+	eq(int(sim._unit_by_seat(0)["max_hp"]), 144, "Stasis Mender gets Sheaf helm + coat and 2pc +10%")
 	StasisCatalog.player_hp = 60
 	sim.reset_match(StasisCatalog.fight_config())
 	eq(int(sim._unit_by_seat(0)["hp"]), 60, "Room B carries Room A HP under the geared max")
 	StasisCatalog.clear_run()
 	_wipe()
+
+
+func _test_loadouts() -> void:
+	var bag := GearBag.new()
+	var sheaf := bag.add_item("sheaf", "head")
+	var shared := bag.add_item("brightedge", "weapon")
+	var kite := bag.add_item("undertow", "boots")
+	bag.from_dict({
+		"items": bag.items.duplicate(true),
+		"equipped": {"head": sheaf, "weapon": shared, "boots": kite},
+		"next_uid": bag.next_uid,
+	})
+	eq(int(bag.equipped_item("head", "mender").get("uid", -1)), sheaf, "a class piece migrates onto its class")
+	eq(bag.equipped_item("boots", "kestrel").is_empty(), false, "Undertow migrates onto Kestrel")
+	eq(bag.is_equipped(shared), false, "a shared piece from the old single loadout stays in the bag")
+	var locked := GearBag.new()
+	locked.from_dict({
+		"items": [{"uid": 1, "item_id": "sheaf.head", "plus": 0}],
+		"loadouts": {"kestrel": {"head": 1}, "mender": {}},
+		"focus_class": "kestrel",
+		"next_uid": 2,
+	})
+	eq(locked.is_equipped(1), false, "a Sheaf head saved on Kestrel is dropped")
+	var twice := GearBag.new()
+	twice.from_dict({
+		"items": [{"uid": 7, "item_id": "brightedge.weapon", "plus": 0}],
+		"loadouts": {"kestrel": {"weapon": 7}, "mender": {"weapon": 7}},
+		"focus_class": "mender",
+		"next_uid": 8,
+	})
+	eq(int(twice.equipped_item("weapon", "kestrel").get("uid", -1)), 7, "one uid stays on the first class")
+	eq(twice.equipped_item("weapon", "mender").is_empty(), true, "the same uid is not on a second class")
+	var live := GearBag.new()
+	var u := live.add_item("undertow", "weapon")
+	var s := live.add_item("sheaf", "weapon")
+	var b := live.add_item("brightedge", "chest")
+	eq(bool(live.equip(u, "kestrel")["ok"]), true, "Undertow equips on Kestrel")
+	eq(str(live.equip(s, "kestrel")["reason"]), "wrong_class", "Sheaf stays off Kestrel")
+	eq(bool(live.equip(s)["ok"]), true, "Sheaf equips on Mender by itself")
+	eq(bool(live.equip(b, "bastion")["ok"]), true, "Brightedge equips on Bastion")
+	eq(str(live.equipped_item("weapon", "kestrel").get("item_id", "")), "undertow.weapon", "Kestrel keeps its own weapon")
+	eq(str(live.equipped_item("weapon", "mender").get("item_id", "")), "sheaf.weapon", "Mender keeps its own weapon")
+	eq(live.focus_class, "bastion", "equipping focuses that class")
+	eq(OS.is_debug_build(), true, "this test binary is a debug build")
+	eq(bool(live.debug_equip_set("kestrel", "oathgrave")["ok"]), true, "debug can wear any full set")
+	eq(live.worn_list("kestrel").size(), 5, "the debug set fills five slots")
+	eq(bool(live.worn_list("kestrel")[0].get("debug", false)), true, "debug pieces are tagged")
+	var local := live.fight_gear(false, "kestrel")
+	eq((local["worn"] as Array).size(), 5, "a local fight keeps debug pieces")
+	var cleaned := GearBag.clean_fight_gear(local)
+	eq((cleaned["worn"] as Array).size(), 0, "clean_fight_gear never sends debug pieces")
+	# Proposed set bonuses that are not the locked 5pc lines.
+	eq(str(GearBag.FAMILIES["oathgrave"]["bonus"][5]).begins_with("+1 AP +1 MP"), true, "Oathgrave 5pc leads with +1 AP +1 MP")
+	eq(int(GearBag.FAMILIES["oathgrave"]["stats"][5]["ward_shield"]), 25, "Oathgrave Ward shield is 25")
+	eq(int(GearBag.FAMILIES["oathgrave"]["stats"][5]["start_aegis"]), 1, "Oathgrave starts with 1 Aegis")
+	eq(int(GearBag.FAMILIES["gravewhisper"]["stats"][4]["back_pct"]), 6, "Gravewhisper 4pc back damage +6%")
+	eq(int(GearBag.FAMILIES["rustward"]["stats"][5]["guard_flat"]), 4, "Rustward 5pc guards the first hit")
+	eq(int(GearBag.FAMILIES["undertow"]["stats"][5]["first_hit"]), 4, "Undertow 5pc first hit +4")
+	eq(int(GearBag.FAMILIES["cragmaw"]["stats"][5]["melee"]), 4, "Cragmaw 5pc melee +4")
+	eq(int(GearBag.FAMILIES["nightglass"]["stats"][5]["first_back"]), 4, "Nightglass 5pc first back hit +4")
+	eq(int(GearBag.FAMILIES["vesperwell"]["stats"][4]["heal_flat"]), 4, "Vesperwell 4pc heals +4")
+
+
+func _test_crit_cap_and_stun() -> void:
+	var sim: Node = root.get_node("/root/CombatSim")
+	sim.reset_match({
+		"seed": 1, "flat_board": true, "skip_deploy": true,
+		"classes": ["kestrel", "ironjaw"],
+		"kestrel_pos": Vector2i(0, 0), "ironjaw_pos": Vector2i(3, 0),
+		"kestrel_facing": "E", "ironjaw_facing": "W",
+		"rolls": [1, 50],
+	})
+	var calm: Dictionary = sim.submit({"type": "cast", "spell": "mark_shot", "to": Vector2i(3, 0), "seat": 0})
+	eq(bool(calm["ok"]), true, "a 0% crit Mark Shot connects")
+	var calm_hit: Dictionary = calm["events"][0]
+	eq(int(calm_hit["damage"]), 8, "0% crit leaves Mark Shot at 8")
+	eq(float(calm_hit["crit_mult"]), 1.0, "a non-crit event stores crit_mult 1.0")
+	eq(bool(calm_hit.get("crit", false)), false, "the hit is not a crit")
+	eq(sim._scripted_rolls.size(), 1, "0% crit does not consume a roll")
+	sim.reset_match({
+		"seed": 1, "flat_board": true, "skip_deploy": true,
+		"classes": ["kestrel", "ironjaw"],
+		"kestrel_pos": Vector2i(0, 0), "ironjaw_pos": Vector2i(3, 0),
+		"kestrel_facing": "E", "ironjaw_facing": "W",
+		"rolls": [1, 21, 1, 20],
+	})
+	sim._unit_by_seat(0)["crit"] = 100
+	var under: Dictionary = sim.submit({"type": "cast", "spell": "mark_shot", "to": Vector2i(3, 0), "seat": 0})
+	eq(int(under["events"][0]["damage"]), 8, "a roll of 21 misses the 20% cap")
+	var over: Dictionary = sim.submit({"type": "cast", "spell": "mark_shot", "to": Vector2i(3, 0), "seat": 0})
+	eq(int(over["events"][0]["damage"]), 10, "a roll of 20 crits: 8 × 1.3 = 10")
+	eq(bool(over["events"][0]["crit"]), true, "the second hit crits")
+	eq(float(over["events"][0]["crit_mult"]), 1.3, "a crit stores 1.3")
+	sim.reset_match({
+		"seed": 1, "flat_board": true, "skip_deploy": true,
+		"classes": ["kestrel", "ironjaw"],
+		"kestrel_pos": Vector2i(0, 0), "ironjaw_pos": Vector2i(3, 0),
+		"kestrel_facing": "E", "ironjaw_facing": "W",
+		"rolls": [1, 1, 1, 1, 1],
+	})
+	sim._unit_by_seat(0)["crit"] = 20
+	var first: Dictionary = sim.submit({"type": "cast", "spell": "mark_shot", "to": Vector2i(3, 0), "seat": 0})
+	eq(int(first["events"][0]["damage"]), 10, "the first hit of the turn crits")
+	var second: Dictionary = sim.submit({"type": "cast", "spell": "mark_shot", "to": Vector2i(3, 0), "seat": 0})
+	eq(int(second["events"][0]["damage"]), 8, "the second hit of the turn does not crit")
+	eq(sim._scripted_rolls.size(), 2, "a spent crit does not roll again")
+	sim.submit({"type": "end_turn", "seat": 0})
+	sim.submit({"type": "end_turn", "seat": 1})
+	var again: Dictionary = sim.submit({"type": "cast", "spell": "mark_shot", "to": Vector2i(3, 0), "seat": 0})
+	eq(int(again["events"][0]["damage"]), 10, "the next turn can crit again")
+	# Mender heals crit. A Kestrel with the same chance does not.
+	sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "classes": ["mender", "kestrel"], "rolls": [1]})
+	var mend := SpellKits.spell(SpellKits.MEND)
+	var healer: Dictionary = sim._unit_by_seat(0)
+	var preview := int(sim._support_heal_amount(healer, healer, mend, false))
+	healer["crit"] = 20
+	var crit_heal := int(sim._support_heal_amount(healer, healer, mend, true))
+	eq(crit_heal, roundi(float(preview) * 1.3), "a Mender heal crits at 1.3")
+	healer["heal_flat"] = 6
+	healer["crit"] = 0
+	eq(int(sim._support_heal_amount(healer, healer, mend, false)), preview + 6, "heal_flat adds after the formula")
+	sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "classes": ["kestrel", "mender"], "rolls": [1, 1]})
+	var hawk: Dictionary = sim._unit_by_seat(0)
+	hawk["crit"] = 100
+	var hawk_preview := int(sim._support_heal_amount(hawk, hawk, mend, false))
+	eq(int(sim._support_heal_amount(hawk, hawk, mend, true)), hawk_preview, "a Kestrel heal does not crit")
+	eq(sim._scripted_rolls.size(), 2, "a non-Mender heal does not roll")
+	# Stun immunity: the skipped turn plus the next real turn.
+	sim.reset_match({
+		"seed": 1, "flat_board": true, "skip_deploy": true,
+		"classes": ["kestrel", "ironjaw"],
+		"kestrel_pos": Vector2i(3, 3), "ironjaw_pos": Vector2i(4, 3),
+		"kestrel_facing": "E", "ironjaw_facing": "W",
+		"ironjaw_impact": 5,
+		"rolls": [1],
+	})
+	sim.submit({"type": "end_turn", "seat": 0})
+	var crush: Dictionary = sim.submit({"type": "cast", "spell": "crush", "to": Vector2i(3, 3), "seat": 1})
+	eq(bool(crush["ok"]), true, "Crush connects")
+	eq(int(crush["events"][0].get("stun_applied", 0)), 1, "a full-Impact Crush stuns")
+	sim.submit({"type": "end_turn", "seat": 1})
+	var stunned: Dictionary = sim._unit_by_seat(0)
+	eq(bool(stunned.get("stun_immune", false)), true, "the skipped turn arms stun immunity")
+	eq(int(sim._apply_stun(stunned, 1)), 0, "immunity blocks another stun")
+	eq(int(stunned.get("stun_remaining", 0)), 0, "immunity does not store a new stun")
+	eq(int(sim.snapshot()["active_seat"]), 1, "the skip handed the turn back")
+	sim.submit({"type": "end_turn", "seat": 1})
+	eq(bool(sim._unit_by_seat(0).get("stunned", false)), false, "the next Kestrel turn is real")
+	eq(bool(sim._unit_by_seat(0).get("stun_immune", false)), true, "immunity lasts through that real turn")
+	eq(int(sim._apply_stun(sim._unit_by_seat(0), 1)), 0, "a stun during the real turn still fails")
+	sim.submit({"type": "end_turn", "seat": 0})
+	eq(bool(sim._unit_by_seat(0).get("stun_immune", false)), false, "immunity ends with the real turn")
+	eq(int(sim._apply_stun(sim._unit_by_seat(0), 1)), 1, "a later stun lands")
+	# Oathgrave: Ward 25, start with 1 Aegis, breaking the shield does not refund.
+	sim.reset_match({
+		"seed": 1, "flat_board": true, "skip_deploy": true,
+		"classes": ["bastion", "kestrel"],
+		"seat_gear": {0: {"worn": _worn("oathgrave", GearBag.SLOTS)}},
+	})
+	var bastion: Dictionary = sim._unit_by_seat(0)
+	eq(int(bastion["aegis"]), 1, "Oathgrave starts with 1 Aegis")
+	eq(int(bastion["ward_shield"]), 25, "Oathgrave Ward shield is 25")
+	bastion["aegis"] = 2
+	sim._resolve_team_ward({"type": "cast", "spell": "ward", "seat": 0}, bastion, SpellKits.spell(SpellKits.WARD), 2, 0)
+	eq(int(bastion["shield"]), 25, "Ward grants 25, not 20")
+	eq(int(bastion["aegis"]), 0, "Ward spent the 2 Aegis")
+	sim._mitigate_hit(sim._unit_by_seat(1), bastion, 40)
+	eq(int(bastion["shield"]), 0, "the shield breaks")
+	eq(int(bastion["aegis"]), 0, "breaking Ward does not refund Aegis")
+	eq(int(sim._gear_strike_damage({"back_pct": 6}, {}, 100, 2, true, true)), 106, "Gravewhisper back hits +6%")
+	eq(int(sim._gear_strike_damage({"melee": 4}, {}, 10, 1, false, true)), 14, "melee +4 at range 1")
+	eq(int(sim._gear_strike_damage({"melee": 4}, {}, 10, 2, false, true)), 10, "melee does not add at range 2")
+	var guarded := {"guard_ready": true, "guard_flat": 4}
+	eq(int(sim._gear_strike_damage({}, guarded, 10, 2, false, true)), 6, "the first hit taken deals 4 less")
+	eq(bool(guarded["guard_ready"]), false, "the guard is spent")
 
 
 func _wipe() -> void:
