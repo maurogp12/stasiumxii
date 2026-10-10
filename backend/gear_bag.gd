@@ -12,9 +12,10 @@ extends RefCounted
 ## AP/MP: base 6/3 + Legendary 5pc +1/+1 + Rare +5 weapon (+1 AP) and
 ## Rare +5 boots (+1 MP), clamped to 8/5. Koliseo flattens parts to +0
 ## (set bonuses still apply, so the +5 gates do not).
-## Stasis loot: Normal from ★1, Rare from ★3, Legendary from ★5, using the
-## existing "min star or below" pool. 5 clears a day; clear 6+ is empty.
-## Ultra PvP sets are not in this file yet. The ladder leaves room for them.
+## Stasis loot rolls a tier, then a family of that tier, then a weighted slot.
+## ★1 is 100% Normal. ★3 is 70/30 Normal/Rare. ★5 is 60/30/10. A boss chest
+## is 50/30/20. ★2 uses the ★1 table and ★4 uses the ★3 table. 5 clears a
+## day; clear 6+ is empty. Ultra sets are not on this ladder and never drop.
 
 const _TestLoadout := preload("res://backend/test_loadout.gd")
 const SLOTS: Array[String] = ["weapon", "head", "chest", "legs", "boots"]
@@ -240,12 +241,21 @@ const DEFAULT_ATTUNE := {}
 const ATTUNE_RIDER := {}
 ## Designer knobs slot_w_*: weapon is rarer.
 const SLOT_WEIGHT := {"weapon": 18.0, "head": 20.5, "chest": 20.5, "legs": 20.5, "boots": 20.5}
-## Normals, then Rares, then Legendaries, so a ★1 roll of 0 is Ashmantle.
+## Normals, then Rares, then Legendaries. A family roll of 0 is the first
+## family of the tier that just won (Ashmantle, Ironveil, or Oathgrave).
 const FAMILY_ORDER: Array[String] = [
 	"ashmantle", "rustward", "undertow", "cragmaw", "nightglass", "vesperwell",
 	"ironveil", "gallowsight", "maulgrave", "stillcut", "sheaf",
 	"oathgrave", "ravenmourn", "tyrantjaw", "gravewhisper", "hallowmourn", "brightedge",
 ]
+const RARITIES: Array[String] = ["Normal", "Rare", "Legendary"]
+## Chest tier weights, out of 100. ★2 reads 1, ★4 reads 3. Boss is its own row.
+const DROP_WEIGHTS := {
+	1: {"Normal": 100, "Rare": 0, "Legendary": 0},
+	3: {"Normal": 70, "Rare": 30, "Legendary": 0},
+	5: {"Normal": 60, "Rare": 30, "Legendary": 10},
+}
+const BOSS_DROP_WEIGHTS := {"Normal": 50, "Rare": 30, "Legendary": 20}
 ## Each family uses its own sheet. Empty on purpose: do not point a set at another.
 const ICON_ALIAS := {}
 
@@ -999,13 +1009,70 @@ func debug_equip_set(class_id: String, family: String) -> Dictionary:
 	return {"ok": true, "reason": "", "class_id": class_id, "family": family}
 
 
-## Families a door of this star can drop (min_star <= star).
+## Families a door of this star can drop (min_star <= star). This is the
+## support of the drop table, not a uniform pool: the chest rolls a tier first.
 static func families_for_star(star: int) -> Array:
 	var pool: Array = []
 	for fam in FAMILY_ORDER:
 		if int(FAMILIES[fam]["min_star"]) <= star:
 			pool.append(fam)
 	return pool
+
+
+## Tier weights for one chest. ★2 uses ★1, ★4 uses ★3. `boss` is the boss row
+## (50/30/20) and does not look at the door star.
+static func drop_weights(star: int, boss: bool = false) -> Dictionary:
+	if boss:
+		return BOSS_DROP_WEIGHTS.duplicate()
+	var key := 5
+	if star <= 2:
+		key = 1
+	elif star <= 4:
+		key = 3
+	return (DROP_WEIGHTS[key] as Dictionary).duplicate()
+
+
+## Families of one rarity, in FAMILY_ORDER. Ultra sets are not in that list.
+static func families_of_rarity(rarity: String) -> Array:
+	var pool: Array = []
+	for fam in FAMILY_ORDER:
+		if str(FAMILIES[fam]["rarity"]) == rarity:
+			pool.append(fam)
+	return pool
+
+
+## Rarity for a 0..1 roll. Walks Normal, then Rare, then Legendary.
+static func roll_tier(weights: Dictionary, roll: float) -> String:
+	var total := 0
+	for rarity in RARITIES:
+		total += int(weights.get(rarity, 0))
+	if total <= 0:
+		return ""
+	var at := clampf(roll, 0.0, 0.999999) * float(total)
+	for rarity in RARITIES:
+		at -= float(int(weights.get(rarity, 0)))
+		if at < 0.0:
+			return rarity
+	return RARITIES[RARITIES.size() - 1]
+
+
+static func roll_family(rarity: String, roll: float) -> String:
+	var pool := families_of_rarity(rarity)
+	if pool.is_empty():
+		return ""
+	return str(pool[mini(int(clampf(roll, 0.0, 0.999999) * pool.size()), pool.size() - 1)])
+
+
+## One chest piece: tier, then a family of that tier, then a weighted slot.
+## `pick` returns 0..1 three times (tests pass a seeded sequence; the game uses randf).
+static func roll_drop(star: int, pick: Callable = Callable(), boss: bool = false) -> Dictionary:
+	var r_tier := float(pick.call()) if pick.is_valid() else randf()
+	var r_fam := float(pick.call()) if pick.is_valid() else randf()
+	var r_slot := float(pick.call()) if pick.is_valid() else randf()
+	var rarity := roll_tier(drop_weights(star, boss), r_tier)
+	var fam := roll_family(rarity, r_fam)
+	var slot := weighted_slot(r_slot)
+	return {"rarity": rarity, "family": fam, "slot": slot, "item_id": item_id_for(fam, slot)}
 
 
 ## +0 point budget. 1 Mastery = 1, 2 HP = 1, 1 Resist = 2, 2 Init = 1, 1% crit = 1.
@@ -1027,10 +1094,12 @@ func loot_clears_left(unix_seconds: int) -> int:
 	return maxi(LOOT_CLEARS_PER_DAY - loot_clears_today, 0)
 
 
-## A Stasis door cleared. The first 5 clears of the UTC day open a chest of
-## +0 pieces from the families that door's star can drop; clear 6+ is empty.
-## `pick` is 0..1 values (tests pass fixed ones; the game passes randf).
-func record_stasis_clear(unix_seconds: int, star: int = 1, pick: Callable = Callable()) -> Dictionary:
+## A Stasis door cleared. The first 5 clears of the UTC day open a chest.
+## Each piece rolls a tier from that door's table (or the boss table), then
+## a family of that tier, then a weighted slot. Clear 6+ is empty. `pick`
+## returns 0..1 (tests pass a seeded sequence; the game passes randf).
+## A ★1 door stays on the ★1 table. Pass boss=true for the boss row.
+func record_stasis_clear(unix_seconds: int, star: int = 1, pick: Callable = Callable(), boss: bool = false) -> Dictionary:
 	var today := utc_day(unix_seconds)
 	if today != loot_day:
 		loot_day = today
@@ -1038,19 +1107,12 @@ func record_stasis_clear(unix_seconds: int, star: int = 1, pick: Callable = Call
 	loot_clears_today += 1
 	if loot_clears_today > LOOT_CLEARS_PER_DAY:
 		return {"chest": false, "items": [], "clears_today": loot_clears_today}
-	var pool: Array[String] = []
-	for fam in FAMILY_ORDER:
-		if int(FAMILIES[fam]["min_star"]) <= star:
-			pool.append(fam)
 	var dropped: Array = []
 	for i in STASIS_1_CHEST_PIECES:
-		if pool.is_empty():
+		var rolled := roll_drop(star, pick, boss)
+		if str(rolled["family"]) == "":
 			break
-		var r1 := float(pick.call()) if pick.is_valid() else randf()
-		var r2 := float(pick.call()) if pick.is_valid() else randf()
-		var fam := pool[mini(int(r1 * pool.size()), pool.size() - 1)]
-		var slot := weighted_slot(r2)
-		var uid := add_item(fam, slot, 0)
+		var uid := add_item(str(rolled["family"]), str(rolled["slot"]), 0)
 		dropped.append(item(uid))
 	return {"chest": true, "items": dropped, "clears_today": loot_clears_today}
 
