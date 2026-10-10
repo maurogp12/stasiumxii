@@ -329,6 +329,11 @@ func _label(size: int, col: Color) -> Label:
 
 func _read_capture_args() -> void:
 	capture = _arg("--dungeon-capture", "")
+	if capture != "":
+		# Captures record the Full look (a fresh save on a slow GPU may pick
+		# Performance mode, which holds the board still).
+		var look := VisualSettings.new()
+		look.apply_preset("Full")
 	_media = OS.get_environment("DUNGEON_MEDIA")
 	if _media == "":
 		_media = OS.get_environment("GRANARY_MEDIA")
@@ -355,9 +360,11 @@ func _grab(file_name: String) -> void:
 ## side on room A's floor, each playing idle, walk, attack (a ranged one
 ## throws its projectile), hit, summon (the boss) and death.
 func _showcase() -> void:
+	board.autoplay = false
 	await _start_room(0, true)
 	board.end_room()
-	board.autoplay = false
+	for t in board.tiles.values():
+		t.set_highlight("")
 	board.set_process(false)
 	sim_node().set_process(false)
 	board.get_node("Units").visible = false
@@ -383,10 +390,26 @@ func _showcase() -> void:
 		p.z_as_relative = false
 		p.z_index = BoardVisualSort.unit_z_index(row[1])
 		shown.append(p)
+	# Frame the cast (the room fit is not re-applied on a resize meanwhile).
+	if get_viewport().size_changed.is_connected(board._on_view_resized):
+		get_viewport().size_changed.disconnect(board._on_view_resized)
+	for i in 4:
+		await get_tree().process_frame
 	var cam: Camera2D = board._camera
-	var mid: Vector2 = board._cell_to_local(Vector2i(6, 6))
-	cam.position = mid + Vector2(0, -40)
-	cam.zoom = Vector2(1.45, 1.45)
+	var lo := Vector2(INF, INF)
+	var hi := Vector2(-INF, -INF)
+	for row in cast:
+		var at: Vector2 = board._cell_to_local(row[1])
+		lo = Vector2(minf(lo.x, at.x), minf(lo.y, at.y))
+		hi = Vector2(maxf(hi.x, at.x), maxf(hi.y, at.y))
+	var vis := get_viewport().get_visible_rect().size
+	var span := (hi - lo) + Vector2(260, 260)
+	var z := clampf(minf(vis.x / span.x, vis.y / span.y), 1.0, 3.0)
+	cam.zoom = Vector2(z, z)
+	var centre := (lo + hi) * 0.5 + Vector2(0, -48)
+	cam.position = centre - vis * 0.5 / z if cam.anchor_mode == Camera2D.ANCHOR_MODE_FIXED_TOP_LEFT else centre
+	cam.reset_smoothing()
+	_sub.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_title.text = run.text("showcase_title", "%s\nMonsters" % str(run.dungeon.get("name", "")))
 	_sub.text = run.text("showcase_sub", "")
 	await get_tree().create_timer(2.0).timeout
@@ -400,7 +423,8 @@ func _showcase() -> void:
 	for p in shown:
 		p.end_path_walk()
 	await get_tree().create_timer(0.6).timeout
-	var target_at: Vector2 = board._cell_to_local(Vector2i(2, 11)) + Vector2(0, -20)
+	# Throws land in front of the cast, inside the frame.
+	var target_at: Vector2 = Vector2((lo.x + hi.x) * 0.5 - 120.0, hi.y + 40.0)
 	for p in shown:
 		p.play_view_plan({"attack": true, "aim": Vector2(-30, 15)})
 		var attack: Dictionary = Art.monster_spec(str(p.monster_id)).get("attack", {})
