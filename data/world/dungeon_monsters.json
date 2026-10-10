@@ -599,7 +599,8 @@
         "every": 2,
         "min_range": 2,
         "max_range": 6,
-        "los": true
+        "los": true,
+        "beam": "lure_line"
       },
       "placeholder": {
         "shape": "archivist",
@@ -759,7 +760,8 @@
         "every": 2,
         "min_range": 2,
         "max_range": 6,
-        "los": true
+        "los": true,
+        "beam": "lure_line"
       },
       "signature2": {
         "id": "riptide",

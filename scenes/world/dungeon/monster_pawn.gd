@@ -266,6 +266,17 @@ func release_offset() -> Vector2:
 	return off
 
 
+## Where the boss's lure (Old Saltmaw's lantern) shines from on the flare
+## frame, in pawn-local px, for the facing shown (manifest lure_point).
+func lure_offset() -> Vector2:
+	var by_face: Dictionary = art.get("lure", {})
+	var src := _face()
+	var off: Vector2 = by_face.get(str(src["face"]), Vector2(26, -118))
+	if bool(src["flip"]):
+		off.x = -off.x
+	return off
+
+
 ## Seconds from the attack's start to the release frame.
 func release_sec() -> float:
 	return float((art.get("release", {}) as Dictionary).get("sec", 0.22))

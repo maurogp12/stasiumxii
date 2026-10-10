@@ -547,6 +547,11 @@ func _arm_view_motions(events: Array) -> void:
 				longest = maxf(longest, Fx.throw(self, manifest, str(event["projectile"]), from_at, to_at, typ == "hit", VISUAL_SORT.unit_z_index(to_cell) + 6, at_sec, str(event.get("impact", "")), view_cfg.get("projectiles", {})))
 		elif typ == "summon" or typ == "pools" or typ == "lure":
 			longest = maxf(longest, pawn.play_view_plan({"cast": true, "strip": "summon"}))
+			if typ == "lure" and str(event.get("beam", "")) != "":
+				# The lure's light streak, lantern to hero, from the flare frame.
+				var tip: Vector2 = pawn.position + (pawn.lure_offset() if pawn.has_method("lure_offset") else Vector2(0, -100))
+				var at_hero := _cell_to_local(_as_cell(event.get("from", Vector2i.ZERO))) + Vector2(0, -30)
+				longest = maxf(longest, Fx.beam(self, manifest, str(event["beam"]), tip, at_hero, VISUAL_SORT.unit_z_index(_as_cell(event.get("from", Vector2i.ZERO))) + 5, PULL_FLARE_SEC, 0.55, view_cfg.get("projectiles", {})))
 		elif typ == "pull":
 			# Lantern Lure / riptide drag: the target slides cell by cell toward
 			# the caster, after the lure's flare frame (a drag goes at once).

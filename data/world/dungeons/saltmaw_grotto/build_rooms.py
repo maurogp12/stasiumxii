@@ -21,14 +21,11 @@ ROOT = Path(__file__).parent
 SIZE = 12
 
 # Prop names are the art kit's board props (art manifest board.props,
-# art/pc/dungeons/saltmaw_grotto/manifest.json), all 1x1 and blocking. Rooms
-# A and B share sunken_crate, barrel, coral_cluster, anchor, barnacle_rock;
-# giant_clam, treasure_chest, sunken_statue and rock_spire (the ring round the
-# whirlpool) are room B's.
-SHARED_PROPS = {"sunken_crate", "barrel", "coral_cluster", "anchor", "barnacle_rock"}
+# art/pc/dungeons/saltmaw_grotto/manifest.json), all 1x1 and blocking, from
+# each room's list in the manifest (board.rooms.<a|b>.props).
 KIT_PROPS = {
-    "room_a": SHARED_PROPS,
-    "room_b": SHARED_PROPS | {"giant_clam", "treasure_chest", "sunken_statue", "rock_spire"},
+    "room_a": {"sunken_crate", "barrel", "coral_cluster", "anchor", "barnacle_rock"},
+    "room_b": {"rock_spire", "giant_clam", "treasure_chest", "sunken_statue", "barrel", "sunken_crate", "barnacle_rock"},
 }
 
 # Room A, the sunken grotto. Rocks, crates and coral stand in short runs on
@@ -65,8 +62,8 @@ ROOM_B = {
         **{(WHIRLPOOL_ORIGIN[0] + dx, WHIRLPOOL_ORIGIN[1] + dy): "rock_spire" for dx, dy in SPIRES_FROM_ORIGIN},
         (2, 1): "sunken_statue", (10, 1): "sunken_statue",
         (1, 4): "giant_clam", (10, 4): "treasure_chest",
-        (2, 9): "anchor", (10, 9): "barrel",
-        (1, 11): "sunken_crate", (11, 11): "coral_cluster",
+        (2, 9): "barnacle_rock", (10, 9): "barrel",
+        (1, 11): "sunken_crate", (11, 11): "barrel",
     },
     "pads": {(x, y): "whirlpool" for x in range(5, 8) for y in range(5, 8)},
     # Floor decal cells that are not pads (the kerb): they carry the decal's

@@ -4720,6 +4720,7 @@ func _resolve_pull(intent: Dictionary, actor: Dictionary, sig: Dictionary) -> Di
 		"type": "lure",
 		"seat": actor["seat"],
 		"spell": str(sig.get("id", "")),
+		"beam": str(sig.get("beam", "")),
 		"caster_cell": actor["pos"],
 		"target_seat": hero["seat"],
 		"from": from,
