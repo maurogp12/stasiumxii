@@ -1,5 +1,7 @@
 # STASIUM XII — handoff for other agents
 
+> **Player accounts (10 Oct 2026, Mauro: "email and guest"):** read `docs/ACCOUNTS.md` — Supabase plan (Step 1 login built; Step 2 cloud save, Step 3 server-checked progress), files, rules and the one-time Supabase setup. Never put the `service_role` key in the repo or the APK.
+
 > **6–7 Oct 2026 session (0.1.133–0.1.136):** read `docs/SESSION_2026-10-06_BALANCE_AND_KITS.md` — every change (Bastion shield class + Thorns, Ironjaw shield breaker, Mender full support + Last Stand, Kestrel range table + Vault + Snare Trap, element package, match clock + sudden death), Mauro's reasons, the simulator results and the open items.
 
 

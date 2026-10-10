@@ -27,6 +27,8 @@ const _Wallet := preload("res://backend/koliseo_wallet.gd")
 const _Shop := preload("res://scenes/koliseo_shop.gd")
 const _Gear := preload("res://scenes/gear_screen.gd")
 const _Inventory := preload("res://scenes/inventory_screen.gd")
+const _AccountClient := preload("res://backend/account_client.gd")
+const _AccountScreen := preload("res://scenes/account_screen.gd")
 
 const NAVY := Color(0.008, 0.028, 0.07)
 const GOLD := Color(0.855, 0.69, 0.4)
@@ -56,6 +58,12 @@ var _shop: Control
 var _gear_button: Button
 var _elements_button: Button
 var _gear: Control
+var _account_button: Button
+var _account_client: Node
+var _account_screen: Control
+## The account screen opens by itself once per app run when nobody is
+## logged in (Mauro 10 Oct 2026: every player has an account).
+static var account_asked: bool = false
 var _banner_ratio: float = 1536.0 / 510.0
 var _tile_ratio: float = 292.0 / 410.0
 
@@ -200,7 +208,16 @@ func _build() -> void:
 	_update_client.status_changed.connect(_set_update_status)
 	_update_client.busy_changed.connect(_set_update_busy)
 	add_child(_update_client)
+	_account_client = _AccountClient.new()
+	_account_client.name = "AccountClient"
+	add_child(_account_client)
+	_account_client.changed.connect(refresh_account)
+	refresh_account()
+	_account_client.refresh_if_needed()
 	_layout()
+	if _auto_launch and not account_asked and _account_client.is_configured() and not _account_client.is_signed_in():
+		account_asked = true
+		call_deferred("open_account")
 
 
 func _remember_door(button: Button, door_id: String) -> void:
@@ -349,6 +366,14 @@ func _make_title_row() -> HBoxContainer:
 	_wallet_label.add_theme_color_override("font_color", GOLD_BRIGHT)
 	row.add_child(_wallet_label)
 	refresh_wallet()
+	# Player account (Step 1: email + guest). Shows the player name.
+	_account_button = _make_update_button()
+	_account_button.name = "Account"
+	_account_button.text = "Log in"
+	_account_button.custom_minimum_size = Vector2(110, 48)
+	_account_button.pressed.disconnect(_on_update_pressed)
+	_account_button.pressed.connect(open_account)
+	row.add_child(_account_button)
 	_shop_button = _make_update_button()
 	_shop_button.name = "Shop"
 	_shop_button.text = "Shop"
@@ -383,6 +408,28 @@ func refresh_wallet() -> void:
 		return
 	var wallet := _Wallet.load_saved()
 	_wallet_label.text = "Coins %d  ·  Trophies %d" % [wallet.coins, wallet.trophies]
+
+
+func refresh_account() -> void:
+	if _account_button == null or _account_client == null:
+		return
+	_account_button.text = _account_client.label()
+
+
+func account_client() -> Node:
+	return _account_client
+
+
+func open_account() -> void:
+	if _account_screen != null and is_instance_valid(_account_screen):
+		return
+	var screen: Control = _AccountScreen.new()
+	screen.name = "AccountScreen"
+	screen.font = _font
+	screen.client = _account_client
+	screen.closed.connect(refresh_account)
+	add_child(screen)
+	_account_screen = screen
 
 
 func open_inventory() -> void:
