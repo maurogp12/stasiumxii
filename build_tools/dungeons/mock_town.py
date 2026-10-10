@@ -23,6 +23,8 @@ CONF = {
     "old_granary_cellar": {"ground": ["golden_plains_a"], "neighbour": ("cottage_thatch", 2), "trees": [], "bg": (40, 40, 30)},
     "saltmaw_grotto": {"ground": ["golden_plains_sand_a", "golden_plains_sand_b", "golden_plains_sand_c"], "neighbour": ("fishing_hut_2x2", 2),
                        "trees": ["tree_autumn_a", "tree_autumn_b"], "bg": (36, 52, 60), "keeper": (0, 3)},
+    "drowned_abbey": {"ground": ["golden_plains_shade_a", "golden_plains_shade_b"], "neighbour": ("fishing_hut_2x2", 2),
+                      "trees": ["tree_willow", "tree_willow_stump"], "bg": (34, 44, 38), "keeper": (0, 3)},
 }
 
 
