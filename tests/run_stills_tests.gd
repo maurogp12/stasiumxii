@@ -44,6 +44,7 @@ func _run() -> void:
 	_test_clear_text_and_icons()
 	_test_screen()
 	_test_card_lines()
+	_test_still_action_button()
 	_wipe()
 	print("Stills tests: %d passed, %d failed" % [_passed, _failed])
 	quit(1 if _failed > 0 else 0)
@@ -634,11 +635,14 @@ func _test_card_lines() -> void:
 	eq(other != null and other.visible, false, "a fighter without a Still shows no icon")
 	eq(hud._unit_card_text(bare, false).contains("Echo"), false, "another player's Still leaves no state line")
 	eq(hud._unit_card_text(bare, false).contains("Bound"), false, "a stray bind name is not a Still on this fighter")
-	eq(hud._use_still_button.icon, StillVault.icon("bound_hour"), "Use Still carries this fighter's icon")
+	var bound_icon := hud._use_still_button.get_node_or_null("StillButtonIcon") as TextureRect
+	eq(bound_icon != null and bound_icon.texture == StillVault.icon("bound_hour"), true, "the round button shows Bound Hour")
+	eq(hud._use_still_button.text, "", "the Still button has no Use Still label")
+	eq(hud._use_still_button.icon, null, "the Still icon is the round button, not a side icon")
 	fight["local_seat"] = 1
 	hud.render(fight, [{"type": "use_still", "seat": 0}])
 	eq(hud._use_still_button.visible, false, "the other fighter does not get Use Still")
-	eq(hud._use_still_button.icon, null, "their button does not keep the first fighter's icon")
+	eq((hud._use_still_button.get_node_or_null("StillButtonIcon") as TextureRect).texture, null, "their button does not keep the first fighter's icon")
 	eq((hud._seat_panels[0].get_node_or_null("StillIcon") as TextureRect).texture, StillVault.icon("bound_hour"), "the owner's card still shows only their Still")
 	eq((hud._seat_panels[1].get_node_or_null("StillIcon") as TextureRect).visible, false, "the other card stays blank")
 	bare["still"] = "tide"
@@ -651,6 +655,58 @@ func _test_card_lines() -> void:
 	eq(left.texture, StillVault.icon("bound_hour"), "the left card keeps Bound Hour")
 	eq(right.visible and right.texture == StillVault.icon("tide"), true, "the other fighter shows only Tide")
 	eq(left.texture == right.texture, false, "the two cards do not share one Still")
+	hud.queue_free()
+
+
+func _until_seat(seat: int) -> void:
+	var guard := 0
+	while int(_sim.snapshot().get("active_seat", -1)) != seat and guard < 6:
+		_sim.submit({"type": "end_turn", "seat": int(_sim.snapshot()["active_seat"])})
+		guard += 1
+
+
+func _test_still_action_button() -> void:
+	var hud := CombatHUD.new()
+	root.add_child(hud)
+	var kids: Array = hud._action_bar.get_children()
+	eq(kids.find(hud._use_still_button), kids.find(hud._end_turn_button) + 1, "the Still button sits beside Pass Turn")
+	eq(hud._use_still_button.custom_minimum_size, Vector2(72, 72), "the Still button is the same size as the round neighbors")
+	var box := hud._use_still_button.get_theme_stylebox("normal") as StyleBoxFlat
+	eq(box != null and box.corner_radius_top_left == 36, true, "the Still button is a circle")
+	_fight(_gear("tide", "intact"))
+	_until_seat(0)
+	hud.render(_sim.snapshot(), _sim.legal_intents(0))
+	eq(hud._use_still_button.visible, false, "a passive Still has no button")
+	eq((hud._seat_panels[0].get_node_or_null("StillIcon") as TextureRect).visible, true, "Tide stays on the corner card")
+	_fight(_gear("mirror_hour", "intact"))
+	_until_seat(0)
+	hud.render(_sim.snapshot(), _sim.legal_intents(0))
+	eq(hud._use_still_button.visible, true, "Mirror Hour shows on your turn")
+	var mark := hud._use_still_button.get_node_or_null("StillButtonIcon") as TextureRect
+	eq(mark != null and mark.texture == StillVault.icon("mirror_hour"), true, "the button icon is Mirror Hour")
+	hud._use_still_button.pressed.emit()
+	eq(hud.still_aiming(), true, "Mirror Hour then asks for a fighter")
+	eq(hud._selected_label.text.contains("tap a fighter"), true, "the hint says to tap a fighter")
+	var net: Node = (load("res://backend/net_session.gd") as Script).new()
+	net.attach_sim(_sim)
+	net.enter_host_offline()
+	var off: Dictionary = net.submit_for_seat({"type": "use_still", "target_seat": 1}, 1)
+	eq(str(off.get("reason", "")), "not_your_turn", "online Mirror Hour is refused off-turn")
+	eq(bool(_u(0).get("still_ready", false)), true, "the off-turn tap does not spend it")
+	var watching: Dictionary = _sim.snapshot()
+	watching["local_seat"] = 1
+	hud.render(watching, _sim.legal_intents(0))
+	eq(hud._use_still_button.visible, false, "online, the other fighter does not see the button")
+	var used: Dictionary = net.submit_for_seat({"type": "use_still", "target_seat": 1}, 0)
+	eq(bool(used.get("ok", false)), true, "online Mirror Hour resolves on your turn")
+	hud.render(_sim.snapshot(), _sim.legal_intents(0))
+	eq(hud._use_still_button.visible, false, "the button disappears after the Still is used")
+	eq((hud._seat_panels[0].get_node_or_null("StillIcon") as TextureRect).visible, true, "the corner icon stays after the button is gone")
+	_end_turns(2)
+	_until_seat(0)
+	hud.render(_sim.snapshot(), _sim.legal_intents(0))
+	eq(hud._use_still_button.visible, false, "it stays gone for the rest of the match")
+	net.free()
 	hud.queue_free()
 
 

@@ -16,6 +16,8 @@ const IDS: Array[String] = [
 	"long_shadow", "withering_sand", "shatterglass", "tolling_bell",
 	"bleeding_hour", "mirror_hour", "held_hour", "bound_hour", "gathered_sand",
 ]
+## Tapped from the button beside Pass Turn. The other ten stay on the corner card.
+const ACTIVATED: Array[String] = ["bleeding_hour", "mirror_hour", "bound_hour"]
 const NAMES := {
 	"steadfast": "Steadfast",
 	"tide": "Tide",
@@ -135,6 +137,10 @@ static func forge_summary(count: int) -> String:
 
 static func is_id(id: String) -> bool:
 	return IDS.has(id)
+
+
+static func is_activated(id: String) -> bool:
+	return ACTIVATED.has(id)
 
 
 static func load_saved() -> StillVault:
