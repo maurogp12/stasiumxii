@@ -41,6 +41,13 @@ const KIT_PROPS: Array[String] = ["pew", "broken_pillar", "fallen_statue", "cand
 var _passed := 0
 var _failed := 0
 var sim: Node
+## The ★5 forms' ids and the ★5 boss name come from the data (variant_of +
+## star_min 5, run.json text.boss_star5), so renaming the mutated forms costs
+## nothing here.
+var G_BOG := ""
+var G_LEECH := ""
+var G_BOSS := ""
+var G_BOSS_NAME := ""
 
 
 func _initialize() -> void:
@@ -51,6 +58,7 @@ func _run() -> void:
 	Regions.set_enabled(true)
 	Launcher.dry_run = true
 	sim = root.get_node("CombatSim")
+	_resolve_star5_ids()
 	_test_door_data()
 	_test_run_file_and_rooms()
 	_test_monsters()
@@ -244,7 +252,7 @@ func _test_run_file_and_rooms() -> void:
 func _test_monsters() -> void:
 	var book = Monsters.load_default()["monsters"]
 	var ids: Array = book.ids_for(ABBEY)
-	eq(ids, ["bog_dead", "mire_leech", "mire_abbess", "gravebound_bog_dead", "gravebound_mire_leech", "gravebound_abbess"], "the abbey's six monsters")
+	eq(ids, ["bog_dead", "mire_leech", "mire_abbess", G_BOG, G_LEECH, G_BOSS], "the abbey's six monsters")
 	for id in ids:
 		var lo: Dictionary = book.stats_at(id, 30)
 		var hi: Dictionary = book.stats_at(id, 40)
@@ -270,20 +278,20 @@ func _test_monsters() -> void:
 	eq(float(sig["hp_pct"]), 0.5, "the risen come back at half HP")
 	eq([int(sig["first_turn"]), int(sig["every"])], [2, 2], "from her 2nd turn, then resting a turn between rites")
 	eq(int(boss["ap"]) >= int(sig["ap"]) + int(boss["attack"]["ap"]), true, "she can raise and lash in one turn")
-	var grave: Dictionary = book.stats_at("gravebound_abbess", LEVEL, 5)
-	eq(str(grave["signature"]["kind"]), "raise", "the Gravebound Abbess raises too")
-	eq((grave["signature"]["raise"] as Array).has("gravebound_mire_leech"), true, "she raises leeches too")
+	var grave: Dictionary = book.stats_at(G_BOSS, LEVEL, 5)
+	eq(str(grave["signature"]["kind"]), "raise", "the ★5 Abbess raises too")
+	eq((grave["signature"]["raise"] as Array).has(G_LEECH), true, "she raises leeches too")
 	eq(int(grave["signature"]["cap_total"]) > int(sig["cap_total"]), true, "and more of them")
 	eq(float(grave["signature"]["hp_pct"]) > float(sig["hp_pct"]), true, "at more HP")
 	eq(str(grave["signature2"]["kind"]), "hazard", "her second move lays a ground hazard")
 	eq(str(grave["signature2"]["hazard"]), "grasping_mire", "the hazard is grasping_mire")
 	eq(bool(grave["signature2"]["root"]), true, "the grasping mire roots")
 	eq(int(grave["hp"]) > int(book.stats_at("mire_abbess", LEVEL, 5)["hp"]), true, "the mutated form is tougher than the Mire Abbess at ★5")
-	for id in ["gravebound_bog_dead", "gravebound_mire_leech"]:
+	for id in [G_BOG, G_LEECH]:
 		var st: Dictionary = book.stats_at(id, LEVEL, 5)
 		eq(str((st["attack"].get("chill", {}) as Dictionary).get("word", "")), "mired", "%s mires" % id)
 		eq(str(st["variant_of"]) != "", true, "%s is a mutated form" % id)
-	eq(str(book.stats_at("gravebound_mire_leech", LEVEL, 5)["attack"]["projectile"]), "gravebound_bile", "gravebound bile flies as gravebound_bile")
+	eq(str(book.stats_at(G_LEECH, LEVEL, 5)["attack"]["projectile"]), "gravebound_bile", "gravebound bile flies as gravebound_bile")
 	var check: Dictionary = book.check(LEVEL)
 	eq(bool(check["ok"]), true, "level 32 numbers pass the sanity pass: %s" % [check["findings"]])
 	var rows: Dictionary = book.stars_for(ABBEY)["scale"]
@@ -317,7 +325,7 @@ func _test_packs_per_star() -> void:
 		2: {"bog_dead": 4, "mire_leech": 3},
 		3: {"bog_dead": 4, "mire_leech": 3},
 		4: {"bog_dead": 4, "mire_leech": 3},
-		5: {"gravebound_bog_dead": 4, "bog_dead": 1, "gravebound_mire_leech": 3},
+		5: {G_BOG: 4, "bog_dead": 1, G_LEECH: 3},
 	}
 	var totals := {1: 6, 2: 7, 3: 7, 4: 7, 5: 8}
 	var hp_by_star := {}
@@ -356,11 +364,11 @@ func _test_packs_per_star() -> void:
 		var mons: Array = boss_room["monsters"]
 		eq(mons.size(), 4, "★%d room B: the boss and a 3-strong escort" % star)
 		eq(bool(mons[0]["boss"]), true, "★%d room B leads with the boss" % star)
-		eq(str(mons[0]["monster"]), "gravebound_abbess" if star == 5 else "mire_abbess", "★%d boss form" % star)
+		eq(str(mons[0]["monster"]), G_BOSS if star == 5 else "mire_abbess", "★%d boss form" % star)
 		var escort := {}
 		for m in mons.slice(1):
 			escort[str(m["monster"])] = int(escort.get(str(m["monster"]), 0)) + 1
-		var want := {"gravebound_bog_dead": 2, "gravebound_mire_leech": 1} if star == 5 else {"bog_dead": 2, "mire_leech": 1}
+		var want := {G_BOG: 2, G_LEECH: 1} if star == 5 else {"bog_dead": 2, "mire_leech": 1}
 		eq(escort, want, "★%d escort: two Bog Dead and a Mire Leech" % star)
 		eq((boss_room["summons"] as Dictionary).has(""), false, "★%d a raise signature carries no summon stats" % star)
 	for star in range(2, 5):
@@ -374,6 +382,10 @@ func _test_ai_always_ends() -> void:
 	var shots := 0
 	var rites := 0
 	var mires := 0
+	var book = Monsters.load_default()["monsters"]
+	var spit_ids := [str(book.raw("mire_leech")["attack"]["id"]), str(book.raw(G_LEECH)["attack"]["id"])]
+	var rite_ids := [str(book.raw("mire_abbess")["signature"]["id"]), str(book.raw(G_BOSS)["signature"]["id"])]
+	var mire_id := str(book.raw(G_BOSS)["signature2"]["id"])
 	for cls in CLASSES:
 		for star in [1, 5]:
 			var run = Run.create(ABBEY, LEVEL, cls, "", star)["run"]
@@ -395,11 +407,11 @@ func _test_ai_always_ends() -> void:
 						if bool(d["intent"].get("forced", false)):
 							stuck += 1
 						var spell := str(d["intent"].get("spell", ""))
-						if spell in ["bile_spit", "gravebound_bile"] and bool(d["ok"]):
+						if spell in spit_ids and bool(d["ok"]):
 							shots += 1
-						if spell in ["rite_of_rising", "gravebound_rite"] and bool(d["ok"]):
+						if spell in rite_ids and bool(d["ok"]):
 							rites += 1
-						if spell == "grasping_mire" and bool(d["ok"]):
+						if spell == mire_id and bool(d["ok"]):
 							mires += 1
 					var after: Dictionary = sim.snapshot()
 					if not bool(after["match_over"]) and int(after["active_seat"]) == seat:
@@ -411,7 +423,7 @@ func _test_ai_always_ends() -> void:
 	eq(monster_turns > 100, true, "monster turns were played (%d)" % monster_turns)
 	eq(shots > 20, true, "Mire Leeches find lines and spit (%d)" % shots)
 	eq(rites > 2, true, "the Abbess raises the dead in real fights (%d)" % rites)
-	eq(mires > 2, true, "the Gravebound Abbess calls the mire in real fights (%d)" % mires)
+	eq(mires > 2, true, "the ★5 Abbess calls the mire in real fights (%d)" % mires)
 	eq(stuck, 0, "no monster turn needed a forced end")
 	eq(unfinished, 0, "every monster turn ends and every fight finishes")
 
@@ -471,7 +483,7 @@ func _test_leech_los_and_kiting() -> void:
 ## Bog Dead at `bogs`.
 func _rite_room(boss_at: Vector2i, hero_at: Vector2i, bogs: Array, star: int = 1, extra: Array = []) -> Dictionary:
 	var book = Monsters.load_default()["monsters"]
-	var boss: Dictionary = book.stats_at("mire_abbess" if star < 5 else "gravebound_abbess", LEVEL, star)
+	var boss: Dictionary = book.stats_at("mire_abbess" if star < 5 else G_BOSS, LEVEL, star)
 	boss["pos"] = boss_at
 	boss["facing"] = "S"
 	var cells: Array = []
@@ -480,7 +492,7 @@ func _rite_room(boss_at: Vector2i, hero_at: Vector2i, bogs: Array, star: int = 1
 			cells.append({"pos": Vector2i(x, y), "terrain": "ground", "elevation": 0, "paint_only": [], "blocks": false, "special": ""})
 	var mons: Array = [boss]
 	for at in bogs:
-		var b: Dictionary = book.stats_at("bog_dead" if star < 5 else "gravebound_bog_dead", LEVEL, star)
+		var b: Dictionary = book.stats_at("bog_dead" if star < 5 else G_BOG, LEVEL, star)
 		b["pos"] = at
 		b["facing"] = "S"
 		mons.append(b)
@@ -693,7 +705,7 @@ func _test_rite_scatter_and_star5() -> void:
 	eq(str(sim.snapshot()["dungeon"]["result"]), "win", "the room is won when every monster is down")
 	# ★5: the Gravebound Rite raises a leech too, at 60%.
 	var book = Monsters.load_default()["monsters"]
-	var leech: Dictionary = book.stats_at("gravebound_mire_leech", LEVEL, 5)
+	var leech: Dictionary = book.stats_at(G_LEECH, LEVEL, 5)
 	leech["pos"] = Vector2i(9, 3)
 	leech["facing"] = "S"
 	sim.reset_match(_rite_room(Vector2i(6, 2), Vector2i(6, 10), [], 5, [leech]))
@@ -702,10 +714,10 @@ func _test_rite_scatter_and_star5() -> void:
 	sim.submit({"type": "end_turn", "seat": 0})
 	g["own_turns"] = 2
 	g["acted_signature2"] = true
-	eq(bool(sim.raise_ready(g)), true, "the Gravebound Abbess raises a fallen leech")
+	eq(bool(sim.raise_ready(g)), true, "the ★5 Abbess raises a fallen leech")
 	sim.submit({"type": "cast", "spell": str(g["signature"]["id"]), "to": Vector2i(9, 3), "seat": 1})
 	var up: Dictionary = (sim.snapshot()["units"] as Array).back()
-	eq(str(up["monster"]), "gravebound_mire_leech", "a gravebound leech rises")
+	eq(str(up["monster"]), G_LEECH, "a ★5 leech rises")
 	eq(int(up["hp"]), int(round(float(up["max_hp"]) * 0.6)), "at 60%% HP (%d)" % int(up["hp"]))
 	eq(bool((up["attack"] as Dictionary).get("los", false)), true, "it still spits with a line")
 
@@ -720,7 +732,7 @@ func _test_star5_grasping_mire() -> void:
 		cfg["rolls"].append(99)
 	sim.reset_match(cfg)
 	var boss: Dictionary = sim._unit_by_seat(1)
-	eq(str(boss["name"]), "The Gravebound Abbess", "★5 room B boss is the Gravebound Abbess")
+	eq(str(boss["name"]), G_BOSS_NAME, "★5 room B boss is %s" % G_BOSS_NAME)
 	var sig2: Dictionary = boss["signature2"]
 	var hero: Dictionary = sim._unit_by_seat(0)
 	hero["pos"] = Vector2i(6, 9)
@@ -810,7 +822,7 @@ func _test_star5_grasping_mire() -> void:
 
 func _test_mire_and_cleanse() -> void:
 	var book = Monsters.load_default()["monsters"]
-	var gl: Dictionary = book.stats_at("gravebound_mire_leech", LEVEL, 5)
+	var gl: Dictionary = book.stats_at(G_LEECH, LEVEL, 5)
 	var cells: Array = []
 	for y in 12:
 		for x in 12:
@@ -848,7 +860,7 @@ func _test_mire_and_cleanse() -> void:
 			cleanse = str(e.get("coach", ""))
 	eq(cleanse.contains("cleanses"), true, "the pad's line is the abbey's own (%s)" % cleanse)
 	# A root on a pad is cleansed too.
-	var boss: Dictionary = book.stats_at("gravebound_abbess", LEVEL, 5)
+	var boss: Dictionary = book.stats_at(G_BOSS, LEVEL, 5)
 	boss["pos"] = Vector2i(2, 1)
 	boss["facing"] = "S"
 	room["monsters"] = [boss]
@@ -1023,7 +1035,7 @@ func _test_world_door_and_panel() -> void:
 	eq(bool(w.door_panel.check.get("ok", false)), true, "a level 32 hero passes the level check")
 	eq(w.door_panel.star_buttons.size(), 5, "★1-★5 on the panel")
 	w.door_panel.select_star(5)
-	eq((w.door_panel.find_child("StarNote", true, false) as Label).text.contains("Gravebound Abbess"), true, "the ★5 note is the abbey's")
+	eq((w.door_panel.find_child("StarNote", true, false) as Label).text.contains(G_BOSS_NAME.trim_prefix("The ")), true, "the ★5 note is the abbey's")
 	w.door_panel.leave_button.emit_signal("pressed")
 	w._approach_npc(w.npc_book.by_id("drowned_abbey_door_keeper"))
 	_drive(w)
@@ -1083,6 +1095,22 @@ func _test_run_scene_win_and_return() -> void:
 
 
 # --- helpers -----------------------------------------------------------------------
+
+func _resolve_star5_ids() -> void:
+	var book = Monsters.load_default()["monsters"]
+	for id in book.ids_for(ABBEY):
+		var row: Dictionary = book.raw(id)
+		if int(row.get("star_min", 0)) < 5:
+			continue
+		match str(row.get("variant_of", "")):
+			"bog_dead": G_BOG = id
+			"mire_leech": G_LEECH = id
+			"mire_abbess": G_BOSS = id
+	var run: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/world/dungeons/drowned_abbey/run.json"))
+	G_BOSS_NAME = str(run["text"]["boss_star5"])
+	eq(G_BOG != "" and G_LEECH != "" and G_BOSS != "", true, "every abbey base monster has a ★5 form (%s, %s, %s)" % [G_BOG, G_LEECH, G_BOSS])
+	eq(str(book.raw(G_BOSS).get("name", "")), G_BOSS_NAME, "the ★5 boss's name is the run file's boss_star5")
+
 
 func chebyshev(a: Vector2i, b: Vector2i) -> int:
 	return maxi(absi(a.x - b.x), absi(a.y - b.y))
