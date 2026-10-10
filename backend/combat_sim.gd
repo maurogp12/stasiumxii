@@ -4311,13 +4311,18 @@ func _dungeon_mp_drain(unit: Dictionary) -> void:
 		return
 	var lost := mini(drain, int(unit.get("mp", 0)))
 	unit["mp"] = int(unit.get("mp", 0)) - lost
+	var coach := "%s is %s: %d MP less this turn." % [unit["name"], str(unit.get("mp_drain_word", "chilled")), lost]
+	if unit.has("mp_drain_text"):
+		# A root hazard's own line (the abbey's grasping mire).
+		coach = str(unit["mp_drain_text"]).format({"name": str(unit["name"]), "mp": lost})
+		unit.erase("mp_drain_text")
 	_last_events.append({
 		"type": "chill",
 		"seat": unit["seat"],
 		"target_seat": unit["seat"],
 		"mp_lost": lost,
 		"mp_delta": -lost,
-		"coach": "%s is %s: %d MP less this turn." % [unit["name"], str(unit.get("mp_drain_word", "chilled")), lost],
+		"coach": coach,
 	})
 
 
@@ -4350,11 +4355,13 @@ func _scatter_summons(boss: Dictionary) -> void:
 			fled.append(int(unit["seat"]))
 	if fled.is_empty():
 		return
+	# A signature may name its own line (the Abbess's risen sink back).
+	var line := str((boss.get("signature", {}) as Dictionary).get("scatter_text", "With {boss} down, the swarm scatters."))
 	_last_events.append({
 		"type": "scatter",
 		"seat": boss["seat"],
 		"fled": fled,
-		"coach": "With %s down, the swarm scatters." % boss["name"],
+		"coach": line.format({"boss": str(boss["name"])}),
 	})
 
 
@@ -4378,6 +4385,8 @@ func _monster_legal_intents(actor: Dictionary) -> Array:
 		out.append({"type": "cast", "spell": str(sig.get("id", "")), "to": actor["pos"], "seat": seat})
 	elif not sig.is_empty() and pull_ready(actor):
 		out.append({"type": "cast", "spell": str(sig.get("id", "")), "to": hero["pos"], "target_seat": hero["seat"], "seat": seat})
+	elif not sig.is_empty() and raise_ready(actor):
+		out.append({"type": "cast", "spell": str(sig.get("id", "")), "to": _raise_corpse(actor)["pos"], "seat": seat})
 	var sig2: Dictionary = actor.get("signature2", {})
 	if not sig2.is_empty() and pools_ready(actor):
 		out.append({"type": "cast", "spell": str(sig2.get("id", "")), "to": hero["pos"] if not hero.is_empty() else actor["pos"], "seat": seat})
@@ -4468,6 +4477,8 @@ func _submit_monster_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
 	if not sig.is_empty() and spell_id == str(sig.get("id", "")):
 		if str(sig.get("kind", "summon")) == "pull":
 			return _resolve_pull(intent, actor, sig)
+		if str(sig.get("kind", "summon")) == "raise":
+			return _resolve_raise(intent, actor, sig)
 		return _resolve_summon(intent, actor, sig)
 	var sig2: Dictionary = actor.get("signature2", {})
 	if not sig2.is_empty() and spell_id == str(sig2.get("id", "")):
@@ -4731,6 +4742,116 @@ func _resolve_pull(intent: Dictionary, actor: Dictionary, sig: Dictionary) -> Di
 	return _accept()
 
 
+## Boss signature kind "raise" (the Drowned Abbey's Rite of Rising): on the
+## boss's first_turn-th turn, then every `every` turns, with AP and under
+## cap_total, she raises one fallen monster of a `raise` kind (its corpse on a
+## free cell, not yet raised and not a risen one) back where it fell, at
+## hp_pct of its max HP. The risen one is a new body (a summon: it takes its
+## turn after the others and sinks back when she falls). A hero standing on a
+## corpse keeps it down.
+func raise_ready(actor: Dictionary) -> bool:
+	var sig: Dictionary = actor.get("signature", {})
+	if sig.is_empty() or str(sig.get("kind", "")) != "raise":
+		return false
+	if bool(actor.get("acted_signature", false)):
+		return false
+	if int(actor.get("ap", 0)) < int(sig.get("ap", 0)):
+		return false
+	var turns := int(actor.get("own_turns", 0))
+	var first := maxi(int(sig.get("first_turn", 1)), 1)
+	var every := maxi(int(sig.get("every", 1)), 1)
+	if turns < first or (turns - first) % every != 0:
+		return false
+	if int(_dungeon.get("raised_total", 0)) >= int(sig.get("cap_total", 0)):
+		return false
+	return not _raise_corpse(actor).is_empty()
+
+
+## The corpse the rite raises: a fallen monster of a `raise` kind, on a free
+## walkable cell, not fled, not already raised, not itself a risen one.
+## Nearest to the caster first, then the lowest seat.
+func _raise_corpse(actor: Dictionary) -> Dictionary:
+	var sig: Dictionary = actor.get("signature", {})
+	var kinds: Array = sig.get("raise", []) if typeof(sig.get("raise", [])) == TYPE_ARRAY else []
+	var reach := int(sig.get("max_range", 99))
+	var best: Dictionary = {}
+	var best_d := 1 << 20
+	for unit in _units:
+		if not _is_monster(unit) or bool(unit.get("alive", false)) or bool(unit.get("fled", false)):
+			continue
+		if bool(unit.get("raised", false)) or bool(unit.get("risen", false)):
+			continue
+		if not kinds.has(str(unit.get("monster", ""))):
+			continue
+		var cell: Vector2i = unit["pos"]
+		if not _in_bounds(cell) or not _board.is_walkable(cell) or not _is_empty(cell):
+			continue
+		var d := chebyshev(actor["pos"], cell)
+		if d > reach:
+			continue
+		if d < best_d:
+			best_d = d
+			best = unit
+	return best
+
+
+func _resolve_raise(intent: Dictionary, actor: Dictionary, sig: Dictionary) -> Dictionary:
+	if not raise_ready(actor):
+		return _reject(intent, "raise_not_ready", "REJECT — %s is not ready." % sig.get("name", "The rite"))
+	var corpse := _raise_corpse(actor)
+	var ap_cost := int(sig.get("ap", 0))
+	actor["ap"] = int(actor["ap"]) - ap_cost
+	actor["acted_signature"] = true
+	_intent_log.append(intent)
+	var cell: Vector2i = corpse["pos"]
+	var face := _face_toward_cell(actor["pos"], cell)
+	if face != "":
+		actor["facing"] = face
+	corpse["raised"] = true
+	var next_seat := 0
+	for unit in _units:
+		next_seat = maxi(next_seat, int(unit["seat"]) + 1)
+	var spec := {
+		"monster": str(corpse["monster"]),
+		"name": str(corpse["name"]),
+		"element": str(corpse.get("element", "earth")),
+		"boss": false,
+		"art": str(corpse.get("art", corpse["monster"])),
+		"level": int(corpse.get("level", 1)),
+		"hp": int(corpse["max_hp"]),
+		"ap": int(corpse.get("max_ap", 4)),
+		"mp": int(corpse.get("max_mp", 3)),
+		"attack": (corpse.get("attack", {}) as Dictionary).duplicate(true),
+		"variant_of": str(corpse.get("variant_of", "")),
+	}
+	var hero := _dungeon_hero()
+	var rise_face := _face_toward_cell(cell, hero["pos"]) if not hero.is_empty() else "S"
+	var risen := _make_monster(next_seat, spec, cell, rise_face if rise_face != "" else "S", true)
+	risen["hp"] = maxi(int(round(float(risen["max_hp"]) * float(sig.get("hp_pct", 0.5)))), 1)
+	risen["risen"] = true
+	risen["risen_from"] = int(corpse["seat"])
+	_units.append(risen)
+	_dungeon["raised_total"] = int(_dungeon.get("raised_total", 0)) + 1
+	var line := str(sig.get("raise_text", "{caster} performs {sig}: {name} rises with {hp} HP."))
+	_last_coach = line.format({"caster": str(actor["name"]), "sig": str(sig.get("name", "the rite")), "name": str(risen["name"]), "hp": int(risen["hp"])})
+	_last_events.append({
+		"type": "raise",
+		"seat": actor["seat"],
+		"spell": str(sig.get("id", "")),
+		"beam": str(sig.get("beam", "")),
+		"caster_cell": actor["pos"],
+		"to": cell,
+		"corpse_seat": int(corpse["seat"]),
+		"risen_seat": next_seat,
+		"monster": str(risen["monster"]),
+		"hp": int(risen["hp"]),
+		"ap_spent": ap_cost,
+		"raised_total": int(_dungeon["raised_total"]),
+		"coach": _last_coach,
+	})
+	return _accept()
+
+
 static func _face_toward_cell(from: Vector2i, to: Vector2i) -> String:
 	var delta := to - from
 	if delta == Vector2i.ZERO:
@@ -4755,6 +4876,7 @@ func _dungeon_snapshot() -> Dictionary:
 		"round": int(_dungeon.get("round", 1)),
 		"monsters_alive": alive,
 		"summoned_total": int(_dungeon.get("summoned_total", 0)),
+		"raised_total": int(_dungeon.get("raised_total", 0)),
 		"star": int(_dungeon.get("star", 1)),
 		"pools": (_dungeon.get("pools", []) as Array).duplicate(true),
 	}
@@ -4873,6 +4995,14 @@ func _resolve_pools(intent: Dictionary, actor: Dictionary, sig: Dictionary) -> D
 				rec["drag_seat"] = int(actor["seat"])
 			if str(sig.get("hit_text", "")) != "":
 				rec["hit_text"] = str(sig["hit_text"])
+			if bool(sig.get("root", false)):
+				# Root hazards (the abbey's grasping mire) hold the hero: no MP
+				# on the next turn. `word` / `drain_text` name it in the lines.
+				rec["root"] = true
+			if str(sig.get("word", "")) != "":
+				rec["word"] = str(sig["word"])
+			if str(sig.get("drain_text", "")) != "":
+				rec["drain_text"] = str(sig["drain_text"])
 		pools.append(rec)
 		made.append(c)
 	_dungeon["pools"] = pools
@@ -4920,9 +5050,20 @@ func _pools_on_hero_end(hero: Dictionary) -> void:
 				hit["coach"] = "%s ends the turn on frost: %d damage, %d MP less next turn." % [hero["name"], dmg, mp_loss]
 				if pool.has("hit_text"):
 					hit["coach"] = str(pool["hit_text"]).format({"hero": str(hero["name"]), "damage": dmg, "mp": mp_loss})
+				if bool(pool.get("root", false)):
+					# Root: no MP at all on the next turn.
+					mp_loss = maxi(mp_loss, int(hero.get("max_mp", MAX_MP)))
+					hit["mp_loss"] = mp_loss
+					hit["root"] = true
+					if pool.has("hit_text"):
+						hit["coach"] = str(pool["hit_text"]).format({"hero": str(hero["name"]), "damage": dmg, "mp": mp_loss})
 				if mp_loss > 0:
 					hero["mp_drain"] = maxi(int(hero.get("mp_drain", 0)), mp_loss)
-					hero["mp_drain_word"] = "chilled"
+					hero["mp_drain_word"] = str(pool.get("word", "chilled"))
+					if pool.has("drain_text"):
+						hero["mp_drain_text"] = str(pool["drain_text"])
+					elif hero.has("mp_drain_text"):
+						hero.erase("mp_drain_text")
 			_last_events.append(hit)
 			_check_death(hero, "poison" if not pool.has("hazard") else "frost")
 			if int(pool.get("drag", 0)) > 0 and bool(hero.get("alive", false)) and not _match_over:

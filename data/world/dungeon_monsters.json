@@ -13,7 +13,8 @@
     "Frostspire Archive (levels 10-20): Ice Construct (slow melee tank), Book Wraith (ranged Frost Bolt, range 2-5, line of sight, kites), The Pale Archivist (boss, Ledger Strike range 1-2; Unbound Pages calls 2 Book Wraiths on his 2nd turn and every 3rd after, one cap with the escort wraiths: 3 alive, 4 in all). The hero side is the level sheet (80 HP, 6 AP, 3 MP; points add a few %), so band stats sit near the cellar's.",
     "chill (attack): a hit takes `mp` MP off the hero's next turn (no stacking). signature2 kind hazard: cells around the hero; a hero who ends a turn on one takes `hp` and loses `mp_loss` MP next turn. stand_in: art to borrow (tinted) until a monster's own frames land. placeholder: drawn stand-in shape and height.",
     "Saltmaw Grotto (levels 20-30): Reef Crab (slow melee tank), Drowned Sailor (cutlass, two swings a turn), Drowned Harpooner (ranged Harpoon Throw, range 2-5, line of sight, kites), Old Saltmaw (boss, Angler Bite range 1; Lantern Lure, signature kind pull: from range 2-6 with a line he pulls the hero 2 cells toward him on his 1st turn and every 2nd after, then bites).",
-    "signature kind pull: slides the hero up to `cells` toward the caster along the longer axis of the gap (diagonal when square), stopping at a prop, a body or next to the caster. signature2 hazard keys drag (cells the hazard drags a hero who ends a turn on it, toward the caster), lay_text and hit_text (coach lines). chill.word names the status (chilled by default)."
+    "signature kind pull: slides the hero up to `cells` toward the caster along the longer axis of the gap (diagonal when square), stopping at a prop, a body or next to the caster. signature2 hazard keys drag (cells the hazard drags a hero who ends a turn on it, toward the caster), lay_text and hit_text (coach lines). chill.word names the status (chilled by default).",
+    "Drowned Abbey (levels 30-40): Bog Dead (slow melee shambler), Mire Leech (ranged Bile Spit, range 2-5, line of sight, kites), The Mire Abbess (boss, Censer Lash range 1-2; Rite of Rising, signature kind raise: on her 2nd turn and every 2nd after she raises a fallen Bog Dead where it fell at half HP; the risen sink back when she falls). signature kind raise keys: raise (monster ids it may raise), hp_pct, cap_total, max_range (optional), raise_text, scatter_text. signature2 hazard key root (no MP on the next turn), word and drain_text (coach lines)."
   ],
   "scaling": {
     "hp_per_level": 0.05,
@@ -795,6 +796,257 @@
         "shape": "archivist",
         "height": 136
       }
+    },
+    {
+      "id": "bog_dead",
+      "name": "Bog Dead",
+      "dungeon": "drowned_abbey",
+      "role": "basic",
+      "level_min": 30,
+      "level_max": 40,
+      "hp": 24,
+      "ap": 5,
+      "mp": 2,
+      "attack": {
+        "id": "bog_grasp",
+        "name": "Bog Grasp",
+        "ap": 4,
+        "min_range": 1,
+        "max_range": 1,
+        "damage": 6,
+        "element": "earth"
+      },
+      "art": "bog_dead",
+      "placeholder": {
+        "shape": "drudge",
+        "height": 100
+      }
+    },
+    {
+      "id": "mire_leech",
+      "name": "Mire Leech",
+      "dungeon": "drowned_abbey",
+      "role": "ranged",
+      "level_min": 30,
+      "level_max": 40,
+      "hp": 13,
+      "ap": 4,
+      "mp": 3,
+      "attack": {
+        "id": "bile_spit",
+        "name": "Bile Spit",
+        "ap": 3,
+        "min_range": 2,
+        "max_range": 5,
+        "damage": 4,
+        "element": "water",
+        "los": true,
+        "projectile": "bile_spit",
+        "impact": "bile_impact"
+      },
+      "art": "mire_leech",
+      "placeholder": {
+        "shape": "wraith",
+        "height": 104
+      }
+    },
+    {
+      "id": "mire_abbess",
+      "name": "The Mire Abbess",
+      "dungeon": "drowned_abbey",
+      "role": "boss",
+      "level_min": 30,
+      "level_max": 40,
+      "hp": 92,
+      "ap": 6,
+      "mp": 2,
+      "attack": {
+        "id": "censer_lash",
+        "name": "Censer Lash",
+        "ap": 4,
+        "min_range": 1,
+        "max_range": 2,
+        "damage": 9,
+        "element": "water"
+      },
+      "art": "mire_abbess",
+      "signature": {
+        "id": "rite_of_rising",
+        "name": "Rite of Rising",
+        "kind": "raise",
+        "ap": 2,
+        "raise": [
+          "bog_dead"
+        ],
+        "hp_pct": 0.5,
+        "first_turn": 2,
+        "every": 2,
+        "cap_total": 2,
+        "beam": "rite_glow",
+        "raise_text": "{caster} swings her censer: {sig}. {name} rises from the bog with {hp} HP.",
+        "scatter_text": "With {boss} down, the risen dead sink back into the bog."
+      },
+      "placeholder": {
+        "shape": "archivist",
+        "height": 140
+      }
+    },
+    {
+      "id": "gravebound_bog_dead",
+      "name": "Gravebound Bog Dead",
+      "dungeon": "drowned_abbey",
+      "role": "basic",
+      "level_min": 30,
+      "level_max": 40,
+      "hp": 24,
+      "ap": 5,
+      "mp": 2,
+      "attack": {
+        "id": "gravebound_grasp",
+        "name": "Gravebound Grasp",
+        "ap": 4,
+        "min_range": 1,
+        "max_range": 1,
+        "damage": 6,
+        "element": "earth",
+        "chill": {
+          "mp": 1,
+          "word": "mired"
+        }
+      },
+      "art": "gravebound_bog_dead",
+      "variant_of": "bog_dead",
+      "star_min": 5,
+      "stand_in": {
+        "art": "bog_dead",
+        "tint": [
+          0.78,
+          1.18,
+          0.72,
+          1.0
+        ]
+      },
+      "placeholder": {
+        "shape": "drudge",
+        "height": 100
+      }
+    },
+    {
+      "id": "gravebound_mire_leech",
+      "name": "Gravebound Mire Leech",
+      "dungeon": "drowned_abbey",
+      "role": "ranged",
+      "level_min": 30,
+      "level_max": 40,
+      "hp": 13,
+      "ap": 4,
+      "mp": 3,
+      "attack": {
+        "id": "gravebound_bile",
+        "name": "Gravebound Bile",
+        "ap": 3,
+        "min_range": 2,
+        "max_range": 5,
+        "damage": 4,
+        "element": "water",
+        "los": true,
+        "projectile": "gravebound_bile",
+        "impact": "bile_impact",
+        "chill": {
+          "mp": 1,
+          "word": "mired"
+        }
+      },
+      "art": "gravebound_mire_leech",
+      "variant_of": "mire_leech",
+      "star_min": 5,
+      "stand_in": {
+        "art": "mire_leech",
+        "tint": [
+          0.78,
+          1.18,
+          0.72,
+          1.0
+        ]
+      },
+      "placeholder": {
+        "shape": "wraith",
+        "height": 104
+      }
+    },
+    {
+      "id": "gravebound_abbess",
+      "name": "The Gravebound Abbess",
+      "dungeon": "drowned_abbey",
+      "role": "boss",
+      "level_min": 30,
+      "level_max": 40,
+      "hp": 106,
+      "ap": 6,
+      "mp": 2,
+      "attack": {
+        "id": "gravebound_censer",
+        "name": "Gravebound Censer",
+        "ap": 4,
+        "min_range": 1,
+        "max_range": 2,
+        "damage": 10,
+        "element": "water"
+      },
+      "art": "gravebound_abbess",
+      "signature": {
+        "id": "gravebound_rite",
+        "name": "Gravebound Rite",
+        "kind": "raise",
+        "ap": 2,
+        "raise": [
+          "bog_dead",
+          "gravebound_bog_dead",
+          "mire_leech",
+          "gravebound_mire_leech"
+        ],
+        "hp_pct": 0.6,
+        "first_turn": 2,
+        "every": 2,
+        "cap_total": 3,
+        "beam": "rite_glow",
+        "raise_text": "{caster} swings her censer: {sig}. {name} rises from the bog with {hp} HP.",
+        "scatter_text": "With {boss} down, the risen dead sink back into the bog."
+      },
+      "signature2": {
+        "id": "grasping_mire",
+        "name": "Grasping Mire",
+        "kind": "hazard",
+        "hazard": "grasping_mire",
+        "ap": 0,
+        "first_turn": 1,
+        "every": 2,
+        "cells_min": 2,
+        "cells_max": 3,
+        "turns": 3,
+        "hp": 5,
+        "mp_loss": 0,
+        "root": true,
+        "word": "rooted",
+        "lay_text": "{caster} calls the {sig}: {n} cells of bog water reach for {hero}.",
+        "hit_text": "{hero} ends the turn in the grasping mire: {damage} damage, and the bog holds on.",
+        "drain_text": "The mire holds {name}: no MP this turn."
+      },
+      "variant_of": "mire_abbess",
+      "star_min": 5,
+      "stand_in": {
+        "art": "mire_abbess",
+        "tint": [
+          0.78,
+          1.18,
+          0.72,
+          1.0
+        ]
+      },
+      "placeholder": {
+        "shape": "archivist",
+        "height": 140
+      }
     }
   ],
   "stars": {
@@ -899,6 +1151,33 @@
         },
         "packs_note": "Room A: ★1-★2 2 Reef Crabs + 2 Drowned Sailors + 2 Drowned Harpooners; ★3-★4 + 1 Harpooner; ★5 the abyssal pack of 8. Room B: Old Saltmaw + escort (1 Reef Crab, 1 Drowned Sailor, 1 Drowned Harpooner); ★5 the Abyssal Saltmaw with an abyssal escort.",
         "star5": "★5 boss form: the Abyssal Saltmaw (100 HP, Abyssal Bite 11 at level 20). Abyssal Lure pulls 3 cells on the same rhythm; from his 2nd turn and every 2nd after, Riptide churns 2-3 cells around the hero (the hero's cell first) for 3 hero turns: a hero who ends a turn on one takes 5 (x the star's damage row) and is dragged 1 cell toward him. Walking across is safe. Abyssal monsters soak: a hit takes 1 MP off the hero's next turn (no stacking). A coral pad or the whirlpool rinses it off."
+      },
+      "drowned_abbey": {
+        "note": "Drowned Abbey rows (solo, level 30-40). See data/world/dungeons/drowned_abbey/README.md.",
+        "scale": {
+          "1": [
+            1.0,
+            1.0
+          ],
+          "2": [
+            1.05,
+            1.0
+          ],
+          "3": [
+            1.1,
+            1.05
+          ],
+          "4": [
+            1.2,
+            1.05
+          ],
+          "5": [
+            1.0,
+            1.0
+          ]
+        },
+        "packs_note": "Room A: ★1-★2 4 Bog Dead + 2 Mire Leeches; ★3-★4 + 1 Mire Leech; ★5 the gravebound pack of 8 (4 Gravebound Bog Dead, 1 Bog Dead, 3 Gravebound Mire Leeches). Room B: the Mire Abbess + escort (2 Bog Dead, 1 Mire Leech); ★5 the Gravebound Abbess with a gravebound escort.",
+        "star5": "★5 boss form: the Gravebound Abbess. Her Gravebound Rite raises Bog Dead and Mire Leeches at 60% HP (3 in a fight, vs 2 Bog Dead at 50%). From her 1st turn and every 2nd after, Grasping Mire turns 2-3 cells around the hero (the hero's cell first) to bog water for 3 hero turns: a hero who ends a turn on one takes 5 (x the star's damage row) and is rooted (no MP next turn). Walking across is safe. Gravebound monsters mire: a hit takes 1 MP off the hero's next turn (no stacking). A candle pad or the rune circle cleanses both."
       }
     }
   }

@@ -21,8 +21,11 @@ const SIGNATURE_KEYS: Array[String] = [
 ## Keys a signature of kind "pull" (Lantern Lure) needs instead: it slides the
 ## hero `cells` toward the boss from min_range..max_range, with line of sight.
 const PULL_KEYS: Array[String] = ["id", "name", "kind", "ap", "cells", "first_turn", "every", "min_range", "max_range"]
+## Keys a signature of kind "raise" (Rite of Rising) needs: it raises one
+## fallen monster of a `raise` kind where it fell, at hp_pct of its HP.
+const RAISE_KEYS: Array[String] = ["id", "name", "kind", "ap", "raise", "hp_pct", "first_turn", "every", "cap_total"]
 ## Signature kinds CombatSim plays.
-const SIGNATURE_KINDS: Array[String] = ["summon", "pull"]
+const SIGNATURE_KINDS: Array[String] = ["summon", "pull", "raise"]
 ## The hero side a level 1 run is checked against (CombatSim unit defaults).
 const HERO_HP := 80
 const HERO_AP := 6
@@ -235,9 +238,20 @@ func _read(doc: Dictionary, errors: Array) -> void:
 				var kind := str((sig as Dictionary).get("kind", "summon"))
 				if not SIGNATURE_KINDS.has(kind):
 					errors.append("%s signature kind %s" % [id, kind])
-				for key in (PULL_KEYS if kind == "pull" else SIGNATURE_KEYS):
+				var need: Array[String] = SIGNATURE_KEYS
+				if kind == "pull":
+					need = PULL_KEYS
+				elif kind == "raise":
+					need = RAISE_KEYS
+				for key in need:
 					if not (sig as Dictionary).has(key):
 						errors.append("%s signature %s" % [id, key])
+				if kind == "raise":
+					var hp_pct := float((sig as Dictionary).get("hp_pct", 0.0))
+					if typeof((sig as Dictionary).get("raise", null)) != TYPE_ARRAY or ((sig as Dictionary)["raise"] as Array).is_empty():
+						errors.append("%s signature raise must list monster ids" % id)
+					if hp_pct <= 0.0 or hp_pct > 1.0:
+						errors.append("%s signature hp_pct must be in (0, 1]" % id)
 		_by_id[id] = row.duplicate(true)
 		_order.append(id)
 	for id in _order:
@@ -246,6 +260,11 @@ func _read(doc: Dictionary, errors: Array) -> void:
 			var summon := str((row["signature"] as Dictionary).get("summon", ""))
 			if summon != "" and not _by_id.has(summon):
 				errors.append("%s summons an unknown monster %s" % [id, summon])
+			var raises: Variant = (row["signature"] as Dictionary).get("raise", [])
+			if typeof(raises) == TYPE_ARRAY:
+				for r_id in raises:
+					if not _by_id.has(str(r_id)):
+						errors.append("%s raises an unknown monster %s" % [id, r_id])
 
 
 static func _fail(errors: Array) -> Dictionary:

@@ -264,14 +264,14 @@
       "role": "door_keeper",
       "zone_id": "crosshaven_southbridge",
       "cell": {
-        "x": 12,
-        "y": 21
+        "x": 23,
+        "y": 26
       },
       "facing": "S",
       "body": "npc_door_keeper",
       "lines": [
         "I keep the door to the Drowned Abbey.",
-        "The way down is not open yet."
+        "The Mire Abbess raises what you fell. Put her down first, or stand where they dropped."
       ],
       "status": "proposed"
     },

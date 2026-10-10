@@ -1000,8 +1000,7 @@
         {
           "type": "clear_dungeon",
           "dungeon": "drowned_abbey",
-          "place": "Drowned Abbey",
-          "pending_chunk": true
+          "place": "Drowned Abbey"
         }
       ],
       "rewards": {
@@ -1011,7 +1010,7 @@
       },
       "lines": {
         "offer": [
-          "Clear the Drowned Abbey. The Warden says the fog hides the nave. The way down is not open yet."
+          "Clear the Drowned Abbey. The Warden says the fog hides the nave. The Door Keeper by the abbey door will let you down."
         ],
         "active": [
           "The Drowned Abbey is still ahead, under the fog."
