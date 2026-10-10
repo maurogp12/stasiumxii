@@ -159,7 +159,7 @@ func _test_door_rules_reject() -> void:
 	(wrong_band["dungeons"] as Array)[0]["door"] = {"zone_id": "crosshaven_northgate", "x": 16, "y": 11}
 	eq(bool(Dungeons.load_document(wrong_band)["dungeons"].validate_world(atlas, npcs)["ok"]), false, "a door outside its band fails")
 	var planned_door: Dictionary = base.duplicate(true)
-	(planned_door["dungeons"] as Array)[2]["door"] = {"zone_id": "crosshaven_eastmarch", "x": 16, "y": 11}
+	(planned_door["dungeons"] as Array)[3]["door"] = {"zone_id": "crosshaven_southbridge", "x": 16, "y": 11}
 	eq(bool(Dungeons.load_document(planned_door).get("ok", true)), false, "a planned dungeon with a door fails to load")
 	var stray: Dictionary = base.duplicate(true)
 	(stray["dungeons"] as Array)[0]["extra"] = 1
@@ -756,7 +756,7 @@ func _test_scripted_win() -> void:
 	eq(int(hero.xp) + 0 > 0 or not (summary["level_ups"] as Array).is_empty(), true, "XP is granted")
 	eq((summary["missions"] as Array).has("stoneford_dungeon"), true, "the clear_dungeon mission is credited")
 	eq(missions.status_of("stoneford_dungeon", hero), "ready", "the cellar mission is ready to turn in")
-	var other = Run.create("saltmaw_grotto", 22, "kestrel")
+	var other = Run.create("drowned_abbey", 32, "kestrel")
 	eq(bool(other.get("ok", true)), false, "a planned dungeon cannot be run")
 
 
