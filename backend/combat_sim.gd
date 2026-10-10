@@ -6514,6 +6514,8 @@ func _append_still_intents(out: Array, actor: Dictionary) -> void:
 
 
 func _submit_use_still(intent: Dictionary, actor: Dictionary) -> Dictionary:
+	if int(actor.get("seat", -1)) != _active_seat:
+		return _reject(intent, "not_your_turn", "REJECT — a Still can only be used on your turn.")
 	if not bool(actor.get("still_ready", false)):
 		return _reject(intent, "still_spent", "REJECT — that Still is already spent.")
 	var id := _still_id(actor)
@@ -6544,15 +6546,12 @@ func _still_picked_target(intent: Dictionary) -> Dictionary:
 func _still_bleed(intent: Dictionary, actor: Dictionary) -> Dictionary:
 	var over := _still_over(actor)
 	var max_hp := maxi(int(actor.get("max_hp", class_base_hp(str(actor.get("class_id", ""))))), 1)
-	var cost := roundi(float(max_hp) * (0.30 if over else 0.20))
+	var nominal := roundi(float(max_hp) * (0.30 if over else 0.20))
+	# The cost never knocks you out. 1 HP is the floor in both modes.
+	var cost := mini(nominal, maxi(int(actor.get("hp", 0)) - 1, 0))
 	actor["still_ready"] = false
-	_lose_hp(actor, cost)
-	_check_death(actor)
-	if not bool(actor.get("alive", false)):
-		_intent_log.append(intent)
-		_last_coach = "%s spends Bleeding Hour and falls." % str(actor.get("name", "Unit"))
-		_still_fired(actor, "bleeding_hour")
-		return _accept()
+	if cost > 0:
+		_lose_hp(actor, cost)
 	var gain := 3 if over else 2
 	if over:
 		actor["ap"] = int(actor.get("ap", 0)) + gain

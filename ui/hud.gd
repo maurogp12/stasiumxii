@@ -2961,8 +2961,11 @@ func _sync_use_still(snap: Dictionary, legal: Array) -> void:
 	var deploying := is_deployment_phase(snap)
 	var match_over := bool(snap.get("match_over", false))
 	var yours := is_local_turn(snap)
+	# Off-turn (online watcher, or a stale legal list) never shows the button.
+	if not yours:
+		offered = false
 	_use_still_button.visible = offered and not deploying and not match_over and yours
-	_use_still_button.disabled = not _use_still_button.visible or _stunned
+	_use_still_button.disabled = not yours or not _use_still_button.visible or _stunned
 	if not _use_still_button.visible:
 		_still_aim = false
 		_use_still_button.text = "Use Still"

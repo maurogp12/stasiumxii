@@ -64,7 +64,7 @@ const EFFECTS := {
 	"withering_sand": {"intact": "First nearby enemy heal: next hit on them adds half (max 15)", "overwound": "Bonus equals the full heal (max 25); you gain no shields", "built": true},
 	"shatterglass": {"intact": "First hit on a shield breaks the whole shield", "overwound": "Hits deal double to shields; you gain no shields", "built": true},
 	"tolling_bell": {"intact": "First enemy to turn Invisible within 5 tiles is revealed", "overwound": "Every such enemy is revealed; your hits deal −10%", "built": true},
-	"bleeding_hour": {"intact": "Once: lose 20% max HP, gain +2 AP", "overwound": "Lose 30% max HP, gain +3 AP (past 8); no heals until next turn ends", "built": true},
+	"bleeding_hour": {"intact": "Once, on your turn: lose 20% max HP (stop at 1), gain +2 AP", "overwound": "Lose 30% max HP (stop at 1), gain +3 AP (past 8); no heals until next turn ends", "built": true},
 	"mirror_hour": {"intact": "Once, 2 AP: swap with a visible fighter within 4 tiles", "overwound": "Free swap; an enemy faces away; you lose remaining MP", "built": true},
 	"held_hour": {"intact": "First hit echoes half its damage on the target's next turn", "overwound": "First hit deals 0 now and double later, unless they hit you first", "built": true},
 	"bound_hour": {"intact": "Once, 2 AP: take 50% of an ally's damage for 3 of their turns", "overwound": "All fight, you take 60%; break past 4 tiles costs you both 1 AP", "built": true},
@@ -82,10 +82,10 @@ const PLAIN := {
 	"withering_sand": {"intact": "The first time an enemy within 4 tiles is healed, your next hit on that enemy deals bonus damage equal to half the heal (max 15).", "overwound": "That bonus equals the full heal (max 25), but you cannot gain shields this fight."},
 	"shatterglass": {"intact": "Your first hit on a shielded enemy breaks the whole shield.", "overwound": "Every hit you land on a shield deals double damage to that shield, but you cannot gain shields this fight."},
 	"tolling_bell": {"intact": "The first enemy that turns Invisible within 5 tiles of you is revealed immediately.", "overwound": "Every enemy that turns Invisible within 5 tiles is revealed immediately, but your hits deal 10% less damage."},
-	"bleeding_hour": {"intact": "Once per fight, on your turn, lose 20% of your max HP and gain +2 AP.", "overwound": "Lose 30% of your max HP and gain +3 AP, even past 8, and you cannot be healed until your next turn ends."},
-	"mirror_hour": {"intact": "Once per fight, spend 2 AP to swap places with a visible fighter within 4 tiles.", "overwound": "The swap costs no AP, an enemy you swap ends facing away from you, and you lose your remaining MP."},
+	"bleeding_hour": {"intact": "Once per fight, on your turn, lose 20% of your max HP, stopping at 1, and gain +2 AP.", "overwound": "Lose 30% of your max HP, stopping at 1, and gain +3 AP, even past 8, and you cannot be healed until your next turn ends."},
+	"mirror_hour": {"intact": "Once per fight, on your turn, spend 2 AP to swap places with a visible fighter within 4 tiles.", "overwound": "The swap costs no AP, an enemy you swap ends facing away from you, and you lose your remaining MP."},
 	"held_hour": {"intact": "Your first hit echoes: half its damage hits again at the start of the target's next turn.", "overwound": "Your first hit deals no damage now and double damage at the start of the target's next turn, but it is lost if they hit you first."},
-	"bound_hour": {"intact": "Once per fight, spend 2 AP to take half the damage an ally within 4 tiles takes, for 3 of their turns.", "overwound": "The bind lasts the whole fight and you take 60% of their damage, but if either of you ends a turn more than 4 tiles apart it breaks and you both lose 1 AP."},
+	"bound_hour": {"intact": "Once per fight, on your turn, spend 2 AP to take half the damage an ally within 4 tiles takes, for 3 of their turns.", "overwound": "The bind lasts the whole fight and you take 60% of their damage, but if either of you ends a turn more than 4 tiles apart it breaks and you both lose 1 AP."},
 	"gathered_sand": {"intact": "15% of the damage you take is stored, up to 15, and your next hit releases it all as bonus damage, once per fight.", "overwound": "You store 25%, up to 25, but you cannot be healed while any of it is stored."},
 }
 ## How Stills work, in four steps (shown in the Inventory and the Vault).

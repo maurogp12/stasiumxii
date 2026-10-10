@@ -45,6 +45,7 @@ func _test_contract_stamps() -> void:
 
 
 func _test_intent_shape() -> void:
+	eq(HostValidate.validate_intent({"type": "use_still", "seat": 0})["ok"], true, "use_still envelope is legal")
 	eq(HostValidate.validate_intent({"type": "end_turn"})["ok"], true, "end_turn envelope is legal")
 	eq(HostValidate.validate_intent({"type": "face", "dir": "N"})["ok"], true, "face N is legal")
 	eq(HostValidate.validate_intent({"type": "move", "to": Vector2i(2, 2)})["ok"], true, "move dest is legal")

@@ -35,6 +35,7 @@ func _run() -> void:
 	_test_shatterglass()
 	_test_tolling_bell()
 	_test_bleeding_hour()
+	_test_still_own_turn()
 	_test_mirror_hour()
 	_test_held_hour()
 	_test_bound_hour()
@@ -311,7 +312,79 @@ func _test_bleeding_hour() -> void:
 	_u(0)["max_hp"] = 100
 	_u(0)["hp"] = 10
 	_sim.submit({"type": "use_still", "seat": 0})
-	eq(bool(_u(0).get("alive", true)), false, "the HP cost can knock you out")
+	eq([int(_u(0)["hp"]), bool(_u(0).get("alive", false))], [1, true], "Intact stops at 1 HP")
+	eq(int(_u(0)["ap"]), 8, "Intact still grants +2 AP at 1 HP")
+	_fight(_gear("bleeding_hour", "overwound"))
+	_u(0)["max_hp"] = 100
+	_u(0)["hp"] = 1
+	_sim.submit({"type": "use_still", "seat": 0})
+	eq([int(_u(0)["hp"]), bool(_u(0).get("alive", false))], [1, true], "Overwound already at 1 HP stays there")
+	eq(int(_u(0)["ap"]), 9, "Overwound still grants +3 AP at 1 HP")
+
+
+func _offers_still(seat: int) -> bool:
+	for intent in _sim.legal_intents(seat):
+		if str(intent.get("type", "")) == "use_still":
+			return true
+	return false
+
+
+func _test_still_own_turn() -> void:
+	# The wearer is seat 1. Seat 0 is acting, so the button's intent is refused.
+	for id in ["bleeding_hour", "mirror_hour"]:
+		_fight({}, _gear(id, "intact"))
+		var hp := int(_u(1)["hp"])
+		var ap := int(_u(1)["ap"])
+		var off: Dictionary = _sim.submit({"type": "use_still", "seat": 1, "target_seat": 0})
+		eq(bool(off.get("ok", false)), false, "%s is refused off-turn" % id)
+		eq(str(off.get("reason", "")), "not_your_turn", "%s off-turn reason is not_your_turn" % id)
+		eq([int(_u(1)["hp"]), int(_u(1)["ap"]), bool(_u(1).get("still_ready", false))], [hp, ap, true], "%s is unchanged off-turn" % id)
+		eq(_offers_still(1), false, "%s is not offered on the other seat's turn" % id)
+		_end_turns(1)
+		eq(_offers_still(1), true, "%s is offered on your turn" % id)
+		var on: Dictionary = _sim.submit({"type": "use_still", "seat": 1, "target_seat": 0})
+		eq(bool(on.get("ok", false)), true, "%s resolves on your turn" % id)
+	var spots := [Vector2i(5, 7), Vector2i(8, 7), Vector2i(6, 7), Vector2i(9, 7)]
+	_team(_gear("bound_hour", "intact"), ["kestrel", "ironjaw", "bastion", "gloam"], spots)
+	var bound_ap := int(_u(0)["ap"])
+	_end_turns(1)
+	var bound_off: Dictionary = _sim.submit({"type": "use_still", "seat": 0, "target_seat": 2})
+	eq(bool(bound_off.get("ok", false)), false, "Bound Hour is refused off-turn")
+	eq(str(bound_off.get("reason", "")), "not_your_turn", "Bound Hour off-turn reason is not_your_turn")
+	eq([int(_u(0)["ap"]), int(_u(0).get("bound_seat", -1)), bool(_u(0).get("still_ready", false))], [bound_ap, -1, true], "Bound Hour is unchanged off-turn")
+	eq(_offers_still(0), false, "Bound Hour is not offered on the other seat's turn")
+	_end_turns(3)
+	eq(int(_sim.snapshot()["active_seat"]), 0, "the wearer's turn comes back around")
+	eq(_offers_still(0), true, "Bound Hour is offered on your turn")
+	eq(bool(_sim.submit({"type": "use_still", "seat": 0, "target_seat": 2}).get("ok", false)), true, "Bound Hour resolves on your turn")
+	# Online: the host stamps the sender's seat, then the sim refuses the wrong turn.
+	_fight(_gear("bleeding_hour", "intact"))
+	_u(0)["max_hp"] = 100
+	_u(0)["hp"] = 100
+	var net: Node = (load("res://backend/net_session.gd") as Script).new()
+	net.attach_sim(_sim)
+	net.enter_host_offline()
+	var remote: Dictionary = net.submit_for_seat({"type": "use_still"}, 1)
+	eq(bool(remote.get("ok", false)), false, "the server refuses Bleeding Hour off-turn")
+	eq(str(remote.get("reason", "")), "not_your_turn", "online off-turn reason is not_your_turn")
+	eq([int(_u(0)["hp"]), bool(_u(0).get("still_ready", false))], [100, true], "online off-turn does not spend the Still")
+	var accepted: Dictionary = net.submit_for_seat({"type": "use_still"}, 0)
+	eq(bool(accepted.get("ok", false)), true, "the server accepts Bleeding Hour on your turn")
+	eq(int(_u(0)["hp"]), 80, "online on-turn pays the HP")
+	net.free()
+	_fight({}, _gear("mirror_hour", "intact"), ["kestrel", "ironjaw"], [], [Vector2i(5, 7), Vector2i(8, 7)])
+	var there: Vector2i = _u(1)["pos"]
+	net = (load("res://backend/net_session.gd") as Script).new()
+	net.attach_sim(_sim)
+	net.enter_host_offline()
+	var early: Dictionary = net.submit_for_seat({"type": "use_still", "target_seat": 0}, 1)
+	eq(str(early.get("reason", "")), "not_your_turn", "the server refuses Mirror Hour off-turn")
+	eq(_u(1)["pos"], there, "online Mirror Hour does not swap off-turn")
+	net.submit_for_seat({"type": "end_turn"}, 0)
+	var swapped: Dictionary = net.submit_for_seat({"type": "use_still", "target_seat": 0}, 1)
+	eq(bool(swapped.get("ok", false)), true, "the server accepts Mirror Hour on your turn")
+	eq(_u(1)["pos"] != there, true, "online Mirror Hour swaps on your turn")
+	net.free()
 
 
 func _test_mirror_hour() -> void:
@@ -528,6 +601,20 @@ func _test_card_lines() -> void:
 		"still": "bound_hour", "still_mode": "intact", "bound_seat": 2, "bound_name": "Bastion", "name": "Kestrel",
 	}
 	eq(hud._unit_card_text(bound, true).contains("Bound to Bastion"), true, "the corner card names the bind")
+	var watching := {
+		"phase": "COMBAT",
+		"local_seat": 1,
+		"active_seat": 0,
+		"match_over": false,
+		"units": [bound, {"hp": 90, "max_hp": 90, "ap": 6, "mp": 3, "alive": true, "class_id": "ironjaw", "seat": 1, "name": "Ironjaw"}],
+	}
+	hud.render(watching, [{"type": "use_still", "seat": 0}])
+	eq(hud._use_still_button.visible, false, "Use Still is hidden on the opponent's turn")
+	eq(hud._use_still_button.disabled, true, "Use Still is disabled on the opponent's turn")
+	watching["local_seat"] = 0
+	hud.render(watching, [{"type": "use_still", "seat": 0}])
+	eq(hud._use_still_button.visible, true, "Use Still shows on your turn")
+	eq(hud._use_still_button.disabled, false, "Use Still is enabled on your turn")
 	hud.queue_free()
 
 
