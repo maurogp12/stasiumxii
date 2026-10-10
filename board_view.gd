@@ -1023,10 +1023,22 @@ func _arm_view_motions(events: Array) -> void:
 		var plan: Dictionary = plans[seat]
 		if int(caster_event.get("seat", -2)) == seat_n and (bool(plan.get("attack", false)) or bool(plan.get("cast", false))):
 			plan["aim"] = _aim_vector(seat_n, caster_event)
+			if pawn.painted_look and bool(plan.get("cast", false)):
+				plan["strikes"] = _cast_strikes(seat_n, events)
 		if bool(plan.get("hit", false)):
 			plan["away"] = _away_vector(seat_n, VIEW_MOTION.hit_event_for(events, seat_n))
 		longest = maxf(longest, pawn.play_view_plan(plan))
 	_pending_motion_sec = minf(longest, VIEW_MOTION.ACTION_LOCK_MAX)
+
+
+## A cast by `seat` that damaged another unit (painted looks swing the attack).
+func _cast_strikes(seat: int, events: Array) -> bool:
+	for event in events:
+		if typeof(event) != TYPE_DICTIONARY or str(event.get("type", "")) != "hit":
+			continue
+		if int(event.get("seat", -2)) == seat and int(event.get("target_seat", seat)) != seat and int(event.get("damage", 0)) > 0:
+			return true
+	return false
 
 
 func _aim_vector(seat: int, event: Dictionary) -> Vector2:
@@ -1132,6 +1144,8 @@ func _rebuild_pawns() -> void:
 	pawns_by_seat.clear()
 	for unit in _sim().snapshot().get("units", []):
 		var pawn := PAWN_SCENE.instantiate() as Pawn
+		# Fighters draw the locked painted class look (units/painted_looks.gd).
+		pawn.painted_look = true
 		$Units.add_child(pawn)
 		pawns_by_seat[int(unit["seat"])] = pawn
 

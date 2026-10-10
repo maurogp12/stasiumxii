@@ -94,12 +94,24 @@ static func role_line(class_id: String) -> String:
 	return str(ROLE_LINES.get(key, ""))
 
 
+const PaintedLooks := preload("res://units/painted_looks.gd")
+
+
+## Old static south sprite (fallback when a class has no painted look).
 static func portrait_path(class_id: String) -> String:
 	var key := SpellKits.normalize_class_id(class_id)
 	return "res://art/characters/%s/%s_s.png" % [key, key]
 
 
+## The card shows the locked painted look: painted idle, first cell, facing
+## south (down-left), from units/painted_looks.gd. The old static is the
+## fallback for a class with no painted sheets.
 static func load_portrait(class_id: String) -> Texture2D:
+	var key := SpellKits.normalize_class_id(class_id)
+	if PaintedLooks.has_class(key):
+		var cells := PaintedLooks.cells(key, "idle", "s")
+		if not cells.is_empty():
+			return cells[0]
 	var path := portrait_path(class_id)
 	if not ResourceLoader.exists(path):
 		return null

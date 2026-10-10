@@ -8,7 +8,9 @@ extends "res://board_view.gd"
 ##   the usual walk / attack / hit animation,
 ## - draws the room: floor tiles, props, glowing pads and the backdrop, from
 ##   the art manifest or drawn placeholders,
-## - spawns pawns for summoned monsters and fades out the fallen.
+## - spawns pawns for summoned monsters and fades out the fallen,
+## - draws the hero on the painted class look (Pawn.painted_look); monsters
+##   keep their own sprites.
 
 signal room_over(result: String)
 signal turn_changed(seat: int)
@@ -257,6 +259,9 @@ func _add_pawn(unit: Dictionary) -> Pawn:
 		pawn = mp
 	else:
 		pawn = PAWN_SCENE.instantiate() as Pawn
+		# The hero plays the locked painted idle, walk, attack, skill, hit
+		# and death of its class (units/painted_looks.gd).
+		pawn.painted_look = true
 	$Units.add_child(pawn)
 	pawns_by_seat[int(unit["seat"])] = pawn
 	return pawn
