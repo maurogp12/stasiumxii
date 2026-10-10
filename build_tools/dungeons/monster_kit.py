@@ -126,6 +126,11 @@ def build(mid, spec, check=False):
                 if act == "attack" and spec.get("release") == i:
                     px, py = rig.point(pose, *rig.pocket)
                     meta.setdefault("release", {"action": "attack", "frame": i, "point_px": {}})["point_px"][f] = [round(px + rig.last_shift[0], 1), round(py + rig.last_shift[1], 1)]
+                for pname, (pact, pframe, pattr) in spec.get("points", {}).items():
+                    # optional named points (e.g. a boss lure tip on its signature frame), recorded like release
+                    if act == pact and i == pframe:
+                        px, py = rig.point(pose, *getattr(rig, pattr))
+                        meta.setdefault(pname, {"action": act, "frame": i, "point_px": {}})["point_px"][f] = [round(px + rig.last_shift[0], 1), round(py + rig.last_shift[1], 1)]
                 lost_max = max(lost_max, lost)
                 shift_max = max(shift_max, abs(rig.last_shift[0]), abs(rig.last_shift[1]))
                 path = os.path.join(mdir, act, "%s_%s_f%02d.png" % (act, f, i))

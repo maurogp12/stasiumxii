@@ -21,6 +21,8 @@ CONF = {
     "frostspire_archive": {"ground": ["snow_crust_a", "snow_crust_b", "snow_crust_c"], "neighbour": ("cottage_slate_snow", 2),
                            "trees": ["tree_pine_snow_a", "tree_pine_snow_b"], "bg": (40, 46, 58)},
     "old_granary_cellar": {"ground": ["golden_plains_a"], "neighbour": ("cottage_thatch", 2), "trees": [], "bg": (40, 40, 30)},
+    "saltmaw_grotto": {"ground": ["golden_plains_sand_a", "golden_plains_sand_b", "golden_plains_sand_c"], "neighbour": ("fishing_hut_2x2", 2),
+                       "trees": ["tree_autumn_a", "tree_autumn_b"], "bg": (36, 52, 60), "keeper": (0, 3)},
 }
 
 
@@ -73,7 +75,8 @@ def main(did):
         nid, nfp = cf["neighbour"]
         nb = (O[0] + 4, O[1])
         items.append((nb[0] + nfp - 1 + nb[1] + nfp - 1, "n", (nb[0] + nfp - 1, nb[1] + nfp - 1)))
-        kc = (O[0] + 1, O[1] + 3)
+        kk = cf.get("keeper", (1, 3))
+        kc = (O[0] + kk[0], O[1] + kk[1])
         items.append((kc[0] + kc[1], "k", kc))
         for i, tid in enumerate(cf["trees"]):
             tc = [(O[0] - 2, O[1] + 1), (O[0] + 6, O[1] + 4)][i % 2]
@@ -96,8 +99,8 @@ def main(did):
                 im = Image.open(os.path.join(KIT, "props", kind[1:] + ".png")).convert("RGBA")
                 can.alpha_composite(im, (px - im.width // 2, py - im.height))
         d = ImageDraw.Draw(can)
-        d.text((10, 8), "%s door at 1x: 3x3 footprint, door cell outlined (origin+%s), door_keeper at origin+(1,3)%s"
-               % (man["name"], dc, ", hover glow on" if hover else ""), fill=(235, 235, 240))
+        d.text((10, 8), "%s door at 1x: 3x3 footprint, door cell outlined (origin+%s), door_keeper at origin+(%d,%d)%s"
+               % (man["name"], dc, kk[0], kk[1], ", hover glow on" if hover else ""), fill=(235, 235, 240))
         out[hover] = can
     mock = os.path.join(gkit.OUT, "_mock")
     os.makedirs(mock, exist_ok=True)

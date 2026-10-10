@@ -39,6 +39,19 @@ def coral_glow(st, al):
     return (np.clip((lum - 0.55) / 0.25, 0, 1) * np.clip((t - 0.25) / 0.25, 0, 1) * (al > 0.5)).astype(np.float32)
 
 
+def mask_outside_diamond(out_id, n):
+    """Clear the decal (and its glow, beyond a few px) outside its footprint diamond: the round painting
+    touches the frame edges, and the edge clamp of the diamond remap smears those pixels into the corners."""
+    from PIL import Image
+    for sub, k in (("", 1), ("_2x", 2)):
+        for name, grow in ((out_id, 0.5), (out_id + "_glow", 3.0)):
+            p = os.path.join(gkit.OUT, "board", "props", sub, name + ".png")
+            im = np.asarray(Image.open(p).convert("RGBA")).copy()
+            m = gkit.diamond_mask(64 * n * k, 32 * n * k, grow * k)
+            im[~m] = 0
+            gkit.save_png(p, im)
+
+
 def build():
     gkit.use("saltmaw_grotto")
     b = board_kit.Board(key="magenta", floor_fill=(14, 24, 26))
@@ -61,6 +74,7 @@ def build():
     b.prop("rock_spire.jpg", "rock_spire", "b", 40, grade=g,
            notes="jagged green-grey standing rock; ring the whirlpool with these (blocking)")
     b.decal("whirlpool.jpg", "whirlpool", n=3, room="b", glow_mask=whirl_lines, glow_col=TEAL, glow_gain=(3, 0.9, 0.3))
+    mask_outside_diamond("whirlpool", 3)
     for n in (15, 12):
         b.backdrop("shell_room_a.jpg", "room_a_grotto", "a", n, "grotto_floor")
         b.backdrop("shell_room_b.jpg", "room_b_lair", "b", n, "lair_floor")
