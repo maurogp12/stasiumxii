@@ -375,7 +375,7 @@
             "facing": "S"
           },
           {
-            "monster": "frozen_book_wraith",
+            "monster": "book_wraith",
             "x": 4,
             "y": 0,
             "facing": "S"
