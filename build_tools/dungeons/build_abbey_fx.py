@@ -20,7 +20,7 @@ META = {"decals": [], "glows": [], "projectiles": []}
 SRC_REL = "build_tools/dungeons/abbey_src/bile_projectiles.jpg"
 BILE = (0.7, 1.0, 0.2)
 RITE = (0.5, 1.0, 0.4)
-JADE = (0.55, 1.0, 0.75)
+GHOST = (0.62, 1.0, 0.5)  # the star-5 Bell theme ghost-light (ids kept from the first star-5 pass)
 
 
 def grasping_mire():
@@ -28,13 +28,13 @@ def grasping_mire():
         lum = rgb.mean(-1)
         return np.clip((lum - 0.25) / 0.25, 0, 1) * np.clip((rgb[..., 1] - rgb[..., 0] - 0.12) / 0.2, 0, 1)
     fx_kit.cell_decal("grasping_mire.jpg", "star5/board/grasping_mire.png", grade={"mul": (0.85, 0.9, 0.9), "sat": 0.95},
-                      glow_col=JADE, gain=(5, 2.2, 1.5, 0.6), bright_fn=bright)
+                      glow_col=GHOST, gain=(5, 2.2, 1.5, 0.6), bright_fn=bright)
     META["decals"].append({
         "id": "grasping_mire", "kind": "floor_decal", "star": 5, "blocks": False, "walkable": True,
         "file": "star5/board/grasping_mire.png", "file_2x": "star5/board/_2x/grasping_mire.png",
         "size": [64, 32], "size_2x": [128, 64], "footprint_size": [1, 1],
         "anchor": "image centre = cell centre (cell_to_local), same as a floor tile; draw on the ground layer over the floor tile",
-        "note": ("'Grasping Mire': the Gravebound Abbess's star-5 hazard, black bog water with drowned skeletal hands and roots "
+        "note": ("'Grasping Mire': the Bell Wraith's star-5 hazard, black bog water with drowned skeletal hands and roots "
                  "reaching up (the rule is CombatSim's). Fade it in over ~0.3 s; pulse the glow"),
         "source": "build_tools/dungeons/abbey_src/grasping_mire.jpg",
     })
@@ -54,9 +54,9 @@ def projectiles():
         {"id": "bile_impact", "quad": (1, 0), "box": (560, 50, 990, 480), "size": 50, "kind": "impact_effect", "keep_main": False,
          "dust_fix": True, "dust_col": [0.95, 1.08, 0.8],
          "note": "one-shot acid splash: scale 0.6 -> 1.2 and fade alpha 1 -> 0 over ~0.3 s at the target's chest (about 40 px above the cell centre at board scale)"},
-        {"id": "gravebound_bile", "quad": (0, 1), "box": (20, 640, 470, 870), "size": 42, "star": 5, "glow_col": JADE, "glow_fit": True,
-         "keep_main": False, "dust_fix": True, "dust_col": [0.9, 1.08, 0.98],
-         "note": "pale-jade soul bile of the star-5 Gravebound Mire Leech; fly it like bile_spit, with its glow (add) centred on it"},
+        {"id": "gravebound_bile", "quad": (0, 1), "box": (20, 640, 470, 870), "size": 42, "star": 5, "glow_col": GHOST, "glow_fit": True,
+         "keep_main": False, "dust_fix": True, "dust_col": [0.85, 1.1, 0.8],
+         "note": "green ghost bile of the star-5 Bellbound Mire Leech (id kept from the first star-5 pass); fly it like bile_spit, with its glow (add) centred on it"},
         {"id": "rite_glow", "quad": (1, 1), "box": (520, 640, 1010, 880), "size": 96, "kind": "beam_effect", "glow_col": RITE, "glow_fit": True,
          "keep_main": False, "dust_fix": True, "dust_col": [0.9, 1.08, 0.9],
          "note": ("the Mire Abbess's 'Rite of Rising' streak: green ritual smoke and light along +x, bright end at +x. On summon f07 stretch it "

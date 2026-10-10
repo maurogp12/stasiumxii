@@ -30,7 +30,6 @@ from monster_kit import CELL, CELL_BIG, PIV, PIV_BIG, cyc, fwd  # noqa: E402
 
 gkit.use("drowned_abbey")
 RITE_GREEN = (0.5, 1.0, 0.35)
-JADE_GLOW = (0.55, 1.0, 0.78)
 
 
 # ------------------------------------------------------------------ rigs
@@ -74,7 +73,6 @@ def leech_facing(f, src="leech"):
 
 
 SMOKE_GREEN = (0.62, 1.0, 0.5)
-SMOKE_JADE = (0.62, 1.0, 0.82)
 
 
 def smoke_fix(fc, col):
@@ -97,7 +95,7 @@ def smoke_fix(fc, col):
 
 
 def abbess_facing(f, src="abbess"):
-    return smoke_fix(_abbess_facing(f, src), SMOKE_JADE if src.startswith("gravebound") else SMOKE_GREEN)
+    return smoke_fix(_abbess_facing(f, src), SMOKE_GREEN)
 
 
 def _abbess_facing(f, src="abbess"):
@@ -126,6 +124,57 @@ def _abbess_facing(f, src="abbess"):
     fc = mrig.Facing(src + "_E.jpg", parts, ground=(500, 1460), hip=(480, 700), scale=0.3, cell=CELL_BIG, cell_pivot=PIV_BIG, despill=True)
     fc.rite_mouth = ("censer", (900, 680))
     return fc
+
+
+def ghost_fix(fc, col=(0.62, 1.0, 0.5)):
+    """Star-5 Bell theme: the translucent ghost-light (veils, wisps, smoke) keys out pinkish grey over magenta.
+    Recolour every translucent (alpha < 0.97) pinkish pixel, on every layer, onto a green ramp by its luminance;
+    opaque paint (bronze, bone, robe) is left alone."""
+    for name, lay in fc.layers.items():
+        a = lay[..., 3]
+        st = lay[..., :3] / np.maximum(a[..., None], 1e-4)
+        pink = (a > 0.02) & (a < 0.97) & (st[..., 0] > st[..., 1] + 0.03) & (st[..., 2] > st[..., 1] - 0.12)
+        if not pink.any():
+            continue
+        rgb = np.clip(st.mean(-1)[..., None] * 1.18 * np.array(col, np.float32), 0, 1)
+        lay[..., :3] = np.where(pink[..., None], rgb * a[..., None], lay[..., :3])
+    return fc
+
+
+BELL_CANDLES = ("candle_1", "candle_2", "candle_3", "candle_4", "candle_5")
+
+
+def bell_wraith_facing(f, src="bell_wraith"):
+    """The star-5 Bell Wraith: her own rig (a new silhouette, not the base Abbess's). Painted 1024x683."""
+    def box(name, x0, y0, x1, y1):
+        return Part(name, [(x0, y0), (x1, y0), (x1, y1), (x0, y1)], ((x0 + x1) // 2, (y0 + y1) // 2), "root", False, 5)
+    if f == "S":
+        parts = [
+            Part("head", [(395, 5), (502, 5), (506, 120), (442, 136), (393, 116)], (450, 130), "body", True, 3),
+            box("candle_1", 325, 20, 378, 108), box("candle_2", 288, 82, 338, 175), box("candle_3", 480, 5, 535, 92),
+            box("candle_4", 528, 40, 582, 122), box("candle_5", 563, 85, 618, 168),
+            Part("censer", [(745, 155), (900, 155), (900, 415), (745, 415)], (775, 150), "arm_r", False, 4),
+            Part("arm_r", [(548, 150), (690, 135), (808, 104), (828, 162), (745, 178), (650, 242), (560, 252)], (565, 195), "body", True, 3),
+            Part("arm_l", [(402, 160), (300, 165), (185, 140), (160, 215), (80, 330), (70, 485), (200, 525), (312, 500), (332, 330), (372, 262), (402, 250)], (395, 200), "body", True, 2),
+        ]
+        fc = mrig.Facing(src + "_S.jpg", parts, ground=(520, 655), hip=(510, 300), scale=0.62, cell=CELL_BIG, cell_pivot=PIV_BIG, despill=True)
+        fc.rite_mouth = ("censer", (820, 330))
+        return ghost_fix(fc)
+    parts = [
+        Part("head", [(455, 15), (562, 15), (566, 140), (470, 142)], (510, 140), "body", True, 3),
+        box("candle_1", 322, 85, 372, 172), box("candle_2", 358, 38, 408, 128), box("candle_3", 413, 8, 462, 98),
+        box("candle_4", 566, 38, 607, 128), box("candle_5", 588, 85, 642, 172),
+        Part("censer", [(758, 168), (905, 168), (905, 405), (758, 405)], (790, 160), "arm_r", False, 4),
+        Part("arm_r", [(598, 170), (700, 152), (818, 112), (835, 160), (762, 182), (690, 242), (620, 262)], (610, 200), "body", True, 3),
+        Part("arm_l", [(452, 180), (330, 192), (205, 165), (195, 250), (105, 360), (100, 505), (312, 515), (342, 350), (402, 300), (452, 262)], (440, 210), "body", True, 2),
+    ]
+    fc = mrig.Facing(src + "_E.jpg", parts, ground=(520, 655), hip=(510, 300), scale=0.62, cell=CELL_BIG, cell_pivot=PIV_BIG, despill=True)
+    fc.rite_mouth = ("censer", (830, 320))
+    return ghost_fix(fc)
+
+
+def bellbound_rig(base_fn, src):
+    return lambda f: ghost_fix(base_fn(f, src))
 
 
 # --------------------------------------------------------------- actions
@@ -294,6 +343,82 @@ def abbess_actions(f):
     return A
 
 
+def _bell_candles(p, t, amp=4.0, lift=0.0):
+    """The five candles drift on small out-of-phase loops around her (screen-space offsets in cell px)."""
+    for k, c in enumerate(BELL_CANDLES):
+        ph = TAU * t + 1.3 * k
+        p[c + ".dx"] = p.get(c + ".dx", 0.0) + amp * math.cos(ph)
+        p[c + ".dy"] = p.get(c + ".dy", 0.0) + 0.6 * amp * S_(ph) - lift
+    return p
+
+
+def bell_wraith_actions(f):
+    A = {}
+    # signs: arm_l (hand left of the shoulder) + raises it; arm_r (hand right of the shoulder) - raises it.
+
+    def idle(t):
+        w = S_(TAU * t)
+        p = {"dy": -5.0 * w, "body": 1.5 * S_(TAU * t + 0.4), "head": 2.0 * S_(TAU * t + 1.1), "arm_l": 3.0 * S_(TAU * t + 0.6),
+             "arm_r": -2.5 * S_(TAU * t + 1.4), "censer": 5.0 * S_(TAU * t + 0.9), "sy": 1 + 0.008 * w}
+        return _bell_candles(p, t)
+    A["idle"] = cyc(12, idle)
+
+    def walk(t):
+        w = S_(TAU * t)
+        # no steps: she glides, the bell swings like a pendulum and bobs, the arms trail
+        p = {"dy": -6.0 * abs(w) + 2.0, "body": 4.0 * w, "rot": 1.5 * w, "head": -2.0 * S_(TAU * t + 0.7),
+             "arm_l": 5.0 * S_(TAU * t + 0.5), "arm_r": -4.0 * S_(TAU * t + 0.5), "censer": 10.0 * S_(TAU * t + 1.3)}
+        p.update({k: p.get(k, 0.0) + v for k, v in fwd(f, 2.0 * w).items()})
+        return _bell_candles(p, t, 5.0)
+    A["walk"] = cyc(12, walk)
+    # Spectral Grasp (range 1-2): the long spectral left arm draws up and back (f02-f04), then lashes down and across
+    # at the target with a lunge on f06 (hit), recovers.
+    wind = dict(fwd(f, -6), arm_l=26, arm_r=-6, body=-5, head=-5, dy=-8, censer=10)
+    strike = dict(fwd(f, 22), arm_l=-34, arm_r=6, body=8, head=6, dy=2, censer=-14)
+    follow = dict(fwd(f, 16), arm_l=-26, arm_r=4, body=5, head=3, censer=-8)
+    att = keys(12, [(0, {}), (3, wind), (4, dict(wind, arm_l=30)), (HIT, strike), (8, follow), (11, {})])
+    A["attack"] = [_bell_candles(p, i / 12.0) for i, p in enumerate(att)]
+    A["hit"] = [_bell_candles(p, i / 8.0, 2.5) for i, p in enumerate(keys(8, [
+        (0, {}),
+        (2, dict(fwd(f, -14), body=-7, head=-10, arm_l=12, arm_r=-12, censer=20, dy=-6)),
+        (4, dict(fwd(f, -8), body=-3, head=-4, censer=-8)),
+        (7, {}),
+    ]))]
+    fall = -1 if f == "S" else 1
+    d = keys(13, [
+        (0, {}),
+        (2, dict(body=-6, head=-12, dy=-10, arm_l=18, arm_r=-18, censer=24)),
+        (5, dict(rot=16 * fall, body=6 * fall, dy=10, sy=0.95, arm_l=-10, arm_r=10, censer=-20, head=8)),
+        (8, dict(rot=46 * fall, body=8 * fall, dy=34, sy=0.9, arm_l=-20, arm_r=18, censer=-40, head=14)),
+        (10, dict(rot=60 * fall, body=6 * fall, dy=44, sy=0.86, arm_l=-26, arm_r=22, censer=-55, head=16)),
+        (12, dict(rot=62 * fall, body=6 * fall, dy=45, sy=0.86, arm_l=-27, arm_r=22, censer=-56, head=16)),
+    ])
+    for i, p in enumerate(d):  # the orbiting candles fall out of the air as the bell topples
+        k = min(1.0, max(0.0, (i - 3) / 6.0))
+        for j, c in enumerate(BELL_CANDLES):
+            p[c + ".dy"] = k ** 2 * (140 + 25 * j)
+            p[c] = 40 * k * (1 if j % 2 else -1)
+    A["death"] = d
+    # Rite of Rising: lower the censer (f00-f02), swing it up as the candles rise and flare (f03-f06), green burst and the
+    # rite fires on f07 (rite_point = the censer on f07), hold (f07-f09), settle (f10-f13). Same timing as the Mire Abbess.
+    shake = [0, 0, 0, 0, 0, 0, 0, 1, -1, 1, 0, 0, 0, 0]
+    sm = keys(14, [
+        (0, {}),
+        (2, dict(fwd(f, 2), dy=6, body=4, head=4, arm_r=12, censer=14, arm_l=-6)),
+        (5, dict(dy=-6, body=-4, head=-6, arm_r=-20, censer=-50, arm_l=14)),
+        (7, dict(fwd(f, -2), dy=-10, body=-6, head=-9, arm_r=-26, censer=-70, arm_l=20)),
+        (9, dict(fwd(f, -2), dy=-9, body=-5, head=-8, arm_r=-23, censer=-64, arm_l=18)),
+        (13, {}),
+    ])
+    lift = [0, 0, 0, 4, 10, 16, 20, 24, 22, 20, 14, 8, 3, 0]
+    for i, p in enumerate(sm):
+        p["censer"] = p.get("censer", 0.0) + 3.0 * shake[i]
+        p["body"] = p.get("body", 0.0) + 0.8 * shake[i]
+        _bell_candles(p, i / 14.0, 2.5, lift[i])
+    A["summon"] = sm
+    return A
+
+
 # ----------------------------------------------------------------- glows
 
 def rite_emissive(im):
@@ -318,16 +443,17 @@ def summon_glow(im, i, big):
     return out
 
 
-def jade_emissive(im):
-    """Weight map of the glowing pale-jade soulfire (eyes, mask cracks, halo, runes, candles, censer, pustules) in a star-5 frame."""
+def ghost_emissive(im):
+    """Weight map of the green ghost-light (under the bell rim, the veils, wisps, eyes, pustules) and the candle flames."""
     a = im[..., 3] > 0
     r, g, b = [im[..., i].astype(np.float32) for i in range(3)]
-    em = a & (g > 170) & (g - r > 45) & (b > 120)
-    return em.astype(np.float32) * np.clip((g - r - 45) / 70.0, 0.35, 1.0)
+    ghost = a & (g > 185) & (g - r > 40) & (g - b > 60)
+    flame = a & (r > 235) & (g > 225) & (b > 170)
+    return ghost.astype(np.float32) * np.clip((g - b - 45) / 70.0, 0.35, 1.0) + flame.astype(np.float32) * 0.8
 
 
-def jade_glow(im, big):
-    return monster_kit.glow_from_mask(im, jade_emissive(im), big, JADE_GLOW, core=(4, 1.2), halo=(13, 0.8), aura=(16, 0.05))
+def ghost_glow(im, big):
+    return monster_kit.glow_from_mask(im, ghost_emissive(im), big, RITE_GREEN, core=(4, 0.8), halo=(13, 0.5), aura=(16, 0.04))
 
 
 MONSTERS = {
@@ -344,16 +470,20 @@ MONSTERS = {
                                   "glow": "summon/summon_{S,E}_fNN_glow.png: additive green rite glow, builds f03-f06, bursts on f07, holds to f09, fades by f12"}},
 }
 
-# Star-5 forms (painted as edits of the base, so they reuse the base part cuts).
-MONSTERS["gravebound_abbess"] = dict(MONSTERS["mire_abbess"], name="The Gravebound Abbess", rig=lambda f: abbess_facing(f, "gravebound_abbess"),
-                                     star5=True, glow=True, glow_fn=jade_glow, base_of="mire_abbess")
-MONSTERS["gravebound_abbess"].pop("action_glow")
-MONSTERS["gravebound_bog_dead"] = dict(MONSTERS["bog_dead"], name="Gravebound Bog Dead", rig=lambda f: bog_dead_facing(f, "gravebound_bog_dead"),
-                                       star5=True, glow=True, glow_fn=jade_glow, base_of="bog_dead")
-MONSTERS["gravebound_mire_leech"] = dict(MONSTERS["mire_leech"], name="Gravebound Mire Leech", rig=lambda f: leech_facing(f, "gravebound_leech"),
-                                         star5=True, glow=True, glow_fn=jade_glow, base_of="mire_leech")
+# Star-5 set, "the Bell" theme (Mauro picked the Bell Wraith, 10 Oct 2026). The boss has her own rig (a new silhouette);
+# the Bellbound Bog Dead and Mire Leech are edits of the base paintings and reuse the base part cuts.
+MONSTERS["bell_wraith"] = {"name": "The Bell Wraith", "rig": bell_wraith_facing, "actions": bell_wraith_actions, "cell": CELL_BIG, "pivot": PIV_BIG,
+                           "star5": True, "glow": True, "glow_fn": ghost_glow, "base_of": "mire_abbess",
+                           "points": {"rite_point": ("summon", RITE_BURST, "rite_mouth")},
+                           "role": "star-5 boss: the Mire Abbess risen as a ghost from the fallen abbey bell; 'Spectral Grasp' (range 1-2) lands on attack f06",
+                           "signature": dict(MONSTERS["mire_abbess"]["signature"],
+                                             glow="every frame has an additive _glow (green ghost-light and candle flames); no separate signature ramp")}
+MONSTERS["bellbound_bog_dead"] = dict(MONSTERS["bog_dead"], name="Bellbound Bog Dead", rig=bellbound_rig(bog_dead_facing, "bellbound_bog_dead"),
+                                      star5=True, glow=True, glow_fn=ghost_glow, base_of="bog_dead")
+MONSTERS["bellbound_mire_leech"] = dict(MONSTERS["mire_leech"], name="Bellbound Mire Leech", rig=bellbound_rig(leech_facing, "bellbound_leech"),
+                                        star5=True, glow=True, glow_fn=ghost_glow, base_of="mire_leech")
 BASE = ("bog_dead", "mire_leech", "mire_abbess")
-STAR5 = ("gravebound_abbess", "gravebound_bog_dead", "gravebound_mire_leech")
+STAR5 = ("bell_wraith", "bellbound_bog_dead", "bellbound_mire_leech")
 
 
 def build(mid, check=False):
