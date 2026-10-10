@@ -253,9 +253,9 @@ def abbess_actions(f):
     sm = keys(14, [
         (0, {}),
         (2, dict(fwd(f, 2), sy=0.97, dy=4, body=4, head=4, arm_censer=12, censer=14, arm_free=6)),
-        (5, dict(sy=1.02, dy=-6, body=-4, head=-6, arm_censer=-30, censer=-95, arm_free=-10)),
-        (7, dict(fwd(f, -2), sy=1.04, dy=-10, body=-6, head=-9, arm_censer=-38, censer=-130, arm_free=-14)),
-        (9, dict(fwd(f, -2), sy=1.03, dy=-9, body=-5, head=-8, arm_censer=-34, censer=-120, arm_free=-12)),
+        (5, dict(sy=1.0, dy=-2, body=-4, head=-6, arm_censer=-22, censer=-75, arm_free=-10)),
+        (7, dict(fwd(f, -2), sy=1.01, dy=-3, body=-6, head=-9, arm_censer=-28, censer=-100, arm_free=-14)),
+        (9, dict(fwd(f, -2), sy=1.01, dy=-3, body=-5, head=-8, arm_censer=-25, censer=-92, arm_free=-12)),
         (13, {}),
     ])
     lift = [0, 0, 0, 4, 10, 16, 20, 24, 22, 20, 14, 8, 3, 0]
