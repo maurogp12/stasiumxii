@@ -29,6 +29,10 @@ const OUT_OF_RANGE_TEXT := "Out of range: walk closer"
 const NO_TARGET_TEXT := "Click a ringed monster  ·  Esc to walk"
 ## How long the out-of-range note stays on the monster's card.
 const NOTE_SEC := 2.2
+## Lantern Lure: the hero starts to slide on the lure's flare frame (summon
+## f07 at the kit's 17.144 fps), one cell per PULL_STEP_SEC.
+const PULL_FLARE_SEC := 0.41
+const PULL_STEP_SEC := 0.16
 
 var manifest: Dictionary = {}
 var room_id := ""
@@ -176,6 +180,13 @@ func _dress_room() -> void:
 		prop.position = _cell_to_local(c2)
 		prop.z_as_relative = false
 		prop.z_index = VISUAL_SORT.unit_z_index(c2, _elev_at(c2))
+	if decal_id != "":
+		# A decal bigger than its pads (the grotto's 5x5 whirlpool round its
+		# 3x3 water): cells that name the decal draw their piece of it too.
+		for cell in tiles.keys():
+			var dc: Vector2i = cell
+			if not grate_cells.has(dc) and (paint.get(dc, []) as Array).has(decal_id):
+				grate_cells.append(dc)
 	if not grate_cells.is_empty():
 		var south: Vector2i = grate_cells[0]
 		for gc in grate_cells:
@@ -191,6 +202,9 @@ func _dress_room() -> void:
 			for gc in grate_cells:
 				var t = tiles[gc]
 				t.set_decal(grate["tex"], grate.get("glow", null), Rect2(at - _cell_to_local(gc), size))
+				# Every cell of the decal pulses its glow piece in step (a
+				# kerb cell that is not a pad too).
+				t.set_process(true)
 	if _backdrop != null and is_instance_valid(_backdrop):
 		_backdrop.free()
 	_backdrop = Props.make_backdrop(kit.get("backdrop", {}), room_id, _board_size)
@@ -478,6 +492,7 @@ func _add_pawn(unit: Dictionary) -> Pawn:
 		var mp := MonsterPawn.new()
 		if view_cfg.has("light"):
 			mp.light = _cfg_color(view_cfg["light"], MonsterPawn.WARM)
+		mp.glow_strength = float(view_cfg.get("monster_glow", 1.0))
 		mp.bind_art(manifest, str(unit["monster"]), bool(unit.get("boss", false)), str(unit.get("variant_of", "")))
 		pawn = mp
 	else:
@@ -534,9 +549,38 @@ func _arm_view_motions(events: Array) -> void:
 				var from_at: Vector2 = pawn.position + (pawn.release_offset() if pawn.has_method("release_offset") else Vector2(0, -22))
 				var at_sec: float = pawn.release_sec() if pawn.has_method("release_sec") else 0.22
 				longest = maxf(longest, Fx.throw(self, manifest, str(event["projectile"]), from_at, to_at, typ == "hit", VISUAL_SORT.unit_z_index(to_cell) + 6, at_sec, str(event.get("impact", "")), view_cfg.get("projectiles", {})))
-		elif typ == "summon" or typ == "pools":
+		elif typ == "summon" or typ == "pools" or typ == "lure":
 			longest = maxf(longest, pawn.play_view_plan({"cast": true, "strip": "summon"}))
+			if typ == "lure" and str(event.get("beam", "")) != "":
+				# The lure's light streak, lantern to hero, from the flare frame.
+				var tip: Vector2 = pawn.position + (pawn.lure_offset() if pawn.has_method("lure_offset") else Vector2(0, -100))
+				var at_hero := _cell_to_local(_as_cell(event.get("from", Vector2i.ZERO))) + Vector2(0, -30)
+				longest = maxf(longest, Fx.beam(self, manifest, str(event["beam"]), tip, at_hero, VISUAL_SORT.unit_z_index(_as_cell(event.get("from", Vector2i.ZERO))) + 5, PULL_FLARE_SEC, 0.55, view_cfg.get("projectiles", {})))
+		elif typ == "pull":
+			# Lantern Lure / riptide drag: the target slides cell by cell toward
+			# the caster, after the lure's flare frame (a drag goes at once).
+			var tseat := int(event.get("target_seat", -1))
+			if pawns_by_seat.has(tseat):
+				var delay := PULL_FLARE_SEC if str(event.get("how", "")) == "pull" else 0.1
+				longest = maxf(longest, _slide_pawn(pawns_by_seat[tseat], event, delay))
 	_pending_motion_sec = minf(longest, VIEW_MOTION.ACTION_LOCK_MAX)
+
+
+## Slides a pawn along a pull event's path (from, path cells). Returns its length.
+func _slide_pawn(body: Pawn, event: Dictionary, delay: float) -> float:
+	var from := _as_cell(event.get("from", Vector2i.ZERO))
+	var path: Array = event.get("path", [event.get("to", from)])
+	body.position = _cell_to_local(from)
+	var tw := create_tween()
+	tw.tween_interval(delay)
+	for raw in path:
+		var c := _as_cell(raw)
+		tw.tween_property(body, "position", _cell_to_local(c), PULL_STEP_SEC).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	var last := _as_cell(path.back()) if not path.is_empty() else from
+	tw.tween_callback(func() -> void:
+		if is_instance_valid(body):
+			body.z_index = VISUAL_SORT.unit_z_index(last, _elev_at(last)))
+	return delay + PULL_STEP_SEC * float(path.size()) + 0.05
 
 
 func _refresh() -> void:

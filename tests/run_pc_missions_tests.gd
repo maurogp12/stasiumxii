@@ -252,7 +252,7 @@ func _test_chain(book) -> void:
 		if dungeon_id != "":
 			hero.level = int(book.mission(dungeon_id)["min_level"])
 			var dungeon_key := str(book.mission(dungeon_id)["steps"][0]["dungeon"])
-			if dungeon_key in ["old_granary_cellar", "frostspire_archive"]:
+			if dungeon_key in ["old_granary_cellar", "frostspire_archive", "saltmaw_grotto"]:
 				# Built (dungeons.json): the dungeon's mission is live and a win credits it.
 				eq(book.label_for(dungeon_id, hero) != "coming soon", true, "%s is live now its dungeon is built" % dungeon_id)
 				eq(bool(book.accept(dungeon_id, hero)["ok"]), true, "%s can be taken" % dungeon_id)

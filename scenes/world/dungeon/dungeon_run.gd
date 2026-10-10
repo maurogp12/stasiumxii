@@ -382,6 +382,7 @@ func _showcase() -> void:
 		var p := MonsterPawn.new()
 		if typeof(light) == TYPE_ARRAY:
 			p.light = Color(float(light[0]), float(light[1]), float(light[2]), float(light[3]) if (light as Array).size() > 3 else 1.0)
+		p.glow_strength = float((run.run_doc.get("view", {}) as Dictionary).get("monster_glow", 1.0))
 		p.bind_art(manifest, str(row[0]), bool(row[2]))
 		stage.add_child(p)
 		var stats: Dictionary = run.monsters.stats_at(str(row[0]), 1)
@@ -405,6 +406,10 @@ func _showcase() -> void:
 	var vis := get_viewport().get_visible_rect().size
 	var span := (hi - lo) + Vector2(260, 260)
 	var z := clampf(minf(vis.x / span.x, vis.y / span.y), 1.0, 3.0)
+	# A cast with tall bosses at the back may pin its own zoom (view.showcase_zoom).
+	var pinned: Variant = (run.run_doc.get("view", {}) as Dictionary).get("showcase_zoom", null)
+	if typeof(pinned) in [TYPE_FLOAT, TYPE_INT]:
+		z = float(pinned)
 	cam.zoom = Vector2(z, z)
 	var centre := (lo + hi) * 0.5 + Vector2(0, -48)
 	cam.position = centre - vis * 0.5 / z if cam.anchor_mode == Camera2D.ANCHOR_MODE_FIXED_TOP_LEFT else centre

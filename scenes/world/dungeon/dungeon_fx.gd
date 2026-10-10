@@ -118,3 +118,53 @@ class Shot extends Node2D:
 		for k in 6:
 			var a := TAU * float(k) / 6.0
 			draw_circle(Vector2(cos(a), sin(a) * 0.6) * (4.0 + 16.0 * u), 3.0 * (1.0 - u) + 1.0, col)
+
+
+## A light streak from `from` to `to` (Old Saltmaw's lure_line: the art
+## points along +x, brightest at the +x end) that flares at `delay` and fades
+## over `hold`. Drawn stand-in: a soft line in the style's colour. Returns how
+## long it keeps the view busy.
+static func beam(parent: Node2D, man: Dictionary, kind: String, from: Vector2, to: Vector2, z: int, delay: float, hold: float, styles: Dictionary = {}) -> float:
+	var b := Beam.new()
+	var pk := Art.projectile_kit(man, kind)
+	b.tex = pk.get("tex", null)
+	b.glow = pk.get("glow", null)
+	b.col = _col((styles.get(kind, {}) as Dictionary).get("color", null), Color(0.35, 1.0, 0.9))
+	b.from = from
+	b.to = to
+	b.z_as_relative = false
+	b.z_index = z
+	b.modulate.a = 0.0
+	parent.add_child(b)
+	var tw := b.create_tween()
+	tw.tween_interval(delay)
+	tw.tween_property(b, "modulate:a", 1.0, 0.08)
+	tw.tween_interval(maxf(hold - 0.3, 0.05))
+	tw.tween_property(b, "modulate:a", 0.0, 0.22)
+	tw.tween_callback(b.queue_free)
+	return delay + hold
+
+
+class Beam extends Node2D:
+	var tex: Texture2D
+	var glow: Texture2D
+	var col := Color(0.35, 1.0, 0.9)
+	var from := Vector2.ZERO
+	var to := Vector2.ZERO
+
+	func _draw() -> void:
+		var d := to - from
+		var len := d.length()
+		if len < 2.0:
+			return
+		draw_set_transform(from, d.angle(), Vector2.ONE)
+		if tex != null:
+			var h := tex.get_size().y
+			draw_texture_rect(tex, Rect2(0, -h * 0.5, len, h), false)
+			if glow != null:
+				var gh := glow.get_size().y
+				draw_texture_rect(glow, Rect2(0, -gh * 0.5, len, gh), false, Color(1, 1, 1, 0.8))
+		else:
+			draw_line(Vector2.ZERO, Vector2(len, 0), Color(col.r, col.g, col.b, 0.35), 9.0)
+			draw_line(Vector2.ZERO, Vector2(len, 0), Color(col.r, col.g, col.b, 0.9), 3.0)
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)

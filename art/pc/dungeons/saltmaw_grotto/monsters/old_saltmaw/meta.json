@@ -1,0 +1,143 @@
+{
+ "id": "old_saltmaw",
+ "name": "Old Saltmaw",
+ "star5": false,
+ "base_of": null,
+ "dir": "monsters/old_saltmaw",
+ "cell": [
+  768,
+  540
+ ],
+ "pivot": [
+  384,
+  494
+ ],
+ "fps": 17.144,
+ "facings": [
+  "S",
+  "E"
+ ],
+ "mirror": {
+  "W": "E",
+  "N": "S"
+ },
+ "actions": {
+  "idle": {
+   "frames": 12,
+   "loop": true,
+   "files": {
+    "S": "monsters/old_saltmaw/idle/idle_S_fNN.png",
+    "E": "monsters/old_saltmaw/idle/idle_E_fNN.png"
+   }
+  },
+  "walk": {
+   "frames": 12,
+   "loop": true,
+   "files": {
+    "S": "monsters/old_saltmaw/walk/walk_S_fNN.png",
+    "E": "monsters/old_saltmaw/walk/walk_E_fNN.png"
+   }
+  },
+  "attack": {
+   "frames": 12,
+   "loop": false,
+   "files": {
+    "S": "monsters/old_saltmaw/attack/attack_S_fNN.png",
+    "E": "monsters/old_saltmaw/attack/attack_E_fNN.png"
+   }
+  },
+  "hit": {
+   "frames": 8,
+   "loop": false,
+   "files": {
+    "S": "monsters/old_saltmaw/hit/hit_S_fNN.png",
+    "E": "monsters/old_saltmaw/hit/hit_E_fNN.png"
+   }
+  },
+  "death": {
+   "frames": 13,
+   "loop": false,
+   "files": {
+    "S": "monsters/old_saltmaw/death/death_S_fNN.png",
+    "E": "monsters/old_saltmaw/death/death_E_fNN.png"
+   }
+  },
+  "summon": {
+   "frames": 14,
+   "loop": false,
+   "files": {
+    "S": "monsters/old_saltmaw/summon/summon_S_fNN.png",
+    "E": "monsters/old_saltmaw/summon/summon_E_fNN.png"
+   },
+   "glow_files": {
+    "S": "monsters/old_saltmaw/summon/summon_S_fNN_glow.png",
+    "E": "monsters/old_saltmaw/summon/summon_E_fNN_glow.png"
+   }
+  }
+ },
+ "qa": {
+  "hole_fill_px_S": 45924,
+  "px_outside_cell_idle_S": 0,
+  "keep_in_shift_px_idle_S": 0.0,
+  "px_outside_cell_walk_S": 0,
+  "keep_in_shift_px_walk_S": 0.0,
+  "px_outside_cell_attack_S": 0,
+  "keep_in_shift_px_attack_S": 0.0,
+  "px_outside_cell_hit_S": 0,
+  "keep_in_shift_px_hit_S": 0.0,
+  "px_outside_cell_death_S": 0,
+  "keep_in_shift_px_death_S": 0.0,
+  "px_outside_cell_summon_S": 0,
+  "keep_in_shift_px_summon_S": 0.0,
+  "hole_fill_px_E": 33644,
+  "px_outside_cell_idle_E": 0,
+  "keep_in_shift_px_idle_E": 0.0,
+  "px_outside_cell_walk_E": 0,
+  "keep_in_shift_px_walk_E": 0.0,
+  "px_outside_cell_attack_E": 0,
+  "keep_in_shift_px_attack_E": 0.0,
+  "px_outside_cell_hit_E": 0,
+  "keep_in_shift_px_hit_E": 0.0,
+  "px_outside_cell_death_E": 0,
+  "keep_in_shift_px_death_E": 0.0,
+  "px_outside_cell_summon_E": 0,
+  "keep_in_shift_px_summon_E": 0.0
+ },
+ "signature": {
+  "action": "summon",
+  "name": "Lantern Lure",
+  "frames": 14,
+  "crouch": [
+   0,
+   2
+  ],
+  "lift": [
+   3,
+   6
+  ],
+  "flare": 7,
+  "pull": [
+   7,
+   10
+  ],
+  "settle": [
+   10,
+   13
+  ],
+  "glow": "summon/summon_{S,E}_fNN_glow.png: additive lure glow, builds f03-f06, flares on f07, holds to f10, fades by f12"
+ },
+ "lure_point": {
+  "action": "summon",
+  "frame": 7,
+  "point_px": {
+   "S": [
+    490.9,
+    115.7
+   ],
+   "E": [
+    484.0,
+    113.5
+   ]
+  }
+ }
+}

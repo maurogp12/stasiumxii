@@ -27,7 +27,18 @@ FROST = {
     "frozen_ice_construct": [("frozen_construct_S", "star 5 S: front, down-right"), ("frozen_construct_E", "star 5 E: back, up-right")],
     "frozen_book_wraith": [("frozen_wraith_S", "star 5 S: front, down-right"), ("frozen_wraith_E", "star 5 E: back, up-right")],
 }
-STAR5 = {"the_frozen_archivist", "frozen_ice_construct", "frozen_book_wraith"}
+SALT = {
+    "reef_crab": [("crab_S", "S: front, facing down-right"), ("crab_E", "E: back, facing up-right")],
+    "drowned_sailor": [("sailor_S", "S: front, facing down-right"), ("sailor_E", "E: back, facing up-right")],
+    "drowned_harpooner": [("harpooner_S", "S: front, facing down-right"), ("harpooner_E", "E: back, facing up-right")],
+    "old_saltmaw": [("saltmaw_S", "S: front, facing down-right"), ("saltmaw_E", "E: back, facing up-right")],
+    "abyssal_saltmaw": [("saltmaw_S", "base S (Old Saltmaw)"), ("abyssal_saltmaw_S", "star 5 S: front, down-right"), ("abyssal_saltmaw_E", "star 5 E: back, up-right")],
+    "abyssal_reef_crab": [("abyssal_crab_S", "star 5 S: front, down-right"), ("abyssal_crab_E", "star 5 E: back, up-right")],
+    "abyssal_drowned_sailor": [("abyssal_sailor_S", "star 5 S: front, down-right"), ("abyssal_sailor_E", "star 5 E: back, up-right")],
+    "abyssal_drowned_harpooner": [("abyssal_harpooner_S", "star 5 S: front, down-right"), ("abyssal_harpooner_E", "star 5 E: back, up-right")],
+}
+STAR5 = {"the_frozen_archivist", "frozen_ice_construct", "frozen_book_wraith",
+         "abyssal_saltmaw", "abyssal_reef_crab", "abyssal_drowned_sailor", "abyssal_drowned_harpooner"}
 
 
 def cut(name, h):
@@ -67,4 +78,6 @@ if __name__ == "__main__":
         gkit.use(d)
         if d == "frostspire_archive":
             SETS = FROST
+        elif d == "saltmaw_grotto":
+            SETS = SALT
     main(args or list(SETS))

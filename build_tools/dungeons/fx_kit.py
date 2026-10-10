@@ -69,7 +69,11 @@ def projectile_sheet(src, specs, source_rel):
     for sp in specs:
         pid = sp["id"]
         qx, qy = sp["quad"]
-        q = prem[qy * H // 2:(qy + 1) * H // 2, qx * W // 2:(qx + 1) * W // 2].copy()
+        if sp.get("box"):  # optional explicit source box (x0, y0, x1, y1) px, for items that cross the sheet's half-lines
+            bx0, by0, bx1, by1 = sp["box"]
+            q = prem[by0:by1, bx0:bx1].copy()
+        else:
+            q = prem[qy * H // 2:(qy + 1) * H // 2, qx * W // 2:(qx + 1) * W // 2].copy()
         a = (q[..., 3] > 0.5).astype(np.uint8)
         n, lab, st, _ = cv2.connectedComponentsWithStats(a, 8)
         if sp.get("keep_main", True):

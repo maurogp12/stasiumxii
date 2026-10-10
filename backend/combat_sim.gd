@@ -4067,6 +4067,7 @@ func _reset_dungeon(config: Dictionary) -> Dictionary:
 		"pads": pads,
 		"pad_heal": int(room.get("pad_heal", 0)),
 		"pad_thaw": bool(room.get("pad_thaw", false)),
+		"pad_thaw_text": str(room.get("pad_thaw_text", "The rune pad thaws {name}: no MP lost.")),
 		"summons": (room.get("summons", {}) as Dictionary).duplicate(true) if typeof(room.get("summons", {})) == TYPE_DICTIONARY else {},
 		"result": "",
 		"round": 1,
@@ -4305,7 +4306,7 @@ func _dungeon_mp_drain(unit: Dictionary) -> void:
 			"type": "thaw",
 			"seat": unit["seat"],
 			"cell": unit["pos"],
-			"coach": "The rune pad thaws %s: no MP lost." % unit["name"],
+			"coach": str(_dungeon.get("pad_thaw_text", "The rune pad thaws {name}: no MP lost.")).replace("{name}", str(unit["name"])),
 		})
 		return
 	var lost := mini(drain, int(unit.get("mp", 0)))
@@ -4316,7 +4317,7 @@ func _dungeon_mp_drain(unit: Dictionary) -> void:
 		"target_seat": unit["seat"],
 		"mp_lost": lost,
 		"mp_delta": -lost,
-		"coach": "%s is chilled: %d MP less this turn." % [unit["name"], lost],
+		"coach": "%s is %s: %d MP less this turn." % [unit["name"], str(unit.get("mp_drain_word", "chilled")), lost],
 	})
 
 
@@ -4375,6 +4376,8 @@ func _monster_legal_intents(actor: Dictionary) -> Array:
 	var sig: Dictionary = actor.get("signature", {})
 	if not sig.is_empty() and summon_ready(actor):
 		out.append({"type": "cast", "spell": str(sig.get("id", "")), "to": actor["pos"], "seat": seat})
+	elif not sig.is_empty() and pull_ready(actor):
+		out.append({"type": "cast", "spell": str(sig.get("id", "")), "to": hero["pos"], "target_seat": hero["seat"], "seat": seat})
 	var sig2: Dictionary = actor.get("signature2", {})
 	if not sig2.is_empty() and pools_ready(actor):
 		out.append({"type": "cast", "spell": str(sig2.get("id", "")), "to": hero["pos"] if not hero.is_empty() else actor["pos"], "seat": seat})
@@ -4463,6 +4466,8 @@ func _submit_monster_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
 	var attack: Dictionary = actor.get("attack", {})
 	var sig: Dictionary = actor.get("signature", {})
 	if not sig.is_empty() and spell_id == str(sig.get("id", "")):
+		if str(sig.get("kind", "summon")) == "pull":
+			return _resolve_pull(intent, actor, sig)
 		return _resolve_summon(intent, actor, sig)
 	var sig2: Dictionary = actor.get("signature2", {})
 	if not sig2.is_empty() and spell_id == str(sig2.get("id", "")):
@@ -4559,14 +4564,17 @@ func _submit_monster_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
 		})
 	var chill: Dictionary = attack.get("chill", {})
 	if not chill.is_empty() and damage > 0 and int(target["hp"]) > 0:
-		# No stacking: the strongest chill waiting is kept.
+		# No stacking: the strongest chill waiting is kept. `word` names the
+		# status in the coach line (chilled by default, soaked in the grotto).
 		target["mp_drain"] = maxi(int(target.get("mp_drain", 0)), int(chill.get("mp", 1)))
+		var word := str(chill.get("word", "chilled"))
+		target["mp_drain_word"] = word
 		_last_events.append({
 			"type": "status",
 			"status": "chill",
 			"target_seat": target["seat"],
 			"mp": int(target["mp_drain"]),
-			"coach": "%s is chilled (%d MP less next turn)." % [target["name"], int(target["mp_drain"])],
+			"coach": "%s is %s (%d MP less next turn)." % [target["name"], word, int(target["mp_drain"])],
 		})
 	_check_death(target)
 	return _accept()
@@ -4605,6 +4613,119 @@ func _resolve_summon(intent: Dictionary, actor: Dictionary, sig: Dictionary) -> 
 		"summoned": made,
 		"ap_spent": ap_cost,
 		"summoned_total": int(_dungeon["summoned_total"]),
+		"coach": _last_coach,
+	})
+	return _accept()
+
+
+## Boss signature kind "pull" (the Saltmaw Grotto's Lantern Lure): on the
+## boss's first_turn-th turn, then every `every` turns, with AP, the hero in
+## range (min_range..max_range, Chebyshev) and a straight line not crossed by
+## a prop (`los`), and at least one free cell to slide the hero into.
+func pull_ready(actor: Dictionary) -> bool:
+	var sig: Dictionary = actor.get("signature", {})
+	if sig.is_empty() or str(sig.get("kind", "")) != "pull":
+		return false
+	if bool(actor.get("acted_signature", false)):
+		return false
+	if int(actor.get("ap", 0)) < int(sig.get("ap", 0)):
+		return false
+	var turns := int(actor.get("own_turns", 0))
+	var first := maxi(int(sig.get("first_turn", 1)), 1)
+	var every := maxi(int(sig.get("every", 1)), 1)
+	if turns < first or (turns - first) % every != 0:
+		return false
+	var hero := _dungeon_hero()
+	if hero.is_empty() or not bool(hero.get("alive", false)):
+		return false
+	var dist := chebyshev(actor["pos"], hero["pos"])
+	if dist < int(sig.get("min_range", 2)) or dist > int(sig.get("max_range", 6)):
+		return false
+	if bool(sig.get("los", true)) and not has_los(actor["pos"], hero["pos"]):
+		return false
+	return not displace_path(hero["pos"], actor["pos"], int(sig.get("cells", 2))).is_empty()
+
+
+## The cells a unit at `from` slides through toward `toward`, up to `cells`
+## steps. Each step goes along the longer axis of the gap (diagonal when the
+## gap is square), onto a walkable, empty cell, and stops next to `toward`.
+func displace_path(from: Vector2i, toward: Vector2i, cells: int) -> Array[Vector2i]:
+	var out: Array[Vector2i] = []
+	var cur := from
+	for i in maxi(cells, 0):
+		if chebyshev(cur, toward) <= 1:
+			break
+		var gap := toward - cur
+		var step := Vector2i.ZERO
+		if absi(gap.x) == absi(gap.y):
+			step = Vector2i(signi(gap.x), signi(gap.y))
+		elif absi(gap.x) > absi(gap.y):
+			step = Vector2i(signi(gap.x), 0)
+		else:
+			step = Vector2i(0, signi(gap.y))
+		var nxt := cur + step
+		if not _in_bounds(nxt) or not _board.is_walkable(nxt) or not _is_empty(nxt):
+			break
+		out.append(nxt)
+		cur = nxt
+	return out
+
+
+## Moves `unit` along displace_path toward `toward` (a pull or a drag) and
+## logs one `pull` event the view slides. Returns the cells moved through.
+func _displace_toward(unit: Dictionary, toward: Dictionary, cells: int, how: String, source: String, by_seat: int) -> Array[Vector2i]:
+	var from: Vector2i = unit["pos"]
+	var path := displace_path(from, toward["pos"], cells)
+	if path.is_empty():
+		return path
+	unit["pos"] = path.back()
+	var face := _face_toward_cell(unit["pos"], toward["pos"])
+	if face != "":
+		unit["facing"] = face
+	var line := "%s is pulled %d cells toward %s." % [unit["name"], path.size(), toward["name"]]
+	if how == "drag":
+		line = "The current drags %s %d cell%s toward %s." % [unit["name"], path.size(), "" if path.size() == 1 else "s", toward["name"]]
+	_last_events.append({
+		"type": "pull",
+		"how": how,
+		"source": source,
+		"seat": by_seat,
+		"target_seat": unit["seat"],
+		"from": from,
+		"to": unit["pos"],
+		"path": path.duplicate(),
+		"cells": path.size(),
+		"facing": str(unit["facing"]),
+		"coach": line,
+	})
+	return path
+
+
+func _resolve_pull(intent: Dictionary, actor: Dictionary, sig: Dictionary) -> Dictionary:
+	if not pull_ready(actor):
+		return _reject(intent, "pull_not_ready", "REJECT — %s is not ready." % sig.get("name", "Pull"))
+	var hero := _dungeon_hero()
+	var ap_cost := int(sig.get("ap", 0))
+	actor["ap"] = int(actor["ap"]) - ap_cost
+	actor["acted_signature"] = true
+	var face := _face_toward_cell(actor["pos"], hero["pos"])
+	if face != "":
+		actor["facing"] = face
+	_intent_log.append(intent)
+	var from: Vector2i = hero["pos"]
+	var path := _displace_toward(hero, actor, int(sig.get("cells", 2)), "pull", str(sig.get("id", "")), int(actor["seat"]))
+	_last_coach = "%s raises %s: %s is pulled %d cell%s." % [actor["name"], sig.get("name", "his lure"), hero["name"], path.size(), "" if path.size() == 1 else "s"]
+	# The cast event comes first so the view plays the lure, then the slide.
+	_last_events.insert(_last_events.size() - 1, {
+		"type": "lure",
+		"seat": actor["seat"],
+		"spell": str(sig.get("id", "")),
+		"beam": str(sig.get("beam", "")),
+		"caster_cell": actor["pos"],
+		"target_seat": hero["seat"],
+		"from": from,
+		"to": hero["pos"],
+		"ap_spent": ap_cost,
 		"coach": _last_coach,
 	})
 	return _accept()
@@ -4746,13 +4867,20 @@ func _resolve_pools(intent: Dictionary, actor: Dictionary, sig: Dictionary) -> D
 		if hazard != "toxic_pool":
 			rec["hazard"] = hazard
 			rec["mp_loss"] = int(sig.get("mp_loss", 0))
+			if int(sig.get("drag", 0)) > 0:
+				# Drag hazards (the grotto's riptide) pull toward their caster.
+				rec["drag"] = int(sig["drag"])
+				rec["drag_seat"] = int(actor["seat"])
+			if str(sig.get("hit_text", "")) != "":
+				rec["hit_text"] = str(sig["hit_text"])
 		pools.append(rec)
 		made.append(c)
 	_dungeon["pools"] = pools
 	if hazard == "toxic_pool":
 		_last_coach = "%s spills %s: %d toxic pools." % [actor["name"], sig.get("name", "toxic pools"), made.size()]
 	else:
-		_last_coach = "%s casts %s: %d cells freeze around %s." % [actor["name"], sig.get("name", "a hazard"), made.size(), _dungeon_hero().get("name", "the hero")]
+		var lay := str(sig.get("lay_text", "{caster} casts {sig}: {n} cells freeze around {hero}."))
+		_last_coach = lay.format({"caster": str(actor["name"]), "sig": str(sig.get("name", "a hazard")), "n": made.size(), "hero": str(_dungeon_hero().get("name", "the hero"))})
 	var laid := {
 		"type": "pools",
 		"seat": actor["seat"],
@@ -4790,10 +4918,17 @@ func _pools_on_hero_end(hero: Dictionary) -> void:
 				hit["hazard"] = str(pool["hazard"])
 				hit["mp_loss"] = mp_loss
 				hit["coach"] = "%s ends the turn on frost: %d damage, %d MP less next turn." % [hero["name"], dmg, mp_loss]
+				if pool.has("hit_text"):
+					hit["coach"] = str(pool["hit_text"]).format({"hero": str(hero["name"]), "damage": dmg, "mp": mp_loss})
 				if mp_loss > 0:
 					hero["mp_drain"] = maxi(int(hero.get("mp_drain", 0)), mp_loss)
+					hero["mp_drain_word"] = "chilled"
 			_last_events.append(hit)
 			_check_death(hero, "poison" if not pool.has("hazard") else "frost")
+			if int(pool.get("drag", 0)) > 0 and bool(hero.get("alive", false)) and not _match_over:
+				var toward := _unit_by_seat(int(pool.get("drag_seat", -1)))
+				if not toward.is_empty() and bool(toward.get("alive", false)):
+					_displace_toward(hero, toward, int(pool["drag"]), "drag", str(pool["hazard"]), int(toward["seat"]))
 			break
 	var kept: Array = []
 	for pool in pools:

@@ -155,6 +155,8 @@ class Facing:
         can = np.zeros((H * SS + 2 * pad, W * SS + 2 * pad, 4), np.float32)
         P = trans(pad, pad)
         for name in order:
+            if pose.get(name + ".hide"):  # optional: a part not drawn on this frame (a thrown weapon after release)
+                continue
             M = (P @ K @ mats[name])[:2]
             lay = self.layers[name]
             out = cv2.warpAffine(lay, M, (can.shape[1], can.shape[0]), flags=cv2.INTER_LINEAR,

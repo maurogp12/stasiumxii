@@ -434,14 +434,14 @@
       "role": "door_keeper",
       "zone_id": "crosshaven_eastmarch",
       "cell": {
-        "x": 15,
+        "x": 25,
         "y": 17
       },
       "facing": "S",
       "body": "npc_door_keeper",
       "lines": [
         "I keep the door to Saltmaw Grotto.",
-        "The way down is not open yet."
+        "The tide runs deep below. Stay out of Old Saltmaw's lantern light."
       ],
       "status": "proposed"
     },

@@ -1,0 +1,510 @@
+{
+  "format": "stasium.dungeon_run",
+  "format_version": 1,
+  "status": "proposed",
+  "dungeon": "saltmaw_grotto",
+  "board_size": 12,
+  "art": "res://art/pc/dungeons/saltmaw_grotto/manifest.json",
+  "pads": {
+    "kind": "buff",
+    "effect": "heal",
+    "amount": 5,
+    "thaw": true,
+    "thaw_text": "The tide pad rinses {name}: no MP lost.",
+    "who": "hero",
+    "note": "Teal coral pads (room A) and the whirlpool (room B): the hero heals 5 HP when a turn starts on one, and that turn keeps its full MP (the pad rinses the abyssal soak off). Monsters get nothing."
+  },
+  "between_rooms": {
+    "heal": "full",
+    "note": "A short rest on the tide steps between room A and room B."
+  },
+  "text": {
+    "town": "Eastmarch",
+    "stairs": "Down the slick tide steps, into Old Saltmaw's lair...",
+    "victory": "{dungeon} is cleared at ★{star}. {boss} is down.",
+    "defeat": "The tide drags you out. No rewards this time.",
+    "return": "You wade back up to the grotto door in Eastmarch.",
+    "return_button": "Return to Eastmarch",
+    "pads": "Tide pads: +{amount} HP and no MP lost when your turn starts on one",
+    "keeper_hint": "Stay out of the lantern's light.",
+    "star_notes": {
+      "5": "The Abyssal Saltmaw and his riptide. A Rare part and a Mystery Box for sure."
+    },
+    "showcase_title": "Saltmaw Grotto\nMonsters",
+    "showcase_sub": "Reef Crab · Drowned Sailor · Drowned Harpooner · Old Saltmaw\n★5: Abyssal Reef Crab · Abyssal Drowned Sailor · Abyssal Drowned Harpooner · Abyssal Saltmaw",
+    "star5_rule": "★5: the Abyssal Saltmaw's lure pulls 3 cells, and he stirs a Riptide every other turn from his 2nd (2-3 cells round the hero, 3 hero turns): end a turn in it for 5 damage and a drag of 1 cell toward him. Abyssal monsters soak (1 MP less next turn). Tide pads and the whirlpool rinse it off.",
+    "signature_rule": "Lantern Lure: on his 1st turn and every 2nd after, from 2-6 cells with a clear line, Old Saltmaw pulls the hero 2 cells toward him, then bites. Rock spires and props break the line.",
+    "b_still": "04_room_b_saltmaw.png",
+    "boss_star5": "The Abyssal Saltmaw"
+  },
+  "view": {
+    "light": [
+      0.86,
+      1.0,
+      1.04,
+      1.0
+    ],
+    "monster_glow": 0.7,
+    "pads": {
+      "coral_pad": {
+        "color": [
+          0.3,
+          0.95,
+          0.85
+        ],
+        "mark": "coral"
+      },
+      "whirlpool": {
+        "color": [
+          0.3,
+          0.9,
+          0.85
+        ],
+        "decal": true,
+        "mark": "swirl"
+      }
+    },
+    "hazard": {
+      "riptide": {
+        "color": [
+          0.2,
+          0.75,
+          0.8
+        ],
+        "bubble": [
+          0.75,
+          1.0,
+          0.98,
+          0.9
+        ],
+        "ring": [
+          0.1,
+          0.85,
+          0.8
+        ],
+        "ring_width": 3.5,
+        "text_color": [
+          0.0,
+          0.1,
+          0.12
+        ]
+      }
+    },
+    "projectiles": {
+      "harpoon": {
+        "color": [
+          0.7,
+          0.62,
+          0.48
+        ],
+        "spin": false,
+        "draw_glow": false
+      },
+      "abyssal_harpoon": {
+        "color": [
+          0.55,
+          1.0,
+          0.9
+        ],
+        "glow": [
+          0.3,
+          1.0,
+          0.85,
+          0.35
+        ],
+        "spin": false,
+        "draw_glow": false
+      },
+      "harpoon_impact": {
+        "color": [
+          0.6,
+          0.95,
+          0.9
+        ]
+      },
+      "lure_line": {
+        "color": [
+          0.35,
+          1.0,
+          0.9
+        ]
+      }
+    },
+    "door": {
+      "shape": "tower",
+      "wall": [
+        0.42,
+        0.46,
+        0.44
+      ],
+      "roof": [
+        0.18,
+        0.36,
+        0.38
+      ],
+      "glow": [
+        0.3,
+        0.95,
+        0.85
+      ],
+      "still_from_door": [
+        3,
+        -2
+      ]
+    },
+    "showcase": [
+      [
+        "reef_crab",
+        1,
+        11,
+        false
+      ],
+      [
+        "drowned_sailor",
+        3,
+        9,
+        false
+      ],
+      [
+        "drowned_harpooner",
+        5,
+        7,
+        false
+      ],
+      [
+        "abyssal_reef_crab",
+        7,
+        5,
+        false
+      ],
+      [
+        "abyssal_drowned_sailor",
+        9,
+        3,
+        false
+      ],
+      [
+        "abyssal_drowned_harpooner",
+        11,
+        1,
+        false
+      ],
+      [
+        "old_saltmaw",
+        0,
+        4,
+        true
+      ],
+      [
+        "abyssal_saltmaw",
+        4,
+        0,
+        true
+      ]
+    ],
+    "showcase_zoom": 1.35,
+    "floor": {
+      "base": [
+        0.2,
+        0.34,
+        0.36
+      ],
+      "seam": [
+        0.08,
+        0.16,
+        0.18,
+        0.9
+      ],
+      "edge": [
+        0.05,
+        0.11,
+        0.13,
+        0.95
+      ],
+      "fleck": [
+        0.55,
+        0.95,
+        0.88,
+        0.5
+      ]
+    }
+  },
+  "rooms": [
+    {
+      "id": "room_a",
+      "name": "The Sunken Grotto",
+      "kind": "pack",
+      "tags": "res://data/world/dungeons/saltmaw_grotto/room_a_tags.json",
+      "hero": {
+        "x": 8,
+        "y": 10,
+        "facing": "N"
+      },
+      "monsters": [
+        {
+          "monster": "reef_crab",
+          "x": 3,
+          "y": 2,
+          "facing": "S"
+        },
+        {
+          "monster": "reef_crab",
+          "x": 8,
+          "y": 2,
+          "facing": "S"
+        },
+        {
+          "monster": "drowned_sailor",
+          "x": 5,
+          "y": 4,
+          "facing": "S"
+        },
+        {
+          "monster": "drowned_sailor",
+          "x": 11,
+          "y": 3,
+          "facing": "S"
+        },
+        {
+          "monster": "drowned_harpooner",
+          "x": 1,
+          "y": 0,
+          "facing": "S"
+        },
+        {
+          "monster": "drowned_harpooner",
+          "x": 6,
+          "y": 0,
+          "facing": "S"
+        }
+      ],
+      "note": "packs: the pack for the highest key at or below the star. monsters is the ★1 pack. Spawns on the far rows (y 0-4), off the coral pads, away from the hero (8,10); rocks and crates on the middle rows break the Harpooners' lines.",
+      "packs": {
+        "1": [
+          {
+            "monster": "reef_crab",
+            "x": 3,
+            "y": 2,
+            "facing": "S"
+          },
+          {
+            "monster": "reef_crab",
+            "x": 8,
+            "y": 2,
+            "facing": "S"
+          },
+          {
+            "monster": "drowned_sailor",
+            "x": 5,
+            "y": 4,
+            "facing": "S"
+          },
+          {
+            "monster": "drowned_sailor",
+            "x": 11,
+            "y": 3,
+            "facing": "S"
+          },
+          {
+            "monster": "drowned_harpooner",
+            "x": 1,
+            "y": 0,
+            "facing": "S"
+          },
+          {
+            "monster": "drowned_harpooner",
+            "x": 6,
+            "y": 0,
+            "facing": "S"
+          }
+        ],
+        "3": [
+          {
+            "monster": "reef_crab",
+            "x": 3,
+            "y": 2,
+            "facing": "S"
+          },
+          {
+            "monster": "reef_crab",
+            "x": 8,
+            "y": 2,
+            "facing": "S"
+          },
+          {
+            "monster": "drowned_sailor",
+            "x": 5,
+            "y": 4,
+            "facing": "S"
+          },
+          {
+            "monster": "drowned_sailor",
+            "x": 11,
+            "y": 3,
+            "facing": "S"
+          },
+          {
+            "monster": "drowned_harpooner",
+            "x": 1,
+            "y": 0,
+            "facing": "S"
+          },
+          {
+            "monster": "drowned_harpooner",
+            "x": 6,
+            "y": 0,
+            "facing": "S"
+          },
+          {
+            "monster": "drowned_harpooner",
+            "x": 10,
+            "y": 1,
+            "facing": "S"
+          }
+        ],
+        "5": [
+          {
+            "monster": "abyssal_reef_crab",
+            "x": 3,
+            "y": 2,
+            "facing": "S"
+          },
+          {
+            "monster": "abyssal_reef_crab",
+            "x": 8,
+            "y": 2,
+            "facing": "S"
+          },
+          {
+            "monster": "abyssal_drowned_sailor",
+            "x": 5,
+            "y": 4,
+            "facing": "S"
+          },
+          {
+            "monster": "abyssal_drowned_sailor",
+            "x": 11,
+            "y": 3,
+            "facing": "S"
+          },
+          {
+            "monster": "drowned_sailor",
+            "x": 4,
+            "y": 0,
+            "facing": "S"
+          },
+          {
+            "monster": "abyssal_drowned_harpooner",
+            "x": 1,
+            "y": 0,
+            "facing": "S"
+          },
+          {
+            "monster": "abyssal_drowned_harpooner",
+            "x": 6,
+            "y": 0,
+            "facing": "S"
+          },
+          {
+            "monster": "abyssal_drowned_harpooner",
+            "x": 10,
+            "y": 1,
+            "facing": "S"
+          }
+        ]
+      }
+    },
+    {
+      "id": "room_b",
+      "name": "Old Saltmaw's Lair",
+      "kind": "boss",
+      "tags": "res://data/world/dungeons/saltmaw_grotto/room_b_tags.json",
+      "hero": {
+        "x": 6,
+        "y": 10,
+        "facing": "N"
+      },
+      "monsters": [
+        {
+          "monster": "old_saltmaw",
+          "x": 6,
+          "y": 2,
+          "facing": "S"
+        },
+        {
+          "monster": "drowned_sailor",
+          "x": 4,
+          "y": 2,
+          "facing": "S"
+        },
+        {
+          "monster": "drowned_harpooner",
+          "x": 8,
+          "y": 2,
+          "facing": "S"
+        },
+        {
+          "monster": "reef_crab",
+          "x": 6,
+          "y": 4,
+          "facing": "S"
+        }
+      ],
+      "note": "Old Saltmaw with his escort (1 Drowned Sailor, 1 Drowned Harpooner, 1 Reef Crab) behind the whirlpool. His Lantern Lure pulls the hero toward him; the rock spires round the whirlpool break its line.",
+      "packs": {
+        "1": [
+          {
+            "monster": "old_saltmaw",
+            "x": 6,
+            "y": 2,
+            "facing": "S"
+          },
+          {
+            "monster": "drowned_sailor",
+            "x": 4,
+            "y": 2,
+            "facing": "S"
+          },
+          {
+            "monster": "drowned_harpooner",
+            "x": 8,
+            "y": 2,
+            "facing": "S"
+          },
+          {
+            "monster": "reef_crab",
+            "x": 6,
+            "y": 4,
+            "facing": "S"
+          }
+        ],
+        "5": [
+          {
+            "monster": "abyssal_saltmaw",
+            "x": 6,
+            "y": 2,
+            "facing": "S"
+          },
+          {
+            "monster": "abyssal_drowned_sailor",
+            "x": 4,
+            "y": 2,
+            "facing": "S"
+          },
+          {
+            "monster": "abyssal_drowned_harpooner",
+            "x": 8,
+            "y": 2,
+            "facing": "S"
+          },
+          {
+            "monster": "abyssal_reef_crab",
+            "x": 6,
+            "y": 4,
+            "facing": "S"
+          }
+        ]
+      }
+    }
+  ]
+}

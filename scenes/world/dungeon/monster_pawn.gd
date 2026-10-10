@@ -18,6 +18,8 @@ var _oneshot := ""
 var _blank: Texture2D
 var _faded := false
 var _glow: AnimatedSprite2D
+## Strength of the additive glow pass (run.json view.monster_glow; 1 = as painted).
+var glow_strength := 1.0
 ## Room light on the kit's flat, cool frames. The run file sets it
 ## (view.light); WARM (the cellar's lantern light) when none is given.
 const WARM := Color(1.14, 0.96, 0.74, 1.0)
@@ -188,7 +190,7 @@ func _process(_delta: float) -> void:
 			if _glow.animation != _body.animation:
 				_glow.animation = _body.animation
 			_glow.frame = _body.frame
-		_glow.modulate = Color(1, 1, 1, _sprite.modulate.a)
+		_glow.modulate = Color(1, 1, 1, _sprite.modulate.a * glow_strength)
 	if _path_walk and _oneshot == "":
 		_play_body("walk", true)
 
@@ -261,6 +263,17 @@ func release_offset() -> Vector2:
 	var by_face: Dictionary = rel.get("offset", {})
 	var src := _face()
 	var off: Vector2 = by_face.get(str(src["face"]), Vector2(14, -40))
+	if bool(src["flip"]):
+		off.x = -off.x
+	return off
+
+
+## Where the boss's lure (Old Saltmaw's lantern) shines from on the flare
+## frame, in pawn-local px, for the facing shown (manifest lure_point).
+func lure_offset() -> Vector2:
+	var by_face: Dictionary = art.get("lure", {})
+	var src := _face()
+	var off: Vector2 = by_face.get(str(src["face"]), Vector2(26, -118))
 	if bool(src["flip"]):
 		off.x = -off.x
 	return off

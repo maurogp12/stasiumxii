@@ -67,7 +67,7 @@ func set_pool(on: bool, turns: int, man: Dictionary, hazard: String = "toxic_poo
 			add_child(_pool_glow)
 	if _pool_glow != null:
 		_pool_glow.visible = on
-	set_process(pool or self.pad)
+	set_process(pool or self.pad or _decal_glow_node != null)
 	queue_redraw()
 
 
@@ -143,6 +143,10 @@ func _process(delta: float) -> void:
 			_glow.modulate.a = 0.6 + 0.4 * sin(_t * 2.4 + float(grid_position.x + grid_position.y))
 		elif pad_tex == null:
 			queue_redraw()
+	elif _decal_glow_node != null:
+		# A decal cell that is not a pad (the whirlpool's kerb) pulses with it.
+		_t += delta
+		_decal_glow_node.modulate.a = 0.65 + 0.35 * sin(_t * 2.2)
 
 
 func _draw() -> void:
@@ -223,6 +227,16 @@ func _draw_pad(pts: PackedVector2Array) -> void:
 		for d in [Vector2(0, -8), Vector2(14, 0), Vector2(0, 8), Vector2(-14, 0)]:
 			draw_line(Vector2.ZERO, d, core, 1.8)
 		draw_circle(Vector2.ZERO, 2.4, core)
+	elif mark == "coral":
+		# A small coral branch.
+		draw_line(Vector2(0, 5), Vector2(0, -6), core, 1.8)
+		draw_line(Vector2(0, 0), Vector2(-7, -5), core, 1.6)
+		draw_line(Vector2(0, -2), Vector2(7, -7), core, 1.6)
+		draw_circle(Vector2(0, -7), 1.8, core)
+	elif mark == "swirl":
+		# A whirlpool swirl (two arcs).
+		draw_arc(Vector2.ZERO, 9.0, _t * 1.5, _t * 1.5 + PI * 1.3, 14, core, 1.8)
+		draw_arc(Vector2.ZERO, 4.5, _t * 1.5 + PI, _t * 1.5 + PI * 2.2, 10, core, 1.6)
 	elif mark == "grate":
 		for k in range(-2, 3):
 			draw_line(Vector2(k * 8 - 8, -4 + k * 4 * 0.0), Vector2(k * 8 + 8, 4), Color(0.12, 0.1, 0.08, 0.9), 2.0)

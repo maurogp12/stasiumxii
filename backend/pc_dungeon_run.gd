@@ -132,7 +132,8 @@ func combat_config(index: int = -1, seed: int = -1) -> Dictionary:
 		var sig: Dictionary = stats.get("signature", {})
 		if not sig.is_empty():
 			var summon_id := str(sig.get("summon", ""))
-			summons[summon_id] = monsters.stats_at(summon_id, level, star)
+			if summon_id != "":
+				summons[summon_id] = monsters.stats_at(summon_id, level, star)
 	var size := tags.get("size", [12, 12]) as Array
 	var config := {
 		"board_size": int(size[0]) if size.size() > 0 else 12,
@@ -145,6 +146,7 @@ func combat_config(index: int = -1, seed: int = -1) -> Dictionary:
 			"cells": cells,
 			"pad_heal": int(pads.get("amount", 0)) if str(pads.get("effect", "")) == "heal" else 0,
 			"pad_thaw": bool(pads.get("thaw", false)),
+			"pad_thaw_text": str(pads.get("thaw_text", "The rune pad thaws {name}: no MP lost.")),
 			"view": (run_doc.get("view", {}) as Dictionary).duplicate(true) if typeof(run_doc.get("view", {})) == TYPE_DICTIONARY else {},
 			"hero": {
 				"class_id": hero_class,

@@ -106,9 +106,12 @@ class Board:
         return os.path.join(self.dir, part, sub, name) if sub else os.path.join(self.dir, part, name)
 
     # ------------------------------------------------------------ tiles
-    def tile(self, src, out_id, room, kind="floor"):
+    def tile(self, src, out_id, room, kind="floor", grade=None):
         rgb = grout_crop(gkit.load_rgb(src)) / 255.0
         rgb = cv2.resize(rgb, (768, 768), interpolation=cv2.INTER_AREA)
+        if grade:  # optional colour grade (straight rgb), e.g. to darken a floor that came out too bright
+            prem = np.concatenate([rgb, np.ones(rgb.shape[:2] + (1,), rgb.dtype)], -1).astype(np.float32)
+            rgb = gkit.grade(prem, **grade)[..., :3]
         for sub, (w, h) in (("", (64, 32)), ("_2x", (128, 64))):
             im = gkit.binarize(gkit.project_square(rgb.astype(np.float32), w, h))
             gkit.save_png(self._path(sub, "tiles", out_id + ".png"), im)
