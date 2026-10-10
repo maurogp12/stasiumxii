@@ -86,7 +86,7 @@ func _test_doors_json() -> void:
 	var book = loaded["dungeons"]
 	eq(book.rows.size(), 5, "five Crosshaven town dungeons")
 	var built: Array = book.built()
-	eq(built.size(), 2, "two dungeons are built (the cellar and the Frostspire Archive)")
+	eq(built.size(), 3, "three dungeons are built (the cellar, the Frostspire Archive and the Saltmaw Grotto)")
 	var row: Dictionary = book.by_id(GRANARY)
 	eq(str(row.get("status", "")), "built", "the Old Granary Cellar is built")
 	eq(str(row["level_zone"]), "stoneford", "the cellar is Stoneford's dungeon")
@@ -102,7 +102,7 @@ func _test_doors_json() -> void:
 	var bands := {}
 	for r in book.rows:
 		bands[str(r["level_zone"])] = int(bands.get(str(r["level_zone"]), 0)) + 1
-		if not str(r["id"]) in [GRANARY, "frostspire_archive"]:
+		if not str(r["id"]) in [GRANARY, "frostspire_archive", "saltmaw_grotto"]:
 			eq(str(r["status"]), "planned", "%s is planned" % r["id"])
 			eq(r.has("door"), false, "%s has no door yet" % r["id"])
 	for band in Dungeons.TOWN_BANDS:

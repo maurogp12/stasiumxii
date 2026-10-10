@@ -18,6 +18,11 @@ const ATTACK_KEYS: Array[String] = ["id", "name", "ap", "min_range", "max_range"
 const SIGNATURE_KEYS: Array[String] = [
 	"id", "name", "kind", "ap", "summon", "count", "first_turn", "every", "cap_alive", "cap_total",
 ]
+## Keys a signature of kind "pull" (Lantern Lure) needs instead: it slides the
+## hero `cells` toward the boss from min_range..max_range, with line of sight.
+const PULL_KEYS: Array[String] = ["id", "name", "kind", "ap", "cells", "first_turn", "every", "min_range", "max_range"]
+## Signature kinds CombatSim plays.
+const SIGNATURE_KINDS: Array[String] = ["summon", "pull"]
 ## The hero side a level 1 run is checked against (CombatSim unit defaults).
 const HERO_HP := 80
 const HERO_AP := 6
@@ -227,7 +232,10 @@ func _read(doc: Dictionary, errors: Array) -> void:
 			if typeof(sig) != TYPE_DICTIONARY:
 				errors.append("%s signature" % id)
 			else:
-				for key in SIGNATURE_KEYS:
+				var kind := str((sig as Dictionary).get("kind", "summon"))
+				if not SIGNATURE_KINDS.has(kind):
+					errors.append("%s signature kind %s" % [id, kind])
+				for key in (PULL_KEYS if kind == "pull" else SIGNATURE_KEYS):
 					if not (sig as Dictionary).has(key):
 						errors.append("%s signature %s" % [id, key])
 		_by_id[id] = row.duplicate(true)

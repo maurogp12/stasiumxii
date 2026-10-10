@@ -850,8 +850,7 @@
         {
           "type": "clear_dungeon",
           "dungeon": "saltmaw_grotto",
-          "place": "Saltmaw Grotto",
-          "pending_chunk": true
+          "place": "Saltmaw Grotto"
         }
       ],
       "rewards": {
@@ -861,7 +860,7 @@
       },
       "lines": {
         "offer": [
-          "Clear the Saltmaw Grotto. The Warden wants the caves quiet. The way down is not open yet."
+          "Clear the Saltmaw Grotto. The Warden wants the caves quiet. The Door Keeper by the grotto door will let you down."
         ],
         "active": [
           "The Saltmaw Grotto is still ahead."

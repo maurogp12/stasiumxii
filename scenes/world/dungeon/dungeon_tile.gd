@@ -223,6 +223,16 @@ func _draw_pad(pts: PackedVector2Array) -> void:
 		for d in [Vector2(0, -8), Vector2(14, 0), Vector2(0, 8), Vector2(-14, 0)]:
 			draw_line(Vector2.ZERO, d, core, 1.8)
 		draw_circle(Vector2.ZERO, 2.4, core)
+	elif mark == "coral":
+		# A small coral branch.
+		draw_line(Vector2(0, 5), Vector2(0, -6), core, 1.8)
+		draw_line(Vector2(0, 0), Vector2(-7, -5), core, 1.6)
+		draw_line(Vector2(0, -2), Vector2(7, -7), core, 1.6)
+		draw_circle(Vector2(0, -7), 1.8, core)
+	elif mark == "swirl":
+		# A whirlpool swirl (two arcs).
+		draw_arc(Vector2.ZERO, 9.0, _t * 1.5, _t * 1.5 + PI * 1.3, 14, core, 1.8)
+		draw_arc(Vector2.ZERO, 4.5, _t * 1.5 + PI, _t * 1.5 + PI * 2.2, 10, core, 1.6)
 	elif mark == "grate":
 		for k in range(-2, 3):
 			draw_line(Vector2(k * 8 - 8, -4 + k * 4 * 0.0), Vector2(k * 8 + 8, 4), Color(0.12, 0.1, 0.08, 0.9), 2.0)
