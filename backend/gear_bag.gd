@@ -227,6 +227,7 @@ static func utc_day(unix_seconds: int) -> int:
 
 
 static func load_saved() -> GearBag:
+	ProgressEpoch.ensure()
 	var bag := GearBag.new()
 	if not FileAccess.file_exists(save_path):
 		return _with_test_loadout(bag)
@@ -451,14 +452,18 @@ func active_bonuses() -> Array:
 	return out
 
 
-## Worn pieces as a plain list [{item_id, plus}] (one per slot). This is
-## what a fight receives; CombatSim recomputes the stats from it.
+## Worn pieces as a plain list [{item_id, plus}] (one per slot). A piece
+## tagged by the old test kit also carries test=true so clean_worn can drop it.
+## CombatSim recomputes the stats from the cleaned list.
 func worn_list() -> Array:
 	var out: Array = []
 	for slot in SLOTS:
 		var it := equipped_item(slot)
 		if not it.is_empty():
-			out.append({"item_id": str(it["item_id"]), "plus": int(it["plus"])})
+			var row := {"item_id": str(it["item_id"]), "plus": int(it["plus"])}
+			if bool(it.get("test", false)):
+				row["test"] = true
+			out.append(row)
 	return out
 
 
@@ -470,6 +475,10 @@ static func clean_worn(raw: Variant) -> Array:
 		return out
 	for entry in raw:
 		if typeof(entry) != TYPE_DICTIONARY:
+			continue
+		# The dedicated server (and every other fight) refuses kit pieces.
+		# A missing flag cannot be detected; the epoch wipe is what clears the bag.
+		if bool(entry.get("test", false)):
 			continue
 		var item_id := str(entry.get("item_id", ""))
 		if not is_valid_item_id(item_id):
@@ -660,8 +669,9 @@ static func clean_spell_elements(class_id: String, raw: Variant) -> Dictionary:
 
 
 ## Everything a fight needs from this bag: {"worn": [...], "attune": {...}}.
+## Test-tagged pieces are stripped here, so a listen-host never sends them.
 func fight_gear(with_still: bool = false) -> Dictionary:
-	var out := {"worn": worn_list(), "attune": attune.duplicate(), "heroes": HeroProgress.load_saved().fight_heroes()}
+	var out := {"worn": clean_worn(worn_list()), "attune": attune.duplicate(), "heroes": HeroProgress.load_saved().fight_heroes()}
 	if with_still:
 		var still := StillVault.load_saved().fight_still()
 		if not still.is_empty():
