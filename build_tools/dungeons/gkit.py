@@ -93,6 +93,20 @@ def key_magenta(rgb: np.ndarray, lo: float = 18.0, hi: float = 200.0) -> np.ndar
     return out
 
 
+def despill_magenta(prem: np.ndarray, tol: float = 6.0) -> np.ndarray:
+    """Remove magenta spill everywhere on a keyed piece (not only at the edge): where both red
+    and blue exceed green by more than `tol`, take that excess off red and blue. For paintings
+    with no real magenta or purple paint (the frost monsters' pink-tinged pages and shroud holes)."""
+    a = prem[..., 3:4]
+    rgb = prem[..., :3] / np.maximum(a, 1e-4) * 255.0
+    spill = np.maximum(np.minimum(rgb[..., 0], rgb[..., 2]) - rgb[..., 1] - tol, 0.0)
+    rgb[..., 0] -= spill
+    rgb[..., 2] -= spill
+    out = prem.copy()
+    out[..., :3] = np.clip(rgb / 255.0, 0, 1) * a
+    return out
+
+
 def key_auto(rgb: np.ndarray) -> np.ndarray:
     c = rgb[:8, :8].reshape(-1, 3).mean(0)
     return key_magenta(rgb) if c[0] > 150 and c[2] > 150 and c[1] < 80 else key_green(rgb)

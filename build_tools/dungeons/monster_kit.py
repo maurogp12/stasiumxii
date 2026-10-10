@@ -5,7 +5,8 @@ A spec is a dict:
   name, rig(f) -> mrig.Facing, actions(f) -> {action: [pose, ...]}, cell, pivot
   optional: base {facing: pose-offsets}, release (attack frame; the rig has .pocket = (part, xy)),
             star5, glow (True), glow_fn(im, big) -> additive RGBA, base_of,
-            signature {...} (copied into meta.json as is)
+            signature {...} (copied into meta.json as is), role (text),
+            action_glow {action: fn(im, frame, big) -> additive RGBA} (glow maps for one action only, e.g. a boss signature)
 The Granary specs live in granary_monsters.py, the Frostspire ones in frostspire_monsters.py.
 """
 from __future__ import annotations
@@ -114,7 +115,10 @@ def build(mid, spec, check=False):
             if check and act not in ("idle", "attack", "death"):
                 continue
             for _ in range(3):
-                poses = keep_in(rig, poses)
+                nxt = keep_in(rig, poses)
+                if nxt is poses:  # nothing left to correct: further passes would be identical
+                    break
+                poses = nxt
             lost_max = 0
             shift_max = 0.0
             for i, pose in enumerate(poses):
@@ -128,9 +132,11 @@ def build(mid, spec, check=False):
                 gkit.save_png(path, im)
                 if spec.get("glow"):
                     gkit.save_png(os.path.join(mdir, act, "%s_%s_f%02d_glow.png" % (act, f, i)), glow_fn(im, spec["cell"] == CELL_BIG))
+                elif act in spec.get("action_glow", {}):
+                    gkit.save_png(os.path.join(mdir, act, "%s_%s_f%02d_glow.png" % (act, f, i)), spec["action_glow"][act](im, i, spec["cell"] == CELL_BIG))
             a = meta["actions"].setdefault(act, {"frames": len(poses), "loop": LOOPS[act], "files": {}})
             a["files"][f] = "%s/%s/%s/%s_%s_fNN.png" % (rel_root, mid, act, act, f)
-            if spec.get("glow"):
+            if spec.get("glow") or act in spec.get("action_glow", {}):
                 a.setdefault("glow_files", {})[f] = "%s/%s/%s/%s_%s_fNN_glow.png" % (rel_root, mid, act, act, f)
             meta["qa"]["px_outside_cell_%s_%s" % (act, f)] = lost_max
             meta["qa"]["keep_in_shift_px_%s_%s" % (act, f)] = round(shift_max, 1)
