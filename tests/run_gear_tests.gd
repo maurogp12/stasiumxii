@@ -44,7 +44,7 @@ func _run() -> void:
 
 func _test_families_and_slots() -> void:
 	eq(GearBag.FAMILY_ORDER.size(), 17, "five classes × 3 plus Ashmantle and Brightedge")
-	eq(GearBag.FAMILIES.size(), 17, "seventeen families")
+	eq(GearBag.FAMILIES.size(), 22, "seventeen ladder families plus five Ultra sets")
 	eq(GearBag.FAMILIES.has("duskbrand"), false, "Duskbrand is gone")
 	eq(GearBag.is_valid_item_id("duskbrand.weapon"), false, "Duskbrand is not a valid item")
 	eq(GearBag.SLOTS, ["weapon", "head", "chest", "legs", "boots"], "five slots")
@@ -287,7 +287,8 @@ func _test_drop_chances() -> void:
 	eq(int(got["items"][0]["plus"]), 0, "weighted drops stay +0")
 	var ultras := ["gatewarden", "sandhawk", "pitmaw", "hushring", "mercywell"]
 	for ultra in ultras:
-		eq(GearBag.FAMILIES.has(ultra), false, "%s is not a drop family" % ultra)
+		eq(GearBag.FAMILIES.has(ultra), true, "%s is a wired Ultra set" % ultra)
+		eq(GearBag.FAMILY_ORDER.has(ultra), false, "%s stays off the drop ladder" % ultra)
 		eq(GearBag.families_of_rarity("Legendary").has(ultra), false, "%s is not in the Legendary pool" % ultra)
 	eq(_drop_sample(1, false, 64, 337)["ids"], _drop_sample(2, false, 64, 337)["ids"], "★2 repeats the ★1 sequence")
 	eq(_drop_sample(3, false, 64, 337)["ids"], _drop_sample(4, false, 64, 337)["ids"], "★4 repeats the ★3 sequence")
@@ -663,7 +664,9 @@ func _test_inventory_screen() -> void:
 	eq(GearBag.icon_path("oathgrave.head").get_file(), "oathgrave_head.png", "Oathgrave uses its own head")
 	eq(GearBag.icon_path("ashmantle.chest").get_file(), "ashmantle_chest.png", "Ashmantle uses its own chest")
 	eq(GearBag.icon_path("ravenmourn.weapon", "kestrel").get_file(), "ravenmourn_weapon_kestrel.png", "Ravenmourn uses its own bow")
-	eq(GearBag.FAMILIES.has("gatewarden"), false, "Gatewarden is not a wired set yet")
+	eq(GearBag.FAMILIES.has("gatewarden"), true, "Gatewarden is a wired Ultra set")
+	eq(GearBag.icon_path("gatewarden.weapon", "bastion").get_file(), "gatewarden_weapon.png", "Ultra weapons are one sheet, not per class")
+	eq(GearBag.icon_path("sandhawk.head").get_file(), "sandhawk_head.png", "Ultra armour lives under art/items/ultra")
 	for ultra in ["gatewarden", "sandhawk", "pitmaw", "hushring", "mercywell"]:
 		truthy(FileAccess.file_exists("res://art/items/ultra/%s/%s_head.png" % [ultra, ultra]), "%s head art is in the repo" % ultra)
 		truthy(FileAccess.file_exists("res://art/items/ultra/%s/%s_weapon.png" % [ultra, ultra]), "%s weapon art is in the repo" % ultra)
@@ -691,6 +694,7 @@ func _test_stasis_chest_wiring() -> void:
 	eq(fight.chest_line({"chest": true, "items": [{"item_id": "undertow.legs", "plus": 0}]}), "Chest: Undertow Guards +0. Wear it in Gear.", "chest copy names the piece")
 	var src := FileAccess.get_file_as_string("res://scenes/stasis_fight.gd")
 	truthy(src.contains("record_stasis_clear"), "a Stasis clear opens the chest")
+	truthy(src.contains("StasisCatalog.room == \"b\""), "only a Room B boss clear uses the boss table")
 	eq(src.contains("record_human_win") or src.contains(".coins"), false, "Stasis never pays Koliseo coins")
 	eq(StasisCatalog.STAR, 1, "doors are Stasis 1 (★1)")
 

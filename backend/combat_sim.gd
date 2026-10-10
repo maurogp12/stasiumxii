@@ -1740,7 +1740,11 @@ func _phase_a_damage(base: int, facing_mult: float, actor: Dictionary = {}, targ
 	var flex := _flex_bonus(actor, el, resolve)
 	var passive := PASSIVE * _class_passive(actor, target)
 	var crit_mult := _gear_crit_mult(actor, resolve, false)
+	if _last_crit and _negate_nearby_crit(target):
+		crit_mult = 1.0
 	var raw: float = float(base) * crit_mult * passive * (1.0 + mastery / 100.0) * (1.0 + flex / 100.0) * (1.0 - clampf(resist, 0.0, RESIST_CAP) / 100.0) * facing_mult
+	if bool(target.get("berserk_on", false)):
+		raw *= 1.05
 	return roundi(raw)
 
 
@@ -1758,6 +1762,8 @@ func _gear_crit_mult(actor: Dictionary, resolve: bool, heals: bool) -> float:
 	if bool(actor.get("crit_landed", false)):
 		return 1.0
 	var chance := mini(maxi(int(actor.get("crit", 0)), 0), CRIT_CAP)
+	if heals and int(actor.get("crit_heal", 0)) > 0:
+		chance = mini(int(actor.get("crit_heal", 0)), CRIT_CAP)
 	if chance <= 0:
 		return 1.0
 	var roll := _roll_d100()
@@ -1765,8 +1771,11 @@ func _gear_crit_mult(actor: Dictionary, resolve: bool, heals: bool) -> float:
 		return 1.0
 	actor["crit_landed"] = true
 	_last_crit = true
-	_last_crit_mult = CRIT_MULT
-	return CRIT_MULT
+	var mult := CRIT_MULT
+	if not heals:
+		mult += float(actor.get("crit_dmg", 0)) / 100.0
+	_last_crit_mult = mult
+	return mult
 
 
 ## Set bonuses that sit on top of the resist formula: back %, melee, the
@@ -1778,6 +1787,12 @@ func _gear_strike_damage(actor: Dictionary, target: Dictionary, damage: int, dis
 	var back_pct := int(actor.get("back_pct", 0))
 	if is_back and back_pct > 0 and out > 0:
 		out = roundi(float(out) * (1.0 + float(back_pct) / 100.0))
+	if dist <= 1 and out > 0:
+		var melee_pct := int(actor.get("melee_pct", 0))
+		if bool(actor.get("berserk_on", false)):
+			melee_pct += 15
+		if melee_pct > 0:
+			out = roundi(float(out) * (1.0 + float(melee_pct) / 100.0))
 	if dist <= 1 and int(actor.get("melee", 0)) > 0 and out > 0:
 		out += int(actor["melee"])
 	if bool(actor.get("first_hit_ready", false)) and int(actor.get("first_hit", 0)) > 0 and out > 0:
@@ -1873,8 +1888,11 @@ func _flex_target(actor: Dictionary, target: Dictionary, def: Dictionary) -> Arr
 func _add_element_rider(target: Dictionary, el: String, tags: Array) -> void:
 	match el:
 		"water":
-			target["water_slow"] = true
-			tags.append("water_slow")
+			if _ultra_unbound(target):
+				tags.append("unbound")
+			else:
+				target["water_slow"] = true
+				tags.append("water_slow")
 		"fire":
 			# Mauro 6 Oct 2026: "burn can be stacked 3 times". Each Fire hit adds
 			# a Burn stack like a lava push (cap 3): 4 × 2 / 8 × 3 / 12 × 4.
@@ -1996,8 +2014,11 @@ func _try_blend(actor: Dictionary, target: Dictionary, el: String) -> String:
 			target["magma_pending"] = int(actor["seat"])
 			note = "the tile they end their next turn on burns for %d" % MAGMA_TICK_HP
 		"mire":
-			target["mire_cell"] = target["pos"]
-			note = "leaving this tile costs +1 MP on their next turn"
+			if _ultra_unbound(target):
+				note = "Unbound ignores the Mire"
+			else:
+				target["mire_cell"] = target["pos"]
+				note = "leaving this tile costs +1 MP on their next turn"
 		"flare":
 			note = _blend_flare(actor, target, event)
 		"steam":
@@ -2030,7 +2051,7 @@ func _infuse(actor: Dictionary, target: Dictionary, def: Dictionary) -> String:
 ## body does.
 func _blend_drift_pin(actor: Dictionary, target: Dictionary, event: Dictionary) -> String:
 	var from: Vector2i = target["pos"]
-	var result := _try_push(actor["pos"], target, 1, true)
+	var result := _try_push(actor["pos"], target, 1, true, actor)
 	var note := ""
 	var hit_something := false
 	if bool(result.get("moved", false)):
@@ -2054,6 +2075,8 @@ func _blend_drift_pin(actor: Dictionary, target: Dictionary, event: Dictionary) 
 		note += "; no Pin (nothing hit)"
 	elif bool(target.get("pinned", false)) or bool(target.get("pinned_last", false)):
 		note += "; no Pin (Pinned last turn)"
+	elif _ultra_unbound(target):
+		note += "; Unbound ignores the Pin"
 	else:
 		target["pin_pending"] = true
 		event["pin"] = true
@@ -2723,6 +2746,11 @@ func _handoff_seat(actor: Dictionary, auto_skip: bool, skip_reason: String = "")
 		next_unit["water_slow"] = false
 		water_cut = mini(1, int(next_unit["mp"]))
 		next_unit["mp"] = int(next_unit["mp"]) - water_cut
+	var gear_cut := 0
+	if bool(next_unit.get("gear_slow", false)):
+		next_unit["gear_slow"] = false
+		gear_cut = mini(1, int(next_unit["mp"]))
+		next_unit["mp"] = int(next_unit["mp"]) - gear_cut
 	var slow_cut := 0
 	if int(next_unit.get("slow_remaining", 0)) > 0:
 		slow_cut = mini(SLOW_MP * maxi(int(next_unit.get("slow_stacks", 1)), 1), int(next_unit["mp"]))
@@ -2736,6 +2764,8 @@ func _handoff_seat(actor: Dictionary, auto_skip: bool, skip_reason: String = "")
 		_last_coach = "%s's turn. AP/MP refilled to %d/%d." % [next_unit["name"], int(next_unit["ap"]), int(next_unit["mp"])]
 	if water_cut > 0:
 		_last_coach += " Water: −1 MP."
+	if gear_cut > 0:
+		_last_coach += " Slow: −1 MP."
 	if bool(next_unit.get("pinned", false)):
 		_last_coach += " Pinned: no walking."
 	if _invisible_wore_off:
@@ -2872,6 +2902,7 @@ func _submit_move(intent: Dictionary, actor: Dictionary) -> Dictionary:
 		dest = path[snare_at]
 	var facing_hops: Array = _face_along_walk(actor, from, path)
 	actor["pos"] = dest
+	_note_step(actor)
 	# Charge the tiles actually entered. A trap does not bill the rest of
 	# the planned path: steps before it keep their cost, and springing it
 	# costs exactly trap_mp (1), not that tile's terrain or climb cost.
@@ -3116,6 +3147,7 @@ func _resolve_advance(intent: Dictionary, actor: Dictionary, _def: Dictionary, d
 	actor["advance_uses"] = int(actor.get("advance_uses", 0)) + 1
 	# Teleport: dest-click snap. Never spend MP. Facing unchanged — no auto-face.
 	actor["pos"] = dest
+	_note_step(actor)
 	var enemy: Dictionary = _enemy_of(int(actor["seat"]))
 	var adjacent: bool = false
 	if not enemy.is_empty() and bool(enemy["alive"]):
@@ -3159,6 +3191,9 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 	var is_back: bool = facing_mult > FRONT_SIDE_FACING + 0.001
 	if str(actor.get("class_id", "")) == SpellKits.CLASS_GLOAM and is_back:
 		facing_mult = SpellKits.BACKSTAB_MULT
+	var guarded := _guard_back(target, facing_mult, is_back)
+	facing_mult = float(guarded[0])
+	is_back = bool(guarded[1])
 	var spell_id := str(def["id"])
 	var marks_on_target: int = int(target.get("marks", 0))
 	var impact_before: int = int(actor.get("impact", 0))
@@ -3274,7 +3309,7 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 	if int(def.get("push_cells", 0)) > 0:
 		# Director Locked Shoulder: occupied = push_blocked; OOB / truly blocked = bounce + stagger.
 		# Lava displaces and Burns. Water silences one spell. Mud slows −1 MP.
-		push_result = _try_push(actor["pos"], target, int(def["push_cells"]), _earth_push(actor, def))
+		push_result = _try_push(actor["pos"], target, int(def["push_cells"]), _earth_push(actor, def), actor)
 	if defer_shoulder_impact:
 		var impact_amount := SHOULDER_CONNECT_IMPACT
 		if bool(push_result.get("bounced", false)):
@@ -3434,6 +3469,7 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 			"coach": "%s is stunned (Locked A′)." % target["name"],
 		})
 	_emit_immunity_spent(target, mitigation)
+	_ultra_on_hit(actor, target, def)
 	_check_death(target)
 	_reflect_thorns_after_hit(actor, target, mitigation, hit_event)
 	_break_invisible_on_attack(actor)
@@ -3446,12 +3482,26 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 ## There is no separate execute path.
 func _check_death(target: Dictionary, cause: String = "damage") -> void:
 	if int(target["hp"]) > 0:
+		_maybe_berserk(target)
 		return
 	# End Still: once, a lethal hit leaves you at 1 HP.
 	if str(target.get("still", "")) == "end" and bool(target.get("still_ready", false)):
 		target["still_ready"] = false
 		target["hp"] = 1
 		_still_fired(target, "end")
+		_maybe_berserk(target)
+		return
+	# Mercywell 4pc: once per fight, a lethal hit leaves her at 1 HP.
+	if bool(target.get("cheat_death", false)) and bool(target.get("cheat_ready", false)):
+		target["cheat_ready"] = false
+		target["hp"] = 1
+		_last_events.append({
+			"type": "status",
+			"status": "cheat_death",
+			"target_seat": target["seat"],
+			"coach": "%s holds on at 1 HP." % target["name"],
+		})
+		_maybe_berserk(target)
 		return
 	target["alive"] = false
 	# Death clears Residue and the element riders on this body.
@@ -3561,12 +3611,15 @@ func _validate_vault(actor: Dictionary, dest: Vector2i) -> String:
 		return "out_of_bounds"
 	if not is_advance_cardinal(actor["pos"], dest):
 		return "out_of_range"
-	var def: Dictionary = SpellKits.spell(SpellKits.VAULT)
-	if int(actor["ap"]) < int(def["ap"]):
-		return "insufficient_ap"
 	if bool(actor.get("vault_used", false)):
 		return "vault_limit"
-	if not _player_cd_ready(actor, SpellKits.VAULT):
+	if int(actor.get("vaults_cast", 0)) >= 2:
+		return "vault_match"
+	var def: Dictionary = SpellKits.spell_for(actor, SpellKits.VAULT)
+	var ap_cost := 0 if bool(actor.get("vault_free", false)) else int(def.get("ap", 3))
+	if int(actor["ap"]) < ap_cost:
+		return "insufficient_ap"
+	if not bool(actor.get("vault_free", false)) and not _player_cd_ready(actor, SpellKits.VAULT):
 		return "cooldown"
 	var pressed := false
 	for unit in _units:
@@ -3583,12 +3636,14 @@ func _vault_reject_text(reason: String) -> String:
 			return "REJECT — Vault only works with an enemy right next to you (refund)."
 		"vault_limit":
 			return "REJECT — Vault is once per turn (refund)."
+		"vault_match":
+			return "REJECT — Vault is twice per match (refund)."
 		"cooldown":
 			return "REJECT — Vault is still cooling down (refund)."
 		"advance_blocked":
 			return "REJECT — Vault cannot jump over a rock, crate, wall or steam (refund)."
 		"insufficient_ap":
-			return "REJECT — Vault costs 2 AP (refund)."
+			return "REJECT — Vault costs 3 AP (refund)."
 		"destination_occupied":
 			return "REJECT — Vault needs an empty tile (refund)."
 	return "REJECT — Vault is exactly 2 tiles in a straight line (refund)."
@@ -3596,13 +3651,22 @@ func _vault_reject_text(reason: String) -> String:
 
 func _resolve_vault(intent: Dictionary, actor: Dictionary, def: Dictionary, dest: Vector2i) -> Dictionary:
 	var from: Vector2i = actor["pos"]
-	var ap_cost := int(def.get("ap", 2))
+	var free := bool(actor.get("vault_free", false))
+	var ap_cost := 0 if free else int(def.get("ap", 3))
 	actor["ap"] = int(actor["ap"]) - ap_cost
 	actor["vault_used"] = true
+	actor["vaults_cast"] = int(actor.get("vaults_cast", 0)) + 1
 	actor["pos"] = dest
-	_arm_spell_cooldown(actor, def)
+	if free:
+		actor["vault_free"] = false
+	else:
+		_arm_spell_cooldown(actor, def)
+	_note_step(actor)
 	_intent_log.append(intent)
-	_last_coach = "%s vaults to %s (−%d AP). Cooldown: next %d turns." % [actor["name"], _cell_text(dest), ap_cost, int(def.get("cooldown", 0))]
+	if free:
+		_last_coach = "%s vaults to %s (free)." % [actor["name"], _cell_text(dest)]
+	else:
+		_last_coach = "%s vaults to %s (−%d AP). Cooldown: next %d turns." % [actor["name"], _cell_text(dest), ap_cost, int(def.get("cooldown", 0))]
 	_last_events.append({
 		"type": "cast",
 		"spell": SpellKits.VAULT,
@@ -3637,7 +3701,7 @@ func _trigger_trap(unit: Dictionary) -> bool:
 		var report := _mitigate_hit({}, unit, int(def.get("trap_damage", 6)))
 		var damage := int(report["damage"])
 		unit["hp"] = maxi(0, int(unit["hp"]) - damage)
-		if not bool(unit.get("pinned", false)) and not bool(unit.get("pinned_last", false)):
+		if not bool(unit.get("pinned", false)) and not bool(unit.get("pinned_last", false)) and not _ultra_unbound(unit):
 			unit["pin_pending"] = true
 		_clear_invisible(unit)
 		_last_events.append({
@@ -3988,6 +4052,205 @@ func intermission_heal(seat: int, pct: int) -> int:
 	return healed
 
 
+func _copy_ultra(unit: Dictionary, stats: Dictionary) -> void:
+	unit["crit_dmg"] = int(stats.get("crit_dmg", 0))
+	unit["melee_pct"] = int(stats.get("melee_pct", 0))
+	unit["heal_pct"] = int(stats.get("heal_pct", 0))
+	unit["crit_heal"] = int(stats.get("crit_heal", 0))
+	unit["bow_range"] = int(stats.get("bow_range", 0))
+	unit["extra_mark"] = int(stats.get("extra_mark", 0))
+	unit["extra_mark_seen"] = []
+	unit["unbound"] = int(stats.get("unbound", 0)) > 0
+	unit["unbound_ready"] = bool(unit["unbound"])
+	unit["push_flat"] = int(stats.get("push_flat", 0))
+	unit["push_guard"] = int(stats.get("push_guard", 0)) > 0
+	unit["no_back"] = int(stats.get("no_back", 0))
+	unit["back_guard_ready"] = int(unit["no_back"]) > 0
+	unit["crit_ward"] = int(stats.get("crit_ward", 0))
+	unit["crit_ward_used"] = false
+	unit["free_vault"] = int(stats.get("free_vault", 0))
+	unit["vault_free"] = false
+	unit["vault_bank_used"] = false
+	unit["vaults_cast"] = 0
+	unit["fade_cut"] = int(stats.get("fade_cut", 0))
+	unit["detonate_strip"] = int(stats.get("detonate_strip", 0))
+	unit["detonate_strip_ready"] = int(unit["detonate_strip"]) > 0
+	unit["berserk"] = int(stats.get("berserk", 0)) > 0
+	unit["berserk_spent"] = false
+	unit["berserk_queued"] = 0
+	unit["berserk_on"] = false
+	unit["berserk_mp_up"] = false
+	unit["hit_slow"] = int(stats.get("hit_slow", 0))
+	unit["hit_slow_ready"] = int(unit["hit_slow"]) > 0
+	unit["shoulder_strip"] = int(stats.get("shoulder_strip", 0)) > 0
+	unit["strip_cd"] = 0
+	unit["heal_suppress"] = int(stats.get("heal_suppress", 0)) > 0
+	unit["shield_burst"] = int(stats.get("shield_burst", 0)) > 0
+	unit["shield_burst_ready"] = bool(unit["shield_burst"])
+	unit["long_fade"] = int(stats.get("long_fade", 0))
+	unit["cleanse_stun"] = int(stats.get("cleanse_stun", 0)) > 0
+	unit["cheat_death"] = int(stats.get("cheat_death", 0)) > 0
+	unit["cheat_ready"] = bool(unit["cheat_death"])
+	unit["rekindle_ultra"] = int(stats.get("rekindle_ultra", 0)) > 0
+	unit["heal_cut"] = false
+	unit["gear_slow"] = false
+
+
+func _tick_berserk(unit: Dictionary) -> void:
+	var queued := int(unit.get("berserk_queued", 0))
+	if queued > 0:
+		unit["berserk_on"] = true
+		unit["berserk_queued"] = queued - 1
+		if not bool(unit.get("berserk_mp_up", false)):
+			unit["max_mp"] = mini(int(unit.get("max_mp", MAX_MP)) + 1, GearBag.MP_CAP)
+			unit["berserk_mp_up"] = true
+	elif bool(unit.get("berserk_on", false)):
+		unit["berserk_on"] = false
+		if bool(unit.get("berserk_mp_up", false)):
+			unit["max_mp"] = maxi(int(unit.get("max_mp", MAX_MP)) - 1, 0)
+			unit["berserk_mp_up"] = false
+
+
+func _maybe_berserk(unit: Dictionary) -> void:
+	if unit.is_empty() or not bool(unit.get("berserk", false)):
+		return
+	if bool(unit.get("berserk_spent", false)) or not bool(unit.get("alive", true)):
+		return
+	if int(unit.get("hp", 0)) <= 0:
+		return
+	var max_hp := maxi(int(unit.get("max_hp", 1)), 1)
+	if float(int(unit["hp"])) / float(max_hp) >= 0.35:
+		return
+	unit["berserk_spent"] = true
+	unit["berserk_queued"] = 2
+
+
+## Gatewarden 5pc: the first crit this turn on him or an ally within 3 tiles
+## deals normal damage. The attacker's crit is still spent.
+func _negate_nearby_crit(target: Dictionary) -> bool:
+	if not _last_crit or target.is_empty() or not target.has("pos"):
+		return false
+	for unit in _units:
+		if int(unit.get("crit_ward", 0)) <= 0 or bool(unit.get("crit_ward_used", false)):
+			continue
+		if not bool(unit.get("alive", false)) or not _allied(unit, target):
+			continue
+		if chebyshev(unit["pos"], target["pos"]) > 3:
+			continue
+		unit["crit_ward_used"] = true
+		_last_crit = false
+		_last_crit_mult = 1.0
+		return true
+	return false
+
+
+func _guard_back(target: Dictionary, facing_mult: float, is_back: bool) -> Array:
+	if is_back and int(target.get("no_back", 0)) > 0 and bool(target.get("back_guard_ready", false)):
+		target["back_guard_ready"] = false
+		return [FRONT_SIDE_FACING, false]
+	return [facing_mult, is_back]
+
+
+## Sandhawk boots: the first Mire, Pin, or Slow of the fight is ignored.
+func _ultra_unbound(unit: Dictionary) -> bool:
+	if unit.is_empty() or not bool(unit.get("unbound", false)):
+		return false
+	if not bool(unit.get("unbound_ready", false)):
+		return false
+	unit["unbound_ready"] = false
+	return true
+
+
+## An enemy stepping onto a tile next to Sandhawk banks her free Vault.
+func _note_step(mover: Dictionary) -> void:
+	if mover.is_empty() or not bool(mover.get("alive", false)):
+		return
+	for unit in _units:
+		if unit == mover or not bool(unit.get("alive", false)):
+			continue
+		if int(unit.get("free_vault", 0)) <= 0 or bool(unit.get("vault_bank_used", false)):
+			continue
+		if _allied(unit, mover):
+			continue
+		if chebyshev(unit["pos"], mover["pos"]) == 1:
+			unit["vault_bank_used"] = true
+			unit["vault_free"] = true
+
+
+func _fade_turns(actor: Dictionary) -> int:
+	var turns := INVISIBLE_TURNS
+	if int(actor.get("long_fade", 0)) > 0:
+		turns = 3
+	if _fade_cut_by_sandhawk(actor):
+		turns = 1
+	return turns
+
+
+func _fade_cut_by_sandhawk(actor: Dictionary) -> bool:
+	if int(actor.get("marks", 0)) < 2:
+		return false
+	var owner := _unit_by_seat(int(actor.get("marks_seat", -1)))
+	if owner.is_empty() or _allied(owner, actor):
+		return false
+	return int(owner.get("fade_cut", 0)) > 0
+
+
+func _ultra_on_hit(actor: Dictionary, target: Dictionary, def: Dictionary) -> void:
+	if actor.is_empty() or target.is_empty():
+		return
+	var spell_id := str(def.get("id", ""))
+	if spell_id == SpellKits.MARK_SHOT and bool(actor.get("extra_mark", false)):
+		var seen: Array = actor.get("extra_mark_seen", [])
+		var key := int(target.get("seat", -1))
+		if not seen.has(key):
+			seen.append(key)
+			actor["extra_mark_seen"] = seen
+			_gain_marks(target, 1, int(actor.get("seat", -1)))
+	if spell_id == SpellKits.DETONATE and int(actor.get("detonate_strip", 0)) > 0 and bool(actor.get("detonate_strip_ready", false)):
+		actor["detonate_strip_ready"] = false
+		if str(target.get("class_id", "")) != SpellKits.CLASS_KESTREL:
+			_strip_class_stack(actor, target)
+	if spell_id == SpellKits.SHOULDER and bool(actor.get("shoulder_strip", false)) and int(actor.get("strip_cd", 0)) == 0:
+		if _strip_class_stack(actor, target) != "":
+			actor["strip_cd"] = 2
+	if int(actor.get("hit_slow", 0)) > 0 and bool(actor.get("hit_slow_ready", false)) and not _allied(actor, target):
+		actor["hit_slow_ready"] = false
+		if not _ultra_unbound(target):
+			target["gear_slow"] = true
+	if bool(actor.get("heal_suppress", false)) and not _allied(actor, target):
+		target["heal_cut"] = true
+
+
+## One stack of the target's class resource. A Kestrel's Marks live on the
+## people she shot; if she has none on herself, take one of hers off the caster.
+func _strip_class_stack(actor: Dictionary, target: Dictionary) -> String:
+	match str(target.get("class_id", "")):
+		SpellKits.CLASS_BASTION:
+			if int(target.get("aegis", 0)) > 0:
+				target["aegis"] = int(target["aegis"]) - 1
+				return "Aegis"
+		SpellKits.CLASS_MENDER:
+			if int(target.get("pulse", 0)) > 0:
+				target["pulse"] = int(target["pulse"]) - 1
+				return "Pulse"
+		SpellKits.CLASS_IRONJAW:
+			if int(target.get("impact", 0)) > 0:
+				target["impact"] = int(target["impact"]) - 1
+				return "Impact"
+		SpellKits.CLASS_GLOAM:
+			if int(target.get("umbral", 0)) > 0:
+				target["umbral"] = int(target["umbral"]) - 1
+				return "Umbral"
+		SpellKits.CLASS_KESTREL:
+			if int(target.get("marks", 0)) > 0:
+				target["marks"] = int(target["marks"]) - 1
+				return "Mark"
+			if int(actor.get("marks", 0)) > 0 and int(actor.get("marks_seat", -2)) == int(target.get("seat", -1)):
+				actor["marks"] = int(actor["marks"]) - 1
+				return "Mark"
+	return ""
+
+
 ## Worn gear from the roster: {"worn": [{item_id, plus}], "attune": {family: element}}.
 ## GearBag.combat_stats sanitises it (valid ids, one per slot, +0–+5, AP/MP 8/5).
 func _apply_gear(unit: Dictionary, raw: Variant) -> void:
@@ -4042,6 +4305,7 @@ func _apply_gear(unit: Dictionary, raw: Variant) -> void:
 		unit["aegis"] = maxi(int(unit.get("aegis", 0)), int(stats["start_aegis"]))
 	unit["max_ap"] = mini(int(stats["ap"]) + int(hero["ap"]), GearBag.AP_CAP)
 	unit["max_mp"] = int(stats["mp"])
+	_copy_ultra(unit, stats)
 	unit["gear"] = GearBag.clean_worn(gear.get("worn", []), false)
 	# XII Still (one fight). Ready flags arm the one-shot effects.
 	var still := StillVault.clean(gear.get("still", {}))
@@ -4357,6 +4621,15 @@ func _begin_unit_turn(unit: Dictionary) -> void:
 	unit["first_hit_ready"] = int(unit.get("first_hit", 0)) > 0
 	unit["first_back_ready"] = int(unit.get("first_back", 0)) > 0
 	unit["guard_ready"] = int(unit.get("guard_flat", 0)) > 0
+	_tick_berserk(unit)
+	if int(unit.get("strip_cd", 0)) > 0:
+		unit["strip_cd"] = int(unit["strip_cd"]) - 1
+	unit["hit_slow_ready"] = int(unit.get("hit_slow", 0)) > 0
+	unit["shield_burst_ready"] = int(unit.get("shield_burst", 0)) > 0
+	unit["back_guard_ready"] = int(unit.get("no_back", 0)) > 0
+	unit["detonate_strip_ready"] = int(unit.get("detonate_strip", 0)) > 0
+	unit["heal_cut"] = false
+	unit["crit_ward_used"] = false
 	# Shade / Plant / Snap Wall share the owner turn-start clock. An enemy
 	# turn-start must not burn a duration turn (Mauro: Shade must read as 3).
 	_decay_board_durations(unit)
@@ -4491,7 +4764,7 @@ func _apply_stun(unit: Dictionary, remaining: int) -> int:
 	return remaining
 
 
-func _try_push(caster_pos: Vector2i, target: Dictionary, cells: int, earth: bool = false) -> Dictionary:
+func _try_push(caster_pos: Vector2i, target: Dictionary, cells: int, earth: bool = false, caster: Dictionary = {}) -> Dictionary:
 	# Chebyshev push 1 along the caster→target line.
 	# Director Locked Shoulder:
 	# - occupied dest: push_blocked (no bounce, no stagger)
@@ -4531,13 +4804,14 @@ func _try_push(caster_pos: Vector2i, target: Dictionary, cells: int, earth: bool
 		return result
 	result["earth"] = earth
 	if not _in_bounds(dest):
-		return _apply_bounce_stagger(target, result, "out_of_bounds")
+		return _apply_bounce_stagger(target, result, "out_of_bounds", caster)
 	if not _is_empty(dest):
 		result["blocked"] = true
 		result["reason"] = "occupied"
 		return result
 	if _board.is_voluntary_impassable(dest):
 		target["pos"] = dest
+		_note_step(target)
 		result["to"] = dest
 		result["moved"] = true
 		var terrain_id := int(_board.terrain_of(dest).get("id", _TerrainDef.Id.GROUND))
@@ -4553,8 +4827,9 @@ func _try_push(caster_pos: Vector2i, target: Dictionary, cells: int, earth: bool
 			result["slow"] = true
 		return result
 	if not _board.is_walkable(dest):
-		return _apply_bounce_stagger(target, result, _unwalkable_push_reason(dest))
+		return _apply_bounce_stagger(target, result, _unwalkable_push_reason(dest), caster)
 	target["pos"] = dest
+	_note_step(target)
 	result["to"] = dest
 	result["moved"] = true
 	return result
@@ -4632,7 +4907,11 @@ func _apply_landing_punishments(target: Dictionary, push_result: Dictionary) -> 
 		return {"burn": burn, "silence": silence, "slow": slow}
 	if bool(push_result.get("burn", false)):
 		burn = _apply_burn(target)
-		burn["land_hp"] = _apply_lava_land(target, int(burn["stacks"]))
+		if bool(target.get("push_guard", false)):
+			burn["land_hp"] = 0
+		else:
+			burn["land_hp"] = _apply_lava_land(target, int(burn["stacks"]))
+			_maybe_berserk(target)
 	if bool(push_result.get("silence", false)):
 		silence = _apply_water_silence(target)
 	if bool(push_result.get("slow", false)):
@@ -4687,6 +4966,8 @@ func _apply_water_silence(unit: Dictionary) -> Dictionary:
 
 ## Slow: −1/−2/−3 MP on the victim's next turn. A re-push while slowed stacks.
 func _apply_mud_slow(unit: Dictionary) -> Dictionary:
+	if _ultra_unbound(unit):
+		return {"applied": false, "unbound": true, "stacks": 0, "remaining": 0, "mp_delta": 0}
 	var previous := int(unit.get("slow_remaining", 0))
 	var stacks := _next_stack(unit, "slow_stacks", "slow_remaining")
 	unit["slow_stacks"] = stacks
@@ -4912,8 +5193,9 @@ func _unwalkable_push_reason(dest: Vector2i) -> String:
 	return "not_walkable"
 
 
-func _apply_bounce_stagger(target: Dictionary, result: Dictionary, reason: String) -> Dictionary:
+func _apply_bounce_stagger(target: Dictionary, result: Dictionary, reason: String, caster: Dictionary = {}) -> Dictionary:
 	# Bounce: unit stays/returns. Stagger: 4 HP; +1 MP only when current MP >= 1.
+	# Pitmaw push +2 adds to that HP. Gatewarden 2pc zeros the extra damage.
 	result["bounced"] = true
 	result["staggered"] = true
 	result["reason"] = reason
@@ -4925,11 +5207,18 @@ func _apply_bounce_stagger(target: Dictionary, result: Dictionary, reason: Strin
 		target["earth_collision_turn"] = _turn_index
 		hp_lost = EARTH_COLLISION_HP
 		result["earth_collision"] = true
+	hp_lost += int(caster.get("push_flat", 0))
+	var guarded := bool(target.get("push_guard", false))
+	if guarded:
+		hp_lost = 0
+		result["staggered"] = false
+		result["push_guard"] = true
 	var mp_lost := 0
-	if int(target.get("mp", 0)) >= STAGGER_MP:
+	if not guarded and int(target.get("mp", 0)) >= STAGGER_MP:
 		mp_lost = STAGGER_MP
 		target["mp"] = int(target["mp"]) - mp_lost
 	target["hp"] = maxi(0, int(target["hp"]) - hp_lost)
+	_maybe_berserk(target)
 	result["stagger_hp"] = hp_lost
 	result["stagger_mp"] = mp_lost
 	result["hp_delta"] = -hp_lost
@@ -5398,6 +5687,9 @@ func _submit_foe_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
 			continue
 		var facing_mult := _facing_multiplier(actor["pos"], target["pos"], str(target.get("facing", "")))
 		var foe_back := facing_mult > FRONT_SIDE_FACING + 0.001
+		var foe_guarded := _guard_back(target, facing_mult, foe_back)
+		facing_mult = float(foe_guarded[0])
+		foe_back = bool(foe_guarded[1])
 		var pre := _phase_a_damage(_foe_base_damage(actor, def), facing_mult, actor, target, _foe_element(actor, def), true)
 		pre = _gear_strike_damage(actor, target, pre, dist, foe_back, true)
 		var mitigation := _mitigate_hit(actor, target, pre)
@@ -5412,7 +5704,7 @@ func _submit_foe_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
 		_stamp_mitigation(event, mitigation)
 		var push_result := {}
 		if int(def.get("push", 0)) > 0:
-			push_result = _try_push(actor["pos"], target, int(def["push"]))
+			push_result = _try_push(actor["pos"], target, int(def["push"]), false, actor)
 		elif int(def.get("pull", 0)) > 0:
 			push_result = _foe_pull(actor, target)
 		if not push_result.is_empty():
@@ -5427,6 +5719,7 @@ func _submit_foe_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
 			var frozen := _apply_frozen(target)
 			_last_events.append({"type": "status", "status": "frozen", "stacks": int(frozen["stacks"]), "remaining": int(frozen["remaining"]), "paralyzed": bool(frozen["paralyzed"]), "target_seat": target["seat"], "coach": "%s is pinned on the ice (Frozen %d)." % [target["name"], int(frozen["stacks"])]})
 		_emit_immunity_spent(target, mitigation)
+		_ultra_on_hit(actor, target, def)
 		_check_death(target)
 		_reflect_thorns_after_hit(actor, target, mitigation, event)
 		if _match_over:
@@ -6201,9 +6494,14 @@ func _mitigate_hit(actor: Dictionary, target: Dictionary, damage: int) -> Dictio
 		report["shield_shattered"] = true
 	var shield := int(target.get("shield", 0))
 	if shield > 0 and remaining > 0:
-		var absorbed := mini(shield, remaining)
+		var into := remaining
+		if bool(actor.get("shield_burst", false)) and bool(actor.get("shield_burst_ready", true)) and not actor.is_empty():
+			# +50% of this hit is dealt to the shield. The extra does not spill into HP.
+			into = roundi(float(remaining) * 1.5)
+			actor["shield_burst_ready"] = false
+		var absorbed := mini(shield, into)
 		target["shield"] = shield - absorbed
-		remaining -= absorbed
+		remaining = maxi(0, remaining - absorbed)
 		report["shield_absorbed"] = absorbed
 		if int(target["shield"]) <= 0:
 			target["shield"] = 0
@@ -6339,7 +6637,12 @@ func _support_heal_amount(actor: Dictionary, target: Dictionary, def: Dictionary
 		passive = SpellKits.TRIAGE_MULT
 	var flex := _flex_bonus(actor, str(def.get("element", "")).to_lower(), false)
 	var crit_mult := _gear_crit_mult(actor, resolve, true)
+	if _last_crit and _negate_nearby_crit(target):
+		crit_mult = 1.0
 	var raw: float = float(base) * crit_mult * passive * (1.0 + (MASTERY + float(actor.get("mastery", 0))) / 100.0) * (1.0 + flex / 100.0) * facing
+	var heal_pct := int(actor.get("heal_pct", 0))
+	if heal_pct > 0:
+		raw *= 1.0 + float(heal_pct) / 100.0
 	# Mauro 6 Oct 2026: Spark is the Mender counter — a Sparked healer's heals
 	# are 40% weaker too (on top of the cut on a Sparked target).
 	if bool(actor.get("sparked", false)):
@@ -6360,6 +6663,8 @@ func _triage_applied(target: Dictionary, def: Dictionary) -> bool:
 func _apply_heal(target: Dictionary, amount: int) -> int:
 	if amount <= 0:
 		return 0
+	if bool(target.get("heal_cut", false)):
+		amount = roundi(float(amount) * 0.75)
 	if bool(target.get("sparked", false)):
 		amount = roundi(float(amount) * (1.0 - SPARK_HEAL_CUT))
 	var room := int(target.get("max_hp", class_base_hp(str(target.get("class_id", ""))))) - int(target.get("hp", 0))
@@ -6419,6 +6724,9 @@ func _resolve_revive(intent: Dictionary, actor: Dictionary, def: Dictionary, des
 		if body.has(key):
 			body[key] = 0
 	body["stunned"] = false
+	if int(def.get("revive_shield", 0)) > 0:
+		body["shield"] = int(def["revive_shield"])
+		body["shield_turns"] = 0
 	if bool(body.get("invisible", false)):
 		_end_invisible(body, false)
 	else:
@@ -6520,6 +6828,11 @@ func _resolve_support(intent: Dictionary, actor: Dictionary, target: Dictionary,
 		# cleanse only takes away 1 debuff". One per cast: Stun first, then the
 		# highest map stack (ties Slow, Breathless, Burn, Frozen, Electrocuted),
 		# then the Blend / element debuffs in CLEANSE_OTHER order.
+		# Mercywell 2pc removes Stun and then one other debuff.
+		if bool(actor.get("cleanse_stun", false)) and (int(target.get("stun_remaining", 0)) > 0 or bool(target.get("stunned", false))):
+			target["stun_remaining"] = 0
+			target["stunned"] = false
+			cc_removed.append("stun")
 		var removed := cleanse_one(target)
 		if removed != "":
 			cc_removed.append(removed)
@@ -6712,7 +7025,8 @@ func _resolve_fade(intent: Dictionary, actor: Dictionary, def: Dictionary, ap_co
 	_spend_mp(actor, mp_cost)
 	var gained := _gain_resource(actor, "umbral", 1)
 	actor["invisible"] = true
-	actor["invisible_turns"] = INVISIBLE_TURNS
+	var fade_turns := _fade_turns(actor)
+	actor["invisible_turns"] = fade_turns
 	# Cooldown starts when Invisible ends, not while he is hidden.
 	actor["fade_cd_skip"] = false
 	var cds: Dictionary = {}
@@ -6722,7 +7036,7 @@ func _resolve_fade(intent: Dictionary, actor: Dictionary, def: Dictionary, ap_co
 	actor["spell_cd"] = cds
 	_intent_log.append(intent)
 	var cool := int(def.get("cooldown", 0))
-	_last_coach = "%s Fade (−%d AP / −%d MP). Invisible for %d turn%s, cooldown %d turn%s after reveal. +%d Umbral." % [actor["name"], ap_cost, mp_cost, INVISIBLE_TURNS, "" if INVISIBLE_TURNS == 1 else "s", cool, "" if cool == 1 else "s", gained]
+	_last_coach = "%s Fade (−%d AP / −%d MP). Invisible for %d turn%s, cooldown %d turn%s after reveal. +%d Umbral." % [actor["name"], ap_cost, mp_cost, fade_turns, "" if fade_turns == 1 else "s", cool, "" if cool == 1 else "s", gained]
 	_last_events.append({
 		"type": "cast",
 		"spell": SpellKits.FADE,
@@ -6732,7 +7046,7 @@ func _resolve_fade(intent: Dictionary, actor: Dictionary, def: Dictionary, ap_co
 		"ap_spent": ap_cost,
 		"mp_spent": mp_cost,
 		"invisible": true,
-		"invisible_turns": INVISIBLE_TURNS,
+		"invisible_turns": fade_turns,
 		"engine_gained": gained,
 		"coach": _last_coach,
 	})
@@ -6900,6 +7214,9 @@ func _resolve_aegis_break(intent: Dictionary, actor: Dictionary, def: Dictionary
 		var cell: Vector2i = target["pos"]
 		var facing_mult := _facing_multiplier(actor["pos"], target["pos"], str(target.get("facing", "E")))
 		var is_back := facing_mult > FRONT_SIDE_FACING + 0.001
+		var aegis_guarded := _guard_back(target, facing_mult, is_back)
+		facing_mult = float(aegis_guarded[0])
+		is_back = bool(aegis_guarded[1])
 		var pre_mitigation := _phase_a_damage(int(def.get("base_damage", 26)), facing_mult, actor, target, str(def.get("element", "")), true)
 		pre_mitigation = _gear_strike_damage(actor, target, pre_mitigation, chebyshev(actor["pos"], target["pos"]), is_back, true)
 		var mitigation := _mitigate_hit(actor, target, pre_mitigation)
@@ -6910,7 +7227,7 @@ func _resolve_aegis_break(intent: Dictionary, actor: Dictionary, def: Dictionary
 		var silence_info: Dictionary = {}
 		var slow_info: Dictionary = {}
 		if int(def.get("push_cells", 0)) > 0:
-			push_result = _try_push(actor["pos"], target, int(def["push_cells"]), _earth_push(actor, def))
+			push_result = _try_push(actor["pos"], target, int(def["push_cells"]), _earth_push(actor, def), actor)
 			var punish := _apply_landing_punishments(target, push_result)
 			burn_info = punish["burn"]
 			silence_info = punish["silence"]
@@ -6934,6 +7251,7 @@ func _resolve_aegis_break(intent: Dictionary, actor: Dictionary, def: Dictionary
 		_emit_push_followups(actor, target, push_result, burn_info)
 		_append_soft_lock_status(target, silence_info, slow_info)
 		_emit_immunity_spent(target, mitigation)
+		_ultra_on_hit(actor, target, def)
 		_check_death(target)
 		_reflect_thorns_after_hit(actor, target, mitigation, row)
 		if _match_over:
@@ -7112,6 +7430,9 @@ func _resolve_hold_line(intent: Dictionary, actor: Dictionary, def: Dictionary, 
 		var is_back := facing_mult > FRONT_SIDE_FACING + 0.001
 		if str(actor.get("class_id", "")) == SpellKits.CLASS_GLOAM and is_back:
 			facing_mult = SpellKits.BACKSTAB_MULT
+		var hold_guarded := _guard_back(target, facing_mult, is_back)
+		facing_mult = float(hold_guarded[0])
+		is_back = bool(hold_guarded[1])
 		var pre_mitigation := _phase_a_damage(int(def.get("base_damage", 7)), facing_mult, actor, target, str(def.get("element", "")), true)
 		pre_mitigation = _gear_strike_damage(actor, target, pre_mitigation, chebyshev(actor["pos"], target["pos"]), is_back, true)
 		var mitigation := _mitigate_hit(actor, target, pre_mitigation)
@@ -7133,6 +7454,7 @@ func _resolve_hold_line(intent: Dictionary, actor: Dictionary, def: Dictionary, 
 		total += damage
 		hit_bodies += 1
 		_emit_immunity_spent(target, mitigation)
+		_ultra_on_hit(actor, target, def)
 		_check_death(target)
 		_reflect_thorns_after_hit(actor, target, mitigation, row)
 		if _match_over:
@@ -7245,6 +7567,7 @@ func _resolve_ambush(intent: Dictionary, actor: Dictionary, target: Dictionary, 
 	# and Shade origins all take this branch. Identity (already standing there)
 	# still counts as the teleport. A miss returned above and did not move.
 	actor["pos"] = cell
+	_note_step(actor)
 	# Face the prey from the back tile. Miss keeps the old facing.
 	var face_dir := facing_from_step(cell, target["pos"])
 	if face_dir != "":
@@ -7253,6 +7576,9 @@ func _resolve_ambush(intent: Dictionary, actor: Dictionary, target: Dictionary, 
 		_remove_shade_at(origin_cell, int(actor["seat"]))
 		_sync_shade_flags()
 	var facing_mult := SpellKits.BACKSTAB_MULT if backstab else FRONT_SIDE_FACING
+	var ambush_guarded := _guard_back(target, facing_mult, backstab)
+	facing_mult = float(ambush_guarded[0])
+	backstab = bool(ambush_guarded[1])
 	var umbral_before := int(actor.get("umbral", 0))
 	var base := _ambush_strike_base(def, actor)
 	var pre_mitigation := _phase_a_damage(base, facing_mult, actor, target, str(def.get("element", "")), true)
@@ -7313,6 +7639,7 @@ func _resolve_ambush(intent: Dictionary, actor: Dictionary, target: Dictionary, 
 	ambush_tags.append_array(_flex_caster(actor, def))
 	_stamp_riders(ambush_hit, ambush_tags, def)
 	_emit_immunity_spent(target, mitigation)
+	_ultra_on_hit(actor, target, def)
 	_check_death(target)
 	_reflect_thorns_after_hit(actor, target, mitigation, ambush_hit)
 	return _accept()

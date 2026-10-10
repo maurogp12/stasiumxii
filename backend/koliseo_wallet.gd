@@ -25,6 +25,8 @@ const SECONDS_PER_DAY := 86400
 ## no overheal. Never from chests; a wipe or leaving keeps unused tonics.
 const TONIC_SKU := "consumable.room_tonic"
 const TONIC_COST := 1
+## One Ultra part. Coins only. The stall sells every slot of every Ultra set.
+const ULTRA_PART_COST := 30
 const TONIC_CARRY := 3
 const TONIC_HEAL_PCT := 30
 
@@ -167,6 +169,23 @@ func can_buy_duskbrand(_slot: String) -> Dictionary:
 
 func buy_duskbrand(_slot: String, _bag: GearBag) -> Dictionary:
 	return _fail("retired")
+
+
+func can_buy_ultra(family: String, slot: String) -> Dictionary:
+	if not GearBag.ULTRA_ORDER.has(family) or not GearBag.SLOTS.has(slot):
+		return _fail("unknown")
+	if coins < ULTRA_PART_COST:
+		return _fail("not_enough_coins")
+	return {"ok": true, "reason": ""}
+
+
+func buy_ultra(family: String, slot: String, bag: GearBag) -> Dictionary:
+	var gate := can_buy_ultra(family, slot)
+	if not bool(gate["ok"]):
+		return gate
+	coins -= ULTRA_PART_COST
+	var uid := bag.add_item(family, slot, 0)
+	return {"ok": true, "reason": "", "uid": uid, "item_id": GearBag.item_id_for(family, slot)}
 
 
 func can_buy_tonic() -> Dictionary:

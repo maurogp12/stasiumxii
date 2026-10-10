@@ -149,9 +149,11 @@ const SPELLS := {
 		"id": VAULT,
 		"name": "Vault",
 		"class_id": CLASS_KESTREL,
-		"ap": 2,
+		"ap": 3,
 		"mp": 0,
 		# Exactly 2 tiles N/S/E/W, only with an enemy next to her, once a turn.
+		# Same AP as Ironjaw's Advance. A match allows two Vaults; Sandhawk's
+		# free Vault counts as one of them. Cooldown stays 2.
 		# Cast-time clock. _arm_spell_cooldown stores cooldown + 1 because the
 		# counter ticks at each later own turn start, before the action. 2 means
 		# her next two turns are locked: cast on N, legal again on N+3.
@@ -693,14 +695,44 @@ static func element_for(unit: Dictionary, spell_id: String) -> String:
 
 static func spell_for(unit: Dictionary, spell_id: String) -> Dictionary:
 	var def := spell_as(spell_id, element_for(unit, spell_id))
+	var changed := false
 	if bool(unit.get("last_stand", false)) and LAST_STAND_DAMAGE.has(spell_id):
 		# Mender Last Stand (Mauro 6 Oct 2026): her heals can hit enemies again.
 		def = def.duplicate()
+		changed = true
 		def["target"] = "any"
 		def["base_damage"] = int(LAST_STAND_DAMAGE[spell_id])
 		if spell_id == HEARTSTOP:
 			def["enemy_skip_mp"] = true
 		def["last_stand"] = true
+	# Sandhawk bow: Mark Shot 2–6 (hit 95 at 6), Detonate 1–5. Set the max,
+	# do not stack another +1 on the Air rider (that would make Detonate 6).
+	if int(unit.get("bow_range", 0)) > 0 and (spell_id == MARK_SHOT or spell_id == DETONATE):
+		if not changed:
+			def = def.duplicate()
+			changed = true
+		if spell_id == MARK_SHOT:
+			def["max_range"] = 6
+			var hits: Dictionary = (def.get("hit_by_distance", {}) as Dictionary).duplicate()
+			hits[6] = 95
+			def["hit_by_distance"] = hits
+		else:
+			def["max_range"] = 5
+	if spell_id == VAULT and bool(unit.get("vault_free", false)):
+		if not changed:
+			def = def.duplicate()
+			changed = true
+		def["ap"] = 0
+	# Mercywell 5pc. The base Rekindle stays 6 AP / 6 Pulse / range 2 / 30%.
+	if spell_id == REKINDLE and bool(unit.get("rekindle_ultra", false)):
+		if not changed:
+			def = def.duplicate()
+		def["ap"] = 5
+		def["requires_pulse"] = 4
+		def["spend_pulse"] = 4
+		def["max_range"] = 3
+		def["revive_pct"] = 40
+		def["revive_shield"] = 10
 	return def
 
 
