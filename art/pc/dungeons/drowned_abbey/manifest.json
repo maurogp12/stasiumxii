@@ -1,0 +1,469 @@
+{
+ "format": "stasium.dungeon_art",
+ "format_version": 1,
+ "dungeon": "drowned_abbey",
+ "name": "Drowned Abbey",
+ "town": "Southbridge",
+ "levels": [
+  30,
+  40
+ ],
+ "root": "res://art/pc/dungeons/drowned_abbey/",
+ "status": "skeleton: planned ids only, files pending",
+ "town_door": {
+  "id": "abbey_door",
+  "zone": "southbridge",
+  "file": "town/abbey_door.png",
+  "file_2x": "town/_2x/abbey_door.png",
+  "hatch_glow": "town/abbey_door_glow.png",
+  "footprint_size": [
+   3,
+   3
+  ],
+  "door_cell_from_nw": [
+   1,
+   3
+  ],
+  "status": "pending"
+ },
+ "board": {
+  "tiles": [
+   "nave_floor_a",
+   "nave_floor_b",
+   "nave_floor_c",
+   "sanctum_floor_a",
+   "sanctum_floor_b",
+   "sanctum_floor_c",
+   "candle_pad"
+  ],
+  "glows": [
+   "candle_pad_glow",
+   "candle_cluster_glow",
+   "rune_circle_glow"
+  ],
+  "props": {
+   "pew": [
+    1,
+    1
+   ],
+   "broken_pillar": [
+    1,
+    1
+   ],
+   "fallen_statue": [
+    1,
+    1
+   ],
+   "candle_cluster": [
+    1,
+    1
+   ],
+   "coffin": [
+    1,
+    1
+   ],
+   "gravestone": [
+    1,
+    1
+   ],
+   "gnarled_roots": [
+    1,
+    1
+   ],
+   "altar": [
+    1,
+    1
+   ],
+   "fallen_bell": [
+    2,
+    2
+   ],
+   "candle_stand": [
+    1,
+    1
+   ],
+   "floating_coffin": [
+    1,
+    1
+   ],
+   "saint_statue": [
+    1,
+    1
+   ]
+  },
+  "decals": {
+   "rune_circle": [
+    5,
+    5
+   ],
+   "lily_pads": [
+    1,
+    1
+   ]
+  },
+  "backdrops": [
+   "room_a_nave_15x15",
+   "room_a_nave_12x12",
+   "room_b_sanctum_15x15",
+   "room_b_sanctum_12x12"
+  ]
+ },
+ "monsters": [
+  {
+   "id": "bog_dead",
+   "name": "Bog Dead",
+   "dir": "monsters/bog_dead",
+   "cell": [
+    512,
+    360
+   ],
+   "pivot": [
+    256,
+    329
+   ],
+   "fps": 17.144,
+   "status": "pending",
+   "actions": {
+    "idle": {
+     "frames": 12,
+     "loop": true,
+     "fps": 17.144,
+     "duration_s": 0.7,
+     "pattern": "monsters/bog_dead/idle/idle_{S,E}_f{00..11}.png"
+    },
+    "walk": {
+     "frames": 12,
+     "loop": true,
+     "fps": 17.144,
+     "duration_s": 0.7,
+     "pattern": "monsters/bog_dead/walk/walk_{S,E}_f{00..11}.png"
+    },
+    "attack": {
+     "frames": 12,
+     "loop": false,
+     "fps": 17.144,
+     "duration_s": 0.7,
+     "pattern": "monsters/bog_dead/attack/attack_{S,E}_f{00..11}.png"
+    },
+    "hit": {
+     "frames": 8,
+     "loop": false,
+     "fps": 17.144,
+     "duration_s": 0.467,
+     "pattern": "monsters/bog_dead/hit/hit_{S,E}_f{00..07}.png"
+    },
+    "death": {
+     "frames": 13,
+     "loop": false,
+     "fps": 17.144,
+     "duration_s": 0.758,
+     "pattern": "monsters/bog_dead/death/death_{S,E}_f{00..12}.png"
+    }
+   }
+  },
+  {
+   "id": "mire_leech",
+   "name": "Mire Leech",
+   "dir": "monsters/mire_leech",
+   "cell": [
+    512,
+    360
+   ],
+   "pivot": [
+    256,
+    329
+   ],
+   "fps": 17.144,
+   "status": "pending",
+   "actions": {
+    "idle": {
+     "frames": 12,
+     "loop": true,
+     "fps": 17.144,
+     "duration_s": 0.7,
+     "pattern": "monsters/mire_leech/idle/idle_{S,E}_f{00..11}.png"
+    },
+    "walk": {
+     "frames": 12,
+     "loop": true,
+     "fps": 17.144,
+     "duration_s": 0.7,
+     "pattern": "monsters/mire_leech/walk/walk_{S,E}_f{00..11}.png"
+    },
+    "attack": {
+     "frames": 12,
+     "loop": false,
+     "fps": 17.144,
+     "duration_s": 0.7,
+     "pattern": "monsters/mire_leech/attack/attack_{S,E}_f{00..11}.png"
+    },
+    "hit": {
+     "frames": 8,
+     "loop": false,
+     "fps": 17.144,
+     "duration_s": 0.467,
+     "pattern": "monsters/mire_leech/hit/hit_{S,E}_f{00..07}.png"
+    },
+    "death": {
+     "frames": 13,
+     "loop": false,
+     "fps": 17.144,
+     "duration_s": 0.758,
+     "pattern": "monsters/mire_leech/death/death_{S,E}_f{00..12}.png"
+    }
+   },
+   "release": {
+    "action": "attack",
+    "frame": 7,
+    "point_px": "pending"
+   }
+  },
+  {
+   "id": "mire_abbess",
+   "name": "The Mire Abbess",
+   "dir": "monsters/mire_abbess",
+   "cell": [
+    768,
+    540
+   ],
+   "pivot": [
+    384,
+    494
+   ],
+   "fps": 17.144,
+   "status": "pending",
+   "actions": {
+    "idle": {
+     "frames": 12,
+     "loop": true,
+     "fps": 17.144,
+     "duration_s": 0.7,
+     "pattern": "monsters/mire_abbess/idle/idle_{S,E}_f{00..11}.png"
+    },
+    "walk": {
+     "frames": 12,
+     "loop": true,
+     "fps": 17.144,
+     "duration_s": 0.7,
+     "pattern": "monsters/mire_abbess/walk/walk_{S,E}_f{00..11}.png"
+    },
+    "attack": {
+     "frames": 12,
+     "loop": false,
+     "fps": 17.144,
+     "duration_s": 0.7,
+     "pattern": "monsters/mire_abbess/attack/attack_{S,E}_f{00..11}.png"
+    },
+    "hit": {
+     "frames": 8,
+     "loop": false,
+     "fps": 17.144,
+     "duration_s": 0.467,
+     "pattern": "monsters/mire_abbess/hit/hit_{S,E}_f{00..07}.png"
+    },
+    "death": {
+     "frames": 13,
+     "loop": false,
+     "fps": 17.144,
+     "duration_s": 0.758,
+     "pattern": "monsters/mire_abbess/death/death_{S,E}_f{00..12}.png"
+    },
+    "summon": {
+     "frames": 14,
+     "loop": false,
+     "fps": 17.144,
+     "duration_s": 0.817,
+     "pattern": "monsters/mire_abbess/summon/summon_{S,E}_f{00..13}.png"
+    }
+   }
+  }
+ ],
+ "projectiles": [
+  "bile_spit",
+  "bile_impact",
+  "rite_glow"
+ ],
+ "star5": {
+  "monsters": [
+   {
+    "id": "gravebound_abbess",
+    "name": "The Gravebound Abbess",
+    "dir": "star5/monsters/gravebound_abbess",
+    "cell": [
+     768,
+     540
+    ],
+    "pivot": [
+     384,
+     494
+    ],
+    "fps": 17.144,
+    "status": "pending",
+    "actions": {
+     "idle": {
+      "frames": 12,
+      "loop": true,
+      "fps": 17.144,
+      "duration_s": 0.7,
+      "pattern": "star5/monsters/gravebound_abbess/idle/idle_{S,E}_f{00..11}.png"
+     },
+     "walk": {
+      "frames": 12,
+      "loop": true,
+      "fps": 17.144,
+      "duration_s": 0.7,
+      "pattern": "star5/monsters/gravebound_abbess/walk/walk_{S,E}_f{00..11}.png"
+     },
+     "attack": {
+      "frames": 12,
+      "loop": false,
+      "fps": 17.144,
+      "duration_s": 0.7,
+      "pattern": "star5/monsters/gravebound_abbess/attack/attack_{S,E}_f{00..11}.png"
+     },
+     "hit": {
+      "frames": 8,
+      "loop": false,
+      "fps": 17.144,
+      "duration_s": 0.467,
+      "pattern": "star5/monsters/gravebound_abbess/hit/hit_{S,E}_f{00..07}.png"
+     },
+     "death": {
+      "frames": 13,
+      "loop": false,
+      "fps": 17.144,
+      "duration_s": 0.758,
+      "pattern": "star5/monsters/gravebound_abbess/death/death_{S,E}_f{00..12}.png"
+     },
+     "summon": {
+      "frames": 14,
+      "loop": false,
+      "fps": 17.144,
+      "duration_s": 0.817,
+      "pattern": "star5/monsters/gravebound_abbess/summon/summon_{S,E}_f{00..13}.png"
+     }
+    },
+    "star": 5
+   },
+   {
+    "id": "gravebound_bog_dead",
+    "name": "Gravebound Bog Dead",
+    "dir": "star5/monsters/gravebound_bog_dead",
+    "cell": [
+     512,
+     360
+    ],
+    "pivot": [
+     256,
+     329
+    ],
+    "fps": 17.144,
+    "status": "pending",
+    "actions": {
+     "idle": {
+      "frames": 12,
+      "loop": true,
+      "fps": 17.144,
+      "duration_s": 0.7,
+      "pattern": "star5/monsters/gravebound_bog_dead/idle/idle_{S,E}_f{00..11}.png"
+     },
+     "walk": {
+      "frames": 12,
+      "loop": true,
+      "fps": 17.144,
+      "duration_s": 0.7,
+      "pattern": "star5/monsters/gravebound_bog_dead/walk/walk_{S,E}_f{00..11}.png"
+     },
+     "attack": {
+      "frames": 12,
+      "loop": false,
+      "fps": 17.144,
+      "duration_s": 0.7,
+      "pattern": "star5/monsters/gravebound_bog_dead/attack/attack_{S,E}_f{00..11}.png"
+     },
+     "hit": {
+      "frames": 8,
+      "loop": false,
+      "fps": 17.144,
+      "duration_s": 0.467,
+      "pattern": "star5/monsters/gravebound_bog_dead/hit/hit_{S,E}_f{00..07}.png"
+     },
+     "death": {
+      "frames": 13,
+      "loop": false,
+      "fps": 17.144,
+      "duration_s": 0.758,
+      "pattern": "star5/monsters/gravebound_bog_dead/death/death_{S,E}_f{00..12}.png"
+     }
+    },
+    "star": 5
+   },
+   {
+    "id": "gravebound_mire_leech",
+    "name": "Gravebound Mire Leech",
+    "dir": "star5/monsters/gravebound_mire_leech",
+    "cell": [
+     512,
+     360
+    ],
+    "pivot": [
+     256,
+     329
+    ],
+    "fps": 17.144,
+    "status": "pending",
+    "actions": {
+     "idle": {
+      "frames": 12,
+      "loop": true,
+      "fps": 17.144,
+      "duration_s": 0.7,
+      "pattern": "star5/monsters/gravebound_mire_leech/idle/idle_{S,E}_f{00..11}.png"
+     },
+     "walk": {
+      "frames": 12,
+      "loop": true,
+      "fps": 17.144,
+      "duration_s": 0.7,
+      "pattern": "star5/monsters/gravebound_mire_leech/walk/walk_{S,E}_f{00..11}.png"
+     },
+     "attack": {
+      "frames": 12,
+      "loop": false,
+      "fps": 17.144,
+      "duration_s": 0.7,
+      "pattern": "star5/monsters/gravebound_mire_leech/attack/attack_{S,E}_f{00..11}.png"
+     },
+     "hit": {
+      "frames": 8,
+      "loop": false,
+      "fps": 17.144,
+      "duration_s": 0.467,
+      "pattern": "star5/monsters/gravebound_mire_leech/hit/hit_{S,E}_f{00..07}.png"
+     },
+     "death": {
+      "frames": 13,
+      "loop": false,
+      "fps": 17.144,
+      "duration_s": 0.758,
+      "pattern": "star5/monsters/gravebound_mire_leech/death/death_{S,E}_f{00..12}.png"
+     }
+    },
+    "star": 5,
+    "release": {
+     "action": "attack",
+     "frame": 7,
+     "point_px": "pending"
+    }
+   }
+  ],
+  "board": {
+   "decals": [
+    "grasping_mire"
+   ]
+  },
+  "projectiles": [
+   "gravebound_bile"
+  ]
+ }
+}
