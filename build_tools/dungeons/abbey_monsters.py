@@ -73,7 +73,34 @@ def leech_facing(f, src="leech"):
     return fc
 
 
+SMOKE_GREEN = (0.62, 1.0, 0.5)
+SMOKE_JADE = (0.62, 1.0, 0.82)
+
+
+def smoke_fix(fc, col):
+    """The censer's and candles' translucent green smoke keys out pinkish grey over magenta (alpha is over-estimated
+    on the soft smoke): recolour every bright pinkish pixel (red and blue above green, which the bronze and wax
+    never are) onto a green ramp by its luminance, on the censer and candle layers."""
+    for name, lay in fc.layers.items():
+        if name != "censer" and not name.startswith("candle_"):
+            continue  # the robe's dark grey has a faint pink cast too; the smoke only rises from the censer and the candles
+        a = lay[..., 3]
+        st = lay[..., :3] / np.maximum(a[..., None], 1e-4)
+        tol = 0.12 if name == "censer" else 0.04  # the censer layer holds only bronze and smoke: catch the cream smoke core too
+        pink = (a > 0.02) & (st.mean(-1) > 0.45) & (st[..., 0] > st[..., 1] + 0.03) & (st[..., 2] > st[..., 1] - tol)
+        if not pink.any():
+            continue
+        lum = st.mean(-1)
+        rgb = np.clip(lum[..., None] * 1.18 * np.array(col, np.float32), 0, 1)
+        lay[..., :3] = np.where(pink[..., None], rgb * a[..., None], lay[..., :3])
+    return fc
+
+
 def abbess_facing(f, src="abbess"):
+    return smoke_fix(_abbess_facing(f, src), SMOKE_JADE if src.startswith("gravebound") else SMOKE_GREEN)
+
+
+def _abbess_facing(f, src="abbess"):
     if f == "S":
         parts = [
             Part("candle_a", [(95, 195), (210, 195), (210, 585), (95, 585)], (150, 400), "root", False, 5),

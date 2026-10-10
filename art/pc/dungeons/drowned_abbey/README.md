@@ -38,7 +38,23 @@ The board uses the same `board_view.gd` math as the Granary: `cell_to_local(x,y)
 - Props y-sort with the units. All of them are 1x1 blockers except `fallen_bell` (2x2).
 - `candle_cluster`, `altar` and `candle_stand` carry their own additive `_glow` (the candle flames) on the same canvas; draw it on top of the prop.
 
-PROP_TABLE
+| id | size (1x) | footprint | room | glow |
+|---|---|---|---|---|
+| `pew` | 62x65 | 1x1 | A |  |
+| `broken_pillar` | 56x67 | 1x1 | A+B |  |
+| `fallen_statue` | 62x52 | 1x1 | A |  |
+| `candle_cluster` | 50x62 | 1x1 | A+B | `candle_cluster_glow` |
+| `coffin` | 60x49 | 1x1 | A+B |  |
+| `gravestone` | 46x68 | 1x1 | A |  |
+| `gnarled_roots` | 58x63 | 1x1 | A+B |  |
+| `altar` | 62x63 | 1x1 | B | `altar_glow` |
+| `candle_stand` | 40x83 | 1x1 | B | `candle_stand_glow` |
+| `floating_coffin` | 60x48 | 1x1 | B |  |
+| `saint_statue` | 36x93 | 1x1 | B |  |
+| `fallen_bell` | 124x131 | 2x2 | B |  |
+
+- `fallen_bell` is **2x2**: its bottom-centre sits on the south tip of origin+(1,1) and all four cells block. In the room tags, name it on its south cell (as the Granary's `bone_throne`).
+- `floating_coffin` is painted cut off at the waterline with a ring of ripples and lily pads; it still blocks. `saint_statue` and `candle_stand` are the tall props.
 
 **Floor decals:**
 - `rune_circle` (320x160) is the big glowing green rune circle of room B. **It is 5x5**, as the room layout asks. I measured it on the approved boss-room design: the ring with its outer spikes is about 4.2 tile widths across, which as a top-down circle is about 6 cells, so a 5x5 decal is a little smaller than the design but clearly not a 3x3 (Saltmaw's whirlpool came out 5x5 the same way). It fills the full 5x5 footprint diamond, with its bottom-centre on the south tip of origin+(4,4); the outer ring and the glyph band run through the 16 border cells and the cross sits on the centre cell.
@@ -57,7 +73,55 @@ PROP_TABLE
 
 **Mock:** `_mock/rooms_mock.png` (`room_a_mock.png`, `room_b_mock.png`) shows both rooms assembled at game camera scale (1 board px = 1 screen px), with the monsters at pawn scale 0.5. The painted hero idle frames stand in for the heroes. `_mock/rooms_mock_star5.png` is the same with the ★5 forms.
 
-MONSTERS_SECTION
+## 3. Monsters: `monsters/<id>/<action>/<action>_<S|E>_fNN.png`
+
+| id | cell | pivot | actions (frames) |
+|---|---|---|---|
+| `bog_dead` | 512x360 | (256,329) | idle 12, walk 12, attack 12, hit 8, death 13 |
+| `mire_leech` | 512x360 | (256,329) | idle 12, walk 12, attack 12 (**release f07**), hit 8, death 13 |
+| `mire_abbess` | **768x540** | **(384,494)** | idle 12, walk 12, attack 12, hit 8, death 13, **summon 14** "Rite of Rising" (+ `summon_*_glow`) |
+
+**Format** (as the Granary, Frostspire and Saltmaw):
+- 17.144 fps. Idle and walk loop; the other actions play once, and death holds its last frame.
+- S is the front facing screen down-right; E is the back facing screen up-right. The other two facings are game-side `flip_h` mirrors.
+- Each monster's `meta.json` repeats the cell, pivot, fps, frame counts and QA numbers.
+- Melee attacks (the Bog Dead's rake, the Abbess's Censer Lash) connect on **attack f06**.
+- The boss is placed like the Ratking: her (384,494) lands where a hero's (256,329) lands. For a centred Sprite2D that is the hero offset minus (0,75) before scale.
+
+**Bog Dead (room A melee shambler):**
+- A drowned monk in a rotten hooded robe dripping bog weed and moss, a rope belt with a wooden cross, a grey-green skull face with glowing yellow-green eyes, long bony claws.
+- **Walk:** a dragging shamble, a lurch to each side with the head lolling behind and the arms swinging loose. **Attack:** a double claw rake: both arms rise high (f02–f04), he lunges and rakes down on **f06**.
+- **Rising:** when the Abbess's Rite of Rising raises a fallen Bog Dead, play its death strip in reverse (f12 → f00) on the corpse cell, then idle. No extra art.
+
+**Mire Leech (room A ranged), for Mauro's ranged-room-A rule:**
+- A giant slimy bog worm: segmented olive-green and brown hide with rows of glowing yellow-green pustules, draped in bog weed and roots, a round lamprey maw ringed with fangs. Its tail coils on the ground and the body rears up in an S.
+- **A worm reads fine as ranged:** it rears back with its throat swelling, then snaps forward and spits; at pawn scale the maw is the brightest thing on it, so the shot reads.
+- **Walk:** a slither, the coil pulses (stretch and squash twice per loop) and the neck sways.
+- **Attack:** it rears back, trembling, its throat swelling (f01–f06), then snaps the head forward and spits on **f07, the release frame**, follows through and settles.
+- **Projectile spawn:** `meta.json > release.point_px` gives the maw at release per facing, in cell pixels (S (334.1,208.1), E (380.5,181.0)). Mirror its x for the mirrored facings.
+- **Projectiles** (`board/projectiles/`, centred):
+  - `bile_spit` (44x23, + `_glow`): a glob of yellow-green acid bile pointing along +x with a dripping tail. Rotate it to the flight direction and fly it on a lobbed arc, no spin.
+  - `bile_impact` (54x52): an acid splash with droplets and a little fizzing steam. Play it as a scale-up and fade of about 0.3 s at the hit point.
+- **Death:** it rears and shudders, then the neck and head flop over onto the coil.
+
+**The Mire Abbess (boss):**
+- A tall drowned abbess in long tattered black and cream robes draped in bog weed and rosaries, a porcelain death mask under a dark veil, a halo crown of rusted iron crosses, a bronze censer on chains trailing green smoke, three lit candles floating around her.
+- **Idle and walk:** she floats, bobbing slowly; the censer swings like a pendulum and the three candles bob out of phase.
+- **Attack, "Censer Lash" (range 1–2):** she draws the censer back (f02–f04) and whips it out on its chains at the target on **f06**.
+- **Death:** she topples; the floating candles go out of the air and drop to the floor.
+
+**Mire Abbess signature, `summon` "Rite of Rising"** (the systems agent's proposal; the strip name stays `summon`). She raises a fallen Bog Dead on its death cell:
+- f00–f02 she lowers the censer; f03–f06 she swings it up over her head while the floating candles rise and flare.
+- On **f07** the green smoke bursts and the rite fires. `meta.json > rite_point.point_px` is the censer on f07 per facing (RITE_POINTS in the 768x540 cell).
+- f07–f09 she holds the censer high; f10–f13 she settles back to idle.
+- `summon/summon_{S,E}_fNN_glow.png` is the additive green rite glow (censer smoke and candle flames) for this action only. It builds f03–f06, bursts on f07, holds to f09 and fades by f12. Draw it like a ★5 glow.
+- `board/projectiles/rite_glow` (+ `_glow`, 100x44) is the green ritual smoke streak along +x, bright end at +x. On f07 stretch it from `rite_point` to the corpse cell (bright end on the corpse) and fade it out over f07–f10, with an add blend. Then play the Bog Dead's death strip reversed on that cell.
+- It plays differently from Saltmaw's pull (a single lure flare toward the hero) and the Ratking's summon (a crook slam with new rats around him): the Abbess swings the censer overhead and the effect travels away from her to a corpse.
+- The key frames are in `meta.json > signature` (`lower [0,2]`, `swing [3,6]`, `burst 7`, `hold [7,9]`, `settle [10,13]`).
+
+**Turnarounds and contact sheets:** `_mock/<id>_turnaround.png` shows the S and E paintings each rig is cut from. `_mock/<id>_contact.png` shows every frame of every action. `_mock/monsters_clip.mp4` plays every action in all four facings.
+
+STAR5_SECTION
 
 ## Pipeline (`build_tools/dungeons/`)
 
@@ -78,4 +142,25 @@ Shared-kit changes (none of which changes the older outputs):
 
 KNOWN_ISSUES
 
-SOURCES
+## Scenario source assets (project "stasium")
+
+Each piece was painted with the approved Abbey images as references (door `asset_3bnqDTvUKjdMRFh1EFhQhwoJ`, room `asset_tSezcNcX2vqpHMhgJhENAfnD`, boss room `asset_2vYkm5hjXTc9UXnwSL2yaNoq`, monsters `asset_vwinBLmpLNkAZJDrc337NBeZ`), using the Granary prompt patterns. E facings and ★5 forms are edits of the chosen S (or base) painting.
+
+| piece | asset (chosen) | local copy in `build_tools/dungeons/abbey_src/` |
+|---|---|---|
+| ruined chapel entrance | `asset_FHsUnXgZD7EkdBiC4Bdmmy3U` (edit of `asset_nKYFNm3ZmzReir4Ai6fZoyeF`, pier shortened) | `town_abbey.jpg` |
+| nave floor a/b/c | `asset_PHibyXE6RzMTxe6iK9x4Nuro`, `asset_uogNBkn5MQsY9qQZxhDG8Vbz`, `asset_6pZ5AA5vet6G9JThSZ9XPxn1` | `floor_a_{1,2,3}.jpg` |
+| sanctum floor a/b/c | `asset_JpCfYjgg2xKz6fLvZAVkchME`, `asset_LhiEwUQd7kAocz4PeS62ZSAF`, `asset_reZDgdEAKiPc8x17ijKjnnJe` | `floor_b_{1,2,3}.jpg` |
+| candle pad | `asset_q36DianDfaNQc581ogZLPzgK` | `candle_pad.jpg` |
+| pew, broken pillar, fallen statue, candle cluster, coffin, gravestone, gnarled roots | `asset_pFrhiXpUk45DmTs5h4gDReDi`, `asset_rKR7fCRRvD8RwJ6CANk4iiFG`, `asset_Xek1DXYXTnYzmctLZ6WisyJr`, `asset_3D5tAiFDanz4Ph5J74F9qqho`, `asset_YG3BDodNb6oSt7nXfS9kr7dU`, `asset_vUDgUNSfSUU2F6RxbKkmyoC1`, `asset_n21v88vA6UGSpAkRP2mibxDv` | `pew.jpg`, `broken_pillar.jpg`, `fallen_statue.jpg`, `candle_cluster.jpg`, `coffin.jpg`, `gravestone.jpg`, `gnarled_roots.jpg` |
+| altar, candle stand, floating coffin, saint statue, fallen bell | `asset_UX9bSosmViLZsDFW4mzZByZL`, `asset_CoLrkfZAVS2w9BGYK43utmYV`, `asset_1TB7FAyH8jMXZmSP8Qt4h33d`, `asset_Uw1ewzyjqKE4pKXhG2b76WoY`, `asset_UMvYktL3bJbY1JjHdxxpuY8N` | `altar.jpg`, `candle_stand.jpg`, `floating_coffin.jpg`, `saint_statue.jpg`, `fallen_bell.jpg` |
+| rune circle, lily pads | `asset_bMzxoKKsj2rUxNSvHDTM1Gdt`, `asset_4ft76zZAtBwDZijcRAyr2HMC` | `rune_circle.jpg`, `lily_pads.jpg` |
+| room A shell, room B shell | `asset_PA2Ct3JGGm6hssLuWSofqGJS`, `asset_jeeZ86zuaKRj8yTQM9Ti32c1` (repaint of `asset_kgDpaWKYpW6a8HzqRWxvdfVx` with a clean floor rhombus) | `shell_room_a.jpg`, `shell_room_b.jpg` |
+| Bog Dead S / E | `asset_doHurwgYn3x7sKYb5CuRbSUm` / `asset_hqYge75yANsQSAQYSfa24mGA` | `bog_dead_S.jpg` / `bog_dead_E.jpg` |
+| Mire Leech S / E | `asset_FpQ7gFsgRoCE8ZbFCpVTSqsF` / `asset_m7w2RScNML4mhHWZuqpfZ9td` | `leech_S.jpg` / `leech_E.jpg` |
+| The Mire Abbess S / E | `asset_KvRzQM4mLtexm3jNP5k3UTJb` / `asset_eKz2ypc1g8EX8uiAWBciP7nr` | `abbess_S.jpg` / `abbess_E.jpg` |
+| bile spit, bile impact, gravebound bile, rite glow | `asset_zojQduVhqsVoLMtPADDytnM3` | `bile_projectiles.jpg` |
+| ★5 Gravebound Abbess S / E | `asset_8hH8iMsYz6gSqnT9eSZcLKPU` (runners-up `asset_PytbLYLvgz4SKK6mDZo8UCvN`, `asset_jQtJww3BxXk8sTPVwsDYGEYd`) / `asset_itmsxYtkSWnbdF6foFe3mMm2` | `gravebound_abbess_S.jpg` / `gravebound_abbess_E.jpg` |
+| ★5 Gravebound Bog Dead S / E | `asset_TygYHrEHHYcLCxRPFJnCksxy` / `asset_N5hyKC81t9j6sneFbeba3tES` | `gravebound_bog_dead_S.jpg` / `gravebound_bog_dead_E.jpg` |
+| ★5 Gravebound Mire Leech S / E | `asset_dy6KXeGz89YmuQmNUYf6y27n` / `asset_MJMVgX5LnQCbZ3PfKGCHQhsA` | `gravebound_leech_S.jpg` / `gravebound_leech_E.jpg` |
+| ★5 grasping mire | `asset_97Jtwjq738d4AHt466633ykf` | `grasping_mire.jpg` |

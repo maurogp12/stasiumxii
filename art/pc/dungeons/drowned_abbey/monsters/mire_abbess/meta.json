@@ -87,8 +87,8 @@
   "keep_in_shift_px_hit_S": 0.0,
   "px_outside_cell_death_S": 0,
   "keep_in_shift_px_death_S": 0.0,
-  "px_outside_cell_summon_S": 20,
-  "keep_in_shift_px_summon_S": 16.3,
+  "px_outside_cell_summon_S": 0,
+  "keep_in_shift_px_summon_S": 0.0,
   "hole_fill_px_E": 27369,
   "px_outside_cell_idle_E": 0,
   "keep_in_shift_px_idle_E": 0.0,
@@ -100,8 +100,8 @@
   "keep_in_shift_px_hit_E": 0.0,
   "px_outside_cell_death_E": 0,
   "keep_in_shift_px_death_E": 0.0,
-  "px_outside_cell_summon_E": 68,
-  "keep_in_shift_px_summon_E": 29.7
+  "px_outside_cell_summon_E": 0,
+  "keep_in_shift_px_summon_E": 0.0
  },
  "signature": {
   "action": "summon",
@@ -131,12 +131,12 @@
   "frame": 7,
   "point_px": {
    "S": [
-    475.8,
-    46.0
+    542.6,
+    66.9
    ],
    "E": [
-    462.0,
-    28.9
+    535.0,
+    45.5
    ]
   }
  }
