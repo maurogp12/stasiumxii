@@ -114,8 +114,9 @@ Bog Dead pack, the kiting leeches, the rite (a fight that grows back) and the �
     - drop her first and the risen sink back;
     - or burn the escort and stand on a corpse to keep it down.
 - **★5, the Bell Wraith** (Mauro's pick, 10 Oct: a full transformation. The Abbess rises as a ghost out of the
-  chained bronze bell, with long spectral arms and candles circling her; she floats. Her own rig is pending, and until
-  it lands she is drawn with the Abbess's frames, tinted pale (`stand_in`). The ★5 ids live only in data: renaming them
+  chained bronze bell, with long spectral arms and candles circling her; she floats. She has her own rig (art
+  `star5/monsters/bell_wraith`: idle, a gliding walk, Spectral Grasp, hit, death, the 14-frame rite, all with glow
+  maps; `rite_point` on f07). The run file sets `view.monster_glow` 0.7 so the ghost glow does not wash the ★5 room out. The ★5 ids live only in data: renaming them
   touches `dungeon_monsters.json` and `run.json`, and the tests read them from `variant_of`. Rule text in `run.json` `text.star5_rule` and `dungeon_monsters.json`
   `stars.by_dungeon.drowned_abbey.star5`):
   - **Tolling Rite:** raises Bog Dead and Mire Leeches at 60% HP, 4 a fight.

@@ -917,15 +917,6 @@
       "art": "bellbound_bog_dead",
       "variant_of": "bog_dead",
       "star_min": 5,
-      "stand_in": {
-        "art": "bog_dead",
-        "tint": [
-          0.78,
-          1.18,
-          0.72,
-          1.0
-        ]
-      },
       "placeholder": {
         "shape": "drudge",
         "height": 100
@@ -960,15 +951,6 @@
       "art": "bellbound_mire_leech",
       "variant_of": "mire_leech",
       "star_min": 5,
-      "stand_in": {
-        "art": "mire_leech",
-        "tint": [
-          0.78,
-          1.18,
-          0.72,
-          1.0
-        ]
-      },
       "placeholder": {
         "shape": "wraith",
         "height": 104
@@ -1034,15 +1016,6 @@
       },
       "variant_of": "mire_abbess",
       "star_min": 5,
-      "stand_in": {
-        "art": "mire_abbess",
-        "tint": [
-          0.78,
-          1.15,
-          1.25,
-          0.82
-        ]
-      },
       "placeholder": {
         "shape": "archivist",
         "height": 140
