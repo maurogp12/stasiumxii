@@ -25,6 +25,9 @@ var _glow_tex: Texture2D
 var _glow_scale := 1.0
 var _glow_node: Node2D
 var _glow_alpha := 0.0
+## The run file's view.door block: placeholder shape ("granary", "tower")
+## and its colours, when no painted building has landed.
+var door_style: Dictionary = {}
 
 
 class Painter extends Node2D:
@@ -47,8 +50,14 @@ func setup(row: Dictionary, man: Dictionary, origin: Vector2i = Vector2i.ZERO) -
 	dungeon = row.duplicate(true)
 	dungeon_id = str(row.get("id", ""))
 	door_cell = Dungeons.door_cell(row)
+	door_style = {}
+	var run_path := str(row.get("run", ""))
+	if run_path != "" and FileAccess.file_exists(run_path):
+		var doc: Variant = JSON.parse_string(FileAccess.get_file_as_string(run_path))
+		if typeof(doc) == TYPE_DICTIONARY and typeof(((doc as Dictionary).get("view", {}) as Dictionary).get("door", null)) == TYPE_DICTIONARY:
+			door_style = (doc["view"]["door"] as Dictionary).duplicate(true)
 	var size := Art.building_size(man, Dungeons.DEFAULT_BUILDING)
-	footprint = Dungeons.building_cells(row, size)
+	footprint = Dungeons.building_cells_for(row, size)
 	var kit := Art.door_kit(man)
 	if not kit.is_empty():
 		_tex = kit["tex"]
@@ -158,7 +167,59 @@ func _draw_building(c: CanvasItem) -> void:
 		var dest := Rect2(-pivot * scale_by, size * scale_by)
 		c.draw_texture_rect(_tex, dest, false, Color(1.12, 1.08, 1.0) if hovered else Color.WHITE)
 		return
+	if str(door_style.get("shape", "granary")) == "tower":
+		_draw_placeholder_tower(c)
+		return
 	_draw_placeholder_granary(c)
+
+
+func _style(key: String, fallback: Color) -> Color:
+	var v: Variant = door_style.get(key, null)
+	if typeof(v) != TYPE_ARRAY or (v as Array).size() < 3:
+		return fallback
+	return Color(float(v[0]), float(v[1]), float(v[2]), float(v[3]) if (v as Array).size() > 3 else 1.0)
+
+
+## Placeholder archive tower (Frostspire): grey-blue stone walls with snow on
+## the footing, a tall slate spire, a frosted arch window glowing blue.
+func _draw_placeholder_tower(c: CanvasItem) -> void:
+	var fp := _fp_size()
+	var w := float(fp.x)
+	var d := float(fp.y)
+	var p_s := Vector2.ZERO
+	var p_e := Vector2(32, -16) * d
+	var p_w := Vector2(-32, -16) * w
+	var p_n := p_w + Vector2(32, -16) * d
+	var wall := _style("wall", Color(0.62, 0.68, 0.78))
+	var roof := _style("roof", Color(0.32, 0.42, 0.6))
+	var glow := _style("glow", Color(0.5, 0.85, 1.0))
+	var up := Vector2(0, -78.0)
+	c.draw_colored_polygon(PackedVector2Array([p_s + Vector2(0, 6), p_e + Vector2(10, 4), p_n + Vector2(10, -2), p_w + Vector2(-8, 4)]), Color(0, 0, 0, 0.22))
+	c.draw_colored_polygon(PackedVector2Array([p_w, p_s, p_s + up, p_w + up]), wall.darkened(0.25))
+	c.draw_colored_polygon(PackedVector2Array([p_s, p_e, p_e + up, p_s + up]), wall)
+	for k in range(1, 6):
+		var t := float(k) / 6.0
+		c.draw_line(p_w.lerp(p_s, 0.0) + up * t, p_s + up * t, wall.darkened(0.45), 1.0)
+		c.draw_line(p_s + up * t, p_e + up * t, wall.darkened(0.3), 1.0)
+	# Snow on the footing.
+	c.draw_colored_polygon(PackedVector2Array([p_w, p_s, p_s + Vector2(0, -7), p_w + Vector2(0, -7)]), Color(0.92, 0.95, 1.0))
+	c.draw_colored_polygon(PackedVector2Array([p_s, p_e, p_e + Vector2(0, -7), p_s + Vector2(0, -7)]), Color(0.97, 0.98, 1.0))
+	# Frosted arch window on the lit face.
+	var mid := p_s.lerp(p_e, 0.5) + Vector2(0, -36)
+	var pulse := 0.8 + 0.2 * sin(_glow_t * 2.5)
+	c.draw_circle(mid, 16.0, Color(glow.r, glow.g, glow.b, 0.16 * pulse))
+	c.draw_colored_polygon(PackedVector2Array([mid + Vector2(-8, 14), mid + Vector2(8, 6), mid + Vector2(8, -14), mid + Vector2(0, -20), mid + Vector2(-8, -6)]), Color(glow.r, glow.g, glow.b, 0.85))
+	# Slate spire.
+	var top := (p_w + p_e) * 0.5 + up + Vector2(0, -96)
+	var rs := p_s + up + Vector2(0, 8)
+	var re := p_e + up + Vector2(8, 0)
+	var rw := p_w + up + Vector2(-8, 0)
+	var rn := p_n + up
+	c.draw_colored_polygon(PackedVector2Array([rw, rs, top]), roof.darkened(0.2))
+	c.draw_colored_polygon(PackedVector2Array([rs, re, top]), roof)
+	c.draw_colored_polygon(PackedVector2Array([re, rn, top]), roof.darkened(0.3))
+	c.draw_line(rs, top, Color(0.92, 0.96, 1.0, 0.8), 2.0)
+	c.draw_circle(top, 4.0, glow)
 
 
 ## Placeholder granary: stone footing, plank walls, a thatched hip roof, a rat

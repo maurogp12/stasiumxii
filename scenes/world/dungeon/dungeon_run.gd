@@ -6,7 +6,7 @@ extends Node2D
 ## goes back to town on the door cell (DungeonLauncher.finish).
 ##
 ## Launched by DungeonLauncher.enter from the door. Run directly for capture:
-##   godot --path . res://scenes/world/dungeon/dungeon_run.tscn -- --dungeon-capture stills|showcase|run [--class kestrel]
+##   godot --path . res://scenes/world/dungeon/dungeon_run.tscn -- --dungeon-capture stills|showcase|run|fight|rewards|room [--dungeon old_granary_cellar] [--class kestrel] [--star 1] [--level 1]
 
 signal run_finished(result: String, summary: Dictionary)
 
@@ -17,6 +17,7 @@ const Progress := preload("res://backend/pc_progress.gd")
 const Missions := preload("res://backend/pc_missions.gd")
 const MonsterPawn := preload("res://scenes/world/dungeon/monster_pawn.gd")
 const Fx := preload("res://scenes/world/dungeon/dungeon_fx.gd")
+const Dungeons := preload("res://backend/world_dungeons.gd")
 
 var ctx: Dictionary = {}
 var run = null
@@ -44,7 +45,12 @@ func _ready() -> void:
 	ctx = Launcher.take_pending()
 	_read_capture_args()
 	if ctx.is_empty():
-		ctx = {"dungeon_id": "old_granary_cellar", "level": int(_arg("--level", "1")), "class_id": _arg("--class", "kestrel"), "star": int(_arg("--star", "1")), "autoplay": capture != "", "return_zone": "crosshaven_stoneford", "return_cell": Vector2i(16, 11)}
+		var dungeon_id := _arg("--dungeon", "old_granary_cellar")
+		var book: Dictionary = Dungeons.load_default()
+		var row: Dictionary = book["dungeons"].by_id(dungeon_id) if bool(book.get("ok", false)) else {}
+		ctx = {"dungeon_id": dungeon_id, "level": int(_arg("--level", str(int(row.get("level_min", 1))))), "class_id": _arg("--class", "kestrel"), "star": int(_arg("--star", "1")), "autoplay": capture != "", "return_zone": str((row.get("door", {}) as Dictionary).get("zone_id", "")), "return_cell": Dungeons.door_cell(row)}
+		if _arg("--seed", "") != "":
+			ctx["seed"] = int(_arg("--seed", "1"))
 	progress = Progress.new()
 	var level := int(ctx.get("level", progress.level))
 	var made: Dictionary = Run.create(str(ctx.get("dungeon_id", "")), level, str(ctx.get("class_id", "kestrel")), str(ctx.get("name", "")), int(ctx.get("star", 1)))
@@ -64,6 +70,7 @@ func _ready() -> void:
 	board.autoplay = bool(ctx.get("autoplay", false))
 	board.room_over.connect(_on_room_over)
 	_build_overlay()
+	_return_button.text = run.text("return_button", "Return to town")
 	if capture == "showcase":
 		call_deferred("_showcase")
 		return
@@ -101,7 +108,7 @@ func _begin() -> void:
 				break
 		board.autoplay = false
 		await get_tree().create_timer(0.6).timeout
-		await _grab(_arg("--b-name", "04_room_b_ratking.png"))
+		await _grab(_arg("--b-name", run.text("b_still", "04_room_b_boss.png")))
 		get_tree().quit()
 
 
@@ -139,7 +146,7 @@ func _process(_delta: float) -> void:
 		lines.append("%s%s  [color=#e8b0a0]%d/%d[/color]" % ["▶ " if active else "", name, int(unit.get("hp", 0)), int(unit.get("max_hp", 1))])
 	var pads := int(info.get("pad_heal", 0))
 	if pads > 0:
-		lines.append("[color=#f2c46a]Glowing pads: +%d HP when your turn starts on one[/color]" % pads)
+		lines.append("[color=#f2c46a]%s[/color]" % run.text("pads", "Glowing pads: +{amount} HP when your turn starts on one").replace("{amount}", str(pads)))
 	_roster.text = "\n".join(lines)
 
 
@@ -170,7 +177,7 @@ func _stairs() -> void:
 	var tw := create_tween()
 	tw.tween_property(_fade, "color:a", 1.0, 0.5)
 	await tw.finished
-	_stair_label.text = "Down the old stairs, deeper under the granary..."
+	_stair_label.text = run.text("stairs", "Down the stairs...")
 	_stair_label.visible = true
 	await get_tree().create_timer(1.3).timeout
 	_stair_label.visible = false
@@ -181,7 +188,7 @@ func _show_result(result: String, data: Dictionary) -> void:
 	var lines: PackedStringArray = []
 	if result == "win":
 		lines.append("[font_size=30][color=#f5d27a]Victory!  ★%d[/color][/font_size]" % int(data.get("star", run.star if run != null else 1)))
-		lines.append("%s is cleared at ★%d. The Ratking is down." % [str(data.get("name", "")), int(data.get("star", 1))])
+		lines.append(run.text("victory", "{dungeon} is cleared at ★{star}.") if run != null else "%s is cleared." % str(data.get("name", "")))
 		if bool(data.get("new_best_star", false)):
 			lines.append("[color=#f5d27a]New best: ★%d[/color]" % int(data.get("star", 1)))
 		lines.append("")
@@ -202,9 +209,9 @@ func _show_result(result: String, data: Dictionary) -> void:
 			lines.append("[color=#9fd0ff]Mission done: %s[/color]" % str(m.get("name", mission_id)))
 	else:
 		lines.append("[font_size=30][color=#e07a6a]Defeated[/color][/font_size]")
-		lines.append("The cellar drives you out. No rewards this time.")
+		lines.append(run.text("defeat", "You are driven out. No rewards this time.") if run != null else "You are driven out. No rewards this time.")
 	lines.append("")
-	lines.append("You climb back up to the granary door in Stoneford.")
+	lines.append(run.text("return", "You climb back up to the door.") if run != null else "You climb back up to the door.")
 	_result_body.text = "\n".join(lines)
 	_result_panel.visible = true
 
@@ -322,7 +329,14 @@ func _label(size: int, col: Color) -> Label:
 
 func _read_capture_args() -> void:
 	capture = _arg("--dungeon-capture", "")
-	_media = OS.get_environment("GRANARY_MEDIA")
+	if capture != "":
+		# Captures record the Full look (a fresh save on a slow GPU may pick
+		# Performance mode, which holds the board still).
+		var look := VisualSettings.new()
+		look.apply_preset("Full")
+	_media = OS.get_environment("DUNGEON_MEDIA")
+	if _media == "":
+		_media = OS.get_environment("GRANARY_MEDIA")
 	if _media == "":
 		_media = "user://"
 
@@ -342,12 +356,15 @@ func _grab(file_name: String) -> void:
 		image.save_png(_media.path_join(file_name))
 
 
-## Monster showcase: the three granary monsters side by side on the cellar
-## floor, each playing idle, walk, attack, hit, summon (the Ratking) and death.
+## Monster showcase: the dungeon's monsters (run.json view.showcase) side by
+## side on room A's floor, each playing idle, walk, attack (a ranged one
+## throws its projectile), hit, summon (the boss) and death.
 func _showcase() -> void:
+	board.autoplay = false
 	await _start_room(0, true)
 	board.end_room()
-	board.autoplay = false
+	for t in board.tiles.values():
+		t.set_highlight("")
 	board.set_process(false)
 	sim_node().set_process(false)
 	board.get_node("Units").visible = false
@@ -356,11 +373,15 @@ func _showcase() -> void:
 	var stage := Node2D.new()
 	stage.name = "Showcase"
 	board.add_child(stage)
-	var cast := [["granary_rat", Vector2i(3, 8), false], ["sling_rat", Vector2i(4, 6), false], ["the_ratking", Vector2i(6, 5), true], ["scarecrow_drudge", Vector2i(8, 3), false],
-		["radioactive_rat", Vector2i(5, 9), false], ["radioactive_sling_rat", Vector2i(7, 8), false], ["radioactive_ratking", Vector2i(9, 6), true]]
+	var cast: Array = []
+	for row in (run.run_doc.get("view", {}) as Dictionary).get("showcase", []):
+		cast.append([str(row[0]), Vector2i(int(row[1]), int(row[2])), bool(row[3])])
+	var light: Variant = (run.run_doc.get("view", {}) as Dictionary).get("light", null)
 	var shown: Array = []
 	for row in cast:
 		var p := MonsterPawn.new()
+		if typeof(light) == TYPE_ARRAY:
+			p.light = Color(float(light[0]), float(light[1]), float(light[2]), float(light[3]) if (light as Array).size() > 3 else 1.0)
 		p.bind_art(manifest, str(row[0]), bool(row[2]))
 		stage.add_child(p)
 		var stats: Dictionary = run.monsters.stats_at(str(row[0]), 1)
@@ -369,12 +390,28 @@ func _showcase() -> void:
 		p.z_as_relative = false
 		p.z_index = BoardVisualSort.unit_z_index(row[1])
 		shown.append(p)
+	# Frame the cast (the room fit is not re-applied on a resize meanwhile).
+	if get_viewport().size_changed.is_connected(board._on_view_resized):
+		get_viewport().size_changed.disconnect(board._on_view_resized)
+	for i in 4:
+		await get_tree().process_frame
 	var cam: Camera2D = board._camera
-	var mid: Vector2 = board._cell_to_local(Vector2i(6, 6))
-	cam.position = mid + Vector2(0, -40)
-	cam.zoom = Vector2(1.45, 1.45)
-	_title.text = "Old Granary Cellar\nMonsters"
-	_sub.text = "Granary Rat · Sling Rat · Scarecrow Drudge · The Ratking\n★5: Radioactive Rat · Radioactive Sling Rat · Radioactive Ratking"
+	var lo := Vector2(INF, INF)
+	var hi := Vector2(-INF, -INF)
+	for row in cast:
+		var at: Vector2 = board._cell_to_local(row[1])
+		lo = Vector2(minf(lo.x, at.x), minf(lo.y, at.y))
+		hi = Vector2(maxf(hi.x, at.x), maxf(hi.y, at.y))
+	var vis := get_viewport().get_visible_rect().size
+	var span := (hi - lo) + Vector2(260, 260)
+	var z := clampf(minf(vis.x / span.x, vis.y / span.y), 1.0, 3.0)
+	cam.zoom = Vector2(z, z)
+	var centre := (lo + hi) * 0.5 + Vector2(0, -48)
+	cam.position = centre - vis * 0.5 / z if cam.anchor_mode == Camera2D.ANCHOR_MODE_FIXED_TOP_LEFT else centre
+	cam.reset_smoothing()
+	_sub.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_title.text = run.text("showcase_title", "%s\nMonsters" % str(run.dungeon.get("name", "")))
+	_sub.text = run.text("showcase_sub", "")
 	await get_tree().create_timer(2.0).timeout
 	for face in ["E", "N", "W", "S"]:
 		for p in shown:
@@ -386,19 +423,21 @@ func _showcase() -> void:
 	for p in shown:
 		p.end_path_walk()
 	await get_tree().create_timer(0.6).timeout
-	var target_at: Vector2 = board._cell_to_local(Vector2i(2, 11)) + Vector2(0, -20)
+	# Throws land in front of the cast, inside the frame.
+	var target_at: Vector2 = Vector2((lo.x + hi.x) * 0.5 - 120.0, hi.y + 40.0)
 	for p in shown:
 		p.play_view_plan({"attack": true, "aim": Vector2(-30, 15)})
-		if str(p.monster_id).contains("sling"):
-			var kind := "sling_pebble_radioactive" if str(p.monster_id).begins_with("radioactive") else "sling_pebble"
-			Fx.throw(board, manifest, kind, p.position + p.release_offset(), target_at, true, 900, p.release_sec())
+		var attack: Dictionary = Art.monster_spec(str(p.monster_id)).get("attack", {})
+		if str(attack.get("projectile", "")) != "":
+			Fx.throw(board, manifest, str(attack["projectile"]), p.position + p.release_offset(), target_at, true, 900, p.release_sec(), str(attack.get("impact", "")), (run.run_doc.get("view", {}) as Dictionary).get("projectiles", {}))
 			await get_tree().create_timer(0.5).timeout
 		await get_tree().create_timer(0.9).timeout
 	for p in shown:
 		p.play_view_plan({"hit": true, "away": Vector2(20, -10)})
 		await get_tree().create_timer(0.8).timeout
-	shown[2].play_view_plan({"cast": true, "strip": "summon"})
-	shown[6].play_view_plan({"cast": true, "strip": "summon"})
+	for i in shown.size():
+		if bool(cast[i][2]):
+			shown[i].play_view_plan({"cast": true, "strip": "summon"})
 	await get_tree().create_timer(1.8).timeout
 	for p in shown:
 		p.alive = false
@@ -439,6 +478,8 @@ func _rewards_still() -> void:
 	await _start_room(1, true)
 	board.end_room()
 	run.result = "win"
+	# The capture pays a hero of the run's level (a fresh save is level 1).
+	progress.level = maxi(int(progress.level), int(ctx.get("level", 1)))
 	summary = run.pay_out(progress, missions, RandomNumberGenerator.new(), false)
 	_show_result("win", summary)
 	await get_tree().create_timer(0.8).timeout

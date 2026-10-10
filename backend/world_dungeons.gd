@@ -85,8 +85,11 @@ static func door_cell(row: Dictionary) -> Vector2i:
 
 
 ## The building's cells: `size` wide (x) and tall (y), on the rows just north
-## of the hatch, centred on its column. The hatch row itself stays open.
-static func building_cells(row: Dictionary, size: Vector2i = DEFAULT_BUILDING) -> Array[Vector2i]:
+## of the hatch. The hatch row itself stays open. `door_from_nw` is the door
+## cell from the footprint's north-west cell (art manifest
+## town_door.door_cell_from_nw, e.g. (2, 3) for the archive); without it the
+## building is centred on the hatch column (the granary's (1, 3)).
+static func building_cells(row: Dictionary, size: Vector2i = DEFAULT_BUILDING, door_from_nw: Vector2i = Vector2i(-1, -1)) -> Array[Vector2i]:
 	var out: Array[Vector2i] = []
 	var door := door_cell(row)
 	if door.x < 0:
@@ -94,14 +97,49 @@ static func building_cells(row: Dictionary, size: Vector2i = DEFAULT_BUILDING) -
 	var w := maxi(size.x, 1)
 	var h := maxi(size.y, 1)
 	var left := door.x - int((w - 1) / 2)
-	for dy in range(h, 0, -1):
+	var top := door.y - h
+	if door_from_nw.x >= 0:
+		left = door.x - door_from_nw.x
+		top = door.y - door_from_nw.y
+	for dy in h:
 		for dx in w:
-			out.append(Vector2i(left + dx, door.y - dy))
+			out.append(Vector2i(left + dx, top + dy))
 	return out
 
 
+## {size, door_from_nw} of a dungeon's building from its art manifest
+## (town_door.footprint_size, door_cell_from_nw). Empty when the art has none.
+static func building_shape(row: Dictionary) -> Dictionary:
+	var run_path := str(row.get("run", ""))
+	if run_path == "" or not FileAccess.file_exists(run_path):
+		return {}
+	var run: Variant = JSON.parse_string(FileAccess.get_file_as_string(run_path))
+	var art := str((run as Dictionary).get("art", "")) if typeof(run) == TYPE_DICTIONARY else ""
+	if art == "" or not FileAccess.file_exists(art):
+		return {}
+	var man: Variant = JSON.parse_string(FileAccess.get_file_as_string(art))
+	var td: Variant = (man as Dictionary).get("town_door", null) if typeof(man) == TYPE_DICTIONARY else null
+	if typeof(td) != TYPE_DICTIONARY or not (td as Dictionary).has("footprint_size"):
+		return {}
+	var fs: Array = td["footprint_size"]
+	var out := {"size": Vector2i(int(fs[0]), int(fs[1])), "door_from_nw": Vector2i(-1, -1)}
+	var dc: Variant = (td as Dictionary).get("door_cell_from_nw", null)
+	if typeof(dc) == TYPE_ARRAY and (dc as Array).size() == 2:
+		out["door_from_nw"] = Vector2i(int(dc[0]), int(dc[1]))
+	return out
+
+
+## The building cells of a row: its art manifest's shape, else `size` centred.
+static func building_cells_for(row: Dictionary, size: Vector2i = DEFAULT_BUILDING) -> Array[Vector2i]:
+	var shape := building_shape(row)
+	if shape.is_empty():
+		return building_cells(row, size)
+	return building_cells(row, shape["size"], shape["door_from_nw"])
+
+
 ## Section 4.6 and section 00 rules against the live world.
-## `atlas` from world_atlas, `npcs` from world_npcs. `size` is the building size.
+## `atlas` from world_atlas, `npcs` from world_npcs. `size` is the building
+## size for a dungeon whose art manifest gives none.
 func validate_world(atlas, npcs, size: Vector2i = DEFAULT_BUILDING) -> Dictionary:
 	var errors: Array = []
 	var levels = atlas.levels if atlas != null else null
@@ -143,12 +181,15 @@ func validate_world(atlas, npcs, size: Vector2i = DEFAULT_BUILDING) -> Dictionar
 			var keeper_cell := Vector2i(int(at.get("x", -9)), int(at.get("y", -9)))
 			if absi(keeper_cell.x - door.x) + absi(keeper_cell.y - door.y) != 1:
 				errors.append("%s keeper must stand beside the hatch" % id)
-		for cell in building_cells(row, size):
+		var building := building_cells_for(row, size)
+		for cell in building:
 			if not zone.in_bounds(cell) or not zone.passable_at(cell):
 				errors.append("%s building cell %s is not open ground" % [id, cell])
 				continue
 			_check_cell(id, "building", zone, cell, atlas, npcs, errors)
-		if not _door_reachable(zone, door, building_cells(row, size), npcs):
+		if not building.has(door + Vector2i(0, -1)):
+			errors.append("%s building must stand on the cells just north of the hatch" % id)
+		if not _door_reachable(zone, door, building, npcs):
 			errors.append("%s hatch cannot be walked to from the chunk spawn" % id)
 		var run_path := str(row.get("run", ""))
 		if run_path == "" or not FileAccess.file_exists(run_path):

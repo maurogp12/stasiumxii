@@ -43,9 +43,11 @@ class Part:
 class Facing:
     """One painted facing, cut into parts."""
 
-    def __init__(self, src, parts, ground, hip, scale, cell, cell_pivot, close_k=41, body_z=0, band_px=36):
+    def __init__(self, src, parts, ground, hip, scale, cell, cell_pivot, close_k=41, body_z=0, band_px=36, despill=False):
         rgb = gkit.load_rgb(src)
         self.prem = gkit.clean_alpha(gkit.key_auto(rgb), min_island=150)
+        if despill:
+            self.prem = gkit.despill_magenta(self.prem)
         self.parts = parts
         self.ground = np.array(ground, np.float64)
         self.hip = np.array(hip, np.float64)

@@ -32,6 +32,8 @@ const NOTE_SEC := 2.2
 
 var manifest: Dictionary = {}
 var room_id := ""
+## The run file's view block (pad styles, hazard colours, room light, ...).
+var view_cfg: Dictionary = {}
 var autoplay := false
 var autoplay_pace := 0.35
 var _driving := false
@@ -49,6 +51,7 @@ func _boot() -> void:
 func start_room(config: Dictionary, art_manifest: Dictionary) -> void:
 	manifest = art_manifest
 	room_id = str((config.get("dungeon", {}) as Dictionary).get("room_id", ""))
+	view_cfg = ((config.get("dungeon", {}) as Dictionary).get("view", {}) as Dictionary).duplicate(true)
 	_over_sent = false
 	_room_live = true
 	_stop_flash_tweens()
@@ -126,25 +129,32 @@ func _dress_room() -> void:
 	var glow_kit: Dictionary = kit.get("pad_glow", {})
 	var decals: Dictionary = kit.get("decals", {})
 	var paint: Dictionary = snap.get("paint_only", {})
+	var pad_styles: Dictionary = view_cfg.get("pads", {})
 	var grate_cells: Array = []
+	var decal_id := ""
 	for cell in tiles.keys():
 		var tile = tiles[cell]
 		var c: Vector2i = cell
 		var props: Array = paint.get(c, [])
 		tile.pad = pads.has(c)
-		tile.pad_kind = "drain_grate" if props.has("drain_grate") else "wheat_pad"
-		tile.pad_color = Color(0.55, 0.95, 0.45) if tile.pad_kind == "drain_grate" else Color(1.0, 0.72, 0.28)
+		tile.pad_kind = _pad_kind(props, pad_styles)
+		var style: Dictionary = pad_styles.get(tile.pad_kind, {})
+		tile.pad_decal = bool(style.get("decal", tile.pad_kind == "drain_grate"))
+		tile.pad_mark = str(style.get("mark", ""))
+		tile.pad_color = _cfg_color(style.get("color", null), Color(0.55, 0.95, 0.45) if tile.pad_decal else Color(1.0, 0.72, 0.28))
+		tile.floor_style = view_cfg.get("floor", {})
 		tile.floor_tex = null
 		if not floors.is_empty():
 			tile.floor_tex = (floors[absi(c.x * 7 + c.y * 13 + c.x * c.y) % floors.size()] as Dictionary)["tex"]
 		tile.pad_tex = null
 		tile.skip_floor = false
-		if tile.pad and tile.pad_kind == "wheat_pad" and not pad_kit.is_empty():
+		if tile.pad and not tile.pad_decal and not pad_kit.is_empty():
 			tile.pad_tex = pad_kit["tex"]
 		tile.set_decal(null, null, Rect2())
-		if tile.pad_kind == "drain_grate":
+		if tile.pad and tile.pad_decal:
 			grate_cells.append(c)
-		tile.set_pad_glow(glow_kit.get("tex", null) if tile.pad_kind == "wheat_pad" else null, float(glow_kit.get("scale", 1.0)))
+			decal_id = tile.pad_kind
+		tile.set_pad_glow(glow_kit.get("tex", null) if tile.pad and not tile.pad_decal else null, float(glow_kit.get("scale", 1.0)))
 		tile.set_process(tile.pad)
 		tile.queue_redraw()
 	if _props_root != null and is_instance_valid(_props_root):
@@ -171,7 +181,7 @@ func _dress_room() -> void:
 		for gc in grate_cells:
 			if gc.x + gc.y > south.x + south.y:
 				south = gc
-		var grate: Dictionary = decals.get("drain_grate", {})
+		var grate: Dictionary = decals.get(decal_id, {})
 		if grate.has("tex"):
 			# Kit rule: bottom-centre on the south tip of the south cell. Each
 			# grate tile draws its own diamond of the decal (and of its glow),
@@ -189,16 +199,38 @@ func _dress_room() -> void:
 	_fit_board_camera()
 
 
-## Toxic pools (★5) show on their tiles as danger cells.
+## The pad kind of a pad cell: its first paint name the view styles know,
+## else its first paint name, else the Granary's wheat pad.
+static func _pad_kind(props: Array, styles: Dictionary) -> String:
+	for name in props:
+		if styles.has(str(name)):
+			return str(name)
+	if props.has("drain_grate"):
+		return "drain_grate"
+	return str(props[0]) if not props.is_empty() and not str(props[0]).ends_with(":part") else "wheat_pad"
+
+
+static func _cfg_color(value: Variant, fallback: Color) -> Color:
+	if typeof(value) != TYPE_ARRAY or (value as Array).size() < 3:
+		return fallback
+	return Color(float(value[0]), float(value[1]), float(value[2]), float(value[3]) if (value as Array).size() > 3 else 1.0)
+
+
+## Ground hazards (★5 toxic pools, frost patches) show on their tiles as
+## danger cells, in the hazard's own decal or colours.
 func _sync_pools() -> void:
 	var snap: Dictionary = sim_node().snapshot()
 	var cells := {}
+	var kinds := {}
 	for pool in (snap.get("dungeon", {}) as Dictionary).get("pools", []):
 		cells[_as_cell(pool["cell"])] = int(pool.get("turns", 0))
+		kinds[_as_cell(pool["cell"])] = str(pool.get("hazard", "toxic_pool"))
+	var styles: Dictionary = view_cfg.get("hazard", {})
 	for cell in tiles.keys():
 		var t = tiles[cell]
 		if t.has_method("set_pool"):
-			t.set_pool(cells.has(cell), int(cells.get(cell, 0)), manifest)
+			var hz := str(kinds.get(cell, t.pool_hazard))
+			t.set_pool(cells.has(cell), int(cells.get(cell, 0)), manifest, hz, styles.get(hz, {}))
 
 
 ## The Koliseo HUD is shared as is; in a room it hides the second seat card
@@ -444,6 +476,8 @@ func _add_pawn(unit: Dictionary) -> Pawn:
 	var pawn: Pawn
 	if unit.has("monster"):
 		var mp := MonsterPawn.new()
+		if view_cfg.has("light"):
+			mp.light = _cfg_color(view_cfg["light"], MonsterPawn.WARM)
 		mp.bind_art(manifest, str(unit["monster"]), bool(unit.get("boss", false)), str(unit.get("variant_of", "")))
 		pawn = mp
 	else:
@@ -499,7 +533,7 @@ func _arm_view_motions(events: Array) -> void:
 				var to_at := _cell_to_local(to_cell) + Vector2(0, -26)
 				var from_at: Vector2 = pawn.position + (pawn.release_offset() if pawn.has_method("release_offset") else Vector2(0, -22))
 				var at_sec: float = pawn.release_sec() if pawn.has_method("release_sec") else 0.22
-				longest = maxf(longest, Fx.throw(self, manifest, str(event["projectile"]), from_at, to_at, typ == "hit", VISUAL_SORT.unit_z_index(to_cell) + 6, at_sec))
+				longest = maxf(longest, Fx.throw(self, manifest, str(event["projectile"]), from_at, to_at, typ == "hit", VISUAL_SORT.unit_z_index(to_cell) + 6, at_sec, str(event.get("impact", "")), view_cfg.get("projectiles", {})))
 		elif typ == "summon" or typ == "pools":
 			longest = maxf(longest, pawn.play_view_plan({"cast": true, "strip": "summon"}))
 	_pending_motion_sec = minf(longest, VIEW_MOTION.ACTION_LOCK_MAX)

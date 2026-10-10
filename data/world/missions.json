@@ -700,8 +700,7 @@
         {
           "type": "clear_dungeon",
           "dungeon": "frostspire_archive",
-          "place": "Frostspire Archive",
-          "pending_chunk": true
+          "place": "Frostspire Archive"
         }
       ],
       "rewards": {
@@ -711,7 +710,7 @@
       },
       "lines": {
         "offer": [
-          "Clear Frostspire Archive. The Warden says the frost keeps what was written. The way down is not open yet."
+          "Clear Frostspire Archive. The Warden says the frost keeps what was written. The Door Keeper by the archive door will let you down."
         ],
         "active": [
           "Frostspire Archive is still ahead, under the frost."

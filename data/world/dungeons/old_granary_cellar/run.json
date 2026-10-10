@@ -65,7 +65,7 @@
           "facing": "S"
         }
       ],
-      "note": "packs: the pack for the highest key at or below the star. monsters is the \u26051 pack. Spawns spread over the far rows, off the pads, away from the hero (8,10).",
+      "note": "packs: the pack for the highest key at or below the star. monsters is the ★1 pack. Spawns spread over the far rows, off the pads, away from the hero (8,10).",
       "packs": {
         "1": [
           {
@@ -293,5 +293,181 @@
         ]
       }
     }
-  ]
+  ],
+  "text": {
+    "town": "Stoneford",
+    "stairs": "Down the old stairs, deeper under the granary...",
+    "victory": "{dungeon} is cleared at ★{star}. The Ratking is down.",
+    "defeat": "The cellar drives you out. No rewards this time.",
+    "return": "You climb back up to the granary door in Stoneford.",
+    "return_button": "Return to Stoneford",
+    "pads": "Glowing pads: +{amount} HP when your turn starts on one",
+    "star_notes": {
+      "5": "The Radioactive Ratking. A Rare part and a Mystery Box for sure."
+    },
+    "showcase_title": "Old Granary Cellar\nMonsters",
+    "showcase_sub": "Granary Rat · Sling Rat · Scarecrow Drudge · The Ratking\n★5: Radioactive Rat · Radioactive Sling Rat · Radioactive Ratking",
+    "star5_rule": "★5: the Radioactive Ratking spills toxic pools every other turn (end a turn on one for 6 poison); radioactive Sling Rats poison.",
+    "b_still": "04_room_b_ratking.png"
+  },
+  "view": {
+    "light": [
+      1.14,
+      0.96,
+      0.74,
+      1.0
+    ],
+    "pads": {
+      "wheat_pad": {
+        "color": [
+          1.0,
+          0.72,
+          0.28
+        ],
+        "mark": "wheat"
+      },
+      "drain_grate": {
+        "color": [
+          0.55,
+          0.95,
+          0.45
+        ],
+        "decal": true,
+        "mark": "grate"
+      }
+    },
+    "hazard": {
+      "toxic_pool": {
+        "color": [
+          0.35,
+          0.95,
+          0.2
+        ],
+        "bubble": [
+          0.7,
+          1.0,
+          0.4,
+          0.85
+        ],
+        "ring": [
+          0.6,
+          1.0,
+          0.3
+        ],
+        "text_color": [
+          0.1,
+          0.2,
+          0.05
+        ]
+      }
+    },
+    "projectiles": {
+      "sling_pebble": {
+        "color": [
+          0.62,
+          0.58,
+          0.52
+        ],
+        "spin": true
+      },
+      "sling_pebble_radioactive": {
+        "color": [
+          0.55,
+          1.0,
+          0.35
+        ],
+        "glow": [
+          0.5,
+          1.0,
+          0.3,
+          0.3
+        ],
+        "spin": true,
+        "puff": [
+          0.6,
+          1.0,
+          0.35
+        ]
+      },
+      "sling_impact_puff": {
+        "color": [
+          0.85,
+          0.8,
+          0.7
+        ]
+      }
+    },
+    "door": {
+      "shape": "granary"
+    },
+    "showcase": [
+      [
+        "granary_rat",
+        3,
+        8,
+        false
+      ],
+      [
+        "sling_rat",
+        4,
+        6,
+        false
+      ],
+      [
+        "the_ratking",
+        6,
+        5,
+        true
+      ],
+      [
+        "scarecrow_drudge",
+        8,
+        3,
+        false
+      ],
+      [
+        "radioactive_rat",
+        5,
+        9,
+        false
+      ],
+      [
+        "radioactive_sling_rat",
+        7,
+        8,
+        false
+      ],
+      [
+        "radioactive_ratking",
+        9,
+        6,
+        true
+      ]
+    ],
+    "floor": {
+      "base": [
+        0.36,
+        0.3,
+        0.25
+      ],
+      "seam": [
+        0.18,
+        0.14,
+        0.11,
+        0.9
+      ],
+      "edge": [
+        0.14,
+        0.11,
+        0.09,
+        0.95
+      ],
+      "fleck": [
+        0.78,
+        0.64,
+        0.32,
+        0.6
+      ]
+    }
+  }
 }

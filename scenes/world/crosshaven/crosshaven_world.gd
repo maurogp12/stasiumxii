@@ -4111,7 +4111,7 @@ func _block_dungeon_buildings() -> void:
 			continue
 		var z: WorldZone = (found as WorldMap).zone(zone_id)
 		if z != null:
-			z.add_blocked(DungeonBook.building_cells(row, building_size_for(row)))
+			z.add_blocked(DungeonBook.building_cells_for(row, building_size_for(row)))
 
 
 func _door_cells_in(zone_id: String) -> Dictionary:
@@ -4120,7 +4120,7 @@ func _door_cells_in(zone_id: String) -> Dictionary:
 		return out
 	for row in dungeon_book.doors_in(zone_id):
 		out[DungeonBook.door_cell(row)] = true
-		for c in DungeonBook.building_cells(row, building_size_for(row)):
+		for c in DungeonBook.building_cells_for(row, building_size_for(row)):
 			out[c] = true
 	return out
 
@@ -4150,7 +4150,7 @@ func door_at(zone_id: String, cell: Vector2i) -> Dictionary:
 	if dungeon_book == null:
 		return {}
 	for row in dungeon_book.doors_in(zone_id):
-		if DungeonBook.door_cell(row) == cell or DungeonBook.building_cells(row, building_size_for(row)).has(cell):
+		if DungeonBook.door_cell(row) == cell or DungeonBook.building_cells_for(row, building_size_for(row)).has(cell):
 			return row
 	return {}
 
@@ -4288,22 +4288,47 @@ func dungeon_outcome() -> Dictionary:
 	return _door_outcome.duplicate(true)
 
 
-## Capture: walk from the square to the granary, open the panel, Enter.
+## The dungeon a door movie plays (env DUNGEON_ID; the cellar by default).
+## Env DUNGEON_LEVEL sets the hero's level for the capture (an in-band hero).
+func _movie_dungeon_id() -> String:
+	if OS.get_environment("DUNGEON_LEVEL") != "" and progress != null:
+		progress.level = int(OS.get_environment("DUNGEON_LEVEL"))
+	var id := OS.get_environment("DUNGEON_ID")
+	return id if id != "" else "old_granary_cellar"
+
+
+## Where the door still's hero stands, from the door (run.json
+## view.door.still_from_door; 3 cells east by default).
+func _still_offset(row: Dictionary) -> Vector2i:
+	var run_path := str(row.get("run", ""))
+	if run_path != "" and FileAccess.file_exists(run_path):
+		var doc: Variant = JSON.parse_string(FileAccess.get_file_as_string(run_path))
+		if typeof(doc) == TYPE_DICTIONARY:
+			var off: Variant = (((doc as Dictionary).get("view", {}) as Dictionary).get("door", {}) as Dictionary).get("still_from_door", null)
+			if typeof(off) == TYPE_ARRAY and (off as Array).size() == 2:
+				return Vector2i(int(off[0]), int(off[1]))
+	return Vector2i(3, 0)
+
+
+## Capture: walk from the square to the dungeon door, open the panel, Enter.
+## Movie modes "granary" / "granary_stills" (any built dungeon via DUNGEON_ID).
 func _movie_granary() -> void:
 	settings.apply_preset("Full")
 	weather.set_weather("clear")
 	weather.time_of_day = 11.0
 	weather.settle()
 	_set_zoom(1.6)
-	if zone == null or zone.zone_id != "crosshaven_stoneford":
-		await enter_zone("crosshaven_stoneford", Vector2i(16, 16), false)
+	var dungeon_id := _movie_dungeon_id()
+	var row: Dictionary = dungeon_book.by_id(dungeon_id)
+	var door := DungeonBook.door_cell(row)
+	var door_zone := str((row.get("door", {}) as Dictionary).get("zone_id", ""))
+	if zone == null or zone.zone_id != door_zone:
+		await enter_zone(door_zone, door + Vector2i(0, 5), false)
 	_hide_debug_readout()
 	_mark("granary_start")
 	await get_tree().create_timer(1.2).timeout
-	var row: Dictionary = dungeon_book.by_id("old_granary_cellar")
-	var door := DungeonBook.door_cell(row)
 	_set_hover(zone, door)
-	approach_door("old_granary_cellar")
+	approach_door(dungeon_id)
 	await _wait_until_stopped()
 	await get_tree().create_timer(0.4).timeout
 	_mark("granary_panel")
@@ -4326,7 +4351,7 @@ func _movie_granary_return() -> void:
 	await get_tree().create_timer(5.5).timeout
 	if reward_popup != null:
 		reward_popup.hide_drop()
-	var row: Dictionary = dungeon_book.by_id("old_granary_cellar")
+	var row: Dictionary = dungeon_book.by_id(_movie_dungeon_id())
 	var door := DungeonBook.door_cell(row)
 	await _go(door + Vector2i(0, 3), "walk")
 	await get_tree().create_timer(1.5).timeout
@@ -4340,12 +4365,16 @@ func _movie_granary_stills() -> void:
 	weather.time_of_day = 11.0
 	weather.settle()
 	_set_zoom(1.5)
-	var folder := OS.get_environment("GRANARY_MEDIA")
+	var folder := OS.get_environment("DUNGEON_MEDIA")
+	if folder == "":
+		folder = OS.get_environment("GRANARY_MEDIA")
 	if folder == "":
 		folder = "user://"
-	var row: Dictionary = dungeon_book.by_id("old_granary_cellar")
+	var dungeon_id := _movie_dungeon_id()
+	var row: Dictionary = dungeon_book.by_id(dungeon_id)
 	var door := DungeonBook.door_cell(row)
-	await enter_zone("crosshaven_stoneford", door + Vector2i(3, 0), false)
+	var door_zone := str((row.get("door", {}) as Dictionary).get("zone_id", ""))
+	await enter_zone(door_zone, door + _still_offset(row), false)
 	_hide_debug_readout()
 	await get_tree().create_timer(1.0).timeout
 	if _banner != null:
@@ -4355,10 +4384,10 @@ func _movie_granary_stills() -> void:
 	if tracker != null:
 		tracker.visible = false
 	await get_tree().create_timer(0.6).timeout
-	await _grab(folder.path_join("01_door_keeper_stoneford.png"))
+	await _grab(folder.path_join("01_door_keeper_%s.png" % door_zone.trim_prefix("crosshaven_")))
 	if tracker != null:
 		tracker.visible = true
-	var walk_res := approach_door("old_granary_cellar")
+	var walk_res := approach_door(dungeon_id)
 	print("MOVIE approach ", walk_res.get("ok"), " ", walk_res.get("reason", ""), " from ", walker.cell)
 	await get_tree().create_timer(0.2).timeout
 	await _wait_until_stopped()

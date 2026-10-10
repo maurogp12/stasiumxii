@@ -9,6 +9,12 @@ var pad := false
 var pad_tex: Texture2D
 var pad_color := Color(1.0, 0.72, 0.28)
 var pad_kind := "wheat_pad"
+## Drawn pad mark ("wheat", "grate", "rune"; run.json view.pads.<kind>.mark).
+var pad_mark := ""
+## The pad is a floor decal (drain grate, rune circle): no tile pad drawn.
+var pad_decal := false
+## Placeholder floor colours (run.json view.floor): base, seam, edge, fleck.
+var floor_style: Dictionary = {}
 var blocked := false
 ## A floor decal (the drain grate) is drawn under this tile; draw no floor.
 var skip_floor := false
@@ -28,15 +34,26 @@ var pool_turns := 0
 var pool_tex: Texture2D
 var _pool_t := 0.0
 var _pool_glow: Sprite2D
+## The hazard on this cell (toxic_pool, frost_patch) and its drawn colours
+## (run.json view.hazard.<id>: color, bubble, ring, text_color).
+var pool_hazard := "toxic_pool"
+var pool_style: Dictionary = {}
 
 
-func set_pool(on: bool, turns: int, man: Dictionary) -> void:
-	if on == pool and turns == pool_turns:
+func set_pool(on: bool, turns: int, man: Dictionary, hazard: String = "toxic_pool", style: Dictionary = {}) -> void:
+	if on == pool and turns == pool_turns and hazard == pool_hazard:
 		return
+	if hazard != pool_hazard:
+		pool_tex = null
+		if _pool_glow != null:
+			_pool_glow.queue_free()
+			_pool_glow = null
+	pool_hazard = hazard
+	pool_style = style
 	pool = on
 	pool_turns = turns
 	if on and pool_tex == null:
-		var kit: Dictionary = load("res://scenes/world/dungeon/dungeon_art.gd").pool_kit(man)
+		var kit: Dictionary = load("res://scenes/world/dungeon/dungeon_art.gd").pool_kit(man, hazard)
 		pool_tex = kit.get("tex", null)
 		if kit.get("glow", null) != null and _pool_glow == null:
 			_pool_glow = Sprite2D.new()
@@ -131,7 +148,7 @@ func _process(delta: float) -> void:
 func _draw() -> void:
 	var pts := _diamond_points()
 	if skip_floor:
-		if pad and pad_tex == null and pad_kind != "drain_grate":
+		if pad and pad_tex == null and not _is_decal_pad():
 			_draw_pad(pts)
 		return
 	if floor_tex != null:
@@ -148,26 +165,38 @@ func _draw() -> void:
 		_draw_pool(pts)
 
 
+func _is_decal_pad() -> bool:
+	return pad_decal or pad_kind == "drain_grate"
+
+
+static func _style_color(style: Dictionary, key: String, fallback: Color) -> Color:
+	var v: Variant = style.get(key, null)
+	if typeof(v) != TYPE_ARRAY or (v as Array).size() < 3:
+		return fallback
+	return Color(float(v[0]), float(v[1]), float(v[2]), float(v[3]) if (v as Array).size() > 3 else fallback.a)
+
+
 func _draw_stone(pts: PackedVector2Array) -> void:
 	var h := absi(hash(Vector2i(grid_position.x * 7, grid_position.y * 13))) % 1000
 	var shade := 0.9 + float(h % 7) * 0.025
-	var base := Color(0.36, 0.3, 0.25) * shade
+	var base := _style_color(floor_style, "base", Color(0.36, 0.3, 0.25)) * shade
 	base.a = 1.0
 	draw_colored_polygon(pts, base)
 	# Flagstone seams: one diagonal cut per tile, alternating.
-	var seam := Color(0.18, 0.14, 0.11, 0.9)
+	var seam := _style_color(floor_style, "seam", Color(0.18, 0.14, 0.11, 0.9))
 	if (grid_position.x + grid_position.y) % 2 == 0:
 		draw_line(pts[0].lerp(pts[3], 0.5), pts[1].lerp(pts[2], 0.5), seam, 1.2)
 	else:
 		draw_line(pts[0].lerp(pts[1], 0.5), pts[3].lerp(pts[2], 0.5), seam, 1.2)
 	var ring := PackedVector2Array(pts)
 	ring.append(pts[0])
-	draw_polyline(ring, Color(0.14, 0.11, 0.09, 0.95), 1.4)
-	# Straw on the floor.
+	draw_polyline(ring, _style_color(floor_style, "edge", Color(0.14, 0.11, 0.09, 0.95)), 1.4)
+	# Straw (or frost) on the floor.
+	var fleck := _style_color(floor_style, "fleck", Color(0.78, 0.64, 0.32, 0.6))
 	for k in 3:
 		var a := float((h >> (k * 3)) % 40) - 20.0
 		var b := float((h >> (k * 2 + 1)) % 16) - 8.0
-		draw_line(Vector2(a, b * 0.5), Vector2(a + 6, b * 0.5 - 2), Color(0.78, 0.64, 0.32, 0.6), 1.0)
+		draw_line(Vector2(a, b * 0.5), Vector2(a + 6, b * 0.5 - 2), fleck, 1.0)
 
 
 func _draw_pad(pts: PackedVector2Array) -> void:
@@ -188,7 +217,13 @@ func _draw_pad(pts: PackedVector2Array) -> void:
 	var ring := PackedVector2Array(inner)
 	ring.append(inner[0])
 	draw_polyline(ring, core, 2.0)
-	if pad_kind == "drain_grate":
+	var mark := pad_mark if pad_mark != "" else ("grate" if pad_kind == "drain_grate" else "wheat")
+	if mark == "rune":
+		# A four-point rune star.
+		for d in [Vector2(0, -8), Vector2(14, 0), Vector2(0, 8), Vector2(-14, 0)]:
+			draw_line(Vector2.ZERO, d, core, 1.8)
+		draw_circle(Vector2.ZERO, 2.4, core)
+	elif mark == "grate":
 		for k in range(-2, 3):
 			draw_line(Vector2(k * 8 - 8, -4 + k * 4 * 0.0), Vector2(k * 8 + 8, 4), Color(0.12, 0.1, 0.08, 0.9), 2.0)
 	else:
@@ -209,13 +244,17 @@ func _draw_pool(pts: PackedVector2Array) -> void:
 		var inner := PackedVector2Array()
 		for p in pts:
 			inner.append(p * 0.82)
-		draw_colored_polygon(inner, Color(0.35, 0.95, 0.2, 0.42 + 0.18 * pulse))
+		var fill := _style_color(pool_style, "color", Color(0.35, 0.95, 0.2))
+		fill.a = 0.42 + 0.18 * pulse
+		draw_colored_polygon(inner, fill)
 		for k in 3:
 			var a := float(k) * 2.1 + _pool_t * 1.3
-			draw_circle(Vector2(cos(a) * 12.0, sin(a) * 5.0), 2.5 + pulse * 1.5, Color(0.7, 1.0, 0.4, 0.85))
+			draw_circle(Vector2(cos(a) * 12.0, sin(a) * 5.0), 2.5 + pulse * 1.5, _style_color(pool_style, "bubble", Color(0.7, 1.0, 0.4, 0.85)))
 	var ring := PackedVector2Array(pts)
 	ring.append(pts[0])
-	draw_polyline(ring, Color(0.6, 1.0, 0.3, 0.75 + 0.25 * pulse), 2.0)
+	var edge := _style_color(pool_style, "ring", Color(0.6, 1.0, 0.3))
+	edge.a = 0.75 + 0.25 * pulse
+	draw_polyline(ring, edge, float(pool_style.get("ring_width", 2.0)))
 	if pool_turns > 0:
 		var font := ThemeDB.fallback_font
-		draw_string(font, Vector2(-4, 5), str(pool_turns), HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color(0.1, 0.2, 0.05))
+		draw_string(font, Vector2(-4, 5), str(pool_turns), HORIZONTAL_ALIGNMENT_LEFT, -1, 11, _style_color(pool_style, "text_color", Color(0.1, 0.2, 0.05)))

@@ -13,10 +13,35 @@ extends RefCounted
 ## (idle, walk, attack, hit, death, summon; S and E facings, W and N mirrored).
 
 const MONSTER_ANIMS: Array[String] = ["idle", "walk", "attack", "hit", "death", "summon"]
-## Screen height (px at zoom 1) a placeholder monster stands.
+## Screen height (px at zoom 1) a placeholder monster stands. Other monsters
+## take it from their data row (dungeon_monsters.json placeholder.height).
 const PLACEHOLDER_HEIGHT := {"granary_rat": 54.0, "scarecrow_drudge": 104.0, "the_ratking": 128.0}
+const MONSTERS_PATH := "res://data/world/dungeon_monsters.json"
 
 static var _cache: Dictionary = {}
+static var _monster_rows: Dictionary = {}
+
+
+## A monster's data row (dungeon_monsters.json), for its stand-in and
+## placeholder look. Read once. Empty when the monster is unknown.
+static func monster_spec(monster_id: String) -> Dictionary:
+	if _monster_rows.is_empty() and FileAccess.file_exists(MONSTERS_PATH):
+		var doc: Variant = JSON.parse_string(FileAccess.get_file_as_string(MONSTERS_PATH))
+		if typeof(doc) == TYPE_DICTIONARY:
+			for row in (doc as Dictionary).get("monsters", []):
+				if typeof(row) == TYPE_DICTIONARY:
+					_monster_rows[str(row.get("id", ""))] = row
+	return (_monster_rows.get(monster_id, {}) as Dictionary)
+
+
+## Board height (px) a drawn placeholder monster stands.
+static func placeholder_height(monster_id: String) -> float:
+	if PLACEHOLDER_HEIGHT.has(monster_id):
+		return float(PLACEHOLDER_HEIGHT[monster_id])
+	var ph: Variant = monster_spec(monster_id).get("placeholder", {})
+	if typeof(ph) == TYPE_DICTIONARY and (ph as Dictionary).has("height"):
+		return float(ph["height"])
+	return 80.0
 
 
 ## Normalised manifest: {ok, path, dir, entries: [entry]}. Never fails hard.
@@ -354,7 +379,7 @@ static func monster_frames(man: Dictionary, monster_id: String) -> Dictionary:
 		height = drawn["height"]
 	if frames.has_animation("default"):
 		frames.remove_animation("default")
-	var cell_px := float(PLACEHOLDER_HEIGHT.get(monster_id, 80.0))
+	var cell_px := placeholder_height(monster_id)
 	if scale <= 0.0:
 		scale = cell_px / maxf(height, 1.0)
 	var out := {"frames": frames, "faces": faces, "pivot": pivot, "scale": scale, "painted": painted}
@@ -406,6 +431,20 @@ static func _paint_monster(img: Image, monster_id: String, face: String, anim: S
 			tint = Color(1.0, 0.9 + 0.1 * t, 0.6 + 0.4 * (1.0 - t), 1.0)
 	var flip := -1.0 if face == "s" else 1.0
 	var base := Vector2(64 + dx * flip, 150 + dy)
+	var ph: Variant = monster_spec(monster_id).get("placeholder", {})
+	var shape := str((ph as Dictionary).get("shape", "")) if typeof(ph) == TYPE_DICTIONARY else ""
+	match shape:
+		"construct":
+			_construct(img, base, flip, squash, tint)
+			return
+		"wraith":
+			_wraith(img, base, flip, squash, tint, t)
+			return
+		"archivist":
+			_archivist(img, base, flip, squash, tint)
+			if anim == "summon":
+				_ring(img, base + Vector2(0, -6), 40.0 + 20.0 * t, Color(0.55, 0.85, 1.0, 0.8 * (1.0 - t)))
+			return
 	match monster_id:
 		"granary_rat":
 			_rat(img, base, flip, 0.75, squash, tint, false)
@@ -478,6 +517,63 @@ static func _drudge(img: Image, feet: Vector2, flip: float, squash: float, tint:
 	for k in 12:
 		var a := PI * float(k) / 11.0
 		_disc(img, hand + Vector2(flip * (cos(a) * 14.0 - 10.0 * flip), -sin(a) * 14.0), 2.2, Color(0.75, 0.78, 0.82, tint.a))
+
+
+## Placeholder Ice Construct: a squat block body of ice with shelf bands
+## and a glowing rune on the chest.
+static func _construct(img: Image, feet: Vector2, flip: float, squash: float, tint: Color) -> void:
+	var ice := Color(0.66, 0.8, 0.92) * tint
+	var wood := Color(0.42, 0.3, 0.2) * tint
+	var h := squash
+	_rect(img, feet + Vector2(-26, -34 * h), Vector2(18, 34 * h), ice)
+	_rect(img, feet + Vector2(8, -34 * h), Vector2(18, 34 * h), ice)
+	_rect(img, feet + Vector2(-36, -96 * h), Vector2(72, 64 * h), ice)
+	for k in 3:
+		_rect(img, feet + Vector2(-30, (-88 + k * 20) * h), Vector2(60, 6), wood)
+	_rect(img, feet + Vector2(-50 + flip * 4, -92 * h), Vector2(14, 48 * h), ice)
+	_rect(img, feet + Vector2(36 + flip * 4, -92 * h), Vector2(14, 48 * h), ice)
+	_rect(img, feet + Vector2(-16, -120 * h), Vector2(32, 24 * h), ice)
+	_disc(img, feet + Vector2(0, -66 * h), 9.0, Color(0.45, 0.8, 1.0, tint.a))
+	_disc(img, feet + Vector2(flip * 6, -110 * h), 3.0, Color(0.4, 0.85, 1.0, tint.a))
+
+
+## Placeholder Book Wraith: a ragged paper shroud with an open book for a head.
+static func _wraith(img: Image, feet: Vector2, flip: float, squash: float, tint: Color, t: float) -> void:
+	var paper := Color(0.84, 0.8, 0.7) * tint
+	var shade := Color(0.5, 0.5, 0.56) * tint
+	var h := squash
+	var hover := -10.0 - 4.0 * sin(t * PI)
+	_ellipse(img, feet + Vector2(0, (-52 + hover) * h), Vector2(26, 40 * h), shade)
+	for k in 7:
+		_rect(img, feet + Vector2(-24 + k * 7, (-20 + hover) * h + float(k % 3) * 4.0), Vector2(5, 14 * h), paper)
+	_ellipse(img, feet + Vector2(0, (-60 + hover) * h), Vector2(18, 28 * h), paper)
+	var head := feet + Vector2(flip * 3, (-98 + hover) * h)
+	_rect(img, head + Vector2(-20, -10), Vector2(19, 20), Color(0.55, 0.36, 0.22, tint.a))
+	_rect(img, head + Vector2(1, -10), Vector2(19, 20), Color(0.55, 0.36, 0.22, tint.a))
+	_rect(img, head + Vector2(-17, -8), Vector2(15, 16), paper)
+	_rect(img, head + Vector2(2, -8), Vector2(15, 16), paper)
+	_disc(img, head + Vector2(-8, 0), 3.0, Color(0.45, 0.85, 1.0, tint.a))
+	_disc(img, head + Vector2(8, 0), 3.0, Color(0.45, 0.85, 1.0, tint.a))
+
+
+## Placeholder Pale Archivist: a tall robed figure, a white beard, a chained
+## tome held out and a spiked crown.
+static func _archivist(img: Image, feet: Vector2, flip: float, squash: float, tint: Color) -> void:
+	var robe := Color(0.62, 0.64, 0.72) * tint
+	var dark := Color(0.2, 0.22, 0.3) * tint
+	var h := squash
+	_ellipse(img, feet + Vector2(0, -48 * h), Vector2(34, 48 * h), dark)
+	_ellipse(img, feet + Vector2(0, -60 * h), Vector2(26, 56 * h), robe)
+	var head := feet + Vector2(flip * 4, -124 * h)
+	_ellipse(img, head, Vector2(13, 15 * h), Color(0.86, 0.86, 0.9) * tint)
+	_ellipse(img, head + Vector2(0, 18 * h), Vector2(9, 16 * h), Color(0.95, 0.95, 0.97) * tint)
+	_disc(img, head + Vector2(-5, -2), 2.5, Color(0.45, 0.85, 1.0, tint.a))
+	_disc(img, head + Vector2(5, -2), 2.5, Color(0.45, 0.85, 1.0, tint.a))
+	for k in 5:
+		_rect(img, head + Vector2(-12 + k * 6, -26 * h), Vector2(3, 10 * h), Color(0.72, 0.62, 0.4, tint.a))
+	var book := feet + Vector2(flip * 30, -84 * h)
+	_rect(img, book + Vector2(-14, -16), Vector2(28, 32), Color(0.4, 0.28, 0.18, tint.a))
+	_disc(img, book, 6.0, Color(0.5, 0.85, 1.0, tint.a))
 
 
 static func _disc(img: Image, c: Vector2, r: float, col: Color) -> void:
@@ -852,8 +948,8 @@ static func fx_frames(man: Dictionary, kind: String, what: String) -> Array:
 	return out
 
 
-static func pool_texture(man: Dictionary) -> Texture2D:
-	var e := _file_by_words(man, ["toxic", "pool"])
+static func pool_texture(man: Dictionary, hazard_id: String = "toxic_pool") -> Texture2D:
+	var e := _file_by_words(man, Array(hazard_id.split("_")))
 	return texture(e) if not e.is_empty() else null
 
 
@@ -876,19 +972,20 @@ static func projectile_kit(man: Dictionary, id: String) -> Dictionary:
 	return out
 
 
-## ★5 toxic pool decal: {tex, scale, glow, glow_scale}.
-static func pool_kit(man: Dictionary) -> Dictionary:
+## ★5 ground hazard decal (the Granary's toxic_pool, Frostspire's
+## frost_patch): {tex, scale, glow, glow_scale}.
+static func pool_kit(man: Dictionary, hazard_id: String = "toxic_pool") -> Dictionary:
 	var raw: Dictionary = man.get("raw", {})
 	var s5: Variant = raw.get("star5", null)
 	if typeof(s5) != TYPE_DICTIONARY:
 		return {}
 	var board: Dictionary = (s5 as Dictionary).get("board", {})
-	var row := _by_id(board.get("decals", []), "toxic_pool")
+	var row := _by_id(board.get("decals", []), hazard_id)
 	var out := _pick(man, row)
 	if out.is_empty():
 		return {}
 	for g in board.get("glows", []):
-		if str(g.get("for", "")) == "toxic_pool":
+		if str(g.get("for", "")) == hazard_id:
 			var gl := _pick(man, g)
 			out["glow"] = gl.get("tex", null)
 			out["glow_scale"] = float(gl.get("scale", 1.0))

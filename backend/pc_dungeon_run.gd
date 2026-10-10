@@ -144,6 +144,8 @@ func combat_config(index: int = -1, seed: int = -1) -> Dictionary:
 			"kind": str(spec.get("kind", "pack")),
 			"cells": cells,
 			"pad_heal": int(pads.get("amount", 0)) if str(pads.get("effect", "")) == "heal" else 0,
+			"pad_thaw": bool(pads.get("thaw", false)),
+			"view": (run_doc.get("view", {}) as Dictionary).duplicate(true) if typeof(run_doc.get("view", {})) == TYPE_DICTIONARY else {},
 			"hero": {
 				"class_id": hero_class,
 				"name": hero_name,
@@ -174,6 +176,17 @@ static func pack_for(spec: Dictionary, for_star: int) -> Array:
 				best = k
 				out = packs[key]
 	return out
+
+
+## A line of the run file's `text` block (stairs, victory, return, ...),
+## with {dungeon}, {boss} (text.boss_star5 at ★5), {town} and {star} filled in. `fallback` when absent.
+func text(key: String, fallback: String = "") -> String:
+	var block: Dictionary = run_doc.get("text", {}) if typeof(run_doc.get("text", {})) == TYPE_DICTIONARY else {}
+	var line := str(block.get(key, fallback))
+	var boss := str(dungeon.get("boss", ""))
+	if star >= MAX_STAR and str(block.get("boss_star5", "")) != "":
+		boss = str(block["boss_star5"])
+	return line.format({"dungeon": str(dungeon.get("name", "")), "boss": boss, "town": str(block.get("town", "")), "star": star})
 
 
 ## Room won: step on. Returns true when another room follows.

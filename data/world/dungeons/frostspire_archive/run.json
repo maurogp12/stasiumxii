@@ -1,0 +1,487 @@
+{
+  "format": "stasium.dungeon_run",
+  "format_version": 1,
+  "status": "proposed",
+  "dungeon": "frostspire_archive",
+  "board_size": 12,
+  "art": "res://art/pc/dungeons/frostspire_archive/manifest.json",
+  "pads": {
+    "kind": "buff",
+    "effect": "heal",
+    "amount": 5,
+    "thaw": true,
+    "who": "hero",
+    "note": "Ice-blue rune pads (room A) and the rune circle (room B): the hero heals 5 HP when a turn starts on one, and that turn keeps its full MP (the pad thaws chill and frost). Monsters get nothing."
+  },
+  "between_rooms": {
+    "heal": "full",
+    "note": "A short rest on the archive stair between room A and room B."
+  },
+  "text": {
+    "town": "Northgate",
+    "stairs": "Down the frozen stair, into the Archivist's hall...",
+    "victory": "{dungeon} is cleared at ★{star}. {boss} is down.",
+    "defeat": "The cold drives you out. No rewards this time.",
+    "return": "You climb back up to the archive door in Northgate.",
+    "return_button": "Return to Northgate",
+    "pads": "Rune pads: +{amount} HP and no MP lost when your turn starts on one",
+    "keeper_hint": "Mind the Archivist's pages.",
+    "star_notes": {
+      "5": "The Frozen Archivist and his frost patches. A Rare part and a Mystery Box for sure."
+    },
+    "showcase_title": "Frostspire Archive\nMonsters",
+    "showcase_sub": "Ice Construct · Book Wraith · The Pale Archivist\n★5: Frozen Ice Construct · Frozen Book Wraith · The Frozen Archivist",
+    "star5_rule": "★5: the Frozen Archivist calls frozen wraiths (4 alive, 6 in all) and lays Rime Patches every other turn (2-3 cells round the hero, 3 hero turns): end a turn on one for frost damage and 2 MP less next turn. Frozen monsters chill (1 MP less next turn). Rune pads thaw.",
+    "b_still": "04_room_b_archivist.png",
+    "boss_star5": "The Frozen Archivist"
+  },
+  "view": {
+    "light": [
+      0.9,
+      0.97,
+      1.12,
+      1.0
+    ],
+    "pads": {
+      "rune_pad": {
+        "color": [
+          0.45,
+          0.8,
+          1.0
+        ],
+        "mark": "rune"
+      },
+      "rune_circle": {
+        "color": [
+          0.5,
+          0.85,
+          1.0
+        ],
+        "decal": true,
+        "mark": "rune"
+      }
+    },
+    "hazard": {
+      "frost_patch": {
+        "color": [
+          0.62,
+          0.86,
+          1.0
+        ],
+        "bubble": [
+          0.92,
+          0.98,
+          1.0,
+          0.9
+        ],
+        "ring": [
+          0.2,
+          0.75,
+          1.0
+        ],
+        "ring_width": 3.5,
+        "text_color": [
+          0.02,
+          0.08,
+          0.22
+        ]
+      }
+    },
+    "projectiles": {
+      "frost_bolt": {
+        "color": [
+          0.6,
+          0.85,
+          1.0
+        ],
+        "spin": false,
+        "draw_glow": false
+      },
+      "frost_bolt_frozen": {
+        "color": [
+          0.85,
+          0.95,
+          1.0
+        ],
+        "glow": [
+          0.55,
+          0.85,
+          1.0,
+          0.35
+        ],
+        "spin": false,
+        "draw_glow": false
+      },
+      "frost_bolt_impact": {
+        "color": [
+          0.75,
+          0.9,
+          1.0
+        ]
+      }
+    },
+    "door": {
+      "shape": "tower",
+      "wall": [
+        0.62,
+        0.68,
+        0.78
+      ],
+      "roof": [
+        0.32,
+        0.42,
+        0.6
+      ],
+      "glow": [
+        0.5,
+        0.85,
+        1.0
+      ],
+      "still_from_door": [
+        3,
+        -2
+      ]
+    },
+    "showcase": [
+      [
+        "ice_construct",
+        3,
+        8,
+        false
+      ],
+      [
+        "book_wraith",
+        4,
+        6,
+        false
+      ],
+      [
+        "the_pale_archivist",
+        6,
+        5,
+        true
+      ],
+      [
+        "frozen_ice_construct",
+        8,
+        3,
+        false
+      ],
+      [
+        "frozen_book_wraith",
+        5,
+        9,
+        false
+      ],
+      [
+        "the_frozen_archivist",
+        9,
+        6,
+        true
+      ]
+    ],
+    "floor": {
+      "base": [
+        0.36,
+        0.42,
+        0.52
+      ],
+      "seam": [
+        0.16,
+        0.2,
+        0.28,
+        0.9
+      ],
+      "edge": [
+        0.12,
+        0.15,
+        0.22,
+        0.95
+      ],
+      "fleck": [
+        0.85,
+        0.93,
+        1.0,
+        0.55
+      ]
+    }
+  },
+  "rooms": [
+    {
+      "id": "room_a",
+      "name": "The Frozen Stacks",
+      "kind": "pack",
+      "tags": "res://data/world/dungeons/frostspire_archive/room_a_tags.json",
+      "hero": {
+        "x": 8,
+        "y": 10,
+        "facing": "N"
+      },
+      "monsters": [
+        {
+          "monster": "ice_construct",
+          "x": 3,
+          "y": 2,
+          "facing": "S"
+        },
+        {
+          "monster": "ice_construct",
+          "x": 8,
+          "y": 2,
+          "facing": "S"
+        },
+        {
+          "monster": "book_wraith",
+          "x": 1,
+          "y": 0,
+          "facing": "S"
+        },
+        {
+          "monster": "book_wraith",
+          "x": 6,
+          "y": 0,
+          "facing": "S"
+        },
+        {
+          "monster": "book_wraith",
+          "x": 10,
+          "y": 1,
+          "facing": "S"
+        },
+        {
+          "monster": "book_wraith",
+          "x": 11,
+          "y": 3,
+          "facing": "S"
+        }
+      ],
+      "note": "packs: the pack for the highest key at or below the star. monsters is the ★1 pack. Spawns on the far rows (y 0-4), off the rune pads, away from the hero (8,10); shelves on the middle rows break the Book Wraiths' lines.",
+      "packs": {
+        "1": [
+          {
+            "monster": "ice_construct",
+            "x": 3,
+            "y": 2,
+            "facing": "S"
+          },
+          {
+            "monster": "ice_construct",
+            "x": 8,
+            "y": 2,
+            "facing": "S"
+          },
+          {
+            "monster": "book_wraith",
+            "x": 1,
+            "y": 0,
+            "facing": "S"
+          },
+          {
+            "monster": "book_wraith",
+            "x": 6,
+            "y": 0,
+            "facing": "S"
+          },
+          {
+            "monster": "book_wraith",
+            "x": 10,
+            "y": 1,
+            "facing": "S"
+          },
+          {
+            "monster": "book_wraith",
+            "x": 11,
+            "y": 3,
+            "facing": "S"
+          }
+        ],
+        "3": [
+          {
+            "monster": "ice_construct",
+            "x": 3,
+            "y": 2,
+            "facing": "S"
+          },
+          {
+            "monster": "ice_construct",
+            "x": 8,
+            "y": 2,
+            "facing": "S"
+          },
+          {
+            "monster": "book_wraith",
+            "x": 1,
+            "y": 0,
+            "facing": "S"
+          },
+          {
+            "monster": "book_wraith",
+            "x": 6,
+            "y": 0,
+            "facing": "S"
+          },
+          {
+            "monster": "book_wraith",
+            "x": 10,
+            "y": 1,
+            "facing": "S"
+          },
+          {
+            "monster": "book_wraith",
+            "x": 11,
+            "y": 3,
+            "facing": "S"
+          },
+          {
+            "monster": "ice_construct",
+            "x": 5,
+            "y": 4,
+            "facing": "S"
+          }
+        ],
+        "5": [
+          {
+            "monster": "frozen_ice_construct",
+            "x": 3,
+            "y": 2,
+            "facing": "S"
+          },
+          {
+            "monster": "frozen_ice_construct",
+            "x": 8,
+            "y": 2,
+            "facing": "S"
+          },
+          {
+            "monster": "ice_construct",
+            "x": 5,
+            "y": 4,
+            "facing": "S"
+          },
+          {
+            "monster": "frozen_book_wraith",
+            "x": 1,
+            "y": 0,
+            "facing": "S"
+          },
+          {
+            "monster": "frozen_book_wraith",
+            "x": 6,
+            "y": 0,
+            "facing": "S"
+          },
+          {
+            "monster": "frozen_book_wraith",
+            "x": 10,
+            "y": 1,
+            "facing": "S"
+          },
+          {
+            "monster": "frozen_book_wraith",
+            "x": 11,
+            "y": 3,
+            "facing": "S"
+          },
+          {
+            "monster": "book_wraith",
+            "x": 4,
+            "y": 0,
+            "facing": "S"
+          }
+        ]
+      }
+    },
+    {
+      "id": "room_b",
+      "name": "The Archivist's Hall",
+      "kind": "boss",
+      "tags": "res://data/world/dungeons/frostspire_archive/room_b_tags.json",
+      "hero": {
+        "x": 6,
+        "y": 10,
+        "facing": "N"
+      },
+      "monsters": [
+        {
+          "monster": "the_pale_archivist",
+          "x": 6,
+          "y": 2,
+          "facing": "S"
+        },
+        {
+          "monster": "book_wraith",
+          "x": 4,
+          "y": 2,
+          "facing": "S"
+        },
+        {
+          "monster": "book_wraith",
+          "x": 8,
+          "y": 2,
+          "facing": "S"
+        },
+        {
+          "monster": "ice_construct",
+          "x": 6,
+          "y": 4,
+          "facing": "S"
+        }
+      ],
+      "note": "The Pale Archivist with his escort (2 Book Wraiths, 1 Ice Construct) in front of the ice throne. His Unbound Pages calls Book Wraiths; they count against one cap with the escort wraiths.",
+      "packs": {
+        "1": [
+          {
+            "monster": "the_pale_archivist",
+            "x": 6,
+            "y": 2,
+            "facing": "S"
+          },
+          {
+            "monster": "book_wraith",
+            "x": 4,
+            "y": 2,
+            "facing": "S"
+          },
+          {
+            "monster": "book_wraith",
+            "x": 8,
+            "y": 2,
+            "facing": "S"
+          },
+          {
+            "monster": "ice_construct",
+            "x": 6,
+            "y": 4,
+            "facing": "S"
+          }
+        ],
+        "5": [
+          {
+            "monster": "the_frozen_archivist",
+            "x": 6,
+            "y": 2,
+            "facing": "S"
+          },
+          {
+            "monster": "frozen_book_wraith",
+            "x": 4,
+            "y": 2,
+            "facing": "S"
+          },
+          {
+            "monster": "frozen_book_wraith",
+            "x": 8,
+            "y": 2,
+            "facing": "S"
+          },
+          {
+            "monster": "frozen_ice_construct",
+            "x": 6,
+            "y": 4,
+            "facing": "S"
+          }
+        ]
+      }
+    }
+  ]
+}
