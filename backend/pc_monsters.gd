@@ -12,7 +12,7 @@ const DOC_KEYS: Array[String] = ["format", "format_version", "status", "notes", 
 const MAX_STAR := 5
 const MONSTER_KEYS: Array[String] = [
 	"id", "name", "dungeon", "role", "level_min", "level_max", "hp", "ap", "mp", "attack", "signature", "signature2",
-	"art", "variant_of", "star_min",
+	"art", "variant_of", "star_min", "stand_in", "placeholder",
 ]
 const ATTACK_KEYS: Array[String] = ["id", "name", "ap", "min_range", "max_range", "damage", "element"]
 const SIGNATURE_KEYS: Array[String] = [
@@ -65,13 +65,35 @@ func raw(monster_id: String) -> Dictionary:
 
 
 ## [HP multiplier, damage multiplier] for a star (solo row; see the json).
-func star_scale(star: int) -> Array:
+## A dungeon with its own rows (stars.by_dungeon) uses them; any other
+## dungeon uses the top-level rows (the Old Granary Cellar's).
+func star_scale(star: int, dungeon_id: String = "") -> Array:
 	var s := clampi(star, 1, MAX_STAR)
 	if star_scale_override.has(s):
 		return star_scale_override[s]
 	var rows: Dictionary = _stars.get("scale", {})
+	var own: Variant = (_stars.get("by_dungeon", {}) as Dictionary).get(dungeon_id, null)
+	if typeof(own) == TYPE_DICTIONARY and typeof((own as Dictionary).get("scale", null)) == TYPE_DICTIONARY:
+		rows = own["scale"]
 	var row: Variant = rows.get(str(s), [1.0, 1.0])
 	return [float(row[0]), float(row[1])]
+
+
+## The star block for one dungeon: its own rows and notes when it has them.
+func stars_for(dungeon_id: String) -> Dictionary:
+	var own: Variant = (_stars.get("by_dungeon", {}) as Dictionary).get(dungeon_id, null)
+	if typeof(own) == TYPE_DICTIONARY:
+		return (own as Dictionary).duplicate(true)
+	return _stars.duplicate(true)
+
+
+## Monster ids of one dungeon, in file order.
+func ids_for(dungeon_id: String) -> Array:
+	var out: Array = []
+	for id in _order:
+		if str((_by_id[id] as Dictionary).get("dungeon", "")) == dungeon_id:
+			out.append(id)
+	return out
 
 
 func stars_doc() -> Dictionary:
@@ -106,7 +128,8 @@ func stats_at(monster_id: String, level: int, star: int = 1) -> Dictionary:
 	}
 	if row.has("signature"):
 		out["signature"] = (row["signature"] as Dictionary).duplicate(true)
-	var mult := star_scale(star)
+	var mult := star_scale(star, str(row.get("dungeon", "")))
+	out["dungeon"] = str(row.get("dungeon", ""))
 	out["star"] = clampi(star, 1, MAX_STAR)
 	out["hp"] = maxi(int(round(float(out["hp"]) * float(mult[0]))), 1)
 	(out["attack"] as Dictionary)["damage"] = maxi(int(round(float(attack["damage"]) * float(mult[1]))), 1)
@@ -118,6 +141,9 @@ func stats_at(monster_id: String, level: int, star: int = 1) -> Dictionary:
 		var poison: Dictionary = ((out["attack"] as Dictionary)["poison"] as Dictionary)
 		poison["hp"] = maxi(int(round(float(poison.get("hp", 1)) * float(mult[1]))), 1)
 	out["variant_of"] = str(row.get("variant_of", ""))
+	for key in ["stand_in", "placeholder"]:
+		if row.has(key):
+			out[key] = (row[key] as Dictionary).duplicate(true) if typeof(row[key]) == TYPE_DICTIONARY else row[key]
 	return out
 
 
@@ -159,6 +185,17 @@ func _read(doc: Dictionary, errors: Array) -> void:
 		var srow: Variant = (_stars.get("scale", {}) as Dictionary).get(s_key, null)
 		if typeof(srow) != TYPE_ARRAY or (srow as Array).size() != 2:
 			errors.append("stars scale %s" % s_key)
+	var by_dungeon: Variant = _stars.get("by_dungeon", {})
+	if typeof(by_dungeon) != TYPE_DICTIONARY:
+		errors.append("stars by_dungeon")
+	else:
+		for d_id in (by_dungeon as Dictionary).keys():
+			var block: Variant = by_dungeon[d_id]
+			var rows_d: Variant = block.get("scale", null) if typeof(block) == TYPE_DICTIONARY else null
+			for s_key in ["1", "2", "3", "4", "5"]:
+				var drow: Variant = (rows_d as Dictionary).get(s_key, null) if typeof(rows_d) == TYPE_DICTIONARY else null
+				if typeof(drow) != TYPE_ARRAY or (drow as Array).size() != 2:
+					errors.append("stars %s scale %s" % [d_id, s_key])
 	var rows: Variant = doc.get("monsters", null)
 	if typeof(rows) != TYPE_ARRAY or (rows as Array).is_empty():
 		errors.append("monsters")

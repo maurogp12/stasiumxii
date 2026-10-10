@@ -4066,6 +4066,7 @@ func _reset_dungeon(config: Dictionary) -> Dictionary:
 		"kind": str(room.get("kind", "pack")),
 		"pads": pads,
 		"pad_heal": int(room.get("pad_heal", 0)),
+		"pad_thaw": bool(room.get("pad_thaw", false)),
 		"summons": (room.get("summons", {}) as Dictionary).duplicate(true) if typeof(room.get("summons", {})) == TYPE_DICTIONARY else {},
 		"result": "",
 		"round": 1,
@@ -4263,6 +4264,7 @@ func _dungeon_handoff(actor: Dictionary, auto_skip: bool, skip_reason: String, d
 		"coach": _last_coach,
 	})
 	_dungeon_pad_heal(next_unit)
+	_dungeon_mp_drain(next_unit)
 	_tick_poison(next_unit)
 	_tick_burn(next_unit)
 	if not _match_over and not bool(next_unit.get("alive", false)) and depth < _units.size() + 1:
@@ -4288,6 +4290,33 @@ func _dungeon_pad_heal(unit: Dictionary) -> void:
 		"healed": healed,
 		"hp": int(unit["hp"]),
 		"coach": "The pad's glow mends %s (+%d HP)." % [unit["name"], healed],
+	})
+
+
+## Chill and frost hazards: MP taken off the start of the hero's next turn.
+## A turn that starts on a thawing pad (run.json pads.thaw) keeps its MP.
+func _dungeon_mp_drain(unit: Dictionary) -> void:
+	var drain := int(unit.get("mp_drain", 0))
+	if drain <= 0 or not bool(unit.get("alive", false)):
+		return
+	unit["mp_drain"] = 0
+	if bool(_dungeon.get("pad_thaw", false)) and (_dungeon.get("pads", []) as Array).has(unit["pos"]):
+		_last_events.append({
+			"type": "thaw",
+			"seat": unit["seat"],
+			"cell": unit["pos"],
+			"coach": "The rune pad thaws %s: no MP lost." % unit["name"],
+		})
+		return
+	var lost := mini(drain, int(unit.get("mp", 0)))
+	unit["mp"] = int(unit.get("mp", 0)) - lost
+	_last_events.append({
+		"type": "chill",
+		"seat": unit["seat"],
+		"target_seat": unit["seat"],
+		"mp_lost": lost,
+		"mp_delta": -lost,
+		"coach": "%s is chilled: %d MP less this turn." % [unit["name"], lost],
 	})
 
 
@@ -4465,6 +4494,7 @@ func _submit_monster_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
 			"spell": spell_id,
 			"monster_attack": true,
 			"projectile": str(attack.get("projectile", "")),
+			"impact": str(attack.get("impact", "")),
 			"caster_cell": caster_cell,
 			"target_seat": target["seat"],
 			"to": dest,
@@ -4511,6 +4541,7 @@ func _submit_monster_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
 	}
 	if attack.has("projectile"):
 		hit_event["projectile"] = str(attack["projectile"])
+		hit_event["impact"] = str(attack.get("impact", ""))
 	_stamp_mitigation(hit_event, mitigation)
 	_last_events.append(hit_event)
 	_emit_immunity_spent(target, mitigation)
@@ -4525,6 +4556,17 @@ func _submit_monster_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
 			"remaining": int(target["poison_remaining"]),
 			"hp_per_tick": int(target["poison_hp"]),
 			"coach": "%s is poisoned (%d HP a turn, %d turns)." % [target["name"], int(target["poison_hp"]), int(target["poison_remaining"])],
+		})
+	var chill: Dictionary = attack.get("chill", {})
+	if not chill.is_empty() and damage > 0 and int(target["hp"]) > 0:
+		# No stacking: the strongest chill waiting is kept.
+		target["mp_drain"] = maxi(int(target.get("mp_drain", 0)), int(chill.get("mp", 1)))
+		_last_events.append({
+			"type": "status",
+			"status": "chill",
+			"target_seat": target["seat"],
+			"mp": int(target["mp_drain"]),
+			"coach": "%s is chilled (%d MP less next turn)." % [target["name"], int(target["mp_drain"])],
 		})
 	_check_death(target)
 	return _accept()
@@ -4638,10 +4680,17 @@ func _tick_poison(unit: Dictionary) -> void:
 	_check_death(unit, "poison")
 
 
-## Toxic pools: on the boss's first_turn-th turn, then every `every` turns.
+## Ground hazard kinds a boss's signature2 may lay (data/world/dungeon_monsters.json):
+## "pools" (the Granary's toxic pools) and "hazard" (any other, named by its
+## `hazard` id, e.g. Frostspire's frost patches). Same rhythm and cells.
+const HAZARD_KINDS: Array[String] = ["pools", "hazard"]
+
+
+## Ground hazard (toxic pools, frost patches): on the boss's first_turn-th
+## turn, then every `every` turns.
 func pools_ready(actor: Dictionary) -> bool:
 	var sig: Dictionary = actor.get("signature2", {})
-	if sig.is_empty() or str(sig.get("kind", "")) != "pools":
+	if sig.is_empty() or not HAZARD_KINDS.has(str(sig.get("kind", ""))):
 		return false
 	if bool(actor.get("acted_signature2", false)):
 		return false
@@ -4691,12 +4740,20 @@ func _resolve_pools(intent: Dictionary, actor: Dictionary, sig: Dictionary) -> D
 	_intent_log.append(intent)
 	var pools: Array = _dungeon.get("pools", [])
 	var made: Array = []
+	var hazard := _hazard_id(sig)
 	for c in cells:
-		pools.append({"cell": c, "turns": int(sig.get("turns", 3)), "hp": int(sig.get("hp", 5))})
+		var rec := {"cell": c, "turns": int(sig.get("turns", 3)), "hp": int(sig.get("hp", 5))}
+		if hazard != "toxic_pool":
+			rec["hazard"] = hazard
+			rec["mp_loss"] = int(sig.get("mp_loss", 0))
+		pools.append(rec)
 		made.append(c)
 	_dungeon["pools"] = pools
-	_last_coach = "%s spills %s: %d toxic pools." % [actor["name"], sig.get("name", "toxic pools"), made.size()]
-	_last_events.append({
+	if hazard == "toxic_pool":
+		_last_coach = "%s spills %s: %d toxic pools." % [actor["name"], sig.get("name", "toxic pools"), made.size()]
+	else:
+		_last_coach = "%s casts %s: %d cells freeze around %s." % [actor["name"], sig.get("name", "a hazard"), made.size(), _dungeon_hero().get("name", "the hero")]
+	var laid := {
 		"type": "pools",
 		"seat": actor["seat"],
 		"spell": str(sig.get("id", "")),
@@ -4704,7 +4761,10 @@ func _resolve_pools(intent: Dictionary, actor: Dictionary, sig: Dictionary) -> D
 		"cells": made,
 		"turns": int(sig.get("turns", 3)),
 		"coach": _last_coach,
-	})
+	}
+	if hazard != "toxic_pool":
+		laid["hazard"] = hazard
+	_last_events.append(laid)
 	return _accept()
 
 
@@ -4717,15 +4777,23 @@ func _pools_on_hero_end(hero: Dictionary) -> void:
 		if pool["cell"] == hero["pos"] and bool(hero.get("alive", false)):
 			var dmg := int(pool.get("hp", 5))
 			hero["hp"] = maxi(int(hero["hp"]) - dmg, 0)
-			_last_events.append({
+			var hit := {
 				"type": "pool_hit",
 				"seat": hero["seat"],
 				"target_seat": hero["seat"],
 				"cell": pool["cell"],
 				"damage": dmg,
 				"coach": "%s ends the turn in a toxic pool: %d poison." % [hero["name"], dmg],
-			})
-			_check_death(hero, "poison")
+			}
+			if pool.has("hazard"):
+				var mp_loss := int(pool.get("mp_loss", 0))
+				hit["hazard"] = str(pool["hazard"])
+				hit["mp_loss"] = mp_loss
+				hit["coach"] = "%s ends the turn on frost: %d damage, %d MP less next turn." % [hero["name"], dmg, mp_loss]
+				if mp_loss > 0:
+					hero["mp_drain"] = maxi(int(hero.get("mp_drain", 0)), mp_loss)
+			_last_events.append(hit)
+			_check_death(hero, "poison" if not pool.has("hazard") else "frost")
 			break
 	var kept: Array = []
 	for pool in pools:
@@ -4733,6 +4801,13 @@ func _pools_on_hero_end(hero: Dictionary) -> void:
 		if int(pool["turns"]) > 0:
 			kept.append(pool)
 	_dungeon["pools"] = kept
+
+
+## The hazard id a signature2 lays: its `hazard` key, "toxic_pool" for pools.
+static func _hazard_id(sig: Dictionary) -> String:
+	if str(sig.get("kind", "")) == "pools":
+		return "toxic_pool"
+	return str(sig.get("hazard", "hazard"))
 
 
 func pool_cells() -> Array:

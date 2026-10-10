@@ -9,7 +9,9 @@
     "Base stats were lowered when room A grew to 6-8 monsters (solo for now): rat 10 HP / Gnaw 3, Sling Rat 8 HP / Sling 2 at range 2-5 with line of sight, Drudge 20 HP / Sickle 5, Ratking 70 HP / Crook 8.",
     "Line of sight (dungeon only; the Koliseo has no LoS rule): a ranged monster attack needs a straight line not crossed by a prop cell. Units do not block.",
     "When the boss falls, the monsters he summoned scatter (they leave the fight); his escort stays and must be beaten.",
-    "The rat cap counts every live rat of the summoned kind, escort and summons together."
+    "The rat cap counts every live rat of the summoned kind, escort and summons together.",
+    "Frostspire Archive (levels 10-20): Ice Construct (slow melee tank), Book Wraith (ranged Frost Bolt, range 2-5, line of sight, kites), The Pale Archivist (boss, Ledger Strike range 1-2; Unbound Pages calls 2 Book Wraiths on his 2nd turn and every 3rd after, one cap with the escort wraiths: 4 alive, 4 in all). The hero side is the level sheet (80 HP, 6 AP, 3 MP; points add a few %), so band stats sit near the cellar's.",
+    "chill (attack): a hit takes `mp` MP off the hero's next turn (no stacking). signature2 kind hazard: cells around the hero; a hero who ends a turn on one takes `hp` and loses `mp_loss` MP next turn. stand_in: art to borrow (tinted) until a monster's own frames land. placeholder: drawn stand-in shape and height."
   ],
   "scaling": {
     "hp_per_level": 0.05,
@@ -56,7 +58,8 @@
         "damage": 3,
         "element": "earth",
         "los": true,
-        "projectile": "sling_pebble"
+        "projectile": "sling_pebble",
+        "impact": "sling_impact_puff"
       },
       "art": "sling_rat"
     },
@@ -160,7 +163,8 @@
         "poison": {
           "hp": 2,
           "turns": 2
-        }
+        },
+        "impact": "sling_impact_puff"
       },
       "art": "radioactive_sling_rat",
       "variant_of": "sling_rat",
@@ -212,10 +216,244 @@
         "turns": 3,
         "hp": 6
       }
+    },
+    {
+      "id": "ice_construct",
+      "name": "Ice Construct",
+      "dungeon": "frostspire_archive",
+      "role": "basic",
+      "level_min": 10,
+      "level_max": 20,
+      "hp": 30,
+      "ap": 5,
+      "mp": 2,
+      "attack": {
+        "id": "construct_slam",
+        "name": "Frost Slam",
+        "ap": 4,
+        "min_range": 1,
+        "max_range": 1,
+        "damage": 7,
+        "element": "water"
+      },
+      "art": "ice_construct",
+      "placeholder": {
+        "shape": "construct",
+        "height": 108
+      }
+    },
+    {
+      "id": "book_wraith",
+      "name": "Book Wraith",
+      "dungeon": "frostspire_archive",
+      "role": "ranged",
+      "level_min": 10,
+      "level_max": 20,
+      "hp": 10,
+      "ap": 4,
+      "mp": 3,
+      "attack": {
+        "id": "wraith_bolt",
+        "name": "Frost Bolt",
+        "ap": 3,
+        "min_range": 2,
+        "max_range": 5,
+        "damage": 4,
+        "element": "water",
+        "los": true,
+        "projectile": "frost_bolt",
+        "impact": "frost_bolt_impact"
+      },
+      "art": "book_wraith",
+      "placeholder": {
+        "shape": "wraith",
+        "height": 92
+      }
+    },
+    {
+      "id": "the_pale_archivist",
+      "name": "The Pale Archivist",
+      "dungeon": "frostspire_archive",
+      "role": "boss",
+      "level_min": 10,
+      "level_max": 20,
+      "hp": 88,
+      "ap": 6,
+      "mp": 2,
+      "attack": {
+        "id": "archivist_ledger",
+        "name": "Ledger Strike",
+        "ap": 4,
+        "min_range": 1,
+        "max_range": 2,
+        "damage": 10,
+        "element": "water"
+      },
+      "art": "the_pale_archivist",
+      "signature": {
+        "id": "archivist_pages",
+        "name": "Unbound Pages",
+        "kind": "summon",
+        "ap": 2,
+        "summon": "book_wraith",
+        "count": 2,
+        "first_turn": 2,
+        "every": 3,
+        "cap_alive": 4,
+        "cap_total": 4
+      },
+      "placeholder": {
+        "shape": "archivist",
+        "height": 132
+      }
+    },
+    {
+      "id": "frozen_ice_construct",
+      "name": "Frozen Ice Construct",
+      "dungeon": "frostspire_archive",
+      "role": "basic",
+      "level_min": 10,
+      "level_max": 20,
+      "hp": 30,
+      "ap": 5,
+      "mp": 2,
+      "attack": {
+        "id": "frozen_slam",
+        "name": "Rime Slam",
+        "ap": 4,
+        "min_range": 1,
+        "max_range": 1,
+        "damage": 7,
+        "element": "water",
+        "chill": {
+          "mp": 1
+        }
+      },
+      "art": "frozen_ice_construct",
+      "variant_of": "ice_construct",
+      "star_min": 5,
+      "stand_in": {
+        "art": "ice_construct",
+        "tint": [
+          0.62,
+          0.9,
+          1.45,
+          1.0
+        ]
+      },
+      "placeholder": {
+        "shape": "construct",
+        "height": 108
+      }
+    },
+    {
+      "id": "frozen_book_wraith",
+      "name": "Frozen Book Wraith",
+      "dungeon": "frostspire_archive",
+      "role": "ranged",
+      "level_min": 10,
+      "level_max": 20,
+      "hp": 10,
+      "ap": 4,
+      "mp": 3,
+      "attack": {
+        "id": "frozen_bolt",
+        "name": "Rime Bolt",
+        "ap": 3,
+        "min_range": 2,
+        "max_range": 5,
+        "damage": 4,
+        "element": "water",
+        "los": true,
+        "projectile": "frost_bolt_frozen",
+        "impact": "frost_bolt_impact",
+        "chill": {
+          "mp": 1
+        }
+      },
+      "art": "frozen_book_wraith",
+      "variant_of": "book_wraith",
+      "star_min": 5,
+      "stand_in": {
+        "art": "book_wraith",
+        "tint": [
+          0.62,
+          0.9,
+          1.45,
+          1.0
+        ],
+        "scale": 1.0
+      },
+      "placeholder": {
+        "shape": "wraith",
+        "height": 92
+      }
+    },
+    {
+      "id": "the_frozen_archivist",
+      "name": "The Frozen Archivist",
+      "dungeon": "frostspire_archive",
+      "role": "boss",
+      "level_min": 10,
+      "level_max": 20,
+      "hp": 88,
+      "ap": 6,
+      "mp": 2,
+      "attack": {
+        "id": "frozen_ledger",
+        "name": "Frozen Ledger",
+        "ap": 4,
+        "min_range": 1,
+        "max_range": 2,
+        "damage": 10,
+        "element": "water"
+      },
+      "art": "the_frozen_archivist",
+      "signature": {
+        "id": "frozen_pages",
+        "name": "Unbound Frozen Pages",
+        "kind": "summon",
+        "ap": 2,
+        "summon": "frozen_book_wraith",
+        "count": 2,
+        "first_turn": 2,
+        "every": 2,
+        "cap_alive": 4,
+        "cap_total": 6
+      },
+      "signature2": {
+        "id": "rime_patches",
+        "name": "Rime Patches",
+        "kind": "hazard",
+        "hazard": "frost_patch",
+        "ap": 2,
+        "first_turn": 1,
+        "every": 2,
+        "cells_min": 2,
+        "cells_max": 3,
+        "turns": 3,
+        "hp": 5,
+        "mp_loss": 2
+      },
+      "variant_of": "the_pale_archivist",
+      "star_min": 5,
+      "stand_in": {
+        "art": "the_pale_archivist",
+        "tint": [
+          0.62,
+          0.9,
+          1.45,
+          1.0
+        ]
+      },
+      "placeholder": {
+        "shape": "archivist",
+        "height": 132
+      }
     }
   ],
   "stars": {
-    "note": "Star difficulty mirrors the mobile Stasis stars (origin/mobile backend/stasis_catalog.gd). The player picks \u26051-\u26055 per run on the entry panel; no unlock gate, as on mobile. Monster HP and damage are the level-band stats times the star row. Mobile's STAR_SCALE is tuned for a party of 4 from \u26053 (PARTY_FOR_STAR, PARTY_SCALE); PC runs are solo for now, so only the solo row applies and the mobile multipliers are scaled down for a solo level 1-10 hero (see scale vs mobile_scale). Tuned with tests/sim_granary_stars.gd (solo bot, level 2, 8 runs x 5 classes): \u26051 85%, \u26052 68%, \u26053 60%, \u26054 58%, \u26055 38%.",
+    "note": "Star difficulty mirrors the mobile Stasis stars (origin/mobile backend/stasis_catalog.gd). The player picks ★1-★5 per run on the entry panel; no unlock gate, as on mobile. Monster HP and damage are the level-band stats times the star row. Mobile's STAR_SCALE is tuned for a party of 4 from ★3 (PARTY_FOR_STAR, PARTY_SCALE); PC runs are solo for now, so only the solo row applies and the mobile multipliers are scaled down for a solo level 1-10 hero (see scale vs mobile_scale). Tuned with tests/sim_granary_stars.gd (solo bot, level 2, 8 runs x 5 classes): ★1 85%, ★2 68%, ★3 60%, ★4 58%, ★5 38%.",
     "mobile_scale": {
       "1": [
         1.0,
@@ -260,7 +498,36 @@
         1.0
       ]
     },
-    "packs_note": "Room A packs by star (Mauro: at least 6 monsters in the first room): \u26051-\u26052 2 rats + 2 Sling Rats + 2 Drudges; \u26053-\u26054 3 + 2 + 2; \u26055 3 radioactive rats + 3 radioactive Sling Rats + 2 Drudges. Room B: the Ratking + escort (2 rats, 1 Drudge); at \u26055 the Radioactive Ratking with radioactive escort rats. Packs live in run.json (packs by star).",
-    "star5": "\u26055 boss form (Mauro: 'Boss 5 stars should be a radioactive rat'): the Radioactive Ratking. Summons radioactive rats; every other turn he leaves 2-3 toxic pools around the hero (last 3 hero turns, 6 poison when the hero ends a turn on one). Radioactive Sling Rats add a small poison (2 HP for 2 turns)."
+    "packs_note": "Room A packs by star (Mauro: at least 6 monsters in the first room): ★1-★2 2 rats + 2 Sling Rats + 2 Drudges; ★3-★4 3 + 2 + 2; ★5 3 radioactive rats + 3 radioactive Sling Rats + 2 Drudges. Room B: the Ratking + escort (2 rats, 1 Drudge); at ★5 the Radioactive Ratking with radioactive escort rats. Packs live in run.json (packs by star).",
+    "star5": "★5 boss form (Mauro: 'Boss 5 stars should be a radioactive rat'): the Radioactive Ratking. Summons radioactive rats; every other turn he leaves 2-3 toxic pools around the hero (last 3 hero turns, 6 poison when the hero ends a turn on one). Radioactive Sling Rats add a small poison (2 HP for 2 turns).",
+    "by_dungeon": {
+      "frostspire_archive": {
+        "note": "Frostspire Archive rows (solo, level 10-20). Tuned with tests/sim_dungeon_stars.gd frostspire_archive (solo bot, level 12, 8 runs x 5 classes). See data/world/dungeons/frostspire_archive/README.md.",
+        "scale": {
+          "1": [
+            1.0,
+            1.0
+          ],
+          "2": [
+            1.1,
+            1.05
+          ],
+          "3": [
+            1.15,
+            1.1
+          ],
+          "4": [
+            1.2,
+            1.1
+          ],
+          "5": [
+            1.0,
+            1.0
+          ]
+        },
+        "packs_note": "Room A: ★1-★2 2 Ice Constructs + 4 Book Wraiths; ★3-★4 3 + 4; ★5 2 Frozen Ice Constructs + 1 Ice Construct + 5 Frozen Book Wraiths. Room B: the Pale Archivist + escort (2 Book Wraiths, 1 Ice Construct); ★5 the Frozen Archivist with frozen escort wraiths.",
+        "star5": "★5 boss form: the Frozen Archivist. Unbound Frozen Pages calls frozen wraiths every 2nd turn (4 alive, 6 in all). Every other turn (from his 1st) Rime Patches freezes 2-3 cells around the hero (the hero's cell first) for 3 hero turns: a hero who ends a turn on one takes 5 frost and has 2 MP less next turn. Walking across is safe. Frozen monsters chill: a hit takes 1 MP off the hero's next turn (no stacking). A rune pad thaws: a turn that starts on one keeps its full MP."
+      }
+    }
   }
 }

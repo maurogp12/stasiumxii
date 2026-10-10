@@ -4,7 +4,8 @@
   "status": "proposed",
   "notes": [
     "Section 4.6, Crosshaven phase (section 00): one dungeon per town band, five in all.",
-    "Old Granary Cellar is built. The other four are approved designs, planned: no door yet.",
+    "Old Granary Cellar and Frostspire Archive are built. The other three are approved designs, planned: no door yet.",
+    "Frostspire Archive: the archive door at crosshaven_northgate (21, 10), the archive building on (20-22, 7-9) (footprint from the art manifest), the Door Keeper at (20, 10).",
     "door is the hatch cell: passable, clickable, not an NPC, gate, exit or spawn cell. The granary building stands on the cells north of it (footprint from the art manifest) and blocks walking.",
     "keeper names the Door Keeper NPC that opens the entry panel. party 1-4 is the rule; runs are solo for now."
   ],
@@ -31,13 +32,15 @@
       "level_zone": "northgate",
       "level_min": 10,
       "level_max": 20,
+      "door": {"zone_id": "crosshaven_northgate", "x": 21, "y": 10},
       "door_art": "door_frostspire_archive",
       "theme": "frost_archive",
       "boss": "The Pale Archivist",
       "rooms": 2,
       "party": {"min": 1, "max": 4},
       "keeper": "northgate_door_keeper",
-      "status": "planned"
+      "run": "res://data/world/dungeons/frostspire_archive/run.json",
+      "status": "built"
     },
     {
       "id": "saltmaw_grotto",
