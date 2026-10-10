@@ -23,6 +23,7 @@ const WORLD := preload("res://scenes/world/crosshaven/crosshaven_world.tscn")
 const RUN_SCENE_PATH := "res://scenes/world/dungeon/dungeon_run.tscn"
 const SCHEMA := "res://data/world/schema/dungeons.schema.json"
 const GRANARY := "old_granary_cellar"
+const FROST := "frostspire_archive"
 const DOOR := Vector2i(16, 11)
 const KEEPER := Vector2i(15, 11)
 const CLASSES: Array[String] = ["kestrel", "ironjaw", "mender", "gloam", "bastion"]
@@ -1043,12 +1044,21 @@ func _test_monster_click_sweep() -> void:
 	# (1x art, still props).
 	var passes: Array = []
 	for c in CLASSES:
-		passes.append([c, false])
-	passes.append(["ironjaw", true])
-	passes.append(["kestrel", true])
+		passes.append([c, false, GRANARY, 1])
+	passes.append(["ironjaw", true, GRANARY, 1])
+	passes.append(["kestrel", true, GRANARY, 1])
+	# The Frostspire Archive's monsters (Ice Constructs, Book Wraiths, the Pale
+	# Archivist; ★5 the frozen forms) get the same sweep.
+	for c in CLASSES:
+		passes.append([c, false, FROST, 1])
+	passes.append(["ironjaw", false, FROST, 5])
+	passes.append(["kestrel", true, FROST, 5])
+	var frost_seen := 0
 	for pass_row in passes:
 		var class_id: String = pass_row[0]
 		var perf: bool = pass_row[1]
+		var dungeon_id: String = pass_row[2]
+		var star: int = pass_row[3]
 		VisualSettings._note_still(perf)
 		Art._cache.clear()
 		var spells: Array = []
@@ -1056,7 +1066,10 @@ func _test_monster_click_sweep() -> void:
 			if view_script.spell_target_kind(str(spell_id)) in ["enemy", "burst", "any"]:
 				spells.append(str(spell_id))
 		eq(spells.is_empty(), false, "%s has a unit-targeted cast to aim" % class_id)
-		Launcher.pending = {"dungeon_id": GRANARY, "level": 1, "class_id": class_id, "autoplay": false, "return_zone": "crosshaven_stoneford", "return_cell": DOOR, "seed": 7}
+		if dungeon_id == GRANARY:
+			Launcher.pending = {"dungeon_id": GRANARY, "level": 1, "class_id": class_id, "autoplay": false, "return_zone": "crosshaven_stoneford", "return_cell": DOOR, "seed": 7}
+		else:
+			Launcher.pending = {"dungeon_id": FROST, "level": 12, "class_id": class_id, "star": star, "autoplay": false, "return_zone": "crosshaven_northgate", "return_cell": Vector2i(21, 10), "seed": 7}
 		var scene: Node = (load(RUN_SCENE_PATH) as PackedScene).instantiate()
 		root.add_child(scene)
 		for i in 4:
@@ -1075,7 +1088,7 @@ func _test_monster_click_sweep() -> void:
 				await process_frame
 				board._fit_board_camera()
 				await process_frame
-				var label := "%s%s %s at %dx%d" % [class_id, " (performance)" if perf else "", "room A" if room_index == 0 else "room B", size.x, size.y]
+				var label := "%s%s%s %s at %dx%d" % ["" if dungeon_id == GRANARY else "archive ★%d " % star, class_id, " (performance)" if perf else "", "room A" if room_index == 0 else "room B", size.x, size.y]
 				var per_size_key := "%dx%d" % [size.x, size.y]
 				for spell_id in spells:
 					hud._selected_spell = spell_id
@@ -1088,6 +1101,8 @@ func _test_monster_click_sweep() -> void:
 							continue
 						if spell_id == spells[0]:
 							monsters_seen += 1
+							if dungeon_id == FROST:
+								frost_seen += 1
 						var want: Vector2i = pawn.grid_position
 						var tried := 0
 						var skipped := 0
@@ -1145,6 +1160,7 @@ func _test_monster_click_sweep() -> void:
 		print("  click sweep %s: %d clicks, %d misses" % [key, int(by_size[key]), int(miss_by_size.get(key, 0))])
 	eq(total > 1000, true, "the sweep clicks every monster body many times (%d)" % total)
 	eq(misses, 0, "every click on a monster's body picks that monster's cell")
+	eq(frost_seen >= 60, true, "the sweep covers the Frostspire monsters (%d monster views)" % frost_seen)
 
 
 ## Screen points on a monster's body: its visible pixels when the pixel mask
