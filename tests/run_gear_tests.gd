@@ -28,6 +28,7 @@ func _run() -> void:
 	_test_ap_mp_clamp()
 	_test_stasis_loot()
 	_test_loot_by_star()
+	_test_drop_chances()
 	_test_temporary_kit()
 	_test_save_roundtrip()
 	_test_gear_screen()
@@ -191,10 +192,10 @@ func _test_stasis_loot() -> void:
 	var first := bag.record_stasis_clear(T0, 1, pick)
 	eq(bool(first["chest"]), true, "first clear opens a chest")
 	eq(first["items"].size(), 1, "Stasis 1 chest holds one piece")
-	eq(str(first["items"][0]["item_id"]), "ashmantle.weapon", "pick 0,0 = Ashmantle weapon")
+	eq(str(first["items"][0]["item_id"]), "ashmantle.boots", "★1 picks 0, 0, .99 = Ashmantle boots")
 	eq(int(first["items"][0]["plus"]), 0, "drops are +0")
 	var second := bag.record_stasis_clear(T0 + 10, 1, pick)
-	eq(str(second["items"][0]["item_id"]), "vesperwell.boots", "pick .99,.99 = Vesperwell boots")
+	eq(str(second["items"][0]["item_id"]), "cragmaw.head", "★1 picks .99, .5, .3 = Cragmaw head")
 	var seen := {}
 	for n in 3:
 		var loot := bag.record_stasis_clear(T0 + 20 + n, 1, pick)
@@ -231,7 +232,7 @@ func _test_loot_by_star() -> void:
 	eq(GearBag.families_for_star(4), up_to_rare, "★4 stays on Normal + Rare")
 	var all: Array = up_to_rare.duplicate()
 	all.append_array(legends)
-	eq(GearBag.families_for_star(5), all, "★5 / boss adds the Legendaries")
+	eq(GearBag.families_for_star(5), all, "★5 can drop every ladder family")
 	for star in [1, 3, 5]:
 		var bag := GearBag.new()
 		var pool: Array = GearBag.families_for_star(int(star))
@@ -246,9 +247,116 @@ func _test_loot_by_star() -> void:
 	eq(str(GearBag.FAMILIES["sheaf"]["rarity"]), "Rare", "Sheaf is Rare")
 	eq(str(GearBag.FAMILIES["ironveil"]["rarity"]), "Rare", "Ironveil is Rare")
 	eq(str(GearBag.FAMILIES["brightedge"]["rarity"]), "Legendary", "Brightedge is Legendary")
+	eq(GearBag.families_for_star(5).has("brightedge"), true, "★5 can drop Brightedge")
 	var a := GearBag.icon("sheaf.chest")
 	eq(a != null, true, "Sheaf chest icon loads")
 	eq(a == GearBag.icon("sheaf.chest"), true, "icons are cached so result/inventory draws keep them alive")
+
+
+## Mauro locked the chest odds: tier first, then a family of that tier, then a slot.
+## ★2 uses ★1, ★4 uses ★3. Boss is its own row. Ultra never drops.
+func _test_drop_chances() -> void:
+	eq(GearBag.drop_weights(1), {"Normal": 100, "Rare": 0, "Legendary": 0}, "★1 is 100% Normal")
+	eq(GearBag.drop_weights(2), GearBag.drop_weights(1), "★2 uses the ★1 table")
+	eq(GearBag.drop_weights(3), {"Normal": 70, "Rare": 30, "Legendary": 0}, "★3 is 70% Normal, 30% Rare")
+	eq(GearBag.drop_weights(4), GearBag.drop_weights(3), "★4 uses the ★3 table")
+	eq(GearBag.drop_weights(5), {"Normal": 60, "Rare": 30, "Legendary": 10}, "★5 is 60/30/10")
+	eq(GearBag.drop_weights(5, true), {"Normal": 50, "Rare": 30, "Legendary": 20}, "boss is 50/30/20")
+	eq(GearBag.drop_weights(1, true), GearBag.drop_weights(5, true), "the boss row ignores the door star")
+	eq(GearBag.roll_tier(GearBag.drop_weights(1), 0.99), "Normal", "★1 has no other tier")
+	eq(GearBag.roll_tier(GearBag.drop_weights(3), 0.699), "Normal", "★3 stays Normal under 70%")
+	eq(GearBag.roll_tier(GearBag.drop_weights(3), 0.70), "Rare", "★3 becomes Rare at 70%")
+	eq(GearBag.roll_tier(GearBag.drop_weights(5), 0.899), "Rare", "★5 stays Rare under 90%")
+	eq(GearBag.roll_tier(GearBag.drop_weights(5), 0.90), "Legendary", "★5 becomes Legendary at 90%")
+	eq(GearBag.roll_tier(GearBag.drop_weights(1, true), 0.799), "Rare", "boss stays Rare under 80%")
+	eq(GearBag.roll_tier(GearBag.drop_weights(1, true), 0.80), "Legendary", "boss becomes Legendary at 80%")
+	eq(GearBag.roll_drop(1, _picks([0.0, 0.0, 0.0]))["item_id"], "ashmantle.weapon", "tier 0, family 0, slot 0 is Ashmantle weapon")
+	eq(GearBag.roll_drop(1, _picks([0.0, 0.99, 0.99]))["item_id"], "vesperwell.boots", "a high Normal roll is still Vesperwell boots")
+	eq(GearBag.roll_drop(3, _picks([0.95, 0.0, 0.0]))["item_id"], "ironveil.weapon", "★3 above 70% is the first Rare")
+	eq(GearBag.roll_drop(5, _picks([0.95, 0.0, 0.0]))["item_id"], "oathgrave.weapon", "★5 above 90% is the first Legendary")
+	eq(GearBag.roll_drop(1, _picks([0.85, 0.0, 0.0]), true)["item_id"], "oathgrave.weapon", "boss above 80% is Legendary")
+	var wired := GearBag.new()
+	var seq := [0.95, 0.0, 0.0]
+	var at := [0]
+	var pick := func() -> float:
+		var v: float = seq[at[0]]
+		at[0] += 1
+		return v
+	var got := wired.record_stasis_clear(T0, 5, pick)
+	eq(str(got["items"][0]["item_id"]), "oathgrave.weapon", "the chest uses the same tier-then-family-then-slot roll")
+	eq(int(got["items"][0]["plus"]), 0, "weighted drops stay +0")
+	var ultras := ["gatewarden", "sandhawk", "pitmaw", "hushring", "mercywell"]
+	for ultra in ultras:
+		eq(GearBag.FAMILIES.has(ultra), false, "%s is not a drop family" % ultra)
+		eq(GearBag.families_of_rarity("Legendary").has(ultra), false, "%s is not in the Legendary pool" % ultra)
+	eq(_drop_sample(1, false, 64, 337)["ids"], _drop_sample(2, false, 64, 337)["ids"], "★2 repeats the ★1 sequence")
+	eq(_drop_sample(3, false, 64, 337)["ids"], _drop_sample(4, false, 64, 337)["ids"], "★4 repeats the ★3 sequence")
+	eq(_drop_sample(1, true, 64, 337)["ids"], _drop_sample(5, true, 64, 337)["ids"], "a boss chest repeats regardless of star")
+	var trials := 8000
+	var tables := [
+		{"star": 1, "boss": false, "want": {"Normal": 100, "Rare": 0, "Legendary": 0}},
+		{"star": 2, "boss": false, "want": {"Normal": 100, "Rare": 0, "Legendary": 0}},
+		{"star": 3, "boss": false, "want": {"Normal": 70, "Rare": 30, "Legendary": 0}},
+		{"star": 4, "boss": false, "want": {"Normal": 70, "Rare": 30, "Legendary": 0}},
+		{"star": 5, "boss": false, "want": {"Normal": 60, "Rare": 30, "Legendary": 10}},
+		{"star": 5, "boss": true, "want": {"Normal": 50, "Rare": 30, "Legendary": 20}},
+		{"star": 1, "boss": true, "want": {"Normal": 50, "Rare": 30, "Legendary": 20}},
+	]
+	for spec in tables:
+		var once := _drop_sample(int(spec["star"]), bool(spec["boss"]), trials, 337)
+		var twice := _drop_sample(int(spec["star"]), bool(spec["boss"]), trials, 337)
+		eq(once["ids"], twice["ids"], "★%d boss=%s repeats under the same seed" % [int(spec["star"]), bool(spec["boss"])])
+		var want: Dictionary = spec["want"]
+		for rarity in GearBag.RARITIES:
+			_near_percent(int(once["rarity"].get(rarity, 0)), trials, int(want[rarity]), "★%d boss=%s %s" % [int(spec["star"]), bool(spec["boss"]), rarity])
+		for rarity in GearBag.RARITIES:
+			if int(want[rarity]) <= 0:
+				continue
+			var families: Array = GearBag.families_of_rarity(rarity)
+			var total := 0
+			for fam in families:
+				total += int(once["family"].get(fam, 0))
+			var mean := float(total) / float(families.size())
+			for fam in families:
+				var n := int(once["family"].get(fam, 0))
+				truthy(mean > 0.0 and absf(float(n) - mean) / mean <= 0.40, "★%d %s %s spread %d vs %.0f" % [int(spec["star"]), rarity, fam, n, mean])
+		for ultra in ultras:
+			eq(int(once["family"].get(ultra, 0)), 0, "★%d never drops %s" % [int(spec["star"]), ultra])
+		eq(int(once["family"].get("duskbrand", 0)), 0, "★%d never drops Duskbrand" % int(spec["star"]))
+
+
+func _picks(values: Array) -> Callable:
+	var at := [0]
+	return func() -> float:
+		var v: float = values[at[0]]
+		at[0] += 1
+		return v
+
+
+func _drop_sample(star: int, boss: bool, trials: int, seed_value: int) -> Dictionary:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = seed_value
+	var pick := func() -> float:
+		return rng.randf()
+	var rarity := {}
+	var family := {}
+	var ids: Array[String] = []
+	for _i in trials:
+		var rolled := GearBag.roll_drop(star, pick, boss)
+		var rare := str(rolled["rarity"])
+		var fam := str(rolled["family"])
+		rarity[rare] = int(rarity.get(rare, 0)) + 1
+		family[fam] = int(family.get(fam, 0)) + 1
+		ids.append(str(rolled["item_id"]))
+	return {"rarity": rarity, "family": family, "ids": ids}
+
+
+func _near_percent(count: int, trials: int, percent: int, msg: String) -> void:
+	if percent == 0:
+		eq(count, 0, "%s is never rolled" % msg)
+		return
+	var got := float(count) / float(trials) * 100.0
+	truthy(absf(got - float(percent)) <= 2.0, "%s is %.2f%% (want %d%% ±2)" % [msg, got, percent])
 
 
 ## The balance-test kit stays off. ProgressEpoch is the one-time fresh start.
@@ -455,6 +563,10 @@ func _test_gear_screen() -> void:
 	screen.wear(h1)
 	screen.wear(c)
 	eq(screen.bag().set_counts(), {"undertow": 2}, "two Undertow pieces worn")
+	var bow := screen.bag().add_item("undertow", "weapon")
+	screen.wear(bow)
+	var weapon_icon := screen.find_child("Slot_weapon", true, false) as Button
+	eq(weapon_icon.icon.resource_path.get_file(), "undertow_weapon_kestrel.png", "the gear screen draws the focused class weapon")
 	eq(screen.find_child("Attune_undertow_Air", true, false), null, "no attune buttons")
 	eq(int(screen.bag().bonus_stats().get("init", 0)), 4, "Undertow 2pc +4 Init shows in the set stats")
 	eq(str(screen.choose_attune("undertow", "Earth")["reason"]), "no_attune", "attune is refused")
@@ -547,6 +659,14 @@ func _test_inventory_screen() -> void:
 	eq(GearBag.icon_path("sheaf.weapon", "kestrel").get_file(), "sheaf_weapon_kestrel.png", "a Kestrel sees the Sheaf bow")
 	eq(GearBag.icon_path("sheaf.weapon").get_file(), "sheaf_weapon_ironjaw.png", "no class shows the axes")
 	eq(GearBag.icon_path("nope.head"), "", "unknown items have no art")
+	eq(GearBag.ICON_ALIAS, {}, "set sheets are not aliased")
+	eq(GearBag.icon_path("oathgrave.head").get_file(), "oathgrave_head.png", "Oathgrave uses its own head")
+	eq(GearBag.icon_path("ashmantle.chest").get_file(), "ashmantle_chest.png", "Ashmantle uses its own chest")
+	eq(GearBag.icon_path("ravenmourn.weapon", "kestrel").get_file(), "ravenmourn_weapon_kestrel.png", "Ravenmourn uses its own bow")
+	eq(GearBag.FAMILIES.has("gatewarden"), false, "Gatewarden is not a wired set yet")
+	for ultra in ["gatewarden", "sandhawk", "pitmaw", "hushring", "mercywell"]:
+		truthy(FileAccess.file_exists("res://art/items/ultra/%s/%s_head.png" % [ultra, ultra]), "%s head art is in the repo" % ultra)
+		truthy(FileAccess.file_exists("res://art/items/ultra/%s/%s_weapon.png" % [ultra, ultra]), "%s weapon art is in the repo" % ultra)
 	inv.show_tab("equipment")
 	var tile := inv.find_child("Item_%d" % w, true, false)
 	truthy(tile != null and tile.icon_tex != null, "bag tiles draw the set art")

@@ -325,7 +325,7 @@ func _clear(box: Node) -> void:
 
 ## Set art icon (GearBag.icon) at the left of a row.
 func _set_icon(button: Button, item_id: String) -> void:
-	var art := GearBag.icon(item_id)
+	var art := GearBag.icon(item_id, _bag.focus_class)
 	if art == null:
 		return
 	button.icon = art
