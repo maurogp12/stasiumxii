@@ -383,30 +383,39 @@
    "terrain": "ground",
    "elevation": 0,
    "paint_only": [
-    "rock_spire"
-   ],
-   "blocks": true
+    "whirlpool"
+   ]
   },
   {
    "x": 5,
    "y": 4,
    "terrain": "ground",
    "elevation": 0,
-   "paint_only": []
+   "paint_only": [
+    "rock_spire",
+    "whirlpool"
+   ],
+   "blocks": true
   },
   {
    "x": 6,
    "y": 4,
    "terrain": "ground",
    "elevation": 0,
-   "paint_only": []
+   "paint_only": [
+    "whirlpool"
+   ]
   },
   {
    "x": 7,
    "y": 4,
    "terrain": "ground",
    "elevation": 0,
-   "paint_only": []
+   "paint_only": [
+    "rock_spire",
+    "whirlpool"
+   ],
+   "blocks": true
   },
   {
    "x": 8,
@@ -414,9 +423,8 @@
    "terrain": "ground",
    "elevation": 0,
    "paint_only": [
-    "rock_spire"
-   ],
-   "blocks": true
+    "whirlpool"
+   ]
   },
   {
    "x": 9,
@@ -475,7 +483,11 @@
    "y": 5,
    "terrain": "ground",
    "elevation": 0,
-   "paint_only": []
+   "paint_only": [
+    "rock_spire",
+    "whirlpool"
+   ],
+   "blocks": true
   },
   {
    "x": 5,
@@ -512,7 +524,9 @@
    "y": 5,
    "terrain": "ground",
    "elevation": 0,
-   "paint_only": []
+   "paint_only": [
+    "whirlpool"
+   ]
   },
   {
    "x": 9,
@@ -569,9 +583,8 @@
    "terrain": "ground",
    "elevation": 0,
    "paint_only": [
-    "rock_spire"
-   ],
-   "blocks": true
+    "whirlpool"
+   ]
   },
   {
    "x": 5,
@@ -609,7 +622,8 @@
    "terrain": "ground",
    "elevation": 0,
    "paint_only": [
-    "rock_spire"
+    "rock_spire",
+    "whirlpool"
    ],
    "blocks": true
   },
@@ -667,7 +681,11 @@
    "y": 7,
    "terrain": "ground",
    "elevation": 0,
-   "paint_only": []
+   "paint_only": [
+    "rock_spire",
+    "whirlpool"
+   ],
+   "blocks": true
   },
   {
    "x": 5,
@@ -704,7 +722,9 @@
    "y": 7,
    "terrain": "ground",
    "elevation": 0,
-   "paint_only": []
+   "paint_only": [
+    "whirlpool"
+   ]
   },
   {
    "x": 9,
@@ -761,30 +781,39 @@
    "terrain": "ground",
    "elevation": 0,
    "paint_only": [
-    "rock_spire"
-   ],
-   "blocks": true
+    "whirlpool"
+   ]
   },
   {
    "x": 5,
    "y": 8,
    "terrain": "ground",
    "elevation": 0,
-   "paint_only": []
+   "paint_only": [
+    "rock_spire",
+    "whirlpool"
+   ],
+   "blocks": true
   },
   {
    "x": 6,
    "y": 8,
    "terrain": "ground",
    "elevation": 0,
-   "paint_only": []
+   "paint_only": [
+    "whirlpool"
+   ]
   },
   {
    "x": 7,
    "y": 8,
    "terrain": "ground",
    "elevation": 0,
-   "paint_only": []
+   "paint_only": [
+    "rock_spire",
+    "whirlpool"
+   ],
+   "blocks": true
   },
   {
    "x": 8,
@@ -792,9 +821,8 @@
    "terrain": "ground",
    "elevation": 0,
    "paint_only": [
-    "rock_spire"
-   ],
-   "blocks": true
+    "whirlpool"
+   ]
   },
   {
    "x": 9,

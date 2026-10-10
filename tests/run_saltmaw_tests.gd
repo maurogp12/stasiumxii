@@ -35,6 +35,8 @@ const CLASSES: Array[String] = ["kestrel", "ironjaw", "mender", "gloam", "bastio
 ## The art kit's board props (build_rooms.py KIT_PROPS), checked against the
 ## manifest once it lists them.
 const KIT_PROPS: Array[String] = ["barnacle_rock", "coral_cluster", "sunken_crate", "barrel", "giant_clam", "anchor", "treasure_chest", "sunken_statue", "rock_spire"]
+## Room A uses only the props both rooms share (the art kit's room tags).
+const ROOM_A_PROPS: Array[String] = ["sunken_crate", "barrel", "coral_cluster", "anchor", "barnacle_rock"]
 
 var _passed := 0
 var _failed := 0
@@ -171,6 +173,8 @@ func _test_run_file_and_rooms() -> void:
 				blocked += 1
 				var prop := str((rec["paint_only"] as Array)[0]).trim_suffix(":part")
 				eq(kit_props.has(prop), true, "%s prop %s at %s is an art kit prop" % [label, prop, c])
+				if index == 0:
+					eq(ROOM_A_PROPS.has(prop), true, "room A prop %s at %s is a shared kit prop" % [prop, c])
 			else:
 				walk[c] = true
 			if str(rec["special"]) != "":
@@ -199,15 +203,26 @@ func _test_run_file_and_rooms() -> void:
 		eq(cut < lines, true, "%s props never cut every line (%d of %d)" % [label, cut, lines])
 	var b_cells: Array = run.combat_config(1, 1)["dungeon"]["cells"]
 	var whirl := 0
+	var water := 0
 	var spires := 0
+	var b_walk := {}
 	for rec in b_cells:
+		var c: Vector2i = rec["pos"]
+		if not bool(rec["blocks"]):
+			b_walk[c] = true
 		if (rec["paint_only"] as Array).has("whirlpool"):
 			whirl += 1
-			eq(bool(rec["blocks"]), false, "the whirlpool cell %s is walkable" % rec["pos"])
+			eq(c.x >= 4 and c.x <= 8 and c.y >= 4 and c.y <= 8, true, "whirlpool cell %s is on the 5x5 decal (4-8 x 4-8)" % c)
+			if str(rec["special"]) != "":
+				water += 1
+				eq(c.x >= 5 and c.x <= 7 and c.y >= 5 and c.y <= 7, true, "pad %s is on the inner 3x3 water" % c)
 		if (rec["paint_only"] as Array).has("rock_spire"):
 			spires += 1
-	eq(whirl, 9, "room B's whirlpool covers 3x3 pad cells")
-	eq(spires >= 4, true, "rock spires ring the whirlpool (%d)" % spires)
+			eq((rec["paint_only"] as Array).has("whirlpool"), true, "spire %s stands on the kerb" % c)
+	eq(whirl, 25, "room B's whirlpool decal covers 5x5 cells")
+	eq(water, 9, "its inner 3x3 water is the room's pads")
+	eq(spires, 7, "seven rock spires on the kerb, with gaps")
+	eq(_flood(b_walk, Vector2i(6, 10), {}).has(Vector2i(6, 6)), true, "the whirlpool's centre is reachable through the gaps")
 	var a_cells: Array = run.combat_config(0, 1)["dungeon"]["cells"]
 	var coral := 0
 	for rec in a_cells:

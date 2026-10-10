@@ -180,6 +180,13 @@ func _dress_room() -> void:
 		prop.position = _cell_to_local(c2)
 		prop.z_as_relative = false
 		prop.z_index = VISUAL_SORT.unit_z_index(c2, _elev_at(c2))
+	if decal_id != "":
+		# A decal bigger than its pads (the grotto's 5x5 whirlpool round its
+		# 3x3 water): cells that name the decal draw their piece of it too.
+		for cell in tiles.keys():
+			var dc: Vector2i = cell
+			if not grate_cells.has(dc) and (paint.get(dc, []) as Array).has(decal_id):
+				grate_cells.append(dc)
 	if not grate_cells.is_empty():
 		var south: Vector2i = grate_cells[0]
 		for gc in grate_cells:

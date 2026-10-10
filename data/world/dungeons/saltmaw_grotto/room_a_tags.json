@@ -178,7 +178,7 @@
    "terrain": "ground",
    "elevation": 0,
    "paint_only": [
-    "treasure_chest"
+    "barrel"
    ],
    "blocks": true
   },
@@ -878,7 +878,7 @@
    "terrain": "ground",
    "elevation": 0,
    "paint_only": [
-    "giant_clam"
+    "barnacle_rock"
    ],
    "blocks": true
   },

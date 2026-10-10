@@ -21,12 +21,14 @@ ROOT = Path(__file__).parent
 SIZE = 12
 
 # Prop names are the art kit's board props (art manifest board.props,
-# art/pc/dungeons/saltmaw_grotto/manifest.json), all 1x1 and blocking:
-# barnacle_rock, coral_cluster, sunken_crate, barrel, giant_clam, anchor,
-# treasure_chest, sunken_statue, rock_spire (the ring round the whirlpool).
+# art/pc/dungeons/saltmaw_grotto/manifest.json), all 1x1 and blocking. Rooms
+# A and B share sunken_crate, barrel, coral_cluster, anchor, barnacle_rock;
+# giant_clam, treasure_chest, sunken_statue and rock_spire (the ring round the
+# whirlpool) are room B's.
+SHARED_PROPS = {"sunken_crate", "barrel", "coral_cluster", "anchor", "barnacle_rock"}
 KIT_PROPS = {
-    "barnacle_rock", "coral_cluster", "sunken_crate", "barrel", "giant_clam",
-    "anchor", "treasure_chest", "sunken_statue", "rock_spire",
+    "room_a": SHARED_PROPS,
+    "room_b": SHARED_PROPS | {"giant_clam", "treasure_chest", "sunken_statue", "rock_spire"},
 }
 
 # Room A, the sunken grotto. Rocks, crates and coral stand in short runs on
@@ -36,34 +38,40 @@ ROOM_A = {
     "hero": (8, 10),
     "props": {
         (5, 2): "barnacle_rock",
-        (0, 2): "treasure_chest",
+        (0, 2): "barrel",
         (11, 5): "coral_cluster",
         (2, 6): "sunken_crate", (3, 6): "barrel",
         (8, 6): "barnacle_rock", (9, 6): "coral_cluster",
         (5, 8): "anchor", (6, 8): "sunken_crate",
-        (10, 9): "giant_clam",
+        (10, 9): "barnacle_rock",
         (1, 10): "coral_cluster",
     },
     "pads": {(6, 5): "coral_pad", (1, 8): "coral_pad", (10, 7): "coral_pad", (4, 10): "coral_pad", (7, 9): "coral_pad", (4, 4): "coral_pad"},
 }
 
-# Room B, Old Saltmaw's lair. The whirlpool (3x3 walkable decal) is in the
-# middle: its nine cells are the room's pads. Rock spires ring it at the
-# corners and the sides, with gaps: a hero behind a spire is out of the
-# lantern's line. The room shell (backdrop) paints the whale bones, the
-# figureheads and the treasure heaps behind the walls.
+# Room B, Old Saltmaw's lair. The whirlpool is a 5x5 walkable floor decal
+# on (4-8, 4-8) (origin (4, 4), bottom-centre on the south tip of (8, 8)): a
+# stone kerb on its 16 border cells round the water on the inner 3x3, whose
+# nine cells are the room's pads. Seven rock spires stand on kerb cells with
+# gaps (the art mock's ring): a hero behind a spire is out of the lantern's
+# line. The room shell (backdrop) paints the whale bones, the figureheads and
+# the treasure heaps behind the walls.
+WHIRLPOOL_ORIGIN = (4, 4)
+WHIRLPOOL_SIZE = 5
+SPIRES_FROM_ORIGIN = [(0, 1), (1, 0), (3, 0), (4, 2), (3, 4), (1, 4), (0, 3)]
 ROOM_B = {
     "hero": (6, 10),
     "props": {
-        (4, 4): "rock_spire", (8, 4): "rock_spire",
-        (4, 8): "rock_spire", (8, 8): "rock_spire",
-        (4, 6): "rock_spire", (8, 6): "rock_spire",
+        **{(WHIRLPOOL_ORIGIN[0] + dx, WHIRLPOOL_ORIGIN[1] + dy): "rock_spire" for dx, dy in SPIRES_FROM_ORIGIN},
         (2, 1): "sunken_statue", (10, 1): "sunken_statue",
         (1, 4): "giant_clam", (10, 4): "treasure_chest",
         (2, 9): "anchor", (10, 9): "barrel",
         (1, 11): "sunken_crate", (11, 11): "coral_cluster",
     },
     "pads": {(x, y): "whirlpool" for x in range(5, 8) for y in range(5, 8)},
+    # Floor decal cells that are not pads (the kerb): they carry the decal's
+    # name too, so each cell draws its piece of the 5x5 decal (under a spire too).
+    "decal": {(WHIRLPOOL_ORIGIN[0] + dx, WHIRLPOOL_ORIGIN[1] + dy): "whirlpool" for dx in range(WHIRLPOOL_SIZE) for dy in range(WHIRLPOOL_SIZE)},
 }
 
 # Spawns per room (the run.json packs use these cells): every star's cells.
@@ -84,9 +92,14 @@ def build(room: dict) -> dict:
         for x in range(SIZE):
             rec = {"x": x, "y": y, "terrain": "ground", "elevation": 0, "paint_only": []}
             prop = room["props"].get((x, y))
+            decal = room.get("decal", {}).get((x, y))
             if prop:
                 rec["paint_only"] = [prop]
                 rec["blocks"] = True
+                if decal:
+                    rec["paint_only"].append(decal)
+            elif decal:
+                rec["paint_only"] = [decal]
             pad = room["pads"].get((x, y))
             if pad:
                 rec["paint_only"] = [pad]
@@ -133,9 +146,12 @@ def _round(v: float) -> int:
 def check(name: str, room: dict) -> None:
     props = room["props"]
     for c, kind in props.items():
-        assert kind in KIT_PROPS, f"{name}: {kind} at {c} is not a kit prop"
+        assert kind in KIT_PROPS[name], f"{name}: {kind} at {c} is not a {name} kit prop"
         assert 0 <= c[0] < SIZE and 0 <= c[1] < SIZE, f"{name}: prop {c} off the board"
     assert not set(props) & set(room["pads"]), f"{name}: a pad under a prop"
+    for c in room["pads"]:
+        if room.get("decal"):
+            assert c in room["decal"], f"{name}: pad {c} off the decal"
     walk = {(x, y) for y in range(SIZE) for x in range(SIZE) if (x, y) not in props}
     hero = room["hero"]
     assert hero in walk, f"{name}: hero start on a prop"
