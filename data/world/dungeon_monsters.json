@@ -892,8 +892,8 @@
       }
     },
     {
-      "id": "gravebound_bog_dead",
-      "name": "Gravebound Bog Dead",
+      "id": "bellbound_bog_dead",
+      "name": "Bellbound Bog Dead",
       "dungeon": "drowned_abbey",
       "role": "basic",
       "level_min": 30,
@@ -902,8 +902,8 @@
       "ap": 5,
       "mp": 2,
       "attack": {
-        "id": "gravebound_grasp",
-        "name": "Gravebound Grasp",
+        "id": "bellbound_grasp",
+        "name": "Bellbound Grasp",
         "ap": 4,
         "min_range": 1,
         "max_range": 1,
@@ -914,7 +914,7 @@
           "word": "mired"
         }
       },
-      "art": "gravebound_bog_dead",
+      "art": "bellbound_bog_dead",
       "variant_of": "bog_dead",
       "star_min": 5,
       "stand_in": {
@@ -932,8 +932,8 @@
       }
     },
     {
-      "id": "gravebound_mire_leech",
-      "name": "Gravebound Mire Leech",
+      "id": "bellbound_mire_leech",
+      "name": "Bellbound Mire Leech",
       "dungeon": "drowned_abbey",
       "role": "ranged",
       "level_min": 30,
@@ -942,8 +942,8 @@
       "ap": 4,
       "mp": 3,
       "attack": {
-        "id": "gravebound_bile",
-        "name": "Gravebound Bile",
+        "id": "bellbound_bile",
+        "name": "Bellbound Bile",
         "ap": 3,
         "min_range": 2,
         "max_range": 5,
@@ -957,7 +957,7 @@
           "word": "mired"
         }
       },
-      "art": "gravebound_mire_leech",
+      "art": "bellbound_mire_leech",
       "variant_of": "mire_leech",
       "star_min": 5,
       "stand_in": {
@@ -975,8 +975,8 @@
       }
     },
     {
-      "id": "gravebound_abbess",
-      "name": "The Gravebound Abbess",
+      "id": "bell_wraith",
+      "name": "The Bell Wraith",
       "dungeon": "drowned_abbey",
       "role": "boss",
       "level_min": 30,
@@ -985,32 +985,32 @@
       "ap": 6,
       "mp": 2,
       "attack": {
-        "id": "gravebound_censer",
-        "name": "Gravebound Censer",
+        "id": "spectral_grasp",
+        "name": "Spectral Grasp",
         "ap": 4,
         "min_range": 1,
         "max_range": 2,
         "damage": 9,
         "element": "water"
       },
-      "art": "gravebound_abbess",
+      "art": "bell_wraith",
       "signature": {
-        "id": "gravebound_rite",
-        "name": "Gravebound Rite",
+        "id": "tolling_rite",
+        "name": "Tolling Rite",
         "kind": "raise",
         "ap": 2,
         "raise": [
           "bog_dead",
-          "gravebound_bog_dead",
+          "bellbound_bog_dead",
           "mire_leech",
-          "gravebound_mire_leech"
+          "bellbound_mire_leech"
         ],
         "hp_pct": 0.6,
         "first_turn": 2,
         "every": 2,
-        "cap_total": 3,
+        "cap_total": 4,
         "beam": "rite_glow",
-        "raise_text": "{caster} swings her censer: {sig}. {name} rises from the bog with {hp} HP.",
+        "raise_text": "{caster} tolls the drowned bell: {sig}. {name} rises from the bog with {hp} HP.",
         "scatter_text": "With {boss} down, the risen dead sink back into the bog."
       },
       "signature2": {
@@ -1028,7 +1028,7 @@
         "mp_loss": 0,
         "root": true,
         "word": "rooted",
-        "lay_text": "{caster} calls the {sig}: {n} cells of bog water reach for {hero}.",
+        "lay_text": "{caster} tolls the bell: the {sig} wakes, {n} cells of bog water reach for {hero}.",
         "hit_text": "{hero} ends the turn in the grasping mire: {damage} damage, and the bog holds on.",
         "drain_text": "The mire holds {name}: no MP this turn."
       },
@@ -1038,9 +1038,9 @@
         "art": "mire_abbess",
         "tint": [
           0.78,
-          1.18,
-          0.72,
-          1.0
+          1.15,
+          1.25,
+          0.82
         ]
       },
       "placeholder": {
@@ -1176,8 +1176,8 @@
             0.9
           ]
         },
-        "packs_note": "Room A: ★1 4 Bog Dead + 2 Mire Leeches; ★2-★4 + 1 Mire Leech; ★5 the gravebound pack of 8 (4 Gravebound Bog Dead, 1 Bog Dead, 3 Gravebound Mire Leeches). Room B: the Mire Abbess + escort (2 Bog Dead, 1 Mire Leech); ★5 the Gravebound Abbess with a gravebound escort.",
-        "star5": "★5 boss form: the Gravebound Abbess. Her Gravebound Rite raises Bog Dead and Mire Leeches at 60% HP (3 in a fight, vs 2 Bog Dead at 50%). From her 1st turn and every 2nd after, Grasping Mire turns 2-3 cells around the hero (the hero's cell first) to bog water for 3 hero turns: a hero who ends a turn on one takes 5 (x the star's damage row) and is rooted (no MP next turn). Walking across is safe. Gravebound monsters mire: a hit takes 1 MP off the hero's next turn (no stacking). A candle pad or the rune circle cleanses both."
+        "packs_note": "Room A: ★1 4 Bog Dead + 2 Mire Leeches; ★2-★4 + 1 Mire Leech; ★5 the bellbound pack of 8 (4 Bellbound Bog Dead, 1 Bog Dead, 3 Bellbound Mire Leeches). Room B: the Mire Abbess + escort (2 Bog Dead, 1 Mire Leech); ★5 the Bell Wraith with a bellbound escort.",
+        "star5": "★5 boss form: the Bell Wraith, the Abbess transformed: a ghost risen out of the chained bronze bell (she floats). Her Tolling Rite raises Bog Dead and Mire Leeches at 60% HP (4 in a fight, vs 2 Bog Dead at 50%). From her 1st turn and every 2nd after, she tolls the bell and the Grasping Mire turns 2-3 cells around the hero (the hero's cell first) to bog water for 3 hero turns: a hero who ends a turn on one takes 5 (x the star's damage row) and is rooted (no MP next turn). Walking across is safe. Bellbound monsters mire: a hit takes 1 MP off the hero's next turn (no stacking). A candle pad or the rune circle cleanses both."
       }
     }
   }

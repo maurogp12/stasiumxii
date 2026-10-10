@@ -12,7 +12,7 @@
     "thaw": true,
     "thaw_text": "The candle-rune glow cleanses {name}: no MP lost.",
     "who": "hero",
-    "note": "Green candle-rune pads (room A) and the rune circle (room B): the hero heals 5 HP when a turn starts on one, and that turn keeps its full MP (the glow cleanses the gravebound mire and the grasping mire's root). Monsters get nothing."
+    "note": "Green candle-rune pads (room A) and the rune circle (room B): the hero heals 5 HP when a turn starts on one, and that turn keeps its full MP (the glow cleanses the bellbound mire and the grasping mire's root). Monsters get nothing."
   },
   "between_rooms": {
     "heal": "full",
@@ -28,14 +28,14 @@
     "pads": "Candle-rune pads: +{amount} HP and no MP lost when your turn starts on one",
     "keeper_hint": "Put the Abbess down before she raises your kills.",
     "star_notes": {
-      "5": "The Gravebound Abbess and her grasping mire. A Rare part and a Mystery Box for sure."
+      "5": "The Bell Wraith and her grasping mire. A Rare part and a Mystery Box for sure."
     },
     "showcase_title": "Drowned Abbey\nMonsters",
-    "showcase_sub": "Bog Dead · Mire Leech · The Mire Abbess\n★5: Gravebound Bog Dead · Gravebound Mire Leech · The Gravebound Abbess",
-    "star5_rule": "★5: the Gravebound Abbess raises Bog Dead and Mire Leeches at 60% HP (3 a fight), and from her 1st turn every other turn she calls the Grasping Mire (2-3 cells round the hero, 3 hero turns): end a turn in it for 5 damage and no MP next turn. Gravebound monsters mire (1 MP less next turn). Candle pads and the rune circle cleanse it.",
+    "showcase_sub": "Bog Dead · Mire Leech · The Mire Abbess\n★5: Bellbound Bog Dead · Bellbound Mire Leech · The Bell Wraith",
+    "star5_rule": "★5: the Abbess rises as the Bell Wraith, a ghost out of the drowned bell. Her Tolling Rite raises Bog Dead and Mire Leeches at 60% HP (4 a fight), and from her 1st turn every other turn she tolls the bell and calls the Grasping Mire (2-3 cells round the hero, 3 hero turns): end a turn in it for 5 damage and no MP next turn. Bellbound monsters mire (1 MP less next turn). Candle pads and the rune circle cleanse it.",
     "signature_rule": "Rite of Rising: from her 2nd turn, when a Bog Dead lies fallen, the Mire Abbess raises it where it fell at half HP, then the rite rests a turn (2 a fight). The risen sink back when she falls. Stand on a corpse to keep it down.",
     "b_still": "04_room_b_abbess.png",
-    "boss_star5": "The Gravebound Abbess"
+    "boss_star5": "The Bell Wraith"
   },
   "view": {
     "light": [
@@ -174,13 +174,13 @@
         false
       ],
       [
-        "gravebound_bog_dead",
+        "bellbound_bog_dead",
         7,
         5,
         false
       ],
       [
-        "gravebound_mire_leech",
+        "bellbound_mire_leech",
         9,
         3,
         false
@@ -192,7 +192,7 @@
         true
       ],
       [
-        "gravebound_abbess",
+        "bell_wraith",
         4,
         0,
         true
@@ -360,25 +360,25 @@
         ],
         "5": [
           {
-            "monster": "gravebound_bog_dead",
+            "monster": "bellbound_bog_dead",
             "x": 2,
             "y": 2,
             "facing": "S"
           },
           {
-            "monster": "gravebound_bog_dead",
+            "monster": "bellbound_bog_dead",
             "x": 5,
             "y": 2,
             "facing": "S"
           },
           {
-            "monster": "gravebound_bog_dead",
+            "monster": "bellbound_bog_dead",
             "x": 7,
             "y": 1,
             "facing": "S"
           },
           {
-            "monster": "gravebound_bog_dead",
+            "monster": "bellbound_bog_dead",
             "x": 10,
             "y": 3,
             "facing": "S"
@@ -390,19 +390,19 @@
             "facing": "S"
           },
           {
-            "monster": "gravebound_mire_leech",
+            "monster": "bellbound_mire_leech",
             "x": 1,
             "y": 0,
             "facing": "S"
           },
           {
-            "monster": "gravebound_mire_leech",
+            "monster": "bellbound_mire_leech",
             "x": 9,
             "y": 0,
             "facing": "S"
           },
           {
-            "monster": "gravebound_mire_leech",
+            "monster": "bellbound_mire_leech",
             "x": 5,
             "y": 0,
             "facing": "S"
@@ -476,25 +476,25 @@
         ],
         "5": [
           {
-            "monster": "gravebound_abbess",
+            "monster": "bell_wraith",
             "x": 6,
             "y": 2,
             "facing": "S"
           },
           {
-            "monster": "gravebound_bog_dead",
+            "monster": "bellbound_bog_dead",
             "x": 4,
             "y": 2,
             "facing": "S"
           },
           {
-            "monster": "gravebound_bog_dead",
+            "monster": "bellbound_bog_dead",
             "x": 8,
             "y": 2,
             "facing": "S"
           },
           {
-            "monster": "gravebound_mire_leech",
+            "monster": "bellbound_mire_leech",
             "x": 6,
             "y": 0,
             "facing": "S"

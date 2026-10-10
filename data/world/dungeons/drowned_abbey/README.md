@@ -78,10 +78,10 @@ section of `combat_sim.gd`, `scenes/world/dungeon/`). Everything that differs is
 |---|---|---|---|
 | ★1 | 4 | 2 | 6 |
 | ★2–★4 | 4 | 3 | 7 |
-| ★5 | 4 gravebound + 1 | 3 gravebound | 8 |
+| ★5 | 4 bellbound + 1 | 3 bellbound | 8 |
 
 - **Room B:** the Mire Abbess with an escort of 2 Bog Dead and 1 Mire Leech behind the rune circle.
-  - ★5: the Gravebound Abbess with a gravebound escort.
+  - ★5: the Bell Wraith with a bellbound escort.
   - The room is won when every monster is down; the risen sink back when she falls.
   - Full heal on the flooded stair between the rooms.
 
@@ -95,9 +95,9 @@ Bog Dead pack, the kiting leeches, the rite (a fight that grows back) and the �
 | Bog Dead | 22 / 24 | 5 | 2 | Bog Grasp 5, range 1 (slow melee shambler) |
 | Mire Leech | 12 / 13 | 4 | 3 | Bile Spit 3, range 2–5, line of sight, kites |
 | The Mire Abbess | 84 / 92 | 6 | 2 | Censer Lash 8, range 1–2; Rite of Rising (raise, 2 a fight, 50%) |
-| Gravebound Bog Dead (★5) | 22 / 24 | 5 | 2 | Gravebound Grasp 5 + mire 1 |
-| Gravebound Mire Leech (★5) | 12 / 13 | 4 | 3 | Gravebound Bile 3 + mire 1, range 2–5, line of sight |
-| The Gravebound Abbess (★5) | 96 / 106 | 6 | 2 | Gravebound Censer 9 (10 at L32); Gravebound Rite (3 a fight, 60%, leeches too); Grasping Mire |
+| Bellbound Bog Dead (★5) | 22 / 24 | 5 | 2 | Bellbound Grasp 5 + mire 1 |
+| Bellbound Mire Leech (★5) | 12 / 13 | 4 | 3 | Bellbound Bile 3 + mire 1, range 2–5, line of sight |
+| The Bell Wraith (★5) | 96 / 106 | 6 | 2 | Spectral Grasp 9 (10 at L32); Tolling Rite (4 a fight, 60%, leeches too); Grasping Mire |
 
 - **Mire Leech:** the giant worm from the approved sheet, and the room's RANGED monster.
   - It uses the Sling Rat / Book Wraith / Harpooner rule. It spits when it has a line (bodies do not block). Next to
@@ -113,16 +113,19 @@ Bog Dead pack, the kiting leeches, the rite (a fight that grows back) and the �
     the hero. The Abbess turns your own kills against you, so kill order matters:
     - drop her first and the risen sink back;
     - or burn the escort and stand on a corpse to keep it down.
-- **★5, the Gravebound Abbess** (rule text in `run.json` `text.star5_rule` and `dungeon_monsters.json`
+- **★5, the Bell Wraith** (Mauro's pick, 10 Oct: a full transformation. The Abbess rises as a ghost out of the
+  chained bronze bell, with long spectral arms and candles circling her; she floats. Her own rig is pending, and until
+  it lands she is drawn with the Abbess's frames, tinted pale (`stand_in`). The ★5 ids live only in data: renaming them
+  touches `dungeon_monsters.json` and `run.json`, and the tests read them from `variant_of`. Rule text in `run.json` `text.star5_rule` and `dungeon_monsters.json`
   `stars.by_dungeon.drowned_abbey.star5`):
-  - **Gravebound Rite:** raises Bog Dead and Mire Leeches at 60% HP, 3 a fight.
+  - **Tolling Rite:** raises Bog Dead and Mire Leeches at 60% HP, 4 a fight.
   - **Grasping Mire** (`signature2`, kind `hazard`, hazard `grasping_mire`, `root`):
-    - From her 1st turn and every 2nd after, 2–3 cells around the hero (the hero's cell first) turn to grasping bog
+    - From her 1st turn and every 2nd after, she tolls the bell and 2–3 cells around the hero (the hero's cell first) turn to grasping bog
       water for 3 hero turns.
     - A hero who **ends** a turn on one takes 5 and is **rooted**: no MP on the next turn. Walking across is safe.
     - The cells show the `grasping_mire` decal with their turns left. The hero bot never ends a turn on one when it
       can step off.
-  - **Mire:** gravebound monsters' hits take 1 MP off the hero's next turn (no stacking). A candle pad or the rune
+  - **Mire:** bellbound monsters' hits take 1 MP off the hero's next turn (no stacking). A candle pad or the rune
     circle cleanses it, and the root too.
 
 ## Stars and rewards
@@ -133,7 +136,7 @@ Bog Dead pack, the kiting leeches, the rite (a fight that grows back) and the �
   - ★2 [1.05, 1.0], +1 Mire Leech;
   - ★3 [1.1, 1.05];
   - ★4 [1.12, 1.05];
-  - ★5 [1.0, 0.9]. ★5's extra difficulty is the gravebound pack and boss, the mire, the stronger rite and the
+  - ★5 [1.0, 0.9]. ★5's extra difficulty is the bellbound pack and boss, the mire, the stronger rite and the
     grasping mire.
 - **Rewards** (`pc_rewards` dungeon row `drowned_abbey`: the tier-30 **Mire Abbess** set, coin level 30, extras Swamp
   Elixir, Abbey Candle Wax, Sunken Bell):
@@ -154,7 +157,7 @@ Bog Dead pack, the kiting leeches, the rite (a fight that grows back) and the �
 | ★2 | [1.05, 1.0] + 1 Mire Leech | 55% | 1/8 | 4/8 | 7/8 | 4/8 | 6/8 | 13 / 5 |
 | ★3 | [1.1, 1.05] | 52% | 1/8 | 3/8 | 8/8 | 2/8 | 7/8 | 12 / 7 |
 | ★4 | [1.12, 1.05] | 38% | 0/8 | 4/8 | 7/8 | 0/8 | 4/8 | 18 / 7 |
-| ★5 | [1.0, 0.9] + gravebound pack, boss, mire, grasping mire | 35% | 0/8 | 1/8 | 8/8 | 0/8 | 5/8 | 18 / 8 |
+| ★5 | [1.0, 0.9] + bellbound pack, boss, mire, grasping mire | 35% | 0/8 | 1/8 | 8/8 | 0/8 | 5/8 | 18 / 8 |
 
 Tuning notes:
 - **First numbers** (Bog Dead 24 / 6, Mire Leech 13 / 4, Abbess 92 / 9): ★1 35%, with most losses in room B.
@@ -167,6 +170,6 @@ Tuning notes:
   - Damage ×1.05 rounds away entirely at these numbers (5→5, 3→3, 8→8), and ×1.1 turns the grasp into 6 (★2 [1.1, 1.1]
     38%).
   - So ★2 adds a leech instead of more HP.
-- **★5:** [0.95, 0.95] gave 30% and [0.9, 0.9] 40%. [1.0, 0.9] gives 35%.
+- **★5:** [0.95, 0.95] gave 30% and [0.9, 0.9] 40%. [1.0, 0.9] gives 35%. Re-run after the Bell Wraith rename with the rite cap at 4 (was 3): still 35%; the bot rarely sees a 4th rising.
 - **Classes:** as in the other dungeons, the bot plays Kestrel and Gloam poorly against ranged kiters and Mender slowly
   but surely. Real players do better.

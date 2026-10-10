@@ -6,8 +6,8 @@ extends SceneTree
 ## the 2x2 fallen bell), pack sizes per star, the AI always ending its turn,
 ## Mire Leech line of sight and kiting, the Mire Abbess's Rite of Rising
 ## (signature kind raise: rhythm, corpses, where the risen stand, the cap, a
-## hero on a corpse, the risen sinking back when she falls), the ★5 Gravebound
-## Abbess and her Grasping Mire (root hazard), the gravebound mire and the
+## hero on a corpse, the risen sinking back when she falls), the ★5 Bell
+## Wraith and her Grasping Mire (root hazard), the bellbound mire and the
 ## cleansing pads, rewards per star, the Southbridge mission, a full run in the
 ## room scene, and guards that the other three dungeons play exactly as before.
 ## Run: godot --headless --path . -s res://tests/run_abbey_tests.gd
@@ -291,7 +291,7 @@ func _test_monsters() -> void:
 		var st: Dictionary = book.stats_at(id, LEVEL, 5)
 		eq(str((st["attack"].get("chill", {}) as Dictionary).get("word", "")), "mired", "%s mires" % id)
 		eq(str(st["variant_of"]) != "", true, "%s is a mutated form" % id)
-	eq(str(book.stats_at(G_LEECH, LEVEL, 5)["attack"]["projectile"]), "gravebound_bile", "gravebound bile flies as gravebound_bile")
+	eq(str(book.stats_at(G_LEECH, LEVEL, 5)["attack"]["projectile"]), "gravebound_bile", "bellbound bile flies as the art's gravebound_bile")
 	var check: Dictionary = book.check(LEVEL)
 	eq(bool(check["ok"]), true, "level 32 numbers pass the sanity pass: %s" % [check["findings"]])
 	var rows: Dictionary = book.stars_for(ABBEY)["scale"]
@@ -703,7 +703,7 @@ func _test_rite_scatter_and_star5() -> void:
 	eq(bool(sim.snapshot()["match_over"]), false, "the room is not won while the escort stands")
 	_kill(3)
 	eq(str(sim.snapshot()["dungeon"]["result"]), "win", "the room is won when every monster is down")
-	# ★5: the Gravebound Rite raises a leech too, at 60%.
+	# ★5: the Tolling Rite raises a leech too, at 60%.
 	var book = Monsters.load_default()["monsters"]
 	var leech: Dictionary = book.stats_at(G_LEECH, LEVEL, 5)
 	leech["pos"] = Vector2i(9, 3)
@@ -722,7 +722,7 @@ func _test_rite_scatter_and_star5() -> void:
 	eq(bool((up["attack"] as Dictionary).get("los", false)), true, "it still spits with a line")
 
 
-# --- ★5 grasping mire, the gravebound mire, cleansing ------------------------------------
+# --- ★5 grasping mire, the bellbound mire, cleansing ------------------------------------
 
 func _test_star5_grasping_mire() -> void:
 	var run = Run.create(ABBEY, LEVEL, "kestrel", "", 5)["run"]
@@ -845,7 +845,7 @@ func _test_mire_and_cleanse() -> void:
 	for e in sim.snapshot()["last_events"]:
 		if str(e.get("status", "")) == "chill":
 			line = str(e.get("coach", ""))
-	eq(line.contains("mired"), true, "a gravebound hit mires the hero (%s)" % line)
+	eq(line.contains("mired"), true, "a bellbound hit mires the hero (%s)" % line)
 	sim.submit({"type": "end_turn", "seat": 1})
 	var hero: Dictionary = sim._unit_by_seat(0)
 	eq(int(hero["mp"]), int(hero["max_mp"]) - 1, "a mired hero has 1 MP less on the next turn")

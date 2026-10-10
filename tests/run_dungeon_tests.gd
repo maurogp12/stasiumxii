@@ -1062,7 +1062,7 @@ func _test_monster_click_sweep() -> void:
 	passes.append(["ironjaw", false, SALT, 5])
 	passes.append(["kestrel", true, SALT, 5])
 	# The Drowned Abbey's monsters (Bog Dead, Mire Leeches, the Mire Abbess;
-	# ★5 the gravebound forms) too.
+	# ★5 the bellbound forms) too.
 	for c in CLASSES:
 		passes.append([c, false, ABBEY, 1])
 	passes.append(["ironjaw", false, ABBEY, 5])
