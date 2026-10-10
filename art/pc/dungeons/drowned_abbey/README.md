@@ -121,25 +121,36 @@ The board uses the same `board_view.gd` math as the Granary: `cell_to_local(x,y)
 
 **Turnarounds and contact sheets:** `_mock/<id>_turnaround.png` shows the S and E paintings each rig is cut from. `_mock/<id>_contact.png` shows every frame of every action. `_mock/monsters_clip.mp4` plays every action in all four facings.
 
-## 4. Star 5: The Gravebound Abbess (`star5/`), **rigs pending Mauro's approval**
+## 4. Star 5: The Bell Wraith (`star5/`)
 
-At ★5 the boss is **The Gravebound Abbess**, the Mire Abbess risen from a sealed grave. The S painting `asset_8hH8iMsYz6gSqnT9eSZcLKPU` was sent to Mauro for approval (side-by-side `build_tools/dungeons/abbey_src/_star5_gate_gravebound_abbess.jpg`, runners-up `asset_PytbLYLvgz4SKK6mDZo8UCvN`, `asset_jQtJww3BxXk8sTPVwsDYGEYd`). **Until he answers, the ★5 monster rigs are not built** and the manifest lists them as `"status": "pending"` with their planned cells and frame counts. Her look:
-- grave-black and ash-grey robes bound in rusted bog-iron grave chains and padlocks;
-- glowing pale-jade soulfire in her cracked mask and eyes, the black-iron cross halo and the grave runes on the chains and hem;
-- a black-iron skull censer pouring pale-jade ghost smoke, ghost-flame candles, and drowned skeletal hands clutching the hem.
+At ★5 the boss is **The Bell Wraith**, the Mire Abbess risen as a ghost from the fallen abbey bell. **Mauro picked this form ("B", 10 Oct 2026)** after three rounds:
+1. **The Gravebound Abbess** (`asset_8hH8iMsYz6gSqnT9eSZcLKPU`: grave-black robes, chains, pale-jade soulfire; runners-up `asset_PytbLYLvgz4SKK6mDZo8UCvN`, `asset_jQtJww3BxXk8sTPVwsDYGEYd`). **Not approved**: he wanted a different theme. The comparison sent is `abbey_src/_star5_gate_gravebound_abbess.jpg`.
+2. **Recolour round** (`abbey_src/_star5_options.jpg`): 1 Abadesa Plaga `asset_qdL6B2BoFHcUarovhHuZoQkX`, 2 Abadesa en Llamas `asset_XN49ncwQ6RpLKV4pHdf23Say`, 3 Abadesa Ahogada `asset_3aUZ4cepK3Puu1LQCRNNhsTw`, 4 Reina de la Ciénaga `asset_3N9KKrMXQ2FmU5C2wDLfvrGr`, 5 Abadesa Encadenada (the Gravebound). **He passed on all five**: "Quiza cambiar su forma totalmente", a new silhouette rather than a recolour of the same pose.
+3. **New-form round** (`abbey_src/_star5_forms.jpg`): A Abadesa-Sanguijuela `asset_92h8b2nUpvdbJ711a37KGeaR`, **B Espectro de la Campana `asset_gnesMrBx78Q3RFMW13ycQakT` (picked)**, C Coloso de Cadáveres `asset_B2mqfnco2fK6FS3eEUzsZQU1`, D Monja Araña `asset_gDA4QAUFa9UP2qLV989pfSW2`.
+
+Her look: her lower half is the huge chained, green-patinated bronze bell with green ghost-light pouring from under its rim; her translucent spectral upper body rises out of it with the same porcelain mask and rusted iron cross halo, long thin spectral arms with bony claws, the bronze censer on chains in her right hand, and five lit candles orbiting her. The Bellbound Bog Dead and Mire Leech follow the theme: ghostly grey-green robes and hide, rusted chains hung with little bronze bells, green ghost-light in the eyes, maw and pustules, and trailing green wisps.
 
 | id | cell | pivot | actions |
 |---|---|---|---|
-| `star5/monsters/gravebound_abbess` | 768x540 | (384,494) | as `mire_abbess`, summon 14 (same rig, timing, signature frames and rite_point) |
-| `star5/monsters/gravebound_bog_dead` | 512x360 | (256,329) | as `bog_dead` (chained grave-black robe, jade soulfire face, runes) |
-| `star5/monsters/gravebound_mire_leech` | 512x360 | (256,329) | as `mire_leech`, release f07 (chained grave-black hide, jade pustules and maw) |
+| `star5/monsters/bell_wraith` | 768x540 | (384,494) | idle 12, walk 12, attack 12, hit 8, death 13, summon 14 "Rite of Rising" (**her own rig**) |
+| `star5/monsters/bellbound_bog_dead` | 512x360 | (256,329) | as `bog_dead` (edit of the base painting, base rig) |
+| `star5/monsters/bellbound_mire_leech` | 512x360 | (256,329) | as `mire_leech`, release f07 (edit of the base painting, base rig) |
 
-- The S and E paintings for all three are already in `abbey_src/` (`gravebound_*`). They are edits of the base paintings with mask overlap 0.94–0.98, so they reuse the base rigs: `python3 abbey_monsters.py gravebound_abbess gravebound_bog_dead gravebound_mire_leech`, then rebuild the manifest and run `mock_rooms.py drowned_abbey --star5`, `mock_turnarounds.py --dungeon drowned_abbey` and `mock_monsters.py --dungeon drowned_abbey --clip5 ...`.
-- **Glow maps:** every ★5 frame will get a same-size additive `<frame>_glow.png` (the pale-jade paint bloomed, `jade_glow`). Draw it on top of the frame with the same offset, scale and flip, using an add blend.
+**The Bell Wraith's rig** (a new silhouette, so a new part cut: the bell and torso as the body, the head, two spectral arms, the censer on the right hand, five candles):
+- Same cell and pivot as `mire_abbess`; the pivot is the bottom centre of the bell rim. She floats.
+- **Idle:** she bobs; the arms drift, the censer swings and the five candles circle on small out-of-phase loops.
+- **Walk:** no steps. She glides: the bell swings like a pendulum, bobs and leans into the move, and the arms trail.
+- **Attack "Spectral Grasp" (range 1–2):** the long left spectral arm draws up and back (f02–f04), then lashes down and across at the target with a lunge, connecting on **f06**.
+- **Hit:** a recoil with the censer swinging.
+- **Death:** the bell topples (about 62°) and the candles fall out of the air.
+- **Summon "Rite of Rising":** the same timing as the base (lower f00–f02, swing f03–f06, **burst f07**, hold f07–f09, settle f10–13). She swings the censer up and out while the candles rise. `meta.json > rite_point.point_px` is the censer on f07 per facing (S (607.5,61.1), E (609.4,78.8) in the 768x540 cell).
+- **Glow maps:** every frame has an additive `<frame>_glow.png`: the green ghost-light (bell rim, veils, wisps) and the candle flames, bloomed, plus a faint aura. Draw it on top with an add blend. There is no separate signature ramp; the burst on f07 is sold by `rite_glow`.
 
-**Other ★5 pieces (built):**
-- `star5/board/grasping_mire.png` is the ★5 hazard "Grasping Mire": a 1-cell, 64x32 pool of black bog water with drowned skeletal hands and roots reaching up, with a 128x64 `_2x/` master and `grasping_mire_glow.png` (96x56, additive). It is centred on the cell, on the ground layer. Only the visual is here; the rule is CombatSim's.
-- `star5/board/projectiles/gravebound_bile.png` (+ `_glow`) is the pale-jade soul bile of the Gravebound Mire Leech.
+**Other ★5 pieces:** the ids are kept from the first ★5 pass so the systems data does not change, and the art is recoloured to the bell's green ghost-light.
+- `star5/board/grasping_mire.png` (+ `_2x/`, `grasping_mire_glow.png` 96x56 additive): the ★5 hazard, a 1-cell pool of black bog water with drowned hands and roots reaching up. It is centred on the cell, on the ground layer; the rule is CombatSim's.
+- `star5/board/projectiles/gravebound_bile.png` (+ `_glow`): the green ghost bile of the Bellbound Mire Leech.
+
+**Review images:** `_mock/bell_wraith_turnaround.png` (base S next to the Bell Wraith S and E), `_mock/star5_<id>_contact.png` (glow baked in, on dark), `_mock/rooms_mock_star5.png`, `_mock/monsters_clip_star5.mp4`.
 
 ## Pipeline (`build_tools/dungeons/`)
 
@@ -156,7 +167,7 @@ Shared-kit changes (none of which changes the older outputs):
 - `gkit.DUNGEONS` gains `drowned_abbey` → `abbey_src`;
 - `mock_rooms` skips a decal glow that does not exist (`lily_pads` has none), and gains the Abbey room layouts and ★5 swap list; `mock_town` and `mock_turnarounds` gain the Abbey entries.
 
-**Sources:** `abbey_src/` holds the chosen paintings (`_star5_gate_gravebound_abbess.jpg` is the comparison sent to Mauro, not a source).
+**Sources:** `abbey_src/` holds the chosen paintings. `_star5_gate_gravebound_abbess.jpg`, `_star5_options.jpg` and `_star5_forms.jpg` are the comparisons sent to Mauro, and `gravebound_abbess_S.jpg`, `opt*_S.jpg` and `form*_S.jpg` are the rejected or unpicked ★5 options, kept for the record; none of them is a source.
 
 ## Known issues / what I'd change
 
@@ -178,6 +189,15 @@ Shared-kit changes (none of which changes the older outputs):
 - **Floors:** the 3-variant floors show the tile grid, because each flagstone is painted with dark grout on all four edges (by design, as for the other kits).
 - **Glows:** the candle-flame glows (`candle_cluster`, `altar`, `candle_stand`) are masks on the near-white flame cores, so they are small spots at 1x; the prop paintings themselves are already bright. `lily_pads` has no glow.
 - **rite_glow** was painted as a grey-green smoke streak next to the magenta key and recoloured onto a green ramp by luminance, so it is flatter than a painted streak (as Saltmaw's `lure_line`).
+- **★5 Bell Wraith:**
+  - It is a fresh rig on a new silhouette: the bell and her torso are one body piece, so the bell does not swing separately from her chest; the glide is a sway of the whole figure about the waist.
+  - Her translucent veils and wisps keyed out pinkish over the magenta key; `ghost_fix` recolours every translucent pinkish pixel onto a green ramp, so the ghost veils are flatter than painted.
+  - The death is capped at a 62° topple (her arms are very wide, and a full 80° fall left the cell); the five candles fall out of the air.
+  - The candles circle on small loops in front of her; they never pass behind her body.
+  - The constant ghost glow is strong (the veils are bright green); lower its modulate (e.g. 0.7) if it reads too bright. There is no separate signature glow ramp; the f07 burst is sold by `rite_glow`.
+- **★5 Bellbound Bog Dead and Mire Leech:** edits of the base paintings with added green wisps around them (outline match 0.79–0.83, lower than usual), so they reuse the base cuts and the wisps outside the base outline ride on the body piece.
+- **★5 bile and hazard:** they keep their first-pass ids (`gravebound_bile`, `grasping_mire`) so the systems data needs no change; only their glow colour moved to the bell's ghost-green.
+- **Turnarounds** use the raw key, so the ★5 ghost veils show pinkish there; the frames themselves are fixed.
 - **Hero stand-ins in the mocks** are the painted idle strips scaled 0.9 by eye, not the game's pawn scale.
 
 ## Scenario source assets (project "stasium")
@@ -197,8 +217,9 @@ Each piece was painted with the approved Abbey images as references (door `asset
 | Bog Dead S / E | `asset_doHurwgYn3x7sKYb5CuRbSUm` / `asset_hqYge75yANsQSAQYSfa24mGA` | `bog_dead_S.jpg` / `bog_dead_E.jpg` |
 | Mire Leech S / E | `asset_FpQ7gFsgRoCE8ZbFCpVTSqsF` / `asset_m7w2RScNML4mhHWZuqpfZ9td` | `leech_S.jpg` / `leech_E.jpg` |
 | The Mire Abbess S / E | `asset_KvRzQM4mLtexm3jNP5k3UTJb` / `asset_eKz2ypc1g8EX8uiAWBciP7nr` | `abbess_S.jpg` / `abbess_E.jpg` |
-| bile spit, bile impact, gravebound bile, rite glow | `asset_zojQduVhqsVoLMtPADDytnM3` | `bile_projectiles.jpg` |
-| ★5 Gravebound Abbess S / E | `asset_8hH8iMsYz6gSqnT9eSZcLKPU` (runners-up `asset_PytbLYLvgz4SKK6mDZo8UCvN`, `asset_jQtJww3BxXk8sTPVwsDYGEYd`) / `asset_itmsxYtkSWnbdF6foFe3mMm2` | `gravebound_abbess_S.jpg` / `gravebound_abbess_E.jpg` |
-| ★5 Gravebound Bog Dead S / E | `asset_TygYHrEHHYcLCxRPFJnCksxy` / `asset_N5hyKC81t9j6sneFbeba3tES` | `gravebound_bog_dead_S.jpg` / `gravebound_bog_dead_E.jpg` |
-| ★5 Gravebound Mire Leech S / E | `asset_dy6KXeGz89YmuQmNUYf6y27n` / `asset_MJMVgX5LnQCbZ3PfKGCHQhsA` | `gravebound_leech_S.jpg` / `gravebound_leech_E.jpg` |
+| bile spit, bile impact, gravebound bile (★5, recoloured), rite glow | `asset_zojQduVhqsVoLMtPADDytnM3` | `bile_projectiles.jpg` |
+| ★5 Bell Wraith S / E | `asset_gnesMrBx78Q3RFMW13ycQakT` (picked by Mauro) / `asset_xpWsSbQxBhUooMqkM1doYNYY` | `bell_wraith_S.jpg` / `bell_wraith_E.jpg` |
+| ★5 Bellbound Bog Dead S / E | `asset_9wzBbYxQnKQrFv5q8gEpi2LY` / `asset_rKvNaerdGDMvAbNLCidsNh8D` | `bellbound_bog_dead_S.jpg` / `bellbound_bog_dead_E.jpg` |
+| ★5 Bellbound Mire Leech S / E | `asset_mT5Fz1qpWAHAo3D3aND2HuHa` / `asset_NNCNj5AEnYTSMFV7mtPRGkAF` | `bellbound_leech_S.jpg` / `bellbound_leech_E.jpg` |
+| rejected ★5 options | Gravebound `asset_8hH8iMsYz6gSqnT9eSZcLKPU`; recolours and forms as listed in section 4 | `gravebound_abbess_S.jpg`, `opt*_S.jpg`, `form*_S.jpg` |
 | ★5 grasping mire | `asset_97Jtwjq738d4AHt466633ykf` | `grasping_mire.jpg` |

@@ -78,7 +78,7 @@ STAR5_REP = {
     "frostspire_archive": {"the_pale_archivist": "the_frozen_archivist", "ice_construct": "frozen_ice_construct", "book_wraith": "frozen_book_wraith"},
     "saltmaw_grotto": {"old_saltmaw": "abyssal_saltmaw", "reef_crab": "abyssal_reef_crab", "drowned_sailor": "abyssal_drowned_sailor",
                        "drowned_harpooner": "abyssal_drowned_harpooner"},
-    "drowned_abbey": {"mire_abbess": "gravebound_abbess", "bog_dead": "gravebound_bog_dead", "mire_leech": "gravebound_mire_leech"},
+    "drowned_abbey": {"mire_abbess": "bell_wraith", "bog_dead": "bellbound_bog_dead", "mire_leech": "bellbound_mire_leech"},
 }
 
 

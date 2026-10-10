@@ -19,14 +19,14 @@ import manifest_kit  # noqa: E402
 FPS = 17.144
 BASE_ACTS = {"idle": 12, "walk": 12, "attack": 12, "hit": 8, "death": 13}
 LOOP = {"idle": True, "walk": True}
-JADE_GLOW_WHAT = "pale-jade soulfire (eyes, mask cracks, halo, runes, candles, censer smoke, pustules) bloomed + faint jade aura"
+GHOST_GLOW_WHAT = "green ghost-light (under the bell rim, veils, wisps, eyes, pustules) and candle flames bloomed + faint green aura"
 PLAN = {
     "bog_dead": ("Bog Dead", False, (512, 360), (256, 329), {}),
     "mire_leech": ("Mire Leech", False, (512, 360), (256, 329), {}),
     "mire_abbess": ("The Mire Abbess", False, (768, 540), (384, 494), {"summon": 14}),
-    "gravebound_abbess": ("The Gravebound Abbess", True, (768, 540), (384, 494), {"summon": 14}),
-    "gravebound_bog_dead": ("Gravebound Bog Dead", True, (512, 360), (256, 329), {}),
-    "gravebound_mire_leech": ("Gravebound Mire Leech", True, (512, 360), (256, 329), {}),
+    "bell_wraith": ("The Bell Wraith", True, (768, 540), (384, 494), {"summon": 14}),
+    "bellbound_bog_dead": ("Bellbound Bog Dead", True, (512, 360), (256, 329), {}),
+    "bellbound_mire_leech": ("Bellbound Mire Leech", True, (512, 360), (256, 329), {}),
 }
 SIG = {"action": "summon", "name": "Rite of Rising",
        "note": ("she raises a FALLEN Bog Dead on its death cell: she lowers the censer (f00-f02), swings it high over her head while the "
@@ -51,7 +51,7 @@ def pending(mid):
                          "pattern": "%s/%s/%s_{S,E}_f{00..%02d}.png" % (d, a, a, n - 1)} for a, n in acts.items()}}
     if star:
         e["star"] = 5
-    if mid in ("mire_leech", "gravebound_mire_leech"):
+    if mid in ("mire_leech", "bellbound_mire_leech"):
         e["release"] = {"action": "attack", "frame": 7, "point_px": "pending"}
     return e
 
@@ -109,7 +109,7 @@ def main():
             d = mk.mm_dir(mid)
         except FileNotFoundError:
             return pending(mid)
-        e = mk.monster(mid, glow_what=JADE_GLOW_WHAT)
+        e = mk.monster(mid, glow_what=GHOST_GLOW_WHAT)
         mm = json.load(open(os.path.join(mk.root, d, "meta.json")))
         if mm.get("rite_point"):
             e["rite_point"] = dict(mm["rite_point"], note=("the censer on the signature's burst frame, per facing, in cell pixels (same space as the pivot); "
@@ -126,11 +126,16 @@ def main():
     monsters[2]["role"] = ("boss: a tall drowned abbess with an iron-cross halo, a bronze censer on chains and three floating candles; attack = "
                            "'Censer Lash' (range 1-2), she whips the censer out on its chains and it connects on f06")
 
-    star5_monsters = [monster(m) for m in ("gravebound_abbess", "gravebound_bog_dead", "gravebound_mire_leech")]
+    star5_monsters = [monster(m) for m in ("bell_wraith", "bellbound_bog_dead", "bellbound_mire_leech")]
     star5_monsters[0]["size_note"] = BIG_NOTE
     star5_monsters[0]["signature"] = SIG
     star5_monsters[0]["special"] = ("'Grasping Mire': leaves star5/board/grasping_mire decals (1 cell each); the rule is CombatSim's, the decal is purely visual")
-    star5_monsters[0]["turnaround"] = "_mock/gravebound_abbess_turnaround.png"
+    star5_monsters[0]["turnaround"] = "_mock/bell_wraith_turnaround.png"
+    star5_monsters[0]["role"] = ("star-5 boss, a NEW silhouette with its own rig: the Mire Abbess risen as a ghost whose lower half is the fallen abbey bell, "
+                                 "long spectral arms, the censer, five orbiting candles; attack 'Spectral Grasp' (range 1-2): the left spectral arm lashes down "
+                                 "and across, connecting on f06; summon = Rite of Rising with the base timing (burst f07, rite_point per facing)")
+    star5_monsters[0]["placement_note"] = ("same cell and pivot as mire_abbess (768x540, (384,494)); she floats: the pivot is the bell rim's bottom centre, "
+                                           "the green ghost-light spills a little below it")
 
     s5 = fx.build()
     for d in s5["decals"]:
@@ -189,17 +194,18 @@ def main():
         "monsters": monsters,
         "projectiles": base_proj,
         "star5": {
-            "rule": ("at star-5 difficulty the Drowned Abbey boss is the Gravebound Abbess (replaces mire_abbess), risen from a sealed grave; "
-                     "room A's monsters may be gravebound_bog_dead and gravebound_mire_leech"),
+            "rule": ("at star-5 difficulty the Drowned Abbey boss is the Bell Wraith (replaces mire_abbess), the Abbess risen as a ghost from the fallen abbey bell; "
+                     "room A's monsters may be bellbound_bog_dead and bellbound_mire_leech. The star-5 projectile (gravebound_bile) and hazard (grasping_mire) "
+                     "keep their first-pass ids and are recoloured to the bell's green ghost-light"),
             "monsters": star5_monsters,
             "board": {"decals": s5["decals"], "glows": s5["glows"]},
             "projectiles": star5_proj,
-            "turnaround": "_mock/gravebound_abbess_turnaround.png",
-            "contact_sheets": ["_mock/star5_gravebound_abbess_contact.png", "_mock/star5_gravebound_bog_dead_contact.png",
-                               "_mock/star5_gravebound_mire_leech_contact.png"],
+            "turnaround": "_mock/bell_wraith_turnaround.png",
+            "contact_sheets": ["_mock/star5_bell_wraith_contact.png", "_mock/star5_bellbound_bog_dead_contact.png",
+                               "_mock/star5_bellbound_mire_leech_contact.png"],
         },
         "files": mk.files,
-        "build": "python3 build_tools/dungeons/build_abbey_town.py; python3 build_tools/dungeons/build_abbey_board.py; python3 build_tools/dungeons/build_abbey_fx.py; python3 build_tools/dungeons/abbey_monsters.py; python3 build_tools/dungeons/abbey_monsters.py gravebound_abbess gravebound_bog_dead gravebound_mire_leech; python3 build_tools/dungeons/build_abbey_manifest.py; python3 build_tools/dungeons/mock_rooms.py drowned_abbey [--star5]; python3 build_tools/dungeons/mock_town.py drowned_abbey; python3 build_tools/dungeons/mock_turnarounds.py --dungeon drowned_abbey; python3 build_tools/dungeons/mock_monsters.py --dungeon drowned_abbey --clip <out.mp4> --clip5 <out_star5.mp4>",
+        "build": "python3 build_tools/dungeons/build_abbey_town.py; python3 build_tools/dungeons/build_abbey_board.py; python3 build_tools/dungeons/build_abbey_fx.py; python3 build_tools/dungeons/abbey_monsters.py; python3 build_tools/dungeons/abbey_monsters.py bell_wraith bellbound_bog_dead bellbound_mire_leech; python3 build_tools/dungeons/build_abbey_manifest.py; python3 build_tools/dungeons/mock_rooms.py drowned_abbey [--star5]; python3 build_tools/dungeons/mock_town.py drowned_abbey; python3 build_tools/dungeons/mock_turnarounds.py --dungeon drowned_abbey; python3 build_tools/dungeons/mock_monsters.py --dungeon drowned_abbey --clip <out.mp4> --clip5 <out_star5.mp4>",
     }
     gkit.write_json(os.path.join(gkit.OUT, "manifest.json"), man)
     missing, extra = mk.check()
