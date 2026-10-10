@@ -576,7 +576,7 @@
       "role": "boss",
       "level_min": 20,
       "level_max": 30,
-      "hp": 80,
+      "hp": 84,
       "ap": 6,
       "mp": 2,
       "attack": {
@@ -737,7 +737,7 @@
       "role": "boss",
       "level_min": 20,
       "level_max": 30,
-      "hp": 96,
+      "hp": 100,
       "ap": 6,
       "mp": 2,
       "attack": {
@@ -746,7 +746,7 @@
         "ap": 4,
         "min_range": 1,
         "max_range": 1,
-        "damage": 10,
+        "damage": 11,
         "element": "water"
       },
       "art": "abyssal_saltmaw",
@@ -874,7 +874,7 @@
         "star5": "★5 boss form: the Frozen Archivist. Unbound Frozen Pages calls frozen wraiths on his 2nd turn and every 3rd after (4 alive, 6 in all, vs 3 and 4 for the Pale Archivist). Every other turn (from his 1st) Rime Patches freezes 2-3 cells around the hero (the hero's cell first) for 3 hero turns: a hero who ends a turn on one takes 5 frost (x the star's damage row) and has 2 MP less next turn. Walking across is safe. Frozen monsters chill: a hit takes 1 MP off the hero's next turn (no stacking). A rune pad thaws: a turn that starts on one keeps its full MP."
       },
       "saltmaw_grotto": {
-        "note": "Saltmaw Grotto rows (solo, level 20-30). Tuned with tests/sim_dungeon_stars.gd saltmaw_grotto 8 22 (solo bot, level 22, 8 runs x 5 classes): ★1 85%, ★2 65%, ★3 55%, ★4 45%, ★5 38%. See data/world/dungeons/saltmaw_grotto/README.md.",
+        "note": "Saltmaw Grotto rows (solo, level 20-30). Tuned with tests/sim_dungeon_stars.gd saltmaw_grotto 8 22 (solo bot, level 22, 8 runs x 5 classes): ★1 80%, ★2 62%, ★3 52%, ★4 42%, ★5 38%. See data/world/dungeons/saltmaw_grotto/README.md.",
         "scale": {
           "1": [
             1.0,
@@ -889,16 +889,16 @@
             1.05
           ],
           "4": [
-            1.15,
+            1.25,
             1.05
           ],
           "5": [
-            1.0,
-            1.0
+            1.05,
+            1.05
           ]
         },
         "packs_note": "Room A: ★1-★2 2 Reef Crabs + 2 Drowned Sailors + 2 Drowned Harpooners; ★3-★4 + 1 Harpooner; ★5 the abyssal pack of 8. Room B: Old Saltmaw + escort (1 Reef Crab, 1 Drowned Sailor, 1 Drowned Harpooner); ★5 the Abyssal Saltmaw with an abyssal escort.",
-        "star5": "★5 boss form: the Abyssal Saltmaw (96 HP, Abyssal Bite 10 at level 20). Abyssal Lure pulls 3 cells on the same rhythm; from his 2nd turn and every 2nd after, Riptide churns 2-3 cells around the hero (the hero's cell first) for 3 hero turns: a hero who ends a turn on one takes 5 (x the star's damage row) and is dragged 1 cell toward him. Walking across is safe. Abyssal monsters soak: a hit takes 1 MP off the hero's next turn (no stacking). A coral pad or the whirlpool rinses it off."
+        "star5": "★5 boss form: the Abyssal Saltmaw (100 HP, Abyssal Bite 11 at level 20). Abyssal Lure pulls 3 cells on the same rhythm; from his 2nd turn and every 2nd after, Riptide churns 2-3 cells around the hero (the hero's cell first) for 3 hero turns: a hero who ends a turn on one takes 5 (x the star's damage row) and is dragged 1 cell toward him. Walking across is safe. Abyssal monsters soak: a hit takes 1 MP off the hero's next turn (no stacking). A coral pad or the whirlpool rinses it off."
       }
     }
   }

@@ -34,9 +34,10 @@ Eastmarch's dungeon, levels 20–30. Art: `art/pc/dungeons/saltmaw_grotto/` (man
   hero start, the spawns of every star on open floor off the pads, room A spawns on the far rows (y 0–4, 6+ cells from
   the hero), bodies on every spawn still leave every route open, and the props cut some lines from the Harpooners'
   spawns (room A) and Old Saltmaw's (room B) onto the hero's half without sealing a shooter off.
-- **Pads** (`run.json` `pads`): teal coral pads in room A, the 3x3 whirlpool in room B. A turn that starts on one
+- **Pads** (`run.json` `pads`): teal coral pads in room A, the whirlpool's inner 3x3 water in room B. A turn that starts on one
   heals the hero 5 HP and **rinses** the soak (that turn keeps its full MP). Monsters get nothing.
-- Room B: six rock spires ring the whirlpool with gaps. A hero behind a spire is out of the lantern's line.
+- Room B: the whirlpool is the art's 5x5 walkable floor decal on (4–8, 4–8): a stone kerb on its 16 border cells,
+  the water on the inner 3x3 (the nine pads). Seven rock spires stand on kerb cells with gaps (the art mock's ring). A hero behind a spire is out of the lantern's line.
 - **Room A packs** (Mauro: at least 6, with ranged monsters):
 
 | Stars | Reef Crabs | Drowned Sailors | Drowned Harpooners | Total |
@@ -59,11 +60,11 @@ cutlass swing, the kiting harpooners, the lure-and-bite and the ★5 mechanics.
 | Reef Crab | 30 / 33 | 5 | 2 | Claw Pinch 5, range 1 (slow melee tank) |
 | Drowned Sailor | 14 / 15 | 6 | 3 | Cutlass Slash 3 for 3 AP, range 1 (two swings a turn) |
 | Drowned Harpooner | 10 / 11 | 4 | 3 | Harpoon Throw 3, range 2–5, line of sight, kites |
-| Old Saltmaw | 80 / 88 | 6 | 2 | Angler Bite 8, range 1; Lantern Lure (pull 2) |
+| Old Saltmaw | 84 / 92 | 6 | 2 | Angler Bite 8, range 1; Lantern Lure (pull 2) |
 | Abyssal Reef Crab (★5) | 30 / 33 | 5 | 2 | Abyssal Pinch 5 + soak 1 |
 | Abyssal Drowned Sailor (★5) | 14 / 15 | 6 | 3 | Abyssal Cutlass 3 + soak 1 |
 | Abyssal Drowned Harpooner (★5) | 10 / 11 | 4 | 3 | Abyssal Harpoon 3 + soak 1, range 2–5, line of sight |
-| Abyssal Saltmaw (★5) | 96 / 106 | 6 | 2 | Abyssal Bite 10 (11 at L22); Abyssal Lure (pull 3); Riptide |
+| Abyssal Saltmaw (★5) | 100 / 110 | 6 | 2 | Abyssal Bite 11 (12 at L22); Abyssal Lure (pull 3); Riptide |
 
 - **Drowned Harpooner:** the Sling Rat / Book Wraith rule. It throws when it has a line (bodies do not block); next to
   the hero it steps back to range 2+ first; otherwise it walks to the nearest cell in range with a line. The harpoon
@@ -87,7 +88,7 @@ cutlass swing, the kiting harpooners, the lure-and-bite and the ★5 mechanics.
 ## Stars and rewards
 - ★1–★5 per run on the entry panel, no unlock gate, best star kept (`pc_progress.dungeon_stars`), as the others.
 - The grotto has its own solo rows (`stars.by_dungeon.saltmaw_grotto.scale`): ★1 [1.0, 1.0], ★2 [1.05, 1.0],
-  ★3 [1.1, 1.05] (+1 Harpooner), ★4 [1.15, 1.05], ★5 [1.0, 1.0]. ★5's extra difficulty is the abyssal pack and
+  ★3 [1.1, 1.05] (+1 Harpooner), ★4 [1.25, 1.05], ★5 [1.05, 1.05]. ★5's extra difficulty is the abyssal pack and
   boss, soak, the longer lure and the riptide.
 - **Rewards** (`pc_rewards` dungeon row `saltmaw_grotto`: the tier-20 **Saltmaw** set, coin level 20, extras Reef
   Chowder, Pearl Shell, Ship in a Bottle):
@@ -100,15 +101,18 @@ cutlass swing, the kiting harpooners, the lure-and-bite and the ★5 mechanics.
 ### Sim results (`tests/sim_dungeon_stars.gd saltmaw_grotto 8 22`: solo hero bot, level 22, 8 runs per class per star)
 | Star | Scale [HP, dmg] | Win | Kestrel | Ironjaw | Mender | Gloam | Bastion | Lost in A / B |
 |---|---|---|---|---|---|---|---|---|
-| ★1 | [1.0, 1.0] | 85% | 5/8 | 6/8 | 8/8 | 8/8 | 7/8 | 1 / 5 |
-| ★2 | [1.05, 1.0] | 65% | 0/8 | 5/8 | 8/8 | 7/8 | 6/8 | 4 / 10 |
-| ★3 | [1.1, 1.05] + 1 Harpooner | 55% | 1/8 | 0/8 | 8/8 | 6/8 | 7/8 | 12 / 6 |
-| ★4 | [1.15, 1.05] | 45% | 0/8 | 1/8 | 7/8 | 5/8 | 5/8 | 14 / 8 |
-| ★5 | [1.0, 1.0] + abyssal pack, boss, riptide | 38% | 0/8 | 0/8 | 7/8 | 0/8 | 8/8 | 18 / 7 |
+| ★1 | [1.0, 1.0] | 80% | 4/8 | 7/8 | 8/8 | 6/8 | 7/8 | 1 / 7 |
+| ★2 | [1.05, 1.0] | 62% | 3/8 | 3/8 | 8/8 | 5/8 | 6/8 | 4 / 11 |
+| ★3 | [1.1, 1.05] + 1 Harpooner | 52% | 1/8 | 2/8 | 8/8 | 3/8 | 7/8 | 12 / 7 |
+| ★4 | [1.25, 1.05] | 42% | 2/8 | 2/8 | 7/8 | 0/8 | 6/8 | 20 / 3 |
+| ★5 | [1.05, 1.05] + abyssal pack, boss, riptide | 38% | 0/8 | 0/8 | 5/8 | 3/8 | 7/8 | 18 / 7 |
 
 Tuning notes: the first numbers (Crab 30 / 6, Sailor 16 HP with Cutlass 4, Harpooner 10 / 4, Saltmaw 90 / 11) gave
 ★1 30% with most losses in room B: the lure makes him hit every other turn, so he went down to 84 / 9 (★1 65%), then
 80 / 8 (★1 85%). The crab, the sailor and the harpoon came down by 1 each. With the archive's ★5 row shape
-[0.9, 0.85] the ★5 run was easier than ★1 (60%: a weaker boss), so the mutated boss got his own numbers (96 / 10,
-pull 3) and ★5 went to [1.0, 1.0] (38%). As in the other dungeons the bot plays Kestrel, Ironjaw and Gloam poorly
+[0.9, 0.85] the ★5 run was easier than ★1 (60%: a weaker boss), so the mutated boss got his own numbers (pull 3).
+The art's 5x5 whirlpool (7 kerb spires with wide gaps) opened room B up, so Old Saltmaw went to 84 HP (★1 80%) and
+the Abyssal Saltmaw to 100 / 11, with ★5 at [1.05, 1.05] (38%). The rows are sensitive to rounding: a 3-damage
+cutlass or harpoon at level 22 turns into 4 from x1.1, so ★4 [1.15, 1.1] gave 38% and [1.1, 1.1] 52%; ★4 adds HP
+instead ([1.25, 1.05], 42%). As in the other dungeons the bot plays Kestrel, Ironjaw and Gloam poorly
 against ranged kiters and Mender slowly but surely; real players do better.
