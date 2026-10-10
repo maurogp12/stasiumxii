@@ -246,21 +246,8 @@ const FAMILY_ORDER: Array[String] = [
 	"ironveil", "gallowsight", "maulgrave", "stillcut", "sheaf",
 	"oathgrave", "ravenmourn", "tyrantjaw", "gravewhisper", "hallowmourn", "brightedge",
 ]
-## Temporary art: new families reuse an existing set sheet until Scenario icons land.
-const ICON_ALIAS := {
-	"ashmantle": "sheaf",
-	"rustward": "ironveil",
-	"oathgrave": "brightedge",
-	"gallowsight": "undertow",
-	"ravenmourn": "duskbrand",
-	"cragmaw": "sheaf",
-	"maulgrave": "ironveil",
-	"tyrantjaw": "duskbrand",
-	"nightglass": "stillcut",
-	"gravewhisper": "duskbrand",
-	"vesperwell": "sheaf",
-	"hallowmourn": "brightedge",
-}
+## Each family uses its own sheet. Empty on purpose: do not point a set at another.
+const ICON_ALIAS := {}
 
 static var save_path: String = "user://gear_bag.json"
 
