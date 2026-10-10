@@ -53,7 +53,10 @@ func forge() -> Dictionary:
 	var result := _vault.forge(selected)
 	if bool(result.get("ok", false)):
 		_vault.save()
-		_status.text = "%s forged. It powers your next Stasis or online Koliseo fight, then breaks." % StillVault.display_name(selected)
+		if bool(result.get("swapped", false)):
+			_status.text = "Swapped to %s. The old Still's fragments are back." % StillVault.display_name(selected)
+		else:
+			_status.text = "%s forged. It powers your next Stasis or online Koliseo fight, then breaks." % StillVault.display_name(selected)
 	else:
 		_status.text = {"needs_12": "Needs 12 fragments of the same Still.", "socket_full": "The socket is full — use that Still in a fight first."}.get(str(result.get("reason", "")), "Cannot forge.")
 	_refresh()
@@ -162,11 +165,17 @@ func _refresh() -> void:
 	_detail.add_child(_label("Overwound — stronger, with a drawback: %s" % StillVault.plain(selected, "overwound"), 15, GOLD_BRIGHT))
 	if not bool(fx["built"]):
 		_detail.add_child(_label("This effect arrives in the next update. Forging it now keeps it for later fights.", 13, GOLD_DIM))
-	var forge_button := _button("Forge %s" % StillVault.display_name(selected))
+	var swapping := _vault.socket != "" and _vault.socket != selected and _vault.kit_can_swap()
+	var forge_label := "Swap to %s" % StillVault.display_name(selected) if swapping else "Forge %s" % StillVault.display_name(selected)
+	var forge_button := _button(forge_label)
 	forge_button.name = "Forge"
 	forge_button.disabled = not bool(_vault.can_forge(selected).get("ok", false))
 	forge_button.pressed.connect(forge)
 	_detail.add_child(forge_button)
+	if _vault.kit_can_swap():
+		var kit_note := _label("Test kit: forging a different Still swaps it in and returns the old one's fragments. Intact and Overwound stay available.", 13, GREEN)
+		kit_note.name = "KitSwap"
+		_detail.add_child(kit_note)
 	var gate: Dictionary = _vault.can_forge(selected)
 	if not bool(gate.get("ok", false)):
 		var why := "Collect %d more %s fragments to forge it." % [StillVault.FORGE_COST - _vault.count(selected), StillVault.display_name(selected)]
