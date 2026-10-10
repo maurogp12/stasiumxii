@@ -145,6 +145,7 @@ func combat_config(index: int = -1, seed: int = -1) -> Dictionary:
 			"cells": cells,
 			"pad_heal": int(pads.get("amount", 0)) if str(pads.get("effect", "")) == "heal" else 0,
 			"pad_thaw": bool(pads.get("thaw", false)),
+			"view": (run_doc.get("view", {}) as Dictionary).duplicate(true) if typeof(run_doc.get("view", {})) == TYPE_DICTIONARY else {},
 			"hero": {
 				"class_id": hero_class,
 				"name": hero_name,

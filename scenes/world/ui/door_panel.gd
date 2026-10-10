@@ -18,8 +18,10 @@ const STAR_NOTES := {
 	2: "Tougher monsters. More XP and coins.",
 	3: "Bigger pack. Rare parts can drop.",
 	4: "Tougher still. Mystery Boxes can drop.",
-	5: "The Radioactive Ratking. A Rare part and a Mystery Box for sure.",
+	5: "The mutated boss. A Rare part and a Mystery Box for sure.",
 }
+## The open dungeon's notes: STAR_NOTES with its run file's text.star_notes.
+var _notes: Dictionary = STAR_NOTES.duplicate()
 
 var dungeon_id := ""
 var check: Dictionary = {}
@@ -126,7 +128,7 @@ func select_star(n: int) -> void:
 		star_buttons[i].modulate = Color(1.0, 0.86, 0.4) if i + 1 == selected_star else Color(0.85, 0.85, 0.85)
 	var best_text := "  Best cleared: ★%d." % best_star if best_star > 0 else ""
 	if _star_note != null:
-		_star_note.text = "★%d: %s%s" % [selected_star, STAR_NOTES.get(selected_star, ""), best_text]
+		_star_note.text = "★%d: %s%s" % [selected_star, _notes.get(selected_star, ""), best_text]
 
 
 func open_for(row: Dictionary, hero_level: int, keeper_line: String = "", best: int = 0) -> void:
@@ -134,6 +136,15 @@ func open_for(row: Dictionary, hero_level: int, keeper_line: String = "", best: 
 	best_star = best
 	dungeon_id = str(row.get("id", ""))
 	check = Run.entry_check(row, hero_level, 1)
+	_notes = STAR_NOTES.duplicate()
+	var run_path := str(row.get("run", ""))
+	if run_path != "" and FileAccess.file_exists(run_path):
+		var doc: Variant = JSON.parse_string(FileAccess.get_file_as_string(run_path))
+		if typeof(doc) == TYPE_DICTIONARY:
+			var own: Variant = ((doc as Dictionary).get("text", {}) as Dictionary).get("star_notes", {})
+			if typeof(own) == TYPE_DICTIONARY:
+				for k in (own as Dictionary).keys():
+					_notes[int(k)] = str(own[k])
 	_title.text = str(row.get("name", "Dungeon"))
 	var party: Dictionary = row.get("party", {})
 	var lines: PackedStringArray = []

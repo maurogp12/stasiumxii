@@ -18,45 +18,37 @@ var _oneshot := ""
 var _blank: Texture2D
 var _faded := false
 var _glow: AnimatedSprite2D
-## Cellar lantern light: lift red, cut blue (the kit frames are flat and cool).
+## Room light on the kit's flat, cool frames. The run file sets it
+## (view.light); WARM (the cellar's lantern light) when none is given.
 const WARM := Color(1.14, 0.96, 0.74, 1.0)
-
-
-## Stand-in base art for monsters whose own art is not in the kit yet.
-const STAND_IN := {
-	"sling_rat": "granary_rat",
-	"radioactive_rat": "granary_rat",
-	"radioactive_sling_rat": "granary_rat",
-	"radioactive_ratking": "the_ratking",
-}
-## Stand-in tints: radioactive green, the Sling Rat a dusty grey-blue.
-const STAND_IN_TINT := {
-	"sling_rat": Color(0.82, 0.9, 1.08, 1.0),
-	"radioactive_rat": Color(0.55, 1.3, 0.45, 1.0),
-	"radioactive_sling_rat": Color(0.55, 1.3, 0.45, 1.0),
-	"radioactive_ratking": Color(0.6, 1.35, 0.5, 1.0),
-}
+var light := WARM
 var tint := Color.WHITE
 var stand_in := false
+## A ★5 variant (data: variant_of + star_min 5), e.g. a radioactive rat.
 var radioactive := false
 
 
+## Stand-in base art for a monster whose own frames are not in the kit yet:
+## the data row's stand_in {art, tint, scale} (dungeon_monsters.json).
 func bind_art(man: Dictionary, id: String, is_boss: bool, variant_of: String = "") -> void:
 	monster_id = id
 	boss = is_boss
-	radioactive = id.begins_with("radioactive")
+	var spec: Dictionary = Art.monster_spec(id)
+	radioactive = int(spec.get("star_min", 0)) >= 5
 	art = Art.monster_frames(man, id)
 	tint = Color.WHITE
 	stand_in = false
-	if not bool(art.get("painted", false)) and STAND_IN.has(id):
-		var base := Art.monster_frames(man, str(STAND_IN[id]))
+	var si: Variant = spec.get("stand_in", null)
+	if not bool(art.get("painted", false)) and typeof(si) == TYPE_DICTIONARY:
+		var base := Art.monster_frames(man, str((si as Dictionary).get("art", "")))
 		if bool(base.get("painted", false)) or not Art.is_kit(man):
 			art = base
-			tint = STAND_IN_TINT.get(id, Color.WHITE)
+			var tc: Array = (si as Dictionary).get("tint", [1, 1, 1, 1])
+			tint = Color(float(tc[0]), float(tc[1]), float(tc[2]), float(tc[3]) if tc.size() > 3 else 1.0)
 			stand_in = true
-			if id.contains("sling"):
+			if (si as Dictionary).has("scale"):
 				art = art.duplicate()
-				art["scale"] = float(art.get("scale", 0.5)) * 0.85
+				art["scale"] = float(art.get("scale", 0.5)) * float(si["scale"])
 	_ensure_body()
 
 
@@ -92,7 +84,7 @@ func _ensure_body() -> void:
 func body_height() -> float:
 	if float(art.get("height", 0.0)) > 0.0:
 		return minf(float(art["height"]) * 0.82, 150.0)
-	return float(Art.PLACEHOLDER_HEIGHT.get(monster_id, 80.0))
+	return Art.placeholder_height(monster_id)
 
 
 func _face() -> Dictionary:
@@ -188,7 +180,7 @@ func _process(_delta: float) -> void:
 	_root.rotation = _sprite.rotation
 	_root.scale = Vector2(s * rel.x, s * rel.y)
 	# The kit's monsters are flatly lit and cool: warm them to the room light.
-	_body.modulate = _sprite.modulate * WARM * tint
+	_body.modulate = _sprite.modulate * light * tint
 	if _glow != null:
 		_glow.flip_h = flip
 		_glow.offset = _body.offset

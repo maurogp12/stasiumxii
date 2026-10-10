@@ -61,7 +61,17 @@
         "projectile": "sling_pebble",
         "impact": "sling_impact_puff"
       },
-      "art": "sling_rat"
+      "art": "sling_rat",
+      "stand_in": {
+        "art": "granary_rat",
+        "tint": [
+          0.82,
+          0.9,
+          1.08,
+          1.0
+        ],
+        "scale": 0.85
+      }
     },
     {
       "id": "scarecrow_drudge",
@@ -138,7 +148,16 @@
       },
       "art": "radioactive_rat",
       "variant_of": "granary_rat",
-      "star_min": 5
+      "star_min": 5,
+      "stand_in": {
+        "art": "granary_rat",
+        "tint": [
+          0.55,
+          1.3,
+          0.45,
+          1.0
+        ]
+      }
     },
     {
       "id": "radioactive_sling_rat",
@@ -168,7 +187,17 @@
       },
       "art": "radioactive_sling_rat",
       "variant_of": "sling_rat",
-      "star_min": 5
+      "star_min": 5,
+      "stand_in": {
+        "art": "granary_rat",
+        "tint": [
+          0.55,
+          1.3,
+          0.45,
+          1.0
+        ],
+        "scale": 0.85
+      }
     },
     {
       "id": "radioactive_ratking",
@@ -215,6 +244,15 @@
         "cells_max": 3,
         "turns": 3,
         "hp": 6
+      },
+      "stand_in": {
+        "art": "the_ratking",
+        "tint": [
+          0.6,
+          1.35,
+          0.5,
+          1.0
+        ]
       }
     },
     {

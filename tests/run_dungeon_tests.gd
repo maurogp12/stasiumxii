@@ -85,7 +85,7 @@ func _test_doors_json() -> void:
 	var book = loaded["dungeons"]
 	eq(book.rows.size(), 5, "five Crosshaven town dungeons")
 	var built: Array = book.built()
-	eq(built.size(), 1, "one dungeon is built")
+	eq(built.size(), 2, "two dungeons are built (the cellar and the Frostspire Archive)")
 	var row: Dictionary = book.by_id(GRANARY)
 	eq(str(row.get("status", "")), "built", "the Old Granary Cellar is built")
 	eq(str(row["level_zone"]), "stoneford", "the cellar is Stoneford's dungeon")
@@ -101,7 +101,7 @@ func _test_doors_json() -> void:
 	var bands := {}
 	for r in book.rows:
 		bands[str(r["level_zone"])] = int(bands.get(str(r["level_zone"]), 0)) + 1
-		if str(r["id"]) != GRANARY:
+		if not str(r["id"]) in [GRANARY, "frostspire_archive"]:
 			eq(str(r["status"]), "planned", "%s is planned" % r["id"])
 			eq(r.has("door"), false, "%s has no door yet" % r["id"])
 	for band in Dungeons.TOWN_BANDS:
@@ -157,7 +157,7 @@ func _test_door_rules_reject() -> void:
 	(wrong_band["dungeons"] as Array)[0]["door"] = {"zone_id": "crosshaven_northgate", "x": 16, "y": 11}
 	eq(bool(Dungeons.load_document(wrong_band)["dungeons"].validate_world(atlas, npcs)["ok"]), false, "a door outside its band fails")
 	var planned_door: Dictionary = base.duplicate(true)
-	(planned_door["dungeons"] as Array)[1]["door"] = {"zone_id": "crosshaven_northgate", "x": 16, "y": 11}
+	(planned_door["dungeons"] as Array)[2]["door"] = {"zone_id": "crosshaven_eastmarch", "x": 16, "y": 11}
 	eq(bool(Dungeons.load_document(planned_door).get("ok", true)), false, "a planned dungeon with a door fails to load")
 	var stray: Dictionary = base.duplicate(true)
 	(stray["dungeons"] as Array)[0]["extra"] = 1
@@ -754,7 +754,7 @@ func _test_scripted_win() -> void:
 	eq(int(hero.xp) + 0 > 0 or not (summary["level_ups"] as Array).is_empty(), true, "XP is granted")
 	eq((summary["missions"] as Array).has("stoneford_dungeon"), true, "the clear_dungeon mission is credited")
 	eq(missions.status_of("stoneford_dungeon", hero), "ready", "the cellar mission is ready to turn in")
-	var other = Run.create("frostspire_archive", 12, "kestrel")
+	var other = Run.create("saltmaw_grotto", 22, "kestrel")
 	eq(bool(other.get("ok", true)), false, "a planned dungeon cannot be run")
 
 

@@ -307,7 +307,8 @@
     },
     "showcase_title": "Old Granary Cellar\nMonsters",
     "showcase_sub": "Granary Rat · Sling Rat · Scarecrow Drudge · The Ratking\n★5: Radioactive Rat · Radioactive Sling Rat · Radioactive Ratking",
-    "star5_rule": "★5: the Radioactive Ratking spills toxic pools every other turn (end a turn on one for 6 poison); radioactive Sling Rats poison."
+    "star5_rule": "★5: the Radioactive Ratking spills toxic pools every other turn (end a turn on one for 6 poison); radioactive Sling Rats poison.",
+    "b_still": "04_room_b_ratking.png"
   },
   "view": {
     "light": [
@@ -338,8 +339,19 @@
     "hazard": {
       "toxic_pool": {
         "color": [
-          0.45,
+          0.35,
           0.95,
+          0.2
+        ],
+        "bubble": [
+          0.7,
+          1.0,
+          0.4,
+          0.85
+        ],
+        "ring": [
+          0.6,
+          1.0,
           0.3
         ],
         "text_color": [
@@ -370,7 +382,12 @@
           0.3,
           0.3
         ],
-        "spin": true
+        "spin": true,
+        "puff": [
+          0.6,
+          1.0,
+          0.35
+        ]
       },
       "sling_impact_puff": {
         "color": [
@@ -426,6 +443,31 @@
         6,
         true
       ]
-    ]
+    ],
+    "floor": {
+      "base": [
+        0.36,
+        0.3,
+        0.25
+      ],
+      "seam": [
+        0.18,
+        0.14,
+        0.11,
+        0.9
+      ],
+      "edge": [
+        0.14,
+        0.11,
+        0.09,
+        0.95
+      ],
+      "fleck": [
+        0.78,
+        0.64,
+        0.32,
+        0.6
+      ]
+    }
   }
 }
