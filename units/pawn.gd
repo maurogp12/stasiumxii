@@ -27,6 +27,13 @@ class_name Pawn
 ## Missing nodes, empty frames, or null textures keep the static sprite.
 ## Mirrors are baked. Never set flip_h.
 ## `debug_draw_tokens` keeps the old circle token as a fallback.
+## Painted look (PC dungeon hero, `painted_look`): the locked painted sheets
+## of the class (`units/painted_looks.gd`) replace the static and the export_2x
+## strips. Standing loops the painted idle on Sprite; walk, attack, skill (as
+## `cast_*`), hit and death play on BodyStrip. Each cell stands on its own
+## ground point (texture_pivot_offset). The painted cells carry the whole
+## motion: no hop, lunge, squash or impact freeze on top. Off by default, so
+## the Koliseo board keeps its look.
 
 var grid_position: Vector2i = Vector2i.ZERO
 var unit_name: String = ""
@@ -64,9 +71,12 @@ var _impact_frozen: bool = false
 var _body_kind: String = ""
 var _death_tilt: float = 1.0
 var _held_death_strip: bool = false
+## Painted look on (set before the first snapshot). See the header.
+var painted_look: bool = false
 
 const VIEW_MOTION := preload("res://units/view_motion.gd")
 const STRIP_LIBRARY := preload("res://units/strip_library.gd")
+const PAINTED := preload("res://units/painted_looks.gd")
 
 const FACING_ISO := {
 	"N": Vector2(20, -10),
@@ -97,6 +107,60 @@ const SEAT_RING_RY := 7.0
 const NAME_GAP_ABOVE_HP := 2.0
 
 static var _sprite_cache: Dictionary = {}
+
+
+## Offset that stands this cell's ground point on the pawn origin. A painted
+## cell carries its own pivot (an action cell can sit lower or off centre);
+## any other cell uses the static's (0, -72).
+static func texture_pivot_offset(tex: Texture2D) -> Vector2:
+	if tex == null or not tex.has_meta(PAINTED.CELL_PIVOT_META):
+		return SPRITE_OFFSET
+	var p: Vector2i = tex.get_meta(PAINTED.CELL_PIVOT_META)
+	var size := Vector2(float(tex.get_width()), float(tex.get_height()))
+	return Vector2(size.x * 0.5 - float(p.x), size.y * 0.5 - float(p.y))
+
+
+## True when this pawn draws the painted sheets (flag on and the class has them).
+func uses_painted_look() -> bool:
+	return painted_look and class_id != "" and PAINTED.pawn_frames(class_id) != null
+
+
+## Painted idle cells for the facing, or [] without the painted look.
+func painted_idle_cells() -> Array[Texture2D]:
+	var none: Array[Texture2D] = []
+	if not uses_painted_look():
+		return none
+	return PAINTED.cells(class_id, "idle", facing.to_lower())
+
+
+## Painted idle cell on the clock (cell 0 when motion is reduced).
+func _painted_idle_cell() -> Texture2D:
+	var cells := painted_idle_cells()
+	if cells.is_empty():
+		return null
+	if VIEW_MOTION.reduce_motion():
+		return cells[0]
+	var fps := float(PAINTED.spec(class_id, "idle").get("fps", 17.144))
+	var now := Time.get_ticks_msec() / 1000.0 + VIEW_MOTION.idle_phase_sec(seat, class_id)
+	return cells[int(floor(now * fps)) % cells.size()]
+
+
+## The playing body is a painted strip cell.
+func _painted_strip_is_body() -> bool:
+	if not _strip_holds_body or _active_strip == null or not is_instance_valid(_active_strip):
+		return false
+	var frames := _active_strip.sprite_frames
+	if frames == null or not frames.has_animation(_active_strip.animation) or frames.get_frame_count(_active_strip.animation) < 1:
+		return false
+	return PAINTED.is_painted_cell(frames.get_frame_texture(_active_strip.animation, 0))
+
+
+## Stand the strip's current clip on its ground point (one clip, one cell).
+func _fit_strip_offset(strip: AnimatedSprite2D) -> void:
+	var frames := strip.sprite_frames
+	if frames == null or not frames.has_animation(strip.animation) or frames.get_frame_count(strip.animation) < 1:
+		return
+	strip.offset = texture_pivot_offset(frames.get_frame_texture(strip.animation, 0))
 
 
 class StatusChrome extends Node2D:
@@ -274,6 +338,15 @@ func _mark_falls_back_to_attack(plan: Dictionary) -> bool:
 	return not _strip_choice("attack").is_empty()
 
 
+## Painted Mender: a cast that hurts an enemy (`strikes`, set by the board)
+## swings the painted lantern attack. Heals and wards keep the skill. Mender
+## has no melee spell, so this is the only way her attack shows.
+func _painted_strike(plan: Dictionary) -> bool:
+	if not bool(plan.get("strikes", false)) or class_id != SpellKits.CLASS_MENDER:
+		return false
+	return uses_painted_look() and not _strip_choice("attack").is_empty()
+
+
 ## Authored clip length. 6 frames at 12 fps is 0.5s. Zero when the strip is missing.
 func _strip_natural_sec(kind: String) -> float:
 	var choice := _strip_choice(kind)
@@ -343,7 +416,7 @@ func play_view_plan(plan: Dictionary) -> float:
 		total += sec
 		if kind == "wait":
 			tw.tween_interval(sec)
-		elif kind == "attack" or (kind == "cast" and _mark_falls_back_to_attack(plan)):
+		elif kind == "attack" or (kind == "cast" and (_mark_falls_back_to_attack(plan) or _painted_strike(plan))):
 			var play_sec := _fit_strip_window("attack", sec, steps)
 			var aim: Vector2 = step.get("dir", plan.get("aim", Vector2.ZERO))
 			if aim.length_squared() < 0.01:
@@ -594,7 +667,9 @@ func _ensure_chrome() -> void:
 func _sync_sprite() -> void:
 	_ensure_visuals()
 	_sprite.flip_h = false
-	_sprite.texture = sprite_texture(class_id, facing)
+	var idle_cell := _painted_idle_cell()
+	_sprite.texture = idle_cell if idle_cell != null else sprite_texture(class_id, facing)
+	_sprite.offset = texture_pivot_offset(_sprite.texture)
 	if not _flashing:
 		_sprite.modulate = rest_modulate()
 	if _strip_holds_body and _active_strip != null and is_instance_valid(_active_strip):
@@ -648,6 +723,13 @@ func _on_action_finished(gen: int) -> void:
 
 
 func _sample_hop(t: float) -> void:
+	if _painted_strip_is_body():
+		# The painted walk carries its own bob and plant. A hop on top lifts
+		# the planted foot off the tile.
+		_place_body(Vector2.ZERO)
+		_ride_chrome(Vector2.ZERO)
+		_reset_walk_scale()
+		return
 	var hop := VIEW_MOTION.hop_offset(t)
 	_place_body(hop)
 	# Name and HP ride the bob. The seat ring stays on the pawn.
@@ -671,11 +753,18 @@ func _reset_walk_scale() -> void:
 
 
 func _sample_attack(t: float, dir: Vector2, reach: float = -1.0) -> void:
+	if _painted_strip_is_body():
+		# A painted one-shot is the whole motion: no lunge, squash or freeze.
+		_apply_body_pose({})
+		return
 	_apply_body_pose(VIEW_MOTION.attack_pose(t, dir, reach))
 	_sync_impact_freeze(t, false)
 
 
 func _sample_cast(t: float, dir: Vector2 = Vector2.ZERO) -> void:
+	if _painted_strip_is_body():
+		_apply_body_pose({})
+		return
 	_apply_body_pose(VIEW_MOTION.cast_pose(t, dir))
 	_sync_impact_freeze(t, true)
 
@@ -780,7 +869,8 @@ func _sample_death_strip(t: float, _tilt_sign: float) -> void:
 	if strip == null or not is_instance_valid(strip):
 		_sample_death(t, _tilt_sign)
 		return
-	if t >= 0.72:
+	# A painted fall stops on its last cell by itself (the clip does not loop).
+	if t >= 0.72 and not _painted_strip_is_body():
 		_freeze_on_frame(strip, _last_frame(strip))
 	if _sprite != null and is_instance_valid(_sprite):
 		_sprite.visible = false
@@ -818,6 +908,7 @@ func _hold_death_strip() -> bool:
 		_prepare_strip_pose(strip)
 	if strip.animation != anim:
 		strip.animation = anim
+	_fit_strip_offset(strip)
 	_active_strip = strip
 	_strip_holds_body = true
 	_held_death_strip = true
@@ -868,6 +959,14 @@ func _start_idle() -> void:
 
 func _sample_idle(_t: float) -> void:
 	if _sprite == null or _motion_playing or _idle_hold or not alive or _strip_holds_body:
+		return
+	var idle_cell := _painted_idle_cell()
+	if idle_cell != null:
+		# The painted idle breathes in its own cells. No bob on top.
+		if _sprite.texture != idle_cell:
+			_sprite.texture = idle_cell
+			_sprite.offset = texture_pivot_offset(idle_cell)
+		_sprite.position = Vector2.ZERO
 		return
 	var phase := VIEW_MOTION.idle_phase_sec(seat, "%s:%s" % [class_id, unit_name])
 	var now := Time.get_ticks_msec() / 1000.0
@@ -937,6 +1036,7 @@ func _begin_body_strip(kind: String, window_sec: float) -> void:
 	_prepare_strip_pose(strip)
 	strip.visible = true
 	strip.play(anim)
+	_fit_strip_offset(strip)
 	if not strip.is_playing():
 		strip.visible = false
 		return
@@ -1016,6 +1116,10 @@ func _prepare_walk_loop(strip: AnimatedSprite2D, anim: StringName) -> void:
 		if frames != null and frames.has_animation(anim):
 			frames.set_animation_loop(anim, true)
 	strip.speed_scale = walk_strip_speed_scale()
+	if PAINTED.is_painted_cell(frames.get_frame_texture(anim, 0) if frames.get_frame_count(anim) > 0 else null):
+		# Painted walk: frames_per_tile cells per board tile, capped at
+		# natural leg speed (a capped class slides its foot a little).
+		strip.speed_scale = PAINTED.pawn_walk_speed_scale(class_id, WALK_TILE_SEC)
 
 
 func _prepare_play_once(strip: AnimatedSprite2D, anim: StringName) -> void:
@@ -1086,7 +1190,9 @@ func bind_motion_frames(frames: SpriteFrames) -> void:
 func _ensure_motion_strips() -> void:
 	if class_id == "":
 		return
-	var frames := STRIP_LIBRARY.frames_for(class_id)
+	var frames: SpriteFrames = PAINTED.pawn_frames(class_id) if painted_look else null
+	if frames == null:
+		frames = STRIP_LIBRARY.frames_for(class_id)
 	var existing := get_node_or_null(BODY_STRIP_PATH) as AnimatedSprite2D
 	if existing != null and existing.sprite_frames != null:
 		if not bool(existing.get_meta("_from_strip_library", false)):
@@ -1138,6 +1244,7 @@ func _play_walk_flat() -> bool:
 	_prepare_strip_pose(strip)
 	strip.visible = true
 	strip.play(anim)
+	_fit_strip_offset(strip)
 	if not strip.is_playing():
 		strip.visible = false
 		if _sprite != null and is_instance_valid(_sprite):

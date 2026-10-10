@@ -44,7 +44,7 @@ func _ready() -> void:
 	ctx = Launcher.take_pending()
 	_read_capture_args()
 	if ctx.is_empty():
-		ctx = {"dungeon_id": "old_granary_cellar", "level": 1, "class_id": _arg("--class", "kestrel"), "star": int(_arg("--star", "1")), "autoplay": capture != "", "return_zone": "crosshaven_stoneford", "return_cell": Vector2i(16, 11)}
+		ctx = {"dungeon_id": "old_granary_cellar", "level": int(_arg("--level", "1")), "class_id": _arg("--class", "kestrel"), "star": int(_arg("--star", "1")), "autoplay": capture != "", "return_zone": "crosshaven_stoneford", "return_cell": Vector2i(16, 11)}
 	progress = Progress.new()
 	var level := int(ctx.get("level", progress.level))
 	var made: Dictionary = Run.create(str(ctx.get("dungeon_id", "")), level, str(ctx.get("class_id", "kestrel")), str(ctx.get("name", "")), int(ctx.get("star", 1)))
@@ -72,6 +72,9 @@ func _ready() -> void:
 		return
 	if capture == "room":
 		call_deferred("_room_clip")
+		return
+	if capture == "fight":
+		call_deferred("_fight_clip")
 		return
 	call_deferred("_begin")
 
@@ -141,6 +144,8 @@ func _process(_delta: float) -> void:
 
 
 func _on_room_over(result: String) -> void:
+	if capture == "fight":
+		return
 	board.end_room()
 	if result == "win" and run.advance():
 		await _stairs()
@@ -408,6 +413,23 @@ func _room_clip() -> void:
 	var index := int(_arg("--room", "0"))
 	await _start_room(index, true)
 	await get_tree().create_timer(float(_arg("--secs", "15"))).timeout
+	get_tree().quit()
+
+
+## Capture: one autoplayed room fight (the hero's painted attack, skill and
+## hit), then the hero standing in the cleared room.
+func _fight_clip() -> void:
+	var over := {}
+	board.room_over.connect(func(r): over["result"] = r)
+	await _start_room(int(_arg("--room", "0")), true)
+	# Game time, not wall time: the movie writer renders slower than real time.
+	var limit := get_tree().create_timer(float(_arg("--secs", "150")))
+	while over.is_empty() and limit.time_left > 0.0:
+		await get_tree().process_frame
+	print("FIGHT %s" % str(over.get("result", "timeout")))
+	_stair_label.text = "Victory" if str(over.get("result", "")) == "win" else "Defeat"
+	_stair_label.visible = true
+	await get_tree().create_timer(3.5).timeout
 	get_tree().quit()
 
 

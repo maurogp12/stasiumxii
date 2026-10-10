@@ -958,6 +958,15 @@ func _test_click_sweep() -> void:
 	for i in 4:
 		await process_frame
 	var board = scene.get_node("BoardView")
+	# The hero pawn draws the painted class look; monsters keep their sprites.
+	var hero_pawn = board.pawns_by_seat.get(0)
+	eq(hero_pawn != null and hero_pawn.painted_look and hero_pawn.uses_painted_look(), true, "the dungeon hero uses the painted look")
+	eq(hero_pawn != null and Pawn.texture_pivot_offset(hero_pawn._sprite.texture) == hero_pawn._sprite.offset and hero_pawn._sprite.texture.has_meta("painted_cell"), true, "the hero stands on a painted idle cell")
+	var plain_monsters := true
+	for seat in board.pawns_by_seat.keys():
+		if int(seat) != 0 and board.pawns_by_seat[seat].painted_look:
+			plain_monsters = false
+	eq(plain_monsters, true, "monster pawns keep their own sprites")
 	var before := root.size
 	for room_index in 2:
 		if room_index == 1:

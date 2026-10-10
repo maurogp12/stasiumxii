@@ -231,10 +231,15 @@ func _ready() -> void:
 	_hover.draw.connect(_draw_hover)
 	add_child(_hover)
 
+	progress = Progress.new()
+	if progress.hero_class == "":
+		var session := get_node_or_null("/root/NetSession")
+		if session != null:
+			progress.set_hero_class(str(session.get("selected_class_id")))
 	walker = Walker.new()
 	walker.name = "Player"
-	if _launch_class != "":
-		walker.class_id = _launch_class
+	# The hero's class, set before _ready so only that class's art loads.
+	walker.class_id = SpellKits.normalize_class_id(_launch_class) if _launch_class != "" else world_hero_class()
 	walker.arrived.connect(_on_arrived)
 	walker.stepped.connect(func(_c): _refresh_hud())
 	add_child(walker)
@@ -274,11 +279,6 @@ func _ready() -> void:
 	visuals.setup(settings, true)
 
 	_build_hud()
-	progress = Progress.new()
-	if progress.hero_class == "":
-		var session := get_node_or_null("/root/NetSession")
-		if session != null:
-			progress.set_hero_class(str(session.get("selected_class_id")))
 	character_window = CharacterWindow.new()
 	character_window.name = "CharacterWindow"
 	character_window.setup(progress)
@@ -2605,6 +2605,8 @@ func _play_movie(mode: String) -> void:
 			await _movie_ironjaw_tall()
 		"locked_s":
 			await _movie_locked_s()
+		"hero_looks":
+			await _movie_hero_looks()
 		"wp4gate":
 			await _movie_wp4_gate()
 		"wp5astills":
@@ -3518,8 +3520,8 @@ func _movie_v7_tour() -> void:
 	_mark("tour-end")
 
 
-## Painted Ironjaw on the v9 roads. East and west use the new strips; north and
-## south are the placeholder cycles. Kestrel stands beside him at the end.
+## The hero on the v9 roads, east/west then south/north. Kestrel stands
+## beside him at the end (scale check).
 func _movie_ironjaw_tall() -> void:
 	settings.apply_preset("Full")
 	_set_zoom(1.85)
@@ -3546,7 +3548,34 @@ func _movie_ironjaw_tall() -> void:
 	_mark("end")
 
 
-## Each class walks down-right (east) on the crossroads with the locked S sheet.
+## The hero class (`--class`, else progress) on the crossroads: stands on the
+## painted idle, walks all four facings, then runs them. One class per run.
+func _movie_hero_looks() -> void:
+	settings.apply_preset("Full")
+	_set_zoom(2.0)
+	weather.set_weather("clear")
+	weather.time_of_day = 12.0
+	weather.auto_rotate = false
+	weather.settle()
+	await enter_zone("crosshaven_crossroads", Vector2i(22, 18), false)
+	var who := str(walker.class_id).capitalize()
+	for pace in ["walk", "run"]:
+		_mark(pace)
+		if _banner != null:
+			_banner.text = "%s  ·  %s" % [who, pace]
+			_banner.modulate.a = 1.0
+		walker.face("e")
+		await get_tree().create_timer(1.2 if pace == "walk" else 0.6).timeout
+		for dir in ["e", "s", "w", "n"]:
+			await _cardinal(dir, 4 if pace == "walk" else 6, pace)
+			await get_tree().create_timer(0.35).timeout
+	_mark("idle")
+	walker.face("e")
+	await get_tree().create_timer(1.5).timeout
+	_mark("end")
+
+
+## Each class walks down-right (east) on the crossroads.
 func _movie_locked_s() -> void:
 	settings.apply_preset("Full")
 	_set_zoom(2.3)
@@ -4178,6 +4207,14 @@ func _sync_door_hover(z: WorldZone, c: Vector2i) -> void:
 	for node in door_nodes.values():
 		var door_zone := str((node.dungeon.get("door", {}) as Dictionary).get("zone_id", ""))
 		node.set_hovered(z != null and z.zone_id == door_zone and node.covers(c))
+
+
+## Class the world hero walks as: progress.hero_class, else Ironjaw (the
+## default hero before a class is picked).
+func world_hero_class() -> String:
+	if progress != null and SpellKits.is_roster_class(str(progress.hero_class)):
+		return SpellKits.normalize_class_id(str(progress.hero_class))
+	return SpellKits.CLASS_IRONJAW
 
 
 func hero_combat_class() -> String:

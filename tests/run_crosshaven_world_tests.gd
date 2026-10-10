@@ -5,6 +5,9 @@ extends SceneTree
 
 const WORLD := preload("res://scenes/world/crosshaven/crosshaven_world.tscn")
 const Pick := preload("res://scenes/world/crosshaven/crosshaven_pick.gd")
+const Specs := preload("res://units/pc_character_specs.gd")
+const Painted := preload("res://units/painted_looks.gd")
+const Strips := preload("res://scenes/world/crosshaven/world_strips.gd")
 
 var passed := 0
 var failed := 0
@@ -48,6 +51,7 @@ func _run() -> void:
 	check(w.map.start_zone == "crosshaven_crossroads" and w.map.start_cell == Vector2i(22, 18), "start is crossroads (22,18)")
 
 	_test_strips(w)
+	_test_hero_performance(w)
 	_test_pick(w)
 	_test_walk(w)
 	_test_reject(w)
@@ -78,8 +82,9 @@ func _test_hero_pace(w: Node2D) -> void:
 	check(is_equal_approx(walker.anim_scale("run"), 2.0), "run playback is 2.0x")
 	check(is_equal_approx(walker.stride_scale("walk"), 2.2 / 1.8), "walk stride grows by 2.2/1.8")
 	check(is_equal_approx(walker.stride_scale("run"), 1.0), "run keeps the painted stride")
-	check(is_equal_approx(walker.shown_fps_of("walk"), 21.6), "walk shows 21.6 fps")
-	check(is_equal_approx(walker.shown_fps_of("run"), 30.0), "run shows 30 fps")
+	var spec: Dictionary = Specs.WORLD[str(walker.class_id)]
+	check(is_equal_approx(walker.shown_fps_of("walk"), float(spec["walk"]["shown_fps"])), "walk shows the built leg rate (%.2f fps)" % walker.shown_fps_of("walk"))
+	check(is_equal_approx(walker.shown_fps_of("run"), float(spec["run"]["shown_fps"])), "run shows the built leg rate (%.2f fps)" % walker.shown_fps_of("run"))
 	for gait in ["walk", "run"]:
 		var count := float(walker.frame_count(gait, "s"))
 		var travel: float = walker.speed_of(gait) * count / walker.shown_fps_of(gait)
@@ -100,25 +105,71 @@ func _test_hero_pace(w: Node2D) -> void:
 	walker.place(zone, zone.spawn)
 
 
+## Performance mode (1x art, still NPCs) keeps the painted hero: walk, run
+## and idle sheets, the same class, Ironjaw on the dark-steel v7.
+func _test_hero_performance(w: Node2D) -> void:
+	var cls := str(w.walker.class_id)
+	w.settings.set_performance(true)
+	check(w.settings.performance, "performance mode is on")
+	for gait in ["walk", "run", "idle"]:
+		for dir in ["n", "e", "s", "w"]:
+			check(w.walker._strips.texture(gait, dir) != null and w.walker.frame_count(gait, dir) == 12, "performance mode: %s %s keeps the 12-cell painted sheet" % [gait, dir])
+	check(str(w.walker.class_id) == cls, "performance mode keeps the hero class")
+	var zone: WorldZone = w.zone
+	w.walker.place(zone, zone.spawn)
+	var target: Vector2i = zone.spawn
+	for step in [Vector2i(1, 0), Vector2i(0, 1), Vector2i(-1, 0), Vector2i(0, -1)]:
+		if zone.passable_at(zone.spawn + step * 2) and zone.passable_at(zone.spawn + step):
+			target = zone.spawn + step * 2
+			break
+	for pace in ["walk", "run"]:
+		w.walker.place(zone, zone.spawn)
+		var steps: Array[Vector2i] = []
+		var dir := (target - zone.spawn) / 2
+		steps.append(zone.spawn + dir)
+		steps.append(target)
+		w.walker.walk(steps, pace)
+		w.walker.advance(0.1)
+		check(w.walker.is_moving() and w.walker.shown_pace() == pace, "performance mode: the hero %ss" % pace)
+		check(w.walker._sprite.texture == w.walker._strips.texture("walk", w.walker.facing), "performance mode: %s draws the painted walk" % pace)
+		_drive(w)
+	w.walker.advance(0.2)
+	check(w.walker._sprite.texture == w.walker._strips.texture("idle", w.walker.facing), "performance mode: the hero idles on the painted idle")
+	var iron = Strips.new()
+	iron.load_class("ironjaw")
+	check(iron.texture("walk", "e") == Painted.sheet("ironjaw", "walk", "S") and str(Painted.spec("ironjaw", "walk")["source"]).contains("ironjaw_walk/v7"), "performance mode: Ironjaw is still the dark-steel v7")
+	w.settings.set_performance(false)
+	w.walker.place(zone, zone.spawn)
+
+
+## The hero walks on the painted class sheets (pc_character_specs.gd): 12-cell
+## walk, run and idle in all four facings, s and w mirrored.
 func _test_strips(w: Node2D) -> void:
-	for dir in ["n", "s"]:
-		check(w.walker.frame_count("walk", dir) == 8, "walk %s is the 8-frame strip" % dir)
-	for dir in ["e", "w"]:
-		check(w.walker.frame_count("walk", dir) == 6, "walk %s is the 6-frame painted strip" % dir)
-	for dir in ["n", "e", "s", "w"]:
-		check(w.walker.frame_count("run", dir) == 8, "run %s is the 8-frame strip" % dir)
-	check(is_equal_approx(w.walker.fps_of("walk"), 12.0), "walk plays at 12 fps")
-	check(is_equal_approx(w.walker.fps_of("run"), 15.0), "run plays at 15 fps")
-	check(is_equal_approx(w.walker.stride_of("walk", "e"), 59.6706), "east walk stride is the painted step at scale 0.33")
-	check(is_equal_approx(w.walker.stride_of("walk", "s"), 16.698), "south walk stride matches the on-screen step")
-	check(is_equal_approx(w.walker.stride_of("run", "e"), 36.96), "east run stride is ground 112 at scale 0.33")
-	check(is_equal_approx(w.walker.stride_of("run", "s"), 29.2248), "south run stride matches the on-screen step")
-	var east_fps: float = w.walker._strips.fps_of("walk", "e")
-	var east_speed: float = w.walker._strips.speed_of("walk", "e")
-	check(is_equal_approx(east_fps, 3.185488331), "east walk fps keeps 31.68 px/s on the painted stride")
-	check(is_equal_approx(east_speed, 31.68), "east walk speed stays 31.68 px/s")
-	check(is_equal_approx(w.walker._strips.fps_of("walk", "w"), east_fps), "west walk matches east fps")
-	check(w.walker._strips.pivot == Vector2(0, -104), "sole pivot sits on the ground point")
+	var cls := str(w.walker.class_id)
+	check(Specs.WORLD.has(cls), "the world hero is a painted class (%s)" % cls)
+	check(cls == w.world_hero_class(), "the world hero walks as progress.hero_class (%s)" % cls)
+	# Only the hero's sheets are loaded in the world, not all five classes.
+	var loaded := 0
+	var other := 0
+	for path in Painted._sheets.keys():
+		if Painted._sheets[path] is Texture2D:
+			loaded += 1
+			if not str(path).begins_with("%s%s/" % [Painted.ROOT, cls]):
+				other += 1
+	check(loaded == 4 and other == 0, "the world loads only the hero's walk and idle sheets (%d loaded, %d other)" % [loaded, other])
+	var spec: Dictionary = Specs.WORLD.get(cls, {})
+	for gait in ["walk", "run", "idle"]:
+		for dir in ["n", "e", "s", "w"]:
+			check(w.walker.frame_count(gait, dir) == 12, "%s %s is the 12-cell painted sheet" % [gait, dir])
+			check(w.walker._strips.texture(gait, dir) != null, "%s %s has a sheet" % [gait, dir])
+	check(w.walker._strips.texture("run", "e") == w.walker._strips.texture("walk", "e"), "run plays the walk sheet")
+	check(is_equal_approx(w.walker.fps_of("walk"), float(spec["walk"]["fps"])), "walk fps is the built number")
+	check(is_equal_approx(w.walker.fps_of("run"), float(spec["run"]["fps"])), "run fps is the built number")
+	check(w.walker.fps_of("run") > w.walker.fps_of("walk"), "run plays faster than the walk")
+	check(is_equal_approx(w.walker.stride_of("walk", "e"), float(spec["walk"]["stride"])), "walk stride is the built number")
+	check(w.walker.shown_stride_of("run") > w.walker.shown_stride_of("walk") - 0.001, "run has the longer (or equal) stride")
+	check(is_equal_approx(w.walker._strips.fps_of("idle"), Specs.AUTHORED_FPS), "idle loops at the authored fps")
+	check(is_equal_approx(w.walker._strips.pivot.x, 0.0), "ground point is centred in the cell")
 	check(w.walker._sprite.texture_filter == CanvasItem.TEXTURE_FILTER_LINEAR, "hero filters linear")
 	var count := float(w.walker.frame_count("walk", "s"))
 	var expected: float = w.walker.shown_stride_of("walk") * w.walker.shown_fps_of("walk") / count
@@ -127,7 +178,7 @@ func _test_strips(w: Node2D) -> void:
 	# The hero pace scales walk 2.2x and run 2.0x, so run lands at about 2x walk.
 	var run_ratio: float = w.walker.speed_of("run") / w.walker.speed_of("walk")
 	check(run_ratio > 1.9 and run_ratio < 2.1, "run is about twice the walk (%.2fx)" % run_ratio)
-	check(w.walker.base_scale() <= 0.4 and w.walker.base_scale() > 0.2, "hero scale lets a cottage tower over them")
+	check(w.walker._strips.height() <= 62.71 and w.walker._strips.height() > 40.0, "hero height lets a cottage tower over them (%.1f px)" % w.walker._strips.height())
 	var saw_sun := false
 	var saw_flower := false
 	var saw_cottage := false

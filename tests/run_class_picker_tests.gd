@@ -1,5 +1,7 @@
 extends SceneTree
 
+const PaintedLooks := preload("res://units/painted_looks.gd")
+
 ## Class-select screen state machine. P1 then P2 starts a local match
 ## with those class ids. Online pick calls NetSession.select_class.
 ## Run: godot --headless --path . -s res://tests/run_class_picker_tests.gd
@@ -61,8 +63,11 @@ func _test_roles_and_art() -> void:
 		var tex: Texture2D = _script.load_portrait(class_id)
 		truthy(tex != null, "%s south portrait loads" % class_id)
 		if tex != null:
-			eq(tex.get_width(), 144, "%s portrait width" % class_id)
-			eq(tex.get_height(), 160, "%s portrait height" % class_id)
+			# The card shows the locked painted idle (first cell, facing south).
+			var cell: Vector2i = PaintedLooks.cell_of(class_id, "idle")
+			eq(tex.get_width(), cell.x, "%s portrait width is the painted idle cell" % class_id)
+			eq(tex.get_height(), cell.y, "%s portrait height is the painted idle cell" % class_id)
+			eq(PaintedLooks.cells(class_id, "idle", "s").has(tex), true, "%s portrait is the painted idle facing south" % class_id)
 		var imp := FileAccess.get_file_as_string("res://art/characters/%s/%s_s.png.import" % [class_id, class_id])
 		truthy(imp.contains("mipmaps/generate=false"), "%s import mipmaps off" % class_id)
 
