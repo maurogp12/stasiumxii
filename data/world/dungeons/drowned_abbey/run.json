@@ -150,6 +150,14 @@
       "still_from_door": [
         3,
         -2
+      ],
+      "movie_from_door": [
+        5,
+        -1
+      ],
+      "back_from_door": [
+        4,
+        -2
       ]
     },
     "showcase": [

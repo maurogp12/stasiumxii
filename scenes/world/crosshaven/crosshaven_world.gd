@@ -4300,14 +4300,20 @@ func _movie_dungeon_id() -> String:
 ## Where the door still's hero stands, from the door (run.json
 ## view.door.still_from_door; 3 cells east by default).
 func _still_offset(row: Dictionary) -> Vector2i:
+	return _door_offset(row, "still_from_door", Vector2i(3, 0))
+
+
+## A capture offset from the door in the run file's view.door block (e.g.
+## movie_from_door, back_from_door for a door with water to its south).
+func _door_offset(row: Dictionary, key: String, fallback: Vector2i) -> Vector2i:
 	var run_path := str(row.get("run", ""))
 	if run_path != "" and FileAccess.file_exists(run_path):
 		var doc: Variant = JSON.parse_string(FileAccess.get_file_as_string(run_path))
 		if typeof(doc) == TYPE_DICTIONARY:
-			var off: Variant = (((doc as Dictionary).get("view", {}) as Dictionary).get("door", {}) as Dictionary).get("still_from_door", null)
+			var off: Variant = (((doc as Dictionary).get("view", {}) as Dictionary).get("door", {}) as Dictionary).get(key, null)
 			if typeof(off) == TYPE_ARRAY and (off as Array).size() == 2:
 				return Vector2i(int(off[0]), int(off[1]))
-	return Vector2i(3, 0)
+	return fallback
 
 
 ## Capture: walk from the square to the dungeon door, open the panel, Enter.
@@ -4323,7 +4329,7 @@ func _movie_granary() -> void:
 	var door := DungeonBook.door_cell(row)
 	var door_zone := str((row.get("door", {}) as Dictionary).get("zone_id", ""))
 	if zone == null or zone.zone_id != door_zone:
-		await enter_zone(door_zone, door + Vector2i(0, 5), false)
+		await enter_zone(door_zone, door + _door_offset(row, "movie_from_door", Vector2i(0, 5)), false)
 	_hide_debug_readout()
 	_mark("granary_start")
 	await get_tree().create_timer(1.2).timeout
@@ -4353,7 +4359,7 @@ func _movie_granary_return() -> void:
 		reward_popup.hide_drop()
 	var row: Dictionary = dungeon_book.by_id(_movie_dungeon_id())
 	var door := DungeonBook.door_cell(row)
-	await _go(door + Vector2i(0, 3), "walk")
+	await _go(door + _door_offset(row, "back_from_door", Vector2i(0, 3)), "walk")
 	await get_tree().create_timer(1.5).timeout
 	_mark("granary_end")
 
