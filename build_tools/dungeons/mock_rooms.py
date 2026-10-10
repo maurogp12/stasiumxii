@@ -54,11 +54,31 @@ ROOMS = {
               "units": [("old_saltmaw", "S", (7, 2)), ("reef_crab", "S", (4, 3)), ("drowned_sailor", "S", (10, 3)),
                         ("hero:kestrel", "E", (6, 12)), ("hero:bastion", "E", (9, 12))]},
     },
+    "drowned_abbey": {
+        "a": {"title": "Room A: the flooded nave (15x15 board, 1 board px = 1 screen px)", "backdrop": "room_a_nave_15x15",
+              "pads": [(3, 4), (8, 2), (12, 6), (4, 11), (10, 10), (7, 13)],
+              "decals": [("lily_pads", (2, 6)), ("lily_pads", (9, 8)), ("lily_pads", (13, 3)), ("lily_pads", (6, 12))],
+              "props": [("pew", (5, 5)), ("pew", (10, 4)), ("broken_pillar", (11, 7)), ("fallen_statue", (6, 9)),
+                        ("candle_cluster", (2, 8)), ("candle_cluster", (13, 11)), ("coffin", (1, 13)), ("gravestone", (8, 13)),
+                        ("gnarled_roots", (7, 1)), ("gravestone", (3, 2))],
+              "units": [("bog_dead", "S", (7, 6)), ("mire_leech", "S", (9, 2)), ("mire_leech", "S", (4, 7)),
+                        ("bog_dead", "S", (12, 8)), ("bog_dead", "S", (3, 3)), ("mire_leech", "E", (11, 11)),
+                        ("hero:kestrel", "E", (8, 11)), ("hero:bastion", "E", (5, 12))]},
+        "b": {"title": "Room B: the Mire Abbess's sanctum (15x15)", "backdrop": "room_b_sanctum_15x15",
+              "pads": [(2, 7), (12, 7), (7, 12)],
+              "decals": [("rune_circle", (5, 5)), ("lily_pads", (3, 10)), ("lily_pads", (11, 3)), ("lily_pads", (12, 11))],
+              "props": [("altar", (7, 0)), ("candle_stand", (5, 1)), ("candle_stand", (10, 1)), ("fallen_bell", (1, 2)),
+                        ("coffin", (12, 5)), ("floating_coffin", (3, 12)), ("floating_coffin", (13, 9)), ("saint_statue", (13, 1)),
+                        ("candle_cluster", (4, 5)), ("candle_cluster", (10, 9)), ("gnarled_roots", (1, 8))],
+              "units": [("mire_abbess", "S", (7, 3)), ("bog_dead", "S", (5, 4)), ("mire_leech", "S", (10, 4)),
+                        ("hero:kestrel", "E", (6, 12)), ("hero:bastion", "E", (9, 12))]},
+    },
 }
 STAR5_REP = {
     "frostspire_archive": {"the_pale_archivist": "the_frozen_archivist", "ice_construct": "frozen_ice_construct", "book_wraith": "frozen_book_wraith"},
     "saltmaw_grotto": {"old_saltmaw": "abyssal_saltmaw", "reef_crab": "abyssal_reef_crab", "drowned_sailor": "abyssal_drowned_sailor",
                        "drowned_harpooner": "abyssal_drowned_harpooner"},
+    "drowned_abbey": {"mire_abbess": "gravebound_abbess", "bog_dead": "gravebound_bog_dead", "mire_leech": "gravebound_mire_leech"},
 }
 
 
@@ -149,7 +169,8 @@ def render(kit, room, n=15):
         cx, cy = c2l(x + m, y + m)
         pos = (O[0] + cx - im.width // 2, O[1] + cy + 16 - im.height)
         can.alpha_composite(im, pos)
-        can = add(can, kit.load(d["file"].replace(".png", "_glow.png")), pos)
+        if os.path.exists(os.path.join(gkit.OUT, d["file"].replace(".png", "_glow.png"))):  # lily_pads has no glow
+            can = add(can, kit.load(d["file"].replace(".png", "_glow.png")), pos)
     for (x, y) in pads:
         cx, cy = c2l(x, y)
         can = add(can, pad_glow, (O[0] + cx - 48, O[1] + cy - 32))
