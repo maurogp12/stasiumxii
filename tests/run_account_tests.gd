@@ -293,6 +293,17 @@ func _test_no_secret_key() -> void:
 		eq(FileAccess.get_file_as_string(path).contains("eyJ"), false, "no key in " + path)
 	var config := FileAccess.get_file_as_string("res://backend/account_config.gd")
 	truthy(config.contains("NEVER put the service_role key"), "config warns about the service_role key")
+	var key: String = load("res://backend/account_config.gd").SUPABASE_ANON_KEY
+	eq(key.begins_with("sb_secret_"), false, "the config key is never a secret key")
+	if key.begins_with("eyJ"):
+		# Old-style key: a JWT whose payload says role "anon".
+		var payload := key.get_slice(".", 1)
+		while payload.length() % 4 != 0:
+			payload += "="
+		var claims: Variant = JSON.parse_string(Marshalls.base64_to_utf8(payload.replace("-", "+").replace("_", "/")))
+		eq(str((claims as Dictionary).get("role", "")) if typeof(claims) == TYPE_DICTIONARY else "", "anon", "an old-style key must be the anon key")
+	else:
+		truthy(key.is_empty() or key.begins_with("sb_publishable_"), "a new-style key must be the publishable key")
 
 
 # --- helpers -----------------------------------------------------------------

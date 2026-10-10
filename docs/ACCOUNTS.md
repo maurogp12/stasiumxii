@@ -20,9 +20,13 @@ calls, so there is no plugin.
 ## Step 1 files
 
 - `backend/account_config.gd`: `SUPABASE_URL` and `SUPABASE_ANON_KEY`.
-  **Empty until Mauro creates the project.** While empty, the hub button
-  reads "Log in", the screen says "Accounts are not connected yet", the
-  screen never opens by itself, and the game plays exactly as before.
+  **Connected 10 Oct 2026** to Mauro's project `stasium`
+  (`https://lydjxqpvcugqkipgowey.supabase.co`, region Canada Central) with
+  its **publishable** key (`sb_publishable_…`, the new name for the anon
+  key; public by design). A test fails if a secret / service_role key is
+  ever put there. If the two values are emptied, the screen says "Accounts
+  are not connected yet", never opens by itself, and the game plays exactly
+  as before.
 - `backend/account_logic.gd`: pure helpers: input checks, the Supabase Auth
   requests, reading answers, plain-words messages, the saved login
   (`user://account.json`).
