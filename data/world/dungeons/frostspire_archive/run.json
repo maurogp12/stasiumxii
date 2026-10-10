@@ -31,7 +31,7 @@
     },
     "showcase_title": "Frostspire Archive\nMonsters",
     "showcase_sub": "Ice Construct · Book Wraith · The Pale Archivist\n★5: Frozen Ice Construct · Frozen Book Wraith · The Frozen Archivist",
-    "star5_rule": "★5: the Frozen Archivist calls frozen wraiths every 2nd turn and lays Rime Patches (2-3 cells round the hero, 3 hero turns): end a turn on one for 5 frost and 2 MP less next turn. Frozen monsters chill (1 MP less next turn). Rune pads thaw.",
+    "star5_rule": "★5: the Frozen Archivist calls frozen wraiths (4 alive, 6 in all) and lays Rime Patches every other turn (2-3 cells round the hero, 3 hero turns): end a turn on one for frost damage and 2 MP less next turn. Frozen monsters chill (1 MP less next turn). Rune pads thaw.",
     "b_still": "04_room_b_archivist.png"
   },
   "view": {

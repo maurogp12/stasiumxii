@@ -10,7 +10,7 @@
     "Line of sight (dungeon only; the Koliseo has no LoS rule): a ranged monster attack needs a straight line not crossed by a prop cell. Units do not block.",
     "When the boss falls, the monsters he summoned scatter (they leave the fight); his escort stays and must be beaten.",
     "The rat cap counts every live rat of the summoned kind, escort and summons together.",
-    "Frostspire Archive (levels 10-20): Ice Construct (slow melee tank), Book Wraith (ranged Frost Bolt, range 2-5, line of sight, kites), The Pale Archivist (boss, Ledger Strike range 1-2; Unbound Pages calls 2 Book Wraiths on his 2nd turn and every 3rd after, one cap with the escort wraiths: 4 alive, 4 in all). The hero side is the level sheet (80 HP, 6 AP, 3 MP; points add a few %), so band stats sit near the cellar's.",
+    "Frostspire Archive (levels 10-20): Ice Construct (slow melee tank), Book Wraith (ranged Frost Bolt, range 2-5, line of sight, kites), The Pale Archivist (boss, Ledger Strike range 1-2; Unbound Pages calls 2 Book Wraiths on his 2nd turn and every 3rd after, one cap with the escort wraiths: 3 alive, 4 in all). The hero side is the level sheet (80 HP, 6 AP, 3 MP; points add a few %), so band stats sit near the cellar's.",
     "chill (attack): a hit takes `mp` MP off the hero's next turn (no stacking). signature2 kind hazard: cells around the hero; a hero who ends a turn on one takes `hp` and loses `mp_loss` MP next turn. stand_in: art to borrow (tinted) until a monster's own frames land. placeholder: drawn stand-in shape and height."
   ],
   "scaling": {
@@ -540,7 +540,7 @@
     "star5": "★5 boss form (Mauro: 'Boss 5 stars should be a radioactive rat'): the Radioactive Ratking. Summons radioactive rats; every other turn he leaves 2-3 toxic pools around the hero (last 3 hero turns, 6 poison when the hero ends a turn on one). Radioactive Sling Rats add a small poison (2 HP for 2 turns).",
     "by_dungeon": {
       "frostspire_archive": {
-        "note": "Frostspire Archive rows (solo, level 10-20). Tuned with tests/sim_dungeon_stars.gd frostspire_archive (solo bot, level 12, 8 runs x 5 classes). See data/world/dungeons/frostspire_archive/README.md.",
+        "note": "Frostspire Archive rows (solo, level 10-20). Tuned with tests/sim_dungeon_stars.gd frostspire_archive 8 12 (solo bot, level 12, 8 runs x 5 classes): ★1 78%, ★2 62%, ★3 58%, ★4 48%, ★5 35%. See data/world/dungeons/frostspire_archive/README.md.",
         "scale": {
           "1": [
             1.0,
@@ -563,8 +563,8 @@
             0.85
           ]
         },
-        "packs_note": "Room A: ★1-★2 2 Ice Constructs + 4 Book Wraiths; ★3-★4 3 + 4; ★5 2 Frozen Ice Constructs + 1 Ice Construct + 5 Frozen Book Wraiths. Room B: the Pale Archivist + escort (2 Book Wraiths, 1 Ice Construct); ★5 the Frozen Archivist with frozen escort wraiths.",
-        "star5": "★5 boss form: the Frozen Archivist. Unbound Frozen Pages calls frozen wraiths every 2nd turn (4 alive, 6 in all). Every other turn (from his 1st) Rime Patches freezes 2-3 cells around the hero (the hero's cell first) for 3 hero turns: a hero who ends a turn on one takes 5 frost and has 2 MP less next turn. Walking across is safe. Frozen monsters chill: a hit takes 1 MP off the hero's next turn (no stacking). A rune pad thaws: a turn that starts on one keeps its full MP."
+        "packs_note": "Room A: ★1-★2 2 Ice Constructs + 4 Book Wraiths; ★3-★4 3 + 4; ★5 2 Frozen Ice Constructs + 1 Ice Construct + 4 Frozen Book Wraiths + 1 Book Wraith. Room B: the Pale Archivist + escort (2 Book Wraiths, 1 Ice Construct); ★5 the Frozen Archivist with frozen escort wraiths.",
+        "star5": "★5 boss form: the Frozen Archivist. Unbound Frozen Pages calls frozen wraiths on his 2nd turn and every 3rd after (4 alive, 6 in all, vs 3 and 4 for the Pale Archivist). Every other turn (from his 1st) Rime Patches freezes 2-3 cells around the hero (the hero's cell first) for 3 hero turns: a hero who ends a turn on one takes 5 frost (x the star's damage row) and has 2 MP less next turn. Walking across is safe. Frozen monsters chill: a hit takes 1 MP off the hero's next turn (no stacking). A rune pad thaws: a turn that starts on one keeps its full MP."
       }
     }
   }
