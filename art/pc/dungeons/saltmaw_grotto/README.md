@@ -38,13 +38,23 @@ The board uses the same `board_view.gd` math as the Granary: `cell_to_local(x,y)
 - Props y-sort with the units. All of them are 1x1 blockers.
 - `coral_cluster` carries its own additive `_glow` on the same canvas; draw it on top of the prop.
 
-PROPS_TABLE
+| id | size (1x) | footprint | room | glow |
+|---|---|---|---|---|
+| `sunken_crate` | 60x71 | 1x1 | A+B |  |
+| `barrel` | 60x61 | 1x1 | A+B |  |
+| `coral_cluster` | 56x65 | 1x1 | A | `coral_cluster_glow` |
+| `anchor` | 60x68 | 1x1 | A |  |
+| `barnacle_rock` | 58x54 | 1x1 | A+B |  |
+| `giant_clam` | 60x67 | 1x1 | B |  |
+| `treasure_chest` | 56x64 | 1x1 | B |  |
+| `sunken_statue` | 48x80 | 1x1 | B |  |
+| `rock_spire` | 42x75 | 1x1 | B |  |
 
 **Floor decal:**
-- `whirlpool` (192x96) is the big swirling teal whirlpool of room B, ringed by a low stone kerb. In the design the swirling water spans about 3.2 board cells inside the ring of standing rocks, so it is a 3x3 decal like `rune_circle`. It fills the full 3x3 footprint diamond, with its bottom-centre on the south tip of origin+(2,2).
+- `whirlpool` (320x160) is the big swirling teal whirlpool of room B, ringed by a low stone kerb. **It is 5x5, not 3x3.** I measured it on the approved boss-room design, where one tile diamond is about 80 px wide: the swirling water spans about 3.7 cells and the kerb with its standing rocks about 5.8 cells. A 3x3 decal like `rune_circle` was visibly too small in the mock. It fills the full 5x5 footprint diamond, with its bottom-centre on the south tip of origin+(4,4); the kerb runs along the 16 border cells and the water fills about the inner 3x3.
 - It is walkable and goes on the ground layer, after the tiles.
 - `whirlpool_glow` is its additive teal light.
-- Ring it with blocking `rock_spire` props on the cells around the 3x3, as the design does, and leave gaps so it stays reachable.
+- Stand blocking `rock_spire` props on some of the border cells of the 5x5 (the design shows 8 to 10 rocks on the kerb), leaving gaps so the water stays reachable. The mock uses 7 rocks.
 
 **Backdrops** (`backdrops/`, 1x only):
 - `room_a_grotto_{15x15,12x12}`: dark barnacled cave rock with dripping stalactites and seaweed, hanging lanterns, fishing nets, glowing teal coral and pools at the wall bases, and the broken ship hull and torn sail on the right back wall.
@@ -56,7 +66,76 @@ PROPS_TABLE
 
 **Mock:** `_mock/rooms_mock.png` (`room_a_mock.png`, `room_b_mock.png`) shows both rooms assembled at game camera scale (1 board px = 1 screen px), with the monsters at pawn scale 0.5. The painted hero idle frames stand in for the heroes. `_mock/rooms_mock_star5.png` is the same with the ★5 forms.
 
-MONSTERS_SECTION
+## 3. Monsters: `monsters/<id>/<action>/<action>_<S|E>_fNN.png`
+
+| id | cell | pivot | actions (frames) |
+|---|---|---|---|
+| `reef_crab` | 512x360 | (256,329) | idle 12, walk 12, attack 12, hit 8, death 13 |
+| `drowned_sailor` | 512x360 | (256,329) | idle 12, walk 12, attack 12, hit 8, death 13 |
+| `drowned_harpooner` | 512x360 | (256,329) | idle 12, walk 12, attack 12 (**release f07**), hit 8, death 13 |
+| `old_saltmaw` | **768x540** | **(384,494)** | idle 12, walk 12, attack 12, hit 8, death 13, **summon 14** "Lantern Lure" (+ `summon_*_glow`) |
+
+**Format** (as the Granary and Frostspire):
+- 17.144 fps. Idle and walk loop; the other actions play once, and death holds its last frame.
+- S is the front facing screen down-right; E is the back facing screen up-right. The other two facings are game-side `flip_h` mirrors.
+- Each monster's `meta.json` repeats the cell, pivot, fps, frame counts and QA numbers.
+- Melee attacks (crab, sailor, the boss's bite) connect on **attack f06**.
+- The boss is placed like the Ratking: his (384,494) lands where a hero's (256,329) lands. For a centred Sprite2D that is the hero offset minus (0,75) before scale.
+
+**Reef Crab (room A melee tank):**
+- A big low, wide crab with a barnacle-crusted rust-red and blue-grey shell, red coral on its back, glowing teal eyes and two huge pincers. Like the Granary rat it is low (about 225 px tall, 240 px wide in the cell).
+- **Walk:** a quick scuttle, two leg beats per loop. **Attack:** both claws rear up (f02–f04), it lunges and snaps on **f06**.
+- **Death:** it rears, flips onto its back and the legs curl and twitch.
+
+**Drowned Sailor (room A melee):**
+- A drowned pirate in a barnacled tricorn with a rusty cutlass and a glowing teal lantern.
+- **Attack:** the cutlass rises high and back (f03–f04) and hacks down across on **f06**.
+
+**Drowned Harpooner (room A ranged), my proposal for Mauro's ranged-room-A rule:**
+- A drowned whaler in a knitted cap and a long oilskin coat, three spare harpoons strapped on his back, a rope coiled from the throwing hand.
+- **Attack:** he cocks the harpoon back, trembling (f01–f06), and hurls it on **f07, the release frame**. The harpoon in his hand is hidden f07–f10 (the projectile takes over), and a fresh one is back in his hand on f11.
+- **Projectile spawn:** `meta.json > release.point_px` gives the harpoon's position at release, per facing, in cell pixels (S (294,121), E (386,153)). Mirror its x for the mirrored facings.
+- **Projectiles** (`board/projectiles/`, centred):
+  - `harpoon` (48x17): a rusty barbed harpoon pointing along +x. Rotate it to the flight direction; a slight arc reads well.
+  - `harpoon_impact` (50x49): a burst of sea foam and teal droplets with splinters. Play it as a scale-up and fade of about 0.25 s at the hit point.
+
+**Old Saltmaw signature, `summon` "Lantern Lure"** (the systems agent's proposal; the strip name stays `summon`):
+- f00–f02 he crouches; f03–f06 the lure lifts high as the jaw gapes.
+- On **f07** the lure **flares**: the pull fires here. `meta.json > lure_point.point_px` is the lure tip on f07 per facing (S (491,116), E (484,114) in the 768x540 cell).
+- f07–f10 he holds the blazing lure while the hero slides toward him; f10–f13 he settles back to idle.
+- `summon/summon_{S,E}_fNN_glow.png` is the lure's additive teal glow for this action only. It builds f03–f06, peaks on f07, holds to f10 and fades by f12. Draw it like a ★5 glow.
+- `board/projectiles/lure_line` (+ `_glow`, 100x22) is the optional teal light streak along +x, bright end at +x. On f07 stretch it from the hero to `lure_point` and fade it out over f07–f10, with an add blend.
+- The key frames are in `meta.json > signature` (`crouch [0,2]`, `lift [3,6]`, `flare 7`, `pull [7,10]`, `settle [10,13]`).
+
+**Turnarounds and contact sheets:** `_mock/<id>_turnaround.png` shows the S and E paintings each rig is cut from. `_mock/<id>_contact.png` shows every frame of every action. `_mock/monsters_clip.mp4` plays every action in all four facings.
+
+## 4. Star 5: Abyssal Saltmaw (`star5/`)
+
+At ★5 the boss is the **Abyssal Saltmaw**, Old Saltmaw risen from the deepest trench. **Mauro approved this look as is** (asset `asset_BprqPkz3sofoVCkkEocsbweL`, "Approve it", 10 Oct 2026). The ★5 crab, sailor and harpooner follow the same black-and-cyan theme. His look:
+- abyssal navy-black skin with glowing bioluminescent cyan spots, stripes and veins;
+- dark translucent fins with glowing cyan edges, and black barnacles with cyan cores;
+- black-iron chains and anchor etched with cyan runes;
+- blazing cyan eyes, a cyan glow deep in the maw, and a white-hot cyan lure.
+
+| id | cell | pivot | actions |
+|---|---|---|---|
+| `star5/monsters/abyssal_saltmaw` | 768x540 | (384,494) | as `old_saltmaw`, summon 14 (same rig, timing, signature frames and lure_point) |
+| `star5/monsters/abyssal_reef_crab` | 512x360 | (256,329) | as `reef_crab` (black shell with cyan cracks, black coral with glowing tips) |
+| `star5/monsters/abyssal_drowned_sailor` | 512x360 | (256,329) | as `drowned_sailor` (blue-black skin, cyan rune cutlass, white-cyan lantern) |
+| `star5/monsters/abyssal_drowned_harpooner` | 512x360 | (256,329) | as `drowned_harpooner`, release f07 (black-iron rune harpoons) |
+
+**Glow maps:**
+- Every ★5 frame has a same-size additive light map, `<frame>_glow.png`: the saturated cyan paint (spots, veins, runes, eyes, lure) bloomed, plus a faint cyan aura.
+- Draw it on top of the frame with the same offset, scale and flip, using an add blend.
+
+**Other ★5 pieces:**
+- `star5/board/riptide.png` is the ★5 hazard "Riptide": a 1-cell, 64x32 patch of swirling abyssal water with glowing cyan currents, with a 128x64 `_2x/` master and `riptide_glow.png` (96x56, additive). It is centred on the cell, on the ground layer. Ending a turn on it deals damage and drags the hero 1 cell toward the boss; only the visual is here, the rule is CombatSim's.
+- `star5/board/projectiles/abyssal_harpoon.png` is the black-iron rune harpoon of the Abyssal Drowned Harpooner, with a `_glow`.
+
+**Review images:**
+- `_mock/abyssal_saltmaw_turnaround.png` shows the base S next to the abyssal S and E paintings.
+- `_mock/star5_<id>_contact.png` shows every frame with the glow baked in, on dark. `_mock/monsters_clip_star5.mp4` is the ★5 clip.
+
 
 ## Pipeline (`build_tools/dungeons/`)
 
