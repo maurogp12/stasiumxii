@@ -7,6 +7,7 @@ const WORLD := preload("res://scenes/world/crosshaven/crosshaven_world.tscn")
 const Pick := preload("res://scenes/world/crosshaven/crosshaven_pick.gd")
 const Specs := preload("res://units/pc_character_specs.gd")
 const Painted := preload("res://units/painted_looks.gd")
+const Strips := preload("res://scenes/world/crosshaven/world_strips.gd")
 
 var passed := 0
 var failed := 0
@@ -50,6 +51,7 @@ func _run() -> void:
 	check(w.map.start_zone == "crosshaven_crossroads" and w.map.start_cell == Vector2i(22, 18), "start is crossroads (22,18)")
 
 	_test_strips(w)
+	_test_hero_performance(w)
 	_test_pick(w)
 	_test_walk(w)
 	_test_reject(w)
@@ -101,6 +103,43 @@ func _test_hero_pace(w: Node2D) -> void:
 	walker._shown_pace = "walk"
 	walker._apply_strip_speed()
 	walker.place(zone, zone.spawn)
+
+
+## Performance mode (1x art, still NPCs) keeps the painted hero: walk, run
+## and idle sheets, the same class, Ironjaw on the dark-steel v7.
+func _test_hero_performance(w: Node2D) -> void:
+	var cls := str(w.walker.class_id)
+	w.settings.set_performance(true)
+	check(w.settings.performance, "performance mode is on")
+	for gait in ["walk", "run", "idle"]:
+		for dir in ["n", "e", "s", "w"]:
+			check(w.walker._strips.texture(gait, dir) != null and w.walker.frame_count(gait, dir) == 12, "performance mode: %s %s keeps the 12-cell painted sheet" % [gait, dir])
+	check(str(w.walker.class_id) == cls, "performance mode keeps the hero class")
+	var zone: WorldZone = w.zone
+	w.walker.place(zone, zone.spawn)
+	var target: Vector2i = zone.spawn
+	for step in [Vector2i(1, 0), Vector2i(0, 1), Vector2i(-1, 0), Vector2i(0, -1)]:
+		if zone.passable_at(zone.spawn + step * 2) and zone.passable_at(zone.spawn + step):
+			target = zone.spawn + step * 2
+			break
+	for pace in ["walk", "run"]:
+		w.walker.place(zone, zone.spawn)
+		var steps: Array[Vector2i] = []
+		var dir := (target - zone.spawn) / 2
+		steps.append(zone.spawn + dir)
+		steps.append(target)
+		w.walker.walk(steps, pace)
+		w.walker.advance(0.1)
+		check(w.walker.is_moving() and w.walker.shown_pace() == pace, "performance mode: the hero %ss" % pace)
+		check(w.walker._sprite.texture == w.walker._strips.texture("walk", w.walker.facing), "performance mode: %s draws the painted walk" % pace)
+		_drive(w)
+	w.walker.advance(0.2)
+	check(w.walker._sprite.texture == w.walker._strips.texture("idle", w.walker.facing), "performance mode: the hero idles on the painted idle")
+	var iron = Strips.new()
+	iron.load_class("ironjaw")
+	check(iron.texture("walk", "e") == Painted.sheet("ironjaw", "walk", "S") and str(Painted.spec("ironjaw", "walk")["source"]).contains("ironjaw_walk/v7"), "performance mode: Ironjaw is still the dark-steel v7")
+	w.settings.set_performance(false)
+	w.walker.place(zone, zone.spawn)
 
 
 ## The hero walks on the painted class sheets (pc_character_specs.gd): 12-cell
