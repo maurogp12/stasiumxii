@@ -4,7 +4,7 @@
 
 **Status (5 Oct 2026)**
 - **Designs:** all five approved by Mauro ("Wow love it" for the Granary; "Approve all 4" for the rest).
-- **Build:** the Old Granary Cellar build has started.
+- **Build:** dungeon 1, the Old Granary Cellar, is merged (#293, targeting fix #336). Dungeon 2, the Frostspire Archive, started 10 Oct 2026 (Mauro: "keep going into the next one"): art on `claude/frostspire-art`, systems on `claude/frostspire-dungeon`.
 
 **Mauro's gate rule (5 Oct, binding):** build one dungeon at a time. When a dungeon is finished, send Mauro:
 1. in-game stills of how it looks: the door in town, room A, room B;
