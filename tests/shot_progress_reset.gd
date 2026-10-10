@@ -56,7 +56,7 @@ func _seed_dirty() -> void:
 	for id in StillVault.IDS:
 		vault.fragments[id] = 99
 		vault.test_grant[id] = 99
-	vault.socket = "stride"
+	vault.socket = "steadfast"
 	vault.mode = "overwound"
 	vault.save()
 	var wallet := KoliseoWallet.new()

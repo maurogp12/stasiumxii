@@ -373,6 +373,8 @@ func submit(intent: Dictionary) -> Dictionary:
 				_note_attacks(actor)
 				actor["cast_this_turn"] = true
 			return cast_result
+		"use_still":
+			return _submit_use_still(normalized, actor)
 		"place", "reposition", "ready", "confirm":
 			return _reject(normalized, "wrong_phase", "REJECT — deploy is over.")
 		_:
@@ -662,6 +664,7 @@ func legal_intents(seat: int) -> Array:
 					})
 
 	_append_blind_casts(out, actor)
+	_append_still_intents(out, actor)
 	out.append({"type": "end_turn", "seat": seat})
 	return out
 
@@ -1881,6 +1884,7 @@ func _flex_target(actor: Dictionary, target: Dictionary, def: Dictionary) -> Arr
 	target["residue"] = el
 	target["residue_turns"] = RESIDUE_TURNS
 	target["residue_seat"] = int(actor["seat"])
+	_still_on_debuff(target, "residue")
 	tags.append("residue")
 	return tags
 
@@ -1893,6 +1897,7 @@ func _add_element_rider(target: Dictionary, el: String, tags: Array) -> void:
 			else:
 				target["water_slow"] = true
 				tags.append("water_slow")
+				_still_on_debuff(target, "water")
 		"fire":
 			# Mauro 6 Oct 2026: "burn can be stacked 3 times". Each Fire hit adds
 			# a Burn stack like a lava push (cap 3): 4 × 2 / 8 × 3 / 12 × 4.
@@ -2012,12 +2017,14 @@ func _try_blend(actor: Dictionary, target: Dictionary, el: String) -> String:
 			note = _blend_spark(actor, target, event)
 		"magma":
 			target["magma_pending"] = int(actor["seat"])
+			_still_on_debuff(target, "magma")
 			note = "the tile they end their next turn on burns for %d" % MAGMA_TICK_HP
 		"mire":
 			if _ultra_unbound(target):
 				note = "Unbound ignores the Mire"
 			else:
 				target["mire_cell"] = target["pos"]
+				_still_on_debuff(target, "mire")
 				note = "leaving this tile costs +1 MP on their next turn"
 		"flare":
 			note = _blend_flare(actor, target, event)
@@ -2062,9 +2069,9 @@ func _blend_drift_pin(actor: Dictionary, target: Dictionary, event: Dictionary) 
 		note = "slams into the wall (%d)" % int(result.get("stagger_hp", 0))
 		hit_something = true
 	elif str(result.get("reason", "")) == "occupied":
-		target["hp"] = maxi(0, int(target["hp"]) - DRIFT_COLLISION_HP)
-		event["collision_hp"] = DRIFT_COLLISION_HP
-		note = "slams into a body (%d)" % DRIFT_COLLISION_HP
+		var drift_hp := _lose_hp(target, DRIFT_COLLISION_HP)
+		event["collision_hp"] = drift_hp
+		note = "slams into a body (%d)" % drift_hp
 		hit_something = true
 	else:
 		note = "holds its ground"
@@ -2079,6 +2086,7 @@ func _blend_drift_pin(actor: Dictionary, target: Dictionary, event: Dictionary) 
 		note += "; Unbound ignores the Pin"
 	else:
 		target["pin_pending"] = true
+		_still_on_debuff(target, "pin")
 		event["pin"] = true
 		note += "; Pinned: cannot walk next turn"
 	return note
@@ -2098,7 +2106,7 @@ func _blend_spark(_actor: Dictionary, target: Dictionary, event: Dictionary) -> 
 	var shield := int(target.get("shield", 0))
 	var soaked := mini(shield, chip)
 	target["shield"] = shield - soaked
-	target["hp"] = maxi(0, int(target["hp"]) - (chip - soaked))
+	_lose_hp(target, chip - soaked)
 	event["chip"] = chip
 	event["shield_soaked"] = soaked
 	event["from"] = target["pos"]
@@ -2106,6 +2114,7 @@ func _blend_spark(_actor: Dictionary, target: Dictionary, event: Dictionary) -> 
 	# Until the end of the target's next own turn (the window the other Blend
 	# effects use): healing it receives is cut by SPARK_HEAL_CUT.
 	target["sparked"] = true
+	_still_on_debuff(target, "spark")
 	event["heal_cut"] = SPARK_HEAL_CUT
 	return "%d damage (ignores resist), -%d%% healing" % [chip, roundi(SPARK_HEAL_CUT * 100.0)]
 
@@ -2200,31 +2209,37 @@ func _end_turn_elements(unit: Dictionary) -> void:
 	if not bool(unit.get("alive", false)):
 		return
 	if unit.has("magma_pending"):
-		_add_element_tile("magma", unit["pos"], int(unit["magma_pending"]))
-		unit.erase("magma_pending")
+		if _still_stretch_holds(unit, "magma"):
+			pass
+		else:
+			_add_element_tile("magma", unit["pos"], int(unit["magma_pending"]))
+			unit.erase("magma_pending")
 	if element_tile_at(unit["pos"], "magma"):
-		unit["hp"] = maxi(0, int(unit["hp"]) - MAGMA_TICK_HP)
+		var magma_lost := _lose_hp(unit, MAGMA_TICK_HP)
 		_last_events.append({
 			"type": "magma",
 			"target_seat": int(unit["seat"]),
 			"to": unit["pos"],
-			"damage": MAGMA_TICK_HP,
-			"hp_delta": -MAGMA_TICK_HP,
+			"damage": magma_lost,
+			"hp_delta": -magma_lost,
 			"hp": int(unit["hp"]),
-			"coach": "%s ends the turn on Magma (−%d HP)." % [str(unit.get("name", "Unit")), MAGMA_TICK_HP],
+			"coach": "%s ends the turn on Magma (−%d HP)." % [str(unit.get("name", "Unit")), magma_lost],
 		})
 		_check_death(unit, "magma")
 	unit["pinned_last"] = bool(unit.get("pinned", false))
 	if bool(unit.get("pinned", false)):
-		unit["pinned"] = false
-		_emit_expire("pinned", unit["pos"], int(unit["seat"]), int(unit["seat"]))
+		if not _still_stretch_holds(unit, "pin"):
+			unit["pinned"] = false
+			_emit_expire("pinned", unit["pos"], int(unit["seat"]), int(unit["seat"]))
 	if unit.has("mire_cell"):
-		unit.erase("mire_cell")
-		_emit_expire("mire", unit["pos"], int(unit["seat"]), int(unit["seat"]))
+		if not _still_stretch_holds(unit, "mire"):
+			unit.erase("mire_cell")
+			_emit_expire("mire", unit["pos"], int(unit["seat"]), int(unit["seat"]))
 	unit["blend_lock"] = false
 	if bool(unit.get("sparked", false)):
-		unit["sparked"] = false
-		_emit_expire("sparked", unit["pos"], int(unit["seat"]), int(unit["seat"]))
+		if not _still_stretch_holds(unit, "spark"):
+			unit["sparked"] = false
+			_emit_expire("sparked", unit["pos"], int(unit["seat"]), int(unit["seat"]))
 	if str(unit.get("infusion", "")) != "":
 		unit["infusion"] = ""
 		_emit_expire("infusion", unit["pos"], int(unit["seat"]), int(unit["seat"]))
@@ -2707,6 +2722,7 @@ func _handoff_seat(actor: Dictionary, auto_skip: bool, skip_reason: String = "")
 	# The seat that is leaving has completed this turn, including a stunned skip.
 	# Shades owned by the other seat count that completion toward Ambush arming.
 	_note_opponent_shade_turns(int(actor.get("seat", -1)))
+	_still_on_turn_end(actor)
 	var next_seat := _next_turn_seat(int(actor.get("seat", _active_seat)))
 	var next_unit := _unit_by_seat(next_seat)
 	if next_seat < 0 or next_unit.is_empty() or not next_unit["alive"]:
@@ -2743,12 +2759,15 @@ func _handoff_seat(actor: Dictionary, auto_skip: bool, skip_reason: String = "")
 	var water_cut := 0
 	if bool(next_unit.get("water_slow", false)):
 		# Water rider: −1 MP at the start of this turn (once, clamp 0).
-		next_unit["water_slow"] = false
+		# Steadfast Overwound lets this one-shot survive a single expiry.
+		if not _still_stretch_holds(next_unit, "water"):
+			next_unit["water_slow"] = false
 		water_cut = mini(1, int(next_unit["mp"]))
 		next_unit["mp"] = int(next_unit["mp"]) - water_cut
 	var gear_cut := 0
 	if bool(next_unit.get("gear_slow", false)):
-		next_unit["gear_slow"] = false
+		if not _still_stretch_holds(next_unit, "gear_slow"):
+			next_unit["gear_slow"] = false
 		gear_cut = mini(1, int(next_unit["mp"]))
 		next_unit["mp"] = int(next_unit["mp"]) - gear_cut
 	var slow_cut := 0
@@ -3246,9 +3265,7 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 	pre_mitigation = _gear_strike_damage(actor, target, pre_mitigation, dist, is_back, true)
 	var mitigation := _mitigate_hit(actor, target, pre_mitigation)
 	var damage := int(mitigation["damage"])
-	target["hp"] = int(target["hp"]) - damage
-	if int(target["hp"]) < 0:
-		target["hp"] = 0
+	_lose_hp(target, damage)
 	_reveal_if_hurt(target, damage)
 	var engine_gained := 0
 	var engine_spent := 0
@@ -3484,13 +3501,6 @@ func _check_death(target: Dictionary, cause: String = "damage") -> void:
 	if int(target["hp"]) > 0:
 		_maybe_berserk(target)
 		return
-	# End Still: once, a lethal hit leaves you at 1 HP.
-	if str(target.get("still", "")) == "end" and bool(target.get("still_ready", false)):
-		target["still_ready"] = false
-		target["hp"] = 1
-		_still_fired(target, "end")
-		_maybe_berserk(target)
-		return
 	# Mercywell 4pc: once per fight, a lethal hit leaves her at 1 HP.
 	if bool(target.get("cheat_death", false)) and bool(target.get("cheat_ready", false)):
 		target["cheat_ready"] = false
@@ -3700,9 +3710,10 @@ func _trigger_trap(unit: Dictionary) -> bool:
 		var def: Dictionary = SpellKits.spell(SpellKits.SNARE_TRAP)
 		var report := _mitigate_hit({}, unit, int(def.get("trap_damage", 6)))
 		var damage := int(report["damage"])
-		unit["hp"] = maxi(0, int(unit["hp"]) - damage)
+		_lose_hp(unit, damage)
 		if not bool(unit.get("pinned", false)) and not bool(unit.get("pinned_last", false)) and not _ultra_unbound(unit):
 			unit["pin_pending"] = true
+			_still_on_debuff(unit, "pin")
 		_clear_invisible(unit)
 		_last_events.append({
 			"type": "trap",
@@ -4217,6 +4228,7 @@ func _ultra_on_hit(actor: Dictionary, target: Dictionary, def: Dictionary) -> vo
 		actor["hit_slow_ready"] = false
 		if not _ultra_unbound(target):
 			target["gear_slow"] = true
+			_still_on_debuff(target, "gear_slow")
 	if bool(actor.get("heal_suppress", false)) and not _allied(actor, target):
 		target["heal_cut"] = true
 
@@ -4313,6 +4325,7 @@ func _apply_gear(unit: Dictionary, raw: Variant) -> void:
 	unit["still_mode"] = str(still.get("mode", ""))
 	unit["still_ready"] = unit["still"] != ""
 	unit["own_turn"] = 0
+	_still_apply_hourglass(unit)
 	if bool(unit.get("placed", false)) and _flow != null and _flow.is_combat():
 		unit["ap"] = mini(int(unit.get("ap", 0)), int(unit["max_ap"]))
 		unit["mp"] = mini(int(unit.get("mp", 0)), int(unit["max_mp"]))
@@ -4491,14 +4504,6 @@ func turn_order() -> Array[int]:
 func _init_first_seat() -> int:
 	if _multi_side():
 		return _init_first_team_seat()
-	# Opening Still: that side acts first whatever the Init (both → Init).
-	var openers: Array[int] = []
-	for unit in _units:
-		if str(unit.get("still", "")) == "opening" and bool(unit.get("alive", true)):
-			openers.append(int(unit.get("seat", -1)))
-	if openers.size() == 1:
-		_init_note = "Opening Still"
-		return openers[0]
 	var mine := int(_unit_by_seat(0).get("init", 0))
 	var theirs := -1
 	var their_seat := -1
@@ -4522,23 +4527,17 @@ func _init_first_seat() -> int:
 	return 0 if _rng.randi_range(0, 1) == 0 else their_seat
 
 
-## Teams: the team whose best Init is higher starts (Opening Still wins;
-## tie = coin flip); that fighter opens.
+## Teams: the team whose best Init is higher starts (tie = coin flip);
+## that fighter opens.
 func _init_first_team_seat() -> int:
 	var best := [-1, -1]
 	var best_seat := [-1, -1]
-	var opener := -1
 	for unit in _units:
 		var team := _team_of(unit)
 		var v := int(unit.get("init", 0))
-		if str(unit.get("still", "")) == "opening" and opener < 0:
-			opener = int(unit["seat"])
 		if v > int(best[team]) or (v == int(best[team]) and int(unit["seat"]) < int(best_seat[team])):
 			best[team] = v
 			best_seat[team] = int(unit["seat"])
-	if opener >= 0:
-		_init_note = "Opening Still"
-		return opener
 	if int(best[0]) > int(best[1]):
 		_init_note = "Init %d vs %d" % [best[0], best[1]]
 		return int(best_seat[0])
@@ -4760,6 +4759,12 @@ func _apply_stun(unit: Dictionary, remaining: int) -> int:
 	# of its next real turn.
 	if remaining <= 0 or bool(unit.get("stun_immune", false)):
 		return 0
+	if _still_id(unit) == "steadfast" and not bool(unit.get("still_stun_used", false)):
+		unit["still_stun_used"] = true
+		if not _still_over(unit):
+			unit["steadfast_ap"] = 3
+		_still_fired(unit, "steadfast")
+		return 0
 	unit["stun_remaining"] = maxi(int(unit.get("stun_remaining", 0)), remaining)
 	return remaining
 
@@ -4875,7 +4880,7 @@ func _next_stack(unit: Dictionary, stacks_key: String, remaining_key: String) ->
 func _apply_lava_land(unit: Dictionary, stacks: int = 1) -> int:
 	# Immediate Fire on entering. Not the turn-start tick and not stagger.
 	var hp := LAVA_ENTER_HP[clampi(stacks, 1, BURN_MAX_STACKS)]
-	unit["hp"] = maxi(0, int(unit.get("hp", 0)) - hp)
+	hp = _lose_hp(unit, hp)
 	return hp
 
 
@@ -4887,14 +4892,15 @@ func _apply_burn(unit: Dictionary) -> Dictionary:
 	var turns := BURN_STACK_TURNS[stacks]
 	unit["burn_stacks"] = stacks
 	unit["burn_remaining"] = turns
+	_still_on_debuff(unit, "burn")
 	return {
 		"applied": true,
 		"refreshed": previous_stacks > 0 and previous > 0,
 		"previous": previous,
 		"previous_stacks": previous_stacks,
-		"stacks": stacks,
-		"remaining": turns,
-		"hp_per_tick": _burn_tick_hp(stacks),
+		"stacks": int(unit.get("burn_stacks", stacks)),
+		"remaining": int(unit.get("burn_remaining", turns)),
+		"hp_per_tick": _burn_tick_hp(int(unit.get("burn_stacks", stacks))),
 	}
 
 
@@ -4960,8 +4966,9 @@ func _apply_water_silence(unit: Dictionary) -> Dictionary:
 	unit["breathless_remaining"] = BREATHLESS_TURNS[stacks]
 	unit["breathless_spell"] = pick
 	unit["silenced_spells"] = [pick]
+	_still_on_debuff(unit, "breathless")
 	var spell_name := str(SpellKits.spell(pick).get("name", pick))
-	return {"applied": true, "spell": pick, "name": spell_name, "stacks": stacks, "remaining": BREATHLESS_TURNS[stacks]}
+	return {"applied": true, "spell": pick, "name": spell_name, "stacks": stacks, "remaining": int(unit.get("breathless_remaining", 0))}
 
 
 ## Slow: −1/−2/−3 MP on the victim's next turn. A re-push while slowed stacks.
@@ -4972,13 +4979,14 @@ func _apply_mud_slow(unit: Dictionary) -> Dictionary:
 	var stacks := _next_stack(unit, "slow_stacks", "slow_remaining")
 	unit["slow_stacks"] = stacks
 	unit["slow_remaining"] = SLOW_TURNS
+	_still_on_debuff(unit, "slow")
 	return {
 		"applied": true,
 		"refreshed": previous > 0,
 		"previous": previous,
-		"stacks": stacks,
-		"remaining": SLOW_TURNS,
-		"mp_delta": -SLOW_MP * stacks,
+		"stacks": int(unit.get("slow_stacks", stacks)),
+		"remaining": int(unit.get("slow_remaining", SLOW_TURNS)),
+		"mp_delta": -SLOW_MP * int(unit.get("slow_stacks", stacks)),
 	}
 
 
@@ -4989,8 +4997,9 @@ func _apply_frozen(unit: Dictionary) -> Dictionary:
 	unit["frozen_remaining"] = FROZEN_TURNS[stacks]
 	var paralyzed := stacks >= HAZARD_MAX_STACKS
 	if paralyzed:
-		unit["stun_remaining"] = maxi(int(unit.get("stun_remaining", 0)), 1)
-	return {"applied": true, "stacks": stacks, "remaining": FROZEN_TURNS[stacks], "paralyzed": paralyzed}
+		_apply_stun(unit, 1)
+	_still_on_debuff(unit, "frozen")
+	return {"applied": true, "stacks": stacks, "remaining": int(unit.get("frozen_remaining", 0)), "paralyzed": paralyzed}
 
 
 ## Electrocuted: −1/−2/−3 AP on the victim's next turn (clamp 0).
@@ -4998,7 +5007,8 @@ func _apply_electrocuted(unit: Dictionary) -> Dictionary:
 	var stacks := _next_stack(unit, "electro_stacks", "electro_remaining")
 	unit["electro_stacks"] = stacks
 	unit["electro_remaining"] = ELECTRO_TURNS
-	return {"applied": true, "stacks": stacks, "remaining": ELECTRO_TURNS, "ap_delta": -stacks}
+	_still_on_debuff(unit, "electro")
+	return {"applied": true, "stacks": stacks, "remaining": int(unit.get("electro_remaining", 0)), "ap_delta": -stacks}
 
 
 ## Melee = a range-1 spell aimed at another fighter (Frozen blocks these).
@@ -5154,8 +5164,8 @@ func _tick_burn(unit: Dictionary) -> void:
 	var remaining := int(unit.get("burn_remaining", 0))
 	if stacks <= 0 or remaining <= 0:
 		return
-	var lost := _burn_tick_hp(stacks)
-	unit["hp"] = maxi(0, int(unit["hp"]) - lost)
+	var tick := _burn_tick_hp(stacks)
+	_lose_hp(unit, tick)
 	var left := remaining - 1
 	if left <= 0:
 		unit["burn_remaining"] = 0
@@ -5167,8 +5177,8 @@ func _tick_burn(unit: Dictionary) -> void:
 		"type": "burn",
 		"status": "burn",
 		"target_seat": int(unit["seat"]),
-		"hp_delta": -lost,
-		"damage": lost,
+		"hp_delta": -tick,
+		"damage": tick,
 		"hp": int(unit["hp"]),
 		"tick_stacks": stacks,
 		"stacks": int(unit.get("burn_stacks", 0)),
@@ -5177,7 +5187,7 @@ func _tick_burn(unit: Dictionary) -> void:
 		"soft_lock": "Soft Lock CASTIGO — Burn tick uses current stacks, duration 4",
 		"coach": "%s burns for %d HP (stack %d, %d tick%s left)." % [
 			str(unit.get("name", "Unit")),
-			lost,
+			tick,
 			stacks,
 			left,
 			"" if left == 1 else "s",
@@ -5217,7 +5227,7 @@ func _apply_bounce_stagger(target: Dictionary, result: Dictionary, reason: Strin
 	if not guarded and int(target.get("mp", 0)) >= STAGGER_MP:
 		mp_lost = STAGGER_MP
 		target["mp"] = int(target["mp"]) - mp_lost
-	target["hp"] = maxi(0, int(target["hp"]) - hp_lost)
+	hp_lost = _lose_hp(target, hp_lost)
 	_maybe_berserk(target)
 	result["stagger_hp"] = hp_lost
 	result["stagger_mp"] = mp_lost
@@ -5608,7 +5618,7 @@ func _submit_foe_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
 	var caster_cell: Vector2i = actor["pos"]
 	var name := str(def.get("name", spell_id))
 	if shape == "self":
-		actor["shield"] = int(actor.get("shield", 0)) + int(def.get("ward", 0))
+		_still_gain_shield(actor, int(def.get("ward", 0)))
 		actor["shield_turns"] = maxi(int(actor.get("shield_turns", 0)), 2)
 		_last_coach = "%s raises %s (+%d Ward)." % [actor["name"], name, int(def.get("ward", 0))]
 		_last_events.append({"type": "cast", "spell": spell_id, "seat": actor["seat"], "caster_cell": caster_cell, "shield": int(actor["shield"]), "ap_spent": ap_cost, "foe": true, "coach": _last_coach})
@@ -5694,7 +5704,7 @@ func _submit_foe_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
 		pre = _gear_strike_damage(actor, target, pre, dist, foe_back, true)
 		var mitigation := _mitigate_hit(actor, target, pre)
 		var damage := int(mitigation["damage"])
-		target["hp"] = maxi(int(target["hp"]) - damage, 0)
+		_lose_hp(target, damage)
 		_reveal_if_hurt(target, damage)
 		hits += 1
 		total += damage
@@ -5832,7 +5842,7 @@ func _sudden_death_tick(unit: Dictionary) -> void:
 	unit["sudden_turns"] = int(unit.get("sudden_turns", 0)) + 1
 	var pct := SUDDEN_DEATH_STEP_PCT * int(unit["sudden_turns"])
 	var lost := maxi(1, roundi(float(unit.get("max_hp", 1)) * float(pct) / 100.0))
-	unit["hp"] = maxi(0, int(unit["hp"]) - lost)
+	lost = _lose_hp(unit, lost)
 	_last_events.append({
 		"type": "sudden_death",
 		"target_seat": int(unit["seat"]),
@@ -6399,66 +6409,590 @@ func _clear_resource(unit: Dictionary, field: String) -> int:
 ## same-seat Bastion may take 40% once. Shield absorbs the rest. Zero shield
 ## and zero immunity leave the formula damage unchanged.
 ## The returned damage is the HP actually lost. The other keys only describe it.
-## Stride per Mauro: Intact +1 AP +1 MP every turn (cap 8/5). Overwound
-## +4 AP +2 MP on the unit's own turns 1–2 over any cap, then −1 AP −2 MP on
-## turn 3 (floor 0), then normal. Only the Still's part ever changes;
-## gear / level AP-MP stay. Ember Overwound's burn ticks here too.
+## Stills (Mauro 9 Oct 2026): event triggers on the socketed hour. Hourglass
+## changes max AP/MP once in _apply_gear. This runs after the turn's refill.
 func _still_turn_start(unit: Dictionary) -> void:
 	if unit.is_empty():
 		return
 	unit["own_turn"] = int(unit.get("own_turn", 0)) + 1
-	var burn := int(unit.get("ember_burn", 0))
-	if burn > 0:
-		unit["ember_burn"] = 0
-		unit["hp"] = maxi(int(unit["hp"]) - burn, 0)
-		_last_events.append({"type": "still", "still": "ember", "seat": int(unit["seat"]), "damage": burn, "pos": unit["pos"]})
-		_check_death(unit, "ember")
-	if str(unit.get("still", "")) != "stride":
-		return
-	var turn := int(unit["own_turn"])
-	if str(unit.get("still_mode", "")) == "overwound":
-		if turn <= 2:
-			unit["ap"] = int(unit["ap"]) + 4
-			unit["mp"] = int(unit["mp"]) + 2
-			if turn == 1:
-				_still_fired(unit, "stride")
-		elif turn == 3:
-			unit["ap"] = maxi(int(unit["ap"]) - 1, 0)
-			unit["mp"] = maxi(int(unit["mp"]) - 2, 0)
-			_last_events.append({"type": "still", "still": "stride_crack", "seat": int(unit["seat"]), "pos": unit["pos"]})
-		return
-	unit["ap"] = mini(int(unit["ap"]) + 1, maxi(GearBag.AP_CAP, int(unit.get("max_ap", MAX_AP))))
-	unit["mp"] = mini(int(unit["mp"]) + 1, maxi(GearBag.MP_CAP, int(unit.get("max_mp", MAX_MP))))
-	if turn == 1:
-		_still_fired(unit, "stride")
-
-
-## Cut / Ember on the attacker's first damaging hit, Guard on the target's
-## first hit taken. Neutral bonus lands after resist.
-func _still_on_hit(actor: Dictionary, target: Dictionary, damage: int) -> int:
-	var over := str(actor.get("still_mode", "")) == "overwound"
-	match str(actor.get("still", "")):
-		"cut":
-			if bool(actor.get("still_ready", false)):
-				actor["still_ready"] = false
-				damage += 10 if over else 4
-				_still_fired(actor, "cut")
-		"ember":
-			if bool(actor.get("still_ready", false)):
-				actor["still_ready"] = false
-				damage += 4
-				if over:
-					target["ember_burn"] = 4
-				_still_fired(actor, "ember")
-	if str(target.get("still", "")) == "guard" and bool(target.get("still_ready", false)):
-		target["still_ready"] = false
-		damage = 0 if str(target.get("still_mode", "")) == "overwound" else roundi(float(damage) * 0.75)
-		_still_fired(target, "guard")
-	return damage
+	var pen := int(unit.get("steadfast_ap", 0))
+	if pen > 0:
+		unit["steadfast_ap"] = 0
+		unit["ap"] = maxi(int(unit.get("ap", 0)) - pen, 0)
+	var bound_pen := int(unit.get("bound_ap_pen", 0))
+	if bound_pen > 0:
+		unit["bound_ap_pen"] = 0
+		unit["ap"] = maxi(int(unit.get("ap", 0)) - bound_pen, 0)
+	if _still_id(unit) == "tide" and _still_over(unit) and int(unit.get("tide_window", 0)) > 0:
+		_still_clear_all_debuffs(unit)
+		unit["tide_window"] = int(unit["tide_window"]) - 1
+		if int(unit["tide_window"]) <= 0:
+			unit["tide_heal_weak"] = true
+		_still_fired(unit, "tide")
+	var refund := int(unit.get("rewind_pending", 0))
+	if refund > 0:
+		unit["rewind_pending"] = 0
+		var cap := int(unit.get("max_hp", class_base_hp(str(unit.get("class_id", "")))))
+		unit["hp"] = mini(int(unit.get("hp", 0)) + refund, cap)
+		_still_fired(unit, "rewind")
+	var bonus := int(unit.get("shadow_mp_next", 0))
+	if bonus > 0:
+		unit["shadow_mp_next"] = 0
+		if _still_id(unit) == "long_shadow" and _still_over(unit):
+			unit["mp"] = int(unit.get("mp", 0)) + bonus
+		else:
+			var room := GearBag.MP_CAP
+			if int(unit.get("mp", 0)) > room:
+				room = int(unit["mp"])
+			unit["mp"] = mini(int(unit.get("mp", 0)) + bonus, room)
+		_still_fired(unit, "long_shadow")
+	_still_resolve_echo(unit)
 
 
 func _still_fired(unit: Dictionary, still_id: String) -> void:
 	_last_events.append({"type": "still", "still": still_id, "seat": int(unit.get("seat", -1)), "mode": str(unit.get("still_mode", "")), "pos": unit.get("pos", UNPLACED)})
+
+
+func _still_id(unit: Dictionary) -> String:
+	return str(unit.get("still", ""))
+
+
+func _still_over(unit: Dictionary) -> bool:
+	return str(unit.get("still_mode", "")) == "overwound"
+
+
+func _still_apply_hourglass(unit: Dictionary) -> void:
+	var over := _still_over(unit)
+	match _still_id(unit):
+		"hourglass_fist":
+			if over:
+				unit["max_ap"] = int(unit.get("max_ap", MAX_AP)) + 3
+				unit["max_mp"] = maxi(int(unit.get("max_mp", MAX_MP)) - 2, 0)
+			else:
+				unit["max_ap"] = mini(int(unit.get("max_ap", MAX_AP)) + 2, GearBag.AP_CAP)
+				unit["max_mp"] = maxi(int(unit.get("max_mp", MAX_MP)) - 1, 0)
+		"hourglass_step":
+			if over:
+				unit["max_mp"] = int(unit.get("max_mp", MAX_MP)) + 3
+				unit["max_ap"] = maxi(int(unit.get("max_ap", MAX_AP)) - 2, 0)
+			else:
+				unit["max_mp"] = mini(int(unit.get("max_mp", MAX_MP)) + 2, GearBag.MP_CAP)
+				unit["max_ap"] = maxi(int(unit.get("max_ap", MAX_AP)) - 1, 0)
+
+
+## Active Stills offer a use_still intent. Mirror and Bound name a target.
+func _append_still_intents(out: Array, actor: Dictionary) -> void:
+	if not bool(actor.get("still_ready", false)):
+		return
+	var id := _still_id(actor)
+	if id == "bleeding_hour":
+		out.append({"type": "use_still", "seat": int(actor["seat"])})
+		return
+	if id != "mirror_hour" and id != "bound_hour":
+		return
+	var cost := 0 if id == "mirror_hour" and _still_over(actor) else 2
+	if int(actor.get("ap", 0)) < cost:
+		return
+	var from: Vector2i = actor["pos"]
+	for raw in _units:
+		var other: Dictionary = raw
+		if not bool(other.get("alive", false)) or int(other.get("seat", -1)) == int(actor["seat"]):
+			continue
+		if chebyshev(from, other["pos"]) > 4:
+			continue
+		if id == "bound_hour":
+			if not _allied(other, actor):
+				continue
+		elif bool(other.get("invisible", false)):
+			continue
+		out.append({
+			"type": "use_still",
+			"seat": int(actor["seat"]),
+			"target_seat": int(other["seat"]),
+			"to": other["pos"],
+		})
+
+
+func _submit_use_still(intent: Dictionary, actor: Dictionary) -> Dictionary:
+	if int(actor.get("seat", -1)) != _active_seat:
+		return _reject(intent, "not_your_turn", "REJECT — a Still can only be used on your turn.")
+	if not bool(actor.get("still_ready", false)):
+		return _reject(intent, "still_spent", "REJECT — that Still is already spent.")
+	var id := _still_id(actor)
+	if id != "bleeding_hour" and id != "mirror_hour" and id != "bound_hour":
+		return _reject(intent, "still_passive", "REJECT — that Still has no button.")
+	if id == "bleeding_hour":
+		return _still_bleed(intent, actor)
+	var target := _still_picked_target(intent)
+	if target.is_empty() or not bool(target.get("alive", false)):
+		return _reject(intent, "no_target", "REJECT — pick a fighter for that Still.")
+	if int(target.get("seat", -1)) == int(actor.get("seat", -2)):
+		return _reject(intent, "no_target", "REJECT — pick another fighter.")
+	if chebyshev(actor["pos"], target["pos"]) > 4:
+		return _reject(intent, "out_of_range", "REJECT — that fighter is more than 4 tiles away.")
+	if id == "mirror_hour":
+		return _still_mirror(intent, actor, target)
+	return _still_bind(intent, actor, target)
+
+
+func _still_picked_target(intent: Dictionary) -> Dictionary:
+	if intent.has("target_seat"):
+		return _unit_by_seat(int(intent["target_seat"]))
+	if intent.has("to"):
+		return _living_unit_at(_as_cell(intent["to"]))
+	return {}
+
+
+func _still_bleed(intent: Dictionary, actor: Dictionary) -> Dictionary:
+	var over := _still_over(actor)
+	var max_hp := maxi(int(actor.get("max_hp", class_base_hp(str(actor.get("class_id", ""))))), 1)
+	var nominal := roundi(float(max_hp) * (0.30 if over else 0.20))
+	# The cost never knocks you out. 1 HP is the floor in both modes.
+	var cost := mini(nominal, maxi(int(actor.get("hp", 0)) - 1, 0))
+	actor["still_ready"] = false
+	if cost > 0:
+		_lose_hp(actor, cost)
+	var gain := 3 if over else 2
+	if over:
+		actor["ap"] = int(actor.get("ap", 0)) + gain
+	else:
+		var cur := int(actor.get("ap", 0))
+		if cur >= GearBag.AP_CAP:
+			actor["ap"] = cur + gain
+		else:
+			actor["ap"] = mini(cur + gain, GearBag.AP_CAP)
+	if over:
+		# Rest of this turn, plus the whole next own turn. Clears when that turn ends.
+		actor["bleed_lock"] = 2
+	_intent_log.append(intent)
+	_last_coach = "%s spends Bleeding Hour (−%d HP, +%d AP)." % [str(actor.get("name", "Unit")), cost, gain]
+	_still_fired(actor, "bleeding_hour")
+	return _accept()
+
+
+func _still_mirror(intent: Dictionary, actor: Dictionary, target: Dictionary) -> Dictionary:
+	if bool(target.get("invisible", false)):
+		return _reject(intent, "invisible", "REJECT — that fighter is not visible.")
+	var over := _still_over(actor)
+	var cost := 0 if over else 2
+	if int(actor.get("ap", 0)) < cost:
+		return _reject(intent, "not_enough_ap", "REJECT — Mirror Hour needs %d AP." % cost)
+	actor["ap"] = int(actor["ap"]) - cost
+	actor["still_ready"] = false
+	var actor_pos: Vector2i = actor["pos"]
+	var target_pos: Vector2i = target["pos"]
+	actor["pos"] = target_pos
+	target["pos"] = actor_pos
+	_note_step(actor)
+	_note_step(target)
+	if over:
+		actor["mp"] = 0
+		if not _allied(target, actor):
+			var toward := facing_toward(target["pos"], actor["pos"], str(target.get("facing", "S")))
+			target["facing"] = {"N": "S", "S": "N", "E": "W", "W": "E"}.get(toward, str(target.get("facing", "S")))
+	_intent_log.append(intent)
+	_last_coach = "%s swaps places with %s." % [str(actor.get("name", "Unit")), str(target.get("name", "them"))]
+	_still_fired(actor, "mirror_hour")
+	_last_events.append({
+		"type": "move",
+		"seat": int(actor["seat"]),
+		"from": actor_pos,
+		"to": actor["pos"],
+		"still": "mirror_hour",
+	})
+	return _accept()
+
+
+func _still_bind(intent: Dictionary, actor: Dictionary, target: Dictionary) -> Dictionary:
+	if not _allied(target, actor):
+		return _reject(intent, "not_ally", "REJECT — Bound Hour needs an ally.")
+	if int(actor.get("ap", 0)) < 2:
+		return _reject(intent, "not_enough_ap", "REJECT — Bound Hour needs 2 AP.")
+	actor["ap"] = int(actor["ap"]) - 2
+	actor["still_ready"] = false
+	var over := _still_over(actor)
+	actor["bound_seat"] = int(target["seat"])
+	actor["bound_name"] = str(target.get("name", "ally"))
+	actor["bound_left"] = -1 if over else 3
+	actor["bound_share"] = 60 if over else 50
+	_intent_log.append(intent)
+	_last_coach = "%s binds to %s." % [str(actor.get("name", "Unit")), str(target.get("name", "ally"))]
+	_still_fired(actor, "bound_hour")
+	return _accept()
+
+
+func _still_on_turn_end(actor: Dictionary) -> void:
+	if actor.is_empty():
+		return
+	if int(actor.get("bleed_lock", 0)) > 0:
+		actor["bleed_lock"] = int(actor["bleed_lock"]) - 1
+	_still_rewind_close(actor)
+	_still_bound_on_turn_end(actor)
+
+
+func _still_rewind_close(actor: Dictionary) -> void:
+	for raw in _units:
+		var unit: Dictionary = raw
+		if _still_id(unit) != "rewind":
+			continue
+		var lost := int(unit.get("rewind_loss", 0))
+		if lost <= 0:
+			continue
+		if _allied(actor, unit):
+			continue
+		unit["rewind_loss"] = 0
+		if bool(unit.get("rewind_used", false)):
+			continue
+		var max_hp := maxi(int(unit.get("max_hp", 1)), 1)
+		if lost * 100 < max_hp * 30:
+			continue
+		unit["rewind_used"] = true
+		unit["rewind_pending"] = lost if _still_over(unit) else roundi(float(lost) * 0.5)
+		if _still_over(unit):
+			unit["rewind_block_ally"] = true
+
+
+func _still_bound_on_turn_end(actor: Dictionary) -> void:
+	for raw in _units:
+		var wearer: Dictionary = raw
+		if int(wearer.get("bound_seat", -1)) < 0:
+			continue
+		var ally := _unit_by_seat(int(wearer["bound_seat"]))
+		if ally.is_empty() or not bool(ally.get("alive", false)) or not bool(wearer.get("alive", false)):
+			_still_clear_bind(wearer)
+			continue
+		var leaving_pair := wearer == actor or ally == actor
+		if not leaving_pair:
+			continue
+		if int(wearer.get("bound_left", 0)) < 0:
+			if chebyshev(wearer["pos"], ally["pos"]) > 4:
+				wearer["bound_ap_pen"] = int(wearer.get("bound_ap_pen", 0)) + 1
+				ally["bound_ap_pen"] = int(ally.get("bound_ap_pen", 0)) + 1
+				_still_clear_bind(wearer)
+				_still_fired(wearer, "bound_hour")
+		elif ally == actor:
+			wearer["bound_left"] = int(wearer.get("bound_left", 0)) - 1
+			if int(wearer["bound_left"]) <= 0:
+				_still_clear_bind(wearer)
+
+
+func _still_clear_bind(wearer: Dictionary) -> void:
+	wearer["bound_seat"] = -1
+	wearer["bound_name"] = ""
+	wearer["bound_left"] = 0
+	wearer["bound_share"] = 0
+
+
+func _still_binder_of(unit: Dictionary) -> Dictionary:
+	for raw in _units:
+		var wearer: Dictionary = raw
+		if int(wearer.get("bound_seat", -1)) == int(unit.get("seat", -2)) and bool(wearer.get("alive", false)):
+			return wearer
+	return {}
+
+
+## Ambush keeps the HP write in source order after the landing. This returns
+## the HP the prey keeps after a Bound Hour split, and pays the wearer's share.
+func _still_bound_portion(unit: Dictionary, amount: int) -> int:
+	if unit.is_empty() or amount <= 0:
+		return amount
+	var binder := _still_binder_of(unit)
+	if binder.is_empty() or binder == unit:
+		return amount
+	var before := int(unit.get("hp", 0))
+	var dealt := mini(amount, maxi(before, 0))
+	var share := roundi(float(dealt) * float(int(binder.get("bound_share", 50))) / 100.0)
+	share = clampi(share, 0, dealt)
+	if share > 0:
+		_lose_hp(binder, share, true)
+		_check_death(binder)
+	return dealt - share
+
+
+## HP actually removed. Bound Hour splits an ally's loss with the wearer.
+## Rewind and Gathered Sand read the loss. from_bind stops the split looping.
+func _lose_hp(unit: Dictionary, amount: int, from_bind: bool = false) -> int:
+	if unit.is_empty() or amount <= 0 or not bool(unit.get("alive", true)):
+		return 0
+	var before := int(unit.get("hp", 0))
+	var dealt := mini(amount, maxi(before, 0))
+	if dealt <= 0:
+		return 0
+	if not from_bind:
+		var binder := _still_binder_of(unit)
+		if not binder.is_empty() and binder != unit:
+			var share := roundi(float(dealt) * float(int(binder.get("bound_share", 50))) / 100.0)
+			share = clampi(share, 0, dealt)
+			var keep := dealt - share
+			unit["hp"] = before - keep
+			_still_note_hp_loss(unit, keep)
+			if share > 0:
+				_lose_hp(binder, share, true)
+				_check_death(binder)
+			return keep
+	unit["hp"] = before - dealt
+	_still_note_hp_loss(unit, dealt)
+	return dealt
+
+
+func _still_note_hp_loss(unit: Dictionary, dealt: int) -> void:
+	if dealt <= 0 or unit.is_empty():
+		return
+	if _still_id(unit) == "gathered_sand" and not bool(unit.get("sand_released", false)):
+		var pct := 0.25 if _still_over(unit) else 0.15
+		var cap := 25 if _still_over(unit) else 15
+		var add := roundi(float(dealt) * pct)
+		unit["sand_stored"] = mini(int(unit.get("sand_stored", 0)) + add, cap)
+	if _still_id(unit) == "rewind" and not bool(unit.get("rewind_used", false)):
+		var foe := _unit_by_seat(_active_seat)
+		if not foe.is_empty() and foe != unit and not _allied(foe, unit):
+			unit["rewind_loss"] = int(unit.get("rewind_loss", 0)) + dealt
+
+
+func _still_resolve_echo(unit: Dictionary) -> void:
+	var echo := int(unit.get("held_echo", 0))
+	if echo <= 0:
+		return
+	unit["held_echo"] = 0
+	unit["held_cancel"] = false
+	var shield := int(unit.get("shield", 0))
+	var soaked := mini(shield, echo)
+	if soaked > 0:
+		unit["shield"] = shield - soaked
+		if int(unit["shield"]) <= 0:
+			unit["shield"] = 0
+			unit["shield_turns"] = 0
+	var hp_loss := echo - soaked
+	if hp_loss > 0:
+		_lose_hp(unit, hp_loss)
+		_check_death(unit, "damage")
+	_last_events.append({"type": "still", "still": "held_hour", "seat": int(unit.get("seat", -1)), "damage": hp_loss, "pos": unit.get("pos", UNPLACED)})
+
+
+## Outgoing and incoming Still modifiers, then Held Hour, before shield.
+func _still_on_hit(actor: Dictionary, target: Dictionary, damage: int) -> int:
+	if damage <= 0 or actor.is_empty() or target.is_empty():
+		return damage
+	if int(actor.get("held_echo", 0)) > 0 and bool(actor.get("held_cancel", false)) and int(actor.get("held_from", -2)) == int(target.get("seat", -3)):
+		actor["held_echo"] = 0
+		actor["held_cancel"] = false
+	if _still_id(actor) == "tolling_bell" and _still_over(actor):
+		damage = maxi(roundi(float(damage) * 0.9), 0)
+	if _still_id(target) == "long_shadow" and _still_over(target) and not _allied(actor, target) and chebyshev(actor["pos"], target["pos"]) == 1:
+		damage = roundi(float(damage) * 1.1)
+	_still_note_kite(actor, target)
+	if int(actor.get("wither_bonus", 0)) > 0 and int(actor.get("wither_seat", -2)) == int(target.get("seat", -3)):
+		damage += int(actor["wither_bonus"])
+		actor["wither_bonus"] = 0
+		_still_fired(actor, "withering_sand")
+	if _still_id(actor) == "gathered_sand" and int(actor.get("sand_stored", 0)) > 0 and not bool(actor.get("sand_released", false)):
+		damage += int(actor["sand_stored"])
+		actor["sand_stored"] = 0
+		actor["sand_released"] = true
+		_still_fired(actor, "gathered_sand")
+	if _still_id(actor) == "held_hour" and not bool(actor.get("held_used", false)) and not _allied(actor, target):
+		actor["held_used"] = true
+		if _still_over(actor):
+			target["held_echo"] = damage * 2
+			target["held_from"] = int(actor.get("seat", -1))
+			target["held_cancel"] = true
+			damage = 0
+		else:
+			target["held_echo"] = roundi(float(damage) * 0.5)
+			target["held_from"] = int(actor.get("seat", -1))
+			target["held_cancel"] = false
+		_still_fired(actor, "held_hour")
+	return damage
+
+
+func _still_note_kite(actor: Dictionary, target: Dictionary) -> void:
+	if _still_id(target) != "long_shadow" or _allied(actor, target):
+		return
+	if chebyshev(actor["pos"], target["pos"]) < 4:
+		return
+	var cap := 3 if _still_over(target) else 1
+	if int(target.get("shadow_hits", 0)) >= cap:
+		return
+	target["shadow_hits"] = int(target.get("shadow_hits", 0)) + 1
+	target["shadow_mp_next"] = int(target.get("shadow_mp_next", 0)) + 2
+
+
+func _still_can_shield(unit: Dictionary) -> bool:
+	if unit.is_empty():
+		return true
+	if not _still_over(unit):
+		return true
+	var id := _still_id(unit)
+	return id != "shatterglass" and id != "withering_sand"
+
+
+func _still_gain_shield(unit: Dictionary, add: int) -> int:
+	var before := int(unit.get("shield", 0))
+	if add <= 0 or not _still_can_shield(unit):
+		return before
+	unit["shield"] = before + add
+	return int(unit["shield"])
+
+
+## Shatterglass Intact breaks the whole shield once and the hit is not soaked.
+func _still_shatter_shield(actor: Dictionary, target: Dictionary, damage: int, report: Dictionary) -> void:
+	if damage <= 0 or int(target.get("shield", 0)) <= 0:
+		return
+	if _still_id(actor) != "shatterglass" or _still_over(actor) or not bool(actor.get("still_ready", false)):
+		return
+	actor["still_ready"] = false
+	target["shield"] = 0
+	target["shield_turns"] = 0
+	report["shield_broken"] = true
+	report["shield_shattered"] = true
+	_still_fired(actor, "shatterglass")
+
+
+func _still_on_debuff(unit: Dictionary, kind: String) -> void:
+	if unit.is_empty() or kind == "":
+		return
+	_still_stretch(unit, kind)
+	if _still_id(unit) != "tide":
+		return
+	if _still_over(unit):
+		if int(unit.get("tide_window", 0)) <= 0 and not bool(unit.get("tide_heal_weak", false)) and not bool(unit.get("tide_started", false)):
+			unit["tide_started"] = true
+			unit["tide_window"] = 3
+			_still_fired(unit, "tide")
+		return
+	if int(unit.get("tide_stripped", 0)) >= 2:
+		return
+	unit["tide_stripped"] = int(unit.get("tide_stripped", 0)) + 1
+	_still_clear_debuff(unit, kind)
+	_still_fired(unit, "tide")
+
+
+func _still_stretch(unit: Dictionary, kind: String) -> void:
+	if _still_id(unit) != "steadfast" or not _still_over(unit):
+		return
+	match kind:
+		"burn":
+			unit["burn_remaining"] = int(unit.get("burn_remaining", 0)) + 1
+		"slow":
+			unit["slow_remaining"] = int(unit.get("slow_remaining", 0)) + 1
+		"frozen":
+			unit["frozen_remaining"] = int(unit.get("frozen_remaining", 0)) + 1
+		"electro":
+			unit["electro_remaining"] = int(unit.get("electro_remaining", 0)) + 1
+		"breathless":
+			unit["breathless_remaining"] = int(unit.get("breathless_remaining", 0)) + 1
+		"residue":
+			unit["residue_turns"] = int(unit.get("residue_turns", 0)) + 1
+		"water", "gear_slow", "pin", "mire", "spark", "magma":
+			unit["stretch_" + kind] = true
+
+
+func _still_stretch_holds(unit: Dictionary, kind: String) -> bool:
+	var key := "stretch_" + kind
+	if not bool(unit.get(key, false)):
+		return false
+	unit[key] = false
+	return true
+
+
+func _still_clear_debuff(unit: Dictionary, kind: String) -> void:
+	match kind:
+		"burn":
+			unit["burn_remaining"] = 0
+			unit["burn_stacks"] = 0
+		"slow":
+			unit["slow_remaining"] = 0
+			unit["slow_stacks"] = 0
+		"frozen":
+			unit["frozen_remaining"] = 0
+			unit["frozen_stacks"] = 0
+		"electro":
+			unit["electro_remaining"] = 0
+			unit["electro_stacks"] = 0
+		"breathless":
+			unit["breathless_remaining"] = 0
+			unit["breathless_stacks"] = 0
+			unit["breathless_spell"] = ""
+			unit["silenced_spells"] = []
+		"residue":
+			unit["residue"] = ""
+			unit["residue_turns"] = 0
+		"water":
+			unit["water_slow"] = false
+		"gear_slow":
+			unit["gear_slow"] = false
+		"pin":
+			unit["pin_pending"] = false
+			unit["pinned"] = false
+		"mire":
+			if unit.has("mire_cell"):
+				unit.erase("mire_cell")
+		"spark":
+			unit["sparked"] = false
+		"magma":
+			if unit.has("magma_pending"):
+				unit.erase("magma_pending")
+	var stretch := "stretch_" + kind
+	if unit.has(stretch):
+		unit.erase(stretch)
+
+
+func _still_clear_all_debuffs(unit: Dictionary) -> void:
+	for kind in ["burn", "slow", "frozen", "electro", "breathless", "residue", "water", "gear_slow", "pin", "mire", "spark", "magma"]:
+		_still_clear_debuff(unit, kind)
+
+
+func _still_note_heal(target: Dictionary, healed: int) -> void:
+	if healed <= 0 or target.is_empty():
+		return
+	for raw in _units:
+		var watcher: Dictionary = raw
+		if _still_id(watcher) != "withering_sand" or bool(watcher.get("wither_used", false)):
+			continue
+		if not bool(watcher.get("alive", false)) or _allied(watcher, target) or watcher == target:
+			continue
+		if chebyshev(watcher["pos"], target["pos"]) > 4:
+			continue
+		var over := _still_over(watcher)
+		var bonus := healed if over else roundi(float(healed) * 0.5)
+		var cap := 25 if over else 15
+		bonus = mini(bonus, cap)
+		if bonus <= 0:
+			continue
+		watcher["wither_used"] = true
+		watcher["wither_bonus"] = bonus
+		watcher["wither_seat"] = int(target.get("seat", -1))
+		_still_fired(watcher, "withering_sand")
+
+
+## Tolling Bell: an enemy who just turned Invisible is revealed at once.
+func _still_on_invisible(hidden: Dictionary) -> void:
+	if hidden.is_empty() or not bool(hidden.get("invisible", false)):
+		return
+	for raw in _units:
+		var watcher: Dictionary = raw
+		if _still_id(watcher) != "tolling_bell" or not bool(watcher.get("alive", false)):
+			continue
+		if _allied(watcher, hidden) or watcher == hidden:
+			continue
+		if chebyshev(watcher["pos"], hidden["pos"]) > 5:
+			continue
+		if not _still_over(watcher) and not bool(watcher.get("still_ready", false)):
+			continue
+		if not _still_over(watcher):
+			watcher["still_ready"] = false
+		if not _end_invisible(hidden, false):
+			return
+		_emit_expire("invisible", hidden["pos"], int(hidden["seat"]), int(hidden["seat"]))
+		_last_events.append({
+			"type": "revealed",
+			"seat": int(hidden["seat"]),
+			"cell": hidden["pos"],
+			"coach": "Tolling Bell reveals %s." % str(hidden.get("name", "them")),
+		})
+		_last_coach = "Tolling Bell reveals %s." % str(hidden.get("name", "them"))
+		_still_fired(watcher, "tolling_bell")
+		return
 
 
 func _mitigate_hit(actor: Dictionary, target: Dictionary, damage: int) -> Dictionary:
@@ -6476,6 +7010,7 @@ func _mitigate_hit(actor: Dictionary, target: Dictionary, damage: int) -> Dictio
 		report["damage"] = damage
 	# Post-stills, pre-shield. Thorns uses this later, after the hit lands.
 	report["thorns_basis"] = damage
+	_still_shatter_shield(actor, target, damage, report)
 	if int(target.get("hit_immunity", 0)) > 0:
 		target["hit_immunity"] = int(target["hit_immunity"]) - 1
 		report["immunity_absorbed"] = true
@@ -6495,9 +7030,12 @@ func _mitigate_hit(actor: Dictionary, target: Dictionary, damage: int) -> Dictio
 	var shield := int(target.get("shield", 0))
 	if shield > 0 and remaining > 0:
 		var into := remaining
+		if _still_id(actor) == "shatterglass" and _still_over(actor):
+			# Double damage into the shield. The extra does not spill into HP.
+			into = remaining * 2
 		if bool(actor.get("shield_burst", false)) and bool(actor.get("shield_burst_ready", true)) and not actor.is_empty():
 			# +50% of this hit is dealt to the shield. The extra does not spill into HP.
-			into = roundi(float(remaining) * 1.5)
+			into = roundi(float(into) * 1.5)
 			actor["shield_burst_ready"] = false
 		var absorbed := mini(shield, into)
 		target["shield"] = shield - absorbed
@@ -6538,7 +7076,7 @@ func _bastion_thorns(actor: Dictionary, target: Dictionary, damage: int, report:
 	if chebyshev(actor["pos"], target["pos"]) != 1:
 		return
 	var thorns := thorns_amount(target, damage)
-	actor["hp"] = maxi(0, int(actor["hp"]) - thorns)
+	thorns = _lose_hp(actor, thorns)
 	report["thorns"] = thorns
 	report["thorns_seat"] = int(actor["seat"])
 	_check_death(actor)
@@ -6610,7 +7148,7 @@ func _intercept_transfer(actor: Dictionary, target: Dictionary, damage: int) -> 
 	if moved <= 0:
 		return 0
 	bastion["intercept_used"] = true
-	bastion["hp"] = maxi(0, int(bastion["hp"]) - moved)
+	moved = _lose_hp(bastion, moved)
 	var dealt := mini(moved, damage)
 	_last_events.append({
 		"type": "intercept",
@@ -6660,9 +7198,17 @@ func _triage_applied(target: Dictionary, def: Dictionary) -> bool:
 	return float(int(target.get("hp", 0))) / float(max_hp) < SpellKits.TRIAGE_HP_THRESHOLD
 
 
-func _apply_heal(target: Dictionary, amount: int) -> int:
-	if amount <= 0:
+func _apply_heal(target: Dictionary, amount: int, healer: Dictionary = {}) -> int:
+	if amount <= 0 or target.is_empty():
 		return 0
+	if int(target.get("bleed_lock", 0)) > 0:
+		return 0
+	if _still_id(target) == "gathered_sand" and _still_over(target) and int(target.get("sand_stored", 0)) > 0:
+		return 0
+	if bool(target.get("rewind_block_ally", false)) and not healer.is_empty() and healer != target and _allied(healer, target):
+		return 0
+	if bool(target.get("tide_heal_weak", false)):
+		amount = roundi(float(amount) * 0.75)
 	if bool(target.get("heal_cut", false)):
 		amount = roundi(float(amount) * 0.75)
 	if bool(target.get("sparked", false)):
@@ -6670,6 +7216,8 @@ func _apply_heal(target: Dictionary, amount: int) -> int:
 	var room := int(target.get("max_hp", class_base_hp(str(target.get("class_id", ""))))) - int(target.get("hp", 0))
 	var healed := mini(amount, maxi(room, 0))
 	target["hp"] = int(target["hp"]) + healed
+	if healed > 0:
+		_still_note_heal(target, healed)
 	return healed
 
 
@@ -6724,7 +7272,7 @@ func _resolve_revive(intent: Dictionary, actor: Dictionary, def: Dictionary, des
 		if body.has(key):
 			body[key] = 0
 	body["stunned"] = false
-	if int(def.get("revive_shield", 0)) > 0:
+	if int(def.get("revive_shield", 0)) > 0 and _still_can_shield(body):
 		body["shield"] = int(def["revive_shield"])
 		body["shield_turns"] = 0
 	if bool(body.get("invisible", false)):
@@ -6800,18 +7348,7 @@ func _resolve_support(intent: Dictionary, actor: Dictionary, target: Dictionary,
 		var heal_amount := _support_heal_amount(actor, target, def, true)
 		heal_crit = _last_crit
 		heal_crit_mult = _last_crit_mult
-		if str(actor.get("still", "")) == "mercy" and bool(actor.get("still_ready", false)):
-			# Mercy Still: first heal +8 (Overwound +16 and Cleanse).
-			actor["still_ready"] = false
-			var over := str(actor.get("still_mode", "")) == "overwound"
-			heal_amount += 16 if over else 8
-			if over:
-				target["stun_remaining"] = 0
-				target["stunned"] = false
-				target["burn_remaining"] = 0
-				target["burn_stacks"] = 0
-			_still_fired(actor, "mercy")
-		healed = _apply_heal(target, heal_amount)
+		healed = _apply_heal(target, heal_amount, actor)
 	var engine_gained := 0
 	var engine_spent := 0
 	match str(def.get("engine_on_connect", "")):
@@ -6819,7 +7356,7 @@ func _resolve_support(intent: Dictionary, actor: Dictionary, target: Dictionary,
 			engine_gained = _gain_resource(actor, "pulse", 1)
 		"spend_pulse":
 			engine_spent = _spend_resource(actor, "pulse", int(def.get("spend_pulse", 1)))
-	if spell_id == SpellKits.WARD:
+	if spell_id == SpellKits.WARD and _still_can_shield(target):
 		target["shield"] = int(def.get("shield", 20))
 		target["shield_turns"] = int(def.get("shield_turns", 2))
 	var cc_removed: Array = []
@@ -6990,7 +7527,8 @@ func _resolve_team_ward(intent: Dictionary, actor: Dictionary, def: Dictionary, 
 		if chebyshev(actor["pos"], unit["pos"]) > radius:
 			continue
 		var before := int(unit.get("shield", 0))
-		unit["shield"] = mini(before + add, cap)
+		var gain := add if _still_can_shield(unit) else 0
+		unit["shield"] = mini(before + gain, cap) if gain > 0 else before
 		unit["shield_turns"] = 0
 		shielded.append({"seat": int(unit["seat"]), "pos": unit["pos"], "shield": int(unit["shield"]), "gained": int(unit["shield"]) - before})
 	_intent_log.append(intent)
@@ -7037,7 +7575,7 @@ func _resolve_fade(intent: Dictionary, actor: Dictionary, def: Dictionary, ap_co
 	_intent_log.append(intent)
 	var cool := int(def.get("cooldown", 0))
 	_last_coach = "%s Fade (−%d AP / −%d MP). Invisible for %d turn%s, cooldown %d turn%s after reveal. +%d Umbral." % [actor["name"], ap_cost, mp_cost, fade_turns, "" if fade_turns == 1 else "s", cool, "" if cool == 1 else "s", gained]
-	_last_events.append({
+	var fade_event := {
 		"type": "cast",
 		"spell": SpellKits.FADE,
 		"seat": actor["seat"],
@@ -7049,7 +7587,13 @@ func _resolve_fade(intent: Dictionary, actor: Dictionary, def: Dictionary, ap_co
 		"invisible_turns": fade_turns,
 		"engine_gained": gained,
 		"coach": _last_coach,
-	})
+	}
+	_last_events.append(fade_event)
+	_still_on_invisible(actor)
+	if not bool(actor.get("invisible", false)):
+		fade_event["invisible"] = false
+		fade_event["invisible_turns"] = 0
+		fade_event["coach"] = _last_coach
 	return _accept()
 
 
@@ -7221,7 +7765,7 @@ func _resolve_aegis_break(intent: Dictionary, actor: Dictionary, def: Dictionary
 		pre_mitigation = _gear_strike_damage(actor, target, pre_mitigation, chebyshev(actor["pos"], target["pos"]), is_back, true)
 		var mitigation := _mitigate_hit(actor, target, pre_mitigation)
 		var damage := int(mitigation["damage"])
-		target["hp"] = maxi(0, int(target["hp"]) - damage)
+		_lose_hp(target, damage)
 		var push_result: Dictionary = {}
 		var burn_info: Dictionary = {}
 		var silence_info: Dictionary = {}
@@ -7437,7 +7981,7 @@ func _resolve_hold_line(intent: Dictionary, actor: Dictionary, def: Dictionary, 
 		pre_mitigation = _gear_strike_damage(actor, target, pre_mitigation, chebyshev(actor["pos"], target["pos"]), is_back, true)
 		var mitigation := _mitigate_hit(actor, target, pre_mitigation)
 		var damage := int(mitigation["damage"])
-		target["hp"] = maxi(0, int(target["hp"]) - damage)
+		_lose_hp(target, damage)
 		target["exit_tax"] = maxi(int(target.get("exit_tax", 0)), int(def.get("exit_tax_turns", 1)))
 		var row := {
 			"target_seat": int(target["seat"]),
@@ -7591,7 +8135,10 @@ func _resolve_ambush(intent: Dictionary, actor: Dictionary, target: Dictionary, 
 	# Invisible self-origin and Shade origin both have to land first.
 	var struck_from: Vector2i = actor["pos"]
 	damage = ambush_damage_if_planted(struck_from, cell, damage)
+	var ambush_hp_before := int(target.get("hp", 0))
+	damage = _still_bound_portion(target, damage)
 	target["hp"] = maxi(0, int(target["hp"]) - damage)
+	_still_note_hp_loss(target, ambush_hp_before - int(target["hp"]))
 	# A connecting hit spends every Umbral. The bonus was already on the base.
 	var umbral_spent := _clear_resource(actor, "umbral")
 	# Teleport and the hit are done. The attack ends Invisible after that.

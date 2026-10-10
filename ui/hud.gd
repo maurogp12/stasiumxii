@@ -4,6 +4,8 @@ class_name CombatHUD
 signal spell_selected(spell_id: String)
 signal face_requested(dir: String)
 signal end_turn_requested
+## Bleeding Hour spends itself. Mirror Hour and Bound Hour arm a target pick.
+signal still_use_requested
 signal new_match_requested
 ## Mauro 5 Oct 2026: "put a option to go back to hub ... in koliseo".
 signal hub_requested
@@ -132,6 +134,8 @@ var _ap_pips: HBoxContainer
 var _mp_pips: HBoxContainer
 var _walk_button: Button
 var _end_turn_button: Button
+var _use_still_button: Button
+var _still_aim: bool = false
 var _new_match_button: Button
 var _hub_button: Button
 var _elements_button: Button
@@ -990,6 +994,7 @@ func clear_spell() -> void:
 
 ## Client Walk mode. Does not submit a CombatSim intent. Does not face.
 func select_walk() -> void:
+	clear_still_aim()
 	clear_spell()
 	spell_selected.emit("")
 
@@ -1162,6 +1167,7 @@ func render(snap: Dictionary, legal: Array) -> void:
 		_apply_spell_modulate(str(spell_id), button, can_submit)
 	_refresh_walk_button()
 	_apply_controls(match_over)
+	_sync_use_still(snap, legal)
 	_sync_deploy_chrome(snap)
 	_sync_stun_badge(chrome, units, match_over)
 	# After the armed spell settles, so a legal target lights the portrait.
@@ -1190,6 +1196,8 @@ func _apply_controls(match_over: bool) -> void:
 		_end_turn_button.disabled = block or not_your_turn
 		_end_turn_button.modulate = Color.WHITE
 		_sync_ability_icon(_end_turn_button)
+	if _use_still_button != null and (block or not_your_turn):
+		_use_still_button.disabled = true
 	if _new_match_button != null:
 		_new_match_button.disabled = _locked
 		_new_match_button.visible = _show_new_match(_last_snap)
@@ -1448,6 +1456,18 @@ func _build() -> void:
 	_end_turn_button.pressed.connect(func() -> void: end_turn_requested.emit())
 	_action_bar.add_child(_end_turn_button)
 	_bind_ability_icon(_end_turn_button, "end_turn", "End Turn")
+
+	_use_still_button = Button.new()
+	_use_still_button.name = "UseStill"
+	_use_still_button.text = "Use Still"
+	_use_still_button.visible = false
+	_use_still_button.custom_minimum_size = TOUCH.END_TURN_BUTTON_SIZE
+	_use_still_button.add_theme_font_size_override("font_size", 15)
+	_use_still_button.add_theme_color_override("font_color", CREAM)
+	_style_chrome_button(_use_still_button, true)
+	_use_still_button.clip_text = true
+	_use_still_button.pressed.connect(_on_use_still_pressed)
+	_action_bar.add_child(_use_still_button)
 
 	_new_match_button = Button.new()
 	_new_match_button.text = "New Match"
@@ -2864,7 +2884,91 @@ func _unit_card_text(unit: Dictionary, _active: bool, snap: Dictionary = {}) -> 
 		text += "\n%s" % extra
 	if meter != "":
 		text += "\n%s" % meter
+	var still_line := _still_state_line(unit)
+	if still_line != "":
+		text += "\n%s" % still_line
 	return text
+
+
+## Socketed Still, only while its state is worth a line on the corner card.
+func _still_state_line(unit: Dictionary) -> String:
+	var id := str(unit.get("still", ""))
+	var over := str(unit.get("still_mode", "")) == "overwound"
+	var parts: PackedStringArray = PackedStringArray()
+	if id == "gathered_sand" and int(unit.get("sand_stored", 0)) > 0:
+		var cap := 25 if over else 15
+		parts.append("Gathered Sand %d/%d" % [int(unit["sand_stored"]), cap])
+	if int(unit.get("bound_seat", -1)) >= 0 and str(unit.get("bound_name", "")) != "":
+		parts.append("Bound to %s" % str(unit["bound_name"]))
+	if int(unit.get("rewind_pending", 0)) > 0:
+		parts.append("Rewind +%d" % int(unit["rewind_pending"]))
+	if int(unit.get("shadow_mp_next", 0)) > 0:
+		parts.append("Long Shadow +%d MP" % int(unit["shadow_mp_next"]))
+	if int(unit.get("wither_bonus", 0)) > 0:
+		parts.append("Wither +%d" % int(unit["wither_bonus"]))
+	if int(unit.get("held_echo", 0)) > 0:
+		parts.append("Echo %d" % int(unit["held_echo"]))
+	if int(unit.get("bleed_lock", 0)) > 0:
+		parts.append("No heals")
+	if bool(unit.get("tide_heal_weak", false)):
+		parts.append("Heals −25%")
+	elif id == "tide" and over and int(unit.get("tide_window", 0)) > 0:
+		parts.append("Tide %d" % int(unit["tide_window"]))
+	elif id == "tide" and not over and int(unit.get("tide_stripped", 0)) > 0:
+		parts.append("Tide %d/2" % int(unit["tide_stripped"]))
+	return "  ".join(parts)
+
+
+func still_aiming() -> bool:
+	return _still_aim
+
+
+func clear_still_aim() -> void:
+	_still_aim = false
+	if _use_still_button != null:
+		_use_still_button.text = "Use Still"
+
+
+func _on_use_still_pressed() -> void:
+	var bleeding := false
+	for intent in _last_legal:
+		if str(intent.get("type", "")) != "use_still":
+			continue
+		if intent.has("target_seat"):
+			bleeding = false
+			break
+		bleeding = true
+	if bleeding:
+		clear_still_aim()
+		still_use_requested.emit()
+		return
+	_still_aim = not _still_aim
+	if _still_aim:
+		_selected_spell = ""
+		spell_selected.emit("")
+	if _use_still_button != null:
+		_use_still_button.text = "Pick target" if _still_aim else "Use Still"
+
+
+func _sync_use_still(snap: Dictionary, legal: Array) -> void:
+	if _use_still_button == null:
+		return
+	var offered := false
+	for intent in legal:
+		if str(intent.get("type", "")) == "use_still":
+			offered = true
+			break
+	var deploying := is_deployment_phase(snap)
+	var match_over := bool(snap.get("match_over", false))
+	var yours := is_local_turn(snap)
+	# Off-turn (online watcher, or a stale legal list) never shows the button.
+	if not yours:
+		offered = false
+	_use_still_button.visible = offered and not deploying and not match_over and yours
+	_use_still_button.disabled = not yours or not _use_still_button.visible or _stunned
+	if not _use_still_button.visible:
+		_still_aim = false
+		_use_still_button.text = "Use Still"
 
 
 func _unit(units: Array, seat: int) -> Dictionary:
@@ -3391,6 +3495,7 @@ func _arm_spell_from_press(spell_id: String) -> void:
 		return
 	_press_gesture_armed = spell_id
 	_suppress_toggle_spell = spell_id
+	clear_still_aim()
 	_selected_spell = spell_id
 	_refresh_spell_buttons()
 	_update_selected_label()
@@ -4055,6 +4160,8 @@ func _sync_deploy_chrome(snap: Dictionary) -> void:
 		_walk_button.visible = not deploying
 	if _end_turn_button != null:
 		_end_turn_button.visible = not deploying
+	if _use_still_button != null and deploying:
+		_use_still_button.visible = false
 	if _face_bar != null:
 		_face_bar.visible = not deploying
 	for button in _face_buttons.values():

@@ -14,6 +14,7 @@ const INTENT_TYPES := [
 	"reposition",
 	"ready",
 	"confirm",
+	"use_still",
 ]
 
 const COMBAT_TYPES := ["end_turn", "face", "move", "cast"]
