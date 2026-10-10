@@ -1649,6 +1649,7 @@ func _apply_seat_banner(seat: int, unit: Dictionary, acting: bool = false) -> vo
 	var bust := _seat_panels[seat].get_node_or_null("Bust") as TextureRect
 	if bust != null:
 		bust.texture = _portrait_for(unit)
+	_apply_still_icon(_seat_panels[seat], unit)
 	_paint_hp_bar(_seat_panels[seat], unit)
 
 
@@ -1945,6 +1946,16 @@ func _make_banner(is_kestrel: bool) -> Panel:
 	bust.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	bust.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	panel.add_child(bust)
+	var still_icon := TextureRect.new()
+	still_icon.name = "StillIcon"
+	still_icon.visible = false
+	still_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	still_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	still_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	still_icon.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	still_icon.position = Vector2(196, 6)
+	still_icon.size = Vector2(36, 36)
+	panel.add_child(still_icon)
 	var title := Label.new()
 	title.text = "Kestrel" if is_kestrel else "Ironjaw"
 	_seat_panels.append(panel)
@@ -1989,6 +2000,9 @@ func _make_banner(is_kestrel: bool) -> Panel:
 		_kestrel_body = body
 	else:
 		_ironjaw_body = body
+	var mark := panel.get_node_or_null("StillIcon")
+	if mark != null:
+		panel.move_child(mark, panel.get_child_count() - 1)
 	return panel
 
 
@@ -2890,27 +2904,40 @@ func _unit_card_text(unit: Dictionary, _active: bool, snap: Dictionary = {}) -> 
 	return text
 
 
-## Socketed Still, only while its state is worth a line on the corner card.
+## The forged Still icon, only on the fighter who has that Still socketed.
+func _apply_still_icon(panel: Panel, unit: Dictionary) -> void:
+	var mark := panel.get_node_or_null("StillIcon") as TextureRect
+	if mark == null:
+		return
+	var id := str(unit.get("still", ""))
+	var tex: Texture2D = StillVault.icon(id) if StillVault.is_id(id) else null
+	mark.texture = tex
+	mark.visible = tex != null
+
+
+## Socketed Still, only while its state is worth a line on that fighter's card.
 func _still_state_line(unit: Dictionary) -> String:
 	var id := str(unit.get("still", ""))
+	if not StillVault.is_id(id):
+		return ""
 	var over := str(unit.get("still_mode", "")) == "overwound"
 	var parts: PackedStringArray = PackedStringArray()
 	if id == "gathered_sand" and int(unit.get("sand_stored", 0)) > 0:
 		var cap := 25 if over else 15
 		parts.append("Gathered Sand %d/%d" % [int(unit["sand_stored"]), cap])
-	if int(unit.get("bound_seat", -1)) >= 0 and str(unit.get("bound_name", "")) != "":
+	if id == "bound_hour" and int(unit.get("bound_seat", -1)) >= 0 and str(unit.get("bound_name", "")) != "":
 		parts.append("Bound to %s" % str(unit["bound_name"]))
-	if int(unit.get("rewind_pending", 0)) > 0:
+	if id == "rewind" and int(unit.get("rewind_pending", 0)) > 0:
 		parts.append("Rewind +%d" % int(unit["rewind_pending"]))
-	if int(unit.get("shadow_mp_next", 0)) > 0:
+	if id == "long_shadow" and int(unit.get("shadow_mp_next", 0)) > 0:
 		parts.append("Long Shadow +%d MP" % int(unit["shadow_mp_next"]))
-	if int(unit.get("wither_bonus", 0)) > 0:
+	if id == "withering_sand" and int(unit.get("wither_bonus", 0)) > 0:
 		parts.append("Wither +%d" % int(unit["wither_bonus"]))
-	if int(unit.get("held_echo", 0)) > 0:
+	if id == "held_hour" and int(unit.get("held_echo", 0)) > 0:
 		parts.append("Echo %d" % int(unit["held_echo"]))
-	if int(unit.get("bleed_lock", 0)) > 0:
+	if id == "bleeding_hour" and int(unit.get("bleed_lock", 0)) > 0:
 		parts.append("No heals")
-	if bool(unit.get("tide_heal_weak", false)):
+	if id == "tide" and bool(unit.get("tide_heal_weak", false)):
 		parts.append("Heals −25%")
 	elif id == "tide" and over and int(unit.get("tide_window", 0)) > 0:
 		parts.append("Tide %d" % int(unit["tide_window"]))
@@ -2966,6 +2993,11 @@ func _sync_use_still(snap: Dictionary, legal: Array) -> void:
 		offered = false
 	_use_still_button.visible = offered and not deploying and not match_over and yours
 	_use_still_button.disabled = not yours or not _use_still_button.visible or _stunned
+	var units: Array = snap.get("units", [])
+	var wearer := unit_for_seat(units, kit_seat(snap))
+	var still_id := str(wearer.get("still", ""))
+	var still_tex: Texture2D = StillVault.icon(still_id) if _use_still_button.visible and StillVault.is_id(still_id) else null
+	_use_still_button.icon = still_tex
 	if not _use_still_button.visible:
 		_still_aim = false
 		_use_still_button.text = "Use Still"
@@ -4401,6 +4433,13 @@ func _layout_corner_innards(banner_w: float, banner_h: float) -> void:
 		if i < bodies.size() and bodies[i] != null:
 			bodies[i].position = Vector2(text_x - 2.0, 40)
 			bodies[i].size = Vector2(text_w + 4.0, maxf(banner_h - 44.0, 1.0))
+		var still_icon := panel.get_node_or_null("StillIcon") as TextureRect
+		if still_icon != null:
+			var side := clampf(banner_h * 0.38, 32.0, 64.0)
+			still_icon.size = Vector2(side, side)
+			still_icon.position = Vector2(maxf(banner_w - side - 6.0, text_x), 4.0)
+			if i < _banner_titles.size():
+				_banner_titles[i].size.x = maxf(text_w - side - 4.0, 1.0)
 
 
 func _apply_turn_label_clock() -> void:

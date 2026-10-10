@@ -597,7 +597,7 @@ func _test_card_lines() -> void:
 	}
 	eq(hud._unit_card_text(sand, true).contains("Gathered Sand 9/15"), true, "the corner card shows stored sand")
 	var bound := {
-		"hp": 75, "max_hp": 75, "ap": 4, "mp": 3, "alive": true, "class_id": "kestrel",
+		"hp": 75, "max_hp": 75, "ap": 4, "mp": 3, "alive": true, "class_id": "kestrel", "seat": 0,
 		"still": "bound_hour", "still_mode": "intact", "bound_seat": 2, "bound_name": "Bastion", "name": "Kestrel",
 	}
 	eq(hud._unit_card_text(bound, true).contains("Bound to Bastion"), true, "the corner card names the bind")
@@ -615,6 +615,42 @@ func _test_card_lines() -> void:
 	hud.render(watching, [{"type": "use_still", "seat": 0}])
 	eq(hud._use_still_button.visible, true, "Use Still shows on your turn")
 	eq(hud._use_still_button.disabled, false, "Use Still is enabled on your turn")
+	var bare := {
+		"hp": 90, "max_hp": 90, "ap": 6, "mp": 3, "alive": true, "class_id": "ironjaw",
+		"seat": 1, "name": "Ironjaw", "held_echo": 12, "bound_name": "Kestrel", "bound_seat": 0,
+	}
+	var fight := {
+		"phase": "COMBAT",
+		"local_seat": 0,
+		"active_seat": 0,
+		"match_over": false,
+		"units": [bound, bare],
+	}
+	hud.render(fight, [{"type": "use_still", "seat": 0}])
+	var owner := hud._seat_panels[0].get_node_or_null("StillIcon") as TextureRect
+	var other := hud._seat_panels[1].get_node_or_null("StillIcon") as TextureRect
+	eq(owner != null and owner.visible, true, "the socketed fighter shows a Still icon")
+	eq(owner.texture, StillVault.icon("bound_hour"), "that icon is their own Still, not a fragment")
+	eq(other != null and other.visible, false, "a fighter without a Still shows no icon")
+	eq(hud._unit_card_text(bare, false).contains("Echo"), false, "another player's Still leaves no state line")
+	eq(hud._unit_card_text(bare, false).contains("Bound"), false, "a stray bind name is not a Still on this fighter")
+	eq(hud._use_still_button.icon, StillVault.icon("bound_hour"), "Use Still carries this fighter's icon")
+	fight["local_seat"] = 1
+	hud.render(fight, [{"type": "use_still", "seat": 0}])
+	eq(hud._use_still_button.visible, false, "the other fighter does not get Use Still")
+	eq(hud._use_still_button.icon, null, "their button does not keep the first fighter's icon")
+	eq((hud._seat_panels[0].get_node_or_null("StillIcon") as TextureRect).texture, StillVault.icon("bound_hour"), "the owner's card still shows only their Still")
+	eq((hud._seat_panels[1].get_node_or_null("StillIcon") as TextureRect).visible, false, "the other card stays blank")
+	bare["still"] = "tide"
+	bare["still_mode"] = "intact"
+	fight["local_seat"] = 0
+	fight["active_seat"] = 0
+	hud.render(fight, [{"type": "use_still", "seat": 0}])
+	var left := hud._seat_panels[0].get_node_or_null("StillIcon") as TextureRect
+	var right := hud._seat_panels[1].get_node_or_null("StillIcon") as TextureRect
+	eq(left.texture, StillVault.icon("bound_hour"), "the left card keeps Bound Hour")
+	eq(right.visible and right.texture == StillVault.icon("tide"), true, "the other fighter shows only Tide")
+	eq(left.texture == right.texture, false, "the two cards do not share one Still")
 	hud.queue_free()
 
 
