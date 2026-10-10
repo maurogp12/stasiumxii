@@ -32,7 +32,7 @@
     },
     "showcase_title": "Saltmaw Grotto\nMonsters",
     "showcase_sub": "Reef Crab · Drowned Sailor · Drowned Harpooner · Old Saltmaw\n★5: Abyssal Reef Crab · Abyssal Drowned Sailor · Abyssal Drowned Harpooner · Abyssal Saltmaw",
-    "star5_rule": "★5: the Abyssal Saltmaw lures on the same rhythm and stirs a Riptide every other turn from his 2nd (2-3 cells round the hero, 3 hero turns): end a turn in it for 5 damage and a drag of 1 cell toward him. Abyssal monsters soak (1 MP less next turn). Tide pads and the whirlpool rinse it off.",
+    "star5_rule": "★5: the Abyssal Saltmaw's lure pulls 3 cells, and he stirs a Riptide every other turn from his 2nd (2-3 cells round the hero, 3 hero turns): end a turn in it for 5 damage and a drag of 1 cell toward him. Abyssal monsters soak (1 MP less next turn). Tide pads and the whirlpool rinse it off.",
     "signature_rule": "Lantern Lure: on his 1st turn and every 2nd after, from 2-6 cells with a clear line, Old Saltmaw pulls the hero 2 cells toward him, then bites. Rock spires and props break the line.",
     "b_still": "04_room_b_saltmaw.png",
     "boss_star5": "The Abyssal Saltmaw"
