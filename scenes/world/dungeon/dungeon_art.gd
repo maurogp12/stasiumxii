@@ -589,6 +589,11 @@ static func tex_at(man: Dictionary, rel: String) -> Texture2D:
 
 ## {tex, scale} preferring the 2x master.
 static func _pick(man: Dictionary, row: Dictionary, one: String = "file", two: String = "file_2x") -> Dictionary:
+	# Performance mode takes the 1x file first (a quarter of the memory).
+	if VisualSettings.still():
+		var small := tex_at(man, str(row.get(one, "")))
+		if small != null:
+			return {"tex": small, "scale": 1.0}
 	var hi := tex_at(man, str(row.get(two, "")))
 	if hi != null:
 		return {"tex": hi, "scale": 0.5}

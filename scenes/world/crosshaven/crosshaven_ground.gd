@@ -119,6 +119,11 @@ const SNOW_SHORE_BLEND := 3
 const SNOW_BLEND := 3
 const SNOW_FIELD_PATH := "res://art/world/crosshaven/tiles/_2x/snow_field.png"
 const SNOW_COBBLE_PATH := "res://art/world/crosshaven/tiles/_2x/snow_cobble_field.png"
+## The 1x snow fields, for performance mode. Same period: the UVs are in world px.
+const SNOW_FIELD_PATH_1X := "res://art/world/crosshaven/tiles/snow_field.png"
+const SNOW_COBBLE_PATH_1X := "res://art/world/crosshaven/tiles/snow_cobble_field.png"
+## Chunk memos kept in performance mode (the current chunk and a few neighbours).
+const LITE_MEMO_CAP := 4
 ## World pixels per repeat of the snow textures (2x masters, four cells a side).
 const SNOW_PERIOD := Vector2(256.0, 128.0)
 ## Off draws Northgate as it was before the snow kit (bench and A/B stills).
@@ -224,6 +229,7 @@ func setup(target: WorldZone) -> void:
 				value.make_read_only()
 			keep[field] = value
 		_memo[key] = keep
+		_cap_memo()
 
 
 func _mark_water_rows() -> void:
@@ -244,7 +250,10 @@ func _process(_delta: float) -> void:
 		return
 	var on := VisualSettings.current != null and VisualSettings.current.enabled("animations")
 	var frame := -1
-	if on:
+	if on and VisualSettings.still():
+		# Performance mode: the ripple and glint hold their first frame.
+		frame = 0
+	elif on:
 		frame = int(float(Time.get_ticks_msec()) * 4.0 / 1000.0) % 8
 	if frame != _ripple_frame:
 		_ripple_frame = frame
@@ -358,6 +367,23 @@ func _memo_key() -> String:
 
 static func clear_memo() -> void:
 	_memo.clear()
+
+
+## Performance mode switched: drop the memo and the shared repeat textures
+## so the next ground loads the 1x snow fields (or the 2x masters again).
+static func reset_shared() -> void:
+	_memo.clear()
+	_snow_tex_loaded = false
+	_snow_field_tex = null
+	_snow_cobble_tex = null
+
+
+## In performance mode the memo keeps only the newest LITE_MEMO_CAP chunks.
+static func _cap_memo() -> void:
+	if not VisualSettings.still():
+		return
+	while _memo.size() > LITE_MEMO_CAP:
+		_memo.erase(_memo.keys()[0])
 
 
 func _redraw_row(d: int) -> void:
@@ -1830,8 +1856,9 @@ static func _load_snow_textures() -> void:
 	if _snow_tex_loaded:
 		return
 	_snow_tex_loaded = true
-	_snow_field_tex = _repeat_texture(SNOW_FIELD_PATH)
-	_snow_cobble_tex = _repeat_texture(SNOW_COBBLE_PATH)
+	var lite := VisualSettings.still()
+	_snow_field_tex = _repeat_texture(SNOW_FIELD_PATH_1X if lite else SNOW_FIELD_PATH)
+	_snow_cobble_tex = _repeat_texture(SNOW_COBBLE_PATH_1X if lite else SNOW_COBBLE_PATH)
 
 
 ## Cover at the diamond corner `i` (N, E, S, W): the mean of the four cells sharing it.

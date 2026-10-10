@@ -140,7 +140,9 @@ class FloorDecal extends Node2D:
 	var _t := 0.0
 
 	func _process(delta: float) -> void:
-		_t += delta
+		# Performance mode: torches and glows hold still.
+		if not VisualSettings.still():
+			_t += delta
 		if glow_sprite != null:
 			glow_sprite.modulate.a = 0.65 + 0.35 * sin(_t * 2.2)
 
@@ -184,7 +186,9 @@ class Backdrop extends Node2D:
 		return Rect2(Vector2(left.x - 20, top.y - 170), Vector2(right.x - left.x + 40, bottom.y - top.y + 190))
 
 	func _process(delta: float) -> void:
-		_t += delta
+		# Performance mode: torches and glows hold still.
+		if not VisualSettings.still():
+			_t += delta
 		if tex == null:
 			queue_redraw()
 

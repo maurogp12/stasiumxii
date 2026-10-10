@@ -69,7 +69,8 @@ func setup(world: Node2D, settings: VisualSettings) -> void:
 	world.add_child(_fall)
 	settings.bind(self, "post_fx", _on_post_fx)
 	settings.bind(self, "sway_shadows", _on_sway_shadows)
-	settings.bind(self, "animations", _on_animations)
+	settings.bind(self, VisualSettings.MOTION, _on_animations)
+	settings.bind(self, VisualSettings.PERFORMANCE, _on_performance)
 
 
 func effect_on(flag: String) -> bool:
@@ -144,7 +145,7 @@ func _on_post_fx(on: bool) -> void:
 
 func _on_sway_shadows(on: bool) -> void:
 	if _shadows != null:
-		_shadows.visible = on
+		_shadows.visible = on and not _still()
 	if _contacts != null:
 		_contacts.visible = on
 
@@ -160,12 +161,41 @@ func _on_animations(on: bool) -> void:
 		_fall.emitting = on
 
 
+## Performance mode: no cloud sheet, and no birds or critters at all (freed,
+## not hidden). Contact shadows stay: they are still drawings.
+func _on_performance(on: bool) -> void:
+	if _shadows != null:
+		_shadows.visible = not on and _settings != null and _settings.enabled("sway_shadows")
+	if on and _critters != null:
+		for child in _critters.get_children():
+			child.free()
+
+
+func _still() -> bool:
+	return _settings != null and _settings.performance
+
+
+## Birds and critters alive now (0 in performance mode).
+func critter_count() -> int:
+	return _critters.get_child_count() if _critters != null else 0
+
+
+func clouds_on() -> bool:
+	return _shadows != null and _shadows.visible
+
+
+func air_on() -> bool:
+	return (_pollen != null and _pollen.emitting) or (_fall != null and _fall.emitting)
+
+
 func restock(zone: WorldZone) -> void:
 	for child in _critters.get_children():
 		child.queue_free()
 	for child in _contacts.get_children():
 		child.queue_free()
 	_add_contacts(zone)
+	if _still():
+		return
 	var spots: Array[Vector2i] = []
 	for y in zone.height:
 		for x in zone.width:
