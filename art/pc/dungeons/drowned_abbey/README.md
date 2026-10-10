@@ -143,7 +143,7 @@ Her look: her lower half is the huge chained, green-patinated bronze bell with g
 - **Attack "Spectral Grasp" (range 1–2):** the long left spectral arm draws up and back (f02–f04), then lashes down and across at the target with a lunge, connecting on **f06**.
 - **Hit:** a recoil with the censer swinging.
 - **Death:** the bell topples (about 62°) and the candles fall out of the air.
-- **Summon "Rite of Rising":** the same timing as the base (lower f00–f02, swing f03–f06, **burst f07**, hold f07–f09, settle f10–13). She swings the censer up and out while the candles rise. `meta.json > rite_point.point_px` is the censer on f07 per facing (RITE_POINTS_BW).
+- **Summon "Rite of Rising":** the same timing as the base (lower f00–f02, swing f03–f06, **burst f07**, hold f07–f09, settle f10–13). She swings the censer up and out while the candles rise. `meta.json > rite_point.point_px` is the censer on f07 per facing (S (607.5,61.1), E (609.4,78.8) in the 768x540 cell).
 - **Glow maps:** every frame has an additive `<frame>_glow.png`: the green ghost-light (bell rim, veils, wisps) and the candle flames, bloomed, plus a faint aura. Draw it on top with an add blend. There is no separate signature ramp; the burst on f07 is sold by `rite_glow`.
 
 **Other ★5 pieces:** the ids are kept from the first ★5 pass so the systems data does not change, and the art is recoloured to the bell's green ghost-light.
@@ -189,6 +189,15 @@ Shared-kit changes (none of which changes the older outputs):
 - **Floors:** the 3-variant floors show the tile grid, because each flagstone is painted with dark grout on all four edges (by design, as for the other kits).
 - **Glows:** the candle-flame glows (`candle_cluster`, `altar`, `candle_stand`) are masks on the near-white flame cores, so they are small spots at 1x; the prop paintings themselves are already bright. `lily_pads` has no glow.
 - **rite_glow** was painted as a grey-green smoke streak next to the magenta key and recoloured onto a green ramp by luminance, so it is flatter than a painted streak (as Saltmaw's `lure_line`).
+- **★5 Bell Wraith:**
+  - It is a fresh rig on a new silhouette: the bell and her torso are one body piece, so the bell does not swing separately from her chest; the glide is a sway of the whole figure about the waist.
+  - Her translucent veils and wisps keyed out pinkish over the magenta key; `ghost_fix` recolours every translucent pinkish pixel onto a green ramp, so the ghost veils are flatter than painted.
+  - The death is capped at a 62° topple (her arms are very wide, and a full 80° fall left the cell); the five candles fall out of the air.
+  - The candles circle on small loops in front of her; they never pass behind her body.
+  - The constant ghost glow is strong (the veils are bright green); lower its modulate (e.g. 0.7) if it reads too bright. There is no separate signature glow ramp; the f07 burst is sold by `rite_glow`.
+- **★5 Bellbound Bog Dead and Mire Leech:** edits of the base paintings with added green wisps around them (outline match 0.79–0.83, lower than usual), so they reuse the base cuts and the wisps outside the base outline ride on the body piece.
+- **★5 bile and hazard:** they keep their first-pass ids (`gravebound_bile`, `grasping_mire`) so the systems data needs no change; only their glow colour moved to the bell's ghost-green.
+- **Turnarounds** use the raw key, so the ★5 ghost veils show pinkish there; the frames themselves are fixed.
 - **Hero stand-ins in the mocks** are the painted idle strips scaled 0.9 by eye, not the game's pawn scale.
 
 ## Scenario source assets (project "stasium")
