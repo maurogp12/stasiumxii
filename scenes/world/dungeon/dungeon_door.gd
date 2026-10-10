@@ -57,7 +57,7 @@ func setup(row: Dictionary, man: Dictionary, origin: Vector2i = Vector2i.ZERO) -
 		if typeof(doc) == TYPE_DICTIONARY and typeof(((doc as Dictionary).get("view", {}) as Dictionary).get("door", null)) == TYPE_DICTIONARY:
 			door_style = (doc["view"]["door"] as Dictionary).duplicate(true)
 	var size := Art.building_size(man, Dungeons.DEFAULT_BUILDING)
-	footprint = Dungeons.building_cells(row, size)
+	footprint = Dungeons.building_cells_for(row, size)
 	var kit := Art.door_kit(man)
 	if not kit.is_empty():
 		_tex = kit["tex"]

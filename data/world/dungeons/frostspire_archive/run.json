@@ -92,7 +92,8 @@
           0.85,
           1.0
         ],
-        "spin": false
+        "spin": false,
+        "draw_glow": false
       },
       "frost_bolt_frozen": {
         "color": [
@@ -106,7 +107,8 @@
           1.0,
           0.35
         ],
-        "spin": false
+        "spin": false,
+        "draw_glow": false
       },
       "frost_bolt_impact": {
         "color": [
@@ -132,6 +134,10 @@
         0.5,
         0.85,
         1.0
+      ],
+      "still_from_door": [
+        3,
+        -2
       ]
     },
     "showcase": [

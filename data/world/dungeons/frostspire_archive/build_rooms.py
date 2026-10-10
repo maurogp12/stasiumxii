@@ -18,7 +18,7 @@ SIZE = 12
 # Prop names are the art kit's board props (art manifest board.props,
 # art/pc/dungeons/frostspire_archive/manifest.json): frozen_bookshelf,
 # book_pile, reading_desk, ice_crystals, frozen_chest, frost_brazier (1x1)
-# and the Archivist's ice_throne (2x2). A multi-cell prop names itself on its
+# and the Archivist's ice_throne (2x2, not used: the room B shell paints it). A multi-cell prop names itself on its
 # south (anchor) cell and "<id>:part" on its other cells.
 
 # Room A, the frozen stacks. Shelves and desks stand in short runs across the
@@ -39,13 +39,14 @@ ROOM_A = {
     "pads": {(6, 5): "rune_pad", (1, 8): "rune_pad", (10, 7): "rune_pad", (4, 10): "rune_pad", (7, 9): "rune_pad", (4, 4): "rune_pad"},
 }
 
-# Room B, the Archivist's hall. The ice throne against the back wall, frost
-# braziers beside it, chests and book piles at the sides, the glowing rune
-# circle (3x3 decal) in the middle: its nine cells are the room's pads.
+# Room B, the Archivist's hall. The room shell (backdrop) already paints the
+# ice throne on its dais behind the back wall, so the kit's ice_throne prop
+# is not stood on the board (no second throne). Frost braziers flank the
+# Archivist, chests and book piles stand at the sides, the glowing rune
+# circle (3x3 decal) is in the middle: its nine cells are the room's pads.
 ROOM_B = {
     "hero": (6, 10),
     "props": {
-        (5, 0): "ice_throne:part", (6, 0): "ice_throne:part", (5, 1): "ice_throne:part", (6, 1): "ice_throne",
         (3, 1): "frost_brazier", (9, 1): "frost_brazier",
         (1, 4): "book_pile", (10, 5): "frozen_chest",
         (2, 8): "ice_crystals", (9, 8): "frozen_bookshelf",

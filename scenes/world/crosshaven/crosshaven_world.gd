@@ -4111,7 +4111,7 @@ func _block_dungeon_buildings() -> void:
 			continue
 		var z: WorldZone = (found as WorldMap).zone(zone_id)
 		if z != null:
-			z.add_blocked(DungeonBook.building_cells(row, building_size_for(row)))
+			z.add_blocked(DungeonBook.building_cells_for(row, building_size_for(row)))
 
 
 func _door_cells_in(zone_id: String) -> Dictionary:
@@ -4120,7 +4120,7 @@ func _door_cells_in(zone_id: String) -> Dictionary:
 		return out
 	for row in dungeon_book.doors_in(zone_id):
 		out[DungeonBook.door_cell(row)] = true
-		for c in DungeonBook.building_cells(row, building_size_for(row)):
+		for c in DungeonBook.building_cells_for(row, building_size_for(row)):
 			out[c] = true
 	return out
 
@@ -4150,7 +4150,7 @@ func door_at(zone_id: String, cell: Vector2i) -> Dictionary:
 	if dungeon_book == null:
 		return {}
 	for row in dungeon_book.doors_in(zone_id):
-		if DungeonBook.door_cell(row) == cell or DungeonBook.building_cells(row, building_size_for(row)).has(cell):
+		if DungeonBook.door_cell(row) == cell or DungeonBook.building_cells_for(row, building_size_for(row)).has(cell):
 			return row
 	return {}
 
@@ -4289,9 +4289,25 @@ func dungeon_outcome() -> Dictionary:
 
 
 ## The dungeon a door movie plays (env DUNGEON_ID; the cellar by default).
+## Env DUNGEON_LEVEL sets the hero's level for the capture (an in-band hero).
 func _movie_dungeon_id() -> String:
+	if OS.get_environment("DUNGEON_LEVEL") != "" and progress != null:
+		progress.level = int(OS.get_environment("DUNGEON_LEVEL"))
 	var id := OS.get_environment("DUNGEON_ID")
 	return id if id != "" else "old_granary_cellar"
+
+
+## Where the door still's hero stands, from the door (run.json
+## view.door.still_from_door; 3 cells east by default).
+func _still_offset(row: Dictionary) -> Vector2i:
+	var run_path := str(row.get("run", ""))
+	if run_path != "" and FileAccess.file_exists(run_path):
+		var doc: Variant = JSON.parse_string(FileAccess.get_file_as_string(run_path))
+		if typeof(doc) == TYPE_DICTIONARY:
+			var off: Variant = (((doc as Dictionary).get("view", {}) as Dictionary).get("door", {}) as Dictionary).get("still_from_door", null)
+			if typeof(off) == TYPE_ARRAY and (off as Array).size() == 2:
+				return Vector2i(int(off[0]), int(off[1]))
+	return Vector2i(3, 0)
 
 
 ## Capture: walk from the square to the dungeon door, open the panel, Enter.
@@ -4358,7 +4374,7 @@ func _movie_granary_stills() -> void:
 	var row: Dictionary = dungeon_book.by_id(dungeon_id)
 	var door := DungeonBook.door_cell(row)
 	var door_zone := str((row.get("door", {}) as Dictionary).get("zone_id", ""))
-	await enter_zone(door_zone, door + Vector2i(3, 0), false)
+	await enter_zone(door_zone, door + _still_offset(row), false)
 	_hide_debug_readout()
 	await get_tree().create_timer(1.0).timeout
 	if _banner != null:

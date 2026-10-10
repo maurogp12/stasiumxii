@@ -28,6 +28,8 @@ static func throw(parent: Node2D, man: Dictionary, kind: String, from: Vector2, 
 	shot.halo = _col(st.get("glow", null), Color(0.5, 1.0, 0.3, 0.3) if green else Color(0, 0, 0, 0))
 	shot.puff_col = _col(st.get("puff", imp.get("color", null)), Color(0.6, 1.0, 0.35) if green else Color(0.85, 0.8, 0.7))
 	shot.spin = bool(st.get("spin", true))
+	shot.draw_glow = bool(st.get("draw_glow", false))
+	shot.glow_scale = float(pk.get("glow_scale", 1.0))
 	var puff := Art.projectile_kit(man, impact) if impact != "" else {}
 	shot.puff = puff.get("tex", null)
 	shot.puff_scale = float(puff.get("scale", 1.0))
@@ -41,7 +43,13 @@ static func throw(parent: Node2D, man: Dictionary, kind: String, from: Vector2, 
 	tw.tween_interval(release)
 	tw.tween_callback(func(): shot.visible = true)
 	var mid := (from + to) * 0.5 + Vector2(0, -minf(from.distance_to(to) * 0.15 + 12.0, 36.0))
-	tw.tween_method(func(t: float): shot.position = from.lerp(mid, t).lerp(mid.lerp(to, t), t), 0.0, 1.0, FLIGHT_SEC)
+	# A bolt that is not spun (frost_bolt points along +x) turns to its flight.
+	tw.tween_method(func(t: float):
+		var at := from.lerp(mid, t).lerp(mid.lerp(to, t), t)
+		var tangent := (mid - from).lerp(to - mid, t)
+		if tangent.length_squared() > 0.01:
+			shot.heading = tangent.angle()
+		shot.position = at, 0.0, 1.0, FLIGHT_SEC)
 	tw.tween_callback(shot.burst)
 	tw.tween_interval(PUFF_SEC)
 	tw.tween_callback(shot.queue_free)
@@ -60,6 +68,10 @@ class Shot extends Node2D:
 	var halo := Color(0, 0, 0, 0)
 	var puff_col := Color(0.85, 0.8, 0.7)
 	var spin := true
+	var heading := 0.0
+	## Draw the manifest's additive glow map with the shot (style draw_glow).
+	var draw_glow := false
+	var glow_scale := 1.0
 	var tex: Texture2D
 	var tex_scale := 1.0
 	var glow: Texture2D
@@ -82,9 +94,12 @@ class Shot extends Node2D:
 		if _puff < 0.0:
 			if tex != null:
 				# Spin ~720 deg/s (a thrown stone), centred on the flight point.
-				draw_set_transform(Vector2.ZERO, _t * TAU * 2.0 if spin else 0.0, Vector2.ONE)
+				draw_set_transform(Vector2.ZERO, _t * TAU * 2.0 if spin else heading, Vector2.ONE)
 				var s := tex.get_size() * tex_scale
 				draw_texture_rect(tex, Rect2(-s * 0.5, s), false)
+				if draw_glow and glow != null:
+					var gs := glow.get_size() * glow_scale
+					draw_texture_rect(glow, Rect2(-gs * 0.5, gs), false, Color(1, 1, 1, 0.8))
 				draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 			else:
 				if halo.a > 0.0:
