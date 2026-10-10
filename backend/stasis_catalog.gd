@@ -419,8 +419,8 @@ static func fight_config(positions_override: Array = []) -> Dictionary:
 
 
 ## Party run: heroes in seats 0..P-1 (team 0) around the player's spawn,
-## monsters from seat P. Every hero wears the phone's loadout for now (one
-## device); online parties will send each player's own gear.
+## monsters from seat P. Every hero wears that class's loadout and Still
+## (one device); online parties will send each player's own gear.
 static func _party_fight_config(cells: Array, foes: Array, heroes: int) -> Dictionary:
 	var hero_cells := party_cells(biome_id, room, cells[0], heroes, cells.slice(1))
 	if hero_cells.size() < heroes:
@@ -432,16 +432,16 @@ static func _party_fight_config(cells: Array, foes: Array, heroes: int) -> Dicti
 		var hero_class := class_id
 		if seat < party_classes.size():
 			hero_class = str(party_classes[seat])
-		var gear := gear_bag.fight_gear(seat == 0, hero_class)
+		var gear := gear_bag.fight_gear(true, hero_class)
 		var rec := {"seat": seat, "facing": "N"}
 		if seat == 0 and player_hp >= 0:
 			rec["hp"] = player_hp
-		if not (gear["worn"] as Array).is_empty() or not (gear["heroes"] as Dictionary).is_empty():
+		if not (gear["worn"] as Array).is_empty() or not (gear["heroes"] as Dictionary).is_empty() or gear.has("still"):
 			var g: Dictionary = gear.duplicate(true)
 			if seat > 0:
-				g.erase("still")
 				# AI companions keep the kit elements (Elements PDF: "companion
-				# AI stays Primary and never reads Residue").
+				# AI stays Primary and never reads Residue"). Each class keeps
+				# its own Still socket.
 				for hid in (g.get("heroes", {}) as Dictionary):
 					(g["heroes"][hid] as Dictionary).erase("elements")
 			rec["gear"] = g

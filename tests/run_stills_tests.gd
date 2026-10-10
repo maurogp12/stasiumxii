@@ -112,11 +112,33 @@ func _test_vault() -> void:
 	eq(v.fight_still(), {"id": "steadfast", "mode": "overwound"}, "the fight gets id + mode")
 	eq(v.consume(), "steadfast", "the fight destroys it")
 	eq(v.socket, "", "socket empty after the fight")
+	v.fragments["tide"] = 12
+	v.fragments["mirror_hour"] = 12
+	v.set_focus("ironjaw")
+	eq(bool(v.forge("tide")["ok"]), true, "Ironjaw forges into his own socket")
+	eq(v.socket_of("ironjaw"), "tide", "Tide is on Ironjaw")
+	eq(v.socket_of("kestrel"), "", "Kestrel's socket stays empty")
+	eq(bool(v.set_mode("overwound")["ok"]), true, "Ironjaw can Overwind")
+	v.set_focus("kestrel")
+	eq(bool(v.forge("mirror_hour")["ok"]), true, "Kestrel forges while Ironjaw's socket is full")
+	eq(v.fight_still("ironjaw"), {"id": "tide", "mode": "overwound"}, "a fight uses Ironjaw's socket")
+	eq(v.fight_still("kestrel"), {"id": "mirror_hour", "mode": "intact"}, "a fight uses Kestrel's socket")
+	eq(v.consume("ironjaw"), "tide", "the fight breaks only Ironjaw's Still")
+	eq(v.socket_of("kestrel"), "mirror_hour", "Kestrel's Still survives Ironjaw's fight")
+	var legacy := StillVault.new()
+	legacy.from_dict({"socket": "bound_hour", "mode": "overwound", "fragments": {}})
+	eq(legacy.socket_of("kestrel"), "bound_hour", "an old socket is kept on Kestrel")
+	eq(legacy.mode_of("kestrel"), "overwound", "the old mode is kept")
+	eq(legacy.socket_of("gloam"), "", "the old socket is not copied onto every class")
 	eq(StillVault.clean({"id": "wheat", "mode": "intact"}), {}, "unknown Still rejected")
 	eq(StillVault.clean({"id": "tide", "mode": "super"}), {}, "unknown mode rejected")
 	eq(StillVault.clean({"id": "mirror_hour", "mode": "overwound"}), {"id": "mirror_hour", "mode": "overwound"}, "the host keeps a new id")
+	v.fragments["tide"] = 12
 	v.save()
-	eq(StillVault.load_saved().count("tide"), 12, "vault saves and reloads")
+	var reloaded := StillVault.load_saved()
+	eq(reloaded.count("tide"), 12, "vault saves and reloads")
+	eq(reloaded.socket_of("kestrel"), "mirror_hour", "Kestrel's socket reloads")
+	eq(reloaded.socket_of("ironjaw"), "", "Ironjaw's broken socket stays empty")
 
 
 func _test_hourglass() -> void:
@@ -490,6 +512,23 @@ func _test_carry_and_online() -> void:
 	StasisCatalog.class_id = "kestrel"
 	eq(StasisCatalog.fight_config()["stasis_roster"][0]["gear"]["still"]["id"], "mirror_hour", "Stasis fight carries the Still")
 	StasisCatalog.clear_run()
+	v.set_focus("ironjaw")
+	v.socket = "tide"
+	v.mode = "intact"
+	v.set_focus("kestrel")
+	v.save()
+	eq(GearBag.load_saved().fight_gear(true, "ironjaw")["still"], {"id": "tide", "mode": "intact"}, "Ironjaw's fight gear is his Still")
+	eq(GearBag.load_saved().fight_gear(true, "kestrel")["still"]["id"], "mirror_hour", "Kestrel's fight gear stays Mirror Hour")
+	StasisCatalog.begin("crosshaven")
+	StasisCatalog.class_id = "kestrel"
+	StasisCatalog.set_party(["kestrel", "ironjaw"], [1])
+	var party: Dictionary = StasisCatalog.fight_config()
+	var party_roster: Array = party.get("stasis_roster", [])
+	eq(party_roster.size() >= 2, true, "a party fight has both heroes")
+	eq(party_roster[0]["gear"]["still"]["id"], "mirror_hour", "seat 0 uses Kestrel's socket")
+	eq(party_roster[1]["gear"]["still"]["id"], "tide", "seat 1 uses Ironjaw's socket")
+	StasisCatalog.clear_run()
+	StasisCatalog.clear_run_party()
 	var cs: Script = load("res://scenes/class_select.gd")
 	var kit_on: bool = load("res://backend/test_loadout.gd").ACTIVE
 	eq(cs.local_match_config().has("seat_gear"), kit_on, "hot-seat gear only while the temporary test kit is on")
@@ -501,6 +540,24 @@ func _test_carry_and_online() -> void:
 	eq(fight.consume_still({"units": [{"seat": 0, "still": "tide"}]}), "tide", "the Stasis fight that used Tide destroys it")
 	_wipe()
 	v = StillVault.new()
+	v.set_focus("kestrel")
+	v.socket = "mirror_hour"
+	v.set_focus("ironjaw")
+	v.socket = "tide"
+	v.save()
+	eq(fight.consume_still({"units": [
+		{"seat": 0, "team": 0, "class_id": "kestrel", "still": "mirror_hour"},
+		{"seat": 1, "team": 0, "class_id": "ironjaw", "still": "tide"},
+		{"seat": 2, "team": 1, "class_id": "gloam", "still": "bound_hour"},
+	]}), "mirror_hour", "a party fight breaks each hero's Still")
+	var after_party := StillVault.load_saved()
+	eq(after_party.socket_of("kestrel"), "", "Kestrel's socket broke")
+	eq(after_party.socket_of("ironjaw"), "", "Ironjaw's socket broke")
+	_wipe()
+	v = StillVault.new()
+	v.set_focus("ironjaw")
+	v.socket = "mirror_hour"
+	v.set_focus("kestrel")
 	v.socket = "tide"
 	v.save()
 	var net: Node = (load("res://backend/net_session.gd") as Script).new()
@@ -508,7 +565,8 @@ func _test_carry_and_online() -> void:
 	net.local_seat = 0
 	net._note_koliseo_result({"match_over": true, "winner_seat": 0, "units": [{"seat": 0, "class_id": "kestrel", "still": "tide"}, {"seat": 1, "class_id": "gloam"}]})
 	eq(int(net.koliseo_last_payout["trophies"]), 1, "a win pays the normal trophy, with no Crown bonus")
-	eq(StillVault.load_saved().socket, "", "the Koliseo fight consumed the Still")
+	eq(StillVault.load_saved().socket_of("kestrel"), "", "the Koliseo fight consumed Kestrel's Still")
+	eq(StillVault.load_saved().socket_of("ironjaw"), "mirror_hour", "Ironjaw's Still stays socketed")
 	net.free()
 	_fight(_gear("bleeding_hour", "intact"))
 	_u(0)["max_hp"] = 100
