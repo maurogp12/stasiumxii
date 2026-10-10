@@ -45,6 +45,9 @@ var _over_sent := false
 var _room_live := false
 var _backdrop: Node2D
 var _props_root: Node2D
+## Rite of Rising: a risen body's pawn plays its death strip backwards from
+## the rite's flare frame (set when the raise event is armed).
+var _rise_delay := -1.0
 
 
 func _boot() -> void:
@@ -205,6 +208,22 @@ func _dress_room() -> void:
 				# Every cell of the decal pulses its glow piece in step (a
 				# kerb cell that is not a pad too).
 				t.set_process(true)
+	# Walkable 1x1 floor decals that are not pads (the abbey's lily pads): a
+	# walkable cell naming a kit decal draws it under the units.
+	for cell in tiles.keys():
+		var lc: Vector2i = cell
+		if grate_cells.has(lc) or bool(tiles[lc].pad):
+			continue
+		for name in (paint.get(lc, []) as Array):
+			var deco: Dictionary = decals.get(str(name), {})
+			if str(name) == decal_id or not deco.has("tex") or deco.get("footprint", Vector2i.ONE) != Vector2i.ONE:
+				continue
+			if not bool(sim_node().tile_at(lc).get("walkable", true)):
+				continue
+			var dsize: Vector2 = (deco["tex"] as Texture2D).get_size() * float(deco.get("scale", 1.0))
+			var dat := _cell_to_local(lc) + Vector2(-dsize.x * 0.5, 16.0 - dsize.y)
+			tiles[lc].set_decal(deco["tex"], deco.get("glow", null), Rect2(dat - _cell_to_local(lc), dsize))
+			break
 	if _backdrop != null and is_instance_valid(_backdrop):
 		_backdrop.free()
 	_backdrop = Props.make_backdrop(kit.get("backdrop", {}), room_id, _board_size)
@@ -511,8 +530,12 @@ func _apply_units(snap: Dictionary) -> void:
 		if not pawns_by_seat.has(seat):
 			var pawn := _add_pawn(unit)
 			pawn.position = _cell_to_local(_as_cell(unit["pos"]))
-			pawn.modulate.a = 0.0
-			create_tween().tween_property(pawn, "modulate:a", 1.0, 0.35)
+			if bool(unit.get("risen", false)) and pawn.has_method("rise"):
+				# A raised corpse climbs back up where it fell.
+				pawn.rise(maxf(_rise_delay, 0.0))
+			else:
+				pawn.modulate.a = 0.0
+				create_tween().tween_property(pawn, "modulate:a", 1.0, 0.35)
 	super._apply_units(snap)
 	for unit in snap.get("units", []):
 		var seat := int(unit["seat"])
@@ -549,8 +572,17 @@ func _arm_view_motions(events: Array) -> void:
 				var from_at: Vector2 = pawn.position + (pawn.release_offset() if pawn.has_method("release_offset") else Vector2(0, -22))
 				var at_sec: float = pawn.release_sec() if pawn.has_method("release_sec") else 0.22
 				longest = maxf(longest, Fx.throw(self, manifest, str(event["projectile"]), from_at, to_at, typ == "hit", VISUAL_SORT.unit_z_index(to_cell) + 6, at_sec, str(event.get("impact", "")), view_cfg.get("projectiles", {})))
-		elif typ == "summon" or typ == "pools" or typ == "lure":
+		elif typ == "summon" or typ == "pools" or typ == "lure" or typ == "raise":
 			longest = maxf(longest, pawn.play_view_plan({"cast": true, "strip": "summon"}))
+			if typ == "raise":
+				# The rite's glow, censer to corpse, from the flare frame; the
+				# corpse rises then (its pawn is made on the next refresh).
+				_rise_delay = PULL_FLARE_SEC
+				longest = maxf(longest, PULL_FLARE_SEC + 0.8)
+				if str(event.get("beam", "")) != "":
+					var mouth: Vector2 = pawn.position + (pawn.lure_offset() if pawn.has_method("lure_offset") else Vector2(0, -100))
+					var at_corpse := _cell_to_local(_as_cell(event.get("to", Vector2i.ZERO))) + Vector2(0, -20)
+					longest = maxf(longest, Fx.beam(self, manifest, str(event["beam"]), mouth, at_corpse, VISUAL_SORT.unit_z_index(_as_cell(event.get("to", Vector2i.ZERO))) + 5, PULL_FLARE_SEC, 0.6, view_cfg.get("projectiles", {})))
 			if typ == "lure" and str(event.get("beam", "")) != "":
 				# The lure's light streak, lantern to hero, from the flare frame.
 				var tip: Vector2 = pawn.position + (pawn.lure_offset() if pawn.has_method("lure_offset") else Vector2(0, -100))

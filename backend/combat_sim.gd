@@ -4742,9 +4742,10 @@ func _resolve_pull(intent: Dictionary, actor: Dictionary, sig: Dictionary) -> Di
 	return _accept()
 
 
-## Boss signature kind "raise" (the Drowned Abbey's Rite of Rising): on the
-## boss's first_turn-th turn, then every `every` turns, with AP and under
-## cap_total, she raises one fallen monster of a `raise` kind (its corpse on a
+## Boss signature kind "raise" (the Drowned Abbey's Rite of Rising): from the
+## boss's first_turn-th turn, whenever a corpse lies free, then no sooner than
+## `every` turns after the last rite (a cooldown, not a fixed beat: the rite
+## needs a body), with AP and under cap_total, she raises one fallen monster of a `raise` kind (its corpse on a
 ## free cell, not yet raised and not a risen one) back where it fell, at
 ## hp_pct of its max HP. The risen one is a new body (a summon: it takes its
 ## turn after the others and sinks back when she falls). A hero standing on a
@@ -4760,7 +4761,7 @@ func raise_ready(actor: Dictionary) -> bool:
 	var turns := int(actor.get("own_turns", 0))
 	var first := maxi(int(sig.get("first_turn", 1)), 1)
 	var every := maxi(int(sig.get("every", 1)), 1)
-	if turns < first or (turns - first) % every != 0:
+	if turns < first or turns - int(actor.get("last_raise_turn", -1000)) < every:
 		return false
 	if int(_dungeon.get("raised_total", 0)) >= int(sig.get("cap_total", 0)):
 		return false
@@ -4802,6 +4803,7 @@ func _resolve_raise(intent: Dictionary, actor: Dictionary, sig: Dictionary) -> D
 	var ap_cost := int(sig.get("ap", 0))
 	actor["ap"] = int(actor["ap"]) - ap_cost
 	actor["acted_signature"] = true
+	actor["last_raise_turn"] = int(actor.get("own_turns", 0))
 	_intent_log.append(intent)
 	var cell: Vector2i = corpse["pos"]
 	var face := _face_toward_cell(actor["pos"], cell)

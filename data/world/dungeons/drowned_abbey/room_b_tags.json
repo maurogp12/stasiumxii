@@ -475,7 +475,9 @@
    "y": 5,
    "terrain": "ground",
    "elevation": 0,
-   "paint_only": []
+   "paint_only": [
+    "lily_pads"
+   ]
   },
   {
    "x": 3,
@@ -644,7 +646,9 @@
    "y": 6,
    "terrain": "ground",
    "elevation": 0,
-   "paint_only": []
+   "paint_only": [
+    "lily_pads"
+   ]
   },
   {
    "x": 11,
@@ -762,7 +766,9 @@
    "y": 8,
    "terrain": "ground",
    "elevation": 0,
-   "paint_only": []
+   "paint_only": [
+    "lily_pads"
+   ]
   },
   {
    "x": 2,
@@ -964,7 +970,9 @@
    "y": 10,
    "terrain": "ground",
    "elevation": 0,
-   "paint_only": []
+   "paint_only": [
+    "lily_pads"
+   ]
   },
   {
    "x": 4,
@@ -1006,7 +1014,9 @@
    "y": 10,
    "terrain": "ground",
    "elevation": 0,
-   "paint_only": []
+   "paint_only": [
+    "lily_pads"
+   ]
   },
   {
    "x": 10,

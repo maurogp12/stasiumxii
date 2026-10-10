@@ -33,7 +33,7 @@
     "showcase_title": "Drowned Abbey\nMonsters",
     "showcase_sub": "Bog Dead · Mire Leech · The Mire Abbess\n★5: Gravebound Bog Dead · Gravebound Mire Leech · The Gravebound Abbess",
     "star5_rule": "★5: the Gravebound Abbess raises Bog Dead and Mire Leeches at 60% HP (3 a fight), and from her 1st turn every other turn she calls the Grasping Mire (2-3 cells round the hero, 3 hero turns): end a turn in it for 5 damage and no MP next turn. Gravebound monsters mire (1 MP less next turn). Candle pads and the rune circle cleanse it.",
-    "signature_rule": "Rite of Rising: on her 2nd turn and every 2nd after, the Mire Abbess raises a fallen Bog Dead where it fell, at half HP (2 a fight). The risen sink back when she falls. Stand on a corpse to keep it down.",
+    "signature_rule": "Rite of Rising: from her 2nd turn, when a Bog Dead lies fallen, the Mire Abbess raises it where it fell at half HP, then the rite rests a turn (2 a fight). The risen sink back when she falls. Stand on a corpse to keep it down.",
     "b_still": "04_room_b_abbess.png",
     "boss_star5": "The Gravebound Abbess"
   },
@@ -306,7 +306,7 @@
             "facing": "S"
           }
         ],
-        "3": [
+        "2": [
           {
             "monster": "bog_dead",
             "x": 2,

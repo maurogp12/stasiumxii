@@ -126,7 +126,7 @@ func _test_door_data() -> void:
 	var away: Dictionary = base.duplicate(true)
 	(away["dungeons"] as Array)[2]["door"] = {"zone_id": "crosshaven_northgate", "x": 26, "y": 17}
 	eq(bool(Dungeons.load_document(away)["dungeons"].validate_world(atlas, npcs)["ok"]), false, "a grotto door outside Eastmarch fails")
-	eq(book.built().size(), 3, "three dungeons are built")
+	eq(book.built().size(), 4, "four dungeons are built")
 
 
 # --- run file and rooms --------------------------------------------------------

@@ -41,7 +41,11 @@ def _manifest_props() -> None:
     man = json.loads(MANIFEST.read_text())
     board = man.get("board", {})
     sizes = {}
-    for row in board.get("props", []):
+    props = board.get("props", [])
+    if isinstance(props, dict):
+        # The manifest skeleton: {id: [w, h]}.
+        props = [{"id": k, "footprint_size": v} for k, v in props.items()]
+    for row in props:
         fs = row.get("footprint_size", [1, 1])
         sizes[row["id"]] = (int(fs[0]), int(fs[1]))
     rooms = board.get("rooms", {})
@@ -84,6 +88,8 @@ ROOM_A = {
     "props": {},
     "origins": ROOM_A_ORIGINS,
     "pads": {(6, 3): "candle_pad", (1, 5): "candle_pad", (10, 6): "candle_pad", (5, 8): "candle_pad"},
+    # Walkable 1x1 floor decals (the kit's lily pads): paint only, no rule.
+    "decor": {(4, 6): "lily_pads", (9, 9): "lily_pads", (0, 7): "lily_pads", (7, 4): "lily_pads", (3, 11): "lily_pads"},
 }
 
 # Room B, the Abbess's chapel. The rune circle is a 5x5 walkable floor decal
@@ -113,6 +119,7 @@ ROOM_B = {
     # Decal cells that are not pads (the circle's border): they carry the
     # decal's name too, so each cell draws its piece of the 5x5 decal.
     "decal": {(CIRCLE_ORIGIN[0] + dx, CIRCLE_ORIGIN[1] + dy): "rune_circle" for dx in range(CIRCLE_SIZE) for dy in range(CIRCLE_SIZE)},
+    "decor": {(2, 5): "lily_pads", (10, 6): "lily_pads", (3, 10): "lily_pads", (9, 10): "lily_pads", (1, 8): "lily_pads"},
 }
 
 # Spawns per room (the run.json packs use these cells): every star's cells.
@@ -141,6 +148,8 @@ def build(room: dict) -> dict:
                     rec["paint_only"].append(decal)
             elif decal:
                 rec["paint_only"] = [decal]
+            elif room.get("decor", {}).get((x, y)):
+                rec["paint_only"] = [room["decor"][(x, y)]]
             pad = room["pads"].get((x, y))
             if pad:
                 rec["paint_only"] = [pad]
@@ -191,6 +200,8 @@ def check(name: str, room: dict) -> None:
         assert base in KIT_PROPS[name], f"{name}: {base} at {c} is not a {name} kit prop"
         assert 0 <= c[0] < SIZE and 0 <= c[1] < SIZE, f"{name}: prop {c} off the board"
     assert not set(props) & set(room["pads"]), f"{name}: a pad under a prop"
+    for c in room.get("decor", {}):
+        assert c not in props and c not in room["pads"] and c not in room.get("decal", {}), f"{name}: decor {c} on a prop, pad or decal"
     for c in room["pads"]:
         if room.get("decal"):
             assert c in room["decal"], f"{name}: pad {c} off the decal"
