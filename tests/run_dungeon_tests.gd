@@ -60,6 +60,9 @@ func _run() -> void:
 	await _test_run_scene_win_and_return()
 	await _test_run_scene_loss_and_return()
 	await _test_click_sweep()
+	await _test_monster_click_sweep()
+	await _test_targeting_chrome()
+	_test_dungeon_turn_timer()
 	_test_paths_unchanged()
 	_finish()
 
@@ -971,7 +974,7 @@ func _test_click_sweep() -> void:
 			scene.run.room_index = 1
 			board.start_room(scene.run.combat_config(1, 5), scene.manifest)
 			await process_frame
-		for size in [Vector2i(1280, 768), Vector2i(1920, 1080), Vector2i(2560, 1440)]:
+		for size in [Vector2i(1280, 768), Vector2i(1920, 1080), Vector2i(2540, 1448), Vector2i(2560, 1440)]:
 			root.size = size
 			await process_frame
 			await process_frame
@@ -985,10 +988,22 @@ func _test_click_sweep() -> void:
 			var b: Vector2 = xf * room.end
 			var shown := Rect2(a, b - a)
 			eq(vis.encloses(shown.grow(-1.0)), true, "%s shows the whole room and its walls" % label)
-			var play: Rect2 = board.frame_rect()
-			var fill := maxf(shown.size.x / play.size.x, shown.size.y / play.size.y)
-			eq(fill > 0.97, true, "%s fills the play area (%.2f)" % [label, fill])
 			var zoom: float = board._camera.zoom.x
+			# Bigger than the old fit (room between a 96 px top band and a 200 px
+			# bottom band), and the floor plus head room clears every HUD panel.
+			var old_zoom := minf((vis.size.x - 24.0) / room.size.x, (vis.size.y - 296.0) / room.size.y)
+			var gain := 1.05 if size.x >= 1920 else 0.99
+			eq(zoom >= old_zoom * gain, true, "%s the room is drawn %s than before (%.2f vs %.2f)" % [label, "bigger" if gain > 1.0 else "no smaller", zoom, old_zoom])
+			var floor_poly := PackedVector2Array()
+			for p in board.floor_keep_clear():
+				floor_poly.append(xf * p)
+			var hits := 0
+			for r in board.hud_keep_out():
+				var box: Rect2 = r
+				if not Geometry2D.intersect_polygons(floor_poly, PackedVector2Array([box.position, Vector2(box.end.x, box.position.y), box.end, Vector2(box.position.x, box.end.y)])).is_empty():
+					hits += 1
+			eq(hits, 0, "%s the floor and units stay clear of the HUD" % label)
+			eq(board.hud_keep_out().size() >= 8, true, "%s the HUD panels are measured (%d)" % [label, board.hud_keep_out().size()])
 			eq(zoom >= 0.7, true, "%s zoom %.2f keeps units at about hero scale" % [label, zoom])
 			var misses := 0
 			var tried := 0
@@ -1009,6 +1024,356 @@ func _test_click_sweep() -> void:
 	root.size = before
 	scene.queue_free()
 	await process_frame
+
+
+## Mauro's mis-picks: a click on a monster's body (tall sprites stand over
+## the cells behind them) must pick the monster's own cell. Every class, every
+## monster in rooms A and B, at three window sizes, several body points each,
+## with each of the class's unit-targeted casts armed.
+func _test_monster_click_sweep() -> void:
+	var view_script := load("res://scenes/world/dungeon/dungeon_board_view.gd")
+	var before := root.size
+	var total := 0
+	var misses := 0
+	var by_size := {}
+	var miss_by_size := {}
+	var monsters_seen := 0
+	var mask_points := 0
+	# Every class with Performance mode off, then Ironjaw and Kestrel with it on
+	# (1x art, still props).
+	var passes: Array = []
+	for c in CLASSES:
+		passes.append([c, false])
+	passes.append(["ironjaw", true])
+	passes.append(["kestrel", true])
+	for pass_row in passes:
+		var class_id: String = pass_row[0]
+		var perf: bool = pass_row[1]
+		VisualSettings._note_still(perf)
+		Art._cache.clear()
+		var spells: Array = []
+		for spell_id in SpellKits.class_spells(class_id):
+			if view_script.spell_target_kind(str(spell_id)) in ["enemy", "burst", "any"]:
+				spells.append(str(spell_id))
+		eq(spells.is_empty(), false, "%s has a unit-targeted cast to aim" % class_id)
+		Launcher.pending = {"dungeon_id": GRANARY, "level": 1, "class_id": class_id, "autoplay": false, "return_zone": "crosshaven_stoneford", "return_cell": DOOR, "seed": 7}
+		var scene: Node = (load(RUN_SCENE_PATH) as PackedScene).instantiate()
+		root.add_child(scene)
+		for i in 4:
+			await process_frame
+		var board = scene.get_node("BoardView")
+		var hud = scene.get_node("HUD")
+		for room_index in 2:
+			if room_index == 1:
+				board.end_room()
+				scene.run.room_index = 1
+				board.start_room(scene.run.combat_config(1, 7), scene.manifest)
+				await process_frame
+			for size in [Vector2i(1280, 768), Vector2i(1920, 1080), Vector2i(2540, 1448)]:
+				root.size = size
+				await process_frame
+				await process_frame
+				board._fit_board_camera()
+				await process_frame
+				var label := "%s%s %s at %dx%d" % [class_id, " (performance)" if perf else "", "room A" if room_index == 0 else "room B", size.x, size.y]
+				var per_size_key := "%dx%d" % [size.x, size.y]
+				for spell_id in spells:
+					hud._selected_spell = spell_id
+					var kind: String = view_script.spell_target_kind(spell_id)
+					for seat in board.pawns_by_seat.keys():
+						if int(seat) == 0:
+							continue
+						var pawn = board.pawns_by_seat[seat]
+						if not pawn.pickable():
+							continue
+						if spell_id == spells[0]:
+							monsters_seen += 1
+						var want: Vector2i = pawn.grid_position
+						var tried := 0
+						var skipped := 0
+						for pt in _body_points(pawn):
+							# A point that a front monster's own pixels cover belongs to it.
+							if _covered_by_front(board, pawn, pt):
+								skipped += 1
+								continue
+							var tap := InputEventScreenTouch.new()
+							tap.pressed = true
+							tap.position = pt
+							tried += 1
+							total += 1
+							by_size[per_size_key] = int(by_size.get(per_size_key, 0)) + 1
+							var got: Vector2i = board._cell_under_pointer(tap)
+							if got != want:
+								misses += 1
+								miss_by_size[per_size_key] = int(miss_by_size.get(per_size_key, 0)) + 1
+								if misses <= 12:
+									var gp: Vector2 = board.get_viewport().get_canvas_transform().affine_inverse() * pt
+									var lv := []
+									for o in board.pawns_by_seat.values():
+										if o.has_method("pick_test"):
+											lv.append([o.grid_position, o.pick_test(gp), o.z_index])
+									print("  miss: %s %s seat %d at %s picked %s want %s levels %s" % [label, spell_id, seat, pt, got, want, lv])
+						if Art.pick_mask(pawn._body.sprite_frames.get_frame_texture(pawn._body.animation, pawn._body.frame)) != null:
+							mask_points += tried
+						eq(tried >= 3 or skipped >= 20, true, "%s %s: %s gets 3+ body clicks (%d, %d behind a front monster)" % [label, spell_id, pawn.monster_id, tried, skipped])
+				# Ally casts: a click on the painted hero's figure picks the hero.
+				var hero_pawn: Node2D = board.pawns_by_seat[0]
+				var hero_pts := _hero_points(hero_pawn)
+				var hero_hits := 0
+				for hp_pt in hero_pts:
+					if board.unit_seat_at(board.get_node("Tiles").make_canvas_position_local(hp_pt), "ally") == 0:
+						hero_hits += 1
+				eq(hero_pts.size() >= 6 and hero_hits == hero_pts.size(), true, "%s an ally cast picks the painted hero on its figure (%d/%d)" % [label, hero_hits, hero_pts.size()])
+				hud._selected_spell = ""
+				# Walk mode: a tap on the hero's sprite walks to the floor cell
+				# it covers, not the hero's own cell.
+				var hero: Node2D = board.pawns_by_seat[0]
+				var hero_cell: Vector2i = hero.grid_position
+				var behind := hero_cell - Vector2i(1, 1)
+				if board.tiles.has(behind):
+					var tap2 := InputEventScreenTouch.new()
+					tap2.pressed = true
+					tap2.position = board.get_node("Tiles").get_global_transform_with_canvas() * board.tiles[behind].position
+					eq(board._cell_under_pointer(tap2), behind, "%s a walk tap on the hero's sprite picks the floor behind" % label)
+		scene.queue_free()
+		await process_frame
+	VisualSettings._note_still(false)
+	Art._cache.clear()
+	root.size = before
+	print("  monster click sweep: %d clicks, %d on pixel masks, %d monster views" % [total, mask_points, monsters_seen])
+	for key in by_size.keys():
+		print("  click sweep %s: %d clicks, %d misses" % [key, int(by_size[key]), int(miss_by_size.get(key, 0))])
+	eq(total > 1000, true, "the sweep clicks every monster body many times (%d)" % total)
+	eq(misses, 0, "every click on a monster's body picks that monster's cell")
+
+
+## Screen points on a monster's body: its visible pixels when the pixel mask
+## is readable, else inside the body box (centre, chest, head, both sides).
+func _body_points(pawn) -> Array:
+	var out: Array = []
+	var body: AnimatedSprite2D = pawn._body
+	var tex: Texture2D = body.sprite_frames.get_frame_texture(body.animation, body.frame)
+	var to_screen: Transform2D = body.get_global_transform_with_canvas()
+	var mask: BitMap = Art.pick_mask(tex)
+	if mask != null:
+		var sz := mask.get_size()
+		var rows: Array = []
+		for y in sz.y:
+			var xs: Array = []
+			for x in sz.x:
+				if mask.get_bit(x, y):
+					xs.append(x)
+			if xs.size() >= 3:
+				rows.append([y, xs])
+		if rows.size() >= 4:
+			for f in [0.1, 0.25, 0.4, 0.55, 0.7, 0.85, 0.95]:
+				var row: Array = rows[int(f * float(rows.size() - 1))]
+				var xs2: Array = row[1]
+				for g in [0.5, 0.15, 0.85, 0.33, 0.67]:
+					var bx := int(xs2[int(g * float(xs2.size() - 1))])
+					if body.flip_h:
+						bx = sz.x - 1 - bx
+					out.append(to_screen * (body.offset + Vector2(bx + 0.5, int(row[0]) + 0.5)))
+			return out
+	var box: Rect2 = pawn.body_box().grow(-pawn.BOX_PAD - 2.0)
+	var pxf: Transform2D = pawn.get_global_transform_with_canvas()
+	for p in [box.get_center(), Vector2(box.get_center().x, box.position.y + box.size.y * 0.2), Vector2(box.get_center().x, box.end.y - 4.0), Vector2(box.position.x + 3.0, box.get_center().y), Vector2(box.end.x - 3.0, box.get_center().y)]:
+		out.append(pxf * p)
+	return out
+
+
+## Screen points on the painted hero's visible figure (the cell shown now).
+func _hero_points(pawn: Node2D) -> Array:
+	var out: Array = []
+	var drawn: Node2D = pawn._sprite
+	var tex: Texture2D = pawn._sprite.texture
+	var strip: AnimatedSprite2D = pawn._active_strip
+	if strip != null and strip.is_visible_in_tree() and strip.sprite_frames != null and strip.sprite_frames.has_animation(strip.animation):
+		drawn = strip
+		tex = strip.sprite_frames.get_frame_texture(strip.animation, strip.frame)
+	var mask: BitMap = Art.pick_mask(tex)
+	if mask == null:
+		return out
+	var sz := mask.get_size()
+	var top_left: Vector2 = drawn.offset - Vector2(sz) * 0.5 if drawn.centered else drawn.offset
+	var rows: Array = []
+	for y in sz.y:
+		var xs: Array = []
+		for x in sz.x:
+			if mask.get_bit(x, y):
+				xs.append(x)
+		if xs.size() >= 5:
+			rows.append([y, xs])
+	if rows.size() < 4:
+		return out
+	for f in [0.15, 0.4, 0.65, 0.85]:
+		var row: Array = rows[int(f * float(rows.size() - 1))]
+		var xs2: Array = row[1]
+		for g in [0.5, 0.3, 0.7]:
+			var bx := int(xs2[int(g * float(xs2.size() - 1))])
+			if drawn.flip_h:
+				bx = sz.x - 1 - bx
+			out.append(drawn.get_global_transform_with_canvas() * (top_left + Vector2(bx + 0.5, int(row[0]) + 0.5)))
+	return out
+
+
+func _covered_by_front(board, pawn, screen_pt: Vector2) -> bool:
+	var global_pt: Vector2 = board.to_global(board.get_node("Tiles").make_canvas_position_local(screen_pt))
+	var mine: int = pawn.pick_test(global_pt)
+	for other in board.pawns_by_seat.values():
+		if other == pawn or not other.has_method("pick_test") or not other.pickable():
+			continue
+		var lv: int = other.pick_test(global_pt)
+		if lv == 0:
+			continue
+		var key_o := [lv, int(other.z_index), other.position.y]
+		var key_m := [mine, int(pawn.z_index), pawn.position.y]
+		if board.pick_key_beats(key_o, key_m):
+			return true
+	return false
+
+
+## Aim chrome: in-range rings, dimmed out-of-range monsters, the hover card
+## (name, HP, hit %, damage), the target cursor, the docked spell card that
+## never covers the room and closes on a hovered target, and the short
+## out-of-range note with the walk-then-strike assist.
+func _test_targeting_chrome() -> void:
+	Launcher.pending = {"dungeon_id": GRANARY, "level": 1, "class_id": "ironjaw", "autoplay": false, "return_zone": "crosshaven_stoneford", "return_cell": DOOR, "seed": 5}
+	var scene: Node = (load(RUN_SCENE_PATH) as PackedScene).instantiate()
+	root.add_child(scene)
+	for i in 6:
+		await process_frame
+	var board = scene.get_node("BoardView")
+	var hud = scene.get_node("HUD")
+	var before := root.size
+	root.size = Vector2i(1920, 1080)
+	for i in 3:
+		await process_frame
+	board._fit_board_camera()
+	eq(hud.tooltip_dock, "bar", "the dungeon docks spell cards beside the action bar")
+	# Put one rat next to Ironjaw; the rest stay out of Strike's reach.
+	var hero: Dictionary = sim._unit_by_seat(0)
+	var near_seat := -1
+	for u in sim.snapshot()["units"]:
+		if u.has("monster") and not bool(u.get("boss", false)) and near_seat < 0:
+			near_seat = int(u["seat"])
+	var spot: Vector2i = hero["pos"]
+	for step in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, -1), Vector2i(0, 1)]:
+		var c: Vector2i = hero["pos"] + step
+		if bool(sim.tile_at(c).get("walkable", false)) and sim._living_unit_at(c).is_empty():
+			spot = c
+			break
+	eq(spot != hero["pos"], true, "a free cell next to the hero for the test rat")
+	sim._unit_by_seat(near_seat)["pos"] = spot
+	board._refresh()
+	await process_frame
+	# Spell card: only while the pointer is on its button, and docked off the room.
+	hud._on_spell_hover(SpellKits.STRIKE)
+	eq(hud.tooltip_visible(), false, "no spell card unless the pointer is on the button")
+	hud._long_press_touch = true
+	hud.show_spell_tooltip(SpellKits.STRIKE)
+	hud._long_press_touch = false
+	eq(hud.tooltip_visible(), true, "the spell card opens for its button")
+	var card: Rect2 = hud.tooltip_rect()
+	var xf: Transform2D = board.get_global_transform_with_canvas()
+	var floor_poly := PackedVector2Array()
+	for p in board.floor_keep_clear():
+		floor_poly.append(xf * p)
+	eq(Geometry2D.intersect_polygons(floor_poly, PackedVector2Array([card.position, Vector2(card.end.x, card.position.y), card.end, Vector2(card.position.x, card.end.y)])).is_empty(), true, "the docked spell card never covers the room (%s)" % card)
+	# Arm Strike: the adjacent rat is ringed, the others are dimmed.
+	hud._on_spell_pressed(SpellKits.STRIKE)
+	await process_frame
+	eq(hud.selected_spell(), SpellKits.STRIKE, "Strike is armed")
+	eq(board.target_cells().has(spot), true, "the adjacent rat is a legal Strike target")
+	eq(board.target_state(near_seat), "legal", "the in-range rat gets the target ring")
+	var dimmed := 0
+	var far_seat := -1
+	for seat in board.pawns_by_seat.keys():
+		if int(seat) == 0 or int(seat) == near_seat:
+			continue
+		if board.target_state(seat) == "dim":
+			dimmed += 1
+			if far_seat < 0:
+				far_seat = int(seat)
+	eq(dimmed >= 2, true, "out-of-range monsters are dimmed (%d)" % dimmed)
+	# Hover the rat's body: card, cursor, ring; the spell card closes.
+	var rat: Node2D = board.pawns_by_seat[near_seat]
+	board.hover_at(rat.position + Vector2(0, -14))
+	await process_frame
+	eq(board.hovered_seat(), near_seat, "hovering the rat's body hovers the rat")
+	eq(board.target_state(near_seat), "hover", "the hovered target is ringed brighter")
+	eq(board.cursor_shape(), Input.CURSOR_CROSS, "the target cursor shows over a legal target")
+	eq(hud.tooltip_visible(), false, "the spell card closes as soon as a target is hovered")
+	var text: String = board.card_text()
+	var unit: Dictionary = sim._unit_by_seat(near_seat)
+	eq(text.contains(str(unit["name"])) and text.contains("%d/%d HP" % [int(unit["hp"]), int(unit["max_hp"])]), true, "the card names the target and its HP (%s)" % text)
+	var pv: Dictionary = sim.preview_cast({"spell": SpellKits.STRIKE, "seat": 0, "to": spot, "target_seat": near_seat})
+	eq(text.contains("HIT %d%%" % int(pv["hit_chance"])) and text.contains("%d dmg" % int(pv["sample_damage"])), true, "the card shows the preview hit %% and damage (%s)" % text)
+	board.hover_at(Vector2(-5000, -5000))
+	eq(board.cursor_shape(), Input.CURSOR_ARROW, "the cursor goes back off a target")
+	# Out of range: short note, no refund line, Strike stays armed, nothing spent.
+	var far_cell: Vector2i = board.pawns_by_seat[far_seat].grid_position
+	var ap_before := int(sim._unit_by_seat(0)["ap"])
+	var coach_before := str(sim.snapshot().get("coach", ""))
+	board._handle_left_click(far_cell)
+	await process_frame
+	eq(board.card_text().contains("Out of range: walk closer"), true, "the note sits on the monster's card")
+	eq(hud.toast_caption(), "Out of range: walk closer", "clicking an out-of-range monster says to walk closer")
+	eq(str(sim.snapshot().get("coach", "")).contains("REJECT"), false, "no refund line for an out-of-range click")
+	eq(str(sim.snapshot().get("coach", "")), coach_before, "the click sent nothing to the sim")
+	eq(int(sim._unit_by_seat(0)["ap"]), ap_before, "no AP spent")
+	eq(hud.selected_spell(), SpellKits.STRIKE, "Strike stays armed after an out-of-range click")
+	# Walk-then-strike: a rat two steps away; the second click walks and strikes.
+	board.hover_at(Vector2(-5000, -5000))
+	var hero_pos: Vector2i = sim._unit_by_seat(0)["pos"]
+	var two := Vector2i(-1, -1)
+	for step in [Vector2i(2, 0), Vector2i(-2, 0), Vector2i(0, -2), Vector2i(0, 2)]:
+		var c2: Vector2i = hero_pos + step
+		var mid: Vector2i = hero_pos + step / 2
+		if c2.x >= 0 and c2.y >= 0 and c2.x < 12 and c2.y < 12 and bool(sim.tile_at(c2).get("walkable", false)) and sim._living_unit_at(c2).is_empty() and bool(sim.tile_at(mid).get("walkable", false)) and sim._living_unit_at(mid).is_empty():
+			two = c2
+			break
+	eq(two.x >= 0, true, "a free cell two steps out for the assist rat")
+	sim._unit_by_seat(near_seat)["pos"] = two
+	board._refresh()
+	await process_frame
+	eq(board.target_state(near_seat), "dim", "the rat two steps out is out of Strike range")
+	var plan: Dictionary = board.walk_strike_plan(SpellKits.STRIKE, near_seat)
+	eq(plan.is_empty(), false, "a melee cast with MP left offers walk-then-strike")
+	var hp_before := int(sim._unit_by_seat(near_seat)["hp"])
+	board._handle_left_click(two)
+	await process_frame
+	eq(board.card_text().contains("Click again: walk + Strike"), true, "the card offers the walk + Strike assist (%s)" % board.card_text())
+	board._handle_left_click(two)
+	var t0 := Time.get_ticks_msec()
+	while int(sim._unit_by_seat(0)["ap"]) == ap_before and Time.get_ticks_msec() - t0 < 8000:
+		await process_frame
+	var hero_after: Dictionary = sim._unit_by_seat(0)
+	eq(hero_after["pos"], plan["walk_to"], "the assist walked next to the rat")
+	eq(int(hero_after["ap"]), ap_before - int(SpellKits.spell(SpellKits.STRIKE)["ap"]), "the assist struck once (AP spent)")
+	var log_has_cast := false
+	for e in sim.snapshot().get("last_events", []):
+		if str(e.get("type", "")) in ["hit", "miss"]:
+			log_has_cast = true
+	eq(log_has_cast or int(sim._unit_by_seat(near_seat)["hp"]) < hp_before, true, "the Strike resolved on the rat")
+	root.size = before
+	scene.queue_free()
+	await process_frame
+
+
+## The dungeon gives the hero 60 s a turn; PvP and the Koliseo keep 30 s.
+func _test_dungeon_turn_timer() -> void:
+	var snap: Dictionary = sim.reset_match(Run.create(GRANARY, 1, "ironjaw")["run"].combat_config(1, 3))
+	eq(float(snap["turn_time_limit"]), 60.0, "a dungeon room turn is 60 s")
+	eq(float(snap["turn_time_remaining"]) >= 59.0, true, "the hero starts the room with the full 60 s")
+	sim.submit({"type": "end_turn", "seat": 0})
+	eq(float(sim.snapshot()["turn_time_limit"]), 60.0, "the next dungeon turn is 60 s too")
+	var pvp: Dictionary = sim.reset_match({"seed": 4242, "skip_deploy": true, "classes": ["kestrel", "ironjaw"]})
+	eq(float(pvp["turn_time_limit"]), 30.0, "PvP keeps the 30 s turn")
+	var kol: Dictionary = sim.reset_match({"seed": 3, "map_id": "crosshaven", "skip_deploy": true})
+	eq(float(kol["turn_time_limit"]), 30.0, "the Koliseo keeps the 30 s turn")
+	eq(float(SIM_SCRIPT.TURN_TIME_LIMIT), 30.0, "the shared clock constant is unchanged")
+	sim.reset_match({})
 
 
 # --- unchanged paths -------------------------------------------------------------

@@ -94,6 +94,12 @@ var _last_legal: Array = []
 var _preview_source: Node = null
 var _terrain_legend: Label
 var _turn_label_base: String = ""
+## Spell card placement. "" keeps the card over the play band (Koliseo /
+## mobile). "bar" docks it in the bottom band beside the action bar, left of
+## the ability cluster, so it never covers the board, and a mouse card only
+## shows while the pointer is on its button.
+var tooltip_dock: String = ""
+const TOOLTIP_DOCK_SIZE := Vector2(260, 150)
 
 
 ## Kit chrome uses local_seat when NetSession set it; hot-seat (local_seat < 0)
@@ -1775,6 +1781,9 @@ func _with_shade_tip(text: String) -> String:
 
 
 func show_spell_tooltip(spell_id: String) -> void:
+	if tooltip_dock == "bar" and not _long_press_touch and not _pointer_on_spell_host(spell_id):
+		hide_spell_tooltip()
+		return
 	var preview := preview_for_spell(spell_id)
 	var text := SpellTooltip.card_text(preview)
 	if text == "" or _tooltip_panel == null or _tooltip_label == null:
@@ -1782,7 +1791,55 @@ func show_spell_tooltip(spell_id: String) -> void:
 		return
 	_tooltip_spell = spell_id
 	_tooltip_label.text = text
+	_place_tooltip()
 	_tooltip_panel.visible = true
+
+
+func set_tooltip_dock(dock: String) -> void:
+	tooltip_dock = dock
+	_place_tooltip()
+
+
+## Where the docked card sits: bottom band, right edge against the ability cluster.
+func tooltip_dock_rect() -> Rect2:
+	var vis := Vector2(TOUCH.VIEW_W, TOUCH.VIEW_H)
+	if is_inside_tree():
+		vis = get_viewport().get_visible_rect().size
+	var right := vis.x - (TOUCH.CLUSTER_SIZE.x + TOUCH.CLUSTER_EDGE) - 8.0
+	return Rect2(Vector2(right - TOOLTIP_DOCK_SIZE.x, vis.y - TOOLTIP_DOCK_SIZE.y - 8.0), TOOLTIP_DOCK_SIZE)
+
+
+func tooltip_rect() -> Rect2:
+	if _tooltip_panel == null:
+		return Rect2()
+	return Rect2(_tooltip_panel.position, _tooltip_panel.size)
+
+
+func _place_tooltip() -> void:
+	if _tooltip_panel == null or _tooltip_label == null:
+		return
+	if tooltip_dock == "bar":
+		var rect := tooltip_dock_rect()
+		_tooltip_panel.position = rect.position
+		_tooltip_panel.size = rect.size
+		_tooltip_label.position = Vector2(10, 6)
+		_tooltip_label.size = rect.size - Vector2(20, 12)
+		_tooltip_label.add_theme_font_size_override("font_size", 11)
+		_tooltip_label.max_lines_visible = 9
+	else:
+		_tooltip_panel.position = Vector2(240, 168)
+		_tooltip_panel.size = Vector2(480, 248)
+		_tooltip_label.position = Vector2(12, 8)
+		_tooltip_label.size = Vector2(456, 232)
+		_tooltip_label.add_theme_font_size_override("font_size", 13)
+		_tooltip_label.max_lines_visible = -1
+
+
+func _pointer_on_spell_host(spell_id: String) -> bool:
+	var host: Control = _spell_hosts.get(spell_id)
+	if host == null or not is_instance_valid(host) or not host.is_inside_tree() or not host.is_visible_in_tree():
+		return false
+	return host.get_global_rect().has_point(host.get_global_mouse_position())
 
 
 func preview_for_spell(spell_id: String) -> Dictionary:
