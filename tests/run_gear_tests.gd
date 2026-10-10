@@ -696,15 +696,19 @@ func _test_gear_in_fights() -> void:
 	var one := GearBag.combat_stats(_worn("ironveil", ["head"]), {}, false, "bastion")
 	eq(int(one["resist"]), 3, "one piece of resist still counts")
 	eq(one["resist_elem"], {}, "one piece does not park resist on Neutral")
-	var capped_crit := GearBag.combat_stats(_worn("stillcut", GearBag.SLOTS), {}, false, "gloam")
-	eq(int(capped_crit["crit"]), 20, "Stillcut 17% + 4pc 4% caps at 20")
+	var still_crit := GearBag.combat_stats(_worn("stillcut", GearBag.SLOTS), {}, false, "gloam")
+	eq(int(still_crit["crit"]), 12, "Stillcut 8% parts + 4pc 4% is 12, under the cap")
+	var legend_crit := GearBag.combat_stats(_worn("gravewhisper", GearBag.SLOTS), {}, false, "gloam")
+	eq(int(legend_crit["crit"]), 12, "Gravewhisper full sheet is 12% (no set-bonus crit)")
+	var night_crit := GearBag.combat_stats(_worn("nightglass", GearBag.SLOTS), {}, false, "gloam")
+	eq(int(night_crit["crit"]), 12, "Nightglass 8% parts + 4pc 4% is 12")
 	# +0 part totals (HP, Mastery, Resist, Init, Crit).
 	var sheet := {
 		"ashmantle": [60, 14, 6, 4, 2], "rustward": [70, 4, 10, 2, 0], "ironveil": [78, 6, 12, 2, 0],
 		"oathgrave": [84, 6, 14, 2, 0], "undertow": [40, 22, 1, 12, 10], "gallowsight": [44, 26, 2, 12, 12],
 		"ravenmourn": [44, 31, 2, 16, 12], "cragmaw": [62, 12, 6, 2, 4], "maulgrave": [70, 12, 8, 2, 6],
-		"tyrantjaw": [74, 14, 9, 2, 7], "nightglass": [36, 18, 0, 18, 15], "stillcut": [40, 18, 1, 26, 17],
-		"gravewhisper": [36, 23, 1, 28, 20], "vesperwell": [62, 13, 7, 2, 1], "sheaf": [68, 14, 9, 4, 2],
+		"tyrantjaw": [74, 14, 9, 2, 7], "nightglass": [36, 25, 0, 18, 8], "stillcut": [40, 27, 1, 26, 8],
+		"gravewhisper": [36, 31, 1, 28, 12], "vesperwell": [62, 13, 7, 2, 1], "sheaf": [68, 14, 9, 4, 2],
 		"hallowmourn": [70, 16, 10, 4, 4], "brightedge": [56, 29, 4, 10, 7],
 	}
 	for fam in sheet:
@@ -715,8 +719,8 @@ func _test_gear_in_fights() -> void:
 		eq(tot, sheet[fam], "%s part totals (HP, Mastery, Resist, Init, Crit)" % fam)
 	eq(GearBag.part_stats("sheaf.head", 5)["hp"], 32, "Sheaf Helm 18 HP × 1.78 at +5 = 32")
 	eq(GearBag.part_stats("sheaf.head", 5)["crit"], 0, "crit% does not fuse")
-	eq(GearBag.part_stats("stillcut.weapon", 3)["mastery"], 17, "Stillcut Edge 12 × 1.41 at +3 = 17")
-	eq(GearBag.part_stats("stillcut.weapon", 3)["crit"], 10, "Stillcut Edge crit stays 10 at +3")
+	eq(GearBag.part_stats("stillcut.weapon", 3)["mastery"], 25, "Stillcut Edge 18 × 1.41 at +3 = 25")
+	eq(GearBag.part_stats("stillcut.weapon", 3)["crit"], 4, "Stillcut Edge crit stays 4 at +3")
 	var flat := GearBag.combat_stats(_worn("sheaf", ["head"], 5), {}, true, "mender")
 	eq(int(flat["hp_flat"]), 18, "Koliseo flatten: a +5 helm counts as +0")
 	eq(GearBag.item_label({"item_id": "stillcut.chest", "plus": 2}), "Stillcut Plate +2", "items use the part names")
