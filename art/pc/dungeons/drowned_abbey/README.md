@@ -112,7 +112,7 @@ The board uses the same `board_view.gd` math as the Granary: `cell_to_local(x,y)
 
 **Mire Abbess signature, `summon` "Rite of Rising"** (the systems agent's proposal; the strip name stays `summon`). She raises a fallen Bog Dead on its death cell:
 - f00–f02 she lowers the censer; f03–f06 she swings it up over her head while the floating candles rise and flare.
-- On **f07** the green smoke bursts and the rite fires. `meta.json > rite_point.point_px` is the censer on f07 per facing (RITE_POINTS in the 768x540 cell).
+- On **f07** the green smoke bursts and the rite fires. `meta.json > rite_point.point_px` is the censer on f07 per facing (S (542.6,66.9), E (535.0,45.5) in the 768x540 cell).
 - f07–f09 she holds the censer high; f10–f13 she settles back to idle.
 - `summon/summon_{S,E}_fNN_glow.png` is the additive green rite glow (censer smoke and candle flames) for this action only. It builds f03–f06, bursts on f07, holds to f09 and fades by f12. Draw it like a ★5 glow.
 - `board/projectiles/rite_glow` (+ `_glow`, 100x44) is the green ritual smoke streak along +x, bright end at +x. On f07 stretch it from `rite_point` to the corpse cell (bright end on the corpse) and fade it out over f07–f10, with an add blend. Then play the Bog Dead's death strip reversed on that cell.
@@ -140,7 +140,27 @@ Shared-kit changes (none of which changes the older outputs):
 
 **Sources:** `abbey_src/` holds the chosen paintings (`_star5_gate_gravebound_abbess.jpg` is the comparison sent to Mauro, not a source).
 
-KNOWN_ISSUES
+## Known issues / what I'd change
+
+- **No painted lying-down keys** (same as the other three dungeons): every death is the standing painting rotated about 80° and lifted in the cell (the leech's neck and head flop over onto its coil instead). Painting a lying key per monster and facing would read better.
+- **Weapon swings are rigid rotations:** the Bog Dead's claws and the Abbess's censer arm swing as one painted piece each. The censer itself rotates as a rigid piece about the hand, so its chains stay straight instead of swinging loose.
+- **Bog Dead:** the robe's long hanging weed is cut with the arms and legs, so on the deepest wind-up and lunge frames a strand or two of weed separates from the body (a small loose clump near the left foot on attack f03–f05). The back-fill behind the arms repeats nearby robe texture.
+- **Mire Leech:**
+  - The rig is three pieces (coil, neck, head); the coil itself does not bend, it only pulses (stretch and squash) during the walk, so the slither is a sway rather than a true wave.
+  - A few drool drips hanging under the maw are cut with the head and float free of it on the flop-over death frames.
+  - `release.point_px` is the maw centre at release; the bile leaves from slightly inside the maw rim.
+- **The Mire Abbess:**
+  - Her translucent green censer smoke keyed out pinkish grey over the magenta key (the soft smoke's alpha is over-estimated), so the rig recolours the bright pinkish pixels of the censer and candle layers onto a green ramp (`smoke_fix`). The smoke is flatter than painted smoke.
+  - The overhead swing of the Rite of Rising is lower than first planned (the censer reaches about head height, not straight up) so she stays inside the 768x540 cell without a keep-in shift. `rite_point` is therefore at the top right of the cell (S (542.6,66.9), E (535.0,45.5)).
+  - The three floating candles are separate parts that bob out of phase; in the death they drop below her and come to rest on the floor beside the body, not in a painted puddle of wax.
+  - The robe hem is part of the body cut, so the glide is a bob and sway of the whole figure; the hem does not trail.
+- **Rune circle:** 5x5 as the systems layout asks. Measured on the design, the ring is a little bigger (a top-down circle of about 6 cells). It is a round painting on a 5x5 diamond, so its corners are empty floor, and the glyphs do not animate (pulse `rune_circle_glow`).
+- **Backdrops are 1x only**, as for the other dungeons. Fit residuals: room A 17.6 px (15x15) / 14.0 px (12x12), room B 21.6 / 17.3 px. Room B was repainted (the first shell had the altar steps cutting into the floor, a 64 px residual).
+- **Town door:** the footprint (3x3, cell 290 px in the painting) was measured by eye from the foundation diamond; the foundation's front-right corner overhangs the SE edge by a few px. The door painting is an edit with the pier shortened so the pier ends on the door cell (1,3); the original long pier ran two cells past the footprint.
+- **Floors:** the 3-variant floors show the tile grid, because each flagstone is painted with dark grout on all four edges (by design, as for the other kits).
+- **Glows:** the candle-flame glows (`candle_cluster`, `altar`, `candle_stand`) are masks on the near-white flame cores, so they are small spots at 1x; the prop paintings themselves are already bright. `lily_pads` has no glow.
+- **rite_glow** was painted as a grey-green smoke streak next to the magenta key and recoloured onto a green ramp by luminance, so it is flatter than a painted streak (as Saltmaw's `lure_line`).
+- **Hero stand-ins in the mocks** are the painted idle strips scaled 0.9 by eye, not the game's pawn scale.
 
 ## Scenario source assets (project "stasium")
 
