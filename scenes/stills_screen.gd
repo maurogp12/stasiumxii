@@ -1,7 +1,7 @@
 extends Control
 class_name StillsScreen
 
-## XII Stills (Mauro 29 Sep 2026). Left: the 12 hourglasses with fragment
+## XII Stills (Mauro 9 Oct 2026). Left: the 14 hourglasses with fragment
 ## counts (x/12). Right: the picked Still's Intact / Overwound effect and
 ## Forge (12 of the same, empty socket). Bottom: the socket and the
 ## Keep Intact / Overwind choice for the next Stasis or online Koliseo fight.
@@ -15,7 +15,7 @@ const GREEN := Color(0.66, 0.84, 0.25)
 const ROW_HEIGHT := 48
 
 var font: Font
-var selected: String = "stride"
+var selected: String = "steadfast"
 var _vault: StillVault
 var _grid: GridContainer
 var _detail: VBoxContainer
@@ -64,7 +64,7 @@ func choose_mode(mode: String) -> Dictionary:
 	var result := _vault.set_mode(mode)
 	if bool(result.get("ok", false)):
 		_vault.save()
-		_status.text = "Keep Intact." if mode == "intact" else "Overwind: stronger, then it cracks."
+		_status.text = "Keep Intact." if mode == "intact" else "Overwind: stronger, with a drawback."
 	_refresh()
 	return result
 
@@ -109,7 +109,7 @@ func _build() -> void:
 	cols.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	body.add_child(cols)
 	_grid = GridContainer.new()
-	_grid.columns = 4
+	_grid.columns = 5
 	_grid.add_theme_constant_override("h_separation", 6)
 	_grid.add_theme_constant_override("v_separation", 6)
 	cols.add_child(_grid)
@@ -137,7 +137,7 @@ func _refresh() -> void:
 		tile.count = _vault.count(id)
 		tile.picked = id == selected
 		tile.font = font
-		tile.custom_minimum_size = Vector2(86, 96)
+		tile.custom_minimum_size = Vector2(108, 104)
 		tile.pressed.connect(pick.bind(id))
 		_grid.add_child(tile)
 	var fx: Dictionary = StillVault.EFFECTS[selected]
@@ -159,7 +159,7 @@ func _refresh() -> void:
 	head_row.add_child(head_text)
 	_detail.add_child(head_row)
 	_detail.add_child(_label("Intact — safe: %s" % StillVault.plain(selected, "intact"), 15, GOLD_BRIGHT))
-	_detail.add_child(_label("Overwound — stronger, then it cracks: %s" % StillVault.plain(selected, "overwound"), 15, GOLD_BRIGHT))
+	_detail.add_child(_label("Overwound — stronger, with a drawback: %s" % StillVault.plain(selected, "overwound"), 15, GOLD_BRIGHT))
 	if not bool(fx["built"]):
 		_detail.add_child(_label("This effect arrives in the next update. Forging it now keeps it for later fights.", 13, GOLD_DIM))
 	var forge_button := _button("Forge %s" % StillVault.display_name(selected))
@@ -240,7 +240,7 @@ func _button(text: String) -> Button:
 
 ## One hourglass tile: glass tinted by the Still, sand filled by fragments.
 class StillTile extends Button:
-	var still_id := "stride"
+	var still_id := "steadfast"
 	var count := 0
 	var picked := false
 	var font: Font

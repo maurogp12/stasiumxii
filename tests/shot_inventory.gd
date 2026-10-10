@@ -35,7 +35,7 @@ func _initialize() -> void:
 	wallet.tonics = 2
 	wallet.save()
 	var vault := StillVault.new()
-	vault.fragments = {"stride": 5, "cut": 12, "ember": 2}
+	vault.fragments = {"steadfast": 5, "tide": 12, "rewind": 2}
 	vault.save()
 	var hero := HeroProgress.new()
 	hero.add_xp("kestrel", 500)

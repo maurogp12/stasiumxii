@@ -1,72 +1,98 @@
 class_name StillVault
 extends RefCounted
 
-## XII Stills on mobile (Mauro 29 Sep 2026, "How you get Still fragments" +
-## the build plan doc). Stasis chests roll fragments (★1–2: 1, ★3–4: 2,
-## ★5: 3, random of the 12), inside the same 5 loot clears a day. Fragments
-## live in the account bank, any class, never expire. 12 of the SAME Still
-## forge it into the one socket (socket must be empty). The socketed Still
-## goes into the next Stasis or online Koliseo fight (never hot-seat) as
-## Intact or Overwound and is destroyed by that fight.
-## Stride (Locked, Mauro): Intact +1 AP +1 MP the whole fight (cap 8/5).
-## Overwound +4 AP +2 MP for your first 2 turns over whatever you have (breaks
-## the cap), then a crack debuff −1 AP −2 MP on your 3rd turn, then normal.
-## Gear / level AP-MP bonuses are never touched.
+## XII Stills (Mauro 9 Oct 2026, locked list of 14). Stasis chests roll
+## fragments (★1–2: 1, ★3–4: 2, ★5: 3, random of the 14), inside the same
+## 5 loot clears a day. Fragments live in the account bank, any class, never
+## expire. 12 of the SAME Still forge it into the one socket (socket must be
+## empty). The socketed Still goes into the next Stasis or online Koliseo
+## fight (never hot-seat) as Intact or Overwound and is destroyed by that fight.
+## Overwound is the stronger form plus a drawback. Triggers are events, never
+## a turn number. Gear / level AP-MP bonuses are never touched.
 
 const _TestLoadout := preload("res://backend/test_loadout.gd")
 const IDS: Array[String] = [
-	"opening", "stride", "cut", "mercy", "guard", "quiet",
-	"root", "ember", "tide", "silence", "crown", "end",
+	"steadfast", "tide", "hourglass_fist", "hourglass_step", "rewind",
+	"long_shadow", "withering_sand", "shatterglass", "tolling_bell",
+	"bleeding_hour", "mirror_hour", "held_hour", "bound_hour", "gathered_sand",
 ]
+const NAMES := {
+	"steadfast": "Steadfast",
+	"tide": "Tide",
+	"hourglass_fist": "Hourglass Fist",
+	"hourglass_step": "Hourglass Step",
+	"rewind": "Rewind",
+	"long_shadow": "Long Shadow",
+	"withering_sand": "Withering Sand",
+	"shatterglass": "Shatterglass",
+	"tolling_bell": "Tolling Bell",
+	"bleeding_hour": "Bleeding Hour",
+	"mirror_hour": "Mirror Hour",
+	"held_hour": "Held Hour",
+	"bound_hour": "Bound Hour",
+	"gathered_sand": "Gathered Sand",
+}
 const FORGE_COST := 12
 const MODES: Array[String] = ["intact", "overwound"]
 ## Fragments per chest by Stasis star.
 const CHEST_FRAGMENTS := {1: 1, 2: 1, 3: 2, 4: 2, 5: 3}
 ## Vault of Aeons colours.
 const COLORS := {
-	"opening": Color(1.0, 0.72, 0.22), "stride": Color(0.78, 0.86, 1.0), "cut": Color(0.86, 0.16, 0.18),
-	"mercy": Color(1.0, 0.52, 0.78), "guard": Color(0.28, 0.52, 1.0), "quiet": Color(0.62, 0.36, 0.95),
-	"root": Color(0.36, 0.78, 0.30), "ember": Color(1.0, 0.56, 0.12), "tide": Color(0.16, 0.78, 0.74),
-	"silence": Color(0.95, 0.96, 1.0), "crown": Color(1.0, 0.86, 0.40), "end": Color(0.30, 0.28, 0.34),
+	"steadfast": Color(0.55, 0.62, 0.72),
+	"tide": Color(0.20, 0.72, 0.78),
+	"hourglass_fist": Color(0.86, 0.42, 0.18),
+	"hourglass_step": Color(0.95, 0.78, 0.28),
+	"rewind": Color(0.45, 0.78, 0.95),
+	"long_shadow": Color(0.42, 0.28, 0.62),
+	"withering_sand": Color(0.72, 0.55, 0.28),
+	"shatterglass": Color(0.75, 0.88, 0.95),
+	"tolling_bell": Color(0.85, 0.72, 0.28),
+	"bleeding_hour": Color(0.72, 0.16, 0.22),
+	"mirror_hour": Color(0.55, 0.78, 0.92),
+	"held_hour": Color(0.62, 0.40, 0.78),
+	"bound_hour": Color(0.35, 0.55, 0.42),
+	"gathered_sand": Color(0.82, 0.68, 0.40),
 }
-## Display text + whether the effect is built yet (others: next update).
+## Short lines plus built (every locked Still is in the fight).
 const EFFECTS := {
-	"opening": {"intact": "You act first, whatever the Init", "overwound": "Act first (+ extra turn after round 1: next update)", "built": true},
-	"stride": {"intact": "+1 AP +1 MP all fight (cap 8/5)", "overwound": "+4 AP +2 MP turns 1–2 (over the cap), then −1 AP −2 MP on turn 3", "built": true},
-	"cut": {"intact": "First HIT +4 Neutral", "overwound": "First HIT +10 Neutral", "built": true},
-	"mercy": {"intact": "First heal +8", "overwound": "First heal +16 and Cleanse", "built": true},
-	"guard": {"intact": "First HIT taken −25%", "overwound": "First HIT taken ignored", "built": true},
-	"quiet": {"intact": "Untargetable until you spend AP", "overwound": "Invisible until AP or turn end", "built": false},
-	"root": {"intact": "Adjacent walk enemy −1 MP next turn", "overwound": "That enemy cannot walk next turn", "built": false},
-	"ember": {"intact": "First damaging spell +4", "overwound": "+4, and that target burns 4 on its next turn", "built": true},
-	"tide": {"intact": "First push +1 tile", "overwound": "First push +2 tiles", "built": false},
-	"silence": {"intact": "Enemy 4+ AP spell on you costs +1 AP", "overwound": "That spell fizzles, they keep AP", "built": false},
-	"crown": {"intact": "Online Koliseo win: +1 extra trophy", "overwound": "+1 trophy and a gold crown glow", "built": true},
-	"end": {"intact": "Once: a lethal hit leaves you at 1 HP", "overwound": "Same (+ attacker pushed 1: next update)", "built": true},
+	"steadfast": {"intact": "First Stun becomes −3 AP, not a skipped turn", "overwound": "First Stun ignored; other debuffs last +1 turn", "built": true},
+	"tide": {"intact": "First 2 debuffs are removed as they land", "overwound": "Next 3 turns start by clearing debuffs, then heals −25%", "built": true},
+	"hourglass_fist": {"intact": "+2 AP, −1 MP all fight", "overwound": "+3 AP, −2 MP; AP may pass 8", "built": true},
+	"hourglass_step": {"intact": "+2 MP, −1 AP all fight", "overwound": "+3 MP, −2 AP; MP may pass 5", "built": true},
+	"rewind": {"intact": "First 30%+ loss in one enemy turn refunds half next turn", "overwound": "Refunds all of it; allies cannot heal you after that", "built": true},
+	"long_shadow": {"intact": "First hit from 4+ tiles: +2 MP next turn", "overwound": "First 3 such hits: +2 MP (past 5); adjacent foes +10% damage", "built": true},
+	"withering_sand": {"intact": "First nearby enemy heal: next hit on them adds half (max 15)", "overwound": "Bonus equals the full heal (max 25); you gain no shields", "built": true},
+	"shatterglass": {"intact": "First hit on a shield breaks the whole shield", "overwound": "Hits deal double to shields; you gain no shields", "built": true},
+	"tolling_bell": {"intact": "First enemy to turn Invisible within 5 tiles is revealed", "overwound": "Every such enemy is revealed; your hits deal −10%", "built": true},
+	"bleeding_hour": {"intact": "Once: lose 20% max HP, gain +2 AP", "overwound": "Lose 30% max HP, gain +3 AP (past 8); no heals until next turn ends", "built": true},
+	"mirror_hour": {"intact": "Once, 2 AP: swap with a visible fighter within 4 tiles", "overwound": "Free swap; an enemy faces away; you lose remaining MP", "built": true},
+	"held_hour": {"intact": "First hit echoes half its damage on the target's next turn", "overwound": "First hit deals 0 now and double later, unless they hit you first", "built": true},
+	"bound_hour": {"intact": "Once, 2 AP: take 50% of an ally's damage for 3 of their turns", "overwound": "All fight, you take 60%; break past 4 tiles costs you both 1 AP", "built": true},
+	"gathered_sand": {"intact": "Store 15% of damage taken (max 15); your next hit releases it", "overwound": "Store 25% (max 25); no heals while any is stored", "built": true},
 }
 
-## Plain wording for players (Mauro 4 Oct 2026: "the stills information is not
-## understandable, please explain better"). Same effects as EFFECTS, in full
-## sentences. Effects not built yet say so in the UI.
+## One sentence per mode (Mauro: fewer words, useful info).
 const PLAIN := {
-	"opening": {"intact": "You take the first turn of the fight, whatever your Initiative.", "overwound": "You take the first turn. Coming in the next update: an extra turn after round 1."},
-	"stride": {"intact": "+1 AP and +1 MP for the whole fight (up to 8 AP and 5 MP).", "overwound": "+4 AP and +2 MP on your first 2 turns, even past the cap. On your 3rd turn it cracks: −1 AP and −2 MP. Then you are back to normal."},
-	"cut": {"intact": "Your first attack that hits deals +4 extra damage.", "overwound": "Your first attack that hits deals +10 extra damage."},
-	"mercy": {"intact": "Your first heal heals 8 more.", "overwound": "Your first heal heals 16 more and also Cleanses."},
-	"guard": {"intact": "The first hit you take deals 25% less damage.", "overwound": "The first hit you take deals no damage."},
-	"quiet": {"intact": "Enemies cannot target you until you spend AP.", "overwound": "You are invisible until you spend AP or end your turn."},
-	"root": {"intact": "An enemy that walks next to you loses 1 MP on its next turn.", "overwound": "That enemy cannot walk at all on its next turn."},
-	"ember": {"intact": "Your first damaging spell deals +4 damage.", "overwound": "Your first damaging spell deals +4, and the target burns for 4 on its next turn."},
-	"tide": {"intact": "Your first push moves the enemy 1 extra tile.", "overwound": "Your first push moves the enemy 2 extra tiles."},
-	"silence": {"intact": "An enemy spell of 4 AP or more aimed at you costs them 1 more AP.", "overwound": "That spell fails, and the enemy keeps its AP."},
-	"crown": {"intact": "Win an online Koliseo fight: +1 extra trophy.", "overwound": "+1 extra trophy and a gold crown glow on your hero."},
-	"end": {"intact": "Once per fight: a hit that would knock you out leaves you at 1 HP instead.", "overwound": "Same as Intact. Coming in the next update: the attacker is also pushed back 1 tile."},
+	"steadfast": {"intact": "The first Stun on you each fight becomes −3 AP that turn instead of a skipped turn.", "overwound": "The first Stun on you is ignored, but every other debuff on you lasts one extra turn."},
+	"tide": {"intact": "The first two debuffs on you each fight are removed the moment they land.", "overwound": "After your first debuff, your next three turns start by clearing every debuff on you, then heals on you are 25% weaker."},
+	"hourglass_fist": {"intact": "You have +2 AP and −1 MP for the whole fight.", "overwound": "You have +3 AP and −2 MP for the whole fight, and AP can go past 8."},
+	"hourglass_step": {"intact": "You have +2 MP and −1 AP for the whole fight.", "overwound": "You have +3 MP and −2 AP for the whole fight, and MP can go past 5."},
+	"rewind": {"intact": "The first time you lose 30% or more HP in one enemy turn, you regain half of it at your next turn.", "overwound": "You regain all of that HP, but allies cannot heal you for the rest of the fight."},
+	"long_shadow": {"intact": "The first hit an enemy lands on you from 4 or more tiles gives you +2 MP next turn.", "overwound": "The first three such hits each give +2 MP next turn, even past 5, but adjacent enemies deal 10% more damage to you."},
+	"withering_sand": {"intact": "The first time an enemy within 4 tiles is healed, your next hit on that enemy deals bonus damage equal to half the heal (max 15).", "overwound": "That bonus equals the full heal (max 25), but you cannot gain shields this fight."},
+	"shatterglass": {"intact": "Your first hit on a shielded enemy breaks the whole shield.", "overwound": "Every hit you land on a shield deals double damage to that shield, but you cannot gain shields this fight."},
+	"tolling_bell": {"intact": "The first enemy that turns Invisible within 5 tiles of you is revealed immediately.", "overwound": "Every enemy that turns Invisible within 5 tiles is revealed immediately, but your hits deal 10% less damage."},
+	"bleeding_hour": {"intact": "Once per fight, on your turn, lose 20% of your max HP and gain +2 AP.", "overwound": "Lose 30% of your max HP and gain +3 AP, even past 8, and you cannot be healed until your next turn ends."},
+	"mirror_hour": {"intact": "Once per fight, spend 2 AP to swap places with a visible fighter within 4 tiles.", "overwound": "The swap costs no AP, an enemy you swap ends facing away from you, and you lose your remaining MP."},
+	"held_hour": {"intact": "Your first hit echoes: half its damage hits again at the start of the target's next turn.", "overwound": "Your first hit deals no damage now and double damage at the start of the target's next turn, but it is lost if they hit you first."},
+	"bound_hour": {"intact": "Once per fight, spend 2 AP to take half the damage an ally within 4 tiles takes, for 3 of their turns.", "overwound": "The bind lasts the whole fight and you take 60% of their damage, but if either of you ends a turn more than 4 tiles apart it breaks and you both lose 1 AP."},
+	"gathered_sand": {"intact": "15% of the damage you take is stored, up to 15, and your next hit releases it all as bonus damage, once per fight.", "overwound": "You store 25%, up to 25, but you cannot be healed while any of it is stored."},
 }
 ## How Stills work, in four steps (shown in the Inventory and the Vault).
 const HOW_TO: Array[String] = [
 	"1. Stasis chests drop Still fragments.",
 	"2. 12 fragments of the same Still forge that Still into your Still socket.",
-	"3. Choose Intact (safe bonus) or Overwound (bigger bonus, then it cracks).",
+	"3. Choose Intact (the safe form) or Overwound (stronger, with a drawback).",
 	"4. It powers your next Stasis or online Koliseo fight, then it breaks.",
 ]
 const ICON_DIR := "res://art/ui/stills/"
@@ -81,7 +107,7 @@ var test_grant: Dictionary = {}
 
 
 static func display_name(id: String) -> String:
-	return id.capitalize()
+	return str(NAMES.get(id, id.capitalize()))
 
 
 ## Plain sentence for a Still's mode, with the not-built note.

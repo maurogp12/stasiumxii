@@ -599,7 +599,7 @@ func _refresh_detail() -> void:
 		_detail.add_child(_label(line, 14, GOLD_BRIGHT))
 		var soon := "" if bool(fx.get("built", true)) else "  (coming in the next update)"
 		_detail.add_child(_label("Intact — safe: %s%s" % [StillVault.plain(id, "intact"), soon], 14, GOLD_BRIGHT))
-		_detail.add_child(_label("Overwound — stronger, then it cracks: %s%s" % [StillVault.plain(id, "overwound"), soon], 14, GOLD_BRIGHT))
+		_detail.add_child(_label("Overwound — stronger, with a drawback: %s%s" % [StillVault.plain(id, "overwound"), soon], 14, GOLD_BRIGHT))
 		_detail.add_child(_label("  ".join(StillVault.HOW_TO), 12, GOLD_DIM))
 		var vault_button := _button("Open the Vault to forge")
 		vault_button.name = "OpenVault"

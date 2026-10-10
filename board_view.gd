@@ -176,6 +176,7 @@ func _ready() -> void:
 	_hud.spell_selected.connect(_on_spell_selected)
 	_hud.face_requested.connect(_on_face_requested)
 	_hud.end_turn_requested.connect(_on_end_turn_button_pressed)
+	_hud.still_use_requested.connect(_on_still_use_requested)
 	_hud.new_match_requested.connect(_on_new_match)
 	_hud.hub_requested.connect(_on_hub_requested)
 	_hud.unit_card_tapped.connect(_on_unit_card_tapped)
@@ -847,6 +848,9 @@ func _handle_left_click(cell: Vector2i) -> void:
 		return
 	if _active_is_stunned():
 		return
+	if _hud.still_aiming():
+		_try_still_target(cell)
+		return
 	var spell_id := _hud.selected_spell()
 	if spell_id == "":
 		var foe := _visible_enemy_seat(cell)
@@ -915,6 +919,9 @@ func _on_unit_card_tapped(seat: int) -> void:
 		select_tile(cell)
 		_center_on_cell(cell)
 		_paint_highlights()
+		return
+	if _hud.still_aiming():
+		_try_still_target(cell)
 		return
 	var spell_id := _hud.selected_spell()
 	if spell_id == "":
@@ -1002,6 +1009,34 @@ func _return_to_walk() -> void:
 	if _hud == null:
 		return
 	_hud.select_walk()
+	_paint_highlights()
+
+
+func _on_still_use_requested() -> void:
+	if _busy or _view_locked or _hud == null:
+		return
+	_submit({"type": "use_still"})
+	_hud.clear_still_aim()
+
+
+func _try_still_target(cell: Vector2i) -> void:
+	var snap: Dictionary = _sim().snapshot()
+	var legal: Array = _sim().legal_intents(CombatHUD.kit_seat(snap))
+	for raw in snap.get("units", []):
+		var unit: Dictionary = raw
+		if not bool(unit.get("alive", false)):
+			continue
+		if _as_cell(unit.get("pos", null)) != cell:
+			continue
+		for intent in legal:
+			if str(intent.get("type", "")) != "use_still":
+				continue
+			if int(intent.get("target_seat", -1)) != int(unit.get("seat", -2)):
+				continue
+			_submit({"type": "use_still", "target_seat": int(unit["seat"]), "to": cell})
+			_hud.clear_still_aim()
+			_paint_highlights()
+			return
 	_paint_highlights()
 
 

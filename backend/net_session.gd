@@ -1150,13 +1150,6 @@ func _note_koliseo_result(snap: Dictionary) -> void:
 		if vault.socket == still_used:
 			vault.consume()
 			vault.save()
-		# Crown Still: an online win pays one extra trophy.
-		if still_used == "crown" and won:
-			var crown_wallet := KoliseoWallet.load_saved()
-			var before := crown_wallet.trophies
-			crown_wallet.trophies = mini(crown_wallet.trophies + 1, KoliseoWallet.TROPHY_WALLET_MAX)
-			crown_wallet.save()
-			koliseo_last_payout["trophies"] = int(koliseo_last_payout.get("trophies", 0)) + (crown_wallet.trophies - before)
 	var hero := HeroProgress.load_saved()
 	var gained := hero.add_xp(class_id, HeroProgress.XP_KOLISEO_WIN if won else HeroProgress.XP_KOLISEO_LOSS)
 	hero.save()
