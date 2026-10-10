@@ -81,8 +81,7 @@ static func revoke_vault(vault) -> void:
 		else:
 			vault.fragments.erase(id)
 	# A Still forged during the test came from granted fragments.
-	vault.socket = ""
-	vault.mode = "intact"
+	vault.sockets.clear()
 	vault.test_grant = {}
 
 

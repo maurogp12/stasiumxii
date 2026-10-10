@@ -120,13 +120,14 @@ static func local_match_config() -> Dictionary:
 	# Hot-seat uses no gear or levels, so both Init are 0: a coin flip picks
 	# who starts (Mauro 29 Sep 2026: higher Init first, tie = coin flip).
 	config["first_by_init"] = true
-	# TEMPORARY balance-test kit (backend/test_loadout.gd): both hot-seat seats
-	# wear the phone's equipped loadout and socketed Still. Normal game: none.
+	# TEMPORARY balance-test kit (backend/test_loadout.gd): each hot-seat seat
+	# wears that class's equipped loadout and Still. Normal game: none.
 	if _TestLoadout.ACTIVE:
-		var kit := GearBag.load_saved().fight_gear(true)
+		var bag := GearBag.load_saved()
 		var seat_gear := {}
 		for seat in 2 * size:
-			seat_gear[seat] = kit.duplicate(true)
+			var cid := str(hotseat_classes[seat]) if all_roster and seat < hotseat_classes.size() else ""
+			seat_gear[seat] = bag.fight_gear(true, cid)
 		config["seat_gear"] = seat_gear
 	return config
 
