@@ -157,6 +157,53 @@ Small optional additions to the shared kit, none of which changes the older outp
 
 **Sources:** `saltmaw_src/` holds the chosen paintings (`_star5_gate_abyssal_saltmaw.jpg` is the comparison sent to Mauro, not a source).
 
-KNOWN_ISSUES
+## Known issues / what I'd change
 
-SOURCES_TABLE
+- **No painted lying-down keys** (same as the Granary and Frostspire):
+  - Every death is the standing painting rotated about 80° (the crab flips 180° onto its back) and lifted inside the cell.
+  - Painting a lying key per monster and facing would read better.
+- **Weapon swings are rigid rotations** about the shoulder: the cutlass and the harpoon arm swing as one painted piece.
+- **Drowned Harpooner:**
+  - The rope coil is its own part, counter-rotated so it keeps hanging during the throw. It stays stiff (no sway), and on the deepest wind-up frames its top can look slightly detached from the hand.
+  - The harpoon is simply hidden f07–f10 and reappears on f11; there is no "draw a new harpoon from the back" motion.
+  - `release.point_px` S (294,121) is where the harpoon tip would be at release, high above the head, so the projectile starts near head height. Fly it slightly downward.
+- **Reef Crab:** its legs are cut as two groups (left and right), not as single legs, so the scuttle is a group sway rather than an alternating gait. At pawn scale it reads, but up close it is stiff.
+- **Old Saltmaw:**
+  - The bite is a body lunge plus a jaw piece rotating; in E the jaw is barely visible, so the E bite reads mainly as a lunge.
+  - The Lantern Lure "flare" is the glow peak on f07 plus the lure lifting; the pull itself (the hero sliding in) and `lure_line` must sell it in game.
+  - In E a few claw tips on the far side are part of the body cut, so they ride on the body during the walk.
+- **★5 glow strength:** the glow maps bloom only saturated bright cyan. The abyssal paintings have cyan all over (spots, veins, fin edges), so their glow covers more of the body than the Frostspire ones. Lower the glow modulate (for example 0.7) if it reads too bright. The Abyssal Saltmaw uses his constant glow and no separate lure ramp in the summon.
+- **Backdrops are 1x only**, as for the other dungeons. The room B fit has a 25 px residual at the corners (20 px at 12x12): its painted floor is not a clean parallelogram. The darkened floor apron hides most of it, but along the front-right lip a few wall blocks sit slightly off the board edge.
+- **Room B floor:** the painted lair slabs are graded down (×0.72–0.76, saturation 0.8) to sit under the whirlpool and the units, as in the design. The 3-variant floor still shows a visible tile grid because each slab is painted with bright edges.
+- **Whirlpool:** a round painting on a 5x5 diamond, so its corners are empty floor, and the swirl does not animate. Rotating the sprite would also rotate the kerb; a slow pulse of `whirlpool_glow` is the safer motion.
+- **Town door:** the footprint (3x3, cell 330 px in the painting) was measured by eye from the rock base diamond. The pier end and the door cell (1,3) are a judgement call; the pier is short.
+- **lure_line** was painted blue-violet next to the magenta key and recoloured onto a teal ramp by luminance, so it is flatter than a painted streak.
+- **Props are slightly graded** (×0.9–0.95, saturation 0.92) to sit in the cave light. `coral_cluster` is the only prop with a glow; `giant_clam`'s pearl does not glow.
+- **Hero stand-ins in the mocks** are the painted idle strips scaled 0.9 by eye, not the game's pawn scale.
+
+
+## Scenario source assets (project "stasium")
+
+Each piece was painted with the approved Saltmaw images as references (door `asset_dyNRMqWJrGuLGYhk1WaXLeZz`, room `asset_J1BK4mxv6goNHE5WUyS2TzMq`, boss room `asset_DYsbbY4vsBWh9Sf2KjDqS144`, monsters `asset_1hYRQsqtN5JyDU4xaLgjm7LS`, Eastmarch style `asset_TQPWy66Pbfv9iRpz7w8NYud3`), using the Granary prompt patterns.
+
+| piece | asset (chosen) | local copy in `build_tools/dungeons/saltmaw_src/` |
+|---|---|---|
+| sea-cave entrance | `asset_fgRWfg8LMTn2rKq5jgdJSVc6` | `town_saltmaw.jpg` |
+| grotto floor a/b/c | `asset_uvzVuomGCRKGJNcF3PmknA6G`, `asset_8rB4vqbt43JJ3etZVrZ7pjZf`, `asset_cPTf3Cm53vyrkvXgb51QWyWK` | `floor_a_{1,2,3}.jpg` |
+| lair floor a/b/c | `asset_2QPK6u8gXjvMr2U2WUTnnHnM`, `asset_g6ZouvXsDNrK9rCjNjJ5a81y`, `asset_Z6wZFYTsyaEchNhr1LPxjUsb` | `floor_b_{1,2,3}.jpg` |
+| coral pad | `asset_aonSPCb1pLQKp5nt11yWJ3Mb` | `coral_pad.jpg` |
+| sunken crate, barrel, coral cluster, anchor, barnacle rock | `asset_g89mBLvc3WGzPfgnEt3dwwsk`, `asset_pW53uAGcuzKXmub71sH9xuYN`, `asset_TXb6qd9QyRxvEbQPNitpmoDk`, `asset_KYpGhMFLARjTFaTeYc6dxLvK`, `asset_GzHGjZHAkvii9XQFqxwztu2g` | `sunken_crate.jpg`, `barrel.jpg`, `coral_cluster.jpg`, `anchor.jpg`, `barnacle_rock.jpg` |
+| giant clam, treasure chest, sunken statue, rock spire | `asset_pETeznwaW6ukVjXK9peRV3nu`, `asset_SsM2CGQRddvz9Vsz8i1zsNWr`, `asset_mcSczCcZD8eBEm1a1DFLFCVp`, `asset_Fd8SoHS6y18RrQfe9gsqus1f` | `giant_clam.jpg`, `treasure_chest.jpg`, `sunken_statue.jpg`, `rock_spire.jpg` |
+| whirlpool | `asset_mXnZi4PDfHFbXh4kFu89e6wj` | `whirlpool.jpg` |
+| room A shell, room B shell | `asset_qAZdv7hPqv2f1QedsHQg3EUd`, `asset_jghpHdbKdYjoarnq7hJsnqkt` | `shell_room_a.jpg`, `shell_room_b.jpg` |
+| Reef Crab S / E | `asset_6qVuxfPNAUGBcKigxRNA4LFx` / `asset_zUnhoN5TfFy8RcBQXrHPLkvx` | `crab_S.jpg` / `crab_E.jpg` |
+| Drowned Sailor S / E | `asset_8ogg7K4gQb43y9mHFE8QEzHs` / `asset_frJ41jzAwcd7Yzn2eniZkD1h` | `sailor_S.jpg` / `sailor_E.jpg` |
+| Drowned Harpooner S / E | `asset_W4oHfH5nRnkeS9mj7Z5vDTCr` / `asset_mLRhRtP5yGL82sVWq2kJsbpY` | `harpooner_S.jpg` / `harpooner_E.jpg` |
+| Old Saltmaw S / E | `asset_cRHBbTBKPTNsYYFNHNNoVK5v` / `asset_gwHJ1vo5d7syfgFMSmYbWMFF` | `saltmaw_S.jpg` / `saltmaw_E.jpg` |
+| harpoon, impact, abyssal harpoon, lure line | `asset_ToXs8S9yLWAQ3oRkkvqVYYxs` | `harpoon_projectiles.jpg` |
+| ★5 Abyssal Saltmaw S / E | `asset_BprqPkz3sofoVCkkEocsbweL` (approved by Mauro; runners-up `asset_mMouwx2mmhMwnEKvJQVBb5fb`, `asset_b6h8RfKX3dEMVesz5mh6MS74`) / `asset_UcEnTmm7kSjbEpCNsHyhbcnZ` | `abyssal_saltmaw_S.jpg` / `abyssal_saltmaw_E.jpg` |
+| ★5 Abyssal Reef Crab S / E | `asset_v2CHcfnnTDuys41uXoYVYfc2` / `asset_uZ6jKsEDSCq1nWRFQ8jm8UwR` | `abyssal_crab_S.jpg` / `abyssal_crab_E.jpg` |
+| ★5 Abyssal Drowned Sailor S / E | `asset_EHmrvvo6a5hJJvgLQ9HkvWMc` / `asset_FU34J4EuXaPv5eL9iTxfukYx` | `abyssal_sailor_S.jpg` / `abyssal_sailor_E.jpg` |
+| ★5 Abyssal Drowned Harpooner S / E | `asset_2F1Ehga17WqQzjnCPjD9bAqD` / `asset_nMhoMGhcsuEMML15fi3aJS1c` | `abyssal_harpooner_S.jpg` / `abyssal_harpooner_E.jpg` |
+| ★5 riptide | `asset_tZxuumjqWfx8VaSeYtmZMD9u` | `riptide.jpg` |
+
