@@ -175,7 +175,7 @@ def main():
                       "monsters": ["reef_crab", "drowned_sailor", "drowned_harpooner"], "backdrop": {"15": "room_a_grotto_15x15", "12": "room_a_grotto_12x12"}},
                 "b": {"name": "Old Saltmaw's treasure lair (boss)", "floor": ["lair_floor_a", "lair_floor_b", "lair_floor_c"], "pad": "coral_pad", "pad_glow": "coral_pad_glow",
                       "props": [p for p in ("rock_spire", "giant_clam", "treasure_chest", "sunken_statue", "barrel", "sunken_crate", "barnacle_rock") if p in props],
-                      "decals": ["whirlpool"], "decal_note": "the whirlpool is a walkable 3x3 floor decal; ring it with blocking rock_spire props (the design shows 8-10 standing rocks around it)",
+                      "decals": ["whirlpool"], "decal_note": "the whirlpool is a walkable 5x5 floor decal (measured on the design): its stone kerb runs along the 5x5 border cells and the swirling water fills about the inner 3x3; stand blocking rock_spire props on some of the 16 border cells (the design shows 8-10 standing rocks on the kerb), leaving gaps so the water stays reachable",
                       "monsters": ["old_saltmaw", "reef_crab", "drowned_sailor"],
                       "backdrop": {"15": "room_b_lair_15x15", "12": "room_b_lair_12x12"}},
             },

@@ -15,6 +15,10 @@ import gkit  # noqa: E402
 import board_kit  # noqa: E402
 
 TEAL = (0.25, 1.0, 0.8)
+# The lair slabs came out brighter and more saturated than the design's floor: darken them so the
+# whirlpool, the pads and the units read on top.
+LAIR_GRADE = {"mul": (0.72, 0.74, 0.76), "sat": 0.8, "gamma": 1.1}
+WHIRL_N = 5  # measured on the design: water ~3.7 cells across, kerb + standing rocks ~5.8 cells
 META = {"tiles": [], "props": [], "decals": [], "glows": [], "backdrops": []}
 
 
@@ -57,7 +61,7 @@ def build():
     b = board_kit.Board(key="magenta", floor_fill=(14, 24, 26))
     for i in (1, 2, 3):
         b.tile("floor_a_%d.jpg" % i, "grotto_floor_%s" % "abc"[i - 1], "a")
-        b.tile("floor_b_%d.jpg" % i, "lair_floor_%s" % "abc"[i - 1], "b")
+        b.tile("floor_b_%d.jpg" % i, "lair_floor_%s" % "abc"[i - 1], "b", grade=LAIR_GRADE)
     pr = b.tile("coral_pad.jpg", "coral_pad", "a", kind="glow_pad")
     b.pad_glow(pr, "coral_pad_glow", "coral_pad", col=TEAL, bright=teal_bright(pr), gain=(3.0, 0.9))
     g = {"mul": (0.9, 0.93, 0.95), "sat": 0.92}
@@ -73,8 +77,8 @@ def build():
     b.prop("sunken_statue.jpg", "sunken_statue", "b", 48, grade=g, notes="barnacled mermaid statue with a trident on a broken plinth (tall)")
     b.prop("rock_spire.jpg", "rock_spire", "b", 40, grade=g,
            notes="jagged green-grey standing rock; ring the whirlpool with these (blocking)")
-    b.decal("whirlpool.jpg", "whirlpool", n=3, room="b", glow_mask=whirl_lines, glow_col=TEAL, glow_gain=(3, 0.9, 0.3))
-    mask_outside_diamond("whirlpool", 3)
+    b.decal("whirlpool.jpg", "whirlpool", n=WHIRL_N, room="b", glow_mask=whirl_lines, glow_col=TEAL, glow_gain=(3, 0.9, 0.3))
+    mask_outside_diamond("whirlpool", WHIRL_N)
     for n in (15, 12):
         b.backdrop("shell_room_a.jpg", "room_a_grotto", "a", n, "grotto_floor")
         b.backdrop("shell_room_b.jpg", "room_b_lair", "b", n, "lair_floor")

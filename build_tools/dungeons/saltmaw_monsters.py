@@ -43,14 +43,14 @@ def crab_facing(f, src="crab"):
             Part("legs_l", [(15, 270), (245, 270), (245, 420), (200, 450), (200, 890), (15, 890)], (235, 420), "root", True, -1),
             Part("legs_r", [(780, 270), (1010, 270), (1010, 830), (955, 830), (955, 560), (880, 450), (800, 420), (780, 400)], (790, 420), "root", True, -1),
         ]
-        return mrig.Facing(src + "_S.jpg", parts, ground=(500, 880), hip=(500, 520), scale=0.27, cell=CELL, cell_pivot=PIV, despill=True)
+        return mrig.Facing(src + "_S.jpg", parts, ground=(500, 880), hip=(500, 520), scale=0.24, cell=CELL, cell_pivot=PIV, despill=True)
     parts = [
         Part("claw_a", [(430, 170), (560, 105), (760, 110), (760, 250), (640, 325), (560, 335), (470, 295)], (480, 280), "body", True, 2),
         Part("claw_b", [(690, 420), (760, 300), (900, 165), (980, 210), (975, 420), (905, 570), (800, 570), (720, 470)], (720, 450), "body", True, 2),
         Part("legs_l", [(15, 330), (230, 330), (265, 480), (265, 840), (15, 840)], (250, 420), "root", True, -1),
         Part("legs_f", [(430, 615), (650, 605), (700, 545), (920, 545), (920, 870), (600, 950), (430, 950)], (600, 600), "root", True, -1),
     ]
-    return mrig.Facing(src + "_E.jpg", parts, ground=(520, 820), hip=(500, 450), scale=0.27, cell=CELL, cell_pivot=PIV, despill=True)
+    return mrig.Facing(src + "_E.jpg", parts, ground=(520, 820), hip=(500, 450), scale=0.24, cell=CELL, cell_pivot=PIV, despill=True)
 
 
 def sailor_facing(f, src="sailor"):
@@ -78,6 +78,7 @@ def harpooner_facing(f, src="harpooner"):
         parts = [
             Part("harpoon", [(225, 115), (460, 55), (695, 25), (695, 95), (470, 172), (225, 218)], (180, 170), "arm_throw", False, 4),
             Part("harpoon_butt", [(20, 160), (128, 140), (128, 212), (20, 214)], (180, 170), "arm_throw", False, 4),
+            Part("rope", [(20, 214), (128, 212), (190, 232), (212, 300), (248, 420), (255, 840), (40, 840), (30, 250)], (150, 215), "arm_throw", False, 2),
             Part("arm_throw", [(20, 214), (128, 212), (128, 115), (225, 115), (225, 218), (280, 260), (330, 280), (370, 380), (300, 430), (260, 440), (250, 835), (45, 835), (35, 250)], (330, 370), "body", True, 3),
             Part("arm_free", [(690, 460), (780, 520), (860, 640), (965, 700), (965, 805), (840, 805), (800, 700), (720, 620), (680, 560)], (710, 490), "body", True, 2),
             Part("leg_l", [(300, 1000), (460, 1000), (430, 1150), (410, 1285), (215, 1295), (225, 1230), (300, 1150)], (390, 1010), "root", True, -1),
@@ -90,6 +91,7 @@ def harpooner_facing(f, src="harpooner"):
     parts = [
         Part("harpoon", [(765, 70), (965, 35), (965, 105), (830, 172), (765, 205)], (720, 170), "arm_throw", False, 4),
         Part("harpoon_butt", [(535, 175), (680, 128), (680, 232), (535, 245)], (720, 170), "arm_throw", False, 4),
+        Part("rope", [(792, 222), (948, 228), (958, 840), (778, 840), (790, 520), (800, 400)], (775, 240), "arm_throw", False, 2),
         Part("arm_throw", [(610, 330), (670, 240), (680, 120), (765, 105), (790, 220), (945, 230), (955, 835), (780, 835), (780, 520), (720, 420), (640, 420)], (640, 380), "body", True, 3),
         Part("arm_free", [(290, 470), (220, 540), (140, 640), (25, 705), (25, 825), (155, 825), (200, 700), (260, 620), (300, 560)], (290, 500), "body", True, 2),
         Part("leg_l", [(200, 1080), (330, 1080), (300, 1250), (300, 1375), (145, 1375), (170, 1250)], (260, 1090), "root", True, -1),
@@ -115,7 +117,7 @@ def saltmaw_facing(f, src="saltmaw"):
         return fc
     parts = [
         Part("lure", [(690, 250), (720, 120), (790, 55), (875, 65), (945, 130), (965, 335), (880, 375), (840, 250), (800, 120), (760, 110), (730, 180), (720, 260)], (710, 260), "body", False, 3),
-        Part("limb_r", [(680, 560), (800, 600), (965, 760), (985, 885), (740, 885), (700, 720), (660, 620)], (700, 600), "root", True, 1),
+        Part("limb_r", [(680, 560), (800, 600), (1024, 690), (1024, 905), (740, 905), (700, 720), (660, 620)], (700, 600), "root", True, 1),
         Part("limb_l", [(400, 640), (560, 620), (620, 760), (655, 965), (415, 965), (390, 800)], (480, 640), "root", True, 1),
         Part("limb_back", [(15, 560), (260, 560), (380, 700), (375, 835), (210, 835), (15, 765)], (240, 580), "root", True, -1),
     ]
@@ -249,7 +251,7 @@ def harpooner_actions(f):
         (7, {}),
     ])
     fall = -1 if f == "S" else 1
-    A["death"] = keys(13, [
+    death = keys(13, [
         (0, {}),
         (2, dict(body=-6, head=-16, dy=-3, arm_throw=-12, arm_free=fr * 20)),
         (5, dict(dy=20, sy=0.92, body=8 * -fall, rot=12 * fall, leg_l=14, leg_r=-14, arm_throw=10, arm_free=-fr * 10, head=10)),
@@ -257,6 +259,15 @@ def harpooner_actions(f):
         (10, dict(rot=80 * fall, dy=56, sy=0.88, body=6 * -fall, leg_l=18, leg_r=-18, arm_throw=20, arm_free=-fr * 22, head=18)),
         (12, dict(rot=82 * fall, dy=57, sy=0.88, body=6 * -fall, leg_l=18, leg_r=-18, arm_throw=21, arm_free=-fr * 23, head=19)),
     ])
+    A["death"] = death
+    # The rope hangs from the throwing hand: counter-rotate it against the arm, body and root so it keeps
+    # hanging down (with a little lag) instead of swinging up with the throw.
+    for act, poses in A.items():
+        prev = 0.0
+        for p in poses:
+            target = -(p.get("arm_throw", 0.0) + p.get("body", 0.0)) - (0.0 if act == "death" else p.get("rot", 0.0))
+            prev = target if prev == 0.0 else prev + (target - prev) * 0.7
+            p["rope"] = prev
     return A
 
 
