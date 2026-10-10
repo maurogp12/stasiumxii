@@ -360,47 +360,105 @@ func _near_percent(count: int, trials: int, percent: int, msg: String) -> void:
 	truthy(absf(got - float(percent)) <= 2.0, "%s is %.2f%% (want %d%% ±2)" % [msg, got, percent])
 
 
-## The balance-test kit stays off. ProgressEpoch is the one-time fresh start.
+## The balance-test kit is on for this build. One flag turns it off.
+## ProgressEpoch is still the one-time fresh start.
 func _test_temporary_kit() -> void:
 	var TL := preload("res://backend/test_loadout.gd")
-	eq(TL.ACTIVE, false, "the test kit is off")
+	eq(TL.ACTIVE, true, "the test kit is on")
 	var plain_hero := HeroProgress.new()
-	eq(TL.sync_hero(plain_hero), false, "kit off does not grant levels")
-	eq(plain_hero.classes.is_empty(), true, "no class rows are invented")
-	eq(plain_hero.test_grant, false, "no hero grant flag")
+	eq(TL.sync_hero(plain_hero), true, "kit grants max level")
+	for cid in HeroProgress.GROWTH:
+		eq(plain_hero.level_of(cid), HeroProgress.MAX_LEVEL, "%s is level 30" % cid)
+		eq(plain_hero.record(cid)["spent"], TL.DUEL_BUILDS[cid], "%s has the duel build" % cid)
+	eq(plain_hero.test_grant, true, "hero grant flag")
+	eq(TL.sync_hero(plain_hero), false, "a second hero sync does not grant")
 	var kept_level := HeroProgress.new()
 	kept_level.test_grant = true
 	kept_level.test_backup = {"kestrel": {"xp": 10, "level": 4, "spent": {}}}
 	kept_level.record("kestrel")["level"] = 30
-	eq(TL.sync_hero(kept_level), true, "a leftover grant flag is cleared")
-	eq(kept_level.level_of("kestrel"), 30, "test_backup is not copied back onto classes")
+	TL.revoke_hero(kept_level)
+	eq(kept_level.level_of("kestrel"), 30, "turning the kit off does not copy test_backup back")
 	eq(kept_level.test_grant, false, "hero grant flag cleared")
 	eq(kept_level.test_backup, {}, "hero backup discarded")
-	eq(TL.sync_hero(kept_level), false, "a second hero sync does not grant")
 	var bag := GearBag.new()
 	var real := bag.add_item("sheaf", "head", 1)
-	eq(TL.sync_bag(bag), false, "kit off does not grant gear")
-	eq(bag.items.size(), 1, "the real piece is the only one")
-	bag.test_grant = true
-	for slot in GearBag.SLOTS:
-		var uid := bag.add_item("brightedge", slot, 5)
-		bag.items[bag.find(uid)]["test"] = true
-		bag.equip(uid)
-	eq(TL.sync_bag(bag), true, "tagged pieces are stripped")
-	eq(bag.find(real) != -1 and bag.items.size() == 1, true, "revoking keeps the real loot")
-	eq(bag.equipped.is_empty(), true, "revoking unequips the test pieces")
-	eq(bag.test_grant, false, "bag grant flag cleared")
+	eq(TL.sync_bag(bag), true, "kit grants every set piece")
+	var families: int = GearBag.FAMILY_ORDER.size() + GearBag.ULTRA_ORDER.size()
+	eq(bag.items.size(), families * GearBag.SLOTS.size() + 1, "ladder, Ultra, and the real piece")
+	eq(bag.find(real) != -1, true, "real loot stays")
+	var all_plus := true
+	var all_tagged := true
+	var saw := {}
+	for it in bag.items:
+		if int(it["uid"]) == real:
+			continue
+		if int(it["plus"]) != GearBag.PLUS_CAP:
+			all_plus = false
+		if not bool(it.get("test", false)):
+			all_tagged = false
+		saw[GearBag.family_of(str(it["item_id"]))] = true
+	eq(all_plus, true, "every kit piece is +5")
+	eq(all_tagged, true, "kit pieces stay tagged in the bag")
+	for fam in GearBag.ULTRA_ORDER:
+		eq(bool(saw.get(fam, false)), true, "%s Ultra is in the bag" % fam)
+	for fam in ["ashmantle", "undertow", "gallowsight", "ravenmourn", "brightedge"]:
+		eq(bool(saw.get(fam, false)), true, "%s is in the bag" % fam)
 	eq(TL.sync_bag(bag), false, "a second bag sync does not grant")
+	var sample := -1
+	for it in bag.items:
+		if str(it["item_id"]) == "brightedge.weapon":
+			sample = int(it["uid"])
+	eq(bool(bag.equip(sample, "kestrel")["ok"]), true, "any class can wear the shared Legendary")
+	var before := bag.items.size()
+	TL.revoke_bag(bag)
+	eq(bag.equipped.is_empty(), true, "the off switch takes the kit piece off")
+	eq(bag.find(real) != -1 and bag.items.size() == 1, true, "the off switch keeps real loot")
+	eq(bag.test_grant, false, "bag grant flag cleared")
+	eq(before > 1, true, "the grant had more than the real piece")
 	var tagged := GearBag.new()
 	var test_uid := tagged.add_item("brightedge", "weapon", 5)
 	tagged.items[tagged.find(test_uid)]["test"] = true
-	tagged.equip(test_uid)
+	tagged.equip(test_uid, "kestrel")
 	var real_uid := tagged.add_item("sheaf", "head", 0)
-	tagged.equip(real_uid)
-	var worn: Array = tagged.fight_gear()["worn"]
-	eq(worn.size(), 1, "fight gear omits test pieces")
-	eq(str(worn[0]["item_id"]), "sheaf.head", "the real worn piece is sent")
-	eq(worn[0].has("test"), false, "the sent piece has no test flag")
+	tagged.equip(real_uid, "mender")
+	var worn: Array = tagged.fight_gear(false, "kestrel")["worn"]
+	eq(worn.size(), 1, "kit on: the test piece is sent")
+	eq(str(worn[0]["item_id"]), "brightedge.weapon", "Brightedge is a normal item id")
+	eq(int(worn[0]["plus"]), 5, "it is still +5")
+	eq(worn[0].has("test"), false, "the wire has no test flag")
+	var mender_worn: Array = tagged.fight_gear(false, "mender")["worn"]
+	eq(mender_worn.size(), 1, "the real piece is sent too")
+	eq(str(mender_worn[0]["item_id"]), "sheaf.head", "Sheaf stays")
+	var full := GearBag.new()
+	eq(TL.sync_bag(full), true, "a fresh bag receives the kit")
+	for slot in GearBag.SLOTS:
+		var uid := -1
+		for it in full.items:
+			if str(it["item_id"]) == "sandhawk.%s" % slot:
+				uid = int(it["uid"])
+		eq(bool(full.equip(uid, "kestrel")["ok"]), true, "kestrel wears Sandhawk %s" % slot)
+	var gate := -1
+	for it in full.items:
+		if str(it["item_id"]) == "gatewarden.weapon":
+			gate = int(it["uid"])
+	eq(str(full.equip(gate, "kestrel")["reason"]), "wrong_class", "Bastion's Ultra stays on Bastion")
+	eq(bool(full.equip(gate, "bastion")["ok"]), true, "Bastion wears Gatewarden")
+	var sent: Array = full.fight_gear(false, "kestrel")["worn"]
+	eq(sent.size(), 5, "the full Ultra set leaves the phone")
+	for row in sent:
+		eq(row.has("test"), false, "Ultra row %s has no test flag" % str(row["item_id"]))
+		eq(int(row["plus"]), GearBag.PLUS_CAP, "Ultra row is +5")
+	var host := GearBag.clean_fight_gear({"worn": sent, "still": {"id": "mirror_hour", "mode": "overwound"}})
+	eq((host["worn"] as Array).size(), 5, "the server keeps the untagged Ultra set")
+	eq(host["still"], {"id": "mirror_hour", "mode": "overwound"}, "the server keeps the Still")
+	var net: Node = (load("res://backend/net_session.gd") as Script).new()
+	net.mode = net.Mode.DEDICATED
+	net.accept_seat_gear(0, {"worn": sent, "still": {"id": "bound_hour", "mode": "intact"}})
+	eq((net._seat_gear[0]["worn"] as Array).size(), 5, "dedicated accept keeps the Ultra set")
+	eq(net._seat_gear[0]["still"]["id"], "bound_hour", "dedicated accept keeps the Still")
+	net.accept_seat_gear(1, {"worn": [{"item_id": "sandhawk.weapon", "plus": 5, "test": true}]})
+	eq((net._seat_gear[1]["worn"] as Array).size(), 0, "a test flag is still dropped")
+	net.free()
 	var cleaned := GearBag.clean_fight_gear({"worn": [
 		{"item_id": "sheaf.head", "plus": 5, "test": true},
 		{"item_id": "sheaf.chest", "plus": 1},
@@ -408,13 +466,25 @@ func _test_temporary_kit() -> void:
 	eq(cleaned["worn"].size(), 1, "clean_fight_gear drops test pieces")
 	eq(str(cleaned["worn"][0]["item_id"]), "sheaf.chest", "clean_fight_gear keeps the real piece")
 	var vault := StillVault.new()
-	eq(TL.sync_vault(vault), false, "kit off does not grant Stills")
-	vault.fragments["cut"] = 20
-	vault.test_grant["cut"] = 5
-	eq(TL.sync_vault(vault), true, "granted fragments are taken back")
-	eq(vault.count("cut"), 15, "fragments the player earned stay")
-	eq(vault.test_grant, {}, "still grant cleared")
+	eq(TL.sync_vault(vault), true, "kit grants every Still")
+	for id in StillVault.IDS:
+		eq(vault.count(id), TL.STILL_FRAGMENTS, "%s has enough fragments" % id)
 	eq(TL.sync_vault(vault), false, "a second vault sync does not grant")
+	eq(bool(vault.forge("tide")["ok"]), true, "forge Tide from the grant")
+	eq(vault.socket, "tide", "Tide is socketed")
+	eq(bool(vault.set_mode("overwound")["ok"]), true, "Overwound is available")
+	eq(bool(vault.forge("mirror_hour")["ok"]), true, "swap to Mirror Hour")
+	eq(vault.socket, "mirror_hour", "the socket followed the swap")
+	eq(vault.mode, "overwound", "the mode stays")
+	eq(vault.count("tide"), TL.STILL_FRAGMENTS, "Tide's fragments came back")
+	eq(vault.count("mirror_hour"), TL.STILL_FRAGMENTS - StillVault.FORGE_COST, "Mirror Hour spent 12")
+	var earned := StillVault.new()
+	earned.fragments["steadfast"] = 20
+	earned.test_grant["steadfast"] = 5
+	TL.revoke_vault(earned)
+	eq(earned.count("steadfast"), 15, "fragments the player earned stay")
+	eq(earned.socket, "", "the off switch clears the socket")
+	eq(earned.test_grant, {}, "still grant cleared")
 	_test_progress_epoch()
 
 

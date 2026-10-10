@@ -867,15 +867,18 @@ func active_bonuses() -> Array:
 	return out
 
 
-## Worn pieces of one class as [{item_id, plus}]. Test and debug tags ride
-## along so clean_worn can drop them. Combat recomputes stats from the list.
+## Worn pieces of one class as [{item_id, plus}]. Debug tags ride along so
+## clean_worn can drop them. A test tag rides along only while the kit is
+## off, so a leftover grant never enters a fight. While the kit is on the
+## tag stays on the saved item (ACTIVE = false can still strip the bag) and
+## is left off this list: the dedicated server keeps a valid item id.
 func worn_list(class_id: String = "") -> Array:
 	var out: Array = []
 	for slot in SLOTS:
 		var it := equipped_item(slot, class_id)
 		if not it.is_empty():
 			var row := {"item_id": str(it["item_id"]), "plus": int(it["plus"])}
-			if bool(it.get("test", false)):
+			if bool(it.get("test", false)) and not _TestLoadout.ACTIVE:
 				row["test"] = true
 			if bool(it.get("debug", false)):
 				row["debug"] = true
@@ -886,7 +889,8 @@ func worn_list(class_id: String = "") -> Array:
 ## Sanitised worn list: valid ids, one per slot, plus 0–5.
 ## `drop_debug` is true on the server path. A local fight keeps debug pieces
 ## so a review build can wear a set, and still sends the flag so a later
-## clean drops them.
+## clean drops them. A row tagged test is always dropped. The kit omits
+## that tag on the way out, so a +5 Ultra set is a normal item.
 static func clean_worn(raw: Variant, drop_debug: bool = true) -> Array:
 	var out: Array = []
 	var used := {}
@@ -895,8 +899,7 @@ static func clean_worn(raw: Variant, drop_debug: bool = true) -> Array:
 	for entry in raw:
 		if typeof(entry) != TYPE_DICTIONARY:
 			continue
-		# The dedicated server (and every other fight) refuses kit pieces.
-		# A missing flag cannot be detected; the epoch wipe is what clears the bag.
+		# A test flag is never applied. The kit sends its pieces without one.
 		if bool(entry.get("test", false)):
 			continue
 		if drop_debug and bool(entry.get("debug", false)):
@@ -1165,9 +1168,9 @@ static func clean_spell_elements(class_id: String, raw: Variant) -> Dictionary:
 
 
 ## Everything a fight needs from one class loadout.
-## Test pieces are stripped. Debug pieces stay (flagged) so a review build
-## can fight with them; the online send path runs clean_fight_gear, which
-## drops debug.
+## While the kit is off, test pieces are stripped. While it is on they are
+## sent as normal items (no test flag) so Koliseo keeps them. Debug pieces
+## stay flagged; the online send path runs clean_fight_gear, which drops debug.
 func fight_gear(with_still: bool = false, class_id: String = "") -> Dictionary:
 	var out := {"worn": clean_worn(worn_list(class_id), false), "attune": attune.duplicate(), "heroes": HeroProgress.load_saved().fight_heroes()}
 	if with_still:

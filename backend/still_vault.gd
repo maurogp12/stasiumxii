@@ -208,10 +208,16 @@ func roll_chest(star: int, pick: Callable = Callable()) -> Array:
 	return out
 
 
+## The test kit may replace the socket. Fragments of the outgoing Still
+## come back, so the 14 can be swapped without waiting for a fight.
+func kit_can_swap() -> bool:
+	return _TestLoadout.ACTIVE and not test_grant.is_empty()
+
+
 func can_forge(id: String) -> Dictionary:
 	if not is_id(id):
 		return {"ok": false, "reason": "unknown_still"}
-	if socket != "":
+	if socket != "" and not (kit_can_swap() and socket != id):
 		return {"ok": false, "reason": "socket_full"}
 	if count(id) < FORGE_COST:
 		return {"ok": false, "reason": "needs_12"}
@@ -222,12 +228,16 @@ func forge(id: String) -> Dictionary:
 	var gate := can_forge(id)
 	if not bool(gate["ok"]):
 		return gate
+	var replacing := socket != "" and socket != id
+	if replacing:
+		fragments[socket] = count(socket) + FORGE_COST
 	fragments[id] = count(id) - FORGE_COST
 	if int(fragments[id]) <= 0:
 		fragments.erase(id)
 	socket = id
-	mode = "intact"
-	return {"ok": true, "reason": "", "still": id}
+	if not replacing:
+		mode = "intact"
+	return {"ok": true, "reason": "", "still": id, "swapped": replacing}
 
 
 func set_mode(next: String) -> Dictionary:
