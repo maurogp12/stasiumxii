@@ -3,34 +3,25 @@ kind, size, pivot/anchor, footprint or cell, frame counts and fps.
 
 Run after build_granary_town.py, build_granary_board.py and granary_monsters.py.
 """
-import glob
-import json
 import os
 import sys
-
-from PIL import Image
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import gkit  # noqa: E402
 import build_granary_board as board  # noqa: E402
 import build_granary_star5 as build_star5  # noqa: E402
 
-ROOT = gkit.OUT
-
-
-def size(rel):
-    with Image.open(os.path.join(ROOT, rel)) as im:
-        return list(im.size)
+import manifest_kit  # noqa: E402
 
 
 def main():
+    gkit.use("old_granary_cellar")
+    ROOT = gkit.OUT
     meta_board = board.build()
-    files = []
-
-    def add(path, kind, **kw):
-        e = {"path": path, "kind": kind, "size": size(path)}
-        e.update(kw)
-        files.append(e)
+    mk = manifest_kit.Manifest()
+    files = mk.files
+    size = mk.size
+    add = mk.add
 
     # Town door.
     town = []
@@ -72,45 +63,7 @@ def main():
         add(b["file"], "backdrop", board_size=b["board_size"], cell00_centre_px=b["cell00_centre_px"])
 
     # Monsters.
-    def monster(mid):
-        mm = json.load(open(os.path.join(ROOT, mm_dir(mid), "meta.json")))
-        d = mm.get("dir", "monsters/" + mid)
-        acts = {}
-        for act, a in mm["actions"].items():
-            acts[act] = {"frames": a["frames"], "loop": a["loop"], "fps": mm["fps"],
-                         "duration_s": round(a["frames"] / mm["fps"], 3),
-                         "pattern": "%s/%s/%s_{S,E}_f{00..%02d}.png" % (d, act, act, a["frames"] - 1)}
-            if a.get("glow_files"):
-                acts[act]["glow_pattern"] = "%s/%s/%s_{S,E}_f{00..%02d}_glow.png" % (d, act, act, a["frames"] - 1)
-            for f in ("S", "E"):
-                for i in range(a["frames"]):
-                    p = "%s/%s/%s_%s_f%02d.png" % (d, act, act, f, i)
-                    files.append({"path": p, "kind": "monster_frame", "size": mm["cell"], "pivot": mm["pivot"],
-                                  "monster": mid, "action": act, "facing": f, "frame": i, "frames": a["frames"], "fps": mm["fps"]})
-                    if a.get("glow_files"):
-                        files.append({"path": p[:-4] + "_glow.png", "kind": "monster_glow_frame", "blend": "add", "size": mm["cell"],
-                                      "pivot": mm["pivot"], "monster": mid, "action": act, "facing": f, "frame": i,
-                                      "frames": a["frames"], "fps": mm["fps"], "for": p})
-        e = {"id": mid, "name": mm["name"], "dir": d, "cell": mm["cell"], "pivot": mm["pivot"], "fps": mm["fps"],
-             "facings": {"S": "front, facing screen down-right", "E": "back, facing screen up-right",
-                         "mirrors": "the other two facings are game-side flip_h mirrors, as for the heroes: S flipped = front facing down-left, E flipped = back facing up-left"},
-             "actions": acts, "qa": mm["qa"]}
-        if mm.get("release"):
-            e["release"] = mm["release"]
-            e["release"]["note"] = ("spawn the projectile on this attack frame at point_px (cell pixels, same space as the pivot; "
-                                    "mirror x about the cell centre for the mirrored facings)")
-        if mm.get("star5"):
-            e["star"] = 5
-            e["replaces"] = mm.get("base_of")
-            e["glow"] = ("every frame has a same-size additive light map <frame>_glow.png (green emissive cracks/sludge bloomed + faint aura): "
-                         "draw it as a child of the same sprite, same offset/scale/flip, CanvasItemMaterial BLEND_MODE_ADD; it is black (adds nothing) elsewhere")
-        return e
-
-    def mm_dir(mid):
-        for d in ("monsters/" + mid, "star5/monsters/" + mid):
-            if os.path.exists(os.path.join(ROOT, d, "meta.json")):
-                return d
-        raise FileNotFoundError(mid)
+    monster = mk.monster
 
     monsters = [monster(m) for m in ("granary_rat", "sling_rat", "scarecrow_drudge", "the_ratking")]
     big_note = ("1.5x the hero height: 768x540 cell, pivot (384,494) = the hero cell scaled 1.5x. "
@@ -192,11 +145,7 @@ def main():
     }
     gkit.write_json(os.path.join(ROOT, "manifest.json"), man)
     # Sanity: every PNG under ROOT (except _mock) is listed.
-    listed = {f["path"] for f in files}
-    on_disk = {os.path.relpath(p, ROOT) for p in glob.glob(os.path.join(ROOT, "**", "*.png"), recursive=True) if "/_mock/" not in p and not os.path.relpath(p, ROOT).startswith("_mock")}
-    missing = sorted(on_disk - listed)
-    extra = sorted(listed - on_disk)
-    print("files", len(files), "missing", missing[:5], len(missing), "extra", extra[:5])
+    mk.check()
     return man
 
 

@@ -23,19 +23,11 @@ import gkit  # noqa: E402
 import mrig  # noqa: E402
 from mrig import Part, keys  # noqa: E402
 
-FPS = 17.144
+from monster_kit import CELL, CELL_BIG, FPS, PIV, PIV_BIG, cyc, fwd  # noqa: E402,F401
+import monster_kit  # noqa: E402
+
+gkit.use("old_granary_cellar")
 OUT = os.path.join(gkit.OUT, "monsters")
-CELL = (512, 360)
-PIV = (256, 329)
-CELL_BIG = (768, 540)
-PIV_BIG = (384, 494)
-
-FWD = {"S": (math.cos(math.atan2(0.5, 1)), math.sin(math.atan2(0.5, 1))),
-       "E": (math.cos(math.atan2(-0.5, 1)), math.sin(math.atan2(-0.5, 1)))}
-
-
-def fwd(f, d):
-    return {"dx": FWD[f][0] * d, "dy": FWD[f][1] * d}
 
 
 # ------------------------------------------------------------------ rigs
@@ -184,10 +176,6 @@ def sling_rat_actions(f):
 
 
 # --------------------------------------------------------------- actions
-
-def cyc(n, fn):
-    return [fn(i / float(n)) for i in range(n)]
-
 
 def rat_actions(f):
     s = math.sin
@@ -352,100 +340,14 @@ MONSTERS["radioactive_ratking"] = {"name": "Radioactive Ratking", "rig": lambda 
 MONSTERS["radioactive_rat"] = {"name": "Radioactive Rat", "rig": lambda f: rat_facing(f, "rad_rat"), "actions": rat_actions,
                                "cell": CELL, "pivot": PIV, "base": {"E": {"tail1": 16, "tail2": 8}}, "star5": True, "glow": True, "base_of": "granary_rat"}
 
-LOOPS = {"idle": True, "walk": True, "attack": False, "hit": False, "death": False, "summon": False}
-
-
-def keep_in(rig, poses):
-    """Lift/shift a pose sequence smoothly so every frame stays inside the cell.
-
-    Pass 1 measures the per-frame shift the renderer would need; the shift is
-    widened (+-2 frames), smoothed, and added to the poses' dx/dy, so the
-    correction eases in and out instead of popping.
-    """
-    need = []
-    for p in poses:
-        rig.render(p)
-        need.append(rig.last_shift)
-    if not any(abs(a) > 0.01 or abs(b) > 0.01 for a, b in need):
-        return poses
-    n = len(poses)
-    out = []
-    env = []
-    for i in range(n):
-        w = need[max(0, i - 2):i + 3]
-        env.append((max(w, key=lambda t: abs(t[0]))[0], max(w, key=lambda t: abs(t[1]))[1]))
-    for i in range(n):
-        w = env[max(0, i - 1):i + 2]
-        ex = sum(t[0] for t in w) / len(w)
-        ey = sum(t[1] for t in w) / len(w)
-        q = dict(poses[i])
-        q["dx"] = q.get("dx", 0.0) + ex * 1.05
-        q["dy"] = q.get("dy", 0.0) + ey * 1.05
-        out.append(q)
-    return out
-
-
-def glow_frame(im, big):
-    """Additive light map for a radioactive frame: the green emissive paint, bloomed, plus a faint aura."""
-    import cv2
-    a = im[..., 3] > 0
-    r, g, b = [im[..., i].astype(np.float32) for i in range(3)]
-    em = a & (g > r + 30) & (g > b + 50) & (g > 110)
-    e = em.astype(np.float32) * np.clip((g - 110) / 120.0, 0.3, 1.0)
-    k = 1.5 if big else 1.0
-    glow = cv2.GaussianBlur(e, (0, 0), 4 * k) * 1.4 + cv2.GaussianBlur(e, (0, 0), 14 * k) * 1.2
-    glow += cv2.GaussianBlur(a.astype(np.float32), (0, 0), 16 * k) * 0.10
-    glow = np.clip(glow, 0, 1)
-    col = np.array([0.55, 1.0, 0.18], np.float32)
-    g8 = np.clip(glow[..., None] * col * 255 + 0.5, 0, 255).astype(np.uint8)
-    on = g8.max(-1) >= 3
-    out = np.zeros(im.shape, np.uint8)
-    out[..., :3] = np.where(on[..., None], g8, 0)
-    out[..., 3] = np.where(on, 255, 0)
-    return out
+LOOPS = monster_kit.LOOPS
+keep_in = monster_kit.keep_in
+glow_frame = monster_kit.glow_green
 
 
 def build(mid, check=False):
-    spec = MONSTERS[mid]
-    star5 = spec.get("star5", False)
-    root = os.path.join(gkit.OUT, "star5", "monsters") if star5 else OUT
-    rel_root = "star5/monsters" if star5 else "monsters"
-    mdir = os.path.join(root, mid)
-    meta = {"id": mid, "name": spec["name"], "star5": star5, "base_of": spec.get("base_of"), "dir": rel_root + "/" + mid, "cell": list(spec["cell"]), "pivot": list(spec["pivot"]), "fps": FPS,
-            "facings": ["S", "E"], "mirror": {"W": "E", "N": "S"}, "actions": {}, "qa": {}}
-    for f in ("S", "E"):
-        rig = spec["rig"](f)
-        acts = spec["actions"](f)
-        meta["qa"]["hole_fill_px_" + f] = rig.hole_px
-        base = spec.get("base", {}).get(f, {})
-        for act, poses in acts.items():
-            poses = mrig.add([dict(p) for p in poses], [base] * len(poses))
-            if check and act not in ("idle", "attack", "death"):
-                continue
-            for _ in range(3):
-                poses = keep_in(rig, poses)
-            lost_max = 0
-            shift_max = 0.0
-            for i, pose in enumerate(poses):
-                im, lost = rig.render(pose)
-                if act == "attack" and spec.get("release") == i:
-                    px, py = rig.point(pose, *rig.pocket)
-                    meta.setdefault("release", {"action": "attack", "frame": i, "point_px": {}})["point_px"][f] = [round(px + rig.last_shift[0], 1), round(py + rig.last_shift[1], 1)]
-                lost_max = max(lost_max, lost)
-                shift_max = max(shift_max, abs(rig.last_shift[0]), abs(rig.last_shift[1]))
-                path = os.path.join(mdir, act, "%s_%s_f%02d.png" % (act, f, i))
-                gkit.save_png(path, im)
-                if spec.get("glow"):
-                    gkit.save_png(os.path.join(mdir, act, "%s_%s_f%02d_glow.png" % (act, f, i)), glow_frame(im, spec["cell"] == CELL_BIG))
-            a = meta["actions"].setdefault(act, {"frames": len(poses), "loop": LOOPS[act], "files": {}})
-            a["files"][f] = "%s/%s/%s/%s_%s_fNN.png" % (rel_root, mid, act, act, f)
-            if spec.get("glow"):
-                a.setdefault("glow_files", {})[f] = "%s/%s/%s/%s_%s_fNN_glow.png" % (rel_root, mid, act, act, f)
-            meta["qa"]["px_outside_cell_%s_%s" % (act, f)] = lost_max
-            meta["qa"]["keep_in_shift_px_%s_%s" % (act, f)] = round(shift_max, 1)
-            print(mid, f, act, len(poses), "outside", lost_max, "keep-in shift", round(shift_max, 1), flush=True)
-    gkit.write_json(os.path.join(mdir, "meta.json"), meta)
-    return meta
+    gkit.use("old_granary_cellar")
+    return monster_kit.build(mid, MONSTERS[mid], check)
 
 
 if __name__ == "__main__":
