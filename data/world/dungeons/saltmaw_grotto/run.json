@@ -155,53 +155,54 @@
     "showcase": [
       [
         "reef_crab",
-        3,
-        8,
+        1,
+        11,
         false
       ],
       [
         "drowned_sailor",
-        4,
-        6,
+        3,
+        9,
         false
       ],
       [
         "drowned_harpooner",
-        3,
-        4,
+        5,
+        7,
         false
       ],
       [
-        "old_saltmaw",
-        6,
-        5,
-        true
-      ],
-      [
         "abyssal_reef_crab",
-        8,
-        3,
+        7,
+        5,
         false
       ],
       [
         "abyssal_drowned_sailor",
-        5,
         9,
+        3,
         false
       ],
       [
         "abyssal_drowned_harpooner",
-        9,
-        8,
+        11,
+        1,
         false
       ],
       [
+        "old_saltmaw",
+        0,
+        4,
+        true
+      ],
+      [
         "abyssal_saltmaw",
-        9,
-        5,
+        4,
+        0,
         true
       ]
     ],
+    "showcase_zoom": 1.35,
     "floor": {
       "base": [
         0.2,

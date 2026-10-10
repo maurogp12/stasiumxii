@@ -406,6 +406,10 @@ func _showcase() -> void:
 	var vis := get_viewport().get_visible_rect().size
 	var span := (hi - lo) + Vector2(260, 260)
 	var z := clampf(minf(vis.x / span.x, vis.y / span.y), 1.0, 3.0)
+	# A cast with tall bosses at the back may pin its own zoom (view.showcase_zoom).
+	var pinned: Variant = (run.run_doc.get("view", {}) as Dictionary).get("showcase_zoom", null)
+	if typeof(pinned) in [TYPE_FLOAT, TYPE_INT]:
+		z = float(pinned)
 	cam.zoom = Vector2(z, z)
 	var centre := (lo + hi) * 0.5 + Vector2(0, -48)
 	cam.position = centre - vis * 0.5 / z if cam.anchor_mode == Camera2D.ANCHOR_MODE_FIXED_TOP_LEFT else centre
