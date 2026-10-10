@@ -23,7 +23,7 @@ GREEN = np.array([5.0, 250.0, 4.0], np.float32)
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.abspath(os.path.join(HERE, "..", ".."))
 # Dungeon id -> its folder of chosen source paintings (next to this file).
-DUNGEONS = {"old_granary_cellar": "granary_src", "frostspire_archive": "frostspire_src"}
+DUNGEONS = {"old_granary_cellar": "granary_src", "frostspire_archive": "frostspire_src", "saltmaw_grotto": "saltmaw_src"}
 # GKIT_OUT_ROOT redirects every builder's output (used by check_granary_repro.py).
 OUT_ROOT = os.environ.get("GKIT_OUT_ROOT") or os.path.join(REPO, "art", "pc", "dungeons")
 DUNGEON = "old_granary_cellar"
