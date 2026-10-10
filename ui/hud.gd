@@ -1457,16 +1457,26 @@ func _build() -> void:
 	_action_bar.add_child(_end_turn_button)
 	_bind_ability_icon(_end_turn_button, "end_turn", "End Turn")
 
+	# Round icon, same 72px as the Pass Turn / Walk row, in the gap beside Pass Turn.
 	_use_still_button = Button.new()
 	_use_still_button.name = "UseStill"
-	_use_still_button.text = "Use Still"
+	_use_still_button.text = ""
 	_use_still_button.visible = false
-	_use_still_button.custom_minimum_size = TOUCH.END_TURN_BUTTON_SIZE
-	_use_still_button.add_theme_font_size_override("font_size", 15)
-	_use_still_button.add_theme_color_override("font_color", CREAM)
-	_style_chrome_button(_use_still_button, true)
-	_use_still_button.clip_text = true
+	_use_still_button.custom_minimum_size = TOUCH.ABILITY_BUTTON_SIZE
 	_use_still_button.pressed.connect(_on_use_still_pressed)
+	var still_mark := TextureRect.new()
+	still_mark.name = "StillButtonIcon"
+	still_mark.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	still_mark.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	still_mark.offset_left = 8
+	still_mark.offset_top = 8
+	still_mark.offset_right = -8
+	still_mark.offset_bottom = -8
+	still_mark.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	still_mark.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	still_mark.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	_use_still_button.add_child(still_mark)
+	_style_still_button(false)
 	_action_bar.add_child(_use_still_button)
 
 	_new_match_button = Button.new()
@@ -2952,8 +2962,8 @@ func still_aiming() -> bool:
 
 func clear_still_aim() -> void:
 	_still_aim = false
-	if _use_still_button != null:
-		_use_still_button.text = "Use Still"
+	_style_still_button(false)
+	_update_selected_label()
 
 
 func _on_use_still_pressed() -> void:
@@ -2973,8 +2983,8 @@ func _on_use_still_pressed() -> void:
 	if _still_aim:
 		_selected_spell = ""
 		spell_selected.emit("")
-	if _use_still_button != null:
-		_use_still_button.text = "Pick target" if _still_aim else "Use Still"
+	_style_still_button(_still_aim)
+	_update_selected_label()
 
 
 func _sync_use_still(snap: Dictionary, legal: Array) -> void:
@@ -2991,16 +3001,37 @@ func _sync_use_still(snap: Dictionary, legal: Array) -> void:
 	# Off-turn (online watcher, or a stale legal list) never shows the button.
 	if not yours:
 		offered = false
-	_use_still_button.visible = offered and not deploying and not match_over and yours
-	_use_still_button.disabled = not yours or not _use_still_button.visible or _stunned
 	var units: Array = snap.get("units", [])
 	var wearer := unit_for_seat(units, kit_seat(snap))
 	var still_id := str(wearer.get("still", ""))
-	var still_tex: Texture2D = StillVault.icon(still_id) if _use_still_button.visible and StillVault.is_id(still_id) else null
-	_use_still_button.icon = still_tex
+	# Passive Stills stay on the corner card. A spent Still stays hidden for the match.
+	if not StillVault.is_activated(still_id):
+		offered = false
+	_use_still_button.visible = offered and not deploying and not match_over and yours
+	_use_still_button.disabled = not yours or not _use_still_button.visible or _stunned
+	_use_still_button.text = ""
+	_use_still_button.icon = null
+	var mark := _use_still_button.get_node_or_null("StillButtonIcon") as TextureRect
+	if mark != null:
+		mark.texture = StillVault.icon(still_id) if _use_still_button.visible else null
+		mark.visible = mark.texture != null
 	if not _use_still_button.visible:
 		_still_aim = false
-		_use_still_button.text = "Use Still"
+	_style_still_button(_still_aim and _use_still_button.visible)
+
+
+func _style_still_button(aiming: bool) -> void:
+	if _use_still_button == null:
+		return
+	var diameter := TOUCH.ABILITY_BUTTON_SIZE.x
+	var fill := Color(0.07, 0.08, 0.12, 0.94)
+	var border := GOLD_BRIGHT if aiming else GOLD
+	var width := 4 if aiming else 2
+	_use_still_button.add_theme_stylebox_override("normal", _circle_style(fill, diameter, border, width))
+	_use_still_button.add_theme_stylebox_override("hover", _circle_style(fill.lightened(0.12), diameter, GOLD_BRIGHT, width))
+	_use_still_button.add_theme_stylebox_override("pressed", _circle_style(fill.darkened(0.1), diameter, Color(0.98, 0.84, 0.4), 4))
+	_use_still_button.add_theme_stylebox_override("focus", _circle_style(fill, diameter, border, width))
+	_use_still_button.add_theme_stylebox_override("disabled", _circle_style(Color(0.28, 0.28, 0.32, 0.78), diameter, Color(1, 1, 1, 0.12), 2))
 
 
 func _unit(units: Array, seat: int) -> Dictionary:
@@ -3663,6 +3694,12 @@ func _update_selected_label() -> void:
 		return
 	if _stunned:
 		_selected_label.text = "Stunned — turn auto-ends"
+		return
+	if _still_aim:
+		var units: Array = _last_snap.get("units", [])
+		var wearer := unit_for_seat(units, kit_seat(_last_snap))
+		var still_name := StillVault.display_name(str(wearer.get("still", "")))
+		_selected_label.text = "%s · tap a fighter" % still_name
 		return
 	if _selected_spell == "":
 		_selected_label.text = _with_shade_tip("Walk · tap a cell")
