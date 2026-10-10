@@ -35,6 +35,30 @@ ROOMS = {
               "units": [("the_pale_archivist", "S", (7, 3)), ("book_wraith", "S", (5, 4)), ("ice_construct", "S", (10, 4)),
                         ("hero:kestrel", "E", (6, 11)), ("hero:bastion", "E", (9, 12))]},
     },
+    "saltmaw_grotto": {
+        "a": {"title": "Room A: the sea cave (15x15 board, 1 board px = 1 screen px)", "backdrop": "room_a_grotto_15x15",
+              "pads": [(3, 4), (8, 2), (12, 6), (4, 11), (10, 10), (7, 13)],
+              "props": [("sunken_crate", (5, 5)), ("barrel", (10, 4)), ("sunken_crate", (11, 5)), ("anchor", (10, 9)),
+                        ("barnacle_rock", (6, 9)), ("coral_cluster", (2, 8)), ("coral_cluster", (13, 11)), ("barrel", (1, 13)),
+                        ("barnacle_rock", (8, 13)), ("coral_cluster", (7, 1))],
+              "units": [("reef_crab", "S", (7, 6)), ("drowned_harpooner", "S", (9, 2)), ("drowned_harpooner", "S", (4, 7)),
+                        ("drowned_sailor", "S", (12, 8)), ("reef_crab", "S", (3, 2)), ("drowned_sailor", "E", (11, 11)),
+                        ("hero:kestrel", "E", (8, 11)), ("hero:bastion", "E", (5, 12))]},
+        "b": {"title": "Room B: Old Saltmaw's treasure lair (15x15)", "backdrop": "room_b_lair_15x15",
+              "pads": [(2, 7), (12, 7), (7, 12)],
+              "decals": [("whirlpool", (5, 5))],
+              "props": [("rock_spire", (5, 6)), ("rock_spire", (6, 5)), ("rock_spire", (8, 5)), ("rock_spire", (9, 7)),
+                        ("rock_spire", (8, 9)), ("rock_spire", (6, 9)), ("rock_spire", (5, 8)),
+                        ("giant_clam", (1, 3)), ("treasure_chest", (12, 1)), ("sunken_statue", (2, 1)), ("barrel", (13, 4)),
+                        ("sunken_crate", (1, 6)), ("barnacle_rock", (12, 12))],
+              "units": [("old_saltmaw", "S", (7, 2)), ("reef_crab", "S", (4, 3)), ("drowned_sailor", "S", (10, 3)),
+                        ("hero:kestrel", "E", (6, 12)), ("hero:bastion", "E", (9, 12))]},
+    },
+}
+STAR5_REP = {
+    "frostspire_archive": {"the_pale_archivist": "the_frozen_archivist", "ice_construct": "frozen_ice_construct", "book_wraith": "frozen_book_wraith"},
+    "saltmaw_grotto": {"old_saltmaw": "abyssal_saltmaw", "reef_crab": "abyssal_reef_crab", "drowned_sailor": "abyssal_drowned_sailor",
+                       "drowned_harpooner": "abyssal_drowned_harpooner"},
 }
 
 
@@ -166,7 +190,7 @@ def main(did, star5=False):
     rooms = ROOMS[did]
     if star5:
         rooms = json.loads(json.dumps(rooms))
-        rep = {"the_pale_archivist": "the_frozen_archivist", "ice_construct": "frozen_ice_construct", "book_wraith": "frozen_book_wraith"}
+        rep = STAR5_REP[did]
         for r in rooms.values():
             r["units"] = [(rep.get(k, k), f, tuple(c)) for k, f, c in r["units"]]
             r["pads"] = [tuple(p) for p in r["pads"]]
