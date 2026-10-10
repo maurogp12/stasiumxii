@@ -726,8 +726,8 @@ func unit_seat_at(local: Vector2, kind: String = "enemy") -> int:
 		var level := 0
 		if pawn.has_method("pick_test"):
 			level = int(pawn.pick_test(point))
-		elif TOUCH.hits_pawn_body(local, (pawn as Pawn).position):
-			level = 1
+		else:
+			level = hero_pick_level(pawn, point)
 		if level <= 0:
 			continue
 		var key := [level, int(pawn.z_index), (pawn as Pawn).position.y]
@@ -735,6 +735,43 @@ func unit_seat_at(local: Vector2, kind: String = "enemy") -> int:
 			best = int(seat)
 			best_key = key
 	return best
+
+
+## The hero (painted look or the Koliseo figure): PICK_PIXEL on the visible
+## pixels of the cell it shows now (idle Sprite or the playing BodyStrip),
+## or, when the pixels cannot be read, PICK_BOX inside the cell's rect.
+static func hero_pick_level(pawn: Node2D, global_point: Vector2) -> int:
+	var drawn: Node2D = null
+	var tex: Texture2D = null
+	var strip = pawn.get("_active_strip")
+	if strip != null and is_instance_valid(strip) and (strip as AnimatedSprite2D).is_visible_in_tree():
+		var a := strip as AnimatedSprite2D
+		if a.sprite_frames != null and a.sprite_frames.has_animation(a.animation):
+			drawn = a
+			tex = a.sprite_frames.get_frame_texture(a.animation, a.frame)
+	if tex == null:
+		var spr = pawn.get("_sprite")
+		if spr != null and is_instance_valid(spr) and (spr as Sprite2D).is_visible_in_tree():
+			drawn = spr as Sprite2D
+			tex = (spr as Sprite2D).texture
+	if tex == null or drawn == null:
+		return 0
+	var size := tex.get_size()
+	var offset: Vector2 = drawn.get("offset")
+	var centered: bool = drawn.get("centered")
+	var top_left := offset - size * 0.5 if centered else offset
+	var p: Vector2 = drawn.get_global_transform().affine_inverse() * global_point - top_left
+	var inside := p.x >= 0.0 and p.y >= 0.0 and p.x < size.x and p.y < size.y
+	if inside:
+		var mask := Art.pick_mask(tex)
+		var bx := int(p.x)
+		if bool(drawn.get("flip_h")):
+			bx = int(size.x) - 1 - bx
+		if mask != null:
+			# Painted cells are wide and mostly clear: only the figure counts.
+			return 2 if MonsterPawn._mask_near(mask, clampi(bx, 0, int(size.x) - 1), int(p.y), int(size.x), int(size.y)) else 0
+		return 1
+	return 0
 
 
 ## [level, z_index, y]: a pixel hit beats a box hit, then the front-most.

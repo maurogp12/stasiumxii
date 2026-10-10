@@ -1116,6 +1116,14 @@ func _test_monster_click_sweep() -> void:
 						if Art.pick_mask(pawn._body.sprite_frames.get_frame_texture(pawn._body.animation, pawn._body.frame)) != null:
 							mask_points += tried
 						eq(tried >= 3 or skipped >= 20, true, "%s %s: %s gets 3+ body clicks (%d, %d behind a front monster)" % [label, spell_id, pawn.monster_id, tried, skipped])
+				# Ally casts: a click on the painted hero's figure picks the hero.
+				var hero_pawn: Node2D = board.pawns_by_seat[0]
+				var hero_pts := _hero_points(hero_pawn)
+				var hero_hits := 0
+				for hp_pt in hero_pts:
+					if board.unit_seat_at(board.get_node("Tiles").make_canvas_position_local(hp_pt), "ally") == 0:
+						hero_hits += 1
+				eq(hero_pts.size() >= 6 and hero_hits == hero_pts.size(), true, "%s an ally cast picks the painted hero on its figure (%d/%d)" % [label, hero_hits, hero_pts.size()])
 				hud._selected_spell = ""
 				# Walk mode: a tap on the hero's sprite walks to the floor cell
 				# it covers, not the hero's own cell.
@@ -1171,6 +1179,41 @@ func _body_points(pawn) -> Array:
 	var pxf: Transform2D = pawn.get_global_transform_with_canvas()
 	for p in [box.get_center(), Vector2(box.get_center().x, box.position.y + box.size.y * 0.2), Vector2(box.get_center().x, box.end.y - 4.0), Vector2(box.position.x + 3.0, box.get_center().y), Vector2(box.end.x - 3.0, box.get_center().y)]:
 		out.append(pxf * p)
+	return out
+
+
+## Screen points on the painted hero's visible figure (the cell shown now).
+func _hero_points(pawn: Node2D) -> Array:
+	var out: Array = []
+	var drawn: Node2D = pawn._sprite
+	var tex: Texture2D = pawn._sprite.texture
+	var strip: AnimatedSprite2D = pawn._active_strip
+	if strip != null and strip.is_visible_in_tree() and strip.sprite_frames != null and strip.sprite_frames.has_animation(strip.animation):
+		drawn = strip
+		tex = strip.sprite_frames.get_frame_texture(strip.animation, strip.frame)
+	var mask: BitMap = Art.pick_mask(tex)
+	if mask == null:
+		return out
+	var sz := mask.get_size()
+	var top_left: Vector2 = drawn.offset - Vector2(sz) * 0.5 if drawn.centered else drawn.offset
+	var rows: Array = []
+	for y in sz.y:
+		var xs: Array = []
+		for x in sz.x:
+			if mask.get_bit(x, y):
+				xs.append(x)
+		if xs.size() >= 5:
+			rows.append([y, xs])
+	if rows.size() < 4:
+		return out
+	for f in [0.15, 0.4, 0.65, 0.85]:
+		var row: Array = rows[int(f * float(rows.size() - 1))]
+		var xs2: Array = row[1]
+		for g in [0.5, 0.3, 0.7]:
+			var bx := int(xs2[int(g * float(xs2.size() - 1))])
+			if drawn.flip_h:
+				bx = sz.x - 1 - bx
+			out.append(drawn.get_global_transform_with_canvas() * (top_left + Vector2(bx + 0.5, int(row[0]) + 0.5)))
 	return out
 
 
