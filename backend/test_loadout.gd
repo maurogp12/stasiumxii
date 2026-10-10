@@ -40,12 +40,15 @@ static func sync_bag(bag) -> bool:
 		bag.test_grant = true
 		return true
 	if not ACTIVE and bag.test_grant:
-		for slot in bag.equipped.keys():
-			var index: int = bag.find(int(bag.equipped[slot]))
-			if index != -1 and bool(bag.items[index].get("test", false)):
-				bag.equipped.erase(slot)
+		for cid in bag.CLASS_IDS:
+			var slots: Dictionary = bag.loadouts.get(cid, {})
+			for slot in slots.keys():
+				var index: int = bag.find(int(slots[slot]))
+				if index != -1 and bool(bag.items[index].get("test", false)):
+					slots.erase(slot)
 		bag.items = bag.items.filter(func(it): return not bool(it.get("test", false)))
 		bag.test_grant = false
+		bag._bind_focus()
 		return true
 	return false
 

@@ -101,10 +101,10 @@ func _test_stride() -> void:
 		seen.append([int(u["ap"]), int(u["mp"])])
 		_end_turns(2)
 	eq(seen, [[10, 5], [10, 5], [5, 1], [6, 3]], "Overwound Stride: 10/5, 10/5, crack 5/1, then 6/3")
-	# Over the cap with a strong champion: level 20 + full Duskbrand = 8/4 normal.
+	# Over the cap with a strong champion: level 20 + full Brightedge = 8/4 normal.
 	var dusk: Array = []
 	for slot in GearBag.SLOTS:
-		dusk.append({"item_id": "duskbrand.%s" % slot, "plus": 0})
+		dusk.append({"item_id": "brightedge.%s" % slot, "plus": 0})
 	var strong := {"worn": dusk, "heroes": {"kestrel": {"level": 20, "spent": {}}}, "still": {"id": "stride", "mode": "overwound"}}
 	_fight(strong)
 	var s: Dictionary = _sim._unit_by_seat(0)

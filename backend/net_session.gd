@@ -1240,7 +1240,7 @@ func _authority_gear_config(config: Dictionary) -> Dictionary:
 	out.erase("seat_gear")
 	var gear := {}
 	if mode == Mode.HOST:
-		gear[HOST_SEAT] = GearBag.load_saved().fight_gear(true)
+		gear[HOST_SEAT] = GearBag.clean_fight_gear(GearBag.load_saved().fight_gear(true, selected_class_id))
 	for seat in _seat_gear:
 		gear[seat] = _seat_gear[seat]
 	# Koliseo arena flatten (Mobile Sets): parts count as +0; set bonuses stay.
@@ -1269,7 +1269,7 @@ func _send_local_gear() -> void:
 	if not _rpc_ready():
 		return
 	_gear_sent_seat = local_seat
-	rpc_submit_gear.rpc_id(1, GearBag.load_saved().fight_gear(true))
+	rpc_submit_gear.rpc_id(1, GearBag.clean_fight_gear(GearBag.load_saved().fight_gear(true, selected_class_id)))
 
 
 @rpc("authority", "reliable")

@@ -1166,7 +1166,7 @@ func _apply_prefight_elements() -> void:
 	if net != null and net.mode_name() == "client":
 		net.resend_local_gear()
 		return
-	var kit := GearBag.load_saved().fight_gear(true)
+	var gear_bag := GearBag.load_saved()
 	var local := CombatHUD.snap_local_seat(snap)
 	for unit in snap.get("units", []):
 		var seat := int(unit.get("seat", -1))
@@ -1175,6 +1175,7 @@ func _apply_prefight_elements() -> void:
 		if local < 0 and not _TestLoadoutRef.ACTIVE:
 			# Plain hot-seat fights without gear or picks.
 			continue
+		var kit := gear_bag.fight_gear(true, str(unit.get("class_id", "")))
 		_sim().set_seat_gear(seat, kit.duplicate(true))
 	_paint_highlights()
 

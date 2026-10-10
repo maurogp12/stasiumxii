@@ -10,8 +10,8 @@ extends RefCounted
 ## and equipped sets stick.
 ##
 ## This is not a rule that the bag stays empty. The class-set ladder
-## (Normal / Rare / Legendary per class, plus shared Ashmantle / Brightedge /
-## Duskbrand), per-class loadouts, and gear crits write these same files
+## (Normal / Rare / Legendary per class, plus shared Ashmantle / Brightedge),
+## per-class loadouts, and gear crits write these same files
 ## after the marker is set.
 ##
 ## Tests redirect save_path, so ensure() does not run on their fixtures.

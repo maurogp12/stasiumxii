@@ -4,7 +4,7 @@ extends RefCounted
 ## Koliseo economy. Blueprint §9 (Daily limits, LOCKED) and §15 (trophies, Soft Lock).
 ## Coins: the first 2 human Koliseo wins each UTC day pay 1 coin. Win 3+ = 0.
 ## Dummy = 0. Loss = 0. Wallet max 120. Coins cannot be bought.
-## Duskbrand stall: 60 coins per +0 part. Never from dungeons.
+## The Duskbrand stall is retired. buy_duskbrand does not spend coins.
 ## Trophies (id=kolitrophy): 1 per human Koliseo win, no daily cap, wallet 300.
 ## The trophy shop sells hub food and cosmetics only. Never Duskbrand, set parts,
 ## AP or MP. In-fight potions are parked. The pet is paint_only.
@@ -160,23 +160,13 @@ func buy(sku: String) -> Dictionary:
 	return {"ok": true, "reason": "", "sku": sku}
 
 
-func can_buy_duskbrand(slot: String) -> Dictionary:
-	if not DUSKBRAND_SLOTS.has(slot):
-		return _fail("unknown_slot")
-	if coins < DUSKBRAND_PART_COST:
-		return _fail("not_enough_coins")
-	return {"ok": true, "reason": ""}
+## Retired with the stall. Coins stay put and nothing is added to the bag.
+func can_buy_duskbrand(_slot: String) -> Dictionary:
+	return _fail("retired")
 
 
-## +0 Duskbrand part. Duplicates are allowed (fuse needs same item_id + plus).
-## The part goes into the GearBag; the caller saves both.
-func buy_duskbrand(slot: String, bag: GearBag) -> Dictionary:
-	var gate := can_buy_duskbrand(slot)
-	if not bool(gate["ok"]):
-		return gate
-	coins -= DUSKBRAND_PART_COST
-	var uid := bag.add_item("duskbrand", slot, 0)
-	return {"ok": true, "reason": "", "part": bag.item(uid)}
+func buy_duskbrand(_slot: String, _bag: GearBag) -> Dictionary:
+	return _fail("retired")
 
 
 func can_buy_tonic() -> Dictionary:

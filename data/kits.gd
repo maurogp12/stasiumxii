@@ -1,6 +1,9 @@
 extends RefCounted
 class_name SpellKits
 
+## Gear sets are not capped at six families. The class ladder
+## (Normal / Rare / Legendary per class, plus shared Ashmantle and
+## Brightedge) lives in GearBag. Duskbrand is retired.
 ## Phase A locked kit only. Later spells stay out of this table.
 ## Advance is Ironjaw-only (Locked). Legal dests are exactly 2 cardinal
 ## spaces (N/S/E/W at Manhattan 2). Reject Manhattan 1, diagonals, and any
