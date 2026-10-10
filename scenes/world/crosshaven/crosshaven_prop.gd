@@ -88,6 +88,12 @@ var _loops_ready := false
 
 
 func _attach_loops() -> void:
+	if VisualSettings.still():
+		# Performance mode: no sway strips at all (no sheet in memory, no
+		# _process). Mills and the fountain keep one still frame; smoke goes.
+		_attach_overlay()
+		set_process(false)
+		return
 	if snowy_art:
 		_attach_overlay()
 		return
@@ -117,6 +123,9 @@ func _attach_overlay() -> void:
 		overlay_id = "fountain_water"
 	elif prop_type == "bakery_2x2" or prop_type == "smithy_2x2" or prop_type == "red_roof_cottage" or prop_type == "farmhouse_2x2" or prop_type == "tavern_3x2":
 		overlay_id = "smoke_puff"
+	if VisualSettings.still():
+		_attach_still_overlay(overlay_id)
+		return
 	_overlay = Art.make_loop(overlay_id) if overlay_id != "" else null
 	if _overlay != null:
 		_overlay.visible = false
@@ -129,6 +138,30 @@ func _attach_overlay() -> void:
 			_overlay.modulate = Color(1, 1, 1, 0.8)
 		add_child(_overlay)
 	_loops_ready = true
+
+
+## Performance mode: mill sails, the water wheel and the fountain keep one
+## still frame (a small texture, not the strip). Chimney smoke is left out.
+var _still_overlay: Sprite2D
+
+
+func _attach_still_overlay(overlay_id: String) -> void:
+	_loops_ready = true
+	if overlay_id == "" or overlay_id == "smoke_puff":
+		return
+	_still_overlay = Art.make_still(overlay_id)
+	if _still_overlay == null:
+		return
+	_still_overlay.name = "StillOverlay"
+	_still_overlay.z_as_relative = true
+	_still_overlay.z_index = 2
+	if prop_type == "windmill_2x2_body":
+		_still_overlay.position = Vector2(0, -104)
+	add_child(_still_overlay)
+
+
+func has_still_overlay() -> bool:
+	return _still_overlay != null
 
 
 func _process(_delta: float) -> void:
@@ -147,6 +180,15 @@ func _process(_delta: float) -> void:
 	if changed:
 		_sync_snow_shader()
 		queue_redraw()
+
+
+## Sway, shadow-sway, and overlay loops this prop runs (performance mode: none).
+func live_loops() -> int:
+	var n := 0
+	for loop in [_sway, _shadow_sway, _overlay]:
+		if loop != null and (loop as AnimatedSprite2D).is_playing():
+			n += 1
+	return n
 
 
 ## Kit art id for this placement: fences along y use `fence_wood_nesw`,

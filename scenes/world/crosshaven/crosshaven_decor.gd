@@ -17,7 +17,12 @@ var art_id := ""
 ## Town snow on this cell (Northgate is 1). Set before setup.
 var snow_cover := 0.0
 var core := false
-var night_only := false
+## A lamp glow: shown at night only, so it keeps its _process in performance mode.
+var night_only := false:
+	set(value):
+		night_only = value
+		if value:
+			set_process(true)
 var base_z := 0
 var cover_rect := Rect2()
 ## True while an NPC (not the hero) stands behind this decor and it is faded.
@@ -47,7 +52,10 @@ func setup(zone: WorldZone, record: Dictionary) -> void:
 		var size := Art.size_of(_art) * plant
 		cover_rect = Rect2(-size.x * 0.5, -size.y, size.x, size.y)
 	_apply_theme_tint(zone.zone_id)
-	if not _groundish and core and art_id == decor_type:
+	if VisualSettings.still():
+		# Performance mode: a still plant, and no _process unless it is a lamp glow.
+		set_process(night_only)
+	elif not _groundish and core and art_id == decor_type:
 		_sway = Art.make_loop(decor_type + "_sway")
 		if _sway != null:
 			_sway.visible = false
@@ -129,6 +137,10 @@ func hides_feet(feet: Vector2) -> bool:
 		return false
 	var local := feet - position
 	return cover_rect.grow(4).has_point(local) and local.y < -20.0
+
+
+func has_sway() -> bool:
+	return _sway != null
 
 
 func _process(_delta: float) -> void:

@@ -33,6 +33,21 @@ func set_visuals_enabled(on: bool) -> void:
 	_apply(0.0)
 
 
+## When false (performance mode), rain, splashes, blown leaves and the drifting
+## cloud cover stop. The day, night and rain tint stays, so the look holds.
+var motion_enabled := true
+
+
+func set_motion_enabled(on: bool) -> void:
+	motion_enabled = on
+	_apply(0.0)
+
+
+## Weather particles emitting now.
+func particles_on() -> bool:
+	return _rain != null and (_rain.emitting or _splash.emitting or _leaves.emitting)
+
+
 func setup(world: Node2D, screen_layer: CanvasLayer) -> void:
 	_rng.seed = 1209
 	_modulate = CanvasModulate.new()
@@ -213,15 +228,18 @@ func _apply(delta: float) -> void:
 	var cloud_amt: float = float(_amount["light_cloud"])
 	var wind_amt: float = float(_amount["wind"])
 	var cover := maxf(cloud_amt, rain_amt * 0.55)
-	_cloud.modulate.a = cover * 0.28 if visuals_enabled else 0.0
-	_cloud.region_rect.position += Vector2(14.0, 4.0) * delta * (1.0 + 2.0 * wind_amt)
-	var rain_on: bool = visuals_enabled and rain_amt > 0.05
+	var moving := visuals_enabled and motion_enabled
+	_cloud.modulate.a = cover * 0.28 if moving else 0.0
+	_cloud.visible = moving and cover > 0.0
+	if moving:
+		_cloud.region_rect.position += Vector2(14.0, 4.0) * delta * (1.0 + 2.0 * wind_amt)
+	var rain_on: bool = moving and rain_amt > 0.05
 	_rain.emitting = rain_on
 	_rain.modulate.a = rain_amt if visuals_enabled else 0.0
 	if _splash != null:
 		_splash.emitting = rain_on
 		_splash.modulate.a = rain_amt if visuals_enabled else 0.0
-	_leaves.emitting = visuals_enabled and wind_amt > 0.05
+	_leaves.emitting = moving and wind_amt > 0.05
 	_leaves.modulate.a = wind_amt if visuals_enabled else 0.0
 
 
