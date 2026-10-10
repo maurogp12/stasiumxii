@@ -1,6 +1,6 @@
 """Contact sheets (one per monster, every frame of every action, S and E) and the review clip.
 
-  python3 mock_monsters.py [--clip OUT.mp4] [--scale 0.5]
+  python3 mock_monsters.py [--dungeon frostspire_archive] [--clip OUT.mp4] [--clip5 OUT5.mp4]
 Sheets go to art/pc/dungeons/old_granary_cellar/_mock/<id>_contact.png on grey 172,
 with the cell pivot marked.
 """
@@ -17,6 +17,8 @@ from PIL import Image, ImageDraw
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import gkit  # noqa: E402
 
+if "--dungeon" in sys.argv:
+    gkit.use(sys.argv[sys.argv.index("--dungeon") + 1])
 MON = os.path.join(gkit.OUT, "monsters")
 MOCK = os.path.join(gkit.OUT, "_mock")
 ORDER = ["idle", "walk", "attack", "hit", "death", "summon"]
@@ -89,8 +91,11 @@ def sheet(mid, sc=0.5):
     return out
 
 
-def clip(out_path, mids=("granary_rat", "sling_rat", "scarecrow_drudge", "the_ratking"), bg=(172, 172, 172)):
+def clip(out_path, mids=None, bg=(172, 172, 172)):
     """Each monster, each action: S, E and both mirrors side by side."""
+    if mids is None:
+        mids = sorted(m for m in os.listdir(MON) if os.path.exists(os.path.join(MON, m, "meta.json"))) if gkit.DUNGEON != "old_granary_cellar" \
+            else ("granary_rat", "sling_rat", "scarecrow_drudge", "the_ratking")
     fps = 17.144
     W, H = 1280, 720
     tmp = tempfile.mkdtemp(prefix="gclip_")
@@ -146,5 +151,7 @@ if __name__ == "__main__":
     if "--clip" in sys.argv:
         print(clip(sys.argv[sys.argv.index("--clip") + 1]))
     if "--clip5" in sys.argv:
-        print(clip(sys.argv[sys.argv.index("--clip5") + 1],
-                   mids=("radioactive_ratking", "radioactive_rat", "radioactive_sling_rat"), bg=(48, 44, 40)))
+        s5 = os.path.join(gkit.OUT, "star5", "monsters")
+        mids5 = ("radioactive_ratking", "radioactive_rat", "radioactive_sling_rat") if gkit.DUNGEON == "old_granary_cellar" \
+            else sorted(m for m in os.listdir(s5) if os.path.exists(os.path.join(s5, m, "meta.json")))
+        print(clip(sys.argv[sys.argv.index("--clip5") + 1], mids=mids5, bg=(48, 44, 40)))

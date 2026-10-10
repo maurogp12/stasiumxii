@@ -21,9 +21,22 @@ from PIL import Image
 
 GREEN = np.array([5.0, 250.0, 4.0], np.float32)
 HERE = os.path.dirname(os.path.abspath(__file__))
-SRC = os.path.join(HERE, "granary_src")
 REPO = os.path.abspath(os.path.join(HERE, "..", ".."))
-OUT = os.path.join(REPO, "art", "pc", "dungeons", "old_granary_cellar")
+# Dungeon id -> its folder of chosen source paintings (next to this file).
+DUNGEONS = {"old_granary_cellar": "granary_src", "frostspire_archive": "frostspire_src"}
+# GKIT_OUT_ROOT redirects every builder's output (used by check_granary_repro.py).
+OUT_ROOT = os.environ.get("GKIT_OUT_ROOT") or os.path.join(REPO, "art", "pc", "dungeons")
+DUNGEON = "old_granary_cellar"
+SRC = os.path.join(HERE, "granary_src")
+OUT = os.path.join(OUT_ROOT, DUNGEON)
+
+
+def use(dungeon: str) -> None:
+    """Point SRC/OUT (and so load_rgb, rel and every builder) at one dungeon."""
+    global DUNGEON, SRC, OUT
+    DUNGEON = dungeon
+    SRC = os.path.join(HERE, DUNGEONS[dungeon])
+    OUT = os.path.join(OUT_ROOT, dungeon)
 
 
 def load_rgb(name: str) -> np.ndarray:
@@ -77,6 +90,20 @@ def key_magenta(rgb: np.ndarray, lo: float = 18.0, hi: float = 200.0) -> np.ndar
     out = np.zeros(rgb.shape[:2] + (4,), np.float32)
     out[..., :3] = fg / 255.0 * a[..., None]
     out[..., 3] = a
+    return out
+
+
+def despill_magenta(prem: np.ndarray, tol: float = 6.0) -> np.ndarray:
+    """Remove magenta spill everywhere on a keyed piece (not only at the edge): where both red
+    and blue exceed green by more than `tol`, take that excess off red and blue. For paintings
+    with no real magenta or purple paint (the frost monsters' pink-tinged pages and shroud holes)."""
+    a = prem[..., 3:4]
+    rgb = prem[..., :3] / np.maximum(a, 1e-4) * 255.0
+    spill = np.maximum(np.minimum(rgb[..., 0], rgb[..., 2]) - rgb[..., 1] - tol, 0.0)
+    rgb[..., 0] -= spill
+    rgb[..., 2] -= spill
+    out = prem.copy()
+    out[..., :3] = np.clip(rgb / 255.0, 0, 1) * a
     return out
 
 

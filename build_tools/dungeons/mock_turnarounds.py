@@ -19,6 +19,17 @@ SETS = {
 }
 
 
+FROST = {
+    "ice_construct": [("construct_S", "S: front, facing down-right"), ("construct_E", "E: back, facing up-right")],
+    "book_wraith": [("wraith_S", "S: front, facing down-right"), ("wraith_E", "E: back, facing up-right")],
+    "the_pale_archivist": [("archivist_S", "S: front, facing down-right"), ("archivist_E", "E: back, facing up-right")],
+    "the_frozen_archivist": [("archivist_S", "base S (the Pale Archivist)"), ("frozen_archivist_S", "star 5 S: front, down-right"), ("frozen_archivist_E", "star 5 E: back, up-right")],
+    "frozen_ice_construct": [("frozen_construct_S", "star 5 S: front, down-right"), ("frozen_construct_E", "star 5 E: back, up-right")],
+    "frozen_book_wraith": [("frozen_wraith_S", "star 5 S: front, down-right"), ("frozen_wraith_E", "star 5 E: back, up-right")],
+}
+STAR5 = {"the_frozen_archivist", "frozen_ice_construct", "frozen_book_wraith"}
+
+
 def cut(name, h):
     b = gkit.binarize(gkit.clean_alpha(gkit.key_auto(gkit.load_rgb(name + ".jpg"))))
     im = Image.fromarray(b)
@@ -30,7 +41,7 @@ def cut(name, h):
 
 def main(ids):
     for mid in ids:
-        star = mid.startswith("radioactive")
+        star = mid.startswith("radioactive") or mid in STAR5
         ims = [(cut(n, 720), lbl) for n, lbl in SETS[mid]]
         W = sum(i.width for i, _ in ims) + 30 * (len(ims) + 1)
         H = max(i.height for i, _ in ims) + 70
@@ -49,4 +60,11 @@ def main(ids):
 
 
 if __name__ == "__main__":
-    main(sys.argv[1:] or list(SETS))
+    args = [a for a in sys.argv[1:] if not a.startswith("--")]
+    if "--dungeon" in sys.argv:
+        d = sys.argv[sys.argv.index("--dungeon") + 1]
+        args.remove(d)
+        gkit.use(d)
+        if d == "frostspire_archive":
+            SETS = FROST
+    main(args or list(SETS))
