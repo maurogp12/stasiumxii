@@ -4,6 +4,9 @@ extends CanvasLayer
 ## Numbers come from pc_progress.gd and pc_rewards.gd. This window does not
 ## invent them. Loaded with preload. No global class.
 
+const Gear := preload("res://backend/pc_gear.gd")
+## Gear slots first (pc_gear.gd, the mobile ladder), then the trinket slots.
+const SLOT_ORDER: Array[String] = ["weapon", "head", "chest", "legs", "boots", "amulet", "ring", "ring_b"]
 const TABS: Array[String] = [
 	"equipment", "consumable", "material", "recipe", "decoration", "special",
 ]
@@ -12,6 +15,8 @@ const TAB_LABEL: Array[String] = [
 ]
 const SLOT_LABEL := {
 	"head": "Head",
+	"chest": "Chest",
+	"legs": "Legs",
 	"amulet": "Amulet",
 	"ring": "Ring",
 	"ring_b": "Ring",
@@ -148,7 +153,13 @@ func ensure_built() -> void:
 	unequip.text = "Unequip"
 	unequip.pressed.connect(_unequip_selected)
 	actions.add_child(unequip)
-	for label in ["Upgrade", "Sell", "List"]:
+	var fuse := Button.new()
+	fuse.name = "FuseButton"
+	fuse.text = "Fuse"
+	fuse.tooltip_text = "Two of the same piece at the same + make one piece at +1 (max +5)."
+	fuse.pressed.connect(_fuse_selected)
+	actions.add_child(fuse)
+	for label in ["Sell", "List"]:
 		var later := Button.new()
 		later.text = label
 		later.disabled = true
@@ -179,6 +190,9 @@ func ensure_built() -> void:
 	_filter.add_item("Rare")
 	_filter.add_item("Epic")
 	_filter.add_item("Relic")
+	_filter.add_item("Normal")
+	_filter.add_item("Legendary")
+	_filter.add_item("Ultra")
 	_filter.item_selected.connect(func(_i): refresh())
 	tools.add_child(_filter)
 	_search = LineEdit.new()
@@ -247,7 +261,7 @@ func _fill() -> void:
 	if progress.has_method("sheet_view"):
 		view = progress.sheet_view()
 	var gear: Dictionary = view.get("gear", {})
-	for slot in ["head", "amulet", "ring", "ring_b", "cape", "belt", "boots", "weapon"]:
+	for slot in SLOT_ORDER:
 		var button := Button.new()
 		button.text = "%s: %s" % [str(SLOT_LABEL[slot]), _slot_text(slot)]
 		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
@@ -260,9 +274,9 @@ func _fill() -> void:
 	for row in rows:
 		var set_row: Dictionary = row
 		set_lines.append("%s %d/5" % [str(set_row.get("name", "")), int(set_row.get("count", 0))])
-		if int(set_row.get("count", 0)) >= 5:
-			set_lines.append(str(set_row.get("five_text", "")))
-			set_lines.append("Five-part effect: not in play")
+		for tier_row in set_row.get("bonuses", []):
+			var tier: Dictionary = tier_row
+			set_lines.append("  %dpc %s%s" % [int(tier["tier"]), str(tier["text"]), "  (Koliseo only)" if bool(tier.get("koliseo_only", false)) and int(tier["tier"]) < 5 else ""])
 	_set_strip.text = "\n".join(set_lines)
 	var epic_name := str(gear.get("epic", ""))
 	var relic_name := str(gear.get("relic", ""))
@@ -315,6 +329,8 @@ func _add_grid_row(row: Dictionary, in_bank: bool, want: String, query: String) 
 		return
 	var button := Button.new()
 	var count := int(row.get("count", 1))
+	if bool(def.get("gear", false)):
+		name = "%s +%d" % [name, int(row.get("plus", 0))]
 	var label := name if count == 1 else "%s x%d" % [name, count]
 	button.text = "Bank: %s" % label if in_bank else label
 	button.add_theme_stylebox_override("normal", _rarity_style(rarity))
@@ -336,6 +352,12 @@ func _filter_rarity() -> String:
 			return "epic"
 		4:
 			return "relic"
+		5:
+			return "normal"
+		6:
+			return "legendary"
+		7:
+			return "ultra"
 		_:
 			return ""
 
@@ -360,25 +382,28 @@ func _select_slot(slot: String) -> void:
 		return
 	var inst: Dictionary = progress.equipped[slot]
 	_selected = int(inst.get("uid", -1))
-	_show_card_def(str(inst.get("item_id", "")), str(inst.get("rarity", "regular")), 1, true)
+	_show_card_def(str(inst.get("item_id", "")), str(inst.get("rarity", "regular")), 1, true, "bag", int(inst.get("plus", 0)))
 
 
 func _show_card(uid: int) -> void:
 	for entry in progress.bag:
 		var row: Dictionary = entry
 		if int(row.get("uid", -1)) == uid:
-			_show_card_def(str(row.get("item_id", "")), str(row.get("rarity", "regular")), int(row.get("count", 1)), false)
+			_show_card_def(str(row.get("item_id", "")), str(row.get("rarity", "regular")), int(row.get("count", 1)), false, "bag", int(row.get("plus", 0)))
 			return
 	for entry in progress.bank:
 		var bank_row: Dictionary = entry
 		if int(bank_row.get("uid", -1)) == uid:
-			_show_card_def(str(bank_row.get("item_id", "")), str(bank_row.get("rarity", "regular")), int(bank_row.get("count", 1)), false, "bank")
+			_show_card_def(str(bank_row.get("item_id", "")), str(bank_row.get("rarity", "regular")), int(bank_row.get("count", 1)), false, "bank", int(bank_row.get("plus", 0)))
 			return
 
 
-func _show_card_def(item_id: String, rarity: String, count: int, worn: bool, held := "bag") -> void:
+func _show_card_def(item_id: String, rarity: String, count: int, worn: bool, held := "bag", plus := 0) -> void:
 	var def: Dictionary = progress.item_def(item_id)
 	var name := str(def.get("name", item_id))
+	if bool(def.get("gear", false)):
+		_card.text = "\n".join(_gear_card(item_id, plus, worn, held, count))
+		return
 	var lines: PackedStringArray = [name, "Rarity %s" % rarity]
 	if int(def.get("min_level", 0)) > 0:
 		lines.append("Level %s" % str(def.get("min_level", "")))
@@ -406,6 +431,48 @@ func _show_card_def(item_id: String, rarity: String, count: int, worn: bool, hel
 	else:
 		lines.append("In the bag x%s" % str(count))
 	_card.text = "\n".join(lines)
+
+
+## A set part (pc_gear.gd): name +plus, tier, who can wear it, the part's
+## numbers at this plus, and the set's 2 / 4 / 5-piece lines.
+func _gear_card(item_id: String, plus: int, worn: bool, held: String, count: int) -> PackedStringArray:
+	var fam := Gear.family_of(item_id)
+	var owner := Gear.owner_of(fam)
+	var lines: PackedStringArray = [Gear.item_label(item_id, plus)]
+	lines.append("%s · %s · %s" % [str(Gear.FAMILIES[fam]["name"]), Gear.rarity_of(fam), "any class" if owner == "" else "%s only" % owner.capitalize()])
+	lines.append(Gear.part_line(item_id, plus))
+	var fits := owner == "" or Gear.class_key(str(progress.hero_class)) == owner
+	if not fits:
+		lines.append("Your class cannot wear this. Keep it to sell or trade later.")
+	var bonus: Dictionary = Gear.FAMILIES[fam]["bonus"]
+	for tier in [2, 4, 5]:
+		lines.append("%dpc %s" % [tier, str(bonus[tier])])
+	if Gear.is_ultra(fam):
+		lines.append("Koliseo shop, %d coins. Set lines work in the Koliseo only." % Gear.ULTRA_PART_COST)
+	if int(plus) < Gear.PLUS_CAP:
+		lines.append("Fuse: needs another %s +%d" % [Gear.part_name(item_id), plus])
+	else:
+		lines.append("Fully fused (+%d)" % Gear.PLUS_CAP)
+	if worn:
+		lines.append("Worn")
+	elif held == "bank":
+		lines.append("In the bank x%s" % str(count))
+	else:
+		lines.append("In the bag x%s" % str(count))
+	return lines
+
+
+func _fuse_selected() -> void:
+	if progress == null or _selected < 0 or not progress.has_method("fuse_uid"):
+		return
+	var result: Dictionary = progress.fuse_uid(_selected)
+	if bool(result.get("ok", false)):
+		_selected = int(result.get("uid", _selected))
+	refresh()
+	if bool(result.get("ok", false)):
+		_card.text = "Fused: %s" % Gear.item_label(str(result.get("item_id", "")), int(result.get("plus", 0)))
+	else:
+		_card.text = "Fuse needs two of the same piece at the same +." if str(result.get("reason", "")) in ["no_partner", "different_plus", "different_item"] else str(result.get("reason", ""))
 
 
 func _equip_selected() -> void:
@@ -515,6 +582,8 @@ func _slot_text(slot: String) -> String:
 		return "empty"
 	var inst: Dictionary = progress.equipped[slot]
 	var def: Dictionary = progress.item_def(str(inst.get("item_id", "")))
+	if bool(def.get("gear", false)):
+		return Gear.item_label(str(inst.get("item_id", "")), int(inst.get("plus", 0)))
 	return str(def.get("name", inst.get("item_id", "")))
 
 
@@ -535,6 +604,10 @@ func _rarity_style(rarity: String) -> StyleBoxFlat:
 	var border := Color(0.92, 0.9, 0.86)
 	if rarity == "rare":
 		border = Color(0.35, 0.55, 0.95)
+	elif rarity == "legendary":
+		border = Color(0.98, 0.6, 0.2)
+	elif rarity == "ultra":
+		border = Color(0.95, 0.3, 0.3)
 	elif rarity == "epic":
 		border = Color(0.72, 0.45, 0.95)
 	elif rarity == "relic":

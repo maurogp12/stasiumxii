@@ -5,6 +5,7 @@ extends CanvasLayer
 ## Loaded with preload. No global class.
 
 const Painted := preload("res://units/painted_looks.gd")
+const Gear := preload("res://backend/pc_gear.gd")
 
 var _portrait: TextureRect
 var _who: Label
@@ -15,6 +16,9 @@ var _root: Control
 var _body: RichTextLabel
 var _details: Label
 var _showing_details := false
+## Worn gear: the five gear slots with their +, gear stats, set bonuses, and
+## a Fuse button per worn piece that has a partner (mobile gear screen).
+var _gear_box: VBoxContainer
 
 
 func setup(hero) -> void:
@@ -85,7 +89,7 @@ func ensure_built() -> void:
 	panel.offset_left = 28
 	panel.offset_top = 36
 	panel.offset_right = 500
-	panel.offset_bottom = 680
+	panel.offset_bottom = 860
 	panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	panel.add_theme_stylebox_override("panel", _card_style())
 	_root.add_child(panel)
@@ -115,6 +119,10 @@ func ensure_built() -> void:
 	_body.custom_minimum_size = Vector2(420, 280)
 	_body.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	box.add_child(_body)
+	_gear_box = VBoxContainer.new()
+	_gear_box.name = "GearBox"
+	_gear_box.add_theme_constant_override("separation", 2)
+	box.add_child(_gear_box)
 	var actions := HBoxContainer.new()
 	actions.add_theme_constant_override("separation", 8)
 	box.add_child(actions)
@@ -157,7 +165,7 @@ func _fill() -> void:
 		lines.append("XP %s  (cap)" % str(view["xp"]))
 	else:
 		lines.append("XP %s / %s" % [str(view["xp"]), str(view["xp_need"])])
-	lines.append("HP %s    class HP per level: %s" % [str(view["hp"]), str(view["class_hp_per_level"])])
+	lines.append("HP %s    (base %s, class HP per level: %s)" % [str(view.get("hp_max", view["hp"])), str(view["hp"]), str(view["class_hp_per_level"])])
 	var caps: Dictionary = view["caps"]
 	lines.append("AP %s / %s    (milestones +%s)" % [
 		str(view["ap"]), str(caps.get("ap", "Open")), str(view["ap_from_milestones"]),
@@ -184,6 +192,72 @@ func _fill() -> void:
 	if view.has("gear"):
 		effects = _gear_line(view["gear"])
 	_details.text = "Titles: %s\nResistances: Open\nHealing bonus: Open\nSet and item effects: %s" % [earned, effects]
+	_fill_gear(view.get("gear", {}))
+
+
+func _fill_gear(gear: Dictionary) -> void:
+	if _gear_box == null:
+		return
+	for child in _gear_box.get_children():
+		_gear_box.remove_child(child)
+		child.queue_free()
+	var head := Label.new()
+	head.text = "Gear"
+	head.add_theme_color_override("font_color", Color(0.93, 0.76, 0.38))
+	_gear_box.add_child(head)
+	for slot in Gear.SLOTS:
+		var row := HBoxContainer.new()
+		row.name = "Slot_%s" % slot
+		_gear_box.add_child(row)
+		var label := Label.new()
+		label.custom_minimum_size = Vector2(330, 0)
+		label.add_theme_color_override("font_color", Color(0.92, 0.9, 0.84))
+		var inst: Dictionary = progress.equipped.get(slot, {}) if progress != null else {}
+		var item_id := str(inst.get("item_id", ""))
+		if Gear.is_valid_item_id(item_id):
+			label.text = "%s: %s" % [slot.capitalize(), Gear.item_label(item_id, int(inst.get("plus", 0)))]
+			label.tooltip_text = Gear.part_line(item_id, int(inst.get("plus", 0)))
+			label.mouse_filter = Control.MOUSE_FILTER_PASS
+		elif item_id != "":
+			label.text = "%s: %s" % [slot.capitalize(), str(progress.item_def(item_id).get("name", item_id))]
+		else:
+			label.text = "%s: empty" % slot.capitalize()
+		row.add_child(label)
+		if Gear.is_valid_item_id(item_id) and progress.has_method("fuse_partner"):
+			var fuse := Button.new()
+			fuse.name = "Fuse_%s" % slot
+			fuse.text = "Fuse"
+			var uid := int(inst.get("uid", -1))
+			fuse.disabled = progress.fuse_partner(uid) == -1 or int(inst.get("plus", 0)) >= Gear.PLUS_CAP
+			fuse.tooltip_text = "Needs another %s +%d in the bag." % [Gear.part_name(item_id), int(inst.get("plus", 0))]
+			fuse.pressed.connect(_fuse.bind(uid))
+			row.add_child(fuse)
+	var stats: Dictionary = gear.get("stats", {})
+	var bits: PackedStringArray = []
+	for key in ["HP", "HP %", "Mastery", "Resist", "Init", "Crit %"]:
+		if int(stats.get(key, 0)) != 0:
+			bits.append("%s +%d" % [key, int(stats[key])])
+	var line := Label.new()
+	line.name = "GearStats"
+	line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	line.add_theme_color_override("font_color", Color(0.85, 0.85, 0.78))
+	line.text = "Gear: %s" % ("none" if bits.is_empty() else ", ".join(bits))
+	_gear_box.add_child(line)
+	for set_row in gear.get("sets", []):
+		var set_label := Label.new()
+		set_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		set_label.add_theme_color_override("font_color", Color(0.78, 0.86, 0.95))
+		var tiers: PackedStringArray = []
+		for tier_row in set_row.get("bonuses", []):
+			tiers.append("%dpc %s" % [int(tier_row["tier"]), str(tier_row["text"])])
+		set_label.text = "%s %d/5%s" % [str(set_row.get("name", "")), int(set_row.get("count", 0)), "" if tiers.is_empty() else ": " + "; ".join(tiers)]
+		_gear_box.add_child(set_label)
+
+
+func _fuse(uid: int) -> void:
+	if progress != null and progress.has_method("fuse_uid"):
+		progress.fuse_uid(uid)
+	refresh()
 
 
 func _spend(stat: String) -> void:
@@ -207,7 +281,7 @@ func _toggle_details() -> void:
 func _gear_line(gear: Dictionary) -> String:
 	var stats: Dictionary = gear.get("stats", {})
 	var bits: PackedStringArray = []
-	for stat in ["Mastery", "Vitality", "Swift", "Resist"]:
+	for stat in ["HP", "HP %", "Mastery", "Resist", "Init", "Crit %"]:
 		if int(stats.get(stat, 0)) != 0:
 			bits.append("%s +%d" % [stat, int(stats[stat])])
 	if int(gear.get("ap", 0)) != 0:
