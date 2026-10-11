@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" path="res://launcher/launcher.gd" id="1"]
 
-[node name="Launcher" type="Control"]
+[node name="Launcher" type="Control" unique_id=1458230917]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
