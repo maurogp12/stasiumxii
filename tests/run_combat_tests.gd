@@ -8389,9 +8389,10 @@ func _test_kestrel_vault_and_snare() -> void:
 
 
 ## Mauro 8 Oct 2026: Vault's cast-time cooldown is 2 of Kestrel's later turns.
-## The helper stores cooldown + 1, so the button reads 3 on the cast turn,
-## 2 on N+1, 1 on N+2, and blank on N+3 when it is legal again. A second
-## Vault on a legal turn is still once-per-turn.
+## The helper stores cooldown + 1 so her own later turn-start can tick it.
+## The button hides that extra 1: "2 turns" on the cast, "1 turn" on N+1 and
+## on N+2, blank on N+3. An enemy turn does not tick it. A second Vault on a
+## legal turn is still once-per-turn.
 func _test_vault_two_turn_cooldown() -> void:
 	var owners := 0
 	for class_id in SpellKits.CLASS_SPELLS:
@@ -8409,30 +8410,36 @@ func _test_vault_two_turn_cooldown() -> void:
 	truthy(card.contains("the turn after those"), "the Vault card says it is ready the turn after those")
 	truthy(card.contains("no match limit"), "the Vault card says there is no match limit")
 	truthy(card.contains("no foe"), "the Vault card names the dark-button reasons")
+	truthy(card.contains("never says 3 turns"), "the Vault card says the button never says 3 turns")
+	truthy(card.contains("still starts this cooldown"), "the Vault card says the free Vault starts the cooldown")
 	var short_card := " ".join(SpellTooltip.card_lines({"spell_id": SpellKits.VAULT, "name": "Vault", "ap": 3, "mp": 0, "range_text": "exactly 2 cardinal"}))
 	truthy(short_card.contains("Cooldown 2 turns"), "the fight tooltip names the 2-turn cooldown")
 	truthy(short_card.contains("No match limit"), "the fight tooltip says there is no match limit")
+	truthy(short_card.contains("2 turns, then 1 turn"), "the fight tooltip says the button counts 2 then 1")
 	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "classes": ["kestrel", "gloam"], "positions": [Vector2i(5, 5), Vector2i(6, 5)]})
 	var vault: Dictionary = _sim.submit({"type": "cast", "spell": "vault", "to": Vector2i(3, 5), "seat": 0})
 	eq(bool(vault.get("ok", false)), true, "the cooldown Vault still jumps")
 	eq(_unit(0)["pos"], Vector2i(3, 5), "she lands 2 tiles west")
 	eq(_spell_cd(0, SpellKits.VAULT), 3, "the cast stores cooldown + 1")
-	eq(CombatHUD.spell_cooldown_badge(_unit(0), SpellKits.VAULT), "3 turns", "the cast turn shows 3 turns")
-	_assert_kit_button(SpellKits.VAULT, "3 turns", true)
+	eq(CombatHUD.spell_cooldown_badge(_unit(0), SpellKits.VAULT), "2 turns", "the cast turn shows 2 turns, not 3")
+	eq(CombatHUD.vault_turns_text(3) != "3 turns", true, "a stored 3 never reads 3 turns")
+	_assert_kit_button(SpellKits.VAULT, "2 turns", true)
 	truthy(str(_sim.snapshot().get("coach", "")).contains("Cooldown: next 2 turns"), "the coach names the 2-turn cooldown")
 	_live_unit(1)["pos"] = Vector2i(4, 5)
 	var same: Dictionary = _sim.submit({"type": "cast", "spell": "vault", "to": Vector2i(3, 3), "seat": 0})
 	eq(str(same.get("reason", "")), "vault_limit", "the cast turn is still once per turn, not cooldown")
 	_sim.submit({"type": "end_turn", "seat": 0})
+	eq(int(_sim.snapshot().get("active_seat", -1)), 1, "the enemy's turn starts")
+	eq(_spell_cd(0, SpellKits.VAULT), 3, "the enemy turn does not tick her Vault clock")
 	_sim.submit({"type": "end_turn", "seat": 1})
 	eq(_spell_cd(0, SpellKits.VAULT), 2, "N+1 ticks the clock to 2")
-	eq(CombatHUD.spell_cooldown_badge(_unit(0), SpellKits.VAULT), "2 turns", "N+1 shows 2 turns")
+	eq(CombatHUD.spell_cooldown_badge(_unit(0), SpellKits.VAULT), "1 turn", "N+1 shows 1 turn")
 	eq(_has_legal_cast(0, SpellKits.VAULT), false, "Vault is not offered on N+1")
 	_live_unit(1)["pos"] = Vector2i(4, 5)
 	var n1: Dictionary = _sim.submit({"type": "cast", "spell": "vault", "to": Vector2i(3, 3), "seat": 0})
 	eq(str(n1.get("reason", "")), "cooldown", "N+1 rejects Vault as cooldown")
 	eq(int(_unit(0)["ap"]), int(_unit(0)["max_ap"]), "the rejected Vault refunds AP")
-	_assert_kit_button(SpellKits.VAULT, "2 turns", true)
+	_assert_kit_button(SpellKits.VAULT, "1 turn", true)
 	_sim.submit({"type": "end_turn", "seat": 0})
 	_sim.submit({"type": "end_turn", "seat": 1})
 	eq(_spell_cd(0, SpellKits.VAULT), 1, "N+2 ticks the clock to 1")

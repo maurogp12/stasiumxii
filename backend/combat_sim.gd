@@ -3615,8 +3615,9 @@ func _validate_advance(actor: Dictionary, dest: Vector2i) -> String:
 ## first so a second Vault on a legal turn (including the cast turn) stays
 ## vault_limit.
 ## Mauro 11 Oct 2026: no match cap. She can Vault every time the cooldown is
-## ready. Sandhawk's free Vault is still once per match, costs 0 AP, skips
-## the cooldown, and does not spend a use.
+## ready. Sandhawk's free Vault is still once per match and costs 0 AP.
+## Mauro 11 Oct 2026, later: the free Vault starts this same cooldown. It
+## does not skip it. Cast on N, locked on N+1 and N+2, legal on N+3.
 func _validate_vault(actor: Dictionary, dest: Vector2i) -> String:
 	if str(actor.get("class_id", "")) != SpellKits.CLASS_KESTREL:
 		return "spell_not_in_kit"
@@ -3630,7 +3631,7 @@ func _validate_vault(actor: Dictionary, dest: Vector2i) -> String:
 	var ap_cost := 0 if bool(actor.get("vault_free", false)) else int(def.get("ap", 3))
 	if int(actor["ap"]) < ap_cost:
 		return "insufficient_ap"
-	if not bool(actor.get("vault_free", false)) and not _player_cd_ready(actor, SpellKits.VAULT):
+	if not _player_cd_ready(actor, SpellKits.VAULT):
 		return "cooldown"
 	var pressed := false
 	for unit in _units:
@@ -3667,14 +3668,14 @@ func _resolve_vault(intent: Dictionary, actor: Dictionary, def: Dictionary, dest
 	actor["pos"] = dest
 	if free:
 		actor["vault_free"] = false
-	else:
-		_arm_spell_cooldown(actor, def)
+	_arm_spell_cooldown(actor, def)
 	_note_step(actor)
 	_intent_log.append(intent)
+	var cool := int(def.get("cooldown", 0))
 	if free:
-		_last_coach = "%s vaults to %s (free)." % [actor["name"], _cell_text(dest)]
+		_last_coach = "%s vaults to %s (free). Cooldown: next %d turns." % [actor["name"], _cell_text(dest), cool]
 	else:
-		_last_coach = "%s vaults to %s (−%d AP). Cooldown: next %d turns." % [actor["name"], _cell_text(dest), ap_cost, int(def.get("cooldown", 0))]
+		_last_coach = "%s vaults to %s (−%d AP). Cooldown: next %d turns." % [actor["name"], _cell_text(dest), ap_cost, cool]
 	_last_events.append({
 		"type": "cast",
 		"spell": SpellKits.VAULT,
