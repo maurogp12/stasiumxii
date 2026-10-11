@@ -8,8 +8,11 @@ extends RefCounted
 const Duel = preload("res://backend/pc_duel.gd")
 const Catalog = preload("res://backend/pc_rewards.gd")
 const Kits = preload("res://data/kits.gd")
+const Roster = preload("res://backend/pc_roster.gd")
 const CURVE_PATH := "res://data/world/level_curve.json"
 const REWARDS_PATH := "res://data/world/level_rewards.json"
+## Single-file path. Existing tests keep this when character_id is empty
+## and nothing here migrates that file. The roster owns migration.
 const SAVE_PATH := "user://pc_progress.json"
 const FORMAT := "stasium.level_curve"
 const FORMAT_VERSION := 1
@@ -52,6 +55,8 @@ var bag: Array = []
 var bank: Array = []
 var equipped: Dictionary = {}
 var hero_class := ""
+## Empty keeps SAVE_PATH. The character screen sets this before the world loads.
+var character_id := ""
 var rare_choice := ""
 var bag_slots := 0
 var bank_slots := 0
@@ -328,8 +333,17 @@ func add_xp(n: int) -> Array:
 	return events
 
 
+func _active_path() -> String:
+	if character_id != "":
+		return Roster.progress_path(character_id)
+	return SAVE_PATH
+
+
 func save() -> bool:
-	var file := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
+	var path := _active_path()
+	if path == "":
+		return false
+	var file := FileAccess.open(path, FileAccess.WRITE)
 	if file == null:
 		return false
 	file.store_string(JSON.stringify({
@@ -353,13 +367,47 @@ func save() -> bool:
 			"y": world_cell.y,
 		},
 	}))
+	if character_id != "":
+		Roster.mirror_level(character_id, level)
 	return true
 
 
-## Public load from user://pc_progress.json.
+## Public load. character_id empty reads user://pc_progress.json.
+## A roster character reads user://pc_progress_<id>.json.
 ## Startup calls read_save() so this file does not call Godot's global load().
 func load() -> bool:
 	return read_save()
+
+
+## Point save and load at one roster character. A missing file leaves a fresh hero.
+func bind_character(id: String) -> bool:
+	var path := Roster.progress_path(id)
+	if path == "":
+		return false
+	character_id = str(id).strip_edges()
+	_clear_hero_state()
+	if not FileAccess.file_exists(path):
+		return false
+	return read_save()
+
+
+func _clear_hero_state() -> void:
+	level = 1
+	xp = 0
+	_reset_spend()
+	coins = 0
+	bag = []
+	bank = []
+	equipped = {}
+	hero_class = ""
+	rare_choice = ""
+	_uid = 1
+	_equip_seq = 1
+	load_log = []
+	mission_blob = {}
+	dungeon_stars = {}
+	world_zone = ""
+	world_cell = Vector2i.ZERO
 
 
 ## Swap in a parsed curve (tests, and the next phase's longer file).
@@ -388,9 +436,10 @@ func bind_rewards(doc: Dictionary) -> bool:
 
 
 func read_save() -> bool:
-	if not FileAccess.file_exists(SAVE_PATH):
+	var path := _active_path()
+	if path == "" or not FileAccess.file_exists(path):
 		return false
-	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(SAVE_PATH))
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
 	if typeof(parsed) != TYPE_DICTIONARY:
 		return false
 	var doc: Dictionary = parsed
