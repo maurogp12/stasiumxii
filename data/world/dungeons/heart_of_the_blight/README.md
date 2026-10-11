@@ -173,20 +173,37 @@ Base stats are at level 40, with +5% HP and +3% damage per level. The hero side 
   - ★3 [1.2, 1.05];
   - ★4 [1.25, 1.05];
   - ★5 [0.8, 0.8]. ★5's extra difficulty is the crystal pack of 8, the Colossus, the Crystal Bloom and the crystallise.
-- **Rewards** (`pc_rewards` dungeon row `heart_of_the_blight`, unchanged: the **Rotting Elder** set (tier 50, spec 4.9),
-  class tier 50, coin level 50, extras Elderroot Feast, Blight Heartwood, Blight Seedling, title "Blightbane"):
+- **Rewards** (`pc_rewards` dungeon row `heart_of_the_blight`; Mauro, 11 Oct 2026: "Si a todo"; numbers Proposed):
   - XP: 27% of xp_to_next(run level) × pace(hero level) **× star**.
-  - Coins: the blight's coin roll × star.
-  - Loot: Normal parts from ★1. **Rare** parts only from ★3. ★5 guarantees a Rare part and a **Mystery Box**.
-  - **Open: the band's set is level 50.** The Rotting Elder set and the tier-50 class sets (spec 4.9 says tier 50)
-    have `min_level` 50, so a level 40–49 hero cannot wear the parts yet. The Abbey drops its tier-30 set from level
-    30. Whether this band should drop the tier-40 class sets (and coin level 40) instead is Open for Mauro.
-  - **Epics and relics:** the 40–50 band's epics have `drop: Open`, and the dungeon does not drop them:
-    - Gale Signet (40), Ember Crown (45), Stormheart Gauntlet (45), Prism Striders (50);
-    - the Abbey's Abbess's Rosary (40).
+  - Coins: **coin level 40** × 8 × star (504 at ★1).
+  - **Sets:** the guaranteed part (and the ★3+ Rare roll and the ★5 guaranteed Rare part) is always a **tier-40 class
+    set** part (Galecrest, Mountainmaw, Deepspring, Voidshroud, Rampart Lord), so a level 40–49 hero can wear it.
+    The row's own `guaranteed_split` is 0 dungeon set / 1 class set. The Abbey drops its tier-30 set from level 30 the
+    same way.
+    - The tier-40 dungeon set is **Ashen Prism**. It is Shard Hollow's own set (Ashen Shardfields, spec 4.9: "no two
+      dungeons share a loot table"), so the blight does not drop it.
+    - **Rotting Elder set** (tier 50, spec 4.9, unchanged): the blight's own set drops only at **★5 on a level-50
+      run**, **10%** per win, one Regular part (`star_drops` group `rotting_elder`, `above_run_level: skip`). Nothing
+      else drops it.
+  - Loot: Normal parts from ★1. **Rare** parts only from ★3. ★5 guarantees a Rare part and a **Mystery Box**
+    (unchanged).
+  - **Epics and relics** (`star_drops`; one draw per group, so at most **one epic** and **one relic** a run):
 
-    The relics are Heart of the Elder (50), Crown of Crosshaven (50) and Blightroot Ring (50), all with `drop: Open`.
-    Heart of the Elder and Blightroot Ring look made for this dungeon. The ★5 Legendary slot stays a Mystery Box.
+| Group | Items | ★1–★3 | ★4 | ★5 |
+|---|---|---|---|---|
+| epic | Gale Signet (40), Ember Crown (45), Stormheart Gauntlet (45), one picked evenly | – | 10% | 20% |
+| epic | Prism Striders (50) | – | – | 5% |
+| relic | Heart of the Elder (50) | – | – | 5% |
+| relic | Blightroot Ring (50) | – | – | 5% |
+
+  - So at ★5 a win gives an epic 25% of the time and a relic 10% of the time.
+  - Level gate: `above_run_level: drop`. An item above the run level still drops and waits in the bag until the
+    hero can wear it (`can_wear` says `level`), as the dungeon roll already does for parts. With `skip` it would not
+    drop below its level (the Mystery Box rule). The Rotting Elder group uses `skip`, so no unwearable set part ever
+    drops.
+  - **Open: Crown of Crosshaven** (relic, 50) still has no drop source (`drop: Open`). It reads as a capstone, maybe
+    for a later event or the level-100 phase.
+  - **Open:** the epic and relic effects are stored and not applied yet (balance gate, spec 4.9).
   - Any star credits `westwatch_dungeon` (clear_dungeon), now live.
 
 ### Sim results (`tests/sim_dungeon_stars.gd heart_of_the_blight 8 42`: solo hero bot, level 42, 8 runs per class per star)

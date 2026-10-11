@@ -145,10 +145,13 @@ Bog Dead pack, the kiting leeches, the rite (a fight that grows back) and the �
   - Coins: the abbey's coin roll × star.
   - Loot: Normal Mire Abbess parts from ★1. **Rare** parts only from ★3. ★5 guarantees a Rare part and a
     **Mystery Box**.
-  - Epics: the 30–40 band has one epic in `rewards.json`, the **Abbess's Rosary** (amulet, `min_level` 40,
-    `drop: Open`). Epics start at level 40 and no dungeon drop source is named for them, so the abbey does not drop
-    it. The ★5 Legendary slot stays a Mystery Box, as in the other three dungeons. Whether ★5 abbey runs at level 40
-    should roll the Rosary is Open for Mauro.
+  - **Abbess's Rosary** (epic amulet, `min_level` 40; Mauro, 11 Oct 2026: "Si a todo"; numbers Proposed):
+    - Drops only at **★5**, **15%** per ★5 win, at most one a run (`rewards.json` dungeon row `drowned_abbey`,
+      `star_drops`, group `epic`). ★1–★4 roll exactly as before.
+    - Level gate: `above_run_level: drop`. A run below level 40 can still drop it, and it waits in the bag until the
+      hero reaches 40 (`can_wear` says `level`). This is how the dungeon roll already treats a part above the run level.
+      Set it to `skip` to drop it only on level-40 runs, like the Mystery Box's level rule.
+    - The ★5 Legendary slot is still a Mystery Box, and the Rosary is rolled on top of it.
   - Any star credits `southbridge_dungeon` (clear_dungeon), now live.
 
 ### Sim results (`tests/sim_dungeon_stars.gd drowned_abbey 8 32`: solo hero bot, level 32, 8 runs per class per star)
