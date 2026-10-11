@@ -212,3 +212,4 @@ func _clear_downloads(install_dir: String) -> void:
 		for f in DirAccess.get_files_at(root.path_join(d)):
 			DirAccess.remove_absolute(root.path_join(d).path_join(f))
 		DirAccess.remove_absolute(root.path_join(d))
+	DirAccess.remove_absolute(root)

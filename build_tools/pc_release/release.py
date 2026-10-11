@@ -120,7 +120,20 @@ def seed_checkout(src, build_dir):
 
 
 def apply_overrides(build_dir):
-    shutil.copyfile(os.path.join(HERE, "export_presets.cfg"), os.path.join(build_dir, "export_presets.cfg"))
+    with open(os.path.join(HERE, "export_presets.cfg")) as f:
+        presets = f.read()
+    # The "resources" filter does not follow preloads inside scripts, so the
+    # Launcher preset lists every file under res://launcher/ explicitly.
+    files = []
+    for dirpath, _dirs, names in os.walk(os.path.join(build_dir, "launcher")):
+        for n in sorted(names):
+            if not n.endswith((".import", ".uid")):
+                rel = os.path.relpath(os.path.join(dirpath, n), build_dir)
+                files.append('"res://%s"' % rel.replace(os.sep, "/"))
+    presets = re.sub(r'(?m)^export_files=PackedStringArray\("res://launcher/.*$',
+                     lambda _m: "export_files=PackedStringArray(%s)" % ", ".join(sorted(files)), presets)
+    with open(os.path.join(build_dir, "export_presets.cfg"), "w") as f:
+        f.write(presets)
     with open(os.path.join(HERE, "project_overrides.json")) as f:
         ov = json.load(f)
     path = os.path.join(build_dir, "project.godot")

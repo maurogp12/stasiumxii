@@ -121,6 +121,7 @@ func _process(_delta: float) -> void:
 func _on_checked(result: Dictionary, deep: bool) -> void:
 	if not result["ok"]:
 		_offline = true
+		news_label.text = "News will show here once the launcher can reach the update server."
 		if boot.content_ready():
 			_show_status("Offline - you can play the installed version.", str(result["error"]))
 			play_button.disabled = false
@@ -196,7 +197,9 @@ func _go_play() -> void:
 		_show_status("Starting the game...", "")
 		boot.restart(PackedStringArray(["--play"]))
 		return
-	get_tree().change_scene_to_file(Config.GAME_SCENE)
+	if get_tree().change_scene_to_file(Config.GAME_SCENE) != OK:
+		_show_status("The game files could not be opened.", "Click Repair to check and fix them.")
+		repair_button.disabled = false
 
 
 func _on_update() -> void:

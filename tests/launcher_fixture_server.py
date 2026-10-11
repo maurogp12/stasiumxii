@@ -6,7 +6,9 @@ Adds what python's http.server lacks:
   - ?cut=N   send the full Content-Length but drop the connection after N body bytes;
   - ?norange=1  ignore Range and answer 200 (a server that cannot resume);
   - --rate B   throttle every response to B bytes per second (for the clip);
-  - --log F    one JSON line per request: path, range, status, bytes sent.
+  - --log F    one JSON line per request: path, range, status, bytes sent;
+  - --upstream URL  stream files missing from --root from URL + path (Range
+    forwarded), e.g. the live pc-builds branch, without saving them to disk.
 
 Usage: launcher_fixture_server.py --root DIR [--port 0] [--port-file F] [--log F] [--rate B]
 """
@@ -16,9 +18,11 @@ import json
 import os
 import posixpath
 import socket
+import ssl
 import threading
 import time
 import urllib.parse
+import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 ARGS = None
@@ -37,17 +41,23 @@ class Handler(BaseHTTPRequestHandler):
         except (ConnectionResetError, BrokenPipeError):
             pass
 
-    def _log(self, path, rng, status, sent):
+    def _log(self, path, rng, status, sent, upstream=False):
         if not ARGS.log:
             return
+        row = {"path": path, "range": rng, "status": status, "sent": sent}
+        if upstream:
+            row["upstream"] = True
         with LOCK, open(ARGS.log, "a") as f:
-            f.write(json.dumps({"path": path, "range": rng, "status": status, "sent": sent}) + "\n")
+            f.write(json.dumps(row) + "\n")
 
     def do_GET(self):
         parsed = urllib.parse.urlsplit(self.path)
         q = urllib.parse.parse_qs(parsed.query)
         rel = posixpath.normpath(urllib.parse.unquote(parsed.path)).lstrip("/")
         full = os.path.join(ARGS.root, rel)
+        if not rel.startswith("..") and not os.path.isfile(full) and ARGS.upstream:
+            self._proxy(rel, parsed, q)
+            return
         if rel.startswith("..") or not os.path.isfile(full):
             body = b"not found"
             self.send_response(404)
@@ -105,6 +115,52 @@ class Handler(BaseHTTPRequestHandler):
         self._log(parsed.path, rng, status, sent)
 
 
+    def _proxy(self, rel, parsed, q):
+        url = ARGS.upstream.rstrip("/") + "/" + rel
+        req = urllib.request.Request(url, headers={"User-Agent": "launcher-fixture"})
+        rng = self.headers.get("Range")
+        if rng:
+            req.add_header("Range", rng)
+        ctx = ssl.create_default_context(cafile=CA) if CA else None
+        try:
+            up = urllib.request.urlopen(req, context=ctx, timeout=60)
+        except urllib.error.HTTPError as e:
+            up = e
+        status = up.status if hasattr(up, "status") else up.code
+        length = up.headers.get("Content-Length")
+        self.send_response(status)
+        for h in ("Content-Length", "Content-Range", "Accept-Ranges", "Content-Type"):
+            if up.headers.get(h):
+                self.send_header(h, up.headers[h])
+        self.end_headers()
+        cut = int(q["cut"][0]) if "cut" in q else -1
+        sent = 0
+        t0 = time.monotonic()
+        try:
+            while True:
+                b = up.read(64 * 1024)
+                if not b:
+                    break
+                if cut >= 0 and sent + len(b) > cut:
+                    b = b[: cut - sent]
+                self.wfile.write(b)
+                sent += len(b)
+                if cut >= 0 and sent >= cut:
+                    self.connection.shutdown(socket.SHUT_RDWR)
+                    self.close_connection = True
+                    break
+                if ARGS.rate:
+                    ahead = sent / ARGS.rate - (time.monotonic() - t0)
+                    if ahead > 0:
+                        time.sleep(ahead)
+        except (BrokenPipeError, ConnectionResetError):
+            pass
+        self._log(parsed.path, rng, status, sent, upstream=True)
+
+
+CA = "/root/.ccr/ca-bundle.crt" if os.path.exists("/root/.ccr/ca-bundle.crt") else None
+
+
 def main():
     global ARGS
     ap = argparse.ArgumentParser()
@@ -113,6 +169,7 @@ def main():
     ap.add_argument("--port-file")
     ap.add_argument("--log")
     ap.add_argument("--rate", type=float, default=0.0)
+    ap.add_argument("--upstream")
     ARGS = ap.parse_args()
     srv = ThreadingHTTPServer(("127.0.0.1", ARGS.port), Handler)
     srv.daemon_threads = True
