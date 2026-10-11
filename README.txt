@@ -1,3 +1,18 @@
+STASIUM XII - PC (Windows 10/11, 64-bit)
+
+NEW: the launcher. Download it once, then it keeps the game up to date.
+1. Download StasiumXII_Launcher.zip (about 37 MB):
+   https://github.com/maurogp12/stasiumxii/raw/pc-builds/StasiumXII_Launcher.zip
+2. Unzip it into a folder you can write to (Desktop, Documents...).
+3. Double-click StasiumXII.exe. SmartScreen: More info -> Run anyway
+   (the game is not code-signed yet).
+4. The first start downloads the game (about 600 MB) and checks it.
+   After that, each start downloads only what changed, then press PLAY.
+   Repair re-checks every file.
+
+-----------------------------------------------------------------------
+Old way (still works, no auto-update): the 8 zips below.
+
 STASIUM XII - PC test build (Windows 10/11, 64-bit)
 Build: 11 Oct 2026, pc/world-zones eb5bfb9.
 New: all five town dungeons - Old Granary Cellar, Frostspire Archive, Saltmaw Grotto, Drowned Abbey, Heart of the Blight.
