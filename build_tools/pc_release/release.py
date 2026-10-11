@@ -327,13 +327,14 @@ def main():
     ap.add_argument("--godot", default="godot")
     ap.add_argument("--repo", default=None, help="git repo (defaults to the one holding this script)")
     ap.add_argument("--keep-build", action="store_true", help="keep the exported files in --work-dir/out")
+    ap.add_argument("--reuse-export", action="store_true", help="reuse --work-dir/out if it was exported from the same commit")
+    ap.add_argument("--export-only", action="store_true", help="stop after exporting into --work-dir/out")
     args = ap.parse_args()
     args.repo = args.repo or git("rev-parse", "--show-toplevel", cwd=HERE)
 
     work = os.path.abspath(args.work_dir)
     os.makedirs(work, exist_ok=True)
     out_dir = os.path.join(work, "out")
-    rm_tree(out_dir)
     pub = Publisher(args, work)
     ch = args.channel
     prev_ch = args.from_channel or ch
@@ -355,8 +356,23 @@ def main():
         raise SystemExit(f"{args.ref} has no launcher/ folder")
     apply_overrides(args.build_dir)
     engine = engine_of(args.godot)
-    exe, content, launcher = export(args.godot, args.build_dir, out_dir)
+    info_path = os.path.join(out_dir, "build_info.json")
+    reuse = False
+    if args.reuse_export and os.path.exists(info_path):
+        with open(info_path) as f:
+            reuse = json.load(f).get("sha") == sha
+    if reuse:
+        log("reusing the export in", out_dir)
+        exe, content, launcher = (os.path.join(out_dir, n) for n in (EXE, "content_full.pck", LAUNCHER_PACK))
+    else:
+        rm_tree(out_dir)
+        exe, content, launcher = export(args.godot, args.build_dir, out_dir)
+        with open(info_path, "w") as f:
+            json.dump({"sha": sha, "ref": args.ref}, f)
     git("checkout", "-q", "--", "project.godot", "export_presets.cfg", cwd=args.build_dir)
+    if args.export_only:
+        log("exported to", out_dir)
+        return
 
     content_pack = pck.read_pack(content)
     new_state = pck.file_state(content_pack)

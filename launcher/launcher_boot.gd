@@ -54,6 +54,15 @@ func _init() -> void:
 func _ready() -> void:
 	if mount_error == "restarting":
 		restart()
+		return
+	# --quit-after=SECONDS: print where we ended up and quit (headless checks).
+	var quit_after := float(_arg("--quit-after=", "0"))
+	if quit_after > 0.0:
+		get_tree().create_timer(quit_after).timeout.connect(func() -> void:
+			var scene := get_tree().current_scene
+			print("[launcher] scene=%s installed=%s mounted=%s" % [
+				scene.scene_file_path if scene else "none", installed_version, mounted.map(func(p): return p.get_file())])
+			get_tree().quit())
 
 
 ## A launcher pack staged as StasiumXII.pck.new by an update Windows would not
