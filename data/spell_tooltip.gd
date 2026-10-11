@@ -41,6 +41,8 @@ static func card_lines(preview: Dictionary) -> PackedStringArray:
 	var effect := _short_effect(preview, needs_marks)
 	if effect != "":
 		lines.append(effect)
+	if spell_id == SpellKits.VAULT:
+		lines.append("Cooldown %d turns. No match limit." % int(kit.get("cooldown", 2)))
 	var duration := _duration_line(str(preview.get("spell_id", "")))
 	if duration != "":
 		lines.append(duration)
@@ -126,8 +128,9 @@ static func simple_lines(spell_id: String, preview: Dictionary = {}) -> PackedSt
 			out.append("The enemy needs at least 1 Mark. All their Marks get used up.")
 		SpellKits.VAULT:
 			out.append("Jump exactly 2 tiles in a straight line (up, down, left or right) to get away. Only works when an enemy is right next to you. Once per turn. Never misses.")
-			out.append("Cooldown: %d turns. After you cast it, your next two turns cannot, and the turn after those can. Still once on the turn it is ready." % int(def.get("cooldown", 2)))
-			out.append("You cannot jump over rocks, crates, walls or steam.")
+			out.append("Cooldown: %d turns. After you cast it, your next two turns cannot, and the turn after those can. Still once on the turn it is ready. There is no match limit." % int(def.get("cooldown", 2)))
+			out.append("You cannot jump over rocks, crates, walls or steam. When the button is dark it says why: 2 turns, 1 turn, no foe, or no tile.")
+			out.append("Sandhawk's free Vault is once per match. It costs 0 AP and skips this cooldown.")
 		SpellKits.SNARE_TRAP:
 			out.append("Hide a trap on an empty tile. Enemies cannot see it. The first enemy who steps on it stops there, takes %d damage, loses %d MP and cannot walk on their next turn." % [int(def.get("trap_damage", 6)), int(def.get("trap_mp", 1))])
 			out.append("You can have %d traps at a time. Setting another removes the oldest. Each lasts %d of your turns." % [int(def.get("trap_cap", 2)), int(def.get("trap_turns", 3))])

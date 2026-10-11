@@ -483,8 +483,8 @@ static func gloam_has_live_shade(snap: Dictionary) -> bool:
 
 ## Number drawn on a kit button: the stored spell_cd counter, blank at 0.
 ## Fade shows nothing while Invisible (the button is grey because the cast
-## is illegal — a 0 would look ready). Vault shows the cast-time clock
-## (cooldown + 1 on the cast turn, then the two locked turns).
+## is illegal — a 0 would look ready). Vault's clock is words ("2 turns",
+## "1 turn"); the dark-button reasons live in vault_button_reason.
 static func spell_cooldown_badge(unit: Dictionary, spell_id: String) -> String:
 	if unit.is_empty() or str(spell_id) == "":
 		return ""
@@ -496,7 +496,78 @@ static func spell_cooldown_badge(unit: Dictionary, spell_id: String) -> String:
 	var left := int((cds as Dictionary).get(spell_id, 0))
 	if left <= 0:
 		return ""
+	if str(spell_id) == SpellKits.VAULT:
+		return vault_turns_text(left)
 	return str(left)
+
+
+## Stored Vault clock as the player reads it. 1 is "1 turn"; 2 and 3 are
+## "2 turns" / "3 turns". Blank at 0.
+static func vault_turns_text(left: int) -> String:
+	if left <= 0:
+		return ""
+	if left == 1:
+		return "1 turn"
+	return "%d turns" % left
+
+
+## Why the Vault button is dark on her own turn. Blank when she can cast,
+## when the turn is not hers, or when the lock is AP / silence / once-this-turn
+## with no cooldown. Cooldown wins over the board, then "no foe", then "no tile".
+static func vault_button_reason(unit: Dictionary, snap: Dictionary, vault_legal: bool) -> String:
+	if unit.is_empty() or str(unit.get("class_id", "")) != SpellKits.CLASS_KESTREL:
+		return ""
+	if vault_legal or bool(snap.get("match_over", false)) or is_deployment_phase(snap):
+		return ""
+	if int(snap.get("active_seat", -1)) != int(unit.get("seat", -2)):
+		return ""
+	if unit_is_stunned(unit):
+		return ""
+	var turns := spell_cooldown_badge(unit, SpellKits.VAULT)
+	if turns != "" and not bool(unit.get("vault_free", false)):
+		return turns
+	if bool(unit.get("vault_used", false)):
+		return ""
+	var cost := 0 if bool(unit.get("vault_free", false)) else int(SpellKits.spell(SpellKits.VAULT).get("ap", 3))
+	if int(unit.get("ap", 0)) < cost:
+		return ""
+	var silenced: Variant = unit.get("silenced_spells", [])
+	if typeof(silenced) == TYPE_ARRAY and (silenced as Array).has(SpellKits.VAULT):
+		return ""
+	if not _vault_enemy_adjacent(unit, snap):
+		return "no foe"
+	return "no tile"
+
+
+static func _vault_enemy_adjacent(unit: Dictionary, snap: Dictionary) -> bool:
+	var pos := _reason_cell(unit.get("pos", null))
+	var seat := int(unit.get("seat", -1))
+	var team := unit_team(unit)
+	for other in snap.get("units", []):
+		if typeof(other) != TYPE_DICTIONARY:
+			continue
+		var foe: Dictionary = other
+		if int(foe.get("seat", -1)) == seat or not bool(foe.get("alive", false)):
+			continue
+		if unit_team(foe) == team:
+			continue
+		if _chebyshev(_reason_cell(foe.get("pos", null)), pos) == 1:
+			return true
+	return false
+
+
+static func _chebyshev(a: Vector2i, b: Vector2i) -> int:
+	return maxi(absi(a.x - b.x), absi(a.y - b.y))
+
+
+static func _reason_cell(value: Variant) -> Vector2i:
+	if value is Vector2i:
+		return value
+	if value is Dictionary:
+		return Vector2i(int(value.get("x", -99)), int(value.get("y", -99)))
+	if value is Array and (value as Array).size() >= 2:
+		return Vector2i(int(value[0]), int(value[1]))
+	return Vector2i(-99, -99)
 
 
 static func legal_cast_ids(legal: Array) -> Dictionary:
@@ -3637,7 +3708,18 @@ func _sync_cooldown_badge(button: Button, spell_id: String) -> void:
 		_apply_display_font(badge)
 		button.add_child(badge)
 	var unit := unit_for_seat(_last_snap.get("units", []), kit_seat(_last_snap))
-	badge.text = spell_cooldown_badge(unit, spell_id)
+	if str(spell_id) == SpellKits.VAULT:
+		badge.text = vault_button_reason(unit, _last_snap, legal_cast_ids(_last_legal).has(SpellKits.VAULT))
+	else:
+		badge.text = spell_cooldown_badge(unit, spell_id)
+	var phrase := badge.text.find(" ") >= 0
+	badge.add_theme_font_size_override("font_size", 16 if phrase else 28)
+	badge.add_theme_constant_override("outline_size", 3 if phrase else 8)
+	# The dark button multiplies children by 0.72. Lift the phrase so
+	# "1 turn" / "no tile" stay cream instead of washing into the icon.
+	badge.modulate = Color(1.4, 1.4, 1.4, 1.4) if phrase else Color.WHITE
+	badge.z_index = 5
+	badge.autowrap_mode = TextServer.AUTOWRAP_OFF
 	badge.visible = badge.text != ""
 
 

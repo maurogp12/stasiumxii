@@ -3614,6 +3614,9 @@ func _validate_advance(actor: Dictionary, dest: Vector2i) -> String:
 ## cast on N is locked on N+1 and N+2 and legal on N+3. vault_used is checked
 ## first so a second Vault on a legal turn (including the cast turn) stays
 ## vault_limit.
+## Mauro 11 Oct 2026: no match cap. She can Vault every time the cooldown is
+## ready. Sandhawk's free Vault is still once per match, costs 0 AP, skips
+## the cooldown, and does not spend a use.
 func _validate_vault(actor: Dictionary, dest: Vector2i) -> String:
 	if str(actor.get("class_id", "")) != SpellKits.CLASS_KESTREL:
 		return "spell_not_in_kit"
@@ -3623,8 +3626,6 @@ func _validate_vault(actor: Dictionary, dest: Vector2i) -> String:
 		return "out_of_range"
 	if bool(actor.get("vault_used", false)):
 		return "vault_limit"
-	if int(actor.get("vaults_cast", 0)) >= 2:
-		return "vault_match"
 	var def: Dictionary = SpellKits.spell_for(actor, SpellKits.VAULT)
 	var ap_cost := 0 if bool(actor.get("vault_free", false)) else int(def.get("ap", 3))
 	if int(actor["ap"]) < ap_cost:
@@ -3646,8 +3647,6 @@ func _vault_reject_text(reason: String) -> String:
 			return "REJECT — Vault only works with an enemy right next to you (refund)."
 		"vault_limit":
 			return "REJECT — Vault is once per turn (refund)."
-		"vault_match":
-			return "REJECT — Vault is twice per match (refund)."
 		"cooldown":
 			return "REJECT — Vault is still cooling down (refund)."
 		"advance_blocked":
@@ -3665,7 +3664,6 @@ func _resolve_vault(intent: Dictionary, actor: Dictionary, def: Dictionary, dest
 	var ap_cost := 0 if free else int(def.get("ap", 3))
 	actor["ap"] = int(actor["ap"]) - ap_cost
 	actor["vault_used"] = true
-	actor["vaults_cast"] = int(actor.get("vaults_cast", 0)) + 1
 	actor["pos"] = dest
 	if free:
 		actor["vault_free"] = false
