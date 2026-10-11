@@ -1,0 +1,53 @@
+{
+  "format": "stasium.class_screen",
+  "format_version": 1,
+  "radar_status": "approved",
+  "lore_status": "proposed",
+  "difficulty_status": "proposed",
+  "note": "Radar values are spec 4.1, approved by Mauro on 11 Oct 2026 (section 11). Lore and difficulty are screen copy. Body options are the creation set from section 11: face (4, inside 3-5), skin (8), hair (8 plus custom), eyes (8 plus custom). Armour dye is not here; that is a later premium-shop package.",
+  "axes": ["Damage", "Range", "Survival", "Support", "Mobility"],
+  "order": ["kestrel", "ironjaw", "mender", "gloam", "bastion"],
+  "faces": [
+    {"id": "broad", "name": "Broad"},
+    {"id": "narrow", "name": "Narrow"},
+    {"id": "soft", "name": "Soft"},
+    {"id": "sharp", "name": "Sharp"}
+  ],
+  "skin": ["#f3d5c0", "#e6b897", "#d4a574", "#c68642", "#a56b3c", "#8d5524", "#6b3a1f", "#3d2415"],
+  "hair": ["#1c1c1c", "#3b2414", "#6b4423", "#a56b32", "#d4a017", "#efe6c9", "#8b2e2e", "#c0c0c0"],
+  "eyes": ["#3d2b1f", "#6b4a2a", "#3a6ea5", "#4a7c59", "#7a8a4a", "#8a8a8a", "#1a1a1a", "#c4a15a"],
+  "defaults": {
+    "gender": "m",
+    "face": "broad",
+    "skin": "#c68642",
+    "hair": "#3b2414",
+    "eyes": "#3d2b1f"
+  },
+  "classes": {
+    "kestrel": {
+      "difficulty": 2,
+      "lore": "Kestrel fights from far away. Mark Shot sets a target up, and Detonate finishes it. A ranged carry, light on armour and lighter on healing.",
+      "radar": {"Damage": 4, "Range": 5, "Survival": 2, "Support": 1, "Mobility": 3}
+    },
+    "ironjaw": {
+      "difficulty": 2,
+      "lore": "Ironjaw closes the gap and stays in it. Advance, Strike, Shoulder and Crush are a melee bruiser's whole plan, in dark steel.",
+      "radar": {"Damage": 5, "Range": 1, "Survival": 4, "Support": 1, "Mobility": 3}
+    },
+    "mender": {
+      "difficulty": 2,
+      "lore": "Mender keeps people standing. Mend and Pulse Tap heal, Ward and Cleanse hold the line, and Heartstop is the last word.",
+      "radar": {"Damage": 2, "Range": 3, "Survival": 3, "Support": 5, "Mobility": 2}
+    },
+    "gloam": {
+      "difficulty": 3,
+      "lore": "Gloam is gone until the strike lands. Fade, Ambush and the shade spells make a stealth assassin, not a front line.",
+      "radar": {"Damage": 5, "Range": 2, "Survival": 2, "Support": 1, "Mobility": 5}
+    },
+    "bastion": {
+      "difficulty": 1,
+      "lore": "Bastion plants its feet and does not give ground. Bash, Hold Line and Aegis are a tank's tools.",
+      "radar": {"Damage": 2, "Range": 1, "Survival": 5, "Support": 4, "Mobility": 2}
+    }
+  }
+}

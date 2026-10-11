@@ -1,6 +1,6 @@
-# Character select art, v1 (P2)
+# Character select art, v1 (P2) and the P1 screens
 
-PC only. This drop is the painted pieces for the character select screens. No game code changes. The screens are not wired to these files yet.
+PC only. The painted pieces live in `art/pc/character_select/`. P1 (`pc/charselect-flow`) wires the Character List and the Class Screen to those files.
 
 Spec: `docs/pc/CHARACTER_SELECT_SPEC.md` on branch `claude/pc-zones-spec` (section 6). That file is not on this branch.
 
@@ -27,8 +27,8 @@ Source is on the box at `/workspace/stasium-pc-look/charselect/`. The copy in th
 | `art/pc/character_select/ui_tab_dim.png` | 195×125 | 42,234 | Delivered. UI 9-slice source. |
 | `art/pc/character_select/ui_tab_lit.png` | 195×123 | 46,215 | Delivered. UI 9-slice source. |
 | `art/pc/character_select/manifest.json` | — | 1,170 | Delivered. Names the pieces, the holds, and the placement notes below. |
-| `docs/pc/art_help/charselect/mock_list_1080.png` | 1920×1080 | 2,195,540 | Reference mock of the list screen. Docs only. A before/after clip is not applicable yet. |
-| `docs/pc/art_help/charselect/mock_class_1080.png` | 1920×1080 | 1,786,084 | Reference mock of the class screen. Docs only. A before/after clip is not applicable yet. |
+| `docs/pc/art_help/charselect/mock_list_1080.png` | 1920×1080 | 2,195,540 | Reference mock of the list screen. The P1 clip sits beside it. |
+| `docs/pc/art_help/charselect/mock_class_1080.png` | 1920×1080 | 1,786,084 | Reference mock of the class screen. The P1 clip sits beside it. |
 
 16 PNGs plus `manifest.json` under `art/pc/character_select/`. The two mocks live here.
 
@@ -38,11 +38,11 @@ These are in the spec and named in the manifest, and they are not in this drop.
 
 | Piece | Spec size | Status |
 |---|---|---|
-| `class_art_<class>_<m/f>` | 1100×1100 / 2200×2200 | Held. |
-| `class_bust_*` | 150×150 and 72×72 (`class_bust_<class>_<m/f>`) | Held. |
-| `class_icon_*` | 32×32 (`class_icon_<class>`) | Held. |
+| `class_art_<class>_<m/f>` | 1100×1100 / 2200×2200 | Not in this package. |
+| `class_bust_*` | 150×150 and 72×72 (`class_bust_<class>_<m/f>`) | Not in this package. The grid and the list use the locked idle instead. |
+| `class_icon_*` | 32×32 (`class_icon_<class>`) | Not in this package. |
 
-Luca's female-option answer decides how many class paintings are needed. The locked world and combat looks are one gender per class. Until that answer, the class art, the busts, and the icons stay out, because a both-genders answer is ten class paintings (five classes × two) and a male-only answer is five. The same answer sets how the busts are cut. See open question 1 in the spec.
+Mauro answered on 11 Oct 2026 (spec section 11): female versions, yes, for every class. That is ten class paintings (five classes × two) plus the matching busts. This package does not paint them. The Male/Female toggle works and both genders are saved on the roster. Until those sheets exist, the pedestal and the island draw the locked idle (art letter S) for either gender. The Appearance tab customises the body only: face, skin, hair, eyes. Those choices are saved for the world and for combat later. Armour dye is a later premium shop, not part of creation. The class-screen radar uses the approved section 4.1 values.
 
 ## Size notes
 

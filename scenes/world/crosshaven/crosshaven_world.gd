@@ -45,6 +45,8 @@ const DungeonDoor := preload("res://scenes/world/dungeon/dungeon_door.gd")
 const DungeonArt := preload("res://scenes/world/dungeon/dungeon_art.gd")
 const DoorPanel := preload("res://scenes/world/ui/door_panel.gd")
 const Launcher := preload("res://scenes/world/dungeon/dungeon_launcher.gd")
+const Roster := preload("res://backend/pc_roster.gd")
+const CHARACTER_SELECT_SCENE := "res://scenes/pc/character_select/character_select.tscn"
 
 ## Kit deep sea, so the margin past Eastmarch matches the painted tiles.
 const SEA := Color("246e9e")
@@ -180,6 +182,12 @@ var _zoom_tween: Tween
 
 func _ready() -> void:
 	_read_launch_args()
+	# A windowed launch of this scene opens the character screen first.
+	# Tests add the world as a child, movies pass --movie, and a dungeon
+	# return already has an outcome, so those stay in the world.
+	if Roster.should_open_front_door(get_tree().current_scene == self, DisplayServer.get_name() == "headless", _movie, Roster.peek_world_entry(), not Launcher.outcome.is_empty()):
+		call_deferred("_open_character_select")
+		return
 	# Parent process runs after the walker so cover uses this frame's feet.
 	process_priority = 1
 	_apply_world_window()
@@ -232,6 +240,7 @@ func _ready() -> void:
 	add_child(_hover)
 
 	progress = Progress.new()
+	_bind_roster_hero()
 	if progress.hero_class == "":
 		var session := get_node_or_null("/root/NetSession")
 		if session != null:
@@ -2499,6 +2508,18 @@ func _apply_world_window() -> void:
 		return
 	_window_before = current
 	DisplayServer.window_set_size(Vector2i(1280, 720))
+
+
+func _open_character_select() -> void:
+	get_tree().change_scene_to_file(CHARACTER_SELECT_SCENE)
+
+
+func _bind_roster_hero() -> void:
+	var id := Roster.take_world_entry()
+	if id == "" and get_tree().current_scene == self and _movie == "" and Roster.has_roster():
+		id = Roster.last_id()
+	if id != "":
+		progress.bind_character(id)
 
 
 func _exit_tree() -> void:

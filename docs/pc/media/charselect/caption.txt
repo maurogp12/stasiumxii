@@ -1,0 +1,10 @@
+P1 character select, before / after, next to the reference mocks.
+
+Reference frames are the class-screen and list-screen mocks in docs/pc/art_help/charselect/ (mock_class_1080.png, mock_list_1080.png).
+
+Clip: charselect_before_after_ref.mp4
+Stills: list_before_after_ref.png, class_before_after_ref.png
+Full frames: after_list.png, after_class.png, after_appearance.png, after_name.png
+1920×1080, 30 fps, H.264, 6.0 s.
+
+Before is the Crossroads still from docs/pc/media/before/stills/crossroads.png. After is the character screen recorded from res://scenes/pc/character_select/character_select.tscn at a 1920×1080 window (canvas_items / expand). The clip holds the list, then the class screen, then the Appearance tab. Female is selected on the last two; the pedestal stays the locked idle until female sheets exist.
