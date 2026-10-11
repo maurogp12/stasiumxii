@@ -4928,8 +4928,8 @@ func wall_ready(actor: Dictionary) -> bool:
 
 
 ## The cells a Root Wall takes: the hero's free neighbours (Chebyshev 1),
-## farthest from the caster first (Manhattan), then the lowest row and
-## column. A cell is skipped when it would seal a live unit off.
+## farthest from the caster first (straight-line distance), then the lowest
+## row and column. A cell is skipped when it would seal a live unit off.
 func _wall_cells(actor: Dictionary, want: int) -> Array[Vector2i]:
 	var out: Array[Vector2i] = []
 	var hero := _dungeon_hero()
@@ -4942,8 +4942,8 @@ func _wall_cells(actor: Dictionary, want: int) -> Array[Vector2i]:
 	for d in [Vector2i(0, 1), Vector2i(1, 0), Vector2i(0, -1), Vector2i(-1, 0), Vector2i(1, 1), Vector2i(-1, 1), Vector2i(1, -1), Vector2i(-1, -1)]:
 		ring.append(center + d)
 	ring.sort_custom(func(a: Vector2i, b: Vector2i) -> bool:
-		var da := manhattan(a, from)
-		var db := manhattan(b, from)
+		var da := (a - from).length_squared()
+		var db := (b - from).length_squared()
 		if da != db:
 			return da > db
 		return a.y * 100 + a.x < b.y * 100 + b.x)

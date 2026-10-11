@@ -140,7 +140,7 @@ func _test_door_data() -> void:
 	var in_water: Dictionary = base.duplicate(true)
 	(in_water["dungeons"] as Array)[3]["door"] = {"zone_id": ZONE, "x": 24, "y": 28}
 	eq(bool(Dungeons.load_document(in_water)["dungeons"].validate_world(atlas, npcs)["ok"]), false, "an abbey door in the swamp water fails")
-	eq(book.built().size(), 4, "four dungeons are built")
+	eq(book.built().size(), 5, "five dungeons are built")
 
 
 # --- run file and rooms --------------------------------------------------------
@@ -998,7 +998,7 @@ func _test_others_unchanged() -> void:
 	for p in sim.snapshot()["dungeon"]["pools"]:
 		eq(p.has("hazard") or p.has("mp_loss") or p.has("root"), false, "a toxic pool record is unchanged")
 	eq(Run.create(GRANARY, 1, "kestrel")["run"].text("victory"), "Old Granary Cellar is cleared at ★1. The Ratking is down.", "the cellar victory line is unchanged")
-	eq(Run.create("heart_of_the_blight", 42, "kestrel").get("ok", true), false, "the Heart of the Blight is still planned")
+	eq(Run.create("heart_of_the_blight", 42, "kestrel").get("ok", false), true, "the Heart of the Blight is built now")
 
 
 # --- world door, panel, scene --------------------------------------------------------
