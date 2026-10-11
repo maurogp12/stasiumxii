@@ -1,0 +1,8 @@
+{"set":"pc_character_select_p2_safe_pieces","version":"v1","date":"2026-10-11","source":"Scenario Art paint tool + rembg isnet-general-use cutouts; binary alpha on cutouts",
+"pieces":{
+"backdrop_storm_sea":{"1x":"backdrop_storm_sea.png (1920x1080)","2x":"backdrop_storm_sea_2x.png (3840x2160, upscaled from a 1024-wide paint; repaint at true 2x if it looks soft)","note":"one painting; crimson is a shader regrade"},
+"lightning_bolts":{"files":["lightning_bolt_1.png","lightning_bolt_2.png","lightning_bolt_3.png"],"size":"256x768","note":"RGBA, alpha from brightness; draw additive"},
+"floating_island":{"1x":"floating_island.png (760x644, includes cliff underside)","2x":"floating_island_2x.png","note":"spec 760x420 is the visible top; place so the platform centre sits at x1300,y640"},
+"pedestal":{"1x":"pedestal.png (420x245)","2x":"pedestal_2x.png","note":"taller than spec 420x160; platform ellipse is the top face"},
+"ui_kit_9slice_sources":["ui_panel.png","ui_btn_orange.png","ui_btn_green.png","ui_btn_red.png","ui_btn_ok.png","ui_tab_dim.png","ui_tab_lit.png"],
+"held":["class_art_<class>_<m/f> (waiting on female-option answer)","class_bust","class_icon"]}}
