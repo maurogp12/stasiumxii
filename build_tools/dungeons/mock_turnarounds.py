@@ -37,7 +37,15 @@ SALT = {
     "abyssal_drowned_sailor": [("abyssal_sailor_S", "star 5 S: front, down-right"), ("abyssal_sailor_E", "star 5 E: back, up-right")],
     "abyssal_drowned_harpooner": [("abyssal_harpooner_S", "star 5 S: front, down-right"), ("abyssal_harpooner_E", "star 5 E: back, up-right")],
 }
-STAR5 = {"the_frozen_archivist", "frozen_ice_construct", "frozen_book_wraith",
+ABBEY = {
+    "bog_dead": [("bog_dead_S", "S: front, facing down-right"), ("bog_dead_E", "E: back, facing up-right")],
+    "mire_leech": [("leech_S", "S: front, facing down-right"), ("leech_E", "E: back, facing up-right")],
+    "mire_abbess": [("abbess_S", "S: front, facing down-right"), ("abbess_E", "E: back, facing up-right")],
+    "bell_wraith": [("abbess_S", "base S (the Mire Abbess)"), ("bell_wraith_S", "star 5 S: front, down-right"), ("bell_wraith_E", "star 5 E: back, up-right")],
+    "bellbound_bog_dead": [("bellbound_bog_dead_S", "star 5 S: front, down-right"), ("bellbound_bog_dead_E", "star 5 E: back, up-right")],
+    "bellbound_mire_leech": [("bellbound_leech_S", "star 5 S: front, down-right"), ("bellbound_leech_E", "star 5 E: back, up-right")],
+}
+STAR5 = {"bell_wraith", "bellbound_bog_dead", "bellbound_mire_leech", "the_frozen_archivist", "frozen_ice_construct", "frozen_book_wraith",
          "abyssal_saltmaw", "abyssal_reef_crab", "abyssal_drowned_sailor", "abyssal_drowned_harpooner"}
 
 
@@ -80,4 +88,6 @@ if __name__ == "__main__":
             SETS = FROST
         elif d == "saltmaw_grotto":
             SETS = SALT
+        elif d == "drowned_abbey":
+            SETS = ABBEY
     main(args or list(SETS))

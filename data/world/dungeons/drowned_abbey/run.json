@@ -1,0 +1,506 @@
+{
+  "format": "stasium.dungeon_run",
+  "format_version": 1,
+  "status": "proposed",
+  "dungeon": "drowned_abbey",
+  "board_size": 12,
+  "art": "res://art/pc/dungeons/drowned_abbey/manifest.json",
+  "pads": {
+    "kind": "buff",
+    "effect": "heal",
+    "amount": 5,
+    "thaw": true,
+    "thaw_text": "The candle-rune glow cleanses {name}: no MP lost.",
+    "who": "hero",
+    "note": "Green candle-rune pads (room A) and the rune circle (room B): the hero heals 5 HP when a turn starts on one, and that turn keeps its full MP (the glow cleanses the bellbound mire and the grasping mire's root). Monsters get nothing."
+  },
+  "between_rooms": {
+    "heal": "full",
+    "note": "A short rest on the flooded stair between room A and room B."
+  },
+  "text": {
+    "town": "Southbridge",
+    "stairs": "Down the flooded stair, toward the tolling of a fallen bell...",
+    "victory": "{dungeon} is cleared at ★{star}. {boss} is down.",
+    "defeat": "The bog closes over you. No rewards this time.",
+    "return": "You wade back up to the abbey door in Southbridge.",
+    "return_button": "Return to Southbridge",
+    "pads": "Candle-rune pads: +{amount} HP and no MP lost when your turn starts on one",
+    "keeper_hint": "Put the Abbess down before she raises your kills.",
+    "star_notes": {
+      "5": "The Bell Wraith and her grasping mire. A Rare part and a Mystery Box for sure."
+    },
+    "showcase_title": "Drowned Abbey\nMonsters",
+    "showcase_sub": "Bog Dead · Mire Leech · The Mire Abbess\n★5: Bellbound Bog Dead · Bellbound Mire Leech · The Bell Wraith",
+    "star5_rule": "★5: the Abbess rises as the Bell Wraith, a ghost out of the drowned bell. Her Tolling Rite raises Bog Dead and Mire Leeches at 60% HP (4 a fight), and from her 1st turn every other turn she tolls the bell and calls the Grasping Mire (2-3 cells round the hero, 3 hero turns): end a turn in it for 5 damage and no MP next turn. Bellbound monsters mire (1 MP less next turn). Candle pads and the rune circle cleanse it.",
+    "signature_rule": "Rite of Rising: from her 2nd turn, when a Bog Dead lies fallen, the Mire Abbess raises it where it fell at half HP, then the rite rests a turn (2 a fight). The risen sink back when she falls. Stand on a corpse to keep it down.",
+    "b_still": "04_room_b_abbess.png",
+    "boss_star5": "The Bell Wraith"
+  },
+  "view": {
+    "light": [
+      0.92,
+      1.0,
+      0.9,
+      1.0
+    ],
+    "monster_glow": 0.7,
+    "pads": {
+      "candle_pad": {
+        "color": [
+          0.62,
+          1.0,
+          0.42
+        ],
+        "mark": "candle"
+      },
+      "rune_circle": {
+        "color": [
+          0.45,
+          1.0,
+          0.5
+        ],
+        "decal": true,
+        "mark": "rune"
+      }
+    },
+    "hazard": {
+      "grasping_mire": {
+        "color": [
+          0.16,
+          0.22,
+          0.12
+        ],
+        "bubble": [
+          0.55,
+          0.75,
+          0.35,
+          0.9
+        ],
+        "ring": [
+          0.35,
+          0.62,
+          0.22
+        ],
+        "ring_width": 3.5,
+        "text_color": [
+          0.9,
+          1.0,
+          0.8
+        ]
+      }
+    },
+    "projectiles": {
+      "bile_spit": {
+        "color": [
+          0.62,
+          0.85,
+          0.2
+        ],
+        "spin": false,
+        "draw_glow": false
+      },
+      "gravebound_bile": {
+        "color": [
+          0.5,
+          1.0,
+          0.45
+        ],
+        "glow": [
+          0.45,
+          1.0,
+          0.4,
+          0.35
+        ],
+        "spin": false,
+        "draw_glow": false
+      },
+      "bile_impact": {
+        "color": [
+          0.6,
+          0.9,
+          0.25
+        ]
+      },
+      "rite_glow": {
+        "color": [
+          0.45,
+          1.0,
+          0.45
+        ]
+      }
+    },
+    "door": {
+      "shape": "tower",
+      "wall": [
+        0.4,
+        0.42,
+        0.36
+      ],
+      "roof": [
+        0.22,
+        0.28,
+        0.2
+      ],
+      "glow": [
+        0.45,
+        1.0,
+        0.45
+      ],
+      "still_from_door": [
+        3,
+        -2
+      ],
+      "movie_from_door": [
+        5,
+        -1
+      ],
+      "back_from_door": [
+        4,
+        -2
+      ]
+    },
+    "showcase": [
+      [
+        "bog_dead",
+        1,
+        11,
+        false
+      ],
+      [
+        "mire_leech",
+        3,
+        9,
+        false
+      ],
+      [
+        "bellbound_bog_dead",
+        7,
+        5,
+        false
+      ],
+      [
+        "bellbound_mire_leech",
+        9,
+        3,
+        false
+      ],
+      [
+        "mire_abbess",
+        0,
+        4,
+        true
+      ],
+      [
+        "bell_wraith",
+        4,
+        0,
+        true
+      ]
+    ],
+    "showcase_zoom": 1.35,
+    "floor": {
+      "base": [
+        0.2,
+        0.26,
+        0.2
+      ],
+      "seam": [
+        0.08,
+        0.12,
+        0.08,
+        0.9
+      ],
+      "edge": [
+        0.05,
+        0.08,
+        0.05,
+        0.95
+      ],
+      "fleck": [
+        0.6,
+        0.95,
+        0.45,
+        0.5
+      ]
+    }
+  },
+  "rooms": [
+    {
+      "id": "room_a",
+      "name": "The Flooded Nave",
+      "kind": "pack",
+      "tags": "res://data/world/dungeons/drowned_abbey/room_a_tags.json",
+      "hero": {
+        "x": 6,
+        "y": 10,
+        "facing": "N"
+      },
+      "monsters": [
+        {
+          "monster": "bog_dead",
+          "x": 2,
+          "y": 2,
+          "facing": "S"
+        },
+        {
+          "monster": "bog_dead",
+          "x": 5,
+          "y": 2,
+          "facing": "S"
+        },
+        {
+          "monster": "bog_dead",
+          "x": 7,
+          "y": 1,
+          "facing": "S"
+        },
+        {
+          "monster": "bog_dead",
+          "x": 10,
+          "y": 3,
+          "facing": "S"
+        },
+        {
+          "monster": "mire_leech",
+          "x": 1,
+          "y": 0,
+          "facing": "S"
+        },
+        {
+          "monster": "mire_leech",
+          "x": 9,
+          "y": 0,
+          "facing": "S"
+        }
+      ],
+      "note": "packs: the pack for the highest key at or below the star. monsters is the ★1 pack. Spawns on the far rows (y 0-4), off the candle pads, away from the hero (6,10); pews, the broken pillar and fallen statues on the middle rows break the Mire Leeches' lines.",
+      "packs": {
+        "1": [
+          {
+            "monster": "bog_dead",
+            "x": 2,
+            "y": 2,
+            "facing": "S"
+          },
+          {
+            "monster": "bog_dead",
+            "x": 5,
+            "y": 2,
+            "facing": "S"
+          },
+          {
+            "monster": "bog_dead",
+            "x": 7,
+            "y": 1,
+            "facing": "S"
+          },
+          {
+            "monster": "bog_dead",
+            "x": 10,
+            "y": 3,
+            "facing": "S"
+          },
+          {
+            "monster": "mire_leech",
+            "x": 1,
+            "y": 0,
+            "facing": "S"
+          },
+          {
+            "monster": "mire_leech",
+            "x": 9,
+            "y": 0,
+            "facing": "S"
+          }
+        ],
+        "2": [
+          {
+            "monster": "bog_dead",
+            "x": 2,
+            "y": 2,
+            "facing": "S"
+          },
+          {
+            "monster": "bog_dead",
+            "x": 5,
+            "y": 2,
+            "facing": "S"
+          },
+          {
+            "monster": "bog_dead",
+            "x": 7,
+            "y": 1,
+            "facing": "S"
+          },
+          {
+            "monster": "bog_dead",
+            "x": 10,
+            "y": 3,
+            "facing": "S"
+          },
+          {
+            "monster": "mire_leech",
+            "x": 1,
+            "y": 0,
+            "facing": "S"
+          },
+          {
+            "monster": "mire_leech",
+            "x": 9,
+            "y": 0,
+            "facing": "S"
+          },
+          {
+            "monster": "mire_leech",
+            "x": 5,
+            "y": 0,
+            "facing": "S"
+          }
+        ],
+        "5": [
+          {
+            "monster": "bellbound_bog_dead",
+            "x": 2,
+            "y": 2,
+            "facing": "S"
+          },
+          {
+            "monster": "bellbound_bog_dead",
+            "x": 5,
+            "y": 2,
+            "facing": "S"
+          },
+          {
+            "monster": "bellbound_bog_dead",
+            "x": 7,
+            "y": 1,
+            "facing": "S"
+          },
+          {
+            "monster": "bellbound_bog_dead",
+            "x": 10,
+            "y": 3,
+            "facing": "S"
+          },
+          {
+            "monster": "bog_dead",
+            "x": 3,
+            "y": 1,
+            "facing": "S"
+          },
+          {
+            "monster": "bellbound_mire_leech",
+            "x": 1,
+            "y": 0,
+            "facing": "S"
+          },
+          {
+            "monster": "bellbound_mire_leech",
+            "x": 9,
+            "y": 0,
+            "facing": "S"
+          },
+          {
+            "monster": "bellbound_mire_leech",
+            "x": 5,
+            "y": 0,
+            "facing": "S"
+          }
+        ]
+      }
+    },
+    {
+      "id": "room_b",
+      "name": "The Abbess's Chapel",
+      "kind": "boss",
+      "tags": "res://data/world/dungeons/drowned_abbey/room_b_tags.json",
+      "hero": {
+        "x": 6,
+        "y": 10,
+        "facing": "N"
+      },
+      "monsters": [
+        {
+          "monster": "mire_abbess",
+          "x": 6,
+          "y": 2,
+          "facing": "S"
+        },
+        {
+          "monster": "bog_dead",
+          "x": 4,
+          "y": 2,
+          "facing": "S"
+        },
+        {
+          "monster": "bog_dead",
+          "x": 8,
+          "y": 2,
+          "facing": "S"
+        },
+        {
+          "monster": "mire_leech",
+          "x": 6,
+          "y": 0,
+          "facing": "S"
+        }
+      ],
+      "note": "The Mire Abbess with her escort (2 Bog Dead, 1 Mire Leech) behind the rune circle. Her Rite of Rising raises fallen Bog Dead where they fell; the candle stands on the circle's corners break the leech's line.",
+      "packs": {
+        "1": [
+          {
+            "monster": "mire_abbess",
+            "x": 6,
+            "y": 2,
+            "facing": "S"
+          },
+          {
+            "monster": "bog_dead",
+            "x": 4,
+            "y": 2,
+            "facing": "S"
+          },
+          {
+            "monster": "bog_dead",
+            "x": 8,
+            "y": 2,
+            "facing": "S"
+          },
+          {
+            "monster": "mire_leech",
+            "x": 6,
+            "y": 0,
+            "facing": "S"
+          }
+        ],
+        "5": [
+          {
+            "monster": "bell_wraith",
+            "x": 6,
+            "y": 2,
+            "facing": "S"
+          },
+          {
+            "monster": "bellbound_bog_dead",
+            "x": 4,
+            "y": 2,
+            "facing": "S"
+          },
+          {
+            "monster": "bellbound_bog_dead",
+            "x": 8,
+            "y": 2,
+            "facing": "S"
+          },
+          {
+            "monster": "bellbound_mire_leech",
+            "x": 6,
+            "y": 0,
+            "facing": "S"
+          }
+        ]
+      }
+    }
+  ]
+}

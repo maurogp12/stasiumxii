@@ -4,9 +4,10 @@
   "status": "proposed",
   "notes": [
     "Section 4.6, Crosshaven phase (section 00): one dungeon per town band, five in all.",
-    "Old Granary Cellar, Frostspire Archive and Saltmaw Grotto are built. The other two are approved designs, planned: no door yet.",
+    "Old Granary Cellar, Frostspire Archive, Saltmaw Grotto and Drowned Abbey are built. Heart of the Blight is an approved design, planned: no door yet.",
     "Frostspire Archive: the archive door at crosshaven_northgate (21, 10), the archive building on (20-22, 7-9) (footprint from the art manifest), the Door Keeper at (20, 10).",
     "Saltmaw Grotto: the grotto door at crosshaven_eastmarch (26, 17), the grotto rock on the cells north of it (footprint from the art manifest), the Door Keeper at (25, 17).",
+    "Drowned Abbey: the abbey door at crosshaven_southbridge (24, 26) on the south grass spit by the swamp, the drowned chapel on the cells north of it (footprint from the art manifest), the Door Keeper at (23, 26).",
     "door is the hatch cell: passable, clickable, not an NPC, gate, exit or spawn cell. The granary building stands on the cells north of it (footprint from the art manifest) and blocks walking.",
     "keeper names the Door Keeper NPC that opens the entry panel. party 1-4 is the rule; runs are solo for now."
   ],
@@ -65,13 +66,15 @@
       "level_zone": "southbridge",
       "level_min": 30,
       "level_max": 40,
+      "door": {"zone_id": "crosshaven_southbridge", "x": 24, "y": 26},
       "door_art": "door_drowned_abbey",
       "theme": "drowned_abbey",
       "boss": "The Mire Abbess",
       "rooms": 2,
       "party": {"min": 1, "max": 4},
       "keeper": "drowned_abbey_door_keeper",
-      "status": "planned"
+      "run": "res://data/world/dungeons/drowned_abbey/run.json",
+      "status": "built"
     },
     {
       "id": "heart_of_the_blight",

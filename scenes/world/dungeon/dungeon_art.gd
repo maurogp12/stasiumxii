@@ -839,9 +839,10 @@ static func _kit_monster(man: Dictionary, monster_id: String) -> Dictionary:
 		for f in pts.keys():
 			by_face[str(f).to_lower()] = (_vec2(pts[f], pivot) - pivot) * MONSTER_CELL_SCALE
 		release = {"frame": int(rel_doc.get("frame", 0)), "sec": float(rel_doc.get("frame", 0)) / maxf(fps, 1.0), "offset": by_face}
-	# A boss's lure tip (Old Saltmaw's lantern) on the signature's flare frame.
+	# A boss's lure tip (Old Saltmaw's lantern) or censer mouth (the Mire
+	# Abbess's rite_point) on the signature's flare frame.
 	var lure := {}
-	var lp: Variant = row.get("lure_point", {})
+	var lp: Variant = row.get("lure_point", row.get("rite_point", {}))
 	if typeof(lp) == TYPE_DICTIONARY and typeof((lp as Dictionary).get("point_px", null)) == TYPE_DICTIONARY:
 		lp = lp["point_px"]
 	if typeof(lp) == TYPE_DICTIONARY:

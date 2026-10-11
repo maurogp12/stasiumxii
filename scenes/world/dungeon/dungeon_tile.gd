@@ -227,6 +227,13 @@ func _draw_pad(pts: PackedVector2Array) -> void:
 		for d in [Vector2(0, -8), Vector2(14, 0), Vector2(0, 8), Vector2(-14, 0)]:
 			draw_line(Vector2.ZERO, d, core, 1.8)
 		draw_circle(Vector2.ZERO, 2.4, core)
+	elif mark == "candle":
+		# Three candles with flames (the abbey's candle-rune pad).
+		for k in [-1, 0, 1]:
+			var x := float(k) * 6.0
+			var top := -7.0 if k == 0 else -4.0
+			draw_line(Vector2(x, 5), Vector2(x, top), core, 2.2)
+			draw_circle(Vector2(x, top - 2.5), 1.6 + 0.6 * pulse, core.lightened(0.3))
 	elif mark == "coral":
 		# A small coral branch.
 		draw_line(Vector2(0, 5), Vector2(0, -6), core, 1.8)

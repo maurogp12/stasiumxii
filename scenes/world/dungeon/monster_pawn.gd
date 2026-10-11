@@ -229,6 +229,26 @@ func settle_motion() -> void:
 		_hold_last("death")
 
 
+## Rite of Rising: the risen body appears on its corpse's cell and plays its
+## death strip backwards (lying down to standing), after `delay` seconds.
+## Without a death strip it fades in.
+func rise(delay: float) -> void:
+	modulate.a = 0.0
+	var tw := create_tween()
+	tw.tween_interval(delay)
+	tw.tween_callback(func() -> void:
+		if not is_instance_valid(self):
+			return
+		modulate.a = 1.0
+		var name := _anim_name("death")
+		if _body != null and name != "":
+			_oneshot = "rise"
+			_body.play_backwards(StringName(name))
+		else:
+			modulate.a = 0.0
+			create_tween().tween_property(self, "modulate:a", 1.0, 0.35))
+
+
 ## Dungeon corpses fade out once the slump has played.
 func fade_out() -> void:
 	if _faded or not is_inside_tree():
