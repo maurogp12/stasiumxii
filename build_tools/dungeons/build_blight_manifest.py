@@ -99,8 +99,8 @@ def main():
         "door_note": ("the hollow blighted stump's cave mouth glows violet on the front; the trodden path runs out of it to the south, over the "
                       "SW edge of the corner cell (3,3), so the passable, clickable door cell is origin+(3,4), just outside the footprint. "
                       "On crosshaven_westwatch the building is on (2..5, 9..12) (origin (2,9)), the door cell is (5,13) and the Door Keeper "
-                      "NPC (body npc_door_keeper) stands at (6,13) = origin+(4,4). The painted earth is rounder than a 2:1 diamond: its front, "
-                      "with the path, overhangs the footprint's south edges by up to ~45 px at 1x (it is part of the sprite)."),
+                      "NPC (body npc_door_keeper) stands at (6,13) = origin+(4,4). The painted earth's rounded front corners and the stakes "
+                      "overhang the footprint's south edges by a few px at 1x (they are part of the sprite)."),
         "hatch_glow_note": "the violet light in the cave mouth and the violet lantern; additive blend (CanvasItemMaterial BLEND_MODE_ADD), same canvas and anchor as the building; fade modulate 0 -> 1 on hover of the door cell or the building",
         "source_painting": "build_tools/dungeons/blight_src/town_blight.jpg",
     }

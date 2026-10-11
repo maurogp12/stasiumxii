@@ -89,9 +89,9 @@ ROOMS = {
               "decals": [("root_rune_circle", (5, 5)), ("root_veins", (3, 10)), ("root_veins", (11, 3)), ("root_veins", (12, 11))],
               "props": [("crystal_spire", (5, 1)), ("crystal_spire", (10, 1)), ("blight_eggs", (1, 2)), ("chained_cocoon", (13, 1)),
                         ("broken_masonry", (12, 5)), ("bone_pile", (3, 12)), ("violet_crystals", (13, 9)), ("root_knot", (1, 8)),
-                        ("violet_crystals", (4, 5)), ("blight_eggs", (10, 9)), ("root_wall", (6, 10)), ("root_wall", (8, 10))],
+                        ("violet_crystals", (4, 5)), ("blight_eggs", (10, 9)), ("root_wall", (4, 9)), ("root_wall", (10, 8))],
               "star5_decals": [("crystal_bloom", (3, 8)), ("crystal_bloom", (11, 6))],
-              "units": [("rotting_elder", "S", (7, 3)), ("blight_hound", "S", (5, 4)), ("blight_horror", "S", (10, 4)),
+              "units": [("rotting_elder", "S", (7, 3)), ("blight_hound", "S", (4, 6)), ("blight_horror", "S", (11, 5)),
                         ("hero:kestrel", "E", (6, 12)), ("hero:bastion", "E", (9, 12))]},
     },
 }

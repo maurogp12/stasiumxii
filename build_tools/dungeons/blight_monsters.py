@@ -331,14 +331,15 @@ def colossus_actions(f):
         (4, dict(fwd(f, -7), body=-3, head=-4)),
         (7, {}),
     ])
-    fall = -1 if f == "S" else 1
+    # Death: the crystal giant cracks and collapses in place: a short tilt (clockwise, which keeps the long spear inside the
+    # cell in both facings), the legs buckle, the body squashes and sinks, the spear-staff sags toward the floor.
     A["death"] = keys(13, [
         (0, {}),
         (2, dict(body=-6, head=-12, dy=-5, arm_l=14, arm_r=14)),
-        (5, dict(rot=14 * fall, body=5 * fall, dy=10, sy=0.95, arm_l=-6, arm_r=-8, head=8, leg_l=6, leg_r=-6)),
-        (8, dict(rot=38 * fall, body=7 * fall, dy=30, sy=0.9, arm_l=-12, arm_r=-16, head=14, leg_l=10, leg_r=-10, spear=-20)),
-        (10, dict(rot=52 * fall, body=6 * fall, dy=40, sy=0.86, arm_l=-16, arm_r=-20, head=16, leg_l=12, leg_r=-12, spear=-34)),
-        (12, dict(rot=54 * fall, body=6 * fall, dy=41, sy=0.86, arm_l=-17, arm_r=-21, head=16, leg_l=12, leg_r=-12, spear=-36)),
+        (5, dict(rot=8, body=4, dy=14, sy=0.9, arm_l=-6, arm_r=-8, head=8, leg_l=8, leg_r=-8, spear=8)),
+        (8, dict(rot=16, body=6, dy=34, sy=0.74, sx=1.04, arm_l=-14, arm_r=-14, head=14, leg_l=14, leg_r=-14, spear=18)),
+        (10, dict(rot=20, body=6, dy=44, sy=0.66, sx=1.06, arm_l=-18, arm_r=-18, head=16, leg_l=16, leg_r=-16, spear=24)),
+        (12, dict(rot=21, body=6, dy=45, sy=0.65, sx=1.06, arm_l=-19, arm_r=-19, head=16, leg_l=16, leg_r=-16, spear=25)),
     ])
     # Root Wall, the base timing: lift the spear-staff (f00-f02), hold it high as the crystals flare (f03-f06), drive its butt
     # into the floor on f07 (the wall fires; staff_point = the spear foot), shockwave f08-f10, settle f11-f13.

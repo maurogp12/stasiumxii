@@ -26,9 +26,9 @@ CONF = {
     "drowned_abbey": {"ground": ["golden_plains_shade_a", "golden_plains_shade_b"], "neighbour": ("fishing_hut_2x2", 2),
                       "trees": ["tree_willow", "tree_willow_stump"], "bg": (34, 44, 38), "keeper": (0, 3)},
     # Westwatch: drawn in crosshaven_westwatch coordinates (building origin (2,9), door (5,13), keeper (6,13)), centred on (5,11)
-    "heart_of_the_blight": {"ground": ["border_forest_floor_a", "border_forest_floor_b"], "neighbour": ("watchtower_2x2", 2),
+    "heart_of_the_blight": {"ground": ["farm_fallow_a", "farm_fallow_b"], "span": ((-3, 14), (2, 21)), "neighbour": ("watchtower_2x2", 2),
                             "trees": ["tree_birch_stump", "tree_golden_oak_stump"], "bg": (40, 34, 44), "keeper": (4, 4),
-                            "origin": (2, 9), "N": 18, "centre": (5, 11), "size": (900, 760), "neighbour_at": (7, 5), "tree_at": [(-2, 2), (6, 1)]},
+                            "origin": (2, 9), "N": 18, "centre": (5, 11), "size": (900, 760), "neighbour_at": (6, -3), "tree_at": [(-2, 2), (7, 2)]},
 }
 
 
@@ -65,10 +65,11 @@ def main(did):
     out = {}
     for hover in (False, True):
         can = Image.new("RGBA", (W, H), cf["bg"] + (255,))
-        for s in range(2 * N - 1):
-            for x in range(N):
+        (gx0, gx1), (gy0, gy1) = cf.get("span", ((0, N), (0, N)))
+        for s in range(gx0 + gy0, gx1 + gy1 - 1):
+            for x in range(gx0, gx1):
                 y = s - x
-                if 0 <= y < N:
+                if gy0 <= y < gy1:
                     cx, cy = c2l(x, y)
                     t = Image.open(os.path.join(KIT, "tiles", cf["ground"][h(x, y, len(cf["ground"]))] + ".png")).convert("RGBA")
                     can.alpha_composite(t, (ox + cx - 32, oy + cy - 16))
