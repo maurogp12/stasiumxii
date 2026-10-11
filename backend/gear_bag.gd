@@ -1174,7 +1174,8 @@ static func clean_spell_elements(class_id: String, raw: Variant) -> Dictionary:
 func fight_gear(with_still: bool = false, class_id: String = "") -> Dictionary:
 	var out := {"worn": clean_worn(worn_list(class_id), false), "attune": attune.duplicate(), "heroes": HeroProgress.load_saved().fight_heroes()}
 	if with_still:
-		var still := StillVault.load_saved().fight_still()
+		var still_class := class_id if class_id != "" else focus_class
+		var still := StillVault.load_saved().fight_still(still_class)
 		if not still.is_empty():
 			out["still"] = still
 	return out

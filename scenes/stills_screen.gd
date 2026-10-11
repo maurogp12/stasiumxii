@@ -3,8 +3,9 @@ class_name StillsScreen
 
 ## XII Stills (Mauro 9 Oct 2026). Left: the 14 hourglasses with fragment
 ## counts (x/12). Right: the picked Still's Intact / Overwound effect and
-## Forge (12 of the same, empty socket). Bottom: the socket and the
-## Keep Intact / Overwind choice for the next Stasis or online Koliseo fight.
+## Forge (12 of the same, that class's socket empty). The class row picks
+## whose socket this forge fills. Bottom: that class's socket and the
+## Keep Intact / Overwind choice for its next fight.
 
 signal closed
 
@@ -16,17 +17,23 @@ const ROW_HEIGHT := 48
 
 var font: Font
 var selected: String = "steadfast"
+## Class whose socket Forge and Intact / Overwound edit. Empty uses the vault focus.
+var class_id: String = ""
 var _vault: StillVault
 var _grid: GridContainer
 var _detail: VBoxContainer
 var _socket_box: HBoxContainer
 var _status: Label
+var _class_buttons: Dictionary = {}
 
 
 func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	_vault = StillVault.load_saved()
+	var use := class_id if StillVault.CLASS_IDS.has(class_id) else _vault.focus_class
+	_vault.set_focus(use)
+	class_id = use
 	if _vault.socket != "":
 		selected = _vault.socket
 	_build()
@@ -41,6 +48,19 @@ func status_text() -> String:
 	return _status.text if _status != null else ""
 
 
+func _focus_class(cid: String) -> void:
+	if not StillVault.CLASS_IDS.has(cid):
+		return
+	class_id = cid
+	_vault.set_focus(cid)
+	_vault.save()
+	if _vault.socket != "":
+		selected = _vault.socket
+	if _status != null:
+		_status.text = ""
+	_refresh()
+
+
 func pick(id: String) -> void:
 	if StillVault.is_id(id):
 		selected = id
@@ -53,10 +73,11 @@ func forge() -> Dictionary:
 	var result := _vault.forge(selected)
 	if bool(result.get("ok", false)):
 		_vault.save()
+		var who := SpellKits.display_name(class_id)
 		if bool(result.get("swapped", false)):
-			_status.text = "Swapped to %s. The old Still's fragments are back." % StillVault.display_name(selected)
+			_status.text = "Swapped %s to %s. The old Still's fragments are back." % [who, StillVault.display_name(selected)]
 		else:
-			_status.text = "%s forged. It powers your next Stasis or online Koliseo fight, then breaks." % StillVault.display_name(selected)
+			_status.text = "%s forged for %s. It powers that class's next fight, then breaks." % [StillVault.display_name(selected), who]
 	else:
 		_status.text = {"needs_12": "Needs 12 fragments of the same Still.", "socket_full": "The socket is full — use that Still in a fight first."}.get(str(result.get("reason", "")), "Cannot forge.")
 	_refresh()
@@ -107,6 +128,16 @@ func _build() -> void:
 	close_button.pressed.connect(close)
 	top.add_child(close_button)
 	body.add_child(top)
+	var classes := HBoxContainer.new()
+	classes.name = "StillClasses"
+	classes.add_theme_constant_override("separation", 6)
+	body.add_child(classes)
+	for cid in StillVault.CLASS_IDS:
+		var tab := _button(SpellKits.display_name(cid))
+		tab.name = "StillClass_%s" % cid
+		tab.pressed.connect(_focus_class.bind(cid))
+		classes.add_child(tab)
+		_class_buttons[cid] = tab
 	var cols := HBoxContainer.new()
 	cols.add_theme_constant_override("separation", 18)
 	cols.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -165,6 +196,8 @@ func _refresh() -> void:
 	_detail.add_child(_label("Overwound — stronger, with a drawback: %s" % StillVault.plain(selected, "overwound"), 15, GOLD_BRIGHT))
 	if not bool(fx["built"]):
 		_detail.add_child(_label("This effect arrives in the next update. Forging it now keeps it for later fights.", 13, GOLD_DIM))
+	for cid in _class_buttons:
+		(_class_buttons[cid] as Button).disabled = cid == class_id
 	var swapping := _vault.socket != "" and _vault.socket != selected and _vault.kit_can_swap()
 	var forge_label := "Swap to %s" % StillVault.display_name(selected) if swapping else "Forge %s" % StillVault.display_name(selected)
 	var forge_button := _button(forge_label)
@@ -180,7 +213,7 @@ func _refresh() -> void:
 	if not bool(gate.get("ok", false)):
 		var why := "Collect %d more %s fragments to forge it." % [StillVault.FORGE_COST - _vault.count(selected), StillVault.display_name(selected)]
 		if str(gate.get("reason", "")) == "socket_full":
-			why = "Your Still socket already holds %s. Use it in a fight first; then you can forge another." % StillVault.display_name(_vault.socket)
+			why = "%s's socket already holds %s. Use it in a fight first; then you can forge another." % [SpellKits.display_name(class_id), StillVault.display_name(_vault.socket)]
 		var why_label := _label(why, 13, GOLD_DIM)
 		why_label.name = "ForgeWhy"
 		_detail.add_child(why_label)
@@ -193,14 +226,15 @@ func _refresh() -> void:
 	socket_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	socket_icon.texture = StillVault.icon(_vault.socket) if _vault.socket != "" else null
 	_socket_box.add_child(socket_icon)
-	var socket_label := _label("Still socket: empty. Forge a Still to fill it.", 16, GOLD)
+	var who := SpellKits.display_name(class_id)
+	var socket_label := _label("%s's Still socket: empty. Forge a Still to fill it." % who, 16, GOLD)
 	socket_label.name = "SocketLabel"
 	# One line beside the buttons (word wrap in a row squeezed it to one letter).
 	socket_label.autowrap_mode = TextServer.AUTOWRAP_OFF
 	socket_label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	_socket_box.add_child(socket_label)
 	if _vault.socket != "":
-		socket_label.text = "Still socket: %s — for your next fight:" % StillVault.display_name(_vault.socket)
+		socket_label.text = "%s's Still socket: %s — for the next fight:" % [who, StillVault.display_name(_vault.socket)]
 		socket_label.add_theme_color_override("font_color", StillVault.COLORS[_vault.socket].lerp(Color.WHITE, 0.3))
 		for mode in StillVault.MODES:
 			var b := _button("Keep Intact" if mode == "intact" else "Overwind")

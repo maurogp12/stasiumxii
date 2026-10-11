@@ -1147,8 +1147,9 @@ func _note_koliseo_result(snap: Dictionary) -> void:
 	# The XII Still that fought is destroyed with the fight.
 	if still_used != "":
 		var vault := StillVault.load_saved()
-		if vault.socket == still_used:
-			vault.consume()
+		var still_class := class_id if StillVault.CLASS_IDS.has(class_id) else vault.focus_class
+		if vault.socket_of(still_class) == still_used:
+			vault.consume(still_class)
 			vault.save()
 	var hero := HeroProgress.load_saved()
 	var gained := hero.add_xp(class_id, HeroProgress.XP_KOLISEO_WIN if won else HeroProgress.XP_KOLISEO_LOSS)

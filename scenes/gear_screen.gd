@@ -97,6 +97,7 @@ func open_stills() -> StillsScreen:
 	var screen: StillsScreen = load("res://scenes/stills_screen.gd").new()
 	screen.name = "StillsScreen"
 	screen.font = font
+	screen.class_id = _bag.focus_class
 	add_child(screen)
 	return screen
 

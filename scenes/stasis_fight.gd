@@ -155,20 +155,29 @@ func drink_tonic() -> Dictionary:
 	return {"ok": true, "reason": "", "healed": healed, "tonics": wallet.tonics}
 
 
-## The Still the player carried into this fight is destroyed when it ends.
+## Each hero's Still is destroyed when the fight ends. Other classes keep theirs.
 static func consume_still(snap: Dictionary) -> String:
+	var vault := StillVault.load_saved()
+	var first := ""
+	var changed := false
 	for unit in snap.get("units", []):
-		if int(unit.get("seat", -1)) != StasisCatalog.PLAYER_SEAT:
+		if typeof(unit) != TYPE_DICTIONARY or not _is_hero(unit):
 			continue
 		var used := str(unit.get("still", ""))
 		if used == "":
-			return ""
-		var vault := StillVault.load_saved()
-		if vault.socket == used:
-			vault.consume()
-			vault.save()
-		return used
-	return ""
+			continue
+		var cid := str(unit.get("class_id", ""))
+		if not StillVault.CLASS_IDS.has(cid):
+			cid = vault.focus_class
+		if vault.socket_of(cid) != used:
+			continue
+		vault.consume(cid)
+		changed = true
+		if first == "":
+			first = used
+	if changed:
+		vault.save()
+	return first
 
 
 ## Stasis ends a fight room by room: count turns and beaten foes; a defeat

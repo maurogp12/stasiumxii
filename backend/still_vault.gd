@@ -4,9 +4,11 @@ extends RefCounted
 ## XII Stills (Mauro 9 Oct 2026, locked list of 14). Stasis chests roll
 ## fragments (★1–2: 1, ★3–4: 2, ★5: 3, random of the 14), inside the same
 ## 5 loot clears a day. Fragments live in the account bank, any class, never
-## expire. 12 of the SAME Still forge it into the one socket (socket must be
-## empty). The socketed Still goes into the next Stasis or online Koliseo
-## fight (never hot-seat) as Intact or Overwound and is destroyed by that fight.
+## expire. 12 of the SAME Still forge it into the selected class's socket
+## (that class's socket must be empty). Each class has its own socket and
+## Intact / Overwound mode. Fragments stay one shared pool. A fight uses
+## the socket of the class being played; a team fight gives each fighter
+## its own class. That class's Still is destroyed when the fight ends.
 ## Overwound is the stronger form plus a drawback. Triggers are events, never
 ## a turn number. Gear / level AP-MP bonuses are never touched.
 
@@ -93,19 +95,33 @@ const PLAIN := {
 ## How Stills work, in four steps (shown in the Inventory and the Vault).
 const HOW_TO: Array[String] = [
 	"1. Stasis chests drop Still fragments.",
-	"2. 12 fragments of the same Still forge that Still into your Still socket.",
+	"2. 12 fragments of the same Still forge it into the selected class's socket.",
 	"3. Choose Intact (the safe form) or Overwound (stronger, with a drawback).",
 	"4. It powers your next Stasis or online Koliseo fight, then it breaks.",
 ]
 const ICON_DIR := "res://art/ui/stills/"
+## Same five classes as GearBag. Kept here so this file does not preload the bag.
+const CLASS_IDS: Array[String] = ["kestrel", "ironjaw", "mender", "gloam", "bastion"]
 
 static var save_path: String = "user://stills.json"
 
 var fragments: Dictionary = {}  # id → count
-var socket: String = ""
-var mode: String = "intact"
+## class_id → {id, mode}. One socket per class. Fragments stay shared.
+var sockets: Dictionary = {}
+var focus_class: String = "kestrel"
 ## TEMPORARY balance-test kit: fragments granted per id (backend/test_loadout.gd).
 var test_grant: Dictionary = {}
+## The focused class's socket. Assignments (`vault.socket = "tide"`) write that class.
+var socket: String:
+	get:
+		return socket_of(focus_class)
+	set(value):
+		_write_socket(focus_class, value)
+var mode: String:
+	get:
+		return mode_of(focus_class)
+	set(value):
+		_write_mode(focus_class, value)
 
 
 static func display_name(id: String) -> String:
@@ -167,7 +183,14 @@ func save() -> bool:
 	var file := FileAccess.open(save_path, FileAccess.WRITE)
 	if file == null:
 		return false
-	file.store_string(JSON.stringify({"fragments": fragments, "socket": socket, "mode": mode, "test_grant": test_grant}, "\t"))
+	file.store_string(JSON.stringify({
+		"fragments": fragments,
+		"sockets": sockets,
+		"focus_class": focus_class,
+		"socket": socket_of(focus_class),
+		"mode": mode_of(focus_class),
+		"test_grant": test_grant,
+	}, "\t"))
 	return true
 
 
@@ -178,12 +201,26 @@ func from_dict(data: Dictionary) -> void:
 		for id in raw:
 			if is_id(str(id)) and int(raw[id]) > 0:
 				fragments[str(id)] = int(raw[id])
-	socket = str(data.get("socket", ""))
-	if not is_id(socket):
-		socket = ""
-	mode = str(data.get("mode", "intact"))
-	if not MODES.has(mode):
-		mode = "intact"
+	sockets = {}
+	var saved_focus := str(data.get("focus_class", "kestrel"))
+	focus_class = saved_focus if CLASS_IDS.has(saved_focus) else "kestrel"
+	var raw_sockets: Variant = data.get("sockets", null)
+	if typeof(raw_sockets) == TYPE_DICTIONARY:
+		for cid in raw_sockets:
+			if not CLASS_IDS.has(str(cid)) or typeof(raw_sockets[cid]) != TYPE_DICTIONARY:
+				continue
+			var rec: Dictionary = raw_sockets[cid]
+			var id := str(rec.get("id", ""))
+			if not is_id(id):
+				continue
+			var m := str(rec.get("mode", "intact"))
+			sockets[str(cid)] = {"id": id, "mode": m if MODES.has(m) else "intact"}
+	elif is_id(str(data.get("socket", ""))):
+		# The old account-wide socket becomes Kestrel's. Other classes start empty.
+		var legacy := str(data.get("socket", ""))
+		var m := str(data.get("mode", "intact"))
+		sockets["kestrel"] = {"id": legacy, "mode": m if MODES.has(m) else "intact"}
+		focus_class = "kestrel"
 	test_grant = {}
 	var raw_grant: Variant = data.get("test_grant", {})
 	if typeof(raw_grant) == TYPE_DICTIONARY:
@@ -214,6 +251,38 @@ func kit_can_swap() -> bool:
 	return _TestLoadout.ACTIVE and not test_grant.is_empty()
 
 
+func set_focus(class_id: String) -> void:
+	if CLASS_IDS.has(class_id):
+		focus_class = class_id
+
+
+func socket_of(class_id: String) -> String:
+	var use := class_id if CLASS_IDS.has(class_id) else focus_class
+	return str(sockets.get(use, {}).get("id", ""))
+
+
+func mode_of(class_id: String) -> String:
+	var use := class_id if CLASS_IDS.has(class_id) else focus_class
+	var m := str(sockets.get(use, {}).get("mode", "intact"))
+	return m if MODES.has(m) else "intact"
+
+
+func _write_socket(class_id: String, id: String) -> void:
+	var use := class_id if CLASS_IDS.has(class_id) else focus_class
+	if not is_id(id):
+		sockets.erase(use)
+		return
+	var m := mode_of(use)
+	sockets[use] = {"id": id, "mode": m}
+
+
+func _write_mode(class_id: String, next: String) -> void:
+	var use := class_id if CLASS_IDS.has(class_id) else focus_class
+	if not sockets.has(use) or not MODES.has(next):
+		return
+	sockets[use]["mode"] = next
+
+
 func can_forge(id: String) -> Dictionary:
 	if not is_id(id):
 		return {"ok": false, "reason": "unknown_still"}
@@ -234,10 +303,10 @@ func forge(id: String) -> Dictionary:
 	fragments[id] = count(id) - FORGE_COST
 	if int(fragments[id]) <= 0:
 		fragments.erase(id)
+	var keep := mode if replacing else "intact"
 	socket = id
-	if not replacing:
-		mode = "intact"
-	return {"ok": true, "reason": "", "still": id, "swapped": replacing}
+	mode = keep
+	return {"ok": true, "reason": "", "still": id, "swapped": replacing, "class_id": focus_class}
 
 
 func set_mode(next: String) -> Dictionary:
@@ -249,18 +318,21 @@ func set_mode(next: String) -> Dictionary:
 	return {"ok": true, "reason": ""}
 
 
-## What a fight receives; empty when nothing is socketed.
-func fight_still() -> Dictionary:
-	if socket == "":
+## What a fight receives for one class; empty when that class's socket is empty.
+## No class means the focused class.
+func fight_still(class_id: String = "") -> Dictionary:
+	var use := class_id if class_id != "" else focus_class
+	var id := socket_of(use)
+	if id == "":
 		return {}
-	return {"id": socket, "mode": mode}
+	return {"id": id, "mode": mode_of(use)}
 
 
-## The fight that carries the Still destroys it.
-func consume() -> String:
-	var used := socket
-	socket = ""
-	mode = "intact"
+## The fight that carries this class's Still destroys that socket only.
+func consume(class_id: String = "") -> String:
+	var use := class_id if CLASS_IDS.has(class_id) else focus_class
+	var used := socket_of(use)
+	sockets.erase(use)
 	return used
 
 

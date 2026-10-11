@@ -88,6 +88,9 @@ func pick_champion(class_id: String) -> void:
 	if SpellKits.is_roster_class(class_id):
 		champion = class_id
 		_bag.set_focus(class_id)
+		_bag.save()
+		_vault.set_focus(class_id)
+		_vault.save()
 		_refresh()
 
 
@@ -151,6 +154,7 @@ func open_stills() -> StillsScreen:
 	var screen: StillsScreen = load("res://scenes/stills_screen.gd").new()
 	screen.name = "StillsScreen"
 	screen.font = font
+	screen.class_id = champion
 	screen.closed.connect(_on_child_closed)
 	add_child(screen)
 	return screen
@@ -346,12 +350,13 @@ func _refresh_doll() -> void:
 	sock.position = Vector2(380 - TILE - 8, y)
 	sock.size = Vector2(TILE, TILE)
 	sock.caption = "Still"
-	if _vault.socket != "":
-		sock.tint = StillVault.COLORS[_vault.socket]
-		sock.icon_tex = StillVault.icon(_vault.socket)
+	var socket_id := _vault.socket_of(champion)
+	if socket_id != "":
+		sock.tint = StillVault.COLORS[socket_id]
+		sock.icon_tex = StillVault.icon(socket_id)
 		sock.filled = true
-		sock.badge = "OW" if _vault.mode == "overwound" else ""
-		sock.pressed.connect(select.bind({"kind": "still", "id": _vault.socket}))
+		sock.badge = "OW" if _vault.mode_of(champion) == "overwound" else ""
+		sock.pressed.connect(select.bind({"kind": "still", "id": socket_id}))
 	else:
 		sock.pressed.connect(open_stills)
 	_doll.add_child(sock)
@@ -469,7 +474,7 @@ func _refresh_grid() -> void:
 		"stills":
 			var any := false
 			for id in StillVault.IDS:
-				if _vault.count(id) <= 0 and _vault.socket != id:
+				if _vault.count(id) <= 0 and _vault.socket_of(champion) != id:
 					continue
 				any = true
 				var t := _grid_tile("Still_" + id)
@@ -479,7 +484,7 @@ func _refresh_grid() -> void:
 				t.tint = StillVault.COLORS[id]
 				t.filled = true
 				t.count = _vault.count(id)
-				t.badge = "S" if _vault.socket == id else ""
+				t.badge = "S" if _vault.socket_of(champion) == id else ""
 				t.picked = str(picked.get("id", "")) == id
 				t.pressed.connect(select.bind({"kind": "still", "id": id}))
 			if not any:
@@ -594,8 +599,9 @@ func _refresh_detail() -> void:
 		_detail.add_child(head)
 		var have := _vault.count(id)
 		var line := "Fragments: %d.  %s" % [have, StillVault.forge_summary(have)]
-		if _vault.socket == id:
-			line = "In your Still socket (%s).  %s" % ["Intact" if _vault.mode == "intact" else "Overwound", line]
+		if _vault.socket_of(champion) == id:
+			var how := "Intact" if _vault.mode_of(champion) == "intact" else "Overwound"
+			line = "In %s's Still socket (%s).  %s" % [SpellKits.display_name(champion), how, line]
 		_detail.add_child(_label(line, 14, GOLD_BRIGHT))
 		var soon := "" if bool(fx.get("built", true)) else "  (coming in the next update)"
 		_detail.add_child(_label("Intact — safe: %s%s" % [StillVault.plain(id, "intact"), soon], 14, GOLD_BRIGHT))
