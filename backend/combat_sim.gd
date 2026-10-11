@@ -4091,6 +4091,8 @@ func _copy_ultra(unit: Dictionary, stats: Dictionary) -> void:
 	unit["berserk_on"] = false
 	unit["berserk_mp_up"] = false
 	unit["hit_slow"] = int(stats.get("hit_slow", 0))
+	# Pitmaw 4pc: the first connecting hit of the fight, not each turn.
+	# A miss never reaches _ultra_on_hit, so the charge stays until one lands.
 	unit["hit_slow_ready"] = int(unit["hit_slow"]) > 0
 	unit["shoulder_strip"] = int(stats.get("shoulder_strip", 0)) > 0
 	unit["strip_cd"] = 0
@@ -4223,6 +4225,9 @@ func _ultra_on_hit(actor: Dictionary, target: Dictionary, def: Dictionary) -> vo
 	if spell_id == SpellKits.SHOULDER and bool(actor.get("shoulder_strip", false)) and int(actor.get("strip_cd", 0)) == 0:
 		if _strip_class_stack(actor, target) != "":
 			actor["strip_cd"] = 2
+	# One target, once per fight. Spending the charge before the Sandhawk
+	# check means her "first Slow" ignore still counts this hit, and he
+	# does not get another.
 	if int(actor.get("hit_slow", 0)) > 0 and bool(actor.get("hit_slow_ready", false)) and not _allied(actor, target):
 		actor["hit_slow_ready"] = false
 		if not _ultra_unbound(target):
@@ -4622,7 +4627,7 @@ func _begin_unit_turn(unit: Dictionary) -> void:
 	_tick_berserk(unit)
 	if int(unit.get("strip_cd", 0)) > 0:
 		unit["strip_cd"] = int(unit["strip_cd"]) - 1
-	unit["hit_slow_ready"] = int(unit.get("hit_slow", 0)) > 0
+	# hit_slow_ready is once per fight. Do not refill it here.
 	unit["shield_burst_ready"] = int(unit.get("shield_burst", 0)) > 0
 	unit["back_guard_ready"] = int(unit.get("no_back", 0)) > 0
 	unit["detonate_strip_ready"] = int(unit.get("detonate_strip", 0)) > 0

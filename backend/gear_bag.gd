@@ -178,7 +178,7 @@ const FAMILIES := {
 		"source": "Koliseo shop", "min_star": 99,
 		"bonus": {
 			2: "Once per fight below 35% HP: Berserk (+15% melee, +1 MP) for your next 2 turns, and you take +5% damage",
-			4: "Your first hit each turn gives the target −1 MP next turn (a Slow)",
+			4: "Your first connecting hit of the fight gives that one target −1 MP on their next turn (a Slow). Once per fight",
 			5: "+1 AP +1 MP. A Shoulder hit removes 1 class stack, at most once every 2 turns",
 		},
 		"stats": {2: {"berserk": 1}, 4: {"hit_slow": 1}, 5: {"ap": 1, "mp": 1, "shoulder_strip": 1}},

@@ -46,6 +46,7 @@ func _run() -> void:
 	_test_host_rejects_shot_across_crystal()
 	_test_host_vault_has_no_match_cap()
 	_test_host_free_vault_starts_cooldown()
+	_test_host_pitmaw_slow_once()
 	_test_client_must_not_roll_on_wire()
 	_test_seat_ownership()
 	_test_guest_hydrate_from_packed_state()
@@ -320,6 +321,69 @@ func _test_host_free_vault_starts_cooldown() -> void:
 		if int(unit.get("seat", -1)) == 0:
 			guest_unit = unit
 	eq(CombatHUD.vault_button_reason(guest_unit, view.snapshot(), false), "1 turn", "the guest button says 1 turn after the free Vault")
+
+
+## Pitmaw's Slow is the host rule and the guest replica: the first connecting
+## hit only. A later hit does not cut MP.
+func _test_host_pitmaw_slow_once() -> void:
+	var worn: Array = []
+	for slot in GearBag.SLOTS:
+		worn.append({"item_id": "pitmaw.%s" % slot, "plus": 5})
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"fixture": true,
+		"classes": ["ironjaw", "kestrel"],
+		"positions": [Vector2i(4, 4), Vector2i(5, 4)],
+		"seat_gear": {0: {"worn": worn, "flatten_plus": true}},
+	})
+	_sim._scripted_rolls.clear()
+	_sim._scripted_rolls.append(1)
+	_sim._scripted_rolls.append(99)
+	var first: Dictionary = _host.submit({"type": "cast", "spell": "strike", "to": Vector2i(5, 4), "seat": 0})
+	eq(bool(first.get("ok", false)), true, "the host Strike connects")
+	eq(bool(_sim._unit_by_seat(1).get("gear_slow", false)), true, "the host's first hit Slows her")
+	eq(bool(_sim._unit_by_seat(0).get("hit_slow_ready", true)), false, "the host spends the once-per-fight charge")
+	_guest.apply_packed_state(_host.pack_result(first, 1))
+	var slowed := false
+	for unit in _guest.snapshot().get("units", []):
+		if int(unit.get("seat", -1)) == 1:
+			slowed = bool(unit.get("gear_slow", false))
+	eq(slowed, true, "the guest replica copies the Slow")
+	var opened_turn: Dictionary = _host.submit_for_seat({"type": "end_turn", "seat": 0}, 0)
+	eq(bool(opened_turn.get("ok", false)), true, "Ironjaw ends after the first hit")
+	var opened: Dictionary = _sim.snapshot()
+	eq(int(opened["units"][1]["mp"]), int(opened["units"][1]["max_mp"]) - 1, "her turn on the host loses 1 MP")
+	truthy(str(opened.get("coach", "")).contains("Slow: −1 MP"), "the host bar names the Slow")
+	_guest.apply_packed_state(_host.pack_result(opened_turn, 1))
+	var guest_mp := -1
+	var guest_max := -1
+	for unit in _guest.snapshot().get("units", []):
+		if int(unit.get("seat", -1)) == 1:
+			guest_mp = int(unit.get("mp", -1))
+			guest_max = int(unit.get("max_mp", -1))
+	eq(guest_mp, guest_max - 1, "the guest replica loses the same 1 MP")
+	eq(bool(_host.submit_for_seat({"type": "end_turn", "seat": 1}, 1).get("ok", false)), true, "Kestrel ends")
+	_sim._scripted_rolls.clear()
+	_sim._scripted_rolls.append(1)
+	_sim._scripted_rolls.append(99)
+	var later: Dictionary = _host.submit({"type": "cast", "spell": "strike", "to": Vector2i(5, 4), "seat": 0})
+	eq(bool(later.get("ok", false)), true, "the host's later Strike connects")
+	eq(bool(_sim._unit_by_seat(1).get("gear_slow", false)), false, "the later hit does not Slow her")
+	var quiet_turn: Dictionary = _host.submit_for_seat({"type": "end_turn", "seat": 0}, 0)
+	eq(bool(quiet_turn.get("ok", false)), true, "Ironjaw ends the later turn")
+	var quiet: Dictionary = _sim.snapshot()
+	eq(int(quiet["units"][1]["mp"]), int(quiet["units"][1]["max_mp"]), "her later turn keeps full MP")
+	eq(str(quiet.get("coach", "")).contains("Slow:"), false, "the host bar does not name a Slow")
+	_guest.apply_packed_state(_host.pack_result(quiet_turn, 1))
+	guest_mp = -1
+	guest_max = -1
+	for unit in _guest.snapshot().get("units", []):
+		if int(unit.get("seat", -1)) == 1:
+			guest_mp = int(unit.get("mp", -1))
+			guest_max = int(unit.get("max_mp", -1))
+	eq(guest_mp, guest_max, "the guest replica keeps full MP after the later hit")
 
 
 func _test_guest_paints_lava_burn_from_host() -> void:

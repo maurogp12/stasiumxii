@@ -28,6 +28,7 @@ func _run() -> void:
 	_test_gatewarden()
 	_test_sandhawk()
 	_test_pitmaw()
+	_test_pitmaw_slow_once()
 	_test_hushring()
 	_test_mercywell()
 	_test_gear_screen_tags()
@@ -341,6 +342,69 @@ func _test_pitmaw() -> void:
 	_cycle_pair()
 	eq(bool(jaw.get("berserk_on", false)), false, "Berserk ends after two turns")
 	eq(int(jaw["max_mp"]), mp, "the extra MP leaves with it")
+
+
+## Pitmaw 4pc was once per turn (refilled at his turn start), not every
+## swing in that turn. Mauro 11 Oct 2026: the first connecting hit of the
+## fight only, one target, still a Slow for Sandhawk, still Koliseo-only.
+func _test_pitmaw_slow_once() -> void:
+	var line := str(GearBag.FAMILIES["pitmaw"]["bonus"][4])
+	truthy(line.contains("Once per fight"), "the Pitmaw card says once per fight")
+	eq(line.contains("each turn"), false, "the Pitmaw card no longer says each turn")
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "classes": ["ironjaw", "kestrel"], "positions": [Vector2i(4, 4), Vector2i(5, 4)], "seat_gear": {0: _fight("pitmaw", false)}})
+	eq(int(_sim._unit_by_seat(0).get("hit_slow", 0)), 0, "Pitmaw Slow stays off outside Koliseo")
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "classes": ["ironjaw", "kestrel"], "positions": [Vector2i(4, 4), Vector2i(5, 4)], "seat_gear": {0: _fight("pitmaw", true)}})
+	var jaw: Dictionary = _sim._unit_by_seat(0)
+	var kite: Dictionary = _sim._unit_by_seat(1)
+	_bring(0)
+	jaw["ap"] = 9
+	_rolls([100])
+	var missed: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(5, 4), "seat": 0})
+	eq(bool(missed.get("ok", false)), true, "a miss still resolves")
+	var saw_miss := false
+	for ev in missed.get("events", []):
+		if str(ev.get("type", "")) == "miss":
+			saw_miss = true
+	eq(saw_miss, true, "the swing missed")
+	eq(bool(jaw.get("hit_slow_ready", false)), true, "a miss does not spend the once-per-fight Slow")
+	eq(bool(kite.get("gear_slow", false)), false, "a miss does not Slow her")
+	_rolls([1, 99])
+	var first: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(5, 4), "seat": 0})
+	eq(bool(first.get("ok", false)), true, "the first Strike connects")
+	eq(bool(kite.get("gear_slow", false)), true, "the first connecting hit applies the Slow")
+	eq(bool(jaw.get("hit_slow_ready", true)), false, "that hit spends the charge")
+	kite["gear_slow"] = false
+	_rolls([1, 99])
+	var second: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(5, 4), "seat": 0})
+	eq(bool(second.get("ok", false)), true, "a second Strike in the same turn connects")
+	eq(bool(kite.get("gear_slow", false)), false, "a later hit in the same turn does not Slow")
+	kite["gear_slow"] = true
+	_end()
+	eq(int(kite["mp"]), int(kite["max_mp"]) - 1, "her next turn loses 1 MP")
+	truthy(str(_sim.snapshot().get("coach", "")).contains("Slow: −1 MP"), "the bar names the Slow")
+	eq(bool(kite.get("gear_slow", true)), false, "the Slow is spent at her turn start")
+	_end()
+	_bring(0)
+	_rolls([1, 99])
+	var later: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(5, 4), "seat": 0})
+	eq(bool(later.get("ok", false)), true, "a hit on a later turn connects")
+	eq(bool(kite.get("gear_slow", false)), false, "a later turn does not Slow her again")
+	_end()
+	eq(int(kite["mp"]), int(kite["max_mp"]), "her following turn keeps full MP")
+	eq(str(_sim.snapshot().get("coach", "")).contains("Slow:"), false, "the bar does not name a Slow")
+	_sim.reset_match({"seed": 2, "flat_board": true, "skip_deploy": true, "classes": ["ironjaw", "kestrel"], "positions": [Vector2i(4, 4), Vector2i(5, 4)], "seat_gear": {0: _fight("pitmaw", true), 1: _fight("sandhawk", true)}})
+	jaw = _sim._unit_by_seat(0)
+	kite = _sim._unit_by_seat(1)
+	eq(bool(kite.get("unbound_ready", false)), true, "Sandhawk can ignore the first Slow")
+	_bring(0)
+	_rolls([1, 99])
+	var ignored: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(5, 4), "seat": 0})
+	eq(bool(ignored.get("ok", false)), true, "the Slow still connects against Sandhawk")
+	eq(bool(kite.get("gear_slow", false)), false, "Sandhawk ignores that first Slow")
+	eq(bool(kite.get("unbound_ready", true)), false, "the ignore is spent")
+	eq(bool(jaw.get("hit_slow_ready", true)), false, "Pitmaw does not get a second Slow after the ignore")
+	_end()
+	eq(int(kite["mp"]), int(kite["max_mp"]), "the ignored Slow does not cut MP")
 
 
 func _test_hushring() -> void:
