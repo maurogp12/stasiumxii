@@ -6,13 +6,40 @@ extends RefCounted
 ## z_index / draw offset are iso world Y + an elevation offset so taller tiles
 ## paint in front. CombatSim / walk costs must not read this helper.
 ## Lifted from proto/elevation/proto_visual_sort.gd.
+##
+## A depth line (same x+y) used to share one z. Godot re-sorts equal z whenever
+## a pawn, the camera, or a particle dirties the canvas, and the shared edges
+## of tiles, lava, snow, and stacked props swapped. Each cell now owns a run
+## of slots. Fighters on that line still share one z so screen position, not
+## the class, breaks their tie.
+##
+## Slots inside one cell, low to high:
+##   0 hazard (lava / snow / water decal)
+##   1 tile body and its grid ink
+##   2 highlight overlay (child of the tile)
+##   3 elevation block
+##   4 prop standing on that block (crystal, pillar, hay)
+##   5 raised-top diamond
+## The next cell on the line starts 6 above. Fighters sit above every slot on
+## their line and under the next line's tiles.
 
 const ELEVATION_PIXELS := 10.0
-const TILE_Z_SCALE := 10
-const ELEVATION_Z_SCALE := 8
-const UNIT_Z_BIAS := 4
+const TILE_Z_SCALE := 104
+const ELEVATION_Z_SCALE := 56
+const CELL_Z_STRIDE := 6
+const TILE_SLOT := 1
+const UNIT_Z_BIAS := 96
 ## Above the tile grid (child z 0) and the highlight overlay (z 1), under the fighter.
 const OCCLUDER_Z_BIAS := 2
+## A prop sharing the cell with an elevation block paints on top of that block.
+const PROP_Z_BIAS := 3
+## Weather, Shade, aim, and floating numbers stay above every board cell,
+## including a fighter lifted over the Stormspire shaft. Godot clamps z at 4096.
+const WEATHER_Z := 3720
+const LIFE_Z := 3820
+const SHADE_Z := 3920
+const AIM_Z := 4000
+const FLOAT_Z := 4080
 
 
 static func cell_to_local(cell: Vector2i, elevation: float = 0.0) -> Vector2:
@@ -21,12 +48,25 @@ static func cell_to_local(cell: Vector2i, elevation: float = 0.0) -> Vector2:
 	return iso
 
 
-static func tile_z_index(cell: Vector2i, elevation: float = 0.0) -> int:
+static func _depth_z(cell: Vector2i, elevation: float) -> int:
 	return (cell.x + cell.y) * TILE_Z_SCALE + int(round(elevation * float(ELEVATION_Z_SCALE)))
 
 
+static func _cell_slot(cell: Vector2i) -> int:
+	return cell.x * CELL_Z_STRIDE
+
+
+static func tile_z_index(cell: Vector2i, elevation: float = 0.0) -> int:
+	return _depth_z(cell, elevation) + _cell_slot(cell) + TILE_SLOT
+
+
+## Lava, snow, and water decals sit in the cell, under its grid ink.
+static func hazard_z_index(cell: Vector2i, elevation: float = 0.0) -> int:
+	return tile_z_index(cell, elevation) - TILE_SLOT
+
+
 static func unit_z_index(cell: Vector2i, elevation: float = 0.0) -> int:
-	return tile_z_index(cell, elevation) + UNIT_Z_BIAS
+	return _depth_z(cell, elevation) + UNIT_Z_BIAS
 
 
 ## Same depth as unit_z_index when `local_pos` is that cell's drawn point.
@@ -84,3 +124,58 @@ static func resolve_camera_z(items: Array) -> void:
 
 static func occluder_z_index(cell: Vector2i, elevation: float = 0.0) -> int:
 	return tile_z_index(cell, elevation) + OCCLUDER_Z_BIAS
+
+
+static func prop_z_index(cell: Vector2i, elevation: float = 0.0) -> int:
+	return tile_z_index(cell, elevation) + PROP_Z_BIAS
+
+
+## Whole pixels in the viewport. A fractional camera makes linear-filtered
+## plates crawl (the phone shimmer). Idempotent: snapping twice is a no-op.
+static func snap_camera_position(pos: Vector2, zoom: Vector2, view_size: Vector2) -> Vector2:
+	if is_zero_approx(zoom.x) or is_zero_approx(zoom.y):
+		return pos
+	var center := view_size * 0.5
+	var origin := Vector2(center.x - pos.x * zoom.x, center.y - pos.y * zoom.y)
+	var snapped := Vector2(roundf(origin.x), roundf(origin.y))
+	return Vector2((center.x - snapped.x) / zoom.x, (center.y - snapped.y) / zoom.y)
+
+
+## Decor authored at half pixels shimmers under a linear filter. Land on a pixel.
+static func snap_point(point: Vector2) -> Vector2:
+	return Vector2(roundf(point.x), roundf(point.y))
+
+
+## Child order matches draw order, so an equal-z pair (two fighters on one
+## depth line) stays put when the canvas sorts again.
+static func order_children(parent: Node) -> void:
+	if parent == null:
+		return
+	var items: Array[CanvasItem] = []
+	for child in parent.get_children():
+		if child is CanvasItem:
+			items.append(child)
+	if items.size() < 2:
+		return
+	items.sort_custom(func(a: CanvasItem, b: CanvasItem) -> bool:
+		if a.z_index != b.z_index:
+			return a.z_index < b.z_index
+		if not is_equal_approx(a.position.y, b.position.y):
+			return a.position.y < b.position.y
+		if not is_equal_approx(a.position.x, b.position.x):
+			return a.position.x < b.position.x
+		return str(a.name) < str(b.name)
+	)
+	var same := true
+	var index := 0
+	for child in parent.get_children():
+		if not (child is CanvasItem):
+			continue
+		if child != items[index]:
+			same = false
+			break
+		index += 1
+	if same:
+		return
+	for i in items.size():
+		parent.move_child(items[i], i)

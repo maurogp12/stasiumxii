@@ -158,6 +158,13 @@ static func _tags_path(room_id: String) -> String:
 	return "res://art/maps/arena_colosseum_v2/tiled/%s_15x15_tags.json" % room_id.trim_prefix("koliseo_")
 
 
+## Off-board props each get their own z so swaying banners cannot swap.
+static func _next_decor_z(host: Node) -> int:
+	var z := int(host.get_meta("decor_z", -150))
+	host.set_meta("decor_z", z - 1)
+	return z
+
+
 static func _shade_for(room_id: String) -> Dictionary:
 	var path := ROOT + "shade.json"
 	if not FileAccess.file_exists(path):
@@ -177,7 +184,7 @@ static func _add_crowd(host: Node2D) -> void:
 		sprite.name = "CrowdBack"
 		sprite.texture = back
 		sprite.centered = true
-		sprite.position = CROWD_POS
+		sprite.position = VISUAL_SORT.snap_point(CROWD_POS)
 		sprite.scale = Vector2(BOARD_SCALE, BOARD_SCALE)
 		# Above the opaque plate (-199), under the floor diamonds (-190).
 		sprite.z_index = -197
@@ -196,7 +203,7 @@ static func _add_crowd(host: Node2D) -> void:
 		sprite.name = "CrowdFront"
 		sprite.texture = front
 		sprite.centered = true
-		sprite.position = CROWD_POS
+		sprite.position = VISUAL_SORT.snap_point(CROWD_POS)
 		sprite.scale = Vector2(BOARD_SCALE, BOARD_SCALE)
 		sprite.z_index = -196
 		sprite.z_as_relative = true
@@ -214,7 +221,7 @@ static func _add_crypt(host: Node2D) -> void:
 	sprite.name = "FrozenCrypt"
 	sprite.texture = tex
 	sprite.centered = true
-	sprite.position = CRYPT_POS
+	sprite.position = VISUAL_SORT.snap_point(CRYPT_POS)
 	sprite.scale = Vector2(CRYPT_SCALE, CRYPT_SCALE)
 	sprite.z_index = -197
 	sprite.z_as_relative = true
@@ -244,8 +251,8 @@ static func _add_props(host: Node2D) -> void:
 		sprite.sprite_frames = _icicles
 		sprite.centered = true
 		sprite.scale = Vector2(icicle_scale, icicle_scale)
-		sprite.position = anchor + Vector2(0, icicle_h * 0.5)
-		sprite.z_index = -194
+		sprite.position = VISUAL_SORT.snap_point(anchor + Vector2(0, icicle_h * 0.5))
+		sprite.z_index = _next_decor_z(host)
 		sprite.z_as_relative = true
 		sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 		host.add_child(sprite)
@@ -275,8 +282,8 @@ static func _stand(host: Node2D, node_name: String, file_name: String, anchor: V
 	sprite.texture = tex
 	sprite.centered = true
 	sprite.scale = Vector2(sprite_scale, sprite_scale)
-	sprite.position = anchor - Vector2(0, tex.get_height() * sprite_scale * 0.5)
-	sprite.z_index = -194
+	sprite.position = VISUAL_SORT.snap_point(anchor - Vector2(0, tex.get_height() * sprite_scale * 0.5))
+	sprite.z_index = _next_decor_z(host)
 	sprite.z_as_relative = true
 	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	if sway:
@@ -315,8 +322,8 @@ static func _add_floors(host: Node2D, cells: Array, shade: Dictionary) -> void:
 		sprite.texture = tex
 		sprite.centered = true
 		sprite.scale = Vector2(0.125, 0.125)
-		sprite.position = VISUAL_SORT.cell_to_local(cell, 0.0)
-		sprite.z_index = -190
+		sprite.position = VISUAL_SORT.snap_point(VISUAL_SORT.cell_to_local(cell, 0.0))
+		sprite.z_index = VISUAL_SORT.hazard_z_index(cell, 0.0)
 		sprite.z_as_relative = true
 		sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 		if terrain == "ground":
@@ -340,7 +347,7 @@ static func _mist_band(host: Node2D, tex: Texture2D, node_name: String, pos: Vec
 	sprite.centered = true
 	sprite.position = pos
 	sprite.scale = sprite_scale
-	sprite.z_index = -170
+	sprite.z_index = -170 if node_name == "MistA" else -169
 	sprite.z_as_relative = true
 	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	var shader := Shader.new()

@@ -19,7 +19,7 @@ var _bolts: Array = []  # {points, branches, age, end}
 func _ready() -> void:
 	z_as_relative = false
 	# Above tiles and fighters, under Shade markers and combat numbers.
-	z_index = 470
+	z_index = BoardVisualSort.WEATHER_Z
 	_rng.randomize()
 
 

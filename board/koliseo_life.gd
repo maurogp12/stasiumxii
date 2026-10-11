@@ -169,9 +169,8 @@ static func edge_tint(map_id: String) -> Color:
 
 func _ready() -> void:
 	z_as_relative = false
-	# Above the iso stack (~tile z 300) and under Shade markers (640),
-	# the aim line, and combat numbers. Motes read as weather.
-	z_index = 480
+	# Above the iso stack and under Shade markers, the aim line, and numbers.
+	z_index = BoardVisualSort.LIFE_Z
 	_motes = CPUParticles2D.new()
 	_motes.name = "Motes"
 	_motes.amount = MOTE_AMOUNT
@@ -235,6 +234,7 @@ func _apply_ambient() -> void:
 	_glow.modulate = Color(light.r, light.g, light.b, 0.05)
 	_glow.visible = true
 	_glow.scale = Vector2(5.4, 3.8)
+	queue_redraw()
 
 
 func _process(delta: float) -> void:
@@ -252,7 +252,6 @@ func _process(delta: float) -> void:
 	_glow.modulate = Color(light.r, light.g, light.b, amp)
 	var breathe := 1.0 + 0.04 * sin(_time * 0.8)
 	_glow.scale = Vector2(5.4, 3.8) * breathe
-	queue_redraw()
 
 
 func _draw() -> void:

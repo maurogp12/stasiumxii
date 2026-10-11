@@ -640,10 +640,11 @@ func set_raised_top(on: bool) -> void:
 	_ensure_overlay()
 	if on:
 		occluder_covers_grid = false
+		# Above the elevation block and the prop on that cell, under the next cell.
 		if _grid != null:
-			_grid.z_index = 3
+			_grid.z_index = 4
 		if _overlay != null:
-			_overlay.z_index = 2
+			_overlay.z_index = 4
 	else:
 		if _grid != null:
 			_grid.z_index = 0

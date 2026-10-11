@@ -423,7 +423,7 @@ func _seat_is_local(seat: int) -> bool:
 
 
 ## Air boss effects (cannonball, explosion) draw over the area tile rings in
-## front of the impact, under the floating numbers (900).
+## front of the impact, under the floating numbers.
 const BOSS_FX_AIR_Z := 880
 
 
@@ -510,7 +510,7 @@ func _play_number(spec: Dictionary) -> void:
 	at.y -= VfxBudget.NUMBER_STACK_PX * float(int(spec.get("stack", 0)))
 	node.position = at
 	node.z_as_relative = false
-	node.z_index = 900
+	node.z_index = BoardVisualSort.FLOAT_Z
 	node.play(spec)
 	_make_room(node)
 

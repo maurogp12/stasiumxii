@@ -38,6 +38,8 @@ window/handheld/orientation=4
 environment/defaults/default_clear_color=Color(0.008, 0.028, 0.07, 1)
 rendering_device/driver.windows="d3d12"
 textures/vram_compression/import_etc2_astc=true
+2d/snap/snap_2d_transforms_to_pixel=true
+textures/canvas_textures/default_texture_filter=1
 
 [stasium]
 

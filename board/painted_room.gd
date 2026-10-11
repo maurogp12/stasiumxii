@@ -137,9 +137,10 @@ static func bind(parent: Node2D, room_id: String, tiles: Dictionary) -> bool:
 			sea_sprite.texture = sea
 			sea_sprite.centered = false
 			sea_sprite.scale = Vector2(0.5, 0.5)
-			sea_sprite.position = origin
+			sea_sprite.position = VISUAL_SORT.snap_point(origin)
 			sea_sprite.z_index = int(place.get("z", -199)) - 1
 			sea_sprite.z_as_relative = true
+			sea_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 			host.add_child(sea_sprite)
 	var bg := texture_from_webpbin("%s%s/%s" % [ROOT, room_id, str(place.get("background", ""))])
 	if bg != null:
@@ -148,9 +149,10 @@ static func bind(parent: Node2D, room_id: String, tiles: Dictionary) -> bool:
 		sprite.texture = bg
 		sprite.centered = false
 		sprite.scale = Vector2(0.5, 0.5)
-		sprite.position = origin
+		sprite.position = VISUAL_SORT.snap_point(origin)
 		sprite.z_index = int(place.get("z", -199))
 		sprite.z_as_relative = true
+		sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 		host.add_child(sprite)
 		_add_brine_rain(host, sprite, bg, room_id)
 	for raw in place.get("occluders", []):
@@ -171,16 +173,19 @@ static func bind(parent: Node2D, room_id: String, tiles: Dictionary) -> bool:
 		# The plate already contains this cut. The offset was measured from the
 		# flat cell, and it already lifts the top face onto the raised diamond.
 		# Anchoring at the cell elevation paints a second block above the plate.
-		sprite.position = VISUAL_SORT.cell_to_local(cell, 0.0) + Vector2(float(off[0]), float(off[1])) * 0.5
-		sprite.z_index = VISUAL_SORT.occluder_z_index(cell, elev)
+		sprite.position = VISUAL_SORT.snap_point(VISUAL_SORT.cell_to_local(cell, 0.0) + Vector2(float(off[0]), float(off[1])) * 0.5)
 		sprite.z_as_relative = true
+		sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 		var whats: Array = occ.get("what", [])
 		var what := str(whats[0]) if whats.size() > 0 else ""
+		# The block and the prop on the same cell used to share one z and swap.
+		var on_block := not what.begins_with("elevation")
+		sprite.z_index = VISUAL_SORT.prop_z_index(cell, elev) if on_block else VISUAL_SORT.occluder_z_index(cell, elev)
 		var drawn := _occluder_rect(cell, occ)
 		if what == "crystal":
 			var pose := crystal_sprite_pose(cell, occ)
 			sprite.scale = Vector2(float(pose["scale"]), float(pose["scale"]))
-			sprite.position = pose["position"]
+			sprite.position = VISUAL_SORT.snap_point(pose["position"])
 			# The cut is shown at its own pixels. Linear filtering would soften it.
 			sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 			var size: Array = occ.get("size", [0.0, 0.0])
@@ -222,6 +227,7 @@ static func bind(parent: Node2D, room_id: String, tiles: Dictionary) -> bool:
 			tile.set_painted_floor(true)
 	_add_slag_lava(host, room_id)
 	_add_windmere(host, room_id)
+	VISUAL_SORT.order_children(host)
 	_bound_room = room_id
 	return true
 
@@ -285,8 +291,8 @@ static func _add_slag_lava(host: Node2D, room_id: String) -> void:
 		sprite.centered = true
 		# 256x128 art covers the 64x32 world diamond. Sharper than the 128x64 slot on a phone.
 		sprite.scale = Vector2(0.25, 0.25)
-		sprite.position = VISUAL_SORT.cell_to_local(cell, 0.0)
-		sprite.z_index = VISUAL_SORT.tile_z_index(cell, 0.0)
+		sprite.position = VISUAL_SORT.snap_point(VISUAL_SORT.cell_to_local(cell, 0.0))
+		sprite.z_index = VISUAL_SORT.hazard_z_index(cell, 0.0)
 		sprite.z_as_relative = true
 		sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 		host.add_child(sprite)
@@ -310,10 +316,11 @@ static func _add_brine_rain(host: Node2D, background: Sprite2D, tex: Texture2D, 
 	rain.name = "BrineRain"
 	rain.texture = ImageTexture.create_from_image(image)
 	rain.centered = false
-	rain.position = background.position
+	rain.position = VISUAL_SORT.snap_point(background.position)
 	rain.scale = tex.get_size() * 0.5 / 4.0
 	rain.z_index = -170
 	rain.z_as_relative = true
+	rain.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	var shader := Shader.new()
 	shader.code = RAIN_CODE
 	var mat := ShaderMaterial.new()
@@ -339,6 +346,8 @@ static func adjust_unit_z(cell: Vector2i, elevation: float, z: int) -> int:
 		return z
 	var lifted := _tower_z + 1 + ahead * VISUAL_SORT.TILE_Z_SCALE
 	lifted += int(round(elevation * float(VISUAL_SORT.ELEVATION_Z_SCALE)))
+	# Stay under the weather band so a near fighter and the snow never share a z.
+	lifted = mini(lifted, VISUAL_SORT.WEATHER_Z - 1)
 	return maxi(z, lifted)
 
 
@@ -451,13 +460,14 @@ static func _add_pit_glow(host: Node2D, tiles: Dictionary) -> void:
 		if maxi(absi(cell.x - _tower_cell.x), absi(cell.y - _tower_cell.y)) > 2:
 			continue
 		var sprite := Sprite2D.new()
-		sprite.name = "PitGlow"
+		sprite.name = "PitGlow%d" % n
 		sprite.texture = tex
 		sprite.centered = true
-		sprite.position = VISUAL_SORT.cell_to_local(cell, 0.0)
+		sprite.position = VISUAL_SORT.snap_point(VISUAL_SORT.cell_to_local(cell, 0.0))
 		# Iso pool: wider than the cell so the light spills onto the bronze flags.
 		sprite.scale = Vector2(176.0 / 256.0, 88.0 / 256.0)
-		sprite.z_index = -188
+		sprite.z_index = VISUAL_SORT.hazard_z_index(cell, 0.0)
+		sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 		sprite.z_as_relative = true
 		var mat := ShaderMaterial.new()
 		mat.shader = _glow_shader()
