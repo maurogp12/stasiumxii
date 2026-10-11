@@ -10,7 +10,7 @@ Every PNG has binary alpha (0/255) with RGB 0 under alpha 0. Files named `*_glow
 
 | file | what |
 |---|---|
-| `blight_door.png` (@@door1x@@), `_2x/` (@@door2x@@) | The Heart of the Blight entrance on the blighted side of Westwatch: a huge hollow dead tree stump with a tangle of twisted roots, bark veined with glowing violet cracks, red thorn vines and horned skulls on stakes, and a cave mouth at its foot glowing deep violet. On its left a sharpened Westwatch palisade with a lantern post (violet lantern) and a dark banner with the white sun-wheel; broken stakes on the right. A trodden dirt path runs out of the cave to the south. There is no Door Keeper in the sprite: use the existing `door_keeper` NPC. |
+| `blight_door.png` (260x200), `_2x/` (518x400) | The Heart of the Blight entrance on the blighted side of Westwatch: a huge hollow dead tree stump with a tangle of twisted roots, bark veined with glowing violet cracks, red thorn vines and horned skulls on stakes, and a cave mouth at its foot glowing deep violet. On its left a sharpened Westwatch palisade with a lantern post (violet lantern) and a dark banner with the white sun-wheel; broken stakes on the right. A trodden dirt path runs out of the cave to the south. There is no Door Keeper in the sprite: use the existing `door_keeper` NPC. |
 | `blight_door_glow.png`, `_2x/` | Additive violet glow in the cave mouth and the lantern, on the same canvas. Fade it in on hover. |
 
 - **Footprint: 4x4 cells, all blocking.** Measured on the painting: the blighted earth patch's side tips are at x 9 and x 1014, so the base is ~1005 px wide and one cell is 251 px. The painted earth is rounder and deeper than a 2:1 diamond (the path runs down to y ~955), so the footprint's south tip is put at (511, 860), near the path's end: the sprite is cut flat at the south tip (the kit rule), and there the cut only crosses the narrow path.
@@ -36,12 +36,22 @@ The board uses the same `board_view.gd` math as the other dungeons: `cell_to_loc
 - Each prop's image bottom-centre sits on the south tip of its south-most cell. Props y-sort with the units. All are 1x1 blockers except `root_mound` (2x2).
 - The props marked glow carry their own additive `_glow` (the violet crystal faces, caps and veins) on the same canvas; draw it on top of the prop.
 
-@@props_table@@
+| id | size (1x) | footprint | room | glow |
+|---|---|---|---|---|
+| `violet_crystals` | 54x55 | 1x1 | A+B | `violet_crystals_glow` |
+| `crystal_spire` | 40x65 | 1x1 | B | `crystal_spire_glow` |
+| `root_knot` | 58x49 | 1x1 | A+B |  |
+| `bone_pile` | 60x37 | 1x1 | A+B |  |
+| `broken_masonry` | 56x57 | 1x1 | B |  |
+| `fungus_clump` | 54x50 | 1x1 | A | `fungus_clump_glow` |
+| `chained_cocoon` | 42x74 | 1x1 | B | `chained_cocoon_glow` |
+| `blight_eggs` | 58x46 | 1x1 | B | `blight_eggs_glow` |
+| `root_mound` | 124x97 | 2x2 | A |  |
 
 - `root_mound` is **2x2**: its bottom-centre sits on the south tip of origin+(1,1) and all four cells block. In the room tags, name it on its south cell.
 - `crystal_spire` and `chained_cocoon` are the tall props.
 
-**Root Wall (the Rotting Elder's signature), `props/root_wall.png` + `props/root_wall/`:** a 1x1 **summoned blocker** (@@wall@@), in `board.props` with three strips under the keys the systems code reads:
+**Root Wall (the Rotting Elder's signature), `props/root_wall.png` + `props/root_wall/`:** a 1x1 **summoned blocker** (58x95 at 1x), in `board.props` with three strips under the keys the systems code reads:
 - `rise`: 6 frames, the roots burst up out of the floor (squashed and clipped at the ground line on f00–f03, overshoot on f03–f04);
 - `idle`: 1 still frame (pulse its `_glow`);
 - `wither`: 6 frames, the roots darken and sink back into the floor.
@@ -90,7 +100,7 @@ Every frame has a same-canvas `_glow`. All strip frames share one canvas; its bo
 
 **Blight Horror (room A ranged), for Mauro's ranged-room-A rule:** the gaunt root figure with spores: twig crown, glowing violet hollow face, a root ribcage around a violet crystal core, mushrooms and spore pods on its shoulders, long wooden claws.
 - **Attack "Spore Bolt":** it rears back with its arms spreading and its face swelling, trembling (f01–f06), then snaps forward and spits a spore bolt from its face on **f07, the release frame**, follows through and settles.
-- **Projectile spawn:** `meta.json > release.point_px` gives the face at release per facing, in cell pixels (@@release@@). Mirror its x for the mirrored facings. Projectiles: `board/projectiles/spore_bolt`, `spore_impact`.
+- **Projectile spawn:** `meta.json > release.point_px` gives the face at release per facing, in cell pixels (S (293.5,111.5), E (307.9,86.1)). Mirror its x for the mirrored facings. Projectiles: `board/projectiles/spore_bolt`, `spore_impact`.
 
 **The Rotting Elder (boss):** a huge hunched treant of rotting bark and grey-olive moss, a crown of antler-branches, a dark hollow face with violet eyes, violet crystals on the shoulders, the crystal heart in his split chest, skulls on cords, a massive root-claw arm and a tall crystal-topped staff.
 - **Idle / walk:** a slow breathing sway; the walk is a ponderous lumber, the root legs dragging forward in turn and the trunk rolling side to side, the staff kept upright.
@@ -100,7 +110,7 @@ Every frame has a same-canvas `_glow`. All strip frames share one canvas; its bo
 **Rotting Elder signature, `summon` "Root Wall"** (the systems agent's proposal; the strip name stays `summon`). He raises root walls that reshape the board:
 - f00–f02 he lifts the staff, the crystal heart dims;
 - f03–f06 the staff is held high, the heart flares violet and the roots writhe at his feet;
-- **f07 he drives the staff into the floor: the wall fires.** `meta.json > staff_point.point_px` is the staff foot on f07 per facing (@@staff@@ in the 768x540 cell). Spawn `root_wall` (play `rise`) on each wall cell and draw a `root_crack` from there to each wall cell;
+- **f07 he drives the staff into the floor: the wall fires.** `meta.json > staff_point.point_px` is the staff foot on f07 per facing (S (531.7,532.1), E (538.6,534.0) in the 768x540 cell). Spawn `root_wall` (play `rise`) on each wall cell and draw a `root_crack` from there to each wall cell;
 - f08–f10 a shockwave ripples through him; f11–f13 he settles.
 - `summon/summon_{S,E}_fNN_glow.png` is the additive violet heart glow for this action only: it dims f00–f02, flares f03–f06, bursts on f07, ripples f08–f10 and fades by f13.
 - It plays differently from the Ratking's summon (a crook slam with new rats around him), Saltmaw's pull (a lure flare toward the hero) and the Abbess's raise (a censer swung overhead at a corpse): here nothing is summoned or pulled; the staff is driven *down*, cracks run out across the floor and the board itself changes as walls burst up.
@@ -128,7 +138,7 @@ His look: most of his body is angular faceted glowing violet crystal growing thr
 - **Idle:** a slow heavy breath. **Walk:** a heavy stomp, each crystal leg lifting and slamming, the trunk lurching over the planted leg.
 - **Attack "Crystal Lance" (range 1–2):** he draws the spear-staff back and up (f02–f04), then thrusts the crystal blade forward and down with a lunge, connecting on **f06**.
 - **Death:** he topples (~54°), the spear-staff falling from his grip.
-- **Summon "Root Wall":** the base timing (lift f00–f02, charge f03–f06, **fire f07**, shockwave f08–f10, settle f11–f13). He drives the spear-staff's foot into the floor. `meta.json > staff_point.point_px` is the spear foot on f07 per facing (@@staff5@@). His wall is `star5/board/props/crystal_wall` (same strips as `root_wall`, in `star5.board.props`).
+- **Summon "Root Wall":** the base timing (lift f00–f02, charge f03–f06, **fire f07**, shockwave f08–f10, settle f11–f13). He drives the spear-staff's foot into the floor. `meta.json > staff_point.point_px` is the spear foot on f07 per facing (S (225.9,515.1), E (233.0,485.0)). His wall is `star5/board/props/crystal_wall` (same strips as `root_wall`, in `star5.board.props`).
 - **Glow maps:** every frame has an additive `<frame>_glow.png` (the violet crystal faces bloomed, kept low because much of him is crystal, plus a faint aura). There is no separate signature ramp; the f07 fire is sold by the cracks and the walls.
 
 **Other ★5 pieces:**
@@ -159,7 +169,26 @@ Shared-kit changes (none of which changes the older outputs; the four repro chec
 
 ## Known issues / what I'd change
 
-@@known@@
+- **No painted lying-down keys** (same as the other four dungeons): the Horror's and the Elder's deaths are the standing painting rotated (about 80° and 58°) and lifted in the cell; the Hound's and the Colossus's deaths are a squash-and-sink collapse in place instead (the Hound stays a low body; the Colossus only tilts ~21°, because rotating his very wide spear-and-fist silhouette further leaves the 768x540 cell). Painting a lying key per monster and facing would read better.
+- **Limb swings are rigid rotations:** the Hound's legs, the Horror's long arms, the Elder's claw arm and staff and the Colossus's spear and fist each swing as one painted piece. The Horror's and the Hound's hanging moss is cut with the limbs, so on the widest frames a strand or two of moss separates a little from the body; the back-fill behind the limbs repeats nearby bark and moss texture.
+- **Blight Hound:** the walk is a trot of four rigid legs about the hip/shoulder (no bending knees); the tail is one piece. The S and E paintings show the far legs only partly, so the far legs are small cuts.
+- **Blight Horror:** `release.point_px` is the glowing face at release; the spore leaves from the face, not from a mouth (it has none).
+- **The Rotting Elder:**
+  - The staff is counter-rotated against his arm so it stays upright; it is still a rigid piece, and on f07 it is pushed straight down 10 px "into" the floor (the staff foot sits ~38 px below the pivot line, so `staff_point` is at the floor, slightly in front of his feet).
+  - The Root Wall lift raises the staff to the top of the cell: the summon needed a small keep-in shift (25 px S, 19 px E) over f04–f08, so the whole figure dips a little while the staff is high.
+  - The heart flare is the additive `summon_*_glow` on the painted heart and crystals; the painted heart itself does not change.
+  - The roots "writhing at his feet" are a small out-of-phase sway of the two root legs, not new roots.
+- **Root Wall / crystal wall strips** are made from one painting each: the rise is the painting squashed up out of the floor line, the wither the same painting sinking and darkening. They read as growth at board scale but are not a painted growth sequence.
+- **root_crack** is one painted crack stretched to length; long cracks (5+ cells) look stretched.
+- **The heart in room B's backdrop** is painted into the shell, not a separate layer: "pulsing" needs a game-side violet glow sprite over it (the manifest says so).
+- **Backdrops are 1x only**, as for the other dungeons. Fit residuals: room A 5.9 px (15x15) / 4.7 px (12x12), room B 24.2 / 19.3 px (the heart chamber's painted floor is not an exact parallelogram; the darkened floor apron hides it).
+- **Floors:** room B's slabs have roots that cross the tile edges, so the roots break at the grout lines; each slab also shows its grout on all four edges (by design, as for the other kits). Room B's floor was graded darker than painted.
+- **Town door:** the footprint (4x4, cell 251 px in the painting) was measured by eye on the earth patch, which is rounder than a 2:1 diamond; the sprite is cut flat at the south tip, so the very end of the trodden path is clipped by a few px. The door cell, origin+(3,4), was chosen where the path leaves the footprint.
+- **★5 Crystal Colossus:** a fresh rig on a new silhouette. In the E painting the spear is still on the screen-left (as in S), so the E facing is a back view whose weapon side matches S rather than a true turnaround of the hands. His constant glow is kept low (much of him is crystal); raise its modulate if he reads too dull. There is no separate signature glow ramp.
+- **★5 Crystal Hound and Horror:** edits of the base paintings (outline match 0.89–0.90), so they reuse the base cuts; a few crystal spikes outside the base outline ride on the body piece.
+- **★5 effects:** `crystal_bloom_burst` is one top-down painting scaled up from the pod and broken apart with a dither (f04–f07), not a painted sequence; its glow is strong at f01–f03. The first, fleshy ★5 hazard (`heart_bloom` / `bloom_burst`) was replaced after Mauro's pick and is not in the kit.
+- **Turnarounds** use the raw key; contact sheets of the ★5 forms have the glow baked in for review only.
+- **Hero stand-ins in the mocks** are the painted idle strips scaled 0.9 by eye, not the game's pawn scale.
 
 ## Scenario source assets (project "stasium")
 
