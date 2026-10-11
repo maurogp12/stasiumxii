@@ -45,3 +45,5 @@ pitmaw_helm_v2_S asset_tvjRgrpRWyWqge7wPoDAdd2p asset_rnK4F7pF5mWiXcyRnejyx71K
 pitmaw_helm_v2_E asset_Am5SxbZK9gFAHLnCNJbfksDd asset_5b86ELU6DQuJA4m5ygLBxFux
 pitmaw_S_head (v2, current) asset_kPbDyG9x3XzUER1btYtrKd2F
 pitmaw_E_head (v2, current) asset_v6Qfc4grHrDMfFiboGqhWWso
+pitmaw_legsheet_legs asset_bkc6F2RYpSMoVxgjWea8RByQ
+pitmaw_legsheet_boots asset_3NbeCJGYu14P9HMRJoLDsCZ2

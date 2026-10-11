@@ -2609,6 +2609,8 @@ func _play_movie(mode: String) -> void:
 			await _movie_locked_s()
 		"hero_looks":
 			await _movie_hero_looks()
+		"visible_gear":
+			await _movie_visible_gear()
 		"wp4gate":
 			await _movie_wp4_gate()
 		"wp5astills":
@@ -3574,6 +3576,55 @@ func _movie_hero_looks() -> void:
 	_mark("idle")
 	walker.face("e")
 	await get_tree().create_timer(1.5).timeout
+	_mark("end")
+
+
+## Visible gear pilot: Ironjaw puts the Cragmaw pieces on one by one in town,
+## idling and walking between each (args: -- --movie visible_gear).
+func _movie_visible_gear() -> void:
+	settings.apply_preset("Full")
+	_set_zoom(3.2)
+	weather.set_weather("clear")
+	weather.time_of_day = 12.0
+	weather.auto_rotate = false
+	weather.settle()
+	walker.use_class("ironjaw")
+	await enter_zone("crosshaven_crossroads", Vector2i(22, 18), false)
+	var steps := [
+		["Sin armadura", ""],
+		["+ Arma  ·  Cragmaw Bit", "cragmaw.weapon"],
+		["+ Casco  ·  Cragmaw Helm", "cragmaw.head"],
+		["+ Pechera  ·  Cragmaw Plate", "cragmaw.chest"],
+		["+ Piernas  ·  Cragmaw Guards", "cragmaw.legs"],
+		["+ Botas  ·  Cragmaw Treads", "cragmaw.boots"],
+	]
+	var worn: Array = []
+	for step in steps:
+		if str(step[1]) != "":
+			worn.append(str(step[1]))
+		walker.set_gear_parts(worn)
+		_mark(str(step[0]))
+		if _banner != null:
+			_banner.text = "Ironjaw  ·  %s" % str(step[0])
+			_banner.modulate.a = 1.0
+		walker.face("e")
+		await get_tree().create_timer(1.6).timeout
+		await _cardinal("e", 2, "walk")
+		await _cardinal("s", 2, "walk")
+		await get_tree().create_timer(0.8).timeout
+		await _cardinal("w", 2, "walk")
+		await _cardinal("n", 2, "walk")
+		walker.face("s")
+		await get_tree().create_timer(1.0).timeout
+	_mark("Set completo")
+	if _banner != null:
+		_banner.text = "Ironjaw  ·  Set completo Cragmaw (Normal)"
+		_banner.modulate.a = 1.0
+	for dir in ["e", "s", "w", "n"]:
+		await _cardinal(dir, 3, "walk")
+	await _cardinal("e", 4, "run")
+	walker.face("e")
+	await get_tree().create_timer(2.0).timeout
 	_mark("end")
 
 
