@@ -43,6 +43,7 @@ func _run() -> void:
 	_test_intent_codec_roundtrip()
 	_test_intent_json_roundtrip()
 	_test_host_submit_identical()
+	_test_host_rejects_shot_across_crystal()
 	_test_client_must_not_roll_on_wire()
 	_test_seat_ownership()
 	_test_guest_hydrate_from_packed_state()
@@ -193,6 +194,31 @@ func _test_guest_hydrate_from_packed_state() -> void:
 	var preview: Dictionary = _guest.preview_cast("mark_shot")
 	eq(str(preview.get("spell_id", "")), "mark_shot", "guest replica still serves preview_cast")
 	eq(preview.has("hit_chance"), true, "guest preview_cast does not roll a new API")
+
+
+## The listen host and the guest replica both keep the Windmere crystal as a wall.
+func _test_host_rejects_shot_across_crystal() -> void:
+	var kestrel := Vector2i(0, 6)
+	var ironjaw := Vector2i(5, 1)
+	var crystal := Vector2i(3, 3)
+	_host.reset_match({
+		"seed": 1,
+		"skip_deploy": true,
+		"fixture": true,
+		"map_id": "windmere",
+		"classes": ["kestrel", "ironjaw"],
+		"positions": [kestrel, ironjaw],
+	})
+	var ap_before := int(_sim.snapshot()["units"][0]["ap"])
+	var cast: Dictionary = _host.submit({"type": "cast", "spell": "mark_shot", "to": ironjaw})
+	eq(bool(cast.get("ok", true)), false, "the host rejects a shot across the crystal")
+	eq(str(cast.get("reason", "")), "no_line_of_sight", "the host reason is no line of sight")
+	eq(int(_sim.snapshot()["units"][0]["ap"]), ap_before, "the host refunds the crystal shot")
+	eq(_sim.has_line_of_sight(kestrel, ironjaw), false, "the host sim still has no sight")
+	_guest.apply_packed_state(_host.pack_result(cast, 1))
+	var view: Node = _guest.sim()
+	eq(view.has_line_of_sight(kestrel, ironjaw), false, "the guest replica blocks the same crystal")
+	eq(bool(view.tile_at(crystal).get("walkable", true)), false, "the guest replica cannot walk the crystal")
 
 
 func _test_guest_paints_lava_burn_from_host() -> void:

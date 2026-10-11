@@ -94,6 +94,7 @@ func _run() -> void:
 	_test_view_does_not_roll_or_own_hp()
 	_test_hud_chrome_kit_gated()
 	_test_line_of_sight()
+	_test_windmere_crystal_blocks_sight()
 	_test_blind_attacks_on_invisible()
 	_test_handoff_timer_is_client_only()
 	_test_advance_teleport_costs()
@@ -3867,6 +3868,48 @@ func _test_line_of_sight() -> void:
 	# Water and mud do not block: Crosshaven row 8 has water at (4,8).
 	eq(_sim.has_line_of_sight(Vector2i(3, 8), Vector2i(8, 8)), true, "water on the line does not block sight")
 	_sim.reset_match({"seed": 1, "skip_deploy": true})
+
+
+## Windmere crystals are walls: the tile blocks a walk and a ranged shot.
+## Kestrel's Mark Shot at Chebyshev 5 would read HIT 90% on open ice.
+func _test_windmere_crystal_blocks_sight() -> void:
+	var shot := func(legal: Array, spell: String, to: Vector2i) -> bool:
+		for intent in legal:
+			if str(intent.get("type", "")) == "cast" and str(intent.get("spell", "")) == spell and intent.get("to", Vector2i(-9, -9)) == to:
+				return true
+		return false
+	var kestrel := Vector2i(0, 6)
+	var ironjaw := Vector2i(5, 1)
+	var crystal := Vector2i(3, 3)
+	_sim.reset_match({
+		"seed": 1,
+		"skip_deploy": true,
+		"map_id": "windmere",
+		"classes": ["kestrel", "ironjaw"],
+		"positions": [kestrel, ironjaw],
+	})
+	eq(_sim.chebyshev(kestrel, ironjaw), 5, "the open shot would be Kestrel's 90% band")
+	eq(bool(_sim.tile_at(crystal).get("walkable", true)), false, "the crystal tile is not walkable")
+	eq(_sim.sight_blocker(kestrel, ironjaw, false), crystal, "the crystal is the wall on the line")
+	eq(_sim.has_line_of_sight(kestrel, ironjaw), false, "a shot across the crystal has no sight")
+	eq(shot.call(_sim.legal_intents(0), "mark_shot", ironjaw), false, "Mark Shot is not offered across the crystal")
+	var preview: Dictionary = _sim.aim_hit_preview(0, "mark_shot", ironjaw)
+	eq(bool(preview.get("show", true)), false, "the blocked aim hides HIT 90%")
+	eq(bool(preview.get("no_sight", false)), true, "the blocked aim is marked no sight")
+	var ap_before := int(_unit(0)["ap"])
+	var res: Dictionary = _sim.submit({"type": "cast", "spell": "mark_shot", "to": ironjaw, "seat": 0})
+	eq(str(res.get("reason", "")), "no_line_of_sight", "the crystal shot is rejected")
+	eq(int(_unit(0)["ap"]), ap_before, "the rejected crystal shot costs no AP")
+	_sim.reset_match({
+		"seed": 1,
+		"skip_deploy": true,
+		"map_id": "windmere",
+		"classes": ["kestrel", "ironjaw"],
+		"positions": [Vector2i(4, 3), Vector2i(8, 4)],
+	})
+	var onto: Dictionary = _sim.submit({"type": "move", "to": crystal, "seat": 0})
+	eq(bool(onto.get("ok", true)), false, "a walk onto the crystal is rejected")
+	eq(str(onto.get("reason", "")), "not_walkable", "the crystal walk reason is not_walkable")
 
 
 ## Mauro 30 Sep 2026: "Gloam should be invisible for enemies turn, also player
