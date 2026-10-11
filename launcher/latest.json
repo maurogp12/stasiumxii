@@ -1,0 +1,86 @@
+{
+  "format": 1,
+  "version": "2026.10.11.1",
+  "date": "2026-10-11",
+  "source_ref": "claude/pc-launcher 18f1ba6ab",
+  "engine": "4.7.2",
+  "news": "Welcome to the STASIUM XII launcher!\n\nFrom now on, just open StasiumXII.exe: it checks for updates, downloads only what changed, and then lets you play.\n\nIn this build:\n- All five town dungeons: Old Granary Cellar (Stoneford, 1-10), Frostspire Archive (Northgate, 10-20), Saltmaw Grotto (Eastmarch, 20-30), Drowned Abbey (Southbridge, 30-40) and Heart of the Blight (Westwatch, 40-50).\n- Dungeon loot fix.\n\nControls: click to walk, Shift+click or double-click to run, R toggles run, Esc for Visuals (Performance mode).",
+  "exe": {
+    "name": "StasiumXII.exe",
+    "sha256": "d34d36f3be1a6c49c56525ae86469b92e4f417ddf0b43cf00dd80c385c4b0562",
+    "size": 109268480,
+    "chunks": [
+      {
+        "url": "files/2026.10.11.1/StasiumXII.exe.part00",
+        "size": 94371840,
+        "sha256": "42587bf37b68a44cc3bf5de34afac495225e9de74d63ce5790c38ed7f1bbe141"
+      },
+      {
+        "url": "files/2026.10.11.1/StasiumXII.exe.part01",
+        "size": 14896640,
+        "sha256": "5563643631478feb85f131cbcfd7c89b9a13f4dfda0bef8bd5440eee4931d1c2"
+      }
+    ]
+  },
+  "launcher": {
+    "name": "StasiumXII.pck",
+    "sha256": "6e05a18f5fca753a538c294a0f4831ff28b2b2e8f8ae7b6f6edc1199edb8422e",
+    "size": 893952,
+    "chunks": [
+      {
+        "url": "files/2026.10.11.1/StasiumXII.pck.part00",
+        "size": 893952,
+        "sha256": "6e05a18f5fca753a538c294a0f4831ff28b2b2e8f8ae7b6f6edc1199edb8422e"
+      }
+    ]
+  },
+  "packs": [
+    {
+      "name": "base-2026.10.11.1.pck",
+      "sha256": "95281056b984d65b9110d18da5b0a13d7db2c4f3b4c83ccaaf5ab4a24758bc53",
+      "size": 595304992,
+      "chunks": [
+        {
+          "url": "files/2026.10.11.1/base-2026.10.11.1.pck.part00",
+          "size": 94371840,
+          "sha256": "ee02f32f88053c693ac26cb0096a20eb989aa0aee0e992ec402e07fa8f67d012"
+        },
+        {
+          "url": "files/2026.10.11.1/base-2026.10.11.1.pck.part01",
+          "size": 94371840,
+          "sha256": "634c30d19d688a661808584e95a4b54d9230075b6b91afaf9f6a138d26ac2593"
+        },
+        {
+          "url": "files/2026.10.11.1/base-2026.10.11.1.pck.part02",
+          "size": 94371840,
+          "sha256": "e1b16fc1c19c8871f909b6f409053483b5f73507077dae9b469e5f2b48cd0da1"
+        },
+        {
+          "url": "files/2026.10.11.1/base-2026.10.11.1.pck.part03",
+          "size": 94371840,
+          "sha256": "a9e9f7a94bc755610c31248ec3d7da5c29729c42dae17fdcd478db2d19b17909"
+        },
+        {
+          "url": "files/2026.10.11.1/base-2026.10.11.1.pck.part04",
+          "size": 94371840,
+          "sha256": "3a45a8be2d87b7bca0b26e450676742d2899ffbf4c868de48aca98b66808203e"
+        },
+        {
+          "url": "files/2026.10.11.1/base-2026.10.11.1.pck.part05",
+          "size": 94371840,
+          "sha256": "14c6ff6a8266f30cd424cafb8bd4554cb2297cd529ed1a1bf137d89ff201134a"
+        },
+        {
+          "url": "files/2026.10.11.1/base-2026.10.11.1.pck.part06",
+          "size": 29073952,
+          "sha256": "ddd6dde07d7a56948132c3f83bc22bb69e8b4e7536a99840f86cabd709f23a0c"
+        }
+      ],
+      "kind": "base",
+      "version": "2026.10.11.1",
+      "files": 18639
+    }
+  ],
+  "state": "state/2026.10.11.1.json.gz",
+  "download_total": 595304992
+}
