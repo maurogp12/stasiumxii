@@ -154,7 +154,7 @@ const SPELLS := {
 		# Exactly 2 tiles N/S/E/W, only with an enemy next to her, once a turn.
 		# Same AP as Ironjaw's Advance. No match cap: every time the cooldown
 		# is ready, she can Vault again. Sandhawk's free Vault is once per
-		# match, costs 0 AP, skips this cooldown, and does not spend a use.
+		# match and costs 0 AP, and it starts this same cooldown.
 		# Cooldown stays 2.
 		# Cast-time clock. _arm_spell_cooldown stores cooldown + 1 because the
 		# counter ticks at each later own turn start, before the action. 2 means

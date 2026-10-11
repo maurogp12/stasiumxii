@@ -167,7 +167,7 @@ const FAMILIES := {
 		"name": "Sandhawk", "rarity": "Ultra", "owner": "kestrel", "resist_all": true, "pvp_only": true,
 		"source": "Koliseo shop", "min_star": 99,
 		"bonus": {
-			2: "Once per match, when an enemy steps next to you, your next Vault is free (0 AP, skips the cooldown)",
+			2: "Once per match, when an enemy steps next to you, your next Vault is free (0 AP, and it still starts the cooldown)",
 			4: "Fade on an enemy with 2+ of your Marks lasts 1 turn",
 			5: "+1 AP +1 MP. Once per turn, Detonate removes 1 class stack",
 		},

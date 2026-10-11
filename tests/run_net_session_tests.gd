@@ -45,6 +45,7 @@ func _run() -> void:
 	_test_host_submit_identical()
 	_test_host_rejects_shot_across_crystal()
 	_test_host_vault_has_no_match_cap()
+	_test_host_free_vault_starts_cooldown()
 	_test_client_must_not_roll_on_wire()
 	_test_seat_ownership()
 	_test_guest_hydrate_from_packed_state()
@@ -235,7 +236,16 @@ func _test_host_vault_has_no_match_cap() -> void:
 	})
 	var first: Dictionary = _host.submit({"type": "cast", "spell": "vault", "to": Vector2i(3, 5), "seat": 0})
 	eq(bool(first.get("ok", false)), true, "the host accepts the first Vault")
-	for _i in 4:
+	eq(int((_sim._unit_by_seat(0).get("spell_cd", {}) as Dictionary).get("vault", 0)), 3, "the host stores 3 right after Vault")
+	eq(CombatHUD.spell_cooldown_badge(_sim._unit_by_seat(0), "vault"), "2 turns", "the host button says 2 turns right after Vault")
+	for _i in 2:
+		var early_seat := int(_sim.snapshot().get("active_seat", 0))
+		eq(bool(_host.submit_for_seat({"type": "end_turn", "seat": early_seat}, early_seat).get("ok", false)), true, "one round passes after Vault")
+	eq(int((_sim._unit_by_seat(0).get("spell_cd", {}) as Dictionary).get("vault", 0)), 2, "her next turn stores 2")
+	eq(CombatHUD.spell_cooldown_badge(_sim._unit_by_seat(0), "vault"), "1 turn", "her next turn says 1 turn")
+	var next_try: Dictionary = _host.submit({"type": "cast", "spell": "vault", "to": Vector2i(3, 3), "seat": 0})
+	eq(str(next_try.get("reason", "")), "cooldown", "the host rejects Vault on the next turn")
+	for _i in 2:
 		var seat := int(_sim.snapshot().get("active_seat", 0))
 		var ended: Dictionary = _host.submit_for_seat({"type": "end_turn", "seat": seat}, seat)
 		eq(bool(ended.get("ok", false)), true, "the host ends seat %d while Vault cools down" % seat)
@@ -270,6 +280,46 @@ func _test_host_vault_has_no_match_cap() -> void:
 		if int(unit.get("seat", -1)) == 0:
 			landed = unit.get("pos", Vector2i(-1, -1))
 	eq(landed, Vector2i(3, 3), "the guest replica lands the later Vault")
+
+
+## Sandhawk's free Vault is 0 AP and still starts the same cooldown on the
+## host and on the guest replica.
+func _test_host_free_vault_starts_cooldown() -> void:
+	_host.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"fixture": true,
+		"classes": ["kestrel", "ironjaw"],
+		"positions": [Vector2i(5, 5), Vector2i(6, 5)],
+	})
+	_sim._unit_by_seat(0)["vault_free"] = true
+	var ap_before := int(_sim._unit_by_seat(0)["ap"])
+	var free: Dictionary = _host.submit({"type": "cast", "spell": "vault", "to": Vector2i(3, 5), "seat": 0})
+	eq(bool(free.get("ok", false)), true, "the host accepts the free Vault")
+	eq(int(_sim._unit_by_seat(0)["ap"]), ap_before, "the free Vault costs 0 AP on the host")
+	eq(int((_sim._unit_by_seat(0).get("spell_cd", {}) as Dictionary).get("vault", 0)), 3, "the free Vault stores the cooldown")
+	eq(bool(_sim._unit_by_seat(0).get("vault_free", true)), false, "the free Vault is spent")
+	_guest.apply_packed_state(_host.pack_result(free, 1))
+	var view: Node = _guest.sim()
+	var guest_unit := {}
+	for unit in view.snapshot().get("units", []):
+		if int(unit.get("seat", -1)) == 0:
+			guest_unit = unit
+	eq(int((guest_unit.get("spell_cd", {}) as Dictionary).get("vault", 0)), 3, "the guest replica stores the free Vault cooldown")
+	eq(CombatHUD.vault_button_reason(guest_unit, view.snapshot(), false), "2 turns", "the guest button says 2 turns after the free Vault")
+	for _i in 2:
+		var seat := int(_sim.snapshot().get("active_seat", 0))
+		eq(bool(_host.submit_for_seat({"type": "end_turn", "seat": seat}, seat).get("ok", false)), true, "one round passes after the free Vault")
+	var blocked: Dictionary = _host.submit({"type": "cast", "spell": "vault", "to": Vector2i(3, 3), "seat": 0})
+	eq(str(blocked.get("reason", "")), "cooldown", "the host rejects the turn after a free Vault")
+	_guest.apply_packed_state(_host.pack_result(blocked, 1))
+	view = _guest.sim()
+	guest_unit = {}
+	for unit in view.snapshot().get("units", []):
+		if int(unit.get("seat", -1)) == 0:
+			guest_unit = unit
+	eq(CombatHUD.vault_button_reason(guest_unit, view.snapshot(), false), "1 turn", "the guest button says 1 turn after the free Vault")
 
 
 func _test_guest_paints_lava_burn_from_host() -> void:

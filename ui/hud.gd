@@ -501,14 +501,19 @@ static func spell_cooldown_badge(unit: Dictionary, spell_id: String) -> String:
 	return str(left)
 
 
-## Stored Vault clock as the player reads it. 1 is "1 turn"; 2 and 3 are
-## "2 turns" / "3 turns". Blank at 0.
+## Stored Vault clock as the player reads it. The sim keeps cooldown + 1 so
+## the turn-start tick does not eat a charge on the cast. She never sees that
+## extra 1: 3 reads "2 turns" (right after she uses it), and 2 or 1 reads
+## "1 turn" (the next locked turn, and the last locked turn). Blank at 0.
 static func vault_turns_text(left: int) -> String:
 	if left <= 0:
 		return ""
-	if left == 1:
+	var shown := left - 1
+	if shown < 1:
+		shown = 1
+	if shown == 1:
 		return "1 turn"
-	return "%d turns" % left
+	return "%d turns" % shown
 
 
 ## Why the Vault button is dark on her own turn. Blank when she can cast,
@@ -524,7 +529,7 @@ static func vault_button_reason(unit: Dictionary, snap: Dictionary, vault_legal:
 	if unit_is_stunned(unit):
 		return ""
 	var turns := spell_cooldown_badge(unit, SpellKits.VAULT)
-	if turns != "" and not bool(unit.get("vault_free", false)):
+	if turns != "":
 		return turns
 	if bool(unit.get("vault_used", false)):
 		return ""

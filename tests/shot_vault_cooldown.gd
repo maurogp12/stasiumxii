@@ -1,6 +1,6 @@
 extends SceneTree
 
-## Kestrel's turn, Vault cooling down, button reads "1 turn".
+## Right after Vault the button reads "2 turns". Her next turn reads "1 turn".
 ## xvfb-run -s "-screen 0 2560x1440x24" godot --path . --rendering-driver opengl3 -s res://tests/shot_vault_cooldown.gd -- /opt/cursor/artifacts/vault --mobile-frame
 
 var _out := "/tmp/vault_cooldown.png"
@@ -34,34 +34,42 @@ func _process(_delta: float) -> bool:
 	if _phase == "fight":
 		if _frames < 8:
 			return false
-		_arm_cooldown(board)
+		_arm_just_cast(board)
 		if board.has_method("_fit_board_camera"):
 			board._fit_board_camera()
-		_phase = "hold"
+		_phase = "hold_two"
 		_frames = 0
 		return false
-	if _phase == "hold":
+	if _phase == "hold_two":
 		if _frames < 24:
 			return false
-		var hud: Node = board._hud
-		var button: Button = hud._spell_buttons.get("vault")
-		var badge := button.get_node_or_null("CooldownBadge") if button != null else null
-		var text := "" if badge == null else str(badge.text)
-		print("VAULT_BADGE ", text)
-		print("VAULT_DISABLED ", button.disabled if button != null else "missing")
-		if button != null:
-			var rect := button.get_global_rect()
-			print("VAULT_RECT ", rect.position.x, " ", rect.position.y, " ", rect.size.x, " ", rect.size.y)
-		var file_name := "vault_one_turn.png"
-		var path := _out if _out.ends_with(".png") else _out.path_join(file_name)
-		var image := root.get_texture().get_image()
-		image.save_png(path)
-		print("saved ", path, " ", image.get_width(), "x", image.get_height())
+		_save(board, "vault_two_turns.png")
+		_advance_one_turn(board)
+		_phase = "hold_one"
+		_frames = 0
+		return false
+	if _phase == "hold_one":
+		if _frames < 24:
+			return false
+		_save(board, "vault_one_turn.png")
 		return true
 	return false
 
 
-func _arm_cooldown(board: Node) -> void:
+func _save(board: Node, file_name: String) -> void:
+	var hud: Node = board._hud
+	var button: Button = hud._spell_buttons.get("vault")
+	var badge := button.get_node_or_null("CooldownBadge") if button != null else null
+	var text := "" if badge == null else str(badge.text)
+	print("VAULT_BADGE ", file_name, " ", text)
+	print("VAULT_DISABLED ", button.disabled if button != null else "missing")
+	var path := _out if _out.ends_with(".png") else _out.path_join(file_name)
+	var image := root.get_texture().get_image()
+	image.save_png(path)
+	print("saved ", path, " ", image.get_width(), "x", image.get_height())
+
+
+func _arm_just_cast(board: Node) -> void:
 	var sim: Node = root.get_node("/root/CombatSim")
 	sim.reset_match({
 		"seed": 1,
@@ -74,7 +82,14 @@ func _arm_cooldown(board: Node) -> void:
 	# Ironjaw on (6,5) stays next to her after the jump.
 	var vault: Dictionary = sim.submit({"type": "cast", "spell": "vault", "to": Vector2i(7, 5), "seat": 0})
 	print("VAULT_CAST ", vault.get("ok", false), " ", vault.get("reason", ""))
-	for _i in 4:
+	board._rebuild_grid(15)
+	board._rebuild_pawns()
+	board._refresh()
+
+
+func _advance_one_turn(board: Node) -> void:
+	var sim: Node = root.get_node("/root/CombatSim")
+	for _i in 2:
 		sim.submit({"type": "end_turn", "seat": sim.snapshot().get("active_seat", 0)})
 	board._rebuild_grid(15)
 	board._rebuild_pawns()
