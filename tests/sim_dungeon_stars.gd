@@ -16,15 +16,18 @@ const AI := preload("res://backend/dungeon_ai.gd")
 const Gear := preload("res://backend/pc_gear.gd")
 const CLASSES: Array[String] = ["kestrel", "ironjaw", "mender", "gloam", "bastion"]
 ## Hero bot gear by star: [tier of the class's own set, pieces worn, plus].
-## ★1 Normal +0; ★2 Normal +1; ★3 Rare +0 (Rare drops from ★3); ★4 Rare +1;
-## ★5 Rare +2. Proposed; a player farming a star wears about this.
+## Proposed, a player farming that star: ★1 three Normal pieces (weapon,
+## head, chest) at +0; ★2 the full Normal set +0; ★3 Normal +1; ★4 the
+## full Rare set +0 (Rare drops from ★3 and on the boss chest); ★5 Rare +1.
+## PC_SIM_GEAR="1:Normal,3,0;5:Rare,5,2" overrides rows.
 const GEAR_BY_STAR := {
-	1: ["Normal", 5, 0],
-	2: ["Normal", 5, 1],
-	3: ["Rare", 5, 0],
-	4: ["Rare", 5, 1],
-	5: ["Rare", 5, 2],
+	1: ["Normal", 3, 0],
+	2: ["Normal", 5, 0],
+	3: ["Normal", 5, 1],
+	4: ["Rare", 5, 0],
+	5: ["Rare", 5, 1],
 }
+static var gear_rows := GEAR_BY_STAR.duplicate(true)
 const DEFAULT_DUNGEON := "old_granary_cellar"
 
 ## Losses per room for the star being run.
@@ -48,6 +51,12 @@ func _go() -> void:
 		for part in str(args[3]).split(","):
 			only.append(int(part))
 	var gear_mode := str(args[4]) if args.size() > 4 else "auto"
+	var env := OS.get_environment("PC_SIM_GEAR")
+	if env != "":
+		for part in env.split(";"):
+			var kv := part.split(":")
+			var bits := kv[1].split(",")
+			gear_rows[int(kv[0])] = [bits[0], int(bits[1]), int(bits[2])]
 	if args.size() > 2 and str(args[2]) != "-":
 		var rows := str(args[2]).split(";")
 		for i in rows.size():
@@ -81,7 +90,7 @@ func _go() -> void:
 
 
 static func kit_for(cls: String, star: int, level: int) -> Dictionary:
-	var row: Array = GEAR_BY_STAR.get(star, GEAR_BY_STAR[1])
+	var row: Array = gear_rows.get(star, GEAR_BY_STAR[1])
 	var fam := ""
 	for f in Gear.FAMILY_ORDER:
 		if Gear.rarity_of(str(f)) == str(row[0]) and Gear.owner_of(str(f)) == cls:

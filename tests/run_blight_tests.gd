@@ -1071,17 +1071,18 @@ func _test_mission_credit() -> void:
 # --- the other four dungeons are unchanged -------------------------------------------
 
 func _test_others_unchanged() -> void:
-	# Rewards: seeded roll + star gate fingerprints taken at bdde0da4, before the
-	# loot change (60 seeds per star, level 1 / 12 / 22).
+	# Rewards: seeded roll + star gate fingerprints (60 seeds per star, level
+	# 1 / 12 / 22). Retaken on claude/pc-mobile-gear: the mobile gear chests
+	# replaced the level-tier sets, so every seeded drop changed.
 	var pins := {
-		GRANARY: ["a805e2ac16dd784996eb45867ff87b96", "b0506a5408594687b477a61de2b4cb50", "27703bdc76b03275dde3cab67b1ea2bd", "e331f7e652393579737119ac1dd3bbbe", "ec613b8978ea1805f738a22024f7c0c6"],
-		FROST: ["c911006047cb30b2cb8caef2e073ebc6", "27b04b1700202db1e9eae607a1d89896", "e1cc11dc17e0f0f845394340f2ced02c", "16e6f4c3ae006408eb1cc595dcfc33ec", "f94a96fc5f4709e3beaccde347344707"],
-		SALT: ["87edc23f2a22f5aa75e1716a5aad2958", "751a86cf8b4d7d870ccf5ecf7ea89447", "5dddd1a84898b1d12bb86d8ba2f975bb", "4f575fa1a1f68a9796099c09626db0c0", "7ce5f29ab5244e4a9d5c144632e0225c"],
+		GRANARY: ["7e0dafc3ba2cfc02bba8459f5677829b", "9e4f3a1c14b33123ff1dd90460d7ea77", "05f3dffcd1233261ad0add0a2c8bf914", "61d201dbaee8f08910a644d42f2d4e16", "8bcf275de51d680a7a0d32eb8e73f9c4"],
+		FROST: ["e10f2727aa1395f80ede97fbd4d35021", "2cbf20b73459df5296adb9b12784158b", "9662aba7da7d8838bea0c4dfdbe5b2c6", "504369b52b12adb38022aadd9dd0e265", "96c2be71e7034376340992b389db84ec"],
+		SALT: ["20371f30208e7bfcae52465e8a418901", "dff3f2e126e9214a2f2b7f968d8f726d", "9f1bd96f284a5837368dfdfe6f514cf1", "9ffba52b7f40e524a36a0ca3bf296eeb", "ad960d9b4fe6eb3c3177407aa971c6ff"],
 	}
 	var levels := {GRANARY: 1, FROST: 12, SALT: 22}
 	for dungeon in pins.keys():
 		for star in range(1, 6):
-			eq(_loot_fingerprint(str(dungeon), int(levels[dungeon]), star), str(pins[dungeon][star - 1]), "%s ★%d rewards are unchanged" % [dungeon, star])
+			eq(_loot_fingerprint(str(dungeon), int(levels[dungeon]), star), str(pins[dungeon][star - 1]), "%s ★%d seeded rewards match the pin" % [dungeon, star])
 	var book = Monsters.load_default()["monsters"]
 	eq(book.ids_for(GRANARY), ["granary_rat", "sling_rat", "scarecrow_drudge", "the_ratking", "radioactive_rat", "radioactive_sling_rat", "radioactive_ratking"], "the cellar keeps its seven monsters")
 	eq(book.ids_for(FROST), ["ice_construct", "book_wraith", "the_pale_archivist", "frozen_ice_construct", "frozen_book_wraith", "the_frozen_archivist"], "the archive keeps its six monsters")

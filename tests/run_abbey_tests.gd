@@ -980,13 +980,13 @@ func _test_rosary() -> void:
 	# Seeded ★1-★4 rewards are pinned. The pins were retaken when the mobile
 	# gear chests replaced the level-tier sets (claude/pc-mobile-gear): two
 	# chest pieces a win now use 6 draws before the box and star_drops draws.
-	var pins := ["21034a957321380bd749a0b8a9958031", "2263bade286b5286184a8f2a2e215ddc", "9670ce32a3d10b6a15ef794f8904f984", "345071c11b2bb6d34142c6b30e24c668"]
+	var pins := ["64e26f43b4408cd6075f8977c8cc1266", "63637164617bb9f05515eff9588f979f", "8c770b04d6bb8989ec3afb7326c7ea78", "cba1049687575a9046231115df08c21d"]
 	for star in range(1, 5):
 		var text := ""
 		for seed in 60:
 			var drop := _loot(LEVEL, star, 9000 + seed)
 			text += "%d|%s;" % [int(drop["coins"]), JSON.stringify(drop["items"])]
-		eq(text.md5_text(), pins[star - 1], "the abbey's ★%d rewards are unchanged" % star)
+		eq(text.md5_text(), pins[star - 1], "the abbey's ★%d seeded rewards match the pin" % star)
 	var n := 4000
 	for level in [32, 40]:
 		for star in range(1, 6):
