@@ -9,6 +9,7 @@ extends SceneTree
 const Dungeons := preload("res://backend/world_dungeons.gd")
 const Monsters := preload("res://backend/pc_monsters.gd")
 const Run := preload("res://backend/pc_dungeon_run.gd")
+const Gear := preload("res://backend/pc_gear.gd")
 const AI := preload("res://backend/dungeon_ai.gd")
 const Atlas := preload("res://backend/world_atlas.gd")
 const NpcBook := preload("res://backend/world_npcs.gd")
@@ -536,14 +537,18 @@ func _test_star_rewards() -> void:
 		var hero = _fresh_hero()
 		var rares := 0
 		var boxes := 0
+		var chests := 0
 		var trials := 30 if star < 5 else 10
 		var summary: Dictionary = {}
 		for t in trials:
 			var h2 = _fresh_hero()
 			var s2: Dictionary = run.pay_out(h2, null, _rng(100 + t), false)
 			for item in s2["items"]:
-				if str(item.get("rarity", "")) == "rare":
+				# Room A's chest rolls the star row (no Rare below ★3).
+				if str(item.get("chest", "")) == "a" and str(item.get("rarity", "")) != "normal":
 					rares += 1
+				if Gear.is_valid_item_id(str(item.get("item_id", ""))):
+					chests += 1
 				if str(item.get("item_id", "")) == "mystery_box":
 					boxes += 1
 			summary = s2
@@ -552,11 +557,11 @@ func _test_star_rewards() -> void:
 			base_coins = int(summary["coins"])
 		eq(int(summary["xp"]), base_xp * star, "★%d XP is %d x %d (mobile: 60 x star)" % [star, base_xp, star])
 		eq(int(summary["coins"]), base_coins * star, "★%d coins are ★1 coins x %d" % [star, star])
+		eq(chests, trials * 2, "★%d every win pays two gear chests (room A, the boss)" % star)
 		if star < 3:
-			eq(rares, 0, "★%d drops no Rare part" % star)
+			eq(rares, 0, "★%d room A's chest is always Normal" % star)
 		if star == 5:
-			eq(rares >= trials, true, "★5 always drops a Rare part")
-			eq(boxes >= trials, true, "★5 always drops a Mystery Box (the Legendary slot)")
+			eq(boxes >= trials, true, "★5 always drops a Mystery Box")
 		var s3: Dictionary = run.pay_out(hero, null, _rng(7), false)
 		eq(int(hero.best_dungeon_star(GRANARY)), star, "★%d clear is recorded as the best star" % star)
 		eq(bool(s3.get("new_best_star", false)), true, "★%d is reported as a new best" % star)

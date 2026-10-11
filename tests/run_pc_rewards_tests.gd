@@ -1,10 +1,13 @@
 extends SceneTree
 
-## WP14 Crypto Coins, set parts and Mystery Boxes.
+## WP14 Crypto Coins, gear chests and Mystery Boxes. The set parts are the
+## mobile gear ladder (backend/pc_gear.gd); run_pc_gear_tests.gd checks the
+## ladder itself.
 ## Run: godot --headless --path . -s res://tests/run_pc_rewards_tests.gd
 
 const Rewards = preload("res://backend/pc_rewards.gd")
 const Progress = preload("res://backend/pc_progress.gd")
+const Gear = preload("res://backend/pc_gear.gd")
 const PATH := "res://data/world/rewards.json"
 const SCHEMA := "res://data/world/schema/rewards.schema.json"
 
@@ -31,7 +34,7 @@ func _run() -> void:
 	_test_tables()
 	_test_rolls(book)
 	_test_box(book)
-	_test_bias(book)
+	_test_uniform_classes(book)
 	_test_gear()
 	_test_save()
 	_test_window()
@@ -60,69 +63,29 @@ func _test_schema() -> void:
 
 func _test_catalog(book) -> void:
 	var rows: Array = book.sets()
-	eq(rows.size(), 43, "43 sets")
-	var class_n := 0
-	var dungeon_n := 0
-	var shared_n := 0
+	eq(rows.size(), 22, "22 gear sets (17 on the loot ladder, 5 Ultra)")
 	var parts := 0
-	var budgets := {}
 	for row in rows:
 		var set_def: Dictionary = row
-		var kind := str(set_def["kind"])
-		if kind == "class":
-			class_n += 1
-		elif kind == "dungeon":
-			dungeon_n += 1
-		elif kind == "shared":
-			shared_n += 1
 		parts += (set_def["parts"] as Array).size()
-		var tier := int(set_def["tier"])
-		var budget := int(set_def["budget"])
-		var full := int(set_def["full_budget"])
-		eq(full, _full_budget(tier), "%s full set is B(T)" % str(set_def["id"]))
-		var total := _set_total(set_def)
-		eq(absi(total - full) <= 1, true, "%s total stays within 1 of B(T)" % str(set_def["id"]))
-		if budgets.has(tier):
-			eq(int(budgets[tier]), full, "tier %d shares one full budget" % tier)
-		else:
-			budgets[tier] = full
-		var regular: Dictionary = set_def["stats"]["regular"]
-		var rare: Dictionary = set_def["stats"]["rare"]
-		eq(_sum(regular), budget, "%s regular points" % str(set_def["id"]))
-		eq(_sum(rare), int(round(1.5 * float(budget))) + 1, "%s rare points" % str(set_def["id"]))
-		eq(bool(set_def["bonuses"]["5"]["applies"]), false, "%s five-part effect is not applied" % str(set_def["id"]))
-	eq(class_n, 30, "30 class sets")
-	eq(dungeon_n, 11, "11 dungeon sets")
-	eq(shared_n, 2, "Wayfarer and Townguard")
-	eq(parts, 215, "five parts on every set")
-	var gloam: Dictionary = book.set_by_id("gloam_umbral_fang")
-	eq(gloam["leans"], ["Swift", "Resist"], "Gloam from tier 30 leans Swift and Resist")
-	var sky: Dictionary = book.set_by_id("kestrel_skyfeather")
-	eq(str(sky["bonuses"]["5"]["text"]).find("Mark Shot") >= 0, true, "Kestrel's tier-20 signature is stored")
-	var mill: Dictionary = book.set_by_id("millwright")
-	eq(str(mill["bonuses"]["5"]["text"]).find("Mastery") >= 0, true, "Millwright keeps its approved line")
+		for part in set_def["parts"]:
+			var def: Dictionary = book.item(str(part["id"]))
+			eq(str(def.get("slot", "")), str(part["slot"]), "%s is a %s item" % [str(part["id"]), str(part["slot"])])
+			eq(int(def.get("weight", 0)), 10, "%s weighs as equipment" % str(part["id"]))
+	eq(parts, 110, "five parts on every set")
+	eq(str(book.set_by_id("cragmaw")["name"]), "Cragmaw", "Cragmaw is a set")
+	eq(book.set_by_id("kestrel_fledgling").is_empty(), true, "the old level-tier sets are gone")
+	eq(book.item("kestrel_fledgling_head").is_empty(), true, "old part ids are not items any more")
 	var dungeons: Array = book.dungeons()
-	for tier in budgets.keys():
-		var higher := int(tier) + 10
-		if not budgets.has(higher):
-			continue
-		var ratio := float(budgets[higher]) / float(budgets[tier]) - 1.0
-		eq(ratio >= 0.25 and ratio <= 0.35, true, "tier %s to %s steps 25 to 35 percent" % [str(tier), str(higher)])
 	eq(dungeons.size(), 10, "ten dungeon tables after Millrace is dropped")
-	var seen := {}
-	var millrace := false
 	var granary: Dictionary = {}
 	for row in dungeons:
 		var dungeon: Dictionary = row
-		var set_id := str(dungeon["set_id"])
-		eq(seen.has(set_id), false, "%s has its own set" % str(dungeon["id"]))
-		seen[set_id] = true
+		eq(dungeon.has("set_id"), false, "%s names no old set" % str(dungeon["id"]))
 		if str(dungeon["id"]) == "millrace_vaults":
-			millrace = true
+			eq(true, false, "Millrace is not a reward source")
 		if str(dungeon["id"]) == "old_granary_cellar":
 			granary = dungeon
-	eq(millrace, false, "Millrace is not a reward source")
-	eq(str(granary.get("also_set_id", "")), "millwright", "the cellar also drops Millwright")
 	var granary_extras: Array = granary["extras"]
 	eq(granary_extras.has("sackcloth"), true, "the cellar keeps its own extras")
 	eq(granary_extras.has("millstone_stew") and granary_extras.has("gear_cog") and granary_extras.has("water_wheel_model"), true, "Millrace extras sit on the cellar")
@@ -137,18 +100,20 @@ func _test_tables() -> void:
 	for row in doc["mission_ranks"]:
 		var total := float(row["regular"]) + float(row["rare"]) + float(row["box"])
 		eq(total <= 1.0 + 0.001, true, "mission rank %s sums to at most 100%%" % str(row["rank"]))
-	eq(float(doc["world_part_chance"]) <= 1.0, true, "world part chance is at most 100%")
-	for key in doc["dungeon_rare_by_stars"].keys():
-		eq(float(doc["dungeon_rare_by_stars"][key]) <= 1.0, true, "rare star %s" % str(key))
+	var gear: Dictionary = doc["gear"]
+	eq(float(gear["world_chance"]) <= 1.0, true, "world gear chance is at most 100%")
+	eq(str(gear["world_tier"]), "Normal", "world fights drop Normal-tier pieces")
+	eq(gear["dungeon_chests"], [{"room": "a", "row": "star"}, {"room": "b", "row": "boss"}], "a dungeon win: room A's chest at the star row, the boss chest at the boss row")
+	eq(gear["mission_tiers"], {"regular": "Normal", "rare": "Rare"}, "mission shares map to chest tiers")
+	eq(gear["ultra"]["source"], "koliseo_shop", "Ultra parts come from the Koliseo shop")
+	eq(int(gear["ultra"]["cost"]), 30, "30 coins per Ultra part")
+	eq(doc["gear_slots"], ["weapon", "head", "chest", "legs", "boots"], "gear slots")
+	eq(doc["equip_slots"], ["weapon", "head", "chest", "legs", "boots", "amulet", "ring", "ring_b"], "equip slots: gear and trinkets")
 	for key in doc["dungeon_box_by_stars"].keys():
 		eq(float(doc["dungeon_box_by_stars"][key]) <= 1.0, true, "box star %s" % str(key))
-	var split: Dictionary = doc["guaranteed_split"]
-	var split_sum := float(split["dungeon_set"]) + float(split["class_set"])
-	eq(absf(split_sum - 1.0) < 0.001, true, "the guaranteed part split sums to 100%")
-	eq(float(doc["dungeon_rare_by_stars"]["1"]), 0.0, "star 1 has no rare part")
-	eq(absf(float(doc["dungeon_rare_by_stars"]["5"]) - 0.35) < 0.001, true, "star 5 rare chance is 35%")
 	eq(float(doc["dungeon_box_by_stars"]["3"]), 0.0, "star 3 has no box")
 	eq(absf(float(doc["dungeon_box_by_stars"]["4"]) - 0.10) < 0.001, true, "star 4 box chance is 10%")
+	eq((doc["legacy_gear"]["sets"] as Array).size(), 43, "the 43 old sets are listed for migration")
 
 
 func _test_rolls(book) -> void:
@@ -183,18 +148,15 @@ func _test_rolls(book) -> void:
 	eq(ninth_box, false, "rank 1 does not give a box")
 	eq(int(ninth["coins"]) >= 20 and int(ninth["coins"]) <= 40, true, "tier-1 mission coins stay in band")
 	var extras := {"sackcloth": true, "granary_bread": true, "old_grain_barrel": true, "millstone_stew": true, "gear_cog": true, "water_wheel_model": true}
-	var saw_rat := false
-	var saw_mill := false
 	for n in 80:
 		var probe: Dictionary = book.roll("dungeon", {
 			"dungeon_id": "old_granary_cellar", "stars": 1, "class_id": "Ironjaw", "level": 1,
 		}, _rng(400 + n))
-		var probe_id := str((probe["items"] as Array)[0]["item_id"])
-		if probe_id.begins_with("ratcatcher_"):
-			saw_rat = true
-		if probe_id.begins_with("millwright_"):
-			saw_mill = true
-	eq(saw_rat and saw_mill, true, "the cellar drops Ratcatcher and Millwright")
+		var first_two: Array = (probe["items"] as Array).slice(0, 2)
+		eq(first_two.size(), 2, "a cellar win pays two chest pieces")
+		for item in first_two:
+			eq(Gear.is_valid_item_id(str(item["item_id"])), true, "a chest piece is a ladder part (%s)" % str(item["item_id"]))
+		eq(str(first_two[0]["rarity"]), "normal", "★1 room A's chest is Normal")
 	for n in 40:
 		var drop: Dictionary = book.roll("dungeon", {
 			"dungeon_id": "old_granary_cellar", "stars": 5, "class_id": "Bastion", "level": 1,
@@ -214,83 +176,70 @@ func _test_box(book) -> void:
 			eq(items.is_empty(), true, "a coin box has no part")
 		else:
 			eq(items.size(), 1, "a part box has one part")
+			eq(str(items[0]["rarity"]) in ["normal", "rare"], true, "a box part is Normal or Rare")
 	var again: Dictionary = book.open_box({"level": 12, "class_id": "Mender"}, _rng(7))
 	var twice: Dictionary = book.open_box({"level": 12, "class_id": "Mender"}, _rng(7))
 	eq(JSON.stringify(again), JSON.stringify(twice), "a seeded box is fixed")
 
 
-func _test_bias(book) -> void:
+## Gear drops are even over sets, so classes come up evenly (Mauro: "las
+## piezas deberian ser random para cada clase"). The hero's class is not read.
+func _test_uniform_classes(book) -> void:
 	var rng := _rng(99)
-	var hits := 0
-	var classes: Array = ["Kestrel", "Ironjaw", "Mender", "Gloam", "Bastion"]
-	var n := 800
+	var by_owner := {}
+	var n := 3000
 	for _i in n:
-		if book.pick_class(rng, "Mender", classes) == "Mender":
-			hits += 1
-	var rate := float(hits) / float(n)
-	eq(rate > 0.5 and rate < 0.7, true, "class parts favour the hero's class (%.3f)" % rate)
+		var piece: Dictionary = book.gear_piece("Rare", rng)
+		var owner := Gear.owner_of(Gear.family_of(str(piece["item_id"])))
+		by_owner[owner] = int(by_owner.get(owner, 0)) + 1
+	eq(by_owner.size(), 5, "Rare pieces come from all five classes")
+	for owner in by_owner.keys():
+		var rate := float(by_owner[owner]) / float(n)
+		eq(absf(rate - 0.2) < 0.03, true, "%s gets about a fifth of Rare pieces (%.3f)" % [str(owner), rate])
+	var as_mender: Dictionary = book.roll("dungeon", {"dungeon_id": "old_granary_cellar", "stars": 3, "class_id": "Mender", "level": 1}, _rng(5))
+	var as_bastion: Dictionary = book.roll("dungeon", {"dungeon_id": "old_granary_cellar", "stars": 3, "class_id": "Bastion", "level": 1}, _rng(5))
+	eq(JSON.stringify(as_mender), JSON.stringify(as_bastion), "the hero's class does not steer the drop")
 
 
 func _test_gear() -> void:
 	_clear_save()
-	var loaded: Dictionary = Rewards.load_default()
-	var book = loaded["rewards"]
-	var fledgling: Dictionary = book.set_by_id("kestrel_fledgling")
 	var hero = Progress.new()
 	eq(hero.hero_class, "", "the hero has no class until one is chosen")
 	eq(hero.set_hero_class("ironjaw"), true, "a roster id sets the class")
 	eq(hero.hero_class, "Ironjaw", "the stored class is the display name")
-	var blocked: Dictionary = hero.equip_uid(_give(hero, "kestrel_fledgling_head", "regular"))
+	var blocked: Dictionary = hero.equip_uid(_give(hero, "undertow.head", "normal"))
 	eq(bool(blocked.get("ok", false)), false, "another class's part stays in the bag")
 	eq(str(blocked.get("reason", "")), "class", "the reason is the class")
-	hero.set_hero_class("kestrel")
-	var low: Dictionary = hero.equip_uid(_give(hero, "kestrel_windrunner_head", "regular"))
-	eq(str(low.get("reason", "")), "level", "a higher tier cannot be worn yet")
-	var slots := ["head", "cape", "belt", "boots", "amulet"]
 	var uids: Array = []
-	for slot in slots:
-		uids.append(_give(hero, "kestrel_fledgling_%s" % slot, "regular"))
+	for slot in Gear.SLOTS:
+		uids.append(_give(hero, Gear.item_id_for("cragmaw", slot), "normal"))
 	hero.equip_uid(int(uids[0]))
+	var one: Dictionary = hero.gear_view()["stats"]
+	eq([one["Mastery"], one["Crit %"], one["HP %"]], [10, 3, 0], "one Cragmaw Bit: Mastery 10, crit 3")
 	hero.equip_uid(int(uids[1]))
-	var two: Dictionary = hero.gear_view()["stats"]
-	eq(two, _expect_stats(fledgling, 2), "two parts include the 2-part bonus")
+	eq(int(hero.gear_view()["stats"]["HP %"]), 8, "two parts: +8% HP")
 	hero.equip_uid(int(uids[2]))
-	var three: Dictionary = hero.gear_view()["stats"]
-	eq(three, _expect_stats(fledgling, 3), "three parts include the 3-part bonus")
 	hero.equip_uid(int(uids[3]))
 	var four: Dictionary = hero.gear_view()["stats"]
+	eq(int(four["Resist"]), 2 + 2 + 2 + 4, "four parts: part Resist plus the 4pc +4")
 	hero.equip_uid(int(uids[4]))
 	var five: Dictionary = hero.gear_view()
-	eq(five["stats"], _expect_stats(fledgling, 5), "five parts add no further set bonus")
-	eq(_sum(five["stats"]) - _sum(four), _sum(fledgling["stats"]["regular"]), "the fifth part adds only its own stats")
-	eq(bool(five["sets"][0]["five_applies"]), false, "the five-part line stays out of the stats")
+	eq(int(five["combat"]["melee"]), 4, "five parts: hits at range 1 deal +4")
+	eq(int(five["stats"]["HP"]), 62, "Cragmaw parts HP 62")
+	eq(hero.hero_max_hp(), roundi(142.0 * 1.08), "sheet HP: (80 + 62) x 1.08")
+	eq(int(hero.sheet_view()["hp_max"]), roundi(142.0 * 1.08), "the sheet shows the geared max HP")
+	eq((five["sets"] as Array).size(), 1, "one set shows")
+	eq((five["sets"][0]["bonuses"] as Array).size(), 3, "2, 4 and 5-piece lines are active")
+	eq(int(hero.sheet_view()["ap"]), 6, "a Normal set gives no AP")
 	eq(hero.spent_in("Mastery"), 0, "gear does not spend characteristic points")
-	eq(hero.spent_in("Swift"), 0, "gear does not spend Swift")
+	eq(hero.fight_gear()["worn"].size(), 5, "the fight reads five worn parts")
 	_clear_save()
-	var rare = Progress.new()
-	rare.set_hero_class("ironjaw")
-	rare.level = 30
-	var rare_slots := ["head", "cape", "belt", "boots", "amulet"]
-	for slot in rare_slots:
-		var uid := _give(rare, "ironjaw_ironclad_ram_%s" % slot, "rare")
-		var wore: Dictionary = rare.equip_uid(uid)
-		eq(bool(wore.get("ok", false)), true, "rare %s equips (%s)" % [slot, str(wore.get("reason", ""))])
-	eq(int(rare.sheet_view()["ap"]), 7, "no AP until the Rare set choice")
-	var choice: Dictionary = rare.choose_rare("ap")
-	eq(bool(choice.get("ok", false)), true, "the first AP or MP choice is free")
-	eq(int(rare.sheet_view()["ap"]), 8, "a full Rare tier-30 set adds the chosen AP")
-	var switched: Dictionary = rare.choose_rare("mp")
-	eq(bool(switched.get("ok", false)), false, "switching the choice does not invent a price")
-	eq(str(switched.get("reason", "")), "switch cost is Open", "the switch price stays Open")
+	var leg = Progress.new()
+	leg.set_hero_class("ironjaw")
+	for slot in Gear.SLOTS:
+		leg.equip_uid(_give(leg, Gear.item_id_for("tyrantjaw", slot), "legendary"))
+	eq([int(leg.sheet_view()["ap"]), int(leg.sheet_view()["mp"])], [7, 4], "a Legendary 5pc adds +1 AP +1 MP")
 	_clear_save()
-	var mp_hero = Progress.new()
-	mp_hero.set_hero_class("ironjaw")
-	mp_hero.level = 30
-	for slot in rare_slots:
-		mp_hero.equip_uid(_give(mp_hero, "ironjaw_ironclad_ram_%s" % slot, "rare"))
-	mp_hero.choose_rare("mp")
-	eq(int(mp_hero.sheet_view()["mp"]), 4, "the same set can add MP instead")
-	eq(int(mp_hero.sheet_view()["ap"]), 7, "the MP choice does not also add AP")
 
 
 func _test_save() -> void:
@@ -301,8 +250,8 @@ func _test_save() -> void:
 	eq(int(hero.bag[0]["count"]), 2, "the stack counts both")
 	hero.bag_slots = 1
 	hero.grant({"coins": 0, "items": [
-		{"item_id": "kestrel_fledgling_head", "rarity": "regular", "count": 1},
-		{"item_id": "kestrel_fledgling_cape", "rarity": "regular", "count": 1},
+		{"item_id": "undertow.head", "rarity": "normal", "count": 1},
+		{"item_id": "undertow.chest", "rarity": "normal", "count": 1},
 	]})
 	eq(hero.bag.size(), 1, "a full bag does not take another slot")
 	eq(hero.bank.size() >= 1, true, "the overflow goes to the bank")
@@ -328,7 +277,7 @@ func _test_window() -> void:
 	_clear_save()
 	var hero = Progress.new()
 	hero.set_hero_class("kestrel")
-	_give(hero, "kestrel_fledgling_head", "regular")
+	_give(hero, "undertow.head", "normal")
 	hero.grant({"coins": 15, "items": [{"item_id": "mystery_box", "rarity": "regular", "count": 1}]})
 	var window = load("res://scenes/world/ui/inventory_window.gd").new()
 	get_root().add_child(window)
@@ -386,11 +335,12 @@ func _test_star_drops_checks() -> void:
 		var loaded: Dictionary = Rewards.load_document(doc)
 		eq(bool(loaded.get("ok", false)), false, "a bad star drop (%s) is rejected" % name)
 		eq(str(loaded.get("errors", [])).contains(str(name)), true, "the error names %s: %s" % [name, loaded.get("errors", [])])
-	var split_doc: Dictionary = base.duplicate(true)
-	for row in split_doc["dungeons"]:
-		if str(row["id"]) == "heart_of_the_blight":
-			row["guaranteed_split"] = {"dungeon_set": 0.5, "class_set": 0.6}
-	eq(bool(Rewards.load_document(split_doc).get("ok", false)), false, "a dungeon split that does not sum to 1 is rejected")
+	var chest_doc: Dictionary = base.duplicate(true)
+	chest_doc["gear"]["dungeon_chests"] = [{"room": "a", "row": "legendary"}]
+	eq(bool(Rewards.load_document(chest_doc).get("ok", false)), false, "a gear chest row that is not star or boss is rejected")
+	var tier_doc: Dictionary = base.duplicate(true)
+	tier_doc["gear"]["world_tier"] = "Ultra"
+	eq(bool(Rewards.load_document(tier_doc).get("ok", false)), false, "world fights cannot pay Ultra")
 
 
 func _test_load_safety() -> void:
@@ -428,23 +378,24 @@ func _test_load_safety() -> void:
 		"level": 1, "xp": 0, "coins": 0, "hero_class": "Mender", "rare_choice": "", "next_uid": 3,
 		"bag": [], "bank": [],
 		"equipped": {
-			"head": {"uid": 2, "item_id": "kestrel_fledgling_head", "rarity": "regular", "upgrade": 0, "seq": 1},
+			"head": {"uid": 2, "item_id": "undertow.head", "rarity": "normal", "upgrade": 0, "plus": 2, "seq": 1},
 		},
 	})
 	var moved = Progress.new()
 	eq(moved.equipped.has("head"), false, "another class's worn part leaves the slot")
 	eq(moved.bag.size(), 1, "that part is put in the bag")
-	eq(str(moved.bag[0]["item_id"]), "kestrel_fledgling_head", "the moved part keeps its id")
+	eq(str(moved.bag[0]["item_id"]), "undertow.head", "the moved part keeps its id")
+	eq(int(moved.bag[0].get("plus", 0)), 2, "the moved part keeps its plus")
 	_write_save({
 		"level": 1, "xp": 0, "coins": 0, "hero_class": "Kestrel", "rare_choice": "", "next_uid": 3,
 		"bag": [], "bank": [],
 		"equipped": {
-			"head": {"uid": 2, "item_id": "kestrel_windrunner_head", "rarity": "regular", "upgrade": 0, "seq": 1},
+			"head": {"uid": 2, "item_id": "ember_crown", "rarity": "epic", "upgrade": 0, "seq": 1},
 		},
 	})
 	var leveled = Progress.new()
-	eq(leveled.equipped.has("head"), false, "a part above the hero's level leaves the slot")
-	eq(str(leveled.bag[0]["item_id"]), "kestrel_windrunner_head", "the high part waits in the bag")
+	eq(leveled.equipped.has("head"), false, "an epic above the hero's level leaves the slot")
+	eq(str(leveled.bag[0]["item_id"]), "ember_crown", "the high epic waits in the bag")
 	_write_save({
 		"level": 45, "xp": 0, "coins": 0, "hero_class": "Kestrel", "rare_choice": "", "next_uid": 4,
 		"bag": [], "bank": [],
@@ -523,10 +474,10 @@ func _test_caps() -> void:
 	var rate := float(hero.stat_per_point["Resist"]["damage_taken"])
 	var cap := float(hero.stat_per_point["Resist"]["cap"])
 	eq(float(hero.spent_in("Resist")) * rate > cap, true, "a full Resist spend is past the cap before clamping")
-	var uid := _give(hero, "mender_dewdrop_head", "regular")
+	var uid := _give(hero, "vesperwell.head", "normal")
 	eq(bool(hero.equip_uid(uid).get("ok", false)), true, "a Mender part equips")
 	var view: Dictionary = hero.sheet_view()
-	eq(float(view["resist"]) <= cap, true, "Resist from gear plus points stays at or under 33 percent")
+	eq(float(view["resist"]) <= cap, true, "Resist from points stays at or under 33 percent")
 	var caps: Dictionary = view["caps"]
 	eq(int(caps["ap"]), 8, "the AP cap is 8")
 	eq(int(caps["mp"]), 5, "the MP cap is 5")
@@ -537,8 +488,8 @@ func _test_caps() -> void:
 	var closed: Dictionary = hero.sheet_view(true)
 	eq(bool(closed["koliseo"]), true, "the koliseo flag is explicit")
 	eq(int(closed["gear"]["stats"]["Resist"]), 0, "koliseo drops gear Resist")
-	eq(int(closed["gear"]["stats"]["Vitality"]), 0, "koliseo drops gear Vitality")
-	eq(int(view["gear"]["stats"]["Resist"]) + int(view["gear"]["stats"]["Vitality"]) > 0, true, "the open-world sheet keeps the part")
+	eq(int(closed["gear"]["stats"]["HP"]), 0, "koliseo drops gear HP")
+	eq(int(view["gear"]["stats"]["Resist"]) + int(view["gear"]["stats"]["HP"]) > 0, true, "the open-world sheet keeps the part")
 	_clear_save()
 	var wearer = Progress.new()
 	wearer.set_hero_class("kestrel")
@@ -563,7 +514,8 @@ func _test_mender_sets(book) -> void:
 	eq(hero.hero_class, "Mender", "Mender is stored as the display name")
 	var hits := 0
 	var parts := 0
-	for i in 800:
+	var tiers := {}
+	for i in 1500:
 		var drop: Dictionary = book.roll("mission", {
 			"level": 15,
 			"class_id": hero.hero_class,
@@ -574,16 +526,18 @@ func _test_mender_sets(book) -> void:
 			var item_id := str(item["item_id"])
 			if item_id == "mystery_box":
 				continue
-			var def: Dictionary = book.item(item_id)
-			var classes: Array = def.get("classes", [])
-			if classes.is_empty():
+			tiers[str(item["rarity"])] = true
+			var owner := Gear.owner_of(Gear.family_of(item_id))
+			if owner == "":
 				continue
 			parts += 1
-			if classes.has(hero.hero_class):
+			if owner == "mender":
 				hits += 1
-	eq(parts > 100, true, "rowanvale missions drop class parts")
+	eq(parts > 200, true, "missions drop class parts")
+	eq(tiers.keys().has("normal") and tiers.keys().has("rare"), true, "rank-3 missions pay Normal and Rare pieces")
+	eq(tiers.keys().has("legendary"), false, "missions never pay Legendary pieces")
 	var rate := float(hits) / float(parts)
-	eq(rate > 0.5 and rate < 0.7, true, "a Mender gets Mender sets near 60 percent (%.3f)" % rate)
+	eq(rate > 0.14 and rate < 0.26, true, "a Mender gets Mender sets about a fifth of the time (%.3f)" % rate)
 
 
 func _test_turn_in() -> void:
@@ -674,9 +628,9 @@ func _test_carry_limits() -> void:
 	var wearer = Progress.new()
 	wearer.set_hero_class("kestrel")
 	wearer.bag_slots = 1
-	var worn := _give(wearer, "kestrel_fledgling_head", "regular")
+	var worn := _give(wearer, "undertow.head", "normal")
 	eq(bool(wearer.equip_uid(worn).get("ok", false)), true, "a part equips before the bag is filled")
-	var incoming := _give(wearer, "kestrel_fledgling_head", "regular")
+	var incoming := _give(wearer, "undertow.head", "normal")
 	eq(wearer.bag.size(), wearer.bag_slots, "the bag is at its slot count")
 	var off: Dictionary = wearer.unequip("head")
 	eq(bool(off.get("ok", false)), false, "unequip refuses a full bag")
@@ -739,32 +693,6 @@ func _rows(n: int, start_uid: int) -> Array:
 			"upgrade": 0,
 		})
 	return rows
-
-
-func _expect_stats(set_def: Dictionary, count: int) -> Dictionary:
-	var stats := {"Mastery": 0, "Vitality": 0, "Swift": 0, "Resist": 0}
-	var regular: Dictionary = set_def["stats"]["regular"]
-	for stat in regular.keys():
-		stats[str(stat)] = int(stats[str(stat)]) + int(regular[stat]) * count
-	if count >= 2:
-		_add_stats(stats, set_def["bonuses"]["2"])
-	if count >= 3:
-		_add_stats(stats, set_def["bonuses"]["3"])
-	return stats
-
-
-func _add_stats(stats: Dictionary, block: Dictionary) -> void:
-	for stat in block.keys():
-		var name := str(stat)
-		stats[name] = int(stats.get(name, 0)) + int(block[stat])
-
-
-func _set_total(set_def: Dictionary) -> int:
-	return 5 * _sum(set_def["stats"]["regular"]) + _sum(set_def["bonuses"]["2"]) + _sum(set_def["bonuses"]["3"])
-
-
-func _full_budget(tier: int) -> int:
-	return int(round(98.0 * pow(1.3, (float(tier) - 50.0) / 10.0)))
 
 
 func _write_save(doc: Dictionary) -> void:

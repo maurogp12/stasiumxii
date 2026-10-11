@@ -15,6 +15,7 @@ extends SceneTree
 const Dungeons := preload("res://backend/world_dungeons.gd")
 const Monsters := preload("res://backend/pc_monsters.gd")
 const Run := preload("res://backend/pc_dungeon_run.gd")
+const Gear := preload("res://backend/pc_gear.gd")
 const AI := preload("res://backend/dungeon_ai.gd")
 const Atlas := preload("res://backend/world_atlas.gd")
 const NpcBook := preload("res://backend/world_npcs.gd")
@@ -895,19 +896,23 @@ func _test_rewards_per_star() -> void:
 		run.result = "win"
 		var rares := 0
 		var boxes := 0
+		var chests := 0
 		var trials := 30 if star < 5 else 10
 		var summary: Dictionary = {}
 		for t in trials:
 			var h = _fresh_hero()
 			var s2: Dictionary = run.pay_out(h, null, _rng(200 + t), false)
 			for item in s2["items"]:
-				if str(item.get("rarity", "")) == "rare":
+				# Room A's chest rolls the star row (no Rare below ★3).
+				if str(item.get("chest", "")) == "a" and str(item.get("rarity", "")) != "normal":
 					rares += 1
+				if Gear.is_valid_item_id(str(item.get("item_id", ""))):
+					chests += 1
 				if str(item.get("item_id", "")) == "mystery_box":
 					boxes += 1
 				var rarity := str(item.get("rarity", "regular"))
 				if star < 5:
-					eq(rarity in ["regular", "rare", "special", ""], true, "★%d drops no epic or relic (%s)" % [star, item.get("item_id", "")])
+					eq(rarity in ["regular", "normal", "rare", "legendary", "special", ""], true, "★%d drops no epic or relic (%s)" % [star, item.get("item_id", "")])
 				else:
 					eq(rarity != "relic" and (rarity != "epic" or str(item.get("item_id", "")) == "abbess_rosary"), true, "★5's only epic is the Rosary (%s)" % item.get("item_id", ""))
 				parts[str(item.get("item_id", ""))] = true
@@ -917,10 +922,10 @@ func _test_rewards_per_star() -> void:
 			base_coins = int(summary["coins"])
 		eq(int(summary["xp"]), base_xp * star, "★%d XP is %d x %d" % [star, base_xp, star])
 		eq(int(summary["coins"]), base_coins * star, "★%d coins are ★1 coins x %d" % [star, star])
+		eq(chests, trials * 2, "★%d every win pays two gear chests (room A, the boss)" % star)
 		if star < 3:
-			eq(rares, 0, "★%d drops no Rare part" % star)
+			eq(rares, 0, "★%d room A's chest is always Normal" % star)
 		if star == 5:
-			eq(rares >= trials, true, "★5 always drops a Rare part")
 			eq(boxes >= trials, true, "★5 always drops a Mystery Box")
 		var hero = _fresh_hero()
 		var s3: Dictionary = run.pay_out(hero, null, _rng(7), false)
@@ -934,9 +939,9 @@ func _test_rewards_per_star() -> void:
 	eq(base_coins > 0, true, "an abbey win pays coins (%d)" % base_coins)
 	var set_part := false
 	for id in parts.keys():
-		if str(id).begins_with("mire_abbess_"):
+		if Gear.is_valid_item_id(str(id)):
 			set_part = true
-	eq(set_part, true, "the abbey drops Mire Abbess set parts (the tier-30 set)")
+	eq(set_part, true, "the abbey drops mobile ladder set parts (pc_gear)")
 
 
 # --- the Abbess's Rosary (Mauro, 11 Oct 2026: "Si a todo") -------------------------
@@ -965,13 +970,16 @@ func _test_rosary() -> void:
 	for r in book.dungeons():
 		if str(r["id"]) == ABBEY:
 			row = r
-	eq([str(row["set_id"]), int(row["class_tier"]), int(row["coin_level"])], ["mire_abbess", 30, 30], "the abbey still pays the tier-30 sets at coin level 30")
+	eq(int(row["coin_level"]), 30, "the abbey still pays coin level 30")
+	eq(row.has("set_id") or row.has("class_tier"), false, "the abbey row names no old set: the gear chests pay the mobile ladder")
 	eq(row.has("guaranteed_split"), false, "the abbey keeps the even set split")
 	eq(str(row["star_drops"]["status"]), "proposed", "the Rosary drop is Proposed")
 	eq(str(book.item("abbess_rosary")["drop"]), "rolled", "the Rosary now drops")
 	eq(str(book.can_wear("abbess_rosary", "epic", 32, "Kestrel")["reason"]), "level", "a level-32 hero carries the Rosary until level 40")
 	eq(bool(book.can_wear("abbess_rosary", "epic", 40, "Kestrel")["ok"]), true, "a level-40 hero can wear it")
-	# ★1-★4 roll exactly as before the change (fingerprints taken at bdde0da4).
+	# Seeded ★1-★4 rewards are pinned. The pins were retaken when the mobile
+	# gear chests replaced the level-tier sets (claude/pc-mobile-gear): two
+	# chest pieces a win now use 6 draws before the box and star_drops draws.
 	var pins := ["21034a957321380bd749a0b8a9958031", "2263bade286b5286184a8f2a2e215ddc", "9670ce32a3d10b6a15ef794f8904f984", "345071c11b2bb6d34142c6b30e24c668"]
 	for star in range(1, 5):
 		var text := ""
