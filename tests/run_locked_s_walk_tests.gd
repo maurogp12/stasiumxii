@@ -139,12 +139,16 @@ func _test_no_skate() -> void:
 		check(absf(shown_stride - iron.foot_stride()) < 0.01, "Ironjaw %s has no foot slide" % gait)
 
 
-## Ironjaw is the dark-steel HD walk v7, cleaned.
+## Ironjaw's locked look is the dark-steel HD walk v7, cleaned. Since the
+## visible gear pilot the game draws his unarmoured paper-doll base on the same
+## locked rig (units/pc_gear_specs.gd); v7 stays in the locked table.
 func _test_ironjaw_v7() -> void:
-	var src := str(Painted.spec("ironjaw", "walk").get("source", ""))
-	check(src.contains("ironjaw_walk/v7") and src.contains("0f3eeb8"), "Ironjaw walks on the dark-steel v7 (%s)" % src)
+	var src := str(Specs.SPECS["ironjaw"]["walk"].get("source", ""))
+	check(src.contains("ironjaw_walk/v7") and src.contains("0f3eeb8"), "Ironjaw's locked walk is the dark-steel v7 (%s)" % src)
 	check(src.contains("art/ironjaw-walk-help"), "Ironjaw v7 is read from art/ironjaw-walk-help")
-	check(str(Painted.spec("ironjaw", "attack").get("source", "")).contains("claude/ironjaw-actions"), "Ironjaw actions are the locked dark-steel set")
+	check(str(Specs.SPECS["ironjaw"]["attack"].get("source", "")).contains("claude/ironjaw-actions"), "Ironjaw's locked actions are the dark-steel set")
+	var shown := str(Painted.spec("ironjaw", "walk").get("source", ""))
+	check(Painted.uses_gear_base("ironjaw") and shown.contains("paper doll base") and shown.contains("9d784a1"), "the game draws Ironjaw's paper-doll base on the locked rig (%s)" % shown)
 	var build := FileAccess.get_file_as_string("res://build_tools/pc_characters/build_pc_characters.py")
 	check(build.contains("\"clean\": True") and build.contains("def clean_frame"), "the build cleans the v7 pin holes and dark edge")
 	var gone := not ResourceLoader.exists("res://art/characters/world/ironjaw_tall/ironjaw_tall_walk_e.png") and not FileAccess.file_exists("res://art/characters/world/ironjaw_tall/ironjaw_tall.json")

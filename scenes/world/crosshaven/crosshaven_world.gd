@@ -243,6 +243,8 @@ func _ready() -> void:
 	walker.arrived.connect(_on_arrived)
 	walker.stepped.connect(func(_c): _refresh_hud())
 	add_child(walker)
+	# Visible gear: the hero's worn looks (units/gear_looks.gd worn_parts).
+	walker.set_gear_parts(walker.GearLooks.worn_parts())
 
 	camera = Camera2D.new()
 	camera.position_smoothing_enabled = true

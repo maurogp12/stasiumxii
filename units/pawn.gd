@@ -77,6 +77,8 @@ var painted_look: bool = false
 const VIEW_MOTION := preload("res://units/view_motion.gd")
 const STRIP_LIBRARY := preload("res://units/strip_library.gd")
 const PAINTED := preload("res://units/painted_looks.gd")
+const GEAR_LOOKS := preload("res://units/gear_looks.gd")
+const GEAR_STACK := preload("res://units/gear_stack.gd")
 
 const FACING_ISO := {
 	"N": Vector2(20, -10),
@@ -107,6 +109,12 @@ const SEAT_RING_RY := 7.0
 const NAME_GAP_ABOVE_HP := 2.0
 
 static var _sprite_cache: Dictionary = {}
+## Visible gear (painted look only): worn part ids and the stacks that draw
+## them on whichever body drawable (Sprite or a strip) is showing.
+var _gear_parts: Array = []
+var _gear_class := ""
+var _gear_looks: Dictionary = {}
+var _gear_stacks: Dictionary = {}
 
 
 ## Offset that stands this cell's ground point on the pawn origin. A painted
@@ -118,6 +126,66 @@ static func texture_pivot_offset(tex: Texture2D) -> Vector2:
 	var p: Vector2i = tex.get_meta(PAINTED.CELL_PIVOT_META)
 	var size := Vector2(float(tex.get_width()), float(tex.get_height()))
 	return Vector2(size.x * 0.5 - float(p.x), size.y * 0.5 - float(p.y))
+
+
+## Visible gear: the worn part ids (mobile ids "<family>.<slot>", or a slot ->
+## id Dictionary). Only the painted look draws them; parts without art for the
+## class draw nothing.
+func set_gear_parts(parts) -> void:
+	_gear_parts = (parts as Dictionary).values() if parts is Dictionary else (parts as Array).duplicate()
+	_gear_class = ""
+	_sync_gear()
+
+
+## Strip ids drawn on the body now, bottom to top ([] with nothing worn).
+func gear_strips() -> Array[String]:
+	var host := _gear_host()
+	if host == null:
+		return []
+	var st: Variant = _gear_stacks.get(host.get_instance_id(), null)
+	return st.shown_strips() if st != null else []
+
+
+func _process(_delta: float) -> void:
+	if not _gear_looks.is_empty() or (_gear_class == "" and not _gear_parts.is_empty()):
+		_sync_gear()
+
+
+func _gear_host() -> CanvasItem:
+	if _strip_holds_body and _active_strip != null and is_instance_valid(_active_strip) and _active_strip.visible:
+		return _active_strip
+	if _sprite != null and is_instance_valid(_sprite):
+		return _sprite
+	return null
+
+
+func _sync_gear() -> void:
+	if _gear_class != class_id:
+		_gear_class = class_id
+		_gear_looks = GEAR_LOOKS.looks_for(class_id, _gear_parts) if (painted_look and class_id != "") else {}
+		for st in _gear_stacks.values():
+			st.clear()
+		_gear_stacks.clear()
+	if _gear_looks.is_empty():
+		return
+	var host := _gear_host()
+	if host == null:
+		return
+	var key := host.get_instance_id()
+	var st: Variant = _gear_stacks.get(key, null)
+	if st == null:
+		st = GEAR_STACK.new(host, class_id)
+		st.set_looks(_gear_looks)
+		_gear_stacks[key] = st
+	var tex: Texture2D = null
+	if host is AnimatedSprite2D:
+		var strip := host as AnimatedSprite2D
+		if strip.sprite_frames != null and strip.sprite_frames.has_animation(strip.animation):
+			tex = strip.sprite_frames.get_frame_texture(strip.animation, strip.frame)
+		st.sync_cell(tex, strip.offset, strip.centered, strip.flip_h)
+	else:
+		var spr := host as Sprite2D
+		st.sync_cell(spr.texture, spr.offset, spr.centered, spr.flip_h)
 
 
 ## True when this pawn draws the painted sheets (flag on and the class has them).

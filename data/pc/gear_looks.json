@@ -1,0 +1,65 @@
+{
+  "format": "stasium.pc_gear_looks",
+  "format_version": 1,
+  "notes": "Visible gear (paper doll), PC. Looks only: which art strip a worn part draws. Keyed by the mobile gear part ids (backend/gear_bag.gd on origin/mobile: '<family>.<slot>'). Stats, drops and inventory live elsewhere. A class with 'enabled' draws its unarmoured base split by slot; every slot that has a worn look draws that look instead of the base strip of the slot. Strips are stacked in 'stack' order per art facing (S front, E back; W and N mirror them); every strip also has an optional '_back' part drawn first (pieces behind the body: the far arm in S). A worn part '<family>.<slot>' of a set listed in 'sets' (same class) draws the strip '<family>_<slot>' when the build made it (units/pc_gear_specs.gd STRIPS); a part with no strip draws nothing and the base shows.",
+  "slots": [
+    "weapon",
+    "head",
+    "chest",
+    "legs",
+    "boots"
+  ],
+  "stack": {
+    "S": [
+      "legs",
+      "boots",
+      "chest",
+      "head",
+      "weapon",
+      "skin"
+    ],
+    "E": [
+      "legs",
+      "boots",
+      "chest",
+      "head",
+      "weapon",
+      "skin"
+    ]
+  },
+  "classes": {
+    "ironjaw": {
+      "enabled": true,
+      "root": "res://art/characters/painted/ironjaw_gear/",
+      "base": "base",
+      "base_strips": {
+        "weapon": "base_weapon",
+        "head": "base_head",
+        "chest": "base_chest",
+        "legs": "base_legs",
+        "boots": "base_boots",
+        "skin": "base_skin"
+      }
+    }
+  },
+  "sets": {
+    "cragmaw": {
+      "name": "Cragmaw",
+      "tier": "Normal",
+      "class": "ironjaw",
+      "approved": false
+    },
+    "tyrantjaw": {
+      "name": "Tyrantjaw",
+      "tier": "Legendary",
+      "class": "ironjaw",
+      "approved": false
+    },
+    "pitmaw": {
+      "name": "Pitmaw",
+      "tier": "Ultra",
+      "class": "ironjaw",
+      "approved": false
+    }
+  }
+}

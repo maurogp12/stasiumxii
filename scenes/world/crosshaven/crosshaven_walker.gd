@@ -14,6 +14,8 @@ signal stepped(cell: Vector2i)
 signal arrived(cell: Vector2i)
 
 const Strips := preload("res://scenes/world/crosshaven/world_strips.gd")
+const GearLooks := preload("res://units/gear_looks.gd")
+const GearStack := preload("res://units/gear_stack.gd")
 var class_id := "ironjaw"
 const CORNER_CUT := 10.0
 ## Ease distance, in strides, so a shorter hero still eases over about one step.
@@ -46,6 +48,10 @@ var auto_advance := true
 var playback := 1.0
 
 var _sprite: Sprite2D
+## Visible gear (units/gear_stack.gd): the worn looks drawn on the body.
+var _gear = null
+var _shown_kind := "idle"
+var _shown_region := Rect2()
 var _strips
 var _queue: Array[Vector2i] = []
 var _moving := false
@@ -102,6 +108,7 @@ func _ready() -> void:
 	rim_mat.shader = load("res://scenes/world/crosshaven/crosshaven_rim.gdshader")
 	_rim.material = rim_mat
 	add_child(_rim)
+	_gear = GearStack.new(_sprite, class_id)
 	_apply_strip_speed()
 	_show_idle()
 
@@ -120,10 +127,31 @@ func use_class(id: String) -> void:
 	if _strips == null:
 		return
 	_strips.load_class(class_id)
+	if _gear != null:
+		_gear.clear()
+		_gear = GearStack.new(_sprite, class_id)
 	_apply_pivot(_strips.pivot)
 	_apply_strip_speed()
 	if not _moving:
 		_show_idle()
+
+
+## Visible gear: the worn part ids (mobile ids "<family>.<slot>", or a
+## slot -> id Dictionary). Parts without art for this class draw nothing.
+func set_gear_parts(parts) -> void:
+	if _gear == null:
+		return
+	_gear.set_looks(GearLooks.looks_for(class_id, parts))
+	_sync_gear()
+
+
+## Strip ids drawn on the body now, bottom to top ([] with nothing worn).
+func gear_strips() -> Array[String]:
+	return _gear.shown_strips() if _gear != null else []
+
+
+func gear_stack():
+	return _gear
 
 
 func frame_count(gait: String, dir: String) -> int:
@@ -615,6 +643,7 @@ func _apply_gait(root: Vector2) -> void:
 	position = _visual
 	var sc: float = _strips.draw_scale(gait, facing)
 	_apply_pivot(_strips.draw_pivot(gait, facing))
+	_shown_kind = "walk"
 	_present(tex, true, Rect2(frame * cell_size.x, 0, cell_size.x, cell_size.y), Vector2(sc, sc), Vector2.ZERO, _strips.flipped(facing))
 	queue_redraw()
 
@@ -629,6 +658,7 @@ func _show_idle() -> void:
 		var cell: Vector2i = _strips.frame_size_of("idle", facing)
 		var sc: float = _strips.draw_scale("idle", facing)
 		_apply_pivot(_strips.draw_pivot("idle", facing))
+		_shown_kind = "idle"
 		_present(_strips.texture("idle", facing), true, Rect2((frame % count) * cell.x, 0, cell.x, cell.y), Vector2(sc, sc), Vector2.ZERO, _strips.flipped(facing))
 	_visual = position
 	_bob = 0.0
@@ -669,7 +699,22 @@ func _present(tex: Texture2D, region_on: bool, region: Rect2, sc: Vector2, foot:
 		_sprite.region_rect = region
 	_sprite.scale = sc
 	_sprite.position = foot
+	_shown_region = region
+	_sync_gear()
 	_sync_rim()
+
+
+func _sync_gear() -> void:
+	if _gear == null or _sprite == null:
+		return
+	if not _gear.is_active():
+		_gear.sync_region(_shown_kind, "S", _shown_region, false, _sprite.offset)
+		return
+	_gear.sync_region(_shown_kind, _art_of(facing), _shown_region, _sprite.flip_h, _sprite.offset, _sprite.centered)
+
+
+static func _art_of(dir: String) -> String:
+	return GearLooks.PAINTED.art_letter(dir)
 
 
 func _sync_rim() -> void:
@@ -688,6 +733,10 @@ func _sync_rim() -> void:
 
 
 func _begin_fade() -> void:
+	# Worn gear: the strips swap with the body on the same frame; a fade of
+	# the bare base under them would flash the tunic.
+	if _gear != null and _gear.is_active():
+		return
 	_fade.texture = _sprite.texture
 	_fade.flip_h = _sprite.flip_h
 	_fade.region_enabled = _sprite.region_enabled

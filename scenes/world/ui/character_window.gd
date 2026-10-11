@@ -5,10 +5,14 @@ extends CanvasLayer
 ## Loaded with preload. No global class.
 
 const Painted := preload("res://units/painted_looks.gd")
+const GearLooks := preload("res://units/gear_looks.gd")
+const GearStack := preload("res://units/gear_stack.gd")
 
 var _portrait: TextureRect
 var _who: Label
 var _portrait_class := ""
+## Visible gear on the portrait (the worn looks over the front idle).
+var _portrait_gear = null
 
 var progress = null
 var _root: Control
@@ -68,6 +72,23 @@ func _sync_portrait() -> void:
 		first.region = Rect2(Vector2.ZERO, Vector2(cell))
 		_portrait.texture = first
 	_who.text = "Hero\n%s" % cls.capitalize()
+	refresh_gear()
+
+
+## Re-stack the worn looks on the portrait (call after the gear changes).
+func refresh_gear(parts = null) -> void:
+	if _portrait == null or _portrait_class == "":
+		return
+	if _portrait_gear == null or _portrait_gear.class_id != _portrait_class:
+		if _portrait_gear != null:
+			_portrait_gear.clear()
+		_portrait_gear = GearStack.new(_portrait, _portrait_class)
+	_portrait_gear.set_looks(GearLooks.looks_for(_portrait_class, GearLooks.worn_parts() if parts == null else parts))
+	_portrait_gear.sync_portrait()
+
+
+func portrait_gear():
+	return _portrait_gear
 
 
 func ensure_built() -> void:

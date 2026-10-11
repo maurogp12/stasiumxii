@@ -16,6 +16,7 @@ signal room_over(result: String)
 signal turn_changed(seat: int)
 
 const AI := preload("res://backend/dungeon_ai.gd")
+const GEAR_LOOKS := preload("res://units/gear_looks.gd")
 const Art := preload("res://scenes/world/dungeon/dungeon_art.gd")
 const DungeonTile := preload("res://scenes/world/dungeon/dungeon_tile.gd")
 const MonsterPawn := preload("res://scenes/world/dungeon/monster_pawn.gd")
@@ -500,6 +501,8 @@ func _add_pawn(unit: Dictionary) -> Pawn:
 		# The hero plays the locked painted idle, walk, attack, skill, hit
 		# and death of its class (units/painted_looks.gd).
 		pawn.painted_look = true
+		# Visible gear: the hero's worn looks on the painted body.
+		pawn.set_gear_parts(GEAR_LOOKS.worn_parts())
 	$Units.add_child(pawn)
 	pawns_by_seat[int(unit["seat"])] = pawn
 	return pawn
