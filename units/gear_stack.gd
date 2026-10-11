@@ -42,7 +42,10 @@ func set_looks(next: Dictionary) -> void:
 func clear() -> void:
 	for n in _nodes.values():
 		if is_instance_valid(n):
-			(n as Node).queue_free()
+			var node := n as Node
+			if node.get_parent() != null:
+				node.get_parent().remove_child(node)
+			node.queue_free()
 	_nodes.clear()
 	_show_host(true)
 
