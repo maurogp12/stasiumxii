@@ -234,3 +234,125 @@ class Backdrop extends Node2D:
 				var q := top.lerp(right, t3) + Vector2(0, -wall_h * 0.4)
 				draw_line(q + Vector2(-10, -30), q + Vector2(6, 26), Color(0.45, 0.31, 0.16), 3.0)
 				draw_line(q + Vector2(-10, -30), q + Vector2(-26, -20), Color(0.75, 0.77, 0.8), 3.0)
+
+
+## A Root Wall cell (the Heart of the Blight's signature): it rises (the kit's
+## `rise` strip, after `delay`), stands (`idle`, its glow pulsing) and
+## withers (`wither`, then frees itself). Drawn stand-in without the kit:
+## gnarled roots with violet veins (run.json view.walls.<prop> bark / vein).
+class WallProp extends Node2D:
+	var kind := "root_wall"
+	var cell := Vector2i.ZERO
+	var kit: Dictionary = {}
+	var bark := Color(0.33, 0.22, 0.16)
+	var vein := Color(0.75, 0.35, 1.0)
+	var state := "rise"
+	var _t := 0.0
+	var _delay := 0.0
+	var _glow: Node2D
+
+	func setup(prop_kind: String, at: Vector2i, art: Dictionary, style: Dictionary, delay: float) -> void:
+		kind = prop_kind
+		cell = at
+		kit = art
+		name = "Wall_%s_%d_%d" % [kind, at.x, at.y]
+		bark = _c(style.get("bark", null), bark)
+		vein = _c(style.get("vein", null), vein)
+		_delay = maxf(delay, 0.0)
+		visible = _delay <= 0.0
+		_glow = Node2D.new()
+		var mat := CanvasItemMaterial.new()
+		mat.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
+		_glow.material = mat
+		_glow.draw.connect(_draw_glow)
+		add_child(_glow)
+
+	## The wall goes: play the wither strip, then free.
+	func wither() -> void:
+		if state == "wither":
+			return
+		state = "wither"
+		_t = 0.0
+		visible = true
+
+	func standing() -> bool:
+		return state != "wither"
+
+	func _process(delta: float) -> void:
+		if _delay > 0.0:
+			_delay -= delta
+			if _delay > 0.0:
+				return
+			visible = true
+		_t += delta
+		var n := _strip(state).size()
+		var length := float(n) / maxf(float(kit.get("fps", 17.144)), 1.0) if n > 0 else 0.4
+		if state == "rise" and _t >= length:
+			state = "idle"
+			_t = 0.0
+		elif state == "wither" and _t >= length:
+			queue_free()
+			return
+		queue_redraw()
+		_glow.queue_redraw()
+
+	func _strip(which: String) -> Array:
+		var s: Variant = kit.get(which, [])
+		return s if typeof(s) == TYPE_ARRAY else []
+
+	func _frame_of(list: Array) -> Texture2D:
+		if list.is_empty():
+			return null
+		var i := clampi(int(_t * float(kit.get("fps", 17.144))), 0, list.size() - 1)
+		return list[i]
+
+	func _current() -> Texture2D:
+		var t := _frame_of(_strip(state))
+		if t == null:
+			t = _frame_of(_strip("idle"))
+		if t == null:
+			t = kit.get("tex", null)
+		return t
+
+	func _current_glow() -> Texture2D:
+		var t := _frame_of(_strip(state + "_glow"))
+		if t == null:
+			t = _frame_of(_strip("idle_glow"))
+		if t == null:
+			t = kit.get("glow", null)
+		return t
+
+	func _rect(t: Texture2D) -> Rect2:
+		var size := t.get_size()
+		return Rect2(Vector2(-size.x * 0.5, 16.0 - size.y + float(kit.get("lift", 0.0))), size)
+
+	func _draw() -> void:
+		var t := _current()
+		if t != null:
+			draw_texture_rect(t, _rect(t), false)
+			return
+		# Stand-in: roots that grow up (rise) and sink (wither).
+		var grow := 1.0
+		if state == "rise":
+			grow = clampf(_t / 0.35, 0.05, 1.0)
+		elif state == "wither":
+			grow = clampf(1.0 - _t / 0.4, 0.0, 1.0)
+		draw_colored_polygon(PackedVector2Array([Vector2(0, -12), Vector2(26, 0), Vector2(0, 13), Vector2(-26, 0)]), Color(0, 0, 0, 0.3))
+		for k in 5:
+			var x := -18.0 + 9.0 * float(k)
+			var h := (34.0 + 14.0 * float((k * 7) % 3)) * grow
+			var lean := 6.0 * sin(float(k) * 1.7)
+			draw_line(Vector2(x, 6), Vector2(x + lean, 6 - h), bark, 7.0)
+			draw_line(Vector2(x, 6), Vector2(x + lean * 0.8, 6 - h * 0.8), vein, 1.6)
+
+	func _draw_glow() -> void:
+		var g := _current_glow()
+		if g == null:
+			return
+		var pulse := 1.0 if state != "idle" else 0.6 + 0.4 * (0.5 + 0.5 * sin(_t * TAU / 1.6))
+		_glow.draw_texture_rect(g, _rect(g), false, Color(1, 1, 1, pulse))
+
+	static func _c(v: Variant, fallback: Color) -> Color:
+		if typeof(v) != TYPE_ARRAY or (v as Array).size() < 3:
+			return fallback
+		return Color(float(v[0]), float(v[1]), float(v[2]), float(v[3]) if (v as Array).size() > 3 else 1.0)

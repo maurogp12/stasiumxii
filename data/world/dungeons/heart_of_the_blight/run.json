@@ -1,0 +1,562 @@
+{
+  "format": "stasium.dungeon_run",
+  "format_version": 1,
+  "status": "proposed",
+  "dungeon": "heart_of_the_blight",
+  "board_size": 12,
+  "art": "res://art/pc/dungeons/heart_of_the_blight/manifest.json",
+  "pads": {
+    "kind": "buff",
+    "effect": "heal",
+    "amount": 5,
+    "thaw": true,
+    "thaw_text": "The blight pad's glow cleanses {name}: nothing lost this turn.",
+    "who": "hero",
+    "note": "Violet blight pads (room A) and the root rune circle (room B): the hero heals 5 HP when a turn starts on one, and that turn keeps its full MP and AP (the glow cleanses the crystal's grip and the bloom's). Root walls never rise on a pad. Monsters get nothing."
+  },
+  "between_rooms": {
+    "heal": "full",
+    "note": "A short rest on the root stair between room A and room B."
+  },
+  "text": {
+    "town": "Westwatch",
+    "stairs": "Down the root stair, toward a slow violet heartbeat...",
+    "victory": "{dungeon} is cleared at ★{star}. {boss} is down.",
+    "defeat": "The roots close over you. No rewards this time.",
+    "return": "You climb back out of the stump into Westwatch.",
+    "return_button": "Return to Westwatch",
+    "pads": "Blight pads: +{amount} HP, and no MP or AP lost, when your turn starts on one",
+    "keeper_hint": "The Elder walls you in with roots. Keep a way out.",
+    "star_notes": {
+      "5": "The Crystal Colossus and his Crystal Bloom. A Rare part and a Mystery Box for sure."
+    },
+    "showcase_title": "Heart of the Blight\nMonsters",
+    "showcase_sub": "Blight Hound · Blight Horror · The Rotting Elder\n★5: Crystal Hound · Crystal Horror · The Crystal Colossus",
+    "signature_rule": "Root Wall: on his 1st turn and every 3rd after, the Rotting Elder drives his staff down and roots burst up on 3 cells next to you, the side away from him first. They block walking and lines of sight until you have ended 2 turns, then wither. They never rise on a pad and never seal anyone in. Hide behind them from the horrors' spores.",
+    "star5_rule": "★5: the violet crystal has eaten the Elder: the Crystal Colossus, a crystal golem with a crystal spear-staff. His Crystal Wall raises 4 cells of crystal-veined roots, and from his 1st turn every other turn his crystal heart pulses a Crystal Bloom: 2-3 crystal pods swell round you (your cell first). When you end your next turn they shatter: on or next to a pod, 6 damage and crystallised (2 AP less next turn). Pods do not block; step two cells clear. Crystal Horrors' shards crystallise (1 AP less next turn). Blight pads and the rune circle cleanse it.",
+    "b_still": "04_room_b_elder.png",
+    "boss_star5": "The Crystal Colossus"
+  },
+  "view": {
+    "light": [
+      0.95,
+      0.9,
+      1.0,
+      1.0
+    ],
+    "monster_glow": 0.8,
+    "pads": {
+      "blight_pad": {
+        "color": [
+          0.78,
+          0.42,
+          1.0
+        ],
+        "mark": "sprout"
+      },
+      "root_rune_circle": {
+        "color": [
+          0.82,
+          0.4,
+          1.0
+        ],
+        "decal": true,
+        "mark": "rune",
+        "glow": true
+      }
+    },
+    "hazard": {
+      "crystal_bloom": {
+        "color": [
+          0.36,
+          0.14,
+          0.5
+        ],
+        "bubble": [
+          0.85,
+          0.6,
+          1.0,
+          0.9
+        ],
+        "ring": [
+          0.8,
+          0.5,
+          1.0
+        ],
+        "ring_width": 3.5,
+        "text_color": [
+          1.0,
+          0.92,
+          1.0
+        ],
+        "splash": [
+          0.75,
+          0.45,
+          1.0,
+          0.28
+        ]
+      }
+    },
+    "walls": {
+      "root_wall": {
+        "bark": [
+          0.33,
+          0.22,
+          0.16
+        ],
+        "vein": [
+          0.75,
+          0.35,
+          1.0
+        ]
+      },
+      "crystal_wall": {
+        "bark": [
+          0.3,
+          0.2,
+          0.3
+        ],
+        "vein": [
+          0.85,
+          0.6,
+          1.0
+        ]
+      }
+    },
+    "projectiles": {
+      "spore_bolt": {
+        "color": [
+          0.72,
+          0.4,
+          0.95
+        ],
+        "spin": false,
+        "draw_glow": false
+      },
+      "crystal_shard": {
+        "color": [
+          0.85,
+          0.6,
+          1.0
+        ],
+        "glow": [
+          0.8,
+          0.55,
+          1.0,
+          0.35
+        ],
+        "spin": true,
+        "draw_glow": false
+      },
+      "spore_impact": {
+        "color": [
+          0.75,
+          0.45,
+          1.0
+        ]
+      },
+      "crystal_shard_impact": {
+        "color": [
+          0.85,
+          0.65,
+          1.0
+        ]
+      },
+      "root_crack": {
+        "color": [
+          0.78,
+          0.4,
+          1.0
+        ]
+      },
+      "crystal_bloom_burst": {
+        "color": [
+          0.95,
+          0.4,
+          0.85
+        ]
+      }
+    },
+    "door": {
+      "shape": "tower",
+      "wall": [
+        0.3,
+        0.22,
+        0.18
+      ],
+      "roof": [
+        0.24,
+        0.16,
+        0.2
+      ],
+      "glow": [
+        0.75,
+        0.35,
+        1.0
+      ],
+      "still_from_door": [
+        3,
+        1
+      ],
+      "movie_from_door": [
+        0,
+        5
+      ],
+      "back_from_door": [
+        0,
+        3
+      ]
+    },
+    "showcase": [
+      [
+        "blight_hound",
+        1,
+        11,
+        false
+      ],
+      [
+        "blight_horror",
+        3,
+        9,
+        false
+      ],
+      [
+        "crystal_hound",
+        7,
+        5,
+        false
+      ],
+      [
+        "crystal_horror",
+        9,
+        3,
+        false
+      ],
+      [
+        "rotting_elder",
+        0,
+        4,
+        true
+      ],
+      [
+        "crystal_colossus",
+        4,
+        0,
+        true
+      ]
+    ],
+    "showcase_zoom": 1.8,
+    "floor": {
+      "base": [
+        0.22,
+        0.17,
+        0.22
+      ],
+      "seam": [
+        0.1,
+        0.06,
+        0.1,
+        0.9
+      ],
+      "edge": [
+        0.06,
+        0.04,
+        0.06,
+        0.95
+      ],
+      "fleck": [
+        0.8,
+        0.45,
+        1.0,
+        0.5
+      ]
+    },
+    "still_wait": {
+      "1": [
+        "walls"
+      ],
+      "5": [
+        "walls",
+        "pools"
+      ]
+    }
+  },
+  "rooms": [
+    {
+      "id": "room_a",
+      "name": "The Rotting Hollow",
+      "kind": "pack",
+      "tags": "res://data/world/dungeons/heart_of_the_blight/room_a_tags.json",
+      "hero": {
+        "x": 6,
+        "y": 10,
+        "facing": "N"
+      },
+      "monsters": [
+        {
+          "monster": "blight_hound",
+          "x": 2,
+          "y": 2,
+          "facing": "S"
+        },
+        {
+          "monster": "blight_hound",
+          "x": 4,
+          "y": 1,
+          "facing": "S"
+        },
+        {
+          "monster": "blight_hound",
+          "x": 8,
+          "y": 1,
+          "facing": "S"
+        },
+        {
+          "monster": "blight_hound",
+          "x": 10,
+          "y": 3,
+          "facing": "S"
+        },
+        {
+          "monster": "blight_horror",
+          "x": 1,
+          "y": 0,
+          "facing": "S"
+        },
+        {
+          "monster": "blight_horror",
+          "x": 10,
+          "y": 0,
+          "facing": "S"
+        }
+      ],
+      "note": "packs: the pack for the highest key at or below the star. monsters is the ★1 pack. Spawns on the far rows (y 0-4), off the blight pads, away from the hero (6,10); root knots, the root mound and violet crystals on the middle rows break the Blight Horrors' lines.",
+      "packs": {
+        "1": [
+          {
+            "monster": "blight_hound",
+            "x": 2,
+            "y": 2,
+            "facing": "S"
+          },
+          {
+            "monster": "blight_hound",
+            "x": 4,
+            "y": 1,
+            "facing": "S"
+          },
+          {
+            "monster": "blight_hound",
+            "x": 8,
+            "y": 1,
+            "facing": "S"
+          },
+          {
+            "monster": "blight_hound",
+            "x": 10,
+            "y": 3,
+            "facing": "S"
+          },
+          {
+            "monster": "blight_horror",
+            "x": 1,
+            "y": 0,
+            "facing": "S"
+          },
+          {
+            "monster": "blight_horror",
+            "x": 10,
+            "y": 0,
+            "facing": "S"
+          }
+        ],
+        "2": [
+          {
+            "monster": "blight_hound",
+            "x": 2,
+            "y": 2,
+            "facing": "S"
+          },
+          {
+            "monster": "blight_hound",
+            "x": 4,
+            "y": 1,
+            "facing": "S"
+          },
+          {
+            "monster": "blight_hound",
+            "x": 8,
+            "y": 1,
+            "facing": "S"
+          },
+          {
+            "monster": "blight_hound",
+            "x": 10,
+            "y": 3,
+            "facing": "S"
+          },
+          {
+            "monster": "blight_horror",
+            "x": 1,
+            "y": 0,
+            "facing": "S"
+          },
+          {
+            "monster": "blight_horror",
+            "x": 10,
+            "y": 0,
+            "facing": "S"
+          },
+          {
+            "monster": "blight_horror",
+            "x": 5,
+            "y": 0,
+            "facing": "S"
+          }
+        ],
+        "5": [
+          {
+            "monster": "crystal_hound",
+            "x": 2,
+            "y": 2,
+            "facing": "S"
+          },
+          {
+            "monster": "crystal_hound",
+            "x": 4,
+            "y": 1,
+            "facing": "S"
+          },
+          {
+            "monster": "crystal_hound",
+            "x": 8,
+            "y": 1,
+            "facing": "S"
+          },
+          {
+            "monster": "crystal_hound",
+            "x": 10,
+            "y": 3,
+            "facing": "S"
+          },
+          {
+            "monster": "crystal_horror",
+            "x": 7,
+            "y": 0,
+            "facing": "S"
+          },
+          {
+            "monster": "crystal_horror",
+            "x": 1,
+            "y": 0,
+            "facing": "S"
+          },
+          {
+            "monster": "crystal_horror",
+            "x": 10,
+            "y": 0,
+            "facing": "S"
+          },
+          {
+            "monster": "crystal_horror",
+            "x": 5,
+            "y": 0,
+            "facing": "S"
+          }
+        ]
+      }
+    },
+    {
+      "id": "room_b",
+      "name": "The Elder's Heart",
+      "kind": "boss",
+      "tags": "res://data/world/dungeons/heart_of_the_blight/room_b_tags.json",
+      "hero": {
+        "x": 6,
+        "y": 10,
+        "facing": "N"
+      },
+      "monsters": [
+        {
+          "monster": "rotting_elder",
+          "x": 6,
+          "y": 2,
+          "facing": "S"
+        },
+        {
+          "monster": "blight_hound",
+          "x": 4,
+          "y": 2,
+          "facing": "S"
+        },
+        {
+          "monster": "blight_hound",
+          "x": 8,
+          "y": 2,
+          "facing": "S"
+        },
+        {
+          "monster": "blight_horror",
+          "x": 6,
+          "y": 0,
+          "facing": "S"
+        }
+      ],
+      "note": "The Rotting Elder with his escort (2 Blight Hounds, 1 Blight Horror) behind the root rune circle. His Root Wall hems the hero in; the crystal spires on the circle's corners break the horror's line.",
+      "packs": {
+        "1": [
+          {
+            "monster": "rotting_elder",
+            "x": 6,
+            "y": 2,
+            "facing": "S"
+          },
+          {
+            "monster": "blight_hound",
+            "x": 4,
+            "y": 2,
+            "facing": "S"
+          },
+          {
+            "monster": "blight_hound",
+            "x": 8,
+            "y": 2,
+            "facing": "S"
+          },
+          {
+            "monster": "blight_horror",
+            "x": 6,
+            "y": 0,
+            "facing": "S"
+          }
+        ],
+        "5": [
+          {
+            "monster": "crystal_colossus",
+            "x": 6,
+            "y": 2,
+            "facing": "S"
+          },
+          {
+            "monster": "crystal_hound",
+            "x": 4,
+            "y": 2,
+            "facing": "S"
+          },
+          {
+            "monster": "crystal_hound",
+            "x": 8,
+            "y": 2,
+            "facing": "S"
+          },
+          {
+            "monster": "crystal_horror",
+            "x": 6,
+            "y": 0,
+            "facing": "S"
+          }
+        ]
+      }
+    }
+  ]
+}

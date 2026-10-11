@@ -73,12 +73,35 @@ ROOMS = {
               "units": [("mire_abbess", "S", (7, 3)), ("bog_dead", "S", (5, 4)), ("mire_leech", "S", (10, 4)),
                         ("hero:kestrel", "E", (6, 12)), ("hero:bastion", "E", (9, 12))]},
     },
+    "heart_of_the_blight": {
+        "a": {"title": "Room A: the blighted crypt (15x15 board, 1 board px = 1 screen px)", "backdrop": "room_a_crypt_15x15",
+              "pads": [(3, 4), (8, 2), (12, 6), (4, 11), (10, 10), (7, 13)],
+              "decals": [("root_veins", (2, 6)), ("root_veins", (9, 8)), ("root_veins", (13, 3)), ("root_veins", (6, 12)), ("root_veins", (11, 12))],
+              "props": [("root_mound", (5, 5)), ("root_knot", (10, 4)), ("violet_crystals", (11, 7)), ("bone_pile", (6, 9)),
+                        ("fungus_clump", (2, 8)), ("violet_crystals", (13, 11)), ("root_knot", (1, 13)), ("bone_pile", (8, 13)),
+                        ("fungus_clump", (7, 1)), ("root_knot", (3, 2))],
+              "star5_decals": [("crystal_bloom", (9, 6)), ("crystal_bloom", (5, 10))],
+              "units": [("blight_hound", "S", (7, 8)), ("blight_horror", "S", (9, 2)), ("blight_horror", "S", (4, 7)),
+                        ("blight_hound", "S", (12, 8)), ("blight_hound", "S", (3, 3)), ("blight_horror", "E", (11, 11)),
+                        ("hero:kestrel", "E", (8, 11)), ("hero:bastion", "E", (5, 12))]},
+        "b": {"title": "Room B: the Rotting Elder's heart chamber (15x15)", "backdrop": "room_b_heart_15x15",
+              "pads": [(2, 7), (12, 7), (7, 12)],
+              "decals": [("root_rune_circle", (5, 5)), ("root_veins", (3, 10)), ("root_veins", (11, 3)), ("root_veins", (12, 11))],
+              "props": [("crystal_spire", (5, 1)), ("crystal_spire", (10, 1)), ("blight_eggs", (1, 2)), ("chained_cocoon", (13, 1)),
+                        ("broken_masonry", (12, 5)), ("bone_pile", (3, 12)), ("violet_crystals", (13, 9)), ("root_knot", (1, 8)),
+                        ("violet_crystals", (4, 5)), ("blight_eggs", (10, 9)), ("root_wall", (4, 9)), ("root_wall", (10, 8))],
+              "star5_decals": [("crystal_bloom", (3, 8)), ("crystal_bloom", (11, 6))],
+              "units": [("rotting_elder", "S", (7, 3)), ("blight_hound", "S", (4, 6)), ("blight_horror", "S", (11, 5)),
+                        ("hero:kestrel", "E", (6, 12)), ("hero:bastion", "E", (9, 12))]},
+    },
 }
 STAR5_REP = {
     "frostspire_archive": {"the_pale_archivist": "the_frozen_archivist", "ice_construct": "frozen_ice_construct", "book_wraith": "frozen_book_wraith"},
     "saltmaw_grotto": {"old_saltmaw": "abyssal_saltmaw", "reef_crab": "abyssal_reef_crab", "drowned_sailor": "abyssal_drowned_sailor",
                        "drowned_harpooner": "abyssal_drowned_harpooner"},
     "drowned_abbey": {"mire_abbess": "bell_wraith", "bog_dead": "bellbound_bog_dead", "mire_leech": "bellbound_mire_leech"},
+    "heart_of_the_blight": {"rotting_elder": "crystal_colossus", "blight_hound": "crystal_hound", "blight_horror": "crystal_horror",
+                            "root_wall": "crystal_wall"},
 }
 
 
@@ -107,6 +130,9 @@ class Kit:
         b = self.man["board"]
         self.props = {p["id"]: p for p in b["props"]}
         self.decals = {d["id"]: d for d in b["decals"]}
+        s5b = self.man.get("star5", {}).get("board", {})  # star-5 board pieces (props, decals) for the --star5 mock
+        self.props.update({p["id"]: p for p in s5b.get("props", [])})
+        self.decals.update({d["id"]: d for d in s5b.get("decals", []) if "footprint_size" in d})
         self.backdrops = {d["id"]: d for d in b["backdrops"]}
         self.star5 = star5
 
@@ -170,7 +196,9 @@ def render(kit, room, n=15):
         pos = (O[0] + cx - im.width // 2, O[1] + cy + 16 - im.height)
         can.alpha_composite(im, pos)
         if os.path.exists(os.path.join(gkit.OUT, d["file"].replace(".png", "_glow.png"))):  # lily_pads has no glow
-            can = add(can, kit.load(d["file"].replace(".png", "_glow.png")), pos)
+            gl = kit.load(d["file"].replace(".png", "_glow.png"))
+            gpos = pos if gl.size == im.size else (pos[0] + (im.width - gl.width) // 2, pos[1] + (im.height - gl.height) // 2 - 4)
+            can = add(can, gl, gpos)
     for (x, y) in pads:
         cx, cy = c2l(x, y)
         can = add(can, pad_glow, (O[0] + cx - 48, O[1] + cy - 32))
@@ -215,8 +243,8 @@ def main(did, star5=False):
         for r in rooms.values():
             r["units"] = [(rep.get(k, k), f, tuple(c)) for k, f, c in r["units"]]
             r["pads"] = [tuple(p) for p in r["pads"]]
-            r["props"] = [(p, tuple(c)) for p, c in r["props"]]
-            r["decals"] = [(d, tuple(c)) for d, c in r.get("decals", [])]
+            r["props"] = [(rep.get(p, p), tuple(c)) for p, c in r["props"]]
+            r["decals"] = [(d, tuple(c)) for d, c in r.get("decals", []) + r.get("star5_decals", [])]
             r["title"] += " - star 5"
     a = render(kit, rooms["a"])
     b = render(kit, rooms["b"])

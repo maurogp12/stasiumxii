@@ -38,6 +38,21 @@ var _pool_glow: Sprite2D
 ## (run.json view.hazard.<id>: color, bubble, ring, text_color).
 var pool_hazard := "toxic_pool"
 var pool_style: Dictionary = {}
+## A fused pod's swell loop (the blight's crystal_bloom): frames cycled
+## instead of the still decal, when the kit has them.
+var pool_swell: Dictionary = {}
+## In the splash of a pod bursting when the hero's turn ends (drawn tint).
+var danger := false
+var danger_color := Color(0.85, 0.3, 0.8, 0.28)
+
+
+func set_danger(on: bool, color: Color = Color(0.85, 0.3, 0.8, 0.28)) -> void:
+	if on == danger and color == danger_color:
+		return
+	danger = on
+	danger_color = color
+	set_process(pool or self.pad or _decal_glow_node != null or danger)
+	queue_redraw()
 
 
 func set_pool(on: bool, turns: int, man: Dictionary, hazard: String = "toxic_pool", style: Dictionary = {}) -> void:
@@ -53,8 +68,10 @@ func set_pool(on: bool, turns: int, man: Dictionary, hazard: String = "toxic_poo
 	pool = on
 	pool_turns = turns
 	if on and pool_tex == null:
-		var kit: Dictionary = load("res://scenes/world/dungeon/dungeon_art.gd").pool_kit(man, hazard)
+		var art_script = load("res://scenes/world/dungeon/dungeon_art.gd")
+		var kit: Dictionary = art_script.pool_kit(man, hazard)
 		pool_tex = kit.get("tex", null)
+		pool_swell = art_script.swell_kit(man, hazard)
 		if kit.get("glow", null) != null and _pool_glow == null:
 			_pool_glow = Sprite2D.new()
 			_pool_glow.texture = kit["glow"]
@@ -130,6 +147,9 @@ func set_pad_glow(tex: Texture2D, scale_by: float) -> void:
 
 
 func _process(delta: float) -> void:
+	if danger and not pool:
+		_pool_t += delta
+		queue_redraw()
 	if pool:
 		_pool_t += delta
 		if _pool_glow != null:
@@ -165,6 +185,11 @@ func _draw() -> void:
 		_draw_cut(self, decal_tex)
 	elif pad:
 		_draw_pad(pts)
+	if danger and not pool:
+		var pulse := 0.6 + 0.4 * sin(_pool_t * 5.0)
+		var fill := danger_color
+		fill.a *= pulse
+		draw_colored_polygon(pts, fill)
 	if pool:
 		_draw_pool(pts)
 
@@ -234,6 +259,11 @@ func _draw_pad(pts: PackedVector2Array) -> void:
 			var top := -7.0 if k == 0 else -4.0
 			draw_line(Vector2(x, 5), Vector2(x, top), core, 2.2)
 			draw_circle(Vector2(x, top - 2.5), 1.6 + 0.6 * pulse, core.lightened(0.3))
+	elif mark == "sprout":
+		# A sprout with two leaves (the blight's pulse pad).
+		draw_line(Vector2(0, 6), Vector2(0, -6), core, 1.8)
+		draw_colored_polygon(PackedVector2Array([Vector2(0, -2), Vector2(-9, -7), Vector2(-3, 1)]), core)
+		draw_colored_polygon(PackedVector2Array([Vector2(0, -2), Vector2(9, -7), Vector2(3, 1)]), core)
 	elif mark == "coral":
 		# A small coral branch.
 		draw_line(Vector2(0, 5), Vector2(0, -6), core, 1.8)
@@ -257,7 +287,18 @@ func _draw_pad(pts: PackedVector2Array) -> void:
 
 func _draw_pool(pts: PackedVector2Array) -> void:
 	var pulse := 0.5 + 0.5 * sin(_pool_t * 4.0 + float(grid_position.x))
-	if pool_tex != null:
+	var swell: Array = pool_swell.get("frames", [])
+	if not swell.is_empty():
+		# The pod breathes (its swell loop), fading in over 0.3 s.
+		var i := int(_pool_t * float(pool_swell.get("fps", 10.0))) % swell.size()
+		var ft: Texture2D = swell[i]
+		var fsz := ft.get_size()
+		var fh := 64.0 * fsz.y / maxf(fsz.x, 1.0)
+		draw_texture_rect(ft, Rect2(-32, -fh * 0.5, 64, fh), false, Color(1, 1, 1, minf(_pool_t / 0.3, 1.0)))
+		var glows: Array = pool_swell.get("glows", [])
+		if not glows.is_empty() and _pool_glow != null:
+			_pool_glow.texture = glows[i % glows.size()]
+	elif pool_tex != null:
 		var size := pool_tex.get_size()
 		var h := 64.0 * size.y / maxf(size.x, 1.0)
 		draw_texture_rect(pool_tex, Rect2(-32, -h * 0.5, 64, h), false, Color(1, 1, 1, minf(_pool_t / 0.3, 1.0)))

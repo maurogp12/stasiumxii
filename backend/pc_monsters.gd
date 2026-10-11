@@ -24,8 +24,11 @@ const PULL_KEYS: Array[String] = ["id", "name", "kind", "ap", "cells", "first_tu
 ## Keys a signature of kind "raise" (Rite of Rising) needs: it raises one
 ## fallen monster of a `raise` kind where it fell, at hp_pct of its HP.
 const RAISE_KEYS: Array[String] = ["id", "name", "kind", "ap", "raise", "hp_pct", "first_turn", "every", "cap_total"]
+## Keys a signature of kind "wall" (Root Wall) needs: roots erupt on up to
+## `cells` cells next to the hero and block for `turns` hero turns.
+const WALL_KEYS: Array[String] = ["id", "name", "kind", "ap", "cells", "turns", "first_turn", "every"]
 ## Signature kinds CombatSim plays.
-const SIGNATURE_KINDS: Array[String] = ["summon", "pull", "raise"]
+const SIGNATURE_KINDS: Array[String] = ["summon", "pull", "raise", "wall"]
 ## The hero side a level 1 run is checked against (CombatSim unit defaults).
 const HERO_HP := 80
 const HERO_AP := 6
@@ -243,6 +246,8 @@ func _read(doc: Dictionary, errors: Array) -> void:
 					need = PULL_KEYS
 				elif kind == "raise":
 					need = RAISE_KEYS
+				elif kind == "wall":
+					need = WALL_KEYS
 				for key in need:
 					if not (sig as Dictionary).has(key):
 						errors.append("%s signature %s" % [id, key])
@@ -252,6 +257,8 @@ func _read(doc: Dictionary, errors: Array) -> void:
 						errors.append("%s signature raise must list monster ids" % id)
 					if hp_pct <= 0.0 or hp_pct > 1.0:
 						errors.append("%s signature hp_pct must be in (0, 1]" % id)
+				if kind == "wall" and (int((sig as Dictionary).get("cells", 0)) < 1 or int((sig as Dictionary).get("turns", 0)) < 1):
+					errors.append("%s signature wall needs cells and turns of 1 or more" % id)
 		_by_id[id] = row.duplicate(true)
 		_order.append(id)
 	for id in _order:

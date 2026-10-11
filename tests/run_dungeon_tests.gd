@@ -26,6 +26,7 @@ const GRANARY := "old_granary_cellar"
 const FROST := "frostspire_archive"
 const SALT := "saltmaw_grotto"
 const ABBEY := "drowned_abbey"
+const BLIGHT := "heart_of_the_blight"
 const DOOR := Vector2i(16, 11)
 const KEEPER := Vector2i(15, 11)
 const CLASSES: Array[String] = ["kestrel", "ironjaw", "mender", "gloam", "bastion"]
@@ -88,7 +89,7 @@ func _test_doors_json() -> void:
 	var book = loaded["dungeons"]
 	eq(book.rows.size(), 5, "five Crosshaven town dungeons")
 	var built: Array = book.built()
-	eq(built.size(), 4, "four dungeons are built (the cellar, the Frostspire Archive, the Saltmaw Grotto and the Drowned Abbey)")
+	eq(built.size(), 5, "five dungeons are built (the cellar, the Frostspire Archive, the Saltmaw Grotto, the Drowned Abbey and the Heart of the Blight)")
 	var row: Dictionary = book.by_id(GRANARY)
 	eq(str(row.get("status", "")), "built", "the Old Granary Cellar is built")
 	eq(str(row["level_zone"]), "stoneford", "the cellar is Stoneford's dungeon")
@@ -104,7 +105,7 @@ func _test_doors_json() -> void:
 	var bands := {}
 	for r in book.rows:
 		bands[str(r["level_zone"])] = int(bands.get(str(r["level_zone"]), 0)) + 1
-		if not str(r["id"]) in [GRANARY, "frostspire_archive", "saltmaw_grotto", "drowned_abbey"]:
+		if not str(r["id"]) in [GRANARY, "frostspire_archive", "saltmaw_grotto", "drowned_abbey", "heart_of_the_blight"]:
 			eq(str(r["status"]), "planned", "%s is planned" % r["id"])
 			eq(r.has("door"), false, "%s has no door yet" % r["id"])
 	for band in Dungeons.TOWN_BANDS:
@@ -161,6 +162,7 @@ func _test_door_rules_reject() -> void:
 	eq(bool(Dungeons.load_document(wrong_band)["dungeons"].validate_world(atlas, npcs)["ok"]), false, "a door outside its band fails")
 	var planned_door: Dictionary = base.duplicate(true)
 	(planned_door["dungeons"] as Array)[4]["door"] = {"zone_id": "crosshaven_westwatch", "x": 16, "y": 11}
+	(planned_door["dungeons"] as Array)[4]["status"] = "planned"
 	eq(bool(Dungeons.load_document(planned_door).get("ok", true)), false, "a planned dungeon with a door fails to load")
 	var stray: Dictionary = base.duplicate(true)
 	(stray["dungeons"] as Array)[0]["extra"] = 1
@@ -757,8 +759,8 @@ func _test_scripted_win() -> void:
 	eq(int(hero.xp) + 0 > 0 or not (summary["level_ups"] as Array).is_empty(), true, "XP is granted")
 	eq((summary["missions"] as Array).has("stoneford_dungeon"), true, "the clear_dungeon mission is credited")
 	eq(missions.status_of("stoneford_dungeon", hero), "ready", "the cellar mission is ready to turn in")
-	var other = Run.create("heart_of_the_blight", 42, "kestrel")
-	eq(bool(other.get("ok", true)), false, "a planned dungeon cannot be run")
+	var other = Run.create("no_such_dungeon", 42, "kestrel")
+	eq(bool(other.get("ok", true)), false, "an unknown dungeon cannot be run")
 
 
 func _test_loss_pays_nothing() -> void:
@@ -776,7 +778,9 @@ func _test_loss_pays_nothing() -> void:
 	eq(bool(check["ok"]), true, "level 1 passes the level check")
 	eq(bool(Run.entry_check(Dungeons.load_default()["dungeons"].by_id(GRANARY), 0)["ok"]), false, "level 0 fails the level check")
 	eq(bool(Run.entry_check(Dungeons.load_default()["dungeons"].by_id(GRANARY), 14)["ok"]), true, "an over-band hero may still enter")
-	eq(bool(Run.entry_check(Dungeons.load_default()["dungeons"].by_id("heart_of_the_blight"), 45)["ok"]), false, "a planned door is closed")
+	var planned_row: Dictionary = Dungeons.load_default()["dungeons"].by_id("heart_of_the_blight")
+	planned_row["status"] = "planned"
+	eq(bool(Run.entry_check(planned_row, 45)["ok"]), false, "a planned door is closed")
 
 
 func _play_run(run, seed: int) -> String:
@@ -1067,9 +1071,16 @@ func _test_monster_click_sweep() -> void:
 		passes.append([c, false, ABBEY, 1])
 	passes.append(["ironjaw", false, ABBEY, 5])
 	passes.append(["kestrel", true, ABBEY, 5])
+	# The Heart of the Blight's monsters (Blight Hounds, Blight Horrors, the
+	# Rotting Elder; ★5 the crystal forms) too.
+	for c in CLASSES:
+		passes.append([c, false, BLIGHT, 1])
+	passes.append(["ironjaw", false, BLIGHT, 5])
+	passes.append(["kestrel", true, BLIGHT, 5])
 	var frost_seen := 0
 	var salt_seen := 0
 	var abbey_seen := 0
+	var blight_seen := 0
 	for pass_row in passes:
 		var class_id: String = pass_row[0]
 		var perf: bool = pass_row[1]
@@ -1088,8 +1099,10 @@ func _test_monster_click_sweep() -> void:
 			Launcher.pending = {"dungeon_id": FROST, "level": 12, "class_id": class_id, "star": star, "autoplay": false, "return_zone": "crosshaven_northgate", "return_cell": Vector2i(21, 10), "seed": 7}
 		elif dungeon_id == SALT:
 			Launcher.pending = {"dungeon_id": SALT, "level": 22, "class_id": class_id, "star": star, "autoplay": false, "return_zone": "crosshaven_eastmarch", "return_cell": Vector2i(26, 17), "seed": 7}
-		else:
+		elif dungeon_id == ABBEY:
 			Launcher.pending = {"dungeon_id": ABBEY, "level": 32, "class_id": class_id, "star": star, "autoplay": false, "return_zone": "crosshaven_southbridge", "return_cell": Vector2i(24, 26), "seed": 7}
+		else:
+			Launcher.pending = {"dungeon_id": BLIGHT, "level": 42, "class_id": class_id, "star": star, "autoplay": false, "return_zone": "crosshaven_westwatch", "return_cell": Vector2i(5, 13), "seed": 7}
 		var scene: Node = (load(RUN_SCENE_PATH) as PackedScene).instantiate()
 		root.add_child(scene)
 		for i in 4:
@@ -1108,7 +1121,7 @@ func _test_monster_click_sweep() -> void:
 				await process_frame
 				board._fit_board_camera()
 				await process_frame
-				var label := "%s%s%s %s at %dx%d" % ["" if dungeon_id == GRANARY else ("archive ★%d " % star if dungeon_id == FROST else ("grotto ★%d " % star if dungeon_id == SALT else "abbey ★%d " % star)), class_id, " (performance)" if perf else "", "room A" if room_index == 0 else "room B", size.x, size.y]
+				var label := "%s%s%s %s at %dx%d" % ["" if dungeon_id == GRANARY else ("archive ★%d " % star if dungeon_id == FROST else ("grotto ★%d " % star if dungeon_id == SALT else ("abbey ★%d " % star if dungeon_id == ABBEY else "blight ★%d " % star))), class_id, " (performance)" if perf else "", "room A" if room_index == 0 else "room B", size.x, size.y]
 				var per_size_key := "%dx%d" % [size.x, size.y]
 				for spell_id in spells:
 					hud._selected_spell = spell_id
@@ -1127,6 +1140,8 @@ func _test_monster_click_sweep() -> void:
 								salt_seen += 1
 							elif dungeon_id == ABBEY:
 								abbey_seen += 1
+							elif dungeon_id == BLIGHT:
+								blight_seen += 1
 						var want: Vector2i = pawn.grid_position
 						var tried := 0
 						var skipped := 0
@@ -1187,6 +1202,7 @@ func _test_monster_click_sweep() -> void:
 	eq(frost_seen >= 60, true, "the sweep covers the Frostspire monsters (%d monster views)" % frost_seen)
 	eq(salt_seen >= 60, true, "the sweep covers the Saltmaw monsters (%d monster views)" % salt_seen)
 	eq(abbey_seen >= 60, true, "the sweep covers the Drowned Abbey monsters (%d monster views)" % abbey_seen)
+	eq(blight_seen >= 60, true, "the sweep covers the Heart of the Blight monsters (%d monster views)" % blight_seen)
 
 
 ## Screen points on a monster's body: its visible pixels when the pixel mask

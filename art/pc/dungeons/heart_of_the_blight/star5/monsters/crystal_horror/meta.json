@@ -1,0 +1,125 @@
+{
+ "id": "crystal_horror",
+ "name": "Crystal Horror",
+ "star5": true,
+ "base_of": "blight_horror",
+ "dir": "star5/monsters/crystal_horror",
+ "cell": [
+  512,
+  360
+ ],
+ "pivot": [
+  256,
+  329
+ ],
+ "fps": 17.144,
+ "facings": [
+  "S",
+  "E"
+ ],
+ "mirror": {
+  "W": "E",
+  "N": "S"
+ },
+ "actions": {
+  "idle": {
+   "frames": 12,
+   "loop": true,
+   "files": {
+    "S": "star5/monsters/crystal_horror/idle/idle_S_fNN.png",
+    "E": "star5/monsters/crystal_horror/idle/idle_E_fNN.png"
+   },
+   "glow_files": {
+    "S": "star5/monsters/crystal_horror/idle/idle_S_fNN_glow.png",
+    "E": "star5/monsters/crystal_horror/idle/idle_E_fNN_glow.png"
+   }
+  },
+  "walk": {
+   "frames": 12,
+   "loop": true,
+   "files": {
+    "S": "star5/monsters/crystal_horror/walk/walk_S_fNN.png",
+    "E": "star5/monsters/crystal_horror/walk/walk_E_fNN.png"
+   },
+   "glow_files": {
+    "S": "star5/monsters/crystal_horror/walk/walk_S_fNN_glow.png",
+    "E": "star5/monsters/crystal_horror/walk/walk_E_fNN_glow.png"
+   }
+  },
+  "attack": {
+   "frames": 12,
+   "loop": false,
+   "files": {
+    "S": "star5/monsters/crystal_horror/attack/attack_S_fNN.png",
+    "E": "star5/monsters/crystal_horror/attack/attack_E_fNN.png"
+   },
+   "glow_files": {
+    "S": "star5/monsters/crystal_horror/attack/attack_S_fNN_glow.png",
+    "E": "star5/monsters/crystal_horror/attack/attack_E_fNN_glow.png"
+   }
+  },
+  "hit": {
+   "frames": 8,
+   "loop": false,
+   "files": {
+    "S": "star5/monsters/crystal_horror/hit/hit_S_fNN.png",
+    "E": "star5/monsters/crystal_horror/hit/hit_E_fNN.png"
+   },
+   "glow_files": {
+    "S": "star5/monsters/crystal_horror/hit/hit_S_fNN_glow.png",
+    "E": "star5/monsters/crystal_horror/hit/hit_E_fNN_glow.png"
+   }
+  },
+  "death": {
+   "frames": 13,
+   "loop": false,
+   "files": {
+    "S": "star5/monsters/crystal_horror/death/death_S_fNN.png",
+    "E": "star5/monsters/crystal_horror/death/death_E_fNN.png"
+   },
+   "glow_files": {
+    "S": "star5/monsters/crystal_horror/death/death_S_fNN_glow.png",
+    "E": "star5/monsters/crystal_horror/death/death_E_fNN_glow.png"
+   }
+  }
+ },
+ "qa": {
+  "hole_fill_px_S": 49282,
+  "px_outside_cell_idle_S": 0,
+  "keep_in_shift_px_idle_S": 0.0,
+  "px_outside_cell_walk_S": 0,
+  "keep_in_shift_px_walk_S": 0.0,
+  "px_outside_cell_attack_S": 0,
+  "keep_in_shift_px_attack_S": 0.0,
+  "px_outside_cell_hit_S": 0,
+  "keep_in_shift_px_hit_S": 0.0,
+  "px_outside_cell_death_S": 0,
+  "keep_in_shift_px_death_S": 0.0,
+  "hole_fill_px_E": 53909,
+  "px_outside_cell_idle_E": 0,
+  "keep_in_shift_px_idle_E": 0.0,
+  "px_outside_cell_walk_E": 0,
+  "keep_in_shift_px_walk_E": 0.0,
+  "px_outside_cell_attack_E": 0,
+  "keep_in_shift_px_attack_E": 0.0,
+  "px_outside_cell_hit_E": 0,
+  "keep_in_shift_px_hit_E": 0.0,
+  "px_outside_cell_death_E": 0,
+  "keep_in_shift_px_death_E": 0.0
+ },
+ "role": "room A ranged: a gaunt root figure with a glowing violet face that spits a spore bolt, released on attack f07",
+ "release": {
+  "action": "attack",
+  "frame": 7,
+  "point_px": {
+   "S": [
+    293.5,
+    111.5
+   ],
+   "E": [
+    307.9,
+    86.1
+   ]
+  }
+ }
+}

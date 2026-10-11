@@ -96,18 +96,32 @@ func _begin() -> void:
 		board.autoplay = false
 		await get_tree().create_timer(1.5).timeout
 		await _grab(_arg("--a-name", "03_room_a_monsters.png"))
+		if typeof((run.run_doc.get("view", {}) as Dictionary).get("still_wait", null)) == TYPE_DICTIONARY:
+			# Let room A's monster turn finish before room B starts, so the
+			# hero bot can play room B's turns.
+			var t_a := Time.get_ticks_msec()
+			while board._driving and Time.get_ticks_msec() - t_a < 20000:
+				await get_tree().process_frame
 		run.room_index = 1
 		board.end_room()
 		await _start_room(1, false)
 		board.autoplay = true
-		# A hero turn with no banner up; at ★5 wait for his toxic pools.
+		# A hero turn with no banner up; at ★5 wait for his toxic pools. A run
+		# file may name what the still waits for per star (view.still_wait,
+		# e.g. the blight's root walls); then the hero bot is set going too.
+		var waits: Array = ["pools"] if run.star >= 5 else []
+		var still_wait: Variant = (run.run_doc.get("view", {}) as Dictionary).get("still_wait", null)
+		if typeof(still_wait) == TYPE_DICTIONARY and (still_wait as Dictionary).has(str(run.star)):
+			waits = still_wait[str(run.star)]
+			board._refresh()
 		var t0 := Time.get_ticks_msec()
 		while Time.get_ticks_msec() - t0 < 40000:
 			await get_tree().create_timer(0.25).timeout
 			var snap: Dictionary = sim_node().snapshot()
 			var ready: bool = int(snap.get("active_seat", -1)) == 0 and not board._busy and not bool(snap.get("match_over", false))
-			if run.star >= 5 and ((snap.get("dungeon", {}) as Dictionary).get("pools", []) as Array).is_empty():
-				ready = false
+			for key in waits:
+				if ((snap.get("dungeon", {}) as Dictionary).get(str(key), []) as Array).is_empty():
+					ready = false
 			if ready:
 				break
 		board.autoplay = false
@@ -472,10 +486,20 @@ func _fight_clip() -> void:
 	await _start_room(int(_arg("--room", "0")), true)
 	# Game time, not wall time: the movie writer renders slower than real time.
 	var limit := get_tree().create_timer(float(_arg("--secs", "150")))
+	# Signature casts seen (walls raised, hazards laid), counted once per turn.
+	var casts := {}
+	var f_start := Engine.get_process_frames()
 	while over.is_empty() and limit.time_left > 0.0:
 		await get_tree().process_frame
+		var live: Dictionary = sim_node().snapshot()
+		for e in live.get("last_events", []):
+			if str(e.get("type", "")) in ["wall", "pools", "summon", "lure", "raise"]:
+				casts["%s:%d" % [str(e["type"]), int(live.get("turn_index", 0))]] = str(e["type"])
 	var info: Dictionary = sim_node().snapshot().get("dungeon", {})
-	print("FIGHT %s raised %d" % [str(over.get("result", "timeout")), int(info.get("raised_total", 0))])
+	var counts := {}
+	for k in casts.keys():
+		counts[casts[k]] = int(counts.get(casts[k], 0)) + 1
+	print("FIGHT %s raised %d casts %s frames %d" % [str(over.get("result", "timeout")), int(info.get("raised_total", 0)), str(counts), Engine.get_process_frames() - f_start])
 	_stair_label.text = "Victory" if str(over.get("result", "")) == "win" else "Defeat"
 	_stair_label.visible = true
 	await get_tree().create_timer(3.5).timeout

@@ -181,6 +181,15 @@ static func hero_intent(sim: Node) -> Dictionary:
 			return intent
 	var pools := {}
 	for c in (snap.get("dungeon", {}) as Dictionary).get("pools", []):
+		if (c as Dictionary).has("fuse"):
+			# A fused pod (Heart Bloom) bursting when this turn ends: its
+			# splash is the danger, not its own cell.
+			if int(c.get("turns", 0)) <= 1:
+				var r := int(c.get("splash", 1))
+				for dy in range(-r, r + 1):
+					for dx in range(-r, r + 1):
+						pools[_cell(c["cell"]) + Vector2i(dx, dy)] = true
+			continue
 		pools[_cell(c["cell"])] = true
 	var low := float(hero.get("hp", 0)) < float(hero.get("max_hp", 80)) * 0.45
 	var best: Dictionary = {}

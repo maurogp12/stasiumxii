@@ -4,10 +4,11 @@
   "status": "proposed",
   "notes": [
     "Section 4.6, Crosshaven phase (section 00): one dungeon per town band, five in all.",
-    "Old Granary Cellar, Frostspire Archive, Saltmaw Grotto and Drowned Abbey are built. Heart of the Blight is an approved design, planned: no door yet.",
+    "Old Granary Cellar, Frostspire Archive, Saltmaw Grotto, Drowned Abbey and Heart of the Blight are built.",
     "Frostspire Archive: the archive door at crosshaven_northgate (21, 10), the archive building on (20-22, 7-9) (footprint from the art manifest), the Door Keeper at (20, 10).",
     "Saltmaw Grotto: the grotto door at crosshaven_eastmarch (26, 17), the grotto rock on the cells north of it (footprint from the art manifest), the Door Keeper at (25, 17).",
     "Drowned Abbey: the abbey door at crosshaven_southbridge (24, 26) on the south grass spit by the swamp, the drowned chapel on the cells north of it (footprint from the art manifest), the Door Keeper at (23, 26).",
+    "Heart of the Blight: the blight door at crosshaven_westwatch (5, 13) on the open west plain (the blighted side of the town), the rotting stump on the cells north of it (footprint from the art manifest), the Door Keeper at (6, 13).",
     "door is the hatch cell: passable, clickable, not an NPC, gate, exit or spawn cell. The granary building stands on the cells north of it (footprint from the art manifest) and blocks walking.",
     "keeper names the Door Keeper NPC that opens the entry panel. party 1-4 is the rule; runs are solo for now."
   ],
@@ -82,13 +83,15 @@
       "level_zone": "westwatch",
       "level_min": 40,
       "level_max": 50,
+      "door": {"zone_id": "crosshaven_westwatch", "x": 5, "y": 13},
       "door_art": "door_heart_of_the_blight",
       "theme": "blight_heart",
       "boss": "The Rotting Elder",
       "rooms": 2,
       "party": {"min": 1, "max": 4},
       "keeper": "westwatch_door_keeper",
-      "status": "planned"
+      "run": "res://data/world/dungeons/heart_of_the_blight/run.json",
+      "status": "built"
     }
   ]
 }

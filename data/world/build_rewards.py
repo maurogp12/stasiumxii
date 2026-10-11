@@ -81,7 +81,7 @@ DUNGEONS = [
     ("shard_hollow", "Shard Hollow", "ashen_shardfields", "Ashen Prism", 40, 40,
      [("crystal_brew", "Crystal Brew", "recipe"), ("prism_shard", "Prism Shard", "material"),
       ("glowing_crystal", "Glowing Crystal", "decoration")], "Shardbreaker"),
-    ("heart_of_the_blight", "Heart of the Blight", "blightwood_hollow", "Rotting Elder", 50, 50,
+    ("heart_of_the_blight", "Heart of the Blight", "blightwood_hollow", "Rotting Elder", 40, 40,
      [("elderroot_feast", "Elderroot Feast", "recipe"), ("blight_heartwood", "Blight Heartwood", "material"),
       ("blight_seedling", "Blight Seedling", "decoration")], "Blightbane"),
 ]
@@ -102,6 +102,50 @@ RELICS = [
     ("blightroot_ring", "Blightroot Ring", "ring",
      "No AP. Your hits poison: 3 damage at the start of the target's turn for 2 turns, stacking up to 3"),
 ]
+
+# A dungeon set's tier is its coin level, except where named here. The Rotting
+# Elder set stays tier 50 (spec 4.9) while the blight pays the tier-40 class
+# sets and level-40 coins (Mauro, 11 Oct 2026: "Si a todo").
+SET_TIER = {"heart_of_the_blight": 50}
+
+# Star drops (Proposed, Mauro 11 Oct 2026: "Si a todo"). One draw per group,
+# so a group gives at most one item a run. A pool's chance is per win at that
+# star. above_run_level "drop": an item above the run level still drops and
+# waits in the bag until the hero can wear it (the dungeon roll already works
+# this way); "skip": it does not drop below its level (the Mystery Box rule).
+STAR_DROPS = {
+    "drowned_abbey": {
+        "status": "proposed",
+        "note": "The Abbess's Rosary drops only at ★5. Mauro, 11 Oct 2026: \"Si a todo\".",
+        "groups": [
+            {"id": "epic", "max_per_run": 1, "above_run_level": "drop", "pools": [
+                {"items": ["abbess_rosary"], "chance_by_stars": {"5": 0.15}},
+            ]},
+        ],
+    },
+    "heart_of_the_blight": {
+        "status": "proposed",
+        "note": "Epics at ★4 and ★5, relics and Prism Striders at ★5 only, the tier-50 Rotting Elder set at ★5 for level-50 runs only. Crown of Crosshaven has no source (Open). Mauro, 11 Oct 2026: \"Si a todo\".",
+        "groups": [
+            {"id": "epic", "max_per_run": 1, "above_run_level": "drop", "pools": [
+                {"items": ["gale_signet", "ember_crown", "stormheart_gauntlet"], "chance_by_stars": {"4": 0.10, "5": 0.20}},
+                {"items": ["prism_striders"], "chance_by_stars": {"5": 0.05}},
+            ]},
+            {"id": "relic", "max_per_run": 1, "above_run_level": "drop", "pools": [
+                {"items": ["heart_of_the_elder"], "chance_by_stars": {"5": 0.05}},
+                {"items": ["blightroot_ring"], "chance_by_stars": {"5": 0.05}},
+            ]},
+            {"id": "rotting_elder", "max_per_run": 1, "above_run_level": "skip", "pools": [
+                {"set_id": "rotting_elder", "rarity": "regular", "chance_by_stars": {"5": 0.10}},
+            ]},
+        ],
+    },
+}
+# The blight's guaranteed part is always a tier-40 class set: its own set is
+# tier 50, and Ashen Prism (tier 40) is Shard Hollow's own set.
+GUARANTEED_SPLIT = {"heart_of_the_blight": {"dungeon_set": 0.0, "class_set": 1.0}}
+SOURCED = {item_id for row in STAR_DROPS.values() for group in row["groups"]
+           for pool in group["pools"] for item_id in pool.get("items", [])}
 
 ZONE_CLASS = {
     "rowanvale": 10,
@@ -285,7 +329,8 @@ def main() -> None:
     for dung_id, dung_name, zone_id, set_name, class_tier, coin_level, extras, title in DUNGEONS:
         set_id = slug(set_name)
         five = "Open"
-        sets.append(make_set(set_id, set_name, coin_level, "dungeon", [], list(STATS), five))
+        set_tier = SET_TIER.get(dung_id, coin_level)
+        sets.append(make_set(set_id, set_name, set_tier, "dungeon", [], list(STATS), five))
         extra_ids = []
         for item_id, item_name, category in extras:
             weight = 20 if category == "decoration" else (0 if category == "recipe" else 1)
@@ -308,6 +353,10 @@ def main() -> None:
                 "Extra Mastery on the turn after you are hit",
             ))
             row["also_set_id"] = "millwright"
+        if dung_id in GUARANTEED_SPLIT:
+            row["guaranteed_split"] = GUARANTEED_SPLIT[dung_id]
+        if dung_id in STAR_DROPS:
+            row["star_drops"] = STAR_DROPS[dung_id]
         dungeons.append(row)
 
     items.append(loose_item(
@@ -319,12 +368,14 @@ def main() -> None:
         items.append(loose_item(
             item_id, name, "equipment", 15, False,
             slot=slot, min_level=level, rarity="epic",
+            drop="rolled" if item_id in SOURCED else "Open",
             effect={"applies": False, "text": text},
         ))
     for item_id, name, slot, text in RELICS:
         items.append(loose_item(
             item_id, name, "equipment", 15, False,
             slot=slot, min_level=50, rarity="relic",
+            drop="rolled" if item_id in SOURCED else "Open",
             effect={"applies": False, "text": text},
         ))
 
@@ -350,7 +401,9 @@ def main() -> None:
             "Heart missions split evenly between Wayfarer and a tier-1 class set. Both are named sources.",
             "Crosshaven world fights drop the shared set for that half of the city. Other regions drop a class set of the region's tier.",
             "Frostspire, Cinderforge and Sunken Mill drop the class tier just below the top of their zone band. Thunderwell Core is named with the tier-30 sources. Millrace Vaults is dropped. Its Millwright set and its stew, cog, and water-wheel extras drop from Old Granary Cellar.",
-            "Unique extras, Epics and Relics have drop Open, so the roller does not grant them.",
+            "Unique extras have drop Open, so the roller does not grant them. Epics and Relics drop only through a dungeon row's star_drops (drop rolled); Crown of Crosshaven keeps drop Open.",
+            "Heart of the Blight pays the tier-40 class sets and level-40 coins, so a level 40-49 hero can wear what drops. Its tier-50 Rotting Elder set drops only from star_drops at ★5 on a level-50 run. Mauro, 11 Oct 2026: \"Si a todo\".",
+            "star_drops (Proposed): one draw per group, so a group gives at most one item a run. A pool's chance is per win at that star; pools at the same star add up. above_run_level drop: an item above the run level still drops and waits in the bag until the hero can wear it. skip: it does not drop.",
             "A full set (5 parts + the 2-part bonus + the 3-part bonus) is worth B(T) = round(98 × 1.3^((T-50)/10)), half away from zero. One part and the 2-part bonus are the same split. The 3-part line takes the remainder so the total equals B(T). budget is the one-part point total; full_budget is B(T).",
             "A Rare part is 1.5 times that one-part total, rounded half away from zero, plus one point in the first of Mastery, Vitality, Swift, Resist that the part does not already lean to. Shared and dungeon parts already list all four, so that point goes to Mastery.",
             "Shared and dungeon parts split across all four stats. Class parts split across the two stats that class leans to. Gloam tiers 30 and up lean Swift and Resist.",

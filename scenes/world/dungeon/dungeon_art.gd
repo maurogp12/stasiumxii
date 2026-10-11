@@ -839,10 +839,11 @@ static func _kit_monster(man: Dictionary, monster_id: String) -> Dictionary:
 		for f in pts.keys():
 			by_face[str(f).to_lower()] = (_vec2(pts[f], pivot) - pivot) * MONSTER_CELL_SCALE
 		release = {"frame": int(rel_doc.get("frame", 0)), "sec": float(rel_doc.get("frame", 0)) / maxf(fps, 1.0), "offset": by_face}
-	# A boss's lure tip (Old Saltmaw's lantern) or censer mouth (the Mire
-	# Abbess's rite_point) on the signature's flare frame.
+	# A boss's lure tip (Old Saltmaw's lantern), censer mouth (the Mire
+	# Abbess's rite_point) or staff foot (the Rotting Elder's staff_point) on
+	# the signature's flare frame.
 	var lure := {}
-	var lp: Variant = row.get("lure_point", row.get("rite_point", {}))
+	var lp: Variant = row.get("lure_point", row.get("rite_point", row.get("staff_point", {})))
 	if typeof(lp) == TYPE_DICTIONARY and typeof((lp as Dictionary).get("point_px", null)) == TYPE_DICTIONARY:
 		lp = lp["point_px"]
 	if typeof(lp) == TYPE_DICTIONARY:
@@ -1001,4 +1002,101 @@ static func pool_kit(man: Dictionary, hazard_id: String = "toxic_pool") -> Dicti
 			var gl := _pick(man, g)
 			out["glow"] = gl.get("tex", null)
 			out["glow_scale"] = float(gl.get("scale", 1.0))
+	return out
+
+
+# --- Root walls and fused pods (Heart of the Blight) ------------------------
+
+## Frame paths of a manifest strip block {frames, pattern "dir/name_f{00..05}.png"}.
+static func pattern_paths(block: Dictionary, key: String = "pattern") -> Array:
+	var pat := str(block.get(key, ""))
+	var count := int(block.get("frames", 0))
+	var out: Array = []
+	var at := pat.find("{")
+	var close := pat.find("}")
+	if pat == "" or count <= 0:
+		return out
+	if at < 0 or close < at:
+		out.append(pat)
+		return out
+	var width := pat.substr(at + 1, close - at - 1).get_slice("..", 0).length()
+	for i in count:
+		out.append(pat.substr(0, at) + str(i).pad_zeros(width) + pat.substr(close + 1))
+	return out
+
+
+static func _frames_at(man: Dictionary, paths: Array) -> Array:
+	var out: Array = []
+	for rel in paths:
+		var t := tex_at(man, str(rel))
+		if t != null:
+			out.append(t)
+	return out
+
+
+## A board row by id in board.<list> or star5.board.<list>.
+static func _board_row(man: Dictionary, list: String, id: String) -> Dictionary:
+	var raw: Dictionary = man.get("raw", {})
+	var row := _by_id((raw.get("board", {}) as Dictionary).get(list, null), id)
+	if row.is_empty() and typeof(raw.get("star5", null)) == TYPE_DICTIONARY:
+		row = _by_id(((raw["star5"] as Dictionary).get("board", {}) as Dictionary).get(list, null), id)
+	return row
+
+
+## A root wall prop (board.props or star5.board.props): {tex, glow, rise,
+## rise_glow, idle, wither, wither_glow, fps, lift}. Strips are 1x frame
+## lists; `lift` is the anchor's px above the south tip. Empty without art.
+static func wall_kit(man: Dictionary, id: String) -> Dictionary:
+	var key := "wall:%s:%s" % [str(man.get("path", "")), id]
+	if _cache.has(key):
+		return _cache[key]
+	var row := _board_row(man, "props", id)
+	var out := {}
+	if not row.is_empty():
+		var tex := tex_at(man, str(row.get("file", "")))
+		if tex != null:
+			out = {"tex": tex, "glow": tex_at(man, str(row.get("glow", ""))), "fps": 17.144, "lift": 3.0 if str(row.get("anchor", "")).contains("(0, -3)") else 0.0}
+			for strip in ["rise", "idle", "wither"]:
+				var block: Variant = row.get(strip, null)
+				if typeof(block) != TYPE_DICTIONARY:
+					continue
+				var paths := pattern_paths(block)
+				out[strip] = _frames_at(man, paths)
+				var glows: Array = []
+				for rel in paths:
+					glows.append(str(rel).trim_suffix(".png") + "_glow.png")
+				out[strip + "_glow"] = _frames_at(man, glows)
+				out["fps"] = float((block as Dictionary).get("fps", out["fps"]))
+	_cache[key] = out
+	return out
+
+
+## A fused pod's swell loop (star5.board.decals <id>.swell): {frames, glows, fps}.
+static func swell_kit(man: Dictionary, id: String) -> Dictionary:
+	var key := "swell:%s:%s" % [str(man.get("path", "")), id]
+	if _cache.has(key):
+		return _cache[key]
+	var row := _board_row(man, "decals", id)
+	var out := {}
+	var block: Variant = row.get("swell", null)
+	if typeof(block) == TYPE_DICTIONARY:
+		out = {"frames": _frames_at(man, pattern_paths(block)), "glows": _frames_at(man, pattern_paths(block, "glow_pattern")), "fps": float((block as Dictionary).get("fps", 10.0))}
+	_cache[key] = out
+	return out
+
+
+## An area effect strip (star5.board.anims <id>, e.g. crystal_bloom_burst):
+## {frames, glows, fps, size, hit_frame}. Empty without art.
+static func area_kit(man: Dictionary, id: String) -> Dictionary:
+	var key := "area:%s:%s" % [str(man.get("path", "")), id]
+	if _cache.has(key):
+		return _cache[key]
+	var row := _board_row(man, "anims", id)
+	var out := {}
+	if not row.is_empty():
+		var frames := _frames_at(man, pattern_paths(row))
+		if not frames.is_empty():
+			var sz: Array = row.get("size", [192, 96])
+			out = {"frames": frames, "glows": _frames_at(man, pattern_paths(row, "glow_pattern")), "fps": float(row.get("fps", 17.144)), "size": Vector2(float(sz[0]), float(sz[1]))}
+	_cache[key] = out
 	return out

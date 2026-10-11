@@ -42,6 +42,7 @@ func _run() -> void:
 	_test_turn_in()
 	_test_carry_limits()
 	_test_sources()
+	_test_star_drops_checks()
 	_restore_save()
 	print("pc rewards tests: %d passed, %d failed" % [_passed, _failed])
 	quit(1 if _failed > 0 else 0)
@@ -364,6 +365,32 @@ func _test_sources() -> void:
 	var world := FileAccess.get_file_as_string("res://scenes/world/crosshaven/crosshaven_world.gd")
 	eq(world.find("grant_turn_in") >= 0, true, "the mission turn-in hook is ready")
 	eq(world.find("return absi") < 0, true, "the banker check keeps looking until the hero is beside one")
+
+
+## star_drops and per-dungeon splits are checked on load (Proposed data,
+## Mauro 11 Oct 2026: "Si a todo").
+func _test_star_drops_checks() -> void:
+	var base: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(PATH))
+	eq(bool(Rewards.load_document(base.duplicate(true)).get("ok", false)), true, "the shipped star drops load")
+	var cases := {
+		"max_per_run": func(g): g["max_per_run"] = 2,
+		"above_run_level": func(g): g["above_run_level"] = "maybe",
+		"item": func(g): g["pools"][0]["items"] = ["no_such_item"],
+		"chances over 1": func(g): g["pools"][0]["chance_by_stars"]["5"] = 0.99,
+	}
+	for name in cases.keys():
+		var doc: Dictionary = base.duplicate(true)
+		for row in doc["dungeons"]:
+			if str(row["id"]) == "heart_of_the_blight":
+				(cases[name] as Callable).call(row["star_drops"]["groups"][0])
+		var loaded: Dictionary = Rewards.load_document(doc)
+		eq(bool(loaded.get("ok", false)), false, "a bad star drop (%s) is rejected" % name)
+		eq(str(loaded.get("errors", [])).contains(str(name)), true, "the error names %s: %s" % [name, loaded.get("errors", [])])
+	var split_doc: Dictionary = base.duplicate(true)
+	for row in split_doc["dungeons"]:
+		if str(row["id"]) == "heart_of_the_blight":
+			row["guaranteed_split"] = {"dungeon_set": 0.5, "class_set": 0.6}
+	eq(bool(Rewards.load_document(split_doc).get("ok", false)), false, "a dungeon split that does not sum to 1 is rejected")
 
 
 func _test_load_safety() -> void:
