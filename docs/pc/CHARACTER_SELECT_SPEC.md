@@ -253,3 +253,13 @@ Then **Kestrel → Bastion → Gloam → Mender**. Mender and Gloam come last be
 3. **Slots:** 5 characters?
 4. **Radar axes and values** in §4.1: OK as a start?
 5. **Mobile:** this screen is PC only. The phone keeps its own class select.
+
+## 11. Mauro's answers to §10 (11 Oct 2026) — these override the sections above where they differ
+1. **Female characters: YES** ("Hacer versión femenina"). Every class gets a female version: the pedestal model (m and f GLBs), the class art (`class_art_<class>_f`), the busts, AND the in-world / combat painted looks (a female no-armour base per class, with every gear set fitting it). The Male / Female toggle stays in the Appearance tab.
+2. **Colours:** "Se podra modificar los colores de las armaduras con un tinte especial que se compra en la tienda premium y solo podran elegir como pintar el mono, su pelo, sus ojos, su piel, quiza añadir varios tipos de cara."
+   - At creation the player picks only the **body**: **skin tone, hair colour, eye colour, and a face type** (several faces; a hairstyle choice can come with it). These must show **in the world and in combat too**, not only on this screen.
+   - **No armour colours at creation.** Armour colour changes only with a **special dye bought in the premium shop** (later package; `backend/pc_premium.gd` exists on PC).
+   - So §4's Appearance tab becomes: Male / Female, Face type (3–5 options), Skin (8 tones), Hair (8 colours + custom), Eyes (8 colours + custom). The §5.4 mask channels become **R = skin, G = hair, B = eyes** on the base body (the armour gets its own dye mask later).
+3. **Slots: 5** characters (as proposed).
+4. **Radar values in §4.1: approved** as they are.
+
