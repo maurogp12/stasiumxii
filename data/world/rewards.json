@@ -7,7 +7,9 @@
     "Heart missions split evenly between Wayfarer and a tier-1 class set. Both are named sources.",
     "Crosshaven world fights drop the shared set for that half of the city. Other regions drop a class set of the region's tier.",
     "Frostspire, Cinderforge and Sunken Mill drop the class tier just below the top of their zone band. Thunderwell Core is named with the tier-30 sources. Millrace Vaults is dropped. Its Millwright set and its stew, cog, and water-wheel extras drop from Old Granary Cellar.",
-    "Unique extras, Epics and Relics have drop Open, so the roller does not grant them.",
+    "Unique extras have drop Open, so the roller does not grant them. Epics and Relics drop only through a dungeon row's star_drops (drop rolled); Crown of Crosshaven keeps drop Open.",
+    "Heart of the Blight pays the tier-40 class sets and level-40 coins, so a level 40-49 hero can wear what drops. Its tier-50 Rotting Elder set drops only from star_drops at \u26055 on a level-50 run. Mauro, 11 Oct 2026: \"Si a todo\".",
+    "star_drops (Proposed): one draw per group, so a group gives at most one item a run. A pool's chance is per win at that star; pools at the same star add up. above_run_level drop: an item above the run level still drops and waits in the bag until the hero can wear it. skip: it does not drop.",
     "A full set (5 parts + the 2-part bonus + the 3-part bonus) is worth B(T) = round(98 \u00d7 1.3^((T-50)/10)), half away from zero. One part and the 2-part bonus are the same split. The 3-part line takes the remainder so the total equals B(T). budget is the one-part point total; full_budget is B(T).",
     "A Rare part is 1.5 times that one-part total, rounded half away from zero, plus one point in the first of Mastery, Vitality, Swift, Resist that the part does not already lean to. Shared and dungeon parts already list all four, so that point goes to Mastery.",
     "Shared and dungeon parts split across all four stats. Class parts split across the two stats that class leans to. Gloam tiers 30 and up lean Swift and Resist.",
@@ -3761,7 +3763,7 @@
       "classes": [],
       "rarity": "epic",
       "set_id": "",
-      "drop": "Open",
+      "drop": "rolled",
       "effect": {
         "applies": false,
         "text": "+1 MP, + Swift"
@@ -3778,7 +3780,7 @@
       "classes": [],
       "rarity": "epic",
       "set_id": "",
-      "drop": "Open",
+      "drop": "rolled",
       "effect": {
         "applies": false,
         "text": "+8% healing done, + Resist"
@@ -3795,7 +3797,7 @@
       "classes": [],
       "rarity": "epic",
       "set_id": "",
-      "drop": "Open",
+      "drop": "rolled",
       "effect": {
         "applies": false,
         "text": "+1 range on spells with range 2 or more"
@@ -3812,7 +3814,7 @@
       "classes": [],
       "rarity": "epic",
       "set_id": "",
-      "drop": "Open",
+      "drop": "rolled",
       "effect": {
         "applies": false,
         "text": "Your first hit each turn also deals 4 Air damage to one enemy next to the target"
@@ -3829,7 +3831,7 @@
       "classes": [],
       "rarity": "epic",
       "set_id": "",
-      "drop": "Open",
+      "drop": "rolled",
       "effect": {
         "applies": false,
         "text": "+1 MP. The first 3 push attempts on you in a fight work normally; after that you can't be pushed for the rest of the fight"
@@ -3846,7 +3848,7 @@
       "classes": [],
       "rarity": "relic",
       "set_id": "",
-      "drop": "Open",
+      "drop": "rolled",
       "effect": {
         "applies": false,
         "text": "+1 AP, -10% max HP"
@@ -3880,7 +3882,7 @@
       "classes": [],
       "rarity": "relic",
       "set_id": "",
-      "drop": "Open",
+      "drop": "rolled",
       "effect": {
         "applies": false,
         "text": "No AP. Your hits poison: 3 damage at the start of the target's turn for 2 turns, stacking up to 3"
@@ -4171,7 +4173,28 @@
         "swamp_elixir",
         "abbey_candle_wax",
         "sunken_bell"
-      ]
+      ],
+      "star_drops": {
+        "status": "proposed",
+        "note": "The Abbess's Rosary drops only at \u26055. Mauro, 11 Oct 2026: \"Si a todo\".",
+        "groups": [
+          {
+            "id": "epic",
+            "max_per_run": 1,
+            "above_run_level": "drop",
+            "pools": [
+              {
+                "items": [
+                  "abbess_rosary"
+                ],
+                "chance_by_stars": {
+                  "5": 0.15
+                }
+              }
+            ]
+          }
+        ]
+      }
     },
     {
       "id": "thunderwell_core",
@@ -4206,14 +4229,87 @@
       "name": "Heart of the Blight",
       "zone_id": "blightwood_hollow",
       "set_id": "rotting_elder",
-      "class_tier": 50,
-      "coin_level": 50,
+      "class_tier": 40,
+      "coin_level": 40,
       "title": "Blightbane",
       "extras": [
         "elderroot_feast",
         "blight_heartwood",
         "blight_seedling"
-      ]
+      ],
+      "guaranteed_split": {
+        "dungeon_set": 0.0,
+        "class_set": 1.0
+      },
+      "star_drops": {
+        "status": "proposed",
+        "note": "Epics at \u26054 and \u26055, relics and Prism Striders at \u26055 only, the tier-50 Rotting Elder set at \u26055 for level-50 runs only. Crown of Crosshaven has no source (Open). Mauro, 11 Oct 2026: \"Si a todo\".",
+        "groups": [
+          {
+            "id": "epic",
+            "max_per_run": 1,
+            "above_run_level": "drop",
+            "pools": [
+              {
+                "items": [
+                  "gale_signet",
+                  "ember_crown",
+                  "stormheart_gauntlet"
+                ],
+                "chance_by_stars": {
+                  "4": 0.1,
+                  "5": 0.2
+                }
+              },
+              {
+                "items": [
+                  "prism_striders"
+                ],
+                "chance_by_stars": {
+                  "5": 0.05
+                }
+              }
+            ]
+          },
+          {
+            "id": "relic",
+            "max_per_run": 1,
+            "above_run_level": "drop",
+            "pools": [
+              {
+                "items": [
+                  "heart_of_the_elder"
+                ],
+                "chance_by_stars": {
+                  "5": 0.05
+                }
+              },
+              {
+                "items": [
+                  "blightroot_ring"
+                ],
+                "chance_by_stars": {
+                  "5": 0.05
+                }
+              }
+            ]
+          },
+          {
+            "id": "rotting_elder",
+            "max_per_run": 1,
+            "above_run_level": "skip",
+            "pools": [
+              {
+                "set_id": "rotting_elder",
+                "rarity": "regular",
+                "chance_by_stars": {
+                  "5": 0.1
+                }
+              }
+            ]
+          }
+        ]
+      }
     }
   ]
 }

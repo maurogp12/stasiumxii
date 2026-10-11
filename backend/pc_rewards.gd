@@ -10,6 +10,8 @@ const Levels := preload("res://backend/world_levels.gd")
 const FORMAT := "stasium.world_rewards"
 const FORMAT_VERSION := 1
 const STATS: Array[String] = ["Mastery", "Vitality", "Swift", "Resist"]
+## star_drops: what an item above the run level does (see _roll_star_drops).
+const ABOVE_RUN_LEVEL: Array[String] = ["drop", "skip"]
 const DOC_KEYS: Array[String] = [
 	"format", "format_version", "status", "notes", "coins", "carry", "weights",
 	"class_bias", "world_part_chance", "classes", "set_slots", "equip_slots",
@@ -329,6 +331,9 @@ func _read(doc: Dictionary, errors: Array) -> void:
 			errors.append("dungeon %s" % dung_id)
 			continue
 		_dungeons[dung_id] = dungeon
+		var own_split: Dictionary = dungeon.get("guaranteed_split", split)
+		if absf(float(own_split.get("dungeon_set", 0)) + float(own_split.get("class_set", 0)) - 1.0) > 0.001:
+			errors.append("guaranteed split %s" % dung_id)
 	for row in doc.get("items", []):
 		var loose: Dictionary = row
 		var item_id := str(loose.get("id", ""))
@@ -342,6 +347,8 @@ func _read(doc: Dictionary, errors: Array) -> void:
 		else:
 			copy["rarities"] = [fixed]
 		_items[item_id] = copy
+	for key in _dungeons.keys():
+		_check_star_drops(_dungeons[key], errors)
 
 
 func _coins_for(source: String, context: Dictionary, rng: RandomNumberGenerator) -> int:
@@ -439,10 +446,93 @@ func _roll_dungeon(context: Dictionary, rng: RandomNumberGenerator, items: Array
 	var box_p := float((_doc["dungeon_box_by_stars"] as Dictionary).get(stars, 0))
 	if rng.randf() < box_p:
 		items.append(_box_item())
+	_roll_star_drops(dungeon, context, rng, items)
+
+
+## A dungeon row's star_drops (Proposed): per group, one draw against the
+## pools' chances at this star, so a group gives at most one item a run. A
+## group with no chance at this star draws nothing (and uses no roll). In a
+## picked pool, one item is chosen evenly. above_run_level "drop" keeps items
+## above the run level (they wait in the bag, as can_wear says); "skip" leaves
+## them out, and a pool with nothing left gives nothing.
+func _roll_star_drops(dungeon: Dictionary, context: Dictionary, rng: RandomNumberGenerator, items: Array) -> void:
+	var table: Dictionary = dungeon.get("star_drops", {})
+	if table.is_empty():
+		return
+	var stars := str(maxi(int(context.get("stars", 1)), 1))
+	var level := int(context.get("level", 1))
+	for raw in table.get("groups", []):
+		var group: Dictionary = raw
+		var live: Array = []
+		for pool in group.get("pools", []):
+			var chance := float(((pool as Dictionary).get("chance_by_stars", {}) as Dictionary).get(stars, 0))
+			if chance > 0.0:
+				live.append([pool, chance])
+		if live.is_empty():
+			continue
+		var x := rng.randf()
+		var acc := 0.0
+		for pair in live:
+			acc += float(pair[1])
+			if x >= acc:
+				continue
+			var pool: Dictionary = pair[0]
+			var ids := _star_pool_ids(pool)
+			if str(group.get("above_run_level", "drop")) == "skip":
+				ids = ids.filter(func(id): return int(item(str(id)).get("min_level", 1)) <= level)
+			if not ids.is_empty():
+				var picked := str(ids[rng.randi() % ids.size()])
+				var rarity := str(pool.get("rarity", item(picked).get("rarity", "")))
+				items.append({"item_id": picked, "rarity": rarity if rarity != "" else "regular", "count": 1})
+			break
+
+
+func _star_pool_ids(pool: Dictionary) -> Array:
+	if pool.has("set_id"):
+		var ids: Array = []
+		for part in set_by_id(str(pool["set_id"])).get("parts", []):
+			ids.append(str((part as Dictionary).get("id", "")))
+		return ids
+	return (pool.get("items", []) as Array).duplicate()
+
+
+func _check_star_drops(dungeon: Dictionary, errors: Array) -> void:
+	var table: Variant = dungeon.get("star_drops", {})
+	if typeof(table) != TYPE_DICTIONARY:
+		errors.append("star_drops %s" % str(dungeon.get("id", "")))
+		return
+	var dung_id := str(dungeon.get("id", ""))
+	for raw in (table as Dictionary).get("groups", []):
+		var group: Dictionary = raw
+		var where := "%s %s" % [dung_id, str(group.get("id", ""))]
+		if int(group.get("max_per_run", 0)) != 1:
+			errors.append("star_drops max_per_run %s" % where)
+		if not ABOVE_RUN_LEVEL.has(str(group.get("above_run_level", ""))):
+			errors.append("star_drops above_run_level %s" % where)
+		var sums: Dictionary = {}
+		for pool_raw in group.get("pools", []):
+			var pool: Dictionary = pool_raw
+			if pool.has("set_id") and set_by_id(str(pool["set_id"])).is_empty():
+				errors.append("star_drops set %s" % where)
+			var ids := _star_pool_ids(pool)
+			if ids.is_empty():
+				errors.append("star_drops empty pool %s" % where)
+			for id in ids:
+				if item(str(id)).is_empty():
+					errors.append("star_drops item %s %s" % [where, str(id)])
+			var by_star: Dictionary = pool.get("chance_by_stars", {})
+			for star in by_star.keys():
+				var chance := float(by_star[star])
+				if chance < 0.0:
+					errors.append("star_drops chance %s" % where)
+				sums[star] = float(sums.get(star, 0.0)) + chance
+		for star in sums.keys():
+			if float(sums[star]) > 1.0 + 0.001:
+				errors.append("star_drops chances over 1 %s star %s" % [where, str(star)])
 
 
 func _dungeon_part_set(dungeon: Dictionary, context: Dictionary, rng: RandomNumberGenerator) -> Dictionary:
-	var split: Dictionary = _doc["guaranteed_split"]
+	var split: Dictionary = dungeon.get("guaranteed_split", _doc["guaranteed_split"])
 	if rng.randf() < float(split.get("dungeon_set", 0)):
 		var set_id := str(dungeon.get("set_id", ""))
 		var also := str(dungeon.get("also_set_id", ""))
