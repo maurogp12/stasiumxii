@@ -187,18 +187,17 @@ func _test_vault_rules() -> void:
 	var first: Dictionary = _sim.submit({"type": "cast", "spell": "vault", "to": Vector2i(3, 5), "seat": 0})
 	eq(bool(first.get("ok", false)), true, "the first Vault lands")
 	eq(int(_sim._unit_by_seat(0)["ap"]), int(_sim._unit_by_seat(0)["max_ap"]) - 3, "it spent 3 AP")
-	eq(int(_sim._unit_by_seat(0)["vaults_cast"]), 1, "it counts toward the match cap")
 	for _i in 3:
 		_cycle_pair()
 	_sim._unit_by_seat(1)["pos"] = Vector2i(4, 5)
 	var second: Dictionary = _sim.submit({"type": "cast", "spell": "vault", "to": Vector2i(3, 3), "seat": 0})
-	eq(bool(second.get("ok", false)), true, "the second Vault is the match cap")
-	eq(int(_sim._unit_by_seat(0)["vaults_cast"]), 2, "two Vaults are recorded")
+	eq(bool(second.get("ok", false)), true, "the second Vault is legal once the cooldown ends")
 	for _i in 3:
 		_cycle_pair()
 	_sim._unit_by_seat(1)["pos"] = Vector2i(3, 4)
 	var third: Dictionary = _sim.submit({"type": "cast", "spell": "vault", "to": Vector2i(3, 1), "seat": 0})
-	eq(str(third.get("reason", "")), "vault_match", "a third Vault is refused")
+	eq(bool(third.get("ok", false)), true, "a third Vault is legal; there is no match cap")
+	eq(_sim._unit_by_seat(0)["pos"], Vector2i(3, 1), "the third Vault lands")
 
 
 func _test_gatewarden() -> void:
@@ -258,8 +257,14 @@ func _test_sandhawk() -> void:
 	var free: Dictionary = _sim.submit({"type": "cast", "spell": "vault", "to": Vector2i(2, 3), "seat": 0})
 	eq(bool(free.get("ok", false)), true, "the free Vault resolves")
 	eq(int(kite["ap"]), ap_before, "a free Vault costs 0 AP")
-	eq(int(kite["vaults_cast"]), 1, "the free Vault counts as one of the two")
 	eq(int((kite.get("spell_cd", {}) as Dictionary).get(SpellKits.VAULT, 0)), 0, "the free Vault skips the cooldown")
+	_end()
+	_end()
+	_sim._unit_by_seat(1)["pos"] = Vector2i(2, 4)
+	var paid: Dictionary = _sim.submit({"type": "cast", "spell": "vault", "to": Vector2i(4, 3), "seat": 0})
+	eq(bool(paid.get("ok", false)), true, "the next turn can Vault; the free one spent no cap")
+	eq(int(kite["ap"]), int(kite["max_ap"]) - 3, "that Vault costs 3 AP")
+	eq(int((kite.get("spell_cd", {}) as Dictionary).get(SpellKits.VAULT, 0)), 3, "the paid Vault arms the cooldown")
 	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "classes": ["kestrel", "bastion"], "positions": [Vector2i(2, 2), Vector2i(5, 2)], "seat_gear": {0: _fight("sandhawk", true)}, "bastion_aegis": 3})
 	_bring(0)
 	_rolls([1, 99])

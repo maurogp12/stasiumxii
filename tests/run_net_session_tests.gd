@@ -44,6 +44,7 @@ func _run() -> void:
 	_test_intent_json_roundtrip()
 	_test_host_submit_identical()
 	_test_host_rejects_shot_across_crystal()
+	_test_host_vault_has_no_match_cap()
 	_test_client_must_not_roll_on_wire()
 	_test_seat_ownership()
 	_test_guest_hydrate_from_packed_state()
@@ -219,6 +220,56 @@ func _test_host_rejects_shot_across_crystal() -> void:
 	var view: Node = _guest.sim()
 	eq(view.has_line_of_sight(kestrel, ironjaw), false, "the guest replica blocks the same crystal")
 	eq(bool(view.tile_at(crystal).get("walkable", true)), false, "the guest replica cannot walk the crystal")
+
+
+## Vault's 2-turn cooldown is the host rule and the guest replica. A later
+## Vault is still legal. There is no twice-per-match refusal.
+func _test_host_vault_has_no_match_cap() -> void:
+	_host.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"fixture": true,
+		"classes": ["kestrel", "ironjaw"],
+		"positions": [Vector2i(5, 5), Vector2i(6, 5)],
+	})
+	var first: Dictionary = _host.submit({"type": "cast", "spell": "vault", "to": Vector2i(3, 5), "seat": 0})
+	eq(bool(first.get("ok", false)), true, "the host accepts the first Vault")
+	for _i in 4:
+		var seat := int(_sim.snapshot().get("active_seat", 0))
+		var ended: Dictionary = _host.submit_for_seat({"type": "end_turn", "seat": seat}, seat)
+		eq(bool(ended.get("ok", false)), true, "the host ends seat %d while Vault cools down" % seat)
+	var cooled: Dictionary = _host.submit({"type": "cast", "spell": "vault", "to": Vector2i(3, 3), "seat": 0})
+	eq(str(cooled.get("reason", "")), "cooldown", "the host rejects Vault on the last locked turn")
+	_guest.apply_packed_state(_host.pack_result(cooled, 1))
+	var view: Node = _guest.sim()
+	var guest_snap: Dictionary = view.snapshot()
+	var guest_unit := {}
+	for unit in guest_snap.get("units", []):
+		if int(unit.get("seat", -1)) == 0:
+			guest_unit = unit
+	var cds: Dictionary = guest_unit.get("spell_cd", {})
+	eq(int(cds.get("vault", 0)), 1, "the guest replica stores Vault's clock at 1")
+	var offered := false
+	for intent in view.legal_intents(0):
+		if str(intent.get("spell", "")) == "vault":
+			offered = true
+	eq(offered, false, "the guest replica does not offer Vault while it is cooling down")
+	eq(CombatHUD.vault_button_reason(guest_unit, guest_snap, false), "1 turn", "the guest button says 1 turn")
+	var locked_seat := int(_sim.snapshot().get("active_seat", 0))
+	eq(bool(_host.submit_for_seat({"type": "end_turn", "seat": locked_seat}, locked_seat).get("ok", false)), true, "Kestrel ends the locked Vault turn")
+	var other_seat := int(_sim.snapshot().get("active_seat", 1))
+	eq(bool(_host.submit_for_seat({"type": "end_turn", "seat": other_seat}, other_seat).get("ok", false)), true, "the other seat ends and Vault is ready")
+	_sim._unit_by_seat(1)["pos"] = Vector2i(4, 5)
+	var third: Dictionary = _host.submit({"type": "cast", "spell": "vault", "to": Vector2i(3, 3), "seat": 0})
+	eq(bool(third.get("ok", false)), true, "the host accepts another Vault once the cooldown ends")
+	eq(str(third.get("reason", "")), "", "the host does not refuse a match cap")
+	_guest.apply_packed_state(_host.pack_result(third, 1))
+	var landed := Vector2i(-1, -1)
+	for unit in _guest.snapshot().get("units", []):
+		if int(unit.get("seat", -1)) == 0:
+			landed = unit.get("pos", Vector2i(-1, -1))
+	eq(landed, Vector2i(3, 3), "the guest replica lands the later Vault")
 
 
 func _test_guest_paints_lava_burn_from_host() -> void:
