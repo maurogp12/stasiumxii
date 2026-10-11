@@ -20,6 +20,7 @@ const Atlas := preload("res://backend/world_atlas.gd")
 const NpcBook := preload("res://backend/world_npcs.gd")
 const Missions := preload("res://backend/pc_missions.gd")
 const Progress := preload("res://backend/pc_progress.gd")
+const Rewards := preload("res://backend/pc_rewards.gd")
 const Art := preload("res://scenes/world/dungeon/dungeon_art.gd")
 const Launcher := preload("res://scenes/world/dungeon/dungeon_launcher.gd")
 const Regions := preload("res://backend/world_regions.gd")
@@ -71,6 +72,7 @@ func _run() -> void:
 	_test_star5_grasping_mire()
 	_test_mire_and_cleanse()
 	_test_rewards_per_star()
+	_test_rosary()
 	_test_mission_credit()
 	_test_others_unchanged()
 	await _test_world_door_and_panel()
@@ -903,7 +905,11 @@ func _test_rewards_per_star() -> void:
 					rares += 1
 				if str(item.get("item_id", "")) == "mystery_box":
 					boxes += 1
-				eq(str(item.get("rarity", "regular")) in ["regular", "rare", "special", ""], true, "★%d drops no epic or relic (%s)" % [star, item.get("item_id", "")])
+				var rarity := str(item.get("rarity", "regular"))
+				if star < 5:
+					eq(rarity in ["regular", "rare", "special", ""], true, "★%d drops no epic or relic (%s)" % [star, item.get("item_id", "")])
+				else:
+					eq(rarity != "relic" and (rarity != "epic" or str(item.get("item_id", "")) == "abbess_rosary"), true, "★5's only epic is the Rosary (%s)" % item.get("item_id", ""))
 				parts[str(item.get("item_id", ""))] = true
 			summary = s2
 		if star == 1:
@@ -931,6 +937,72 @@ func _test_rewards_per_star() -> void:
 		if str(id).begins_with("mire_abbess_"):
 			set_part = true
 	eq(set_part, true, "the abbey drops Mire Abbess set parts (the tier-30 set)")
+
+
+# --- the Abbess's Rosary (Mauro, 11 Oct 2026: "Si a todo") -------------------------
+
+var _loot_book = null
+var _loot_runs := {}
+
+
+## Mirrors pay_out: the rewards roll at the run level, then the star gate.
+func _loot(level: int, star: int, seed: int) -> Dictionary:
+	if _loot_book == null:
+		_loot_book = Rewards.load_default()["rewards"]
+	var key := "%d/%d" % [level, star]
+	if not _loot_runs.has(key):
+		_loot_runs[key] = Run.create(ABBEY, level, "kestrel", "", star)["run"]
+	var run = _loot_runs[key]
+	var rng := _rng(seed)
+	var drop: Dictionary = _loot_book.roll("dungeon", {"dungeon_id": ABBEY, "level": run.level, "stars": star, "class_id": "kestrel", "zone_id": ZONE}, rng)
+	drop["items"] = run.star_loot(_loot_book, drop["items"], rng)
+	return drop
+
+
+func _test_rosary() -> void:
+	var book = Rewards.load_default()["rewards"]
+	var row: Dictionary = {}
+	for r in book.dungeons():
+		if str(r["id"]) == ABBEY:
+			row = r
+	eq([str(row["set_id"]), int(row["class_tier"]), int(row["coin_level"])], ["mire_abbess", 30, 30], "the abbey still pays the tier-30 sets at coin level 30")
+	eq(row.has("guaranteed_split"), false, "the abbey keeps the even set split")
+	eq(str(row["star_drops"]["status"]), "proposed", "the Rosary drop is Proposed")
+	eq(str(book.item("abbess_rosary")["drop"]), "rolled", "the Rosary now drops")
+	eq(str(book.can_wear("abbess_rosary", "epic", 32, "Kestrel")["reason"]), "level", "a level-32 hero carries the Rosary until level 40")
+	eq(bool(book.can_wear("abbess_rosary", "epic", 40, "Kestrel")["ok"]), true, "a level-40 hero can wear it")
+	# ★1-★4 roll exactly as before the change (fingerprints taken at bdde0da4).
+	var pins := ["21034a957321380bd749a0b8a9958031", "2263bade286b5286184a8f2a2e215ddc", "9670ce32a3d10b6a15ef794f8904f984", "345071c11b2bb6d34142c6b30e24c668"]
+	for star in range(1, 5):
+		var text := ""
+		for seed in 60:
+			var drop := _loot(LEVEL, star, 9000 + seed)
+			text += "%d|%s;" % [int(drop["coins"]), JSON.stringify(drop["items"])]
+		eq(text.md5_text(), pins[star - 1], "the abbey's ★%d rewards are unchanged" % star)
+	var n := 4000
+	for level in [32, 40]:
+		for star in range(1, 6):
+			var got := 0
+			for t in n:
+				var rosaries := 0
+				var box := false
+				for item in _loot(level, star, 300000 + 10000 * star + t + level * 1000000)["items"]:
+					var id := str(item["item_id"])
+					box = box or id == "mystery_box"
+					if id == "abbess_rosary":
+						rosaries += 1
+						eq(str(item["rarity"]), "epic", "the Rosary drops as epic")
+					if str(book.item(id).get("rarity", "")) in ["epic", "relic"] and id != "abbess_rosary":
+						eq(id, "", "%s is not an abbey drop" % id)
+				if rosaries > 1:
+					eq(rosaries, 1, "at most one Rosary a run")
+				if star == 5 and not box:
+					eq(box, true, "★5 still gives a Mystery Box")
+				got += rosaries
+			var rate := float(got) / n
+			var expect := 0.15 if star == 5 else 0.0
+			print("  abbey level %d ★%d over %d wins: Rosary %.3f" % [level, star, n, rate])
+			eq(absf(rate - expect) <= 0.02, true, "level %d ★%d: Rosary %.3f (~%.2f)" % [level, star, rate, expect])
 
 
 func _test_mission_credit() -> void:

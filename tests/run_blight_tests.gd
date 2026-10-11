@@ -22,6 +22,7 @@ const Atlas := preload("res://backend/world_atlas.gd")
 const NpcBook := preload("res://backend/world_npcs.gd")
 const Missions := preload("res://backend/pc_missions.gd")
 const Progress := preload("res://backend/pc_progress.gd")
+const Rewards := preload("res://backend/pc_rewards.gd")
 const Art := preload("res://scenes/world/dungeon/dungeon_art.gd")
 const Launcher := preload("res://scenes/world/dungeon/dungeon_launcher.gd")
 const Regions := preload("res://backend/world_regions.gd")
@@ -71,6 +72,8 @@ func _run() -> void:
 	_test_star5_crystal_bloom()
 	_test_wither_and_cleanse()
 	_test_rewards_per_star()
+	_test_loot_tiers()
+	_test_star_drop_rates()
 	_test_mission_credit()
 	_test_others_unchanged()
 	await _test_world_door_and_panel()
@@ -893,7 +896,11 @@ func _test_rewards_per_star() -> void:
 					rares += 1
 				if str(item.get("item_id", "")) == "mystery_box":
 					boxes += 1
-				eq(str(item.get("rarity", "regular")) in ["regular", "rare", "special", ""], true, "★%d drops no epic or relic (%s)" % [star, item.get("item_id", "")])
+				var rarity := str(item.get("rarity", "regular"))
+				if star < 4:
+					eq(rarity in ["regular", "rare", "special", ""], true, "★%d drops no epic or relic (%s)" % [star, item.get("item_id", "")])
+				elif star == 4:
+					eq(rarity != "relic", true, "★4 drops no relic (%s)" % item.get("item_id", ""))
 				parts[str(item.get("item_id", ""))] = true
 			summary = s2
 		if star == 1:
@@ -916,12 +923,137 @@ func _test_rewards_per_star() -> void:
 	eq(base_xp, expect_xp, "level 42 ★1 XP is 27%% of xp_to_next(42) x pace (%d)" % expect_xp)
 	eq(base_xp > Run.create(ABBEY, LEVEL, "kestrel")["run"].win_xp(LEVEL), true, "for the same hero the blight pays more XP than the abbey")
 	eq(base_coins > 0, true, "a blight win pays coins (%d)" % base_coins)
-	var set_part := false
+	var tier40 := false
 	for id in parts.keys():
-		if str(id).begins_with("rotting_elder_"):
-			set_part = true
-		eq(str(id) in ["heart_of_the_elder", "blightroot_ring", "crown_of_crosshaven", "gale_signet", "abbess_rosary", "ember_crown", "stormheart_gauntlet", "prism_striders"], false, "%s is not an epic or relic" % id)
-	eq(set_part, true, "the blight drops Rotting Elder set parts")
+		eq(str(id).begins_with("rotting_elder_"), false, "%s: no Rotting Elder part below a level-50 run" % id)
+		eq(str(id) in ["crown_of_crosshaven", "abbess_rosary"], false, "%s does not drop in the blight" % id)
+		for suffix in ["galecrest", "mountainmaw", "deepspring", "voidshroud", "rampart_lord"]:
+			tier40 = tier40 or str(id).contains("_%s_" % suffix)
+	eq(tier40, true, "the blight drops tier-40 class set parts")
+
+
+# --- loot: wearable sets, epics and relics (Mauro, 11 Oct 2026: "Si a todo") ------
+
+## Mirrors pay_out: the rewards roll at the run level, then the star gate.
+var _loot_book = null
+var _loot_runs := {}
+
+
+func _loot(dungeon: String, level: int, star: int, seed: int) -> Dictionary:
+	if _loot_book == null:
+		_loot_book = Rewards.load_default()["rewards"]
+	var book = _loot_book
+	var key := "%s/%d/%d" % [dungeon, level, star]
+	if not _loot_runs.has(key):
+		_loot_runs[key] = Run.create(dungeon, level, "kestrel", "", star)["run"]
+	var run = _loot_runs[key]
+	var rng := _rng(seed)
+	var drop: Dictionary = book.roll("dungeon", {"dungeon_id": dungeon, "level": run.level, "stars": star, "class_id": "kestrel", "zone_id": ZONE}, rng)
+	drop["items"] = run.star_loot(book, drop["items"], rng)
+	return drop
+
+
+func _test_loot_tiers() -> void:
+	var book = Rewards.load_default()["rewards"]
+	var row: Dictionary = {}
+	for r in book.dungeons():
+		if str(r["id"]) == BLIGHT:
+			row = r
+	eq([int(row["class_tier"]), int(row["coin_level"])], [40, 40], "the blight pays tier-40 class sets at coin level 40")
+	eq(str(row["set_id"]), "rotting_elder", "the Rotting Elder is still the blight's own set")
+	eq(int(book.set_by_id("rotting_elder")["tier"]), 50, "the Rotting Elder set stays tier 50 (spec 4.9)")
+	eq(float(row["guaranteed_split"]["class_set"]), 1.0, "the guaranteed part is always a class set")
+	eq(str(row["star_drops"]["status"]), "proposed", "the star drops are Proposed")
+	var coins40 := int(round(3.0 + 1.5 * 40.0)) * 8
+	var books := Rewards.load_default()
+	eq(bool(books["ok"]), true, "rewards.json loads with the star drops: %s" % [books.get("errors", [])])
+	for level in [40, 42, 45, 49]:
+		for star in range(1, 6):
+			var gear := 0
+			for t in 40:
+				var drop := _loot(BLIGHT, level, star, 5000 + 97 * level + 13 * star + t)
+				eq(int(drop["coins"]), coins40 * star, "level %d ★%d coins are coin level 40 x star" % [level, star])
+				for item in drop["items"]:
+					var id := str(item["item_id"])
+					var def: Dictionary = book.item(id)
+					if str(def.get("set_id", "")) == "":
+						continue
+					gear += 1
+					var set_def: Dictionary = book.set_by_id(str(def["set_id"]))
+					eq([str(set_def["kind"]), int(set_def["tier"])], ["class", 40], "level %d ★%d set part %s is a tier-40 class part" % [level, star, id])
+					eq(int(def["min_level"]) <= level, true, "level %d ★%d set part %s is wearable" % [level, star, id])
+			eq(gear >= 40, true, "level %d ★%d: every win gives a set part (%d)" % [level, star, gear])
+	# A level-50 run: still no tier-50 set part below ★5.
+	for star in range(1, 5):
+		for t in 60:
+			for item in _loot(BLIGHT, 50, star, 7000 + 100 * star + t)["items"]:
+				eq(str(item["item_id"]).begins_with("rotting_elder_"), false, "level 50 ★%d drops no Rotting Elder part" % star)
+				eq(str(book.item(str(item["item_id"])).get("rarity", "")) != "relic", true, "level 50 ★%d: no relic" % star)
+	# ★5 keeps its Mystery Box and its Rare part, and the Rare part is wearable.
+	for t in 30:
+		var items: Array = _loot(BLIGHT, 42, 5, 8000 + t)["items"]
+		var box := false
+		var rare_ok := false
+		for item in items:
+			box = box or str(item["item_id"]) == "mystery_box"
+			if str(item["rarity"]) == "rare":
+				rare_ok = rare_ok or int(book.item(str(item["item_id"]))["min_level"]) == 40
+		eq(box, true, "★5 still gives a Mystery Box")
+		eq(rare_ok, true, "★5's Rare part is a tier-40 part")
+	# above_run_level "drop": a level-50 relic dropped on a level-42 run waits in the bag.
+	eq(str(book.can_wear("heart_of_the_elder", "relic", 42, "Kestrel")["reason"]), "level", "a level-42 hero cannot wear Heart of the Elder yet")
+	eq(bool(book.can_wear("heart_of_the_elder", "relic", 50, "Kestrel")["ok"]), true, "a level-50 hero can")
+	eq(str(book.item("crown_of_crosshaven")["drop"]), "Open", "Crown of Crosshaven has no source yet")
+	for id in ["gale_signet", "ember_crown", "stormheart_gauntlet", "prism_striders", "heart_of_the_elder", "blightroot_ring"]:
+		eq(str(book.item(id)["drop"]), "rolled", "%s now drops" % id)
+
+
+func _test_star_drop_rates() -> void:
+	var book = Rewards.load_default()["rewards"]
+	var low := ["gale_signet", "ember_crown", "stormheart_gauntlet"]
+	var relics := ["heart_of_the_elder", "blightroot_ring"]
+	var n := 4000
+	for level in [42, 50]:
+		for star in range(1, 6):
+			var count := {}
+			var elder := 0
+			for t in n:
+				var epics := 0
+				var rel := 0
+				for item in _loot(BLIGHT, level, star, 100000 + 10000 * star + t + level * 1000000)["items"]:
+					var id := str(item["item_id"])
+					var rarity := str(book.item(id).get("rarity", ""))
+					if rarity == "epic":
+						epics += 1
+						eq(str(item["rarity"]), "epic", "an epic drops as epic")
+					if rarity == "relic":
+						rel += 1
+						eq(str(item["rarity"]), "relic", "a relic drops as relic")
+					if id.begins_with("rotting_elder_"):
+						elder += 1
+					count[id] = int(count.get(id, 0)) + 1
+				if epics > 1 or rel > 1:
+					eq([epics, rel], [1, 1], "level %d ★%d: at most one epic and one relic a run" % [level, star])
+			var low_n := 0
+			for id in low:
+				low_n += int(count.get(id, 0))
+			var rate := float(low_n) / n
+			var expect_low: float = {4: 0.10, 5: 0.20}.get(star, 0.0)
+			eq(absf(rate - expect_low) <= 0.02, true, "level %d ★%d: Gale / Ember / Stormheart %.3f (~%.2f)" % [level, star, rate, expect_low])
+			var expect_5 := 0.05 if star == 5 else 0.0
+			for id in ["prism_striders"] + relics:
+				var r := float(count.get(id, 0)) / n
+				eq(absf(r - expect_5) <= 0.015, true, "level %d ★%d: %s %.3f (~%.2f)" % [level, star, id, r, expect_5])
+			eq(count.has("crown_of_crosshaven") or count.has("abbess_rosary"), false, "level %d ★%d: no Crown, no Rosary" % [level, star])
+			var expect_elder := 0.10 if (star == 5 and level == 50) else 0.0
+			var er := float(elder) / n
+			print("  blight level %d ★%d over %d wins: Gale/Ember/Stormheart %.3f, Prism %.3f, Heart %.3f, Blightroot %.3f, Rotting Elder part %.3f" % [level, star, n, rate, float(count.get("prism_striders", 0)) / n, float(count.get("heart_of_the_elder", 0)) / n, float(count.get("blightroot_ring", 0)) / n, er])
+			eq(absf(er - expect_elder) <= 0.02, true, "level %d ★%d: Rotting Elder part %.3f (~%.2f)" % [level, star, er, expect_elder])
+			if star == 5 and level == 42:
+				for id in low:
+					eq(int(count.get(id, 0)) > 0, true, "★5 at level 42 drops %s too (drop above the run level)" % id)
+	# The draws are seeded: the same seed gives the same drop.
+	eq(JSON.stringify(_loot(BLIGHT, 42, 5, 31)), JSON.stringify(_loot(BLIGHT, 42, 5, 31)), "a seeded ★5 drop is fixed")
 
 
 func _test_mission_credit() -> void:
@@ -942,6 +1074,17 @@ func _test_mission_credit() -> void:
 # --- the other four dungeons are unchanged -------------------------------------------
 
 func _test_others_unchanged() -> void:
+	# Rewards: seeded roll + star gate fingerprints taken at bdde0da4, before the
+	# loot change (60 seeds per star, level 1 / 12 / 22).
+	var pins := {
+		GRANARY: ["a805e2ac16dd784996eb45867ff87b96", "b0506a5408594687b477a61de2b4cb50", "27703bdc76b03275dde3cab67b1ea2bd", "e331f7e652393579737119ac1dd3bbbe", "ec613b8978ea1805f738a22024f7c0c6"],
+		FROST: ["c911006047cb30b2cb8caef2e073ebc6", "27b04b1700202db1e9eae607a1d89896", "e1cc11dc17e0f0f845394340f2ced02c", "16e6f4c3ae006408eb1cc595dcfc33ec", "f94a96fc5f4709e3beaccde347344707"],
+		SALT: ["87edc23f2a22f5aa75e1716a5aad2958", "751a86cf8b4d7d870ccf5ecf7ea89447", "5dddd1a84898b1d12bb86d8ba2f975bb", "4f575fa1a1f68a9796099c09626db0c0", "7ce5f29ab5244e4a9d5c144632e0225c"],
+	}
+	var levels := {GRANARY: 1, FROST: 12, SALT: 22}
+	for dungeon in pins.keys():
+		for star in range(1, 6):
+			eq(_loot_fingerprint(str(dungeon), int(levels[dungeon]), star), str(pins[dungeon][star - 1]), "%s ★%d rewards are unchanged" % [dungeon, star])
 	var book = Monsters.load_default()["monsters"]
 	eq(book.ids_for(GRANARY), ["granary_rat", "sling_rat", "scarecrow_drudge", "the_ratking", "radioactive_rat", "radioactive_sling_rat", "radioactive_ratking"], "the cellar keeps its seven monsters")
 	eq(book.ids_for(FROST), ["ice_construct", "book_wraith", "the_pale_archivist", "frozen_ice_construct", "frozen_book_wraith", "the_frozen_archivist"], "the archive keeps its six monsters")
@@ -1136,6 +1279,15 @@ func _fresh_hero():
 	hero.dungeon_stars = {}
 	hero.hero_class = "kestrel"
 	return hero
+
+
+## 60 seeded rolls (coins + items after the star gate), hashed.
+func _loot_fingerprint(dungeon: String, level: int, star: int) -> String:
+	var text := ""
+	for seed in 60:
+		var drop := _loot(dungeon, level, star, 9000 + seed)
+		text += "%d|%s;" % [int(drop["coins"]), JSON.stringify(drop["items"])]
+	return text.md5_text()
 
 
 func _rng(seed: int) -> RandomNumberGenerator:
