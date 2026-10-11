@@ -188,8 +188,8 @@ All pieces are painted in Scenario, team "Maurogarza06's Organization", project 
 |---|---|---|
 | `backdrop_storm_sea` | 1920×1080 / 3840×2160 | a stormy sea and sky, cool. One painting; the crimson regrade is a shader, not a second painting |
 | `lightning_bolts` ×3 | 256×768 | additive |
-| `floating_island` | 760×420 | cut out, with a small waterfall |
-| `pedestal` | 420×160 | carved stone, front-lit |
+| `floating_island` | 760×644 (accepted 11 Oct: includes the cliff underside; platform centre at x1300, y640) | cut out, with a small waterfall |
+| `pedestal` | 420×245 (accepted 11 Oct; the top ellipse is the stand surface) | carved stone, front-lit; regrade or rim-tint it on the crimson screen |
 | `class_art_<class>_<m/f>` | 1100×1100 / 2200×2200 | **the big painted class illustration**, dramatic, matching the locked look of each class (the dark-steel v7 Ironjaw etc.). Transparent edges that fade into the backdrop. 10 total (5 classes × 2 genders) |
 | `class_bust_<class>_<m/f>` | 150×150 and 72×72 | tiles and list portraits |
 | `class_icon_<class>` | 32×32 | list rows |
