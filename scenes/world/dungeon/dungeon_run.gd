@@ -6,7 +6,7 @@ extends Node2D
 ## goes back to town on the door cell (DungeonLauncher.finish).
 ##
 ## Launched by DungeonLauncher.enter from the door. Run directly for capture:
-##   godot --path . res://scenes/world/dungeon/dungeon_run.tscn -- --dungeon-capture stills|showcase|run|fight|rewards|room [--dungeon old_granary_cellar] [--class kestrel] [--star 1] [--level 1]
+##   godot --path . res://scenes/world/dungeon/dungeon_run.tscn -- --dungeon-capture stills|showcase|run|fight|rewards|room [--dungeon old_granary_cellar] [--class kestrel] [--star 1] [--level 1] [--pace 0.35]
 
 signal run_finished(result: String, summary: Dictionary)
 
@@ -68,6 +68,10 @@ func _ready() -> void:
 		missions.reconcile(progress)
 	manifest = Art.manifest(str(run.run_doc.get("art", "")))
 	board.autoplay = bool(ctx.get("autoplay", false))
+	if capture != "" and _arg("--pace", "") != "":
+		# Capture only: a slower hero bot beat (seconds between its intents)
+		# so a clip reads; the fight itself is the same.
+		board.autoplay_pace = float(_arg("--pace", "0.35"))
 	board.room_over.connect(_on_room_over)
 	_build_overlay()
 	_return_button.text = run.text("return_button", "Return to town")
@@ -470,7 +474,8 @@ func _fight_clip() -> void:
 	var limit := get_tree().create_timer(float(_arg("--secs", "150")))
 	while over.is_empty() and limit.time_left > 0.0:
 		await get_tree().process_frame
-	print("FIGHT %s" % str(over.get("result", "timeout")))
+	var info: Dictionary = sim_node().snapshot().get("dungeon", {})
+	print("FIGHT %s raised %d" % [str(over.get("result", "timeout")), int(info.get("raised_total", 0))])
 	_stair_label.text = "Victory" if str(over.get("result", "")) == "win" else "Defeat"
 	_stair_label.visible = true
 	await get_tree().create_timer(3.5).timeout
