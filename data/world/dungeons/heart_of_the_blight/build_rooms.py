@@ -28,11 +28,9 @@ SIZE = 12
 
 # The agreed board props (art agent, claude/blight-art), all 1x1 and blocking.
 # Replaced by the manifest's room lists once the manifest names them.
-KIT_PROPS = {
-    "room_a": {"thorn_mound", "blight_crystal", "glow_mushroom", "bone_pile", "root_stump"},
-    "room_b": {"thorn_mound", "blight_crystal", "glow_mushroom", "bone_pile", "root_stump", "rib_cage"},
-}
-FOOTPRINTS = {}
+KIT = {"violet_crystals", "crystal_spire", "root_knot", "root_mound", "bone_pile", "broken_masonry", "fungus_clump", "chained_cocoon", "blight_eggs"}
+KIT_PROPS = {"room_a": set(KIT), "room_b": set(KIT)}
+FOOTPRINTS = {"root_mound": (2, 2)}
 
 
 def _manifest_props() -> None:
@@ -69,58 +67,59 @@ def stamp(origin: tuple, prop: str) -> dict:
     return out
 
 
-# Room A, the rotting hollow. Thorn mounds with blight crystals stand in short
+# Room A, the rotting hollow. Root knots, a root mound and violet crystals stand in short
 # runs on the middle rows, so a Blight Horror on the back rows must move to find
-# a line on the hero; six violet pulse pads glow on the floor.
+# a line on the hero; six violet blight pads glow on the floor.
 ROOM_A_ORIGINS = {
-    (0, 2): "glow_mushroom",
+    (0, 2): "fungus_clump",
     (11, 6): "bone_pile",
-    (2, 5): "thorn_mound", (3, 5): "blight_crystal",
-    (8, 4): "thorn_mound", (9, 4): "thorn_mound",
-    (5, 7): "thorn_mound",
-    (9, 8): "blight_crystal", (10, 8): "thorn_mound",
-    (2, 9): "thorn_mound",
+    (2, 5): "root_knot", (3, 5): "violet_crystals",
+    (8, 3): "root_mound",
+    (5, 7): "root_knot",
+    (9, 8): "violet_crystals", (10, 8): "blight_eggs",
+    (2, 9): "root_knot",
     (0, 11): "bone_pile",
-    (11, 11): "glow_mushroom",
+    (11, 11): "fungus_clump",
 }
 ROOM_A = {
     "hero": (6, 10),
     "props": {},
     "origins": ROOM_A_ORIGINS,
-    "pads": {(6, 2): "pulse_pad", (1, 6): "pulse_pad", (10, 6): "pulse_pad", (7, 6): "pulse_pad", (4, 9): "pulse_pad", (8, 10): "pulse_pad"},
-    "decor": {},
+    "pads": {(6, 2): "blight_pad", (1, 6): "blight_pad", (10, 6): "blight_pad", (7, 6): "blight_pad", (4, 9): "blight_pad", (8, 10): "blight_pad"},
+    # Walkable 1x1 floor decals (the kit's root veins): paint only, no rule.
+    "decor": {(4, 3): "root_veins", (6, 5): "root_veins", (10, 10): "root_veins", (1, 9): "root_veins", (3, 11): "root_veins"},
 }
 
-# Room B, the Elder's heart chamber. The pulse circle is a 5x5 walkable floor
+# Room B, the Elder's heart chamber. The root rune circle is a 5x5 walkable floor
 # decal on (4-8, 4-8) (origin (4, 4), bottom-centre on the south tip of
-# (8, 8)); its inner 3x3 glows (the nine pads). Blight crystals on its four
-# corner cells give cover from the horror's spores. Root stumps, a rib cage and
+# (8, 8)); its inner 3x3 glows (the nine pads). Crystal spires on its four
+# corner cells give cover from the horror's spores. A chained cocoon, masonry, eggs and
 # bones lie round the walls under the crystal heart.
 CIRCLE_ORIGIN = (4, 4)
 CIRCLE_SIZE = 5
 ROOM_B_ORIGINS = {
-    (1, 1): "root_stump",
-    (10, 1): "rib_cage",
-    (11, 4): "blight_crystal",
-    (4, 4): "blight_crystal", (8, 4): "blight_crystal", (4, 8): "blight_crystal", (8, 8): "blight_crystal",
+    (1, 1): "chained_cocoon",
+    (10, 1): "broken_masonry",
+    (11, 4): "violet_crystals",
+    (4, 4): "crystal_spire", (8, 4): "crystal_spire", (4, 8): "crystal_spire", (8, 8): "crystal_spire",
     (0, 6): "bone_pile",
-    (2, 9): "root_stump",
-    (10, 9): "thorn_mound",
-    (0, 11): "glow_mushroom",
+    (2, 9): "root_knot",
+    (10, 9): "blight_eggs",
+    (0, 11): "fungus_clump",
     (11, 11): "bone_pile",
 }
 ROOM_B = {
     "hero": (6, 10),
     "props": {},
     "origins": ROOM_B_ORIGINS,
-    "pads": {(x, y): "pulse_circle" for x in range(5, 8) for y in range(5, 8)},
-    "decal": {(CIRCLE_ORIGIN[0] + dx, CIRCLE_ORIGIN[1] + dy): "pulse_circle" for dx in range(CIRCLE_SIZE) for dy in range(CIRCLE_SIZE)},
-    "decor": {},
+    "pads": {(x, y): "root_rune_circle" for x in range(5, 8) for y in range(5, 8)},
+    "decal": {(CIRCLE_ORIGIN[0] + dx, CIRCLE_ORIGIN[1] + dy): "root_rune_circle" for dx in range(CIRCLE_SIZE) for dy in range(CIRCLE_SIZE)},
+    "decor": {(2, 5): "root_veins", (10, 6): "root_veins", (3, 10): "root_veins", (9, 10): "root_veins", (1, 8): "root_veins"},
 }
 
 # Spawns per room (the run.json packs use these cells): every star's cells.
 SPAWNS = {
-    "room_a": [(2, 2), (4, 1), (8, 1), (10, 3), (1, 0), (10, 0), (5, 0), (7, 3)],
+    "room_a": [(2, 2), (4, 1), (8, 1), (10, 3), (1, 0), (10, 0), (5, 0), (7, 0)],
     "room_b": [(6, 2), (4, 2), (8, 2), (6, 0)],
 }
 # Where the room's ranged shooters (Blight Horrors) stand.

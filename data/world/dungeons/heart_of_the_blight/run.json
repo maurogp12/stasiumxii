@@ -46,7 +46,7 @@
     ],
     "monster_glow": 0.8,
     "pads": {
-      "pulse_pad": {
+      "blight_pad": {
         "color": [
           0.78,
           0.42,
@@ -54,7 +54,7 @@
         ],
         "mark": "sprout"
       },
-      "pulse_circle": {
+      "root_rune_circle": {
         "color": [
           0.82,
           0.4,
@@ -132,7 +132,7 @@
         "spin": false,
         "draw_glow": false
       },
-      "crystal_spore": {
+      "crystal_shard": {
         "color": [
           0.85,
           0.6,
@@ -154,7 +154,7 @@
           1.0
         ]
       },
-      "crystal_impact": {
+      "crystal_shard_impact": {
         "color": [
           0.85,
           0.65,
@@ -168,7 +168,7 @@
           1.0
         ]
       },
-      "bloom_burst": {
+      "crystal_bloom_burst": {
         "color": [
           0.95,
           0.4,
@@ -320,7 +320,7 @@
           "facing": "S"
         }
       ],
-      "note": "packs: the pack for the highest key at or below the star. monsters is the ★1 pack. Spawns on the far rows (y 0-4), off the pulse pads, away from the hero (6,10); thorn mounds and blight crystals on the middle rows break the Blight Horrors' lines.",
+      "note": "packs: the pack for the highest key at or below the star. monsters is the ★1 pack. Spawns on the far rows (y 0-4), off the pulse pads, away from the hero (6,10); root knots, the root mound and violet crystals on the middle rows break the Blight Horrors' lines.",
       "packs": {
         "1": [
           {
@@ -430,9 +430,9 @@
             "facing": "S"
           },
           {
-            "monster": "blight_hound",
+            "monster": "crystal_horror",
             "x": 7,
-            "y": 3,
+            "y": 0,
             "facing": "S"
           },
           {
@@ -492,7 +492,7 @@
           "facing": "S"
         }
       ],
-      "note": "The Rotting Elder with his escort (2 Blight Hounds, 1 Blight Horror) behind the pulse circle. His Root Wall hems the hero in; the blight crystals on the circle's corners break the horror's line.",
+      "note": "The Rotting Elder with his escort (2 Blight Hounds, 1 Blight Horror) behind the root rune circle. His Root Wall hems the hero in; the crystal spires on the circle's corners break the horror's line.",
       "packs": {
         "1": [
           {

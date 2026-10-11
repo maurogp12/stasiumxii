@@ -178,7 +178,7 @@
    "terrain": "ground",
    "elevation": 0,
    "paint_only": [
-    "glow_mushroom"
+    "fungus_clump"
    ],
    "blocks": true
   },
@@ -223,7 +223,7 @@
    "terrain": "ground",
    "elevation": 0,
    "paint_only": [
-    "pulse_pad"
+    "blight_pad"
    ],
    "special": "pad"
   },
@@ -295,7 +295,9 @@
    "y": 3,
    "terrain": "ground",
    "elevation": 0,
-   "paint_only": []
+   "paint_only": [
+    "root_veins"
+   ]
   },
   {
    "x": 5,
@@ -323,14 +325,20 @@
    "y": 3,
    "terrain": "ground",
    "elevation": 0,
-   "paint_only": []
+   "paint_only": [
+    "root_mound:part"
+   ],
+   "blocks": true
   },
   {
    "x": 9,
    "y": 3,
    "terrain": "ground",
    "elevation": 0,
-   "paint_only": []
+   "paint_only": [
+    "root_mound:part"
+   ],
+   "blocks": true
   },
   {
    "x": 10,
@@ -408,7 +416,7 @@
    "terrain": "ground",
    "elevation": 0,
    "paint_only": [
-    "thorn_mound"
+    "root_mound:part"
    ],
    "blocks": true
   },
@@ -418,7 +426,7 @@
    "terrain": "ground",
    "elevation": 0,
    "paint_only": [
-    "thorn_mound"
+    "root_mound"
    ],
    "blocks": true
   },
@@ -456,7 +464,7 @@
    "terrain": "ground",
    "elevation": 0,
    "paint_only": [
-    "thorn_mound"
+    "root_knot"
    ],
    "blocks": true
   },
@@ -466,7 +474,7 @@
    "terrain": "ground",
    "elevation": 0,
    "paint_only": [
-    "blight_crystal"
+    "violet_crystals"
    ],
    "blocks": true
   },
@@ -489,7 +497,9 @@
    "y": 5,
    "terrain": "ground",
    "elevation": 0,
-   "paint_only": []
+   "paint_only": [
+    "root_veins"
+   ]
   },
   {
    "x": 7,
@@ -539,7 +549,7 @@
    "terrain": "ground",
    "elevation": 0,
    "paint_only": [
-    "pulse_pad"
+    "blight_pad"
    ],
    "special": "pad"
   },
@@ -584,7 +594,7 @@
    "terrain": "ground",
    "elevation": 0,
    "paint_only": [
-    "pulse_pad"
+    "blight_pad"
    ],
    "special": "pad"
   },
@@ -608,7 +618,7 @@
    "terrain": "ground",
    "elevation": 0,
    "paint_only": [
-    "pulse_pad"
+    "blight_pad"
    ],
    "special": "pad"
   },
@@ -663,7 +673,7 @@
    "terrain": "ground",
    "elevation": 0,
    "paint_only": [
-    "thorn_mound"
+    "root_knot"
    ],
    "blocks": true
   },
@@ -778,7 +788,7 @@
    "terrain": "ground",
    "elevation": 0,
    "paint_only": [
-    "blight_crystal"
+    "violet_crystals"
    ],
    "blocks": true
   },
@@ -788,7 +798,7 @@
    "terrain": "ground",
    "elevation": 0,
    "paint_only": [
-    "thorn_mound"
+    "blight_eggs"
    ],
    "blocks": true
   },
@@ -811,7 +821,9 @@
    "y": 9,
    "terrain": "ground",
    "elevation": 0,
-   "paint_only": []
+   "paint_only": [
+    "root_veins"
+   ]
   },
   {
    "x": 2,
@@ -819,7 +831,7 @@
    "terrain": "ground",
    "elevation": 0,
    "paint_only": [
-    "thorn_mound"
+    "root_knot"
    ],
    "blocks": true
   },
@@ -836,7 +848,7 @@
    "terrain": "ground",
    "elevation": 0,
    "paint_only": [
-    "pulse_pad"
+    "blight_pad"
    ],
    "special": "pad"
   },
@@ -951,7 +963,7 @@
    "terrain": "ground",
    "elevation": 0,
    "paint_only": [
-    "pulse_pad"
+    "blight_pad"
    ],
    "special": "pad"
   },
@@ -967,7 +979,9 @@
    "y": 10,
    "terrain": "ground",
    "elevation": 0,
-   "paint_only": []
+   "paint_only": [
+    "root_veins"
+   ]
   },
   {
    "x": 11,
@@ -1005,7 +1019,9 @@
    "y": 11,
    "terrain": "ground",
    "elevation": 0,
-   "paint_only": []
+   "paint_only": [
+    "root_veins"
+   ]
   },
   {
    "x": 4,
@@ -1062,7 +1078,7 @@
    "terrain": "ground",
    "elevation": 0,
    "paint_only": [
-    "glow_mushroom"
+    "fungus_clump"
    ],
    "blocks": true
   }

@@ -101,7 +101,7 @@
    "terrain": "ground",
    "elevation": 0,
    "paint_only": [
-    "root_stump"
+    "chained_cocoon"
    ],
    "blocks": true
   },
@@ -167,7 +167,7 @@
    "terrain": "ground",
    "elevation": 0,
    "paint_only": [
-    "rib_cage"
+    "broken_masonry"
    ],
    "blocks": true
   },
@@ -380,8 +380,8 @@
    "terrain": "ground",
    "elevation": 0,
    "paint_only": [
-    "blight_crystal",
-    "pulse_circle"
+    "crystal_spire",
+    "root_rune_circle"
    ],
    "blocks": true
   },
@@ -391,7 +391,7 @@
    "terrain": "ground",
    "elevation": 0,
    "paint_only": [
-    "pulse_circle"
+    "root_rune_circle"
    ]
   },
   {
@@ -400,7 +400,7 @@
    "terrain": "ground",
    "elevation": 0,
    "paint_only": [
-    "pulse_circle"
+    "root_rune_circle"
    ]
   },
   {
@@ -409,7 +409,7 @@
    "terrain": "ground",
    "elevation": 0,
    "paint_only": [
-    "pulse_circle"
+    "root_rune_circle"
    ]
   },
   {
@@ -418,8 +418,8 @@
    "terrain": "ground",
    "elevation": 0,
    "paint_only": [
-    "blight_crystal",
-    "pulse_circle"
+    "crystal_spire",
+    "root_rune_circle"
    ],
    "blocks": true
   },
@@ -443,7 +443,7 @@
    "terrain": "ground",
    "elevation": 0,
    "paint_only": [
-    "blight_crystal"
+    "violet_crystals"
    ],
    "blocks": true
   },
@@ -466,7 +466,9 @@
    "y": 5,
    "terrain": "ground",
    "elevation": 0,
-   "paint_only": []
+   "paint_only": [
+    "root_veins"
+   ]
   },
   {
    "x": 3,
@@ -481,7 +483,7 @@
    "terrain": "ground",
    "elevation": 0,
    "paint_only": [
-    "pulse_circle"
+    "root_rune_circle"
    ]
   },
   {
@@ -490,7 +492,7 @@
    "terrain": "ground",
    "elevation": 0,
    "paint_only": [
-    "pulse_circle"
+    "root_rune_circle"
    ],
    "special": "pad"
   },
@@ -500,7 +502,7 @@
    "terrain": "ground",
    "elevation": 0,
    "paint_only": [
-    "pulse_circle"
+    "root_rune_circle"
    ],
    "special": "pad"
   },
@@ -510,7 +512,7 @@
    "terrain": "ground",
    "elevation": 0,
    "paint_only": [
-    "pulse_circle"
+    "root_rune_circle"
    ],
    "special": "pad"
   },
@@ -520,7 +522,7 @@
    "terrain": "ground",
    "elevation": 0,
    "paint_only": [
-    "pulse_circle"
+    "root_rune_circle"
    ]
   },
   {
@@ -581,7 +583,7 @@
    "terrain": "ground",
    "elevation": 0,
    "paint_only": [
-    "pulse_circle"
+    "root_rune_circle"
    ]
   },
   {
@@ -590,7 +592,7 @@
    "terrain": "ground",
    "elevation": 0,
    "paint_only": [
-    "pulse_circle"
+    "root_rune_circle"
    ],
    "special": "pad"
   },
@@ -600,7 +602,7 @@
    "terrain": "ground",
    "elevation": 0,
    "paint_only": [
-    "pulse_circle"
+    "root_rune_circle"
    ],
    "special": "pad"
   },
@@ -610,7 +612,7 @@
    "terrain": "ground",
    "elevation": 0,
    "paint_only": [
-    "pulse_circle"
+    "root_rune_circle"
    ],
    "special": "pad"
   },
@@ -620,7 +622,7 @@
    "terrain": "ground",
    "elevation": 0,
    "paint_only": [
-    "pulse_circle"
+    "root_rune_circle"
    ]
   },
   {
@@ -635,7 +637,9 @@
    "y": 6,
    "terrain": "ground",
    "elevation": 0,
-   "paint_only": []
+   "paint_only": [
+    "root_veins"
+   ]
   },
   {
    "x": 11,
@@ -678,7 +682,7 @@
    "terrain": "ground",
    "elevation": 0,
    "paint_only": [
-    "pulse_circle"
+    "root_rune_circle"
    ]
   },
   {
@@ -687,7 +691,7 @@
    "terrain": "ground",
    "elevation": 0,
    "paint_only": [
-    "pulse_circle"
+    "root_rune_circle"
    ],
    "special": "pad"
   },
@@ -697,7 +701,7 @@
    "terrain": "ground",
    "elevation": 0,
    "paint_only": [
-    "pulse_circle"
+    "root_rune_circle"
    ],
    "special": "pad"
   },
@@ -707,7 +711,7 @@
    "terrain": "ground",
    "elevation": 0,
    "paint_only": [
-    "pulse_circle"
+    "root_rune_circle"
    ],
    "special": "pad"
   },
@@ -717,7 +721,7 @@
    "terrain": "ground",
    "elevation": 0,
    "paint_only": [
-    "pulse_circle"
+    "root_rune_circle"
    ]
   },
   {
@@ -753,7 +757,9 @@
    "y": 8,
    "terrain": "ground",
    "elevation": 0,
-   "paint_only": []
+   "paint_only": [
+    "root_veins"
+   ]
   },
   {
    "x": 2,
@@ -775,8 +781,8 @@
    "terrain": "ground",
    "elevation": 0,
    "paint_only": [
-    "blight_crystal",
-    "pulse_circle"
+    "crystal_spire",
+    "root_rune_circle"
    ],
    "blocks": true
   },
@@ -786,7 +792,7 @@
    "terrain": "ground",
    "elevation": 0,
    "paint_only": [
-    "pulse_circle"
+    "root_rune_circle"
    ]
   },
   {
@@ -795,7 +801,7 @@
    "terrain": "ground",
    "elevation": 0,
    "paint_only": [
-    "pulse_circle"
+    "root_rune_circle"
    ]
   },
   {
@@ -804,7 +810,7 @@
    "terrain": "ground",
    "elevation": 0,
    "paint_only": [
-    "pulse_circle"
+    "root_rune_circle"
    ]
   },
   {
@@ -813,8 +819,8 @@
    "terrain": "ground",
    "elevation": 0,
    "paint_only": [
-    "blight_crystal",
-    "pulse_circle"
+    "crystal_spire",
+    "root_rune_circle"
    ],
    "blocks": true
   },
@@ -859,7 +865,7 @@
    "terrain": "ground",
    "elevation": 0,
    "paint_only": [
-    "root_stump"
+    "root_knot"
    ],
    "blocks": true
   },
@@ -918,7 +924,7 @@
    "terrain": "ground",
    "elevation": 0,
    "paint_only": [
-    "thorn_mound"
+    "blight_eggs"
    ],
    "blocks": true
   },
@@ -955,7 +961,9 @@
    "y": 10,
    "terrain": "ground",
    "elevation": 0,
-   "paint_only": []
+   "paint_only": [
+    "root_veins"
+   ]
   },
   {
    "x": 4,
@@ -997,7 +1005,9 @@
    "y": 10,
    "terrain": "ground",
    "elevation": 0,
-   "paint_only": []
+   "paint_only": [
+    "root_veins"
+   ]
   },
   {
    "x": 10,
@@ -1019,7 +1029,7 @@
    "terrain": "ground",
    "elevation": 0,
    "paint_only": [
-    "glow_mushroom"
+    "fungus_clump"
    ],
    "blocks": true
   },

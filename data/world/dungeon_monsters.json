@@ -1029,16 +1029,16 @@
       "role": "basic",
       "level_min": 40,
       "level_max": 50,
-      "hp": 20,
-      "ap": 6,
+      "hp": 18,
+      "ap": 5,
       "mp": 4,
       "attack": {
         "id": "blight_bite",
         "name": "Blight Bite",
-        "ap": 3,
+        "ap": 4,
         "min_range": 1,
         "max_range": 1,
-        "damage": 3,
+        "damage": 5,
         "element": "earth"
       },
       "art": "blight_hound",
@@ -1063,7 +1063,7 @@
         "ap": 3,
         "min_range": 2,
         "max_range": 5,
-        "damage": 4,
+        "damage": 3,
         "element": "earth",
         "los": true,
         "projectile": "spore_bolt",
@@ -1082,7 +1082,7 @@
       "role": "boss",
       "level_min": 40,
       "level_max": 50,
-      "hp": 96,
+      "hp": 92,
       "ap": 6,
       "mp": 2,
       "attack": {
@@ -1091,7 +1091,7 @@
         "ap": 4,
         "min_range": 1,
         "max_range": 2,
-        "damage": 9,
+        "damage": 8,
         "element": "earth"
       },
       "art": "rotting_elder",
@@ -1121,21 +1121,17 @@
       "role": "basic",
       "level_min": 40,
       "level_max": 50,
-      "hp": 20,
-      "ap": 6,
+      "hp": 18,
+      "ap": 5,
       "mp": 4,
       "attack": {
         "id": "crystal_bite",
         "name": "Crystal Bite",
-        "ap": 3,
+        "ap": 4,
         "min_range": 1,
         "max_range": 1,
-        "damage": 3,
-        "element": "earth",
-        "wither": {
-          "ap": 1,
-          "word": "crystallised"
-        }
+        "damage": 5,
+        "element": "earth"
       },
       "art": "crystal_hound",
       "variant_of": "blight_hound",
@@ -1165,16 +1161,16 @@
       "ap": 4,
       "mp": 3,
       "attack": {
-        "id": "crystal_spore",
+        "id": "crystal_shard",
         "name": "Crystal Shard",
         "ap": 3,
         "min_range": 2,
         "max_range": 5,
-        "damage": 4,
+        "damage": 3,
         "element": "earth",
         "los": true,
-        "projectile": "crystal_spore",
-        "impact": "crystal_impact",
+        "projectile": "crystal_shard",
+        "impact": "crystal_shard_impact",
         "wither": {
           "ap": 1,
           "word": "crystallised"
@@ -1415,12 +1411,12 @@
             1.05
           ],
           "4": [
-            1.12,
+            1.15,
             1.05
           ],
           "5": [
-            1.0,
-            0.9
+            0.8,
+            0.8
           ]
         },
         "packs_note": "Room A: ★1 4 Blight Hounds + 2 Blight Horrors; ★2-★4 + 1 Blight Horror; ★5 the crystal pack of 8 (4 Crystal Hounds, 1 Blight Hound, 3 Crystal Horrors). Room B: the Rotting Elder + escort (2 Blight Hounds, 1 Blight Horror); ★5 the Crystal Colossus with a crystal escort.",
