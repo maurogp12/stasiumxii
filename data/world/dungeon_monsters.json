@@ -15,7 +15,7 @@
     "Saltmaw Grotto (levels 20-30): Reef Crab (slow melee tank), Drowned Sailor (cutlass, two swings a turn), Drowned Harpooner (ranged Harpoon Throw, range 2-5, line of sight, kites), Old Saltmaw (boss, Angler Bite range 1; Lantern Lure, signature kind pull: from range 2-6 with a line he pulls the hero 2 cells toward him on his 1st turn and every 2nd after, then bites).",
     "signature kind pull: slides the hero up to `cells` toward the caster along the longer axis of the gap (diagonal when square), stopping at a prop, a body or next to the caster. signature2 hazard keys drag (cells the hazard drags a hero who ends a turn on it, toward the caster), lay_text and hit_text (coach lines). chill.word names the status (chilled by default).",
     "Drowned Abbey (levels 30-40): Bog Dead (slow melee shambler), Mire Leech (ranged Bile Spit, range 2-5, line of sight, kites), The Mire Abbess (boss, Censer Lash range 1-2; Rite of Rising, signature kind raise: from her 2nd turn, when a Bog Dead lies fallen on a free cell, she raises it where it fell at half HP, then the rite rests a turn; the risen sink back when she falls). signature kind raise keys: raise (monster ids it may raise), hp_pct, cap_total, max_range (optional), raise_text, scatter_text. signature2 hazard key root (no MP on the next turn), word and drain_text (coach lines). For kind raise, every is a cooldown (turns between rites), not a fixed beat: the rite needs a body.",
-    "Heart of the Blight (levels 40-50): Blight Hound (fast melee, 4 MP, two bites a turn), Blight Horror (ranged Spore Bolt, range 2-5, line of sight, kites), The Rotting Elder (boss, Elder Staff range 1-2; Root Wall, signature kind wall: on his 1st turn and every 3rd after, roots erupt on 3 free cells next to the hero, the side away from him first, and block walking and lines of sight until the hero has ended 2 turns; never on a pad, a body, a corpse or a hazard, never sealing a unit off). signature kind wall keys: cells, turns, prop (the board prop drawn, root_wall), on_pads (optional), beam, wall_text, wither_text. attack key wither {ap, word}: a hit takes `ap` AP off the hero's next turn (no stacking). signature2 hazard keys fuse (hero turns before the pod bursts), splash (Chebyshev radius of the burst), ap_loss (AP off the hero's next turn), burst_text, miss_text: a fused pod does nothing where it stands; it bursts when the hero has ended `fuse` turns, and hits the hero once if any bursting pod is within its splash. A thawing pad cleanses withered AP too."
+    "Heart of the Blight (levels 40-50): Blight Hound (fast melee, 4 MP), Blight Horror (ranged Spore Bolt, range 2-5, line of sight, kites), The Rotting Elder (boss, Root Claw range 1; Root Wall, signature kind wall: on his 1st turn and every 3rd after, roots erupt on 3 free cells next to the hero, the side away from him first, and block walking and lines of sight until the hero has ended 2 turns; never on a pad, a body, a corpse or a hazard, never sealing a unit off). signature kind wall keys: cells, turns, prop (the board prop drawn, root_wall), on_pads (optional), beam, wall_text, wither_text. attack key wither {ap, word}: a hit takes `ap` AP off the hero's next turn (no stacking). signature2 hazard keys fuse (hero turns before the pod bursts), splash (Chebyshev radius of the burst), ap_loss (AP off the hero's next turn), burst_text, miss_text: a fused pod does nothing where it stands; it bursts when the hero has ended `fuse` turns, and hits the hero once if any bursting pod is within its splash. A thawing pad cleanses withered AP too."
   ],
   "scaling": {
     "hp_per_level": 0.05,
@@ -1086,11 +1086,11 @@
       "ap": 6,
       "mp": 2,
       "attack": {
-        "id": "elder_staff",
-        "name": "Elder Staff",
+        "id": "root_claw",
+        "name": "Root Claw",
         "ap": 4,
         "min_range": 1,
-        "max_range": 2,
+        "max_range": 1,
         "damage": 8,
         "element": "earth"
       },
@@ -1136,15 +1136,6 @@
       "art": "crystal_hound",
       "variant_of": "blight_hound",
       "star_min": 5,
-      "stand_in": {
-        "art": "blight_hound",
-        "tint": [
-          0.78,
-          0.62,
-          1.0
-        ],
-        "scale": 1.0
-      },
       "placeholder": {
         "shape": "drudge",
         "height": 80
@@ -1179,15 +1170,6 @@
       "art": "crystal_horror",
       "variant_of": "blight_horror",
       "star_min": 5,
-      "stand_in": {
-        "art": "blight_horror",
-        "tint": [
-          0.78,
-          0.62,
-          1.0
-        ],
-        "scale": 1.0
-      },
       "placeholder": {
         "shape": "wraith",
         "height": 118
@@ -1204,8 +1186,8 @@
       "ap": 6,
       "mp": 2,
       "attack": {
-        "id": "crystal_spear",
-        "name": "Crystal Spear",
+        "id": "crystal_lance",
+        "name": "Crystal Lance",
         "ap": 4,
         "min_range": 1,
         "max_range": 2,
@@ -1250,15 +1232,6 @@
       },
       "variant_of": "rotting_elder",
       "star_min": 5,
-      "stand_in": {
-        "art": "rotting_elder",
-        "tint": [
-          0.78,
-          0.62,
-          1.0
-        ],
-        "scale": 1.08
-      },
       "placeholder": {
         "shape": "archivist",
         "height": 150
@@ -1396,22 +1369,22 @@
         "star5": "★5 boss form: the Bell Wraith, the Abbess transformed: a ghost risen out of the chained bronze bell (she floats). Her Tolling Rite raises Bog Dead and Mire Leeches at 60% HP (4 in a fight, vs 2 Bog Dead at 50%). From her 1st turn and every 2nd after, she tolls the bell and the Grasping Mire turns 2-3 cells around the hero (the hero's cell first) to bog water for 3 hero turns: a hero who ends a turn on one takes 5 (x the star's damage row) and is rooted (no MP next turn). Walking across is safe. Bellbound monsters mire: a hit takes 1 MP off the hero's next turn (no stacking). A candle pad or the rune circle cleanses both."
       },
       "heart_of_the_blight": {
-        "note": "Heart of the Blight rows (solo, level 40-50). Tuned with tests/sim_dungeon_stars.gd heart_of_the_blight 8 42 (solo bot, level 42, 8 runs x 5 classes). See data/world/dungeons/heart_of_the_blight/README.md.",
+        "note": "Heart of the Blight rows (solo, level 40-50). Tuned with tests/sim_dungeon_stars.gd heart_of_the_blight 8 42 (solo bot, level 42, 8 runs x 5 classes): ★1 85%, ★2 70%, ★3 55%, ★4 50%, ★5 38%. ★2's step is the extra Blight Horror. See data/world/dungeons/heart_of_the_blight/README.md.",
         "scale": {
           "1": [
             1.0,
             1.0
           ],
           "2": [
-            1.05,
+            1.0,
             1.0
           ],
           "3": [
-            1.1,
+            1.2,
             1.05
           ],
           "4": [
-            1.15,
+            1.25,
             1.05
           ],
           "5": [
@@ -1419,8 +1392,8 @@
             0.8
           ]
         },
-        "packs_note": "Room A: ★1 4 Blight Hounds + 2 Blight Horrors; ★2-★4 + 1 Blight Horror; ★5 the crystal pack of 8 (4 Crystal Hounds, 1 Blight Hound, 3 Crystal Horrors). Room B: the Rotting Elder + escort (2 Blight Hounds, 1 Blight Horror); ★5 the Crystal Colossus with a crystal escort.",
-        "star5": "★5 boss form: the Crystal Colossus (Mauro's pick, 11 Oct: the violet crystal has consumed the Elder; an angular crystal golem with a crystal spear-staff, his own rig). His Crystal Wall raises 4 root cells on the same beat. From his 1st turn and every 2nd after, Crystal Bloom swells 2-3 crystal pods round the hero (the hero's cell first): when the hero ends the next turn they shatter, and a hero on or next to a pod takes 6 (x the star's damage row) and is crystallised (2 AP less next turn). Pods do not block; step two cells clear. Crystal monsters crystallise: a hit takes 1 AP off the hero's next turn (no stacking). A pulse pad cleanses it."
+        "packs_note": "Room A: ★1 4 Blight Hounds + 2 Blight Horrors; ★2-★4 + 1 Blight Horror; ★5 the crystal pack of 8 (4 Crystal Hounds, 4 Crystal Horrors). Room B: the Rotting Elder + escort (2 Blight Hounds, 1 Blight Horror); ★5 the Crystal Colossus with a crystal escort.",
+        "star5": "★5 boss form: the Crystal Colossus (Mauro's pick, 11 Oct: the violet crystal has consumed the Elder; an angular crystal golem with a crystal spear-staff, his own rig). His Crystal Wall raises 4 root cells on the same beat. From his 1st turn and every 2nd after, Crystal Bloom swells 2-3 crystal pods round the hero (the hero's cell first): when the hero ends the next turn they shatter, and a hero on or next to a pod takes 6 (x the star's damage row) and is crystallised (2 AP less next turn). Pods do not block; step two cells clear. Crystal Horrors crystallise: a spore hit takes 1 AP off the hero's next turn (no stacking). A blight pad or the rune circle cleanses it."
       }
     }
   }

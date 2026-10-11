@@ -168,3 +168,79 @@ class Beam extends Node2D:
 			draw_line(Vector2.ZERO, Vector2(len, 0), Color(col.r, col.g, col.b, 0.35), 9.0)
 			draw_line(Vector2.ZERO, Vector2(len, 0), Color(col.r, col.g, col.b, 0.9), 3.0)
 		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+
+## An area effect strip centred on `at` (the blight's crystal_bloom_burst:
+## the 3x3 diamond round a pod), from `delay`, over the units. Drawn
+## stand-in: a burst of shards in the style's colour. Returns how long it
+## keeps the view busy.
+static func area(parent: Node2D, man: Dictionary, kind: String, at: Vector2, z: int, delay: float, styles: Dictionary = {}) -> float:
+	var a := Area.new()
+	var kit := Art.area_kit(man, kind)
+	a.frames = kit.get("frames", [])
+	a.glows = kit.get("glows", [])
+	a.fps = float(kit.get("fps", 17.144))
+	a.size = kit.get("size", Vector2(192, 96))
+	a.col = _col((styles.get(kind, {}) as Dictionary).get("color", null), Color(0.85, 0.55, 1.0))
+	a.position = at
+	a.z_as_relative = false
+	a.z_index = z
+	a.visible = false
+	parent.add_child(a)
+	var g := Node2D.new()
+	var mat := CanvasItemMaterial.new()
+	mat.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
+	g.material = mat
+	g.draw.connect(func() -> void: a._draw_glow(g))
+	a.add_child(g)
+	a.glow_node = g
+	var tw := a.create_tween()
+	tw.tween_interval(delay)
+	tw.tween_callback(func() -> void: a.visible = true)
+	var length := (float(a.frames.size()) / maxf(a.fps, 1.0)) if not a.frames.is_empty() else 0.5
+	return delay + length
+
+
+class Area extends Node2D:
+	var frames: Array = []
+	var glows: Array = []
+	var fps := 17.144
+	var size := Vector2(192, 96)
+	var col := Color(0.85, 0.55, 1.0)
+	var glow_node: Node2D
+	var _t := 0.0
+
+	func _process(delta: float) -> void:
+		if not visible:
+			return
+		_t += delta
+		var length := (float(frames.size()) / maxf(fps, 1.0)) if not frames.is_empty() else 0.5
+		if _t >= length:
+			queue_free()
+			return
+		queue_redraw()
+		if glow_node != null:
+			glow_node.queue_redraw()
+
+	func _frame() -> int:
+		return clampi(int(_t * fps), 0, maxi(frames.size() - 1, 0))
+
+	func _draw() -> void:
+		if not frames.is_empty():
+			draw_texture_rect(frames[_frame()], Rect2(-size * 0.5, size), false)
+			return
+		var u := clampf(_t / 0.5, 0.0, 1.0)
+		var c := Color(col.r, col.g, col.b, 1.0 - u)
+		var r := 20.0 + 60.0 * u
+		draw_colored_polygon(PackedVector2Array([Vector2(0, -r * 0.5), Vector2(r, 0), Vector2(0, r * 0.5), Vector2(-r, 0)]), Color(c.r, c.g, c.b, 0.25 * (1.0 - u)))
+		for k in 8:
+			var ang := TAU * float(k) / 8.0
+			var tip := Vector2(cos(ang), sin(ang) * 0.5) * r
+			draw_line(tip * 0.4, tip, c, 3.0)
+
+	func _draw_glow(canvas: Node2D) -> void:
+		if glows.is_empty() or frames.is_empty():
+			return
+		var t: Texture2D = glows[mini(_frame(), glows.size() - 1)]
+		var gs := t.get_size() * (size.x / maxf(float((frames[0] as Texture2D).get_size().x), 1.0))
+		canvas.draw_texture_rect(t, Rect2(-gs * 0.5, gs), false)

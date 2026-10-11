@@ -798,7 +798,7 @@
    "terrain": "ground",
    "elevation": 0,
    "paint_only": [
-    "blight_eggs"
+    "fungus_clump"
    ],
    "blocks": true
   },

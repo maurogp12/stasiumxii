@@ -10,9 +10,9 @@
     "effect": "heal",
     "amount": 5,
     "thaw": true,
-    "thaw_text": "The pulse pad's glow cleanses {name}: nothing lost this turn.",
+    "thaw_text": "The blight pad's glow cleanses {name}: nothing lost this turn.",
     "who": "hero",
-    "note": "Violet pulse pads (room A) and the pulse circle (room B): the hero heals 5 HP when a turn starts on one, and that turn keeps its full MP and AP (the glow cleanses the crystal's grip and the bloom's). Root walls never rise on a pad. Monsters get nothing."
+    "note": "Violet blight pads (room A) and the root rune circle (room B): the hero heals 5 HP when a turn starts on one, and that turn keeps its full MP and AP (the glow cleanses the crystal's grip and the bloom's). Root walls never rise on a pad. Monsters get nothing."
   },
   "between_rooms": {
     "heal": "full",
@@ -25,7 +25,7 @@
     "defeat": "The roots close over you. No rewards this time.",
     "return": "You climb back out of the stump into Westwatch.",
     "return_button": "Return to Westwatch",
-    "pads": "Pulse pads: +{amount} HP, and no MP or AP lost, when your turn starts on one",
+    "pads": "Blight pads: +{amount} HP, and no MP or AP lost, when your turn starts on one",
     "keeper_hint": "The Elder walls you in with roots. Keep a way out.",
     "star_notes": {
       "5": "The Crystal Colossus and his Crystal Bloom. A Rare part and a Mystery Box for sure."
@@ -33,7 +33,7 @@
     "showcase_title": "Heart of the Blight\nMonsters",
     "showcase_sub": "Blight Hound · Blight Horror · The Rotting Elder\n★5: Crystal Hound · Crystal Horror · The Crystal Colossus",
     "signature_rule": "Root Wall: on his 1st turn and every 3rd after, the Rotting Elder drives his staff down and roots burst up on 3 cells next to you, the side away from him first. They block walking and lines of sight until you have ended 2 turns, then wither. They never rise on a pad and never seal anyone in. Hide behind them from the horrors' spores.",
-    "star5_rule": "★5: the violet crystal has eaten the Elder: the Crystal Colossus, a crystal golem with a crystal spear-staff. His Crystal Wall raises 4 cells of crystal-veined roots, and from his 1st turn every other turn his heart pulses a Crystal Bloom: 2-3 crystal pods swell round you (your cell first). When you end your next turn they shatter: on or next to a pod, 6 damage and crystallised (2 AP less next turn). Pods do not block; step two cells clear. Crystal monsters crystallise (1 AP less next turn). Pulse pads and the pulse circle cleanse it.",
+    "star5_rule": "★5: the violet crystal has eaten the Elder: the Crystal Colossus, a crystal golem with a crystal spear-staff. His Crystal Wall raises 4 cells of crystal-veined roots, and from his 1st turn every other turn his crystal heart pulses a Crystal Bloom: 2-3 crystal pods swell round you (your cell first). When you end your next turn they shatter: on or next to a pod, 6 damage and crystallised (2 AP less next turn). Pods do not block; step two cells clear. Crystal Horrors' shards crystallise (1 AP less next turn). Blight pads and the rune circle cleanse it.",
     "b_still": "04_room_b_elder.png",
     "boss_star5": "The Crystal Colossus"
   },
@@ -61,7 +61,8 @@
           1.0
         ],
         "decal": true,
-        "mark": "rune"
+        "mark": "rune",
+        "glow": true
       }
     },
     "hazard": {
@@ -320,7 +321,7 @@
           "facing": "S"
         }
       ],
-      "note": "packs: the pack for the highest key at or below the star. monsters is the ★1 pack. Spawns on the far rows (y 0-4), off the pulse pads, away from the hero (6,10); root knots, the root mound and violet crystals on the middle rows break the Blight Horrors' lines.",
+      "note": "packs: the pack for the highest key at or below the star. monsters is the ★1 pack. Spawns on the far rows (y 0-4), off the blight pads, away from the hero (6,10); root knots, the root mound and violet crystals on the middle rows break the Blight Horrors' lines.",
       "packs": {
         "1": [
           {

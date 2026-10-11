@@ -1029,7 +1029,7 @@
    "terrain": "ground",
    "elevation": 0,
    "paint_only": [
-    "fungus_clump"
+    "violet_crystals"
    ],
    "blocks": true
   },

@@ -76,7 +76,7 @@ ROOM_A_ORIGINS = {
     (2, 5): "root_knot", (3, 5): "violet_crystals",
     (8, 3): "root_mound",
     (5, 7): "root_knot",
-    (9, 8): "violet_crystals", (10, 8): "blight_eggs",
+    (9, 8): "violet_crystals", (10, 8): "fungus_clump",
     (2, 9): "root_knot",
     (0, 11): "bone_pile",
     (11, 11): "fungus_clump",
@@ -105,7 +105,7 @@ ROOM_B_ORIGINS = {
     (0, 6): "bone_pile",
     (2, 9): "root_knot",
     (10, 9): "blight_eggs",
-    (0, 11): "fungus_clump",
+    (0, 11): "violet_crystals",
     (11, 11): "bone_pile",
 }
 ROOM_B = {

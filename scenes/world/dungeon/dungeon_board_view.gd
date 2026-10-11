@@ -48,6 +48,10 @@ var _props_root: Node2D
 ## Rite of Rising: a risen body's pawn plays its death strip backwards from
 ## the rite's flare frame (set when the raise event is armed).
 var _rise_delay := -1.0
+## Root Wall: cell -> its wall node (dungeon_props.gd WallProp). New walls
+## rise from the signature's flare frame (set when the wall event is armed).
+var _walls := {}
+var _wall_delay := -1.0
 
 
 func _boot() -> void:
@@ -161,11 +165,14 @@ func _dress_room() -> void:
 		if tile.pad and tile.pad_decal:
 			grate_cells.append(c)
 			decal_id = tile.pad_kind
-		tile.set_pad_glow(glow_kit.get("tex", null) if tile.pad and not tile.pad_decal else null, float(glow_kit.get("scale", 1.0)))
+		# A decal pad draws the pad glow too when its style asks (the blight's
+		# root rune circle: run.json view.pads.<kind>.glow).
+		tile.set_pad_glow(glow_kit.get("tex", null) if tile.pad and (not tile.pad_decal or bool(style.get("glow", false))) else null, float(glow_kit.get("scale", 1.0)))
 		tile.set_process(tile.pad)
 		tile.queue_redraw()
 	if _props_root != null and is_instance_valid(_props_root):
 		_props_root.free()
+	_walls = {}
 	_props_root = Node2D.new()
 	_props_root.name = "RoomProps"
 	$Units.add_child(_props_root)
@@ -259,11 +266,60 @@ func _sync_pools() -> void:
 		cells[_as_cell(pool["cell"])] = int(pool.get("turns", 0))
 		kinds[_as_cell(pool["cell"])] = str(pool.get("hazard", "toxic_pool"))
 	var styles: Dictionary = view_cfg.get("hazard", {})
+	# Fused pods (the blight's crystal bloom) bursting when the hero's turn
+	# ends: their splash cells show as danger.
+	var splash := {}
+	for pool in (snap.get("dungeon", {}) as Dictionary).get("pools", []):
+		if not (pool as Dictionary).has("fuse") or int(pool.get("turns", 0)) > 1:
+			continue
+		var r := int(pool.get("splash", 1))
+		var pc := _as_cell(pool["cell"])
+		var tint := _cfg_color((styles.get(str(pool.get("hazard", "")), {}) as Dictionary).get("splash", null), Color(0.85, 0.3, 0.8, 0.28))
+		for dy in range(-r, r + 1):
+			for dx in range(-r, r + 1):
+				splash[pc + Vector2i(dx, dy)] = tint
 	for cell in tiles.keys():
 		var t = tiles[cell]
 		if t.has_method("set_pool"):
 			var hz := str(kinds.get(cell, t.pool_hazard))
 			t.set_pool(cells.has(cell), int(cells.get(cell, 0)), manifest, hz, styles.get(hz, {}))
+		if t.has_method("set_danger"):
+			t.set_danger(splash.has(cell), splash.get(cell, Color(0.85, 0.3, 0.8, 0.28)))
+
+
+## Root walls on the board: new ones rise (from the flare frame when a wall
+## event was just armed), gone ones wither.
+func _sync_walls() -> void:
+	if _props_root == null or not is_instance_valid(_props_root):
+		return
+	var want := {}
+	for wall in (sim_node().snapshot().get("dungeon", {}) as Dictionary).get("walls", []):
+		want[_as_cell(wall["cell"])] = str(wall.get("prop", "root_wall"))
+	for cell in _walls.keys():
+		var node = _walls[cell]
+		if not want.has(cell) or not is_instance_valid(node):
+			if is_instance_valid(node):
+				node.wither()
+			_walls.erase(cell)
+	var styles: Dictionary = view_cfg.get("walls", {})
+	for cell in want.keys():
+		if _walls.has(cell):
+			continue
+		var c: Vector2i = cell
+		var kind := str(want[cell])
+		var node := Props.WallProp.new()
+		_props_root.add_child(node)
+		node.setup(kind, c, Art.wall_kit(manifest, kind), styles.get(kind, {}), _wall_delay)
+		node.position = _cell_to_local(c)
+		node.z_as_relative = false
+		node.z_index = VISUAL_SORT.unit_z_index(c, _elev_at(c))
+		_walls[c] = node
+	_wall_delay = -1.0
+
+
+## Root wall nodes standing now, by cell (tests).
+func wall_nodes() -> Dictionary:
+	return _walls.duplicate()
 
 
 ## The Koliseo HUD is shared as is; in a room it hides the second seat card
@@ -572,6 +628,23 @@ func _arm_view_motions(events: Array) -> void:
 				var from_at: Vector2 = pawn.position + (pawn.release_offset() if pawn.has_method("release_offset") else Vector2(0, -22))
 				var at_sec: float = pawn.release_sec() if pawn.has_method("release_sec") else 0.22
 				longest = maxf(longest, Fx.throw(self, manifest, str(event["projectile"]), from_at, to_at, typ == "hit", VISUAL_SORT.unit_z_index(to_cell) + 6, at_sec, str(event.get("impact", "")), view_cfg.get("projectiles", {})))
+		elif typ == "wall":
+			# Root Wall: the boss's 14-frame strip; the root cracks run from
+			# his staff foot to each wall cell on the flare frame, and the
+			# walls rise then (their nodes are made on the next refresh).
+			longest = maxf(longest, pawn.play_view_plan({"cast": true, "strip": "summon"}))
+			_wall_delay = PULL_FLARE_SEC
+			longest = maxf(longest, PULL_FLARE_SEC + 0.45)
+			if str(event.get("beam", "")) != "":
+				var foot: Vector2 = pawn.position + (pawn.lure_offset() if pawn.has_method("lure_offset") else Vector2.ZERO)
+				for raw_cell in event.get("cells", []):
+					var wc := _as_cell(raw_cell)
+					longest = maxf(longest, Fx.beam(self, manifest, str(event["beam"]), foot, _cell_to_local(wc), VISUAL_SORT.tile_z_index(wc, 0.0) + 1, PULL_FLARE_SEC, 0.4, view_cfg.get("projectiles", {})))
+		elif typ == "bloom":
+			# Fused pods burst: the burst strip on each pod's cell, over the units.
+			for raw_cell in event.get("cells", []):
+				var pc := _as_cell(raw_cell)
+				longest = maxf(longest, Fx.area(self, manifest, str(event.get("hazard", "")) + "_burst", _cell_to_local(pc), VISUAL_SORT.unit_z_index(pc) + 8, 0.0, view_cfg.get("projectiles", {})))
 		elif typ == "summon" or typ == "pools" or typ == "lure" or typ == "raise":
 			longest = maxf(longest, pawn.play_view_plan({"cast": true, "strip": "summon"}))
 			if typ == "raise":
@@ -619,6 +692,7 @@ func _refresh() -> void:
 	super._refresh()
 	_tidy_hud()
 	_sync_pools()
+	_sync_walls()
 	if not _room_live:
 		return
 	var snap: Dictionary = sim_node().snapshot()
