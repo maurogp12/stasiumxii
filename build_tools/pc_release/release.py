@@ -545,6 +545,8 @@ def main():
         "publish_root": pub.root,
     }
     print(json.dumps(summary, indent=2))
+    if pub.git and not pub.dry:
+        rm_tree(pub.root)  # its .git holds every pushed chunk again
 
 
 def drop_local(pub, files):
