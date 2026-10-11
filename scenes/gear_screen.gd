@@ -320,7 +320,7 @@ func _refresh() -> void:
 			_sets_box.add_child(row)
 	if not any:
 		_sets_box.add_child(_label("Wear 2 pieces of one family for its first bonus.", 14, GOLD_DIM))
-	_sets_box.add_child(_label("Gear counts in Stasis and online Koliseo (Koliseo counts every part as +0). Set bonuses are active, including Legendary 5pc +1 AP +1 MP. Ultra specials and set bonuses work only in online Koliseo; a dungeon keeps plain HP, Mastery, Resist and Init. Caps stay 8 AP / 5 MP.", 12, GOLD_DIM))
+	_sets_box.add_child(_label("Gear counts in Stasis and online Koliseo. Koliseo counts part HP, Mastery, Resist and Init as +0. AP/MP is the same in every fight: 5pc +1/+1 (Legendary and Ultra), Rare +5 weapon +1 AP, Rare +5 boots +1 MP. Ultra special lines are Koliseo only. Caps stay 8 AP / 5 MP.", 12, GOLD_DIM))
 	if OS.is_debug_build():
 		_sets_box.add_child(_label("Debug review — not in a release build, never sent online.", 12, GOLD_DIM))
 		var review_order: Array = []

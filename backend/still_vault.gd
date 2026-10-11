@@ -328,6 +328,23 @@ func fight_still(class_id: String = "") -> Dictionary:
 	return {"id": id, "mode": mode_of(use)}
 
 
+## Hourglass Fist / Step change the fight's AP and MP for the whole fight.
+## Intact stays inside the 8 AP / 5 MP caps. Overwound may pass them.
+## Any other Still leaves the pools alone.
+static func adjust_ap_mp(ap: int, mp: int, id: String, mode: String) -> Dictionary:
+	var over := mode == "overwound"
+	match id:
+		"hourglass_fist":
+			if over:
+				return {"ap": ap + 3, "mp": maxi(mp - 2, 0)}
+			return {"ap": mini(ap + 2, GearBag.AP_CAP), "mp": maxi(mp - 1, 0)}
+		"hourglass_step":
+			if over:
+				return {"ap": maxi(ap - 2, 0), "mp": mp + 3}
+			return {"ap": maxi(ap - 1, 0), "mp": mini(mp + 2, GearBag.MP_CAP)}
+	return {"ap": ap, "mp": mp}
+
+
 ## The fight that carries this class's Still destroys that socket only.
 func consume(class_id: String = "") -> String:
 	var use := class_id if CLASS_IDS.has(class_id) else focus_class

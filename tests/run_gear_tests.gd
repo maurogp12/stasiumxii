@@ -37,6 +37,7 @@ func _run() -> void:
 	_test_gear_in_fights()
 	_test_loadouts()
 	_test_crit_cap_and_stun()
+	_test_ap_mp_matrix()
 	_wipe()
 	print("Gear tests: %d passed, %d failed" % [_passed, _failed])
 	quit(1 if _failed > 0 else 0)
@@ -171,7 +172,7 @@ func _test_ap_mp_clamp() -> void:
 	normal.equip(normal.add_item("nightglass", "boots", 5))
 	eq(normal.rare_gate(), {"ap": 0, "mp": 0}, "a Normal +5 does not open the gate")
 	var flat := GearBag.combat_stats(_worn("stillcut", ["weapon", "boots"], 5), {}, true, "gloam")
-	eq([int(flat["ap"]), int(flat["mp"])], [6, 3], "Koliseo flatten closes the +5 gates")
+	eq([int(flat["ap"]), int(flat["mp"])], [7, 4], "Koliseo keeps the Rare +5 AP/MP gates")
 	var legend := GearBag.combat_stats(_worn("gravewhisper", GearBag.SLOTS), {}, true, "gloam")
 	eq([int(legend["ap"]), int(legend["mp"])], [7, 4], "Legendary 5pc +1/+1 survives flatten")
 	eq(GearBag.AP_CAP, 8, "AP clamp 8")
@@ -1144,6 +1145,123 @@ func _test_crit_cap_and_stun() -> void:
 	var guarded := {"guard_ready": true, "guard_flat": 4}
 	eq(int(sim._gear_strike_damage({}, guarded, 10, 2, false, true)), 6, "the first hit taken deals 4 less")
 	eq(bool(guarded["guard_ready"]), false, "the guard is spent")
+
+
+## Every class, every AP/MP piece, every fight path. Fight-start max
+## AP/MP equals the inventory sheet.
+func _test_ap_mp_matrix() -> void:
+	var sheet: Script = load("res://scenes/inventory_screen.gd")
+	var select: Script = load("res://scenes/class_select.gd")
+	var legend := {"kestrel": "ravenmourn", "ironjaw": "tyrantjaw", "mender": "hallowmourn", "gloam": "gravewhisper", "bastion": "oathgrave"}
+	var ultra := {"kestrel": "sandhawk", "ironjaw": "pitmaw", "mender": "mercywell", "gloam": "hushring", "bastion": "gatewarden"}
+	var rare := {"kestrel": "gallowsight", "ironjaw": "maulgrave", "mender": "sheaf", "gloam": "stillcut", "bastion": "ironveil"}
+	var normal := {"kestrel": "undertow", "ironjaw": "cragmaw", "mender": "vesperwell", "gloam": "nightglass", "bastion": "rustward"}
+	var cases: Array = []
+	for cid in GearBag.CLASS_IDS:
+		cases.append(_ap_case(cid, legend[cid], GearBag.SLOTS, 0, 1, "", "intact"))
+		cases.append(_ap_case(cid, ultra[cid], GearBag.SLOTS, 5, 1, "", "intact"))
+		cases.append(_ap_case(cid, rare[cid], ["weapon", "boots"], 5, 1, "", "intact"))
+		cases.append(_ap_case(cid, rare[cid], ["weapon"], 5, 1, "", "intact"))
+		cases.append(_ap_case(cid, rare[cid], ["boots"], 5, 1, "", "intact"))
+		cases.append(_ap_case(cid, rare[cid], ["weapon", "boots"], 4, 1, "", "intact"))
+		cases.append(_ap_case(cid, normal[cid], GearBag.SLOTS, 5, 1, "", "intact"))
+		cases.append(_ap_case(cid, "brightedge", GearBag.SLOTS, 0, 1, "", "intact"))
+		cases.append(_ap_case(cid, "ashmantle", GearBag.SLOTS, 5, 1, "", "intact"))
+	cases.append(_ap_case("kestrel", "ravenmourn", ["weapon", "head", "chest", "legs"], 0, 1, "", "intact"))
+	cases.append(_ap_case("ironjaw", "", [], 0, 20, "", "intact"))
+	cases.append(_ap_case("bastion", "oathgrave", GearBag.SLOTS, 0, 30, "", "intact"))
+	cases.append(_ap_case("kestrel", "", [], 0, 1, "hourglass_fist", "intact"))
+	cases.append(_ap_case("ironjaw", "pitmaw", GearBag.SLOTS, 0, 30, "hourglass_step", "intact"))
+	cases.append(_ap_case("mender", "", [], 0, 1, "hourglass_fist", "overwound"))
+	cases.append(_ap_case("gloam", "", [], 0, 1, "hourglass_step", "overwound"))
+	cases.append(_ap_case("bastion", "brightedge", GearBag.SLOTS, 0, 1, "hourglass_fist", "intact"))
+	for row in cases:
+		_assert_ap_mp_row(sheet, select, row)
+	StasisCatalog.clear_run()
+	StasisCatalog.clear_run_party()
+
+
+func _ap_case(class_id: String, family: String, slots: Array, plus: int, level: int, still: String, mode: String) -> Dictionary:
+	var label := class_id
+	if family != "":
+		label += " " + family
+		if slots.size() == GearBag.SLOTS.size():
+			label += " 5pc"
+		else:
+			label += " " + " ".join(slots)
+		if plus > 0:
+			label += " +%d" % plus
+	if level > 1:
+		label += " lv%d" % level
+	if still != "":
+		label += " " + still + " " + mode
+	return {"class_id": class_id, "family": family, "slots": slots, "plus": plus, "level": level, "still": still, "mode": mode, "label": label}
+
+
+func _assert_ap_mp_row(sheet: Script, select: Script, row: Dictionary) -> void:
+	var class_id := str(row["class_id"])
+	var other := "ironjaw" if class_id != "ironjaw" else "kestrel"
+	var bag := GearBag.new()
+	var family := str(row["family"])
+	if family != "":
+		for slot in row["slots"]:
+			var worn: Dictionary = bag.equip(bag.add_item(family, str(slot), int(row["plus"])), class_id)
+			eq(bool(worn.get("ok", false)), true, "%s can wear %s %s" % [row["label"], family, str(slot)])
+	bag.save()
+	var hero := HeroProgress.new()
+	hero.classes[class_id] = {"xp": 0, "level": int(row["level"]), "spent": {}}
+	hero.save()
+	var vault := StillVault.new()
+	if str(row["still"]) != "":
+		vault.set_focus(class_id)
+		vault.socket = str(row["still"])
+		vault.mode = str(row["mode"])
+	vault.save()
+	var inv: Dictionary = sheet.champion_stats(bag, hero, class_id)
+	var want := Vector2i(int(inv["ap"]), int(inv["mp"]))
+	StasisCatalog.clear_run_party()
+	StasisCatalog.begin("crosshaven")
+	StasisCatalog.class_id = class_id
+	var solo: Dictionary = StasisCatalog.fight_config()
+	var solo_gear: Dictionary = solo["stasis_roster"][0]["gear"]
+	eq(bool(solo_gear.get("flatten_plus", false)), false, "%s Stasis gear is not flattened" % row["label"])
+	_eq_pools(class_id, other, solo_gear, want, "%s Stasis" % row["label"])
+	StasisCatalog.set_party([class_id, other], [1])
+	var party: Dictionary = StasisCatalog.fight_config()
+	var party_gear: Dictionary = party["stasis_roster"][0]["gear"]
+	eq(bool(party_gear.get("flatten_plus", false)), false, "%s dungeon gear is not flattened" % row["label"])
+	_eq_pools(class_id, other, party_gear, want, "%s dungeon" % row["label"])
+	select.hotseat_team_size = 1
+	var roster: Array[String] = [class_id, other]
+	select.hotseat_classes = roster
+	select.hotseat_map_id = ""
+	var local: Dictionary = select.local_match_config()
+	var local_gear: Dictionary = local["seat_gear"][0]
+	eq(bool(local_gear.get("flatten_plus", false)), true, "%s local Koliseo sets the Ultra switch" % row["label"])
+	_eq_pools(class_id, other, local_gear, want, "%s local Koliseo" % row["label"])
+	var net: Node = (load("res://backend/net_session.gd") as Script).new()
+	net.mode = net.Mode.HOST
+	net.selected_class_id = class_id
+	var online: Dictionary = net._authority_gear_config({"classes": [class_id, other]})
+	net.free()
+	var online_gear: Dictionary = online["seat_gear"][0]
+	eq(bool(online_gear.get("flatten_plus", false)), true, "%s online payload sets the Ultra switch" % row["label"])
+	_eq_pools(class_id, other, online_gear, want, "%s online Koliseo" % row["label"])
+
+
+func _eq_pools(class_id: String, other: String, gear: Dictionary, want: Vector2i, label: String) -> void:
+	var sim: Node = root.get_node("/root/CombatSim")
+	sim.reset_match({
+		"classes": [class_id, other],
+		"skip_deploy": true,
+		"flat_board": true,
+		"positions": [Vector2i(2, 2), Vector2i(5, 2)],
+		"seat_gear": {0: gear},
+	})
+	var unit: Dictionary = sim._unit_by_seat(0)
+	eq(int(unit["ap"]), int(unit["max_ap"]), "%s card shows the full AP pool" % label)
+	eq(int(unit["mp"]), int(unit["max_mp"]), "%s card shows the full MP pool" % label)
+	eq(Vector2i(int(unit["max_ap"]), int(unit["max_mp"])), want, "%s fight-start %d/%d equals inventory %d/%d" % [label, int(unit["max_ap"]), int(unit["max_mp"]), want.x, want.y])
 
 
 func _wipe() -> void:
