@@ -18,6 +18,10 @@ const _ElevationCost := preload("res://backend/elevation_cost.gd")
 const _BoardSize := preload("res://backend/board_size.gd")
 const _CellTagMap := preload("res://backend/cell_tag_map.gd")
 const _HitBands := preload("res://backend/hit_bands.gd")
+## PC gear (mobile ladder). Read only for a dungeon hero that carries `gear`.
+const _PcGear := preload("res://backend/pc_gear.gd")
+## Resist cap for gear resist (mobile RESIST_CAP).
+const GEAR_RESIST_CAP := 50.0
 ## Ship default is 15×15. MatchConfig.board_size 8 and 12 are proto only.
 const BOARD_SIZE := _BoardSize.SHIP
 const MAX_AP := 6
@@ -85,6 +89,11 @@ var _winner_seat: int = -1
 var _quiet: bool = false
 var _seed: int = 0
 var _rng := RandomNumberGenerator.new()
+## Gear crit rolls only. A separate stream, so the hit rolls of a fight are
+## the same with or without crit gear.
+var _crit_rng := RandomNumberGenerator.new()
+var _last_crit := false
+var _last_crit_mult := 1.0
 var _scripted_rolls: Array[int] = []
 var _last_events: Array = []
 var _last_coach: String = ""
@@ -1122,14 +1131,110 @@ func _preview_kit_lines(spell_id: String) -> Dictionary:
 ## Callers that omit mastery and resist keep the locked zeros, so a live
 ## match with the unit fields at 0 resolves exactly as before. The Koliseo
 ## duel writes those fields from the point spend; preview cards do not.
-func _phase_a_damage(base: int, facing_mult: float, mastery: float = MASTERY, resist: float = RESIST) -> int:
-	var raw: float = float(base) * CRIT_MULT * PASSIVE * (1.0 + mastery / 100.0) * (1.0 - resist / 100.0) * facing_mult
+func _phase_a_damage(base: int, facing_mult: float, mastery: float = MASTERY, resist: float = RESIST, crit: float = CRIT_MULT) -> int:
+	var raw: float = float(base) * crit * PASSIVE * (1.0 + mastery / 100.0) * (1.0 - resist / 100.0) * facing_mult
 	return roundi(raw)
 
 
+## A resolved hit. A dungeon hero's worn gear (pc_gear) adds a crit roll and
+## the set riders; every other unit has none of those keys and resolves as
+## before.
 func _dealt(base: int, facing_mult: float, actor: Dictionary, target: Dictionary) -> int:
 	var mastery := float(actor.get("mastery", MASTERY)) + float(actor.get("bonus_damage", 0.0))
-	return _phase_a_damage(base, facing_mult, mastery, float(target.get("resist", RESIST)))
+	var resist := float(target.get("resist", RESIST))
+	if target.has("pc_gear"):
+		resist = minf(resist, GEAR_RESIST_CAP)
+	var crit := _gear_crit_mult(actor, false)
+	var out := _phase_a_damage(base, facing_mult, mastery, resist, crit)
+	if actor.has("pc_gear") or target.has("pc_gear"):
+		var dist := chebyshev(_as_cell(actor.get("pos", Vector2i.ZERO)), _as_cell(target.get("pos", Vector2i.ZERO)))
+		out = _gear_strike_damage(actor, target, out, dist, facing_mult > FRONT_SIDE_FACING + 0.001)
+	return out
+
+
+## Gear crit (mobile): x1.3, chance capped at 20%, one crit per fighter per
+## turn, only on the active fighter's own turn. Heals crit for the Mender only.
+func _gear_crit_mult(actor: Dictionary, heals: bool) -> float:
+	_last_crit = false
+	_last_crit_mult = CRIT_MULT
+	if not actor.has("pc_gear") or int(actor.get("crit", 0)) <= 0:
+		return CRIT_MULT
+	if heals and str(actor.get("class_id", "")) != SpellKits.CLASS_MENDER:
+		return CRIT_MULT
+	if int(actor.get("seat", -99)) != _active_seat or bool(actor.get("crit_landed", false)):
+		return CRIT_MULT
+	var chance := mini(int(actor.get("crit", 0)), _PcGear.CRIT_CAP)
+	if _crit_rng.randi_range(1, 100) > chance:
+		return CRIT_MULT
+	actor["crit_landed"] = true
+	_last_crit = true
+	_last_crit_mult = _PcGear.CRIT_MULT
+	return _PcGear.CRIT_MULT
+
+
+## Set riders that sit on top of the resist formula (mobile): back %, melee
+## flat, the first hit of the turn, the first back hit, and the first hit
+## taken (guard). Flats are not run through resist.
+func _gear_strike_damage(actor: Dictionary, target: Dictionary, damage: int, dist: int, is_back: bool) -> int:
+	var out := damage
+	var back_pct := int(actor.get("back_pct", 0))
+	if is_back and back_pct > 0 and out > 0:
+		out = roundi(float(out) * (1.0 + float(back_pct) / 100.0))
+	if dist <= 1 and int(actor.get("melee", 0)) > 0 and out > 0:
+		out += int(actor["melee"])
+	if bool(actor.get("first_hit_ready", false)) and int(actor.get("first_hit", 0)) > 0 and out > 0:
+		out += int(actor["first_hit"])
+		actor["first_hit_ready"] = false
+	if is_back and bool(actor.get("first_back_ready", false)) and int(actor.get("first_back", 0)) > 0 and out > 0:
+		out += int(actor["first_back"])
+		actor["first_back_ready"] = false
+	if bool(target.get("guard_ready", false)) and int(target.get("guard_flat", 0)) > 0 and out > 0:
+		out = maxi(0, out - int(target["guard_flat"]))
+		target["guard_ready"] = false
+	return out
+
+
+## Worn PC gear on a dungeon hero ({worn, class_id, extra_ap}). Max HP is
+## (80 + part HP) x (1 + set HP%); Mastery, Resist, Init, Crit, AP / MP and
+## the set riders come from pc_gear.combat_stats for this unit's class.
+func _apply_pc_gear(unit: Dictionary, raw: Variant) -> void:
+	if typeof(raw) != TYPE_DICTIONARY:
+		return
+	var gear: Dictionary = raw
+	var stats: Dictionary = _PcGear.combat_stats(gear.get("worn", []), str(unit.get("class_id", "")), false, int(gear.get("extra_ap", 0)))
+	unit["pc_gear"] = (stats["worn"] as Array).duplicate(true)
+	unit["max_hp"] = maxi(_PcGear.max_hp(START_HP, 0, stats), 1)
+	unit["hp"] = int(unit["max_hp"])
+	unit["mastery"] = float(unit.get("mastery", 0)) + float(stats["mastery"])
+	unit["resist"] = float(unit.get("resist", 0)) + float(stats["resist"])
+	unit["init"] = int(stats["init"])
+	unit["crit"] = int(stats["crit"])
+	unit["crit_landed"] = false
+	unit["back_pct"] = int(stats["back_pct"])
+	unit["melee"] = int(stats["melee"])
+	unit["first_hit"] = int(stats["first_hit"])
+	unit["first_hit_ready"] = int(stats["first_hit"]) > 0
+	unit["first_back"] = int(stats["first_back"])
+	unit["first_back_ready"] = int(stats["first_back"]) > 0
+	unit["guard_flat"] = int(stats["guard_flat"])
+	unit["guard_ready"] = int(stats["guard_flat"]) > 0
+	unit["heal_flat"] = int(stats["heal_flat"])
+	unit["ward_shield"] = int(stats["ward_shield"])
+	if int(stats["start_aegis"]) > 0 and int(unit.get("aegis_cap", 0)) > 0:
+		unit["aegis"] = mini(maxi(int(unit.get("aegis", 0)), int(stats["start_aegis"])), int(unit["aegis_cap"]))
+	unit["max_ap"] = int(stats["ap"])
+	unit["max_mp"] = int(stats["mp"])
+
+
+## Turn start: the once-per-turn gear flags come back (crit, first hit,
+## first back hit, guard).
+func _refresh_gear_turn(unit: Dictionary) -> void:
+	if not unit.has("pc_gear"):
+		return
+	unit["crit_landed"] = false
+	unit["first_hit_ready"] = int(unit.get("first_hit", 0)) > 0
+	unit["first_back_ready"] = int(unit.get("first_back", 0)) > 0
+	unit["guard_ready"] = int(unit.get("guard_flat", 0)) > 0
 
 
 func _make_unit(seat: int, class_id: String, unit_name: String, element: String, pos: Vector2i, facing: String, placed: bool = true) -> Dictionary:
@@ -1829,6 +1934,11 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 		"engine_spent": engine_spent,
 		"coach": _last_coach,
 	}
+	if _last_crit:
+		hit_event["crit"] = true
+		hit_event["crit_mult"] = _last_crit_mult
+		_last_coach += " CRIT"
+		hit_event["coach"] = _last_coach
 	if spell_id == SpellKits.DETONATE:
 		hit_event["marks_consumed"] = marks_consumed
 		hit_event["marks_remaining"] = int(target.get("marks", 0))
@@ -2317,6 +2427,7 @@ func _begin_unit_turn(unit: Dictionary) -> void:
 	_decay_board_durations(unit)
 	_tick_snap_walls(unit)
 	_tick_shield(unit)
+	_refresh_gear_turn(unit)
 	if str(unit.get("class_id", "")) == SpellKits.CLASS_BASTION:
 		unit["intercept_used"] = false
 
@@ -2925,7 +3036,9 @@ func _support_heal_amount(actor: Dictionary, target: Dictionary, def: Dictionary
 	if _triage_applied(target, def):
 		passive = SpellKits.TRIAGE_MULT
 	var mastery := float(actor.get("mastery", MASTERY))
-	var raw: float = float(base) * CRIT_MULT * passive * (1.0 + mastery / 100.0) * facing
+	var crit := _gear_crit_mult(actor, true)
+	var raw: float = float(base) * crit * passive * (1.0 + mastery / 100.0) * facing
+	raw += float(actor.get("heal_flat", 0))
 	return roundi(raw)
 
 
@@ -2998,6 +3111,8 @@ func _resolve_support(intent: Dictionary, actor: Dictionary, target: Dictionary,
 			engine_spent = _spend_resource(actor, "pulse", int(def.get("spend_pulse", 1)))
 	if spell_id == SpellKits.WARD:
 		target["shield"] = int(def.get("shield", 20))
+		if int(actor.get("ward_shield", 0)) > 0:
+			target["shield"] = int(actor["ward_shield"])
 		target["shield_turns"] = int(def.get("shield_turns", 2))
 	var cc_removed: Array = []
 	if spell_id == SpellKits.CLEANSE:
@@ -4037,6 +4152,7 @@ func _reset_dungeon(config: Dictionary) -> Dictionary:
 	_seed = int(config.get("seed", Time.get_ticks_usec()))
 	_elev_seed = _seed
 	_rng.seed = _seed
+	_crit_rng.seed = _seed * 7919 + 17
 	_quiet = bool(config.get("quiet", false))
 	_elevation_gen = "dungeon"
 	_map_id = "dungeon_%s" % str(room.get("room_id", "room"))
@@ -4087,6 +4203,8 @@ func _reset_dungeon(config: Dictionary) -> Dictionary:
 		hero_name = SpellKits.display_name(class_id)
 	var hero := _make_unit(DUNGEON_HERO_SEAT, class_id, hero_name, SpellKits.element_of(class_id), _as_cell(hero_cfg.get("pos", Vector2i(0, 0))), str(hero_cfg.get("facing", "N")), true)
 	hero["team"] = "hero"
+	if hero_cfg.has("gear"):
+		_apply_pc_gear(hero, hero_cfg["gear"])
 	if hero_cfg.has("max_hp"):
 		hero["max_hp"] = maxi(int(hero_cfg["max_hp"]), 1)
 	hero["hp"] = clampi(int(hero_cfg.get("hp", hero["max_hp"])), 1, int(hero["max_hp"]))

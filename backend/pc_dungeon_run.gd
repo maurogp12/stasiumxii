@@ -8,7 +8,10 @@ extends RefCounted
 ## XP (spec 4.8, Proposed): dungeon_win share (balance_inputs, 27%) of
 ## xp_to_next(L) x star x pace(player level). L is the run level: the hero's
 ## level clamped into the dungeon's band. Star is 1 (stars are not built).
-## Coins and items: pc_rewards.roll("dungeon", ...), the dungeon's own table.
+## Coins and items: pc_rewards.roll("dungeon", ...): two gear chests (room A
+## at the star row, room B's boss at the boss row, mobile odds), the Mystery
+## Box chance, the dungeon's star_drops. `hero_gear` (pc_progress.fight_gear)
+## goes into the hero of every room, so worn gear counts in the fight.
 
 const Dungeons = preload("res://backend/world_dungeons.gd")
 const Monsters = preload("res://backend/pc_monsters.gd")
@@ -20,11 +23,9 @@ const MAX_STAR := 5
 ## Mobile: Stasis clear XP is 60 x star (hero_progress.gd). PC keeps its
 ## level-curve base XP (4.8) and multiplies it by the star the same way.
 const XP_STAR_LINEAR := true
-## Loot gates by star, as mobile's gear sources (gear_bag.gd FAMILIES):
-## Normal from ★1, Rare from ★3, Legendary from ★5 or the boss. PC set parts
-## are regular / rare; PC has no Legendary tier for a level 1-10 band (epics
-## and relics start at level 40), so the ★5 Legendary slot is a Mystery Box.
-const RARE_FROM_STAR := 3
+## The gear chests carry the tiers (pc_gear.gd: Normal from ★1, Rare from
+## ★3, Legendary at ★5 or on the boss chest). The ★5 Mystery Box stays
+## guaranteed (rewards.json gear.star5_box).
 const LEGENDARY_FROM_STAR := 5
 
 var dungeon: Dictionary = {}
@@ -36,8 +37,11 @@ var hero_name := ""
 var room_index := 0
 var result := ""
 var star := 1
-## Tests only: start each room with this HP (-1 keeps the full 80).
+## Tests only: start each room with this HP (-1 keeps the full max HP).
 var hero_hp := -1
+## Worn gear for the fight: pc_progress.fight_gear() ({worn, class_id,
+## extra_ap}). Empty = the bare 80 HP body.
+var hero_gear: Dictionary = {}
 var errors: Array = []
 var _rooms: Array = []
 
@@ -158,6 +162,8 @@ func combat_config(index: int = -1, seed: int = -1) -> Dictionary:
 			"summons": summons,
 		},
 	}
+	if not hero_gear.is_empty():
+		(config["dungeon"]["hero"] as Dictionary)["gear"] = hero_gear.duplicate(true)
 	if hero_hp > 0:
 		(config["dungeon"]["hero"] as Dictionary)["hp"] = hero_hp
 	if seed >= 0:
@@ -266,26 +272,14 @@ func pay_out(progress, missions, rng: RandomNumberGenerator, persist: bool = tru
 	return summary
 
 
-## Star gate on the dungeon roll: no Rare part below ★3; at ★5 one Rare part
-## and one Mystery Box (the Legendary slot) are guaranteed.
-func star_loot(catalog, items: Array, rng: RandomNumberGenerator) -> Array:
-	var out: Array = []
-	for raw in items:
-		var item: Dictionary = raw
-		if str(item.get("rarity", "regular")) == "rare" and star < RARE_FROM_STAR:
-			item = item.duplicate()
-			item["rarity"] = "regular"
-		out.append(item)
-	if star >= LEGENDARY_FROM_STAR and catalog != null:
-		var has_rare := false
+## At ★5 one Mystery Box is guaranteed (the separate box layer). The gear
+## chests need no gate: their star rows already hold the tiers.
+func star_loot(catalog, items: Array, _rng: RandomNumberGenerator = null) -> Array:
+	var out: Array = items.duplicate(true)
+	if star >= LEGENDARY_FROM_STAR and catalog != null and bool(catalog.gear_rules().get("star5_box", true)):
 		var has_box := false
 		for item in out:
-			has_rare = has_rare or str(item.get("rarity", "")) == "rare"
 			has_box = has_box or str(item.get("item_id", "")) == "mystery_box"
-		if not has_rare:
-			var rare: Dictionary = catalog._part_drop(catalog._dungeon_part_set(catalog._dungeon(str(dungeon["id"])), {"class_id": hero_class}, rng), "rare", rng)
-			if str(rare.get("item_id", "")) != "":
-				out.append(rare)
 		if not has_box:
 			out.append(catalog._box_item())
 	return out

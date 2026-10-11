@@ -1,54 +1,18 @@
 #!/usr/bin/env python3
-"""Build data/world/rewards.json from the WP14 tables in the zones spec.
+"""Build data/world/rewards.json (format_version 2).
 
-Numbers that the spec states are written as stated. Splits the spec leaves
-unweighted are even, and those rows are listed in the file's notes.
+The set parts are the mobile gear ladder (backend/pc_gear.gd, ported from
+origin/mobile backend/gear_bag.gd). This file keeps the PC layers: Crypto
+Coins, carry rules, the Mystery Box, the loose items (extras, epics, relics),
+the dungeon rows and their star_drops, and the PC mapping of the mobile chest
+onto PC sources. Mauro, 11 Oct 2026: "Ok entonces utiliza los de mobil" and
+"Sí, como en el móvil".
 """
 
 import json
 from pathlib import Path
 
-STATS = ["Mastery", "Vitality", "Swift", "Resist"]
-SET_SLOTS = ["head", "cape", "belt", "boots", "amulet"]
-SLOT_LABEL = {
-    "head": "Head",
-    "cape": "Cape",
-    "belt": "Belt",
-    "boots": "Boots",
-    "amulet": "Amulet",
-    "ring": "Ring",
-    "weapon": "Weapon",
-}
-
-CLASS_LEANS = {
-    "kestrel": ["Mastery", "Swift"],
-    "ironjaw": ["Mastery", "Vitality"],
-    "mender": ["Vitality", "Resist"],
-    "gloam": ["Mastery", "Swift"],
-    "bastion": ["Vitality", "Resist"],
-}
-CLASS_NAME = {
-    "kestrel": "Kestrel",
-    "ironjaw": "Ironjaw",
-    "mender": "Mender",
-    "gloam": "Gloam",
-    "bastion": "Bastion",
-}
-CLASS_SETS = {
-    "kestrel": ["Fledgling", "Windrunner", "Skyfeather", "Stormquill", "Galecrest", "Zenith Talon"],
-    "ironjaw": ["Quarryhand", "Stonefist", "Quarrybreaker", "Ironclad Ram", "Mountainmaw", "Titan's Jaw"],
-    "mender": ["Dewdrop", "Brookmender", "Tidewell", "Riverheart", "Deepspring", "Oceansong"],
-    "gloam": ["Shadowstep", "Nightcloak", "Duskveil", "Umbral Fang", "Voidshroud", "Eclipse"],
-    "bastion": ["Watchpost", "Shieldwall", "Bulwark", "Ironbastion", "Rampart Lord", "Aegis Eternal"],
-}
-TIERS = [1, 10, 20, 30, 40, 50]
-SIGNATURE = {
-    "kestrel": "+1 max range on Mark Shot",
-    "ironjaw": "Start every fight with +1 Impact",
-    "mender": "Mend heals +2 and Pulse Tap heals +1",
-    "gloam": "+1 MP on turns you start Invisible",
-    "bastion": "The first hit you take in each fight deals half damage",
-}
+GEAR_SLOTS = ["weapon", "head", "chest", "legs", "boots"]
 
 # (id, display name, zone id, set name, class tier, coin level, extras, title)
 DUNGEONS = [
@@ -103,16 +67,6 @@ RELICS = [
      "No AP. Your hits poison: 3 damage at the start of the target's turn for 2 turns, stacking up to 3"),
 ]
 
-# A dungeon set's tier is its coin level, except where named here. The Rotting
-# Elder set stays tier 50 (spec 4.9) while the blight pays the tier-40 class
-# sets and level-40 coins (Mauro, 11 Oct 2026: "Si a todo").
-SET_TIER = {"heart_of_the_blight": 50}
-
-# Star drops (Proposed, Mauro 11 Oct 2026: "Si a todo"). One draw per group,
-# so a group gives at most one item a run. A pool's chance is per win at that
-# star. above_run_level "drop": an item above the run level still drops and
-# waits in the bag until the hero can wear it (the dungeon roll already works
-# this way); "skip": it does not drop below its level (the Mystery Box rule).
 STAR_DROPS = {
     "drowned_abbey": {
         "status": "proposed",
@@ -125,7 +79,7 @@ STAR_DROPS = {
     },
     "heart_of_the_blight": {
         "status": "proposed",
-        "note": "Epics at ★4 and ★5, relics and Prism Striders at ★5 only, the tier-50 Rotting Elder set at ★5 for level-50 runs only. Crown of Crosshaven has no source (Open). Mauro, 11 Oct 2026: \"Si a todo\".",
+        "note": "Epics at ★4 and ★5, relics and Prism Striders at ★5 only. Crown of Crosshaven has no source (Open). Mauro, 11 Oct 2026: \"Si a todo\".",
         "groups": [
             {"id": "epic", "max_per_run": 1, "above_run_level": "drop", "pools": [
                 {"items": ["gale_signet", "ember_crown", "stormheart_gauntlet"], "chance_by_stars": {"4": 0.10, "5": 0.20}},
@@ -135,152 +89,29 @@ STAR_DROPS = {
                 {"items": ["heart_of_the_elder"], "chance_by_stars": {"5": 0.05}},
                 {"items": ["blightroot_ring"], "chance_by_stars": {"5": 0.05}},
             ]},
-            {"id": "rotting_elder", "max_per_run": 1, "above_run_level": "skip", "pools": [
-                {"set_id": "rotting_elder", "rarity": "regular", "chance_by_stars": {"5": 0.10}},
-            ]},
         ],
     },
 }
-# The blight's guaranteed part is always a tier-40 class set: its own set is
-# tier 50, and Ashen Prism (tier 40) is Shard Hollow's own set.
-GUARANTEED_SPLIT = {"heart_of_the_blight": {"dungeon_set": 0.0, "class_set": 1.0}}
 SOURCED = {item_id for row in STAR_DROPS.values() for group in row["groups"]
            for pool in group["pools"] for item_id in pool.get("items", [])}
 
-ZONE_CLASS = {
-    "rowanvale": 10,
-    "windmere": 10,
-    "brinewake": 20,
-    "slagcrown": 20,
-    "eastmarch_fen_edge": 20,
-    "gloomfen_mire": 30,
-    "stormspire": 30,
-    "ashen_shardfields": 40,
-    "blightwood_hollow": 50,
-}
-
-
-def round_half_away(value: float) -> int:
-    if value >= 0:
-        return int(value + 0.5)
-    return int(value - 0.5)
-
-
-def slug(name: str) -> str:
-    return name.lower().replace("'", "").replace(" ", "_")
-
-
-def split(total: int, leans: list) -> dict:
-    base, rem = divmod(total, len(leans))
-    out = {}
-    for i, stat in enumerate(leans):
-        points = base + (1 if i < rem else 0)
-        if points:
-            out[stat] = points
-    return out
-
-
-def full_budget(tier: int) -> int:
-    # B(T) = round(98 × 1.3^((T − 50) / 10)). Half away from zero, matching Godot round().
-    return round_half_away(98 * (1.3 ** ((tier - 50) / 10.0)))
-
-
-def allocate(full: int, leans: list) -> tuple:
-    """Whole stat points whose full set (5 parts + 2-part + 3-part) equals B(T).
-
-    One part and the 2-part bonus share the same split. The 3-part line takes
-    the remainder so the total is exactly B(T), not merely near it.
-    """
-    part_target = full / 7.5
-    three_target = full / 5.0
-    best = None
-    for part_points in range(0, full + 1):
-        three_points = full - 6 * part_points
-        if three_points < 0:
-            continue
-        score = abs(part_points - part_target) + abs(three_points - three_target)
-        row = (score, part_points, three_points)
-        if best is None or row < best:
-            best = row
-    _score, part_points, three_points = best
-    part = split(part_points, leans)
-    return part, dict(part), split(three_points, leans)
-
-
-def leans_for(class_id: str, tier: int) -> list:
-    if class_id == "gloam" and tier >= 30:
-        return ["Swift", "Resist"]
-    return list(CLASS_LEANS[class_id])
-
-
-def rare_stats(budget: int, leans: list) -> dict:
-    stats = split(round_half_away(1.5 * budget), leans)
-    for stat in STATS:
-        if stat not in leans:
-            stats[stat] = stats.get(stat, 0) + 1
-            return stats
-    # Shared and dungeon parts already list all four stats, so the extra
-    # point lands on Mastery.
-    stats[STATS[0]] = stats.get(STATS[0], 0) + 1
-    return stats
-
-
-def five_part(text: str) -> dict:
-    return {"applies": False, "text": text}
-
-
-def make_set(set_id: str, name: str, tier: int, kind: str, classes: list, leans: list, five_text: str) -> dict:
-    full = full_budget(tier)
-    regular, bonus_two, bonus_three = allocate(full, leans)
-    budget = sum(regular.values())
-    parts = []
-    for slot in SET_SLOTS:
-        parts.append({
-            "id": "%s_%s" % (set_id, slot),
-            "slot": slot,
-            "name": "%s %s" % (name, SLOT_LABEL[slot]),
-        })
-    return {
-        "id": set_id,
-        "name": name,
-        "tier": tier,
-        "kind": kind,
-        "classes": classes,
-        "leans": leans,
-        "budget": budget,
-        "full_budget": full,
-        "stats": {
-            "regular": regular,
-            "rare": rare_stats(budget, leans),
-        },
-        "bonuses": {
-            "2": bonus_two,
-            "3": bonus_three,
-            "5": five_part(five_text),
-        },
-        "parts": parts,
-    }
-
-
-def class_five(class_id: str, tier: int) -> str:
-    if tier < 20:
-        return "Plain stat bonus at five parts. Not applied yet."
-    text = SIGNATURE[class_id]
-    if tier > 20:
-        text += " The later-tier addition is not built yet."
-    return text
-
-
-def shared_row(kind: str, set_id: str) -> dict:
-    return {"kind": kind, "set_id": set_id, "weight": 1}
-
-
-def class_row(tier: int) -> dict:
-    return {"kind": "class", "tier": tier, "weight": 1}
-
-
-def zone_block(world: list, mission: list) -> dict:
-    return {"world": world, "mission": mission}
+# The old level-tier sets (format_version 1, 43 sets, slots head / cape /
+# belt / boots / amulet). A saved part "<set>_<slot>" is migrated on load to
+# an Ashmantle piece in the mapped slot (Ashmantle fits every class). An old
+# Rare part becomes that piece at +1 (two +0 copies fused).
+LEGACY_SLOT_MAP = {"head": "head", "cape": "chest", "belt": "legs", "boots": "boots", "amulet": "weapon"}
+LEGACY_SETS = [
+    "kestrel_fledgling", "kestrel_windrunner", "kestrel_skyfeather", "kestrel_stormquill",
+    "kestrel_galecrest", "kestrel_zenith_talon", "ironjaw_quarryhand", "ironjaw_stonefist",
+    "ironjaw_quarrybreaker", "ironjaw_ironclad_ram", "ironjaw_mountainmaw", "ironjaw_titans_jaw",
+    "mender_dewdrop", "mender_brookmender", "mender_tidewell", "mender_riverheart",
+    "mender_deepspring", "mender_oceansong", "gloam_shadowstep", "gloam_nightcloak",
+    "gloam_duskveil", "gloam_umbral_fang", "gloam_voidshroud", "gloam_eclipse",
+    "bastion_watchpost", "bastion_shieldwall", "bastion_bulwark", "bastion_ironbastion",
+    "bastion_rampart_lord", "bastion_aegis_eternal", "wayfarer", "townguard", "ratcatcher",
+    "millwright", "orchard_warden", "pale_archivist", "saltmaw", "ember_smith",
+    "millwheel_hag", "mire_abbess", "storm_engine", "ashen_prism", "rotting_elder",
+]
 
 
 def loose_item(item_id: str, name: str, category: str, weight: int, stack: bool, **extra) -> dict:
@@ -301,36 +132,12 @@ def loose_item(item_id: str, name: str, category: str, weight: int, stack: bool,
     return row
 
 
-def main() -> None:
-    sets = []
-    for class_id, names in CLASS_SETS.items():
-        for tier, name in zip(TIERS, names):
-            leans = leans_for(class_id, tier)
-            sets.append(make_set(
-                "%s_%s" % (class_id, slug(name)),
-                name,
-                tier,
-                "class",
-                [CLASS_NAME[class_id]],
-                leans,
-                class_five(class_id, tier),
-            ))
-    sets.append(make_set(
-        "wayfarer", "Wayfarer", 1, "shared", [], list(STATS),
-        "+1 MP on the first turn of a fight",
-    ))
-    sets.append(make_set(
-        "townguard", "Townguard", 5, "shared", [], list(STATS),
-        "Extra Resist when standing next to an ally",
-    ))
 
+
+def main() -> None:
     items = []
     dungeons = []
-    for dung_id, dung_name, zone_id, set_name, class_tier, coin_level, extras, title in DUNGEONS:
-        set_id = slug(set_name)
-        five = "Open"
-        set_tier = SET_TIER.get(dung_id, coin_level)
-        sets.append(make_set(set_id, set_name, set_tier, "dungeon", [], list(STATS), five))
+    for dung_id, dung_name, zone_id, _set_name, _class_tier, coin_level, extras, title in DUNGEONS:
         extra_ids = []
         for item_id, item_name, category in extras:
             weight = 20 if category == "decoration" else (0 if category == "recipe" else 1)
@@ -340,21 +147,10 @@ def main() -> None:
             "id": dung_id,
             "name": dung_name,
             "zone_id": zone_id,
-            "set_id": set_id,
-            "class_tier": class_tier,
             "coin_level": coin_level,
             "title": title,
             "extras": extra_ids,
         }
-        if dung_id == "old_granary_cellar":
-            # Millrace Vaults is dropped. Its tier-1 set still drops here.
-            sets.append(make_set(
-                "millwright", "Millwright", 8, "dungeon", [], list(STATS),
-                "Extra Mastery on the turn after you are hit",
-            ))
-            row["also_set_id"] = "millwright"
-        if dung_id in GUARANTEED_SPLIT:
-            row["guaranteed_split"] = GUARANTEED_SPLIT[dung_id]
         if dung_id in STAR_DROPS:
             row["star_drops"] = STAR_DROPS[dung_id]
         dungeons.append(row)
@@ -379,37 +175,22 @@ def main() -> None:
             effect={"applies": False, "text": text},
         ))
 
-    zones = {
-        "crosshaven_heart": zone_block(
-            [shared_row("shared", "wayfarer")],
-            [shared_row("shared", "wayfarer"), class_row(1)],
-        ),
-        "crosshaven_towns": zone_block(
-            [shared_row("shared", "townguard")],
-            [shared_row("shared", "townguard")],
-        ),
-    }
-    for zone_id, tier in ZONE_CLASS.items():
-        zones[zone_id] = zone_block([class_row(tier)], [class_row(tier)])
-
     doc = {
         "format": "stasium.world_rewards",
-        "format_version": 1,
+        "format_version": 2,
         "status": "proposed",
         "notes": [
-            "A dungeon win's guaranteed part is an even split between that dungeon's own set and a class set of its tier. Section 4.9 names both and does not weight them.",
-            "Heart missions split evenly between Wayfarer and a tier-1 class set. Both are named sources.",
-            "Crosshaven world fights drop the shared set for that half of the city. Other regions drop a class set of the region's tier.",
-            "Frostspire, Cinderforge and Sunken Mill drop the class tier just below the top of their zone band. Thunderwell Core is named with the tier-30 sources. Millrace Vaults is dropped. Its Millwright set and its stew, cog, and water-wheel extras drop from Old Granary Cellar.",
+            "Set parts are the mobile gear ladder: 23 sets in backend/pc_gear.gd (origin/mobile 7035f8f backend/gear_bag.gd), slots weapon, head, chest, legs, boots. Item ids are mobile's, <set>.<slot>. Mauro, 11 Oct 2026: \"Ok entonces utiliza los de mobil\".",
+            "Dungeon win (Proposed): two chests, one piece each at +0. Room A's chest rolls the star row (100 / 70-30 / 60-30-10 for ★1-2 / ★3-4 / ★5), room B's boss chest rolls the boss row (50 / 30 / 20). Each chest rolls a tier, then a set of that tier at equal odds, then a slot (weapon 18%, each other slot 20.5%). Mobile pays one chest per Stasis clear with a cap of 5 clears a day; PC dungeons keep no daily cap. Mauro: \"Sí, como en el móvil\".",
+            "World fights (Proposed): world_chance per win of one Normal-tier piece (Ashmantle and the five class Normal sets at equal odds). Missions (Proposed): the rank's regular share is a Normal-tier piece, its rare share a Rare-tier piece (the five class Rare sets). The Mystery Box part rows map the same way.",
+            "Ultra sets (Gatewarden, Sandhawk, Pitmaw, Hushring, Mercywell) never drop. Source koliseo_shop, 30 Koliseo coins per piece. PC has no Koliseo shop or Koliseo wallet yet (Open).",
+            "Class sets fit only their class; Ashmantle and Brightedge fit any class. Drops are uniform over sets, so a hero receives other classes' pieces. Selling and trading are not built (the Trader NPCs say the shop is not open).",
+            "Epics, relics, the Mystery Box and star_drops are a separate layer and roll as before. The ★5 Mystery Box stays guaranteed. The ★5 guaranteed Rare part and the old Rare-part roll are retired: the chests carry the tiers now. The blight's tier-50 Rotting Elder pool is gone with the old sets.",
+            "Coins and XP are unchanged.",
+            "legacy_gear: a saved part of an old set migrates on load to the Ashmantle piece of the mapped slot, at +0, or +1 for an old Rare part. A worn part stays worn in the new slot when it is free.",
             "Unique extras have drop Open, so the roller does not grant them. Epics and Relics drop only through a dungeon row's star_drops (drop rolled); Crown of Crosshaven keeps drop Open.",
-            "Heart of the Blight pays the tier-40 class sets and level-40 coins, so a level 40-49 hero can wear what drops. Its tier-50 Rotting Elder set drops only from star_drops at ★5 on a level-50 run. Mauro, 11 Oct 2026: \"Si a todo\".",
             "star_drops (Proposed): one draw per group, so a group gives at most one item a run. A pool's chance is per win at that star; pools at the same star add up. above_run_level drop: an item above the run level still drops and waits in the bag until the hero can wear it. skip: it does not drop.",
-            "A full set (5 parts + the 2-part bonus + the 3-part bonus) is worth B(T) = round(98 × 1.3^((T-50)/10)), half away from zero. One part and the 2-part bonus are the same split. The 3-part line takes the remainder so the total equals B(T). budget is the one-part point total; full_budget is B(T).",
-            "A Rare part is 1.5 times that one-part total, rounded half away from zero, plus one point in the first of Mastery, Vitality, Swift, Resist that the part does not already lean to. Shared and dungeon parts already list all four, so that point goes to Mastery.",
-            "Shared and dungeon parts split across all four stats. Class parts split across the two stats that class leans to. Gloam tiers 30 and up lean Swift and Resist.",
-            "Five-part texts are stored and not applied. The full Rare tier-30 class set's AP or MP choice is applied, because that choice is already approved.",
             "Mystery Box weight is 1, the consumable weight. Decoration weight uses the stated floor of 20.",
-            "The first AP or MP choice on a full Rare tier-30 class set is free. Switching the choice costs Crypto Coins, and that price is Open.",
         ],
         "coins": {
             "world_base": 3,
@@ -440,15 +221,34 @@ def main() -> None:
             "decoration": 20,
             "special": 1,
         },
-        "class_bias": 0.6,
-        "world_part_chance": 0.03,
         "classes": ["Kestrel", "Ironjaw", "Mender", "Gloam", "Bastion"],
-        "set_slots": SET_SLOTS,
-        "equip_slots": ["head", "amulet", "ring", "ring_b", "cape", "belt", "boots", "weapon"],
-        "rare_full": {"tier": 30, "ap": 1, "mp": 1},
+        "gear_slots": GEAR_SLOTS,
+        "equip_slots": GEAR_SLOTS + ["amulet", "ring", "ring_b"],
+        "gear": {
+            "source": "res://backend/pc_gear.gd",
+            "dungeon_chests": [
+                {"room": "a", "row": "star"},
+                {"room": "b", "row": "boss"},
+            ],
+            "world_chance": 0.03,
+            "world_tier": "Normal",
+            "mission_tiers": {"regular": "Normal", "rare": "Rare"},
+            "box_tiers": {"regular": "Normal", "rare": "Rare"},
+            "star5_box": True,
+            "ultra": {"source": "koliseo_shop", "cost": 30, "currency": "koliseo_coins", "shop_built": False},
+        },
+        "legacy_gear": {
+            "to_set": "ashmantle",
+            "slot_map": LEGACY_SLOT_MAP,
+            "rare_plus": 1,
+            "sets": LEGACY_SETS,
+        },
         "rarity_colors": {
             "regular": "white",
+            "normal": "white",
             "rare": "blue",
+            "legendary": "orange",
+            "ultra": "red",
             "epic": "purple",
             "relic": "gold",
         },
@@ -464,17 +264,13 @@ def main() -> None:
             {"kind": "part", "rarity": "regular", "chance": 0.35},
             {"kind": "part", "rarity": "rare", "chance": 0.15},
         ],
-        "dungeon_rare_by_stars": {"1": 0, "2": 0.05, "3": 0.10, "4": 0.20, "5": 0.35},
         "dungeon_box_by_stars": {"1": 0, "2": 0, "3": 0, "4": 0.10, "5": 0.10},
-        "guaranteed_split": {"dungeon_set": 0.5, "class_set": 0.5},
-        "sets": sets,
         "items": items,
-        "zones": zones,
         "dungeons": dungeons,
     }
     path = Path(__file__).with_name("rewards.json")
-    path.write_text(json.dumps(doc, indent=2) + "\n", encoding="utf-8")
-    print("wrote %s sets=%d items=%d" % (path.name, len(sets), len(items)))
+    path.write_text(json.dumps(doc, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    print("wrote %s items=%d dungeons=%d" % (path.name, len(items), len(dungeons)))
 
 
 if __name__ == "__main__":

@@ -60,6 +60,9 @@ func _ready() -> void:
 		_show_result("lose", {"name": "Dungeon", "error": true})
 		return
 	run = made["run"]
+	# Worn gear (pc_gear ladder) goes into every room's hero.
+	if progress.has_method("fight_gear"):
+		run.hero_gear = progress.fight_gear()
 	if int(ctx.get("hero_hp", -1)) > 0:
 		run.hero_hp = int(ctx["hero_hp"])
 	var loaded: Dictionary = Missions.load_default()

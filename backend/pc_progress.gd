@@ -7,6 +7,7 @@ extends RefCounted
 
 const Duel = preload("res://backend/pc_duel.gd")
 const Catalog = preload("res://backend/pc_rewards.gd")
+const Gear = preload("res://backend/pc_gear.gd")
 const Kits = preload("res://data/kits.gd")
 const CURVE_PATH := "res://data/world/level_curve.json"
 const REWARDS_PATH := "res://data/world/level_rewards.json"
@@ -24,8 +25,10 @@ const REWARD_KEYS: Array[String] = [
 	"koliseo_duel",
 ]
 const STAT_NAMES: Array[String] = ["Mastery", "Vitality", "Swift", "Resist"]
+## Gear slots (mobile ladder, pc_gear.gd) and the epic / relic trinket slots.
+## An epic or relic with a head, weapon or boots slot takes that gear slot.
 const EQUIP_SLOTS: Array[String] = [
-	"head", "amulet", "ring", "ring_b", "cape", "belt", "boots", "weapon",
+	"weapon", "head", "chest", "legs", "boots", "amulet", "ring", "ring_b",
 ]
 
 var level: int = 1
@@ -264,15 +267,9 @@ func sheet_view(koliseo: bool = false) -> Dictionary:
 	var base_mp := int(sheet.get("mp", 0)) if _whole(sheet.get("mp", null)) else 0
 	var gear := gear_view()
 	if koliseo:
-		gear = {
-			"stats": {"Mastery": 0, "Vitality": 0, "Swift": 0, "Resist": 0},
-			"ap": 0,
-			"mp": 0,
-			"sets": [],
-			"epic": "",
-			"relic": "",
-		}
-	var ap_total := base_ap + milestone_ap() + int(gear.get("ap", 0))
+		gear = _empty_gear()
+		gear["ap"] = milestone_ap()
+	var ap_total := base_ap + int(gear.get("ap", 0))
 	var mp_total := base_mp + int(gear.get("mp", 0))
 	if _whole(caps.get("ap", null)) and int(caps["ap"]) > 0 and ap_total > int(caps["ap"]):
 		ap_total = int(caps["ap"])
@@ -287,6 +284,7 @@ func sheet_view(koliseo: bool = false) -> Dictionary:
 		"points_earned": points_earned(),
 		"stats": rows,
 		"hp": sheet.get("hp", "Open"),
+		"hp_max": hero_max_hp(gear),
 		"class_hp_per_level": class_hp_per_level,
 		"ap": ap_total,
 		"ap_from_milestones": milestone_ap(),
@@ -441,6 +439,7 @@ func read_save() -> bool:
 		if _whole(place.get("x", null)) and _whole(place.get("y", null)):
 			world_zone = str(place.get("zone_id", ""))
 			world_cell = Vector2i(int(place["x"]), int(place["y"]))
+	var migrated := migrate_legacy_gear(doc)
 	if not missions_ok or not _apply_saved_spend(doc) or not _apply_saved_items(doc):
 		level = prev_level
 		xp = prev_xp
@@ -459,6 +458,8 @@ func read_save() -> bool:
 		world_cell = prev_cell
 		dungeon_stars = prev_stars
 		return false
+	if not migrated.is_empty():
+		load_log.append_array(migrated)
 	return true
 
 
@@ -621,13 +622,130 @@ func bag_weight() -> int:
 	return total
 
 
+## Worn gear: stats, set bonuses, AP / MP bonus (the level milestone AP is
+## inside "ap"), epic and relic names. See pc_rewards.gear_for.
 func gear_view() -> Dictionary:
 	if _catalog == null:
-		return {
-			"stats": {"Mastery": 0, "Vitality": 0, "Swift": 0, "Resist": 0},
-			"ap": 0, "mp": 0, "sets": [], "epic": "", "relic": "",
-		}
-	return _catalog.gear_for(equipped, hero_class, rare_choice)
+		var empty := _empty_gear()
+		empty["ap"] = milestone_ap()
+		return empty
+	return _catalog.gear_for(equipped, hero_class, milestone_ap())
+
+
+func _empty_gear() -> Dictionary:
+	return {
+		"stats": {"HP": 0, "HP %": 0, "Mastery": 0, "Resist": 0, "Init": 0, "Crit %": 0},
+		"combat": {}, "worn": [], "ap": 0, "mp": 0, "sets": [], "epic": "", "relic": "",
+	}
+
+
+## Sheet max HP: (sheet HP + gear part HP) x (1 + set HP%). PC has no class
+## or level HP yet (class_hp_per_level is Open).
+func hero_max_hp(gear: Dictionary = {}) -> int:
+	var base := int(sheet.get("hp", 80)) if _whole(sheet.get("hp", null)) else 80
+	var view := gear if not gear.is_empty() else gear_view()
+	var stats: Dictionary = view.get("stats", {})
+	return Gear.max_hp(base, 0, {"hp_flat": int(stats.get("HP", 0)), "hp_pct": int(stats.get("HP %", 0))})
+
+
+## What a dungeon fight reads: the worn set parts ({item_id, plus}), the
+## class, and the level milestone AP. CombatSim sums it with pc_gear.
+func fight_gear() -> Dictionary:
+	var worn: Array = []
+	for slot in Gear.SLOTS:
+		var inst: Dictionary = equipped.get(slot, {})
+		var item_id := str(inst.get("item_id", ""))
+		if Gear.is_valid_item_id(item_id):
+			worn.append({"item_id": item_id, "plus": int(inst.get("plus", 0))})
+	return {"worn": worn, "class_id": Gear.class_key(hero_class), "extra_ap": milestone_ap()}
+
+
+## The look of one worn slot for the paper doll: {set_id, part_id, slot,
+## plus, rarity, owner}, or {} when the slot is empty or holds no set part.
+func equipped_look(slot: String) -> Dictionary:
+	var inst: Dictionary = equipped.get(slot, {})
+	return Gear.look_of(str(inst.get("item_id", "")), int(inst.get("plus", 0)))
+
+
+## Every worn set part's look, keyed by slot.
+func equipped_looks() -> Dictionary:
+	var out := {}
+	for slot in Gear.SLOTS:
+		var look := equipped_look(slot)
+		if not look.is_empty():
+			out[slot] = look
+	return out
+
+
+## A partner to fuse `uid` with: same item id and plus, in the bag or worn.
+## Prefers a bag copy. -1 when there is none.
+func fuse_partner(uid: int) -> int:
+	var base := _gear_row(uid)
+	if base.is_empty():
+		return -1
+	var worn_match := -1
+	for entry in bag:
+		var other := int(entry.get("uid", -1))
+		if other != uid and str(entry.get("item_id", "")) == str(base["item_id"]) and int(entry.get("plus", 0)) == int(base.get("plus", 0)):
+			return other
+	for slot in equipped.keys():
+		var inst: Dictionary = equipped[slot]
+		var other_w := int(inst.get("uid", -1))
+		if other_w != uid and str(inst.get("item_id", "")) == str(base["item_id"]) and int(inst.get("plus", 0)) == int(base.get("plus", 0)):
+			worn_match = other_w
+	return worn_match
+
+
+## Fuse (mobile): two copies of one piece at the same plus become one piece
+## at plus + 1, cap +5. The kept piece is `uid` (or the worn one of the two,
+## so a worn piece stays worn). `partner` -1 finds one.
+func fuse_uid(uid: int, partner: int = -1) -> Dictionary:
+	if partner < 0:
+		partner = fuse_partner(uid)
+	var a := _gear_row(uid)
+	var b := _gear_row(partner)
+	if partner < 0 or b.is_empty():
+		return {"ok": false, "reason": "no_partner"}
+	var gate: Dictionary = Gear.can_fuse(a, b)
+	if not bool(gate["ok"]):
+		return gate
+	var keep := uid
+	var drop := partner
+	if _worn_slot(partner) != "" and _worn_slot(uid) == "":
+		keep = partner
+		drop = uid
+	if _worn_slot(drop) != "":
+		equipped.erase(_worn_slot(drop))
+	else:
+		_remove_uid(drop)
+	var plus := int(a.get("plus", 0)) + 1
+	var slot := _worn_slot(keep)
+	if slot != "":
+		equipped[slot]["plus"] = plus
+	else:
+		_find_bag(keep)["plus"] = plus
+	_autosave()
+	return {"ok": true, "reason": "", "uid": keep, "plus": plus, "item_id": str(a["item_id"])}
+
+
+func _gear_row(uid: int) -> Dictionary:
+	if uid < 0:
+		return {}
+	var row := _find_bag(uid)
+	if row.is_empty():
+		var slot := _worn_slot(uid)
+		if slot != "":
+			row = equipped[slot]
+	if row.is_empty() or not Gear.is_valid_item_id(str(row.get("item_id", ""))):
+		return {}
+	return {"uid": uid, "item_id": str(row["item_id"]), "plus": int(row.get("plus", 0))}
+
+
+func _worn_slot(uid: int) -> String:
+	for slot in equipped.keys():
+		if int((equipped[slot] as Dictionary).get("uid", -1)) == uid:
+			return str(slot)
+	return ""
 
 
 func item_def(item_id: String) -> Dictionary:
@@ -655,9 +773,10 @@ func grant(drop: Dictionary) -> Dictionary:
 			var count := int(item.get("count", 1))
 			if count < 1:
 				continue
-			if _place(item_id, rarity, count):
+			var plus := clampi(int(item.get("plus", 0)), 0, Gear.PLUS_CAP)
+			if _place(item_id, rarity, count, plus):
 				to_bag.append(item)
-			elif _to_bank(item_id, rarity, count):
+			elif _to_bank(item_id, rarity, count, plus):
 				to_bank.append(item)
 			else:
 				refused.append(item)
@@ -741,6 +860,7 @@ func equip_uid(uid: int) -> Dictionary:
 		"item_id": item_id,
 		"rarity": rarity,
 		"upgrade": int(entry.get("upgrade", 0)),
+		"plus": int(entry.get("plus", 0)),
 		"seq": _equip_seq,
 	}
 	_equip_seq += 1
@@ -760,6 +880,7 @@ func unequip(slot: String, write: bool = true) -> Dictionary:
 		"rarity": rarity,
 		"count": 1,
 		"upgrade": int(inst.get("upgrade", 0)),
+		"plus": int(inst.get("plus", 0)),
 	}
 	if bag.size() >= bag_slots or bag_weight() + _entry_weight(row) > weight_max():
 		return {"ok": false, "reason": "bag full"}
@@ -780,7 +901,7 @@ func choose_rare(which: String) -> Dictionary:
 	return {"ok": false, "reason": "switch cost is Open"}
 
 
-func _place(item_id: String, rarity: String, count: int) -> bool:
+func _place(item_id: String, rarity: String, count: int, plus: int = 0) -> bool:
 	var stack: bool = _catalog != null and _catalog.stacks(item_id)
 	if stack:
 		var weight := _entry_weight({"item_id": item_id, "count": count})
@@ -798,11 +919,11 @@ func _place(item_id: String, rarity: String, count: int) -> bool:
 	if bag.size() + count > bag_slots or bag_weight() + one * count > weight_max():
 		return false
 	for _i in count:
-		bag.append(_fresh(item_id, rarity, 1))
+		bag.append(_fresh(item_id, rarity, 1, plus))
 	return true
 
 
-func _to_bank(item_id: String, rarity: String, count: int) -> bool:
+func _to_bank(item_id: String, rarity: String, count: int, plus: int = 0) -> bool:
 	var stack: bool = _catalog != null and _catalog.stacks(item_id)
 	if stack:
 		for entry in bank:
@@ -816,14 +937,17 @@ func _to_bank(item_id: String, rarity: String, count: int) -> bool:
 	if not _bank_has_room(count):
 		return false
 	for _i in count:
-		bank.append(_fresh(item_id, rarity, 1))
+		bank.append(_fresh(item_id, rarity, 1, plus))
 	return true
 
 
-func _fresh(item_id: String, rarity: String, count: int) -> Dictionary:
+func _fresh(item_id: String, rarity: String, count: int, plus: int = 0) -> Dictionary:
 	var uid := _uid
 	_uid += 1
-	return {"uid": uid, "item_id": item_id, "rarity": rarity, "count": count, "upgrade": 0}
+	var row := {"uid": uid, "item_id": item_id, "rarity": rarity, "count": count, "upgrade": 0}
+	if Gear.is_valid_item_id(item_id):
+		row["plus"] = clampi(plus, 0, Gear.PLUS_CAP)
+	return row
 
 
 func _entry_weight(entry: Dictionary) -> int:
@@ -1030,16 +1154,15 @@ func _autosave() -> void:
 	save()
 
 
-func _resist_fraction(gear: Dictionary) -> float:
+func _resist_fraction(_gear: Dictionary) -> float:
 	var resist: Variant = stat_per_point.get("Resist", {})
 	if typeof(resist) != TYPE_DICTIONARY:
 		return 0.0
 	var rate := _as_float((resist as Dictionary).get("damage_taken", 0))
 	var cap := _as_float((resist as Dictionary).get("cap", 0))
+	# Gear Resist is a combat percent (pc_gear), not a point; the sheet shows
+	# it on its own line.
 	var points := float(int(spent.get("Resist", 0)))
-	var block: Variant = gear.get("stats", {})
-	if typeof(block) == TYPE_DICTIONARY:
-		points += float(int((block as Dictionary).get("Resist", 0)))
 	var raw := points * rate
 	if cap > 0.0 and raw > cap:
 		return cap
@@ -1142,10 +1265,11 @@ func deposit_uid(uid: int) -> Dictionary:
 		return {"ok": false, "reason": "not in bag"}
 	var item_id := str(entry.get("item_id", ""))
 	var rarity := str(entry.get("rarity", "regular"))
+	var plus := int(entry.get("plus", 0))
 	if not _consume_uid(uid):
 		return {"ok": false, "reason": "not in bag"}
-	if not _to_bank(item_id, rarity, 1):
-		_place(item_id, rarity, 1)
+	if not _to_bank(item_id, rarity, 1, plus):
+		_place(item_id, rarity, 1, plus)
 		_autosave()
 		return {"ok": false, "reason": _bank_full_message()}
 	_autosave()
@@ -1252,6 +1376,7 @@ func _apply_saved_items(doc: Dictionary) -> bool:
 				"item_id": str(inst["item_id"]),
 				"rarity": str(inst["rarity"]),
 				"upgrade": int(inst.get("upgrade", 0)) if _whole(inst.get("upgrade", 0)) else 0,
+				"plus": clampi(int(inst.get("plus", 0)), 0, Gear.PLUS_CAP) if _whole(inst.get("plus", 0)) else 0,
 				"count": 1,
 				"seq": int(inst.get("seq", 0)) if _whole(inst.get("seq", 0)) else 0,
 			}
@@ -1292,6 +1417,116 @@ func _apply_saved_items(doc: Dictionary) -> bool:
 	equipped = kept
 	_cap_carried()
 	return true
+
+
+## Old saves (rewards format 1): parts of the 43 level-tier sets, slots head /
+## cape / belt / boots / amulet. Each becomes the Ashmantle piece of the
+## mapped slot (rewards.json legacy_gear: cape → chest, belt → legs, amulet →
+## weapon), at +0, or +1 for an old Rare part. Ashmantle fits every class, so
+## a worn part stays worn in its new slot when that slot is free; otherwise it
+## goes to the bag. Rewrites `doc` in place and returns one line per change.
+func migrate_legacy_gear(doc: Dictionary) -> Array:
+	var log: Array = []
+	if _catalog == null:
+		return log
+	var rules: Dictionary = _catalog.legacy_rules()
+	var to_set := str(rules.get("to_set", ""))
+	var slot_map: Dictionary = rules.get("slot_map", {})
+	var old_sets: Array = rules.get("sets", [])
+	var rare_plus := int(rules.get("rare_plus", 1))
+	if to_set == "" or old_sets.is_empty():
+		return log
+	for key in ["bag", "bank"]:
+		if typeof(doc.get(key, null)) != TYPE_ARRAY:
+			continue
+		var rows: Array = []
+		for raw in doc[key]:
+			if typeof(raw) == TYPE_DICTIONARY:
+				var row: Dictionary = (raw as Dictionary).duplicate(true)
+				var moved := _legacy_row(row, to_set, slot_map, old_sets, rare_plus)
+				if not moved.is_empty():
+					log.append("%s: %s → %s" % [key, str(raw.get("item_id", "")), str(moved["item_id"])])
+					var count := maxi(int(row.get("count", 1)), 1)
+					moved["count"] = 1
+					rows.append(moved)
+					for extra in count - 1:
+						var copy: Dictionary = moved.duplicate(true)
+						copy["uid"] = _legacy_spare_uid(doc)
+						rows.append(copy)
+					continue
+			rows.append(raw)
+		doc[key] = rows
+	if typeof(doc.get("equipped", null)) == TYPE_DICTIONARY:
+		var worn: Dictionary = doc["equipped"]
+		var next := {}
+		var to_bag: Array = []
+		for slot in worn.keys():
+			var inst: Variant = worn[slot]
+			if typeof(inst) != TYPE_DICTIONARY:
+				next[slot] = inst
+				continue
+			var moved := _legacy_row((inst as Dictionary).duplicate(true), to_set, slot_map, old_sets, rare_plus)
+			if moved.is_empty():
+				if EQUIP_SLOTS.has(str(slot)):
+					next[slot] = inst
+				else:
+					# A non-gear item in a retired slot (cape, belt) goes to the bag.
+					var loose: Dictionary = (inst as Dictionary).duplicate(true)
+					loose["count"] = 1
+					loose.erase("seq")
+					to_bag.append(loose)
+					log.append("equipped %s: %s → bag" % [str(slot), str(loose.get("item_id", ""))])
+				continue
+			log.append("equipped %s: %s → %s" % [str(slot), str(inst.get("item_id", "")), str(moved["item_id"])])
+			moved["count"] = 1
+			to_bag.append(moved)
+		for row in to_bag:
+			var item_id := str(row.get("item_id", ""))
+			var new_slot := Gear.slot_of(item_id) if Gear.is_valid_item_id(item_id) else ""
+			if new_slot != "" and not next.has(new_slot):
+				row.erase("count")
+				next[new_slot] = row
+			else:
+				row.erase("seq")
+				if typeof(doc.get("bag", null)) != TYPE_ARRAY:
+					doc["bag"] = []
+				(doc["bag"] as Array).append(row)
+		doc["equipped"] = next
+	return log
+
+
+func _legacy_row(row: Dictionary, to_set: String, slot_map: Dictionary, old_sets: Array, rare_plus: int) -> Dictionary:
+	var item_id := str(row.get("item_id", ""))
+	if item_id == "" or item_id.contains("."):
+		return {}
+	var cut := item_id.rfind("_")
+	if cut <= 0:
+		return {}
+	var old_set := item_id.substr(0, cut)
+	var old_slot := item_id.substr(cut + 1)
+	if not old_sets.has(old_set) or not slot_map.has(old_slot):
+		return {}
+	var out := row.duplicate(true)
+	out["item_id"] = Gear.item_id_for(to_set, str(slot_map[old_slot]))
+	out["rarity"] = Gear.rarity_of(to_set).to_lower()
+	out["plus"] = rare_plus if str(row.get("rarity", "regular")) == "rare" else 0
+	out["upgrade"] = 0
+	return out
+
+
+## A fresh uid for a split stack during migration (above every saved uid).
+func _legacy_spare_uid(doc: Dictionary) -> int:
+	var top := int(doc.get("next_uid", 1)) if _whole(doc.get("next_uid", null)) else 1
+	for key in ["bag", "bank"]:
+		for raw in doc.get(key, []):
+			if typeof(raw) == TYPE_DICTIONARY and _whole(raw.get("uid", null)):
+				top = maxi(top, int(raw["uid"]) + 1)
+	if typeof(doc.get("equipped", null)) == TYPE_DICTIONARY:
+		for inst in (doc["equipped"] as Dictionary).values():
+			if typeof(inst) == TYPE_DICTIONARY and _whole(inst.get("uid", null)):
+				top = maxi(top, int(inst["uid"]) + 1)
+	doc["next_uid"] = top + 1
+	return top
 
 
 func _apply_saved_class(doc: Dictionary) -> bool:
@@ -1353,13 +1588,16 @@ func _read_stack(raw: Variant, into: Array, seen: Dictionary) -> bool:
 		if seen.has(uid):
 			return false
 		seen[uid] = true
-		into.append({
+		var kept := {
 			"uid": uid,
 			"item_id": str(row["item_id"]),
 			"rarity": str(row["rarity"]),
 			"count": int(row["count"]),
 			"upgrade": int(row.get("upgrade", 0)) if _whole(row.get("upgrade", 0)) else 0,
-		})
+		}
+		if Gear.is_valid_item_id(str(row["item_id"])):
+			kept["plus"] = clampi(int(row.get("plus", 0)), 0, Gear.PLUS_CAP) if _whole(row.get("plus", 0)) else 0
+		into.append(kept)
 	return true
 
 
