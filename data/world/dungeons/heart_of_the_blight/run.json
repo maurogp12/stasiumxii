@@ -245,7 +245,7 @@
         true
       ]
     ],
-    "showcase_zoom": 1.35,
+    "showcase_zoom": 1.8,
     "floor": {
       "base": [
         0.22,
@@ -269,6 +269,15 @@
         0.45,
         1.0,
         0.5
+      ]
+    },
+    "still_wait": {
+      "1": [
+        "walls"
+      ],
+      "5": [
+        "walls",
+        "pools"
       ]
     }
   },

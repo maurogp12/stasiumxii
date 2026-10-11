@@ -67,6 +67,10 @@ Saltmaw Grotto and the Drowned Abbey play exactly as before.
   - `view.pads.<kind>.glow` makes a decal pad draw the pad glow too (the rune circle's inner 3x3).
   - The `sprout` pad mark is a placeholder.
   - The manifest `staff_point` is read like the lure and rite points.
+- **Capture:**
+  - `view.still_wait` names what the room B still waits for per star (the blight waits for the root wall, and at ★5 the pods too).
+  - The fight clip prints the signature casts it saw.
+  - `view.showcase_zoom` is 1.8.
 
 ## Rooms (`run.json`, tags built by `build_rooms.py`)
 - **Boards:** both rooms are 12x12, with props from the art kit (the manifest's room lists).
