@@ -75,6 +75,10 @@ When those land, Claude reads them, copies the key facts into this file, and con
 | `claude/pc-zones-spec` | latest | Spec, look targets, change log, this file |
 | `claude/ironjaw-walk-help-reply` | `19b4ac1` | Ironjaw metric, rig fixes, punch list |
 | `claude/class-walk-blockouts` | `9ade2ce` | Class blockouts + Blender scripts (`scripts/blockout.py`, `preview.py`); action renders are in the session scratchpad |
+| `claude/abbey-dungeon` / `claude/blight-dungeon` | latest | Dungeons 4 and 5 (Drowned Abbey, Heart of the Blight), done; loot fix (tier-40 sets, epic and relic drops) in progress, then merge + Windows build (Mauro: "Si a todo") |
+| `claude/pc-visible-gear` | latest | **Visible gear (paper doll), PC only.** Characters start in plain adventurer clothes (the same for all classes); head, cape, belt, boots and amulet show when worn. Pilot: Ironjaw + Quarryhand. Mauro approves the look before rigging. Luca's team was told on PR #252 (11 Oct) |
+
+**Character select / creation screen:** Luca's team builds it from `docs/pc/CHARACTER_SELECT_SPEC.md` (3D allowed on that screen only). Claude does not work on it unless Mauro asks.
 
 ## 5. Waiting on Mauro
 
