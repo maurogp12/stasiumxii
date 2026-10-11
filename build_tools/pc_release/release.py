@@ -229,12 +229,16 @@ class Publisher:
         self.root = os.path.join(work, "pc-builds")
         rm_tree(self.root)
         url = git("remote", "get-url", "origin", cwd=args.repo)
-        git("clone", "--depth", "1", "--filter=blob:none", "--sparse", "--branch", REMOTE_BRANCH,
+        # --no-checkout first: a plain --sparse clone still checks out every
+        # top-level file, which on pc-builds means the old 600 MB of zips.
+        git("clone", "--depth", "1", "--filter=blob:none", "--no-checkout", "--branch", REMOTE_BRANCH,
             url, self.root, cwd=work, capture=False)
         pats = ["/README.txt"]
         for ch in {args.channel, args.from_channel or args.channel}:
             pats += [f"/{ch}/latest.json", f"/{ch}/state/", f"/{ch}/manifests/"]
+        git("sparse-checkout", "init", "--no-cone", cwd=self.root)
         git("sparse-checkout", "set", "--no-cone", *pats, cwd=self.root)
+        git("checkout", "-q", REMOTE_BRANCH, cwd=self.root)
 
     def path(self, *parts):
         return os.path.join(self.root, *parts)
