@@ -55,7 +55,8 @@ func _arm() -> bool:
 	_seed()
 	var select: Script = load("res://scenes/class_select.gd")
 	select.hotseat_team_size = 1
-	select.hotseat_classes = ["kestrel", "ironjaw"]
+	var roster: Array[String] = ["kestrel", "ironjaw"]
+	select.hotseat_classes = roster
 	select.hotseat_map_id = "windmere"
 	var config: Dictionary = select.local_match_config()
 	config["seed"] = 3
