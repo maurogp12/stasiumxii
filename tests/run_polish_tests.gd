@@ -78,8 +78,50 @@ func _test_grid_and_occluders() -> void:
 	truthy(room_src.contains("set_occluder_covers_grid"), "a wall or prop cell hides its grid ink")
 	truthy(room_src.contains("cell_to_local(cell, 0.0)"), "occluders anchor on the plate, not a second elevation lift")
 	truthy(room_src.contains("set_raised_top"), "a raised block keeps its diamond on the painted top")
+	eq(PaintedRoom.CRYSTAL_DRAW_SCALE, 1.0, "Windmere crystals draw at the source pixel size")
+	var pose: Dictionary = PaintedRoom.crystal_sprite_pose(Vector2i(3, 3), {"offset": [-21, -71], "size": [43, 84]})
+	var half_top := VISUAL_SORT.cell_to_local(Vector2i(3, 3), 0.0) + Vector2(-10.5, -35.5)
+	var foot := half_top + Vector2(43.0 * 0.25, 84.0 * 0.5)
+	eq(pose["foot"], foot, "the bigger crystal keeps the old foot")
+	truthy(float(pose["position"].y) < half_top.y, "the crystal grows up from that foot")
+	var behind := Vector2i(2, 2)
+	truthy(VISUAL_SORT.occluder_z_index(Vector2i(3, 3), 0.0) > VISUAL_SORT.unit_z_index(behind, 0.0), "a fighter behind the crystal paints under it")
+	_assert_crystal_art_on_crystal_tiles(
+		"res://art/rooms/koliseo_windmere/place.json",
+		"res://art/maps/arena_colosseum_v2/tiled/windmere_15x15_tags.json"
+	)
+	_assert_crystal_art_on_crystal_tiles(
+		"res://art/rooms/stasis_windmere_room_a/place.json",
+		"res://art/maps/stasis_v1/windmere_room_a_15x15_tags.json"
+	)
 	eq(CombatHUD.coach_hint("REJECT — that path needs 5 MP (you have 1)."), "Needs 5 MP (have 1)", "the path reject is one short line")
 	truthy(CombatHUD.PORTRAIT_CHIP.y >= 96.0, "turn portraits are at least 96px tall")
+
+
+## The painted crystal copy has to sit on the crystal tile. A corner park
+## leaves the obstacle looking like empty snow.
+func _assert_crystal_art_on_crystal_tiles(place_path: String, tags_path: String) -> void:
+	var place: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(place_path))
+	var tags: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(tags_path))
+	var painted := {}
+	for raw in place.get("occluders", []):
+		var occ: Dictionary = raw
+		var whats: Array = occ.get("what", [])
+		if not whats.has("crystal"):
+			continue
+		var cell: Array = occ.get("cell", [])
+		painted[Vector2i(int(cell[0]), int(cell[1]))] = true
+	var tagged := 0
+	for raw in tags.get("cells", []):
+		var tile: Dictionary = raw
+		var paint: Array = tile.get("paint_only", [])
+		if not paint.has("crystal"):
+			continue
+		tagged += 1
+		var cell := Vector2i(int(tile.get("x", -1)), int(tile.get("y", -1)))
+		truthy(painted.has(cell), "crystal art sits on %s" % str(cell))
+	truthy(tagged > 0, "the map has crystal tiles")
+	eq(painted.size(), tagged, "every painted crystal is a crystal tile")
 
 
 func _test_class_select_copy() -> void:

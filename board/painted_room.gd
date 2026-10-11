@@ -9,6 +9,10 @@ const ROOT := "res://art/rooms/"
 const VISUAL_SORT := preload("res://board/visual_sort.gd")
 const ARENA_LOOK := preload("res://board/arena_look.gd")
 const WINDMERE := preload("res://board/windmere_alive.gd")
+## The crystal cut is 43×84 and was drawn at the shared half scale, so the
+## opaque cluster sat about 30px tall. Native scale is chest height on the
+## 0.5 character and stays 1:1 with the source pixels. Walls stay at half.
+const CRYSTAL_DRAW_SCALE := 1.0
 
 ## Stasis Brinewake only. One scrolling layer, above the plate and under the cells.
 const RAIN_CODE := "shader_type canvas_item;
@@ -172,10 +176,19 @@ static func bind(parent: Node2D, room_id: String, tiles: Dictionary) -> bool:
 		sprite.z_as_relative = true
 		var whats: Array = occ.get("what", [])
 		var what := str(whats[0]) if whats.size() > 0 else ""
+		var drawn := _occluder_rect(cell, occ)
+		if what == "crystal":
+			var pose := crystal_sprite_pose(cell, occ)
+			sprite.scale = Vector2(float(pose["scale"]), float(pose["scale"]))
+			sprite.position = pose["position"]
+			# The cut is shown at its own pixels. Linear filtering would soften it.
+			sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+			var size: Array = occ.get("size", [0.0, 0.0])
+			drawn = Rect2(sprite.position, Vector2(float(size[0]), float(size[1])) * float(pose["scale"]))
 		sprite.set_meta("what", what)
 		sprite.set_meta("cell", cell)
 		sprite.set_meta("elev", elev)
-		sprite.set_meta("rect", _occluder_rect(cell, occ))
+		sprite.set_meta("rect", drawn)
 		host.add_child(sprite)
 		var raised := elev > 0.05
 		if tile == null:
@@ -368,6 +381,21 @@ static func _lift_tower(host: Node2D, _place: Dictionary, tiles: Dictionary) -> 
 	_tower_cell = tower_cell
 	_tower_z = tower.z_index
 	print("tower sort ", tower_cell, " z ", tower.z_index)
+
+
+## Half-scale foot, then the crystal grows upward from that same point.
+## Other occluders stay on the shared half scale.
+static func crystal_sprite_pose(cell: Vector2i, occ: Dictionary) -> Dictionary:
+	var off: Array = occ.get("offset", [0.0, 0.0])
+	var size: Array = occ.get("size", [0.0, 0.0])
+	var top := VISUAL_SORT.cell_to_local(cell, 0.0) + Vector2(float(off[0]), float(off[1])) * 0.5
+	var foot := top + Vector2(float(size[0]) * 0.25, float(size[1]) * 0.5)
+	var drawn := Vector2(float(size[0]), float(size[1])) * CRYSTAL_DRAW_SCALE
+	return {
+		"scale": CRYSTAL_DRAW_SCALE,
+		"position": foot - Vector2(drawn.x * 0.5, drawn.y),
+		"foot": foot,
+	}
 
 
 static func _occluder_rect(cell: Vector2i, occ: Dictionary) -> Rect2:
