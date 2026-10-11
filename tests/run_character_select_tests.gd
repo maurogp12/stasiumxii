@@ -5,11 +5,10 @@ extends SceneTree
 
 const Roster = preload("res://backend/pc_roster.gd")
 const Progress = preload("res://backend/pc_progress.gd")
-const Kits = preload("res://data/kits.gd")
-const ScreenScene = preload("res://scenes/pc/character_select/character_select.tscn")
-const WorldScene = preload("res://scenes/world/crosshaven/crosshaven_world.tscn")
-const DungeonScene = preload("res://scenes/world/dungeon/dungeon_run.tscn")
 const VisualSettings = preload("res://backend/visual_settings.gd")
+const SCREEN_SCENE := "res://scenes/pc/character_select/character_select.tscn"
+const WORLD_SCENE := "res://scenes/world/crosshaven/crosshaven_world.tscn"
+const DUNGEON_SCENE := "res://scenes/world/dungeon/dungeon_run.tscn"
 
 const SCREEN_SRC := "res://scenes/pc/character_select/character_select.gd"
 const WORLD_SRC := "res://scenes/world/crosshaven/crosshaven_world.gd"
@@ -30,12 +29,8 @@ func _initialize() -> void:
 	_backup()
 	_wipe_roster_files()
 	Roster.take_world_entry()
-	_run()
-	_wipe_roster_files()
-	Roster.take_world_entry()
-	_restore()
-	print("character select tests: %d passed, %d failed" % [_passed, _failed])
-	quit(1 if _failed > 0 else 0)
+	# Nodes added before the first frame do not run _ready yet.
+	process_frame.connect(_run, CONNECT_ONE_SHOT)
 
 
 func _run() -> void:
@@ -51,6 +46,11 @@ func _run() -> void:
 	_test_world_bind_and_no_redirect()
 	_test_containment()
 	_test_sources()
+	_wipe_roster_files()
+	Roster.take_world_entry()
+	_restore()
+	print("character select tests: %d passed, %d failed" % [_passed, _failed])
+	quit(1 if _failed > 0 else 0)
 
 
 func _test_legacy_path_without_roster() -> void:
@@ -190,9 +190,10 @@ func _test_create_rename_delete_and_cap() -> void:
 	eq(Roster.find_character(str(made["id"]))["name"], "Mara Voss", "the new name is on the roster")
 	var clash: Dictionary = Roster.create_character("mara voss", "ironjaw", Roster.default_appearance())
 	eq(clash["ok"], false, "a second character cannot reuse the name")
-	for i in range(1, Roster.SLOT_LIMIT):
-		var extra: Dictionary = Roster.create_character("Hero %d" % (i + 1), "ironjaw", Roster.default_appearance())
-		eq(extra["ok"], true, "slot %d opens" % (i + 1))
+	var extras := ["Bram", "Cora", "Dunn", "Edda"]
+	for char_name in extras:
+		var extra: Dictionary = Roster.create_character(char_name, "ironjaw", Roster.default_appearance())
+		eq(extra["ok"], true, "slot for %s opens (%s)" % [char_name, extra.get("reason", "")])
 	eq((Roster.load_roster()["characters"] as Array).size(), Roster.SLOT_LIMIT, "the roster holds five")
 	var full: Dictionary = Roster.create_character("Sixth", "bastion", Roster.default_appearance())
 	eq(full["ok"], false, "the sixth character is refused")
@@ -337,7 +338,7 @@ func _test_world_bind_and_no_redirect() -> void:
 	var made: Dictionary = Roster.create_character("Wyn", "kestrel", Roster.default_appearance())
 	var id := str(made["id"])
 	Roster.arm_world_entry(id)
-	var world = WorldScene.instantiate()
+	var world = load(WORLD_SCENE).instantiate()
 	root.add_child(world)
 	eq(world.get_node_or_null("Player") != null, true, "a child world does not redirect to the screen")
 	eq(world.progress.character_id, id, "an armed entry binds that character")
@@ -345,7 +346,7 @@ func _test_world_bind_and_no_redirect() -> void:
 	eq(Roster.peek_world_entry(), "", "the world consumes the armed entry")
 	_assert_no_3d(world, "world scene")
 	world.free()
-	var dungeon = DungeonScene.instantiate()
+	var dungeon = load(DUNGEON_SCENE).instantiate()
 	root.add_child(dungeon)
 	_assert_no_3d(dungeon, "dungeon scene")
 	dungeon.free()
@@ -397,7 +398,7 @@ func _test_sources() -> void:
 
 
 func _open_screen():
-	var screen = ScreenScene.instantiate()
+	var screen = load(SCREEN_SCENE).instantiate()
 	screen.instant = true
 	screen.auto_enter_world = false
 	screen.auto_quit = false
@@ -407,10 +408,10 @@ func _open_screen():
 
 func _fill_roster() -> void:
 	_wipe_roster_files()
-	for i in Roster.SLOT_LIMIT:
-		var made: Dictionary = Roster.create_character("Slot %d" % (i + 1), "ironjaw", Roster.default_appearance())
+	for char_name in ["Asha", "Bram", "Cora", "Dunn", "Edda"]:
+		var made: Dictionary = Roster.create_character(char_name, "ironjaw", Roster.default_appearance())
 		if not bool(made.get("ok", false)):
-			eq(false, true, "fill slot %d (%s)" % [i + 1, made.get("reason", "")])
+			eq(false, true, "fill %s (%s)" % [char_name, made.get("reason", "")])
 
 
 func _write_legacy(level: int, xp: int, hero_class: String, zone_id: String, x: int, y: int) -> void:
