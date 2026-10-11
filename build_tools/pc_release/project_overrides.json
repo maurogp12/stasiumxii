@@ -1,0 +1,12 @@
+{
+  "_comment": "Applied to project.godot inside the release build checkout only (never committed to the root file, which mobile shares).",
+  "set": {
+    "application": {
+      "config/name": "\"STASIUM XII (PC)\"",
+      "run/main_scene": "\"res://launcher/launcher.tscn\""
+    }
+  },
+  "autoload_first": {
+    "LauncherBoot": "\"*res://launcher/launcher_boot.gd\""
+  }
+}
