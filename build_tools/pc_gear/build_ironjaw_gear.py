@@ -63,32 +63,114 @@ def strip_file(strip: str, kind: str, F: str) -> str:
     return os.path.join(OUT, folder, f"{CLS}_{name}_{kind}_{F}.png")
 
 
+def close_holes(frames: dict, strips: list[str]) -> dict:
+    """No holes, in any combination of worn slots, frame and facing.
+
+    1. The base slot strips together cover every pixel of the whole base: a
+       pixel the split lost (clean-up specks at the seams) joins the nearest
+       slot strip, in the base's colour.
+    2. A look covers every pixel of the base strip of its slot (the zone it
+       replaces): a pixel it misses takes the look's nearest paint. The weapon
+       is the exception: new axes have their own shape, and where the base axe
+       was, the ground shows.
+    Together these make any stack of base and look strips opaque wherever the
+    bare base is (outside the base axes)."""
+    from scipy import ndimage as ndi
+    log = {"base": 0, "looks": 0}
+    groups = sorted(st[len("base_"):] for st in strips if st.startswith("base_") and "__" not in st)
+    looks = [st for st in strips if "__" not in st and not st.startswith("base")]
+    for (st, kind, F), fl in list(frames.items()):
+        if st != "base":
+            continue
+        for i in range(len(fl)):
+            full = np.asarray(fl[i])
+            arr = {}
+            for name in [f"base_{g}" for g in groups] + looks:
+                for suffix in ("", "__back"):
+                    key = (name + suffix, kind, F)
+                    if key in frames:
+                        arr[name + suffix] = np.asarray(frames[key][i]).copy()
+
+            def alpha(name):
+                a = np.zeros(full.shape[:2], bool)
+                for suffix in ("", "__back"):
+                    if name + suffix in arr:
+                        a |= arr[name + suffix][..., 3] > 0
+                return a
+            lab = np.zeros(full.shape[:2], np.int32)
+            for gi, g in enumerate(groups):
+                lab[alpha(f"base_{g}")] = gi + 1
+            miss = (full[..., 3] > 0) & (lab == 0)
+            if miss.any() and (lab > 0).any():
+                _, (iy, ix) = ndi.distance_transform_edt(lab == 0, return_indices=True)
+                near = lab[iy, ix]
+                for gi, g in enumerate(groups):
+                    m = miss & (near == gi + 1)
+                    if m.any() and f"base_{g}" in arr:
+                        arr[f"base_{g}"][m] = full[m]
+                        log["base"] += int(m.sum())
+            for name in looks:
+                slot = name.rsplit("_", 1)[1]
+                if slot == "weapon" or name not in arr:
+                    continue
+                want = alpha(f"base_{slot}")
+                have = alpha(name)
+                need = want & ~have
+                if not need.any():
+                    continue
+                own = arr[name][..., 3] > 0
+                if own.any():
+                    _, (iy, ix) = ndi.distance_transform_edt(~own, return_indices=True)
+                    arr[name][need] = arr[name][iy[need], ix[need]]
+                else:
+                    arr[name][need] = full[need]
+                log["looks"] += int(need.sum())
+            for name, a in arr.items():
+                frames[(name, kind, F)][i] = Image.fromarray(a)
+    print("holes closed:", log)
+    return log
+
+
 def build(work: str, strips: list[str]):
     B = pcb()
     fr = os.path.join(work, "frames")
     k = LOCKED_K
     piv = (256, 329)
-    frames = {}
+    paths = {}
     for st in strips:
         for kind in KINDS:
             for F in "SE":
                 fl = [os.path.join(fr, st, f"{kind}_{F}_f{i:02d}.png") for i in range(FRAMES[kind])]
                 if all(os.path.exists(p) for p in fl):
-                    frames[(st, kind, F)] = [Image.open(p).convert("RGBA") for p in fl]
+                    paths[(st, kind, F)] = fl
+
+    def load(key):
+        return [Image.open(p).convert("RGBA") for p in paths[key]]
+    # extents, streamed (the frames of every strip do not fit in memory at once)
+    ext_by = {}
+    for (st, kind, F), fl in paths.items():
+        e = ext_by.setdefault(kind, {"top": 0, "below": 0, "L": {"S": 0, "E": 0}, "R": {"S": 0, "E": 0}})
+        for p in fl:
+            a = np.asarray(Image.open(p))[..., 3] > 0
+            if not a.any():
+                continue
+            ys, xs = np.nonzero(a)
+            e["top"] = max(e["top"], piv[1] - int(ys.min()))
+            e["below"] = max(e["below"], int(ys.max()) - piv[1])
+            e["L"][F] = max(e["L"][F], piv[0] - int(xs.min()))
+            e["R"][F] = max(e["R"][F], int(xs.max()) - piv[0])
 
     def extents(kinds):
         ext = {"top": 0, "below": 0, "L": {"S": 0, "E": 0}, "R": {"S": 0, "E": 0}}
-        for (st, kind, F), fl in frames.items():
-            if kind not in kinds:
+        for kd in kinds:
+            e = ext_by.get(kd)
+            if not e:
                 continue
-            for f in fl:
-                if not (np.asarray(f)[..., 3] > 0).any():
-                    continue
-                x0, y0, x1, y1 = B.alpha_bbox(f)
-                ext["top"] = max(ext["top"], piv[1] - y0)
-                ext["below"] = max(ext["below"], y1 - piv[1])
-                ext["L"][F] = max(ext["L"][F], piv[0] - x0)
-                ext["R"][F] = max(ext["R"][F], x1 - piv[0])
+            ext["top"] = max(ext["top"], e["top"])
+            ext["below"] = max(ext["below"], e["below"])
+            for F in "SE":
+                ext["L"][F] = max(ext["L"][F], e["L"][F])
+                ext["R"][F] = max(ext["R"][F], e["R"][F])
         return ext
 
     layout = {}
@@ -128,20 +210,23 @@ def build(work: str, strips: list[str]):
             shutil.rmtree(full)
     written = {}
     sheets_S = {}
-    for (st, kind, F), fl in sorted(frames.items()):
-        lay = layout[kind]
-        cells = [place(f, lay["cell"], lay["piv"][F]) for f in fl]
-        if not any((np.asarray(c)[..., 3] > 0).any() for c in cells):
-            continue
-        sheet = Image.new("RGBA", (lay["cell"][0] * len(cells), lay["cell"][1]), (0, 0, 0, 0))
-        for i, c in enumerate(cells):
-            sheet.paste(c, (i * lay["cell"][0], 0))
-        path = strip_file(st, kind, F)
-        os.makedirs(os.path.dirname(path), exist_ok=True)
-        sheet.save(path, optimize=True)
-        written.setdefault(st, {}).setdefault(kind, []).append(F)
-        if st == "base" and kind == "walk" and F == "S":
-            sheets_S["walk"] = fl
+    for kind in KINDS:
+        for Fk in "SE":
+            keys = [key for key in paths if key[1] == kind and key[2] == Fk]
+            placed = {key: [place(f, layout[kind]["cell"], layout[kind]["piv"][Fk]) for f in load(key)] for key in keys}
+            close_holes(placed, strips)
+            for (st, kd, F), cells in sorted(placed.items()):
+                lay = layout[kd]
+                if not any((np.asarray(c)[..., 3] > 0).any() for c in cells):
+                    continue
+                sheet = Image.new("RGBA", (lay["cell"][0] * len(cells), lay["cell"][1]), (0, 0, 0, 0))
+                for i, c in enumerate(cells):
+                    sheet.paste(c, (i * lay["cell"][0], 0))
+                path = strip_file(st, kd, F)
+                os.makedirs(os.path.dirname(path), exist_ok=True)
+                sheet.save(path, optimize=True)
+                written.setdefault(st, {}).setdefault(kd, []).append(F)
+            placed = None
     pivots = {}
     for kind, lay in layout.items():
         cw = lay["cell"][0]
@@ -151,7 +236,7 @@ def build(work: str, strips: list[str]):
             dst = lay["piv"][F]
             pivots[kind][letter] = [cw - dst[0] if mirror else dst[0], dst[1]]
     # walk numbers, measured on the base walk like the locked build
-    walkS = frames[("base", "walk", "S")]
+    walkS = load(("base", "walk", "S"))
     stances = [B.stance_px_per_frame(walkS, 0), B.stance_px_per_frame(walkS, 6)]
     good = [v for v in stances if v >= 0.5 * max(stances)]
     ppf = sum(good) / len(good)
@@ -181,6 +266,25 @@ def build(work: str, strips: list[str]):
             s["frames_per_tile_no_slide"] = round(measured, 3)
         specs[kind] = s
     write_specs(B, specs, world, written)
+    legs_path = os.path.join(work, "frames", "_legs.json")
+    if os.path.exists(legs_path):
+        raw = json.load(open(legs_path))
+        out = {}
+        for F, acts in raw.items():
+            for kind, fl in acts.items():
+                lay = layout[kind]
+                dst = lay["piv"][F]
+                rows = []
+                for rec in fl:
+                    row = {}
+                    for sd, r in rec.items():
+                        conv = lambda p: [round(dst[0] + (p[0] - piv[0]) * k, 2), round(dst[1] + (p[1] - piv[1]) * k, 2)]
+                        row[sd] = {"hip": conv(r["hip"]), "knee": conv(r["knee"]), "ankle": conv(r["ankle"]),
+                                   "knee_deg": r["knee_deg"], "knee_cover": r["knee_cover"], "ankle_cover": r["ankle_cover"]}
+                    rows.append(row)
+                out.setdefault(kind, {})[F] = rows
+        with open(os.path.join(OUT, "legs_joints.json"), "w") as fh:
+            json.dump({"notes": "Leg joints per kind, art facing (S/E) and frame, in sheet cell px (build_ironjaw_gear.py): hip, knee, ankle, the knee angle (deg, thigh to shin) and how much of a 4 px disc at the knee / ankle the two pieces cover in the base rig.", "legs": out}, fh)
     return specs, world, written
 
 

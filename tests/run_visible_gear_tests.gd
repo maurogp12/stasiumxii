@@ -22,6 +22,9 @@ const SLOTS: Array[String] = ["weapon", "head", "chest", "legs", "boots"]
 const KINDS: Array[String] = ["walk", "idle", "attack", "skill", "hit", "death"]
 const OTHERS: Array[String] = ["bastion", "gloam", "kestrel", "mender"]
 const FAMILY := "cragmaw"
+const FAMILIES: Array[String] = ["cragmaw", "tyrantjaw", "pitmaw"]
+const GROUPS: Array[String] = ["weapon", "head", "chest", "legs", "boots", "skin"]
+const LEGS_JSON := "res://art/characters/painted/ironjaw_gear/legs_joints.json"
 
 var passed := 0
 var failed := 0
@@ -47,6 +50,8 @@ func _run() -> void:
 	_test_strip_sheets()
 	_test_slot_swaps()
 	_test_stack_order()
+	_test_no_holes()
+	_test_legs()
 	await _test_walker_layers()
 	await _test_only_worn_load()
 	await _test_pawn_sync()
@@ -129,6 +134,149 @@ func _test_slot_swaps() -> void:
 	for art in ["S", "E"]:
 		for st in LOOKS.stack_for("ironjaw", full, art):
 			check(st.begins_with(FAMILY) or st.begins_with("base_skin"), "full set %s: no base clothing strip (%s)" % [art, st])
+
+
+## White silhouette of a sheet (or a blank image when the strip has none).
+func _sil(strip: String, kind: String, art: String, size: Vector2i) -> Image:
+	var out := Image.create(size.x, size.y, false, Image.FORMAT_RGBA8)
+	for name in [strip, strip + "_back"]:
+		var tex := LOOKS.sheet("ironjaw", name, kind, art)
+		if tex == null:
+			continue
+		var img := tex.get_image()
+		if img.is_compressed():
+			img.decompress()
+		img.convert(Image.FORMAT_RGBA8)
+		var white := Image.create(size.x, size.y, false, Image.FORMAT_RGBA8)
+		white.fill(Color.WHITE)
+		out.blend_rect_mask(white, img, Rect2i(Vector2i.ZERO, size), Vector2i.ZERO)
+	return out
+
+
+func _sil_full(kind: String, art: String, size: Vector2i) -> Image:
+	var out := Image.create(size.x, size.y, false, Image.FORMAT_RGBA8)
+	var img := Painted.sheet("ironjaw", kind, art).get_image()
+	if img.is_compressed():
+		img.decompress()
+	img.convert(Image.FORMAT_RGBA8)
+	var white := Image.create(size.x, size.y, false, Image.FORMAT_RGBA8)
+	white.fill(Color.WHITE)
+	out.blend_rect_mask(white, img, Rect2i(Vector2i.ZERO, size), Vector2i.ZERO)
+	return out
+
+
+## Pixels of `inner` not inside `outer` (both white silhouettes), as a count.
+func _outside(inner: Image, outer: Image) -> int:
+	var both := outer.duplicate() as Image
+	both.blend_rect(inner, Rect2i(Vector2i.ZERO, inner.get_size()), Vector2i.ZERO)
+	var m := both.compute_image_metrics(outer, false)
+	if float(m.get("max", 0.0)) <= 0.0:
+		return 0
+	# per-channel mean difference: an open pixel differs by 255 on all four
+	var n := float(inner.get_width() * inner.get_height())
+	return maxi(1, int(round(float(m.get("mean", 0.0)) * n / 255.0)))
+
+
+func _union(sils: Array) -> Image:
+	var out: Image = (sils[0] as Image).duplicate()
+	for i in range(1, sils.size()):
+		out.blend_rect(sils[i], Rect2i(Vector2i.ZERO, out.get_size()), Vector2i.ZERO)
+	return out
+
+
+## No holes: wherever the bare base is opaque, the layered hero stays opaque,
+## for every combination of worn slots, every kind, frame and facing. Proven
+## per slot (any stack is the base strips with some slots swapped):
+## 1. the base slot strips together cover the whole base;
+## 2. each look covers the base strip of the slot it replaces (the weapon is
+##    the exception: where the old axe was, the ground shows);
+## and checked directly on each set worn whole and on every single piece.
+func _test_no_holes() -> void:
+	for kind in KINDS:
+		var s := LOOKS.spec("ironjaw", kind)
+		var size := Vector2i(int(s["cell"].x) * int(s["frames"]), int(s["cell"].y))
+		for art in ["S", "E"]:
+			var full := _sil_full(kind, art, size)
+			var base := {}
+			var parts: Array = []
+			for g in GROUPS:
+				base[g] = _sil("base_" + g, kind, art, size)
+				parts.append(base[g])
+			var split := _union(parts)
+			check(_outside(full, split) == 0, "%s %s: the base slot strips cover the whole base (%d px open)" % [kind, art, _outside(full, split)])
+			for fam in FAMILIES:
+				var worn: Array = [base["skin"]]
+				for g in SLOTS:
+					var look := _sil("%s_%s" % [fam, g], kind, art, size)
+					worn.append(look)
+					if g != "weapon":
+						var open := _outside(base[g], look)
+						check(open == 0, "%s %s %s_%s covers the base %s it replaces (%d px open)" % [kind, art, fam, g, g, open])
+					var single: Array = [look]
+					for h in GROUPS:
+						if h != g:
+							single.append(base[h])
+					var allowed := _union(single + [base["weapon"]])
+					check(_outside(full, allowed) == 0, "%s %s: %s_%s alone leaves no hole" % [kind, art, fam, g])
+				var whole := _union(worn + [base["weapon"]])
+				var open_full := _outside(full, whole)
+				check(open_full == 0, "%s %s: the full %s set leaves no hole (%d px open)" % [kind, art, fam, open_full])
+
+
+## Legs: the knee and ankle joints are covered by both pieces in every frame
+## (no gap), the knee bends the way the joints say, and the walk's knee angle
+## is continuous from frame to frame (no snap). The worn leg looks have the
+## base leg silhouettes, so they share these joints exactly.
+func _test_legs() -> void:
+	check(FileAccess.file_exists(LEGS_JSON), "the build wrote the leg joints")
+	var doc: Variant = JSON.parse_string(FileAccess.get_file_as_string(LEGS_JSON))
+	if not (doc is Dictionary):
+		return
+	var legs: Dictionary = doc["legs"]
+	for kind in KINDS:
+		var s := LOOKS.spec("ironjaw", kind)
+		var cw := int(s["cell"].x)
+		for art in ["S", "E"]:
+			var rows: Array = (legs.get(kind, {}) as Dictionary).get(art, [])
+			check(rows.size() == int(s["frames"]), "%s %s: leg joints for every frame" % [kind, art])
+			var sheets := {}
+			for st in ["base_legs"] + FAMILIES.map(func(f): return f + "_legs"):
+				var t := LOOKS.sheet("ironjaw", st, kind, art)
+				var tb := LOOKS.sheet("ironjaw", st + "_back", kind, art)
+				var imgs: Array = []
+				for tex in [t, tb]:
+					if tex != null:
+						var im := (tex as Texture2D).get_image()
+						if im.is_compressed():
+							im.decompress()
+						imgs.append(im)
+				sheets[st] = imgs
+			for i in rows.size():
+				for sd in ["R", "L"]:
+					var r: Dictionary = rows[i][sd]
+					check(float(r["knee_cover"]) >= 0.9, "%s %s f%02d %s knee: thigh and shin meet (%.2f)" % [kind, art, i, sd, float(r["knee_cover"])])
+					check(float(r["ankle_cover"]) >= 0.9, "%s %s f%02d %s ankle: shin and boot meet (%.2f)" % [kind, art, i, sd, float(r["ankle_cover"])])
+					if kind == "walk" or kind == "idle":
+						check(absf(float(r["knee_deg"])) <= 130.0, "%s %s f%02d %s knee bends %.0f deg (not folded back)" % [kind, art, i, sd, float(r["knee_deg"])])
+					if kind == "walk":
+						# the walk loops: frame 0 follows frame 11
+						var prev: Dictionary = rows[(i + rows.size() - 1) % rows.size()][sd]
+						var step := absf(float(r["knee_deg"]) - float(prev["knee_deg"]))
+						check(step <= 50.0, "walk %s f%02d %s knee angle is continuous (%.0f deg step)" % [art, i, sd, step])
+						check(signf(float(r["knee_deg"])) == signf(float(prev["knee_deg"])) or absf(float(r["knee_deg"])) < 10.0 or absf(float(prev["knee_deg"])) < 10.0, "walk %s f%02d %s knee never flips side" % [art, i, sd])
+					var kp: Array = r["knee"]
+					var px := Vector2i(int(round(float(kp[0]))) + i * cw, int(round(float(kp[1]))))
+					for st in sheets.keys():
+						var hit := false
+						for im in sheets[st]:
+							var img := im as Image
+							for dy in [-1, 0, 1]:
+								for dx in [-1, 0, 1]:
+									var q := px + Vector2i(dx, dy)
+									if q.x >= 0 and q.y >= 0 and q.x < img.get_width() and q.y < img.get_height() and img.get_pixel(q.x, q.y).a > 0.5:
+										hit = true
+						check(hit, "%s %s f%02d %s: %s is drawn at the knee joint" % [kind, art, i, sd, st])
+	LOOKS.clear_cache()
 
 
 ## The order is the data's stack per facing; strips behind the body first.

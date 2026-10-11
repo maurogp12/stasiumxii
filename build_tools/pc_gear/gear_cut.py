@@ -575,6 +575,31 @@ def cut_look(F, family, slot, masks, base_rgb, base_dir, out_dir):
             parts[n] = pm
         # anything the owner map gave the head stays with the torso
         parts["body"] = parts["body"] | (m & (lab == names.index("head")))
+    if slot in ("head", "chest"):
+        # A worn piece REPLACES its whole base zone: every pixel of that slot's
+        # base parts stays covered (the neck under a helm, the hem under a
+        # cuirass), painted from the one-piece painting; where the painting
+        # shows background there (a smaller helm), the piece's own paint
+        # around it fills in, so the base zone never opens a hole.
+        gdir = os.path.join(os.path.dirname(out_dir), f"base_{slot}")
+        bg = bg_colour(edit).astype(np.float32)
+        isbg = np.abs(edit.astype(np.float32) - bg).sum(-1) < 30
+        allm = np.zeros(SH, bool)
+        for pm in parts.values():
+            allm |= pm
+        for f in sorted(os.listdir(gdir)):
+            if not f.endswith(f"_{F}.png"):
+                continue
+            name = f[:-6]
+            ab = np.asarray(Image.open(os.path.join(gdir, f)))[..., 3] > 127
+            if not ab.any():
+                continue
+            u = parts.get(name, np.zeros(SH, bool)) | ab
+            need = u & ~allm & isbg
+            if need.any() and allm.any():
+                _, (iy, ix) = ndi.distance_transform_edt(~allm, return_indices=True)
+                rgb[need] = rgb[iy[need], ix[need]]
+            parts[name] = u
     out = {}
     for part, pm in parts.items():
         pm = clean(pm, 40)

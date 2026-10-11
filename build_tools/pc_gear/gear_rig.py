@@ -58,7 +58,82 @@ def load_rig(work: str):
     for F in "SE":
         R.head_top_t(F)
     add_walk(R, tree)
+    patch_walk_legs(R, tree)
     return R
+
+
+def patch_walk_legs(R, tree):
+    """Walk legs on the TA walk joints, the joints the approved v7 walk was
+    painted on: the hip is the TA hip and the knee bends the TA way. The
+    locked IK used the idle leg lengths from a hip carried by the body
+    placement, so the walk knees splayed sideways and the legs crossed.
+    Here the boot still sits on the TA heel and toe (no foot slide), the knee
+    is solved with that frame's TA thigh and shin lengths (scaled to reach the
+    boot's ankle point), so thigh, knee and shin stay one chain."""
+    ta = json.load(open(os.path.join(tree, GC.WALK_DIR, "joints_512.json")))["facings"]
+    locked = R.leg_pose
+    chain = {}
+    knees = {}
+    for F in "SE":
+        for sd in "RL":
+            l1, l2, side = [], [], []
+            for i in range(12):
+                tj = ta[f"walk_{F}"][f"f{i:02d}"]["joints"]
+                h, kk = np.array(tj[f"{sd}_hip"], float), np.array(tj[f"{sd}_knee"], float)
+                Mb, _ = R.foot_pose(F, "walk", i, sd)
+                a = R.apm(Mb, R.pt(F, sd, "boot", "J"))
+                l1.append(float(np.hypot(*(kk - h))))
+                l2.append(float(np.hypot(*(a - kk))))
+                u = R.unit(a - h)
+                side.append(float(np.dot(kk - h, np.array([-u[1], u[0]]))))
+            chain[(F, sd)] = (float(np.median(l1)), float(np.median(l2)), 1.0 if float(np.median(side)) >= 0 else -1.0)
+            # the knee of each frame in the hip -> ankle frame (along, across),
+            # smoothed over the loop so it never snaps from one frame to the next
+            rel = []
+            for i in range(12):
+                tj = ta[f"walk_{F}"][f"f{i:02d}"]["joints"]
+                h = np.array(tj[f"{sd}_hip"], float)
+                a = R.apm(R.foot_pose(F, "walk", i, sd)[0], R.pt(F, sd, "boot", "J"))
+                L1, L2, sg = chain[(F, sd)]
+                dd = float(np.hypot(*(a - h)))
+                kk = max(1.0, dd / ((L1 + L2) * 0.999))
+                kn = R.ik_knee(h, a, L1 * kk, L2 * kk, sg)
+                u = R.unit(a - h)
+                n = np.array([-u[1], u[0]])
+                rel.append(((kn - h) @ u / dd, (kn - h) @ n / dd))
+            rel = np.array(rel)
+            smooth = 0.5 * rel + 0.25 * np.roll(rel, 1, 0) + 0.25 * np.roll(rel, -1, 0)
+            knees[(F, sd)] = smooth
+
+    def leg_pose(F, act, i, sd, Mt):
+        if act != "walk":
+            return locked(F, act, i, sd, Mt)
+        c = R.CFG[F]
+        s = c["s"]
+        tj = ta[f"walk_{F}"][f"f{i:02d}"]["joints"]
+        hip = np.array(tj[f"{sd}_hip"], float)
+        tk = np.array(tj[f"{sd}_knee"], float)
+        ta_an = np.array(tj[f"{sd}_ankle"], float)
+        Mb, finfo = R.foot_pose(F, act, i, sd)
+        an = R.apm(Mb, R.pt(F, sd, "boot", "J"))
+        # one leg chain for the whole cycle: thigh and shin lengths and the
+        # side the knee bends to are the medians over the TA walk, the knee
+        # is solved between the TA hip and the boot's ankle point (the boot
+        # stands on the TA heel and toe), so the knee never flips side or snaps
+        d = float(np.hypot(*(an - hip)))
+        u = R.unit(an - hip)
+        n = np.array([-u[1], u[0]])
+        ra, rn = knees[(F, sd)][i]
+        kn = hip + u * ra * d + n * rn * d
+        L1, L2, _ = chain[(F, sd)]
+        k = float((np.hypot(*(kn - hip)) + np.hypot(*(an - kn))) / (L1 + L2))
+        th0, th1 = R.pt(F, sd, "thigh", "P0"), R.pt(F, sd, "thigh", "P1")
+        sh0, sh1 = R.pt(F, sd, "shin", "P0"), R.pt(F, sd, "shin", "P1")
+        Mth = R.sim(th0, th1, hip, kn, s)
+        Msh = R.sim(sh0, sh1, kn, an, s)
+        return dict(Mth=Mth, Msh=Msh, Mb=Mb, hip=hip.tolist(), knee=kn.tolist(), ankle=an.tolist(), k=k, k_eff=k,
+                    short=0.0, heel=finfo["heel"], toe=finfo["toe"])
+    R.leg_pose = leg_pose
 
 
 def add_walk(R, tree):
@@ -207,7 +282,8 @@ class Poser:
             M[f"leg_{sd}_boot"] = legs[sd]["Mb"]
             M[f"leg_{sd}_shin"] = legs[sd]["Msh"]
             M[f"leg_{sd}_thigh"] = legs[sd]["Mth"]
-        return {"F": F, "order": order, "M": M, "cape": (Mt, Mu, Ml)}
+        return {"F": F, "order": order, "M": M, "cape": (Mt, Mu, Ml),
+                "legs": {sd: {k: list(map(float, legs[sd][k])) for k in ("hip", "knee", "ankle")} for sd in "RL"}}
 
     def draw(self, pose, ps: PartSet, cv):
         """{slot: premultiplied image} for the slots this set has."""
@@ -292,6 +368,7 @@ def render_all(work: str, strips_wanted, acts):
     sets = {g: PartSet(R, os.path.join(parts, g)) for g in groups}
     frames_root = os.path.join(work, "frames")
     stats = {}
+    legs_metrics = {}
     for F in "SE":
         for act in acts:
             n = R.ACTS[act]
@@ -322,6 +399,28 @@ def render_all(work: str, strips_wanted, acts):
                 names.add(strip)
             for i, p in enumerate(poses):
                 write("base", i, base_full[i])
+                base_parts = poser.draw(p, base, cv)
+                rec = {}
+                for sd in "RL":
+                    L = p["legs"][sd]
+                    hip, kn, an = (np.asarray(L[k], float) for k in ("hip", "knee", "ankle"))
+                    v1, v2 = kn - hip, an - kn
+                    ang = math.degrees(math.atan2(v1[0] * v2[1] - v1[1] * v2[0], v1[0] * v2[0] + v1[1] * v2[1]))
+
+                    def cover(pt, a, b):
+                        q = cv.pts(pt)
+                        yy, xx = np.ogrid[:cv.H, :cv.W]
+                        disc = (xx - q[0]) ** 2 + (yy - q[1]) ** 2 <= 16
+                        m = np.zeros((cv.H, cv.W), bool)
+                        for nm in (a, b):
+                            if nm in base_parts:
+                                m |= base_parts[nm][..., 3] > 0.5
+                        return float(m[disc].mean())
+                    rec[sd] = {"hip": [hip[0] + sx[i], hip[1] - sy[i]], "knee": [kn[0] + sx[i], kn[1] - sy[i]],
+                               "ankle": [an[0] + sx[i], an[1] - sy[i]], "knee_deg": round(ang, 2),
+                               "knee_cover": round(cover(kn, f"leg_{sd}_thigh", f"leg_{sd}_shin"), 3),
+                               "ankle_cover": round(cover(an, f"leg_{sd}_shin", f"leg_{sd}_boot"), 3)}
+                legs_metrics.setdefault(F, {}).setdefault(act, []).append(rec)
                 bg = {group_slot(h): poser.draw(p, sets[h], cv) for h in groups if h.startswith("base_")}
                 for g in groups:
                     imgs = bg[group_slot(g)] if g.startswith("base_") else poser.draw(p, sets[g], cv)
@@ -332,6 +431,7 @@ def render_all(work: str, strips_wanted, acts):
             outs = sorted(names)
             print(F, act, len(outs), flush=True)
     json.dump(stats, open(os.path.join(frames_root, "_stats.json"), "w"), indent=1)
+    json.dump(legs_metrics, open(os.path.join(frames_root, "_legs.json"), "w"))
     return stats
 
 

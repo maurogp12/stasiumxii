@@ -2611,6 +2611,8 @@ func _play_movie(mode: String) -> void:
 			await _movie_hero_looks()
 		"visible_gear":
 			await _movie_visible_gear()
+		"gear_walk":
+			await _movie_gear_walk()
 		"wp4gate":
 			await _movie_wp4_gate()
 		"wp5astills":
@@ -3625,6 +3627,33 @@ func _movie_visible_gear() -> void:
 	await _cardinal("e", 4, "run")
 	walker.face("e")
 	await get_tree().create_timer(2.0).timeout
+	_mark("end")
+
+
+## Visible gear pilot: the full Cragmaw set walking, then running, in all
+## four facings (args: -- --movie gear_walk).
+func _movie_gear_walk() -> void:
+	settings.apply_preset("Full")
+	_set_zoom(3.2)
+	weather.set_weather("clear")
+	weather.time_of_day = 12.0
+	weather.auto_rotate = false
+	weather.settle()
+	walker.use_class("ironjaw")
+	walker.set_gear_parts(["cragmaw.weapon", "cragmaw.head", "cragmaw.chest", "cragmaw.legs", "cragmaw.boots"])
+	await enter_zone("crosshaven_crossroads", Vector2i(22, 18), false)
+	for pace in ["walk", "run"]:
+		_mark(pace)
+		if _banner != null:
+			_banner.text = "Ironjaw  ·  Cragmaw  ·  %s" % ("caminar" if pace == "walk" else "correr")
+			_banner.modulate.a = 1.0
+		walker.face("e")
+		await get_tree().create_timer(1.0).timeout
+		for dir in ["e", "s", "w", "n"]:
+			await _cardinal(dir, 4 if pace == "walk" else 6, pace)
+			await get_tree().create_timer(0.4).timeout
+	walker.face("s")
+	await get_tree().create_timer(1.5).timeout
 	_mark("end")
 
 

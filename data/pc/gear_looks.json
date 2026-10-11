@@ -47,19 +47,19 @@
       "name": "Cragmaw",
       "tier": "Normal",
       "class": "ironjaw",
-      "approved": false
+      "approved": true
     },
     "tyrantjaw": {
       "name": "Tyrantjaw",
       "tier": "Legendary",
       "class": "ironjaw",
-      "approved": false
+      "approved": true
     },
     "pitmaw": {
       "name": "Pitmaw",
       "tier": "Ultra",
       "class": "ironjaw",
-      "approved": false
+      "approved": true
     }
   }
 }
