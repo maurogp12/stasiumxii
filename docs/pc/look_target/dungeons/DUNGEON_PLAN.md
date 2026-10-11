@@ -4,7 +4,7 @@
 
 **Status (5 Oct 2026)**
 - **Designs:** all five approved by Mauro ("Wow love it" for the Granary; "Approve all 4" for the rest).
-- **Build:** dungeon 1, the Old Granary Cellar, is merged (#293, targeting fix #336). Dungeon 2, the Frostspire Archive, merged as #344 (`4e650d5`). Dungeon 3, the Saltmaw Grotto, merged as #345 (`9467e3f`). Dungeon 4, the Drowned Abbey, finished 11 Oct 2026 (`claude/abbey-dungeon` b4670041, not merged yet). Dungeon 5, the Heart of the Blight, started 11 Oct 2026 (Mauro: "empieza la ultima"): art `claude/blight-art`, systems `claude/blight-dungeon`, both based on the Abbey branch.
+- **Build:** dungeon 1, the Old Granary Cellar, is merged (#293, targeting fix #336). Dungeon 2, the Frostspire Archive, merged as #344 (`4e650d5`). Dungeon 3, the Saltmaw Grotto, merged as #345 (`9467e3f`). Dungeon 4, the Drowned Abbey, merged as #349 (`bc8c2a6`). Dungeon 5, the Heart of the Blight, merged as #350 (`eb5bfb9`). **All five town dungeons are built.**
 
 **Mauro's gate rule (5 Oct, binding):** build one dungeon at a time. When a dungeon is finished, send Mauro:
 1. in-game stills of how it looks: the door in town, room A, room B;
