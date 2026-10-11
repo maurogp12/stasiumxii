@@ -88,10 +88,10 @@ func _test_budgets_and_switch() -> void:
 		eq([int(off["hp_flat"]), int(off["mastery"]), int(off["resist"]), int(off["init"])], row, "%s dungeon keeps plain stats" % fam)
 		eq([int(on["hp_flat"]), int(on["mastery"]), int(on["resist"]), int(on["init"])], row, "%s Koliseo keeps the same plain stats" % fam)
 		eq(int(off["crit"]), 0, "%s crit is off outside PvP" % fam)
-		eq(int(off["ap"]), 6, "%s dungeon AP stays 6" % fam)
-		eq(int(off["mp"]), 3, "%s dungeon MP stays 3" % fam)
-		eq(int(on["ap"]), 7, "%s 5pc is +1 AP in PvP" % fam)
-		eq(int(on["mp"]), 4, "%s 5pc is +1 MP in PvP" % fam)
+		eq(int(off["ap"]), 7, "%s 5pc +1 AP counts in a dungeon" % fam)
+		eq(int(off["mp"]), 4, "%s 5pc +1 MP counts in a dungeon" % fam)
+		eq(int(on["ap"]), 7, "%s 5pc is +1 AP in Koliseo" % fam)
+		eq(int(on["mp"]), 4, "%s 5pc is +1 MP in Koliseo" % fam)
 		for key in ["push_guard", "no_back", "crit_ward", "free_vault", "fade_cut", "detonate_strip", "berserk", "hit_slow", "shoulder_strip", "heal_suppress", "shield_burst", "long_fade", "cleanse_stun", "cheat_death", "rekindle_ultra", "bow_range", "extra_mark", "unbound", "melee_pct", "crit_dmg", "push_flat", "heal_pct", "crit_heal", "back_pct", "ward_shield"]:
 			eq(int(off.get(key, 0)), 0, "%s %s is off outside PvP" % [fam, key])
 	var gate: Dictionary = GearBag.combat_stats(_worn("gatewarden"), {}, true, "bastion")
@@ -412,9 +412,9 @@ func _test_gear_screen_tags() -> void:
 	screen.set_pvp_lines(false)
 	var grey := _bonus_color(screen, false)
 	eq(grey, Color(0.42, 0.42, 0.46), "the same lines are grey in a dungeon")
-	truthy(screen.header_text().contains("AP 6/"), "the dungeon header hides the +1 AP")
+	truthy(screen.header_text().contains("AP 7/"), "the dungeon header shows the +1 AP")
 	screen.set_pvp_lines(true)
-	truthy(screen.header_text().contains("AP 7/"), "the PvP header shows the +1 AP")
+	truthy(screen.header_text().contains("AP 7/"), "the Koliseo header shows the same +1 AP")
 	screen.queue_free()
 
 

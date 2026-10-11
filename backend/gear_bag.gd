@@ -9,16 +9,19 @@ extends RefCounted
 ## Slots: weapon, head, chest, legs, boots.
 ## Fuse: same item_id + same plus → plus+1, cap +5. Crit% does not fuse.
 ## These sets have no attune. Part resist counts against every element.
-## AP/MP: base 6/3 + Legendary 5pc +1/+1 + Rare +5 weapon (+1 AP) and
-## Rare +5 boots (+1 MP), clamped to 8/5. Koliseo flattens parts to +0
-## (set bonuses still apply, so the +5 gates do not).
+## AP/MP: base 6/3 + every 5pc that grants +1/+1 (Legendary and Ultra) +
+## Rare +5 weapon (+1 AP) and Rare +5 boots (+1 MP), then +1 AP at level 20
+## and the socketed Hourglass. Same number on the inventory sheet and at
+## the start of a Stasis room, a dungeon, a local Koliseo, and online
+## Koliseo. Clamped to 8/5; Hourglass Overwound may pass the cap.
+## Koliseo flattens part HP / Mastery / Resist / Init to +0. The Rare +5
+## AP/MP gates still look at the real plus. Ultra special lines (not the
+## +1/+1) apply only when the fight sets flatten_plus.
 ## Stasis loot rolls a tier, then a family of that tier, then a weighted slot.
 ## ★1 is 100% Normal. ★3 is 70/30 Normal/Rare. ★5 is 60/30/10. A boss chest
 ## is 50/30/20. ★2 uses the ★1 table and ★4 uses the ★3 table. 5 clears a
 ## day; clear 6+ is empty. Ultra sets are not on this ladder and never drop.
-## They are sold in the Koliseo shop. Their special lines and set bonuses
-## apply only in online Koliseo (the fight's flatten_plus flag). A dungeon
-## or hot-seat fight keeps the plain HP / Mastery / Resist / Init.
+## They are sold in the Koliseo shop.
 
 const _TestLoadout := preload("res://backend/test_loadout.gd")
 const SLOTS: Array[String] = ["weapon", "head", "chest", "legs", "boots"]
@@ -147,8 +150,9 @@ const FAMILIES := {
 		"bonus": {2: "+4% crit", 4: "+6 Mastery", 5: "+1 AP +1 MP"},
 		"stats": {2: {"crit": 4}, 4: {"mastery": 6}, 5: {"ap": 1, "mp": 1}},
 	},
-	# Ultra. pvp_only: special lines and these bonuses need online Koliseo.
-	# Plain HP / Mastery / Resist / Init always apply. They never drop.
+	# Ultra. pvp_only: special lines need a Koliseo fight (flatten_plus).
+	# The 5pc +1 AP +1 MP always applies. Plain HP / Mastery / Resist / Init
+	# always apply. They never drop.
 	"gatewarden": {
 		"name": "Gatewarden", "rarity": "Ultra", "owner": "bastion", "resist_all": true, "pvp_only": true,
 		"source": "Koliseo shop", "min_star": 99,
@@ -926,27 +930,30 @@ static func worn_counts(worn: Array) -> Dictionary:
 	return counts
 
 
-## `pvp` includes Ultra set bonuses. Ladder bonuses always apply.
+## `pvp` includes Ultra special lines. The +1 AP +1 MP on an Ultra 5pc
+## always counts, so a dungeon and a Koliseo start from the same pool.
 static func stats_of_worn(worn: Array, pvp: bool = true) -> Dictionary:
 	var total := {}
 	var counts := worn_counts(worn)
 	var order: Array = []
 	order.append_array(FAMILY_ORDER)
-	if pvp:
-		order.append_array(ULTRA_ORDER)
+	order.append_array(ULTRA_ORDER)
 	for fam in order:
 		var pieces := int(counts.get(fam, 0))
 		var stats: Dictionary = FAMILIES[fam]["stats"]
+		var ultra := bool(FAMILIES[fam].get("pvp_only", false))
 		for tier in [2, 4, 5]:
 			if pieces >= tier and stats.has(tier):
 				for key in stats[tier]:
+					if ultra and not pvp and key != "ap" and key != "mp":
+						continue
 					total[key] = int(total.get(key, 0)) + int(stats[tier][key])
 	return total
 
 
 ## Rare +5 weapon → +1 AP. Rare +5 boots → +1 MP. Not stacked, and a
-## Normal or Legendary +5 does not open the gate. Koliseo flattens plus
-## to 0 before this runs, so the gates do not apply in the arena.
+## Normal, Legendary, or Ultra +5 does not open the gate. Koliseo still
+## reads this off the real plus after it flattens part stats to +0.
 static func gate_of_worn(worn: Array) -> Dictionary:
 	var out := {"ap": 0, "mp": 0}
 	for entry in worn:
@@ -978,9 +985,9 @@ static func ap_mp_of_worn(worn: Array, pvp: bool = true) -> Dictionary:
 ## What a fight uses from worn gear. Part numbers × fuse multiplier (not
 ## crit), plus set bonuses. resist_all families add part resist to the
 ## universal resist, which hits every element. A class_id drops pieces
-## that class cannot wear. `flatten_plus`: Koliseo arena — parts count as
-## +0, so the Rare +5 gates do not. It is also the Ultra switch: special
-## lines and Ultra set bonuses apply only when it is set.
+## that class cannot wear. `flatten_plus`: Koliseo arena — part HP,
+## Mastery, Resist and Init count as +0, and Ultra special lines turn on.
+## AP/MP (5pc and the Rare +5 gates) does not change with that switch.
 static func combat_stats(raw_worn: Variant, attune_map: Dictionary = {}, flatten_plus: bool = false, class_id: String = "", drop_debug: bool = false) -> Dictionary:
 	var worn := clean_worn(raw_worn, drop_debug)
 	if class_id != "":
@@ -989,10 +996,11 @@ static func combat_stats(raw_worn: Variant, attune_map: Dictionary = {}, flatten
 			if can_wear(family_of(str(entry["item_id"])), class_id):
 				filtered.append(entry)
 		worn = filtered
+	var gates := gate_of_worn(worn)
 	if flatten_plus:
 		for entry in worn:
 			entry["plus"] = 0
-	return _sum_worn(worn, attune_map, flatten_plus)
+	return _sum_worn(worn, attune_map, flatten_plus, gates)
 
 
 ## Gear-screen numbers. Same sum as a fight, without flattening +plus.
@@ -1000,9 +1008,19 @@ static func sheet_stats(raw_worn: Variant, attune_map: Dictionary = {}, pvp: boo
 	return _sum_worn(clean_worn(raw_worn, false), attune_map, pvp)
 
 
-static func _sum_worn(worn: Array, attune_map: Dictionary, pvp: bool) -> Dictionary:
+static func _sum_worn(worn: Array, attune_map: Dictionary, pvp: bool, preserved_gates: Variant = null) -> Dictionary:
 	var stats := stats_of_worn(worn, pvp)
 	var apmp := ap_mp_of_worn(worn, pvp)
+	# Flatten zeroes plus before the sum. The Rare +5 gates were read first
+	# and are put back here, so Koliseo AP/MP matches the inventory sheet.
+	if typeof(preserved_gates) == TYPE_DICTIONARY:
+		var raw_ap := BASE_AP + int(stats.get("ap", 0)) + int(preserved_gates.get("ap", 0))
+		var raw_mp := BASE_MP + int(stats.get("mp", 0)) + int(preserved_gates.get("mp", 0))
+		apmp = {
+			"ap": mini(raw_ap, AP_CAP), "mp": mini(raw_mp, MP_CAP),
+			"raw_ap": raw_ap, "raw_mp": raw_mp,
+			"ap_greyed": maxi(raw_ap - AP_CAP, 0), "mp_greyed": maxi(raw_mp - MP_CAP, 0),
+		}
 	var counts := worn_counts(worn)
 	var hp_flat := 0
 	var mastery_flat := int(stats.get("mastery", 0))

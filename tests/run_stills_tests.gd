@@ -169,21 +169,21 @@ func _worn(family: String) -> Array:
 	return out
 
 
-## The 0.1.158 report: level 30, Pitmaw on Ironjaw, Sandhawk on Kestrel,
-## Hourglass Step and Fist Intact. Without Koliseo rules the cards read
-## 6/5 and 8/2. With them, and on the inventory sheet, they read 7/5 and 8/3.
+## Level 30, Pitmaw on Ironjaw, Sandhawk on Kestrel, Hourglass Step and
+## Fist Intact. Dungeon and Koliseo both start at 8/3 and 7/5, matching
+## the inventory sheet.
 func _test_set_still_pools() -> void:
 	var heroes := {"kestrel": {"level": 30, "spent": {}}, "ironjaw": {"level": 30, "spent": {}}}
 	var kite := {"worn": _worn("sandhawk"), "heroes": heroes, "still": {"id": "hourglass_fist", "mode": "intact"}}
 	var jaw := {"worn": _worn("pitmaw"), "heroes": heroes, "still": {"id": "hourglass_step", "mode": "intact"}}
 	_fight(kite, jaw)
-	eq([int(_u(0)["max_ap"]), int(_u(0)["max_mp"])], [8, 2], "without Koliseo rules Kestrel's Ultra 5pc is missing (8/2)")
-	eq([int(_u(1)["max_ap"]), int(_u(1)["max_mp"])], [6, 5], "without Koliseo rules Ironjaw's Ultra 5pc is missing (6/5)")
+	eq([int(_u(0)["max_ap"]), int(_u(0)["max_mp"])], [8, 3], "a dungeon keeps Kestrel's Ultra 5pc (8/3)")
+	eq([int(_u(1)["max_ap"]), int(_u(1)["max_mp"])], [7, 5], "a dungeon keeps Ironjaw's Ultra 5pc (7/5)")
 	kite["flatten_plus"] = true
 	jaw["flatten_plus"] = true
 	_fight(kite, jaw)
-	eq([int(_u(0)["ap"]), int(_u(0)["max_ap"]), int(_u(0)["mp"]), int(_u(0)["max_mp"])], [8, 8, 3, 3], "Kestrel's card is 8 AP / 3 MP: level, Sandhawk 5pc, Fist Intact")
-	eq([int(_u(1)["ap"]), int(_u(1)["max_ap"]), int(_u(1)["mp"]), int(_u(1)["max_mp"])], [7, 7, 5, 5], "Ironjaw's card is 7 AP / 5 MP: level, Pitmaw 5pc, Step Intact")
+	eq([int(_u(0)["ap"]), int(_u(0)["max_ap"]), int(_u(0)["mp"]), int(_u(0)["max_mp"])], [8, 8, 3, 3], "Koliseo Kestrel is the same 8 AP / 3 MP")
+	eq([int(_u(1)["ap"]), int(_u(1)["max_ap"]), int(_u(1)["mp"]), int(_u(1)["max_mp"])], [7, 7, 5, 5], "Koliseo Ironjaw is the same 7 AP / 5 MP")
 	eq(StillVault.adjust_ap_mp(8, 4, "hourglass_fist", "intact"), {"ap": 8, "mp": 3}, "Fist Intact from a 5pc pool")
 	eq(StillVault.adjust_ap_mp(8, 4, "hourglass_step", "intact"), {"ap": 7, "mp": 5}, "Step Intact from a 5pc pool")
 	eq(StillVault.adjust_ap_mp(8, 4, "tide", "intact"), {"ap": 8, "mp": 4}, "Tide does not move AP or MP")

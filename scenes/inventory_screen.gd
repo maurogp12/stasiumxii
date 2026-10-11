@@ -64,11 +64,10 @@ func stats() -> Dictionary:
 	return champion_stats(_bag, _hero, champion)
 
 
-## The characteristics sheet for this champion. HP follows the worn parts.
-## AP/MP is the Koliseo pool: base 6/3, the 5-piece +1/+1 (Ultra included),
-## +1 AP from level 20, then the socketed Hourglass. A dungeon leaves an
-## Ultra 5-piece's +1/+1 behind. A Koliseo fight, and a test-kit local
-## fight, start each turn from this same pool.
+## The characteristics sheet for this champion. HP follows the worn parts
+## (a Koliseo fight then counts those parts as +0). AP/MP is the pool every
+## fight starts from: base 6/3, Legendary and Ultra 5pc +1/+1, Rare +5
+## weapon / boots, +1 AP from level 20, then the socketed Hourglass.
 static func champion_stats(gear: GearBag, hero: HeroProgress, class_id: String) -> Dictionary:
 	var st := GearBag.combat_stats(gear.worn_list(class_id), gear.attune, false, class_id)
 	var lv := HeroProgress.combat_stats(hero.fight_hero(class_id), class_id)
