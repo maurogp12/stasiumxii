@@ -1,0 +1,143 @@
+{
+ "id": "rotting_elder",
+ "name": "The Rotting Elder",
+ "star5": false,
+ "base_of": null,
+ "dir": "monsters/rotting_elder",
+ "cell": [
+  768,
+  540
+ ],
+ "pivot": [
+  384,
+  494
+ ],
+ "fps": 17.144,
+ "facings": [
+  "S",
+  "E"
+ ],
+ "mirror": {
+  "W": "E",
+  "N": "S"
+ },
+ "actions": {
+  "idle": {
+   "frames": 12,
+   "loop": true,
+   "files": {
+    "S": "monsters/rotting_elder/idle/idle_S_fNN.png",
+    "E": "monsters/rotting_elder/idle/idle_E_fNN.png"
+   }
+  },
+  "walk": {
+   "frames": 12,
+   "loop": true,
+   "files": {
+    "S": "monsters/rotting_elder/walk/walk_S_fNN.png",
+    "E": "monsters/rotting_elder/walk/walk_E_fNN.png"
+   }
+  },
+  "attack": {
+   "frames": 12,
+   "loop": false,
+   "files": {
+    "S": "monsters/rotting_elder/attack/attack_S_fNN.png",
+    "E": "monsters/rotting_elder/attack/attack_E_fNN.png"
+   }
+  },
+  "hit": {
+   "frames": 8,
+   "loop": false,
+   "files": {
+    "S": "monsters/rotting_elder/hit/hit_S_fNN.png",
+    "E": "monsters/rotting_elder/hit/hit_E_fNN.png"
+   }
+  },
+  "death": {
+   "frames": 13,
+   "loop": false,
+   "files": {
+    "S": "monsters/rotting_elder/death/death_S_fNN.png",
+    "E": "monsters/rotting_elder/death/death_E_fNN.png"
+   }
+  },
+  "summon": {
+   "frames": 14,
+   "loop": false,
+   "files": {
+    "S": "monsters/rotting_elder/summon/summon_S_fNN.png",
+    "E": "monsters/rotting_elder/summon/summon_E_fNN.png"
+   },
+   "glow_files": {
+    "S": "monsters/rotting_elder/summon/summon_S_fNN_glow.png",
+    "E": "monsters/rotting_elder/summon/summon_E_fNN_glow.png"
+   }
+  }
+ },
+ "qa": {
+  "hole_fill_px_S": 49319,
+  "px_outside_cell_idle_S": 0,
+  "keep_in_shift_px_idle_S": 0.0,
+  "px_outside_cell_walk_S": 0,
+  "keep_in_shift_px_walk_S": 0.0,
+  "px_outside_cell_attack_S": 0,
+  "keep_in_shift_px_attack_S": 0.0,
+  "px_outside_cell_hit_S": 0,
+  "keep_in_shift_px_hit_S": 0.0,
+  "px_outside_cell_death_S": 0,
+  "keep_in_shift_px_death_S": 6.3,
+  "px_outside_cell_summon_S": 0,
+  "keep_in_shift_px_summon_S": 25.0,
+  "hole_fill_px_E": 37667,
+  "px_outside_cell_idle_E": 0,
+  "keep_in_shift_px_idle_E": 0.0,
+  "px_outside_cell_walk_E": 0,
+  "keep_in_shift_px_walk_E": 0.0,
+  "px_outside_cell_attack_E": 0,
+  "keep_in_shift_px_attack_E": 0.0,
+  "px_outside_cell_hit_E": 0,
+  "keep_in_shift_px_hit_E": 0.0,
+  "px_outside_cell_death_E": 0,
+  "keep_in_shift_px_death_E": 0.0,
+  "px_outside_cell_summon_E": 0,
+  "keep_in_shift_px_summon_E": 19.0
+ },
+ "signature": {
+  "action": "summon",
+  "name": "Root Wall",
+  "frames": 14,
+  "lift": [
+   0,
+   2
+  ],
+  "charge": [
+   3,
+   6
+  ],
+  "fire": 7,
+  "shockwave": [
+   8,
+   10
+  ],
+  "settle": [
+   11,
+   13
+  ],
+  "glow": "summon/summon_{S,E}_fNN_glow.png: additive violet heart glow, dims f00-f02, flares f03-f06, bursts on f07, ripples f08-f10, fades by f13"
+ },
+ "staff_point": {
+  "action": "summon",
+  "frame": 7,
+  "point_px": {
+   "S": [
+    531.7,
+    532.1
+   ],
+   "E": [
+    538.6,
+    534.0
+   ]
+  }
+ }
+}

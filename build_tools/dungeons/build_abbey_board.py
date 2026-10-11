@@ -55,10 +55,11 @@ def mask_outside_diamond(out_id, n):
             gkit.save_png(p, im)
 
 
-def ground_cell_decal(src, out_id, room, note, inset=0.96, grade=None):
-    """A 1-cell walkable ground decal (no glow): a keyed top-down painting mapped into the 64x32 diamond."""
+def ground_cell_decal(src, out_id, room, note, inset=0.96, grade=None, key=None):
+    """A 1-cell walkable ground decal (no glow): a keyed top-down painting mapped into the 64x32 diamond.
+    key: the keyer (default gkit.key_magenta, the Abbey's)."""
     rgb = gkit.load_rgb(src)
-    prem = gkit.clean_alpha(gkit.key_magenta(rgb), min_island=40)
+    prem = gkit.clean_alpha((key or gkit.key_magenta)(rgb), min_island=40)
     if grade:
         prem = gkit.grade(prem, **grade)
     # Crop to a square around the painted content (the cluster sits in the middle with wide margins).

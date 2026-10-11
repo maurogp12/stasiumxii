@@ -45,7 +45,15 @@ ABBEY = {
     "bellbound_bog_dead": [("bellbound_bog_dead_S", "star 5 S: front, down-right"), ("bellbound_bog_dead_E", "star 5 E: back, up-right")],
     "bellbound_mire_leech": [("bellbound_leech_S", "star 5 S: front, down-right"), ("bellbound_leech_E", "star 5 E: back, up-right")],
 }
-STAR5 = {"bell_wraith", "bellbound_bog_dead", "bellbound_mire_leech", "the_frozen_archivist", "frozen_ice_construct", "frozen_book_wraith",
+BLIGHT = {
+    "blight_hound": [("hound_S", "S: front, facing down-right"), ("hound_E", "E: back, facing up-right")],
+    "blight_horror": [("horror_S", "S: front, facing down-right"), ("horror_E", "E: back, facing up-right")],
+    "rotting_elder": [("elder_S", "S: front, facing down-right"), ("elder_E", "E: back, facing up-right")],
+    "crystal_colossus": [("elder_S", "base S (the Rotting Elder)"), ("colossus_S", "star 5 S: front, down-right"), ("colossus_E", "star 5 E: back, up-right")],
+    "crystal_hound": [("crystal_hound_S", "star 5 S: front, down-right"), ("crystal_hound_E", "star 5 E: back, up-right")],
+    "crystal_horror": [("crystal_horror_S", "star 5 S: front, down-right"), ("crystal_horror_E", "star 5 E: back, up-right")],
+}
+STAR5 = {"crystal_colossus", "crystal_hound", "crystal_horror", "bell_wraith", "bellbound_bog_dead", "bellbound_mire_leech", "the_frozen_archivist", "frozen_ice_construct", "frozen_book_wraith",
          "abyssal_saltmaw", "abyssal_reef_crab", "abyssal_drowned_sailor", "abyssal_drowned_harpooner"}
 
 
@@ -90,4 +98,6 @@ if __name__ == "__main__":
             SETS = SALT
         elif d == "drowned_abbey":
             SETS = ABBEY
+        elif d == "heart_of_the_blight":
+            SETS = BLIGHT
     main(args or list(SETS))
