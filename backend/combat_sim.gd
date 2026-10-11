@@ -4074,6 +4074,7 @@ func _reset_dungeon(config: Dictionary) -> Dictionary:
 		"summoned_total": 0,
 		"star": int(room.get("star", 1)),
 		"pools": [],
+		"walls": [],
 	}
 	var flow_config := {"board_size": _board_size, "elev_seed": _elev_seed}
 	_flow.reset(_seed, flow_config)
@@ -4217,6 +4218,7 @@ func _dungeon_handoff(actor: Dictionary, auto_skip: bool, skip_reason: String, d
 		_pools_on_hero_end(actor)
 		if _match_over:
 			return {}
+		_walls_on_hero_end()
 	var next_seat := _next_dungeon_seat(int(actor.get("seat", _active_seat)))
 	if next_seat < 0:
 		return {}
@@ -4266,6 +4268,7 @@ func _dungeon_handoff(actor: Dictionary, auto_skip: bool, skip_reason: String, d
 	})
 	_dungeon_pad_heal(next_unit)
 	_dungeon_mp_drain(next_unit)
+	_dungeon_ap_drain(next_unit)
 	_tick_poison(next_unit)
 	_tick_burn(next_unit)
 	if not _match_over and not bool(next_unit.get("alive", false)) and depth < _units.size() + 1:
@@ -4322,6 +4325,35 @@ func _dungeon_mp_drain(unit: Dictionary) -> void:
 		"target_seat": unit["seat"],
 		"mp_lost": lost,
 		"mp_delta": -lost,
+		"coach": coach,
+	})
+
+
+## Wither (the blight's ★5 pack and Heart Bloom): AP taken off the start of
+## the hero's next turn. A turn that starts on a thawing pad keeps its AP too.
+func _dungeon_ap_drain(unit: Dictionary) -> void:
+	var drain := int(unit.get("ap_drain", 0))
+	if drain <= 0 or not bool(unit.get("alive", false)):
+		return
+	unit["ap_drain"] = 0
+	if bool(_dungeon.get("pad_thaw", false)) and (_dungeon.get("pads", []) as Array).has(unit["pos"]):
+		_last_events.append({
+			"type": "thaw",
+			"seat": unit["seat"],
+			"cell": unit["pos"],
+			"what": "ap",
+			"coach": str(_dungeon.get("pad_thaw_text", "The rune pad thaws {name}: no MP lost.")).replace("{name}", str(unit["name"])),
+		})
+		return
+	var lost := mini(drain, int(unit.get("ap", 0)))
+	unit["ap"] = int(unit.get("ap", 0)) - lost
+	var coach := "%s is %s: %d AP less this turn." % [unit["name"], str(unit.get("ap_drain_word", "withered")), lost]
+	_last_events.append({
+		"type": "wither",
+		"seat": unit["seat"],
+		"target_seat": unit["seat"],
+		"ap_lost": lost,
+		"ap_delta": -lost,
 		"coach": coach,
 	})
 
@@ -4387,6 +4419,8 @@ func _monster_legal_intents(actor: Dictionary) -> Array:
 		out.append({"type": "cast", "spell": str(sig.get("id", "")), "to": hero["pos"], "target_seat": hero["seat"], "seat": seat})
 	elif not sig.is_empty() and raise_ready(actor):
 		out.append({"type": "cast", "spell": str(sig.get("id", "")), "to": _raise_corpse(actor)["pos"], "seat": seat})
+	elif not sig.is_empty() and wall_ready(actor):
+		out.append({"type": "cast", "spell": str(sig.get("id", "")), "to": hero["pos"], "target_seat": hero["seat"], "seat": seat})
 	var sig2: Dictionary = actor.get("signature2", {})
 	if not sig2.is_empty() and pools_ready(actor):
 		out.append({"type": "cast", "spell": str(sig2.get("id", "")), "to": hero["pos"] if not hero.is_empty() else actor["pos"], "seat": seat})
@@ -4479,6 +4513,8 @@ func _submit_monster_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
 			return _resolve_pull(intent, actor, sig)
 		if str(sig.get("kind", "summon")) == "raise":
 			return _resolve_raise(intent, actor, sig)
+		if str(sig.get("kind", "summon")) == "wall":
+			return _resolve_wall(intent, actor, sig)
 		return _resolve_summon(intent, actor, sig)
 	var sig2: Dictionary = actor.get("signature2", {})
 	if not sig2.is_empty() and spell_id == str(sig2.get("id", "")):
@@ -4586,6 +4622,20 @@ func _submit_monster_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
 			"target_seat": target["seat"],
 			"mp": int(target["mp_drain"]),
 			"coach": "%s is %s (%d MP less next turn)." % [target["name"], word, int(target["mp_drain"])],
+		})
+	var wither: Dictionary = attack.get("wither", {})
+	if not wither.is_empty() and damage > 0 and int(target["hp"]) > 0:
+		# Wither (the blight's ★5 pack): AP off the hero's next turn, no
+		# stacking. `word` names it (withered by default).
+		target["ap_drain"] = maxi(int(target.get("ap_drain", 0)), int(wither.get("ap", 1)))
+		var wword := str(wither.get("word", "withered"))
+		target["ap_drain_word"] = wword
+		_last_events.append({
+			"type": "status",
+			"status": "wither",
+			"target_seat": target["seat"],
+			"ap": int(target["ap_drain"]),
+			"coach": "%s is %s (%d AP less next turn)." % [target["name"], wword, int(target["ap_drain"])],
 		})
 	_check_death(target)
 	return _accept()
@@ -4854,6 +4904,179 @@ func _resolve_raise(intent: Dictionary, actor: Dictionary, sig: Dictionary) -> D
 	return _accept()
 
 
+## Boss signature kind "wall" (the Heart of the Blight's Root Wall): on the
+## boss's first_turn-th turn, then every `every` turns (a fixed beat), with
+## AP, roots erupt on up to `cells` free cells next to the hero, the side
+## away from the caster first. They stand as blocking terrain (no walking
+## through, and they cut lines of sight) until the hero has ended `turns`
+## turns, then wither. They never rise on a pad (unless `on_pads`), on a body,
+## a corpse or a hazard, and never seal a live unit off from another.
+func wall_ready(actor: Dictionary) -> bool:
+	var sig: Dictionary = actor.get("signature", {})
+	if sig.is_empty() or str(sig.get("kind", "")) != "wall":
+		return false
+	if bool(actor.get("acted_signature", false)):
+		return false
+	if int(actor.get("ap", 0)) < int(sig.get("ap", 0)):
+		return false
+	var turns := int(actor.get("own_turns", 0))
+	var first := maxi(int(sig.get("first_turn", 1)), 1)
+	var every := maxi(int(sig.get("every", 1)), 1)
+	if turns < first or (turns - first) % every != 0:
+		return false
+	return not _wall_cells(actor, int(sig.get("cells", 3))).is_empty()
+
+
+## The cells a Root Wall takes: the hero's free neighbours (Chebyshev 1),
+## farthest from the caster first (Manhattan), then the lowest row and
+## column. A cell is skipped when it would seal a live unit off.
+func _wall_cells(actor: Dictionary, want: int) -> Array[Vector2i]:
+	var out: Array[Vector2i] = []
+	var hero := _dungeon_hero()
+	if hero.is_empty() or not bool(hero.get("alive", false)) or want <= 0:
+		return out
+	var sig: Dictionary = actor.get("signature", {})
+	var center: Vector2i = hero["pos"]
+	var from: Vector2i = actor["pos"]
+	var ring: Array[Vector2i] = []
+	for d in [Vector2i(0, 1), Vector2i(1, 0), Vector2i(0, -1), Vector2i(-1, 0), Vector2i(1, 1), Vector2i(-1, 1), Vector2i(1, -1), Vector2i(-1, -1)]:
+		ring.append(center + d)
+	ring.sort_custom(func(a: Vector2i, b: Vector2i) -> bool:
+		var da := manhattan(a, from)
+		var db := manhattan(b, from)
+		if da != db:
+			return da > db
+		return a.y * 100 + a.x < b.y * 100 + b.x)
+	var pads: Array = _dungeon.get("pads", [])
+	var hazards := {}
+	for pool in _dungeon.get("pools", []):
+		hazards[pool["cell"]] = true
+	var corpses := {}
+	for unit in _units:
+		if _is_monster(unit) and not bool(unit.get("alive", false)) and not bool(unit.get("fled", false)):
+			corpses[unit["pos"]] = true
+	var taken: Array[Vector2i] = []
+	for c in ring:
+		if out.size() >= want:
+			break
+		if not _in_bounds(c) or not _board.is_walkable(c) or not _is_empty(c):
+			continue
+		if hazards.has(c) or corpses.has(c):
+			continue
+		if pads.has(c) and not bool(sig.get("on_pads", false)):
+			continue
+		taken.append(c)
+		if not _units_connected(taken):
+			taken.pop_back()
+			continue
+		out.append(c)
+	return out
+
+
+## True when every live unit can still walk to every other one (ortho steps
+## over walkable cells, bodies ignored) with `extra` cells blocked too.
+func _units_connected(extra: Array[Vector2i]) -> bool:
+	var blocked := {}
+	for c in extra:
+		blocked[c] = true
+	var live: Array = []
+	for unit in _units:
+		if bool(unit.get("alive", false)):
+			live.append(unit["pos"])
+	if live.size() <= 1:
+		return true
+	var start: Vector2i = live[0]
+	var seen := {start: true}
+	var queue: Array[Vector2i] = [start]
+	var head := 0
+	while head < queue.size():
+		var cur: Vector2i = queue[head]
+		head += 1
+		for step in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+			var nxt: Vector2i = cur + step
+			if seen.has(nxt) or blocked.has(nxt) or not _in_bounds(nxt) or not _board.is_walkable(nxt):
+				continue
+			seen[nxt] = true
+			queue.append(nxt)
+	for at in live:
+		if not seen.has(at):
+			return false
+	return true
+
+
+func _resolve_wall(intent: Dictionary, actor: Dictionary, sig: Dictionary) -> Dictionary:
+	if not wall_ready(actor):
+		return _reject(intent, "wall_not_ready", "REJECT — %s is not ready." % sig.get("name", "The roots"))
+	var cells := _wall_cells(actor, int(sig.get("cells", 3)))
+	var ap_cost := int(sig.get("ap", 0))
+	actor["ap"] = int(actor["ap"]) - ap_cost
+	actor["acted_signature"] = true
+	_intent_log.append(intent)
+	var hero := _dungeon_hero()
+	var face := _face_toward_cell(actor["pos"], hero["pos"])
+	if face != "":
+		actor["facing"] = face
+	var walls: Array = _dungeon.get("walls", [])
+	var prop := str(sig.get("prop", "root_wall"))
+	for c in cells:
+		var tile = _board.tile_at(c)
+		var rec := {"cell": c, "turns": int(sig.get("turns", 2)), "prop": prop, "seat": int(actor["seat"])}
+		if tile != null:
+			rec["was"] = tile.walkable_override
+			tile.walkable_override = false
+		walls.append(rec)
+	_dungeon["walls"] = walls
+	var line := str(sig.get("wall_text", "{caster} drives down his staff: {sig}. Roots wall in {hero} on {n} cells."))
+	_last_coach = line.format({"caster": str(actor["name"]), "sig": str(sig.get("name", "the roots")), "hero": str(hero.get("name", "the hero")), "n": cells.size()})
+	_last_events.append({
+		"type": "wall",
+		"seat": actor["seat"],
+		"spell": str(sig.get("id", "")),
+		"beam": str(sig.get("beam", "")),
+		"prop": prop,
+		"caster_cell": actor["pos"],
+		"cells": cells.duplicate(),
+		"turns": int(sig.get("turns", 2)),
+		"ap_spent": ap_cost,
+		"coach": _last_coach,
+	})
+	return _accept()
+
+
+## The hero ends a turn: every root wall ages; spent ones wither and the
+## cells open again.
+func _walls_on_hero_end() -> void:
+	var walls: Array = _dungeon.get("walls", [])
+	if walls.is_empty():
+		return
+	var kept: Array = []
+	var gone: Array = []
+	var line := ""
+	for wall in walls:
+		wall["turns"] = int(wall["turns"]) - 1
+		if int(wall["turns"]) > 0:
+			kept.append(wall)
+			continue
+		var tile = _board.tile_at(wall["cell"])
+		if tile != null:
+			tile.walkable_override = wall.get("was", null)
+		gone.append(wall["cell"])
+		if line == "":
+			var caster := _unit_by_seat(int(wall.get("seat", -1)))
+			line = str((caster.get("signature", {}) as Dictionary).get("wither_text", "The roots wither back into the floor."))
+	_dungeon["walls"] = kept
+	if not gone.is_empty():
+		_last_events.append({"type": "wall_wither", "cells": gone, "coach": line})
+
+
+## Cells a root wall stands on now.
+func wall_cells() -> Array:
+	var out: Array = []
+	for wall in _dungeon.get("walls", []):
+		out.append(wall["cell"])
+	return out
+
+
 static func _face_toward_cell(from: Vector2i, to: Vector2i) -> String:
 	var delta := to - from
 	if delta == Vector2i.ZERO:
@@ -4881,6 +5104,7 @@ func _dungeon_snapshot() -> Dictionary:
 		"raised_total": int(_dungeon.get("raised_total", 0)),
 		"star": int(_dungeon.get("star", 1)),
 		"pools": (_dungeon.get("pools", []) as Array).duplicate(true),
+		"walls": (_dungeon.get("walls", []) as Array).duplicate(true),
 	}
 	return snap
 
@@ -5005,6 +5229,18 @@ func _resolve_pools(intent: Dictionary, actor: Dictionary, sig: Dictionary) -> D
 				rec["word"] = str(sig["word"])
 			if str(sig.get("drain_text", "")) != "":
 				rec["drain_text"] = str(sig["drain_text"])
+			if int(sig.get("fuse", 0)) > 0:
+				# Fused hazards (the blight's Heart Bloom pods): they do nothing
+				# where they stand; when the hero has ended `fuse` turns they
+				# burst on their cell and `splash` cells round it.
+				rec["fuse"] = int(sig["fuse"])
+				rec["turns"] = int(sig["fuse"])
+				rec["splash"] = int(sig.get("splash", 1))
+				rec["ap_loss"] = int(sig.get("ap_loss", 0))
+				if str(sig.get("burst_text", "")) != "":
+					rec["burst_text"] = str(sig["burst_text"])
+				if str(sig.get("miss_text", "")) != "":
+					rec["miss_text"] = str(sig["miss_text"])
 		pools.append(rec)
 		made.append(c)
 	_dungeon["pools"] = pools
@@ -5034,6 +5270,8 @@ func _pools_on_hero_end(hero: Dictionary) -> void:
 	if pools.is_empty():
 		return
 	for pool in pools:
+		if pool.has("fuse"):
+			continue
 		if pool["cell"] == hero["pos"] and bool(hero.get("alive", false)):
 			var dmg := int(pool.get("hp", 5))
 			hero["hp"] = maxi(int(hero["hp"]) - dmg, 0)
@@ -5074,11 +5312,54 @@ func _pools_on_hero_end(hero: Dictionary) -> void:
 					_displace_toward(hero, toward, int(pool["drag"]), "drag", str(pool["hazard"]), int(toward["seat"]))
 			break
 	var kept: Array = []
+	var bursts: Array = []
 	for pool in pools:
 		pool["turns"] = int(pool["turns"]) - 1
 		if int(pool["turns"]) > 0:
 			kept.append(pool)
+		elif pool.has("fuse"):
+			bursts.append(pool)
 	_dungeon["pools"] = kept
+	if not bursts.is_empty() and not _match_over:
+		_burst_pods(hero, bursts)
+
+
+## Fused pods burst: one hit on the hero when any bursting pod is within its
+## splash (Chebyshev), the strongest of them; withering AP off the next turn.
+func _burst_pods(hero: Dictionary, bursts: Array) -> void:
+	var cells: Array = []
+	var hit: Dictionary = {}
+	for pod in bursts:
+		cells.append(pod["cell"])
+		if bool(hero.get("alive", false)) and chebyshev(pod["cell"], hero["pos"]) <= int(pod.get("splash", 1)):
+			if hit.is_empty() or int(pod.get("hp", 0)) > int(hit.get("hp", 0)):
+				hit = pod
+	var first: Dictionary = bursts[0]
+	var event := {
+		"type": "bloom",
+		"seat": hero["seat"],
+		"target_seat": hero["seat"],
+		"hazard": str(first.get("hazard", "hazard")),
+		"cells": cells,
+		"splash": int(first.get("splash", 1)),
+		"hit": not hit.is_empty(),
+		"damage": 0,
+	}
+	if hit.is_empty():
+		event["coach"] = str(first.get("miss_text", "The pods burst round {hero}, who is clear.")).format({"hero": str(hero["name"])})
+		_last_events.append(event)
+		return
+	var dmg := int(hit.get("hp", 5))
+	hero["hp"] = maxi(int(hero["hp"]) - dmg, 0)
+	var ap_loss := int(hit.get("ap_loss", 0))
+	event["damage"] = dmg
+	event["ap_loss"] = ap_loss
+	event["coach"] = str(hit.get("burst_text", "The pods burst on {hero}: {damage} damage.")).format({"hero": str(hero["name"]), "damage": dmg, "ap": ap_loss})
+	_last_events.append(event)
+	if ap_loss > 0 and int(hero["hp"]) > 0:
+		hero["ap_drain"] = maxi(int(hero.get("ap_drain", 0)), ap_loss)
+		hero["ap_drain_word"] = str(hit.get("word", "withered"))
+	_check_death(hero, "blight")
 
 
 ## The hazard id a signature2 lays: its `hazard` key, "toxic_pool" for pools.

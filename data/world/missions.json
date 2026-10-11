@@ -1141,8 +1141,7 @@
         {
           "type": "clear_dungeon",
           "dungeon": "heart_of_the_blight",
-          "place": "Heart of the Blight",
-          "pending_chunk": true
+          "place": "Heart of the Blight"
         }
       ],
       "rewards": {
@@ -1152,7 +1151,7 @@
       },
       "lines": {
         "offer": [
-          "Clear the Heart of the Blight. The Warden will not name what waits there. The way down is not open yet."
+          "Clear the Heart of the Blight. The Warden will not name what waits there. The Door Keeper by the blight door will let you down."
         ],
         "active": [
           "The Heart of the Blight is still ahead."

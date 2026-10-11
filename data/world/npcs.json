@@ -587,14 +587,14 @@
       "role": "door_keeper",
       "zone_id": "crosshaven_westwatch",
       "cell": {
-        "x": 14,
-        "y": 10
+        "x": 6,
+        "y": 13
       },
       "facing": "S",
       "body": "npc_door_keeper",
       "lines": [
         "I keep the door to the Heart of the Blight.",
-        "The way down is not open yet."
+        "The Rotting Elder walls you in with roots. Keep a way out, and break the horrors' lines."
       ],
       "status": "proposed"
     },
