@@ -89,7 +89,7 @@ func _test_doors_json() -> void:
 	var book = loaded["dungeons"]
 	eq(book.rows.size(), 5, "five Crosshaven town dungeons")
 	var built: Array = book.built()
-	eq(built.size(), 4, "four dungeons are built (the cellar, the Frostspire Archive, the Saltmaw Grotto and the Drowned Abbey)")
+	eq(built.size(), 5, "five dungeons are built (the cellar, the Frostspire Archive, the Saltmaw Grotto, the Drowned Abbey and the Heart of the Blight)")
 	var row: Dictionary = book.by_id(GRANARY)
 	eq(str(row.get("status", "")), "built", "the Old Granary Cellar is built")
 	eq(str(row["level_zone"]), "stoneford", "the cellar is Stoneford's dungeon")
