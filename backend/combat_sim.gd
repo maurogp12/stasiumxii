@@ -6462,22 +6462,9 @@ func _still_over(unit: Dictionary) -> bool:
 
 
 func _still_apply_hourglass(unit: Dictionary) -> void:
-	var over := _still_over(unit)
-	match _still_id(unit):
-		"hourglass_fist":
-			if over:
-				unit["max_ap"] = int(unit.get("max_ap", MAX_AP)) + 3
-				unit["max_mp"] = maxi(int(unit.get("max_mp", MAX_MP)) - 2, 0)
-			else:
-				unit["max_ap"] = mini(int(unit.get("max_ap", MAX_AP)) + 2, GearBag.AP_CAP)
-				unit["max_mp"] = maxi(int(unit.get("max_mp", MAX_MP)) - 1, 0)
-		"hourglass_step":
-			if over:
-				unit["max_mp"] = int(unit.get("max_mp", MAX_MP)) + 3
-				unit["max_ap"] = maxi(int(unit.get("max_ap", MAX_AP)) - 2, 0)
-			else:
-				unit["max_mp"] = mini(int(unit.get("max_mp", MAX_MP)) + 2, GearBag.MP_CAP)
-				unit["max_ap"] = maxi(int(unit.get("max_ap", MAX_AP)) - 1, 0)
+	var pools := StillVault.adjust_ap_mp(int(unit.get("max_ap", MAX_AP)), int(unit.get("max_mp", MAX_MP)), _still_id(unit), str(unit.get("still_mode", "")))
+	unit["max_ap"] = int(pools["ap"])
+	unit["max_mp"] = int(pools["mp"])
 
 
 ## Active Stills offer a use_still intent. Mirror and Bound name a target.

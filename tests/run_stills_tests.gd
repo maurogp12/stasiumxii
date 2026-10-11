@@ -27,6 +27,7 @@ func _run() -> void:
 	_wipe()
 	_test_vault()
 	_test_hourglass()
+	_test_set_still_pools()
 	_test_steadfast()
 	_test_tide()
 	_test_rewind()
@@ -159,6 +160,52 @@ func _test_hourglass() -> void:
 	var strong := {"worn": dusk, "heroes": {"kestrel": {"level": 20, "spent": {}}}, "still": {"id": "hourglass_fist", "mode": "overwound"}}
 	_fight(strong)
 	eq(int(_u(0)["max_ap"]) > 8, true, "Fist Overwound still passes 8 on a capped build (got %d)" % int(_u(0)["max_ap"]))
+
+
+func _worn(family: String) -> Array:
+	var out: Array = []
+	for slot in GearBag.SLOTS:
+		out.append({"item_id": "%s.%s" % [family, slot], "plus": 5})
+	return out
+
+
+## The 0.1.158 report: level 30, Pitmaw on Ironjaw, Sandhawk on Kestrel,
+## Hourglass Step and Fist Intact. Without Koliseo rules the cards read
+## 6/5 and 8/2. With them, and on the inventory sheet, they read 7/5 and 8/3.
+func _test_set_still_pools() -> void:
+	var heroes := {"kestrel": {"level": 30, "spent": {}}, "ironjaw": {"level": 30, "spent": {}}}
+	var kite := {"worn": _worn("sandhawk"), "heroes": heroes, "still": {"id": "hourglass_fist", "mode": "intact"}}
+	var jaw := {"worn": _worn("pitmaw"), "heroes": heroes, "still": {"id": "hourglass_step", "mode": "intact"}}
+	_fight(kite, jaw)
+	eq([int(_u(0)["max_ap"]), int(_u(0)["max_mp"])], [8, 2], "without Koliseo rules Kestrel's Ultra 5pc is missing (8/2)")
+	eq([int(_u(1)["max_ap"]), int(_u(1)["max_mp"])], [6, 5], "without Koliseo rules Ironjaw's Ultra 5pc is missing (6/5)")
+	kite["flatten_plus"] = true
+	jaw["flatten_plus"] = true
+	_fight(kite, jaw)
+	eq([int(_u(0)["ap"]), int(_u(0)["max_ap"]), int(_u(0)["mp"]), int(_u(0)["max_mp"])], [8, 8, 3, 3], "Kestrel's card is 8 AP / 3 MP: level, Sandhawk 5pc, Fist Intact")
+	eq([int(_u(1)["ap"]), int(_u(1)["max_ap"]), int(_u(1)["mp"]), int(_u(1)["max_mp"])], [7, 7, 5, 5], "Ironjaw's card is 7 AP / 5 MP: level, Pitmaw 5pc, Step Intact")
+	eq(StillVault.adjust_ap_mp(8, 4, "hourglass_fist", "intact"), {"ap": 8, "mp": 3}, "Fist Intact from a 5pc pool")
+	eq(StillVault.adjust_ap_mp(8, 4, "hourglass_step", "intact"), {"ap": 7, "mp": 5}, "Step Intact from a 5pc pool")
+	eq(StillVault.adjust_ap_mp(8, 4, "tide", "intact"), {"ap": 8, "mp": 4}, "Tide does not move AP or MP")
+	var bag := GearBag.new()
+	for slot in GearBag.SLOTS:
+		bag.equip(bag.add_item("pitmaw", slot, 5), "ironjaw")
+		bag.equip(bag.add_item("sandhawk", slot, 5), "kestrel")
+	var hero := HeroProgress.new()
+	hero.classes = {"ironjaw": {"xp": 0, "level": 30, "spent": {}}, "kestrel": {"xp": 0, "level": 30, "spent": {}}}
+	var vault := StillVault.new()
+	vault.set_focus("ironjaw")
+	vault.socket = "hourglass_step"
+	vault.mode = "intact"
+	vault.set_focus("kestrel")
+	vault.socket = "hourglass_fist"
+	vault.mode = "intact"
+	vault.save()
+	var sheet: Script = load("res://scenes/inventory_screen.gd")
+	var jaw_sheet: Dictionary = sheet.champion_stats(bag, hero, "ironjaw")
+	var kite_sheet: Dictionary = sheet.champion_stats(bag, hero, "kestrel")
+	eq([int(jaw_sheet["ap"]), int(jaw_sheet["mp"])], [7, 5], "Ironjaw's inventory matches his fight card")
+	eq([int(kite_sheet["ap"]), int(kite_sheet["mp"])], [8, 3], "Kestrel's inventory matches her fight card")
 
 
 func _test_steadfast() -> void:
@@ -532,6 +579,9 @@ func _test_carry_and_online() -> void:
 	var cs: Script = load("res://scenes/class_select.gd")
 	var kit_on: bool = load("res://backend/test_loadout.gd").ACTIVE
 	eq(cs.local_match_config().has("seat_gear"), kit_on, "hot-seat gear only while the temporary test kit is on")
+	if kit_on:
+		var local_gear: Dictionary = cs.local_match_config()["seat_gear"]
+		eq(bool(local_gear[0].get("flatten_plus", false)), true, "a test-kit local fight counts an Ultra 5pc")
 	_wipe()
 	v = StillVault.new()
 	v.socket = "tide"

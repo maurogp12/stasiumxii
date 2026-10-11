@@ -117,17 +117,20 @@ static func local_match_config() -> Dictionary:
 		config["team_size"] = size
 	if CellTagMap.is_ship_map(hotseat_map_id):
 		config["map_id"] = CellTagMap.normalize_id(hotseat_map_id)
-	# Hot-seat uses no gear or levels, so both Init are 0: a coin flip picks
-	# who starts (Mauro 29 Sep 2026: higher Init first, tie = coin flip).
+	# Higher Init acts first. A tie is a coin flip (Mauro 29 Sep 2026).
 	config["first_by_init"] = true
 	# TEMPORARY balance-test kit (backend/test_loadout.gd): each hot-seat seat
-	# wears that class's equipped loadout and Still. Normal game: none.
+	# wears that class's loadout and Still. flatten_plus is the Koliseo switch,
+	# so an Ultra 5-piece's +1 AP +1 MP counts here the same way it does online.
+	# A normal hot-seat sends no gear.
 	if _TestLoadout.ACTIVE:
 		var bag := GearBag.load_saved()
 		var seat_gear := {}
 		for seat in 2 * size:
 			var cid := str(hotseat_classes[seat]) if all_roster and seat < hotseat_classes.size() else ""
-			seat_gear[seat] = bag.fight_gear(true, cid)
+			var kit := bag.fight_gear(true, cid)
+			kit["flatten_plus"] = true
+			seat_gear[seat] = kit
 		config["seat_gear"] = seat_gear
 	return config
 
