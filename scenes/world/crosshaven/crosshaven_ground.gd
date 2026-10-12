@@ -11,6 +11,8 @@ const TILE_ART_ROOT := "res://art/world/crosshaven/tiles/"
 const Pick := preload("res://scenes/world/crosshaven/crosshaven_pick.gd")
 const Art := preload("res://scenes/world/crosshaven/crosshaven_art.gd")
 const Kit := preload("res://scenes/world/crosshaven/outskirts_kit.gd")
+const Blight := preload("res://scenes/world/crosshaven/blightwood_art.gd")
+const BlightFx := preload("res://scenes/world/crosshaven/blightwood_fx.gd")
 
 const TOP := {
 	"golden_plains": Color("d8c27a"),
@@ -257,6 +259,7 @@ func setup(target: WorldZone) -> void:
 			for run in runs:
 				if bool(run["anim"]):
 					_track_anim(run["node"], run["cells"])
+	BlightFx.dress(self)
 	if key != "" and memo.is_empty():
 		var keep := {"_void_margin": _void_margin}
 		for field in MEMO_FIELDS:
@@ -1502,6 +1505,9 @@ func _ellipse(at: Vector2, rx: float, ry: float) -> PackedVector2Array:
 
 ## Technical Artist kit path: height strips, autotiled floor, corner decals.
 func _draw_cell_kit(ci: Node2D, cell: Vector2i, terrain: String, steps: int, bank: bool = false) -> void:
+	if zone != null and zone.region == "blightwood_hollow":
+		Blight.draw_floor(ci, zone, cell, world_origin, steps)
+		return
 	var center := BoardVisualSort.cell_to_local(cell, float(steps))
 	var south_tip := center + Vector2(0, Pick.HALF_H)
 	var shown := "golden_plains" if bank else terrain

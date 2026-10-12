@@ -7,18 +7,22 @@
   ],
   "grade": {
     "warm_mul": [
-      0.74,
-      0.66,
-      1.1
+      0.45,
+      0.7,
+      1.15
     ],
     "haze_col": [
-      0.26,
-      0.14,
-      0.4
+      0.1,
+      0.06,
+      0.22
     ],
-    "haze_max": 0.18,
-    "saturation": 0.7,
-    "tint_col": [0.7, 0.08, 1.0],
-    "tint_amount": 0.5
+    "haze_max": 0.34,
+    "saturation": 1.0,
+    "tint_col": [
+      0.55,
+      0.12,
+      0.9
+    ],
+    "tint_amount": 0.15
   }
 }

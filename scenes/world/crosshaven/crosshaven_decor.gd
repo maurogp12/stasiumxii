@@ -5,6 +5,7 @@ extends Node2D
 
 const Art := preload("res://scenes/world/crosshaven/crosshaven_art.gd")
 const Pick := preload("res://scenes/world/crosshaven/crosshaven_pick.gd")
+const Blight := preload("res://scenes/world/crosshaven/blightwood_art.gd")
 
 ## Hero is 0.33, about 40px tall. Sunflowers land at his shoulder. Grass,
 ## flowers, mushrooms and small bushes stay between ankle and knee.
@@ -41,6 +42,17 @@ func setup(zone: WorldZone, record: Dictionary) -> void:
 	base_z = (cell.x + cell.y) * BoardVisualSort.TILE_Z_SCALE + (1 if _groundish else 2)
 	z_index = base_z
 	core = _is_core(zone, cell)
+	if zone.zone_id.begins_with("blightwood_hollow"):
+		art_id = Blight.decor_file(decor_type, cell)
+		_art = Blight.texture("props", art_id) if art_id != "" else {}
+		var sc := Blight.prop_scale(art_id, cell) if art_id != "" else 1.0
+		scale = Vector2(sc, sc)
+		if not _art.is_empty():
+			var size := Art.size_of(_art) * sc
+			cover_rect = Rect2(-size.x * 0.5, -size.y, size.x, size.y)
+		set_process(false)
+		queue_redraw()
+		return
 	art_id = decor_type
 	if snow_cover >= 0.5:
 		art_id = Art.snow_decor_id(decor_type, cell)
