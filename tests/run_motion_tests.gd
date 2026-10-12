@@ -2334,7 +2334,26 @@ func _test_glide_walk() -> void:
 	eq(MOTION.dust_on_plant(false, true), true, "dust on the final step")
 	var view := FileAccess.get_file_as_string("res://board_view.gd")
 	truthy(view.contains("_sample_glide_step"), "the board samples the glide per tile")
-	truthy(view.contains("walk_foot"), "the board plants elevation on the stride")
+	truthy(view.contains("walk_span"), "the board times a painted step from the stride")
+	truthy(view.contains("show_stride_frame"), "the visible walk frame is the stride, not a free clock")
+	var iron := MOTION.walk_timeline(7.932, 0.0, true)
+	var span := float(iron["total"])
+	truthy(span > 0.7, "an ironjaw tile holds the plants and the rise")
+	var opened: Dictionary = MOTION.walk_sample(0.0, 7.932, 0.0, true)
+	near(float(opened["u"]), 0.0, "a step starts planted")
+	near(float(opened["elev"]), 0.0, "a step starts at the low height")
+	near(float(opened["bob"]), 0.0, "a plant does not bob")
+	var mid: Dictionary = MOTION.walk_sample(0.28, 7.932, 0.0, true)
+	near(float(mid["elev"]), 0.0, "the crossing has not started to rise")
+	truthy(float(mid["u"]) > 0.05 and float(mid["u"]) < 0.95, "the crossing is under way before the rise")
+	var risen: Dictionary = MOTION.walk_sample(1.0, 7.932, 0.0, true)
+	near(float(risen["u"]), 1.0, "the rise keeps the foot on the high cell")
+	near(float(risen["elev"]), 1.0, "the rise lands on the high elevation")
+	# A contact hold: two samples inside the opening plant do not move.
+	var hold_a: Dictionary = MOTION.walk_sample(0.01, 7.932, 0.0, false)
+	var hold_b: Dictionary = MOTION.walk_sample(0.04, 7.932, 0.0, false)
+	near(float(hold_a["u"]), float(hold_b["u"]), "the opening plant does not slide")
+	eq(int(floor(float(hold_a["frame"]) + 0.001)) % 12, 0, "the opening plant shows the contact frame")
 
 
 func _test_elevation_landing() -> void:

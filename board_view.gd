@@ -1951,10 +1951,16 @@ func _animate_path(seat: int, path: Array, origin: Vector2i = Vector2i(-1, -1)) 
 		# The squash after the landing stays quiet, and so does takeoff.
 		var dust := VIEW_MOTION.dust_on_plant(facing_changed, cell_i == cells.size() - 1)
 		if VIEW_MOTION.glide:
-			# One eased step per tile. A climb rises after the foot lands.
+			# Painted strides run at the sheet's no-slide rate and hold on
+			# each contact. A climb rises only after that step has stopped.
 			var first := cell_i == 0
 			var last := cell_i == cells.size() - 1
-			_walk_tween.tween_method(_sample_glide_step.bind(pawn, prev, cell, first, last), 0.0, 1.0, Pawn.WALK_TILE_SEC)
+			var per := pawn.painted_walk_frames_per_tile()
+			var dur := Pawn.WALK_TILE_SEC
+			if per > 0.0:
+				var climbing := absf(_elev_at(prev) - _elev_at(cell)) > 0.001
+				dur = VIEW_MOTION.walk_span(per, float(cell_i) * per, climbing)
+			_walk_tween.tween_method(_sample_glide_step.bind(pawn, prev, cell, first, last, cell_i), 0.0, 1.0, dur)
 			if dust:
 				_walk_tween.tween_callback(_puff_footstep.bind(pawn, cell))
 		else:
@@ -2037,9 +2043,9 @@ func _sample_walk_step(t: float, pawn: Pawn, src: Vector2i, dst: Vector2i) -> vo
 
 
 
-## Glide sample: every tile eases. The stride follows the horizontal travel,
-## and stays on the arrival contact while a climb rises in place.
-func _sample_glide_step(t: float, pawn: Pawn, src: Vector2i, dst: Vector2i, _first: bool, _last: bool) -> void:
+## Glide sample. Painted classes step at the stride rate: the body moves
+## only while the feet do, holds on a contact, and a climb rises after.
+func _sample_glide_step(t: float, pawn: Pawn, src: Vector2i, dst: Vector2i, _first: bool, _last: bool, tile_i: int) -> void:
 	if pawn == null or not is_instance_valid(pawn):
 		return
 	var dir := VIEW_MOTION.walk_segment_facing(src, dst, _cell_to_local(dst) - _cell_to_local(src))
@@ -2048,13 +2054,29 @@ func _sample_glide_step(t: float, pawn: Pawn, src: Vector2i, dst: Vector2i, _fir
 	var src_e := _elev_at(src)
 	var dst_e := _elev_at(dst)
 	var climbing := absf(dst_e - src_e) > 0.001
-	var split := VIEW_MOTION.stride_split(t, climbing)
-	_step_along = split.x
-	_step_elev = split.y
-	pawn.position = VIEW_MOTION.walk_foot(_cell_to_local(src), _cell_to_local(dst), src_e, dst_e, t)
-	if pawn.begin_segment_walk(dir):
-		pawn.sample_driven_gait(split.x)
-	_track_step_sort(split.x, pawn, src, dst)
+	var per := pawn.painted_walk_frames_per_tile()
+	var along := 0.0
+	var elev_u := 0.0
+	if per > 0.0:
+		var sample := VIEW_MOTION.walk_sample(t, per, float(tile_i) * per, climbing)
+		along = float(sample["u"])
+		elev_u = float(sample["elev"])
+		_step_along = along
+		_step_elev = elev_u
+		pawn.position = VIEW_MOTION.foot_at(_cell_to_local(src), _cell_to_local(dst), src_e, dst_e, along, elev_u)
+		if pawn.begin_segment_walk(dir):
+			pawn.show_stride_frame(float(sample["frame"]))
+			pawn.set_stride_bob(float(sample["bob"]))
+	else:
+		var split := VIEW_MOTION.stride_split(t, climbing)
+		along = split.x
+		elev_u = split.y
+		_step_along = along
+		_step_elev = elev_u
+		pawn.position = VIEW_MOTION.walk_foot(_cell_to_local(src), _cell_to_local(dst), src_e, dst_e, t)
+		if pawn.begin_segment_walk(dir):
+			pawn.sample_driven_gait(along)
+	_track_step_sort(along, pawn, src, dst)
 	_follow_walker(pawn)
 
 

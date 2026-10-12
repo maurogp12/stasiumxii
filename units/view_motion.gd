@@ -755,6 +755,97 @@ static func glide_travel(t: float, _first: bool = false, _last: bool = false) ->
 	return tile_ease(t)
 
 
+## Painted walks. The sheet's no-slide rate is how many of its frames the
+## planted foot needs in order to cover one tile. Playing fewer, while the
+## body keeps moving, is the moonwalk. Authored fps keeps that rate from
+## turning into a blur. A contact (every 6th frame) holds the body still.
+const WALK_AUTHORED_FPS := 17.144
+const PLANT_HOLD_SEC := 0.14
+const CLIMB_RISE_SEC := 0.34
+const STEP_BOB_PX := 4.0
+const CLIMB_HOP_PX := 7.0
+
+
+static func _frame_is_contact(frame: float) -> bool:
+	var m := fposmod(frame, 6.0)
+	return m < 0.05 or m > 5.95
+
+
+## One tile, in order. `frame0` is the cycle position at the start of the
+## tile (tiles already walked times the no-slide rate), so the stride does
+## not restart on every cell. A climb finishes the step, holds, then rises.
+static func walk_timeline(no_slide: float, frame0: float, climbing: bool) -> Dictionary:
+	var span := maxf(no_slide, 0.5)
+	var frame_end := frame0 + span
+	var segs: Array = []
+	var cursor := 0.0
+	var frame := frame0
+	if _frame_is_contact(frame):
+		segs.append({"kind": "hold", "t": cursor, "dur": PLANT_HOLD_SEC, "u": 0.0, "f": frame})
+		cursor += PLANT_HOLD_SEC
+	var guard := 0
+	while frame < frame_end - 0.001 and guard < 24:
+		guard += 1
+		var next_contact: float = (float(floor(frame / 6.0)) + 1.0) * 6.0
+		var dest: float = minf(next_contact, frame_end)
+		if dest <= frame + 0.0001:
+			dest = minf(frame + span, frame_end)
+		var dur := maxf((dest - frame) / WALK_AUTHORED_FPS, 0.02)
+		segs.append({
+			"kind": "move",
+			"t": cursor,
+			"dur": dur,
+			"u0": (frame - frame0) / span,
+			"u1": (dest - frame0) / span,
+			"f0": frame,
+			"f1": dest,
+		})
+		cursor += dur
+		frame = dest
+		if frame < frame_end - 0.05 and _frame_is_contact(frame):
+			var u := (frame - frame0) / span
+			segs.append({"kind": "hold", "t": cursor, "dur": PLANT_HOLD_SEC, "u": u, "f": frame})
+			cursor += PLANT_HOLD_SEC
+	if climbing:
+		segs.append({"kind": "rise", "t": cursor, "dur": CLIMB_RISE_SEC, "u": 1.0, "f": frame_end})
+		cursor += CLIMB_RISE_SEC
+	return {"segs": segs, "total": maxf(cursor, 0.05)}
+
+
+static func walk_span(no_slide: float, frame0: float, climbing: bool) -> float:
+	return float(walk_timeline(no_slide, frame0, climbing)["total"])
+
+
+## t is 0..1 across walk_span. `u` is horizontal progress, `elev` is the
+## height blend, `frame` is the absolute cycle position, `bob` lifts the
+## visible sprite (0 on a plant).
+static func walk_sample(t: float, no_slide: float, frame0: float, climbing: bool) -> Dictionary:
+	var timeline := walk_timeline(no_slide, frame0, climbing)
+	var total := float(timeline["total"])
+	var time := clampf(t, 0.0, 1.0) * total
+	var segs: Array = timeline["segs"]
+	var chosen: Dictionary = segs[segs.size() - 1]
+	for seg in segs:
+		var t0 := float(seg["t"])
+		var dur := float(seg["dur"])
+		if time <= t0 + dur + 0.0001:
+			chosen = seg
+			break
+	var kind := str(chosen["kind"])
+	var k := 0.0
+	var step_dur := float(chosen["dur"])
+	if step_dur > 0.0:
+		k = clampf((time - float(chosen["t"])) / step_dur, 0.0, 1.0)
+	var eased := tile_ease(k)
+	if kind == "hold":
+		return {"u": float(chosen["u"]), "elev": 0.0, "frame": float(chosen["f"]), "bob": 0.0}
+	if kind == "rise":
+		return {"u": 1.0, "elev": eased, "frame": float(chosen["f"]), "bob": sin(k * PI) * CLIMB_HOP_PX}
+	var along := lerpf(float(chosen["u0"]), float(chosen["u1"]), eased)
+	var frame := lerpf(float(chosen["f0"]), float(chosen["f1"]), eased)
+	return {"u": along, "elev": 0.0, "frame": frame, "bob": sin(k * PI) * STEP_BOB_PX}
+
+
 ## The puff is the landing: the sample where hop Y returns to 0.
 ## Takeoff is also Y=0, and so is the rest of the plant window. Neither
 ## of those is a puff. Mid-air is not a puff. One landing, not a trail.

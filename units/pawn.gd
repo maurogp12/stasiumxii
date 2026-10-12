@@ -798,9 +798,56 @@ func walk_contact_frame() -> int:
 
 
 func _sampled_walk_frame(t: float, count: int) -> int:
-	# t is this tile's travel, 0 and 1 on the contact. A distance times the
-	# no-slide rate walks off that plant, so the feet never meet the tile.
+	var per_tile := painted_walk_frames_per_tile()
+	if per_tile > 0.0:
+		# t is 0..1 across this tile. The frame follows that fraction at the
+		# no-slide rate, continuing from the tiles already walked.
+		var walked := float(_stride_tile) + clampf(t, 0.0, 1.0)
+		return VIEW_MOTION.painted_walk_frame(walked, per_tile, count, walk_contact_frame())
 	return VIEW_MOTION.walk_cycle_frame(t, count, _stride_tile, walk_contact_frame())
+
+
+## Absolute cycle position (tiles walked times the no-slide rate). The board
+## pauses this on a contact so the planted foot is not dragged with the body.
+func show_stride_frame(absolute_frame: float) -> void:
+	if VIEW_MOTION.reduce_motion() or not is_inside_tree() or not _path_walk:
+		return
+	_ensure_motion_strips()
+	var choice := _strip_choice("walk")
+	if choice.is_empty():
+		return
+	var strip: AnimatedSprite2D = choice["node"]
+	if strip == null or not is_instance_valid(strip):
+		return
+	var anim := StringName(str(choice["anim"]))
+	if strip.animation != anim or (not strip.visible and not _walk_draw_stamp):
+		if _sprite != null and is_instance_valid(_sprite):
+			_sprite.visible = false
+		strip.visible = true
+		strip.animation = anim
+		_active_strip = strip
+		_strip_holds_body = true
+		_walk_looping = true
+	elif _active_strip != strip:
+		_active_strip = strip
+		_strip_holds_body = true
+	if strip.is_playing():
+		strip.pause()
+	strip.speed_scale = 0.0
+	var frames := strip.sprite_frames
+	if frames == null or not frames.has_animation(strip.animation):
+		return
+	var count := frames.get_frame_count(strip.animation)
+	if count < 1:
+		return
+	strip.frame = posmod(int(floor(absolute_frame + 0.001)), count)
+	strip.frame_progress = 0.0
+	_publish_walk_cell()
+
+
+## Bob on the visible body. 0 keeps the sole on the pawn origin (a plant).
+func set_stride_bob(px: float) -> void:
+	_place_body(Vector2(0.0, -maxf(px, 0.0)))
 
 
 ## Cells per tile of the painted walk for this facing. 0 without one

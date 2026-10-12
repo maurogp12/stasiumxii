@@ -13,7 +13,7 @@ var _clip_i := 0
 var _saved := false
 var _watchdog := 0
 var _samples: Array[Dictionary] = []
-const CLIP_MAX := 360
+const CLIP_MAX := 480
 
 
 func _initialize() -> void:
@@ -122,9 +122,17 @@ func _note_sample() -> void:
 	var sampler := pawn.walk_sampler()
 	if sampler != null:
 		frame = sampler.frame
+	var draw := pawn.get_node_or_null("WalkDraw") as Sprite2D
+	var vis := pawn.position
+	var bob := 0.0
+	if draw != null:
+		vis = draw.global_position
+		bob = draw.position.length()
 	_samples.append({
 		"i": _clip_i,
 		"pos": pawn.position,
+		"vis": vis,
+		"bob": bob,
 		"cell": pawn.grid_position,
 		"frame": frame,
 	})
@@ -180,9 +188,9 @@ func _report() -> void:
 	lines.append("climb_n=%d y_above=%.3f x_hold=%.3f" % [climb.size(), climb_rise["y_above"], climb_rise["x_hold"]])
 	lines.append("foot_miss=%d flat_contacts=%s climb_contacts=%s" % [feet, flat_contacts, climb_contacts])
 	for sample in flat:
-		lines.append("F %d %s frame=%d" % [int(sample["i"]), sample["pos"], int(sample["frame"])])
+		lines.append("F %d pawn=%s vis=%s bob=%.2f frame=%d" % [int(sample["i"]), sample["pos"], sample["vis"], float(sample["bob"]), int(sample["frame"])])
 	for sample in climb:
-		lines.append("C %d %s frame=%d" % [int(sample["i"]), sample["pos"], int(sample["frame"])])
+		lines.append("C %d pawn=%s vis=%s bob=%.2f frame=%d" % [int(sample["i"]), sample["pos"], sample["vis"], float(sample["bob"]), int(sample["frame"])])
 	var file := FileAccess.open(_dir.path_join("probe.txt"), FileAccess.WRITE)
 	if file != null:
 		file.store_string("\n".join(lines))

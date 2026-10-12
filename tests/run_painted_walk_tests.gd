@@ -229,6 +229,7 @@ func _unit(class_id: String, facing: String, seat: int) -> Dictionary:
 
 func _test_driven_four_facings() -> void:
 	for class_id in CLASSES:
+		var per_tile := float(StripLibrary.painted_spec(class_id, "walk").get("frames_per_tile_no_slide", 0.0))
 		var pawn := Pawn.new()
 		get_root().add_child(pawn)
 		await process_frame
@@ -248,7 +249,7 @@ func _test_driven_four_facings() -> void:
 			for i in 9:
 				var u := float(i) / 8.0
 				pawn.sample_driven_gait(u)
-				var want := MOTION.walk_cycle_frame(u, 12, tile, 0)
+				var want := MOTION.painted_walk_frame(float(tile) + u, per_tile, 12, 0)
 				var sampler := pawn.walk_sampler()
 				if sampler == null or sampler.frame != want or String(sampler.animation) != "walk_%s" % face.to_lower():
 					ok = false
@@ -328,7 +329,7 @@ func _test_board_move_plays_walk(class_id: String) -> void:
 	var skate := 0
 	var samples := 0
 	var frames := 0
-	while frames < 400:
+	while frames < 2500:
 		await process_frame
 		frames += 1
 		walked += pawn.position.distance_to(prev) / TILE_STEP
@@ -346,10 +347,8 @@ func _test_board_move_plays_walk(class_id: String) -> void:
 		faces[pawn.facing] = true
 		cells[sampler.frame] = true
 		samples += 1
-		# The cell follows this tile's travel. 0 and 1 are the contact frames.
-		var tile_i := int(floor(walked))
-		var frac := walked - float(tile_i)
-		var want := MOTION.walk_cycle_frame(frac, 12, tile_i, 0)
+		# The cell follows the distance at the no-slide rate.
+		var want := MOTION.painted_walk_frame(walked, per_tile, 12, 0)
 		var off := posmod(sampler.frame - want + 6, 12) - 6
 		if absi(off) > 1:
 			skate += 1
