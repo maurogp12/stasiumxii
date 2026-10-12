@@ -4,8 +4,8 @@ extends SceneTree
 ## Assets: 4 facings x 12 cells per class (Ironjaw: the dark-steel v7),
 ## pivot on the 152 sole line,
 ## binary alpha, W/S mirrors baked. Playback: a board move plays the facing
-## strip at the spec rate (frame follows the distance walked, legs capped at
-## 1.6x the authored fps), with the
+## strip at the no-slide rate (the frame follows the distance walked, so the
+## foot matches the tile; every class keeps the same tile time), with the
 ## static file as the fallback when a sheet is missing.
 ## Run: godot --headless --path . -s res://tests/run_painted_walk_tests.gd
 
@@ -189,9 +189,10 @@ func _test_frame_follows_distance() -> void:
 		var no_slide := float(spec.get("frames_per_tile_no_slide", 0.0))
 		var authored := float(spec.get("fps", 0.0))
 		var leg_fps := per_tile / Pawn.WALK_TILE_SEC
-		truthy(leg_fps <= SPECS.MAX_LEG_RATE * authored + 0.001, "%s legs cycle at %.2f fps, at most 1.6x the authored %.3f" % [class_id, leg_fps, authored])
-		truthy(absf(per_tile - minf(no_slide, SPECS.MAX_LEG_RATE * authored * 0.34)) < 0.002, "%s rate is the no-slide rate under the cap" % class_id)
-		truthy(no_slide > 0.0 and per_tile <= no_slide + 0.001, "%s cap only slows the legs, never speeds them" % class_id)
+		truthy(leg_fps <= SPECS.MAX_LEG_RATE * authored + 0.001, "%s the stored cap stays at most 1.6x authored (%.2f fps)" % [class_id, leg_fps])
+		truthy(absf(per_tile - minf(no_slide, SPECS.MAX_LEG_RATE * authored * 0.34)) < 0.002, "%s stored rate is the no-slide rate under the cap" % class_id)
+		truthy(no_slide > 0.0 and per_tile <= no_slide + 0.001, "%s stored cap only slows the legs, never speeds them" % class_id)
+		near(StripLibrary.painted_frames_per_tile(class_id, "s"), no_slide, "%s playback uses the no-slide stride" % class_id)
 		var board_px_per_cell := TILE_STEP / per_tile
 		truthy(board_px_per_cell > 1.0 and board_px_per_cell < 9.0, "%s one cell moves %.2f board px" % [class_id, board_px_per_cell])
 
@@ -228,7 +229,7 @@ func _unit(class_id: String, facing: String, seat: int) -> Dictionary:
 
 func _test_driven_four_facings() -> void:
 	for class_id in CLASSES:
-		var per_tile := float(StripLibrary.painted_spec(class_id, "walk").get("frames_per_tile", 0.0))
+		var per_tile := float(StripLibrary.painted_spec(class_id, "walk").get("frames_per_tile_no_slide", 0.0))
 		var pawn := Pawn.new()
 		get_root().add_child(pawn)
 		await process_frame
@@ -355,9 +356,10 @@ func _test_board_move_plays_walk(class_id: String) -> void:
 	eq(static_during, false, "%s the static stays hidden while the move plays" % class_id)
 	truthy(faces.has("E") and faces.has("S"), "%s the move faces east then south (%s)" % [class_id, faces.keys()])
 	truthy(cells.size() >= 6, "%s the walk cycles its cells (%d seen)" % [class_id, cells.size()])
-	eq(skate, 0, "%s the painted cell follows the board distance at the capped rate" % class_id)
-	var cells_per_tile := per_tile
-	truthy(cells_per_tile / Pawn.WALK_TILE_SEC <= SPECS.MAX_LEG_RATE * 17.144 + 0.001, "%s the move cycles the legs at most 1.6x authored" % class_id)
+	eq(skate, 0, "%s the painted cell follows the board distance" % class_id)
+	var no_slide := float(StripLibrary.painted_spec(class_id, "walk").get("frames_per_tile_no_slide", 0.0))
+	near(per_tile, no_slide, "%s playback is the no-slide stride" % class_id)
+	near(Pawn.WALK_TILE_SEC, 0.34, "%s keeps the shared tile time" % class_id)
 	eq(pawn.grid_position, Vector2i(4, 3), "%s lands on the clicked tile" % class_id)
 	var planted := pawn.walk_sampler()
 	truthy(planted != null and planted.frame == 0 and String(planted.animation) == "walk_s", "%s arrival stands on walk_s f00" % class_id)

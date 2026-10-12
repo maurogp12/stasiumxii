@@ -694,6 +694,34 @@ static func dust_on_plant(facing_changed: bool, is_final: bool) -> bool:
 	return facing_changed or is_final
 
 
+## Height stays on the tile you are leaving, then eases onto the next one
+## over the last third of the step. 0 is the departure elevation, 1 is the
+## landing. Flat ground ignores this. The horizontal glide is unchanged.
+const ELEVATION_LAND_AT := 0.68
+
+
+static func elevation_land(t: float) -> float:
+	var u := clampf(t, 0.0, 1.0)
+	if u <= ELEVATION_LAND_AT:
+		return 0.0
+	var v := (u - ELEVATION_LAND_AT) / (1.0 - ELEVATION_LAND_AT)
+	return v * v * (3.0 - 2.0 * v)
+
+
+## Screen foot for one tile. `src` and `dst` are cell_to_local points, so they
+## already include elevation. Horizontal travel follows `u`. The height change
+## waits for elevation_land, so a climb does not cut through the block and a
+## drop does not sink at the lip. Equal elevations stay a straight glide.
+static func walk_foot(src: Vector2, dst: Vector2, src_elev: float, dst_elev: float, u: float) -> Vector2:
+	var travel := clampf(u, 0.0, 1.0)
+	var px := BoardVisualSort.ELEVATION_PIXELS
+	var flat_src := src + Vector2(0.0, src_elev * px)
+	var flat_dst := dst + Vector2(0.0, dst_elev * px)
+	var flat := flat_src.lerp(flat_dst, travel)
+	var elev := lerpf(src_elev, dst_elev, elevation_land(travel))
+	return flat + Vector2(0.0, -elev * px)
+
+
 ## Glide path ease: the first tile accelerates, the last one slows down, the
 ## tiles between keep a constant speed. A one-tile walk eases both ways.
 static func glide_travel(t: float, first: bool, last: bool) -> float:

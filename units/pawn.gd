@@ -9,8 +9,8 @@ class_name Pawn
 ## while the pawn eases, which is the idle slide.
 ## Painted looks (4 Oct 2026): `art/characters/<class>/walk/` holds the
 ## 12-cell walk per facing (StripLibrary.painted_cells). The frame follows the
-## distance walked (painted_walk_frames_per_tile, capped at 1.6x the authored
-## fps for natural leg speed), not one cycle per tile, and
+## distance walked (painted_walk_frames_per_tile, the no-slide stride), not
+## one cycle per tile, and
 ## the sprite hop is off while it plays. The static files below are that
 ## walk's frame 0.
 ## Painted actions (LOCKED, 4 Oct 2026): standing loops the painted idle on

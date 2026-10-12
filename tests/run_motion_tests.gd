@@ -39,6 +39,7 @@ func _finish_live() -> void:
 	await _test_ambush_present_race()
 	MOTION.glide = true
 	_test_glide_walk()
+	_test_elevation_landing()
 	print("Motion tests: %d passed, %d failed" % [_passed, _failed])
 	_sim.free()
 	quit(1 if _failed > 0 else 0)
@@ -2332,6 +2333,28 @@ func _test_glide_walk() -> void:
 	eq(MOTION.dust_on_plant(false, true), true, "dust on the final step")
 	var view := FileAccess.get_file_as_string("res://board_view.gd")
 	truthy(view.contains("_sample_glide_step"), "the board samples the glide per tile")
+	truthy(view.contains("walk_foot"), "the board plants elevation on the stride")
+
+
+func _test_elevation_landing() -> void:
+	eq(MOTION.elevation_land(0.0), 0.0, "a step starts on the tile you are leaving")
+	eq(MOTION.elevation_land(0.5), 0.0, "the middle of the step has not climbed yet")
+	eq(MOTION.elevation_land(1.0), 1.0, "arrival has landed on the next elevation")
+	var mid_rise := MOTION.elevation_land(0.84)
+	truthy(mid_rise > 0.2 and mid_rise < 0.8, "the rise eases across the last third")
+	var flat_src := Vector2(0, 0)
+	var flat_dst := Vector2(32, 16)
+	var flat := MOTION.walk_foot(flat_src, flat_dst, 0.0, 0.0, 0.4)
+	near(flat.x, 12.8, "flat ground keeps the horizontal glide")
+	near(flat.y, 6.4, "flat ground keeps the vertical glide")
+	var climb_src := Vector2(0, 0)
+	var climb_dst := Vector2(32, 16 - BoardVisualSort.ELEVATION_PIXELS)
+	var early := MOTION.walk_foot(climb_src, climb_dst, 0.0, 1.0, 0.4)
+	near(early.y, 6.4, "a climb stays on the low tile through the first half")
+	near(early.x, 12.8, "a climb still crosses the tile")
+	var landed := MOTION.walk_foot(climb_src, climb_dst, 0.0, 1.0, 1.0)
+	near(landed.x, 32.0, "a climb arrives on the higher cell")
+	near(landed.y, 16.0 - BoardVisualSort.ELEVATION_PIXELS, "a climb lands on the higher elevation")
 
 
 func near(actual: float, expected: float, msg: String) -> void:

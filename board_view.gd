@@ -108,6 +108,10 @@ var _walk_tween: Tween
 var _hop_seat: int = -1
 var _step_src: Vector2i = Vector2i(-999, -999)
 var _step_dst: Vector2i = Vector2i(-999, -999)
+## Horizontal progress of the tile currently being sampled. -1 when no step
+## is in progress. Depth uses this so a late elevation landing does not
+## invent a progress from the bent screen path.
+var _step_along: float = -1.0
 var _shade_markers: Dictionary = {}
 var _aim_line: Node2D
 ## Last hovered cell while a spell is armed. Ambush ignores it and aims from the Shade.
@@ -812,13 +816,15 @@ func _publish_pawn_depth(pawn: Pawn) -> void:
 	var sort_cell := pawn.grid_position
 	var elev := _elev_at(sort_cell)
 	if _busy and pawn.seat == _hop_seat and _step_src.x > -900:
-		var src_at := _cell_to_local(_step_src)
-		var dst_at := _cell_to_local(_step_dst)
-		var span := dst_at - src_at
-		var along := 0.0
-		if span.length_squared() > 0.01:
-			along = clampf((pawn.position - src_at).dot(span) / span.length_squared(), 0.0, 1.0)
-		elev = lerpf(_elev_at(_step_src), _elev_at(_step_dst), along)
+		var along := _step_along
+		if along < 0.0:
+			var src_at := _cell_to_local(_step_src)
+			var dst_at := _cell_to_local(_step_dst)
+			var span := dst_at - src_at
+			along = 0.0
+			if span.length_squared() > 0.01:
+				along = clampf((pawn.position - src_at).dot(span) / span.length_squared(), 0.0, 1.0)
+		elev = lerpf(_elev_at(_step_src), _elev_at(_step_dst), VIEW_MOTION.elevation_land(along))
 		# The tower shaft uses the cell the feet are nearer to. Neighbour
 		# order still follows the continuous foot position.
 		sort_cell = _step_dst if along >= 0.5 else _step_src
@@ -2013,7 +2019,8 @@ func _sample_walk_step(t: float, pawn: Pawn, src: Vector2i, dst: Vector2i) -> vo
 	if dir == "":
 		dir = str(pawn.facing)
 	var u := VIEW_MOTION.step_travel(t)
-	pawn.position = _cell_to_local(src).lerp(_cell_to_local(dst), u)
+	_step_along = u
+	pawn.position = VIEW_MOTION.walk_foot(_cell_to_local(src), _cell_to_local(dst), _elev_at(src), _elev_at(dst), u)
 	# Idle texture while the node moves is the slide. No walk strip means no
 	# animated gait frame, but the node itself must still glide tile to tile —
 	# begin_segment_walk() only gates the walk-cycle animation, never the move.
@@ -2032,7 +2039,8 @@ func _sample_glide_step(t: float, pawn: Pawn, src: Vector2i, dst: Vector2i, firs
 	if dir == "":
 		dir = str(pawn.facing)
 	var u := VIEW_MOTION.glide_travel(t, first, last)
-	pawn.position = _cell_to_local(src).lerp(_cell_to_local(dst), u)
+	_step_along = u
+	pawn.position = VIEW_MOTION.walk_foot(_cell_to_local(src), _cell_to_local(dst), _elev_at(src), _elev_at(dst), u)
 	if pawn.begin_segment_walk(dir):
 		pawn.sample_driven_gait(u)
 	_track_step_sort(u, pawn, src, dst)
