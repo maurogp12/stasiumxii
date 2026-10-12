@@ -98,6 +98,7 @@ func _run() -> void:
 	_test_windmere_crystal_blocks_sight()
 	_test_hold_line_pull()
 	_test_plant_blocks_sight()
+	_test_plant_one_flag_per_tile()
 	_test_blind_attacks_on_invisible()
 	_test_handoff_timer_is_client_only()
 	_test_advance_teleport_costs()
@@ -4092,6 +4093,56 @@ func _test_plant_blocks_sight() -> void:
 	truthy(int(_unit(0)["hp"]) < int(_unit(0)["max_hp"]), "the clear shot deals damage")
 	var plant_card := " ".join(SpellTooltip.simple_lines(SpellKits.PLANT))
 	truthy(plant_card.contains("Shots cannot pass through the flag"), "Plant's card says it blocks shots")
+
+
+## One flag per tile. A second Plant on that tile is not a target, spends no
+## AP, and the guest snapshot stays on the same single flag.
+func _test_plant_one_flag_per_tile() -> void:
+	var bastion := Vector2i(4, 4)
+	var flag := Vector2i(5, 4)
+	var other := Vector2i(4, 5)
+	_sim.reset_match({
+		"seed": 1, "flat_board": true, "skip_deploy": true,
+		"classes": ["bastion", "kestrel"],
+		"positions": [bastion, Vector2i(8, 8)],
+	})
+	var before_ap := int(_unit(0)["ap"])
+	var before_aegis := int(_unit(0).get("aegis", 0))
+	var planted: Dictionary = _sim.submit({"type": "cast", "spell": "plant", "to": flag, "seat": 0})
+	eq(bool(planted.get("ok", false)), true, "the first Plant places a flag")
+	eq((_sim.snapshot()["plant_tiles"] as Array).size(), 1, "one flag is on the board")
+	eq(int(_unit(0)["ap"]), before_ap - 2, "the first Plant spends 2 AP")
+	eq(int(_unit(0).get("aegis", 0)), before_aegis + 1, "the first Plant grants 1 Aegis")
+	eq(_has_legal_cast_to(0, "plant", flag), false, "the targeting preview does not offer the flagged tile")
+	eq(_sim.range_highlight_cells(0, "plant").has(flag), false, "the range ring leaves out the flagged tile")
+	eq(_has_legal_cast_to(0, "plant", other), true, "a clear tile is still a Plant target")
+	eq(str(_sim.preview_cast("plant", bastion, flag).get("reason", "")), "flag_present", "the preview rejects a tile that already has a flag")
+	var spent_ap := int(_unit(0)["ap"])
+	var spent_aegis := int(_unit(0).get("aegis", 0))
+	var guest_script := load("res://backend/combat_sim.gd")
+	var guest: Node = guest_script.new()
+	guest.apply_host_snapshot(_sim.snapshot())
+	eq((guest.snapshot()["plant_tiles"] as Array).size(), 1, "the other phone has the one flag")
+	eq(guest.legal_intents(0).any(func(intent): return str(intent.get("spell", "")) == "plant" and intent.get("to") == flag), false, "the other phone does not offer the flagged tile")
+	eq(guest.range_highlight_cells(0, "plant").has(flag), false, "the other phone's range ring leaves the flag out")
+	var stacked: Dictionary = _sim.submit({"type": "cast", "spell": "plant", "to": flag, "seat": 0})
+	eq(bool(stacked.get("ok", false)), false, "a second Plant on that tile does not resolve")
+	eq(str(stacked.get("reason", "")), "flag_present", "the reject reason is the flag already there")
+	eq(int(_unit(0)["ap"]), spent_ap, "the rejected Plant spends no AP")
+	eq(int(_unit(0).get("aegis", 0)), spent_aegis, "the rejected Plant grants no Aegis")
+	eq((_sim.snapshot()["plant_tiles"] as Array).size(), 1, "the tile still holds one flag")
+	guest.apply_host_snapshot(_sim.snapshot())
+	eq((guest.snapshot()["plant_tiles"] as Array).size(), 1, "the other phone still has one flag")
+	var guest_bastion := {}
+	for unit in guest.snapshot()["units"]:
+		if int(unit.get("seat", -1)) == 0:
+			guest_bastion = unit
+	eq(int(guest_bastion.get("ap", -1)), spent_ap, "the other phone keeps the same AP")
+	eq(int(guest_bastion.get("aegis", -1)), spent_aegis, "the other phone keeps the same Aegis")
+	var again: Dictionary = _sim.submit({"type": "cast", "spell": "plant", "to": other, "seat": 0})
+	eq(bool(again.get("ok", false)), true, "Plant still places a flag on a clear tile")
+	eq((_sim.snapshot()["plant_tiles"] as Array).size(), 2, "two tiles can each hold one flag")
+	guest.free()
 
 
 ## Mauro 30 Sep 2026: "Gloam should be invisible for enemies turn, also player

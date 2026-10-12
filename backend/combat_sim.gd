@@ -955,6 +955,9 @@ func range_highlight_cells(seat: int, spell_id: String) -> Array:
 			if dist >= int(def["min_range"]) and dist <= int(def["max_range"]):
 				if not _spell_sees(def, from, cell):
 					continue
+				# A tile that already holds a flag is not a Plant destination.
+				if spell_id == SpellKits.PLANT and _tile_has_plant(cell):
+					continue
 				out.append(cell)
 	return out
 
@@ -1728,6 +1731,8 @@ func _preview_reason(def: Dictionary, actor: Dictionary, target: Dictionary, fro
 			return "destination_occupied"
 		return ""
 	if target_kind == "tile":
+		if spell_id == SpellKits.PLANT and _tile_has_plant(to_cell):
+			return "flag_present"
 		return ""
 	if target_kind == "cone":
 		if not _cone_enemies(actor, true).is_empty():
@@ -6665,6 +6670,8 @@ func _append_ranged_cells(out: Array, actor: Dictionary, def: Dictionary, spell_
 				continue
 			if (spell_id == SpellKits.SNAP_WALL or spell_id == SpellKits.SNARE_TRAP) and _fallen_body_at(cell):
 				continue
+			if spell_id == SpellKits.PLANT and _tile_has_plant(cell):
+				continue
 			out.append({"type": "cast", "spell": spell_id, "to": cell, "seat": seat})
 
 
@@ -8255,6 +8262,9 @@ func _resolve_empty_tile(intent: Dictionary, actor: Dictionary, def: Dictionary,
 
 
 func _resolve_plant(intent: Dictionary, actor: Dictionary, def: Dictionary, dest: Vector2i, ap_cost: int, mp_cost: int) -> Dictionary:
+	# One flag per tile. A second Plant on the same cell spends nothing.
+	if _tile_has_plant(dest):
+		return _reject(intent, "flag_present", "REJECT — that tile already has a flag (refund).")
 	var caster_cell: Vector2i = actor["pos"]
 	actor["ap"] = int(actor["ap"]) - ap_cost
 	_spend_mp(actor, mp_cost)
@@ -9482,12 +9492,15 @@ func _bastion_in_match() -> bool:
 	return false
 
 
-func _plant_blocks_sight(cell: Vector2i) -> bool:
+func _tile_has_plant(cell: Vector2i) -> bool:
 	for item in _plant_tiles:
-		var tile: Dictionary = item
-		if tile.get("pos") == cell:
+		if (item as Dictionary).get("pos") == cell:
 			return true
 	return false
+
+
+func _plant_blocks_sight(cell: Vector2i) -> bool:
+	return _tile_has_plant(cell)
 
 
 func _snap_wall_blocks(cell: Vector2i) -> bool:
