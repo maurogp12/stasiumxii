@@ -263,7 +263,7 @@ func _spawn(spec: Dictionary, ghost_motion: bool) -> void:
 				if aura != null and aura.has_method("flare"):
 					aura.call("flare")
 		"spark":
-			_play_burst("spark", spec, true)
+			_play_burst("spark", spec, bool(spec.get("chest", true)))
 		"stamp":
 			_play_stamp(spec)
 		"spell_fx":

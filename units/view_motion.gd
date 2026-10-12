@@ -458,6 +458,18 @@ static func chrome_plans(events: Array) -> Dictionary:
 						# lantern attack; heals and wards keep the skill.
 						plan["strip"] = "attack"
 				plans[seat] = plan
+		if typ == "trap":
+			# The snare is not a spell hit, but the body still flinches.
+			# Contact is immediate: the board plays this when the foot lands.
+			var victim := int(event.get("target_seat", -1))
+			if victim < 0:
+				continue
+			var trap_plan: Dictionary = plans.get(victim, {})
+			trap_plan["hit"] = true
+			trap_plan["delay"] = true
+			trap_plan["contact"] = 0.0
+			plans[victim] = trap_plan
+			continue
 		if typ != "hit":
 			continue
 		var target := int(event.get("target_seat", -1))

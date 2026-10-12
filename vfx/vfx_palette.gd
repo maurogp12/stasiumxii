@@ -113,6 +113,8 @@ static func number_colors(kind: String) -> Dictionary:
 			return {"top": MENDER_CREAM, "bottom": MENDER_DEEP, "size": VfxBudget.NUMBER_SIZE_SMALL}
 		"stagger":
 			return {"top": DAMAGE_TOP, "bottom": DAMAGE_BOTTOM, "size": VfxBudget.NUMBER_SIZE_SMALL}
+		"trap":
+			return {"top": KESTREL_AIR, "bottom": KESTREL, "size": 36}
 		_:
 			return {"top": DAMAGE_TOP, "bottom": DAMAGE_BOTTOM, "size": VfxBudget.NUMBER_SIZE}
 

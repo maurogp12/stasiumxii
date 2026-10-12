@@ -194,7 +194,7 @@
    "path": "res://art/vfx/spells/kestrel/snare_spring.png",
    "frames": 3,
    "fps": 12,
-   "scale": 0.356,
+   "scale": 0.5,
    "px": 0,
    "anchor": [
     96,
@@ -781,7 +781,7 @@
    "path": "res://art/vfx/spells/kestrel/snare_trap_token.png",
    "frames": 1,
    "fps": 1.0,
-   "scale": 0.338,
+   "scale": 0.55,
    "anchor": [
     96,
     150

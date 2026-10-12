@@ -117,6 +117,8 @@ var _deploy_selected_seat: int = -1
 var _board_data: Dictionary = {}
 var _skip_local_net_echo: bool = false
 var _flash_tweens: Array = []
+## Snare springs when the foot is on the cell, not when the walk is ordered.
+var _deferred_traps: Array = []
 var _view_locked: bool = false
 var _pending_motion_sec: float = 0.0
 var _resolve_hold_refresh: bool = false
@@ -325,18 +327,23 @@ func _on_net_state(events: Array, _snap: Dictionary) -> void:
 	if _resolve_hold_refresh:
 		_resolve_hold_refresh = false
 		_refresh()
+		_spring_deferred_traps()
 		_maybe_drain_net()
 		return
 	if swallowed:
+		_spring_deferred_traps()
 		_maybe_drain_net()
 		return
 	if CombatHUD.should_play_walk_hops(events):
 		var path_event := _path_event(events)
 		if not path_event.is_empty():
 			await _play_walk(int(path_event.get("seat", 0)), path_event["path"], _as_cell(path_event.get("from", Vector2i(-1, -1))))
+		else:
+			_spring_deferred_traps()
 		_maybe_drain_net()
 		return
 	_refresh()
+	_spring_deferred_traps()
 	_hydrate_turn_clock()
 	if _has_turn_change(events) and not _busy:
 		_present_turn_handoff({"events": events, "snapshot": _sim().snapshot()})
@@ -1328,9 +1335,11 @@ func _submit(intent: Dictionary) -> void:
 		if _resolve_hold_refresh:
 			_resolve_hold_refresh = false
 			_refresh()
+			_spring_deferred_traps()
 			_maybe_drain_net()
 			return
 		if swallowed:
+			_spring_deferred_traps()
 			_maybe_drain_net()
 			return
 		if CombatHUD.should_play_walk_hops(events):
@@ -1339,6 +1348,7 @@ func _submit(intent: Dictionary) -> void:
 			_maybe_drain_net()
 			return
 	_refresh()
+	_spring_deferred_traps()
 	_maybe_drain_net()
 
 
@@ -1397,6 +1407,56 @@ func _seat_cell(seat: int) -> Vector2i:
 	return Vector2i(-1, -1)
 
 
+func _trap_events(events: Array) -> Array:
+	var out: Array = []
+	for event in events:
+		if typeof(event) == TYPE_DICTIONARY and str(event.get("type", "")) == "trap":
+			out.append(event)
+	return out
+
+
+func _events_without_traps(events: Array) -> Array:
+	var out: Array = []
+	var any := false
+	for event in events:
+		if typeof(event) == TYPE_DICTIONARY and str(event.get("type", "")) == "trap":
+			any = true
+			continue
+		out.append(event)
+	return out if any else events
+
+
+func _trap_event_for(events: Array, target_seat: int) -> Dictionary:
+	for event in events:
+		if typeof(event) != TYPE_DICTIONARY:
+			continue
+		if str(event.get("type", "")) != "trap":
+			continue
+		if int(event.get("target_seat", -1)) != target_seat:
+			continue
+		return event
+	return {}
+
+
+## Burst, label, shake, and the flinch. Called once the body is on the cell.
+func _spring_deferred_traps() -> void:
+	if _deferred_traps.is_empty():
+		return
+	var batch: Array = _deferred_traps
+	_deferred_traps = []
+	_arm_view_motions(batch)
+	_arm_vfx(batch)
+	for event in batch:
+		var seat := int(event.get("target_seat", -1))
+		if not pawns_by_seat.has(seat):
+			continue
+		var pawn: Pawn = pawns_by_seat[seat]
+		if pawn == null or not is_instance_valid(pawn):
+			continue
+		pawn.flash_hit()
+		_tween_pawn_modulate(pawn)
+
+
 func _present_resolve(events: Array) -> bool:
 	# A hit plants on the back tile in this call, before any slash, toast, or
 	# damage float. Shade origin and Invisible origin share that snap. A miss
@@ -1411,9 +1471,12 @@ func _present_resolve(events: Array) -> bool:
 	# and Shades count land in this beat. Do not wait out the lunge.
 	_sync_shade_chrome(events)
 	if ambush_hit.is_empty():
-		_play_combat_feedback(events)
-		_arm_view_motions(events)
-		_arm_vfx(events)
+		# The spring waits until the walker is standing on the cell.
+		_deferred_traps = _trap_events(events)
+		var shown := _events_without_traps(events)
+		_play_combat_feedback(shown)
+		_arm_view_motions(shown)
+		_arm_vfx(shown)
 		# Coach and vitals share this event with the float. Waiting for the
 		# motion lock left the previous HIT line up under a new MISS.
 		_commit_resolve_readout(events)
@@ -1871,6 +1934,8 @@ func _play_walk(seat: int, path: Array, origin: Vector2i = Vector2i(-1, -1)) -> 
 	_hud.set_locked(false)
 	_busy = false
 	_refresh()
+	# The foot is on the snare. Flash, flinch, and the label start here.
+	_spring_deferred_traps()
 	if _clock_expired_pending:
 		_clock_expired_pending = false
 		_on_turn_clock_expired()
@@ -2145,7 +2210,10 @@ func _arm_view_motions(events: Array) -> void:
 		if int(caster_event.get("seat", -2)) == seat_n and (bool(plan.get("attack", false)) or bool(plan.get("cast", false))):
 			plan["aim"] = _aim_vector(seat_n, caster_event)
 		if bool(plan.get("hit", false)):
-			plan["away"] = _away_vector(seat_n, VIEW_MOTION.hit_event_for(events, seat_n))
+			var blow := VIEW_MOTION.hit_event_for(events, seat_n)
+			if blow.is_empty():
+				blow = _trap_event_for(events, seat_n)
+			plan["away"] = _away_vector(seat_n, blow)
 		longest = maxf(longest, pawn.play_view_plan(plan))
 	_pending_motion_sec = minf(longest, VIEW_MOTION.ACTION_LOCK_MAX)
 

@@ -204,6 +204,8 @@ static func _recipes_for_event(event: Dictionary) -> Array:
 			return _intercept_recipes(event)
 		"blend":
 			return _blend_recipes(event)
+		"trap":
+			return _trap_spring_recipes(event)
 		"magma":
 			var at := cell_of(event.get("to", Vector2i.ZERO))
 			return [_number(int(event.get("target_seat", -1)), at, "-%d MAGMA" % int(event.get("damage", 0)), "damage", 0.0, 1.0, "", Color(1.0, 0.42, 0.1))]
@@ -315,6 +317,35 @@ static func _blend_recipes(event: Dictionary) -> Array:
 	if int(event.get("collision_hp", 0)) > 0:
 		out.append(_number(seat, to, "-%d" % int(event.get("collision_hp", 0)), "damage", 0.35, 1.0, "", Color(0, 0, 0, 0)))
 	return out
+
+
+## A sprung snare has to read in one beat: burst and flash on the cell,
+## a snap ring, the "Trap!" label, and a short camera shake. The painted
+## snare_spring strip is added by choreography. Nothing here locks input.
+static func _trap_spring_recipes(event: Dictionary) -> Array:
+	var seat := int(event.get("target_seat", -1))
+	var cell := cell_of(event.get("to", Vector2i.ZERO))
+	var flash := _hit_flash(seat, cell, 0.0)
+	flash["chest"] = false
+	flash["px"] = 76.0
+	var label := _number(seat, cell, "Trap!", "trap", 0.0, 1.2, "", Color(0, 0, 0, 0))
+	label["rise_sec"] = 0.34
+	label["fade_sec"] = 0.16
+	return [
+		{
+			"id": "spark",
+			"block": 0.0,
+			"seat": seat,
+			"cell": cell,
+			"tint": VfxPalette.KESTREL,
+			"chest": false,
+			"amount": 14,
+		},
+		flash,
+		_ring(cell, VfxPalette.KESTREL, false, 0.28, 0.0, "crack"),
+		label,
+		{"id": "shake", "block": 0.0, "amplitude": VfxBudget.SHAKE_PX * 1.15, "duration": 0.18},
+	]
 
 
 static func _hit_recipes(event: Dictionary) -> Array:
