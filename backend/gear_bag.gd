@@ -847,6 +847,93 @@ func set_counts(class_id: String = "") -> Dictionary:
 	return counts
 
 
+## Families this class can wear that have a free piece (or one this class
+## already wears). Another class's worn uid does not count. Ladder order,
+## then Ultra.
+func families_in_bag(class_id: String = "") -> Array:
+	var use := _class_or_focus(class_id)
+	var found := {}
+	for it in items:
+		var fam := family_of(str(it.get("item_id", "")))
+		if not can_wear(fam, use):
+			continue
+		if _worn_by(int(it.get("uid", -1))) not in ["", use]:
+			continue
+		found[fam] = true
+	var out: Array = []
+	var order: Array = []
+	order.append_array(FAMILY_ORDER)
+	order.append_array(ULTRA_ORDER)
+	for fam in order:
+		if bool(found.get(fam, false)):
+			out.append(fam)
+	return out
+
+
+## The family covering the most worn slots. A tie keeps the earlier family.
+func worn_family(class_id: String = "") -> String:
+	var counts := set_counts(class_id)
+	var best := ""
+	var best_n := 0
+	var order: Array = []
+	order.append_array(FAMILY_ORDER)
+	order.append_array(ULTRA_ORDER)
+	for fam in order:
+		var n := int(counts.get(fam, 0))
+		if n > best_n:
+			best_n = n
+			best = str(fam)
+	return best
+
+
+## Wear the best free piece of `family` in every slot. A slot with no free
+## piece comes off, so the set is one family. Never takes a uid another
+## class is wearing. Highest +plus wins; the same +plus keeps the lower uid.
+func wear_family(class_id: String, family: String) -> Dictionary:
+	if not CLASS_IDS.has(class_id) or not can_wear(family, class_id):
+		return _fail("wrong_class")
+	var picks := {}
+	for it in items:
+		var item_id := str(it.get("item_id", ""))
+		if family_of(item_id) != family:
+			continue
+		var slot := slot_of(item_id)
+		if not SLOTS.has(slot):
+			continue
+		var uid := int(it.get("uid", -1))
+		if _worn_by(uid) not in ["", class_id]:
+			continue
+		var plus := int(it.get("plus", 0))
+		var better := not picks.has(slot)
+		if not better:
+			var have: Dictionary = picks[slot]
+			better = plus > int(have["plus"]) or (plus == int(have["plus"]) and uid < int(have["uid"]))
+		if better:
+			picks[slot] = {"uid": uid, "plus": plus}
+	if picks.is_empty():
+		return _fail("no_pieces")
+	var slots := _slots_of(class_id)
+	for slot in SLOTS:
+		if picks.has(slot):
+			_strip_uid(int(picks[slot]["uid"]))
+	for slot in SLOTS:
+		if picks.has(slot):
+			slots[slot] = int(picks[slot]["uid"])
+		elif slots.has(slot):
+			slots.erase(slot)
+	set_focus(class_id)
+	return {"ok": true, "reason": "", "worn": int(set_counts(class_id).get(family, 0)), "family": family}
+
+
+func _worn_by(uid: int) -> String:
+	for cid in CLASS_IDS:
+		var slots: Dictionary = loadouts.get(cid, {})
+		for slot in slots.keys():
+			if int(slots[slot]) == uid:
+				return str(cid)
+	return ""
+
+
 func can_attune(family: String, element: String) -> Dictionary:
 	if not FAMILIES.has(family):
 		return _fail("unknown_family")

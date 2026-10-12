@@ -8412,12 +8412,16 @@ func _test_prefight_elements_button() -> void:
 	hud._build()
 	hud.render(_sim.snapshot(), _sim.legal_intents(0))
 	eq(hud._elements_button.visible, true, "the Elements button shows during deployment")
+	eq(hud._gear_button.visible, true, "the Gear button shows during deployment")
+	eq(hud._gear_button.text, "Gear", "the Gear button is one word")
 	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "classes": ["kestrel", "ironjaw"]})
 	hud.render(_sim.snapshot(), _sim.legal_intents(0))
 	eq(hud._elements_button.visible, false, "the Elements button hides once the fight starts")
+	eq(hud._gear_button.visible, false, "the Gear button hides once the fight starts")
 	hud.free()
 	var view := FileAccess.get_file_as_string("res://board_view.gd")
 	truthy(view.contains("_hud.elements_requested.connect(_on_elements_requested)"), "the board opens the Elements screen")
+	truthy(view.contains("_hud.gear_requested.connect(_on_gear_requested)"), "the board opens the Gear screen")
 	truthy(view.contains("set_seat_gear(seat, kit.duplicate(true))"), "closing it re-applies the fighter's pick")
 
 

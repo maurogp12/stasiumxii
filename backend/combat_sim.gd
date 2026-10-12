@@ -4571,6 +4571,8 @@ func _apply_gear(unit: Dictionary, raw: Variant) -> void:
 	unit["far_cut"] = int(stats.get("far_cut", 0))
 	unit["near_amp"] = int(stats.get("near_amp", 0))
 	unit["gate_stance"] = str(stats.get("gate_stance", ""))
+	# Koliseo parts stay +0 when a pre-fight pick is applied again.
+	unit["gear_flat"] = bool(gear.get("flatten_plus", false))
 	unit["heal_flat"] = int(stats["heal_flat"])
 	unit["ward_shield"] = int(stats["ward_shield"])
 	if int(stats["start_aegis"]) > 0:

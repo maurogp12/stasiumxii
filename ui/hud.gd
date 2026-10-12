@@ -12,6 +12,8 @@ signal hub_requested
 ## Mauro 6 Oct 2026: change elements before the fight (deployment only, the
 ## usual trophy price).
 signal elements_requested
+## Set, Ultra stance, and Still. Deployment only, same step as Elements.
+signal gear_requested
 ## Mauro 6 Oct 2026: tap an enemy portrait / card to aim the armed spell at it.
 signal unit_card_tapped(seat: int)
 signal ready_requested(seat: int)
@@ -140,6 +142,7 @@ var _still_aim: bool = false
 var _new_match_button: Button
 var _hub_button: Button
 var _elements_button: Button
+var _gear_button: Button
 var _log_button: Button
 var _log_panel: Panel
 var _log_scroll: ScrollContainer
@@ -1630,6 +1633,17 @@ func _build() -> void:
 	_elements_button.clip_text = true
 	_elements_button.visible = false
 	_elements_button.pressed.connect(func() -> void: elements_requested.emit())
+
+	_gear_button = Button.new()
+	_gear_button.name = "GearButton"
+	_gear_button.text = "Gear"
+	_gear_button.custom_minimum_size = TOUCH.NEW_MATCH_BUTTON_SIZE
+	_gear_button.add_theme_font_size_override("font_size", 15)
+	_gear_button.add_theme_color_override("font_color", CREAM)
+	_style_chrome_button(_gear_button, false)
+	_gear_button.clip_text = true
+	_gear_button.visible = false
+	_gear_button.pressed.connect(func() -> void: gear_requested.emit())
 	_log_button = Button.new()
 	_log_button.name = "LogButton"
 	_log_button.text = "Log"
@@ -1724,6 +1738,8 @@ func _build() -> void:
 		side_column.add_child(_hub_button)
 	if _elements_button != null:
 		side_column.add_child(_elements_button)
+	if _gear_button != null:
+		side_column.add_child(_gear_button)
 	if _log_button != null:
 		side_column.add_child(_log_button)
 	_build_log_panel(root)
@@ -4209,6 +4225,8 @@ func claims_screen_point(point: Vector2) -> bool:
 		return true
 	if _control_claims(_elements_button, point):
 		return true
+	if _control_claims(_gear_button, point):
+		return true
 	if _control_claims(_log_button, point):
 		return true
 	if _log_open and _control_claims(_log_panel, point):
@@ -4361,6 +4379,8 @@ func _sync_deploy_chrome(snap: Dictionary) -> void:
 	var deploying := is_deployment_phase(snap)
 	if _elements_button != null:
 		_elements_button.visible = deploying
+	if _gear_button != null:
+		_gear_button.visible = deploying
 	var ready: Dictionary = snap.get("ready", {})
 	var local_seat := snap_local_seat(snap)
 	if _ready_p1_button != null:

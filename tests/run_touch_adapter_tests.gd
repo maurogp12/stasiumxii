@@ -730,9 +730,11 @@ func _test_player_zoom() -> void:
 	eq(column.get_child(0), hud._new_match_button, "New Match is the first control, so nothing is left above it")
 	eq(hud._hub_button.get_parent(), column, "Hub stays under New Match")
 	eq(hud._elements_button.get_parent(), column, "Elements stays under Hub")
+	eq(hud._gear_button.get_parent(), column, "Gear stays in the deployment column")
 	eq(hud._new_match_button.text, "New Match", "New Match is still on the HUD")
 	eq(hud._hub_button.text, "Hub", "Hub is still on the HUD")
 	eq(hud._elements_button.text, "Elements", "Elements is still on the HUD")
+	eq(hud._gear_button.text, "Gear", "Gear is still on the HUD")
 	hud.free()
 
 
