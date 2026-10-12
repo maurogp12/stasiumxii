@@ -637,9 +637,8 @@ static func _signed(amount: int, unit: String) -> String:
 	return "%d %s" % [amount, unit]
 
 
-## Opposing view of a fighter who is invisible, or who acted while invisible.
-## Hot-seat has one shared screen, so it uses that opposing view while the
-## fighter is still hidden. The owner's online log keeps the details.
+## Opposing view while a fighter is invisible. Hot-seat has one shared screen,
+## so it uses that view too. The owner's online log keeps the details.
 static func _veiled_line(kind: String, event: Dictionary, snap: Dictionary) -> String:
 	if kind == "cast" and str(event.get("spell", "")) == SpellKits.FADE:
 		return ""
@@ -659,23 +658,10 @@ static func _veiled_line(kind: String, event: Dictionary, snap: Dictionary) -> S
 	return ""
 
 
-static func _hide_motion(event: Dictionary, snap: Dictionary, seat: int) -> bool:
-	if seat < 0:
+static func _hide_motion(_event: Dictionary, snap: Dictionary, seat: int) -> bool:
+	if seat < 0 or not _invisible_unit(snap, seat):
 		return false
-	var now := _invisible_unit(snap, seat)
-	var was := _was_concealed(event, seat)
-	if not now and not was:
-		return false
-	if _owner_detail(snap, seat):
-		return false
-	if _explicit_local_seat(snap) < 0:
-		return now
-	return true
-
-
-static func _was_concealed(event: Dictionary, seat: int) -> bool:
-	var raw: Variant = event.get("concealed_seats", [])
-	return raw is Array and (raw as Array).has(seat)
+	return not _owner_detail(snap, seat)
 
 
 static func _owner_detail(snap: Dictionary, seat: int) -> bool:

@@ -157,7 +157,8 @@ func _test_named_lines() -> void:
 	truthy(shove_text.contains("moves while hidden"), "a hidden shove is only movement: %s" % shove_text)
 	var revealed_snap := hidden.duplicate(true)
 	revealed_snap["units"][0]["invisible"] = false
-	eq(LOG.plain(hidden_walk, revealed_snap), "Kestrel moves while hidden.", "the enemy still does not learn the hidden path")
+	var shown := LOG.plain(hidden_walk, revealed_snap)
+	truthy(shown.contains("walks 1") and not shown.contains("(2,"), "once visible, the step count shows and the tile does not: %s" % shown)
 	var hot_later := revealed_snap.duplicate(true)
 	hot_later["local_seat"] = -1
 	truthy(LOG.plain(hidden_walk, hot_later).contains("walks 1") and not LOG.plain(hidden_walk, hot_later).contains("(2,"), "hot-seat shows the step once they are visible")
@@ -340,12 +341,12 @@ func _test_online_redaction() -> void:
 	_sim._unit_by_seat(0)["invisible"] = false
 	var later: Dictionary = _sim.snapshot()
 	var after: Dictionary = net._redact_invisible_for_viewer(later, [], 1)
-	var still_hidden := false
+	var walk_back := false
 	for event in after["snapshot"].get("battle_log", []):
 		if str(event.get("type", "")) != "move":
 			continue
-		still_hidden = event.get("from", Vector2i.ZERO) == null and not event.has("path") and not event.has("mp_spent")
-	truthy(still_hidden, "the hidden walk stays off the enemy wire after Gloam is visible")
+		walk_back = event.get("to", null) != null and event.has("path")
+	truthy(walk_back, "the walk tile returns once Gloam is visible")
 
 
 func _view(seat: int) -> Dictionary:

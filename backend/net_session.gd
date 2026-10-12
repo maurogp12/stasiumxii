@@ -793,7 +793,6 @@ func _redact_invisible_for_viewer(snap: Dictionary, events: Array, viewer_seat: 
 		return {"snapshot": out_snap, "events": out_events, "hidden_cells": hidden_cells}
 	_redact_shades_for_viewer(out_snap, out_events, viewer_seat)
 	_redact_traps_for_viewer(out_snap, out_events, viewer_seat)
-	_redact_concealed_history(out_snap, out_events, viewer_seat)
 	var hidden_seats := {}
 	var secret: Array = []
 	for unit in out_snap.get("units", []):
@@ -897,36 +896,8 @@ func _seat_team(snap: Dictionary, seat: int) -> int:
 	return seat
 
 
-## Actions taken while invisible stay off the opponent's wire after the
-## fighter is visible again. The owner's copy keeps the path and the cost.
-func _redact_concealed_history(out_snap: Dictionary, out_events: Array, viewer_seat: int) -> void:
-	var lists: Array = [out_events]
-	if out_snap.get("last_events", null) is Array:
-		lists.append(out_snap["last_events"])
-	if out_snap.get("battle_log", null) is Array:
-		lists.append(out_snap["battle_log"])
-	for list in lists:
-		for event in list:
-			if typeof(event) != TYPE_DICTIONARY:
-				continue
-			var row: Dictionary = event
-			var seats: Variant = row.get("concealed_seats", [])
-			if typeof(seats) != TYPE_ARRAY:
-				continue
-			var hide := false
-			for seat in seats:
-				if int(seat) != viewer_seat:
-					hide = true
-			if not hide:
-				continue
-			var secret: Array = []
-			for key in ["from", "to", "path", "caster_cell", "origin", "destination", "push_from", "push_to", "push_attempted", "pos", "cell", "cone", "attempted"]:
-				_null_cell_field(row, key, secret)
-			_strip_hidden_motion(row)
-			if row.has("coach"):
-				row["coach"] = _scrub_coach(str(row["coach"]), secret)
-
-
+## While the fighter is invisible, the opponent's copy loses the step cost,
+## facing, and terrain. A reveal puts the stopped tile back on the wire.
 func _strip_hidden_motion(event: Dictionary) -> void:
 	var kind := str(event.get("type", ""))
 	for key in ["dir", "facing", "facing_from", "facing_hops"]:

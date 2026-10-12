@@ -1005,39 +1005,10 @@ func _stamp_log_pools(row: Dictionary) -> void:
 	if seat < 0:
 		seat = int(row.get("for_seat", -1))
 	var unit := _unit_by_seat(seat)
-	if not unit.is_empty():
-		row["ap_left"] = int(unit.get("ap", 0))
-		row["mp_left"] = int(unit.get("mp", 0))
-	_stamp_concealed(row)
-
-
-func _stamp_concealed(row: Dictionary) -> void:
-	var seats: Array = row.get("concealed_seats", []) if row.get("concealed_seats", []) is Array else []
-	for key in ["seat", "target_seat", "owner_seat"]:
-		var hidden_seat := int(row.get(key, -1))
-		if hidden_seat < 0 or seats.has(hidden_seat):
-			continue
-		var body := _unit_by_seat(hidden_seat)
-		if body.is_empty() or not bool(body.get("invisible", false)):
-			continue
-		seats.append(hidden_seat)
-	if not seats.is_empty():
-		row["concealed_seats"] = seats
-
-
-func _stamp_uncommitted_hidden(seat: int) -> void:
-	for i in range(_log_taken, _last_events.size()):
-		var raw: Variant = _last_events[i]
-		if typeof(raw) != TYPE_DICTIONARY:
-			continue
-		var row: Dictionary = raw
-		if int(row.get("seat", -2)) != seat and int(row.get("target_seat", -2)) != seat and int(row.get("owner_seat", -2)) != seat:
-			continue
-		var seats: Array = row.get("concealed_seats", []) if row.get("concealed_seats", []) is Array else []
-		if seats.has(seat):
-			continue
-		seats.append(seat)
-		row["concealed_seats"] = seats
+	if unit.is_empty():
+		return
+	row["ap_left"] = int(unit.get("ap", 0))
+	row["mp_left"] = int(unit.get("mp", 0))
 
 
 func snapshot() -> Dictionary:
@@ -5468,7 +5439,6 @@ func _start_fade_cooldown(unit: Dictionary, at_turn_start: bool) -> void:
 func _end_invisible(unit: Dictionary, at_turn_start: bool) -> bool:
 	if not bool(unit.get("invisible", false)):
 		return false
-	_stamp_uncommitted_hidden(int(unit.get("seat", -1)))
 	unit["invisible"] = false
 	unit["invisible_turns"] = 0
 	_start_fade_cooldown(unit, at_turn_start)
