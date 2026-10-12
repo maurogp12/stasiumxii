@@ -440,26 +440,29 @@ func _test_puppet() -> void:
 	eq(puppet.facing, "S", "idle starts on S")
 	eq(puppet.rig.get("fps", 0), 60, "the rig is 60 fps")
 	eq(is_equal_approx(float(puppet.rig.get("turn", {}).get("sec", 0)), 0.18), true, "the turn is 0.18 s")
-	eq(is_equal_approx(float(puppet.rig.get("overlap_px", 0)), 12.0), true, "joints overlap by about 12 px")
+	eq(is_equal_approx(float(puppet.rig.get("overlap_px", 0)), 6.0), true, "joints overlap by about 6 px")
 	var base_scale: float = puppet.scale_x_magnitude()
 	puppet.apply_turn_sample(0.5)
 	eq(is_equal_approx(puppet.scale_x_magnitude(), base_scale * 0.96), true, "the turn squashes to 0.96 at the midpoint")
 	puppet.apply_turn_sample(1.0)
 	eq(is_equal_approx(puppet.scale_x_magnitude(), base_scale), true, "the squash is gone at the end of the turn")
 	puppet.turn(1)
-	eq(puppet.facing, "E", "the first step faces E")
+	eq(puppet.facing, "Sm", "the first step mirrors S")
 	puppet.snap_facing("S")
 	puppet.turn_by_pixels(60.0)
-	eq(puppet.facing, "E", "a 60 px drag steps to E")
-	puppet.snap_facing("E")
+	eq(puppet.facing, "Sm", "a 60 px drag mirrors S")
+	puppet.snap_facing("Sm")
+	eq(puppet._visible_root().scale.x < 0.0, true, "Sm is S mirrored")
 	puppet.turn(1)
-	eq(puppet.facing, "W", "the second step faces W")
-	eq(puppet.scale_x_magnitude() > 0.0, true, "W keeps a scale")
-	puppet.snap_facing("W")
-	eq(puppet._visible_root().scale.x < 0.0, true, "W is E mirrored")
+	eq(puppet.facing, "B", "the second step faces B")
+	puppet.snap_facing("B")
+	eq(puppet._visible_root().scale.x > 0.0, true, "B is the back view, not a mirror")
+	eq(str(puppet.part_node("weapon").get_parent().name), "hand_r", "the weapon hangs off the holding hand")
 	puppet.turn(1)
 	eq(puppet.facing, "S", "the third step returns to S")
+	_assert_blades(puppet)
 	_assert_joints(puppet, "base")
+	_assert_welds(puppet, "base")
 	for family in ["cragmaw", "tyrantjaw", "pitmaw"]:
 		for slot in ["head", "chest", "legs", "boots", "weapon"]:
 			puppet.clear_slots()
@@ -467,16 +470,17 @@ func _test_puppet() -> void:
 			puppet.set_slot(slot, family)
 			_assert_gear_covers(puppet, family, slot)
 			_assert_joints(puppet, "%s %s" % [family, slot])
+			_assert_gear_weld_matches(puppet, slot)
 	puppet.clear_slots()
 	puppet.snap_facing("S")
 	puppet.seek_anim("select", 1.15)
 	var dust: Node2D = puppet.part_node("dust")
 	eq(dust.modulate.a > 0.5, true, "the select slam shows the dust puff")
 	puppet.set_performance(true)
-	truthy(puppet.texture_path("torso").contains("_1x"), "performance mode uses the 1x parts")
+	truthy(puppet.texture_path("torso").contains("_half"), "performance mode uses the half-size parts")
 	eq(puppet.secondary_on(), false, "performance mode turns secondary motion off")
 	puppet.seek_anim("idle_core", 1.8)
-	eq(puppet.part_node("torso").scale.y > 1.001, true, "the breath still plays on the 1x puppet")
+	eq(puppet.part_node("torso").scale.y > 1.001, true, "the breath still plays on the half-size puppet")
 	eq(is_equal_approx(puppet.part_node("hair").rotation, 0.0), true, "hair lag is off in performance mode")
 	puppet.set_body_colors(Color.html("#c68642"), Color.html("#3b2414"), Color.html("#3a6ea5"))
 	puppet.set_face("sharp")
@@ -530,8 +534,163 @@ func _assert_gear_covers(puppet, family: String, slot: String) -> void:
 		eq(differ / float(maxi(counted, 1)) > 0.02, true, "%s %s is not the base paint" % [family, part_name])
 
 
+func _assert_blades(puppet) -> void:
+	puppet.snap_facing("S")
+	var weapon_blade := _sibling_image(puppet, "weapon", "_blade.png")
+	var hand_blade := _sibling_image(puppet, "hand_l", "_blade.png")
+	_assert_blade_cover(puppet.part_image("weapon"), weapon_blade, "S weapon")
+	_assert_blade_cover(puppet.part_image("hand_l"), hand_blade, "S left hand")
+	puppet.snap_facing("B")
+	var back: Image = puppet.part_image("weapon")
+	eq(back.get_width() > 40 and back.get_height() > 40, true, "the back axe is not a handle stub")
+	eq(_opaque_count(back) > 1500, true, "the back axe keeps its head")
+	var back_hand: Image = puppet.part_image("hand_l")
+	eq(_opaque_count(back_hand) > 1500, true, "the other back axe keeps its head")
+	puppet.snap_facing("S")
+
+
+func _assert_blade_cover(image: Image, blade: Image, label: String) -> void:
+	if image == null or blade == null:
+		eq(false, true, "%s blade images loaded" % label)
+		return
+	eq(image.get_width(), blade.get_width(), "%s matches the base_S.jpg crop" % label)
+	eq(image.get_height(), blade.get_height(), "%s matches the base_S.jpg crop height" % label)
+	var total := 0
+	var missing := 0
+	for y in blade.get_height():
+		for x in blade.get_width():
+			if blade.get_pixel(x, y).a <= 0.5:
+				continue
+			total += 1
+			if image.get_pixel(x, y).a <= 0.5:
+				missing += 1
+	eq(total > 350, true, "%s head from base_S.jpg is a real blade" % label)
+	eq(missing, 0, "%s keeps the base_S.jpg head" % label)
+
+
+func _opaque_count(image: Image) -> int:
+	var count := 0
+	for y in image.get_height():
+		for x in image.get_width():
+			if image.get_pixel(x, y).a > 0.5:
+				count += 1
+	return count
+
+
+func _sibling_image(puppet, part: String, suffix: String) -> Image:
+	var path: String = puppet.texture_path(part)
+	if path == "":
+		return null
+	var tex := load(path.trim_suffix(".png") + suffix) as Texture2D
+	if tex == null:
+		return null
+	return tex.get_image()
+
+
+func _assert_gear_weld_matches(puppet, slot: String) -> void:
+	var family := str(puppet._worn.get(slot, ""))
+	var slots: Dictionary = puppet.rig.get("slots", {})
+	var names: Array = slots.get(slot, [])
+	for part_name in names:
+		puppet.set_slot(slot, family)
+		puppet.snap_facing("S")
+		var gear: Image = _sibling_image(puppet, str(part_name), "_weld.png")
+		puppet.clear_slots()
+		var base: Image = _sibling_image(puppet, str(part_name), "_weld.png")
+		if gear == null or base == null:
+			eq(false, true, "%s %s weld loaded" % [slot, part_name])
+			continue
+		eq(gear.get_width(), base.get_width(), "%s %s weld matches the base crop" % [slot, part_name])
+		var differ := 0
+		for y in base.get_height():
+			for x in base.get_width():
+				var ba := base.get_pixel(x, y).a > 0.5
+				var ga := gear.get_pixel(x, y).a > 0.5
+				if ba != ga:
+					differ += 1
+		eq(differ, 0, "%s %s weld is the same tuck as the base" % [slot, part_name])
+	puppet.set_slot(slot, family)
+
+
+func _assert_welds(puppet, label: String) -> void:
+	for facing in ["S", "B"]:
+		puppet.snap_facing(facing)
+		var images := {}
+		var welds := {}
+		var weld_pts := {}
+		for child in _JOINTS.keys():
+			var child_name := str(child)
+			var parent_name := str(_JOINTS[child])
+			images[child_name] = puppet.part_image(child_name)
+			images[parent_name] = puppet.part_image(parent_name)
+			var weld: Image = _sibling_image(puppet, child_name, "_weld.png")
+			welds[child_name] = weld
+			weld_pts[child_name] = _weld_points(weld)
+		for anim_name in ["idle", "select"]:
+			var length: float = puppet.anim_length(anim_name)
+			var t := 0.0
+			while t <= length + 0.0001:
+				puppet.seek_anim(anim_name, t)
+				puppet.force_update_transform()
+				for child in _JOINTS.keys():
+					var child_name := str(child)
+					var parent_name := str(_JOINTS[child])
+					if not _weld_inside(puppet, images, welds, weld_pts[child_name], child_name, parent_name):
+						eq(false, true, "%s weld outside %s %s %.2f" % [label, child_name, facing, t])
+						return
+				t += 1.0 / 60.0
+	eq(true, true, "%s welds stay inside the painted silhouette" % label)
+
+
+func _weld_points(weld: Image) -> Array:
+	var points: Array = []
+	if weld == null:
+		return points
+	for y in weld.get_height():
+		for x in weld.get_width():
+			if weld.get_pixel(x, y).a > 0.5:
+				points.append(Vector2i(x, y))
+	return points
+
+
+func _weld_inside(puppet, images: Dictionary, welds: Dictionary, points: Array, child: String, parent: String) -> bool:
+	var node: Node2D = puppet.part_node(child)
+	var sprite: Sprite2D = puppet.sprite_of(child)
+	if node == null or sprite == null:
+		return false
+	var child_img: Image = images.get(child, null)
+	var parent_img: Image = images.get(parent, null)
+	var child_weld: Image = welds.get(child, null)
+	for point in points:
+		var texel := Vector2(float(point.x) + 0.5, float(point.y) + 0.5)
+		var world: Vector2 = node.global_transform * (sprite.position + texel * sprite.scale)
+		var on_parent := _image_hits(puppet, parent, parent_img, null, world)
+		var on_child := _image_hits(puppet, child, child_img, child_weld, world)
+		if not on_parent and not on_child:
+			return false
+	return true
+
+
+func _image_hits(puppet, part: String, image: Image, weld: Image, world: Vector2) -> bool:
+	var node: Node2D = puppet.part_node(part)
+	var sprite: Sprite2D = puppet.sprite_of(part)
+	if node == null or sprite == null or image == null:
+		return false
+	var local: Vector2 = node.get_global_transform().affine_inverse() * world
+	var tex: Vector2 = (local - sprite.position) / sprite.scale
+	var x := int(floor(tex.x))
+	var y := int(floor(tex.y))
+	if x < 0 or y < 0 or x >= image.get_width() or y >= image.get_height():
+		return false
+	if image.get_pixel(x, y).a <= 0.5:
+		return false
+	if weld != null and x < weld.get_width() and y < weld.get_height() and weld.get_pixel(x, y).a > 0.5:
+		return false
+	return true
+
+
 func _assert_joints(puppet, label: String) -> void:
-	for facing in ["S", "E"]:
+	for facing in ["S", "B"]:
 		puppet.snap_facing(facing)
 		for anim_name in ["idle", "select"]:
 			var length: float = puppet.anim_length(anim_name)

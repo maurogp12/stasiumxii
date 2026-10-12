@@ -8,7 +8,7 @@ Spec: `docs/pc/CHARACTER_SELECT_SPEC.md` on branch `claude/pc-zones-spec` (secti
 
 The class pedestal and the list island draw a 2D cut-out for Ironjaw male. Every other class, and Ironjaw female, stay on the locked idle sprite and show "Coming soon" on the appearance controls. Gender stays enabled. The screen still plays with no puppet at all.
 
-This cut is soft on purpose. It is not the 2× 1024×1280 paint (that is P4). `build_tools/pc_charselect/cut_puppet.py` upscales the existing 1024×576 visible-gear sources to 1280×720 and cuts the world-walker part split, with about 12 px of paint shared across each joint. Re-run it from the repo root:
+This cut is soft on purpose. It is not the 2× 1024×1280 paint (that is P4). `build_tools/pc_charselect/cut_puppet.py` cuts the approved 1024×576 paintings at 1:1, with no upscale. The figure is about 520 px. Each child keeps about 6 px of its parent's real edge colours under the joint. Re-run it from the repo root:
 
 `python3 build_tools/pc_charselect/cut_puppet.py`
 
@@ -18,18 +18,18 @@ art/pc/character_select/puppets/ironjaw_m/
   S/base/<part>.png and _mask.png   base body, R skin / G hair / B eyes
   S/base/head_f1.png … head_f4.png  broad, narrow, soft, sharp
   S/<family>_<slot>/<part>.png      Cragmaw, Tyrantjaw, Pitmaw
-  E/...                             the side facing
-  _1x/...                           generated half-size copies
+  B/...                             the back view, cut from the *_E.jpg paintings
+  _half/...                         generated half-size copies
   source/                           the 1024×576 paintings (.gdignore)
 ```
 
-W is not a third paint. The scene mirrors E.
+Sm is not a third paint. The scene mirrors S. B is the back view. The source files stay `base_E.jpg` and `<family>_E_<slot>.jpg`.
 
-The rig is a Node2D parent chain. Each part holds a Sprite2D. There is no bone rig. Idle and select are data in `rig.json`, built into an AnimationPlayer at 60 fps when the puppet loads. Arrows under the pedestal, or a horizontal drag of 60 px, step S → E → W. Each step is a 0.18 s cross-fade, with a squash to 0.96 on x at the midpoint. Idle starts on S and returns to S after 4 s with no input.
+The rig is a Node2D parent chain. Each part holds a Sprite2D. The weapon hangs off the right hand. There is no bone rig. Idle and select are data in `rig.json`, built into an AnimationPlayer at 60 fps when the puppet loads. Arrows under the pedestal, or a horizontal drag of 60 px, step S → S mirrored → B. Each step is a 0.18 s cross-fade, with a squash to 0.96 on x at the midpoint. Idle starts on S and returns to S after 4 s with no input. The master is drawn at 1:1, and the feet stand on the top ellipse of the pedestal.
 
 `scenes/pc/character_select/recolour.gdshader` is a canvas_item shader shared by the parts. R tints skin, G tints hair, B tints eyes, and black leaves the texel as painted. The tint is the luminance maths from the closed 3D stage: `lum * 2.0 * tint`. There is no spatial shader, no armour dye, and no 3D node.
 
-Performance mode loads the `_1x` parts and turns the hair and weapon lag off. The list uses the same puppet at 0.8 scale, idle only.
+Performance mode loads the `_half` parts and turns the hair and weapon lag off. The list uses the same puppet at 0.8 scale, idle only.
 
 Source is on the box at `/workspace/stasium-pc-look/charselect/`. The copy in the repo is `art/pc/character_select/` (`manifest.json`, set `pc_character_select_p2_safe_pieces`, version v1, 11 Oct 2026). Reference mocks for the two screens are in this folder.
 

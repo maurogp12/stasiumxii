@@ -9,4 +9,4 @@ Full frames: after_list.png, after_class.png, after_appearance.png, after_name.p
 
 Before is the Crossroads still from docs/pc/media/before/stills/crossroads.png. After is the character screen recorded from res://scenes/pc/character_select/character_select.tscn at a 1920×1080 window (canvas_items / expand). The clip holds the list, then the class screen, then the Appearance tab. Female is selected on the last two; the pedestal stays the locked idle until female sheets exist.
 
-P3 puppet clip: puppet_before_after.mp4. Still: puppet_still.png. Before is Kestrel on the locked idle. After is the Ironjaw male cut-out: idle on S, the select slam, then the turn through E and W. 1920×1080, 30 fps, H.264, 8.1 s. The P1 files above are unchanged.
+P3 puppet clip: puppet_review.mp4. Stills: puppet_s_idle.png (idle on S), puppet_select_low.png (select at its lowest point), puppet_back.png (back view B). Before is Kestrel on the locked idle. After is the Ironjaw male cut-out at 1:1: idle on S, the select slam with the axe in the hand, then S mirrored, then B, then back to S. 1920×1080, 30 fps, H.264. The P1 files above are unchanged.

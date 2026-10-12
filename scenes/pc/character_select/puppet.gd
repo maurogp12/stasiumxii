@@ -3,7 +3,8 @@ extends Node2D
 ## 2D cut-out puppet for the character select pedestal and island.
 ## Parts are Sprite2D nodes in a parent chain. No bone rig and no 3D.
 ## Idle and select are built from rig.json into an AnimationPlayer at 60 fps.
-## S and E are painted. W is E mirrored. A turn is a 0.18 s cross-fade.
+## S is the front three-quarter. Sm is S mirrored. B is the back view.
+## A turn is a 0.18 s cross-fade.
 
 const ART_ROOT := "res://art/pc/character_select/puppets/"
 const SHADER := preload("res://scenes/pc/character_select/recolour.gdshader")
@@ -65,7 +66,7 @@ func show_puppet(class_key: String, gender_key: String) -> bool:
 	_fade_b.modulate.a = 0.0
 	_fade_b.visible = false
 	_apply_facing(_fade_a, "S")
-	_apply_facing(_fade_b, "E")
+	_apply_facing(_fade_b, "Sm")
 	_apply_root_scale()
 	play_idle()
 	return true
@@ -179,7 +180,7 @@ func snap_facing(which: String) -> void:
 func turn(dir: int) -> void:
 	if list_mode or _fading or rig.is_empty() or dir == 0:
 		return
-	var order: Array = rig.get("turn", {}).get("order", ["S", "E", "W"])
+	var order: Array = rig.get("turn", {}).get("order", ["S", "Sm", "B"])
 	var index := order.find(facing)
 	if index < 0:
 		index = 0
@@ -280,7 +281,8 @@ func _process(delta: float) -> void:
 	if _still < limit:
 		return
 	_still = 0.0
-	if facing == "E":
+	# Sm steps back to S. B steps forward to S.
+	if facing == "Sm":
 		turn(-1)
 	else:
 		turn(1)
@@ -406,7 +408,7 @@ func _node_path(part: String) -> String:
 func _apply_facing(root: Node2D, which: String) -> void:
 	if root == null:
 		return
-	var art := "E" if which == "W" else which
+	var art := _art_for(which)
 	var parts: Dictionary = rig.get("parts", {})
 	for part_name in parts.keys():
 		var spec: Dictionary = parts[part_name]
@@ -432,7 +434,7 @@ func _apply_facing(root: Node2D, which: String) -> void:
 func _bind_sprite(sprite: Sprite2D, part: String, art: String, pivot: Vector2) -> void:
 	var file_name := _file_for(part, art)
 	var folder := _folder_for(part)
-	var stem := ART_ROOT + "%s_%s/%s%s/%s/%s" % [class_id, gender, "_1x/" if performance else "", art, folder, file_name]
+	var stem := ART_ROOT + "%s_%s/%s%s/%s/%s" % [class_id, gender, "_half/" if performance else "", art, folder, file_name]
 	var tex := load(stem + ".png") as Texture2D
 	var mask := load(stem + "_mask.png") as Texture2D
 	sprite.texture = tex
@@ -471,12 +473,13 @@ func _folder_for(part: String) -> String:
 func _refresh_textures() -> void:
 	_materials.clear()
 	var shown := facing
+	var other := _next_facing(shown)
 	if _showing_b:
 		_apply_facing(_fade_b, shown)
-		_apply_facing(_fade_a, "E" if shown == "S" else "S")
+		_apply_facing(_fade_a, other)
 	else:
 		_apply_facing(_fade_a, shown)
-		_apply_facing(_fade_b, "E" if shown == "S" else "S")
+		_apply_facing(_fade_b, other)
 
 
 func _begin_fade(nxt: String) -> void:
@@ -538,8 +541,22 @@ func _apply_root_scale() -> void:
 		hidden.scale = Vector2(_base_scale, _base_scale)
 
 
+func _art_for(which: String) -> String:
+	if which == "B":
+		return "B"
+	return "S"
+
+
+func _next_facing(which: String) -> String:
+	var order: Array = rig.get("turn", {}).get("order", ["S", "Sm", "B"])
+	var index := order.find(which)
+	if index < 0:
+		index = 0
+	return str(order[posmod(index + 1, order.size())])
+
+
 func _sign_for(which: String) -> float:
-	return -1.0 if which == "W" else 1.0
+	return -1.0 if which == "Sm" else 1.0
 
 
 func _visible_root() -> Node2D:

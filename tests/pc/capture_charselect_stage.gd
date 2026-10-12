@@ -53,21 +53,29 @@ func _go() -> void:
 	puppet.snap_facing("S")
 	puppet.play_idle()
 	_caption.text = "AFTER  Ironjaw male, idle on S."
-	await _hold(20)
-	_save("puppet_still.png")
-	await _hold(40)
-	_caption.text = "AFTER  Select. The axe comes down."
+	await _hold(24)
+	_save("puppet_s_idle.png")
+	await _hold(36)
+	_caption.text = "AFTER  Select. The axe stays in the hand."
 	puppet.play_select()
-	await _hold(75)
+	# 1.05 s is the low point of the slam. Capture runs at 30 fps.
+	await _hold(32)
+	_save("puppet_select_low.png")
+	await _hold(36)
 	puppet.snap_facing("S")
 	puppet.play_idle()
-	_caption.text = "AFTER  Turn to E."
+	_caption.text = "AFTER  Turn. S mirrored."
 	puppet.turn(1)
-	await _hold(36)
-	_caption.text = "AFTER  Turn to W. E mirrored."
+	await _hold(28)
+	_caption.text = "AFTER  Back view, B."
 	puppet.turn(1)
-	await _hold(36)
-	print("CAPTURED frames=%d still=puppet_still.png" % _frame_i)
+	await _hold(20)
+	_save("puppet_back.png")
+	await _hold(16)
+	_caption.text = "AFTER  Back to S."
+	puppet.turn(1)
+	await _hold(24)
+	print("CAPTURED frames=%d stills=puppet_s_idle.png,puppet_select_low.png,puppet_back.png" % _frame_i)
 	quit(0)
 
 

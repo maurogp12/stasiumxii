@@ -650,7 +650,8 @@ func _place_feet() -> void:
 		return
 	var pivot := Painted.pivot_of(_shown_class, "idle", IDLE_LETTER)
 	var height := size.y * (SPRITE_PX / DESIGN.y)
-	var feet_p := Vector2(_pedestal.size.x * 0.5, _pedestal.size.y * 0.30)
+	# 0.18 sits on the top ellipse. The front lip of that ellipse is near 0.36.
+	var feet_p := Vector2(_pedestal.size.x * 0.5, _pedestal.size.y * 0.18)
 	var feet_i := Vector2(_island.size.x * 0.5, _island.size.y * (210.0 / 644.0))
 	_fit_sprite(pedestal_sprite, feet_p, height, cell, pivot)
 	_fit_sprite(island_sprite, feet_i, height * ISLAND_SPRITE_SCALE, cell, pivot)
