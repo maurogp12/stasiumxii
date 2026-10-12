@@ -70,14 +70,37 @@ The PC dungeon star is the Stasis star. Equal odds over sets make every class eq
 
 ## Balance
 
-The dungeon star sims were rerun (`tests/sim_dungeon_stars.gd <id> 8 <level>`, solo hero bot, every class). The bot now wears its class's own set by star, the way mobile's `sim_dungeons.gd` gives its heroes a set (`GEAR_BY_STAR`, Proposed): ★1 Normal +0, ★2 Normal +1, ★3 Rare +0, ★4 Rare +1, ★5 Rare +2, all five pieces; the level milestone AP rides along. `gear none` reruns the bare body.
+The dungeon star sims were rerun (`tests/sim_dungeon_stars.gd <id> 8 <level>`, solo hero bot, every class). The bot now wears its class's own set by star, the way mobile's `sim_dungeons.gd` gives its heroes a set (`GEAR_BY_STAR`, Proposed): ★1 three Normal pieces (weapon, head, chest) at +0, ★2 the Normal set +0, ★3 Normal +1, ★4 the Rare set +0, ★5 Rare +1; the level milestone AP rides along. `gear none` reruns the bare body.
 
-BALANCE_TABLE
+Win % per star (8 runs x 5 classes; levels 2 / 12 / 22 / 32 / 42). "Before" is `pc/world-zones` eb5bfb9 (bare hero, old rows). "Gear, old rows" is this branch with the gear assumption and the old rows. "After" is this branch with the retuned rows.
+
+| Dungeon | Before ★1-★5 | Gear, old rows | After ★1-★5 |
+|---|---|---|---|
+| Old Granary Cellar | 85 / 68 / 60 / 58 / 38 | ★1 100, ★2 100 (all classes 8/8; run stopped there) | 78 / 62 / 48 / 45 / 35 |
+| Frostspire Archive | 78 / 62 / 58 / 48 / 35 | ★1 100, ★2 100 | 80 / 62 / 55 / 40 / 40 |
+| Saltmaw Grotto | 80 / 62 / 52 / 42 / 38 | ★1 at the cellar's ★1 row 90 | 82 / 68 / 52 / 38 / 40 |
+| Drowned Abbey | 78 / 55 / 52 / 38 / 35 | ★1 at [1.25, 1.4] 90 | 82 / 62 / 55 / 52 / 35 |
+| Heart of the Blight | 85 / 70 / 55 / 50 / 38 | ★1 at [1.3, 1.45] 90 | 90 / 70 / 60 / 48 / 42 |
+
+Every dungeon left its curve (★1 100%), so every star row was retuned (`data/world/dungeon_monsters.json`, `[hp, damage]`; the old rows stay as `pre_gear_scale`):
+
+| Dungeon | ★1 | ★2 | ★3 | ★4 | ★5 |
+|---|---|---|---|---|---|
+| Old Granary Cellar (top-level `scale`) | 1.0, 1.0 → 1.25, 1.4 | 1.1, 1.05 → 1.65, 1.75 | 1.15, 1.1 → 1.72, 1.76 | 1.2, 1.1 → 1.9, 1.95 | 1.0, 1.0 → 1.75, 1.85 |
+| Frostspire Archive | 1.0, 1.0 → 1.2, 1.35 | 1.05, 1.0 → 1.5, 1.6 | 1.05, 1.0 → 1.55, 1.58 | 1.1, 1.0 → 1.95, 1.95 | 0.875, 0.85 → 1.6, 1.65 |
+| Saltmaw Grotto | 1.0, 1.0 → 1.32, 1.48 | 1.05, 1.0 → 1.8, 1.9 | 1.1, 1.05 → 2.0, 1.95 | 1.25, 1.05 → 2.3, 2.2 | 1.05, 1.05 → 1.95, 2.05 |
+| Drowned Abbey | 1.0, 1.0 → 1.3, 1.45 | 1.05, 1.0 → 1.6, 1.7 | 1.1, 1.05 → 1.85, 1.85 | 1.12, 1.05 → 2.2, 2.08 | 1.0, 0.9 → 2.08, 1.85 |
+| Heart of the Blight | 1.0, 1.0 → 1.32, 1.46 | 1.0, 1.0 → 1.55, 1.65 | 1.2, 1.05 → 1.92, 1.87 | 1.25, 1.05 → 2.35, 2.1 | 0.8, 0.8 → 2.03, 1.88 |
+
+The win rate jumps in steps (one more hit to kill or be killed flips a class from 8/8 to 0/8), so a few stars sit a little off the curve: the abbey's ★4 (52) is close to its ★3 (55), the blight's ★1 is 90. Kestrel and Gloam lose most of the higher stars, as before.
+
+**A bare hero now loses.** With the new rows a hero with no gear wins the cellar's ★1 15% of the time and ★2 2% (gear `none`). A first-time hero has no gear. Open: a starter kit (for example an Ashmantle set at +0 when the class is picked), or a gentler cellar ★1 row. The dungeon scene suites now give their autoplay hero an Ashmantle +0 kit (`hero_gear` in the launch context).
 
 ## Open points
 
 - One chest or two per dungeon run; a daily chest cap like mobile's 5 clears.
 - The sim's gear assumption by star.
+- A bare hero loses the cellar ★1 (15%): a starter kit or a softer first row.
 - PC points (Mastery / Vitality / Swift / Resist) do not reach the dungeon fight; gear does.
 - Class base HP (mobile 75-110) is not ported; PC stays at a flat 80.
 - Ultra Koliseo-only lines have no PC Koliseo fight to work in yet.
