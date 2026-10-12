@@ -127,6 +127,7 @@ func _test_every_blend_and_reaction_is_logged() -> void:
 	_assert_mire_unbound_logged()
 	_assert_hidden_spark_logged()
 	_assert_magma_shield_blocked()
+	_assert_utility_residue_logged()
 
 
 func _assert_blend_logged(blend_id: String, spec: Dictionary) -> void:
@@ -339,6 +340,76 @@ func _assert_magma_shield_blocked() -> void:
 	eq(blocked_line.contains(","), false, "the blocked line has no tile: %s" % blocked_line)
 
 
+func _assert_utility_residue_logged() -> void:
+	_open_duel(Vector2i(5, 5), Vector2i(6, 5), ["bastion", "kestrel"])
+	_sim._active_seat = 0
+	var bastion: Dictionary = _sim._unit_by_seat(0)
+	bastion["spell_elements"] = {"bash": "earth", "plant": "water", "hold_line": "earth", "snap_wall": "water", "ward": "earth"}
+	bastion["aegis"] = 4
+	var wall: Dictionary = _sim.submit({"type": "cast", "spell": "snap_wall", "seat": 0, "to": Vector2i(5, 6)})
+	eq(bool(wall.get("ok", false)), true, "Snap Wall resolves for the log")
+	var row := _find(_sim.snapshot()["battle_log"], "snap_wall")
+	var owner_lines: Array = LOG.lines(row, _view(0))
+	var enemy_lines: Array = LOG.lines(row, _view(1))
+	eq(owner_lines, enemy_lines, "Snap Wall Residue reads the same on both seats")
+	var joined := " ".join(owner_lines)
+	truthy(joined.contains("Snap Wall: Residue Water on Kestrel."), "Snap Wall Residue line: %s" % joined)
+	eq(joined.contains("("), false, "Snap Wall Residue has no tile: %s" % joined)
+	var bash: Dictionary = _sim.submit({"type": "cast", "spell": "bash", "seat": 0, "to": Vector2i(6, 5)})
+	eq(bool(bash.get("ok", false)), true, "Earth Bash connects for Mire")
+	var blend := _find(_sim.snapshot()["battle_log"], "blend")
+	var blend_line := LOG.plain(blend, _view(0))
+	eq(blend_line, LOG.plain(blend, _view(1)), "Mire reads the same on both seats: %s" % blend_line)
+	truthy(blend_line.contains("Mire") and blend_line.contains("Bastion") and blend_line.contains("Kestrel"), "Mire names both fighters: %s" % blend_line)
+	var whole := LOG.text(_sim.snapshot()["battle_log"], _view(1))
+	var residue_at := whole.find("Snap Wall: Residue Water on Kestrel.")
+	var mire_at := whole.find("Mire:")
+	truthy(residue_at >= 0 and mire_at > residue_at, "Residue is logged before Mire: %s" % whole)
+	eq(whole.contains("("), false, "the wall and the Blend keep tiles out: %s" % whole)
+
+	_open_duel(Vector2i(5, 5), Vector2i(6, 5), ["gloam", "kestrel"])
+	_sim._active_seat = 0
+	var gloam: Dictionary = _sim._unit_by_seat(0)
+	gloam["spell_elements"] = {"cut": "air", "drop_shade": "air", "ambush": "air", "fade": "water"}
+	var faded: Dictionary = _sim.submit({"type": "cast", "spell": "fade", "seat": 0, "to": Vector2i(5, 5)})
+	eq(bool(faded.get("ok", false)), true, "Fade resolves")
+	eq(str(_sim._unit_by_seat(1).get("residue", "")), "water", "Fade marks the adjacent enemy")
+	var snap: Dictionary = _sim.snapshot()
+	var net: Node = root.get_node("NetSession")
+	var viewed: Dictionary = net._redact_invisible_for_viewer(snap, [], 1)
+	var kept: Dictionary = net._redact_invisible_for_viewer(snap, [], 0)
+	var enemy_row := _find(viewed["snapshot"].get("battle_log", []), "cast")
+	var owner_row := _find(kept["snapshot"].get("battle_log", []), "cast")
+	eq(enemy_row.get("caster_cell", Vector2i.ZERO), null, "the enemy wire drops hidden Gloam's cell")
+	truthy(owner_row.get("caster_cell", null) != null, "Gloam's own wire keeps the cell")
+	var marked: Array = enemy_row.get("residue_on", []) if enemy_row.get("residue_on", []) is Array else []
+	truthy(not marked.is_empty(), "the enemy wire still carries the Residue seats")
+	for item in marked:
+		var rec: Dictionary = item
+		eq(rec.has("to") or rec.has("pos") or rec.has("cell") or rec.has("from"), false, "Residue rows have no tile")
+	var enemy_view: Dictionary = viewed["snapshot"]
+	enemy_view["local_seat"] = 1
+	var owner_view: Dictionary = kept["snapshot"]
+	owner_view["local_seat"] = 0
+	var fade_lines: Array = LOG.lines(enemy_row, enemy_view)
+	eq(fade_lines, LOG.lines(owner_row, owner_view), "both phones show the same Fade Residue")
+	var fade_text := " ".join(fade_lines)
+	truthy(fade_text.contains("Fade: Residue Water on Kestrel."), "Fade Residue line: %s" % fade_text)
+	eq(fade_text.contains("(") or fade_text.contains("5, 5") or fade_text.contains("5,5"), false, "Fade Residue keeps the tile out: %s" % fade_text)
+
+	_open_duel(Vector2i(4, 5), Vector2i(5, 5), ["kestrel", "ironjaw"])
+	_sim._active_seat = 0
+	var kestrel: Dictionary = _sim._unit_by_seat(0)
+	kestrel["spell_elements"] = {"mark_shot": "air", "detonate": "air", "vault": "water", "snare_trap": "water"}
+	var vault: Dictionary = _sim.submit({"type": "cast", "spell": "vault", "seat": 0, "to": Vector2i(6, 5)})
+	eq(bool(vault.get("ok", false)), true, "Vault resolves")
+	var vault_row := _find(_sim.snapshot()["battle_log"], "cast")
+	var vault_text := " ".join(LOG.lines(vault_row, _view(0)))
+	eq(vault_text, " ".join(LOG.lines(vault_row, _view(1))), "Vault Residue matches on both seats")
+	truthy(vault_text.contains("Vault: Residue Water on Ironjaw."), "Vault Residue line: %s" % vault_text)
+	eq(vault_text.contains("("), false, "Vault Residue has no tile: %s" % vault_text)
+
+
 func _open_duel(at: Vector2i, foe: Vector2i, classes: Array = ["ironjaw", "kestrel"]) -> void:
 	_sim.reset_match({
 		"seed": 3,
@@ -410,6 +481,16 @@ func _test_named_lines() -> void:
 		"from": Vector2i(2, 2), "to": Vector2i(5, 2), "ap_spent": 2, "ap_left": 4, "mp_left": 3,
 	}, snap)
 	truthy(mirror.contains("Mirror Hour") and mirror.contains("-2 AP") and mirror.contains("AP 4 MP 3"), "mirror names AP left: %s" % mirror)
+	var sand_event := {
+		"type": "still", "still": "gathered_sand", "seat": 0, "target_seat": 1, "damage": 4, "pos": Vector2i(5, 7),
+	}
+	var sand_owner := snap.duplicate(true)
+	sand_owner["local_seat"] = 0
+	var sand_enemy := snap.duplicate(true)
+	sand_enemy["local_seat"] = 1
+	eq(LOG.plain(sand_event, sand_owner), "Gathered Sand: Kestrel reflects 4 to Ironjaw.", "Gathered Sand names both fighters")
+	eq(LOG.plain(sand_event, sand_enemy), LOG.plain(sand_event, sand_owner), "both phones show the same reflect line")
+	eq(LOG.plain(sand_event, sand_owner).contains("("), false, "the reflect line has no tile")
 	var tide := LOG.plain({"type": "still", "still": "tide", "seat": 0, "cleared": ["Slow", "Burn"]}, snap)
 	truthy(tide.contains("Tide cleansed Slow, Burn"), "tide names what it cleaned: %s" % tide)
 	var vault := LOG.plain({

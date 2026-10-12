@@ -87,17 +87,27 @@ static func lines(event: Dictionary, snap: Dictionary) -> Array:
 	var kind := str(event.get("type", ""))
 	if not LINES.has(kind):
 		return []
+	var extra := _residue_lines(event, snap)
 	var veiled := _veiled_line(kind, event, snap)
 	if veiled != "":
-		return [veiled]
+		var hidden: Array = [veiled]
+		hidden.append_array(extra)
+		return hidden
 	if kind == "hit":
 		var out: Array = [_hit_line(event, snap)]
 		var push := _push_success(event, snap)
 		if push != "":
 			out.append(push)
+		out.append_array(extra)
 		return out
 	var text := _line(kind, event, snap)
-	return [] if text == "" else [text]
+	if text == "" and extra.is_empty():
+		return []
+	var rows: Array = []
+	if text != "":
+		rows.append(text)
+	rows.append_array(extra)
+	return rows
 
 
 ## Plain log, newest events last, one header per turn.
@@ -360,6 +370,40 @@ static func _move_line(event: Dictionary, snap: Dictionary) -> String:
 	var steps := _step_count(event)
 	var verb := "walks" if steps < 0 else "walks %d" % steps
 	return _finish("%s %s" % [who, verb], event, true)
+
+
+## "Snap Wall: Residue Water on Kestrel." Seats and the element only, so a
+## hidden Gloam, a Shade and a Snare never put a tile on the line.
+static func _residue_lines(event: Dictionary, snap: Dictionary) -> Array:
+	var raw: Variant = event.get("residue_on", [])
+	if typeof(raw) != TYPE_ARRAY:
+		return []
+	var spell := _residue_spell_name(event)
+	var out: Array = []
+	for item in raw:
+		if typeof(item) != TYPE_DICTIONARY:
+			continue
+		var row: Dictionary = item
+		var el := str(row.get("residue", ""))
+		if el == "":
+			continue
+		out.append("%s: Residue %s on %s." % [spell, el.capitalize(), _name(snap, int(row.get("target_seat", -1)))])
+	return out
+
+
+static func _residue_spell_name(event: Dictionary) -> String:
+	var spell := str(event.get("spell", ""))
+	if spell != "":
+		return _spell_name(spell)
+	match str(event.get("type", "")):
+		"advance":
+			return "Advance"
+		"trap":
+			return "Snare Trap"
+		"snap_wall":
+			return "Snap Wall"
+		_:
+			return "Spell"
 
 
 static func _cast_line(event: Dictionary, snap: Dictionary) -> String:
@@ -687,7 +731,7 @@ static func _still_line(event: Dictionary, snap: Dictionary) -> String:
 		"shatterglass":
 			return "Shatterglass breaks the shield."
 		"gathered_sand":
-			return "Gathered Sand releases."
+			return "Gathered Sand: %s reflects %d to %s." % [who, int(event.get("damage", 0)), _name(snap, int(event.get("target_seat", -1)))]
 		_:
 			return "%s." % title
 

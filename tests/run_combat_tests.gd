@@ -27,6 +27,7 @@ func _finish_shade_board() -> void:
 func _run() -> void:
 	_test_element_riders()
 	_test_element_blends()
+	_test_utility_residue()
 	_test_marks_fade_without_attack()
 	_test_reset_and_turn_order()
 	_test_live_deploy_starts_before_turn_1()
@@ -7079,7 +7080,7 @@ func _test_preview_cast() -> void:
 	eq(diag_preview["legal"], false, "diagonal Advance dest is illegal")
 	eq(diag_preview["reason"], "out_of_range", "preview_cast rejects a diagonal")
 	truthy(_notes_has(preview["notes"], "teleport"), "Advance notes teleport")
-	eq(preview["on_connect_text"], "Teleport snap. +1 Impact if adjacent. Facing unchanged.", "Advance connect kit line")
+	eq(preview["on_connect_text"], "Teleport snap. +1 Impact if adjacent. Facing unchanged. Enemies next to the landing get this element's Residue.", "Advance connect kit line")
 	eq(preview["on_miss_text"], "No roll.", "Advance has no roll")
 	_assert_preview_did_not_mutate(before, "Advance preview is read-only")
 	eq(_unit(1)["pos"], Vector2i(3, 3), "Advance preview does not teleport")
@@ -9023,16 +9024,190 @@ func _test_marks_fade_without_attack() -> void:
 	eq(int(_unit(0)["pulse"]), 0, "a turn with no spell at all drops her Pulse")
 
 
+func _residue_line(events: Array, spell_name: String) -> String:
+	var log = load("res://ui/battle_log.gd")
+	var snap: Dictionary = _sim.snapshot()
+	for event in events:
+		if typeof(event) != TYPE_DICTIONARY:
+			continue
+		for row in log.lines(event, snap):
+			if str(row).begins_with(spell_name + ": Residue"):
+				return str(row)
+	return ""
+
+
+func _test_utility_residue() -> void:
+	var bastion_picks := {"bash": "earth", "plant": "water", "hold_line": "earth", "snap_wall": "water", "ward": "water"}
+	# Around the wall, not a hit: Residue only, then Earth Bash blends to Mire.
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1, 1], "classes": ["bastion", "kestrel"], "positions": [Vector2i(5, 5), Vector2i(6, 5)], "bastion_aegis": 4})
+	_live_unit(0)["spell_elements"] = bastion_picks
+	var wall: Dictionary = _sim.submit({"type": "cast", "spell": "snap_wall", "to": Vector2i(5, 6), "seat": 0})
+	eq(bool(wall.get("ok", false)), true, "Snap Wall resolves")
+	eq(str(_unit(1).get("residue", "")), "water", "Kestrel takes the wall's Water Residue")
+	eq(int(_unit(1).get("residue_turns", 0)), 2, "that Residue lasts 2 turns")
+	eq(bool(_unit(1).get("water_slow", false)), false, "Snap Wall does not slow")
+	eq(int(_unit(1).get("burn_stacks", 0)), 0, "Snap Wall does not Burn")
+	eq(bool(_unit(0).get("grounded", false)), false, "Snap Wall does not Ground Bastion")
+	eq(_residue_line(wall.get("events", []), "Snap Wall"), "Snap Wall: Residue Water on Kestrel.", "Snap Wall Residue line")
+	var bash: Dictionary = _sim.submit({"type": "cast", "spell": "bash", "to": Vector2i(6, 5), "seat": 0})
+	eq(str(_first_event_where(bash.get("events", []), "blend").get("blend", "")), "mire", "Water wall then Earth Bash is Mire")
+	eq(str(_unit(1).get("residue", "")), "", "the Blend writes no new Residue")
+
+	# A Fire wall still does not Burn. Knocking the wall down adds no Residue.
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "classes": ["bastion", "kestrel"], "positions": [Vector2i(1, 1), Vector2i(8, 8)], "bastion_aegis": 4})
+	_live_unit(0)["spell_elements"] = {"bash": "fire", "plant": "fire", "hold_line": "fire", "snap_wall": "fire", "ward": "fire"}
+	var far_wall: Dictionary = _sim.submit({"type": "cast", "spell": "snap_wall", "to": Vector2i(2, 1), "seat": 0})
+	eq(bool(far_wall.get("ok", false)), true, "a far Snap Wall resolves")
+	eq(str(_unit(1).get("residue", "")), "", "an enemy who is not next to the wall is clean")
+	eq(int(_unit(1).get("burn_stacks", 0)), 0, "Fire Snap Wall does not Burn")
+	var broke: Dictionary = _sim.submit({"type": "cast", "spell": "snap_wall", "to": Vector2i(2, 1), "seat": 0})
+	eq(bool(broke.get("ok", false)), true, "Bastion knocks his wall down")
+	eq(_residue_line(broke.get("events", []), "Snap Wall"), "", "knocking the wall down leaves no Residue")
+
+	# No pick: the kit is still Neutral, so nothing is written.
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "classes": ["bastion", "kestrel"], "positions": [Vector2i(5, 5), Vector2i(6, 5)], "bastion_aegis": 4})
+	var bare: Dictionary = _sim.submit({"type": "cast", "spell": "snap_wall", "to": Vector2i(5, 6), "seat": 0})
+	eq(bool(bare.get("ok", false)), true, "a Neutral Snap Wall still builds")
+	eq(str(_unit(1).get("residue", "")), "", "Neutral Snap Wall writes no Residue")
+
+	# Plant marks enemies next to Bastion, not enemies who only touch the flag.
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "classes": ["bastion", "kestrel"], "positions": [Vector2i(5, 5), Vector2i(5, 8)], "bastion_aegis": 2})
+	_live_unit(0)["spell_elements"] = bastion_picks
+	var missed: Dictionary = _sim.submit({"type": "cast", "spell": "plant", "to": Vector2i(5, 7), "seat": 0})
+	eq(bool(missed.get("ok", false)), true, "Plant resolves away from Kestrel")
+	eq(str(_unit(1).get("residue", "")), "", "an enemy next to the flag but not Bastion stays clean")
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "classes": ["bastion", "kestrel"], "positions": [Vector2i(5, 5), Vector2i(6, 5)], "bastion_aegis": 2})
+	_live_unit(0)["spell_elements"] = bastion_picks
+	var planted: Dictionary = _sim.submit({"type": "cast", "spell": "plant", "to": Vector2i(5, 7), "seat": 0})
+	eq(bool(planted.get("ok", false)), true, "Plant resolves next to Kestrel")
+	eq(str(_unit(1).get("residue", "")), "water", "Plant marks the enemy next to Bastion")
+	eq(_residue_line(planted.get("events", []), "Plant"), "Plant: Residue Water on Kestrel.", "Plant Residue line")
+	eq(bool(_unit(1).get("water_slow", false)), false, "Plant does not slow")
+
+	# Fade marks the neighbor and does not mark Gloam.
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "classes": ["gloam", "kestrel"], "positions": [Vector2i(5, 5), Vector2i(6, 5)]})
+	_live_unit(0)["spell_elements"] = {"cut": "air", "drop_shade": "water", "ambush": "air", "fade": "water"}
+	var faded: Dictionary = _sim.submit({"type": "cast", "spell": "fade", "to": Vector2i(5, 5), "seat": 0})
+	eq(bool(faded.get("ok", false)), true, "Fade resolves")
+	eq(str(_unit(1).get("residue", "")), "water", "Fade marks the adjacent enemy")
+	eq(str(_unit(0).get("residue", "")), "", "Fade does not mark Gloam")
+	eq(_residue_line(faded.get("events", []), "Fade"), "Fade: Residue Water on Kestrel.", "Fade Residue line")
+	eq(int(_unit(0).get("mp", 0)), int(_unit(0).get("max_mp", 0)), "Air Fade does not grant the melee MP rider")
+
+	# Vault and Advance mark enemies next to the landing.
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "classes": ["kestrel", "ironjaw"], "positions": [Vector2i(4, 5), Vector2i(5, 5)]})
+	_live_unit(0)["spell_elements"] = {"mark_shot": "air", "detonate": "air", "vault": "water", "snare_trap": "earth"}
+	var vault: Dictionary = _sim.submit({"type": "cast", "spell": "vault", "to": Vector2i(6, 5), "seat": 0})
+	eq(bool(vault.get("ok", false)), true, "Vault resolves")
+	eq(_unit(0)["pos"], Vector2i(6, 5), "Vault lands two tiles on")
+	eq(str(_unit(1).get("residue", "")), "water", "Vault marks the enemy next to the landing")
+	eq(_residue_line(vault.get("events", []), "Vault"), "Vault: Residue Water on Ironjaw.", "Vault Residue line")
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "classes": ["ironjaw", "kestrel"], "positions": [Vector2i(4, 5), Vector2i(5, 5)]})
+	_live_unit(0)["spell_elements"] = {"advance": "water", "strike": "earth", "shoulder": "earth", "crush": "earth"}
+	var advance: Dictionary = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(6, 5), "seat": 0})
+	eq(bool(advance.get("ok", false)), true, "Advance resolves")
+	eq(str(_unit(1).get("residue", "")), "water", "Advance marks the enemy next to the landing")
+	eq(_residue_line(advance.get("events", []), "Advance"), "Advance: Residue Water on Kestrel.", "Advance Residue line")
+	eq(bool(_unit(0).get("grounded", false)), false, "Advance does not Ground Ironjaw")
+
+	# Ward marks enemies next to Bastion. Allies stay clean.
+	_sim.reset_match({
+		"seed": 1, "flat_board": true, "skip_deploy": true, "team_size": 2, "bastion_aegis": 4,
+		"classes": ["bastion", "kestrel", "mender", "gloam"],
+		"positions": [Vector2i(5, 5), Vector2i(10, 10), Vector2i(5, 6), Vector2i(6, 5)],
+	})
+	_sim._active_seat = 0
+	_live_unit(0)["spell_elements"] = bastion_picks
+	var ward: Dictionary = _sim.submit({"type": "cast", "spell": "ward", "to": Vector2i(5, 5), "seat": 0})
+	eq(bool(ward.get("ok", false)), true, "Ward resolves")
+	eq(str(_unit(2).get("residue", "")), "", "the warded ally has no Residue")
+	eq(str(_unit(0).get("residue", "")), "", "Bastion has no Residue from his own Ward")
+	eq(str(_unit(3).get("residue", "")), "water", "the enemy next to Bastion takes Ward's Residue")
+	eq(str(_unit(1).get("residue", "")), "", "a far enemy is not marked")
+	eq(_residue_line(ward.get("events", []), "Ward"), "Ward: Residue Water on Gloam.", "Ward Residue line")
+
+	# A heal marks enemies next to the ally and never the ally.
+	_sim.reset_match({
+		"seed": 1, "flat_board": true, "skip_deploy": true, "team_size": 2, "rolls": [1],
+		"classes": ["mender", "kestrel", "ironjaw", "gloam"],
+		"positions": [Vector2i(4, 4), Vector2i(10, 10), Vector2i(6, 4), Vector2i(7, 4)],
+	})
+	_sim._active_seat = 0
+	_live_unit(0)["spell_elements"] = {"mend": "water", "pulse_tap": "water", "cleanse": "earth", "heartstop": "water", "rekindle": "fire"}
+	_live_unit(2)["hp"] = int(_live_unit(2)["hp"]) - 20
+	var healed: Dictionary = _sim.submit({"type": "cast", "spell": "mend", "to": Vector2i(6, 4), "target_seat": 2, "seat": 0})
+	eq(bool(healed.get("ok", false)), true, "Mend resolves")
+	eq(str(_unit(2).get("residue", "")), "", "the healed ally has no Residue")
+	eq(str(_unit(2).get("infusion", "")), "water", "the heal still infuses the ally")
+	eq(str(_unit(3).get("residue", "")), "water", "the enemy next to the ally takes Mend's Residue")
+	eq(bool(_unit(3).get("water_slow", false)), false, "Mend does not slow that enemy")
+	# Cleanse is not a heal: no infusion, Residue on the neighbor, nothing on her.
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "classes": ["mender", "ironjaw"], "positions": [Vector2i(5, 5), Vector2i(6, 5)]})
+	_live_unit(0)["spell_elements"] = {"mend": "water", "pulse_tap": "water", "cleanse": "earth", "heartstop": "water", "rekindle": "fire"}
+	var cleansed: Dictionary = _sim.submit({"type": "cast", "spell": "cleanse", "to": Vector2i(5, 5), "seat": 0})
+	eq(bool(cleansed.get("ok", false)), true, "self Cleanse resolves")
+	eq(str(_unit(0).get("residue", "")), "", "Cleanse does not mark Mender")
+	eq(str(_unit(0).get("infusion", "")), "", "Cleanse does not infuse")
+	eq(str(_unit(1).get("residue", "")), "earth", "Cleanse marks the enemy next to her")
+	eq(bool(_unit(0).get("grounded", false)), false, "Earth Cleanse does not Ground her")
+
+	# Drop Shade marks enemies next to the shadow. Dismiss does not.
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "classes": ["gloam", "kestrel"], "positions": [Vector2i(2, 2), Vector2i(5, 5)]})
+	_live_unit(0)["spell_elements"] = {"cut": "air", "drop_shade": "water", "ambush": "air", "fade": "air"}
+	var shade: Dictionary = _sim.submit({"type": "cast", "spell": "drop_shade", "to": Vector2i(4, 5), "seat": 0})
+	eq(bool(shade.get("ok", false)), true, "Drop Shade resolves")
+	eq(str(_unit(1).get("residue", "")), "water", "the enemy next to the shadow is marked")
+	var shade_line := _residue_line(shade.get("events", []), "Drop Shade")
+	eq(shade_line, "Drop Shade: Residue Water on Kestrel.", "Drop Shade Residue line")
+	eq(shade_line.contains("("), false, "Drop Shade Residue has no tile")
+	_live_unit(1)["residue"] = ""
+	_live_unit(1)["residue_turns"] = 0
+	var dismissed: Dictionary = _sim.submit({"type": "cast", "spell": "drop_shade", "to": Vector2i(4, 5), "seat": 0})
+	eq(bool(dismissed.get("ok", false)), true, "dismissing the shadow resolves")
+	eq(str(_unit(1).get("residue", "")), "", "dismissing a shadow writes no Residue")
+
+	# Setting a trap marks neighbors. Springing it marks the victim, still with no rider.
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "classes": ["kestrel", "ironjaw"], "positions": [Vector2i(4, 5), Vector2i(8, 5)]})
+	_live_unit(0)["spell_elements"] = {"mark_shot": "air", "detonate": "air", "vault": "air", "snare_trap": "fire"}
+	var trap: Dictionary = _sim.submit({"type": "cast", "spell": "snare_trap", "to": Vector2i(6, 5), "seat": 0})
+	eq(bool(trap.get("ok", false)), true, "Snare Trap resolves")
+	eq(str(_unit(1).get("residue", "")), "", "an enemy away from the trap is clean")
+	_live_unit(1)["pos"] = Vector2i(6, 4)
+	_sim.submit({"type": "end_turn", "seat": 0})
+	var stepped: Dictionary = _sim.submit({"type": "move", "to": Vector2i(6, 5), "seat": 1})
+	eq(bool(stepped.get("ok", false)), true, "Ironjaw steps onto the trap")
+	eq(str(_unit(1).get("residue", "")), "fire", "the sprung trap marks its victim")
+	eq(int(_unit(1).get("burn_stacks", 0)), 0, "a sprung trap does not Burn")
+	eq(_residue_line(stepped.get("events", []), "Snare Trap"), "Snare Trap: Residue Fire on Ironjaw.", "Snare Trap Residue line")
+
+	var plant_card := " ".join(SpellTooltip.simple_lines(SpellKits.PLANT))
+	truthy(plant_card.contains("next to you") and plant_card.contains("Element:"), "Plant's card names Residue and the pick")
+	var wall_card := " ".join(SpellTooltip.simple_lines(SpellKits.SNAP_WALL))
+	truthy(wall_card.contains("next to the wall"), "Snap Wall's card names Residue")
+	var fade_card := " ".join(SpellTooltip.simple_lines(SpellKits.FADE))
+	truthy(fade_card.contains("not sent"), "Fade's card says the position is not sent")
+	var vault_card := " ".join(SpellTooltip.simple_lines(SpellKits.VAULT))
+	truthy(vault_card.contains("where you land"), "Vault's card names the landing")
+	eq(" ".join(SpellTooltip.simple_lines(SpellKits.NIGHTFOLD)).contains("Element: the one you picked"), false, "Nightfold stays out of the picker")
+	truthy(SpellTooltip.card_text({"name": "Snap Wall", "spell_id": SpellKits.SNAP_WALL, "ap": 1, "mp": 0, "range_text": "range 1–2"}).contains("Residue on enemies next to the wall"), "the Snap Wall hold card names Residue")
+
+
 func _test_element_blends() -> void:
 	# Spell data follows the picked element.
 	eq(str(SpellKits.spell_as("detonate", "earth")["element"]), "earth", "Detonate can be cast as Earth")
 	eq(int(SpellKits.spell_as("detonate", "earth")["max_range"]), 4, "Earth Detonate has no Air range")
 	eq(int(SpellKits.spell_as("detonate", "air")["max_range"]), 5, "Air Detonate keeps +1 range")
 	eq(int(SpellKits.spell_as("mend", "fire")["base_heal"]), 16, "Fire Mend has no Water +4")
-	eq(str(SpellKits.spell_as("advance", "fire")["element"]), "neutral", "geometry spells stay Neutral")
-	eq(SpellKits.is_flex("rekindle"), false, "Rekindle takes no element")
-	eq(SpellKits.flex_spells("ironjaw"), ["strike", "shoulder", "crush"], "Ironjaw's FLEX spells")
+	eq(str(SpellKits.spell_as("advance", "fire")["element"]), "fire", "Advance takes the picked element")
+	eq(int(SpellKits.spell_as("advance", "air")["max_range"]), 2, "Air does not stretch Advance")
+	eq(int(SpellKits.spell_as("vault", "air")["max_range"]), 2, "Air does not stretch Vault")
+	eq(SpellKits.is_flex("rekindle"), true, "Rekindle takes an element")
+	eq(SpellKits.is_flex("nightfold"), false, "Nightfold stays gated")
+	eq(SpellKits.flex_spells("ironjaw"), ["advance", "strike", "shoulder", "crush"], "Ironjaw's FLEX spells")
+	eq(SpellKits.flex_spells("bastion"), ["bash", "plant", "hold_line", "snap_wall", "ward"], "Bastion's FLEX spells")
 	eq(SpellKits.element_for({"spell_elements": {}}, "strike"), "neutral", "no pick yet: Neutral")
+	eq(SpellKits.element_for({"spell_elements": {"bash": "water"}}, "snap_wall"), "water", "a Neutral-era spell uses the main pick")
+	eq(SpellKits.element_for({"spell_elements": {"snap_wall": "earth", "bash": "water"}}, "snap_wall"), "earth", "Snap Wall's own pick wins")
 	eq(SpellKits.element_for({}, "strike"), "earth", "AI / tests keep the kit element")
 	eq(_sim.blend_of("water", "earth"), "mire", "Earth + Water = Mire in any order")
 	eq(_sim.blend_of("air", "air"), "", "same element is no Blend")
@@ -9246,7 +9421,7 @@ func _test_element_blends() -> void:
 	var first := hero.set_elements("gloam", ["air", "fire"], {"ambush": "fire"}, wallet)
 	eq(bool(first["ok"]), true, "the first pick is free")
 	eq(int(wallet.trophies), 3, "no trophies for the first pick")
-	eq(hero.spell_elements("gloam"), {"cut": "air", "ambush": "fire"}, "unset spells take the first element")
+	eq(hero.spell_elements("gloam"), {"cut": "air", "drop_shade": "air", "ambush": "fire", "fade": "air"}, "unset spells take the first element")
 	var swap := hero.set_elements("gloam", ["fire", "air"], {"cut": "fire", "ambush": "air"}, wallet)
 	eq([bool(swap["ok"]), int(swap["cost"]), int(wallet.trophies)], [true, 0, 3], "moving spells inside the same pair is free")
 	var change := hero.set_elements("gloam", ["water", "air"], {}, wallet)
@@ -9257,7 +9432,8 @@ func _test_element_blends() -> void:
 	eq(bool(hero.set_elements("gloam", ["air", "air"], {}, wallet)["ok"]), false, "two different elements")
 	eq(HeroProgress.clean_elements("kestrel", {"pair": ["air", "neutral"]}), {}, "Neutral is not a pick")
 	eq(GearBag.clean_spell_elements("ironjaw", {"strike": "air", "shoulder": "fire", "crush": "water"}), {}, "a fight never takes a third element")
-	eq(GearBag.clean_spell_elements("ironjaw", {"strike": "air", "advance": "fire"}), {"strike": "air"}, "only FLEX spells take an element")
+	eq(GearBag.clean_spell_elements("ironjaw", {"strike": "air", "advance": "fire"}), {"advance": "fire", "strike": "air"}, "Advance keeps a picked element")
+	eq(GearBag.clean_spell_elements("ironjaw", {"strike": "air", "nightfold": "fire"}), {"strike": "air"}, "a gated spell still takes no element")
 
 
 ## Mauro: Magma adds 2 Burn stacks (Fire's +1 still applies, cap 3). Burn stays

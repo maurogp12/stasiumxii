@@ -64,7 +64,7 @@ const EFFECTS := {
 	"hourglass_fist": {"intact": "+2 AP, −1 MP all fight", "overwound": "+3 AP, −2 MP; AP may pass 8", "built": true},
 	"hourglass_step": {"intact": "+2 MP, −1 AP all fight", "overwound": "+3 MP, −2 AP; MP may pass 5", "built": true},
 	"rewind": {"intact": "First 30%+ loss in one enemy turn refunds half next turn", "overwound": "Refunds all of it; allies cannot heal you after that", "built": true},
-	"long_shadow": {"intact": "First hit from 4+ tiles: +2 MP next turn", "overwound": "First 3 such hits: +2 MP (past 5); adjacent foes +10% damage", "built": true},
+	"long_shadow": {"intact": "First hit from 3+ tiles: +2 MP next turn", "overwound": "First 3 such hits: +2 MP (past 5); adjacent foes +10% damage", "built": true},
 	"withering_sand": {"intact": "First nearby enemy heal: next hit on them adds half (max 15)", "overwound": "Bonus equals the full heal (max 25); you gain no shields", "built": true},
 	"shatterglass": {"intact": "First hit on a shield breaks the whole shield", "overwound": "Hits deal double to shields; you gain no shields", "built": true},
 	"tolling_bell": {"intact": "First enemy to turn Invisible within 5 tiles is revealed", "overwound": "Every such enemy is revealed; your hits deal −10%", "built": true},
@@ -72,7 +72,7 @@ const EFFECTS := {
 	"mirror_hour": {"intact": "Once, 2 AP: swap with a visible fighter within 4 tiles", "overwound": "Free swap; an enemy faces away; you lose remaining MP", "built": true},
 	"held_hour": {"intact": "First hit echoes half its damage on the target's next turn", "overwound": "First hit deals 0 now and double later, unless they hit you first", "built": true},
 	"bound_hour": {"intact": "Once, 2 AP: take 50% of an ally's damage for 3 of their turns", "overwound": "All fight, you take 60%; break past 4 tiles costs you both 1 AP", "built": true},
-	"gathered_sand": {"intact": "Store 15% of damage taken (max 15); your next hit releases it", "overwound": "Store 25% (max 25); no heals while any is stored", "built": true},
+	"gathered_sand": {"intact": "Each direct hit reflects 10% to the attacker (max 12)", "overwound": "Reflects 20% (max 12); you cannot be healed", "built": true},
 }
 
 ## One sentence per mode (Mauro: fewer words, useful info).
@@ -82,7 +82,7 @@ const PLAIN := {
 	"hourglass_fist": {"intact": "You have +2 AP and −1 MP for the whole fight.", "overwound": "You have +3 AP and −2 MP for the whole fight, and AP can go past 8."},
 	"hourglass_step": {"intact": "You have +2 MP and −1 AP for the whole fight.", "overwound": "You have +3 MP and −2 AP for the whole fight, and MP can go past 5."},
 	"rewind": {"intact": "The first time you lose 30% or more HP in one enemy turn, you regain half of it at your next turn.", "overwound": "You regain all of that HP, but allies cannot heal you for the rest of the fight."},
-	"long_shadow": {"intact": "The first hit an enemy lands on you from 4 or more tiles gives you +2 MP next turn.", "overwound": "The first three such hits each give +2 MP next turn, even past 5, but adjacent enemies deal 10% more damage to you."},
+	"long_shadow": {"intact": "The first hit an enemy lands on you from 3 or more tiles gives you +2 MP next turn.", "overwound": "The first three hits from 3 or more tiles each give +2 MP next turn, even past 5, but adjacent enemies deal 10% more damage to you."},
 	"withering_sand": {"intact": "The first time an enemy within 4 tiles is healed, your next hit on that enemy deals bonus damage equal to half the heal (max 15).", "overwound": "That bonus equals the full heal (max 25), but you cannot gain shields this fight."},
 	"shatterglass": {"intact": "Your first hit on a shielded enemy breaks the whole shield.", "overwound": "Every hit you land on a shield deals double damage to that shield, but you cannot gain shields this fight."},
 	"tolling_bell": {"intact": "The first enemy that turns Invisible within 5 tiles of you is revealed immediately.", "overwound": "Every enemy that turns Invisible within 5 tiles is revealed immediately, but your hits deal 10% less damage."},
@@ -90,7 +90,7 @@ const PLAIN := {
 	"mirror_hour": {"intact": "Once per fight, on your turn, spend 2 AP to swap places with a visible fighter within 4 tiles.", "overwound": "The swap costs no AP, an enemy you swap ends facing away from you, and you lose your remaining MP."},
 	"held_hour": {"intact": "Your first hit echoes: half its damage hits again at the start of the target's next turn.", "overwound": "Your first hit deals no damage now and double damage at the start of the target's next turn, but it is lost if they hit you first."},
 	"bound_hour": {"intact": "Once per fight, on your turn, spend 2 AP to take half the damage an ally within 4 tiles takes, for 3 of their turns.", "overwound": "The bind lasts the whole fight and you take 60% of their damage, but if either of you ends a turn more than 4 tiles apart it breaks and you both lose 1 AP."},
-	"gathered_sand": {"intact": "15% of the damage you take is stored, up to 15, and your next hit releases it all as bonus damage, once per fight.", "overwound": "You store 25%, up to 25, but you cannot be healed while any of it is stored."},
+	"gathered_sand": {"intact": "Each direct hit an enemy lands on you reflects 10% of that damage back to them, up to 12, for the whole fight.", "overwound": "Each direct hit an enemy lands on you reflects 20% of that damage back to them, up to 12, but you cannot be healed for the whole fight."},
 }
 ## How Stills work, in four steps (shown in the Inventory and the Vault).
 const HOW_TO: Array[String] = [
