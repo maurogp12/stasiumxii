@@ -90,6 +90,16 @@ func _test_art() -> void:
 		"res://art/world/blightwood_hollow/animated/heart_sap_pulse_8f.png",
 		"res://art/world/blightwood_hollow/MANIFEST.md",
 		"res://art/world/blightwood_hollow/atlas_meta.json",
+		"res://art/world/blightwood_hollow/v2/MANIFEST.md",
+		"res://art/world/blightwood_hollow/v2/ground/leaf_litter.png",
+		"res://art/world/blightwood_hollow/v2/ground/_2x/trodden_path.png",
+		"res://art/world/blightwood_hollow/v2/trees/_2x/dead_tree_tall_a.png",
+		"res://art/world/blightwood_hollow/v2/fx/fog_layer_far.png",
+		"res://art/world/blightwood_hollow/v2/fx/fog_layer_mid.png",
+		"res://art/world/blightwood_hollow/v2/fx/fog_layer_near.png",
+		"res://art/world/blightwood_hollow/v2/fx/eyes_blink_f0.png",
+		"res://art/world/blightwood_hollow/v2/fx/heart_glow.png",
+		"res://art/world/blightwood_hollow/v2/props/hanging_cage.png",
 	]
 	for path in needed:
 		eq(FileAccess.file_exists(path), true, path)

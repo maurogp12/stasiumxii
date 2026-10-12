@@ -44,10 +44,11 @@ func setup(zone: WorldZone, record: Dictionary) -> void:
 	core = _is_core(zone, cell)
 	if zone.zone_id.begins_with("blightwood_hollow"):
 		art_id = Blight.decor_file(decor_type, cell)
-		_art = Blight.texture("props", art_id)
-		scale = Vector2.ONE
+		_art = Blight.texture("props", art_id) if art_id != "" else {}
+		var sc := Blight.prop_scale(art_id, cell) if art_id != "" else 1.0
+		scale = Vector2(sc, sc)
 		if not _art.is_empty():
-			var size := Art.size_of(_art)
+			var size := Art.size_of(_art) * sc
 			cover_rect = Rect2(-size.x * 0.5, -size.y, size.x, size.y)
 		set_process(false)
 		queue_redraw()

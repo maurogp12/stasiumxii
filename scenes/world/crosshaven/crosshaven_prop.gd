@@ -72,6 +72,8 @@ func setup(zone: WorldZone, record: Dictionary) -> void:
 	_tex = _load_art()
 	cover_rect = _cover_rect()
 	var clutter := _clutter_scale(prop_type)
+	if zone_id.begins_with("blightwood_hollow"):
+		clutter = Blight.prop_scale(art_id, footprint[0] if not footprint.is_empty() else Vector2i.ZERO)
 	if clutter != 1.0:
 		scale = Vector2(clutter, clutter)
 		cover_rect = Rect2(cover_rect.position * clutter, cover_rect.size * clutter)
@@ -94,6 +96,12 @@ func _attach_loops() -> void:
 		# would put a bright loop on the hollow.
 		if art_id == "heart_of_the_blight":
 			Blight.attach_sap(self)
+		elif art_id == "lantern":
+			Blight.attach_lantern_glow(self)
+		elif art_id.begins_with("dead_tree_tall"):
+			var origin := footprint[0] if not footprint.is_empty() else Vector2i.ZERO
+			if Art.h(origin.x, origin.y, 8) == 0:
+				Blight.attach_cage(self, origin)
 		set_process(false)
 		return
 	if VisualSettings.still():
