@@ -329,8 +329,8 @@ static func _trap_spring_recipes(event: Dictionary) -> Array:
 	flash["chest"] = false
 	flash["px"] = 76.0
 	var label := _number(seat, cell, "Trap!", "trap", 0.0, 1.0, "", Color(0, 0, 0, 0))
-	label["rise_sec"] = 0.14
-	label["fade_sec"] = 0.10
+	label["rise_sec"] = 0.38
+	label["fade_sec"] = 0.12
 	label["lift_px"] = 36.0
 	return [
 		{
