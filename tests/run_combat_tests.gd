@@ -96,6 +96,8 @@ func _run() -> void:
 	_test_hud_chrome_kit_gated()
 	_test_line_of_sight()
 	_test_windmere_crystal_blocks_sight()
+	_test_hold_line_pull()
+	_test_plant_blocks_sight()
 	_test_blind_attacks_on_invisible()
 	_test_handoff_timer_is_client_only()
 	_test_advance_teleport_costs()
@@ -3911,6 +3913,185 @@ func _test_windmere_crystal_blocks_sight() -> void:
 	var onto: Dictionary = _sim.submit({"type": "move", "to": crystal, "seat": 0})
 	eq(bool(onto.get("ok", true)), false, "a walk onto the crystal is rejected")
 	eq(str(onto.get("reason", "")), "not_walkable", "the crystal walk reason is not_walkable")
+
+
+## Hold Line yanks one enemy up to 4 tiles toward Bastion. The old cone
+## only reached the tile in front, so the cast range is now 1–4.
+func _test_hold_line_pull() -> void:
+	eq(int(SpellKits.spell(SpellKits.HOLD_LINE)["ap"]), 3, "Hold Line still costs 3 AP")
+	eq(str(SpellKits.spell(SpellKits.HOLD_LINE)["element"]), "earth", "Hold Line stays earth")
+	eq(int(SpellKits.spell(SpellKits.HOLD_LINE)["max_range"]), 4, "Hold Line reaches 4 tiles")
+	eq(int(SpellKits.spell_as(SpellKits.HOLD_LINE, "air")["max_range"]), 4, "Air does not stretch Hold Line")
+	var card := " ".join(SpellTooltip.simple_lines(SpellKits.HOLD_LINE))
+	truthy(card.contains("up to 4 tiles straight toward you"), "the Hold Line card describes the pull")
+	var listed := SpellTooltip.card_text({"name": "Hold Line", "spell_id": SpellKits.HOLD_LINE, "ap": 3, "mp": 0, "range_text": "range 1–4", "sample_damage": 7})
+	truthy(listed.contains("Pull 4"), "the spells list names Pull 4")
+	truthy(listed.contains("Residue on the enemy hit"), "Hold Line still leaves Residue on the enemy hit")
+	var log_script = load("res://ui/battle_log.gd")
+	_sim.reset_match({
+		"seed": 1, "flat_board": true, "skip_deploy": true,
+		"classes": ["bastion", "kestrel"],
+		"positions": [Vector2i(1, 1), Vector2i(5, 1)],
+		"kestrel_facing": "W", "rolls": [1],
+	})
+	var ap_before := int(_unit(0)["ap"])
+	var pulled: Dictionary = _sim.submit({"type": "cast", "spell": "hold_line", "to": Vector2i(5, 1), "seat": 0})
+	var hit := _first_event_where(pulled.get("events", []), "hit")
+	eq(bool(pulled.get("ok", false)), true, "Hold Line from 4 tiles connects")
+	eq(int(_unit(0)["ap"]), ap_before - 3, "Hold Line spends 3 AP")
+	eq(int(hit.get("damage", -1)), 7, "Hold Line still hits for 7")
+	eq(int(hit.get("pull_tiles", -1)), 3, "four tiles away becomes a pull of 3")
+	eq(_unit(1)["pos"], Vector2i(2, 1), "the pull stops on the tile next to Bastion")
+	eq(str(_unit(1).get("residue", "")), "earth", "the hit still leaves earth Residue")
+	var rows: Array = log_script.lines(hit, _sim.snapshot())
+	truthy(rows.size() > 1 and str(rows[1]).contains("pulled 3 tiles"), "the log names the pull distance: %s" % str(rows))
+	# The pull steps (5,3) -> (4,2) -> (3,1). (3,1) is off the shot, so the
+	# cast still lands and the yank stops on the near side.
+	var prey := Vector2i(5, 3)
+	var jam := Vector2i(3, 1)
+	_sim.reset_match({
+		"seed": 1, "flat_board": true, "skip_deploy": true,
+		"classes": ["bastion", "kestrel"],
+		"positions": [Vector2i(1, 1), prey],
+		"kestrel_facing": "W", "rolls": [1],
+		"snap_walls": [jam],
+	})
+	eq(_sim.has_line_of_sight(Vector2i(1, 1), prey), true, "the wall is off the shot")
+	var walled: Dictionary = _sim.submit({"type": "cast", "spell": "hold_line", "to": prey, "seat": 0})
+	var wall_hit := _first_event_where(walled.get("events", []), "hit")
+	eq(int(wall_hit.get("pull_tiles", -1)), 1, "a Snap Wall stops the pull")
+	eq(_unit(1)["pos"], Vector2i(4, 2), "the target stops on the near side of the wall")
+	_sim.reset_match({
+		"seed": 1, "flat_board": true, "skip_deploy": true,
+		"classes": ["bastion", "kestrel"],
+		"positions": [Vector2i(1, 1), prey],
+		"kestrel_facing": "W", "rolls": [1],
+	})
+	var blocker: Dictionary = _sim._make_unit(2, "ironjaw", "Blocker", "earth", jam, "W", true)
+	_sim._units.append(blocker)
+	eq(_sim.has_line_of_sight(Vector2i(1, 1), prey), true, "the fighter is off the shot")
+	var blocked: Dictionary = _sim.submit({"type": "cast", "spell": "hold_line", "to": prey, "seat": 0})
+	var block_hit := _first_event_where(blocked.get("events", []), "hit")
+	eq(int(block_hit.get("pull_tiles", -1)), 1, "a fighter stops the pull")
+	eq(_unit(1)["pos"], Vector2i(4, 2), "the target stops on the near side of the fighter")
+	eq(blocker["pos"], jam, "the fighter in the way does not move")
+	eq(int(blocker["hp"]), int(blocker["max_hp"]), "the fighter in the way is not hit")
+	_sim.reset_match({
+		"seed": 1, "flat_board": true, "skip_deploy": true,
+		"classes": ["bastion", "kestrel"],
+		"positions": [Vector2i(1, 1), prey],
+		"kestrel_facing": "W", "rolls": [1],
+		"blockers": [jam],
+	})
+	eq(_sim.has_line_of_sight(Vector2i(1, 1), prey), true, "the obstacle is off the shot")
+	var obst: Dictionary = _sim.submit({"type": "cast", "spell": "hold_line", "to": prey, "seat": 0})
+	eq(int(_first_event_where(obst.get("events", []), "hit").get("pull_tiles", -1)), 1, "an obstacle stops the pull")
+	eq(_unit(1)["pos"], Vector2i(4, 2), "the target stops on the near side of the obstacle")
+	# Already next to Bastion: the pull distance is 0, and the log says so.
+	_sim.reset_match({
+		"seed": 1, "flat_board": true, "skip_deploy": true,
+		"classes": ["bastion", "kestrel"],
+		"positions": [Vector2i(1, 1), Vector2i(2, 1)],
+		"kestrel_facing": "W", "rolls": [1],
+	})
+	var close: Dictionary = _sim.submit({"type": "cast", "spell": "hold_line", "to": Vector2i(2, 1), "seat": 0})
+	var close_hit := _first_event_where(close.get("events", []), "hit")
+	eq(int(close_hit.get("pull_tiles", -1)), 0, "an adjacent target is pulled 0")
+	eq(_unit(1)["pos"], Vector2i(2, 1), "an adjacent target stays put")
+	var close_rows: Array = log_script.lines(close_hit, _sim.snapshot())
+	truthy(str(close_rows).contains("pulled 0 tiles"), "the log names a pull of 0: %s" % str(close_rows))
+	# A diagonal step still moves straight toward Bastion.
+	_sim.reset_match({
+		"seed": 1, "flat_board": true, "skip_deploy": true,
+		"classes": ["bastion", "kestrel"],
+		"positions": [Vector2i(1, 1), Vector2i(5, 4)],
+		"kestrel_facing": "W", "rolls": [1],
+	})
+	var diag: Dictionary = _sim.submit({"type": "cast", "spell": "hold_line", "to": Vector2i(5, 4), "seat": 0})
+	eq(int(_first_event_where(diag.get("events", []), "hit").get("pull_tiles", -1)), 3, "a diagonal target is pulled 3")
+	eq(_unit(1)["pos"], Vector2i(2, 1), "each step moves straight toward Bastion")
+	# A miss does not pull. A target past 4 is out of range. A killing blow stays put.
+	_sim.reset_match({
+		"seed": 1, "flat_board": true, "skip_deploy": true,
+		"classes": ["bastion", "kestrel"],
+		"positions": [Vector2i(1, 1), Vector2i(5, 1)],
+		"rolls": [100],
+	})
+	var missed: Dictionary = _sim.submit({"type": "cast", "spell": "hold_line", "to": Vector2i(5, 1), "seat": 0})
+	eq(_first_event_where(missed.get("events", []), "miss").has("pull_tiles"), false, "a miss has no pull")
+	eq(_unit(1)["pos"], Vector2i(5, 1), "a miss leaves the target")
+	var far_ap := int(_unit(0)["ap"])
+	var far: Dictionary = _sim.submit({"type": "cast", "spell": "hold_line", "to": Vector2i(6, 1), "seat": 0})
+	eq(str(far.get("reason", "")), "out_of_range", "Hold Line does not reach 5 tiles")
+	eq(int(_unit(0)["ap"]), far_ap, "the out-of-range cast is refunded")
+	_sim.reset_match({
+		"seed": 1, "flat_board": true, "skip_deploy": true,
+		"classes": ["bastion", "kestrel"],
+		"positions": [Vector2i(1, 1), Vector2i(5, 1)],
+		"rolls": [1],
+	})
+	_live_unit(1)["hp"] = 1
+	var slain: Dictionary = _sim.submit({"type": "cast", "spell": "hold_line", "to": Vector2i(5, 1), "seat": 0})
+	eq(bool(_unit(1).get("alive", true)), false, "the small hit can still kill")
+	eq(_unit(1)["pos"], Vector2i(5, 1), "a killing blow does not pull the body")
+	eq(_first_event_where(slain.get("events", []), "hit").has("pull_tiles"), false, "a killing blow logs no pull")
+
+
+## Snap Wall already blocked sight. Plant did not; it does now, and the
+## grey preview list is the same one the board paints.
+func _test_plant_blocks_sight() -> void:
+	var shot := func(legal: Array, spell: String, to: Vector2i) -> bool:
+		for intent in legal:
+			if str(intent.get("type", "")) == "cast" and str(intent.get("spell", "")) == spell and intent.get("to", Vector2i(-9, -9)) == to:
+				return true
+		return false
+	var view := FileAccess.get_file_as_string("res://board_view.gd")
+	truthy(view.contains("sight_blocked_cells"), "the targeting preview asks for blocked cells")
+	truthy(view.contains("set_highlight(\"grey\")"), "blocked cells are painted grey")
+	var bastion := Vector2i(2, 7)
+	var kestrel := Vector2i(7, 7)
+	var flag := Vector2i(4, 7)
+	_sim.reset_match({
+		"seed": 1, "flat_board": true, "skip_deploy": true,
+		"classes": ["kestrel", "bastion"],
+		"positions": [kestrel, bastion],
+		"snap_walls": [flag],
+	})
+	eq(_sim.has_line_of_sight(kestrel, bastion), false, "a Snap Wall already blocked this shot")
+	_sim.reset_match({
+		"seed": 1, "flat_board": true, "skip_deploy": true,
+		"classes": ["bastion", "kestrel"],
+		"positions": [bastion, kestrel],
+	})
+	eq(_sim.has_line_of_sight(kestrel, bastion), true, "the open row has sight before the flag")
+	var planted: Dictionary = _sim.submit({"type": "cast", "spell": "plant", "to": flag, "seat": 0})
+	eq(bool(planted.get("ok", false)), true, "Plant places the flag")
+	eq(_sim.sight_blocker(kestrel, bastion), flag, "the flag is the wall on the line")
+	eq(_sim.has_line_of_sight(kestrel, bastion), false, "a Plant blocks a ranged shot")
+	eq(_sim.range_highlight_cells(1, "mark_shot").has(bastion), false, "no gold range tile behind the flag")
+	truthy(_sim.sight_blocked_cells(1, "mark_shot").has(bastion), "the tile behind the flag is listed as no sight")
+	eq(str(_sim.preview_cast("mark_shot", kestrel, bastion).get("reason", "")), "no_line_of_sight", "the preview says no sight")
+	eq(_sim.has_line_of_sight(Vector2i(7, 9), bastion), true, "a line that misses the flag still has sight")
+	_sim.submit({"type": "end_turn", "seat": 0})
+	eq(shot.call(_sim.legal_intents(1), "mark_shot", bastion), false, "Mark Shot is not offered through the flag")
+	var ap_before := int(_unit(1)["ap"])
+	var denied: Dictionary = _sim.submit({"type": "cast", "spell": "mark_shot", "to": bastion, "seat": 1})
+	eq(str(denied.get("reason", "")), "no_line_of_sight", "the shot through the flag is rejected")
+	eq(int(_unit(1)["ap"]), ap_before, "the rejected shot costs no AP")
+	# Off the flag's row the same shot still lands.
+	_sim.reset_match({
+		"seed": 1, "flat_board": true, "skip_deploy": true,
+		"classes": ["bastion", "kestrel"],
+		"positions": [bastion, Vector2i(7, 9)],
+		"rolls": [1],
+	})
+	eq(bool(_sim.submit({"type": "cast", "spell": "plant", "to": flag, "seat": 0}).get("ok", false)), true, "the off-line flag still plants")
+	_sim.submit({"type": "end_turn", "seat": 0})
+	var clear: Dictionary = _sim.submit({"type": "cast", "spell": "mark_shot", "to": bastion, "seat": 1})
+	eq(bool(clear.get("ok", false)), true, "a shot that misses the flag still hits")
+	truthy(int(_unit(0)["hp"]) < int(_unit(0)["max_hp"]), "the clear shot deals damage")
+	var plant_card := " ".join(SpellTooltip.simple_lines(SpellKits.PLANT))
+	truthy(plant_card.contains("Shots cannot pass through the flag"), "Plant's card says it blocks shots")
 
 
 ## Mauro 30 Sep 2026: "Gloam should be invisible for enemies turn, also player

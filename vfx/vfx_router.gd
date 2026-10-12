@@ -115,21 +115,7 @@ static func debug_beats() -> Array:
 		{"name": "G12 resource", "events": [_hit("strike", 16, caster, target, {"engine": "impact", "engine_gained": 1})]},
 		{"name": "shield absorb", "events": [_hit("strike", 4, caster, target, {"shield_absorbed": 12, "shield_remaining": 0, "shield_broken": true})]},
 		{"name": "ambush blink", "events": [_hit("ambush", 30, caster, target, {"teleported": true, "origin": Vector2i(2, 4), "destination": Vector2i(4, 4), "backstab": true, "facing_mult": 1.35})]},
-		{"name": "hold line", "events": [{
-			"type": "hit",
-			"spell": "hold_line",
-			"seat": 0,
-			"caster_cell": caster,
-			"damage": 14,
-			"bodies": 2,
-			"cone": [Vector2i(3, 3), Vector2i(3, 2), Vector2i(3, 4)],
-			"targets": [
-				{"target_seat": 1, "cell": Vector2i(3, 3), "hit": true, "damage": 7, "back": false},
-				{"target_seat": 2, "cell": Vector2i(3, 4), "hit": true, "damage": 7, "back": true, "facing_mult": 1.2},
-			],
-			"engine": "aegis",
-			"engine_gained": 1,
-		}]},
+		{"name": "hold line", "events": [_hit("hold_line", 7, caster, target, {"pushed": true, "pulled": true, "push_from": target, "push_to": Vector2i(2, 3), "pull_tiles": 3, "engine": "aegis", "engine_gained": 1})]},
 		{"name": "expire", "events": [{"type": "expire", "status": "stun", "target_seat": 1, "pos": target, "owner_seat": 1}]},
 		{"name": "K1 Mark Shot", "events": [_hit("mark_shot", 8, caster, target, {"engine": "mark", "engine_gained": 1})]},
 		{"name": "K2 Detonate", "events": [_hit("detonate", 24, caster, target, {"marks_consumed": 3, "marks_remaining": 0, "engine": "mark", "engine_spent": 3})]},
@@ -153,12 +139,7 @@ static func debug_beats() -> Array:
 		{"name": "Gl5 Nightfold parked", "events": [{"type": "cast", "spell": "nightfold", "seat": 0, "caster_cell": caster, "to": Vector2i(3, 5)}]},
 		{"name": "B1 Bash", "events": [_hit("bash", 11, caster, target, {"engine": "aegis", "engine_gained": 1})]},
 		{"name": "B2 Plant", "events": [{"type": "cast", "spell": "plant", "seat": 0, "caster_cell": caster, "to": Vector2i(3, 3), "engine": "aegis", "engine_gained": 1}]},
-		{"name": "B3 Hold Line", "events": [{
-			"type": "hit", "spell": "hold_line", "seat": 0, "caster_cell": caster, "damage": 7, "bodies": 1,
-			"cone": [Vector2i(3, 3), Vector2i(3, 2), Vector2i(3, 4)],
-			"targets": [{"target_seat": 1, "cell": target, "hit": true, "damage": 7, "exit_tax": 1, "back": false}],
-			"engine": "aegis", "engine_gained": 1,
-		}]},
+		{"name": "B3 Hold Line", "events": [_hit("hold_line", 7, caster, target, {"pushed": true, "pulled": true, "push_from": target, "push_to": Vector2i(2, 3), "pull_tiles": 3, "engine": "aegis", "engine_gained": 1})]},
 		{"name": "B4 Snap Wall", "events": [{"type": "snap_wall", "spell": "snap_wall", "seat": 0, "caster_cell": caster, "to": Vector2i(3, 2), "aegis_spent": 2, "turns": 2}]},
 		{"name": "B5 Aegis Break", "events": [_hit("aegis_break", 26, caster, Vector2i(4, 3), {"aegis_spent": 4, "stacks_cleared": true, "engine": "aegis", "engine_spent": 4})]},
 		{"name": "B6 Intercept", "events": [{"type": "intercept", "interceptor_seat": 0, "for_seat": 1, "interceptor_cell": caster, "for_cell": target, "damage": 4, "hp": 76}]},
@@ -355,9 +336,7 @@ static func _hit_recipes(event: Dictionary) -> Array:
 		# Gated. No per-body damage until the rule is stamped.
 		return []
 	var out: Array = []
-	if spell_id == "hold_line":
-		out.append_array(_hold_line_recipes(event, true))
-	elif int(event.get("healed", 0)) > 0:
+	if int(event.get("healed", 0)) > 0:
 		out.append_array(_heal_recipes(event))
 	elif _is_shield_grant(event):
 		out.append_array(_shield_grant_recipes(event))
@@ -508,44 +487,6 @@ static func _shield_grant_recipes(event: Dictionary) -> Array:
 	]
 
 
-static func _hold_line_recipes(event: Dictionary, connected: bool) -> Array:
-	var out: Array = []
-	var cone: Array = event.get("cone", [])
-	for raw in cone:
-		out.append(_ring(cell_of(raw), VfxPalette.BASTION, false, 0.28, 0.0))
-	if not connected:
-		var at := _centroid(cone)
-		if cone.is_empty():
-			at = cell_of(event.get("caster_cell", Vector2i.ZERO))
-		out.append(_number(-1, at, "MISS", "miss", 0.0, 1.0, "", Color(0, 0, 0, 0)))
-		out.append(_puff(int(event.get("seat", -1)), cell_of(event.get("caster_cell", Vector2i.ZERO)), VfxPalette.spell_tint("hold_line"), 0.5))
-		return out
-	var targets: Array = event.get("targets", [])
-	if targets.is_empty() and int(event.get("damage", 0)) > 0:
-		out.append(_number(int(event.get("seat", -1)), cell_of(event.get("caster_cell", Vector2i.ZERO)), str(int(event.get("damage", 0))), "damage", 0.0, 1.0, "", Color(0, 0, 0, 0)))
-	for raw in targets:
-		if typeof(raw) != TYPE_DICTIONARY:
-			continue
-		var row: Dictionary = raw
-		if not bool(row.get("hit", false)):
-			continue
-		var cell := cell_of(row.get("cell", Vector2i.ZERO))
-		var seat := int(row.get("target_seat", -1))
-		var damage := int(row.get("damage", 0))
-		if damage <= 0:
-			continue
-		out.append({"id": "spark", "block": 0.0, "seat": seat, "cell": cell, "tint": VfxPalette.BASTION, "chest": true})
-		out.append(_hit_flash(seat, cell, 0.0))
-		out.append(_damage_float(seat, cell, 0.0))
-		out.append(_number(seat, cell, str(damage), "damage", 0.0, _back_scale(row), _back_text(row, str(damage)), _back_tint(row)))
-		if not _back_tag(row).is_empty():
-			out.append(_chevron(seat, cell, event))
-		var absorbed := int(row.get("shield_absorbed", 0))
-		if absorbed > 0:
-			out.append(_number(seat, cell, str(absorbed), "absorb", 0.0, 1.0, "", Color(0, 0, 0, 0)))
-	return out
-
-
 static func _miss_recipes(event: Dictionary) -> Array:
 	var spell_id := str(event.get("spell", ""))
 	if spell_id == "nightfold":
@@ -554,9 +495,6 @@ static func _miss_recipes(event: Dictionary) -> Array:
 	var caster_seat := int(event.get("seat", -1))
 	var caster_cell := cell_of(event.get("caster_cell", Vector2i.ZERO))
 	var tint: Color = VfxPalette.spell_tint(spell_id)
-	if spell_id == "hold_line":
-		out.append_array(_hold_line_recipes(event, false))
-		return out
 	out.append(_puff(caster_seat, caster_cell, tint, 0.5))
 	var at := cell_of(event.get("to", caster_cell))
 	if not event.has("to"):
@@ -1133,13 +1071,12 @@ static func _choreography(event: Dictionary, snapshot: Dictionary) -> Array:
 					out.append(_status_on("aegis", caster, caster_cell, _stack_count(snapshot, caster, "aegis", int(event.get("engine_gained", 1)))))
 		"hold_line":
 			if typ == "hit":
-				for raw in event.get("targets", []):
-					if typeof(raw) != TYPE_DICTIONARY:
-						continue
-					var row: Dictionary = raw
-					if int(row.get("exit_tax", 0)) <= 0:
-						continue
-					out.append(_status_on("exit_tax", int(row.get("target_seat", -1)), cell_of(row.get("cell", Vector2i.ZERO)), int(row.get("exit_tax", 1))))
+				if _chebyshev(caster_cell, to_cell) >= 2:
+					out.append(_shot(caster_cell, to_cell, VfxPalette.BASTION, 0.0, 0.12, 4.0))
+				if int(event.get("engine_gained", 0)) > 0:
+					out.append(_status_on("aegis", caster, caster_cell, _stack_count(snapshot, caster, "aegis", int(event.get("engine_gained", 1)))))
+			elif typ == "miss":
+				out.append(_puff(caster, caster_cell, VfxPalette.BASTION, 0.45))
 		"snap_wall":
 			if typ == "snap_wall" and event.has("to"):
 				out.append(_puff(caster, cell_of(event.get("to")), VfxPalette.IRONJAW_DUST, 0.7))

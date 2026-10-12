@@ -351,7 +351,7 @@ func _test_caster_and_target_kinds() -> void:
 	eq(MOTION.caster_motion(SpellKits.STRIKE), "attack", "Strike lunges")
 	eq(MOTION.caster_motion(SpellKits.SHOULDER), "attack", "Shoulder lunges")
 	eq(MOTION.caster_motion(SpellKits.BASH), "attack", "Bash lunges")
-	eq(MOTION.caster_motion(SpellKits.HOLD_LINE), "attack", "Hold Line lunges")
+	eq(MOTION.caster_motion(SpellKits.HOLD_LINE), "cast", "Hold Line winds up a pull")
 	eq(MOTION.caster_motion(SpellKits.CRUSH), "attack", "Crush lunges")
 	eq(MOTION.caster_motion(SpellKits.MARK_SHOT), "cast", "Mark Shot winds up")
 	eq(MOTION.caster_motion(SpellKits.DETONATE), "cast", "Detonate winds up")
@@ -442,7 +442,8 @@ func _test_commit_motion_on_hit_and_miss() -> void:
 		"spell": SpellKits.HOLD_LINE,
 		"seat": 0,
 	}])
-	eq(bool((hold_miss.get(0, {}) as Dictionary).get("attack", false)), true, "Hold Line miss still lunges")
+	eq(bool((hold_miss.get(0, {}) as Dictionary).get("cast", false)), true, "Hold Line miss still winds up")
+	eq(bool((hold_miss.get(0, {}) as Dictionary).get("attack", false)), false, "Hold Line miss does not lunge")
 	eq(hold_miss.size(), 1, "Hold Line miss does not invent a target recoil")
 	_sim.reset_match({
 		"seed": 1,

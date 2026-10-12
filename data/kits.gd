@@ -473,16 +473,17 @@ const SPELLS := {
 		"ap": 3,
 		"mp": 0,
 		"range_mode": "chebyshev",
+		# Was a 1-tile cone. The pull reaches 4, so the cast does too.
+		# AP stays 3, the element stays earth, Residue stays on the enemy hit.
+		# Air does not add a fifth tile (AIR_RANGE_EXCLUDED).
 		"min_range": 1,
-		"max_range": 1,
+		"max_range": 4,
 		"rolls": true,
 		"element": "earth",
 		"base_damage": 7,
-		"target": "cone",
+		"target": "enemy",
 		"engine_on_connect": "aegis",
-		"cone": 3,
-		"exit_tax_mp": 1,
-		"exit_tax_turns": 1,
+		"pull_cells": 4,
 	},
 	SNAP_WALL: {
 		"id": SNAP_WALL,
@@ -610,7 +611,7 @@ static var element_riders: bool = true
 const AIR_RANGE_MIN_MAX := 3
 ## Mark Shot is excluded on purpose. Advance and Vault are exactly 2 tiles;
 ## Air must not stretch that jump even if a later pass raises their max.
-const AIR_RANGE_EXCLUDED: Array[String] = [MARK_SHOT, ADVANCE, VAULT]
+const AIR_RANGE_EXCLUDED: Array[String] = [MARK_SHOT, ADVANCE, VAULT, HOLD_LINE]
 const WATER_HEAL_RIDER := 4
 static var _rider_cache: Dictionary = {}
 

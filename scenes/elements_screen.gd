@@ -42,7 +42,7 @@ const COUNTER_TIPS := [
 	["Ironjaw vs Kestrel", "Water hits take 1 MP from her and Mire (Earth + Water) taxes her first step: catch her before she kites away. Air gives you +1 MP after a melee hit."],
 	["Kestrel vs Gloam", "Flare (Air + Fire) reveals him when he dives Invisible; Drift-Pin (Air + Earth) throws him back into a wall."],
 	["Gloam vs Bastion", "Fire: Burn hurts him through his shield and does not trigger Thorns. While he is burning he cannot Ward or gain any new shield."],
-	["Bastion vs Ironjaw", "Water slows his approach; Mire (Earth + Water) on Bash or Hold Line keeps him from leaving; Earth keeps you from being pushed."],
+	["Bastion vs Ironjaw", "Hold Line pulls him in. Water slows what is left of his approach. Earth keeps you from being pushed."],
 	["Team vs Mender", "Spark (Air + Water) the Mender: her heals get 40% weaker and Cleanse cannot remove it."],
 ]
 
@@ -51,7 +51,7 @@ const BLEND_ROWS := [
 	["air", "water", "Spark", "Electricity: 10 damage that ignores resist (a shield soaks it first). Until the end of its next turn the enemy gets 40% less healing, and if it is a healer its own heals are 40% weaker. Cleanse cannot remove it.", "Beating Mender: Spark the healer and the team she keeps alive."],
 	["air", "fire", "Flare", "A burst of light: every Invisible enemy within 2 tiles of the target is revealed, and the target gets a Burn stack (4 per stack, up to 3).", "Kestrel against a diving Gloam; burning through Bastion's shield (Burn ignores shields and Thorns)."],
 	["earth", "fire", "Magma", "Adds 2 Burn stacks. The Fire hit's own +1 still applies, up to 3 (4, then 8, then 12 per tick). While burning, the enemy cannot gain a new shield; a shield it already has does not stop the ticks. The tile they end their next turn on still burns for 4 until your next turn.", "Bastion, who cannot Ward while he burns, and enemies stuck on a tile."],
-	["earth", "water", "Mire", "On its next turn, the enemy's first step off its tile costs +1 MP. Being pushed is free. Stacks with Bastion's Hold Line (+2 MP to leave).", "Melee fighters holding an enemy next to them."],
+	["earth", "water", "Mire", "On its next turn, the enemy's first step off its tile costs +1 MP. Being pushed is free.", "Melee fighters holding an enemy next to them."],
 	["fire", "water", "Steam", "The enemy's tile blocks line of sight until your next turn. The enemy standing there can still be hit; once it moves, nobody can shoot through that tile.", "Blocking enemy archers and casters, covering a retreat."],
 ]
 

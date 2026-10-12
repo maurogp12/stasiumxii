@@ -1877,6 +1877,9 @@ func _gear_strike_damage(actor: Dictionary, target: Dictionary, damage: int, dis
 		out += int(actor["first_back"])
 		if resolve:
 			actor["first_back_ready"] = false
+	# Ironveil 4pc. Chebyshev, same band as Long Shadow. DoTs never call this.
+	if dist >= 3 and int(target.get("far_cut", 0)) > 0 and out > 0:
+		out = roundi(float(out) * (1.0 - float(int(target["far_cut"])) / 100.0))
 	if bool(target.get("guard_ready", false)) and int(target.get("guard_flat", 0)) > 0 and out > 0:
 		out = maxi(0, out - int(target["guard_flat"]))
 		if resolve:
@@ -3546,6 +3549,8 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 		# Director Locked Shoulder: occupied = push_blocked; OOB / truly blocked = bounce + stagger.
 		# Lava displaces and Burns. Water silences one spell. Mud slows −1 MP.
 		push_result = _try_push(actor["pos"], target, int(def["push_cells"]), _earth_push(actor, def), actor)
+	elif spell_id == SpellKits.HOLD_LINE and int(target.get("hp", 0)) > 0:
+		push_result = _hold_line_pull(actor, target, int(def.get("pull_cells", 4)))
 	if defer_shoulder_impact:
 		var impact_amount := SHOULDER_CONNECT_IMPACT
 		if bool(push_result.get("bounced", false)):
@@ -3629,6 +3634,8 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 		if not slow_info.is_empty():
 			hit_event["slow_remaining"] = int(slow_info.get("remaining", 0))
 			hit_event["slow_refreshed"] = bool(slow_info.get("refreshed", false))
+		if push_result.has("pull_tiles"):
+			hit_event["pull_tiles"] = int(push_result["pull_tiles"])
 	if skip_next_mp:
 		hit_event["skip_next_mp"] = true
 	var rider_tags := _flex_target(actor, target, def)
@@ -4543,6 +4550,7 @@ func _apply_gear(unit: Dictionary, raw: Variant) -> void:
 	unit["first_back_ready"] = int(stats["first_back"]) > 0
 	unit["guard_flat"] = int(stats["guard_flat"])
 	unit["guard_ready"] = int(stats["guard_flat"]) > 0
+	unit["far_cut"] = int(stats.get("far_cut", 0))
 	unit["heal_flat"] = int(stats["heal_flat"])
 	unit["ward_shield"] = int(stats["ward_shield"])
 	if int(stats["start_aegis"]) > 0:
@@ -4936,7 +4944,11 @@ func _connect_extra_note(engine_gained: int, engine_name: String, marks_consumed
 	if stun_applied > 0:
 		parts.append(" Stun %d (Locked A′)." % stun_applied)
 	if not push_result.is_empty():
-		if bool(push_result.get("blocked", false)):
+		if bool(push_result.get("pulled", false)):
+			parts.append(" Pulled %d." % int(push_result.get("pull_tiles", 0)))
+			if bool(push_result.get("burn", false)):
+				parts.append(" Lava %d HP, then Burn." % LAVA_LAND_HP)
+		elif bool(push_result.get("blocked", false)):
 			parts.append(" Push blocked (occupied — hard body-block).")
 		elif bool(push_result.get("bounced", false)):
 			var mp_bit := ""
@@ -6032,6 +6044,92 @@ func _foe_pull(actor: Dictionary, target: Dictionary) -> Dictionary:
 	return result
 
 
+## Hold Line. Step toward Bastion, at most `max_steps` tiles. Stop on the
+## tile next to him, and before a wall, a fighter, or an obstacle. A hazard
+## tile is an obstacle you land on and then stop. A killing blow does not pull.
+func _hold_line_pull(actor: Dictionary, target: Dictionary, max_steps: int) -> Dictionary:
+	var origin: Vector2i = actor["pos"]
+	var from: Vector2i = target["pos"]
+	var cursor: Vector2i = from
+	var steps := 0
+	var stop := ""
+	var last_try: Vector2i = from
+	for _i in maxi(max_steps, 0):
+		if chebyshev(origin, cursor) <= 1:
+			stop = "adjacent"
+			break
+		var step := _sign_step(origin - cursor)
+		var dest := cursor + step
+		last_try = dest
+		if dest == cursor or dest == origin:
+			stop = "adjacent"
+			break
+		var block := _hold_line_block(dest)
+		if block != "":
+			stop = block
+			break
+		cursor = dest
+		steps += 1
+		if _board.is_voluntary_impassable(dest):
+			stop = hazard_family_at(dest)
+			break
+	if steps > 0:
+		target["pos"] = cursor
+		_note_step(target)
+	var result := {
+		"from": from,
+		"to": cursor,
+		"attempted": last_try,
+		"moved": steps > 0,
+		"blocked": false,
+		"bounced": false,
+		"staggered": false,
+		"burn": false,
+		"silence": false,
+		"slow": false,
+		"frozen": false,
+		"electrocuted": false,
+		"pulled": true,
+		"pull_tiles": steps,
+		"reason": stop,
+		"stagger_hp": 0,
+		"stagger_mp": 0,
+		"hp_delta": 0,
+		"mp_delta": 0,
+	}
+	if steps > 0:
+		var family := hazard_family_at(cursor)
+		match family:
+			"burn":
+				result["burn"] = true
+			"slow":
+				result["slow"] = true
+			"breathless":
+				result["silence"] = true
+			"frozen", "electrocuted":
+				result[family] = true
+		if family != "":
+			result["reason"] = family
+	return result
+
+
+## Why the next Hold Line step cannot be entered. "" means the step is open.
+func _hold_line_block(dest: Vector2i) -> String:
+	if not _in_bounds(dest):
+		return "edge"
+	if _snap_wall_blocks(dest):
+		return "wall"
+	if not _living_unit_at(dest).is_empty():
+		return "unit"
+	if not _is_empty(dest):
+		return "obstacle"
+	if _board.is_voluntary_impassable(dest):
+		return ""
+	if not _board.is_walkable(dest):
+		return "obstacle"
+	return ""
+
+
 func _foe_element(actor: Dictionary, def: Dictionary) -> String:
 	var el := str(def.get("element", "Neutral"))
 	if el == "door":
@@ -6463,6 +6561,9 @@ func _blocks_sight(cell: Vector2i, _top: int, bodies: bool = true) -> bool:
 	if _CellTagMap.props_block_sight(_map_id, _paint_only.get(cell, []), cell):
 		return true
 	if _snap_wall_blocks(cell):
+		return true
+	# Plant is a flag you can stand on. It still blocks a shot, like a crystal.
+	if _plant_blocks_sight(cell):
 		return true
 	if _map_steam_at(cell):
 		return true
@@ -9343,6 +9444,14 @@ func _consume_plant_resist(target: Dictionary) -> bool:
 func _bastion_in_match() -> bool:
 	for unit in _units:
 		if str(unit.get("class_id", "")) == SpellKits.CLASS_BASTION:
+			return true
+	return false
+
+
+func _plant_blocks_sight(cell: Vector2i) -> bool:
+	for item in _plant_tiles:
+		var tile: Dictionary = item
+		if tile.get("pos") == cell:
 			return true
 	return false
 

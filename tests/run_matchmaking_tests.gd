@@ -631,16 +631,11 @@ func _test_hold_line_exit_tax() -> void:
 		"rolls": [1],
 	})
 	var hit: Dictionary = _sim.submit({"type": "cast", "spell": "hold_line", "to": Vector2i(2, 1), "seat": 0})
-	eq(bool(hit.get("ok", false)), true, "Hold Line hits the front cone")
-	eq(int(_sim.snapshot()["units"][1]["hp"]), 68, "Hold Line is 7 per body")
-	eq(int(_sim.snapshot()["units"][1]["exit_tax"]), 1, "Hold Line applies a 1-turn exit tax")
+	eq(bool(hit.get("ok", false)), true, "Hold Line hits the enemy next to Bastion")
+	eq(int(_sim.snapshot()["units"][1]["hp"]), 68, "Hold Line is still 7 damage")
+	eq(int(_sim.snapshot()["units"][1]["exit_tax"]), 0, "Hold Line no longer taxes the walk away")
 	eq(int(_sim.snapshot()["units"][0]["aegis"]), 1, "Hold Line gains 1 Aegis on connect")
-	_sim.submit({"type": "end_turn", "seat": 0})
-	eq(_move_offered(1, Vector2i(5, 1)), false, "exit tax shortens the walk budget by 1")
-	eq(_move_offered(1, Vector2i(4, 1)), true, "a shorter walk stays legal")
-	var walked: Dictionary = _sim.submit({"type": "move", "to": Vector2i(4, 1), "seat": 1})
-	eq(bool(walked.get("ok", false)), true, "taxed walk resolves")
-	eq(int(_sim.snapshot()["units"][1]["mp"]), 0, "exit tax spends path cost + 1")
+	eq(_sim.snapshot()["units"][1]["pos"], Vector2i(2, 1), "an adjacent target is already next to Bastion")
 
 
 func _test_heartstop() -> void:

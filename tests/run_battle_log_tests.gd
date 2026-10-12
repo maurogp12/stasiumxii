@@ -461,6 +461,17 @@ func _test_named_lines() -> void:
 		"type": "hit", "seat": 1, "target_seat": 0, "damage": 4, "pushed": true, "pulled": true,
 		"push_from": Vector2i(2, 2), "push_to": Vector2i(3, 2),
 	}, snap)[1]).contains("pulled"), "pull is its own line")
+	var held := LOG.lines({
+		"type": "hit", "seat": 0, "target_seat": 1, "spell": "hold_line", "damage": 7,
+		"pull_tiles": 0,
+	}, snap)
+	truthy(held.size() > 1 and str(held[1]).contains("pulled 0 tiles"), "a pull of 0 is logged: %s" % str(held[1]))
+	var yanked := LOG.lines({
+		"type": "hit", "seat": 0, "target_seat": 1, "spell": "hold_line", "damage": 7,
+		"pushed": true, "pulled": true, "pull_tiles": 3,
+		"push_from": Vector2i(5, 1), "push_to": Vector2i(2, 1),
+	}, snap)
+	truthy(str(yanked[1]).contains("pulled 3 tiles"), "Hold Line logs the pull distance: %s" % str(yanked[1]))
 	var bounce := LOG.plain({"type": "push_bounce", "target_seat": 1, "reason": "wall", "stagger_hp": 4, "stagger_mp": 1}, snap)
 	truthy(bounce.contains("wall") and bounce.contains("-4 HP"), "bounce names the wall and damage: %s" % bounce)
 	var blocked := LOG.plain({"type": "push_blocked", "target_seat": 1, "reason": "occupied"}, snap)

@@ -73,6 +73,8 @@ static func _short_effect(preview: Dictionary, needs_marks: bool) -> String:
 		bits.append("+1 Impact")
 	if spell_id == SpellKits.SHOULDER or int(def.get("push_cells", 0)) > 0:
 		bits.append("Push %d" % maxi(int(def.get("push_cells", 1)), 1))
+	if int(def.get("pull_cells", 0)) > 0:
+		bits.append("Pull %d" % int(def["pull_cells"]))
 	if spell_id == SpellKits.ADVANCE or spell_id == SpellKits.VAULT:
 		bits.append("Jump")
 	if spell_id == SpellKits.DETONATE:
@@ -202,9 +204,9 @@ static func simple_lines(spell_id: String, preview: Dictionary = {}) -> PackedSt
 		SpellKits.BASH:
 			out.append("Hit an enemy next to you with your shield for %d damage. Hit = +1 Aegis." % dmg)
 		SpellKits.PLANT:
-			out.append("Plant your flag on a tile. +1 Aegis. Stand on it and the first push against you does nothing. Lasts %d turns." % int(def.get("plant_turns", 3)))
+			out.append("Plant your flag on a tile. +1 Aegis. Stand on it and the first push against you does nothing. Shots cannot pass through the flag. Lasts %d turns." % int(def.get("plant_turns", 3)))
 		SpellKits.HOLD_LINE:
-			out.append("Swing at the 3 tiles in front of you: %d damage to every enemy there. They need 1 extra MP to walk away next turn. +1 Aegis." % dmg)
+			out.append("Yank one enemy up to %d tiles straight toward you for %d damage. They stop next to you, or sooner if a wall, a fighter, or an obstacle is in the way. +1 Aegis." % [int(def.get("pull_cells", 4)), dmg])
 		SpellKits.SNAP_WALL:
 			out.append("Build a wall on an empty tile. Nobody can walk or shoot through it. Lasts %d of your turns. Uses 2 Aegis." % int(def.get("wall_turns", 2)))
 			out.append("Use it on your own wall to knock it down and get the 2 Aegis back.")

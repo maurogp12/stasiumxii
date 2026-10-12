@@ -96,6 +96,8 @@ static func lines(event: Dictionary, snap: Dictionary) -> Array:
 	if kind == "hit":
 		var out: Array = [_hit_line(event, snap)]
 		var push := _push_success(event, snap)
+		if push == "":
+			push = _pull_still(event, snap)
 		if push != "":
 			out.append(push)
 		out.append_array(extra)
@@ -559,6 +561,17 @@ static func _push_success(event: Dictionary, snap: Dictionary) -> String:
 	if tiles > 0:
 		return "%s %s %d tile%s%s." % [who, verb, tiles, "" if tiles == 1 else "s", where]
 	return "%s %s%s." % [who, verb, where]
+
+
+## A Hold Line connect that did not slide. A slide already has its own line.
+static func _pull_still(event: Dictionary, snap: Dictionary) -> String:
+	if not event.has("pull_tiles"):
+		return ""
+	if bool(event.get("pushed", false)) and bool(event.get("pulled", false)):
+		return ""
+	var who := _name(snap, int(event.get("target_seat", -1)))
+	var tiles := int(event["pull_tiles"])
+	return "%s pulled %d tile%s." % [who, tiles, "" if tiles == 1 else "s"]
 
 
 static func _push_blocked(event: Dictionary, snap: Dictionary) -> String:
