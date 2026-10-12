@@ -616,7 +616,9 @@ func _test_crit_hit() -> void:
 	eq(home.x - quarter.x < home.x * 0.25, true, "the return eases off instead of snapping")
 	eq(hopped.y < -4.0, true, "the return hops back onto the tile")
 	var view := FileAccess.get_file_as_string("res://board_view.gd")
-	truthy(view.contains("func punch_camera"), "the crit shake moves the camera, not the board")
+	truthy(view.contains("func punch_camera"), "the crit shake is a screen punch")
+	truthy(view.contains("_set_view_shake"), "the crit shake moves the world parent")
+	eq(view.contains("_camera.offset = wobble"), false, "the crit shake does not write the camera offset")
 
 
 ## A sprung snare is a short readable beat. The painted strip stays; the
@@ -684,7 +686,9 @@ func _test_trap_spring() -> void:
 	eq(float(token.get("scale", 0.0)) >= 0.5, true, "the armed token is large enough to read on a phone tile")
 	var view := FileAccess.get_file_as_string("res://board_view.gd")
 	truthy(view.contains("_spring_deferred_traps"), "the board springs the trap when the foot lands")
-	truthy(view.contains("func punch_camera"), "the trap shake moves the camera, not the board")
+	truthy(view.contains("func punch_camera"), "the trap shake is a screen punch")
+	truthy(view.contains("_expand_shake_cull"), "the trap shake keeps a cull margin")
+	eq(view.contains("_camera.offset = wobble"), false, "the trap shake does not write the camera offset")
 	truthy(view.contains("_deferred_traps"), "the board holds the spring until the landing")
 	var crush_miss: Array = ROUTER.recipes_for([{
 		"type": "miss",

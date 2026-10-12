@@ -47,7 +47,7 @@ static func run(host: SceneTree) -> void:
 	var marker: Node = board._shade_markers.get(dest)
 	host.truthy(marker != null and is_instance_valid(marker), "accept syncs a live Shade marker without another action")
 	host.eq(marker.get_parent().name, "ShadeMarkers", "the marker is on the ShadeMarkers layer")
-	host.eq(marker.get_parent() == board.get_node("Units"), false, "the marker is not parented under Units")
+	host.eq(marker.get_parent() == board.find_child("Units", true, false), false, "the marker is not parented under Units")
 	host.eq(marker.visible, true, "the Shade marker is visible")
 	host.eq(int(marker.get("turns")), 3, "the marker keeps the 3 turn count")
 	var token := marker.get_node_or_null("Token") as Sprite2D
@@ -65,7 +65,7 @@ static func run(host: SceneTree) -> void:
 	host.eq(token.texture.get_height(), 160, "Shade token is the 160px TA sheet")
 	host.eq(tile.texture.get_width(), 64, "Shade decal is 64px wide")
 	host.eq(tile.texture.get_height(), 48, "Shade decal is 48px tall")
-	var layer := board.get_node("ShadeMarkers") as Node2D
+	var layer := board.find_child("ShadeMarkers", true, false) as Node2D
 	host.eq(layer.z_as_relative, false, "Shade layer z is absolute")
 	var buried_z := BoardVisualSort.unit_z_index(Vector2i(14, 14), 2.0)
 	host.eq(layer.z_index > buried_z, true, "Shade layer paints above tiles and units")
@@ -549,7 +549,7 @@ static func _seat_pos(snap: Dictionary, seat: int) -> Vector2i:
 
 static func _units_hold_shade(board: Node) -> bool:
 	var marker_script: Script = load("res://board/shade_marker.gd")
-	for child in board.get_node("Units").get_children():
+	for child in board.find_child("Units", true, false).get_children():
 		if child.get_script() == marker_script:
 			return true
 	return false

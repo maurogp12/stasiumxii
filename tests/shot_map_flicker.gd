@@ -185,7 +185,7 @@ func _freeze(board: Node) -> void:
 		var glow := life.get_node_or_null("Light")
 		if glow != null:
 			glow.visible = false
-	_pause_tree(board.get_node_or_null("Tiles"))
+	_pause_tree(board.find_child("Tiles", true, false))
 
 
 func _pause_tree(node: Node) -> void:

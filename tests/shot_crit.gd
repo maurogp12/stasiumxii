@@ -117,10 +117,17 @@ func _setup() -> void:
 		hud._layout_chrome()
 
 
+func _shake_screen_px() -> float:
+	var world: Node2D = _board.get("_world")
+	if world == null or _board._camera == null:
+		return _board._camera.offset.length() * _board._camera.zoom.x if _board._camera != null else 0.0
+	return world.position.length() * _board._camera.zoom.x
+
+
 func _probe() -> void:
 	if _board == null or _board._camera == null:
 		return
-	_max_shake = maxf(_max_shake, _board._camera.offset.length() * _board._camera.zoom.x)
+	_max_shake = maxf(_max_shake, _shake_screen_px())
 	if not _board.pawns_by_seat.has(1):
 		return
 	var pawn: Pawn = _board.pawns_by_seat[1]

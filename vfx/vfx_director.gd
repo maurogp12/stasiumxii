@@ -718,7 +718,8 @@ func _start_shake(amplitude: float, duration: float) -> void:
 	if pixels <= 0.0:
 		return
 	# Moving the board also moves its camera, so the view never shakes.
-	# The live board punches the camera in screen pixels instead.
+	# The live board punches a world parent in whole screen pixels. The
+	# camera offset stays clear so tiles are not culled or re-sorted.
 	if _board.has_method("punch_camera"):
 		var screen := amplitude if amplitude > VfxBudget.SHAKE_PX + 0.5 else 12.0
 		_board.call("punch_camera", screen, duration)

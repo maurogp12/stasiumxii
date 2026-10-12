@@ -146,6 +146,47 @@ static func snap_point(point: Vector2) -> Vector2:
 	return Vector2(roundf(point.x), roundf(point.y))
 
 
+## Screen shake stays on a parent, not the camera. Whole screen pixels so the
+## snapped canvas shifts every tile by the same amount. A fractional camera
+## offset re-rounds each tile on its own and the shared edges swap or drop.
+const SHAKE_CULL_MARGIN := 96.0
+## Containers keep a stable rect. A merged child rect goes empty for a frame
+## when the view shifts, and the whole diamond vanishes onto the sky.
+const SHAKE_PARENT_RECT := Rect2(-2400, -2400, 4800, 4800)
+
+
+static func shake_screen(raw: Vector2) -> Vector2:
+	return Vector2(roundf(raw.x), roundf(raw.y))
+
+
+## `screen` is phone pixels. The parent offset is world pixels, so the picture
+## moves by exactly those screen pixels at the current zoom.
+static func shake_world_offset(screen: Vector2, zoom: float) -> Vector2:
+	return shake_screen(screen) / maxf(zoom, 0.001)
+
+
+static func pin_cull_rect(item: CanvasItem) -> void:
+	if item == null or not item.is_inside_tree():
+		return
+	RenderingServer.canvas_item_set_custom_rect(item.get_canvas_item(), true, SHAKE_PARENT_RECT)
+
+
+## Grow a drawn tile or prop once. A second call would pad the already padded
+## rect. Empty rects (not drawn yet) are left alone so a later pass can measure.
+static func grow_cull_rect(item: CanvasItem) -> void:
+	if item == null or not item.is_inside_tree() or item.has_meta("shake_cull"):
+		return
+	var rect := Rect2()
+	if item is Sprite2D:
+		rect = (item as Sprite2D).get_rect()
+	else:
+		rect = RenderingServer.debug_canvas_item_get_rect(item.get_canvas_item())
+	if rect.size.x < 1.0 and rect.size.y < 1.0:
+		return
+	RenderingServer.canvas_item_set_custom_rect(item.get_canvas_item(), true, rect.grow(SHAKE_CULL_MARGIN))
+	item.set_meta("shake_cull", true)
+
+
 ## Child order matches draw order, so an equal-z pair (two fighters on one
 ## depth line) stays put when the canvas sorts again.
 static func order_children(parent: Node) -> void:

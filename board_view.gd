@@ -132,6 +132,10 @@ var _queued_net_events: Array = []
 var _vfx: Node
 var _board_size: int = BoardSize.SHIP
 var _camera: Camera2D
+## World content (tiles, units, sky slab). The shake offsets this node.
+## The camera stays put so culling and tile order do not follow the wobble.
+var _world: Node2D
+var _shake_cull_queued := false
 var _koliseo_life: Node2D
 var _arena_sky: Node2D
 var _shake_tween: Tween
@@ -192,9 +196,10 @@ func _ready() -> void:
 	_hud.aim_dragged.connect(_on_hud_aim_dragged)
 	_hud.zoom_step_requested.connect(_on_zoom_step)
 	# VFX pass 1. Motion pass owns pawn tweens. This node only plays pooled effects.
+	_ensure_world()
 	_vfx = VFX_DIRECTOR.new()
 	_vfx.name = "VfxDirector"
-	add_child(_vfx)
+	_adopt_world(_vfx)
 	_vfx.bind_board(self)
 	_shade_layer()
 	_ensure_aim_line()
@@ -600,7 +605,7 @@ func _on_hud_aim_dragged(screen_pos: Vector2, committing: bool) -> void:
 		if committing:
 			_chrome_aim = false
 		return
-	var local := ($Tiles as Node2D).make_canvas_position_local(screen_pos)
+	var local := (_tiles_root() as Node2D).make_canvas_position_local(screen_pos)
 	var cell := _pick_local(local, true)
 	if not _in_bounds(cell):
 		if committing:
@@ -641,10 +646,10 @@ func _commit_cell(cell: Vector2i) -> void:
 
 
 func _cell_under_pointer(event: InputEvent) -> Vector2i:
-	var local: Vector2 = ($Tiles as Node2D).get_local_mouse_position()
+	var local: Vector2 = (_tiles_root() as Node2D).get_local_mouse_position()
 	var finger := false
 	if event is InputEventScreenTouch or event is InputEventScreenDrag:
-		local = ($Tiles as Node2D).make_canvas_position_local(TOUCH.pointer_position(event))
+		local = (_tiles_root() as Node2D).make_canvas_position_local(TOUCH.pointer_position(event))
 		finger = true
 	return _pick_local(local, finger)
 
@@ -741,7 +746,7 @@ func _ensure_pick_ring() -> PickRing:
 	ring.name = "PickRing"
 	ring.z_index = VISUAL_SORT.FLOAT_Z
 	ring.visible = false
-	add_child(ring)
+	_adopt_world(ring)
 	_pick_ring = ring
 	return ring
 
@@ -845,7 +850,7 @@ func _publish_pawn_depth(pawn: Pawn) -> void:
 
 
 func _order_unit_nodes(bodies: Array) -> void:
-	var layer := $Units
+	var layer := _units_root()
 	var ordered: Array = bodies.duplicate()
 	ordered.sort_custom(func(a: Pawn, b: Pawn) -> bool:
 		return VISUAL_SORT.draws_behind(a.z_index, a.position, a.seat, b.z_index, b.position, b.seat)
@@ -1864,58 +1869,65 @@ func _ensure_flourish() -> void:
 		return
 	_flourish = SPELL_FLOURISH.new()
 	_flourish.name = "SpellFlourish"
-	add_child(_flourish)
+	_adopt_world(_flourish)
 	_flourish.bind_elevation(_elev_at)
 
 
 ## Impact punch (view only): a short decaying camera wobble. Bigger hits and
 ## knockouts shake more. A sine wobble, not dice, so it never touches the sim.
-## Screen-pixel camera bump. `screen_px` is how far the view travels on the
-## phone, independent of zoom. Two slow wobbles, then the offset clears.
+## Screen-pixel bump. `screen_px` is how far the view travels on the phone,
+## independent of zoom. The world parent moves; the camera offset stays zero
+## so tile culling and draw order do not follow the wobble. Whole pixels.
 func punch_camera(screen_px: float, duration: float) -> void:
-	if _camera == null or not is_instance_valid(_camera) or not is_inside_tree():
+	if not is_inside_tree():
 		return
 	if screen_px <= 0.0 or duration <= 0.0:
 		return
+	_arm_shake_cull()
 	if _shake_tween != null and is_instance_valid(_shake_tween):
 		_shake_tween.kill()
 	_shake_tween = create_tween()
 	_shake_tween.tween_method(_apply_punch.bind(screen_px), 0.0, 1.0, duration)
-	_shake_tween.tween_callback(func() -> void:
-		if _camera != null and is_instance_valid(_camera):
-			_camera.offset = Vector2.ZERO
-	)
+	_shake_tween.tween_callback(func() -> void: _set_view_shake(Vector2.ZERO))
 
 
 func _apply_punch(t: float, screen_px: float) -> void:
-	if _camera == null or not is_instance_valid(_camera):
-		return
 	var fall := 1.0 - clampf(t, 0.0, 1.0)
-	var zoom := maxf(_camera.zoom.x, 0.001)
 	var wobble := Vector2(sin(t * TAU * 2.0), cos(t * TAU * 1.6) * 0.55)
-	_camera.offset = wobble * screen_px * fall / zoom
+	_set_view_shake(wobble * screen_px * fall)
 
 
 func _shake_camera(dealt: float, knockout: bool) -> void:
-	if _camera == null or not is_instance_valid(_camera) or not is_inside_tree():
+	if not is_inside_tree():
 		return
 	if dealt <= 0.0 and not knockout:
 		return
 	var amp := clampf(1.5 + dealt * 0.12, 1.5, 5.0)
 	if knockout:
 		amp = 7.0
+	_arm_shake_cull()
 	if _shake_tween != null and is_instance_valid(_shake_tween):
 		_shake_tween.kill()
 	_shake_tween = create_tween()
 	_shake_tween.tween_method(_apply_shake.bind(amp), 0.0, 1.0, 0.26 if not knockout else 0.4)
-	_shake_tween.tween_callback(func() -> void: _camera.offset = Vector2.ZERO)
+	_shake_tween.tween_callback(func() -> void: _set_view_shake(Vector2.ZERO))
 
 
 func _apply_shake(t: float, amp: float) -> void:
-	if _camera == null or not is_instance_valid(_camera):
-		return
 	var fall := (1.0 - t) * (1.0 - t)
-	_camera.offset = Vector2(sin(t * 57.0), cos(t * 43.0) * 0.6) * amp * fall / _camera.zoom.x
+	var wobble := Vector2(sin(t * 57.0), cos(t * 43.0) * 0.6)
+	_set_view_shake(wobble * amp * fall)
+
+
+## Whole screen pixels on the world parent. Camera offset stays clear.
+func _set_view_shake(screen: Vector2) -> void:
+	var world := _ensure_world()
+	var zoom := 1.0
+	if _camera != null and is_instance_valid(_camera):
+		zoom = _camera.zoom.x
+		if _camera.offset != Vector2.ZERO:
+			_camera.offset = Vector2.ZERO
+	world.position = VISUAL_SORT.shake_world_offset(screen, zoom)
 
 
 func _tween_pawn_modulate(pawn: Pawn) -> void:
@@ -2512,16 +2524,16 @@ func _rebuild_pawns() -> void:
 	# Pawns only. Shade markers live on ShadeMarkers. A marker that raced onto
 	# Units is moved, not freed — this pass used to free the token.
 	var layer := _shade_layer()
-	for child in $Units.get_children():
+	for child in _units_root().get_children():
 		if child.get_script() == SHADE_MARKER:
 			child.reparent(layer)
 			continue
-		$Units.remove_child(child)
+		_units_root().remove_child(child)
 		child.free()
 	pawns_by_seat.clear()
 	for unit in _sim().snapshot().get("units", []):
 		var pawn := PAWN_SCENE.instantiate() as Pawn
-		$Units.add_child(pawn)
+		_units_root().add_child(pawn)
 		pawns_by_seat[int(unit["seat"])] = pawn
 
 
@@ -2615,11 +2627,12 @@ func _sync_shade_markers(snap: Dictionary) -> void:
 
 
 func _shade_layer() -> Node2D:
-	var layer := get_node_or_null("ShadeMarkers") as Node2D
+	var world := _ensure_world()
+	var layer := world.get_node_or_null("ShadeMarkers") as Node2D
 	if layer == null:
 		layer = Node2D.new()
 		layer.name = "ShadeMarkers"
-		add_child(layer)
+		world.add_child(layer)
 	layer.z_as_relative = false
 	layer.z_index = SHADE_LAYER_Z
 	return layer
@@ -2758,7 +2771,7 @@ func _enemy_reach_badge() -> PanelContainer:
 	label.add_theme_color_override("font_outline_color", Color(0.08, 0.03, 0.03))
 	label.add_theme_constant_override("outline_size", 6)
 	panel.add_child(label)
-	($Tiles as Node2D).add_child(panel)
+	_tiles_root().add_child(panel)
 	_foe_mp_badge = panel
 	_foe_mp_label = label
 	return panel
@@ -3168,7 +3181,7 @@ func _ensure_aim_line() -> Node2D:
 		return _aim_line
 	_aim_line = AIM_LINE.new()
 	_aim_line.name = "AimLine"
-	add_child(_aim_line)
+	_adopt_world(_aim_line)
 	return _aim_line
 
 
@@ -3239,7 +3252,7 @@ func _apply_board_tiles(snap: Dictionary) -> void:
 		tile.set_walk_blocked(SNAPSHOT_TILES.walk_block_kind(rec))
 		tile.position = VISUAL_SORT.cell_to_local(cell, float(rec.get("elevation", 0.0)))
 		tile.z_index = VISUAL_SORT.tile_z_index(cell, float(rec.get("elevation", 0.0)))
-	var painted := PAINTED.bind($Tiles, PAINTED.room_id_for(map_key, _painted_room_letter()), tiles)
+	var painted := PAINTED.bind(_tiles_root(), PAINTED.room_id_for(map_key, _painted_room_letter()), tiles)
 	if not painted:
 		for cell in tiles.keys():
 			if ARENA_LOOK.centerpiece_for(map_key, cell, _paint_props_at(paint, cell)) != null:
@@ -3248,7 +3261,8 @@ func _apply_board_tiles(snap: Dictionary) -> void:
 				# standing in that row. Painted occluders sort on their own.
 				_tile_at(cell).z_index += VISUAL_SORT.TILE_Z_SCALE + 1
 	_apply_edge_glow(map_key)
-	VISUAL_SORT.order_children($Tiles)
+	VISUAL_SORT.order_children(_tiles_root())
+	_arm_shake_cull()
 	_ensure_koliseo_life()
 	if _koliseo_life != null:
 		_koliseo_life.bind(map_key, _board_size)
@@ -3289,10 +3303,10 @@ func _ensure_koliseo_life() -> void:
 		return
 	_koliseo_life = KOLISEO_LIFE.new()
 	_koliseo_life.name = "KoliseoLife"
-	var units := get_node_or_null("Units")
-	add_child(_koliseo_life)
+	_adopt_world(_koliseo_life)
+	var units := _units_root()
 	if units != null:
-		move_child(_koliseo_life, units.get_index())
+		_ensure_world().move_child(_koliseo_life, units.get_index())
 
 
 ## Look-picture glow: a cell's edges that touch the arena's hot terrain
@@ -3318,8 +3332,93 @@ func _ensure_arena_sky() -> void:
 		return
 	_arena_sky = ARENA_SKY.new()
 	_arena_sky.name = "ArenaSky"
-	add_child(_arena_sky)
-	move_child(_arena_sky, 0)
+	_adopt_world(_arena_sky)
+	_ensure_world().move_child(_arena_sky, 0)
+
+
+func _ensure_world() -> Node2D:
+	if _world != null and is_instance_valid(_world):
+		return _world
+	_world = get_node_or_null("WorldShake") as Node2D
+	if _world == null:
+		_world = Node2D.new()
+		_world.name = "WorldShake"
+		add_child(_world)
+		move_child(_world, 0)
+	for child_name in ["ArenaSky", "Tiles", "Units", "ShadeMarkers", "KoliseoLife", "SpellFlourish", "VfxDirector", "AimLine", "PickRing"]:
+		var node := get_node_or_null(child_name)
+		if node != null and node.get_parent() == self:
+			remove_child(node)
+			_world.add_child(node)
+	_pin_cull_item(_world)
+	for child_name in ["Tiles", "Units", "ShadeMarkers"]:
+		var pinned := _world.get_node_or_null(child_name)
+		if pinned is CanvasItem:
+			_pin_cull_item(pinned)
+	return _world
+
+
+func _adopt_world(node: Node) -> void:
+	var world := _ensure_world()
+	if node.get_parent() == world:
+		return
+	if node.get_parent() != null:
+		node.reparent(world)
+	else:
+		world.add_child(node)
+
+
+func _tiles_root() -> Node2D:
+	return _ensure_world().get_node("Tiles") as Node2D
+
+
+func _units_root() -> Node2D:
+	return _ensure_world().get_node("Units") as Node2D
+
+
+func _pin_cull_item(item: CanvasItem) -> void:
+	VISUAL_SORT.pin_cull_rect(item)
+
+
+## Containers keep a stable rect. Tiles and painted props grow by the shake
+## margin. Units and effects are left on their live rects so a walk or a
+## recoil is not culled against a snapshot.
+func _expand_shake_cull() -> void:
+	var world := _ensure_world()
+	_pin_cull_item(world)
+	for child_name in ["Tiles", "Units", "ShadeMarkers", "ArenaSky", "KoliseoLife", "VfxDirector"]:
+		var node := world.get_node_or_null(child_name)
+		if node is CanvasItem:
+			_pin_cull_item(node)
+	var tiles := world.get_node_or_null("Tiles")
+	if tiles != null:
+		_grow_tile_cull(tiles)
+
+
+func _grow_tile_cull(node: Node) -> void:
+	if node is CanvasLayer:
+		return
+	if node is BoardTile or node is Sprite2D or node.get_parent() is BoardTile:
+		if node is CanvasItem:
+			VISUAL_SORT.grow_cull_rect(node)
+	elif node is CanvasItem and str(node.name) != "Tiles":
+		_pin_cull_item(node)
+	for child in node.get_children():
+		_grow_tile_cull(child)
+
+
+func _arm_shake_cull() -> void:
+	_expand_shake_cull()
+	if _shake_cull_queued or not is_inside_tree():
+		return
+	_shake_cull_queued = true
+	get_tree().process_frame.connect(_finish_shake_cull, CONNECT_ONE_SHOT)
+
+
+func _finish_shake_cull() -> void:
+	_shake_cull_queued = false
+	if is_inside_tree():
+		_expand_shake_cull()
 
 
 func _ensure_camera() -> void:
@@ -3340,8 +3439,8 @@ func _rebuild_grid(size: int) -> void:
 	if next == _board_size and tiles.size() == next * next and not tiles.is_empty():
 		return
 	_board_size = next
-	for child in $Tiles.get_children():
-		$Tiles.remove_child(child)
+	for child in _tiles_root().get_children():
+		_tiles_root().remove_child(child)
 		child.free()
 	tiles.clear()
 	selected_tile = null
@@ -3354,7 +3453,7 @@ func _rebuild_grid(size: int) -> void:
 			tile.apply_board_data("ground", 0.0)
 			tile.position = VISUAL_SORT.cell_to_local(tile.grid_position, 0.0)
 			tile.z_index = VISUAL_SORT.tile_z_index(tile.grid_position, 0.0)
-			$Tiles.add_child(tile)
+			_tiles_root().add_child(tile)
 			tiles[tile.grid_position] = tile
 	_fit_board_camera()
 
