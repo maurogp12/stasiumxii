@@ -2320,14 +2320,14 @@ func _test_glide_walk() -> void:
 	truthy(MOTION.hop_offset(0.5).y < -0.5, "the body rises between footfalls")
 	truthy(MOTION.hop_offset(0.5).y > -2.0, "the rise is soft (under 2px)")
 	eq(MOTION.plant_scale(0.9), Vector2.ONE, "no plant squash on every tile")
-	# The stride never stops: half the cells on one tile, the other half on the
-	# next tile (the other foot), no hold on the contact.
+	# Half the cells on one tile, the other half on the next (the other foot).
+	# The end of the tile holds the plant instead of a passing cell.
 	var seen := {}
 	for tile in 2:
 		for i in 12:
 			seen[MOTION.walk_cycle_frame((float(i) + 0.5) / 12.0, 8, tile)] = true
 	eq(seen.size(), 8, "two tiles show all eight walk cells")
-	eq(MOTION.walk_cycle_frame(0.95, 8, 0), 3, "late in the first tile the stride is on its fourth cell, not frozen on contact")
+	eq(MOTION.walk_cycle_frame(0.95, 8, 0), 4, "late in the tile the foot is on the plant")
 	eq(MOTION.walk_cycle_frame(0.05, 8, 1), 4, "the next tile leads with the other foot")
 	eq(MOTION.anticipate_segment(2, true), false, "a turn mid path does not stop to settle")
 	eq(MOTION.dust_on_plant(true, false), false, "no dust on every turn")

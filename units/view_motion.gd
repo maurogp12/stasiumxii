@@ -632,9 +632,12 @@ static func walk_cycle_frame(t: float, frame_count: int, _step_index: int = 0, c
 		var base := plant + (posmod(_step_index, 2)) * half
 		if t <= 0.0:
 			return base % count
-		if t >= 1.0:
+		# The slowdown at the end of the tile is the plant, not one more
+		# passing cell. 0.84 of the travel is the stride; the rest holds.
+		if t >= 0.84:
 			return (base + half) % count
-		return (base + clampi(int(floor(t * float(half))), 0, half - 1)) % count
+		var open := clampf(t / 0.84, 0.0, 0.999999)
+		return (base + clampi(int(floor(open * float(half))), 0, half - 1)) % count
 	if glide:
 		# Continuous stride: every cell in turn across the tile, then the next
 		# tile starts on the contact again, so the seam never repeats a cell.
