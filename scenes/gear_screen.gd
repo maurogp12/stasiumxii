@@ -79,6 +79,13 @@ func fuse(uid: int) -> Dictionary:
 	return result
 
 
+func choose_stance(mode: String) -> Dictionary:
+	var result := _bag.set_stance(mode)
+	var label := "Neutral" if mode == GearBag.STANCE_NEUTRAL else "Ranged Guard"
+	_after(result, "Gatewarden stance: %s." % label)
+	return result
+
+
 func choose_attune(family: String, element: String) -> Dictionary:
 	var result := _bag.set_attune(family, element)
 	_after(result, "%s attuned to %s." % [str(GearBag.FAMILIES.get(family, {}).get("name", family)), element])
@@ -213,7 +220,7 @@ func _refresh() -> void:
 	var grey := ""
 	if int(apmp["ap_greyed"]) > 0 or int(apmp["mp_greyed"]) > 0:
 		grey = "   (extra greyed out)"
-	var st := GearBag.sheet_stats(_bag.worn_list(), _bag.attune, _pvp_lines)
+	var st := GearBag.sheet_stats(_bag.worn_list(), _bag.attune, _pvp_lines, _bag.stance_of())
 	var base_hp := int(preload("res://backend/combat_sim.gd").class_base_hp(_bag.focus_class))
 	var hp := roundi(float(base_hp + int(st["hp_flat"])) * (1.0 + float(st["hp_pct"]) / 100.0))
 	_header.text = "%s   HP %d   Mastery %d   Init %d   Crit %d%%   AP %d/%d   MP %d/%d%s   Loot today %d/%d" % [
@@ -298,7 +305,35 @@ func _refresh() -> void:
 			elif on:
 				tint = GOLD_BRIGHT
 			var line := _label("  %dpc: %s%s" % [tier, str(spec["bonus"][tier]), suffix], 13, tint)
+			if fam == GearBag.STANCE_FAMILY and int(tier) == GearBag.STANCE_PIECES:
+				line.name = "Gatewarden5pc"
+				line.tooltip_text = "%s. %s" % [str(spec["bonus"][tier]), GearBag.stance_sentence(_bag.stance_of())]
 			_sets_box.add_child(line)
+		if fam == GearBag.STANCE_FAMILY:
+			var stance_line := _label(GearBag.stance_sentence(_bag.stance_of()), 13, GOLD_BRIGHT if pieces >= GearBag.STANCE_PIECES else GOLD_DIM)
+			stance_line.name = "GatewardenStance"
+			stance_line.tooltip_text = stance_line.text
+			_sets_box.add_child(stance_line)
+			var stance_row := HBoxContainer.new()
+			stance_row.add_theme_constant_override("separation", 4)
+			for mode in GearBag.STANCES:
+				var picked := _bag.stance_of() == str(mode)
+				var label := "Neutral" if str(mode) == GearBag.STANCE_NEUTRAL else "Ranged Guard"
+				var stance_button := _button(label)
+				stance_button.name = "Stance_%s" % str(mode)
+				stance_button.clip_text = false
+				stance_button.custom_minimum_size = Vector2(150, ROW_HEIGHT)
+				stance_button.alignment = HORIZONTAL_ALIGNMENT_CENTER
+				if picked:
+					var stance_lit := StyleBoxFlat.new()
+					stance_lit.bg_color = Color(0.30, 0.24, 0.10)
+					stance_lit.border_color = GOLD_BRIGHT
+					stance_lit.set_border_width_all(2)
+					stance_button.add_theme_stylebox_override("normal", stance_lit)
+					stance_button.add_theme_color_override("font_color", Color.WHITE)
+				stance_button.pressed.connect(choose_stance.bind(str(mode)))
+				stance_row.add_child(stance_button)
+			_sets_box.add_child(stance_row)
 		if pieces >= GearBag.ATTUNE_PIECES and bool(spec.get("can_attune", false)):
 			var row := HBoxContainer.new()
 			row.add_theme_constant_override("separation", 4)
@@ -320,7 +355,7 @@ func _refresh() -> void:
 			_sets_box.add_child(row)
 	if not any:
 		_sets_box.add_child(_label("Wear 2 pieces of one family for its first bonus.", 14, GOLD_DIM))
-	_sets_box.add_child(_label("Gear counts in Stasis and online Koliseo. Koliseo counts part HP, Mastery, Resist and Init as +0. AP/MP is the same in every fight: 5pc +1/+1 (Legendary and Ultra), Rare +5 weapon +1 AP, Rare +5 boots +1 MP. Ultra special lines are Koliseo only. Caps stay 8 AP / 5 MP.", 12, GOLD_DIM))
+	_sets_box.add_child(_label("Gear counts in Stasis and online Koliseo. Koliseo counts part HP, Mastery, Resist and Init as +0. AP/MP is the same in every fight: 5pc +1/+1 (Legendary and Ultra), Rare +5 weapon +1 AP, Rare +5 boots +1 MP. Ultra special lines are Koliseo only. Gatewarden's Neutral and Ranged Guard count in every fight. Caps stay 8 AP / 5 MP.", 12, GOLD_DIM))
 	if OS.is_debug_build():
 		_sets_box.add_child(_label("Debug review — not in a release build, never sent online.", 12, GOLD_DIM))
 		var review_order: Array = []
@@ -349,6 +384,8 @@ static func _reason_text(reason: String) -> String:
 			return "This set has no attune. Its resist counts against every element."
 		"not_debug":
 			return "Debug sets are not in this build."
+		"bad_stance":
+			return "That stance is not on Gatewarden."
 	return "Cannot do that."
 
 

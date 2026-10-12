@@ -1022,9 +1022,13 @@ func _test_loadouts() -> void:
 	var cleaned := GearBag.clean_fight_gear(local)
 	eq((cleaned["worn"] as Array).size(), 0, "clean_fight_gear never sends debug pieces")
 	# Proposed set bonuses that are not the locked 5pc lines.
+	eq(str(GearBag.FAMILIES["oathgrave"]["bonus"][2]), "+12% HP", "Oathgrave 2pc stays +12% HP")
+	eq(str(GearBag.FAMILIES["oathgrave"]["bonus"][4]), "+6 Resist", "Oathgrave 4pc stays +6 Resist")
+	eq(str(GearBag.FAMILIES["oathgrave"]["bonus"][5]), "+1 AP +1 MP. Ward shield 25 (cap 40). Start with 1 Aegis. No Aegis refund when Ward breaks.", "Oathgrave 5pc bonuses stay")
 	eq(str(GearBag.FAMILIES["oathgrave"]["bonus"][5]).begins_with("+1 AP +1 MP"), true, "Oathgrave 5pc leads with +1 AP +1 MP")
 	eq(int(GearBag.FAMILIES["oathgrave"]["stats"][5]["ward_shield"]), 25, "Oathgrave Ward shield is 25")
 	eq(int(GearBag.FAMILIES["oathgrave"]["stats"][5]["start_aegis"]), 1, "Oathgrave starts with 1 Aegis")
+	eq(bool(GearBag.FAMILIES["oathgrave"]["stats"][5].has("far_cut")), false, "Oathgrave does not take the range stance")
 	eq(int(GearBag.FAMILIES["gravewhisper"]["stats"][4]["back_pct"]), 6, "Gravewhisper 4pc back damage +6%")
 	eq(int(GearBag.FAMILIES["rustward"]["stats"][5]["guard_flat"]), 4, "Rustward 5pc guards the first hit")
 	eq(int(GearBag.FAMILIES["undertow"]["stats"][5]["first_hit"]), 4, "Undertow 5pc first hit +4")
@@ -1145,45 +1149,99 @@ func _test_crit_cap_and_stun() -> void:
 	var guarded := {"guard_ready": true, "guard_flat": 4}
 	eq(int(sim._gear_strike_damage({}, guarded, 10, 2, false, true)), 6, "the first hit taken deals 4 less")
 	eq(bool(guarded["guard_ready"]), false, "the guard is spent")
-	eq(int(GearBag.FAMILIES["ironveil"]["stats"][4]["far_cut"]), 20, "Ironveil 4pc cuts far hits by 20%")
-	eq(int(GearBag.FAMILIES["ironveil"]["stats"][4]["resist"]), 6, "Ironveil 4pc still grants +6 Resist")
-	var iron_tip := str(GearBag.FAMILIES["ironveil"]["bonus"][4])
-	truthy(iron_tip.contains("20%") and iron_tip.contains("3 or more"), "Ironveil 4pc tooltip names the far cut")
-	truthy(iron_tip.contains("Damage over time"), "Ironveil 4pc tooltip leaves damage over time alone")
-	var four := GearBag.combat_stats(_worn("ironveil", ["weapon", "head", "chest", "legs"]), {}, false, "bastion")
-	eq(int(four["far_cut"]), 20, "four Ironveil pieces grant the far cut")
-	var two := GearBag.combat_stats(_worn("ironveil", ["head", "chest"]), {}, false, "bastion")
-	eq(int(two.get("far_cut", 0)), 0, "two Ironveil pieces do not grant the far cut")
-	eq(int(sim._gear_strike_damage({}, {"far_cut": 20}, 10, 3, false, true)), 8, "a hit from 3 tiles deals 20% less")
-	eq(int(sim._gear_strike_damage({}, {"far_cut": 20}, 10, 4, false, true)), 8, "a hit from 4 tiles deals 20% less")
-	eq(int(sim._gear_strike_damage({}, {"far_cut": 20}, 10, 2, false, true)), 10, "a hit from 2 tiles is not cut")
-	eq(int(sim._gear_strike_damage({}, {"far_cut": 20}, 10, 1, false, true)), 10, "a melee hit is not cut")
-	var guarded_far := {"guard_ready": true, "guard_flat": 4, "far_cut": 20}
+	eq(GearBag.FAMILIES["ironveil"]["stats"][4], {"resist": 6}, "Ironveil 4pc is +6 Resist only")
+	eq(str(GearBag.FAMILIES["ironveil"]["bonus"][2]), "+10% HP", "Ironveil 2pc stays +10% HP")
+	eq(str(GearBag.FAMILIES["ironveil"]["bonus"][4]), "+6 Resist", "Ironveil 4pc tooltip is +6 Resist")
+	eq(str(GearBag.FAMILIES["ironveil"]["bonus"][5]), "First hit you take each turn deals 6 less", "Ironveil 5pc stays the first-hit guard")
+	var iron_four := GearBag.combat_stats(_worn("ironveil", ["weapon", "head", "chest", "legs"]), {}, false, "bastion")
+	eq(int(iron_four.get("far_cut", 0)), 0, "four Ironveil pieces do not cut far hits")
+	eq(int(iron_four.get("near_amp", 0)), 0, "four Ironveil pieces do not raise close hits")
+	eq(preload("res://backend/test_loadout.gd").ACTIVE, true, "the test kit stays on")
+	var picker := GearBag.new()
+	eq(picker.stance_of(), "neutral", "the stance defaults to Neutral")
+	eq(bool(picker.set_stance("ranged_guard")["ok"]), true, "Ranged Guard can be picked")
+	eq(picker.stance_of(), "ranged_guard", "the pick stays")
+	eq(str(picker.set_stance("bogus")["reason"]), "bad_stance", "a third stance is refused")
+	eq(picker.stance_of(), "ranged_guard", "a bad pick does not change the stance")
+	picker.set_stance("neutral")
+	picker.save()
+	eq(GearBag.load_saved().stance_of(), "neutral", "Neutral reloads")
+	var saved_ranged := GearBag.load_saved()
+	saved_ranged.set_stance("ranged_guard")
+	saved_ranged.save()
+	eq(GearBag.load_saved().stance_of(), "ranged_guard", "Ranged Guard reloads")
+	eq(GearBag.clean_stance("nope"), "neutral", "a smuggled stance becomes Neutral")
+	eq(GearBag.clean_fight_gear({"stance": "ranged_guard"})["stance"], "ranged_guard", "the fight keeps Ranged Guard")
+	var gate_tip := str(GearBag.FAMILIES["gatewarden"]["bonus"][5])
+	eq(gate_tip.begins_with("+1 AP +1 MP"), true, "Gatewarden 5pc still leads with +1 AP +1 MP")
+	truthy(gate_tip.contains("crit"), "Gatewarden 5pc still wards a crit")
+	var sentence := GearBag.stance_sentence("ranged_guard")
+	truthy(sentence.contains("20%") and sentence.contains("15%") and sentence.contains("Damage over time"), "the Ranged Guard tooltip names both rates and leaves damage over time alone")
+	truthy(GearBag.stance_sentence("neutral").contains("+4 Resist"), "the Neutral tooltip names +4 Resist")
+	var full_neutral: Dictionary = GearBag.combat_stats(_worn("gatewarden", GearBag.SLOTS), {}, false, "bastion", false, "neutral")
+	eq(int(full_neutral["far_cut"]), 0, "Neutral has no far cut in a dungeon")
+	eq(int(full_neutral["near_amp"]), 0, "Neutral has no close amp in a dungeon")
+	eq(str(full_neutral["gate_stance"]), "neutral", "five pieces arm Neutral")
+	eq(int(full_neutral["ap"]), 7, "Neutral keeps +1 AP in a dungeon")
+	eq(int(full_neutral["mp"]), 4, "Neutral keeps +1 MP in a dungeon")
+	var full_neutral_pvp: Dictionary = GearBag.combat_stats(_worn("gatewarden", GearBag.SLOTS), {}, true, "bastion", false, "neutral")
+	eq(int(full_neutral_pvp["resist"]) - int(full_neutral["resist"]), 0, "Neutral +4 Resist is the same in a dungeon and in Koliseo")
+	eq(int(full_neutral_pvp["ap"]), 7, "Neutral keeps +1 AP in Koliseo")
+	var four_ranged: Dictionary = GearBag.combat_stats(_worn("gatewarden", ["weapon", "head", "chest", "legs"]), {}, false, "bastion", false, "ranged_guard")
+	eq(str(four_ranged["gate_stance"]), "", "four Gatewarden pieces do not arm the stance")
+	eq(int(four_ranged["far_cut"]), 0, "four pieces do not cut far hits")
+	eq(int(four_ranged["near_amp"]), 0, "four pieces do not raise close hits")
+	var ranged_target := {"far_cut": 20, "near_amp": 15}
+	eq(int(sim._gear_strike_damage({}, ranged_target, 10, 3, false, true)), 8, "a hit from 3 tiles deals 20% less")
+	eq(int(sim._gear_strike_damage({}, ranged_target, 10, 4, false, true)), 8, "a hit from 4 tiles deals 20% less")
+	eq(int(sim._gear_strike_damage({}, ranged_target, 10, 2, false, true)), 12, "a hit from 2 tiles deals 15% more")
+	eq(int(sim._gear_strike_damage({}, ranged_target, 10, 1, false, true)), 12, "a hit from 1 tile deals 15% more")
+	eq(int(sim._gear_strike_damage({}, ranged_target, 10, 0, false, true)), 10, "a same-tile hit is not a close hit")
+	var guarded_far := {"guard_ready": true, "guard_flat": 4, "far_cut": 20, "near_amp": 15}
 	eq(int(sim._gear_strike_damage({}, guarded_far, 10, 3, false, true)), 4, "the far cut happens before the first-hit guard")
+	var guarded_near := {"guard_ready": true, "guard_flat": 4, "far_cut": 20, "near_amp": 15}
+	eq(int(sim._gear_strike_damage({}, guarded_near, 10, 2, false, true)), 8, "the close increase happens before the first-hit guard")
 	sim.reset_match({
 		"seed": 1, "flat_board": true, "skip_deploy": true,
 		"classes": ["kestrel", "bastion"],
 		"positions": [Vector2i(0, 0), Vector2i(3, 0)],
 		"kestrel_facing": "E", "bastion_facing": "W",
 		"rolls": [1],
-		"seat_gear": {1: {"worn": _worn("ironveil", ["weapon", "head", "chest", "legs"])}},
+		"seat_gear": {1: {"worn": _worn("gatewarden", GearBag.SLOTS), "stance": "ranged_guard"}},
 	})
 	var wearer: Dictionary = sim._unit_by_seat(1)
-	eq(int(wearer["far_cut"]), 20, "the fight copies Ironveil's far cut")
+	eq(str(wearer["gate_stance"]), "ranged_guard", "the fight copies Ranged Guard")
+	eq(int(wearer["far_cut"]), 20, "the fight copies the far cut")
+	eq(int(wearer["near_amp"]), 15, "the fight copies the close increase")
+	eq(int(wearer["max_ap"]), 7, "the fight keeps Gatewarden +1 AP")
+	eq(int(wearer["max_mp"]), 4, "the fight keeps Gatewarden +1 MP")
 	wearer["facing"] = "W"
 	wearer["resist"] = 0
 	wearer["resist_elem"] = {}
 	var hp_before := int(wearer["hp"])
 	var shot: Dictionary = sim.submit({"type": "cast", "spell": "mark_shot", "to": Vector2i(3, 0), "seat": 0})
 	eq(bool(shot.get("ok", false)), true, "Mark Shot from 3 tiles connects")
-	eq(hp_before - int(wearer["hp"]), 6, "Ironveil 4pc turns an 8-damage far hit into 6")
+	eq(hp_before - int(wearer["hp"]), 6, "Ranged Guard turns an 8-damage far hit into 6")
+	var log_script: Script = load("res://ui/battle_log.gd")
+	var snap: Dictionary = sim.snapshot()
+	var hit_text := ""
+	var start_text := ""
+	for ev in snap["battle_log"]:
+		if typeof(ev) != TYPE_DICTIONARY:
+			continue
+		var row_text := " ".join(log_script.lines(ev, snap))
+		if str(ev.get("type", "")) == "hit" and int(ev.get("target_seat", -1)) == 1:
+			hit_text = row_text
+		if str(ev.get("type", "")) == "combat_start":
+			start_text = row_text
+	truthy(hit_text.contains("Ranged Guard -20%"), "the hit log names the far cut: %s" % hit_text)
+	truthy(start_text.contains("Ranged Guard") and start_text.contains("20%") and start_text.contains("15%"), "the fight log names Ranged Guard: %s" % start_text)
 	sim.reset_match({
 		"seed": 1, "flat_board": true, "skip_deploy": true,
 		"classes": ["kestrel", "bastion"],
 		"positions": [Vector2i(0, 0), Vector2i(2, 0)],
-		"kestrel_facing": "E", "bastion_facing": "W",
 		"rolls": [1],
-		"seat_gear": {1: {"worn": _worn("ironveil", ["weapon", "head", "chest", "legs"])}},
+		"seat_gear": {1: {"worn": _worn("gatewarden", GearBag.SLOTS), "stance": "ranged_guard"}},
 	})
 	wearer = sim._unit_by_seat(1)
 	wearer["facing"] = "W"
@@ -1192,19 +1250,66 @@ func _test_crit_cap_and_stun() -> void:
 	hp_before = int(wearer["hp"])
 	var near: Dictionary = sim.submit({"type": "cast", "spell": "mark_shot", "to": Vector2i(2, 0), "seat": 0})
 	eq(bool(near.get("ok", false)), true, "Mark Shot from 2 tiles connects")
-	eq(hp_before - int(wearer["hp"]), 8, "Ironveil 4pc does not cut a hit from 2 tiles")
+	eq(hp_before - int(wearer["hp"]), 9, "Ranged Guard turns an 8-damage close hit into 9")
+	snap = sim.snapshot()
+	var near_text := ""
+	for ev in near.get("events", []):
+		if typeof(ev) == TYPE_DICTIONARY and str(ev.get("type", "")) == "hit":
+			near_text = " ".join(log_script.lines(ev, snap))
+	truthy(near_text.contains("Ranged Guard +15%"), "the hit log names the close increase: %s" % near_text)
 	sim.reset_match({
 		"seed": 1, "flat_board": true, "skip_deploy": true,
 		"classes": ["kestrel", "bastion"],
 		"positions": [Vector2i(0, 0), Vector2i(3, 0)],
-		"seat_gear": {1: {"worn": _worn("ironveil", ["weapon", "head", "chest", "legs"])}},
+		"seat_gear": {1: {"worn": _worn("gatewarden", GearBag.SLOTS), "stance": "ranged_guard"}},
 	})
 	var burning: Dictionary = sim._unit_by_seat(1)
 	burning["burn_stacks"] = 1
 	burning["burn_remaining"] = 2
 	var before_burn := int(burning["hp"])
 	sim._tick_burn(burning)
-	eq(before_burn - int(burning["hp"]), sim._burn_tick_hp(1), "a burn tick ignores Ironveil's far cut")
+	eq(before_burn - int(burning["hp"]), sim._burn_tick_hp(1), "a burn tick ignores Ranged Guard")
+	sim.reset_match({
+		"seed": 1, "flat_board": true, "skip_deploy": true,
+		"classes": ["kestrel", "bastion"],
+		"positions": [Vector2i(0, 0), Vector2i(3, 0)],
+		"rolls": [1],
+		"seat_gear": {1: {"worn": _worn("gatewarden", GearBag.SLOTS), "stance": "neutral", "flatten_plus": true}},
+	})
+	wearer = sim._unit_by_seat(1)
+	eq(str(wearer["gate_stance"]), "neutral", "Koliseo keeps Neutral")
+	eq(int(wearer["resist"]), 15, "Koliseo Neutral keeps +4 Resist on top of +0 part Resist")
+	eq(int(wearer["far_cut"]), 0, "Koliseo Neutral does not cut far hits")
+	eq(int(wearer["max_ap"]), 7, "Koliseo Neutral keeps +1 AP")
+	eq(int(wearer["max_mp"]), 4, "Koliseo Neutral keeps +1 MP")
+	wearer["facing"] = "W"
+	wearer["resist"] = 0
+	wearer["resist_elem"] = {}
+	hp_before = int(wearer["hp"])
+	var plain_shot: Dictionary = sim.submit({"type": "cast", "spell": "mark_shot", "to": Vector2i(3, 0), "seat": 0})
+	eq(bool(plain_shot.get("ok", false)), true, "Mark Shot from 3 tiles connects on Neutral")
+	eq(hp_before - int(wearer["hp"]), 8, "Neutral does not cut a far hit")
+	snap = sim.snapshot()
+	var neutral_start := ""
+	for ev in snap["battle_log"]:
+		if typeof(ev) == TYPE_DICTIONARY and str(ev.get("type", "")) == "combat_start":
+			neutral_start = " ".join(log_script.lines(ev, snap))
+	truthy(neutral_start.contains("Neutral") and neutral_start.contains("+4 Resist"), "the fight log names Neutral: %s" % neutral_start)
+	var screen := GearScreen.new()
+	screen.name = "StanceGear"
+	root.add_child(screen)
+	eq(bool(screen.bag().debug_equip_set("bastion", "gatewarden")["ok"]), true, "debug wears Gatewarden")
+	screen.bag().set_stance("neutral")
+	screen._refresh()
+	var stance_label := screen.find_child("GatewardenStance", true, false) as Label
+	truthy(stance_label != null and stance_label.text.contains("+4 Resist"), "the set list shows Neutral")
+	var tip := screen.find_child("Gatewarden5pc", true, false) as Label
+	truthy(tip != null and str(tip.tooltip_text).contains("Ranged Guard") == false and str(tip.tooltip_text).contains("+4 Resist"), "the 5pc tooltip shows the picked stance")
+	eq(bool(screen.choose_stance("ranged_guard")["ok"]), true, "the set list can pick Ranged Guard")
+	eq(GearBag.load_saved().stance_of(), "ranged_guard", "the pick is saved")
+	stance_label = screen.find_child("GatewardenStance", true, false) as Label
+	truthy(stance_label.text.contains("20%") and stance_label.text.contains("15%"), "the set list shows Ranged Guard")
+	screen.queue_free()
 
 
 ## Every class, every AP/MP piece, every fight path. Fight-start max

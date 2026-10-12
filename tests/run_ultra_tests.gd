@@ -76,7 +76,7 @@ func _test_budgets_and_switch() -> void:
 	eq(_points("hushring"), 76.5, "Hushring is 76.5 points (10% back is 7.5)")
 	eq(_points("mercywell"), 77.0, "Mercywell is 77 points")
 	var plain := {
-		"gatewarden": [71, 6, 11, 2],
+		"gatewarden": [71, 6, 15, 2],
 		"sandhawk": [56, 12, 6, 6],
 		"pitmaw": [70, 6, 10, 0],
 		"hushring": [62, 23, 0, 14],
@@ -100,6 +100,22 @@ func _test_budgets_and_switch() -> void:
 	eq(int(gate["push_guard"]), 1, "Gatewarden 2pc")
 	eq(int(gate["no_back"]), 1, "Gatewarden 4pc")
 	eq(int(gate["crit_ward"]), 1, "Gatewarden 5pc crit ward")
+	eq(int(gate["resist"]), 15, "Neutral +4 Resist counts in Koliseo on top of part Resist")
+	eq(str(gate["gate_stance"]), "neutral", "a full Gatewarden set defaults to Neutral")
+	var ranged: Dictionary = GearBag.combat_stats(_worn("gatewarden"), {}, true, "bastion", false, "ranged_guard")
+	eq(int(ranged["far_cut"]), 20, "Ranged Guard cuts far hits in Koliseo")
+	eq(int(ranged["near_amp"]), 15, "Ranged Guard raises close hits in Koliseo")
+	eq(int(ranged["resist"]), 11, "Ranged Guard does not add the Neutral Resist")
+	eq(int(ranged["ap"]), 7, "Ranged Guard keeps the Ultra +1 AP in Koliseo")
+	eq(int(ranged["mp"]), 4, "Ranged Guard keeps the Ultra +1 MP in Koliseo")
+	eq(int(ranged["crit_ward"]), 1, "Ranged Guard keeps the crit ward")
+	var ranged_dungeon: Dictionary = GearBag.combat_stats(_worn("gatewarden"), {}, false, "bastion", false, "ranged_guard")
+	eq(int(ranged_dungeon["far_cut"]), 20, "Ranged Guard cuts far hits in a dungeon")
+	eq(int(ranged_dungeon["near_amp"]), 15, "Ranged Guard raises close hits in a dungeon")
+	eq(int(ranged_dungeon["ap"]), 7, "Ranged Guard keeps the Ultra +1 AP in a dungeon")
+	eq(int(ranged_dungeon["mp"]), 4, "Ranged Guard keeps the Ultra +1 MP in a dungeon")
+	eq(int(ranged_dungeon["crit_ward"]), 0, "the crit ward stays Koliseo-only")
+	eq(int(ranged_dungeon["push_guard"]), 0, "push guard stays Koliseo-only")
 	var hawk: Dictionary = GearBag.combat_stats(_worn("sandhawk"), {}, true, "kestrel")
 	eq(int(hawk["crit"]), 5, "Sandhawk crit is 5%")
 	eq(int(hawk["bow_range"]), 1, "Sandhawk bow range")
