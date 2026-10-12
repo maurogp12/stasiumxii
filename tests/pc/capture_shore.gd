@@ -21,6 +21,7 @@ const SPOTS := {
 	"coves": {"zone": "crosshaven_eastmarch_coves", "hero": Vector2i(22, 6), "cam": Vector2i(24, 6), "zoom": 1.6},
 	"southbridge": {"zone": "crosshaven_southbridge", "hero": Vector2i(8, 23), "cam": Vector2i(10, 25), "zoom": 1.6},
 	"northgate": {"zone": "crosshaven_northgate", "hero": Vector2i(7, 7), "cam": Vector2i(7, 6), "zoom": 1.6},
+	"saltmaw_north": {"zone": "crosshaven_eastmarch_sea_caves", "hero": Vector2i(26, 6), "cam": Vector2i(27, 4), "zoom": 1.6},
 	"crags_east": {"zone": "crosshaven_northgate_crags_east", "hero": Vector2i(8, 4), "cam": Vector2i(10, 3), "zoom": 1.6},
 }
 const WALK_FROM := Vector2i(24, 29)

@@ -158,10 +158,14 @@ var _shore_animate := -1.0
 static var _shore_mats: Array[WeakRef] = []
 static var _shore_anim_now := -1.0
 ## How far the bands reach from the cell coast (cells): land side, sea side.
-const SHORE_LAND_REACH := 1.0
+const SHORE_LAND_REACH := 5.6
+## Cell-centre distance from the sea (cells) up to which flat grass is beach.
+## The sand runs a little past it (`BEACH_EDGE` in the shader, about 4.3 to
+## 4.7), so a beach cell is sand all over and the grass edge is drawn smooth.
+const BEACH_CELLS := 3.5
 const SHORE_SEA_REACH := 2.3
 ## Distances past this are all the same to the bands.
-const SHORE_FIELD_CAP := 4.0
+const SHORE_FIELD_CAP := 8.0
 enum { SHORE_SEA, SHORE_SOFT, SHORE_HARD }
 
 
@@ -577,8 +581,6 @@ func _cache_beach() -> void:
 		# rims showed through as a grid of green lines on the sand.
 		margin = _view_margin()
 		_seen_memo_on = true
-		_cache_near_sea(margin)
-		_near_sea_ready = true
 	for y in range(-margin, zone.height + margin):
 		for x in range(-margin, zone.width + margin):
 			var cell := Vector2i(x, y)
@@ -747,6 +749,9 @@ func _classify_beach(cell: Vector2i) -> String:
 	# theme weights are the slow part.
 	if terrain != "water" and terrain != "golden_plains":
 		return ""
+	if smooth_shore and terrain != "water":
+		# Beach land comes from the shore field (`_cache_shore`).
+		return ""
 	var dist := 0
 	if terrain == "golden_plains":
 		dist = _sea_dist(cell)
@@ -763,7 +768,7 @@ func _classify_beach(cell: Vector2i) -> String:
 			if nb != "" and nb != "water":
 				return "sea_shallow"
 		return "sea_deep"
-	if dist == 1 and not smooth_shore:
+	if dist == 1:
 		return "wet_sand"
 	return "sand"
 
@@ -1055,6 +1060,9 @@ func _shore_prop(cell: Vector2i, family: String) -> String:
 		return ""
 	if _cave_id(cell) != "" or _cave_id(cell + Vector2i(1, 0)) != "":
 		return ""
+	# The kit's beach props belong to the Eastmarch coast.
+	if smooth_shore and not _east_coast(cell):
+		return ""
 	var wet_row := family == "wet_sand" or (family == "sand" and smooth_shore and _sea_dist(cell) == 1)
 	if wet_row and Art.h(cell.x, cell.y, 9) == 0:
 		var wet := ["mooring_post", "shell_heap", "driftwood_fork"]
@@ -1075,7 +1083,12 @@ func _draw_beach(ci: Node2D, cell: Vector2i, family: String, steps: int) -> void
 	if sea:
 		ci.draw_colored_polygon(Pick.diamond(cell, float(steps)) if shore else _sea_diamond(cell, steps), Color("246e9e"))
 		modulate = Color.WHITE
-	var pick: Dictionary = Kit.pick("eastmarch", family, cell, Callable(self, "_family_seen"))
+	var seen := Callable(self, "_family_seen")
+	if smooth_shore and not sea:
+		# Plain sand: the grass edge is drawn smooth by the shore bands, not
+		# by the kit's per-cell edge pieces.
+		seen = Callable(self, "_all_sand")
+	var pick: Dictionary = Kit.pick("eastmarch", family, cell, seen)
 	var floor := str(pick.get("floor", ""))
 	if floor != "" and sea and shore:
 		# Exactly its diamond: a bleed past it would cut the smoothed bands
@@ -1100,8 +1113,18 @@ func _draw_beach(ci: Node2D, cell: Vector2i, family: String, steps: int) -> void
 			_paint_clamped(ci, corner_art, south_tip, modulate, WATER_OVERLAP, false, false)
 		else:
 			Kit.draw(ci, corner_art, south_tip, modulate, false, false)
+	if smooth_shore and not sea and cover_at(cell) > 0.0:
+		# Toward a snow town the sand turns to snowy sand.
+		_draw_snow_floor(ci, cell, steps, "golden_plains", false)
+		var lip := snow_shore_at(cell)
+		if lip > 0.0:
+			_draw_snow_lip(ci, cell, steps, lip)
 	if not _defers_decor(cell):
 		_draw_shore_prop(ci, cell, family, steps)
+
+
+func _all_sand(_cell: Vector2i) -> String:
+	return "sand"
 
 
 func _draw_shore_prop(ci: Node2D, cell: Vector2i, family: String, steps: int) -> void:
@@ -1484,6 +1507,10 @@ func _draw_cell_kit(ci: Node2D, cell: Vector2i, terrain: String, steps: int, ban
 		if floor_art.is_empty():
 			floor_art = Art.texture("tiles", terrain)
 		if cover > 0.0 and terrain != "water":
+			_paint_exact(ci, floor_art, cell, steps, floor_tint)
+		elif terrain == "golden_plains" and _touches_shore(cell):
+			# Its rim would lie over the sand edge the bands drew on the
+			# cell in the row behind, as a thin green line.
 			_paint_exact(ci, floor_art, cell, steps, floor_tint)
 		else:
 			_paint_art(ci, floor_art, south_tip, floor_tint, water_overlap)
@@ -2354,6 +2381,17 @@ func _on_shore(cell: Vector2i) -> bool:
 	return _shore_cells.has(cell)
 
 
+func _touches_shore(cell: Vector2i) -> bool:
+	if _shore_cells.is_empty():
+		return false
+	if _shore_cells.has(cell):
+		return true
+	for dir in _ORTHO:
+		if _shore_cells.has(cell + dir):
+			return true
+	return false
+
+
 ## Rows with shore bands draw their props, cave mouths and exit arrows after
 ## the bands, so a band never covers the foot of a tall sprite in its row.
 func _defers_decor(cell: Vector2i) -> bool:
@@ -2395,8 +2433,9 @@ func _cache_shore() -> void:
 	if zone == null or not smooth_shore:
 		return
 	var margin := _view_margin()
-	# Two cells past the drawn range for the smooth read, one more to spare.
-	var pad := margin + 3
+	# Past the drawn range by the beach width and the smooth read, so a
+	# drawn cell sees every sea cell that sets its distance.
+	var pad := margin + 9
 	var origin := Vector2i(-pad, -pad)
 	var size := Vector2i(zone.width + pad * 2, zone.height + pad * 2)
 	var n := size.x * size.y
@@ -2455,7 +2494,20 @@ func _cache_shore() -> void:
 						cold = maxf(cold, maxf(cover_at(nb), snow_shore_at(nb)))
 			soft[i] = 1.0 if soft_n + hard_n <= 0.0 else soft_n / (soft_n + hard_n)
 			snow[i] = cold
-	# Shore cells: drawn sea and sand cells the bands reach.
+	# One beach on every flat sea coast: flat grass within BEACH_CELLS of the
+	# sea is sand, whatever chunk or theme it is in. Every ground works it out
+	# from the same terrain, so the beach runs on across chunk seams. Cells
+	# under full town snow stay snow.
+	for y in range(-margin, zone.height + margin):
+		for x in range(-margin, zone.width + margin):
+			var cell := Vector2i(x, y)
+			var i := (y - origin.y) * size.x + (x - origin.x)
+			if kind[i] != SHORE_SOFT or dist[i] > BEACH_CELLS:
+				continue
+			if Art.terrain_seen(zone, cell) != "golden_plains" or cover_at(cell) >= 0.999:
+				continue
+			_beach[cell] = "sand"
+	# Shore cells: drawn sea and land cells the bands reach.
 	var kit := false
 	for y in range(-margin, zone.height + margin):
 		for x in range(-margin, zone.width + margin):
@@ -2470,7 +2522,11 @@ func _cache_shore() -> void:
 				if not zone.in_bounds(cell) and Art.terrain_seen(zone, cell) == "" and _beach_at(cell) == "" and not _void_sea.has(cell):
 					continue
 			elif kind[i] == SHORE_SOFT:
-				if sd > SHORE_LAND_REACH or not _shore_land_cell(cell):
+				if sd > SHORE_LAND_REACH:
+					continue
+				# Grass just past the beach takes the smooth sand edge too.
+				var grass_edge := Art.terrain_seen(zone, cell) == "golden_plains"
+				if not grass_edge and not _shore_land_cell(cell):
 					continue
 				var fam := _beach_at(cell)
 				kit = kit or fam == "sand" or fam == "wet_sand"
@@ -2490,11 +2546,12 @@ func _cache_shore() -> void:
 	var bytes := PackedByteArray()
 	bytes.resize(n * 4)
 	for i in n:
-		var enc := clampf((dist[i] + SHORE_FIELD_CAP) / (SHORE_FIELD_CAP * 2.0), 0.0, 1.0)
-		bytes[i * 4] = roundi(enc * 255.0)
+		# 16 bits of distance: high byte in r, low byte in a.
+		var enc := _encode_distance(dist[i])
+		bytes[i * 4] = enc >> 8
 		bytes[i * 4 + 1] = roundi(clampf(snow[i], 0.0, 1.0) * 255.0)
 		bytes[i * 4 + 2] = roundi(clampf(soft[i], 0.0, 1.0) * 255.0)
-		bytes[i * 4 + 3] = 255
+		bytes[i * 4 + 3] = enc & 255
 	var image := Image.create_from_data(size.x, size.y, false, Image.FORMAT_RGBA8, bytes)
 	_shore_field = {
 		"origin": origin,
@@ -2595,11 +2652,14 @@ func shore_smooth_at(p: Vector2) -> float:
 	return total
 
 
-## Field value as the texture stores it (8-bit), so the test reads what the GPU reads.
+## Field value as the texture stores it (16-bit), so the test reads what the GPU reads.
 func _field_encoded(cell: Vector2i) -> float:
-	var d := shore_field_at(cell)
-	var enc := float(roundi(clampf((d + SHORE_FIELD_CAP) / (SHORE_FIELD_CAP * 2.0), 0.0, 1.0) * 255.0)) / 255.0
+	var enc := float(_encode_distance(shore_field_at(cell))) / 65535.0
 	return enc * SHORE_FIELD_CAP * 2.0 - SHORE_FIELD_CAP
+
+
+static func _encode_distance(d: float) -> int:
+	return roundi(clampf((d + SHORE_FIELD_CAP) / (SHORE_FIELD_CAP * 2.0), 0.0, 1.0) * 65535.0)
 
 
 static func _cr_weights(t: float) -> PackedFloat32Array:
@@ -2660,6 +2720,7 @@ func _shore_material() -> ShaderMaterial:
 	if _snow_field_tex != null:
 		mat.set_shader_parameter("snow_tex", _snow_field_tex.diffuse_texture)
 	mat.set_shader_parameter("snow_period", SNOW_PERIOD)
+	mat.set_shader_parameter("field_cap", SHORE_FIELD_CAP)
 	_shore_mat = mat
 	_shore_mats.append(weakref(mat))
 	_sync_shore_material()

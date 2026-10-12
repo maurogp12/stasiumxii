@@ -5,7 +5,8 @@ shader_type canvas_item;
 // position in the field texture, so the ground keeps its row order.
 //
 // The field holds one texel per cell (texel centre = cell centre):
-//   r: signed distance to the cell coast in cells, land +, sea -, 0..1 = -4..4
+//   r, a: signed distance to the cell coast in cells (16 bits, r high byte),
+//         land +, sea -, 0..1 = -field_cap..field_cap
 //   g: snow on the shore (Northgate), 0..1
 //   b: how much of the coast here is soft (sand or snow, not cliff or bank)
 // A Catmull-Rom read of it is a smooth signed distance: a straight cell coast
@@ -15,6 +16,9 @@ shader_type canvas_item;
 
 uniform sampler2D field : filter_nearest, repeat_disable;
 uniform vec2 field_size = vec2(1.0);
+uniform float field_cap = 8.0;
+// Where the beach meets the grass, in cells from the sea (plus noise).
+uniform float beach_edge = 4.35;
 // World cell of field texel (0, 0).
 uniform vec2 field_origin = vec2(0.0);
 uniform sampler2D sand_tex : filter_linear, repeat_disable;
@@ -37,7 +41,9 @@ void vertex() {
 
 float texel_s(ivec2 at) {
 	ivec2 c = clamp(at, ivec2(0), ivec2(field_size) - ivec2(1));
-	return texelFetch(field, c, 0).r * 8.0 - 4.0;
+	vec4 t = texelFetch(field, c, 0);
+	float enc = (floor(t.r * 255.0 + 0.5) * 256.0 + floor(t.a * 255.0 + 0.5)) / 65535.0;
+	return enc * field_cap * 2.0 - field_cap;
 }
 
 vec2 texel_gb(ivec2 at) {
@@ -145,7 +151,14 @@ void fragment() {
 		// A thin glossy sheen where the last wave drained.
 		float sheen = (1.0 - smoothstep(0.0, 0.09, edge)) * 0.25;
 		col = mix(col, vec3(0.92, 0.95, 0.96), sheen);
-		alpha = 1.0 - smoothstep(0.55, 0.95, sw);
+		// The sand runs inland to an organic edge against the grass: wobbly,
+		// with a soft warm shade on the sand side of it.
+		float n3 = vnoise(w * 0.028 + 71.0);
+		float edge_at = beach_edge + 0.42 * n3 + 0.12 * (n2 - 0.5);
+		float inland = s + 0.1 * (n1 - 0.5);
+		alpha = 1.0 - smoothstep(edge_at - 0.07, edge_at + 0.05, inland);
+		float lip = smoothstep(edge_at - 0.45, edge_at - 0.02, inland);
+		col *= mix(1.0, 0.86, lip * (1.0 - snow));
 	} else {
 		float depth = -edge;
 		vec3 turq = mix(vec3(0.36, 0.71, 0.72), vec3(0.30, 0.56, 0.70), snow);

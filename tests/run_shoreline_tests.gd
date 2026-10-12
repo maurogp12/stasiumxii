@@ -183,7 +183,7 @@ func _test_saltmaw_spot(w: Node2D) -> void:
 	var cells: Dictionary = ground.call("shore_cells")
 	check(cells.has(Vector2i(28, 29)), "Saltmaw: the sand at the water (28, 29) takes the bands")
 	check(cells.has(Vector2i(29, 29)), "Saltmaw: the first sea cell (29, 29) takes the bands")
-	check(not cells.has(Vector2i(24, 29)), "Saltmaw: the grass at 24, 29 stays as it was")
+	check(not cells.has(Vector2i(20, 29)), "Saltmaw: the grass at 20, 29, well inland, stays as it was")
 	var surf := 0
 	var wet := 0
 	for cell in cells.keys():
