@@ -24,6 +24,7 @@ PC only.
 | `base/` | The whole base body in one sheet per kind and facing. It is drawn while nothing is worn, at the same cost as a locked look. |
 | `base_<group>/` | The base split by slot group: `weapon`, `head`, `chest`, `legs`, `boots`, plus `skin` (the bare hands). These draw once anything is worn. |
 | `<family>_<slot>/` | A look strip, for example `cragmaw_chest`. |
+| `legs_joints.json` | Hip, knee and ankle per leg, frame, kind and facing, in sheet cell pixels, plus the knee bend and whether the pieces meet at the knee and ankle. The tests read it. |
 
 Strip files are named `ironjaw_<strip>_<kind>_<S|E>.png`. The kinds are walk, idle, attack, skill, hit and death. A strip `x_back` lives in folder `x`.
 
@@ -56,7 +57,7 @@ Re-run with:
 python3 build_tools/pc_gear/build_ironjaw_gear.py --work /tmp/ironjaw_gear_work [--families cragmaw,tyrantjaw,pitmaw]
 ```
 
-It takes about 10 to 15 minutes and 2 to 3 GB of RAM. It reads the locked rig from git (`claude/ironjaw-actions` 9d784a1 and `art/ironjaw-walk-help` 0f3eeb8), so neither branch needs to be checked out.
+It takes about 15 to 25 minutes for three sets and 2 to 3 GB of RAM (the rig streams one frame at a time). It reads the locked rig from git (`claude/ironjaw-actions` 9d784a1 and `art/ironjaw-walk-help` 0f3eeb8), so neither branch needs to be checked out.
 
 ### 1. `gear_cut.py`: paintings to rig parts
 
@@ -94,9 +95,11 @@ Each frame is then drawn once per strip:
 
 So every strip has the body's cells, pivot and frames, and the game only stacks them.
 
+**Walk legs.** The walk hips sit on the TA walk hips and each boot stands on the TA heel and toe. The knee comes from a two-bone chain with constant thigh and shin lengths (the medians over the cycle) and a fixed bend side per leg and facing, and its position is smoothed around the loop. So the thigh, shin and boot pieces stay joined, bend at the knee and never flip from frame to frame. The other actions keep the locked leg IK. The rig writes the leg joints and checks (`_legs.json`) beside the frames.
+
 ### 3. `build_ironjaw_gear.py`: frames to sheets
 
-The frames are written as sheets at the locked Ironjaw scale (0.5547). Each kind gets one shared layout, the union of every strip, so all strips of a kind share one cell and pivot. The script also writes `units/pc_gear_specs.gd`, which holds SPECS, WORLD (gait numbers measured on the new walk) and STRIPS.
+The frames are written as sheets at the locked Ironjaw scale (0.5547). Before writing, the build closes holes: every pixel the full base covers must be covered by the base slot groups, and a look's pixels always include its slot's base zone (weapon excepted, since the axes change shape). So no combination of worn and empty slots can show the background, at the neck or anywhere else. Each kind gets one shared layout, the union of every strip, so all strips of a kind share one cell and pivot. The script also writes `units/pc_gear_specs.gd`, which holds SPECS, WORLD (gait numbers measured on the new walk) and STRIPS.
 
 ## Data: `data/pc/gear_looks.json`
 
@@ -137,6 +140,11 @@ The stack is used in three places:
 |---|---|
 | **New set** for a class that already has a base (about 1 to 2 hours) | 1. Paint 10 one-piece edits of `base_{S,E}` (weapon, head, chest, legs, boots), using the set's design panel as the second reference. The chest covers the torso, sleeves and hem; the legs cover hip to boot. 2. Paint 2 leg-sheet edits (legs and boots) on `legs_base.jpg`. 3. Add the family to `sets` in the data. 4. Re-run the build. |
 | **New class** (about a day) | 1. Paint its base on its locked S/E targets. 2. Hand-place the joints in `gear_cut.CFG`. 3. Point the rig import at that class's locked rig (`claude/<class>-actions`, which has the same `act_blockout`/aimfix format). 4. Repaint its leg sheet. 5. Enable the class in the data. Then each set follows the new-set row. |
+
+## Checks (`tests/run_visible_gear_tests.gd`)
+
+- **Holes:** for every kind, facing and frame, the base groups stacked cover the full base, each look covers its slot's base zone, and the full set and every single piece of all three sets leave no background inside the body.
+- **Legs:** knee and ankle contact at least 90 % on every frame of every kind; walk and idle knees bend at most 130 degrees; along the walk loop the knee angle moves at most 50 degrees per frame and never flips side; the leg strips are opaque at the knee.
 
 ## Later: face types, skin, hair, eye colours, female bodies
 
