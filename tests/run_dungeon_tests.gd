@@ -462,7 +462,10 @@ func _test_star_scaling() -> void:
 	var prev_hp := 0
 	for star in range(1, 6):
 		var mult: Array = book.star_scale(star)
+		# The band stats before any star row (★1 has its own row since the gear retune).
+		Monsters.star_scale_override[1] = [1.0, 1.0]
 		var raw: Dictionary = book.stats_at("granary_rat", 1, 1)
+		Monsters.star_scale_override.erase(1)
 		var at: Dictionary = book.stats_at("granary_rat", 1, star)
 		eq(int(at["hp"]), maxi(int(round(float(raw["hp"]) * float(mult[0]))), 1), "★%d rat HP is base x %.2f" % [star, float(mult[0])])
 		eq(int(at["attack"]["damage"]), maxi(int(round(float(raw["attack"]["damage"]) * float(mult[1]))), 1), "★%d rat damage is base x %.2f" % [star, float(mult[1])])
@@ -879,7 +882,7 @@ func _test_world_door_and_panel() -> void:
 
 
 func _test_run_scene_win_and_return() -> void:
-	Launcher.pending = {"dungeon_id": GRANARY, "level": 1, "class_id": "ironjaw", "autoplay": true, "return_zone": "crosshaven_stoneford", "return_cell": DOOR, "seed": 1}
+	Launcher.pending = {"dungeon_id": GRANARY, "level": 1, "class_id": "ironjaw", "autoplay": true, "return_zone": "crosshaven_stoneford", "return_cell": DOOR, "seed": 1, "hero_gear": {"worn": [{"item_id": "ashmantle.weapon", "plus": 0}, {"item_id": "ashmantle.head", "plus": 0}, {"item_id": "ashmantle.chest", "plus": 0}, {"item_id": "ashmantle.legs", "plus": 0}, {"item_id": "ashmantle.boots", "plus": 0}], "extra_ap": 0}}  # an Ashmantle +0 hero (the star rows assume worn gear)
 	Launcher.outcome = {}
 	var scene: Node = (load(RUN_SCENE_PATH) as PackedScene).instantiate()
 	eq(scene.has_signal("run_finished"), true, "the run scene script loads")

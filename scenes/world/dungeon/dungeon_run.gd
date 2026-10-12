@@ -61,7 +61,9 @@ func _ready() -> void:
 		return
 	run = made["run"]
 	# Worn gear (pc_gear ladder) goes into every room's hero.
-	if progress.has_method("fight_gear"):
+	if ctx.has("hero_gear"):
+		run.hero_gear = (ctx["hero_gear"] as Dictionary).duplicate(true)
+	elif progress.has_method("fight_gear"):
 		run.hero_gear = progress.fight_gear()
 	if int(ctx.get("hero_hp", -1)) > 0:
 		run.hero_hp = int(ctx["hero_hp"])

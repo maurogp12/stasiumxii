@@ -1088,15 +1088,15 @@ func _test_others_unchanged() -> void:
 	eq(book.ids_for(FROST), ["ice_construct", "book_wraith", "the_pale_archivist", "frozen_ice_construct", "frozen_book_wraith", "the_frozen_archivist"], "the archive keeps its six monsters")
 	eq(book.ids_for(SALT), ["reef_crab", "drowned_sailor", "drowned_harpooner", "old_saltmaw", "abyssal_reef_crab", "abyssal_drowned_sailor", "abyssal_drowned_harpooner", "abyssal_saltmaw"], "the grotto keeps its eight monsters")
 	eq(book.ids_for(ABBEY), ["bog_dead", "mire_leech", "mire_abbess", "bellbound_bog_dead", "bellbound_mire_leech", "bell_wraith"], "the abbey keeps its six monsters")
-	var rows := {1: [1.0, 1.0], 2: [1.1, 1.05], 3: [1.15, 1.1], 4: [1.2, 1.1], 5: [1.0, 1.0]}
-	var frost_rows := {1: [1.0, 1.0], 2: [1.05, 1.0], 3: [1.05, 1.0], 4: [1.1, 1.0], 5: [0.875, 0.85]}
-	var salt_rows := {1: [1.0, 1.0], 2: [1.05, 1.0], 3: [1.1, 1.05], 4: [1.25, 1.05], 5: [1.05, 1.05]}
-	var abbey_rows := {1: [1.0, 1.0], 2: [1.05, 1.0], 3: [1.1, 1.05], 4: [1.12, 1.05], 5: [1.0, 0.9]}
+	var rows := {1: [1.25, 1.4], 2: [1.65, 1.75], 3: [1.72, 1.76], 4: [1.9, 1.95], 5: [1.75, 1.85]}
+	var frost_rows := {1: [1.2, 1.35], 2: [1.5, 1.6], 3: [1.55, 1.58], 4: [1.95, 1.95], 5: [1.6, 1.65]}
+	var salt_rows := {1: [1.32, 1.48], 2: [1.8, 1.9], 3: [2.0, 1.95], 4: [2.3, 2.2], 5: [1.95, 2.05]}
+	var abbey_rows := {1: [1.3, 1.45], 2: [1.6, 1.7], 3: [1.85, 1.85], 4: [2.2, 2.08], 5: [2.08, 1.85]}
 	for star in range(1, 6):
-		eq(book.star_scale(star, GRANARY), rows[star], "the cellar's ★%d row is unchanged" % star)
-		eq(book.star_scale(star, FROST), frost_rows[star], "the archive's ★%d row is unchanged" % star)
-		eq(book.star_scale(star, SALT), salt_rows[star], "the grotto's ★%d row is unchanged" % star)
-		eq(book.star_scale(star, ABBEY), abbey_rows[star], "the abbey's ★%d row is unchanged" % star)
+		eq(book.star_scale(star, GRANARY), rows[star], "the cellar's ★%d row is the gear-retuned pin" % star)
+		eq(book.star_scale(star, FROST), frost_rows[star], "the archive's ★%d row is the gear-retuned pin" % star)
+		eq(book.star_scale(star, SALT), salt_rows[star], "the grotto's ★%d row is the gear-retuned pin" % star)
+		eq(book.star_scale(star, ABBEY), abbey_rows[star], "the abbey's ★%d row is the gear-retuned pin" % star)
 	eq([int(book.stats_at("mire_abbess", 32)["hp"]), int(book.stats_at("mire_abbess", 32)["attack"]["damage"])], [92, 8], "the Mire Abbess 92 HP, Lash 8 at level 32")
 	eq(str(book.stats_at("mire_abbess", 32)["signature"]["kind"]), "raise", "the Abbess still raises")
 	eq(str(book.stats_at("old_saltmaw", 22)["signature"]["kind"]), "pull", "Old Saltmaw still pulls")
@@ -1174,7 +1174,7 @@ func _test_world_door_and_panel() -> void:
 
 
 func _test_run_scene_win_and_return() -> void:
-	Launcher.pending = {"dungeon_id": BLIGHT, "level": LEVEL, "class_id": "ironjaw", "autoplay": true, "return_zone": ZONE, "return_cell": DOOR, "seed": 1}
+	Launcher.pending = {"dungeon_id": BLIGHT, "level": LEVEL, "class_id": "ironjaw", "autoplay": true, "return_zone": ZONE, "return_cell": DOOR, "seed": 1, "hero_gear": {"worn": [{"item_id": "ashmantle.weapon", "plus": 0}, {"item_id": "ashmantle.head", "plus": 0}, {"item_id": "ashmantle.chest", "plus": 0}, {"item_id": "ashmantle.legs", "plus": 0}, {"item_id": "ashmantle.boots", "plus": 0}], "extra_ap": 0}}  # an Ashmantle +0 hero (the star rows assume worn gear)
 	Launcher.outcome = {}
 	var scene: Node = (load(RUN_SCENE_PATH) as PackedScene).instantiate()
 	var got := {}

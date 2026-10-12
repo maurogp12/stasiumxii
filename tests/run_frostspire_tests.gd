@@ -242,7 +242,9 @@ func _test_monsters() -> void:
 		eq(float(m2[0]) >= prev, true, "★%d archive HP row is not softer than the star below" % star)
 		prev = float(m2[0])
 	var mult: Array = book.star_scale(3, FROST)
+	Monsters.star_scale_override[1] = [1.0, 1.0]
 	var raw: Dictionary = book.stats_at("book_wraith", LEVEL, 1)
+	Monsters.star_scale_override.erase(1)
 	eq(int(book.stats_at("book_wraith", LEVEL, 3)["hp"]), maxi(int(round(float(raw["hp"]) * float(mult[0]))), 1), "★3 wraith HP is the band HP x the archive's ★3 row")
 
 
@@ -692,13 +694,13 @@ func _test_mission_credit() -> void:
 func _test_granary_unchanged() -> void:
 	var book = Monsters.load_default()["monsters"]
 	eq(book.ids_for(GRANARY), ["granary_rat", "sling_rat", "scarecrow_drudge", "the_ratking", "radioactive_rat", "radioactive_sling_rat", "radioactive_ratking"], "the cellar keeps its seven monsters")
-	var rows := {1: [1.0, 1.0], 2: [1.1, 1.05], 3: [1.15, 1.1], 4: [1.2, 1.1], 5: [1.0, 1.0]}
+	var rows := {1: [1.25, 1.4], 2: [1.65, 1.75], 3: [1.72, 1.76], 4: [1.9, 1.95], 5: [1.75, 1.85]}
 	for star in range(1, 6):
-		eq(book.star_scale(star), rows[star], "the cellar's ★%d row is unchanged" % star)
+		eq(book.star_scale(star), rows[star], "the cellar's ★%d row is the gear-retuned pin" % star)
 		eq(book.star_scale(star, GRANARY), rows[star], "the cellar's own lookup is the same row")
-	eq([int(book.stats_at("granary_rat", 1)["hp"]), int(book.stats_at("granary_rat", 1)["attack"]["damage"])], [13, 4], "rat 13 HP, Gnaw 4")
-	eq([int(book.stats_at("the_ratking", 1)["hp"]), int(book.stats_at("the_ratking", 1)["attack"]["damage"])], [82, 10], "Ratking 82 HP, Crook 10")
-	eq(int(book.stats_at("radioactive_ratking", 1, 5)["signature2"]["hp"]), 6, "toxic pools still 6 poison")
+	eq([int(book.stats_at("granary_rat", 1)["hp"]), int(book.stats_at("granary_rat", 1)["attack"]["damage"])], [16, 6], "rat 16 HP, Gnaw 6 at ★1 (13 / 4 x the gear-retuned ★1 row)")
+	eq([int(book.stats_at("the_ratking", 1)["hp"]), int(book.stats_at("the_ratking", 1)["attack"]["damage"])], [103, 14], "Ratking 103 HP, Crook 14 at ★1 (82 / 10 x the gear-retuned ★1 row)")
+	eq(int(book.stats_at("radioactive_ratking", 1, 5)["signature2"]["hp"]), 11, "toxic pools 11 poison at ★5 (6 x the gear-retuned ★5 damage row)")
 	var run = Run.create(GRANARY, 1, "kestrel", "", 5)["run"]
 	var room: Dictionary = run.combat_config(1, 31)["dungeon"]
 	eq(bool(room.get("pad_thaw", false)), false, "cellar pads do not thaw")
@@ -779,7 +781,7 @@ func _test_world_door_and_panel() -> void:
 
 
 func _test_run_scene_win_and_return() -> void:
-	Launcher.pending = {"dungeon_id": FROST, "level": LEVEL, "class_id": "bastion", "autoplay": true, "return_zone": ZONE, "return_cell": DOOR, "seed": 1}
+	Launcher.pending = {"dungeon_id": FROST, "level": LEVEL, "class_id": "bastion", "autoplay": true, "return_zone": ZONE, "return_cell": DOOR, "seed": 1, "hero_gear": {"worn": [{"item_id": "ashmantle.weapon", "plus": 0}, {"item_id": "ashmantle.head", "plus": 0}, {"item_id": "ashmantle.chest", "plus": 0}, {"item_id": "ashmantle.legs", "plus": 0}, {"item_id": "ashmantle.boots", "plus": 0}], "extra_ap": 0}}  # an Ashmantle +0 hero (the star rows assume worn gear)
 	Launcher.outcome = {}
 	var scene: Node = (load(RUN_SCENE_PATH) as PackedScene).instantiate()
 	var got := {}
