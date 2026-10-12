@@ -50,6 +50,236 @@ func _test_every_event_type_has_a_line() -> void:
 		eq(LOG.LINES.has(type_name), true, "no log line for event type %s" % type_name)
 		var line := LOG.plain({"type": type_name, "seat": 0, "target_seat": 1, "coach": "REJECT — no."}, snap)
 		truthy(line != "", "empty log line for event type %s" % type_name)
+	_test_every_blend_and_reaction_is_logged()
+
+
+## A combo or reaction the sim can fire, with no log line, fails here.
+## The setup tables must name every scanned blend id and reaction tag.
+const _BLEND_CASES := {
+	"spark": {
+		"hit": "water", "residue": "air", "at": Vector2i(5, 5), "foe": Vector2i(6, 5),
+		"damage": 10, "debuffs": ["Healing"],
+	},
+	"drift_pin": {
+		"hit": "air", "residue": "earth", "at": Vector2i(13, 5), "foe": Vector2i(14, 5),
+		"damage": 8, "debuffs": ["Pin"],
+	},
+	"magma": {
+		"hit": "fire", "residue": "earth", "at": Vector2i(5, 5), "foe": Vector2i(6, 5),
+		"damage": 0, "debuffs": ["Magma"],
+	},
+	"mire": {
+		"hit": "earth", "residue": "water", "at": Vector2i(5, 5), "foe": Vector2i(6, 5),
+		"damage": 0, "debuffs": ["Mire"],
+	},
+	"steam": {
+		"hit": "fire", "residue": "water", "at": Vector2i(5, 5), "foe": Vector2i(6, 5),
+		"damage": 0, "debuffs": ["Steam"],
+	},
+	"flare": {
+		"hit": "air", "residue": "fire", "at": Vector2i(5, 5), "foe": Vector2i(6, 5),
+		"damage": 0, "debuffs": ["Burn"], "reveal": true,
+	},
+}
+const _REACTION_CASES := {
+	"water_slow": {"element": "water", "text": "Water slow -1 MP for 1 turn"},
+	"fire_burn": {"element": "fire", "text": "Burn stack 1, 4 HP for 2 turns"},
+	"residue": {"element": "earth", "text": "Residue Earth for 2 turns"},
+	"grounded": {"element": "earth", "text": "Grounded for 1 turn"},
+	"air_mp": {"element": "air", "text": "Air +1 MP"},
+	"unbound": {"element": "water", "text": "Unbound", "unbound": true},
+}
+
+
+func _test_every_blend_and_reaction_is_logged() -> void:
+	var snap := _snap()
+	var blend_ids: Array = LOG.blend_ids()
+	truthy(blend_ids.size() >= 6, "the sim scan found element combos")
+	eq(blend_ids.size(), _sim.BLENDS.size(), "the scan lists every blend")
+	for raw_id in blend_ids:
+		var blend_id := str(raw_id)
+		truthy(_BLEND_CASES.has(blend_id), "no log coverage for combo %s" % blend_id)
+		if not _BLEND_CASES.has(blend_id):
+			continue
+		var spec: Dictionary = _BLEND_CASES[blend_id]
+		_assert_blend_logged(blend_id, spec)
+	var tags: Array = LOG.reaction_tags()
+	truthy(tags.size() >= 6, "the sim scan found element reactions")
+	for raw_tag in tags:
+		var tag := str(raw_tag)
+		truthy(_REACTION_CASES.has(tag), "no log coverage for reaction %s" % tag)
+		if not _REACTION_CASES.has(tag):
+			continue
+		var reaction: Dictionary = _REACTION_CASES[tag]
+		var sample := {
+			"type": "hit", "seat": 0, "target_seat": 1, "spell": "strike", "damage": 4,
+			"riders": [tag],
+			"water_mp": 1, "water_turns": 1,
+			"burn_stacks": 1, "burn_remaining": 2, "burn_tick": 4,
+			"residue": "earth", "residue_turns": 2,
+			"grounded_turns": 1,
+		}
+		var formatted := LOG.plain(sample, snap)
+		truthy(formatted.contains(str(reaction["text"])), "reaction %s is not logged: %s" % [tag, formatted])
+		_assert_reaction_logged(tag, reaction)
+	_assert_mire_unbound_logged()
+	_assert_hidden_spark_logged()
+
+
+func _assert_blend_logged(blend_id: String, spec: Dictionary) -> void:
+	var at: Vector2i = spec["at"]
+	var foe: Vector2i = spec["foe"]
+	if bool(spec.get("reveal", false)):
+		_sim.reset_match({
+			"seed": 3,
+			"flat_board": true,
+			"skip_deploy": true,
+			"team_size": 2,
+			"rolls": [1, 1, 1, 1],
+			"classes": ["ironjaw", "kestrel", "mender", "gloam"],
+			"positions": [at, foe, Vector2i(1, 1), foe + Vector2i(1, 1)],
+		})
+		_sim._active_seat = 0
+		var hidden: Dictionary = _sim._unit_by_seat(3)
+		hidden["invisible"] = true
+		hidden["invisible_turns"] = 2
+	else:
+		_open_duel(at, foe)
+	var element := str(spec["hit"])
+	var actor: Dictionary = _sim._unit_by_seat(0)
+	actor["spell_elements"] = {"strike": element, "shoulder": element, "crush": element}
+	var body: Dictionary = _sim._unit_by_seat(1)
+	body["residue"] = str(spec["residue"])
+	body["residue_seat"] = 0
+	body["residue_turns"] = 2
+	var cast: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "seat": 0, "to": foe})
+	eq(bool(cast.get("ok", false)), true, "%s cast connects" % blend_id)
+	var row := _find(_sim.snapshot()["battle_log"], "blend")
+	eq(str(row.get("blend", "")), blend_id, "%s is in the fight log" % blend_id)
+	eq(int(row.get("damage", -1)), int(spec["damage"]), "%s log keeps the extra damage" % blend_id)
+	var debuffs: Array = row.get("debuffs", []) if row.get("debuffs", []) is Array else []
+	var wanted: Array = spec["debuffs"]
+	eq(debuffs.size(), wanted.size(), "%s log lists each debuff" % blend_id)
+	for i in wanted.size():
+		var debuff: Dictionary = debuffs[i]
+		eq(str(debuff.get("name", "")), str(wanted[i]), "%s debuff name" % blend_id)
+		truthy(int(debuff.get("turns", 0)) > 0, "%s debuff keeps a duration" % blend_id)
+	var owner := LOG.plain(row, _view(0))
+	var enemy := LOG.plain(row, _view(1))
+	eq(owner, enemy, "%s reads the same on both seats: %s" % [blend_id, owner])
+	var title := str(row.get("name", ""))
+	truthy(owner.contains(title) and owner.contains("Ironjaw") and owner.contains("Kestrel"), "%s names the combo, the cause, and the target: %s" % [blend_id, owner])
+	if int(spec["damage"]) > 0:
+		truthy(owner.contains("-%d HP" % int(spec["damage"])), "%s names the extra damage: %s" % [blend_id, owner])
+	for debuff_name in wanted:
+		truthy(owner.contains(str(debuff_name)) and owner.contains("turn"), "%s names the debuff and its duration: %s" % [blend_id, owner])
+	eq(owner.contains("("), false, "%s log has no tile: %s" % [blend_id, owner])
+	if bool(spec.get("reveal", false)):
+		truthy(owner.contains("reveals Gloam"), "%s names who it revealed: %s" % [blend_id, owner])
+		var whole := LOG.text(_sim.snapshot()["battle_log"], _view(1))
+		eq(whole.contains("(7,"), false, "a revealed Gloam's tile stays out of the log: %s" % whole)
+
+
+func _assert_reaction_logged(tag: String, spec: Dictionary) -> void:
+	_open_duel(Vector2i(5, 5), Vector2i(6, 5))
+	var element := str(spec["element"])
+	var actor: Dictionary = _sim._unit_by_seat(0)
+	actor["spell_elements"] = {"strike": element, "shoulder": element, "crush": element}
+	if bool(spec.get("unbound", false)):
+		var body: Dictionary = _sim._unit_by_seat(1)
+		body["unbound"] = true
+		body["unbound_ready"] = true
+	var cast: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "seat": 0, "to": Vector2i(6, 5)})
+	eq(bool(cast.get("ok", false)), true, "%s cast connects" % tag)
+	var row := _find(_sim.snapshot()["battle_log"], "hit")
+	var riders: Array = row.get("riders", []) if row.get("riders", []) is Array else []
+	truthy(riders.has(tag), "%s is on the logged hit" % tag)
+	var line := LOG.plain(row, _view(0))
+	var other := LOG.plain(row, _view(1))
+	eq(line, other, "%s reads the same on both seats: %s" % [tag, line])
+	truthy(line.contains(str(spec["text"])), "%s is logged from the fight: %s" % [tag, line])
+	eq(line.contains("("), false, "%s log has no tile: %s" % [tag, line])
+	if bool(spec.get("unbound", false)):
+		eq(line.contains("Water slow"), false, "Unbound is what the log records: %s" % line)
+
+
+func _assert_mire_unbound_logged() -> void:
+	_open_duel(Vector2i(5, 5), Vector2i(6, 5))
+	var actor: Dictionary = _sim._unit_by_seat(0)
+	actor["spell_elements"] = {"strike": "earth", "shoulder": "earth", "crush": "earth"}
+	var body: Dictionary = _sim._unit_by_seat(1)
+	body["residue"] = "water"
+	body["residue_seat"] = 0
+	body["residue_turns"] = 2
+	body["unbound"] = true
+	body["unbound_ready"] = true
+	var cast: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "seat": 0, "to": Vector2i(6, 5)})
+	eq(bool(cast.get("ok", false)), true, "Unbound Mire cast connects")
+	var row := _find(_sim.snapshot()["battle_log"], "blend")
+	eq(str(row.get("blend", "")), "mire", "Unbound still logs the Mire combo")
+	eq(str(row.get("ignored", "")), "Unbound", "the log event records that Unbound ignored it")
+	var line := LOG.plain(row, _view(1))
+	truthy(line.contains("Mire") and line.contains("Ironjaw") and line.contains("Kestrel") and line.contains("Unbound ignores it"), "Unbound Mire is logged: %s" % line)
+	eq(line.contains("("), false, "Unbound Mire has no tile: %s" % line)
+
+
+func _assert_hidden_spark_logged() -> void:
+	_open_duel(Vector2i(5, 5), Vector2i(6, 5), ["ironjaw", "gloam"])
+	var actor: Dictionary = _sim._unit_by_seat(0)
+	actor["spell_elements"] = {"strike": "water", "shoulder": "air", "crush": "air"}
+	var gloam: Dictionary = _sim._unit_by_seat(1)
+	gloam["residue"] = "air"
+	gloam["residue_seat"] = 0
+	gloam["residue_turns"] = 2
+	gloam["invisible"] = true
+	gloam["invisible_turns"] = 2
+	var cast: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "seat": 0, "to": Vector2i(6, 5)})
+	eq(bool(cast.get("ok", false)), true, "spark on a hidden Gloam connects")
+	var row := _find(_sim.snapshot()["battle_log"], "blend")
+	eq(str(row.get("blend", "")), "spark", "the hidden Spark is in the fight log")
+	var owner := LOG.plain(row, _view(0))
+	var enemy := LOG.plain(row, _view(1))
+	var hot := LOG.plain(row, _view(-1))
+	eq(owner, enemy, "a hidden Spark reads the same for both seats: %s" % owner)
+	eq(owner, hot, "hot-seat keeps the Spark line: %s" % hot)
+	truthy(owner.contains("Spark") and owner.contains("Ironjaw") and owner.contains("Gloam"), "hidden Spark names both fighters: %s" % owner)
+	truthy(owner.contains("-10 HP") and owner.contains("Healing") and owner.contains("for 1 turn"), "hidden Spark names the chip and the debuff: %s" % owner)
+	eq(owner.contains("(") or owner.contains("6, 5") or owner.contains("6,5"), false, "hidden Spark keeps the tile out: %s" % owner)
+	# Hurt reveals Gloam. Hide them again so the opponent's wire still drops the cell.
+	_sim._unit_by_seat(1)["invisible"] = true
+	var snap: Dictionary = _sim.snapshot()
+	var net: Node = root.get_node("NetSession")
+	var viewed: Dictionary = net._redact_invisible_for_viewer(snap, [], 0)
+	var kept: Dictionary = net._redact_invisible_for_viewer(snap, [], 1)
+	var enemy_row := _find(viewed["snapshot"].get("battle_log", []), "blend")
+	var owner_row := _find(kept["snapshot"].get("battle_log", []), "blend")
+	eq(enemy_row.get("to", Vector2i.ZERO), null, "the enemy wire drops the hidden Spark tile")
+	eq(enemy_row.get("from", Vector2i.ZERO), null, "the enemy wire drops the hidden Spark origin")
+	eq(str(enemy_row.get("name", "")), "Spark", "the enemy wire keeps the combo name")
+	eq(int(enemy_row.get("damage", 0)), 10, "the enemy wire keeps the Spark damage")
+	var debuffs: Array = enemy_row.get("debuffs", []) if enemy_row.get("debuffs", []) is Array else []
+	truthy(not debuffs.is_empty() and str(debuffs[0].get("name", "")) == "Healing" and int(debuffs[0].get("turns", 0)) == 1, "the enemy wire keeps the Spark debuff")
+	truthy(owner_row.get("to", null) != null, "Gloam's own wire keeps the tile")
+	var enemy_view: Dictionary = viewed["snapshot"]
+	enemy_view["local_seat"] = 0
+	var owner_view: Dictionary = kept["snapshot"]
+	owner_view["local_seat"] = 1
+	var enemy_line := LOG.plain(enemy_row, enemy_view)
+	var owner_line := LOG.plain(owner_row, owner_view)
+	eq(enemy_line, owner_line, "both phones show the same Spark line: %s" % enemy_line)
+	truthy(enemy_line.contains("Spark") and enemy_line.contains("-10 HP") and enemy_line.contains("Healing"), "the redacted line still records Spark: %s" % enemy_line)
+	eq(enemy_line.contains("("), false, "the redacted Spark line has no tile: %s" % enemy_line)
+
+
+func _open_duel(at: Vector2i, foe: Vector2i, classes: Array = ["ironjaw", "kestrel"]) -> void:
+	_sim.reset_match({
+		"seed": 3,
+		"flat_board": true,
+		"skip_deploy": true,
+		"rolls": [1, 1, 1, 1],
+		"classes": classes,
+		"positions": [at, foe],
+	})
 
 
 func _test_named_lines() -> void:
