@@ -63,8 +63,8 @@ const FAMILIES := {
 	"ironveil": {
 		"name": "Ironveil", "rarity": "Rare", "owner": "bastion", "resist_all": true,
 		"source": "Stasis ★3+", "min_star": 3,
-		"bonus": {2: "+10% HP", 4: "+6 Resist", 5: "First hit you take each turn deals 6 less"},
-		"stats": {2: {"hp_pct": 10}, 4: {"resist": 6}, 5: {"guard_flat": 6}},
+		"bonus": {2: "+10% HP", 4: "+6 Resist. Hits from 3 or more tiles away deal 20% less. Damage over time is not reduced.", 5: "First hit you take each turn deals 6 less"},
+		"stats": {2: {"hp_pct": 10}, 4: {"resist": 6, "far_cut": 20}, 5: {"guard_flat": 6}},
 	},
 	"oathgrave": {
 		"name": "Oathgrave", "rarity": "Legendary", "owner": "bastion", "resist_all": true,
@@ -1096,6 +1096,7 @@ static func _sum_worn(worn: Array, attune_map: Dictionary, pvp: bool, preserved_
 		"heal_flat": int(stats.get("heal_flat", 0)),
 		"first_back": int(stats.get("first_back", 0)),
 		"guard_flat": int(stats.get("guard_flat", 0)),
+		"far_cut": int(stats.get("far_cut", 0)),
 		"ward_shield": int(stats.get("ward_shield", 0)) + ward_part,
 		"start_aegis": int(stats.get("start_aegis", 0)),
 		"crit_dmg": crit_dmg,

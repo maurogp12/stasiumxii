@@ -707,38 +707,38 @@ func _test_hold_line_ambush_intercept_expire() -> void:
 		"type": "hit",
 		"spell": "hold_line",
 		"seat": 0,
+		"target_seat": 1,
 		"caster_cell": Vector2i(2, 3),
-		"damage": 14,
-		"bodies": 2,
-		"cone": [Vector2i(3, 3), Vector2i(3, 2), Vector2i(3, 4)],
-		"targets": [
-			{"target_seat": 1, "cell": Vector2i(3, 3), "hit": true, "damage": 7, "back": false},
-			{"target_seat": 2, "cell": Vector2i(3, 4), "hit": true, "damage": 7, "back": true, "facing_mult": 1.2},
-		],
+		"to": Vector2i(6, 3),
+		"damage": 7,
+		"pushed": true,
+		"pulled": true,
+		"push_from": Vector2i(6, 3),
+		"push_to": Vector2i(3, 3),
+		"pull_tiles": 3,
 		"engine": "aegis",
 		"engine_gained": 1,
 	}])
-	eq(_count(hold, "spark"), 2, "Hold Line sparks each listed body")
-	eq(_count(hold, "ring"), 3, "Hold Line outlines the cone cells")
+	eq(_count(hold, "spark"), 1, "Hold Line sparks the one body")
+	eq(_count(hold, "slide"), 1, "Hold Line slides the pull")
 	var damage_texts: Array = []
 	for item in _all(hold, "number"):
 		if str(item.get("kind", "")) == "damage":
 			damage_texts.append(str(item.get("text", "")))
-	eq(damage_texts.has("14"), false, "Hold Line does not float the total as one hit")
-	truthy(damage_texts.has("7"), "Hold Line floats each body's damage")
-	truthy(damage_texts.has("BACK 7"), "Hold Line keeps a per-body back tag")
+	eq(damage_texts.has("14"), false, "Hold Line does not float an area total")
+	truthy(damage_texts.has("7"), "Hold Line floats the direct hit")
 	var hold_miss: Array = ROUTER.recipes_for([{
 		"type": "miss",
 		"spell": "hold_line",
 		"seat": 0,
+		"target_seat": 1,
 		"caster_cell": Vector2i(2, 3),
+		"to": Vector2i(6, 3),
 		"damage": 0,
-		"bodies": 0,
-		"cone": [Vector2i(3, 3), Vector2i(3, 2), Vector2i(3, 4)],
-		"targets": [{"target_seat": 1, "cell": Vector2i(3, 3), "hit": false, "damage": 0}],
 	}])
-	eq(_first(hold_miss, "number")["text"], "MISS", "a Hold Line miss tags the cone")
+	eq(_first(hold_miss, "number")["text"], "MISS", "a Hold Line miss tags the target")
 	eq(_has(hold_miss, "spark"), false, "a Hold Line miss has no body spark")
+	eq(_has(hold_miss, "slide"), false, "a Hold Line miss does not pull")
 	var ambush: Array = ROUTER.recipes_for([{
 		"type": "hit",
 		"spell": "ambush",
@@ -1589,15 +1589,21 @@ func _test_class_choreography() -> void:
 		"type": "hit",
 		"spell": "hold_line",
 		"seat": 0,
+		"target_seat": 1,
 		"caster_cell": caster,
+		"to": foe,
 		"damage": 7,
-		"bodies": 1,
-		"cone": [Vector2i(3, 3), Vector2i(3, 2), Vector2i(3, 4)],
-		"targets": [{"target_seat": 1, "cell": foe, "hit": true, "damage": 7, "exit_tax": 1}],
+		"pushed": true,
+		"pulled": true,
+		"push_from": foe,
+		"push_to": caster + Vector2i(1, 0),
+		"pull_tiles": 2,
+		"engine": "aegis",
+		"engine_gained": 1,
 	}])
-	eq(_count(taxed, "spark"), 1, "Hold Line still sparks only the listed bodies")
-	eq(_count(taxed, "ring"), 3, "Hold Line still outlines only the cone")
-	eq(_first(taxed, "status_on")["status"], "exit_tax", "Hold Line locks exit tax from the body row")
+	eq(_count(taxed, "spark"), 1, "Hold Line sparks the pulled body")
+	eq(_count(taxed, "slide"), 1, "Hold Line draws the pull")
+	eq(_first(taxed, "status_on")["status"], "aegis", "Hold Line still shows the Aegis gain")
 	var lance: Array = ROUTER.recipes_for([{
 		"type": "hit",
 		"spell": "aegis_break",

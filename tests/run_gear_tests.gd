@@ -1145,6 +1145,66 @@ func _test_crit_cap_and_stun() -> void:
 	var guarded := {"guard_ready": true, "guard_flat": 4}
 	eq(int(sim._gear_strike_damage({}, guarded, 10, 2, false, true)), 6, "the first hit taken deals 4 less")
 	eq(bool(guarded["guard_ready"]), false, "the guard is spent")
+	eq(int(GearBag.FAMILIES["ironveil"]["stats"][4]["far_cut"]), 20, "Ironveil 4pc cuts far hits by 20%")
+	eq(int(GearBag.FAMILIES["ironveil"]["stats"][4]["resist"]), 6, "Ironveil 4pc still grants +6 Resist")
+	var iron_tip := str(GearBag.FAMILIES["ironveil"]["bonus"][4])
+	truthy(iron_tip.contains("20%") and iron_tip.contains("3 or more"), "Ironveil 4pc tooltip names the far cut")
+	truthy(iron_tip.contains("Damage over time"), "Ironveil 4pc tooltip leaves damage over time alone")
+	var four := GearBag.combat_stats(_worn("ironveil", ["weapon", "head", "chest", "legs"]), {}, false, "bastion")
+	eq(int(four["far_cut"]), 20, "four Ironveil pieces grant the far cut")
+	var two := GearBag.combat_stats(_worn("ironveil", ["head", "chest"]), {}, false, "bastion")
+	eq(int(two.get("far_cut", 0)), 0, "two Ironveil pieces do not grant the far cut")
+	eq(int(sim._gear_strike_damage({}, {"far_cut": 20}, 10, 3, false, true)), 8, "a hit from 3 tiles deals 20% less")
+	eq(int(sim._gear_strike_damage({}, {"far_cut": 20}, 10, 4, false, true)), 8, "a hit from 4 tiles deals 20% less")
+	eq(int(sim._gear_strike_damage({}, {"far_cut": 20}, 10, 2, false, true)), 10, "a hit from 2 tiles is not cut")
+	eq(int(sim._gear_strike_damage({}, {"far_cut": 20}, 10, 1, false, true)), 10, "a melee hit is not cut")
+	var guarded_far := {"guard_ready": true, "guard_flat": 4, "far_cut": 20}
+	eq(int(sim._gear_strike_damage({}, guarded_far, 10, 3, false, true)), 4, "the far cut happens before the first-hit guard")
+	sim.reset_match({
+		"seed": 1, "flat_board": true, "skip_deploy": true,
+		"classes": ["kestrel", "bastion"],
+		"positions": [Vector2i(0, 0), Vector2i(3, 0)],
+		"kestrel_facing": "E", "bastion_facing": "W",
+		"rolls": [1],
+		"seat_gear": {1: {"worn": _worn("ironveil", ["weapon", "head", "chest", "legs"])}},
+	})
+	var wearer: Dictionary = sim._unit_by_seat(1)
+	eq(int(wearer["far_cut"]), 20, "the fight copies Ironveil's far cut")
+	wearer["facing"] = "W"
+	wearer["resist"] = 0
+	wearer["resist_elem"] = {}
+	var hp_before := int(wearer["hp"])
+	var shot: Dictionary = sim.submit({"type": "cast", "spell": "mark_shot", "to": Vector2i(3, 0), "seat": 0})
+	eq(bool(shot.get("ok", false)), true, "Mark Shot from 3 tiles connects")
+	eq(hp_before - int(wearer["hp"]), 6, "Ironveil 4pc turns an 8-damage far hit into 6")
+	sim.reset_match({
+		"seed": 1, "flat_board": true, "skip_deploy": true,
+		"classes": ["kestrel", "bastion"],
+		"positions": [Vector2i(0, 0), Vector2i(2, 0)],
+		"kestrel_facing": "E", "bastion_facing": "W",
+		"rolls": [1],
+		"seat_gear": {1: {"worn": _worn("ironveil", ["weapon", "head", "chest", "legs"])}},
+	})
+	wearer = sim._unit_by_seat(1)
+	wearer["facing"] = "W"
+	wearer["resist"] = 0
+	wearer["resist_elem"] = {}
+	hp_before = int(wearer["hp"])
+	var near: Dictionary = sim.submit({"type": "cast", "spell": "mark_shot", "to": Vector2i(2, 0), "seat": 0})
+	eq(bool(near.get("ok", false)), true, "Mark Shot from 2 tiles connects")
+	eq(hp_before - int(wearer["hp"]), 8, "Ironveil 4pc does not cut a hit from 2 tiles")
+	sim.reset_match({
+		"seed": 1, "flat_board": true, "skip_deploy": true,
+		"classes": ["kestrel", "bastion"],
+		"positions": [Vector2i(0, 0), Vector2i(3, 0)],
+		"seat_gear": {1: {"worn": _worn("ironveil", ["weapon", "head", "chest", "legs"])}},
+	})
+	var burning: Dictionary = sim._unit_by_seat(1)
+	burning["burn_stacks"] = 1
+	burning["burn_remaining"] = 2
+	var before_burn := int(burning["hp"])
+	sim._tick_burn(burning)
+	eq(before_burn - int(burning["hp"]), sim._burn_tick_hp(1), "a burn tick ignores Ironveil's far cut")
 
 
 ## Every class, every AP/MP piece, every fight path. Fight-start max
