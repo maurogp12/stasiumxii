@@ -46,6 +46,8 @@ func _run() -> void:
 	_test_world_bind_and_no_redirect()
 	_test_containment()
 	_test_sources()
+	_test_no_3d()
+	_test_puppet()
 	_wipe_roster_files()
 	Roster.take_world_entry()
 	_restore()
@@ -243,8 +245,8 @@ func _test_screen_flow() -> void:
 	screen.press_create()
 	eq(screen.screen_id, "class", "create on the list opens the class screen")
 	eq(screen.back_button.visible, true, "back is visible once a character exists")
-	eq(screen.uses_painted_fallback(), true, "the pedestal uses the painted fallback")
-	eq(screen.painted_art_letter(), "S", "the fallback is idle S")
+	eq(screen.uses_painted_fallback(), false, "Ironjaw male uses the test puppet")
+	eq(screen.painted_art_letter(), "S", "the puppet idles on S")
 	eq(screen.class_art.texture, null, "class art is not painted in this package")
 	screen.select_class("kestrel")
 	eq(screen.selected_class_id, "kestrel", "the class grid selects kestrel")
@@ -304,7 +306,9 @@ func _test_screen_flow() -> void:
 	eq(list.island_sprite.texture != null, true, "the list shows the locked sprite on the island")
 	list.move_selection(-1)
 	eq(str(list._selected()["name"]), "Hera", "up wraps onto the other row")
+	eq(list.get_tree().get_nodes_in_group("charselect_puppet").size(), 1, "the list holds the Ironjaw puppet")
 	list.press_play()
+	eq(list.get_tree().get_nodes_in_group("charselect_puppet").size(), 0, "leaving the screen frees the puppet")
 	eq(list.entered["reason"], "play", "play enters with the selected character")
 	eq(list.entered["id"], "1", "play uses the highlighted id")
 	eq(Roster.last_id(), "1", "play records last played")
@@ -395,6 +399,210 @@ func _test_sources() -> void:
 	var world := FileAccess.get_file_as_string(WORLD_SRC)
 	truthy(world.contains("should_open_front_door"), "the world opens the character screen on launch")
 	truthy(world.contains("_bind_roster_hero"), "the world binds the roster character")
+
+
+func _test_no_3d() -> void:
+	var scenes: Array = []
+	_collect_files("res://", ".tscn", scenes)
+	var bad := 0
+	for path in scenes:
+		var text := FileAccess.get_file_as_string(str(path))
+		if text.contains('type="Node3D"') or text.contains('type="Camera3D"') or text.contains('type="MeshInstance3D"') or text.contains('Light3D"') or text.contains('type="WorldEnvironment"'):
+			bad += 1
+			print("3D scene: %s" % path)
+		if text.contains("own_world_3d = true"):
+			bad += 1
+			print("3D viewport: %s" % path)
+	eq(bad, 0, "no 3D nodes and no 3D viewport anywhere")
+	for suffix in [".glb", ".gltf", ".blend"]:
+		var found: Array = []
+		_collect_files("res://art", suffix, found)
+		_collect_files("res://scenes", suffix, found)
+		eq(found.size(), 0, "no %s under art or scenes" % suffix)
+	var puppet_src := FileAccess.get_file_as_string("res://scenes/pc/character_select/puppet.gd")
+	eq(puppet_src.find("Skeleton2D") < 0, true, "the puppet has no Skeleton2D")
+	var shader := FileAccess.get_file_as_string("res://scenes/pc/character_select/recolour.gdshader")
+	truthy(shader.contains("shader_type canvas_item"), "recolour is a canvas_item shader")
+	truthy(shader.contains("dot(c.rgb, vec3(0.299, 0.587, 0.114))"), "the luminance weights are kept")
+	truthy(shader.contains("lum * 2.0"), "the luminance tint is kept")
+	eq(shader.find("shader_type spatial") < 0, true, "the spatial shader was not carried over")
+	eq(shader.find("dye_") < 0, true, "gear dye is not in this shader")
+	eq(FileAccess.file_exists("res://build_tools/pc_charselect/cut_puppet.py"), true, "cut_puppet.py is in the package")
+
+
+func _test_puppet() -> void:
+	var packed: PackedScene = load("res://scenes/pc/character_select/puppet.tscn")
+	var puppet = packed.instantiate()
+	root.add_child(puppet)
+	eq(puppet.show_puppet("kestrel", "m"), false, "kestrel has no puppet")
+	eq(puppet.show_puppet("ironjaw", "f"), false, "the female puppet is not in this package")
+	truthy(puppet.show_puppet("ironjaw", "m"), "Ironjaw male loads")
+	eq(puppet.facing, "S", "idle starts on S")
+	eq(puppet.rig.get("fps", 0), 60, "the rig is 60 fps")
+	eq(is_equal_approx(float(puppet.rig.get("turn", {}).get("sec", 0)), 0.18), true, "the turn is 0.18 s")
+	eq(is_equal_approx(float(puppet.rig.get("overlap_px", 0)), 12.0), true, "joints overlap by about 12 px")
+	var base_scale := puppet.scale_x_magnitude()
+	puppet.apply_turn_sample(0.5)
+	eq(is_equal_approx(puppet.scale_x_magnitude(), base_scale * 0.96), true, "the turn squashes to 0.96 at the midpoint")
+	puppet.apply_turn_sample(1.0)
+	eq(is_equal_approx(puppet.scale_x_magnitude(), base_scale), true, "the squash is gone at the end of the turn")
+	puppet.turn(1)
+	eq(puppet.facing, "E", "the first step faces E")
+	puppet.snap_facing("S")
+	puppet.turn_by_pixels(60.0)
+	eq(puppet.facing, "E", "a 60 px drag steps to E")
+	puppet.snap_facing("E")
+	puppet.turn(1)
+	eq(puppet.facing, "W", "the second step faces W")
+	eq(puppet.scale_x_magnitude() > 0.0, true, "W keeps a scale")
+	puppet.snap_facing("W")
+	eq(puppet._visible_root().scale.x < 0.0, true, "W is E mirrored")
+	puppet.turn(1)
+	eq(puppet.facing, "S", "the third step returns to S")
+	_assert_joints(puppet, "base")
+	for family in ["cragmaw", "tyrantjaw", "pitmaw"]:
+		for slot in ["head", "chest", "legs", "boots", "weapon"]:
+			puppet.clear_slots()
+			puppet.snap_facing("S")
+			puppet.set_slot(slot, family)
+			_assert_gear_covers(puppet, family, slot)
+			_assert_joints(puppet, "%s %s" % [family, slot])
+	puppet.clear_slots()
+	puppet.snap_facing("S")
+	puppet.seek_anim("select", 1.15)
+	var dust := puppet.part_node("dust")
+	eq(dust.modulate.a > 0.5, true, "the select slam shows the dust puff")
+	puppet.set_performance(true)
+	truthy(puppet.texture_path("torso").contains("_1x"), "performance mode uses the 1x parts")
+	eq(puppet.secondary_on(), false, "performance mode turns secondary motion off")
+	puppet.seek_anim("idle_core", 1.8)
+	eq(puppet.part_node("torso").scale.y > 1.001, true, "the breath still plays on the 1x puppet")
+	eq(is_equal_approx(puppet.part_node("hair").rotation, 0.0), true, "hair lag is off in performance mode")
+	puppet.set_body_colors(Color.html("#c68642"), Color.html("#3b2414"), Color.html("#3a6ea5"))
+	puppet.set_face("sharp")
+	truthy(puppet.texture_path("head").contains("head_f4"), "the sharp face uses head_f4")
+	puppet.release()
+	eq(root.get_nodes_in_group("charselect_puppet").size(), 0, "release drops the puppet group")
+	puppet.free()
+	_wipe_roster_files()
+	var screen = _open_screen()
+	screen.select_class("kestrel")
+	eq(screen.uses_painted_fallback(), true, "zero puppets for this class stays on the locked sprite")
+	truthy(screen.fallback_note.text.contains("Coming soon"), "a missing puppet says coming soon")
+	eq(screen.pedestal_sprite.visible, true, "the locked sprite is shown")
+	screen.press_create()
+	eq(screen.naming, true, "create still opens the name field with no puppet")
+	screen.press_cancel_name()
+	screen.select_class("ironjaw")
+	screen.set_gender("m")
+	eq(screen.uses_painted_fallback(), false, "Ironjaw male leaves the fallback")
+	eq(screen.turn_left.visible, true, "turn arrows sit under the pedestal")
+	screen.free()
+
+
+func _assert_gear_covers(puppet, family: String, slot: String) -> void:
+	var slots: Dictionary = puppet.rig.get("slots", {})
+	var names: Array = slots.get(slot, [])
+	for part_name in names:
+		var gear := puppet.part_image(str(part_name))
+		puppet.clear_slots()
+		var base := puppet.part_image(str(part_name))
+		puppet.set_slot(slot, family)
+		if gear == null or base == null:
+			eq(false, true, "%s %s %s loaded" % [family, slot, part_name])
+			continue
+		eq(gear.get_width(), base.get_width(), "%s %s shares the base crop" % [family, part_name])
+		var differ := 0.0
+		var counted := 0
+		var missing := 0
+		for y in base.get_height():
+			for x in base.get_width():
+				var bp := base.get_pixel(x, y)
+				if bp.a <= 0.5:
+					continue
+				counted += 1
+				var gp := gear.get_pixel(x, y)
+				if gp.a <= 0.5:
+					missing += 1
+				else:
+					differ += absf(gp.r - bp.r) + absf(gp.g - bp.g) + absf(gp.b - bp.b)
+		eq(missing, 0, "%s %s has no base hole" % [family, part_name])
+		eq(differ / float(maxi(counted, 1)) > 0.02, true, "%s %s is not the base paint" % [family, part_name])
+
+
+func _assert_joints(puppet, label: String) -> void:
+	for facing in ["S", "E"]:
+		puppet.snap_facing(facing)
+		for anim_name in ["idle", "select"]:
+			var length := puppet.anim_length(anim_name)
+			var cache := _puppet_images(puppet)
+			var t := 0.0
+			while t <= length + 0.0001:
+				puppet.seek_anim(anim_name, t)
+				puppet.force_update_transform()
+				for child in _JOINTS.keys():
+					var node := puppet.part_node(str(child))
+					if node == null:
+						eq(false, true, "%s missing %s" % [label, child])
+						continue
+					var parent := str(_JOINTS[child])
+					if not _joint_closed(puppet, cache, str(child), parent, node.global_position):
+						eq(false, true, "%s hole at %s/%s %s %.2f" % [label, child, parent, facing, t])
+						return
+				t += 1.0 / 60.0
+	eq(true, true, "%s joints stay closed" % label)
+
+
+func _puppet_images(puppet) -> Dictionary:
+	var images := {}
+	for child in _JOINTS.keys():
+		images[str(child)] = puppet.part_image(str(child))
+		images[str(_JOINTS[child])] = puppet.part_image(str(_JOINTS[child]))
+	return images
+
+
+func _joint_closed(puppet, cache: Dictionary, child: String, parent: String, origin: Vector2) -> bool:
+	var points: Array[Vector2] = [origin]
+	for i in 4:
+		var angle := TAU * float(i) / 4.0
+		points.append(origin + Vector2(cos(angle), sin(angle)) * 4.0)
+	for point in points:
+		if not _sprite_hits(puppet, cache, child, point) or not _sprite_hits(puppet, cache, parent, point):
+			return false
+	return true
+
+
+func _sprite_hits(puppet, cache: Dictionary, part: String, world: Vector2) -> bool:
+	var node := puppet.part_node(part)
+	var sprite := puppet.sprite_of(part)
+	var image: Image = cache.get(part, null)
+	if node == null or sprite == null or image == null:
+		return false
+	var local: Vector2 = node.get_global_transform().affine_inverse() * world
+	var tex: Vector2 = (local - sprite.position) / sprite.scale
+	var x := int(floor(tex.x))
+	var y := int(floor(tex.y))
+	if x < 0 or y < 0 or x >= image.get_width() or y >= image.get_height():
+		return false
+	return image.get_pixel(x, y).a > 0.5
+
+
+const _JOINTS := {
+	"head": "torso",
+	"upper_arm_l": "torso",
+	"upper_arm_r": "torso",
+	"lower_arm_l": "upper_arm_l",
+	"lower_arm_r": "upper_arm_r",
+	"hand_l": "lower_arm_l",
+	"hand_r": "lower_arm_r",
+	"thigh_l": "torso",
+	"thigh_r": "torso",
+	"shin_l": "thigh_l",
+	"shin_r": "thigh_r",
+	"foot_l": "shin_l",
+	"foot_r": "shin_r",
+	"weapon": "hand_r",
+}
 
 
 func _open_screen():

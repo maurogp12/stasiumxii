@@ -1,8 +1,8 @@
 extends Control
 
-## PC character list and class screen (P1). No 3D: the pedestal and the island
-## use the locked painted idle, art letter S, for every class and both genders.
-## Female sheets are not in yet (Mauro, section 11: make them, later).
+## PC character list and class screen. No 3D anywhere.
+## Ironjaw male uses the 2D cut-out puppet. Every other class and gender
+## keeps the locked painted idle (art letter S) until its puppet exists.
 ## Appearance is the body only: gender, face, skin, hair, eyes. Saved on the
 ## roster for the world and for combat. Armour dye is a later premium shop.
 ##
@@ -17,6 +17,8 @@ const Koliseo = preload("res://scenes/class_select.gd")
 const RadarChart = preload("res://scenes/pc/character_select/radar_chart.gd")
 const GradeShader = preload("res://scenes/pc/character_select/backdrop_grade.gdshader")
 const SettingsPanel = preload("res://ui/visual_settings_panel.gd")
+const PuppetScene = preload("res://scenes/pc/character_select/puppet.tscn")
+const PuppetScript = preload("res://scenes/pc/character_select/puppet.gd")
 
 const WORLD_SCENE := "res://scenes/world/crosshaven/crosshaven_world.tscn"
 const ART := "res://art/pc/character_select/"
@@ -48,6 +50,9 @@ var quit_requested := false
 var class_art: TextureRect
 var pedestal_sprite: Sprite2D
 var island_sprite: Sprite2D
+var puppet: Node2D
+var turn_left: Button
+var turn_right: Button
 var back_button: Button
 var create_button: Button
 var list_create: Button
@@ -113,6 +118,8 @@ var _gender_buttons: Dictionary = {}
 var _class_buttons: Dictionary = {}
 var _hair_custom_button: Button
 var _eye_custom_button: Button
+var _drag_pad: Control
+var _drag_x := 0.0
 
 var grade_value := 0.0:
 	set(v):
@@ -182,7 +189,6 @@ func _process(delta: float) -> void:
 
 
 func performance_stage_scale() -> float:
-	# P3 sizes its SubViewport from this. This package has no 3D viewport.
 	return 0.5 if _performance else 1.0
 
 
@@ -193,7 +199,7 @@ func lightning_gap_range() -> Vector2:
 
 
 func uses_painted_fallback() -> bool:
-	return class_art != null and class_art.texture == null and not _idle_frames.is_empty()
+	return puppet == null or not puppet.visible
 
 
 func painted_art_letter() -> String:
@@ -222,6 +228,7 @@ func select_class(class_id: String) -> void:
 	_refresh_class_grid()
 	_refresh_gameplay()
 	_set_idle_class(key)
+	_sync_puppet(screen_id != "list")
 	if radar != null:
 		radar.set_values(Roster.radar_values(key), instant)
 
@@ -232,6 +239,7 @@ func set_gender(gender: String) -> void:
 		return
 	draft["gender"] = key
 	_refresh_appearance()
+	_sync_puppet(true)
 
 
 func set_face(face_id: String) -> void:
@@ -239,6 +247,9 @@ func set_face(face_id: String) -> void:
 		if typeof(row) == TYPE_DICTIONARY and str((row as Dictionary).get("id", "")) == face_id:
 			draft["face"] = face_id
 			_refresh_appearance()
+			_apply_puppet_colors()
+			if puppet != null and puppet.visible and screen_id == "class":
+				puppet.play_select()
 			return
 
 
@@ -248,6 +259,7 @@ func set_skin(hex: String) -> void:
 		return
 	draft["skin"] = clean
 	_refresh_appearance()
+	_apply_puppet_colors()
 
 
 func set_hair(hex: String, custom: bool = false) -> void:
@@ -259,6 +271,7 @@ func set_hair(hex: String, custom: bool = false) -> void:
 	draft["hair"] = clean
 	draft["hair_custom"] = custom
 	_refresh_appearance()
+	_apply_puppet_colors()
 
 
 func set_eyes(hex: String, custom: bool = false) -> void:
@@ -270,6 +283,7 @@ func set_eyes(hex: String, custom: bool = false) -> void:
 	draft["eyes"] = clean
 	draft["eyes_custom"] = custom
 	_refresh_appearance()
+	_apply_puppet_colors()
 
 
 func reset_body() -> void:
@@ -277,6 +291,7 @@ func reset_body() -> void:
 	draft = Roster.default_appearance()
 	draft["gender"] = gender
 	_refresh_appearance()
+	_apply_puppet_colors()
 
 
 func open_custom(channel: String) -> void:
@@ -304,6 +319,8 @@ func press_create() -> void:
 		return
 	if (_roster.get("characters", []) as Array).size() >= Roster.SLOT_LIMIT:
 		return
+	if puppet != null and puppet.visible and puppet.has_method("play_select"):
+		puppet.play_select()
 	naming = true
 	name_error_label.text = ""
 	name_error_label.visible = false
@@ -467,6 +484,9 @@ func _unhandled_input(event: InputEvent) -> void:
 			KEY_ESCAPE:
 				_quit_dialog.show()
 				get_viewport().set_input_as_handled()
+	elif screen_id == "class" and puppet != null and puppet.visible and (key == KEY_LEFT or key == KEY_RIGHT):
+		puppet.turn(-1 if key == KEY_LEFT else 1)
+		get_viewport().set_input_as_handled()
 	elif key == KEY_ESCAPE:
 		if back_button != null and back_button.visible:
 			press_back()
@@ -499,6 +519,7 @@ func _show_list() -> void:
 	var ch := _selected()
 	if not ch.is_empty():
 		_set_idle_class(str(ch.get("class_id", "ironjaw")))
+		_sync_puppet(false)
 
 
 func _show_class(animated: bool) -> void:
@@ -536,6 +557,7 @@ func _show_class(animated: bool) -> void:
 
 
 func _enter_world(id: String, reason: String) -> void:
+	_release_puppet()
 	Roster.set_last(id)
 	var ch := Roster.find_character(id)
 	var place := _saved_place(id)
@@ -628,8 +650,15 @@ func _place_feet() -> void:
 		return
 	var pivot := Painted.pivot_of(_shown_class, "idle", IDLE_LETTER)
 	var height := size.y * (SPRITE_PX / DESIGN.y)
-	_fit_sprite(pedestal_sprite, Vector2(_pedestal.size.x * 0.5, _pedestal.size.y * 0.30), height, cell, pivot)
-	_fit_sprite(island_sprite, Vector2(_island.size.x * 0.5, _island.size.y * (210.0 / 644.0)), height * ISLAND_SPRITE_SCALE, cell, pivot)
+	var feet_p := Vector2(_pedestal.size.x * 0.5, _pedestal.size.y * 0.30)
+	var feet_i := Vector2(_island.size.x * 0.5, _island.size.y * (210.0 / 644.0))
+	_fit_sprite(pedestal_sprite, feet_p, height, cell, pivot)
+	_fit_sprite(island_sprite, feet_i, height * ISLAND_SPRITE_SCALE, cell, pivot)
+	if puppet != null and puppet.visible:
+		var on_island := puppet.get_parent() == _island
+		puppet.fit_height(height)
+		var feet := feet_i if on_island else feet_p
+		puppet.position = feet - Vector2(0.0, puppet.feet_offset())
 	var blob := _pedestal.get_node_or_null("Shadow") as Node2D
 	if blob != null:
 		blob.position = Vector2(_pedestal.size.x * 0.5, _pedestal.size.y * 0.32)
@@ -643,6 +672,94 @@ func _fit_sprite(sprite: Sprite2D, feet: Vector2, height: float, cell: Vector2i,
 	sprite.centered = true
 	sprite.scale = Vector2(sc, sc)
 	sprite.position = feet - (Vector2(pivot) - Vector2(cell) * 0.5) * sc
+
+
+func _figure_gender() -> String:
+	if screen_id == "list":
+		var ch := _selected()
+		if not ch.is_empty():
+			return str(ch.get("gender", Roster.GENDER_MALE))
+	return str(draft.get("gender", Roster.GENDER_MALE))
+
+
+func _sync_puppet(flourish: bool) -> void:
+	if puppet == null:
+		return
+	var gender := _figure_gender()
+	var show: bool = PuppetScript.has_puppet(selected_class_id, gender)
+	if show:
+		var changed := (not puppet.visible) or str(puppet.class_id) != selected_class_id or str(puppet.gender) != gender
+		puppet.show_puppet(selected_class_id, gender)
+		puppet.visible = true
+		pedestal_sprite.visible = false
+		island_sprite.visible = false
+		var on_island := screen_id == "list"
+		var host: Node = _island if on_island else _pedestal
+		if puppet.get_parent() != host:
+			puppet.reparent(host)
+		puppet.set_list_mode(on_island)
+		_apply_puppet_colors()
+		if flourish and changed and not on_island:
+			puppet.play_select()
+	else:
+		_release_puppet()
+		pedestal_sprite.visible = true
+		island_sprite.visible = true
+	if turn_left != null:
+		turn_left.visible = show and screen_id == "class"
+	if turn_right != null:
+		turn_right.visible = show and screen_id == "class"
+	if _drag_pad != null:
+		_drag_pad.visible = show and screen_id == "class"
+		_drag_pad.mouse_filter = Control.MOUSE_FILTER_STOP if _drag_pad.visible else Control.MOUSE_FILTER_IGNORE
+	_place_feet()
+	_refresh_appearance()
+
+
+func _release_puppet() -> void:
+	if puppet != null and puppet.has_method("release"):
+		puppet.release()
+	if puppet != null:
+		puppet.visible = false
+
+
+func _apply_puppet_colors() -> void:
+	if puppet == null or not puppet.visible:
+		return
+	var skin := ""
+	var hair := ""
+	var eyes := ""
+	var face := "broad"
+	if screen_id == "list":
+		var ch := _selected()
+		skin = str(ch.get("skin", ""))
+		hair = str(ch.get("hair", ""))
+		eyes = str(ch.get("eyes", ""))
+		face = str(ch.get("face", "broad"))
+	else:
+		skin = str(draft.get("skin", ""))
+		hair = str(draft.get("hair", ""))
+		eyes = str(draft.get("eyes", ""))
+		face = str(draft.get("face", "broad"))
+	if skin != "":
+		puppet.set_body_colors(Color.html(skin), Color.html(hair), Color.html(eyes))
+	puppet.set_face(face)
+
+
+func _on_stage_drag(event: InputEvent) -> void:
+	if puppet == null or not puppet.visible or screen_id != "class":
+		return
+	if event is InputEventMouseButton:
+		var button := event as InputEventMouseButton
+		if button.pressed and button.button_index == MOUSE_BUTTON_LEFT:
+			_drag_x = button.position.x
+	elif event is InputEventMouseMotion:
+		var motion := event as InputEventMouseMotion
+		if (motion.button_mask & MOUSE_BUTTON_MASK_LEFT) == 0:
+			return
+		var dx := motion.position.x - _drag_x
+		_drag_x = motion.position.x
+		puppet.turn_by_pixels(dx)
 
 
 func _strike() -> void:
@@ -669,6 +786,9 @@ func _on_performance(on: bool) -> void:
 		_rain.visible = not on
 	if on and _bolt != null:
 		_bolt.visible = false
+	if puppet != null and puppet.has_method("set_performance"):
+		puppet.set_performance(on)
+		_place_feet()
 	var gap := lightning_gap_range()
 	if _bolt_wait < gap.x:
 		_bolt_wait = gap.x
@@ -765,6 +885,15 @@ func _build_stage() -> void:
 	_pedestal.add_child(pedestal_shadow)
 	pedestal_sprite = Sprite2D.new()
 	_pedestal.add_child(pedestal_sprite)
+	puppet = PuppetScene.instantiate()
+	puppet.visible = false
+	_pedestal.add_child(puppet)
+	_drag_pad = Control.new()
+	_drag_pad.mouse_filter = Control.MOUSE_FILTER_STOP
+	_drag_pad.visible = false
+	_drag_pad.gui_input.connect(_on_stage_drag)
+	_place(_drag_pad, Rect2(750, 280, 420, 560))
+	add_child(_drag_pad)
 
 
 func _build_list() -> void:
@@ -836,6 +965,24 @@ func _build_class_ui() -> void:
 	_place(create_button, Rect2(780, 990, 360, 64))
 	create_button.pressed.connect(press_create)
 	_class_root.add_child(create_button)
+	turn_left = _text_button("<", "ui_tab_dim.png", 22)
+	turn_left.custom_minimum_size = Vector2(72, 56)
+	_place(turn_left, Rect2(760, 900, 72, 56))
+	turn_left.visible = false
+	turn_left.pressed.connect(func() -> void:
+		if puppet != null and puppet.visible:
+			puppet.turn(-1)
+	)
+	_class_root.add_child(turn_left)
+	turn_right = _text_button(">", "ui_tab_dim.png", 22)
+	turn_right.custom_minimum_size = Vector2(72, 56)
+	_place(turn_right, Rect2(1090, 900, 72, 56))
+	turn_right.visible = false
+	turn_right.pressed.connect(func() -> void:
+		if puppet != null and puppet.visible:
+			puppet.turn(1)
+	)
+	_class_root.add_child(turn_right)
 	_name_row = HBoxContainer.new()
 	_name_row.add_theme_constant_override("separation", 8)
 	_place(_name_row, Rect2(700, 990, 520, 72))
@@ -1244,10 +1391,23 @@ func _refresh_gameplay() -> void:
 func _refresh_appearance() -> void:
 	if fallback_note == null:
 		return
-	var female := str(draft.get("gender", "m")) == Roster.GENDER_FEMALE
-	fallback_note.text = "Male and Female are both saved. Female painted sheets are not in yet, so the pedestal keeps the locked sprite either way. Face, skin, hair and eyes are saved for the world and for combat. Armour dye is a later premium shop, not part of creation."
-	if female:
-		fallback_note.text = "Female is saved. Her painted sheets are not in yet, so this is still the locked sprite. Face, skin, hair and eyes are saved for the world and for combat. Armour dye is a later premium shop, not part of creation."
+	var coming := uses_painted_fallback()
+	if coming:
+		fallback_note.text = "Coming soon. This class has no puppet yet, so the pedestal keeps the locked idle sprite. Face, skin, hair and eyes are still saved."
+	else:
+		fallback_note.text = "Skin, hair and eyes show on the puppet. Armour dye is a later premium shop, not part of creation."
+	for key in _face_buttons.keys():
+		(_face_buttons[key] as Button).disabled = coming
+	for key in _skin_buttons.keys():
+		(_skin_buttons[key] as Button).disabled = coming
+	for key in _hair_buttons.keys():
+		(_hair_buttons[key] as Button).disabled = coming
+	for key in _eye_buttons.keys():
+		(_eye_buttons[key] as Button).disabled = coming
+	if _hair_custom_button != null:
+		_hair_custom_button.disabled = coming
+	if _eye_custom_button != null:
+		_eye_custom_button.disabled = coming
 	for key in _gender_buttons.keys():
 		_style_tab(_gender_buttons[key], str(key) == str(draft.get("gender", "")))
 	for key in _face_buttons.keys():

@@ -1,0 +1,1364 @@
+{
+  "format": "stasium.charselect_puppet",
+  "format_version": 1,
+  "class_id": "ironjaw",
+  "gender": "m",
+  "soft_test": true,
+  "note": "Cut from the 1024x576 visible-gear sources. Soft on purpose. The real 2x puppet is P4.",
+  "canvas": [
+    1280,
+    720
+  ],
+  "source_px": [
+    1024,
+    576
+  ],
+  "figure_px": 642,
+  "feet_from_hip": 271.0,
+  "overlap_px": 12,
+  "fps": 60,
+  "turn": {
+    "order": [
+      "S",
+      "E",
+      "W"
+    ],
+    "sec": 0.18,
+    "squash": 0.96,
+    "return_s_sec": 4.0,
+    "drag_px": 60
+  },
+  "faces": [
+    {
+      "id": "broad",
+      "file": "head_f1"
+    },
+    {
+      "id": "narrow",
+      "file": "head_f2"
+    },
+    {
+      "id": "soft",
+      "file": "head_f3"
+    },
+    {
+      "id": "sharp",
+      "file": "head_f4"
+    }
+  ],
+  "slots": {
+    "head": [
+      "hair"
+    ],
+    "chest": [
+      "torso",
+      "upper_arm_l",
+      "upper_arm_r",
+      "lower_arm_l",
+      "lower_arm_r"
+    ],
+    "legs": [
+      "thigh_l",
+      "thigh_r",
+      "shin_l",
+      "shin_r"
+    ],
+    "boots": [
+      "foot_l",
+      "foot_r"
+    ],
+    "weapon": [
+      "weapon"
+    ]
+  },
+  "families": [
+    "cragmaw",
+    "tyrantjaw",
+    "pitmaw"
+  ],
+  "parts": {
+    "hip": {
+      "parent": "",
+      "z": {
+        "S": 0,
+        "E": 0
+      },
+      "rest": {
+        "S": {
+          "pos": [
+            0.0,
+            0.0
+          ],
+          "rot": 0.0,
+          "scale": [
+            1.0,
+            1.0
+          ]
+        },
+        "E": {
+          "pos": [
+            0.0,
+            0.0
+          ],
+          "rot": 0.0,
+          "scale": [
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "sprite": false
+    },
+    "torso": {
+      "parent": "hip",
+      "z": {
+        "S": 10,
+        "E": 10
+      },
+      "rest": {
+        "S": {
+          "pos": [
+            0.0,
+            0.0
+          ],
+          "rot": 0.0,
+          "scale": [
+            1.0,
+            1.0
+          ]
+        },
+        "E": {
+          "pos": [
+            0.0,
+            0.0
+          ],
+          "rot": 0.0,
+          "scale": [
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "sprite": true,
+      "file": "torso.png",
+      "pivot": {
+        "S": [
+          175.0,
+          302.0
+        ],
+        "E": [
+          170.0,
+          304.0
+        ]
+      }
+    },
+    "head": {
+      "parent": "torso",
+      "z": {
+        "S": 20,
+        "E": 20
+      },
+      "rest": {
+        "S": {
+          "pos": [
+            6.0,
+            -226.0
+          ],
+          "rot": 0.0,
+          "scale": [
+            1.0,
+            1.0
+          ]
+        },
+        "E": {
+          "pos": [
+            12.0,
+            -292.0
+          ],
+          "rot": 0.0,
+          "scale": [
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "sprite": true,
+      "file": "head_f1.png",
+      "faces": [
+        "head_f1.png",
+        "head_f2.png",
+        "head_f3.png",
+        "head_f4.png"
+      ],
+      "pivot": {
+        "S": [
+          61.0,
+          91.0
+        ],
+        "E": [
+          43.0,
+          56.0
+        ]
+      }
+    },
+    "hair": {
+      "parent": "head",
+      "z": {
+        "S": 21,
+        "E": 21
+      },
+      "rest": {
+        "S": {
+          "pos": [
+            0.0,
+            0.0
+          ],
+          "rot": 0.0,
+          "scale": [
+            1.0,
+            1.0
+          ]
+        },
+        "E": {
+          "pos": [
+            0.0,
+            0.0
+          ],
+          "rot": 0.0,
+          "scale": [
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "sprite": true,
+      "file": "hair.png",
+      "pivot": {
+        "S": [
+          68.0,
+          144.0
+        ],
+        "E": [
+          47.0,
+          92.0
+        ]
+      }
+    },
+    "eyes": {
+      "parent": "head",
+      "z": {
+        "S": 22,
+        "E": 22
+      },
+      "rest": {
+        "S": {
+          "pos": [
+            0.0,
+            0.0
+          ],
+          "rot": 0.0,
+          "scale": [
+            1.0,
+            1.0
+          ]
+        },
+        "E": {
+          "pos": [
+            0.0,
+            0.0
+          ],
+          "rot": 0.0,
+          "scale": [
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "sprite": true,
+      "file": "eyes.png",
+      "pivot": {
+        "S": [
+          23.0,
+          91.0
+        ],
+        "E": [
+          22.0,
+          56.0
+        ]
+      }
+    },
+    "upper_arm_r": {
+      "parent": "torso",
+      "z": {
+        "S": 30,
+        "E": 30
+      },
+      "rest": {
+        "S": {
+          "pos": [
+            -148.0,
+            -222.0
+          ],
+          "rot": 0.0,
+          "scale": [
+            1.0,
+            1.0
+          ]
+        },
+        "E": {
+          "pos": [
+            138.0,
+            -252.0
+          ],
+          "rot": 0.0,
+          "scale": [
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "sprite": true,
+      "file": "upper_arm_r.png",
+      "pivot": {
+        "S": [
+          97.0,
+          45.0
+        ],
+        "E": [
+          43.0,
+          22.0
+        ]
+      }
+    },
+    "upper_arm_l": {
+      "parent": "torso",
+      "z": {
+        "S": 5,
+        "E": 16
+      },
+      "rest": {
+        "S": {
+          "pos": [
+            104.0,
+            -222.0
+          ],
+          "rot": 0.0,
+          "scale": [
+            1.0,
+            1.0
+          ]
+        },
+        "E": {
+          "pos": [
+            -126.0,
+            -252.0
+          ],
+          "rot": 0.0,
+          "scale": [
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "sprite": true,
+      "file": "upper_arm_l.png",
+      "pivot": {
+        "S": [
+          39.0,
+          39.0
+        ],
+        "E": [
+          84.0,
+          29.0
+        ]
+      }
+    },
+    "lower_arm_r": {
+      "parent": "upper_arm_r",
+      "z": {
+        "S": 31,
+        "E": 31
+      },
+      "rest": {
+        "S": {
+          "pos": [
+            -74.0,
+            98.0
+          ],
+          "rot": 0.0,
+          "scale": [
+            1.0,
+            1.0
+          ]
+        },
+        "E": {
+          "pos": [
+            34.0,
+            122.0
+          ],
+          "rot": 0.0,
+          "scale": [
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "sprite": true,
+      "file": "lower_arm_r.png",
+      "pivot": {
+        "S": [
+          63.0,
+          11.0
+        ],
+        "E": [
+          32.0,
+          11.0
+        ]
+      }
+    },
+    "lower_arm_l": {
+      "parent": "upper_arm_l",
+      "z": {
+        "S": 6,
+        "E": 17
+      },
+      "rest": {
+        "S": {
+          "pos": [
+            30.0,
+            102.0
+          ],
+          "rot": 0.0,
+          "scale": [
+            1.0,
+            1.0
+          ]
+        },
+        "E": {
+          "pos": [
+            -58.0,
+            114.0
+          ],
+          "rot": 0.0,
+          "scale": [
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "sprite": true,
+      "file": "lower_arm_l.png",
+      "pivot": {
+        "S": [
+          31.0,
+          11.0
+        ],
+        "E": [
+          39.0,
+          11.0
+        ]
+      }
+    },
+    "hand_r": {
+      "parent": "lower_arm_r",
+      "z": {
+        "S": 32,
+        "E": 32
+      },
+      "rest": {
+        "S": {
+          "pos": [
+            -22.0,
+            112.0
+          ],
+          "rot": 0.0,
+          "scale": [
+            1.0,
+            1.0
+          ]
+        },
+        "E": {
+          "pos": [
+            34.0,
+            122.0
+          ],
+          "rot": 0.0,
+          "scale": [
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "sprite": true,
+      "file": "hand_r.png",
+      "pivot": {
+        "S": [
+          38.0,
+          39.0
+        ],
+        "E": [
+          36.0,
+          39.0
+        ]
+      }
+    },
+    "hand_l": {
+      "parent": "lower_arm_l",
+      "z": {
+        "S": 7,
+        "E": 18
+      },
+      "rest": {
+        "S": {
+          "pos": [
+            12.0,
+            110.0
+          ],
+          "rot": 0.0,
+          "scale": [
+            1.0,
+            1.0
+          ]
+        },
+        "E": {
+          "pos": [
+            -3.0,
+            120.0
+          ],
+          "rot": 0.0,
+          "scale": [
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "sprite": true,
+      "file": "hand_l.png",
+      "pivot": {
+        "S": [
+          36.0,
+          36.0
+        ],
+        "E": [
+          36.0,
+          39.0
+        ]
+      }
+    },
+    "weapon": {
+      "parent": "hand_r",
+      "z": {
+        "S": 33,
+        "E": 33
+      },
+      "rest": {
+        "S": {
+          "pos": [
+            0.0,
+            0.0
+          ],
+          "rot": 0.0,
+          "scale": [
+            1.0,
+            1.0
+          ]
+        },
+        "E": {
+          "pos": [
+            0.0,
+            0.0
+          ],
+          "rot": 0.0,
+          "scale": [
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "sprite": true,
+      "file": "weapon.png",
+      "pivot": {
+        "S": [
+          35.0,
+          29.0
+        ],
+        "E": [
+          509.0,
+          30.0
+        ]
+      }
+    },
+    "thigh_r": {
+      "parent": "hip",
+      "z": {
+        "S": 12,
+        "E": 12
+      },
+      "rest": {
+        "S": {
+          "pos": [
+            -46.0,
+            28.0
+          ],
+          "rot": 0.0,
+          "scale": [
+            1.0,
+            1.0
+          ]
+        },
+        "E": {
+          "pos": [
+            56.0,
+            40.0
+          ],
+          "rot": 0.0,
+          "scale": [
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "sprite": true,
+      "file": "thigh_r.png",
+      "pivot": {
+        "S": [
+          85.0,
+          7.0
+        ],
+        "E": [
+          28.0,
+          14.0
+        ]
+      }
+    },
+    "thigh_l": {
+      "parent": "hip",
+      "z": {
+        "S": 2,
+        "E": 2
+      },
+      "rest": {
+        "S": {
+          "pos": [
+            60.0,
+            20.0
+          ],
+          "rot": 0.0,
+          "scale": [
+            1.0,
+            1.0
+          ]
+        },
+        "E": {
+          "pos": [
+            -60.0,
+            40.0
+          ],
+          "rot": 0.0,
+          "scale": [
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "sprite": true,
+      "file": "thigh_l.png",
+      "pivot": {
+        "S": [
+          47.0,
+          3.0
+        ],
+        "E": [
+          76.0,
+          14.0
+        ]
+      }
+    },
+    "shin_r": {
+      "parent": "thigh_r",
+      "z": {
+        "S": 13,
+        "E": 13
+      },
+      "rest": {
+        "S": {
+          "pos": [
+            -57.0,
+            96.0
+          ],
+          "rot": 0.0,
+          "scale": [
+            1.0,
+            1.0
+          ]
+        },
+        "E": {
+          "pos": [
+            22.0,
+            102.0
+          ],
+          "rot": 0.0,
+          "scale": [
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "sprite": true,
+      "file": "shin_r.png",
+      "pivot": {
+        "S": [
+          71.0,
+          15.0
+        ],
+        "E": [
+          25.0,
+          9.0
+        ]
+      }
+    },
+    "shin_l": {
+      "parent": "thigh_l",
+      "z": {
+        "S": 3,
+        "E": 3
+      },
+      "rest": {
+        "S": {
+          "pos": [
+            -20.0,
+            96.0
+          ],
+          "rot": 0.0,
+          "scale": [
+            1.0,
+            1.0
+          ]
+        },
+        "E": {
+          "pos": [
+            -48.0,
+            102.0
+          ],
+          "rot": 0.0,
+          "scale": [
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "sprite": true,
+      "file": "shin_l.png",
+      "pivot": {
+        "S": [
+          24.0,
+          10.0
+        ],
+        "E": [
+          67.0,
+          13.0
+        ]
+      }
+    },
+    "foot_r": {
+      "parent": "shin_r",
+      "z": {
+        "S": 14,
+        "E": 14
+      },
+      "rest": {
+        "S": {
+          "pos": [
+            -47.0,
+            93.0
+          ],
+          "rot": 0.0,
+          "scale": [
+            1.0,
+            1.0
+          ]
+        },
+        "E": {
+          "pos": [
+            11.0,
+            96.0
+          ],
+          "rot": 0.0,
+          "scale": [
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "sprite": true,
+      "file": "foot_r.png",
+      "pivot": {
+        "S": [
+          30.0,
+          120.0
+        ],
+        "E": [
+          37.0,
+          22.0
+        ]
+      }
+    },
+    "foot_l": {
+      "parent": "shin_l",
+      "z": {
+        "S": 4,
+        "E": 4
+      },
+      "rest": {
+        "S": {
+          "pos": [
+            24.0,
+            90.0
+          ],
+          "rot": 0.0,
+          "scale": [
+            1.0,
+            1.0
+          ]
+        },
+        "E": {
+          "pos": [
+            -44.0,
+            99.0
+          ],
+          "rot": 0.0,
+          "scale": [
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "sprite": true,
+      "file": "foot_l.png",
+      "pivot": {
+        "S": [
+          15.0,
+          23.0
+        ],
+        "E": [
+          25.0,
+          23.0
+        ]
+      }
+    },
+    "dust": {
+      "parent": "hip",
+      "z": {
+        "S": 40,
+        "E": 40
+      },
+      "rest": {
+        "S": {
+          "pos": [
+            0.0,
+            80.0
+          ],
+          "rot": 0.0,
+          "scale": [
+            1.0,
+            1.0
+          ]
+        },
+        "E": {
+          "pos": [
+            0.0,
+            80.0
+          ],
+          "rot": 0.0,
+          "scale": [
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "sprite": true,
+      "file": "dust.png",
+      "pivot": {
+        "S": [
+          48,
+          70
+        ],
+        "E": [
+          48,
+          70
+        ]
+      }
+    }
+  },
+  "anims": {
+    "idle": {
+      "length": 3.6,
+      "loop": true,
+      "tracks": {
+        "torso": [
+          {
+            "t": 0,
+            "rot": 0,
+            "sx": 1.0,
+            "sy": 1.0,
+            "curve": "sine"
+          },
+          {
+            "t": 1.8,
+            "rot": 0.02,
+            "sx": 1.0,
+            "sy": 1.015,
+            "curve": "sine"
+          },
+          {
+            "t": 3.6,
+            "rot": 0,
+            "sx": 1.0,
+            "sy": 1.0,
+            "curve": "sine"
+          }
+        ],
+        "head": [
+          {
+            "t": 0,
+            "rot": 0,
+            "sx": 1.0,
+            "sy": 1.0,
+            "curve": "sine"
+          },
+          {
+            "t": 0.9,
+            "rot": 0.05,
+            "sx": 1.0,
+            "sy": 1.0,
+            "curve": "sine"
+          },
+          {
+            "t": 1.8,
+            "rot": 0.0,
+            "sx": 1.0,
+            "sy": 1.0,
+            "curve": "sine"
+          },
+          {
+            "t": 2.7,
+            "rot": -0.04,
+            "sx": 1.0,
+            "sy": 1.0,
+            "curve": "sine"
+          },
+          {
+            "t": 3.6,
+            "rot": 0,
+            "sx": 1.0,
+            "sy": 1.0,
+            "curve": "sine"
+          }
+        ],
+        "hair": [
+          {
+            "t": 0,
+            "rot": 0,
+            "sx": 1.0,
+            "sy": 1.0,
+            "curve": "sine"
+          },
+          {
+            "t": 1.2,
+            "rot": 0.07,
+            "sx": 1.0,
+            "sy": 1.0,
+            "curve": "sine"
+          },
+          {
+            "t": 2.1,
+            "rot": -0.02,
+            "sx": 1.0,
+            "sy": 1.0,
+            "curve": "sine"
+          },
+          {
+            "t": 3.0,
+            "rot": 0.05,
+            "sx": 1.0,
+            "sy": 1.0,
+            "curve": "sine"
+          },
+          {
+            "t": 3.6,
+            "rot": 0,
+            "sx": 1.0,
+            "sy": 1.0,
+            "curve": "sine"
+          }
+        ],
+        "upper_arm_r": [
+          {
+            "t": 0,
+            "rot": 0,
+            "sx": 1.0,
+            "sy": 1.0,
+            "curve": "sine"
+          },
+          {
+            "t": 1.8,
+            "rot": 0.06,
+            "sx": 1.0,
+            "sy": 1.0,
+            "curve": "sine"
+          },
+          {
+            "t": 3.6,
+            "rot": 0,
+            "sx": 1.0,
+            "sy": 1.0,
+            "curve": "sine"
+          }
+        ],
+        "upper_arm_l": [
+          {
+            "t": 0,
+            "rot": 0,
+            "sx": 1.0,
+            "sy": 1.0,
+            "curve": "sine"
+          },
+          {
+            "t": 1.8,
+            "rot": -0.05,
+            "sx": 1.0,
+            "sy": 1.0,
+            "curve": "sine"
+          },
+          {
+            "t": 3.6,
+            "rot": 0,
+            "sx": 1.0,
+            "sy": 1.0,
+            "curve": "sine"
+          }
+        ],
+        "lower_arm_r": [
+          {
+            "t": 0,
+            "rot": 0,
+            "sx": 1.0,
+            "sy": 1.0,
+            "curve": "sine"
+          },
+          {
+            "t": 1.8,
+            "rot": 0.04,
+            "sx": 1.0,
+            "sy": 1.0,
+            "curve": "sine"
+          },
+          {
+            "t": 3.6,
+            "rot": 0,
+            "sx": 1.0,
+            "sy": 1.0,
+            "curve": "sine"
+          }
+        ],
+        "lower_arm_l": [
+          {
+            "t": 0,
+            "rot": 0,
+            "sx": 1.0,
+            "sy": 1.0,
+            "curve": "sine"
+          },
+          {
+            "t": 1.8,
+            "rot": -0.03,
+            "sx": 1.0,
+            "sy": 1.0,
+            "curve": "sine"
+          },
+          {
+            "t": 3.6,
+            "rot": 0,
+            "sx": 1.0,
+            "sy": 1.0,
+            "curve": "sine"
+          }
+        ],
+        "weapon": [
+          {
+            "t": 0,
+            "rot": 0,
+            "sx": 1.0,
+            "sy": 1.0,
+            "curve": "sine"
+          },
+          {
+            "t": 2.0,
+            "rot": 0.05,
+            "sx": 1.0,
+            "sy": 1.0,
+            "curve": "sine"
+          },
+          {
+            "t": 3.6,
+            "rot": 0,
+            "sx": 1.0,
+            "sy": 1.0,
+            "curve": "sine"
+          }
+        ],
+        "dust": [
+          {
+            "t": 0,
+            "rot": 0.0,
+            "sx": 1.0,
+            "sy": 1.0,
+            "curve": "sine",
+            "a": 0
+          },
+          {
+            "t": 3.6,
+            "rot": 0.0,
+            "sx": 1.0,
+            "sy": 1.0,
+            "curve": "sine",
+            "a": 0
+          }
+        ]
+      },
+      "secondary": [
+        "hair",
+        "weapon"
+      ]
+    },
+    "select": {
+      "length": 2.0,
+      "loop": false,
+      "tracks": {
+        "torso": [
+          {
+            "t": 0,
+            "rot": 0,
+            "sx": 1.0,
+            "sy": 1,
+            "curve": "ease"
+          },
+          {
+            "t": 0.45,
+            "rot": -0.04,
+            "sx": 1.0,
+            "sy": 1.02,
+            "curve": "ease"
+          },
+          {
+            "t": 1.05,
+            "rot": 0.06,
+            "sx": 1.0,
+            "sy": 0.98,
+            "curve": "ease"
+          },
+          {
+            "t": 2.0,
+            "rot": 0,
+            "sx": 1.0,
+            "sy": 1,
+            "curve": "ease"
+          }
+        ],
+        "head": [
+          {
+            "t": 0,
+            "rot": 0,
+            "sx": 1.0,
+            "sy": 1.0,
+            "curve": "ease"
+          },
+          {
+            "t": 0.45,
+            "rot": -0.08,
+            "sx": 1.0,
+            "sy": 1.0,
+            "curve": "ease"
+          },
+          {
+            "t": 1.05,
+            "rot": 0.1,
+            "sx": 1.0,
+            "sy": 1.0,
+            "curve": "ease"
+          },
+          {
+            "t": 2.0,
+            "rot": 0,
+            "sx": 1.0,
+            "sy": 1.0,
+            "curve": "ease"
+          }
+        ],
+        "upper_arm_r": [
+          {
+            "t": 0,
+            "rot": 0,
+            "sx": 1.0,
+            "sy": 1.0,
+            "curve": "ease"
+          },
+          {
+            "t": 0.5,
+            "rot": -1.05,
+            "sx": 1.0,
+            "sy": 1.0,
+            "curve": "ease"
+          },
+          {
+            "t": 1.05,
+            "rot": 0.35,
+            "sx": 1.0,
+            "sy": 1.0,
+            "curve": "ease"
+          },
+          {
+            "t": 2.0,
+            "rot": 0,
+            "sx": 1.0,
+            "sy": 1.0,
+            "curve": "ease"
+          }
+        ],
+        "lower_arm_r": [
+          {
+            "t": 0,
+            "rot": 0,
+            "sx": 1.0,
+            "sy": 1.0,
+            "curve": "ease"
+          },
+          {
+            "t": 0.5,
+            "rot": -0.45,
+            "sx": 1.0,
+            "sy": 1.0,
+            "curve": "ease"
+          },
+          {
+            "t": 1.05,
+            "rot": 0.25,
+            "sx": 1.0,
+            "sy": 1.0,
+            "curve": "ease"
+          },
+          {
+            "t": 2.0,
+            "rot": 0,
+            "sx": 1.0,
+            "sy": 1.0,
+            "curve": "ease"
+          }
+        ],
+        "upper_arm_l": [
+          {
+            "t": 0,
+            "rot": 0,
+            "sx": 1.0,
+            "sy": 1.0,
+            "curve": "ease"
+          },
+          {
+            "t": 0.5,
+            "rot": 0.35,
+            "sx": 1.0,
+            "sy": 1.0,
+            "curve": "ease"
+          },
+          {
+            "t": 1.05,
+            "rot": -0.1,
+            "sx": 1.0,
+            "sy": 1.0,
+            "curve": "ease"
+          },
+          {
+            "t": 2.0,
+            "rot": 0,
+            "sx": 1.0,
+            "sy": 1.0,
+            "curve": "ease"
+          }
+        ],
+        "weapon": [
+          {
+            "t": 0,
+            "rot": 0,
+            "sx": 1.0,
+            "sy": 1.0,
+            "curve": "ease"
+          },
+          {
+            "t": 0.5,
+            "rot": -0.9,
+            "sx": 1.0,
+            "sy": 1.0,
+            "curve": "ease"
+          },
+          {
+            "t": 1.05,
+            "rot": 0.45,
+            "sx": 1.0,
+            "sy": 1.0,
+            "curve": "ease"
+          },
+          {
+            "t": 2.0,
+            "rot": 0,
+            "sx": 1.0,
+            "sy": 1.0,
+            "curve": "ease"
+          }
+        ],
+        "dust": [
+          {
+            "t": 0,
+            "rot": 0.0,
+            "sx": 1.0,
+            "sy": 1.0,
+            "curve": "ease",
+            "a": 0
+          },
+          {
+            "t": 1.0,
+            "rot": 0.0,
+            "sx": 1.0,
+            "sy": 1.0,
+            "curve": "ease",
+            "a": 0
+          },
+          {
+            "t": 1.15,
+            "rot": 0.0,
+            "sx": 1.0,
+            "sy": 1.0,
+            "curve": "ease",
+            "a": 1
+          },
+          {
+            "t": 1.7,
+            "rot": 0.0,
+            "sx": 1.0,
+            "sy": 1.0,
+            "curve": "ease",
+            "a": 0
+          },
+          {
+            "t": 2.0,
+            "rot": 0.0,
+            "sx": 1.0,
+            "sy": 1.0,
+            "curve": "ease",
+            "a": 0
+          }
+        ]
+      },
+      "secondary": []
+    }
+  }
+}
