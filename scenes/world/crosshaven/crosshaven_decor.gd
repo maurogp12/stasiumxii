@@ -30,6 +30,8 @@ var covering_npc := false
 var _groundish := false
 var _art: Dictionary = {}
 var _sway: AnimatedSprite2D
+var _edge_cells := 99
+var _flip_h := false
 
 
 func setup(zone: WorldZone, record: Dictionary) -> void:
@@ -38,8 +40,13 @@ func setup(zone: WorldZone, record: Dictionary) -> void:
 	position = BoardVisualSort.cell_to_local(cell, float(zone.height_at(cell))) + Vector2(0, Pick.HALF_H)
 	z_as_relative = false
 	_groundish = decor_type.begins_with("decal_") or decor_type == "lilypads_a" or decor_type == "ford_stones"
-	base_z = (cell.x + cell.y) * BoardVisualSort.TILE_Z_SCALE + (1 if _groundish else 2)
+	var edge := mini(mini(cell.x, cell.y), mini(zone.width - 1 - cell.x, zone.height - 1 - cell.y))
+	var lift := 0
+	if not _groundish and (decor_type.begins_with("pine_snow") or decor_type.begins_with("tree_")) and edge <= 1:
+		lift = 9
+	base_z = (cell.x + cell.y) * BoardVisualSort.TILE_Z_SCALE + (1 if _groundish else 2) + lift
 	z_index = base_z
+	_edge_cells = edge
 	core = _is_core(zone, cell)
 	art_id = decor_type
 	if snow_cover >= 0.5:
@@ -52,6 +59,11 @@ func setup(zone: WorldZone, record: Dictionary) -> void:
 		var size := Art.size_of(_art) * plant
 		cover_rect = Rect2(-size.x * 0.5, -size.y, size.x, size.y)
 	_apply_theme_tint(zone.zone_id)
+	if art_id.begins_with("pine_snow"):
+		var n := float(Art.h(cell.x + 3, cell.y + 11, 1000)) / 1000.0
+		var sc := (0.94 + 0.12 * n) * scale.x
+		scale = Vector2(sc, sc)
+		_flip_h = n > 0.62
 	if VisualSettings.still():
 		# Performance mode: a still plant, and no _process unless it is a lamp glow.
 		set_process(night_only)
@@ -73,6 +85,9 @@ func _apply_theme_tint(zone_id: String) -> void:
 		modulate = Color(0.72, 0.78, 0.58)
 	elif zone_id.find("eastmarch") >= 0 and decor_type.find("rock") >= 0:
 		modulate = Color(0.95, 0.90, 0.78)
+	if _edge_cells < 6 and modulate != Color(1, 1, 1, 1):
+		modulate = Color.WHITE.lerp(modulate, clampf(float(_edge_cells) / 6.0, 0.0, 1.0))
+		modulate.a = 1.0
 
 
 func _plant_scale(kind: String) -> float:
@@ -174,5 +189,14 @@ func _draw() -> void:
 		return
 	if _art.is_empty():
 		return
+	if art_id.begins_with("pine_snow"):
+		var base := Art.texture("props", Art.pine_base_id(art_id))
+		if not base.is_empty():
+			var bs := Art.size_of(base)
+			Art.draw_at(self, base, Vector2(-bs.x * 0.5, -bs.y))
 	var size := Art.size_of(_art)
-	Art.draw_at(self, _art, Vector2(-size.x * 0.5, -size.y))
+	if _flip_h:
+		var tex: Texture2D = _art["tex"]
+		draw_texture_rect(tex, Rect2(Vector2(size.x * 0.5, -size.y), Vector2(-size.x, size.y)), false)
+	else:
+		Art.draw_at(self, _art, Vector2(-size.x * 0.5, -size.y))

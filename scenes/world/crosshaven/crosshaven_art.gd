@@ -26,8 +26,13 @@ const INTERIOR := {
 	"golden_plains": ["golden_plains_a", "golden_plains_b", "golden_plains_c", "golden_plains_d",
 		"golden_plains_a", "golden_plains_b", "golden_plains_c", "golden_plains_d",
 		"golden_plains_golden_a", "golden_plains_golden_b", "golden_plains_flowers_a",
-		"golden_plains_flowers_b", "golden_plains_flowers_c"],
-	"dirt_road": ["dirt_road_a", "dirt_road_b", "dirt_road_c", "dirt_road_d"],
+		"golden_plains_flowers_b", "golden_plains_flowers_c",
+		"meadow_d", "meadow_e", "meadow_f", "meadow_g"],
+	# Old dirt interiors stay the majority so the darker road_dirt set mottles
+	# the road instead of checkerboarding against the lighter edge pieces.
+	"dirt_road": ["dirt_road_a", "dirt_road_b", "dirt_road_c", "dirt_road_d",
+		"dirt_road_a", "dirt_road_b", "dirt_road_c", "dirt_road_d",
+		"road_dirt_a", "road_dirt_b", "road_dirt_c", "road_dirt_d"],
 	"water": ["water_a", "water_b", "water_c", "water_d"],
 	"cliff": ["cliff_a", "cliff_b", "cliff_c"],
 }
@@ -43,6 +48,11 @@ const CORNER_PREFIX := {
 	"cliff": "cliff_corner_",
 }
 const TREE_VARIANTS := ["tree_oak_a", "tree_oak_b", "tree_autumn_a", "tree_autumn_b", "tree_pine"]
+## Painted snow pines (Scenario Art). Sizes already vary; the base decal is separate.
+const SNOW_PINES: Array[String] = [
+	"pine_snow_sapling", "pine_snow_small", "pine_snow_mid_a",
+	"pine_snow_mid_b", "pine_snow_tall", "pine_snow_giant",
+]
 const FARM_TERRAINS: Array[String] = [
 	"farm_cabbage", "farm_carrot", "farm_fallow", "farm_lavender",
 	"farm_plowed", "farm_pumpkin", "farm_soil", "farm_sunflower",
@@ -277,9 +287,8 @@ static func prop_art_id(prop_type: String, origin: Vector2i, fence_axis: int, zo
 ## prop takes its `<art id>_snow` repaint when that file exists.
 static func snow_art_id(prop_type: String, art_id: String, origin: Vector2i) -> String:
 	var id := art_id + "_snow"
-	if prop_type == "tree" or art_id.begins_with("tree_pine") or art_id.begins_with("tree_oak"):
-		var pines := ["tree_pine_snow_a", "tree_pine_snow_b", "tree_pine_snow_c"]
-		id = pines[h(origin.x, origin.y, pines.size())]
+	if prop_type == "tree" or art_id.begins_with("tree_pine") or art_id.begins_with("tree_oak") or art_id.begins_with("pine_snow"):
+		id = SNOW_PINES[h(origin.x, origin.y, SNOW_PINES.size())]
 	elif prop_type.begins_with("hedgerow"):
 		id = "fir_snow_small" if h(origin.x, origin.y, 2) == 0 else "fir_snow_small_b"
 	elif art_id == "cottage_slate" and h(origin.x, origin.y, 2) == 1:
@@ -303,6 +312,17 @@ static func snow_decor_id(decor_type: String, cell: Vector2i) -> String:
 				return "snow_mound_b"
 			return ""
 	return decor_type
+
+
+## Floor decal drawn under a snow pine, at the same south-tip anchor.
+static func pine_base_id(pine_id: String) -> String:
+	if pine_id == "pine_snow_giant" or pine_id == "pine_snow_tall" or pine_id == "pine_snow_mid_a":
+		return "pine_base_snow_large"
+	return "pine_base_snow_small"
+
+
+static func snow_pine_id(origin: Vector2i) -> String:
+	return SNOW_PINES[h(origin.x, origin.y, SNOW_PINES.size())]
 
 
 static func _tree_variants(zone_id: String) -> Array:

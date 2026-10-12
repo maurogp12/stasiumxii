@@ -506,9 +506,13 @@ static func snow_at(zone_id: String, cell: Vector2i) -> float:
 	if zone_id.begins_with("crosshaven_northgate"):
 		return 1.0
 	if zone_id == "crosshaven_road_north":
-		if cell.y >= 16:
+		# The zero line used to be y = 16 on every column. It now wanders:
+		# (12, 2) stays above 0.7 and (12, 24) stays clear.
+		if cell.y >= 20:
 			return 0.0
-		return clampf(1.0 - float(cell.y) / 16.0, 0.0, 1.0)
+		var base := 1.0 - float(cell.y) / 16.0
+		var wobble := (world_noise(Vector2(cell) * 0.35) - 0.5) * (0.15 + float(cell.y) * 0.04)
+		return clampf(base + wobble, 0.0, 1.0)
 	return 0.0
 
 
@@ -1046,13 +1050,39 @@ func _near_sea_or_void(cell: Vector2i) -> int:
 	return 99
 
 
-func _water_grade_tint(cell: Vector2i) -> Color:
-	var grade := _water_grade(cell)
+func _grade_color(grade: String) -> Color:
 	if grade == "swamp":
 		return SWAMP_TINT
 	if grade == "sea":
 		return SEA_TINT
 	return Color.WHITE
+
+
+func _water_grade_tint(cell: Vector2i) -> Color:
+	var grade := _water_grade(cell)
+	var here := _grade_color(grade)
+	# A different water tone within a few cells mixes in, so swamp, river and
+	# sea do not change on the cell where the zone id changes.
+	var best := 99
+	var other := here
+	for dir in _ORTHO:
+		for k in range(1, 6):
+			if k >= best:
+				break
+			var nb := cell + dir * k
+			if Art.terrain_seen(zone, nb) != "water":
+				continue
+			var g := _water_grade(nb)
+			if g == grade:
+				continue
+			best = k
+			other = _grade_color(g)
+			break
+	if best > 5 or best == 99:
+		return here
+	var n := world_noise(Vector2(world_origin + cell) * 0.2)
+	var t := clampf((5.5 - float(best)) / 5.0, 0.0, 0.65) * (0.45 + 0.35 * n)
+	return here.lerp(other, t)
 
 
 func _open_water_tile(id: String) -> bool:
@@ -1285,6 +1315,151 @@ func _draw_foam_row(ci: Node2D, s: int) -> void:
 		_draw_sea_foam(ci, cell, Art.height_seen(zone, cell), true)
 
 
+## How far a border may borrow its neighbour's terrain. Interior cells (4 or
+## more from another zone) stay as the zone file painted them.
+const SEAM_BAND := 5
+
+
+## What this cell should show so a zone change is a noisy band, not a straight
+## cut. Both grounds agree: the choice uses world samples only. Roads stay
+## roads. Water never swaps with land. A cliff shown on grass is one low step;
+## a cliff shown as grass is flat.
+func _seam_show(cell: Vector2i) -> Dictionary:
+	var terrain := Art.terrain_seen(zone, cell)
+	var steps := Art.height_seen(zone, cell)
+	var out := {"terrain": terrain, "steps": steps, "swapped": false}
+	if zone == null or terrain == "" or _beach_at(cell) != "":
+		return out
+	var mine := _zone_id_at(cell)
+	if mine == "":
+		return out
+	var best_k := 99
+	var best_dir := Vector2i.ZERO
+	var best_nb := cell
+	for dir in _ORTHO:
+		for k in range(1, SEAM_BAND):
+			if k >= best_k:
+				break
+			var nb := cell + dir * k
+			var zid := _zone_id_at(nb)
+			if zid == "" or zid == mine:
+				continue
+			best_k = k
+			best_dir = dir
+			best_nb = nb
+			break
+	if best_k >= 4:
+		return out
+	var signed := float(best_k)
+	if best_dir.x < 0 or best_dir.y < 0:
+		signed = -signed
+	var shift := (world_noise(Vector2(world_origin + cell) * 0.16) - 0.5) * 4.8
+	var s := signed - shift
+	var show_ours := (s > 0.0) == (signed > 0.0)
+	if show_ours or terrain == "dirt_road":
+		return out
+	var other_t := Art.terrain_seen(zone, best_nb)
+	if other_t == "" or other_t == terrain:
+		return out
+	if (terrain == "water") != (other_t == "water"):
+		return out
+	var draw_steps := steps
+	if terrain != "cliff" and other_t == "cliff":
+		draw_steps = 1
+	elif terrain == "cliff" and other_t != "cliff":
+		draw_steps = 0
+	out["terrain"] = other_t
+	out["steps"] = draw_steps
+	out["swapped"] = other_t != terrain or draw_steps != steps
+	return out
+
+
+## Interior tile of the borrowed terrain, mapped to this diamond so the edge
+## pieces of either family cannot draw a straight lip along the border.
+func _draw_dithered(ci: Node2D, cell: Vector2i, terrain: String, steps: int) -> void:
+	var south_tip := BoardVisualSort.cell_to_local(cell, float(steps)) + Vector2(0, Pick.HALF_H)
+	if steps > 0:
+		var face := "cliff" if terrain == "cliff" else "golden_plains"
+		var face_tint := Color.WHITE if cover_at(cell) >= 0.5 else _floor_modulate(cell, terrain)
+		var left := "%s_side_left_top" % face
+		var right := "%s_side_right_top" % face
+		if Art.has("tiles", left) and Art.has("tiles", right):
+			Art.draw_at(ci, Art.texture("tiles", left), south_tip + Vector2(-32, -16), face_tint)
+			Art.draw_at(ci, Art.texture("tiles", right), south_tip + Vector2(0, -16), face_tint)
+		else:
+			_draw_flat_faces(ci, Pick.diamond(cell, float(steps)), steps, SIDE.get(terrain, Color.DARK_MAGENTA))
+	var cover := cover_at(cell)
+	if cover >= 0.999 and terrain != "water":
+		_draw_snow_floor(ci, cell, steps, terrain, true)
+		return
+	var pieces: Array = Art.INTERIOR.get(terrain, [terrain])
+	var world := world_origin + cell
+	var floor_id := str(pieces[Art.h(world.x, world.y, pieces.size())])
+	var art := Art.texture("tiles", floor_id)
+	if art.is_empty():
+		art = Art.texture("tiles", terrain)
+	var tint := _floor_modulate(cell, terrain)
+	_paint_exact(ci, art, cell, steps, tint)
+	if cover > 0.0 and terrain != "water":
+		_draw_snow_floor(ci, cell, steps, terrain, false)
+
+
+## Approximate painted colour of a cell, for the border-cut test. Includes the
+## seam dither, snow and water mix. Both grounds that draw the cell agree.
+func visual_color(cell: Vector2i) -> Color:
+	var terrain := Art.terrain_seen(zone, cell)
+	if terrain == "":
+		return Color(0.14, 0.43, 0.62)
+	var beach := _beach_at(cell)
+	if beach == "sand" or beach == "wet_sand" or (terrain == "golden_plains" and _shore_land(cell)):
+		return Color(0.86, 0.78, 0.55)
+	var shown := _seam_show(cell)
+	terrain = str(shown["terrain"])
+	if terrain == "water":
+		return Color(0.16, 0.48, 0.68).lerp(_water_grade_tint(cell), 0.55)
+	var cover := cover_at(cell)
+	if cover < 0.999:
+		var n := world_noise(Vector2(world_origin + cell) * 0.22)
+		cover = clampf(cover + (n - 0.5) * 0.5, 0.0, 1.0)
+	if cover >= 0.7:
+		return Color(0.93, 0.95, 0.98)
+	var tint := _floor_modulate(cell, terrain)
+	var base := Color(0.76, 0.72, 0.28)
+	if terrain == "dirt_road":
+		base = Color(0.62, 0.48, 0.32)
+	elif terrain == "cliff":
+		base = Color(0.45, 0.42, 0.38)
+	if cover > 0.3:
+		base = base.lerp(Color(0.93, 0.95, 0.98), cover)
+	return Color(base.r * tint.r, base.g * tint.g, base.b * tint.b, 1.0)
+
+
+## Sparse tufts and snow rocks, hashed in world space, drawn in the ground so
+## they are not a thousand nodes and they do not stop on a chunk edge.
+func _polish_scatter(ci: Node2D, cell: Vector2i, terrain: String, steps: int) -> void:
+	if _beach_at(cell) != "" or _on_shore(cell):
+		return
+	if terrain == "water" or terrain == "dirt_road" or terrain == "":
+		return
+	var world := world_origin + cell
+	var cover := cover_at(cell)
+	var south := BoardVisualSort.cell_to_local(cell, float(steps)) + Vector2(0, Pick.HALF_H)
+	if terrain == "golden_plains" and cover < 0.45 and Art.h(world.x, world.y, 18) == 0:
+		var tufts: Array[String] = ["polish_tuft_a", "polish_tuft_b", "polish_tuft_c"]
+		_draw_floor_decal(ci, south, tufts[Art.h(world.x, world.y, tufts.size())])
+	if cover > 0.35 and Art.h(world.x + 19, world.y + 7, 16) == 0:
+		var rocks: Array[String] = ["snow_rocks_a", "snow_rocks_b"]
+		_draw_floor_decal(ci, south, rocks[Art.h(world.x, world.y, rocks.size())])
+
+
+func _draw_floor_decal(ci: Node2D, south_tip: Vector2, id: String) -> void:
+	var art := Art.texture("props", id)
+	if art.is_empty():
+		return
+	var s := Art.size_of(art)
+	Art.draw_at(ci, art, south_tip + Vector2(-s.x * 0.5, -s.y))
+
+
 func _draw_cell(ci: Node2D, cell: Vector2i) -> void:
 	var terrain := Art.terrain_seen(zone, cell)
 	if terrain == "":
@@ -1297,6 +1472,8 @@ func _draw_cell(ci: Node2D, cell: Vector2i) -> void:
 	var steps := Art.height_seen(zone, cell)
 	var rank := void_rank(cell)
 	var beach := _beach_at(cell)
+	var shown := _seam_show(cell)
+	var dither := bool(shown["swapped"]) and beach == "" and not _on_shore(cell) and not _shore_land(cell)
 	# A stream that ends inland can still close on a grass bank. Sea, and the
 	# river where it meets the map fill, stay water so the edge can fade.
 	var sea_edge := terrain == "water" and (_water_grade(cell) == "sea" or _rim_depth(cell) <= 4)
@@ -1304,6 +1481,8 @@ func _draw_cell(ci: Node2D, cell: Vector2i) -> void:
 	var paint := "golden_plains" if bank else terrain
 	if beach != "":
 		_draw_beach(ci, cell, beach, steps)
+	elif dither:
+		_draw_dithered(ci, cell, str(shown["terrain"]), int(shown["steps"]))
 	elif _use_kit:
 		_draw_cell_kit(ci, cell, terrain, steps, bank)
 	else:
@@ -1331,6 +1510,9 @@ func _draw_cell(ci: Node2D, cell: Vector2i) -> void:
 	if not _kit_sea(cell):
 		_fade_void_edge(ci, cell, steps, rank, terrain)
 	_dust_snow(ci, cell, paint, steps)
+	var scatter := str(shown["terrain"]) if dither else terrain
+	var scatter_steps := int(shown["steps"]) if dither else steps
+	_polish_scatter(ci, cell, scatter, scatter_steps)
 
 
 func _draw_flat_faces(ci: Node2D, lifted: PackedVector2Array, steps: int, side: Color) -> void:
@@ -2209,9 +2391,11 @@ func _patchy(cover: float, cell: Vector2i, i: int) -> float:
 			corner = cell + Vector2i(0, 1)
 	var n := _hash(world_origin + corner + Vector2i(911, 37))
 	if smooth_shore:
-		# A gentler ramp: thin snow fades out over several cells instead of
-		# stopping on a line (the road into Northgate turned to cobble on one).
-		return clampf((cover - 0.5) * 1.4 + 0.5 + (0.5 - n) * 0.5, 0.0, 1.0)
+		# A gentler ramp, then a wider world-noise swing so the town edge is
+		# patches of snow rather than a band parallel to the chunk.
+		var world := world_origin + corner
+		var swing := (world_noise(Vector2(world) * 0.22) - 0.5) * 0.85
+		return clampf((cover - 0.5) * 1.4 + 0.5 + (0.5 - n) * 0.35 + swing, 0.0, 1.0)
 	return clampf(cover * 1.6 - 0.6 * n, 0.0, 1.0)
 
 
@@ -2409,7 +2593,9 @@ func _floor_modulate(cell: Vector2i, terrain: String) -> Color:
 		# Normalised weights jump from no theme to a full theme where the
 		# last anchor's reach starts (a hard line across the plains, cell by
 		# cell). Fade the theme in with how much any anchor reaches here.
-		tint = Color.WHITE.lerp(tint, smoothstep(0.0, 0.2, _theme_presence(cell)))
+		var presence := _theme_presence(cell)
+		var warp := (world_noise(Vector2(world_origin + cell) * 0.09) - 0.5) * 0.06
+		tint = Color.WHITE.lerp(tint, smoothstep(0.0, 0.35, presence + warp))
 	if terrain == "golden_plains" and not smooth_shore and _joins_kit_sand(cell):
 		return _with_frost(Color.WHITE, cell, terrain)
 	if terrain == "cliff":
@@ -2452,17 +2638,22 @@ func _theme_marks(ci: Node2D, cell: Vector2i, terrain: String, steps: int) -> vo
 	if zone == null or terrain == "dirt_road":
 		return
 	var weights := theme_weights(cell)
-	var n := _hash(cell)
+	var world := world_origin + cell
+	var n := world_noise(Vector2(world) * 0.31)
 	var c := BoardVisualSort.cell_to_local(cell, float(steps))
 	var south := _weight(weights, "southbridge")
 	var west := _weight(weights, "westwatch")
 	var east := _weight(weights, "eastmarch")
 	var north := _weight(weights, "northgate")
-	if terrain != "water" and terrain != "cliff" and south > 0.42 and n > 0.93:
-		_soft_blob(ci, c + Vector2(-4, 2), 18.0, 7.0, Color(0.78, 0.84, 0.72, 0.10), n)
-	if terrain != "water" and west > 0.4 and n > 0.94:
-		_soft_blob(ci, c, 20.0, 8.0, Color(0.52, 0.46, 0.64, 0.09), n + 1.3)
-	if terrain != "water" and terrain != "cliff" and west > 0.28 and n > 0.55:
+	# Fog follows the theme weight, in world space, so a chunk edge is not a
+	# hard on/off for the haze.
+	if terrain != "water" and terrain != "cliff" and south > 0.18 and n > 0.72:
+		var a := clampf((south - 0.18) / 0.45, 0.0, 1.0) * 0.10
+		_soft_blob(ci, c + Vector2(-4, 2), 18.0, 7.0, Color(0.78, 0.84, 0.72, a), n)
+	if terrain != "water" and west > 0.16 and n > 0.74:
+		var aw := clampf((west - 0.16) / 0.45, 0.0, 1.0) * 0.09
+		_soft_blob(ci, c, 20.0, 8.0, Color(0.52, 0.46, 0.64, aw), n + 1.3)
+	if terrain != "water" and terrain != "cliff" and west > 0.22 and n > 0.55:
 		var crack := Color(0.28, 0.22, 0.32, 0.5)
 		ci.draw_line(c + Vector2(-8, 2), c + Vector2(-1, -2), crack, 1.0)
 		ci.draw_line(c + Vector2(-1, -2), c + Vector2(6, 3), crack, 1.0)
@@ -2638,7 +2829,11 @@ func _cache_shore() -> void:
 			var cell := origin + Vector2i(x, y)
 			if kind[i] != SHORE_SEA:
 				soft[i] = 1.0 if kind[i] == SHORE_SOFT else 0.0
-				snow[i] = maxf(cover_at(cell), snow_shore_at(cell))
+				var frost := snow_at_cell(cell)
+				var cold_here := maxf(cover_at(cell), snow_shore_at(cell))
+				if frost > 0.0 and frost < 1.0:
+					cold_here = maxf(cold_here, frost * 0.85)
+				snow[i] = cold_here
 				continue
 			if dist[i] < -SHORE_SEA_REACH - 1.5:
 				# Open sea: no band reaches here, nothing to weigh.
