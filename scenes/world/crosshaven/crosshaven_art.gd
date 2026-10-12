@@ -122,14 +122,18 @@ static func _joins(zone: WorldZone, terrain: String, cell: Vector2i) -> bool:
 
 
 ## Floor id plus corner decals for one cell, per the kit's README picker.
-static func pick_tile(zone: WorldZone, cell: Vector2i) -> Dictionary:
-	var terrain := zone.terrain_at(cell)
+## `origin` is the chunk's world cell: variants hash on the world cell and a
+## cell past the chunk edge reads the neighbour chunk's terrain, so every
+## ground that draws a seam cell draws it the same way.
+static func pick_tile(zone: WorldZone, cell: Vector2i, origin: Vector2i = Vector2i.ZERO) -> Dictionary:
+	var terrain := terrain_seen(zone, cell)
+	var wc := cell + origin
 	if FARM_TERRAINS.has(terrain):
-		var farm := _autotile(zone, cell, terrain, terrain + "_edge_", terrain + "_corner_", [terrain + "_a", terrain + "_b"])
+		var farm := _autotile(zone, cell, terrain, terrain + "_edge_", terrain + "_corner_", [terrain + "_a", terrain + "_b"], origin)
 		farm["lip"] = ""
 		return farm
 	var pieces: Array = INTERIOR.get(terrain, [terrain])
-	var floor_id: String = pieces[h(cell.x, cell.y, pieces.size())]
+	var floor_id: String = pieces[h(wc.x, wc.y, pieces.size())]
 	var corners: Array[String] = []
 	var lip := ""
 	if not EDGE_PREFIX.has(terrain):
@@ -143,8 +147,8 @@ static func pick_tile(zone: WorldZone, cell: Vector2i) -> Dictionary:
 	if not g.is_empty():
 		floor_id = str(EDGE_PREFIX[terrain]) + "_".join(g)
 	elif terrain == "dirt_road" and _near_poi(zone, cell, 7):
-		var macro := "dirt_road_flagstone_m%d%d" % [posmod(cell.x, 3), posmod(cell.y, 3)]
-		if h(cell.x, cell.y, 6) == 0 and has("tiles", macro + "_moss"):
+		var macro := "dirt_road_flagstone_m%d%d" % [posmod(wc.x, 3), posmod(wc.y, 3)]
+		if h(wc.x, wc.y, 6) == 0 and has("tiles", macro + "_moss"):
 			macro = macro + "_moss"
 		if has("tiles", macro):
 			floor_id = macro
@@ -157,8 +161,8 @@ static func pick_tile(zone: WorldZone, cell: Vector2i) -> Dictionary:
 	return {"floor": floor_id, "corners": corners, "lip": lip}
 
 
-static func _autotile(zone: WorldZone, cell: Vector2i, terrain: String, edge_prefix: String, corner_prefix: String, interiors: Array) -> Dictionary:
-	var floor_id: String = interiors[posmod(cell.x + cell.y, interiors.size())]
+static func _autotile(zone: WorldZone, cell: Vector2i, terrain: String, edge_prefix: String, corner_prefix: String, interiors: Array, origin: Vector2i = Vector2i.ZERO) -> Dictionary:
+	var floor_id: String = interiors[posmod(cell.x + origin.x + cell.y + origin.y, interiors.size())]
 	var corners: Array[String] = []
 	var g: Array[String] = []
 	for side in SIDES:
@@ -180,7 +184,7 @@ static func _autotile(zone: WorldZone, cell: Vector2i, terrain: String, edge_pre
 
 
 static func grass_lip(zone: WorldZone, cell: Vector2i) -> String:
-	if zone.terrain_at(cell) != "golden_plains":
+	if terrain_seen(zone, cell) != "golden_plains":
 		return ""
 	var g: Array[String] = []
 	for side in SIDES:
@@ -204,8 +208,10 @@ static func _near_poi(zone: WorldZone, cell: Vector2i, radius: int) -> bool:
 ## Height-face strips for one cell: [{id, offset}] relative to the lifted south tip.
 static func face_strips(zone: WorldZone, cell: Vector2i) -> Array:
 	var out: Array = []
-	var terrain := zone.terrain_at(cell)
-	var elev := zone.height_at(cell)
+	# Seen, not owned: a raised cell past the chunk edge keeps its faces
+	# (it used to float as a bare lifted diamond over the neighbour's ground).
+	var terrain := terrain_seen(zone, cell)
+	var elev := height_seen(zone, cell)
 	for face in ["left", "right"]:
 		var n_cell: Vector2i = cell + (Vector2i(0, 1) if face == "left" else Vector2i(1, 0))
 		var n_elev := height_seen(zone, n_cell)

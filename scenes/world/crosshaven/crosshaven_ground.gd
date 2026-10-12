@@ -117,7 +117,7 @@ const SEA_FADE_CELLS := 4
 ## Cells along the coast where the Northgate snow lip thins into sand.
 const SNOW_SHORE_BLEND := 3
 ## Cells over which the town snow thins into a neighbouring chunk.
-const SNOW_BLEND := 3
+const SNOW_BLEND := 6
 const SNOW_FIELD_PATH := "res://art/world/crosshaven/tiles/_2x/snow_field.png"
 const SNOW_COBBLE_PATH := "res://art/world/crosshaven/tiles/_2x/snow_cobble_field.png"
 ## The 1x snow fields, for performance mode. Same period: the UVs are in world px.
@@ -415,6 +415,7 @@ func _memo_key() -> String:
 
 static func clear_memo() -> void:
 	_memo.clear()
+	_plane_sea_tag = ""
 
 
 ## Performance mode switched: drop the memo and the shared repeat textures
@@ -752,6 +753,9 @@ func _classify_beach(cell: Vector2i) -> String:
 	if smooth_shore and terrain != "water":
 		# Beach land comes from the shore field (`_cache_shore`).
 		return ""
+	if smooth_shore and not _sea_candidate(cell):
+		# Swamp and the Stoneford river keep their own water.
+		return ""
 	var dist := 0
 	if terrain == "golden_plains":
 		dist = _sea_dist(cell)
@@ -810,10 +814,74 @@ func _water_grade(cell: Vector2i) -> String:
 
 ## Flood sea from the rim through connected water. Swamp and the Stoneford
 ## river stay out, so a bay more than 8 cells in still counts as sea.
+## Sea water of the whole plane (world cells), flooded once per map from
+## every rim cell. Each ground used to seed only from its own rect, so a bay
+## whose rim cells lay past it was drawn as river tiles by one chunk and as
+## sea by the next, with the change on the chunk edge.
+static var _plane_sea: Dictionary = {}
+## Empty cells within SEA_SKIRT of that sea: painted as sea by some ground.
+static var _plane_void: Dictionary = {}
+static var _plane_sea_tag := ""
+
+
+func _ensure_plane_sea() -> void:
+	if cache_tag == "" or zone == null or not zone.sample_terrain.is_valid():
+		return
+	if _plane_sea_tag == cache_tag:
+		return
+	_plane_sea_tag = cache_tag
+	_plane_sea = {}
+	_plane_void = {}
+	var queue: Array[Vector2i] = []
+	for wy in range(PLANE_Y0, PLANE_Y1):
+		for wx in range(PLANE_X0, PLANE_X1):
+			var world := Vector2i(wx, wy)
+			var local := world - world_origin
+			if not _sea_candidate(local):
+				continue
+			if _rim_depth(local) <= 8 or _faces_void(local):
+				_plane_sea[world] = true
+				queue.append(world)
+	var head := 0
+	while head < queue.size():
+		var at: Vector2i = queue[head]
+		head += 1
+		for dir in _ORTHO:
+			var nb: Vector2i = at + dir
+			if _plane_sea.has(nb):
+				continue
+			if not _sea_candidate(nb - world_origin):
+				continue
+			_plane_sea[nb] = true
+			queue.append(nb)
+	var voids: Array[Vector2i] = []
+	for at in _plane_sea.keys():
+		for dir in _ORTHO:
+			var nb: Vector2i = (at as Vector2i) + dir
+			if _plane_void.has(nb) or Art.terrain_seen(zone, nb - world_origin) != "":
+				continue
+			_plane_void[nb] = 1
+			voids.append(nb)
+	head = 0
+	while head < voids.size():
+		var at: Vector2i = voids[head]
+		head += 1
+		var here := int(_plane_void[at])
+		if here >= SEA_SKIRT:
+			continue
+		for dir in _ORTHO:
+			var nb: Vector2i = at + dir
+			if _plane_void.has(nb) or Art.terrain_seen(zone, nb - world_origin) != "":
+				continue
+			_plane_void[nb] = here + 1
+			voids.append(nb)
+
+
 func _cache_sea_body() -> void:
 	_sea_body.clear()
 	if zone == null:
 		return
+	_ensure_plane_sea()
 	var can_sample := zone.sample_terrain.is_valid()
 	var margin := 4
 	if can_sample:
@@ -825,7 +893,7 @@ func _cache_sea_body() -> void:
 			var cell := Vector2i(x, y)
 			if not _sea_candidate(cell):
 				continue
-			var seed := _rim_depth(cell) <= 8
+			var seed := _rim_depth(cell) <= 8 or _plane_sea.has(world_origin + cell)
 			if not seed and can_sample:
 				seed = _faces_void(cell)
 			if not seed:
@@ -947,8 +1015,10 @@ func _cache_water_edge() -> void:
 			dist[nb] = here + 1
 			queue.append(nb)
 	_edge_fade = dist
-	for y in range(-margin, zone.height + margin):
-		for x in range(-margin, zone.width + margin):
+	# Over every drawn cell: a neighbour ground draws this ground's margin.
+	var mouth_margin := maxi(margin, _view_margin()) if smooth_shore else margin
+	for y in range(-mouth_margin, zone.height + mouth_margin):
+		for x in range(-mouth_margin, zone.width + mouth_margin):
 			var cell := Vector2i(x, y)
 			if Art.terrain_seen(zone, cell) != "water" or _water_grade(cell) != "river":
 				continue
@@ -1470,7 +1540,7 @@ func _draw_cell_kit(ci: Node2D, cell: Vector2i, terrain: String, steps: int, ban
 			_draw_snow_lip(ci, cell, steps, lip_amount)
 		return
 	var floor_tint := _floor_modulate(cell, terrain)
-	var pick := Art.pick_tile(zone, cell)
+	var pick := Art.pick_tile(zone, cell, world_origin)
 	var floor_id := str(pick["floor"])
 	var corner_ids: Array = pick["corners"]
 	# Open sea is one world-space surface. Per-cell water tiles carried a
@@ -1523,6 +1593,8 @@ func _draw_cell_kit(ci: Node2D, cell: Vector2i, terrain: String, steps: int, ban
 		var corner_id := str(raw_corner)
 		var corner_art := Art.texture("tiles", corner_id)
 		_paint_art(ci, corner_art, south_tip, floor_tint, water_overlap)
+	if terrain == "water" and smooth_shore and _mouth_mix.has(cell):
+		_draw_mouth_blend(ci, cell, steps)
 	if terrain == "water" and VisualSettings.current != null and VisualSettings.current.enabled("animations"):
 		_draw_water_polish(ci, cell, steps)
 	var lip := str(pick.get("lip", ""))
@@ -1536,6 +1608,44 @@ func _draw_cell_kit(ci: Node2D, cell: Vector2i, terrain: String, steps: int, ban
 	var snow_lip := snow_shore_at(cell)
 	if terrain != "water" and snow_lip > 0.0:
 		_draw_snow_lip(ci, cell, steps, snow_lip)
+
+
+## Where a river meets the sea, the world-space sea surface fades in over
+## the river tiles across the last cells, so the change of water is not a
+## line on the cell (or chunk) edge.
+func _draw_mouth_blend(ci: Node2D, cell: Vector2i, steps: int) -> void:
+	_load_sea_textures()
+	if _sea_surface_tex == null:
+		return
+	var d := Pick.diamond(cell, float(steps))
+	var own := _mouth_value(cell)
+	var bases: Array[Vector2i] = [cell + Vector2i(-1, -1), cell + Vector2i(0, -1), cell, cell + Vector2i(-1, 0)]
+	var shift := BoardVisualSort.cell_to_local(world_origin) + Vector2(0, float(steps) * BoardVisualSort.ELEVATION_PIXELS)
+	var phase := _sea_phase()
+	var sway := Vector2(cos(phase), sin(phase)) * 2.0
+	var colors := PackedColorArray()
+	var uvs := PackedVector2Array()
+	for i in 4:
+		var sum := 0.0
+		var count := 0
+		for o in [Vector2i(0, 0), Vector2i(1, 0), Vector2i(0, 1), Vector2i(1, 1)]:
+			var v := _mouth_value(bases[i] + (o as Vector2i))
+			if v >= 0.0:
+				sum += v
+				count += 1
+		var a := own if count == 0 else sum / float(count)
+		colors.append(Color(1, 1, 1, clampf(a, 0.0, 1.0)))
+		uvs.append((d[i] + shift + sway) / SEA_PERIOD)
+	ci.draw_polygon(d, colors, uvs, _sea_surface_tex)
+
+
+## 1 on sea, a share on a river cell near it, -1 on land (left out of the mix).
+func _mouth_value(cell: Vector2i) -> float:
+	if Art.terrain_seen(zone, cell) != "water":
+		return -1.0
+	if _water_grade(cell) == "sea":
+		return 1.0
+	return float(_mouth_mix.get(cell, 0.0)) / 0.72 * 0.85
 
 
 func _draw_water_polish(ci: Node2D, cell: Vector2i, steps: int) -> void:
@@ -1990,38 +2100,68 @@ func _cache_cover() -> void:
 	if not full and snow_rects.is_empty():
 		return
 	var margin := _view_margin()
-	var reach := Rect2i(world_origin - Vector2i(margin + SNOW_BLEND, margin + SNOW_BLEND), Vector2i(zone.width, zone.height) + Vector2i(2, 2) * (margin + SNOW_BLEND))
+	var reach := Rect2i(world_origin - Vector2i(margin + SNOW_BLEND + 3, margin + SNOW_BLEND + 3), Vector2i(zone.width, zone.height) + Vector2i(2, 2) * (margin + SNOW_BLEND + 3))
 	var near: Array[Rect2i] = []
 	for r in snow_rects:
 		if r.intersects(reach):
 			near.append(r)
 	if not full and near.is_empty():
 		return
-	for y in range(-margin, zone.height + margin):
-		for x in range(-margin, zone.width + margin):
+	for y in range(-margin - 1, zone.height + margin + 1):
+		for x in range(-margin - 1, zone.width + margin + 1):
 			var cell := Vector2i(x, y)
-			if full and zone.in_bounds(cell):
+			var world := world_origin + cell
+			if full and zone.in_bounds(cell) and near.is_empty():
 				_cover[cell] = 1.0
 				continue
-			var world := world_origin + cell
-			var best := 99
+			var best := 99.0
 			for r in near:
 				var dx := maxi(maxi(r.position.x - world.x, world.x - (r.end.x - 1)), 0)
 				var dy := maxi(maxi(r.position.y - world.y, world.y - (r.end.y - 1)), 0)
-				best = mini(best, maxi(dx, dy))
-			if full and best > 0:
+				best = minf(best, Vector2(dx, dy).length())
+			if full and best > 0.0:
 				# Outside the chunk without a plane: measure to the chunk itself.
 				var dx2 := maxi(maxi(-x, x - (zone.width - 1)), 0)
 				var dy2 := maxi(maxi(-y, y - (zone.height - 1)), 0)
-				best = mini(best, maxi(dx2, dy2))
-			if best == 0:
-				_cover[cell] = 1.0
+				best = minf(best, Vector2(dx2, dy2).length())
+			if best <= 0.0:
+				# Inside the snow: full, except the last two cells before
+				# open ground thin a little, so the drop is not on the edge.
+				var depth := _snow_depth(world, near)
+				if depth >= 3:
+					_cover[cell] = 1.0
+					continue
+				var warp_in := (world_noise(Vector2(world) * 0.17) - 0.5) * 3.2
+				_cover[cell] = clampf(1.0 - float(3 - depth) * 0.09 - maxf(warp_in, 0.0) * 0.06, 0.74, 1.0)
 				continue
-			if best > SNOW_BLEND:
+			# The thinning edge is warped by world-space noise, so it wanders
+			# instead of running parallel to the snow chunk's straight edge.
+			# The wobble grows away from the edge, so the snow starts thinning
+			# from where the snow chunk's own edge cells leave off.
+			var warp := (world_noise(Vector2(world) * 0.17) - 0.5) * 3.2 * clampf((best - 0.5) / 3.0, 0.0, 1.0)
+			var c := 0.9 - (best - 1.0 + warp) / float(SNOW_BLEND + 1)
+			c += (_hash(world) - 0.5) * 0.12
+			if c < 0.04:
 				continue
-			var c := 1.0 - float(best) / float(SNOW_BLEND + 1)
-			c += (_hash(world) - 0.5) * 0.24
-			_cover[cell] = clampf(c, 0.05, 0.95)
+			_cover[cell] = clampf(c, 0.05, 0.97)
+
+
+## Steps (1..3) from a snowy world cell to the nearest cell outside every
+## snow rect, along the four axes. 3 means three or more.
+static func _snow_depth(world: Vector2i, rects: Array[Rect2i]) -> int:
+	var best := 3
+	for dir in _ORTHO:
+		for k in range(1, 3):
+			var at: Vector2i = world + dir * k
+			var inside := false
+			for r in rects:
+				if r.has_point(at):
+					inside = true
+					break
+			if not inside:
+				best = mini(best, k)
+				break
+	return best
 
 
 ## How much town snow lies on this cell: 1 in Northgate, 0 far from it.
@@ -2360,6 +2500,18 @@ func _draw_exit(ci: Node2D, cell: Vector2i, dir: Vector2i) -> void:
 	ci.draw_colored_polygon(PackedVector2Array([tip, c - screen_dir * 3.0 + side * 6.0, c - screen_dir * 3.0 - side * 6.0]), EXIT_COLOR)
 
 
+## Smooth value noise over world cells, 0..1 (same answer in every chunk).
+static func world_noise(p: Vector2) -> float:
+	var i := Vector2i(floori(p.x), floori(p.y))
+	var f := p - Vector2(i)
+	f = f * f * (Vector2(3, 3) - 2.0 * f)
+	var a := _hash(i)
+	var b := _hash(i + Vector2i(1, 0))
+	var c := _hash(i + Vector2i(0, 1))
+	var d := _hash(i + Vector2i(1, 1))
+	return lerpf(lerpf(a, b, f.x), lerpf(c, d, f.x), f.y)
+
+
 static func _hash(cell: Vector2i) -> float:
 	var h := (cell.x * 73856093) ^ (cell.y * 19349663)
 	h = (h ^ (h >> 13)) * 1274126177
@@ -2404,11 +2556,12 @@ func _defers_decor(cell: Vector2i) -> bool:
 func _shore_kind(cell: Vector2i) -> int:
 	var seen := _seen_fast(cell)
 	if seen == "":
-		if _void_sea.has(cell) or _kit_sea(cell):
+		if _void_sea.has(cell) or _kit_sea(cell) or _plane_void.has(world_origin + cell):
 			return SHORE_SEA
 		return SHORE_HARD
 	if seen == "water":
-		if _kit_sea(cell) or _water_grade(cell) == "sea":
+		# By grade, not by kit family: every ground grades water the same way.
+		if _water_grade(cell) == "sea":
 			return SHORE_SEA
 		return SHORE_HARD
 	if seen == "cliff" or Art.height_seen(zone, cell) != 0:
@@ -2497,9 +2650,10 @@ func _cache_shore() -> void:
 	# One beach on every flat sea coast: flat grass within BEACH_CELLS of the
 	# sea is sand, whatever chunk or theme it is in. Every ground works it out
 	# from the same terrain, so the beach runs on across chunk seams. Cells
-	# under full town snow stay snow.
-	for y in range(-margin, zone.height + margin):
-		for x in range(-margin, zone.width + margin):
+	# under full town snow stay snow. One cell past the drawn range too: the
+	# tint and edge picks of a drawn cell look at its neighbours.
+	for y in range(-margin - 1, zone.height + margin + 1):
+		for x in range(-margin - 1, zone.width + margin + 1):
 			var cell := Vector2i(x, y)
 			var i := (y - origin.y) * size.x + (x - origin.x)
 			if kind[i] != SHORE_SOFT or dist[i] > BEACH_CELLS:

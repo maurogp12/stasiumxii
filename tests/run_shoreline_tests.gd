@@ -12,6 +12,8 @@ extends SceneTree
 
 const WORLD := preload("res://scenes/world/crosshaven/crosshaven_world.tscn")
 const Ground := preload("res://scenes/world/crosshaven/crosshaven_ground.gd")
+const Art := preload("res://scenes/world/crosshaven/crosshaven_art.gd")
+const Survey := preload("res://tests/pc/survey_seams.gd")
 ## Every chunk with a sea coast, and one spot on it.
 const COASTS := {
 	"crosshaven_eastmarch_sea_caves": Vector2i(24, 29),
@@ -57,6 +59,7 @@ func _run() -> void:
 	_test_saltmaw_spot(w)
 	_test_old_look(w)
 	await _test_performance(w, settings)
+	await _test_plane(w)
 	print("shoreline tests: %d passed, %d failed" % [passed, failed])
 	quit(1 if failed > 0 else 0)
 
@@ -241,3 +244,61 @@ func _shore_mats(w: Node2D) -> Array[ShaderMaterial]:
 		if mat != null:
 			out.append(mat)
 	return out
+
+
+## Mauro: "de arena pasó a pasto y debería ser arena" and "que sea flow
+## continuo". Every chunk of the plane at once:
+##   - every flat grass cell within BEACH_CELLS of the sea is beach, every
+##     one past it is not, on every chunk, so the beach keeps its width
+##     across chunk and zone edges;
+##   - no flat coast cell shows grass next to the sea;
+##   - every ground that draws a cell draws it as its own chunk does;
+##   - no look change runs along a chunk edge (survey_seams.gd), except the
+##     zone data seams listed in the change log (roads the zone files end
+##     on a chunk edge).
+func _test_plane(w: Node2D) -> void:
+	var report: Dictionary = await Survey.survey(w)
+	var grounds := {}
+	for g in w._grounds_root.get_children():
+		if g.zone != null:
+			grounds[g.zone.zone_id] = g
+	check(grounds.size() >= 20, "the survey mounts the whole plane (%d grounds)" % grounds.size())
+	var wrong_width := 0
+	var grass_at_sea := 0
+	var example := ""
+	for zone_id in grounds.keys():
+		var g: Node2D = grounds[zone_id]
+		var z: WorldZone = g.zone
+		var field: Dictionary = g.get("_shore_field")
+		for y in z.height:
+			for x in z.width:
+				var cell := Vector2i(x, y)
+				if z.terrain_at(cell) != "golden_plains" or z.height_at(cell) != 0:
+					continue
+				if float(g.call("cover_at", cell)) >= 0.999:
+					continue
+				var sand := str(g.call("_beach_at", cell)) == "sand"
+				var near_sea := false
+				for dy in range(-1, 2):
+					for dx in range(-1, 2):
+						if int(g.call("_shore_kind", cell + Vector2i(dx, dy))) == Ground.SHORE_SEA:
+							near_sea = true
+				if near_sea and not sand:
+					grass_at_sea += 1
+					example = "%s %s" % [zone_id, cell]
+				if field.is_empty():
+					continue
+				var d := float(g.call("shore_field_at", cell))
+				if (d <= Ground.BEACH_CELLS) != sand:
+					wrong_width += 1
+					example = "%s %s d=%.2f sand=%s" % [zone_id, cell, d, sand]
+	check(grass_at_sea == 0, "no flat coast cell has grass beside the sea (%d, %s)" % [grass_at_sea, example])
+	check(wrong_width == 0, "the beach is BEACH_CELLS wide on every chunk (%d off, %s)" % [wrong_width, example])
+	check(int(report["order"]) == 0, "every ground draws a seam cell as its owner does (%d differ)" % int(report["order"]))
+	check(int(report["draw"]) == 0, "no drawn look changes along a chunk edge (%d runs)" % int(report["draw"]))
+	for line in report["lines"]:
+		if str(line).begins_with("DRAW") or str(line).begins_with("ORDER"):
+			print("  ", line)
+	# Zone-data seams (a road the zone files stop at a chunk edge) are listed,
+	# not failed: the zone data stays as it is on this branch.
+	print("  shoreline: zone data seams %d, road ends at chunk edges %d" % [int(report["data"]), int(report["road"])])
