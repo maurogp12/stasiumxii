@@ -982,7 +982,7 @@ func _test_rosary() -> void:
 	# gear chests replaced the level-tier sets (claude/pc-mobile-gear): one
 	# chest piece a win (Mauro: "Un cofre") uses 3 draws before the box and
 	# star_drops draws.
-	var pins := ["64e26f43b4408cd6075f8977c8cc1266", "63637164617bb9f05515eff9588f979f", "8c770b04d6bb8989ec3afb7326c7ea78", "cba1049687575a9046231115df08c21d"]
+	var pins := ["535bbec73bdaa12c7b804b2ee8ac02ff", "072e10bebf3071b8d8c939682a825f27", "c966d62b893e34e676bced6cd0822b18", "90c2f8830b7bf7a086cd9558fcceb8fe"]
 	for star in range(1, 5):
 		var text := ""
 		for seed in 60:

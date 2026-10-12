@@ -1074,11 +1074,12 @@ func _test_mission_credit() -> void:
 func _test_others_unchanged() -> void:
 	# Rewards: seeded roll + star gate fingerprints (60 seeds per star, level
 	# 1 / 12 / 22). Retaken on claude/pc-mobile-gear: the mobile gear chests
-	# replaced the level-tier sets, so every seeded drop changed.
+	# replaced the level-tier sets, so every seeded drop changed; retaken again
+	# for one chest a win (Mauro: "Un cofre").
 	var pins := {
-		GRANARY: ["7e0dafc3ba2cfc02bba8459f5677829b", "9e4f3a1c14b33123ff1dd90460d7ea77", "05f3dffcd1233261ad0add0a2c8bf914", "61d201dbaee8f08910a644d42f2d4e16", "8bcf275de51d680a7a0d32eb8e73f9c4"],
-		FROST: ["e10f2727aa1395f80ede97fbd4d35021", "2cbf20b73459df5296adb9b12784158b", "9662aba7da7d8838bea0c4dfdbe5b2c6", "504369b52b12adb38022aadd9dd0e265", "96c2be71e7034376340992b389db84ec"],
-		SALT: ["20371f30208e7bfcae52465e8a418901", "dff3f2e126e9214a2f2b7f968d8f726d", "9f1bd96f284a5837368dfdfe6f514cf1", "9ffba52b7f40e524a36a0ca3bf296eeb", "ad960d9b4fe6eb3c3177407aa971c6ff"],
+		GRANARY: ["d461c2df7ddb8d793b4525e5db79d488", "38534b9caeb02089fab5958c0f5dee8a", "efa92590cbe0e17ea4ecd7c88e05876e", "f12d9df33b481a06f7c314159da2d81f", "440d84954081f738e147fa78625c90ee"],
+		FROST: ["35faae72260c7ed2125804943fb522ff", "5791b1f85a555bcfdca1a97690cd3e7b", "b7c02f399d528d778f7718b862618169", "4d4b7c5fec87931cdf4d9b390fe980b3", "10facfc597d0c15eef8c4f1697acf85b"],
+		SALT: ["fbfac7dbf423ff178903b8f6d8a5eaa2", "ba6e05e0835555ced1efb1e10c91b238", "1345a9edb46893db24e2d2538dce5795", "e4869f6f18501ff4b62481c5d719bd09", "8bfb9a9c729d4e8630c45d65cf0276ec"],
 	}
 	var levels := {GRANARY: 1, FROST: 12, SALT: 22}
 	for dungeon in pins.keys():
