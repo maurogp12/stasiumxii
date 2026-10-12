@@ -392,6 +392,7 @@ func _test_ai_always_ends() -> void:
 	for cls in CLASSES:
 		for star in [1, 5]:
 			var run = Run.create(ABBEY, LEVEL, cls, "", star)["run"]
+			run.hero_gear = _star_kit(cls, star)
 			for index in 2:
 				sim.reset_match(run.combat_config(index, 60 + star))
 				var guard := 0
@@ -1042,7 +1043,7 @@ func _test_others_unchanged() -> void:
 		eq(book.star_scale(star, GRANARY), rows[star], "the cellar's ★%d row is the gear-retuned pin" % star)
 		eq(book.star_scale(star, FROST), frost_rows[star], "the archive's ★%d row is the gear-retuned pin" % star)
 		eq(book.star_scale(star, SALT), salt_rows[star], "the grotto's ★%d row is the gear-retuned pin" % star)
-	eq([int(book.stats_at("old_saltmaw", 22)["hp"]), int(book.stats_at("old_saltmaw", 22)["attack"]["damage"])], [92, 8], "Old Saltmaw 92 HP, Bite 8 at level 22")
+	eq([int(book.stats_at("old_saltmaw", 22)["hp"]), int(book.stats_at("old_saltmaw", 22)["attack"]["damage"])], [121, 12], "Old Saltmaw 121 HP, Bite 12 at level 22 ★1 (92 / 8 x the gear-retuned ★1 row)")
 	eq(str(book.stats_at("old_saltmaw", 22)["signature"]["kind"]), "pull", "Old Saltmaw still pulls")
 	eq(str(book.stats_at("the_pale_archivist", 12)["signature"]["kind"]), "summon", "the Archivist still summons")
 	# The grotto's riptide and the archive's frost patch keep their records and lines.
@@ -1255,3 +1256,18 @@ func eq(actual: Variant, expected: Variant, msg: String) -> void:
 	else:
 		_failed += 1
 		print("FAIL: %s (got %s expected %s)" % [msg, str(actual), str(expected)])
+
+
+## A hero in its own class set, as the star rows assume (sim GEAR_BY_STAR):
+## ★1 the Normal set +0, ★5 the Rare set +1.
+func _star_kit(cls: String, star: int) -> Dictionary:
+	var tier := "Rare" if star >= 4 else "Normal"
+	var plus := 1 if star >= 5 else 0
+	var fam := ""
+	for f in Gear.FAMILY_ORDER:
+		if Gear.rarity_of(str(f)) == tier and Gear.owner_of(str(f)) == cls:
+			fam = str(f)
+	var worn: Array = []
+	for slot in Gear.SLOTS:
+		worn.append({"item_id": Gear.item_id_for(fam, slot), "plus": plus})
+	return {"worn": worn, "class_id": cls, "extra_ap": 1}

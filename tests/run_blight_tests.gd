@@ -410,6 +410,7 @@ func _test_ai_always_ends() -> void:
 	for cls in CLASSES:
 		for star in [1, 5]:
 			var run = Run.create(BLIGHT, LEVEL, cls, "", star)["run"]
+			run.hero_gear = _star_kit(cls, star)
 			for index in 2:
 				sim.reset_match(run.combat_config(index, 60 + star))
 				var guard := 0
@@ -1097,7 +1098,7 @@ func _test_others_unchanged() -> void:
 		eq(book.star_scale(star, FROST), frost_rows[star], "the archive's ★%d row is the gear-retuned pin" % star)
 		eq(book.star_scale(star, SALT), salt_rows[star], "the grotto's ★%d row is the gear-retuned pin" % star)
 		eq(book.star_scale(star, ABBEY), abbey_rows[star], "the abbey's ★%d row is the gear-retuned pin" % star)
-	eq([int(book.stats_at("mire_abbess", 32)["hp"]), int(book.stats_at("mire_abbess", 32)["attack"]["damage"])], [92, 8], "the Mire Abbess 92 HP, Lash 8 at level 32")
+	eq([int(book.stats_at("mire_abbess", 32)["hp"]), int(book.stats_at("mire_abbess", 32)["attack"]["damage"])], [120, 12], "the Mire Abbess 120 HP, Lash 12 at level 32 ★1 (92 / 8 x the gear-retuned ★1 row)")
 	eq(str(book.stats_at("mire_abbess", 32)["signature"]["kind"]), "raise", "the Abbess still raises")
 	eq(str(book.stats_at("old_saltmaw", 22)["signature"]["kind"]), "pull", "Old Saltmaw still pulls")
 	eq(str(book.stats_at("the_pale_archivist", 12)["signature"]["kind"]), "summon", "the Archivist still summons")
@@ -1314,3 +1315,18 @@ func eq(actual: Variant, expected: Variant, msg: String) -> void:
 	else:
 		_failed += 1
 		print("FAIL: %s (got %s expected %s)" % [msg, str(actual), str(expected)])
+
+
+## A hero in its own class set, as the star rows assume (sim GEAR_BY_STAR):
+## ★1 the Normal set +0, ★5 the Rare set +1.
+func _star_kit(cls: String, star: int) -> Dictionary:
+	var tier := "Rare" if star >= 4 else "Normal"
+	var plus := 1 if star >= 5 else 0
+	var fam := ""
+	for f in Gear.FAMILY_ORDER:
+		if Gear.rarity_of(str(f)) == tier and Gear.owner_of(str(f)) == cls:
+			fam = str(f)
+	var worn: Array = []
+	for slot in Gear.SLOTS:
+		worn.append({"item_id": Gear.item_id_for(fam, slot), "plus": plus})
+	return {"worn": worn, "class_id": cls, "extra_ap": 1}

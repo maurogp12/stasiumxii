@@ -812,7 +812,7 @@ func _test_others_unchanged() -> void:
 	for star in range(1, 6):
 		eq(book.star_scale(star, GRANARY), rows[star], "the cellar's ★%d row is the gear-retuned pin" % star)
 		eq(book.star_scale(star, FROST), frost_rows[star], "the archive's ★%d row is the gear-retuned pin" % star)
-	eq([int(book.stats_at("the_pale_archivist", 12)["hp"]), int(book.stats_at("the_pale_archivist", 12)["attack"]["damage"])], [90, 11], "Archivist 90 HP, Ledger 11 at level 12")
+	eq([int(book.stats_at("the_pale_archivist", 12)["hp"]), int(book.stats_at("the_pale_archivist", 12)["attack"]["damage"])], [108, 15], "Archivist 108 HP, Ledger 15 at level 12 ★1 (90 / 11 x the gear-retuned ★1 row)")
 	eq(str(book.stats_at("the_pale_archivist", 12)["signature"]["kind"]), "summon", "the Archivist still summons")
 	# The archive's frost patch and chill lines are unchanged.
 	var run = Run.create(FROST, 12, "kestrel", "", 5)["run"]
