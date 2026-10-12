@@ -151,7 +151,7 @@ The Ankama way (Dofus, Wakfu): the painted character is **cut into parts** and a
   - The roster's equipped gear (§2) picks the layers.
 - **Face types:** 3 to 5 `head` variants per class and gender (`head_f1` … `head_f5`), with the same pivot and size. The hairstyle can travel with the face if Luca wants.
 - **Godot build:** one `Node2D` per part in a parent chain (the hip, then the torso, upper arm, lower arm and hand, and so on), each holding a `Sprite2D`. That is plain cut-out animation, with no `Skeleton2D` or mesh deformation. Binary alpha, and z-order per part from the rig file.
-- **Joints overlap so no holes show.** Each child part is painted about 12 px (at 2x) past its joint, under its parent. The cross-section test (§9) checks for gaps at every joint in every frame. This is the neck lesson from the visible gear.
+- **Joints overlap so no holes show.** Each child part is painted about 8 px (at master size) past its joint, under its parent. The cross-section test (§9) checks for gaps at every joint in every frame. This is the neck lesson from the visible gear.
 
 ### 5.2 Facings ("drag to turn" is replaced)
 - Two painted facings, as in the world rig: **S** (front three-quarter) and **E** (side). **W** is E mirrored, and **N** is not needed here.
@@ -178,7 +178,7 @@ The Ankama way (Dofus, Wakfu): the painted character is **cut into parts** and a
 
 ### 5.5 Performance mode on this screen
 - No rain particles. Lightning becomes a flash only, at most every 14 s.
-- The puppet uses the 1x parts (§8) instead of the 2x parts, and idle secondary motion is off.
+- The puppet uses the half-size parts (§8), and idle secondary motion is off.
 
 ### 5.6 Fallback (so the screen can ship before every puppet exists)
 If a class has no puppet yet, the pedestal shows its **locked painted idle sprite** (`units/painted_looks.gd`, `idle` S, scaled to about 520 px tall), with the appearance UI disabled ("Coming soon"). The screen must be fully playable with **zero** puppets.
@@ -208,22 +208,29 @@ All pieces are painted in Scenario, team "Maurogarza06's Organization", project 
 
 ## 8. Puppet brief: files, sizes, who does what
 
-**Sizes:**
+**Sizes (restated 12 Oct 2026 for Scenario's 1280×720 output limit):**
 - On screen the puppet is about **520 px tall at 1080p**.
-- Parts are painted at **2x** (the figure about **1040 px tall**, feet to the top of the head, on a **1024×1280** canvas per facing). The game also keeps 1x copies (512×640), made by the build script.
-- The world sprites are far too small to reuse here: the world cells are at most 256 px at 1x, and the visible-gear source paintings are about 500 px tall. So **the select puppet is painted at its own size**, from the same designs.
+- The **master** is painted at Scenario's native size: the figure is about **650 px tall** (feet to the top of the head), cropped to a **640×720** canvas per facing from the 1280×720 output. **No upscaling.** The master is drawn at 0.8 scale on screen, so it is downsampled and stays sharp at 1080p and 1440p. Softness at 4K is accepted.
+- **Joint overlap:** about **8 px** at master size. The face variants, masks and overlaps are painted at master size too.
+- The build script makes a **half-size copy** (320×360) for Performance mode and the list-screen island.
+- **Drift check before cutting:** the base figures must match the approved visible-gear base (`art/characters/painted/ironjaw_gear/source/base_{S,E}.jpg`).
+  - The S figure has no metal jaw piece.
+  - The hair is the approved colour and style.
+  - E is a **strict side view**, not a 3/4 turn.
+  - Use those paintings as the image reference and keep the prompt strength low, so the design does not drift.
+- The world sprites are far too small to reuse here: the world cells are at most 256 px at 1x, and the gear sources are about 500 px tall. So the select puppet is painted at its own size, from the same designs.
 
 **File layout per class and gender:**
 
 ```
 art/pc/character_select/puppets/ironjaw_m/
   rig.json                     # parts, parent, pivot, z, rest pose per facing; idle and select keys
-  S/base/<part>.png            # 2x, binary alpha
+  S/base/<part>.png            # master (figure ~650 px), binary alpha
   S/base/<part>_mask.png       # R skin / G hair / B eyes, same size
   S/base/head_f1..f5.png (+ _mask)
   S/<family>_<slot>/<part>.png # gear layers, e.g. S/cragmaw_chest/torso.png
   E/...                        # the same for the side facing
-  _1x/...                      # generated, do not edit
+  _half/...                    # generated half-size copies, do not edit
   source/                      # full-figure paintings, Scenario ids (.gdignore)
 ```
 
@@ -231,8 +238,8 @@ art/pc/character_select/puppets/ironjaw_m/
 
 | Who | Does |
 |---|---|
-| **Scenario Art** (Luca's team) | Paints, per class and gender, the **full-figure S and E** of the no-armour base and each gear set at 1024×1280, using the approved world designs as the guide: the visible-gear `source/` paintings and the sets PDF. Then paints the **part sheets**: each part with its joint overlap, the face variants, and the R/G/B masks. The part split follows the world walker's parts |
-| **Build agents** (Luca's team) | `build_tools/pc_charselect/cut_puppet.py`: cuts or arranges parts from the sheets, writes the 1x copies and checks alpha and pivots. Then `rig.json` (pivots and parent chain), the idle and select keys, the puppet scene, the shader, the turn control, the roster hook and the tests |
+| **Scenario Art** (Luca's team) | Paints, per class and gender, the **full-figure S and E** of the no-armour base and each gear set at master size (figure ~650 px, 640×720 crop), using the approved world designs as the guide: the visible-gear `source/` paintings and the sets PDF. Then paints the **part sheets**: each part with its joint overlap, the face variants, and the R/G/B masks. The part split follows the world walker's parts |
+| **Build agents** (Luca's team) | `build_tools/pc_charselect/cut_puppet.py`: cuts or arranges parts from the sheets, writes the half-size copies and checks alpha and pivots. Then `rig.json` (pivots and parent chain), the idle and select keys, the puppet scene, the shader, the turn control, the roster hook and the tests |
 
 **First puppet: Ironjaw, male**, with the base plus Cragmaw, Tyrantjaw and Pitmaw, the three sets already approved for the world. It is the default hero, its look is the most seen, and its sets exist.
 
@@ -248,7 +255,7 @@ The female puppets wait on the female world bases (§11) so that both match.
 | P1 | `pc/charselect-flow` | Roster save and migration (§2), both screens with **placeholder art** and the **painted-sprite fallback** (§5.6), the create/name/delete flow, keys, Performance mode hooks, and the containment test skeleton | none |
 | P2 | `pc/charselect-art` | All §6 2D art (Scenario) plus the manifest. The screens switch to it | P1 |
 | P3 | `pc/charselect-puppet-stage` | The puppet scene: part loader from `rig.json`, the `AnimationPlayer` built from data, the S/E/W turn, the body recolour shader (ported from #355), and gear layers switching by slot. Uses a **test puppet**: Ironjaw cut from the existing 1024×576 visible-gear sources, soft but enough to prove the pipeline | P1 |
-| P4 | `pc/charselect-puppet-ironjaw` | Ironjaw `m` at 2x: base, 3 face types, masks, the Cragmaw / Tyrantjaw / Pitmaw layers, idle and select, and a clip. Then one package per class and gender | P3 |
+| P4 | `pc/charselect-puppet-ironjaw` | Ironjaw `m` at master size: base, 3 face types, masks, the Cragmaw / Tyrantjaw / Pitmaw layers, idle and select, and a clip. Then one package per class and gender | P3 |
 | P5 | later | Female world sprites and world-sprite recolour masks (see open questions) | Mauro's decision |
 
 **Tests to add** (in `run_character_select_tests.gd`, which takes the suite count up by 1):
@@ -258,7 +265,7 @@ The female puppets wait on the female world bases (§11) so that both match.
 - the skin, hair and eye uniforms set from swatches and saved, and the face type saved;
 - Create → ✓ entering the world as that class at Crossroads;
 - X cancelling;
-- Performance mode using the 1x parts;
+- Performance mode using the half-size parts;
 - no 3D (§7);
 - no holes at any joint in any idle or select frame, in S and E, for the base and every gear layer;
 - each gear layer replacing its base parts, so no base pixels show in that zone;
