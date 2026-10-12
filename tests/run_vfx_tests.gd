@@ -38,6 +38,7 @@ func _run() -> void:
 	_test_lava_is_a_stub()
 	_test_burn_stun_heal_death_resource()
 	_test_shake_only_crush_and_aegis()
+	_test_trap_spring()
 	_test_hold_line_ambush_intercept_expire()
 	_test_support_and_absorb()
 	_test_stacks_and_lock_cap()
@@ -538,6 +539,75 @@ func _test_shake_only_crush_and_aegis() -> void:
 	truthy(_has(break_hit, "shake"), "Aegis Break shakes")
 	eq(_has(ROUTER.recipes_for([_damage("bash", 11)]), "shake"), false, "Bash does not shake")
 	eq(_has(ROUTER.recipes_for([_damage("detonate", 18)]), "shake"), false, "Detonate does not shake")
+
+
+## A sprung snare is a short readable beat. The painted strip stays; the
+## burst, ring, label, and shake are the existing pools.
+func _test_trap_spring() -> void:
+	var event := {
+		"type": "trap",
+		"seat": 0,
+		"target_seat": 1,
+		"to": Vector2i(5, 4),
+		"damage": 6,
+		"pin": true,
+	}
+	var recipes: Array = ROUTER.recipes_for([event])
+	var spark: Dictionary = _first(recipes, "spark")
+	eq(spark.get("cell"), Vector2i(5, 4), "the trap burst sits on the sprung cell")
+	eq(bool(spark.get("chest", true)), false, "the trap burst is on the cell, not the chest")
+	eq(int(spark.get("amount", 0)) > 0, true, "the trap burst has sparks")
+	eq(float(spark.get("block", 1.0)), 0.0, "the trap burst does not lock input")
+	var flash: Dictionary = _sheet(recipes, "hit_flash")
+	eq(flash.is_empty(), false, "the trap flashes the cell")
+	eq(bool(flash.get("chest", true)), false, "the trap flash is on the cell")
+	eq(float(flash.get("life", 1.0)) < 0.6, true, "the trap flash is under 0.6s")
+	var ring: Dictionary = _first(recipes, "ring")
+	eq(str(ring.get("style", "")), "crack", "the trap snaps a crack ring")
+	eq(float(ring.get("life", 1.0)) < 0.6, true, "the trap ring is under 0.6s")
+	var label: Dictionary = _first(recipes, "number")
+	eq(str(label.get("text", "")), "Trap!", "the trap label reads Trap!")
+	eq(str(label.get("kind", "")), "trap", "the trap label uses the trap color")
+	var shown := float(label.get("rise_sec", 1.0)) + float(label.get("fade_sec", 1.0))
+	eq(shown > 0.45 and shown < 0.6, true, "the trap label stays up about half a second")
+	eq(float(label.get("lift_px", 0.0)) >= 30.0, true, "the trap label sits above the victim")
+	eq(is_equal_approx(float(label.get("scale", 1.0)), 1.0), true, "the trap label is not popped over the board")
+	var shake: Dictionary = _first(recipes, "shake")
+	eq(float(shake.get("duration", 1.0)) < 0.6, true, "the trap shake is brief")
+	eq(float(shake.get("amplitude", 0.0)) > 0.0, true, "the trap shakes the camera")
+	eq(float(shake.get("block", 1.0)), 0.0, "the trap shake does not lock input")
+	var sprung := false
+	for item in recipes:
+		if str(item.get("id", "")) == "spell_fx" and str(item.get("path", "")).contains("snare_spring"):
+			sprung = true
+	eq(sprung, true, "the existing snare snap strip still plays")
+	var colors: Dictionary = PALETTE.number_colors("trap")
+	eq(colors["top"], PALETTE.TRAP_WORD, "Trap! is warm white")
+	eq(colors["bottom"], PALETTE.TRAP_WORD_GOLD, "Trap! fills in gold")
+	eq(int(colors["size"]), 21, "Trap! is about 1.5x the 14px word")
+	var plans: Dictionary = ViewMotion.chrome_plans([event])
+	var victim: Dictionary = plans.get(1, {})
+	eq(bool(victim.get("hit", false)), true, "the victim recoils when the trap springs")
+	eq(bool(victim.get("force_knock", false)), true, "the trap flinch moves the body")
+	var recoil := ViewMotion.recoil_offset(0.4, Vector2(10, 0), 16.0)
+	eq(recoil.length() > 12.0, true, "the trap recoil is a visible knock")
+	eq(ViewMotion.recoil_offset(0.6, Vector2(10, 0), 16.0).y > 2.0, true, "the trap recoil staggers")
+	eq(ViewMotion.recoil_offset(0.0, Vector2(10, 0), 16.0), Vector2.ZERO, "the recoil starts at the feet")
+	eq(ViewMotion.recoil_offset(1.0, Vector2(10, 0), 16.0), Vector2.ZERO, "the recoil ends at the feet")
+	eq(is_equal_approx(float(victim.get("contact", -1.0)), 0.0), true, "the trap flinch starts on the landing")
+	eq(plans.has(0), false, "the trap owner does not flinch")
+	var art: Script = load("res://vfx/spell_art.gd")
+	var tokens: Dictionary = art.linger_specs({
+		"trap_tiles_visible": [{"pos": Vector2i(5, 4), "owner_seat": 0, "turns": 2}],
+	})
+	var token: Dictionary = tokens.get("snare_token:5,4", {})
+	eq(token.is_empty(), false, "an armed trap keeps the owner's token")
+	eq(str(token.get("path", "")).ends_with("snare_trap_token.png"), true, "the armed token is the existing trap art")
+	eq(float(token.get("scale", 0.0)) >= 0.5, true, "the armed token is large enough to read on a phone tile")
+	var view := FileAccess.get_file_as_string("res://board_view.gd")
+	truthy(view.contains("_spring_deferred_traps"), "the board springs the trap when the foot lands")
+	truthy(view.contains("func punch_camera"), "the trap shake moves the camera, not the board")
+	truthy(view.contains("_deferred_traps"), "the board holds the spring until the landing")
 	var crush_miss: Array = ROUTER.recipes_for([{
 		"type": "miss",
 		"spell": "crush",

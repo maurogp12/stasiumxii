@@ -1140,7 +1140,7 @@ func play_view_plan(plan: Dictionary) -> float:
 				tw.tween_callback(_start_kind_strip.bind("hit", hit_play))
 				total += hit_play - sec
 				sec = hit_play
-			tw.tween_method(_sample_hit.bind(step.get("dir", Vector2.ZERO)), 0.0, 1.0, sec)
+			tw.tween_method(_sample_hit.bind(step.get("dir", Vector2.ZERO), bool(step.get("force_knock", false)), float(step.get("knock_px", 0.0))), 0.0, 1.0, sec)
 		elif kind == "lift":
 			tw.tween_callback(_end_body_strip)
 			tw.tween_method(_sample_lift, 0.0, 1.0, sec)
@@ -2178,14 +2178,21 @@ func foe_body_lean() -> float:
 	return float((_sprite.material as ShaderMaterial).get_shader_parameter("lean"))
 
 
-func _sample_hit(t: float, dir: Vector2) -> void:
+func _sample_hit(t: float, dir: Vector2, force_knock: bool = false, knock_px: float = 0.0) -> void:
 	if _sprite == null:
 		return
 	# The 4-frame sheet already flashes and recoils, and its feet stay on the
 	# walk baseline. Knock and squash are the fallback when that clip is missing.
-	var planted := _hit_strip_is_body()
-	var pos := Vector2.ZERO if planted else VIEW_MOTION.hit_offset(t, dir)
-	var mul := Vector2.ONE if planted else VIEW_MOTION.hit_squash(t)
+	# A trap forces the knock: the painted cell does not travel on its own.
+	var planted := _hit_strip_is_body() and not force_knock
+	var pos := Vector2.ZERO
+	var mul := Vector2.ONE
+	if force_knock:
+		pos = VIEW_MOTION.recoil_offset(t, dir, knock_px if knock_px > 1.0 else 16.0)
+		mul = VIEW_MOTION.recoil_squash(t)
+	elif not planted:
+		pos = VIEW_MOTION.hit_offset(t, dir)
+		mul = VIEW_MOTION.hit_squash(t)
 	# A struck foe reels from the blow (upper body first) and buckles.
 	var reel := sin(clampf(t, 0.0, 1.0) * PI) * (1.0 - clampf(t, 0.0, 1.0) * 0.4)
 	var away := signf(dir.x) if absf(dir.x) > 0.01 else 1.0
@@ -2198,6 +2205,8 @@ func _sample_hit(t: float, dir: Vector2) -> void:
 	if _active_strip != null and is_instance_valid(_active_strip):
 		_active_strip.position = pos
 		_active_strip.scale = scaled
+	if force_knock and _walk_draw != null and is_instance_valid(_walk_draw):
+		_walk_draw.position = pos
 
 
 ## A flinch ends the stride. The next pose is the idle plant, not the frame
