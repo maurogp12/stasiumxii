@@ -1,8 +1,8 @@
 extends SceneTree
 
 ## 60fps check: a crit punch and a trap punch never drop a tile or change
-## tile order. Weather is frozen and fighters are hidden so a changed pixel
-## at a tile center is the floor, not a body.
+## tile order. Shaders are paused. Each frame has to be the still board
+## slid by the punch's whole-pixel offset.
 ## xvfb-run -s "-screen 0 2560x1440x24" godot --rendering-driver opengl3 --fixed-fps 60 --path . -s res://tests/shot_shake_tiles.gd -- /opt/cursor/artifacts/shake_tiles --mobile-frame
 
 const KOLISEO := ["crosshaven", "brinewake", "slagcrown", "windmere", "stormspire"]
@@ -13,6 +13,7 @@ const PUNCHES := [
 const FRAMES := 24
 
 var _out := "/tmp/shake_tiles"
+var _only := ""
 var _steps: Array = []
 var _index := 0
 var _phase := "boot"
@@ -21,11 +22,14 @@ var _opened := -1
 var _open_waits := 0
 var _punch := 0
 var _order := ""
-var _colors := {}
-var _lag_at := {}
+var _base := PackedByteArray()
+var _base_w := 0
+var _base_h := 0
+var _canvas7 := Vector2.ZERO
 var _max_shift := 0.0
-var _holes := 0
-var _swaps := 0
+var _misses := 0
+var _worst := 0
+var _thin := 0
 var _order_breaks := 0
 var _samples := 0
 var _failed := 0
@@ -33,18 +37,26 @@ var _log: FileAccess
 
 
 func _initialize() -> void:
+	var positional: Array[String] = []
 	for arg in OS.get_cmdline_user_args():
 		if not str(arg).begins_with("--"):
-			_out = str(arg)
+			positional.append(str(arg))
+	if positional.size() > 0:
+		_out = positional[0]
+	if positional.size() > 1:
+		_only = positional[1]
 	DirAccess.make_dir_recursive_absolute(_out)
 	_log = FileAccess.open(_out.path_join("shake_tiles.txt"), FileAccess.WRITE)
 	DisplayServer.window_set_size(Vector2i(2400, 1080))
 	root.size = Vector2i(2400, 1080)
 	for biome in KOLISEO:
-		_steps.append({"kind": "koliseo", "biome": biome, "room": ""})
-	for biome in KOLISEO:
-		_steps.append({"kind": "stasis", "biome": biome, "room": "a"})
-		_steps.append({"kind": "stasis", "biome": biome, "room": "b"})
+		if _only != "" and _only != "stasis" and biome != _only:
+			continue
+		if _only != "stasis":
+			_steps.append({"kind": "koliseo", "biome": biome, "room": ""})
+		if _only == "" or _only == "stasis" or _only == biome:
+			_steps.append({"kind": "stasis", "biome": biome, "room": "a"})
+			_steps.append({"kind": "stasis", "biome": biome, "room": "b"})
 	var cs: GDScript = load("res://scenes/class_select.gd")
 	cs.set("hotseat_classes", ["ironjaw", "gloam"])
 	cs.set("hotseat_map_id", "crosshaven")
@@ -96,12 +108,18 @@ func _process(_delta: float) -> bool:
 			return false
 		_capture(board)
 		var spec: Dictionary = PUNCHES[_punch]
+		# The tween clock is paused with the shaders. Step the same punch the
+		# tween would call, one 60fps sample at a time, so the picture stays still.
 		board.punch_camera(float(spec["px"]), float(spec["sec"]))
+		if board._shake_tween != null and is_instance_valid(board._shake_tween):
+			board._shake_tween.kill()
+		board._set_view_shake(Vector2.ZERO)
 		_phase = "punch"
 		_frames = 0
 		_max_shift = 0.0
-		_holes = 0
-		_swaps = 0
+		_misses = 0
+		_worst = 0
+		_thin = 0
 		_order_breaks = 0
 		_samples = 0
 		return false
@@ -109,6 +127,7 @@ func _process(_delta: float) -> bool:
 		_frames += 1
 		_note(board, step, str(PUNCHES[_punch]["name"]))
 		if _frames < FRAMES:
+			_step_punch(board)
 			return false
 		_report_punch(step, str(PUNCHES[_punch]["name"]))
 		board._set_view_shake(Vector2.ZERO)
@@ -167,7 +186,8 @@ func _wait_open(step: Dictionary) -> bool:
 
 
 func _freeze(board: Node) -> void:
-	Engine.time_scale = 1.0
+	# Shader TIME and weather stop. A changed pixel is the floor moving, not lava.
+	Engine.time_scale = 0.0
 	if board._focus_tween != null and is_instance_valid(board._focus_tween):
 		board._focus_tween.kill()
 	var units := board.find_child("Units", true, false)
@@ -188,6 +208,7 @@ func _freeze(board: Node) -> void:
 			if node != null:
 				node.visible = false
 				node.set_process(false)
+	_hide_decor(board.find_child("Tiles", true, false))
 	var life := board.find_child("KoliseoLife", true, false)
 	if life != null:
 		life.set_process(false)
@@ -202,22 +223,35 @@ func _freeze(board: Node) -> void:
 
 func _capture(board: Node) -> void:
 	_order = _tile_order(board)
-	_colors = {}
 	var image := _image()
 	if image == null:
+		_base = PackedByteArray()
 		return
-	var tiles: Dictionary = board.tiles
-	for cell in tiles.keys():
-		var tile: Node2D = tiles[cell]
-		if tile == null:
-			continue
-		var at := _screen_of(tile)
-		if not _on_screen(at, image.get_width(), image.get_height()):
-			continue
-		_colors[cell] = image.get_pixel(int(at.x), int(at.y))
-		_lag_at[cell] = at
+	if image.get_format() != Image.FORMAT_RGBA8:
+		image.convert(Image.FORMAT_RGBA8)
+	_base = image.get_data()
+	_base_w = image.get_width()
+	_base_h = image.get_height()
+	var tile: Node2D = board.tiles.get(Vector2i(7, 7))
+	_canvas7 = tile.get_global_transform_with_canvas().origin if tile != null else Vector2.ZERO
 
 
+## Banners, mist, and floor decals keep their own clock. The diamonds underneath
+## are the tiles the shake was dropping.
+func _hide_decor(node: Node) -> void:
+	if node == null:
+		return
+	for child in node.get_children():
+		_hide_decor(child)
+		if child is BoardTile or child.get_parent() is BoardTile:
+			continue
+		if child is Sprite2D or child is AnimatedSprite2D:
+			(child as CanvasItem).visible = false
+
+
+## The picture on screen was drawn with the shake applied last frame. Interior
+## tile pixels have to be that still frame slid by one shared offset. The HUD
+## stays put, and the diamond's outer edge meets the sky, so neither counts.
 func _note(board: Node, step: Dictionary, punch: String) -> void:
 	var order := _tile_order(board)
 	if order != _order:
@@ -226,36 +260,117 @@ func _note(board: Node, step: Dictionary, punch: String) -> void:
 		_order = order
 	if board._camera != null and board._camera.offset.length() > 0.01:
 		_fail("%s %s %s camera offset moved" % [str(step["kind"]), str(step["biome"]), punch])
-	_max_shift = maxf(_max_shift, _shift_of(board))
-	# The viewport image is the previous frame. Sample the positions recorded
-	# then, then store this frame's positions for the next image.
 	var image := _image()
-	if image == null:
+	if image == null or _base.is_empty():
 		return
+	if image.get_format() != Image.FORMAT_RGBA8:
+		image.convert(Image.FORMAT_RGBA8)
+	var raw := image.get_data()
 	var width := image.get_width()
 	var height := image.get_height()
-	for cell in _lag_at.keys():
-		var at: Vector2 = _lag_at[cell]
-		if not _on_screen(at, width, height):
-			continue
-		if not _colors.has(cell):
-			continue
-		_samples += 1
-		var got := image.get_pixel(int(at.x), int(at.y))
-		var want: Color = _colors[cell]
-		if _is_sky(got) and not _is_sky(want):
-			_holes += 1
-		elif not _near(got, want):
-			_swaps += 1
-	_lag_at = {}
-	var tiles: Dictionary = board.tiles
-	for cell in _colors.keys():
-		var tile: Node2D = tiles.get(cell)
-		if tile == null:
-			continue
-		var at := _screen_of(tile)
-		if _on_screen(at, width, height):
-			_lag_at[cell] = at
+	if width != _base_w or height != _base_h:
+		_fail("%s %s %s viewport size changed" % [str(step["kind"]), str(step["biome"]), punch])
+		return
+	var expect := _image_shift(board)
+	var best := expect
+	var best_n := 1 << 30
+	var best_checked := 0
+	for dy in range(-2, 3):
+		for dx in range(-2, 3):
+			var score := _tally(raw, width, height, expect + Vector2i(dx, dy))
+			if int(score.x) < best_n:
+				best_n = int(score.x)
+				best_checked = int(score.y)
+				best = expect + Vector2i(dx, dy)
+	_samples += best_checked
+	_misses += best_n
+	_worst = maxi(_worst, best_n)
+	# One vanished diamond covers dozens of samples. A handful is the
+	# stretch filter on a hard edge, which the trap's larger slide shows.
+	if best_n > 8:
+		_fail("%s %s %s frame %d %d tile pixels moved on their own" % [str(step["kind"]), str(step["biome"]), punch, _frames, best_n])
+	if best_checked < 80:
+		_thin += 1
+		_fail("%s %s %s frame %d saw %d tile pixels" % [str(step["kind"]), str(step["biome"]), punch, _frames, best_checked])
+
+
+func _step_punch(board: Node) -> void:
+	var spec: Dictionary = PUNCHES[_punch]
+	var dur := maxi(1, roundi(float(spec["sec"]) * 60.0))
+	var step_i := _frames - 1
+	if step_i < dur:
+		board._apply_punch(float(step_i) / float(dur), float(spec["px"]))
+	else:
+		board._set_view_shake(Vector2.ZERO)
+	_max_shift = maxf(_max_shift, _shift_of(board))
+
+
+## Canvas pixels, times the window stretch, in the framebuffer.
+func _image_shift(board: Node) -> Vector2i:
+	var tile: Node2D = board.tiles.get(Vector2i(7, 7))
+	if tile == null:
+		return Vector2i.ZERO
+	var delta := tile.get_global_transform_with_canvas().origin - _canvas7
+	var scale := root.get_final_transform().get_scale()
+	return Vector2i(roundi(delta.x * scale.x), roundi(delta.y * scale.y))
+
+
+const STRIDE := 8
+const INSET_L := 360
+const INSET_T := 340
+const INSET_R := 360
+const INSET_B := 380
+
+
+## Interior floor pixels. A hit matches the still tile slid by `shift`, or the
+## HUD pixel that was already there. Sky along the diamond edge is not interior.
+func _tally(raw: PackedByteArray, width: int, height: int, shift: Vector2i) -> Vector2i:
+	var row := width * 4
+	var x0 := INSET_L
+	var y0 := INSET_T
+	var x1 := width - INSET_R
+	var y1 := height - INSET_B
+	var bad := 0
+	var checked := 0
+	var y := y0
+	while y < y1:
+		var x := x0
+		while x < x1:
+			var a := y * row + x * 4
+			if not _sky_at(_base, a) and not _fringe(width, x, y):
+				var qx := x + shift.x
+				var qy := y + shift.y
+				if qx >= x0 and qy >= y0 and qx < x1 and qy < y1:
+					checked += 1
+					var b := qy * row + qx * 4
+					if not _near_at(raw, b, _base, a) and not _near_at(raw, b, _base, b):
+						bad += 1
+			x += STRIDE
+		y += STRIDE
+	return Vector2i(bad, checked)
+
+
+func _fringe(width: int, x: int, y: int) -> bool:
+	var row := width * 4
+	for step in [Vector2i(-STRIDE, 0), Vector2i(STRIDE, 0), Vector2i(0, -STRIDE), Vector2i(0, STRIDE)]:
+		var nx: int = x + int(step.x)
+		var ny: int = y + int(step.y)
+		if nx < 0 or ny < 0 or nx >= width or ny >= _base_h:
+			return true
+		if _sky_at(_base, ny * row + nx * 4):
+			return true
+	return false
+
+
+func _sky_at(raw: PackedByteArray, i: int) -> bool:
+	var r := int(raw[i])
+	var g := int(raw[i + 1])
+	var b := int(raw[i + 2])
+	return r < 31 and g < 41 and b < 71 and b + 5 >= r
+
+
+func _near_at(a: PackedByteArray, ia: int, b: PackedByteArray, ib: int) -> bool:
+	return absi(int(a[ia]) - int(b[ib])) <= 2 and absi(int(a[ia + 1]) - int(b[ib + 1])) <= 2 and absi(int(a[ia + 2]) - int(b[ib + 2])) <= 2
 
 
 func _shift_of(board: Node) -> float:
@@ -267,10 +382,10 @@ func _shift_of(board: Node) -> float:
 
 func _report_punch(step: Dictionary, punch: String) -> void:
 	var label := "%s %s%s %s" % [str(step["kind"]), str(step["biome"]), str(step["room"]), punch]
-	var bad := _order_breaks > 0 or _holes > 0 or _swaps > 0 or _max_shift < 8.0
+	var bad := _order_breaks > 0 or _worst > 8 or _thin > 0 or _max_shift < 8.0
 	if bad:
 		_failed += 1
-	var line := "%s shift=%.2f samples=%d holes=%d swaps=%d order=%d %s" % [label, _max_shift, _samples, _holes, _swaps, _order_breaks, "FAIL" if bad else "ok"]
+	var line := "%s shift=%.2f samples=%d misses=%d worst=%d order=%d %s" % [label, _max_shift, _samples, _misses, _worst, _order_breaks, "FAIL" if bad else "ok"]
 	print(line)
 	if _log != null:
 		_log.store_line(line)
@@ -295,24 +410,6 @@ func _order_of(node: Node, prefix: String) -> String:
 			parts += _order_of(child, prefix + "/" + str(child.name))
 		index += 1
 	return parts
-
-
-func _screen_of(tile: Node2D) -> Vector2:
-	return tile.get_global_transform_with_canvas().origin
-
-
-func _on_screen(at: Vector2, width: int, height: int) -> bool:
-	return at.x >= 8.0 and at.y >= 8.0 and at.x < float(width - 8) and at.y < float(height - 8)
-
-
-func _near(a: Color, b: Color) -> bool:
-	return absf(a.r - b.r) <= 12.0 / 255.0 and absf(a.g - b.g) <= 12.0 / 255.0 and absf(a.b - b.b) <= 12.0 / 255.0
-
-
-## The star field is the dark blue behind the diamond. A tile that vanishes
-## lands on that color. Painted floors are lighter than this.
-func _is_sky(color: Color) -> bool:
-	return color.r < 0.12 and color.g < 0.16 and color.b < 0.28 and color.b + 0.02 >= color.r
 
 
 func _image() -> Image:
