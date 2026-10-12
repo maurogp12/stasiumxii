@@ -9,6 +9,11 @@ extends SceneTree
 ##     -s res://tools/pc/capture_ui_u0_frames.gd -- \
 ##     --out=docs/pc/look_target/ui_u0/real_frames --class ironjaw
 ##
+## The same Granary room A fight with the phone combat HUD hidden (capture
+## only; the scene is unchanged). Move tiles, name plates and HP bars stay:
+##   ... -s res://tools/pc/capture_ui_u0_frames.gd -- \
+##     --out=docs/pc/look_target/ui_u0/real_frames --class ironjaw --only=granary-clean
+##
 ## The window keeps the project stretch (960x720 base, canvas_items, expand),
 ## so a 1920x1080 window is the game on a 1080p screen. Zoom stays the world's
 ## default (1.6). Visuals are the Full preset. --class ironjaw is the hero
@@ -20,6 +25,7 @@ const DUNGEON_PATH := "res://scenes/world/dungeon/dungeon_run.tscn"
 
 var _out := "docs/pc/look_target/ui_u0/real_frames"
 var _preview := false
+var _only := ""
 
 
 func _initialize() -> void:
@@ -29,6 +35,8 @@ func _initialize() -> void:
 			_out = text.trim_prefix("--out=")
 		elif text == "--preview":
 			_preview = true
+		elif text.begins_with("--only="):
+			_only = text.trim_prefix("--only=")
 	_go.call_deferred()
 
 
@@ -39,6 +47,10 @@ func _go() -> void:
 	if not folder.is_absolute_path():
 		folder = ProjectSettings.globalize_path("res://" + folder.trim_prefix("./"))
 	DirAccess.make_dir_recursive_absolute(folder)
+	if _only == "granary-clean":
+		await _granary(folder.path_join("frame2_granary_fight_clean.png"), true)
+		quit(0)
+		return
 	var w: Node2D = WORLD.instantiate()
 	w.instant_transitions = true
 	# A non-empty movie skips the slow-machine performance offer and opens
@@ -189,7 +201,13 @@ func _opaque_height(walker: Node2D) -> float:
 	return float(bottom - top) * absf(sprite.scale.y)
 
 
-func _granary(path: String) -> void:
+## hide_phone_hud is capture-only. It turns off the shared combat HUD layer
+## (hero card, AP/MP/TIME, face pad, action buttons, Selected line and log)
+## and the dungeon's right-hand column (title, star line, round list) after
+## the room has fitted, then lets the board's own keep-out pass settle.
+## Pawns, name plates, HP bars and the move-range tiles are not touched.
+## A normal launch never calls this.
+func _granary(path: String, hide_phone_hud: bool = false) -> void:
 	root.size = Vector2i(1920, 1080)
 	DisplayServer.window_set_size(Vector2i(1920, 1080))
 	var run: Node2D = (load(DUNGEON_PATH) as PackedScene).instantiate()
@@ -207,6 +225,11 @@ func _granary(path: String) -> void:
 	if not ready:
 		push_error("granary room did not finish fading in")
 	await _seconds(0.4)
+	if hide_phone_hud:
+		_hide_phone_hud(run)
+		# The board refits on its next keep-out check (0.25 s) once those
+		# panels are invisible. Wait so the grab is that settled frame.
+		await _seconds(0.6)
 	await RenderingServer.frame_post_draw
 	var image := root.get_texture().get_image()
 	if image == null or image.get_size() != Vector2i(1920, 1080):
@@ -221,6 +244,18 @@ func _granary(path: String) -> void:
 		path.get_file(), str(run.run.star) if run.run != null else "?", str(run.run.level) if run.run != null else "?",
 		str(run.ctx.get("class_id", "")), zoom, DisplayServer.window_get_size(), root.get_visible_rect().size,
 	])
+
+
+func _hide_phone_hud(run: Node) -> void:
+	var hud := run.get_node_or_null("HUD")
+	if hud != null:
+		hud.visible = false
+	# The right-hand column is the round list plus its dungeon title and
+	# star line. All three are overlay text, not the board.
+	for key in ["_title", "_sub", "_roster"]:
+		var line: CanvasItem = run.get(key)
+		if line != null:
+			line.visible = false
 
 
 func _frames(n: int) -> void:

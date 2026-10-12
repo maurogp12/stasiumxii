@@ -30,6 +30,8 @@ XDG_DATA_HOME=/tmp/ui-u0-data xvfb-run -a -s "-screen 0 1920x1080x24" \
 
 `XDG_DATA_HOME` points at an empty directory so a saved Performance preset cannot turn the look off. A fresh store loads Full. `--preview` also writes coast and farm candidates next to the three frames (Eastmarch beach, Eastmarch north shore, Stoneford fields, Stoneford mill).
 
+The clean Granary plate (phone combat HUD hidden) is the same command with `--only=granary-clean`. It writes only `frame2_granary_fight_clean.png`.
+
 ## Frame 1 — Crossroads plaza
 
 [frame1_crossroads_plaza.png](frame1_crossroads_plaza.png)
@@ -63,6 +65,36 @@ Opaque Ironjaw idle height in this frame: 65.9 world px, 105.4 viewport px at zo
 | Date | 12 Oct 2026 |
 
 The grab is the opening of room A, after the fade, before the hero's first action, so the board and the combat HUD are both still. The isometric floor does not cover every corner of the 16:9 frame; those corners are the scene clear color.
+
+## Frame 2 clean — Granary fight, phone HUD hidden
+
+[frame2_granary_fight_clean.png](frame2_granary_fight_clean.png)
+
+Same fight as frame 2: Old Granary Cellar, room A, ★1, level 1, Ironjaw's turn, before his first action. Move-range tiles, name plates, and HP bars stay. The phone combat HUD is hidden only in this capture (`--only=granary-clean` in `tools/pc/capture_ui_u0_frames.gd`). A normal launch does not hide it.
+
+Hidden for the grab, after the room has faded in:
+
+- the combat HUD layer (`ui/hud.gd`): the red hero card, the AP/MP/TIME box, the N/S/E/W face pad, the action buttons, and the Selected line and log
+- the dungeon's right-hand column: the room title, the star line, and the round list
+
+The board then runs its own keep-out fit, so with those panels gone the room zoom is **1.417** (frame 2, with the HUD up, was 1.021). Window, stretch, Full visuals, class, star, and level are the same.
+
+```
+XDG_DATA_HOME=/tmp/ui-u0-data xvfb-run -a -s "-screen 0 1920x1080x24" \
+  godot --rendering-driver opengl3 --audio-driver Dummy --path . \
+  --resolution 1920x1080 \
+  -s res://tools/pc/capture_ui_u0_frames.gd -- \
+  --out=docs/pc/look_target/ui_u0/real_frames --class ironjaw --only=granary-clean
+```
+
+| | |
+|---|---|
+| Scene | `res://scenes/world/dungeon/dungeon_run.tscn` |
+| Dungeon | `old_granary_cellar`, room A, ★1, level 1, Ironjaw |
+| Camera | room fit after the phone HUD is hidden, zoom 1.417 |
+| Visuals | Full, performance off |
+| Window | 1920×1080, project stretch (visible rect 1280×720) |
+| Date | 12 Oct 2026 |
 
 ## Frame 3 — Crosshaven coast
 
