@@ -641,11 +641,17 @@ func _pick_local(local: Vector2, mobile: bool = false) -> Vector2i:
 	var spell := ""
 	if _hud != null:
 		spell = _hud.selected_spell()
-	var prefer := TOUCH.spell_targets_unit(spell)
+	var still := _hud != null and _hud.still_aiming()
+	var prefer := still or TOUCH.spell_targets_unit(spell)
 	# Walks use the sprite too (tight body, and the whole drawing when it is
 	# not another tile). Unit spells still take the wide pad and the cell.
+	# A Still target pick takes the fighter first: the sprite, the name, or
+	# the diamond they stand on. A phone walk still prefers the painted tile.
 	var pawns: Array = _living_pawns_for_pick(spell)
-	var cell := TOUCH.pick_board_cell(local, _tile_positions(), pawns, prefer, mobile or TOUCH.use_mobile_pick())
+	var positions := _tile_positions()
+	if still:
+		return _pick_still_cell(local, positions, pawns, mobile)
+	var cell := TOUCH.pick_board_cell(local, positions, pawns, prefer, mobile or TOUCH.use_mobile_pick())
 	return _soft_lock_cell(cell, spell, prefer)
 
 
@@ -1001,7 +1007,7 @@ func _face_toward(cell: Vector2i) -> void:
 
 
 func _on_spell_selected(spell_id: String) -> void:
-	if spell_id != "":
+	if spell_id != "" or (_hud != null and _hud.still_aiming()):
 		_clear_enemy_reach()
 	if _busy or _view_locked:
 		return
@@ -1023,25 +1029,54 @@ func _on_still_use_requested() -> void:
 	_hud.clear_still_aim()
 
 
-func _try_still_target(cell: Vector2i) -> void:
+func _fighter_at(cell: Vector2i) -> Dictionary:
+	if not _in_bounds(cell):
+		return {}
 	var snap: Dictionary = _sim().snapshot()
-	var legal: Array = _sim().legal_intents(CombatHUD.kit_seat(snap))
 	for raw in snap.get("units", []):
 		var unit: Dictionary = raw
 		if not bool(unit.get("alive", false)):
 			continue
 		if _as_cell(unit.get("pos", null)) != cell:
 			continue
-		for intent in legal:
-			if str(intent.get("type", "")) != "use_still":
-				continue
-			if int(intent.get("target_seat", -1)) != int(unit.get("seat", -2)):
-				continue
-			_submit({"type": "use_still", "target_seat": int(unit["seat"]), "to": cell})
-			_hud.clear_still_aim()
-			_paint_highlights()
-			return
-	_paint_highlights()
+		return unit
+	return {}
+
+
+## Still target: the name, the diamond they stand on, then the sprite
+## (including the part drawn over a neighboring tile). An empty diamond
+## is not a walk.
+func _pick_still_cell(local: Vector2, positions: Dictionary, pawns: Array, mobile: bool) -> Vector2i:
+	var plate := TOUCH._pick_name_plate(local, pawns)
+	if not _fighter_at(plate).is_empty():
+		return plate
+	var ground := TOUCH.front_cell(local, positions)
+	if ground.x < 0:
+		ground = TOUCH.pick_board_cell(local, positions, [], false, mobile or TOUCH.use_mobile_pick())
+	if not _fighter_at(ground).is_empty():
+		return ground
+	var body := TOUCH._pick_pawn_hit(local, pawns, true, true, true)
+	if not _fighter_at(body).is_empty():
+		return body
+	if ground.x >= 0:
+		return ground
+	return TOUCH.pick_board_cell(local, positions, [], false, mobile or TOUCH.use_mobile_pick())
+
+
+## Bound Hour and Mirror Hour. The fighter's sprite and the diamond they
+## stand on both count. An empty cell does not walk. A bad target stays in
+## the pick and the bar says why.
+func _try_still_target(cell: Vector2i) -> void:
+	var unit := _fighter_at(cell)
+	if unit.is_empty():
+		return
+	await _submit({"type": "use_still", "target_seat": int(unit["seat"]), "to": cell})
+	if _hud == null:
+		return
+	var actor := _active_unit(_sim().snapshot())
+	if actor.is_empty() or not bool(actor.get("still_ready", false)):
+		_hud.clear_still_aim()
+		_paint_highlights()
 
 
 func _on_face_requested(dir: String) -> void:
@@ -2656,6 +2691,7 @@ func _paint_highlights() -> void:
 		return
 	var legal: Array = _sim().legal_intents(CombatHUD.kit_seat(snap))
 	var spell_id := _hud.selected_spell()
+	var still_aim := _hud.still_aiming()
 	var actor := _kit_unit(snap)
 	if spell_id != "" and not CombatHUD.offered_cast_ids(actor, legal).has(spell_id):
 		spell_id = ""
@@ -2687,7 +2723,7 @@ func _paint_highlights() -> void:
 	# Solid props are already not walkable, so a blue path cannot cross a rock, fence, or arch.
 	# kind == "move" and spell_id == "" — walk highlights stay off while a spell is selected.
 	for dest in SNAPSHOT_TILES.walk_dests(legal):
-		if spell_id == "" and tiles.has(dest):
+		if spell_id == "" and not still_aim and tiles.has(dest):
 			_tile_at(dest).set_highlight("move")
 	# Advance and other cast dest chrome: legal_intents only. No client range ring.
 	for dest in SNAPSHOT_TILES.cast_dests(legal, spell_id):
@@ -2721,7 +2757,17 @@ func _paint_highlights() -> void:
 			var dismiss_cell: Vector2i = _as_cell(intent.get("to", Vector2i(-1, -1)))
 			if tiles.has(dismiss_cell):
 				_tile_at(dismiss_cell).set_highlight("dismiss")
-	_paint_enemy_reach(snap)
+	if not still_aim:
+		_paint_enemy_reach(snap)
+	# After every other wash, so a legal Still target stays orange and the
+	# green walk field stays hidden for the whole pick.
+	if still_aim:
+		for intent in legal:
+			if str(intent.get("type", "")) != "use_still" or not intent.has("to"):
+				continue
+			var still_cell := _as_cell(intent.get("to", null))
+			if tiles.has(still_cell):
+				_tile_at(still_cell).set_highlight("target")
 	_sync_aim_preview()
 	_sync_target_marks()
 
