@@ -5,7 +5,9 @@ extends RefCounted
 ## fragments (★1–2: 1, ★3–4: 2, ★5: 3, random of the 14), inside the same
 ## 5 loot clears a day. Fragments live in the account bank, any class, never
 ## expire. 12 of the SAME Still forge it into the selected class's socket
-## (that class's socket must be empty). Each class has its own socket and
+## (that class's socket must be empty). Deployment can swap that socket
+## for another 12-fragment Still; the hub forge rule stays empty-only.
+## Each class has its own socket and
 ## Intact / Overwound mode. Fragments stay one shared pool. A fight uses
 ## the socket of the class being played; a team fight gives each fighter
 ## its own class. That class's Still is destroyed when the fight ends.
@@ -304,6 +306,28 @@ func forge(id: String) -> Dictionary:
 	if int(fragments[id]) <= 0:
 		fragments.erase(id)
 	var keep := mode if replacing else "intact"
+	socket = id
+	mode = keep
+	return {"ok": true, "reason": "", "still": id, "swapped": replacing, "class_id": focus_class}
+
+
+## Deployment inventory only. Replaces the socketed Still: refund 12 of the
+## old one, spend 12 of the new one, keep Intact / Overwound. The hub forge
+## path stays empty-socket unless the test kit is swapping.
+func deploy_swap(id: String) -> Dictionary:
+	if not is_id(id):
+		return {"ok": false, "reason": "unknown_still"}
+	if socket == id:
+		return {"ok": true, "reason": "", "still": id, "swapped": false, "class_id": focus_class}
+	if count(id) < FORGE_COST:
+		return {"ok": false, "reason": "needs_12"}
+	var replacing := socket != ""
+	var keep := mode if replacing else "intact"
+	if replacing:
+		fragments[socket] = count(socket) + FORGE_COST
+	fragments[id] = count(id) - FORGE_COST
+	if int(fragments[id]) <= 0:
+		fragments.erase(id)
 	socket = id
 	mode = keep
 	return {"ok": true, "reason": "", "still": id, "swapped": replacing, "class_id": focus_class}

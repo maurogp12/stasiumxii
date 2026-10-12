@@ -151,8 +151,11 @@ var _log_open := false
 var _match_left: float = -1.0
 var _sudden: bool = false
 var _new_match_holder: Button
+var _ready_row: HBoxContainer
 var _ready_p1_button: Button
 var _ready_p2_button: Button
+## Lower-center deploy confirm. Tall enough to read across the board, clear of the side column.
+const READY_SIZE := Vector2(280, 96)
 var _clock_row: HBoxContainer
 var _deploying: bool = false
 var _deploy_note: String = ""
@@ -1549,25 +1552,34 @@ func _build() -> void:
 	_empty_kit_button.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_action_bar.add_child(_empty_kit_button)
 
+	_ready_row = HBoxContainer.new()
+	_ready_row.name = "ReadyRow"
+	_ready_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_ready_row.add_theme_constant_override("separation", 16)
+	_ready_row.visible = false
+	root.add_child(_ready_row)
+
 	_ready_p1_button = Button.new()
+	_ready_p1_button.name = "ReadyP1"
 	_ready_p1_button.text = "Ready P1"
-	_ready_p1_button.custom_minimum_size = TOUCH.READY_BUTTON_SIZE
-	_ready_p1_button.add_theme_font_size_override("font_size", 15)
+	_ready_p1_button.custom_minimum_size = READY_SIZE
+	_ready_p1_button.add_theme_font_size_override("font_size", 22)
 	_ready_p1_button.add_theme_color_override("font_color", CREAM)
-	_style_chrome_button(_ready_p1_button, false)
-	_ready_p1_button.clip_text = true
+	_style_chrome_button(_ready_p1_button, true)
+	_ready_p1_button.clip_text = false
 	_ready_p1_button.pressed.connect(func() -> void: ready_requested.emit(0))
-	_action_bar.add_child(_ready_p1_button)
+	_ready_row.add_child(_ready_p1_button)
 
 	_ready_p2_button = Button.new()
+	_ready_p2_button.name = "ReadyP2"
 	_ready_p2_button.text = "Ready P2"
-	_ready_p2_button.custom_minimum_size = TOUCH.READY_BUTTON_SIZE
-	_ready_p2_button.add_theme_font_size_override("font_size", 15)
+	_ready_p2_button.custom_minimum_size = READY_SIZE
+	_ready_p2_button.add_theme_font_size_override("font_size", 22)
 	_ready_p2_button.add_theme_color_override("font_color", CREAM)
-	_style_chrome_button(_ready_p2_button, false)
-	_ready_p2_button.clip_text = true
+	_style_chrome_button(_ready_p2_button, true)
+	_ready_p2_button.clip_text = false
 	_ready_p2_button.pressed.connect(func() -> void: ready_requested.emit(1))
-	_action_bar.add_child(_ready_p2_button)
+	_ready_row.add_child(_ready_p2_button)
 
 	_end_turn_button = Button.new()
 	_end_turn_button.text = "End Turn"
@@ -1610,7 +1622,8 @@ func _build() -> void:
 	_style_chrome_button(_new_match_button, false)
 	_new_match_button.clip_text = true
 	_new_match_button.pressed.connect(func() -> void: new_match_requested.emit())
-	# Kept off the map (Mauro): New Match, Hub, and Elements share the left column.
+	# Kept off the map: New Match, Hub, Gear, and Log share the left column.
+	# Elements is a tab inside Gear, not its own HUD button.
 	_new_match_holder = _new_match_button
 
 	_hub_button = Button.new()
@@ -1736,8 +1749,6 @@ func _build() -> void:
 		side_column.add_child(_new_match_holder)
 	if _hub_button != null:
 		side_column.add_child(_hub_button)
-	if _elements_button != null:
-		side_column.add_child(_elements_button)
 	if _gear_button != null:
 		side_column.add_child(_gear_button)
 	if _log_button != null:
@@ -1767,6 +1778,8 @@ func _build() -> void:
 	_handoff_label.text = "Kestrel's turn"
 	_handoff_panel.add_child(_handoff_label)
 
+	if _ready_row != null and _handoff_overlay != null:
+		root.move_child(_ready_row, _handoff_overlay.get_index())
 	_update_selected_label()
 	if not root.resized.is_connected(_layout_chrome):
 		root.resized.connect(_layout_chrome)
@@ -4377,8 +4390,9 @@ func clear_deploy_note() -> void:
 
 func _sync_deploy_chrome(snap: Dictionary) -> void:
 	var deploying := is_deployment_phase(snap)
+	# Elements lives inside the Gear inventory. The HUD button stays off the column.
 	if _elements_button != null:
-		_elements_button.visible = deploying
+		_elements_button.visible = false
 	if _gear_button != null:
 		_gear_button.visible = deploying
 	var ready: Dictionary = snap.get("ready", {})
@@ -4413,7 +4427,37 @@ func _sync_deploy_chrome(snap: Dictionary) -> void:
 		(button as Button).visible = not deploying
 	if _ability_cluster != null and deploying:
 		_ability_cluster.visible = false
+	_layout_ready_row()
 	_sync_bottom_inset()
+
+
+## Centered just above the status strip. One button online, both on a shared phone.
+func _layout_ready_row(view: Vector2 = Vector2.ZERO) -> void:
+	if _ready_row == null:
+		return
+	if view.x < 2.0:
+		view = _layout_view
+	if view.x < 2.0:
+		return
+	var shown: Array[Button] = []
+	for button in [_ready_p1_button, _ready_p2_button]:
+		if button != null and button.visible:
+			shown.append(button)
+	_ready_row.visible = not shown.is_empty()
+	if shown.is_empty():
+		return
+	var gap := 16.0
+	var width := 0.0
+	var height := 0.0
+	for button in shown:
+		var need := button.get_combined_minimum_size()
+		width += need.x
+		height = maxf(height, need.y)
+	if shown.size() > 1:
+		width += gap * float(shown.size() - 1)
+	var y := view.y - 36.0 - height - 14.0
+	_ready_row.position = Vector2(maxf((view.x - width) * 0.5, 0.0), maxf(y, 0.0))
+	_ready_row.size = Vector2(maxf(width, 1.0), maxf(height, 1.0))
 
 
 func deploy_chrome_visible() -> bool:
@@ -4688,6 +4732,7 @@ func _layout_chrome(forced: Vector2 = Vector2.ZERO) -> void:
 		if _coach_label != null:
 			_coach_label.position = Vector2(16, 18)
 			_coach_label.size = Vector2(hint_w, 16)
+	_layout_ready_row(view)
 
 
 func _layout_corner_innards(banner_w: float, banner_h: float) -> void:

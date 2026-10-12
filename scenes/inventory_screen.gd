@@ -8,6 +8,8 @@ class_name InventoryScreen
 ## Right: tabs (Equipment / Consumables / Stills / Cosmetics), an item grid,
 ## and a detail box with Wear, Take off and Fuse. Levels, Stills and Sets
 ## open the full screens for spend points, forging and attune.
+## During deployment the same screen is the only setup page: Equipment,
+## Elements, Stills and Sets are tabs. Nothing closes one screen to open another.
 
 signal closed
 ## Fired after a saved equip, set, stance, or Still change while this screen
@@ -21,15 +23,31 @@ const GREEN := Color(0.66, 0.84, 0.25)
 const ROW_HEIGHT := 48
 const TILE := 64
 const TABS: Array[String] = ["equipment", "consumables", "stills", "cosmetics"]
-const TAB_LABEL := {"equipment": "Equipment", "consumables": "Consumables", "stills": "Stills", "cosmetics": "Cosmetics"}
+const TAB_LABEL := {
+	"equipment": "Equipment",
+	"consumables": "Consumables",
+	"stills": "Stills",
+	"cosmetics": "Cosmetics",
+	"elements": "Elements",
+	"sets": "Sets",
+}
 ## Doll slots: left side, right side of the champion card.
 const LEFT_SLOTS: Array[String] = ["head", "weapon", "chest"]
 const RIGHT_SLOTS: Array[String] = ["legs", "boots"]
 const CONSUMABLES: Array[String] = ["consumable.room_tonic", "food.hearth", "food.stillwater"]
+const _RARITY_CHOICES: Array[Dictionary] = [
+	{"id": "", "node": "RarityAll", "label": "All"},
+	{"id": "Normal", "node": "RarityNormal", "label": "Normal"},
+	{"id": "Rare", "node": "RarityRare", "label": "Rare"},
+	{"id": "Legendary", "node": "RarityLegendary", "label": "Legendary"},
+	{"id": "Ultra", "node": "RarityUltra", "label": "Ultra Legendary"},
+]
 
 var font: Font
 var champion: String = "kestrel"
 var tab: String = "equipment"
+## Equipment grid filter. Empty string is All.
+var rarity_filter: String = ""
 ## Deployment inventory. Empty means the hub: every class, coins, consumables,
 ## cosmetics. While set, only these classes show, and mid-match chrome stays hidden.
 var fight_classes: Array = []
@@ -46,8 +64,16 @@ var _doll: Control
 var _stage: ChampionStage
 var _stats_box: VBoxContainer
 var _tab_row: HBoxContainer
+var _rarity_row: HBoxContainer
 var _grid: GridContainer
 var _detail: VBoxContainer
+var _body: VBoxContainer
+var _left: VBoxContainer
+var _right: VBoxContainer
+var _cols: HBoxContainer
+var _section: Control
+var _elements_page: ElementsScreen
+var _sets_page: GearScreen
 
 
 func _ready() -> void:
@@ -103,6 +129,8 @@ func set_fight_classes(ids: Array) -> void:
 		champion = str(fight_classes[0])
 	if _in_fight() and not _visible_tabs().has(tab):
 		tab = "equipment"
+	if _body != null:
+		_place_nav()
 	if is_inside_tree():
 		_reload()
 		_refresh()
@@ -124,6 +152,19 @@ func show_tab(id: String) -> void:
 	if _visible_tabs().has(id):
 		tab = id
 		picked = {}
+		_refresh()
+
+
+## Equipment grid only. "" is All. Normal, Rare, Legendary, or Ultra.
+func set_rarity_filter(rarity: String) -> void:
+	if rarity != "" and not GearScreen.RARITY_TINT.has(rarity):
+		return
+	rarity_filter = rarity
+	if str(picked.get("kind", "")) == "item" and _bag != null:
+		var item := _bag.item(int(picked.get("uid", -1)))
+		if not item.is_empty() and not _rarity_matches(str(item.get("item_id", ""))):
+			picked = {}
+	if is_inside_tree():
 		_refresh()
 
 
@@ -184,6 +225,23 @@ func choose_still(mode: String) -> Dictionary:
 	return result
 
 
+## Deployment only. Swap which Still is socketed. Locks with the rest of the loadout.
+func socket_still(id: String) -> Dictionary:
+	_vault.set_focus(champion)
+	var result := _vault.deploy_swap(id)
+	if bool(result.get("ok", false)):
+		_vault.save()
+		_status.text = "Socketed %s." % StillVault.display_name(id)
+	elif str(result.get("reason", "")) == "needs_12":
+		_status.text = "Need 12 fragments of this Still."
+	else:
+		_status.text = "That Still cannot be socketed."
+	_refresh()
+	if bool(result.get("ok", false)):
+		_emit_changed()
+	return result
+
+
 func open_levels() -> CharacterScreen:
 	var screen: CharacterScreen = load("res://scenes/character_screen.gd").new()
 	screen.name = "CharacterScreen"
@@ -198,24 +256,26 @@ func open_levels() -> CharacterScreen:
 
 ## Elements Step 3: pick 2 elements per class, set each spell, Blend guide.
 func open_elements() -> ElementsScreen:
+	if _in_fight():
+		show_tab("elements")
+		return _elements_page
 	var screen: ElementsScreen = load("res://scenes/elements_screen.gd").new()
 	screen.name = "ElementsScreen"
 	screen.font = font
 	screen.selected = champion
-	if _in_fight():
-		screen.only_classes = fight_classes.duplicate()
 	screen.closed.connect(_on_child_closed)
 	add_child(screen)
 	return screen
 
 
 func open_stills() -> StillsScreen:
+	if _in_fight():
+		show_tab("stills")
+		return null
 	var screen: StillsScreen = load("res://scenes/stills_screen.gd").new()
 	screen.name = "StillsScreen"
 	screen.font = font
 	screen.class_id = champion
-	if _in_fight():
-		screen.fight_classes = fight_classes.duplicate()
 	screen.closed.connect(_on_child_closed)
 	screen.changed.connect(_on_child_changed)
 	add_child(screen)
@@ -223,12 +283,12 @@ func open_stills() -> StillsScreen:
 
 
 func open_sets() -> GearScreen:
+	if _in_fight():
+		show_tab("sets")
+		return _sets_page
 	var screen: GearScreen = load("res://scenes/gear_screen.gd").new()
 	screen.name = "GearScreen"
 	screen.font = font
-	if _in_fight():
-		screen.fight_classes = fight_classes.duplicate()
-		screen.focus_class_id = champion
 	screen.closed.connect(_on_child_closed)
 	screen.changed.connect(_on_child_changed)
 	add_child(screen)
@@ -290,7 +350,7 @@ func _roster() -> Array:
 
 func _visible_tabs() -> Array:
 	if _in_fight():
-		return ["equipment", "stills"]
+		return ["equipment", "elements", "stills", "sets"]
 	var all: Array = []
 	all.append_array(TABS)
 	return all
@@ -299,6 +359,80 @@ func _visible_tabs() -> Array:
 func _emit_changed() -> void:
 	if _in_fight():
 		changed.emit(champion)
+
+
+## Fight mode keeps the class tabs and content tabs above the page, so
+## Elements and Sets can replace the paperdoll without hiding the tabs.
+func _place_nav() -> void:
+	if _champ_row == null or _tab_row == null or _body == null:
+		return
+	if _in_fight():
+		if _champ_row.get_parent() != _body:
+			_body.add_child(_champ_row)
+		_body.move_child(_champ_row, 1)
+		if _tab_row.get_parent() != _body:
+			_body.add_child(_tab_row)
+		_body.move_child(_tab_row, 2)
+	else:
+		if _left != null and _champ_row.get_parent() != _left:
+			_left.add_child(_champ_row)
+			_left.move_child(_champ_row, 0)
+		if _right != null and _tab_row.get_parent() != _right:
+			_right.add_child(_tab_row)
+			_right.move_child(_tab_row, 0)
+
+
+func _apply_fight_section() -> void:
+	if _section == null or _cols == null:
+		return
+	var show_section := _in_fight() and (tab == "elements" or tab == "sets")
+	_cols.visible = not show_section
+	_section.visible = show_section
+	if _elements_page != null and is_instance_valid(_elements_page):
+		_elements_page.visible = tab == "elements"
+	if _sets_page != null and is_instance_valid(_sets_page):
+		_sets_page.visible = tab == "sets"
+	if not show_section:
+		return
+	if tab == "elements":
+		_ensure_elements()
+		_elements_page.only_classes = fight_classes.duplicate()
+		_elements_page.visible = true
+		if _elements_page.selected != champion:
+			_elements_page.pick_class(champion)
+	elif tab == "sets":
+		_ensure_sets()
+		_sets_page.fight_classes = fight_classes.duplicate()
+		_sets_page.visible = true
+		_sets_page.focus_class(champion)
+
+
+func _ensure_elements() -> void:
+	if _elements_page != null and is_instance_valid(_elements_page):
+		return
+	var screen: ElementsScreen = load("res://scenes/elements_screen.gd").new()
+	screen.name = "ElementsScreen"
+	screen.font = font
+	screen.embedded = true
+	screen.selected = champion
+	screen.only_classes = fight_classes.duplicate()
+	screen.changed.connect(_on_child_changed)
+	_section.add_child(screen)
+	_elements_page = screen
+
+
+func _ensure_sets() -> void:
+	if _sets_page != null and is_instance_valid(_sets_page):
+		return
+	var screen: GearScreen = load("res://scenes/gear_screen.gd").new()
+	screen.name = "GearScreen"
+	screen.font = font
+	screen.embedded = true
+	screen.fight_classes = fight_classes.duplicate()
+	screen.focus_class_id = champion
+	screen.changed.connect(_on_child_changed)
+	_section.add_child(screen)
+	_sets_page = screen
 
 
 func _draw() -> void:
@@ -321,6 +455,7 @@ func _build() -> void:
 	panel.add_theme_stylebox_override("panel", style)
 	add_child(panel)
 	var body := VBoxContainer.new()
+	_body = body
 	body.add_theme_constant_override("separation", 8)
 	panel.add_child(body)
 	var top := HBoxContainer.new()
@@ -331,24 +466,30 @@ func _build() -> void:
 	_header.autowrap_mode = TextServer.AUTOWRAP_OFF
 	_header.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	top.add_child(_header)
-	for spec in [["Levels", "OpenLevels", open_levels], ["Elements", "OpenElements", open_elements], ["Stills", "OpenStills", open_stills], ["Sets", "OpenSets", open_sets], ["Close", "CloseInventory", close]]:
+	var specs: Array = [["Close", "CloseInventory", close]]
+	if not _in_fight():
+		specs = [["Levels", "OpenLevels", open_levels], ["Elements", "OpenElements", open_elements], ["Stills", "OpenStills", open_stills], ["Sets", "OpenSets", open_sets], ["Close", "CloseInventory", close]]
+	for spec in specs:
 		var b := _button(str(spec[0]))
 		b.name = str(spec[1])
 		b.alignment = HORIZONTAL_ALIGNMENT_CENTER
 		b.pressed.connect(spec[2] as Callable)
 		top.add_child(b)
+	_champ_row = HBoxContainer.new()
+	_champ_row.add_theme_constant_override("separation", 4)
+	_tab_row = HBoxContainer.new()
+	_tab_row.add_theme_constant_override("separation", 4)
 	var cols := HBoxContainer.new()
+	_cols = cols
 	cols.add_theme_constant_override("separation", 14)
 	cols.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	body.add_child(cols)
 	# Left: champion.
 	var left := VBoxContainer.new()
+	_left = left
 	left.custom_minimum_size.x = 380
 	left.add_theme_constant_override("separation", 6)
 	cols.add_child(left)
-	_champ_row = HBoxContainer.new()
-	_champ_row.add_theme_constant_override("separation", 4)
-	left.add_child(_champ_row)
 	_doll = Control.new()
 	_doll.name = "Doll"
 	_doll.custom_minimum_size = Vector2(380, 300)
@@ -364,12 +505,14 @@ func _build() -> void:
 	left.add_child(_stats_box)
 	# Right: bag.
 	var right := VBoxContainer.new()
+	_right = right
 	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	right.add_theme_constant_override("separation", 6)
 	cols.add_child(right)
-	_tab_row = HBoxContainer.new()
-	_tab_row.add_theme_constant_override("separation", 4)
-	right.add_child(_tab_row)
+	_rarity_row = HBoxContainer.new()
+	_rarity_row.name = "RarityRow"
+	_rarity_row.add_theme_constant_override("separation", 4)
+	right.add_child(_rarity_row)
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -393,9 +536,17 @@ func _build() -> void:
 	_detail.name = "ItemDetail"
 	_detail.add_theme_constant_override("separation", 4)
 	detail_panel.add_child(_detail)
+	_section = Control.new()
+	_section.name = "FightSection"
+	_section.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_section.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_section.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_section.visible = false
+	body.add_child(_section)
 	_status = _label("", 14, GOLD)
 	_status.name = "InventoryStatus"
 	body.add_child(_status)
+	_place_nav()
 
 
 func _refresh() -> void:
@@ -411,8 +562,10 @@ func _refresh() -> void:
 	_refresh_doll()
 	_refresh_stats()
 	_refresh_tabs()
+	_refresh_rarity()
 	_refresh_grid()
 	_refresh_detail()
+	_apply_fight_section()
 
 
 func _refresh_champions() -> void:
@@ -466,6 +619,8 @@ func _refresh_doll() -> void:
 		sock.filled = true
 		sock.badge = "OW" if _vault.mode_of(champion) == "overwound" else ""
 		sock.pressed.connect(select.bind({"kind": "still", "id": socket_id}))
+	elif _in_fight():
+		sock.pressed.connect(show_tab.bind("stills"))
 	else:
 		sock.pressed.connect(open_stills)
 	_doll.add_child(sock)
@@ -572,6 +727,65 @@ func _refresh_tabs() -> void:
 		_tab_row.add_child(b)
 
 
+func _refresh_rarity() -> void:
+	if _rarity_row == null:
+		return
+	_clear(_rarity_row)
+	_rarity_row.visible = tab == "equipment"
+	if tab != "equipment":
+		return
+	for spec in _RARITY_CHOICES:
+		var id := str(spec["id"])
+		var b := _button(str(spec["label"]))
+		b.name = str(spec["node"])
+		b.clip_text = false
+		b.custom_minimum_size = Vector2(0, 32)
+		b.add_theme_font_size_override("font_size", 12)
+		b.alignment = HORIZONTAL_ALIGNMENT_CENTER
+		_paint_rarity_button(b, _filter_tint(id), id == rarity_filter)
+		b.pressed.connect(set_rarity_filter.bind(id))
+		_rarity_row.add_child(b)
+
+
+func _filter_tint(id: String) -> Color:
+	if id == "":
+		return GOLD
+	return GearScreen.RARITY_TINT.get(id, GOLD)
+
+
+func _filter_label() -> String:
+	for spec in _RARITY_CHOICES:
+		if str(spec["id"]) == rarity_filter:
+			return str(spec["label"])
+	return "All"
+
+
+func _paint_rarity_button(button: Button, tint: Color, on: bool) -> void:
+	var fill := tint if on else Color(0.07, 0.06, 0.05, 0.95)
+	var ink := Color(0.12, 0.08, 0.05) if on else tint
+	button.add_theme_color_override("font_color", ink)
+	button.add_theme_color_override("font_hover_color", Color.WHITE if not on else ink)
+	button.add_theme_color_override("font_pressed_color", ink)
+	for style_name in ["normal", "hover", "pressed", "focus", "disabled"]:
+		var st := StyleBoxFlat.new()
+		st.bg_color = fill.lightened(0.08) if style_name == "hover" and not on else fill
+		st.border_color = tint
+		st.set_border_width_all(2 if on else 1)
+		st.set_corner_radius_all(4)
+		st.content_margin_left = 8
+		st.content_margin_right = 8
+		st.content_margin_top = 2
+		st.content_margin_bottom = 2
+		button.add_theme_stylebox_override(style_name, st)
+
+
+func _rarity_matches(item_id: String) -> bool:
+	if rarity_filter == "":
+		return true
+	var rarity := str(GearBag.FAMILIES.get(GearBag.family_of(item_id), {}).get("rarity", ""))
+	return rarity == rarity_filter
+
+
 func _refresh_grid() -> void:
 	_clear(_grid)
 	match tab:
@@ -585,12 +799,17 @@ func _refresh_grid() -> void:
 				if str(a["item_id"]) != str(b["item_id"]):
 					return GearBag.SLOTS.find(GearBag.slot_of(str(a["item_id"]))) < GearBag.SLOTS.find(GearBag.slot_of(str(b["item_id"])))
 				return int(a["plus"]) > int(b["plus"]))
+			var shown := 0
 			for it in sorted:
+				var item_id := str(it["item_id"])
+				if not _rarity_matches(item_id):
+					continue
+				shown += 1
 				var uid := int(it["uid"])
 				var t := _grid_tile("Item_%d" % uid)
-				t.glyph = GearBag.slot_of(str(it["item_id"]))
-				t.tint = _rarity_tint(str(it["item_id"]))
-				t.icon_tex = GearBag.icon(str(it["item_id"]), champion)
+				t.glyph = GearBag.slot_of(item_id)
+				t.tint = _rarity_tint(item_id)
+				t.icon_tex = GearBag.icon(item_id, champion)
 				t.filled = true
 				t.plus = int(it["plus"])
 				t.badge = "E" if _bag.is_equipped(uid) else ""
@@ -598,6 +817,8 @@ func _refresh_grid() -> void:
 				t.pressed.connect(select.bind({"kind": "item", "uid": uid}))
 			if sorted.is_empty():
 				_grid_note("Empty. Clear a Stasis door.")
+			elif shown == 0:
+				_grid_note("No %s pieces." % _filter_label())
 		"consumables":
 			var any := false
 			for sku in CONSUMABLES:
@@ -763,6 +984,15 @@ func _refresh_detail() -> void:
 				mode_button.pressed.connect(choose_still.bind(mode))
 				modes.add_child(mode_button)
 			_detail.add_child(modes)
+		elif _in_fight():
+			var swap := _button("Socket" if _vault.socket_of(champion) == "" else "Swap in")
+			swap.name = "SocketStill"
+			swap.clip_text = false
+			swap.custom_minimum_size.x = 140
+			swap.disabled = _vault.count(id) < StillVault.FORGE_COST
+			swap.tooltip_text = "Uses 12 fragments. The old Still's 12 come back."
+			swap.pressed.connect(socket_still.bind(id))
+			_detail.add_child(swap)
 		var have := _vault.count(id)
 		var line := "Fragments: %d.  %s" % [have, StillVault.forge_summary(have)]
 		if _vault.socket_of(champion) == id:
@@ -774,10 +1004,10 @@ func _refresh_detail() -> void:
 		_detail.add_child(_label("Overwound — stronger, with a drawback: %s%s" % [StillVault.plain(id, "overwound"), soon], 14, GOLD_BRIGHT))
 		if not _in_fight():
 			_detail.add_child(_label("  ".join(StillVault.HOW_TO), 12, GOLD_DIM))
-		var vault_button := _button("Open the Vault to forge")
-		vault_button.name = "OpenVault"
-		vault_button.pressed.connect(open_stills)
-		_detail.add_child(vault_button)
+			var vault_button := _button("Open the Vault to forge")
+			vault_button.name = "OpenVault"
+			vault_button.pressed.connect(open_stills)
+			_detail.add_child(vault_button)
 		return
 	_add_stance_pick()
 	_detail.add_child(_label("Tap an item to see it. Tap a worn slot to take it off.", 13, GOLD_DIM))

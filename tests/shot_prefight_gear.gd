@@ -1,6 +1,6 @@
 extends SceneTree
 
-## Deployment inventory on the fight screen.
+## Deployment HUD and the one inventory screen (Equipment, Elements, Stills, Sets).
 ## DISPLAY=:1 godot --path . --rendering-driver opengl3 -s res://tests/shot_prefight_gear.gd
 
 const OUT := "/opt/cursor/artifacts/prefight_gear"
@@ -28,8 +28,8 @@ func _initialize() -> void:
 
 func _process(_delta: float) -> bool:
 	_frames += 1
-	if _frames > 240:
-		push_error("prefight inventory shot timed out in phase %d" % _phase)
+	if _frames > 360:
+		push_error("prefight shot timed out in phase %d" % _phase)
 		return true
 	if _board == null:
 		_board = current_scene.get_node_or_null("BoardView") if current_scene != null else null
@@ -61,8 +61,10 @@ func _process(_delta: float) -> bool:
 		_frames = 0
 		return false
 	if _phase == 1:
-		if _frames < 8:
+		if _frames < 10:
 			return false
+		_expect_deploy_hud(hud)
+		_shot("deploy_hud.png")
 		_board._on_gear_requested()
 		_phase = 2
 		_frames = 0
@@ -74,31 +76,49 @@ func _process(_delta: float) -> bool:
 		if screen == null:
 			push_error("inventory did not open")
 			return true
-		_expect_worn(screen)
-		_shot("prefight_inventory_worn.png")
-		var uid := _loose_uid(screen)
-		if uid < 0:
-			push_error("no loose piece to equip")
+		_expect_equipment(screen)
+		_shot("inventory_equipment.png")
+		screen.set_rarity_filter("Legendary")
+		_phase = 9
+		_frames = 0
+		return false
+	if _phase == 9:
+		if _frames < 4:
+			return false
+		var screen := _inventory()
+		if screen == null or screen.rarity_filter != "Legendary":
+			push_error("legendary filter did not stick")
 			return true
-		screen.select({"kind": "item", "uid": uid})
+		_expect_rarity(screen, "Legendary")
+		_shot("inventory_filter_legendary.png")
+		screen.set_rarity_filter("Ultra")
+		_phase = 10
+		_frames = 0
+		return false
+	if _phase == 10:
+		if _frames < 4:
+			return false
+		var screen := _inventory()
+		if screen == null or screen.rarity_filter != "Ultra":
+			push_error("ultra filter did not stick")
+			return true
+		_expect_rarity(screen, "Ultra")
+		_shot("inventory_filter_ultra.png")
+		screen.set_rarity_filter("")
+		screen.show_tab("elements")
 		_phase = 3
 		_frames = 0
 		return false
 	if _phase == 3:
-		if _frames < 4:
+		if _frames < 6:
 			return false
 		var screen := _inventory()
-		if screen == null:
-			push_error("inventory closed before Wear")
+		if screen == null or screen.find_child("Element_air", true, false) == null:
+			push_error("elements tab missing")
 			return true
-		var wear := screen.find_child("Wear", true, false) as Button
-		if wear == null:
-			push_error("Wear button missing")
-			return true
-		print("WEAR %s" % wear.text)
-		_shot("prefight_inventory_wear.png")
-		screen.select({})
-		screen.choose_stance("ranged_guard")
+		_shot("inventory_elements.png")
+		screen.show_tab("stills")
+		screen.select({"kind": "still", "id": "tide"})
 		_phase = 4
 		_frames = 0
 		return false
@@ -106,11 +126,76 @@ func _process(_delta: float) -> bool:
 		if _frames < 4:
 			return false
 		var screen := _inventory()
-		if screen == null:
-			push_error("inventory closed before stance")
+		var swap: Button = null
+		if screen != null:
+			swap = screen.find_child("SocketStill", true, false) as Button
+		if swap == null or swap.text != "Swap in":
+			push_error("swap button missing")
 			return true
-		_expect_stance(screen)
-		_shot("prefight_inventory_stance.png")
+		print("SWAP %s disabled=%s" % [swap.text, swap.disabled])
+		_shot("inventory_stills_swap.png")
+		screen.socket_still("tide")
+		_phase = 5
+		_frames = 0
+		return false
+	if _phase == 5:
+		if _frames < 4:
+			return false
+		var screen := _inventory()
+		if screen == null:
+			push_error("inventory closed during swap")
+			return true
+		if StillVault.load_saved().socket_of("bastion") != "tide":
+			push_error("socket did not become tide")
+			return true
+		_shot("inventory_stills_socketed.png")
+		screen.show_tab("sets")
+		_phase = 6
+		_frames = 0
+		return false
+	if _phase == 6:
+		if _frames < 6:
+			return false
+		var screen := _inventory()
+		var sets := screen.find_child("GearScreen", true, false) if screen != null else null
+		if sets == null or sets.find_child("Stance_neutral", true, false) == null:
+			push_error("sets tab missing stance")
+			return true
+		_shot("inventory_sets.png")
+		screen.close()
+		_phase = 7
+		_frames = 0
+		return false
+	if _phase == 7:
+		if _frames < 4:
+			return false
+		if _inventory() != null:
+			push_error("inventory still open")
+			return true
+		var sim: Node = root.get_node("/root/CombatSim")
+		var a: Array = sim.legal_deploy_cells(0)
+		var b: Array = sim.legal_deploy_cells(1)
+		if a.is_empty() or b.is_empty():
+			push_error("deploy zones empty")
+			return true
+		sim.place_unit(0, a[0])
+		sim.place_unit(1, b[0])
+		sim.ready_seat(0)
+		sim.ready_seat(1)
+		_board._rebuild_pawns()
+		_board._refresh()
+		_phase = 8
+		_frames = 0
+		return false
+	if _phase == 8:
+		if _frames < 8:
+			return false
+		var sim: Node = root.get_node("/root/CombatSim")
+		if str(sim.snapshot().get("phase", "")) == "DEPLOYMENT":
+			push_error("still deploying")
+			return true
+		_expect_combat_hud(hud)
+		_shot("combat_hud.png")
 		return true
 	return false
 
@@ -119,44 +204,72 @@ func _inventory() -> InventoryScreen:
 	return _board._hud.get_node_or_null("InventoryScreen") as InventoryScreen
 
 
-func _loose_uid(screen: InventoryScreen) -> int:
-	for it in screen.bag().items:
-		var uid := int(it["uid"])
-		if screen.bag().is_equipped(uid):
-			continue
-		if GearBag.family_of(str(it["item_id"])) == "ironveil":
-			return uid
-	return -1
+func _expect_deploy_hud(hud: Node) -> void:
+	var gear: Button = hud._gear_button
+	var ready: Button = hud._ready_p2_button
+	print("GEAR visible=%s parent=%s" % [gear.visible, gear.get_parent().name if gear.get_parent() != null else "none"])
+	print("ELEMENTS parent=%s visible=%s" % [hud._elements_button.get_parent(), hud._elements_button.visible])
+	print("READY text=%s visible=%s pos=%s size=%s row=%s" % [
+		ready.text, ready.visible, ready.global_position, ready.size, hud._ready_row.global_position,
+	])
+	if not gear.visible or gear.get_parent().name != "SideColumn":
+		push_error("gear should be the deployment button")
+	if hud._elements_button.get_parent() != null or hud._elements_button.visible:
+		push_error("elements button should be gone")
+	if not ready.visible or ready.get_parent().name != "ReadyRow":
+		push_error("ready should be in the centered row")
+	var row: Control = hud._ready_row
+	var view_x := 1600.0
+	var mid := row.global_position.x + row.size.x * 0.5
+	print("READY mid=%s" % mid)
+	if absf(mid - view_x * 0.5) > 80.0:
+		push_error("ready row is not centered (%s)" % mid)
 
 
-func _expect_worn(screen: InventoryScreen) -> void:
+func _expect_equipment(screen: InventoryScreen) -> void:
 	var header := screen.find_child("InventoryHeader", true, false) as Label
 	print("HEADER %s" % (header.text if header != null else "MISSING"))
-	if header == null or header.text != "Inventory":
-		push_error("header is %s" % (header.text if header != null else "missing"))
-	for name in ["Champ_bastion", "Champ_kestrel", "Tab_equipment", "Tab_stills", "Slot_head", "Slot_weapon", "Socket", "OpenSets"]:
+	for name in ["Champ_bastion", "Champ_kestrel", "Tab_equipment", "Tab_elements", "Tab_stills", "Tab_sets", "Slot_weapon", "Socket"]:
 		if screen.find_child(name, true, false) == null:
 			push_error("missing %s" % name)
-	for name in ["Champ_ironjaw", "Tab_consumables", "Tab_cosmetics"]:
+	for name in ["Champ_ironjaw", "Tab_consumables", "Tab_cosmetics", "OpenElements", "OpenSets"]:
 		if screen.find_child(name, true, false) != null:
 			push_error("should be hidden: %s" % name)
-	if screen.find_child("Stance_neutral", true, false) == null or screen.find_child("Stance_ranged_guard", true, false) == null:
-		push_error("stance buttons missing on the worn view")
 
 
-func _expect_stance(screen: InventoryScreen) -> void:
-	for name in ["Stance_neutral", "Stance_ranged_guard", "Champ_bastion"]:
-		var button := screen.find_child(name, true, false) as Button
-		if button == null:
-			push_error("missing %s" % name)
+func _expect_rarity(screen: InventoryScreen, rarity: String) -> void:
+	var node := "RarityUltra" if rarity == "Ultra" else "Rarity" + rarity
+	var label := "Ultra Legendary" if rarity == "Ultra" else rarity
+	var button := screen.find_child(node, true, false) as Button
+	if button == null or button.text != label:
+		push_error("filter button %s missing" % label)
+		return
+	print("FILTER BUTTON %s" % button.text)
+	var grid := screen.find_child("ItemGrid", true, false)
+	var count := 0
+	if grid == null:
+		push_error("item grid missing")
+		return
+	for child in grid.get_children():
+		var tile_name := str(child.name)
+		if not tile_name.begins_with("Item_"):
 			continue
-		print("BUTTON %s text=%s" % [name, button.text])
-	var line := screen.find_child("StanceLine", true, false) as Label
-	print("STANCE %s" % (line.text if line != null else "MISSING"))
-	if line == null or not line.text.contains("20%") or not line.text.contains("15%"):
-		push_error("ranged line is %s" % (line.text if line != null else "missing"))
-	if str(GearBag.load_saved().stance_of()) != "ranged_guard":
-		push_error("saved stance is %s" % GearBag.load_saved().stance_of())
+		count += 1
+		var item: Dictionary = screen.bag().item(tile_name.trim_prefix("Item_").to_int())
+		var got := str(GearBag.FAMILIES.get(GearBag.family_of(str(item.get("item_id", ""))), {}).get("rarity", ""))
+		if got != rarity:
+			push_error("tile %s is %s, wanted %s" % [str(item.get("item_id", "")), got, rarity])
+	print("FILTER %s tiles=%d" % [rarity, count])
+	if count == 0:
+		push_error("filter %s showed no pieces" % rarity)
+
+
+func _expect_combat_hud(hud: Node) -> void:
+	print("COMBAT gear=%s ready=%s elements=%s row=%s" % [
+		hud._gear_button.visible, hud._ready_p1_button.visible, hud._elements_button.visible, hud._ready_row.visible,
+	])
+	if hud._gear_button.visible or hud._ready_p1_button.visible or hud._ready_row.visible or hud._elements_button.visible:
+		push_error("deployment chrome still visible after combat start")
 
 
 func _shot(file_name: String) -> void:
@@ -187,6 +300,8 @@ func _seed_loadout() -> void:
 	bag.set_stance("neutral")
 	bag.save()
 	var vault := StillVault.new()
+	for id in StillVault.IDS:
+		vault.fragments[id] = 24
 	vault.set_focus("bastion")
 	vault.socket = "gathered_sand"
 	vault.set_mode("intact")
