@@ -3,10 +3,10 @@ extends SceneTree
 ## Painted character walks on the mobile board (new looks, 4 Oct 2026).
 ## Assets: 4 facings x 12 cells per class (Ironjaw: the dark-steel v7),
 ## pivot on the 152 sole line,
-## binary alpha, W/S mirrors baked. Playback: a board move plays the facing
-## strip at the no-slide rate (the frame follows the distance walked, so the
-## foot matches the tile; every class keeps the same tile time), with the
-## static file as the fallback when a sheet is missing.
+## binary alpha, W/S mirrors baked. Playback: a board move plants the contact
+## frame on each tile edge and advances the other half of the cycle with the
+## eased travel. The no-slide rate stays in the spec. A missing sheet falls
+## back to the static file.
 ## Run: godot --headless --path . -s res://tests/run_painted_walk_tests.gd
 
 const MOTION := preload("res://units/view_motion.gd")
@@ -192,7 +192,7 @@ func _test_frame_follows_distance() -> void:
 		truthy(leg_fps <= SPECS.MAX_LEG_RATE * authored + 0.001, "%s the stored cap stays at most 1.6x authored (%.2f fps)" % [class_id, leg_fps])
 		truthy(absf(per_tile - minf(no_slide, SPECS.MAX_LEG_RATE * authored * 0.34)) < 0.002, "%s stored rate is the no-slide rate under the cap" % class_id)
 		truthy(no_slide > 0.0 and per_tile <= no_slide + 0.001, "%s stored cap only slows the legs, never speeds them" % class_id)
-		near(StripLibrary.painted_frames_per_tile(class_id, "s"), no_slide, "%s playback uses the no-slide stride" % class_id)
+		near(StripLibrary.painted_frames_per_tile(class_id, "s"), no_slide, "%s the spec still stores the no-slide rate" % class_id)
 		var board_px_per_cell := TILE_STEP / per_tile
 		truthy(board_px_per_cell > 1.0 and board_px_per_cell < 9.0, "%s one cell moves %.2f board px" % [class_id, board_px_per_cell])
 
@@ -229,7 +229,6 @@ func _unit(class_id: String, facing: String, seat: int) -> Dictionary:
 
 func _test_driven_four_facings() -> void:
 	for class_id in CLASSES:
-		var per_tile := float(StripLibrary.painted_spec(class_id, "walk").get("frames_per_tile_no_slide", 0.0))
 		var pawn := Pawn.new()
 		get_root().add_child(pawn)
 		await process_frame
@@ -249,7 +248,7 @@ func _test_driven_four_facings() -> void:
 			for i in 9:
 				var u := float(i) / 8.0
 				pawn.sample_driven_gait(u)
-				var want := MOTION.painted_walk_frame(float(tile) + u, per_tile, 12, 0)
+				var want := MOTION.walk_cycle_frame(u, 12, tile, 0)
 				var sampler := pawn.walk_sampler()
 				if sampler == null or sampler.frame != want or String(sampler.animation) != "walk_%s" % face.to_lower():
 					ok = false
@@ -347,8 +346,10 @@ func _test_board_move_plays_walk(class_id: String) -> void:
 		faces[pawn.facing] = true
 		cells[sampler.frame] = true
 		samples += 1
-		# The cell must match the distance on the board (+-1 for the sample edge).
-		var want := MOTION.painted_walk_frame(walked, per_tile, 12, 0)
+		# The cell follows this tile's travel. 0 and 1 are the contact frames.
+		var tile_i := int(floor(walked))
+		var frac := walked - float(tile_i)
+		var want := MOTION.walk_cycle_frame(frac, 12, tile_i, 0)
 		var off := posmod(sampler.frame - want + 6, 12) - 6
 		if absi(off) > 1:
 			skate += 1
@@ -356,9 +357,9 @@ func _test_board_move_plays_walk(class_id: String) -> void:
 	eq(static_during, false, "%s the static stays hidden while the move plays" % class_id)
 	truthy(faces.has("E") and faces.has("S"), "%s the move faces east then south (%s)" % [class_id, faces.keys()])
 	truthy(cells.size() >= 6, "%s the walk cycles its cells (%d seen)" % [class_id, cells.size()])
-	eq(skate, 0, "%s the painted cell follows the board distance" % class_id)
+	eq(skate, 0, "%s the painted cell follows the step and plants on the tile" % class_id)
 	var no_slide := float(StripLibrary.painted_spec(class_id, "walk").get("frames_per_tile_no_slide", 0.0))
-	near(per_tile, no_slide, "%s playback is the no-slide stride" % class_id)
+	near(per_tile, no_slide, "%s the spec still stores the no-slide rate" % class_id)
 	near(Pawn.WALK_TILE_SEC, 0.34, "%s keeps the shared tile time" % class_id)
 	eq(pawn.grid_position, Vector2i(4, 3), "%s lands on the clicked tile" % class_id)
 	var planted := pawn.walk_sampler()

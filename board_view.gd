@@ -112,6 +112,7 @@ var _step_dst: Vector2i = Vector2i(-999, -999)
 ## is in progress. Depth uses this so a late elevation landing does not
 ## invent a progress from the bent screen path.
 var _step_along: float = -1.0
+var _step_elev: float = -1.0
 var _shade_markers: Dictionary = {}
 var _aim_line: Node2D
 ## Last hovered cell while a spell is armed. Ambush ignores it and aims from the Shade.
@@ -782,6 +783,7 @@ func _sync_unit_readability() -> void:
 	if not _busy:
 		_step_src = Vector2i(-999, -999)
 		_step_dst = Vector2i(-999, -999)
+		_step_elev = -1.0
 	_raise_nearer_units(bodies)
 	for body in bodies:
 		_raise_shade_unit(body)
@@ -824,7 +826,8 @@ func _publish_pawn_depth(pawn: Pawn) -> void:
 			along = 0.0
 			if span.length_squared() > 0.01:
 				along = clampf((pawn.position - src_at).dot(span) / span.length_squared(), 0.0, 1.0)
-		elev = lerpf(_elev_at(_step_src), _elev_at(_step_dst), VIEW_MOTION.elevation_land(along))
+		var elev_u := _step_elev if _step_elev >= 0.0 else VIEW_MOTION.elevation_land(along)
+		elev = lerpf(_elev_at(_step_src), _elev_at(_step_dst), elev_u)
 		# The tower shaft uses the cell the feet are nearer to. Neighbour
 		# order still follows the continuous foot position.
 		sort_cell = _step_dst if along >= 0.5 else _step_src
@@ -1948,7 +1951,7 @@ func _animate_path(seat: int, path: Array, origin: Vector2i = Vector2i(-1, -1)) 
 		# The squash after the landing stays quiet, and so does takeoff.
 		var dust := VIEW_MOTION.dust_on_plant(facing_changed, cell_i == cells.size() - 1)
 		if VIEW_MOTION.glide:
-			# One glide per tile: constant speed, ease only at the path ends.
+			# One eased step per tile. A climb rises after the foot lands.
 			var first := cell_i == 0
 			var last := cell_i == cells.size() - 1
 			_walk_tween.tween_method(_sample_glide_step.bind(pawn, prev, cell, first, last), 0.0, 1.0, Pawn.WALK_TILE_SEC)
@@ -2020,7 +2023,11 @@ func _sample_walk_step(t: float, pawn: Pawn, src: Vector2i, dst: Vector2i) -> vo
 		dir = str(pawn.facing)
 	var u := VIEW_MOTION.step_travel(t)
 	_step_along = u
-	pawn.position = VIEW_MOTION.walk_foot(_cell_to_local(src), _cell_to_local(dst), _elev_at(src), _elev_at(dst), u)
+	_step_elev = -1.0
+	var src_e := _elev_at(src)
+	var dst_e := _elev_at(dst)
+	var elev_u := 0.0 if absf(dst_e - src_e) <= 0.001 else VIEW_MOTION.elevation_land(u)
+	pawn.position = VIEW_MOTION.foot_at(_cell_to_local(src), _cell_to_local(dst), src_e, dst_e, u, elev_u)
 	# Idle texture while the node moves is the slide. No walk strip means no
 	# animated gait frame, but the node itself must still glide tile to tile —
 	# begin_segment_walk() only gates the walk-cycle animation, never the move.
@@ -2030,20 +2037,24 @@ func _sample_walk_step(t: float, pawn: Pawn, src: Vector2i, dst: Vector2i) -> vo
 
 
 
-## Glide sample: the body moves on the eased path; the stride and the
-## footfall bob run on the tile's own clock so the legs never stop.
-func _sample_glide_step(t: float, pawn: Pawn, src: Vector2i, dst: Vector2i, first: bool, last: bool) -> void:
+## Glide sample: every tile eases. The stride follows the horizontal travel,
+## and stays on the arrival contact while a climb rises in place.
+func _sample_glide_step(t: float, pawn: Pawn, src: Vector2i, dst: Vector2i, _first: bool, _last: bool) -> void:
 	if pawn == null or not is_instance_valid(pawn):
 		return
 	var dir := VIEW_MOTION.walk_segment_facing(src, dst, _cell_to_local(dst) - _cell_to_local(src))
 	if dir == "":
 		dir = str(pawn.facing)
-	var u := VIEW_MOTION.glide_travel(t, first, last)
-	_step_along = u
-	pawn.position = VIEW_MOTION.walk_foot(_cell_to_local(src), _cell_to_local(dst), _elev_at(src), _elev_at(dst), u)
+	var src_e := _elev_at(src)
+	var dst_e := _elev_at(dst)
+	var climbing := absf(dst_e - src_e) > 0.001
+	var split := VIEW_MOTION.stride_split(t, climbing)
+	_step_along = split.x
+	_step_elev = split.y
+	pawn.position = VIEW_MOTION.walk_foot(_cell_to_local(src), _cell_to_local(dst), src_e, dst_e, t)
 	if pawn.begin_segment_walk(dir):
-		pawn.sample_driven_gait(u)
-	_track_step_sort(u, pawn, src, dst)
+		pawn.sample_driven_gait(split.x)
+	_track_step_sort(split.x, pawn, src, dst)
 	_follow_walker(pawn)
 
 

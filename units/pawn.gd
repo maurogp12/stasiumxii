@@ -8,11 +8,10 @@ class_name Pawn
 ## That cell is drawn on WalkDraw. A paused strip keeps one cell on device
 ## while the pawn eases, which is the idle slide.
 ## Painted looks (4 Oct 2026): `art/characters/<class>/walk/` holds the
-## 12-cell walk per facing (StripLibrary.painted_cells). The frame follows the
-## distance walked (painted_walk_frames_per_tile, the no-slide stride), not
-## one cycle per tile, and
-## the sprite hop is off while it plays. The static files below are that
-## walk's frame 0.
+## 12-cell walk per facing (StripLibrary.painted_cells). The driven step
+## plants the contact frame on each tile edge and advances the other half of
+## the cycle with the eased travel. The sprite hop is off while it plays.
+## The static files below are that walk's frame 0.
 ## Painted actions (LOCKED, 4 Oct 2026): standing loops the painted idle on
 ## WalkDraw (same cell and pivot as walk f00, which stays the fallback). The
 ## painted attack, skill (as cast) and hit play once, evenly, with no lunge,
@@ -799,13 +798,8 @@ func walk_contact_frame() -> int:
 
 
 func _sampled_walk_frame(t: float, count: int) -> int:
-	var per_tile := painted_walk_frames_per_tile()
-	if per_tile > 0.0:
-		# Painted walk: the frame follows the distance walked on this path
-		# (eased travel), at the spec rate. That rate is capped at natural
-		# leg speed, so a capped class slides its foot a little.
-		var walked := float(_stride_tile) + VIEW_MOTION.step_travel(t)
-		return VIEW_MOTION.painted_walk_frame(walked, per_tile, count, walk_contact_frame())
+	# t is this tile's travel, 0 and 1 on the contact. A distance times the
+	# no-slide rate walks off that plant, so the feet never meet the tile.
 	return VIEW_MOTION.walk_cycle_frame(t, count, _stride_tile, walk_contact_frame())
 
 
