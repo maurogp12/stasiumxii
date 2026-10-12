@@ -103,7 +103,9 @@ func _test_tables() -> void:
 	var gear: Dictionary = doc["gear"]
 	eq(float(gear["world_chance"]) <= 1.0, true, "world gear chance is at most 100%")
 	eq(str(gear["world_tier"]), "Normal", "world fights drop Normal-tier pieces")
-	eq(gear["dungeon_chests"], [{"room": "a", "row": "star"}, {"room": "b", "row": "boss"}], "a dungeon win: room A's chest at the star row, the boss chest at the boss row")
+	eq(gear["dungeon_chests"], [{"room": "b", "row": "star"}], "a dungeon win: one chest, at the boss, on the star's row (Mauro: \"Un cofre\")")
+	eq(gear["daily_clear_cap"], null, "no daily clear cap on PC (Mauro: \"Sin límite\")")
+	eq(absf(float(gear["world_chance"]) - 0.08) < 0.0001, true, "world fights: 8% of a Normal piece a win (Proposed)")
 	eq(gear["mission_tiers"], {"regular": "Normal", "rare": "Rare"}, "mission shares map to chest tiers")
 	eq(gear["ultra"]["source"], "koliseo_shop", "Ultra parts come from the Koliseo shop")
 	eq(int(gear["ultra"]["cost"]), 30, "30 coins per Ultra part")
@@ -152,11 +154,13 @@ func _test_rolls(book) -> void:
 		var probe: Dictionary = book.roll("dungeon", {
 			"dungeon_id": "old_granary_cellar", "stars": 1, "class_id": "Ironjaw", "level": 1,
 		}, _rng(400 + n))
-		var first_two: Array = (probe["items"] as Array).slice(0, 2)
-		eq(first_two.size(), 2, "a cellar win pays two chest pieces")
-		for item in first_two:
-			eq(Gear.is_valid_item_id(str(item["item_id"])), true, "a chest piece is a ladder part (%s)" % str(item["item_id"]))
-		eq(str(first_two[0]["rarity"]), "normal", "★1 room A's chest is Normal")
+		var gear_items: Array = []
+		for item in probe["items"]:
+			if Gear.is_valid_item_id(str(item["item_id"])):
+				gear_items.append(item)
+		eq(gear_items.size(), 1, "a cellar win pays one chest piece")
+		eq(str(gear_items[0]["rarity"]), "normal", "★1's chest is Normal")
+		eq(str(gear_items[0]["chest"]), "b", "the chest is the boss's")
 	for n in 40:
 		var drop: Dictionary = book.roll("dungeon", {
 			"dungeon_id": "old_granary_cellar", "stars": 5, "class_id": "Bastion", "level": 1,

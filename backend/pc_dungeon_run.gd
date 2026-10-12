@@ -8,8 +8,8 @@ extends RefCounted
 ## XP (spec 4.8, Proposed): dungeon_win share (balance_inputs, 27%) of
 ## xp_to_next(L) x star x pace(player level). L is the run level: the hero's
 ## level clamped into the dungeon's band. Star is 1 (stars are not built).
-## Coins and items: pc_rewards.roll("dungeon", ...): two gear chests (room A
-## at the star row, room B's boss at the boss row, mobile odds), the Mystery
+## Coins and items: pc_rewards.roll("dungeon", ...): one gear chest at the
+## boss on the chosen star's tier row (Mauro: "Un cofre"), the Mystery
 ## Box chance, the dungeon's star_drops. `hero_gear` (pc_progress.fight_gear)
 ## goes into the hero of every room, so worn gear counts in the fight.
 
@@ -24,7 +24,7 @@ const MAX_STAR := 5
 ## level-curve base XP (4.8) and multiplies it by the star the same way.
 const XP_STAR_LINEAR := true
 ## The gear chests carry the tiers (pc_gear.gd: Normal from ★1, Rare from
-## ★3, Legendary at ★5 or on the boss chest). The ★5 Mystery Box stays
+## ★3, Legendary at ★5). The ★5 Mystery Box stays
 ## guaranteed (rewards.json gear.star5_box).
 const LEGENDARY_FROM_STAR := 5
 

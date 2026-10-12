@@ -180,9 +180,9 @@ def main() -> None:
         "format_version": 2,
         "status": "proposed",
         "notes": [
-            "Set parts are the mobile gear ladder: 23 sets in backend/pc_gear.gd (origin/mobile 7035f8f backend/gear_bag.gd), slots weapon, head, chest, legs, boots. Item ids are mobile's, <set>.<slot>. Mauro, 11 Oct 2026: \"Ok entonces utiliza los de mobil\".",
-            "Dungeon win (Proposed): two chests, one piece each at +0. Room A's chest rolls the star row (100 / 70-30 / 60-30-10 for ★1-2 / ★3-4 / ★5), room B's boss chest rolls the boss row (50 / 30 / 20). Each chest rolls a tier, then a set of that tier at equal odds, then a slot (weapon 18%, each other slot 20.5%). Mobile pays one chest per Stasis clear with a cap of 5 clears a day; PC dungeons keep no daily cap. Mauro: \"Sí, como en el móvil\".",
-            "World fights (Proposed): world_chance per win of one Normal-tier piece (Ashmantle and the five class Normal sets at equal odds). Missions (Proposed): the rank's regular share is a Normal-tier piece, its rare share a Rare-tier piece (the five class Rare sets). The Mystery Box part rows map the same way.",
+            "Set parts are the mobile gear ladder: 22 sets in backend/pc_gear.gd (origin/mobile 7035f8f backend/gear_bag.gd), slots weapon, head, chest, legs, boots. Item ids are mobile's, <set>.<slot>. Mauro, 11 Oct 2026: \"Ok entonces utiliza los de mobil\".",
+            "Dungeon win: one gear chest, at the boss (room B), one piece at +0, rolled on the chosen star's tier row: ★1-2 all Normal, ★3-4 70 / 30 Normal / Rare, ★5 60 / 30 / 10 Normal / Rare / Legendary. The chest rolls a tier, then a set of that tier at equal odds, then a slot (weapon 18%, each other slot 20.5%). No daily clear cap on PC (mobile caps Stasis chests at 5 clears a day). Mauro, 12 Oct 2026: \"Un cofre\", \"Sin límite\"; earlier \"Sí, como en el móvil\".",
+            "World fights (Proposed): world_chance per win of one Normal-tier piece (Ashmantle and the five class Normal sets at equal odds), through pc_gear.roll_world_drop(zone_level, rng). 0.08 is sized so a hero on the normal mix (about 14 world wins a level, so about 140 a 10-level band) finds about 11 Normal pieces a band, about 4 of them for its own class or Ashmantle, which covers about 3 slots. The open-world zone monsters that will pay these drops are a later package. Mauro, 12 Oct 2026: \"Para eso tiene que haber mobs en el openworld… debe de haber zonas de lvl\". Missions (Proposed): the rank's regular share is a Normal-tier piece, its rare share a Rare-tier piece (the five class Rare sets). The Mystery Box part rows map the same way.",
             "Ultra sets (Gatewarden, Sandhawk, Pitmaw, Hushring, Mercywell) never drop. Source koliseo_shop, 30 Koliseo coins per piece. PC has no Koliseo shop or Koliseo wallet yet (Open).",
             "Class sets fit only their class; Ashmantle and Brightedge fit any class. Drops are uniform over sets, so a hero receives other classes' pieces. Selling and trading are not built (the Trader NPCs say the shop is not open).",
             "Epics, relics, the Mystery Box and star_drops are a separate layer and roll as before. The ★5 Mystery Box stays guaranteed. The ★5 guaranteed Rare part and the old Rare-part roll are retired: the chests carry the tiers now. The blight's tier-50 Rotting Elder pool is gone with the old sets.",
@@ -227,10 +227,11 @@ def main() -> None:
         "gear": {
             "source": "res://backend/pc_gear.gd",
             "dungeon_chests": [
-                {"room": "a", "row": "star"},
-                {"room": "b", "row": "boss"},
+                {"room": "b", "row": "star"},
             ],
-            "world_chance": 0.03,
+            "daily_clear_cap": None,
+            "world_chance": 0.08,
+            "world_band_levels": 10,
             "world_tier": "Normal",
             "mission_tiers": {"regular": "Normal", "rare": "Rare"},
             "box_tiers": {"regular": "Normal", "rare": "Rare"},

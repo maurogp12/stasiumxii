@@ -643,8 +643,8 @@ func _test_rewards_per_star() -> void:
 			var h = _fresh_hero()
 			var s2: Dictionary = run.pay_out(h, null, _rng(200 + t), false)
 			for item in s2["items"]:
-				# Room A's chest rolls the star row (no Rare below ★3).
-				if str(item.get("chest", "")) == "a" and str(item.get("rarity", "")) != "normal":
+				# The boss chest rolls the star's row (no Rare below ★3).
+				if str(item.get("chest", "")) == "b" and str(item.get("rarity", "")) != "normal":
 					rares += 1
 				if Gear.is_valid_item_id(str(item.get("item_id", ""))):
 					chests += 1
@@ -657,9 +657,9 @@ func _test_rewards_per_star() -> void:
 			base_coins = int(summary["coins"])
 		eq(int(summary["xp"]), base_xp * star, "★%d XP is %d x %d" % [star, base_xp, star])
 		eq(int(summary["coins"]), base_coins * star, "★%d coins are ★1 coins x %d" % [star, star])
-		eq(chests, trials * 2, "★%d every win pays two gear chests (room A, the boss)" % star)
+		eq(chests, trials, "★%d every win pays one gear chest, at the boss" % star)
 		if star < 3:
-			eq(rares, 0, "★%d room A's chest is always Normal" % star)
+			eq(rares, 0, "★%d the boss chest is always Normal" % star)
 		if star == 5:
 			eq(boxes >= trials, true, "★5 always drops a Mystery Box")
 		var hero = _fresh_hero()

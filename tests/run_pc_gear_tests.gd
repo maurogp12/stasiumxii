@@ -59,6 +59,7 @@ func _run() -> void:
 	_test_hp_pct()
 	_test_chest_odds()
 	_test_uniform_sets()
+	_test_world_drop()
 	_test_ultra_never_drops()
 	_test_class_fit()
 	_test_migration()
@@ -319,7 +320,30 @@ func _test_chest_odds() -> void:
 	for item in won["items"]:
 		if Gear.is_valid_item_id(str(item["item_id"])):
 			chests.append(str(item.get("chest", "")))
-	eq(chests, ["a", "b"], "a dungeon win pays two chests: room A and the boss")
+	eq(chests, ["b"], "a dungeon win pays one chest, at the boss (Mauro: \"Un cofre\")")
+	# The boss chest rolls the chosen star's row, not mobile's boss row.
+	for star in [1, 2]:
+		var srng := _rng(70 + star)
+		for i in 400:
+			for item in book.roll("dungeon", {"dungeon_id": "old_granary_cellar", "level": 2, "stars": star}, srng)["items"]:
+				if Gear.is_valid_item_id(str(item["item_id"])) and str(item["rarity"]) != "normal":
+					eq(str(item["rarity"]), "normal", "★%d chest is always Normal" % star)
+	var leg := 0
+	var lrng := _rng(91)
+	var n5 := 3000
+	for i in n5:
+		for item in book.roll("dungeon", {"dungeon_id": "old_granary_cellar", "level": 2, "stars": 5}, lrng)["items"]:
+			if str(item.get("rarity", "")) == "legendary":
+				leg += 1
+	eq(absf(float(leg) / n5 - 0.10) < 0.02, true, "★5 chest Legendary %.3f near 0.10" % (float(leg) / n5))
+	# No daily cap: the 30th win of a run of wins still pays.
+	var many := 0
+	var mrng := _rng(5)
+	for i in 30:
+		for item in book.roll("dungeon", {"dungeon_id": "old_granary_cellar", "level": 2, "stars": 1}, mrng)["items"]:
+			if Gear.is_valid_item_id(str(item["item_id"])):
+				many += 1
+	eq(many, 30, "no daily cap: 30 wins pay 30 chests")
 
 
 func _test_uniform_sets() -> void:
@@ -346,6 +370,55 @@ func _test_uniform_sets() -> void:
 		for item in book.roll("world", {"level": 5}, world_rng)["items"]:
 			seen_world[Gear.rarity_of(Gear.family_of(str(item["item_id"])))] = true
 	eq(seen_world.keys(), ["Normal"], "world fights drop Normal-tier pieces only")
+
+
+## World fights, for the open-world zone monsters to come (Mauro, 12 Oct
+## 2026: "Para eso tiene que haber mobs en el openworld… debe de haber zonas
+## de lvl"): roll_world_drop(zone_level, rng), chance from rewards.json.
+func _test_world_drop() -> void:
+	var rules := Gear.world_rules()
+	eq(absf(float(rules["world_chance"]) - 0.08) < 0.0001, true, "world chance 0.08 from the data")
+	var rng := _rng(808)
+	var n := 20000
+	var got := 0
+	var levels := {}
+	for i in n:
+		var piece := Gear.roll_world_drop(17, rng)
+		if piece.is_empty():
+			continue
+		got += 1
+		eq(Gear.rarity_of(str(piece["family"])), "Normal", "a world drop is Normal")
+		eq(int(piece["plus"]), 0, "a world drop is +0")
+		levels[int(piece["zone_level"])] = true
+	eq(absf(float(got) / n - 0.08) < 0.006, true, "world drop rate %.4f near 0.08" % (float(got) / n))
+	eq(levels.keys(), [17], "the drop carries its zone level")
+	eq(Gear.roll_world_drop(5, _rng(1), 0.0).is_empty(), true, "chance 0 drops nothing")
+	eq(Gear.roll_world_drop(5, _rng(1), 1.0, "Rare")["rarity"], "Rare", "the tier is a parameter")
+	# The proposed rate: about 14 world wins a level (balance_inputs: world 50%
+	# of XP at 3.5% of a step a fight) over a 10-level band gives about three
+	# wearable Normal slots.
+	var est := Gear.world_band_estimate(14.0)
+	eq(float(est["slots"]) > 2.5 and float(est["slots"]) < 3.5, true, "about 3 Normal slots a band (%.2f slots, %.1f pieces, %.1f wearable)" % [float(est["slots"]), float(est["pieces"]), float(est["wearable"])])
+	# Simulated: one class over a band of world wins.
+	var srng := _rng(4242)
+	var bands := 400
+	var total_slots := 0
+	for b in bands:
+		var slots := {}
+		for w in 140:
+			var p := Gear.roll_world_drop(5, srng)
+			if p.is_empty():
+				continue
+			if Gear.can_wear(str(p["family"]), "kestrel"):
+				slots[str(p["slot"])] = true
+		total_slots += slots.size()
+	var mean := float(total_slots) / bands
+	eq(mean > 2.4 and mean < 3.6, true, "a Kestrel ends a 140-win band with about 3 Normal slots filled (%.2f)" % mean)
+	# The rewards roll goes through the same pipe.
+	var book = Rewards.load_default()["rewards"]
+	var a := Gear.roll_world_drop(9, _rng(3))
+	var b: Dictionary = book.roll_world_drop(9, _rng(3))
+	eq(str(a.get("item_id", "")), str(b.get("item_id", "")), "pc_rewards.roll_world_drop is the pc_gear pipe")
 
 
 func _test_ultra_never_drops() -> void:

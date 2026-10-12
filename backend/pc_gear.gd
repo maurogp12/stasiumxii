@@ -727,6 +727,58 @@ static func roll_tier_chest(rarity: String, rng: RandomNumberGenerator) -> Dicti
 	return roll_piece(weights, rng)
 
 
+## World fight drop, for the open-world zone monsters (a later package;
+## Mauro, 12 Oct 2026: "Para eso tiene que haber mobs en el openworld… debe
+## de haber zonas de lvl"). One win: `chance` (rewards.json gear.world_chance,
+## Proposed 0.08) of one piece of `tier` (gear.world_tier, Normal) at +0.
+## The tier roll is fixed, so a set of that tier is picked at equal odds,
+## then a weighted slot. `zone_level` rides on the drop for the zone and
+## level-gap rules to come; it does not change the odds yet. A chance below 0
+## reads the data. Returns {} when nothing drops. Draws: one rng.randf() for
+## the chance, then three for the piece.
+static func roll_world_drop(zone_level: int, rng: RandomNumberGenerator, chance: float = -1.0, tier: String = "") -> Dictionary:
+	if chance < 0.0 or tier == "":
+		var rules := world_rules()
+		if chance < 0.0:
+			chance = float(rules.get("world_chance", 0.0))
+		if tier == "":
+			tier = str(rules.get("world_tier", "Normal"))
+	if rng.randf() >= chance:
+		return {}
+	var piece := roll_tier_chest(tier, rng)
+	if piece.is_empty():
+		return {}
+	piece["zone_level"] = maxi(zone_level, 1)
+	return piece
+
+
+static var _world_rules: Dictionary = {}
+
+
+## rewards.json gear block (world_chance, world_tier, world_band_levels).
+static func world_rules() -> Dictionary:
+	if _world_rules.is_empty():
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/world/rewards.json"))
+		if typeof(parsed) == TYPE_DICTIONARY and typeof((parsed as Dictionary).get("gear", null)) == TYPE_DICTIONARY:
+			_world_rules = (parsed["gear"] as Dictionary).duplicate(true)
+	return _world_rules
+
+
+## Expected Normal pieces a hero finds over one zone band at `wins_per_level`
+## world wins a level: total, and the share it can wear (its class's Normal
+## set and Ashmantle out of the six Normal sets).
+static func world_band_estimate(wins_per_level: float, chance: float = -1.0, band_levels: int = -1) -> Dictionary:
+	var rules := world_rules()
+	if chance < 0.0:
+		chance = float(rules.get("world_chance", 0.0))
+	if band_levels < 0:
+		band_levels = int(rules.get("world_band_levels", 10))
+	var pieces := wins_per_level * float(band_levels) * chance
+	var wearable := pieces * 2.0 / float(families_of_rarity("Normal").size())
+	var slots := float(SLOTS.size()) * (1.0 - pow(1.0 - 1.0 / float(SLOTS.size()), wearable))
+	return {"pieces": pieces, "wearable": wearable, "slots": slots}
+
+
 ## +0 point budget. 1 Mastery = 1, 2 HP = 1, 1 Resist = 2, 2 Init = 1, 1% crit = 1.
 static func budget_points(family: String) -> int:
 	var points := 0

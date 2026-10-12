@@ -904,8 +904,8 @@ func _test_rewards_per_star() -> void:
 			var h = _fresh_hero()
 			var s2: Dictionary = run.pay_out(h, null, _rng(200 + t), false)
 			for item in s2["items"]:
-				# Room A's chest rolls the star row (no Rare below ★3).
-				if str(item.get("chest", "")) == "a" and str(item.get("rarity", "")) != "normal":
+				# The boss chest rolls the star's row (no Rare below ★3).
+				if str(item.get("chest", "")) == "b" and str(item.get("rarity", "")) != "normal":
 					rares += 1
 				if Gear.is_valid_item_id(str(item.get("item_id", ""))):
 					chests += 1
@@ -923,9 +923,9 @@ func _test_rewards_per_star() -> void:
 			base_coins = int(summary["coins"])
 		eq(int(summary["xp"]), base_xp * star, "★%d XP is %d x %d" % [star, base_xp, star])
 		eq(int(summary["coins"]), base_coins * star, "★%d coins are ★1 coins x %d" % [star, star])
-		eq(chests, trials * 2, "★%d every win pays two gear chests (room A, the boss)" % star)
+		eq(chests, trials, "★%d every win pays one gear chest, at the boss" % star)
 		if star < 3:
-			eq(rares, 0, "★%d room A's chest is always Normal" % star)
+			eq(rares, 0, "★%d the boss chest is always Normal" % star)
 		if star == 5:
 			eq(boxes >= trials, true, "★5 always drops a Mystery Box")
 		var hero = _fresh_hero()
@@ -979,8 +979,9 @@ func _test_rosary() -> void:
 	eq(str(book.can_wear("abbess_rosary", "epic", 32, "Kestrel")["reason"]), "level", "a level-32 hero carries the Rosary until level 40")
 	eq(bool(book.can_wear("abbess_rosary", "epic", 40, "Kestrel")["ok"]), true, "a level-40 hero can wear it")
 	# Seeded ★1-★4 rewards are pinned. The pins were retaken when the mobile
-	# gear chests replaced the level-tier sets (claude/pc-mobile-gear): two
-	# chest pieces a win now use 6 draws before the box and star_drops draws.
+	# gear chests replaced the level-tier sets (claude/pc-mobile-gear): one
+	# chest piece a win (Mauro: "Un cofre") uses 3 draws before the box and
+	# star_drops draws.
 	var pins := ["64e26f43b4408cd6075f8977c8cc1266", "63637164617bb9f05515eff9588f979f", "8c770b04d6bb8989ec3afb7326c7ea78", "cba1049687575a9046231115df08c21d"]
 	for star in range(1, 5):
 		var text := ""

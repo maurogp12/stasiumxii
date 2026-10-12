@@ -251,7 +251,7 @@ func gear_piece(rarity: String, rng: RandomNumberGenerator) -> Dictionary:
 	return _piece_row(Gear.roll_tier_chest(rarity, rng), "")
 
 
-## One dungeon chest piece: the star row, or the boss row.
+## One dungeon chest piece: the star row, or mobile's boss row (unused on PC).
 func chest_piece(star: int, boss: bool, rng: RandomNumberGenerator) -> Dictionary:
 	return _piece_row(Gear.roll_chest(star, boss, rng), "b" if boss else "a")
 
@@ -421,12 +421,20 @@ func _is_tenth(context: Dictionary) -> bool:
 
 
 
-## World fight (Proposed): world_chance of one Normal-tier piece.
-func _roll_world(_context: Dictionary, rng: RandomNumberGenerator, items: Array) -> void:
+## World fight (Proposed): pc_gear.roll_world_drop with this file's
+## world_chance and world_tier. `level` in the context is the zone level.
+func roll_world_drop(zone_level: int, rng: RandomNumberGenerator) -> Dictionary:
 	var gear: Dictionary = _doc["gear"]
-	if rng.randf() >= float(gear.get("world_chance", 0)):
-		return
-	var piece := gear_piece(str(gear.get("world_tier", "Normal")), rng)
+	var rolled := Gear.roll_world_drop(zone_level, rng, float(gear.get("world_chance", 0)), str(gear.get("world_tier", "Normal")))
+	if rolled.is_empty():
+		return {}
+	var row := _piece_row(rolled, "")
+	row["zone_level"] = int(rolled["zone_level"])
+	return row
+
+
+func _roll_world(context: Dictionary, rng: RandomNumberGenerator, items: Array) -> void:
+	var piece := roll_world_drop(int(context.get("zone_level", context.get("level", 1))), rng)
 	if not piece.is_empty():
 		items.append(piece)
 
@@ -455,9 +463,9 @@ func _roll_mission(context: Dictionary, rng: RandomNumberGenerator, items: Array
 		items.append(piece)
 
 
-## Dungeon win: one chest per gear.dungeon_chests row (room A at the star
-## row, room B at the boss row), then the Mystery Box chance by star, then
-## the dungeon's star_drops.
+## Dungeon win: one chest per gear.dungeon_chests row (PC: one chest, at the
+## boss, on the chosen star's row; Mauro, 12 Oct 2026: "Un cofre"), then the
+## Mystery Box chance by star, then the dungeon's star_drops. No daily cap.
 func _roll_dungeon(context: Dictionary, rng: RandomNumberGenerator, items: Array) -> void:
 	var dungeon := _dungeon(str(context.get("dungeon_id", "")))
 	if dungeon.is_empty():
