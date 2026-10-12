@@ -755,95 +755,77 @@ static func glide_travel(t: float, _first: bool = false, _last: bool = false) ->
 	return tile_ease(t)
 
 
-## Painted walks. The sheet's no-slide rate is how many of its frames the
-## planted foot needs in order to cover one tile. Playing fewer, while the
-## body keeps moving, is the moonwalk. Authored fps keeps that rate from
-## turning into a blur. A contact (every 6th frame) holds the body still.
-const WALK_AUTHORED_FPS := 17.144
-const PLANT_HOLD_SEC := 0.14
+## Painted walks. The sheet's no-slide rate is how many frames one tile of
+## foot travel takes. The body never stops on a contact: the cycle is locked
+## to ground distance, so one 12-frame cycle covers that measured stride.
+## A sheet that needs more than 1.5 cycles per tile walks a little slower
+## (0.45s) instead of pausing. Matches Pawn.WALK_TILE_SEC for the others.
+const WALK_TILE_SEC := 0.34
+const WALK_SLOW_TILE_SEC := 0.45
+const WALK_SHEET_FRAMES := 12.0
+const WALK_CYCLE_CAP := 1.5
 const CLIMB_RISE_SEC := 0.34
 const STEP_BOB_PX := 4.0
 const CLIMB_HOP_PX := 7.0
 
 
-static func _frame_is_contact(frame: float) -> bool:
-	var m := fposmod(frame, 6.0)
-	return m < 0.05 or m > 5.95
+static func walk_cycles_per_tile(no_slide: float) -> float:
+	return maxf(no_slide, 0.5) / WALK_SHEET_FRAMES
 
 
-## One tile, in order. `frame0` is the cycle position at the start of the
-## tile (tiles already walked times the no-slide rate), so the stride does
-## not restart on every cell. A climb finishes the step, holds, then rises.
-static func walk_timeline(no_slide: float, frame0: float, climbing: bool) -> Dictionary:
-	var span := maxf(no_slide, 0.5)
-	var frame_end := frame0 + span
-	var segs: Array = []
-	var cursor := 0.0
-	var frame := frame0
-	if _frame_is_contact(frame):
-		segs.append({"kind": "hold", "t": cursor, "dur": PLANT_HOLD_SEC, "u": 0.0, "f": frame})
-		cursor += PLANT_HOLD_SEC
-	var guard := 0
-	while frame < frame_end - 0.001 and guard < 24:
-		guard += 1
-		var next_contact: float = (float(floor(frame / 6.0)) + 1.0) * 6.0
-		var dest: float = minf(next_contact, frame_end)
-		if dest <= frame + 0.0001:
-			dest = minf(frame + span, frame_end)
-		var dur := maxf((dest - frame) / WALK_AUTHORED_FPS, 0.02)
-		segs.append({
-			"kind": "move",
-			"t": cursor,
-			"dur": dur,
-			"u0": (frame - frame0) / span,
-			"u1": (dest - frame0) / span,
-			"f0": frame,
-			"f1": dest,
-		})
-		cursor += dur
-		frame = dest
-		if frame < frame_end - 0.05 and _frame_is_contact(frame):
-			var u := (frame - frame0) / span
-			segs.append({"kind": "hold", "t": cursor, "dur": PLANT_HOLD_SEC, "u": u, "f": frame})
-			cursor += PLANT_HOLD_SEC
+static func walk_travel_sec(no_slide: float) -> float:
+	if walk_cycles_per_tile(no_slide) > WALK_CYCLE_CAP:
+		return WALK_SLOW_TILE_SEC
+	return WALK_TILE_SEC
+
+
+## Horizontal time, plus the rise when the next tile is higher. No contact hold.
+static func walk_span(no_slide: float, _frame0: float, climbing: bool) -> float:
+	var travel := walk_travel_sec(no_slide)
 	if climbing:
-		segs.append({"kind": "rise", "t": cursor, "dur": CLIMB_RISE_SEC, "u": 1.0, "f": frame_end})
-		cursor += CLIMB_RISE_SEC
-	return {"segs": segs, "total": maxf(cursor, 0.05)}
+		return travel + CLIMB_RISE_SEC
+	return travel
 
 
-static func walk_span(no_slide: float, frame0: float, climbing: bool) -> float:
-	return float(walk_timeline(no_slide, frame0, climbing)["total"])
+## First step eases in and arrives at cruise speed. Last step leaves at
+## cruise speed and eases out. A one-tile path does both. Middle tiles are linear.
+static func walk_ground(k: float, first: bool, last: bool) -> float:
+	var u := clampf(k, 0.0, 1.0)
+	if first and last:
+		return tile_ease(u)
+	if first:
+		return u * u * (2.0 - u)
+	if last:
+		return u + u * u * (1.0 - u)
+	return u
 
 
-## t is 0..1 across walk_span. `u` is horizontal progress, `elev` is the
-## height blend, `frame` is the absolute cycle position, `bob` lifts the
-## visible sprite (0 on a plant).
-static func walk_sample(t: float, no_slide: float, frame0: float, climbing: bool) -> Dictionary:
-	var timeline := walk_timeline(no_slide, frame0, climbing)
-	var total := float(timeline["total"])
-	var time := clampf(t, 0.0, 1.0) * total
-	var segs: Array = timeline["segs"]
-	var chosen: Dictionary = segs[segs.size() - 1]
-	for seg in segs:
-		var t0 := float(seg["t"])
-		var dur := float(seg["dur"])
-		if time <= t0 + dur + 0.0001:
-			chosen = seg
-			break
-	var kind := str(chosen["kind"])
-	var k := 0.0
-	var step_dur := float(chosen["dur"])
-	if step_dur > 0.0:
-		k = clampf((time - float(chosen["t"])) / step_dur, 0.0, 1.0)
-	var eased := tile_ease(k)
-	if kind == "hold":
-		return {"u": float(chosen["u"]), "elev": 0.0, "frame": float(chosen["f"]), "bob": 0.0}
-	if kind == "rise":
-		return {"u": 1.0, "elev": eased, "frame": float(chosen["f"]), "bob": sin(k * PI) * CLIMB_HOP_PX}
-	var along := lerpf(float(chosen["u0"]), float(chosen["u1"]), eased)
-	var frame := lerpf(float(chosen["f0"]), float(chosen["f1"]), eased)
-	return {"u": along, "elev": 0.0, "frame": frame, "bob": sin(k * PI) * STEP_BOB_PX}
+## t is 0..1 across walk_span. `u` is horizontal progress and keeps moving
+## through the step. `frame` is the absolute cycle position, locked to `u`.
+## A climb finishes the step, then rises in place.
+static func walk_sample(t: float, no_slide: float, frame0: float, climbing: bool, first: bool = false, last: bool = false) -> Dictionary:
+	var span := maxf(no_slide, 0.5)
+	var travel := walk_travel_sec(no_slide)
+	var total := travel + (CLIMB_RISE_SEC if climbing else 0.0)
+	var time := clampf(t, 0.0, 1.0) * maxf(total, 0.0001)
+	if climbing and time > travel:
+		var rise := clampf((time - travel) / CLIMB_RISE_SEC, 0.0, 1.0)
+		return {
+			"u": 1.0,
+			"elev": tile_ease(rise),
+			"frame": frame0 + span,
+			"bob": sin(rise * PI) * CLIMB_HOP_PX,
+		}
+	var k := 0.0 if travel <= 0.0 else clampf(time / travel, 0.0, 1.0)
+	var along := walk_ground(k, first, last)
+	var frame := frame0 + along * span
+	var phase := fposmod(frame, 6.0) / 6.0
+	return {
+		"u": along,
+		"elev": 0.0,
+		"frame": frame,
+		"bob": sin(phase * PI) * STEP_BOB_PX,
+	}
 
 
 ## The puff is the landing: the sample where hop Y returns to 0.

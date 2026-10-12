@@ -1951,8 +1951,8 @@ func _animate_path(seat: int, path: Array, origin: Vector2i = Vector2i(-1, -1)) 
 		# The squash after the landing stays quiet, and so does takeoff.
 		var dust := VIEW_MOTION.dust_on_plant(facing_changed, cell_i == cells.size() - 1)
 		if VIEW_MOTION.glide:
-			# Painted strides run at the sheet's no-slide rate and hold on
-			# each contact. A climb rises only after that step has stopped.
+			# Painted strides keep moving. The cycle is locked to ground speed.
+			# A climb rises only after that step has finished.
 			var first := cell_i == 0
 			var last := cell_i == cells.size() - 1
 			var per := pawn.painted_walk_frames_per_tile()
@@ -2043,8 +2043,8 @@ func _sample_walk_step(t: float, pawn: Pawn, src: Vector2i, dst: Vector2i) -> vo
 
 
 
-## Glide sample. Painted classes step at the stride rate: the body moves
-## only while the feet do, holds on a contact, and a climb rises after.
+## Glide sample. Painted classes keep moving. The walk cycle follows the
+## ground speed, and a climb rises after the step.
 func _sample_glide_step(t: float, pawn: Pawn, src: Vector2i, dst: Vector2i, _first: bool, _last: bool, tile_i: int) -> void:
 	if pawn == null or not is_instance_valid(pawn):
 		return
@@ -2058,7 +2058,7 @@ func _sample_glide_step(t: float, pawn: Pawn, src: Vector2i, dst: Vector2i, _fir
 	var along := 0.0
 	var elev_u := 0.0
 	if per > 0.0:
-		var sample := VIEW_MOTION.walk_sample(t, per, float(tile_i) * per, climbing)
+		var sample := VIEW_MOTION.walk_sample(t, per, float(tile_i) * per, climbing, _first, _last)
 		along = float(sample["u"])
 		elev_u = float(sample["elev"])
 		_step_along = along

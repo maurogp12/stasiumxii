@@ -34,7 +34,7 @@ func _initialize() -> void:
 	root.size = Vector2i(2400, 1080)
 	var select: GDScript = load("res://scenes/class_select.gd")
 	select.set("hotseat_map_id", "crosshaven")
-	select.set("hotseat_classes", ["ironjaw", "gloam"])
+	select.set("hotseat_classes", ["ironjaw", "mender"])
 	change_scene_to_file("res://main.tscn")
 	call_deferred("_drive")
 
@@ -66,9 +66,13 @@ func _drive() -> void:
 	_setup()
 	if _mode == "after":
 		_dump = true
-	await _frames(30)
+	await _frames(20)
 	await _board._submit({"type": "move", "to": Vector2i(7, 5), "seat": 0})
-	await _frames(80)
+	await _frames(12)
+	await _board._submit({"type": "end_turn", "seat": 0})
+	await _frames(8)
+	await _board._submit({"type": "move", "to": Vector2i(7, 8), "seat": 1})
+	await _frames(30)
 	_report()
 	if not _saved:
 		_save("walk_%s.png" % _mode)
@@ -88,8 +92,8 @@ func _setup() -> void:
 		"seed": 4,
 		"skip_deploy": true,
 		"map_id": "crosshaven",
-		"classes": ["ironjaw", "gloam"],
-		"positions": [Vector2i(4, 4), Vector2i(10, 10)],
+		"classes": ["ironjaw", "mender"],
+		"positions": [Vector2i(4, 4), Vector2i(4, 8)],
 	})
 	sim.set_tile(Vector2i(6, 4), "ground", 1)
 	sim.set_tile(Vector2i(7, 4), "ground", 1)
@@ -97,6 +101,9 @@ func _setup() -> void:
 	var unit: Dictionary = sim._unit_by_seat(0)
 	unit["mp"] = 8
 	unit["max_mp"] = 8
+	var mender: Dictionary = sim._unit_by_seat(1)
+	mender["mp"] = 6
+	mender["max_mp"] = 6
 	if _board.has_method("_rebuild_pawns"):
 		_board._rebuild_pawns()
 	if _board.has_method("_refresh"):
@@ -130,6 +137,33 @@ func _note_sample() -> void:
 		bob = draw.position.length()
 	_samples.append({
 		"i": _clip_i,
+		"seat": 0,
+		"pos": pawn.position,
+		"vis": vis,
+		"bob": bob,
+		"cell": pawn.grid_position,
+		"frame": frame,
+	})
+	_note_mender()
+
+
+func _note_mender() -> void:
+	if _board == null or not _board.pawns_by_seat.has(1):
+		return
+	var pawn: Pawn = _board.pawns_by_seat[1]
+	var frame := -1
+	var sampler := pawn.walk_sampler()
+	if sampler != null:
+		frame = sampler.frame
+	var draw := pawn.get_node_or_null("WalkDraw") as Sprite2D
+	var vis := pawn.position
+	var bob := 0.0
+	if draw != null:
+		vis = draw.global_position
+		bob = draw.position.length()
+	_samples.append({
+		"i": _clip_i,
+		"seat": 1,
 		"pos": pawn.position,
 		"vis": vis,
 		"bob": bob,
@@ -180,8 +214,12 @@ func _report() -> void:
 	var feet := _foot_misses(flat, 0) + _foot_misses(climb, 1)
 	var flat_contacts := _edge_contacts(flat, 0)
 	var climb_contacts := _edge_contacts(climb, 1)
-	print("PROBE flat_n=%d early=%.3f late=%.3f climb_n=%d y_above=%.2f x_hold=%.2f foot_miss=%d flat_contacts=%s climb_contacts=%s clip=%d" % [
-		flat.size(), flat_ease["early"], flat_ease["late"], climb.size(), climb_rise["y_above"], climb_rise["x_hold"], feet, flat_contacts, climb_contacts, _clip_i,
+	var flat_halt := _longest_halt(flat, Vector2i(4, 4), Vector2i(5, 4))
+	var mender := _moving_run(Vector2i(5, 8), Vector2i(6, 8))
+	var mender_halt := _longest_halt(mender, Vector2i(5, 8), Vector2i(6, 8))
+	var mender_ease := _ease_marks(mender, Vector2i(5, 8), Vector2i(6, 8))
+	print("PROBE flat_n=%d early=%.3f late=%.3f halt=%d climb_n=%d y_above=%.2f x_hold=%.2f foot_miss=%d mender_n=%d mender_early=%.3f mender_late=%.3f mender_halt=%d flat_contacts=%s climb_contacts=%s clip=%d" % [
+		flat.size(), flat_ease["early"], flat_ease["late"], flat_halt, climb.size(), climb_rise["y_above"], climb_rise["x_hold"], feet, mender.size(), mender_ease["early"], mender_ease["late"], mender_halt, flat_contacts, climb_contacts, _clip_i,
 	])
 	var lines := PackedStringArray()
 	lines.append("flat_n=%d early=%.3f late=%.3f" % [flat.size(), flat_ease["early"], flat_ease["late"]])
@@ -203,6 +241,10 @@ func _moving_run(src_cell: Vector2i, dst_cell: Vector2i) -> Array[Dictionary]:
 	var span := dst - src
 	var out: Array[Dictionary] = []
 	for sample in _samples:
+		if int(sample.get("seat", 0)) != 0 and src_cell.y < 7:
+			continue
+		if int(sample.get("seat", 0)) != 1 and src_cell.y >= 7:
+			continue
 		if sample["cell"] != src_cell:
 			continue
 		var pos: Vector2 = sample["pos"]
@@ -257,6 +299,26 @@ func _rise_gap(run: Array[Dictionary], src_cell: Vector2i, dst_cell: Vector2i) -
 			if pos.y < planted_y - 3.0:
 				break
 	return {"y_above": y_above, "x_hold": x_hold}
+
+
+## Longest run of frames where the foot barely moves. A contact hold is
+## several of these in a row. A gentle ease-in is one or two.
+func _longest_halt(run: Array[Dictionary], src_cell: Vector2i, dst_cell: Vector2i) -> int:
+	var src: Vector2 = _board._cell_to_local(src_cell)
+	var dst: Vector2 = _board._cell_to_local(dst_cell)
+	var span := dst - src
+	var best := 0
+	var streak := 0
+	var prev := -1.0
+	for sample in run:
+		var h := _progress(sample, src, span)
+		if prev >= 0.0 and absf(h - prev) < 0.008 and h < 0.98:
+			streak += 1
+			best = maxi(best, streak)
+		else:
+			streak = 0
+		prev = h
+	return best
 
 
 func _foot_misses(run: Array[Dictionary], tile_i: int) -> int:
