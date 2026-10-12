@@ -565,6 +565,38 @@ func _test_tracker(book) -> void:
 	eq(str(tracker._body.text).find("+1 more · J") >= 0, true, "the rows return after the toast")
 	eq(tracker._reward_card.visible, false, "the toast is gone")
 	tracker.queue_free()
+	_test_tracker_task_once(book)
+
+
+## Mauro's screenshot: a reach task showed "Reach Stone Ford" twice, because
+## a task's name and its step line are the same text.
+func _test_tracker_task_once(book) -> void:
+	_wipe_save()
+	var hero = Progress.new()
+	hero.mission_blob = {}
+	hero.level = 1
+	hero.xp = 0
+	book.accept("crossroads_guide_errand", hero)
+	book.on_talk("crossroads_trader", hero)
+	book.turn_in("crossroads_guide_errand", hero)
+	var took: Dictionary = book.accept("task_offer:crossroads_guide", hero)
+	eq(bool(took["ok"]), true, "a task is active for the tracker")
+	var stored: Dictionary = (hero.mission_blob["tasks"] as Dictionary)["crossroads_guide"]
+	var name := str(stored["name"])
+	eq(name.begins_with("Reach "), true, "the task is a reach task (%s)" % name)
+	var tracker = load("res://scenes/world/ui/mission_tracker.gd").new()
+	root.add_child(tracker)
+	tracker.setup(book, hero)
+	var body := str(tracker._body.text)
+	eq(body.count(name), 1, "the tracker shows a task's reach line once (%s)" % body.replace("\n", " | "))
+	# Stone Ford, as in the screenshot: the task row and the row text.
+	var ford := {"name": "Reach Stone Ford", "status": "active", "step": "Reach Stone Ford"}
+	eq(str(tracker.row_text(ford)), "Reach Stone Ford", "a step equal to the name is not repeated")
+	var story := {"name": "The stone ford", "status": "active", "step": "Reach Stone Ford"}
+	eq(str(tracker.row_text(story)), "The stone ford\nReach Stone Ford", "a story mission keeps its name and step")
+	var ready := {"name": "Reach Stone Ford", "status": "ready", "step": "Return to Guide"}
+	eq(str(tracker.row_text(ready)), "Reach Stone Ford\nReturn to Guide", "a ready task still says where to return")
+	tracker.queue_free()
 
 
 func _test_ready_level(book) -> void:

@@ -41,10 +41,21 @@ func refresh() -> void:
 		var record: Dictionary = rows[index]
 		if text != "":
 			text += "\n"
-		text += str(record["name"]) + "\n" + str(record["step"])
+		text += row_text(record)
 	if rows.size() > ROW_CAP:
 		text += "\n+%d more · J" % (rows.size() - ROW_CAP)
 	_body.text = text
+
+
+## One tracker entry: the mission name, then its next step. A repeatable
+## task is named after its step ("Reach Stone Ford" twice), so a step that
+## only repeats the name is shown once.
+static func row_text(record: Dictionary) -> String:
+	var name := str(record.get("name", ""))
+	var step := str(record.get("step", ""))
+	if step.strip_edges() == "" or step.strip_edges().to_lower() == name.strip_edges().to_lower():
+		return name
+	return name + "\n" + step
 
 
 func show_reward(result: Dictionary, hold: bool) -> void:
