@@ -2208,6 +2208,10 @@ func _patchy(cover: float, cell: Vector2i, i: int) -> float:
 		3:
 			corner = cell + Vector2i(0, 1)
 	var n := _hash(world_origin + corner + Vector2i(911, 37))
+	if smooth_shore:
+		# A gentler ramp: thin snow fades out over several cells instead of
+		# stopping on a line (the road into Northgate turned to cobble on one).
+		return clampf((cover - 0.5) * 1.4 + 0.5 + (0.5 - n) * 0.5, 0.0, 1.0)
 	return clampf(cover * 1.6 - 0.6 * n, 0.0, 1.0)
 
 
