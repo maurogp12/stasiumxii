@@ -817,6 +817,9 @@ func _redact_invisible_for_viewer(snap: Dictionary, events: Array, viewer_seat: 
 	var last: Variant = out_snap.get("last_events", [])
 	if last is Array:
 		_redact_events(last, hidden_seats, hidden_cells, secret)
+	var logged: Variant = out_snap.get("battle_log", [])
+	if logged is Array:
+		_redact_events(logged, hidden_seats, hidden_cells, secret)
 	if out_snap.has("coach"):
 		out_snap["coach"] = _scrub_coach(str(out_snap.get("coach", "")), secret)
 	return {"snapshot": out_snap, "events": out_events, "hidden_cells": hidden_cells}
@@ -836,6 +839,8 @@ func _redact_shades_for_viewer(out_snap: Dictionary, out_events: Array, viewer_s
 	var lists: Array = [out_events]
 	if out_snap.get("last_events", null) is Array:
 		lists.append(out_snap["last_events"])
+	if out_snap.get("battle_log", null) is Array:
+		lists.append(out_snap["battle_log"])
 	for list in lists:
 		for event in list:
 			if typeof(event) != TYPE_DICTIONARY:
@@ -862,6 +867,8 @@ func _redact_traps_for_viewer(out_snap: Dictionary, out_events: Array, viewer_se
 	var lists: Array = [out_events]
 	if out_snap.get("last_events", null) is Array:
 		lists.append(out_snap["last_events"])
+	if out_snap.get("battle_log", null) is Array:
+		lists.append(out_snap["battle_log"])
 	for list in lists:
 		for event in list:
 			if typeof(event) != TYPE_DICTIONARY:
