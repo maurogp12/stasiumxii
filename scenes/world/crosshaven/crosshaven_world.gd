@@ -2613,6 +2613,8 @@ func _play_movie(mode: String) -> void:
 			await _movie_visible_gear()
 		"gear_walk":
 			await _movie_gear_walk()
+		"gear_walk_close":
+			await _movie_gear_walk(5.0)
 		"wp4gate":
 			await _movie_wp4_gate()
 		"wp5astills":
@@ -3632,7 +3634,8 @@ func _movie_visible_gear() -> void:
 
 ## Visible gear pilot: the full Cragmaw set walking, then running, in all
 ## four facings (args: -- --movie gear_walk).
-func _movie_gear_walk() -> void:
+## `close` > 0 sets the camera zoom past the player limit for a leg close-up.
+func _movie_gear_walk(close: float = 0.0) -> void:
 	settings.apply_preset("Full")
 	_set_zoom(3.2)
 	weather.set_weather("clear")
@@ -3642,6 +3645,11 @@ func _movie_gear_walk() -> void:
 	walker.use_class("ironjaw")
 	walker.set_gear_parts(["cragmaw.weapon", "cragmaw.head", "cragmaw.chest", "cragmaw.legs", "cragmaw.boots"])
 	await enter_zone("crosshaven_crossroads", Vector2i(22, 18), false)
+	if close > 0.0:
+		await get_tree().create_timer(0.5).timeout
+		if _zoom_tween != null and is_instance_valid(_zoom_tween):
+			_zoom_tween.kill()
+		camera.zoom = Vector2.ONE * close
 	for pace in ["walk", "run"]:
 		_mark(pace)
 		if _banner != null:
