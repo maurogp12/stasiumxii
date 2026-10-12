@@ -356,11 +356,18 @@ static func _hit_recipes(event: Dictionary) -> Array:
 			"width": 4.0,
 		})
 	out.append_array(_resource_recipes(event, int(event.get("seat", -1)), cell_of(event.get("caster_cell", Vector2i.ZERO))))
-	if _wants_shake(event):
+	if bool(event.get("crit", false)) and int(event.get("damage", 0)) > 0:
+		# Punch when the blow lands, not at the start of the swing.
+		# A heavy crit uses this punch instead of the 4px board nudge.
+		out.append({
+			"id": "shake",
+			"block": 0.0,
+			"amplitude": 14.0,
+			"duration": 0.20,
+			"delay_spawn": ViewMotion.damage_resolve_sec(str(event.get("spell", ""))),
+		})
+	elif _wants_shake(event):
 		out.append({"id": "shake", "block": 0.0, "amplitude": VfxBudget.SHAKE_PX, "duration": VfxBudget.SHAKE_SEC})
-	elif bool(event.get("crit", false)) and int(event.get("damage", 0)) > 0:
-		# A crit that is not already a heavy hit still gets a small shake.
-		out.append({"id": "shake", "block": 0.0, "amplitude": VfxBudget.SHAKE_PX * 0.85, "duration": 0.14})
 	return out
 
 
@@ -412,14 +419,16 @@ static func _damage_hit_recipes(event: Dictionary) -> Array:
 		if crit:
 			out.append(_ring(cell, VfxPalette.EMBER, false, 0.24, 0.0, "crack"))
 		var damage_text := ("CRIT %d" % damage) if crit else str(damage)
-		var pop := 1.45 if crit else _back_scale(event)
+		var pop := 1.35 if crit else _back_scale(event)
 		var kind := "crit" if crit else "damage"
-		# The back chevron still marks a backstab. The big word stays CRIT.
+		# The back chevron still marks a backstab. The word stays CRIT, in gold.
 		var override := "" if crit else _back_text(event, damage_text)
-		var label := _number(target_seat, cell, damage_text, kind, number_delay, pop, override, _back_tint(event))
+		var number_tint := Color(0, 0, 0, 0) if crit else _back_tint(event)
+		var label := _number(target_seat, cell, damage_text, kind, number_delay, pop, override, number_tint)
 		if crit:
-			label["rise_sec"] = 0.32
-			label["fade_sec"] = 0.16
+			label["rise_sec"] = 0.22
+			label["fade_sec"] = 0.14
+			label["lift_px"] = 28.0
 		out.append(label)
 		var back := _back_tag(event)
 		if not back.is_empty():

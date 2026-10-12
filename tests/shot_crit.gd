@@ -1,7 +1,8 @@
 extends SceneTree
 
 ## Phone-fit crit. Window 2400×1080, logical view 1600×720.
-## xvfb-run -s "-screen 0 2560x1440x24" godot --rendering-driver opengl3 --fixed-fps 30 --path . -s res://tests/shot_crit.gd -- <out_dir> [before|after] --mobile-frame
+## xvfb-run -s "-screen 0 2560x1440x24" godot --rendering-driver opengl3 --fixed-fps 60 --path . -s res://tests/shot_crit.gd -- <out_dir> [before|after] --mobile-frame
+## `after` dumps every process frame. Encode at 60fps. No log panel during the clip.
 
 var _dir := "/opt/cursor/artifacts/crit_hit"
 var _mode := "after"
@@ -10,7 +11,14 @@ var _dump := false
 var _clip_i := 0
 var _saved := false
 var _watchdog := 0
-const CLIP_MAX := 180
+const CLIP_MAX := 360
+var _max_shake := 0.0
+var _max_recoil := 0.0
+var _label_text := ""
+var _label_size := 0
+var _label_top := ""
+var _hold_frames := 0
+var _last_recoil := -1.0
 
 
 func _initialize() -> void:
@@ -38,15 +46,13 @@ func _initialize() -> void:
 
 func _process(_delta: float) -> bool:
 	_watchdog += 1
-	if _watchdog > 700:
+	if _watchdog > 2400:
 		push_error("crit shot timed out")
 		quit(1)
 		return true
 	if _dump:
+		_probe()
 		_dump_frame()
-		if not _saved and _crit_label_up():
-			_save("crit_%s.png" % _mode)
-			_saved = true
 	return false
 
 
@@ -60,21 +66,26 @@ func _drive() -> void:
 			break
 	await _frames(6)
 	_setup()
+	await _frames(8)
 	if _mode == "after":
 		_dump = true
-	await _frames(12)
+	await _frames(20)
 	await _board._submit({"type": "cast", "spell": "strike", "seat": 0, "to": Vector2i(5, 4)})
-	await _frames(8)
+	# The cast awaits inside _submit. Keep dumping through the hit-stop.
+	await _frames(150)
 	if not _saved:
 		_save("crit_%s.png" % _mode)
-		_saved = true
+	_dump = false
 	_open_log()
-	await _frames(36)
+	await _frames(2)
 	var hud: CombatHUD = _board._hud
 	var body := "" if hud == null or hud._log_body == null else hud._log_body.get_parsed_text()
 	print("LOG\n%s" % body)
 	if _mode == "after" and not body.to_lower().contains("crit"):
 		push_error("log is missing the crit")
+	if _mode == "after" and not _label_text.contains("CRIT"):
+		push_error("the live number never read CRIT")
+	print("PROBE shake=%.2f recoil=%.2f hold_frames=%d label=%s size=%d top=%s" % [_max_shake, _max_recoil, _hold_frames, _label_text, _label_size, _label_top])
 	print("CRIT done saved=%s clip=%d" % [_saved, _clip_i])
 	quit(0)
 
@@ -106,21 +117,42 @@ func _setup() -> void:
 		hud._layout_chrome()
 
 
-func _crit_label_up() -> bool:
-	if _board == null:
-		return false
+func _probe() -> void:
+	if _board == null or _board._camera == null:
+		return
+	_max_shake = maxf(_max_shake, _board._camera.offset.length() * _board._camera.zoom.x)
+	if not _board.pawns_by_seat.has(1):
+		return
+	var pawn: Pawn = _board.pawns_by_seat[1]
+	var recoil := 0.0
+	var strip: Node = pawn.get("_active_strip")
+	if strip != null:
+		recoil = maxf(recoil, strip.position.length())
+	var draw: Node2D = pawn.get_node_or_null("WalkDraw")
+	if draw != null:
+		recoil = maxf(recoil, draw.position.length())
+	if _last_recoil > 8.0 and absf(recoil - _last_recoil) < 0.4:
+		_hold_frames += 1
+	_last_recoil = recoil
+	_max_recoil = maxf(_max_recoil, recoil)
 	var vfx: Node = _board.get("_vfx")
 	if vfx == null:
-		return false
+		return
 	var pools: Variant = vfx.get("_pools")
 	if typeof(pools) != TYPE_DICTIONARY:
-		return false
+		return
 	for node in pools.get("number", []):
 		if node == null or not bool(node.get("in_use")):
 			continue
-		if str(node.get("_text")).contains("CRIT"):
-			return true
-	return false
+		var text := str(node.get("_text"))
+		if text.contains("CRIT"):
+			_label_text = text
+			_label_size = int(node.get("_font_size"))
+			var top: Color = node.get("_top")
+			_label_top = top.to_html(false)
+			if not _saved and recoil > 8.0:
+				_save("crit_%s.png" % _mode)
+				_saved = true
 
 
 func _open_log() -> void:

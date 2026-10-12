@@ -1137,18 +1137,16 @@ func play_view_plan(plan: Dictionary) -> float:
 			tw.tween_callback(_interrupt_stride_for_flinch)
 			tw.tween_callback(_end_body_strip)
 			var hit_stop := float(step.get("stop", 0.0))
+			var hit_dir: Vector2 = step.get("dir", Vector2.ZERO)
+			var force_knock := bool(step.get("force_knock", false))
+			var knock_px := float(step.get("knock_px", 0.0))
 			if not _strip_choice("hit").is_empty():
 				var hit_play := _fit_strip_window("hit", sec, steps)
 				tw.tween_callback(_start_kind_strip.bind("hit", hit_play))
 				total += hit_play - sec
 				sec = hit_play
-				if hit_stop >= 0.06:
-					# Hold the contact frame. The clock is not paused.
-					tw.tween_callback(_freeze_hit_strip)
-					tw.tween_interval(hit_stop)
-					tw.tween_callback(_thaw_hit_strip)
-					total += hit_stop
-			tw.tween_method(_sample_hit.bind(step.get("dir", Vector2.ZERO), hit_stop), 0.0, 1.0, sec)
+			# A crit holds at the peak of the knock, not on the first cell.
+			tw.tween_method(_sample_hit.bind(hit_dir, hit_stop, force_knock, knock_px, sec), 0.0, 1.0, sec)
 		elif kind == "lift":
 			tw.tween_callback(_end_body_strip)
 			tw.tween_method(_sample_lift, 0.0, 1.0, sec)
@@ -2197,15 +2195,23 @@ func _thaw_hit_strip() -> void:
 		_active_strip.speed_scale = _held_strip_speed
 
 
-func _sample_hit(t: float, dir: Vector2, stop: float = 0.0) -> void:
+func _sample_hit(t: float, dir: Vector2, stop: float = 0.0, force_knock: bool = false, knock_px: float = 0.0, duration: float = 0.0) -> void:
 	if _sprite == null:
 		return
-	# The 4-frame sheet already flashes and recoils, and its feet stay on the
-	# walk baseline. Knock and squash are the fallback when that clip is missing.
-	var planted := _hit_strip_is_body()
+	# The painted hit cell does not travel. A crit forces an eased knock.
+	var planted := _hit_strip_is_body() and not force_knock
 	var curve_stop := stop if stop >= 0.06 else -1.0
-	var pos := Vector2.ZERO if planted else VIEW_MOTION.hit_offset(t, dir, curve_stop)
-	var mul := Vector2.ONE if planted else VIEW_MOTION.hit_squash(t, curve_stop)
+	var pos := Vector2.ZERO
+	var mul := Vector2.ONE
+	if force_knock:
+		var span := duration if duration > 0.05 else VIEW_MOTION.crit_motion_sec()
+		var knock := knock_px if knock_px > 1.0 else VIEW_MOTION.CRIT_KNOCK_PX
+		pos = VIEW_MOTION.crit_recoil(t, span, dir, knock)
+		mul = VIEW_MOTION.crit_squash(t, span)
+		_pin_crit_pose(t, span)
+	elif not planted:
+		pos = VIEW_MOTION.hit_offset(t, dir, curve_stop)
+		mul = VIEW_MOTION.hit_squash(t, curve_stop)
 	# A struck foe reels from the blow (upper body first) and buckles.
 	var reel := sin(clampf(t, 0.0, 1.0) * PI) * (1.0 - clampf(t, 0.0, 1.0) * 0.4)
 	var away := signf(dir.x) if absf(dir.x) > 0.01 else 1.0
@@ -2218,6 +2224,32 @@ func _sample_hit(t: float, dir: Vector2, stop: float = 0.0) -> void:
 	if _active_strip != null and is_instance_valid(_active_strip):
 		_active_strip.position = pos
 		_active_strip.scale = scaled
+	if force_knock and _walk_draw != null and is_instance_valid(_walk_draw):
+		_walk_draw.position = pos
+
+
+## Hold the impact cell through the push and the hit-stop. The return
+## eases toward the last cell. A running clock would slide the feet.
+func _pin_crit_pose(t: float, duration: float) -> void:
+	var strip := _active_strip
+	if strip == null or not is_instance_valid(strip) or strip.sprite_frames == null:
+		return
+	var anim := strip.animation
+	if not strip.sprite_frames.has_animation(anim):
+		return
+	var count := strip.sprite_frames.get_frame_count(anim)
+	if count <= 0:
+		return
+	if strip.is_playing():
+		strip.pause()
+	strip.speed_scale = 0.0
+	var impact := mini(STRIP_LIBRARY.impact_frame(class_id, "hit"), count - 1)
+	var recover := VIEW_MOTION.crit_recover(t, duration)
+	if recover <= 0.0:
+		strip.frame = impact
+	else:
+		var last := count - 1
+		strip.frame = clampi(impact + int(round(recover * float(last - impact))), 0, last)
 
 
 ## A flinch ends the stride. The next pose is the idle plant, not the frame

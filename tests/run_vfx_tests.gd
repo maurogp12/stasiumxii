@@ -551,6 +551,8 @@ func _test_crit_hit() -> void:
 	eq(str(label.get("text", "")), "CRIT 22", "the crit number leads with CRIT")
 	eq(str(label.get("kind", "")), "crit", "the crit number uses the crit color")
 	eq(float(label.get("scale", 1.0)) > 1.3, true, "the crit number is larger than a normal hit")
+	eq(float(label.get("lift_px", 0.0)) >= 20.0, true, "the crit number sits above the victim")
+	eq(label.has("tint"), false, "a back hit does not replace the crit gold")
 	eq(float(label.get("rise_sec", 1.0)) + float(label.get("fade_sec", 1.0)) < 0.6, true, "the crit number is under 0.6s")
 	eq(float(label.get("block", 1.0)), 0.0, "the crit number does not lock input")
 	var flash: Dictionary = _sheet(recipes, "hit_flash")
@@ -559,7 +561,8 @@ func _test_crit_hit() -> void:
 	eq(str(_first(recipes, "ring").get("style", "")), "crack", "a crit snaps its own ring")
 	var shake: Dictionary = _first(recipes, "shake")
 	eq(float(shake.get("duration", 1.0)) < 0.6, true, "the crit shake is brief")
-	eq(float(shake.get("amplitude", 0.0)) > 0.0, true, "a crit shakes a little")
+	eq(float(shake.get("amplitude", 0.0)) >= 12.0, true, "a crit punches the camera in screen pixels")
+	eq(is_equal_approx(float(shake.get("delay_spawn", -1.0)), ViewMotion.damage_resolve_sec("strike")), true, "the crit shake waits for the blow")
 	eq(float(shake.get("block", 1.0)), 0.0, "the crit shake does not lock input")
 	eq(_has(ROUTER.recipes_for([_damage("detonate", 18)]), "shake"), false, "a non-crit Detonate still does not shake")
 	var plain: Array = ROUTER.recipes_for([_damage("strike", 16)])
@@ -567,9 +570,11 @@ func _test_crit_hit() -> void:
 	eq(_has(plain, "shake"), false, "a normal strike does not shake")
 	var colors: Dictionary = PALETTE.number_colors("crit")
 	eq(colors["top"], PALETTE.CRIT_TOP, "CRIT is hot gold")
+	eq((colors["top"] as Color).b < 0.45, true, "CRIT gold is not the cream damage color")
 	eq(int(colors["size"]) > BUDGET.NUMBER_SIZE, true, "CRIT is larger than a damage number")
 	var plans: Dictionary = ViewMotion.chrome_plans([event])
 	eq(bool(plans.get(1, {}).get("crit", false)), true, "the victim's flinch is marked as a crit")
+	eq(bool(plans.get(1, {}).get("force_knock", false)), true, "the crit flinch moves the body")
 	var steps: Array = ViewMotion.steps_for(plans.get(1, {}))
 	var hit_step := {}
 	for step in steps:
@@ -577,10 +582,29 @@ func _test_crit_hit() -> void:
 			hit_step = step
 	eq(is_equal_approx(float(hit_step.get("stop", 0.0)), ViewMotion.CRIT_HIT_STOP_SEC), true, "a crit holds for about 70ms")
 	eq(float(hit_step.get("stop", 0.0)) >= 0.06 and float(hit_step.get("stop", 0.0)) <= 0.08, true, "the crit hit-stop is 60–80ms")
+	eq(bool(hit_step.get("force_knock", false)), true, "the crit step pushes the body")
 	eq(is_equal_approx(ViewMotion.hit_sec(), ViewMotion.HIT_OUT_SEC + ViewMotion.HIT_STOP_SEC + ViewMotion.HIT_SHAKE_SEC + ViewMotion.HIT_RETURN_SEC), true, "a normal hit keeps the short stop")
 	var aim := Vector2(10, 0)
-	var stop_t := (ViewMotion.HIT_OUT_SEC + ViewMotion.CRIT_HIT_STOP_SEC * 0.5) / ViewMotion.hit_sec(ViewMotion.CRIT_HIT_STOP_SEC)
-	eq(is_equal_approx(ViewMotion.hit_offset(stop_t, aim, ViewMotion.CRIT_HIT_STOP_SEC).length(), ViewMotion.HIT_KNOCK_PX), true, "the crit stop holds the knock")
+	var span := ViewMotion.crit_motion_sec()
+	var hold_t := 0.0
+	for sample in 40:
+		var u := float(sample) / 39.0
+		if ViewMotion.crit_holding(u, span):
+			hold_t = u
+			break
+	eq(hold_t > 0.0, true, "the crit curve has a hold")
+	eq(ViewMotion.crit_recoil(hold_t, span, aim).length() > 16.0, true, "the crit stop holds a visible knock")
+	var stagger := Vector2.ZERO
+	for sample in 40:
+		var u := float(sample) / 39.0
+		var at := ViewMotion.crit_recoil(u, span, aim)
+		if at.y > stagger.y:
+			stagger = at
+	eq(stagger.y > 3.0, true, "the crit knock staggers")
+	eq(ViewMotion.crit_recoil(0.0, span, aim), Vector2.ZERO, "the crit knock starts on the tile")
+	eq(ViewMotion.crit_recoil(1.0, span, aim), Vector2.ZERO, "the crit knock ends on the tile")
+	var view := FileAccess.get_file_as_string("res://board_view.gd")
+	truthy(view.contains("func punch_camera"), "the crit shake moves the camera, not the board")
 	var crush_miss: Array = ROUTER.recipes_for([{
 		"type": "miss",
 		"spell": "crush",
