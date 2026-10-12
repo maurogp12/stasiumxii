@@ -86,6 +86,9 @@ static func lines(event: Dictionary, snap: Dictionary) -> Array:
 	var kind := str(event.get("type", ""))
 	if not LINES.has(kind):
 		return []
+	var veiled := _veiled_line(kind, event, snap)
+	if veiled != "":
+		return [veiled]
 	if kind == "hit":
 		var out: Array = [_hit_line(event, snap)]
 		var push := _push_success(event, snap)
@@ -181,9 +184,9 @@ static func _line(kind: String, event: Dictionary, snap: Dictionary) -> String:
 		"turn_start":
 			return _turn_header(event, snap)
 		"place":
-			return _finish("%s places %s" % [_name(snap, int(event.get("seat", -1))), _public_cell(event.get("to"), snap, int(event.get("seat", -1)))], event, false)
+			return _finish("%s places" % _name(snap, int(event.get("seat", -1))), event, false)
 		"reposition":
-			return _finish("%s repositions %s" % [_name(snap, int(event.get("seat", -1))), _span(event, snap, int(event.get("seat", -1)))], event, false)
+			return _finish("%s repositions" % _name(snap, int(event.get("seat", -1))), event, false)
 		"ready":
 			return "%s ready." % _name(snap, int(event.get("seat", -1)))
 		"end_turn":
@@ -201,7 +204,7 @@ static func _line(kind: String, event: Dictionary, snap: Dictionary) -> String:
 			var note := ""
 			if int(event.get("impact_gained", 0)) > 0:
 				note = ", Impact +%d" % int(event["impact_gained"])
-			return _finish("%s advances %s%s" % [_name(snap, int(event.get("seat", -1))), _span(event, snap, int(event.get("seat", -1))), note], event, true)
+			return _finish("%s advances%s" % [_name(snap, int(event.get("seat", -1))), note], event, true)
 		"cast":
 			return _cast_line(event, snap)
 		"miss":
@@ -230,10 +233,15 @@ static func _line(kind: String, event: Dictionary, snap: Dictionary) -> String:
 				lava = absi(int(event.get("hp_delta", 0)))
 			return "%s takes %d lava damage." % [_name(snap, int(event.get("target_seat", -1))), lava]
 		"slow":
-			var slow := "%s Slow" % _name(snap, int(event.get("target_seat", -1)))
+			var who_slow := _name(snap, int(event.get("target_seat", -1)))
 			if int(event.get("remaining", 1)) <= 0:
-				slow += " ends"
-			return _finish(slow, event, true)
+				var cut := int(event.get("mp_delta", -1))
+				if cut == 0:
+					cut = -1
+				var quiet := event.duplicate()
+				quiet.erase("mp_delta")
+				return _finish("%s Slow %s (last turn)" % [who_slow, _signed(cut, "MP")], quiet, true)
+			return _finish("%s Slow" % who_slow, event, true)
 		"burn":
 			var left := int(event.get("remaining", 0))
 			var burn := "%s Burn tick %d" % [_name(snap, int(event.get("target_seat", -1))), int(event.get("damage", 0))]
@@ -253,12 +261,12 @@ static func _line(kind: String, event: Dictionary, snap: Dictionary) -> String:
 			var hp := int(event.get("damage", event.get("hp", 0)))
 			return "%s intercepts for %s, %d HP." % [_name(snap, int(event.get("interceptor_seat", -1))), _name(snap, int(event.get("for_seat", -1))), hp]
 		"snap_wall":
-			var wall := "%s Snap Wall %s, %d turns" % [_name(snap, int(event.get("seat", -1))), _public_cell(event.get("to"), snap, int(event.get("seat", -1))), int(event.get("turns", 0))]
+			var wall := "%s Snap Wall, %d turns" % [_name(snap, int(event.get("seat", -1))), int(event.get("turns", 0))]
 			if int(event.get("aegis_spent", 0)) > 0:
 				wall += ", -%d Aegis" % int(event["aegis_spent"])
 			return _finish(wall, event, true)
 		"snap_wall_break":
-			var broken := "%s breaks the Snap Wall %s" % [_name(snap, int(event.get("seat", -1))), _public_cell(event.get("to"), snap, int(event.get("seat", -1)))]
+			var broken := "%s breaks the Snap Wall" % _name(snap, int(event.get("seat", -1)))
 			if int(event.get("engine_gained", 0)) > 0:
 				broken += ", +%d Aegis" % int(event["engine_gained"])
 			return _finish(broken, event, true)
@@ -297,14 +305,13 @@ static func _turn_header(event: Dictionary, snap: Dictionary) -> String:
 static func _move_line(event: Dictionary, snap: Dictionary) -> String:
 	var seat := int(event.get("seat", -1))
 	var who := _name(snap, seat)
-	var span := _span(event, snap, seat)
 	if str(event.get("still", "")) == "mirror_hour":
-		return _finish("%s swaps %s" % [who, span], event, true)
+		return _finish("%s swaps" % who, event, true)
 	if str(event.get("spell", "")) != "":
-		return _finish("%s %s %s" % [who, _spell_name(str(event["spell"])), span], event, true)
+		return _finish("%s %s" % [who, _spell_name(str(event["spell"]))], event, true)
 	var steps := _step_count(event)
 	var verb := "walks" if steps < 0 else "walks %d" % steps
-	return _finish("%s %s %s" % [who, verb, span], event, true)
+	return _finish("%s %s" % [who, verb], event, true)
 
 
 static func _cast_line(event: Dictionary, snap: Dictionary) -> String:
@@ -322,22 +329,14 @@ static func _cast_line(event: Dictionary, snap: Dictionary) -> String:
 			fade += ", Umbral +%d" % int(event["engine_gained"])
 		return _finish(fade, event, true)
 	if spell == SpellKits.VAULT:
-		var vault := "%s vaults %s" % [who, _span(event, snap, seat)]
+		var vault := "%s vaults" % who
 		if int(event.get("ap_spent", 0)) <= 0:
 			vault += ", free"
 		return _finish(vault, event, true)
 	if spell == SpellKits.SNARE_TRAP:
-		var cell := _secret_cell(event.get("to"), snap, seat)
-		var trap := "%s sets a Snare Trap" % who
-		if cell != "":
-			trap += " " + cell
-		return _finish(trap, event, true)
+		return _finish("%s sets a Snare Trap" % who, event, true)
 	if spell == SpellKits.DROP_SHADE:
-		var cell := _secret_cell(event.get("to"), snap, seat)
-		var shade := "%s drops a Shade" % who
-		if cell != "":
-			shade += " " + cell
-		return _finish(shade, event, true)
+		return _finish("%s drops a Shade" % who, event, true)
 	return _finish("%s casts %s" % [who, _spell_name(spell)], event, true)
 
 
@@ -443,20 +442,20 @@ static func _push_success(event: Dictionary, snap: Dictionary) -> String:
 		return ""
 	var seat := int(event.get("target_seat", -1))
 	var who := _name(snap, seat)
+	if _hide_motion(event, snap, seat):
+		return "%s moves while hidden." % who
 	var verb := "pulled" if bool(event.get("pulled", false)) else "pushed"
-	var span := _pair(event.get("push_from"), event.get("push_to"), snap, seat)
 	var tiles := _chebyshev(event.get("push_from"), event.get("push_to"))
 	var where := ""
 	if bool(event.get("burn_applied", false)):
-		where = ", into lava"
+		where = " into lava"
 	elif bool(event.get("silence_applied", false)):
-		where = ", into water"
+		where = " into water"
 	elif bool(event.get("slow_applied", false)):
-		where = ", into mud"
-	var count := ""
+		where = " into mud"
 	if tiles > 0:
-		count = ", %d tile%s" % [tiles, "" if tiles == 1 else "s"]
-	return "%s %s%s%s%s." % [who, verb, (" " + span) if span != "" else "", count, where]
+		return "%s %s %d tile%s%s." % [who, verb, tiles, "" if tiles == 1 else "s", where]
+	return "%s %s%s." % [who, verb, where]
 
 
 static func _push_blocked(event: Dictionary, snap: Dictionary) -> String:
@@ -519,10 +518,7 @@ static func _status_line(event: Dictionary, snap: Dictionary) -> String:
 
 static func _trap_line(event: Dictionary, snap: Dictionary) -> String:
 	var who := _name(snap, int(event.get("target_seat", -1)))
-	var cell := _public_cell(event.get("to"), snap, int(event.get("target_seat", -1)))
 	var text := "Snare! %s steps on it" % who
-	if cell != "":
-		text += " " + cell
 	text += ", -%d HP" % int(event.get("damage", 0))
 	if bool(event.get("pin", false)):
 		text += ", Pinned"
@@ -535,9 +531,6 @@ static func _blend_line(event: Dictionary, snap: Dictionary) -> String:
 	var text := "Blend %s on %s" % [name, who]
 	if bool(event.get("pin", false)):
 		text += ", Pinned"
-	var span := _pair(event.get("from"), event.get("to"), snap, int(event.get("target_seat", -1)))
-	if span != "":
-		text += " " + span
 	return text + "."
 
 
@@ -556,8 +549,7 @@ static func _still_line(event: Dictionary, snap: Dictionary) -> String:
 			return "Tide."
 		"mirror_hour":
 			var other := _name(snap, int(event.get("target_seat", -1)))
-			var span := _pair(event.get("from"), event.get("to"), snap, int(event.get("seat", -1)))
-			return _finish("Mirror Hour: %s swaps with %s%s" % [who, other, (" " + span) if span != "" else ""], event, true)
+			return _finish("Mirror Hour: %s swaps with %s" % [who, other], event, true)
 		"bound_hour":
 			return _finish("Bound Hour: %s binds %s" % [who, _name(snap, int(event.get("target_seat", -1)))], event, true)
 		"bleeding_hour":
@@ -589,11 +581,9 @@ static func _still_line(event: Dictionary, snap: Dictionary) -> String:
 static func _revealed_line(event: Dictionary, snap: Dictionary) -> String:
 	var who := _name(snap, int(event.get("seat", -1)))
 	var coach := str(event.get("coach", ""))
-	var cell := _public_cell(event.get("cell", event.get("pos", null)), snap, int(event.get("seat", -1)))
-	var where := (" " + cell) if cell != "" else ""
 	if "Tolling Bell" in coach:
-		return "Tolling Bell reveals %s%s." % [who, where]
-	return "%s is hit and revealed%s." % [who, where]
+		return "Tolling Bell reveals %s." % who
+	return "%s is hit and revealed." % who
 
 
 static func _expire_line(event: Dictionary, snap: Dictionary) -> String:
@@ -601,16 +591,8 @@ static func _expire_line(event: Dictionary, snap: Dictionary) -> String:
 	var label := str(_EXPIRE_NAME.get(status, status.capitalize() if status != "" else "Effect"))
 	var seat := int(event.get("target_seat", event.get("owner_seat", -1)))
 	var who := _name(snap, seat)
-	var secret := status in ["trap", "shade", "invisible"]
-	var cell := ""
-	if secret:
-		cell = _secret_cell(event.get("pos"), snap, int(event.get("owner_seat", seat)))
-	else:
-		cell = _public_cell(event.get("pos"), snap, seat)
 	if status == "invisible":
-		return "%s is visible%s." % [who, (" " + cell) if cell != "" else ""]
-	if cell != "":
-		return "%s ended %s." % [label, cell]
+		return "%s is visible." % who
 	return "%s ended on %s." % [label, who]
 
 
@@ -655,50 +637,67 @@ static func _signed(amount: int, unit: String) -> String:
 	return "%d %s" % [amount, unit]
 
 
-static func _span(event: Dictionary, snap: Dictionary, seat: int) -> String:
-	return _pair(event.get("from"), event.get("to"), snap, seat)
-
-
-static func _pair(a: Variant, b: Variant, snap: Dictionary, seat: int) -> String:
-	var left := _public_cell(a, snap, seat)
-	var right := _public_cell(b, snap, seat)
-	if left != "" and right != "":
-		return "%s->%s" % [left, right]
-	if right != "":
-		return right
-	return left
-
-
-static func _public_cell(value: Variant, snap: Dictionary, seat: int) -> String:
-	if _hidden_now(snap, seat):
+## Opposing view of a fighter who is invisible, or who acted while invisible.
+## Hot-seat has one shared screen, so it uses that opposing view while the
+## fighter is still hidden. The owner's online log keeps the details.
+static func _veiled_line(kind: String, event: Dictionary, snap: Dictionary) -> String:
+	if kind == "cast" and str(event.get("spell", "")) == SpellKits.FADE:
 		return ""
-	return _cell(value)
+	var actor := int(event.get("seat", -1))
+	var target := int(event.get("target_seat", -1))
+	if kind in ["move", "advance", "reposition"] and _hide_motion(event, snap, actor):
+		return "%s moves while hidden." % _name(snap, actor)
+	if kind == "cast" and str(event.get("spell", "")) == SpellKits.VAULT and _hide_motion(event, snap, actor):
+		return "%s moves while hidden." % _name(snap, actor)
+	if kind in ["trap", "lava_land", "blend", "push_bounce", "push_blocked"] and _hide_motion(event, snap, target):
+		return "%s moves while hidden." % _name(snap, target)
+	if kind == "still" and str(event.get("still", "")) == "mirror_hour" and (_hide_motion(event, snap, actor) or _hide_motion(event, snap, target)):
+		var who := actor if _hide_motion(event, snap, actor) else target
+		return "%s moves while hidden." % _name(snap, who)
+	if kind in ["face", "cast", "miss", "hit", "still"] and _hide_motion(event, snap, actor):
+		return "%s (hidden) acts." % _name(snap, actor)
+	return ""
 
 
-static func _secret_cell(value: Variant, snap: Dictionary, owner_seat: int) -> String:
-	if not sees_seat(snap, owner_seat):
-		return ""
-	return _cell(value)
+static func _hide_motion(event: Dictionary, snap: Dictionary, seat: int) -> bool:
+	if seat < 0:
+		return false
+	var now := _invisible_unit(snap, seat)
+	var was := _was_concealed(event, seat)
+	if not now and not was:
+		return false
+	if _owner_detail(snap, seat):
+		return false
+	if _explicit_local_seat(snap) < 0:
+		return now
+	return true
 
 
-static func _cell(value: Variant) -> String:
-	if value == null:
-		return ""
-	var cell := Vector2i(-999, -999)
-	if value is Vector2i:
-		cell = value
-	elif typeof(value) == TYPE_DICTIONARY:
-		var rec: Dictionary = value
-		if not rec.has("x") and not rec.has("y"):
-			return ""
-		cell = Vector2i(int(rec.get("x", -999)), int(rec.get("y", -999)))
-	elif typeof(value) == TYPE_ARRAY and (value as Array).size() >= 2:
-		cell = Vector2i(int(value[0]), int(value[1]))
-	else:
-		return ""
-	if cell.x < 0 or cell.y < 0:
-		return ""
-	return "(%d,%d)" % [cell.x, cell.y]
+static func _was_concealed(event: Dictionary, seat: int) -> bool:
+	var raw: Variant = event.get("concealed_seats", [])
+	return raw is Array and (raw as Array).has(seat)
+
+
+static func _owner_detail(snap: Dictionary, seat: int) -> bool:
+	if _explicit_local_seat(snap) < 0:
+		return false
+	return sees_seat(snap, seat)
+
+
+static func _explicit_local_seat(snap: Dictionary) -> int:
+	if snap.has("local_seat"):
+		return int(snap.get("local_seat", -1))
+	var net: Variant = snap.get("net", {})
+	if net is Dictionary and (net as Dictionary).has("local_seat"):
+		return int((net as Dictionary).get("local_seat", -1))
+	return -1
+
+
+static func _invisible_unit(snap: Dictionary, seat: int) -> bool:
+	var unit := _unit(snap, seat)
+	if unit.is_empty():
+		return false
+	return bool(unit.get("invisible", false)) or bool(unit.get("pos_hidden", false))
 
 
 static func _step_count(event: Dictionary) -> int:
@@ -766,17 +765,6 @@ static func sees_seat(snap: Dictionary, seat: int) -> bool:
 	if int(snap.get("team_size", 1)) > 1 or int(snap.get("party_size", 1)) > 1:
 		return _team(snap, seat) == _team(snap, viewer)
 	return seat == viewer
-
-
-static func _hidden_now(snap: Dictionary, seat: int) -> bool:
-	if sees_seat(snap, seat):
-		return false
-	var unit := _unit(snap, seat)
-	if unit.is_empty():
-		return false
-	if unit.get("pos", Vector2i.ZERO) == null or bool(unit.get("pos_hidden", false)):
-		return true
-	return bool(unit.get("invisible", false))
 
 
 static func _team(snap: Dictionary, seat: int) -> int:

@@ -1,7 +1,6 @@
 extends SceneTree
 
-## 2400×1080 phone fit: the Log button on a fight, then the log open after
-## a walk, a crit, a Still, a push into mud, and the Slow tick.
+## 2400×1080 phone fit: the log open on a hidden Gloam turn.
 ## xvfb-run -s "-screen 0 2560x1440x24" godot --rendering-driver opengl3 --path . -s res://tests/shot_battle_log.gd -- /opt/cursor/artifacts/battle_log --mobile-frame
 
 var _dir := "/opt/cursor/artifacts/battle_log"
@@ -21,7 +20,7 @@ func _initialize() -> void:
 	root.size = Vector2i(2400, 1080)
 	var select: GDScript = load("res://scenes/class_select.gd")
 	select.set("hotseat_map_id", "crosshaven")
-	select.set("hotseat_classes", ["kestrel", "ironjaw"])
+	select.set("hotseat_classes", ["gloam", "kestrel"])
 	change_scene_to_file("res://main.tscn")
 
 
@@ -61,13 +60,15 @@ func _process(_delta: float) -> bool:
 		var hud: CombatHUD = _board._hud
 		hud._scroll_log_end()
 		_frame("open")
-		_save("log_open.png")
+		_save("log_hidden_gloam.png")
 		var body := "" if hud._log_body == null else hud._log_body.get_parsed_text()
 		print("LOG\n%s" % body)
 		if not hud._log_open:
 			push_error("log panel did not open")
-		if not body.contains("crit") or not body.contains("Bleeding Hour") or not body.contains("Slow"):
-			push_error("log is missing the crit, Still, or Slow")
+		if not body.contains("moves while hidden"):
+			push_error("log is missing the hidden Gloam move")
+		if body.contains("(4,") or body.contains("walks"):
+			push_error("hidden Gloam turn leaked a step or a tile")
 		return true
 	return true
 
@@ -79,27 +80,12 @@ func _play() -> bool:
 		"skip_deploy": true,
 		"map_id": "crosshaven",
 		"rolls": [1, 1, 1, 1, 1],
-		"classes": ["kestrel", "ironjaw"],
-		"positions": [Vector2i(5, 5), Vector2i(8, 5)],
-		"tiles": [{"pos": Vector2i(4, 6), "terrain": "mud", "elevation": 0}],
+		"classes": ["gloam", "kestrel"],
+		"positions": [Vector2i(4, 4), Vector2i(8, 4)],
 	})
-	if not _act(sim, {"type": "move", "seat": 0, "to": Vector2i(5, 6)}, "walk"):
+	if not _act(sim, {"type": "cast", "spell": "fade", "seat": 0, "to": Vector2i(4, 4)}, "fade"):
 		return false
-	sim._unit_by_seat(0)["crit"] = 100
-	if not _act(sim, {"type": "cast", "spell": "mark_shot", "seat": 0, "to": Vector2i(8, 5)}, "mark shot"):
-		return false
-	sim._unit_by_seat(0)["still"] = "bleeding_hour"
-	sim._unit_by_seat(0)["still_mode"] = "intact"
-	sim._unit_by_seat(0)["still_ready"] = true
-	if not _act(sim, {"type": "use_still", "seat": 0}, "bleeding hour"):
-		return false
-	if not _act(sim, {"type": "end_turn", "seat": 0}, "end turn"):
-		return false
-	if not _act(sim, {"type": "move", "seat": 1, "to": Vector2i(6, 6)}, "ironjaw walk"):
-		return false
-	if not _act(sim, {"type": "cast", "spell": "shoulder", "seat": 1, "to": Vector2i(5, 6)}, "shoulder"):
-		return false
-	if not _act(sim, {"type": "end_turn", "seat": 1}, "ironjaw end"):
+	if not _act(sim, {"type": "move", "seat": 0, "to": Vector2i(4, 5)}, "hidden walk"):
 		return false
 	return true
 
