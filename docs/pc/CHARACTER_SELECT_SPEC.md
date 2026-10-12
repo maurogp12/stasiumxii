@@ -262,4 +262,4 @@ Then **Kestrel → Bastion → Gloam → Mender**. Mender and Gloam come last be
    - So §4's Appearance tab becomes: Male / Female, Face type (3–5 options), Skin (8 tones), Hair (8 colours + custom), Eyes (8 colours + custom). The §5.4 mask channels become **R = skin, G = hair, B = eyes** on the base body (the armour gets its own dye mask later).
 3. **Slots: 5** characters (as proposed).
 4. **Radar values in §4.1: approved** as they are.
-
+5. **Who makes the 3D models (12 Oct 2026):** Luca's team, with their own scripted Blender pipeline (trial on `pc/charselect-3d-ironjaw`). Mauro: "opcion b, estoy trabajando con ellos". The earlier "Grok" note is dropped.
