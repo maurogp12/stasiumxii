@@ -316,14 +316,18 @@ static func card_portrait(class_id: String, canvas_size: Vector2i = Vector2i(260
 
 
 ## Painted walk cells crossed by one board tile of travel, or 0 when this
-## class and facing has no painted walk on disk. The spec caps it at
-## MAX_LEG_RATE x the authored fps (natural leg speed, small foot slide).
+## class and facing has no painted walk on disk. Playback uses the measured
+## no-slide rate so the foot lands with the tile. The capped `frames_per_tile`
+## stays in the spec as the old 1.6x leg-speed note.
 static func painted_frames_per_tile(class_id: String, face: String) -> float:
 	var spec := painted_spec(class_id, "walk")
 	if spec.is_empty():
 		return 0.0
 	if painted_cells(class_id, "walk", face).size() < 2:
 		return 0.0
+	var no_slide := float(spec.get("frames_per_tile_no_slide", 0.0))
+	if no_slide > 0.0:
+		return no_slide
 	return float(spec.get("frames_per_tile", 0.0))
 
 

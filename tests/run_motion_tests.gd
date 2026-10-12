@@ -39,6 +39,7 @@ func _finish_live() -> void:
 	await _test_ambush_present_race()
 	MOTION.glide = true
 	_test_glide_walk()
+	_test_elevation_landing()
 	print("Motion tests: %d passed, %d failed" % [_passed, _failed])
 	_sim.free()
 	quit(1 if _failed > 0 else 0)
@@ -2300,38 +2301,96 @@ func _test_glide_walk() -> void:
 	# Mauro 2 Oct 2026 ("focus on the walking", the Wakfu video): one smooth
 	# glide, legs cycling the whole path, two soft footfalls per tile.
 	eq(MOTION.glide, true, "the glide walk is the default")
-	near(MOTION.step_travel(0.5), 0.5, "a middle tile travels at constant speed")
-	near(MOTION.glide_travel(0.5, false, false), 0.5, "middle tiles are linear")
-	truthy(MOTION.glide_travel(0.25, true, false) < 0.25, "the first tile eases in")
+	near(MOTION.step_travel(0.5), 0.5, "eased travel is halfway at mid tile")
+	truthy(MOTION.step_travel(0.25) < 0.2, "every tile eases in, including a middle tile")
+	near(MOTION.glide_travel(0.5, false, false), 0.5, "the middle of a tile is the midpoint")
+	truthy(MOTION.glide_travel(0.25, false, false) < 0.2, "a middle tile eases in")
 	near(MOTION.glide_travel(1.0, true, false), 1.0, "the first tile still arrives")
-	truthy(MOTION.glide_travel(0.75, false, true) > 0.75, "the last tile eases out")
-	near(MOTION.glide_travel(0.0, false, true), 0.0, "the last tile starts where the tile before ended")
-	# Speed is continuous across the seams (no stop on a tile).
+	truthy(MOTION.glide_travel(0.75, false, true) > 0.8, "a middle tile eases out")
+	near(MOTION.glide_travel(0.0, false, true), 0.0, "a tile starts on the plant")
+	# The plant is a slowdown, not a constant-speed seam.
 	var d := 0.001
-	var leave_first := (MOTION.glide_travel(1.0, true, false) - MOTION.glide_travel(1.0 - d, true, false)) / d
-	var enter_last := (MOTION.glide_travel(d, false, true) - MOTION.glide_travel(0.0, false, true)) / d
-	truthy(absf(leave_first - 1.0) < 0.01, "the first tile leaves at full speed")
-	truthy(absf(enter_last - 1.0) < 0.01, "the last tile enters at full speed")
+	var leave := (MOTION.glide_travel(1.0, false, false) - MOTION.glide_travel(1.0 - d, false, false)) / d
+	var enter := (MOTION.glide_travel(d, false, false) - MOTION.glide_travel(0.0, false, false)) / d
+	truthy(leave < 0.02, "a tile arrives slowly, on the plant")
+	truthy(enter < 0.02, "a tile leaves slowly, off the plant")
 	# Look 1, one step per tile (Mauro): one footfall per tile, a soft rise mid tile.
 	eq(MOTION.step_per_tile, true, "the painted walk is one step per tile")
 	near(MOTION.hop_offset(0.0).y, 0.0, "a footfall on the tile seam")
 	truthy(MOTION.hop_offset(0.5).y < -0.5, "the body rises between footfalls")
 	truthy(MOTION.hop_offset(0.5).y > -2.0, "the rise is soft (under 2px)")
 	eq(MOTION.plant_scale(0.9), Vector2.ONE, "no plant squash on every tile")
-	# The stride never stops: half the cells on one tile, the other half on the
-	# next tile (the other foot), no hold on the contact.
+	# Half the cells on one tile, the other half on the next (the other foot).
+	# The end of the tile holds the plant instead of a passing cell.
 	var seen := {}
 	for tile in 2:
 		for i in 12:
 			seen[MOTION.walk_cycle_frame((float(i) + 0.5) / 12.0, 8, tile)] = true
 	eq(seen.size(), 8, "two tiles show all eight walk cells")
-	eq(MOTION.walk_cycle_frame(0.95, 8, 0), 3, "late in the first tile the stride is on its fourth cell, not frozen on contact")
+	eq(MOTION.walk_cycle_frame(0.95, 8, 0), 4, "late in the tile the foot is on the plant")
 	eq(MOTION.walk_cycle_frame(0.05, 8, 1), 4, "the next tile leads with the other foot")
 	eq(MOTION.anticipate_segment(2, true), false, "a turn mid path does not stop to settle")
 	eq(MOTION.dust_on_plant(true, false), false, "no dust on every turn")
 	eq(MOTION.dust_on_plant(false, true), true, "dust on the final step")
 	var view := FileAccess.get_file_as_string("res://board_view.gd")
 	truthy(view.contains("_sample_glide_step"), "the board samples the glide per tile")
+	truthy(view.contains("walk_span"), "the board times a painted step from the stride")
+	truthy(view.contains("show_stride_frame"), "the visible walk frame is the stride, not a free clock")
+	near(MOTION.walk_travel_sec(7.932), Pawn.WALK_TILE_SEC, "ironjaw keeps the normal tile pace")
+	near(MOTION.walk_travel_sec(21.409), 0.45, "a short stride slows the tile to 0.45s")
+	near(MOTION.walk_span(7.932, 0.0, false), Pawn.WALK_TILE_SEC, "a flat step has no contact hold")
+	near(MOTION.walk_span(7.932, 0.0, true), Pawn.WALK_TILE_SEC + 0.34, "a climb adds the rise after the step")
+	var opened: Dictionary = MOTION.walk_sample(0.0, 7.932, 0.0, true, true, false)
+	near(float(opened["u"]), 0.0, "a step starts on the tile")
+	near(float(opened["elev"]), 0.0, "a step starts at the low height")
+	near(float(opened["bob"]), 0.0, "a contact frame does not bob")
+	var mid: Dictionary = MOTION.walk_sample(0.28, 7.932, 0.0, true, false, false)
+	near(float(mid["elev"]), 0.0, "the crossing has not started to rise")
+	truthy(float(mid["u"]) > 0.05 and float(mid["u"]) < 0.95, "the crossing is under way before the rise")
+	var risen: Dictionary = MOTION.walk_sample(1.0, 7.932, 0.0, true, false, false)
+	near(float(risen["u"]), 1.0, "the rise keeps the foot on the high cell")
+	near(float(risen["elev"]), 1.0, "the rise lands on the high elevation")
+	var moving_a: Dictionary = MOTION.walk_sample(0.40, 7.932, 0.0, false, false, false)
+	var moving_b: Dictionary = MOTION.walk_sample(0.48, 7.932, 0.0, false, false, false)
+	truthy(float(moving_b["u"]) > float(moving_a["u"]) + 0.05, "the body keeps moving through a contact")
+	var cruise: Dictionary = MOTION.walk_sample(0.5, 7.932, 0.0, false, false, false)
+	near(float(cruise["u"]), 0.5, "a middle step is linear")
+	near(float(cruise["frame"]), 0.5 * 7.932, "the cycle is locked to the ground")
+	var eased_in: Dictionary = MOTION.walk_sample(0.5, 7.932, 0.0, false, true, false)
+	near(float(eased_in["u"]), 0.375, "the first step eases in")
+	var eased_out: Dictionary = MOTION.walk_sample(0.5, 7.932, 0.0, false, false, true)
+	near(float(eased_out["u"]), 0.625, "the last step eases out")
+
+
+func _test_elevation_landing() -> void:
+	eq(MOTION.elevation_land(0.0), 0.0, "a step starts on the tile you are leaving")
+	eq(MOTION.elevation_land(0.5), 0.0, "the middle of the step has not climbed yet")
+	eq(MOTION.elevation_land(1.0), 1.0, "arrival has landed on the next elevation")
+	var mid_rise := MOTION.elevation_land(0.86)
+	truthy(mid_rise > 0.2 and mid_rise < 0.8, "the rise eases after the step finishes")
+	var flat_src := Vector2(0, 0)
+	var flat_dst := Vector2(32, 16)
+	var flat_ease := MOTION.glide_travel(0.4, false, false)
+	var flat := MOTION.walk_foot(flat_src, flat_dst, 0.0, 0.0, 0.4)
+	near(flat.x, 32.0 * flat_ease, "flat ground eases across the tile")
+	near(flat.y, 16.0 * flat_ease, "flat ground eases both screen axes")
+	truthy(flat_ease < 0.37, "flat ground is slower than a linear skate at 0.4")
+	var climb_src := Vector2(0, 0)
+	var climb_dst := Vector2(32, 16 - BoardVisualSort.ELEVATION_PIXELS)
+	var early_split := MOTION.stride_split(0.4, true)
+	var early := MOTION.walk_foot(climb_src, climb_dst, 0.0, 1.0, 0.4)
+	near(early.x, 32.0 * early_split.x, "a climb still crosses the tile")
+	near(early.y, 16.0 * early_split.x, "a climb stays on the low height while it crosses")
+	eq(early_split.y, 0.0, "the height has not started during the crossing")
+	var planted := MOTION.walk_foot(climb_src, climb_dst, 0.0, 1.0, MOTION.ELEVATION_MOVE_END)
+	near(planted.x, 32.0, "horizontal travel finishes before the rise")
+	near(planted.y, 16.0, "the body is still low when the step finishes")
+	var rising := MOTION.walk_foot(climb_src, climb_dst, 0.0, 1.0, 0.86)
+	near(rising.x, planted.x, "the rise does not keep sliding sideways")
+	truthy(rising.y < planted.y - 2.0, "the body then rises in place")
+	var landed := MOTION.walk_foot(climb_src, climb_dst, 0.0, 1.0, 1.0)
+	near(landed.x, 32.0, "a climb arrives on the higher cell")
+	near(landed.y, 16.0 - BoardVisualSort.ELEVATION_PIXELS, "a climb lands on the higher elevation")
 
 
 func near(actual: float, expected: float, msg: String) -> void:
