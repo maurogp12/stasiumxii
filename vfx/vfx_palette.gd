@@ -18,6 +18,9 @@ const SHIELD_BOTTOM := Color(0.42, 0.50, 0.60)
 const MISS := Color(0.95, 0.86, 0.55)
 const BURN := Color(0.92, 0.28, 0.1)
 const EMBER := Color("FFC266")
+## Hot gold, brighter than a normal damage number, so a crit reads at a glance.
+const CRIT_TOP := Color("FFF1B8")
+const CRIT_BOTTOM := Color("E25A12")
 const STUN := Color(0.95, 0.78, 0.2, 1.0)
 
 const KESTREL := Color("3FA35B")
@@ -113,6 +116,8 @@ static func number_colors(kind: String) -> Dictionary:
 			return {"top": MENDER_CREAM, "bottom": MENDER_DEEP, "size": VfxBudget.NUMBER_SIZE_SMALL}
 		"stagger":
 			return {"top": DAMAGE_TOP, "bottom": DAMAGE_BOTTOM, "size": VfxBudget.NUMBER_SIZE_SMALL}
+		"crit":
+			return {"top": CRIT_TOP, "bottom": CRIT_BOTTOM, "size": 44}
 		_:
 			return {"top": DAMAGE_TOP, "bottom": DAMAGE_BOTTOM, "size": VfxBudget.NUMBER_SIZE}
 

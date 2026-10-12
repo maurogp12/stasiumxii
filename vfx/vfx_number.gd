@@ -43,6 +43,12 @@ func play(spec: Dictionary) -> void:
 	if _kind == "miss":
 		drift = Vector2(14.0, -12.0)
 	var risen: Vector2 = position + drift
+	var rise_sec := VfxBudget.NUMBER_RISE_SEC
+	var fade_sec := VfxBudget.NUMBER_FADE_SEC
+	if spec.has("rise_sec"):
+		rise_sec = float(spec["rise_sec"])
+	if spec.has("fade_sec"):
+		fade_sec = float(spec["fade_sec"])
 	_tween = create_tween()
 	if delay > 0.0:
 		_tween.tween_interval(delay)
@@ -50,8 +56,8 @@ func play(spec: Dictionary) -> void:
 	_rise = create_tween()
 	if delay > 0.0:
 		_rise.tween_interval(delay)
-	_rise.tween_property(self, "position", risen, VfxBudget.NUMBER_RISE_SEC).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	_rise.tween_property(self, "modulate:a", 0.0, VfxBudget.NUMBER_FADE_SEC)
+	_rise.tween_property(self, "position", risen, rise_sec).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	_rise.tween_property(self, "modulate:a", 0.0, fade_sec)
 	_rise.finished.connect(release, CONNECT_ONE_SHOT)
 	queue_redraw()
 

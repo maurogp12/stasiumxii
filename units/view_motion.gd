@@ -115,6 +115,8 @@ const REACTION_DELAY := 0.06
 const HIT_OUT_SEC := 0.08
 ## Hold the knock so the contact reads. The clock is not paused.
 const HIT_STOP_SEC := 0.045
+## A crit holds a little longer, still inside the 60–80ms read.
+const CRIT_HIT_STOP_SEC := 0.07
 const HIT_SHAKE_SEC := 0.08
 const HIT_RETURN_SEC := 0.08
 const HIT_KNOCK_PX := 6.0
@@ -223,8 +225,12 @@ static func cast_phase(t: float) -> String:
 	return _phase(t, cast_sec(), CAST_RISE_SEC, CAST_RELEASE_SEC)
 
 
-static func hit_sec() -> float:
-	return HIT_OUT_SEC + HIT_STOP_SEC + HIT_SHAKE_SEC + HIT_RETURN_SEC
+static func _stop_sec(stop: float) -> float:
+	return HIT_STOP_SEC if stop < 0.0 else stop
+
+
+static func hit_sec(stop: float = -1.0) -> float:
+	return HIT_OUT_SEC + _stop_sec(stop) + HIT_SHAKE_SEC + HIT_RETURN_SEC
 
 
 static func support_sec() -> float:
@@ -476,6 +482,8 @@ static func chrome_plans(events: Array) -> Dictionary:
 			plan["hit"] = true
 			plan["delay"] = true
 			plan["contact"] = damage_resolve_sec(spell_id)
+			if bool(event.get("crit", false)):
+				plan["crit"] = true
 		elif react == "lift":
 			plan["lift"] = true
 			plan["delay"] = true
@@ -526,7 +534,13 @@ static func steps_for(plan: Dictionary) -> Array:
 			"strip": str(plan.get("strip", "cast")),
 		})
 	if hit:
-		steps.append({"kind": "hit", "sec": hit_sec(), "dir": plan.get("away", Vector2.ZERO)})
+		var stop := CRIT_HIT_STOP_SEC if bool(plan.get("crit", false)) else -1.0
+		steps.append({
+			"kind": "hit",
+			"sec": hit_sec(stop),
+			"dir": plan.get("away", Vector2.ZERO),
+			"stop": CRIT_HIT_STOP_SEC if stop >= 0.0 else 0.0,
+		})
 	elif lift:
 		steps.append({"kind": "lift", "sec": support_sec()})
 	if death:
@@ -960,12 +974,12 @@ static func cast_pose(t: float, dir: Vector2 = Vector2.ZERO) -> Dictionary:
 
 
 ## Body squash through the knock. Rest at the ends so the next pose is clean.
-static func hit_squash(t: float) -> Vector2:
+static func hit_squash(t: float, stop: float = -1.0) -> Vector2:
 	if t <= 0.0 or t >= 1.0:
 		return Vector2.ONE
-	var total := hit_sec()
+	var total := hit_sec(stop)
 	var time := clampf(t, 0.0, 1.0) * total
-	var stop_end := HIT_OUT_SEC + HIT_STOP_SEC
+	var stop_end := HIT_OUT_SEC + _stop_sec(stop)
 	var shake_end := stop_end + HIT_SHAKE_SEC
 	var k := 0.0
 	if time <= HIT_OUT_SEC:
@@ -978,14 +992,14 @@ static func hit_squash(t: float) -> Vector2:
 	return Vector2(lerpf(1.0, HIT_SQUASH_X, k), lerpf(1.0, HIT_SQUASH_Y, k))
 
 
-static func hit_offset(t: float, away: Vector2) -> Vector2:
+static func hit_offset(t: float, away: Vector2, stop: float = -1.0) -> Vector2:
 	if t <= 0.0 or t >= 1.0:
 		return Vector2.ZERO
-	var total := hit_sec()
+	var total := hit_sec(stop)
 	var time := clampf(t, 0.0, 1.0) * total
 	var dir := _unit(away)
 	var perp := Vector2(-dir.y, dir.x) if dir != Vector2.ZERO else Vector2.RIGHT
-	var stop_end := HIT_OUT_SEC + HIT_STOP_SEC
+	var stop_end := HIT_OUT_SEC + _stop_sec(stop)
 	var shake_end := stop_end + HIT_SHAKE_SEC
 	if time <= HIT_OUT_SEC:
 		return dir * HIT_KNOCK_PX * _ease_out(time / HIT_OUT_SEC)

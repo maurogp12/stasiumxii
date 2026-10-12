@@ -100,6 +100,7 @@ var burn_remaining: int = 0
 var burn_stacks: int = 0
 var debug_draw_tokens: bool = false
 var _hit_flash: bool = false
+var _held_strip_speed: float = 1.0
 var _flashing: bool = false
 var _sprite: Sprite2D
 var _chrome: StatusChrome
@@ -1135,12 +1136,19 @@ func play_view_plan(plan: Dictionary) -> float:
 		elif kind == "hit":
 			tw.tween_callback(_interrupt_stride_for_flinch)
 			tw.tween_callback(_end_body_strip)
+			var hit_stop := float(step.get("stop", 0.0))
 			if not _strip_choice("hit").is_empty():
 				var hit_play := _fit_strip_window("hit", sec, steps)
 				tw.tween_callback(_start_kind_strip.bind("hit", hit_play))
 				total += hit_play - sec
 				sec = hit_play
-			tw.tween_method(_sample_hit.bind(step.get("dir", Vector2.ZERO)), 0.0, 1.0, sec)
+				if hit_stop >= 0.06:
+					# Hold the contact frame. The clock is not paused.
+					tw.tween_callback(_freeze_hit_strip)
+					tw.tween_interval(hit_stop)
+					tw.tween_callback(_thaw_hit_strip)
+					total += hit_stop
+			tw.tween_method(_sample_hit.bind(step.get("dir", Vector2.ZERO), hit_stop), 0.0, 1.0, sec)
 		elif kind == "lift":
 			tw.tween_callback(_end_body_strip)
 			tw.tween_method(_sample_lift, 0.0, 1.0, sec)
@@ -2178,14 +2186,26 @@ func foe_body_lean() -> float:
 	return float((_sprite.material as ShaderMaterial).get_shader_parameter("lean"))
 
 
-func _sample_hit(t: float, dir: Vector2) -> void:
+func _freeze_hit_strip() -> void:
+	if _active_strip != null and is_instance_valid(_active_strip):
+		_held_strip_speed = maxf(_active_strip.speed_scale, 0.05)
+		_active_strip.speed_scale = 0.0
+
+
+func _thaw_hit_strip() -> void:
+	if _active_strip != null and is_instance_valid(_active_strip):
+		_active_strip.speed_scale = _held_strip_speed
+
+
+func _sample_hit(t: float, dir: Vector2, stop: float = 0.0) -> void:
 	if _sprite == null:
 		return
 	# The 4-frame sheet already flashes and recoils, and its feet stay on the
 	# walk baseline. Knock and squash are the fallback when that clip is missing.
 	var planted := _hit_strip_is_body()
-	var pos := Vector2.ZERO if planted else VIEW_MOTION.hit_offset(t, dir)
-	var mul := Vector2.ONE if planted else VIEW_MOTION.hit_squash(t)
+	var curve_stop := stop if stop >= 0.06 else -1.0
+	var pos := Vector2.ZERO if planted else VIEW_MOTION.hit_offset(t, dir, curve_stop)
+	var mul := Vector2.ONE if planted else VIEW_MOTION.hit_squash(t, curve_stop)
 	# A struck foe reels from the blow (upper body first) and buckles.
 	var reel := sin(clampf(t, 0.0, 1.0) * PI) * (1.0 - clampf(t, 0.0, 1.0) * 0.4)
 	var away := signf(dir.x) if absf(dir.x) > 0.01 else 1.0

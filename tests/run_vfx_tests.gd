@@ -38,6 +38,7 @@ func _run() -> void:
 	_test_lava_is_a_stub()
 	_test_burn_stun_heal_death_resource()
 	_test_shake_only_crush_and_aegis()
+	_test_crit_hit()
 	_test_hold_line_ambush_intercept_expire()
 	_test_support_and_absorb()
 	_test_stacks_and_lock_cap()
@@ -538,6 +539,48 @@ func _test_shake_only_crush_and_aegis() -> void:
 	truthy(_has(break_hit, "shake"), "Aegis Break shakes")
 	eq(_has(ROUTER.recipes_for([_damage("bash", 11)]), "shake"), false, "Bash does not shake")
 	eq(_has(ROUTER.recipes_for([_damage("detonate", 18)]), "shake"), false, "Detonate does not shake")
+
+
+## A crit is a bigger gold number, a harder flash, a small shake, and a
+## slightly longer hit-stop. A non-crit Detonate still does not shake.
+func _test_crit_hit() -> void:
+	var event := _damage("strike", 22)
+	event["crit"] = true
+	var recipes: Array = ROUTER.recipes_for([event])
+	var label: Dictionary = _first(recipes, "number")
+	eq(str(label.get("text", "")), "CRIT 22", "the crit number leads with CRIT")
+	eq(str(label.get("kind", "")), "crit", "the crit number uses the crit color")
+	eq(float(label.get("scale", 1.0)) > 1.3, true, "the crit number is larger than a normal hit")
+	eq(float(label.get("rise_sec", 1.0)) + float(label.get("fade_sec", 1.0)) < 0.6, true, "the crit number is under 0.6s")
+	eq(float(label.get("block", 1.0)), 0.0, "the crit number does not lock input")
+	var flash: Dictionary = _sheet(recipes, "hit_flash")
+	eq(float(flash.get("px", 0.0)) > BUDGET.STAMP_HIT_PX, true, "a crit flash is stronger than a normal hit")
+	eq(float(_sheet(recipes, "damage_float").get("px", 0.0)) > BUDGET.STAMP_FLOAT_PX, true, "a crit impact stamp is larger")
+	eq(str(_first(recipes, "ring").get("style", "")), "crack", "a crit snaps its own ring")
+	var shake: Dictionary = _first(recipes, "shake")
+	eq(float(shake.get("duration", 1.0)) < 0.6, true, "the crit shake is brief")
+	eq(float(shake.get("amplitude", 0.0)) > 0.0, true, "a crit shakes a little")
+	eq(float(shake.get("block", 1.0)), 0.0, "the crit shake does not lock input")
+	eq(_has(ROUTER.recipes_for([_damage("detonate", 18)]), "shake"), false, "a non-crit Detonate still does not shake")
+	var plain: Array = ROUTER.recipes_for([_damage("strike", 16)])
+	eq(str(_first(plain, "number").get("text", "")), "16", "a normal hit stays a plain number")
+	eq(_has(plain, "shake"), false, "a normal strike does not shake")
+	var colors: Dictionary = PALETTE.number_colors("crit")
+	eq(colors["top"], PALETTE.CRIT_TOP, "CRIT is hot gold")
+	eq(int(colors["size"]) > BUDGET.NUMBER_SIZE, true, "CRIT is larger than a damage number")
+	var plans: Dictionary = ViewMotion.chrome_plans([event])
+	eq(bool(plans.get(1, {}).get("crit", false)), true, "the victim's flinch is marked as a crit")
+	var steps: Array = ViewMotion.steps_for(plans.get(1, {}))
+	var hit_step := {}
+	for step in steps:
+		if str(step.get("kind", "")) == "hit":
+			hit_step = step
+	eq(is_equal_approx(float(hit_step.get("stop", 0.0)), ViewMotion.CRIT_HIT_STOP_SEC), true, "a crit holds for about 70ms")
+	eq(float(hit_step.get("stop", 0.0)) >= 0.06 and float(hit_step.get("stop", 0.0)) <= 0.08, true, "the crit hit-stop is 60–80ms")
+	eq(is_equal_approx(ViewMotion.hit_sec(), ViewMotion.HIT_OUT_SEC + ViewMotion.HIT_STOP_SEC + ViewMotion.HIT_SHAKE_SEC + ViewMotion.HIT_RETURN_SEC), true, "a normal hit keeps the short stop")
+	var aim := Vector2(10, 0)
+	var stop_t := (ViewMotion.HIT_OUT_SEC + ViewMotion.CRIT_HIT_STOP_SEC * 0.5) / ViewMotion.hit_sec(ViewMotion.CRIT_HIT_STOP_SEC)
+	eq(is_equal_approx(ViewMotion.hit_offset(stop_t, aim, ViewMotion.CRIT_HIT_STOP_SEC).length(), ViewMotion.HIT_KNOCK_PX), true, "the crit stop holds the knock")
 	var crush_miss: Array = ROUTER.recipes_for([{
 		"type": "miss",
 		"spell": "crush",
