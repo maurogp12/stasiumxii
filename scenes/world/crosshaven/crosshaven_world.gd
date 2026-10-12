@@ -1549,6 +1549,7 @@ func _refresh_plane() -> void:
 	var found: Variant = lay.get("offsets", {})
 	if typeof(found) == TYPE_DICTIONARY:
 		plane_offsets = found
+		Ground.plane_origins = plane_offsets.duplicate()
 
 
 func _origin_of(zone_id: String) -> Vector2i:

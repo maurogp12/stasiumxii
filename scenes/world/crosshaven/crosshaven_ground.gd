@@ -524,10 +524,21 @@ func _rim_depth(cell: Vector2i) -> int:
 	return mini(dx, dy)
 
 
+## zone id -> plane origin. The world fills this so a neighbour ground applies
+## the same frost as the chunk that owns the cell.
+static var plane_origins: Dictionary = {}
+
+
 func snow_at_cell(cell: Vector2i) -> float:
 	if zone == null:
 		return 0.0
-	return snow_at(zone.zone_id, cell)
+	var zid := _zone_id_at(cell)
+	var local := cell
+	if zid != "" and zid != zone.zone_id and plane_origins.has(zid):
+		local = world_origin + cell - (plane_origins[zid] as Vector2i)
+	elif zid == "":
+		zid = zone.zone_id
+	return snow_at(zid, local)
 
 
 ## 1 = this cell meets empty world, 2 = the next cell in. 0 on a real join.
@@ -2593,9 +2604,7 @@ func _floor_modulate(cell: Vector2i, terrain: String) -> Color:
 		# Normalised weights jump from no theme to a full theme where the
 		# last anchor's reach starts (a hard line across the plains, cell by
 		# cell). Fade the theme in with how much any anchor reaches here.
-		var presence := _theme_presence(cell)
-		var warp := (world_noise(Vector2(world_origin + cell) * 0.09) - 0.5) * 0.06
-		tint = Color.WHITE.lerp(tint, smoothstep(0.0, 0.35, presence + warp))
+		tint = Color.WHITE.lerp(tint, smoothstep(0.0, 0.2, _theme_presence(cell)))
 	if terrain == "golden_plains" and not smooth_shore and _joins_kit_sand(cell):
 		return _with_frost(Color.WHITE, cell, terrain)
 	if terrain == "cliff":

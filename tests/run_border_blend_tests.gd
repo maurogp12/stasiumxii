@@ -135,7 +135,7 @@ func _test_snow_line(w: Node2D) -> void:
 		return
 	var zeros: Array[int] = []
 	for x in g.zone.width:
-		var y0 := g.zone.height
+		var y0: int = int(g.zone.height)
 		for y in g.zone.height:
 			if float(g.call("snow_at_cell", Vector2i(x, y))) <= 0.001:
 				y0 = y
