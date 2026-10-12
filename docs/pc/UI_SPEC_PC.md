@@ -57,7 +57,7 @@ Reference: `t0050_hud_inventario.jpg`, `t0050_zoom_barra_inferior.jpg`, `t0050_z
 | **Bottom centre** | **Class emblem orb**: the class crest in a round frame. **HP current / max** sits above it, with a red fill that drops as HP drops. The **level** sits in a small medallion under the orb. A thin **XP bar** runs along the whole bottom bar, with a "Lv 23 · 45%" tooltip. The **stamina** bar (run) hugs the orb as a small arc instead of a loose bar |
 | **Bottom left** | **Menu buttons**, about 10 icons: Character (O), Inventory (I), Spells, Quests (L), Map (M), Dungeons and stars, Koliseo, Shop (premium), Settings (Esc) |
 | **Bottom right** | **Slot bar**: 8 slots for consumables and items, with page arrows 1/2. In combat the existing combat HUD takes over; outside combat these are item slots |
-| **Top right** | **Minimap** (§6), with the **Shop** button and quick icons (mail or notifications, Performance mode) under it |
+| **Top right** | **Square minimap** (§6), with the **Shop** button and quick icons (mail or notifications, Performance mode) under it |
 | **Right edge, under the minimap** | **Quest tracker**, restyled: collapsible, title plus objectives with checkboxes, max 3 quests, click to open the quest log |
 | **Top left** | **Zone banner**: zone name and level band (e.g. "Saltmaw Sea Caves · 20–30"), and a red **danger** tag in danger zones. It shows big for 3 s on entering a zone, then a small line |
 | **Removed for players** | Cell, height, weather, time, music and the controls line. Keep them behind a debug toggle (F3 or a `--debug-hud` flag). The controls line shows only on the first play, as a hint that fades |
@@ -110,7 +110,7 @@ Reference: `t0150_tooltip_objeto.jpg`, `t0470_comparar_equipado.jpg`.
 
 The video doesn't show one. Mauro and Luca both want it.
 - **Minimap**, top right:
-  - a **round painted frame**, about 190 px at 1080p;
+  - a **square painted frame**, about 200×200 px at 1080p (Mauro: square);
   - it shows the current chunk, top-down and simplified (ground colours, water, roads, buildings as blocks);
   - the hero arrow sits in the centre;
   - icons for NPCs with a quest (!), dungeon doors, exits, and the quest target;
@@ -144,3 +144,14 @@ The video doesn't show one. Mauro and Luca both want it.
 2. **Builds (modulation):** in the first version or later? (Proposed: later.)
 3. **Minimap shape:** round as proposed, or square?
 4. **Slot bar outside combat:** consumables only, or also emotes and mounts later?
+
+## 9. Mauro's decisions (12 Oct 2026)
+- **Who builds:** Luca's team builds every package. Claude reviews each one and says what to change, and **Claude approves it on Mauro's behalf** ("Dile al equipo de Grok cómo hacerlo y que ellos lo hagan, tú autorizas si te gusta y les dices qué cambiar").
+- **Minimap:** **square** ("el mapa cuadrado").
+- **Builds (modulation):** later (U5), unless Mauro says otherwise.
+- **Approval gate per package:**
+  1. The team posts a draft PR with a before/after clip and stills at 1920×1080 and 1280×720.
+  2. Claude reviews: style against §1, layout against §2–§6, and the tests.
+  3. Claude replies **Approved** or a numbered change list.
+  4. U0 (the 3 mockups): Claude shortlists, and Mauro sees the chosen style before U1 starts.
+
