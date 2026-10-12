@@ -115,6 +115,10 @@ const REACTION_DELAY := 0.06
 const HIT_OUT_SEC := 0.08
 ## Hold the knock so the contact reads. The clock is not paused.
 const HIT_STOP_SEC := 0.045
+## A crit holds a little longer, still inside the 60–80ms read.
+const CRIT_HIT_STOP_SEC := 0.07
+## Board pixels. Big enough to read on a phone, still on the victim's tile.
+const CRIT_KNOCK_PX := 22.0
 const HIT_SHAKE_SEC := 0.08
 const HIT_RETURN_SEC := 0.08
 const HIT_KNOCK_PX := 6.0
@@ -223,8 +227,26 @@ static func cast_phase(t: float) -> String:
 	return _phase(t, cast_sec(), CAST_RISE_SEC, CAST_RELEASE_SEC)
 
 
-static func hit_sec() -> float:
-	return HIT_OUT_SEC + HIT_STOP_SEC + HIT_SHAKE_SEC + HIT_RETURN_SEC
+static func _stop_sec(stop: float) -> float:
+	return HIT_STOP_SEC if stop < 0.0 else stop
+
+
+static func hit_sec(stop: float = -1.0) -> float:
+	return HIT_OUT_SEC + _stop_sec(stop) + HIT_SHAKE_SEC + HIT_RETURN_SEC
+
+
+## Push, 70ms hold, stagger, return. Stays under the action lock on its own.
+static func crit_motion_sec() -> float:
+	return 0.48
+
+
+static func _crit_phases(duration: float) -> Dictionary:
+	var span := maxf(duration, 0.16)
+	var hold := minf(CRIT_HIT_STOP_SEC, maxf(span * 0.22, 0.05))
+	var push := minf(0.12, maxf((span - hold) * 0.34, 0.05))
+	var stagger := minf(0.14, maxf((span - hold - push) * 0.45, 0.05))
+	var back := maxf(span - push - hold - stagger, 0.04)
+	return {"push": push, "hold": hold, "stagger": stagger, "back": back}
 
 
 static func support_sec() -> float:
@@ -491,6 +513,11 @@ static func chrome_plans(events: Array) -> Dictionary:
 			plan["hit"] = true
 			plan["delay"] = true
 			plan["contact"] = damage_resolve_sec(spell_id)
+			if bool(event.get("crit", false)):
+				plan["crit"] = true
+				# The painted hit cell does not travel. Force an eased knock.
+				plan["force_knock"] = true
+				plan["knock_px"] = CRIT_KNOCK_PX
 		elif react == "lift":
 			plan["lift"] = true
 			plan["delay"] = true
@@ -541,8 +568,18 @@ static func steps_for(plan: Dictionary) -> Array:
 			"strip": str(plan.get("strip", "cast")),
 		})
 	if hit:
-		var hit_step := {"kind": "hit", "sec": hit_sec(), "dir": plan.get("away", Vector2.ZERO)}
-		if bool(plan.get("force_knock", false)):
+		var crit_hit := bool(plan.get("crit", false))
+		var stop := CRIT_HIT_STOP_SEC if crit_hit else -1.0
+		var hit_step := {
+			"kind": "hit",
+			"sec": crit_motion_sec() if crit_hit else hit_sec(stop),
+			"dir": plan.get("away", Vector2.ZERO),
+			"stop": CRIT_HIT_STOP_SEC if stop >= 0.0 else 0.0,
+		}
+		if crit_hit:
+			hit_step["force_knock"] = true
+			hit_step["knock_px"] = float(plan.get("knock_px", CRIT_KNOCK_PX))
+		elif bool(plan.get("force_knock", false)):
 			hit_step["force_knock"] = true
 			hit_step["knock_px"] = float(plan.get("knock_px", 16.0))
 		steps.append(hit_step)
@@ -979,12 +1016,12 @@ static func cast_pose(t: float, dir: Vector2 = Vector2.ZERO) -> Dictionary:
 
 
 ## Body squash through the knock. Rest at the ends so the next pose is clean.
-static func hit_squash(t: float) -> Vector2:
+static func hit_squash(t: float, stop: float = -1.0) -> Vector2:
 	if t <= 0.0 or t >= 1.0:
 		return Vector2.ONE
-	var total := hit_sec()
+	var total := hit_sec(stop)
 	var time := clampf(t, 0.0, 1.0) * total
-	var stop_end := HIT_OUT_SEC + HIT_STOP_SEC
+	var stop_end := HIT_OUT_SEC + _stop_sec(stop)
 	var shake_end := stop_end + HIT_SHAKE_SEC
 	var k := 0.0
 	if time <= HIT_OUT_SEC:
@@ -1031,14 +1068,14 @@ static func recoil_squash(t: float) -> Vector2:
 	return Vector2(lerpf(1.0, 1.14, k), lerpf(1.0, 0.78, k))
 
 
-static func hit_offset(t: float, away: Vector2) -> Vector2:
+static func hit_offset(t: float, away: Vector2, stop: float = -1.0) -> Vector2:
 	if t <= 0.0 or t >= 1.0:
 		return Vector2.ZERO
-	var total := hit_sec()
+	var total := hit_sec(stop)
 	var time := clampf(t, 0.0, 1.0) * total
 	var dir := _unit(away)
 	var perp := Vector2(-dir.y, dir.x) if dir != Vector2.ZERO else Vector2.RIGHT
-	var stop_end := HIT_OUT_SEC + HIT_STOP_SEC
+	var stop_end := HIT_OUT_SEC + _stop_sec(stop)
 	var shake_end := stop_end + HIT_SHAKE_SEC
 	if time <= HIT_OUT_SEC:
 		return dir * HIT_KNOCK_PX * _ease_out(time / HIT_OUT_SEC)
@@ -1051,6 +1088,75 @@ static func hit_offset(t: float, away: Vector2) -> Vector2:
 		return dir * HIT_KNOCK_PX + perp * HIT_SHAKE_PX * wobble
 	var bt := (time - shake_end) / HIT_RETURN_SEC
 	return dir * HIT_KNOCK_PX * (1.0 - _ease_in(bt))
+
+
+## Crit knock. Eases off the tile, holds (the hit-stop), staggers, eases home.
+## `t` is 0..1 across `duration` seconds. Zero at both ends.
+static func crit_recoil(t: float, duration: float, away: Vector2, knock: float = CRIT_KNOCK_PX) -> Vector2:
+	if t <= 0.0 or t >= 1.0 or duration <= 0.0:
+		return Vector2.ZERO
+	var dir := _unit(away)
+	if dir == Vector2.ZERO:
+		dir = Vector2(0.85, 0.45).normalized()
+	var phase: Dictionary = _crit_phases(duration)
+	var time := clampf(t, 0.0, 1.0) * duration
+	var push: float = phase["push"]
+	var hold_end: float = push + float(phase["hold"])
+	var stag_end: float = hold_end + float(phase["stagger"])
+	var along := 0.0
+	var dip := 0.0
+	if time < push:
+		var k := time / maxf(push, 0.0001)
+		along = knock * (1.0 - (1.0 - k) * (1.0 - k))
+	elif time < hold_end:
+		along = knock
+	elif time < stag_end:
+		var k := (time - hold_end) / maxf(float(phase["stagger"]), 0.0001)
+		along = knock + sin(k * PI) * 5.0
+		dip = sin(k * PI) * 8.0
+	else:
+		# Smoothstep home, plus a hop, so the return is a step and not a slide.
+		var k := clampf((time - stag_end) / maxf(float(phase["back"]), 0.0001), 0.0, 1.0)
+		var settled := k * k * (3.0 - 2.0 * k)
+		along = knock * (1.0 - settled)
+		dip = -sin(k * PI) * 11.0
+	return dir * along + Vector2(0.0, dip)
+
+
+static func crit_holding(t: float, duration: float) -> bool:
+	if t <= 0.0 or t >= 1.0 or duration <= 0.0:
+		return false
+	var phase: Dictionary = _crit_phases(duration)
+	var time := t * duration
+	var push: float = phase["push"]
+	return time >= push and time < push + float(phase["hold"])
+
+
+## 0 until the return, then 0..1 as the body eases home.
+static func crit_recover(t: float, duration: float) -> float:
+	if t <= 0.0 or duration <= 0.0:
+		return 0.0
+	if t >= 1.0:
+		return 1.0
+	var phase: Dictionary = _crit_phases(duration)
+	var stag_end: float = float(phase["push"]) + float(phase["hold"]) + float(phase["stagger"])
+	var time := t * duration
+	if time < stag_end:
+		return 0.0
+	return clampf((time - stag_end) / maxf(float(phase["back"]), 0.0001), 0.0, 1.0)
+
+
+static func crit_squash(t: float, duration: float) -> Vector2:
+	if t <= 0.0 or t >= 1.0 or duration <= 0.0:
+		return Vector2.ONE
+	var phase: Dictionary = _crit_phases(duration)
+	var hold_end: float = float(phase["push"]) + float(phase["hold"])
+	var stag_end: float = hold_end + float(phase["stagger"])
+	var time := t * duration
+	if time < hold_end or time >= stag_end:
+		return Vector2.ONE
+	var k := sin((time - hold_end) / maxf(float(phase["stagger"]), 0.0001) * PI)
+	return Vector2(lerpf(1.0, 1.16, k), lerpf(1.0, 0.76, k))
 
 
 static func support_offset(t: float) -> Vector2:

@@ -85,6 +85,9 @@ func _draw() -> void:
 	var font := _FONT if _FONT != null else ThemeDB.fallback_font
 	if font == null:
 		return
+	if _kind == "crit":
+		_draw_crit_lines(font)
+		return
 	var width := font.get_string_size(_text, HORIZONTAL_ALIGNMENT_LEFT, -1, _font_size).x
 	var baseline := Vector2(-width * 0.5, _font_size * 0.35 - lift)
 	font.draw_string(get_canvas_item(), baseline + Vector2(1, 2), _text, HORIZONTAL_ALIGNMENT_LEFT, -1, _font_size, VfxPalette.NUMBER_SHADOW)
@@ -98,6 +101,39 @@ func _draw() -> void:
 	if _kind == "miss":
 		var slash_y := baseline.y - float(_font_size) * 0.28
 		draw_line(Vector2(baseline.x - 4.0, slash_y + 2.0), Vector2(baseline.x + width + 4.0, slash_y - float(_font_size) * 0.55), Color(0.28, 0.16, 0.1, 0.95), 3.0, true)
+
+
+## "CRIT" on its own line, the amount under it. One line read as "- 22"
+## because the dark fill hid the word and left a gold sliver.
+func _draw_crit_lines(font: Font) -> void:
+	var parts := _text.split(" ", false)
+	var word := "CRIT"
+	var amount := _text
+	if parts.size() >= 2 and str(parts[0]) == "CRIT":
+		amount = ""
+		for i in range(1, parts.size()):
+			if amount != "":
+				amount += " "
+			amount += str(parts[i])
+	var word_size := maxi(_font_size - 2, 22)
+	var num_size := _font_size
+	var word_w := font.get_string_size(word, HORIZONTAL_ALIGNMENT_LEFT, -1, word_size).x
+	var num_w := font.get_string_size(amount, HORIZONTAL_ALIGNMENT_LEFT, -1, num_size).x
+	var word_base := Vector2(-word_w * 0.5, -float(num_size) * 0.72 - lift)
+	var num_base := Vector2(-num_w * 0.5, float(num_size) * 0.42 - lift)
+	_paint_line(font, word, word_base, word_size)
+	_paint_line(font, amount, num_base, num_size)
+
+
+func _paint_line(font: Font, text: String, baseline: Vector2, size: int) -> void:
+	font.draw_string(get_canvas_item(), baseline + Vector2(1, 2), text, HORIZONTAL_ALIGNMENT_LEFT, -1, size, VfxPalette.NUMBER_SHADOW)
+	for ox in [-2, 0, 2]:
+		for oy in [-2, 0, 2]:
+			if ox == 0 and oy == 0:
+				continue
+			font.draw_string(get_canvas_item(), baseline + Vector2(ox, oy), text, HORIZONTAL_ALIGNMENT_LEFT, -1, size, _outline)
+	font.draw_string(get_canvas_item(), baseline + Vector2(0, -2), text, HORIZONTAL_ALIGNMENT_LEFT, -1, size, _top)
+	font.draw_string(get_canvas_item(), baseline, text, HORIZONTAL_ALIGNMENT_LEFT, -1, size, _bottom)
 
 
 ## Resource and MP ticks give way to damage and heal numbers.

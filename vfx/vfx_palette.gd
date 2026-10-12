@@ -18,6 +18,10 @@ const SHIELD_BOTTOM := Color(0.42, 0.50, 0.60)
 const MISS := Color(0.95, 0.86, 0.55)
 const BURN := Color(0.92, 0.28, 0.1)
 const EMBER := Color("FFC266")
+## Bright gold. The number drawer paints the bottom color as the body, so a
+## dark bottom left only a 2px gold edge and "CRIT" read as a dash.
+const CRIT_TOP := Color("F8D56A")
+const CRIT_BOTTOM := Color("F6C445")
 const STUN := Color(0.95, 0.78, 0.2, 1.0)
 
 const KESTREL := Color("3FA35B")
@@ -116,6 +120,8 @@ static func number_colors(kind: String) -> Dictionary:
 			return {"top": MENDER_CREAM, "bottom": MENDER_DEEP, "size": VfxBudget.NUMBER_SIZE_SMALL}
 		"stagger":
 			return {"top": DAMAGE_TOP, "bottom": DAMAGE_BOTTOM, "size": VfxBudget.NUMBER_SIZE_SMALL}
+		"crit":
+			return {"top": CRIT_TOP, "bottom": CRIT_BOTTOM, "size": 28}
 		"trap":
 			# 1.5x the 14px word. Warm white over gold, with the number's dark outline.
 			return {"top": TRAP_WORD, "bottom": TRAP_WORD_GOLD, "size": 21}
