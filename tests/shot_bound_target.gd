@@ -4,7 +4,9 @@ const SIM_SCRIPT := preload("res://backend/combat_sim.gd")
 
 ## 2400×1080 courtyard: Bound Hour target pick (allies highlighted, no walk
 ## cells), then the bind on Mender ("Bound to Mender" on Bastion's card).
-## xvfb-run -s "-screen 0 2560x1440x24" godot --rendering-driver opengl3 --path . -s res://tests/shot_bound_target.gd -- /opt/cursor/artifacts/bound_target
+## Phone fit, same as the other 2400×1080 shots. Without --mobile-frame the
+## desktop zoom is fitted to 960×720 and the arena sits in a small rectangle.
+## xvfb-run -s "-screen 0 2560x1440x24" godot --rendering-driver opengl3 --path . -s res://tests/shot_bound_target.gd -- /opt/cursor/artifacts/bound_target --mobile-frame
 
 var _dir := "/opt/cursor/artifacts/bound_target"
 var _phase := "boot"
@@ -96,7 +98,10 @@ func _arm_pick() -> bool:
 		bastion, mender, SIM_SCRIPT.chebyshev(bastion, mender),
 		sim._unit_by_seat(4)["pos"], sim._unit_by_seat(1)["pos"],
 	])
-	print("AIM label=%s" % hud._selected_label.text)
+	var zoom := 0.0
+	if _board._camera != null:
+		zoom = _board._camera.zoom.x
+	print("AIM label=%s zoom=%.3f view=%s" % [hud._selected_label.text, zoom, _board.get_viewport_rect().size])
 	return hud.still_aiming()
 
 
