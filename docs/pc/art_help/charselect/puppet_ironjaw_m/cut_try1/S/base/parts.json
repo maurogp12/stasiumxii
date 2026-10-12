@@ -1,0 +1,508 @@
+{
+ "canvas": [
+  640,
+  720
+ ],
+ "facing": "S",
+ "source": "art/characters/painted/ironjaw_gear/source/base_S.jpg (1024x576, crop x173..813, placed y+127, 1:1)",
+ "coords": "canvas px, origin top-left; bbox=[x0,y0,x1,y1) ; pivot in canvas px",
+ "alpha": "binary",
+ "parts": {
+  "torso": {
+   "file": "S/base/torso.png",
+   "bbox": [
+    203,
+    180,
+    418,
+    519
+   ],
+   "pivot": [
+    305,
+    445
+   ],
+   "joint": "pelvis",
+   "parent": null,
+   "z": 6,
+   "px": 46708
+  },
+  "head": {
+   "file": "S/base/head.png",
+   "bbox": [
+    307,
+    174,
+    396,
+    251
+   ],
+   "pivot": [
+    345,
+    238
+   ],
+   "joint": "neck",
+   "parent": "torso",
+   "z": 15,
+   "px": 3649,
+   "underlap": {
+    "owner": "torso",
+    "under": "head",
+    "px": 548,
+    "bbox": [
+     308,
+     213,
+     387,
+     251
+    ],
+    "status": "EMPTY - needs paint (hidden in painting)",
+    "mask": "S/base/_underlap/head.png"
+   }
+  },
+  "hair": {
+   "file": "S/base/hair.png",
+   "bbox": [
+    294,
+    130,
+    393,
+    222
+   ],
+   "pivot": [
+    345,
+    238
+   ],
+   "joint": "neck",
+   "parent": "head",
+   "z": 17,
+   "px": 4691
+  },
+  "eyes": {
+   "file": "S/base/eyes.png",
+   "bbox": [
+    338,
+    196,
+    380,
+    213
+   ],
+   "pivot": [
+    345,
+    238
+   ],
+   "joint": "neck",
+   "parent": "head",
+   "z": 16,
+   "px": 572
+  },
+  "upper_arm_r": {
+   "file": "S/base/upper_arm_r.png",
+   "bbox": [
+    132,
+    207,
+    228,
+    357
+   ],
+   "pivot": [
+    212,
+    245
+   ],
+   "joint": "sh_r",
+   "parent": "torso",
+   "z": 11,
+   "px": 7306,
+   "underlap": {
+    "owner": "torso",
+    "under": "upper_arm_r",
+    "px": 488,
+    "bbox": [
+     209,
+     207,
+     228,
+     290
+    ],
+    "status": "EMPTY - needs paint (hidden in painting)",
+    "mask": "S/base/_underlap/upper_arm_r.png"
+   }
+  },
+  "lower_arm_r": {
+   "file": "S/base/lower_arm_r.png",
+   "bbox": [
+    119,
+    337,
+    180,
+    399
+   ],
+   "pivot": [
+    150,
+    330
+   ],
+   "joint": "el_r",
+   "parent": "upper_arm_r",
+   "z": 12,
+   "px": 2125,
+   "underlap": {
+    "owner": "upper_arm_r",
+    "under": "lower_arm_r",
+    "px": 278,
+    "bbox": [
+     131,
+     337,
+     180,
+     361
+    ],
+    "status": "EMPTY - needs paint (hidden in painting)",
+    "mask": "S/base/_underlap/lower_arm_r.png"
+   }
+  },
+  "hand_r": {
+   "file": "S/base/hand_r.png",
+   "bbox": [
+    89,
+    395,
+    171,
+    472
+   ],
+   "pivot": [
+    138,
+    395
+   ],
+   "joint": "wr_r",
+   "parent": "lower_arm_r",
+   "z": 14,
+   "px": 2630,
+   "underlap": {
+    "owner": "lower_arm_r",
+    "under": "hand_r",
+    "px": 229,
+    "bbox": [
+     115,
+     397,
+     157,
+     405
+    ],
+    "status": "EMPTY - needs paint (hidden in painting)",
+    "mask": "S/base/_underlap/hand_r.png"
+   }
+  },
+  "weapon_r": {
+   "file": "S/base/weapon_r.png",
+   "bbox": [
+    91,
+    382,
+    280,
+    627
+   ],
+   "pivot": [
+    140,
+    420
+   ],
+   "joint": "grip_r",
+   "parent": "hand_r",
+   "z": 13,
+   "px": 9986,
+   "underlap": {
+    "owner": "weapon_r",
+    "under": "hand_r",
+    "px": 357,
+    "bbox": [
+     98,
+     398,
+     171,
+     462
+    ],
+    "status": "EMPTY - needs paint (hidden in painting)",
+    "mask": "S/base/_underlap/weapon_r.png"
+   }
+  },
+  "upper_arm_l": {
+   "file": "S/base/upper_arm_l.png",
+   "bbox": [
+    392,
+    210,
+    455,
+    351
+   ],
+   "pivot": [
+    405,
+    245
+   ],
+   "joint": "sh_l",
+   "parent": "torso",
+   "z": 7,
+   "px": 4413,
+   "underlap": {
+    "owner": "torso",
+    "under": "upper_arm_l",
+    "px": 471,
+    "bbox": [
+     392,
+     210,
+     408,
+     290
+    ],
+    "status": "EMPTY - needs paint (hidden in painting)",
+    "mask": "S/base/_underlap/upper_arm_l.png"
+   }
+  },
+  "lower_arm_l": {
+   "file": "S/base/lower_arm_l.png",
+   "bbox": [
+    415,
+    337,
+    464,
+    401
+   ],
+   "pivot": [
+    443,
+    330
+   ],
+   "joint": "el_l",
+   "parent": "upper_arm_l",
+   "z": 8,
+   "px": 2056,
+   "underlap": {
+    "owner": "upper_arm_l",
+    "under": "lower_arm_l",
+    "px": 229,
+    "bbox": [
+     415,
+     337,
+     454,
+     357
+    ],
+    "status": "EMPTY - needs paint (hidden in painting)",
+    "mask": "S/base/_underlap/lower_arm_l.png"
+   }
+  },
+  "hand_l": {
+   "file": "S/base/hand_l.png",
+   "bbox": [
+    425,
+    399,
+    482,
+    458
+   ],
+   "pivot": [
+    445,
+    397
+   ],
+   "joint": "wr_l",
+   "parent": "lower_arm_l",
+   "z": 10,
+   "px": 2037,
+   "underlap": {
+    "owner": "lower_arm_l",
+    "under": "hand_l",
+    "px": 177,
+    "bbox": [
+     433,
+     399,
+     466,
+     407
+    ],
+    "status": "EMPTY - needs paint (hidden in painting)",
+    "mask": "S/base/_underlap/hand_l.png"
+   }
+  },
+  "weapon_l": {
+   "file": "S/base/weapon_l.png",
+   "bbox": [
+    412,
+    379,
+    553,
+    603
+   ],
+   "pivot": [
+    447,
+    422
+   ],
+   "joint": "grip_l",
+   "parent": "hand_l",
+   "z": 9,
+   "px": 7150,
+   "underlap": {
+    "owner": "weapon_l",
+    "under": "hand_l",
+    "px": 264,
+    "bbox": [
+     425,
+     401,
+     480,
+     454
+    ],
+    "status": "EMPTY - needs paint (hidden in painting)",
+    "mask": "S/base/_underlap/weapon_l.png"
+   }
+  },
+  "thigh_r": {
+   "file": "S/base/thigh_r.png",
+   "bbox": [
+    168,
+    428,
+    257,
+    542
+   ],
+   "pivot": [
+    240,
+    455
+   ],
+   "joint": "hip_r",
+   "parent": "torso",
+   "z": 3,
+   "px": 4980,
+   "underlap": {
+    "owner": "thigh_r",
+    "under": "torso",
+    "px": 493,
+    "bbox": [
+     216,
+     422,
+     263,
+     496
+    ],
+    "status": "EMPTY - needs paint (hidden in painting)",
+    "mask": "S/base/_underlap/thigh_r.png"
+   }
+  },
+  "shin_r": {
+   "file": "S/base/shin_r.png",
+   "bbox": [
+    172,
+    531,
+    217,
+    571
+   ],
+   "pivot": [
+    206,
+    522
+   ],
+   "joint": "kn_r",
+   "parent": "thigh_r",
+   "z": 4,
+   "px": 1150,
+   "underlap": {
+    "owner": "thigh_r",
+    "under": "shin_r",
+    "px": 249,
+    "bbox": [
+     173,
+     531,
+     217,
+     545
+    ],
+    "status": "EMPTY - needs paint (hidden in painting)",
+    "mask": "S/base/_underlap/shin_r.png"
+   }
+  },
+  "foot_r": {
+   "file": "S/base/foot_r.png",
+   "bbox": [
+    168,
+    601,
+    224,
+    641
+   ],
+   "pivot": [
+    192,
+    592
+   ],
+   "joint": "an_r",
+   "parent": "shin_r",
+   "z": 5,
+   "px": 1109,
+   "underlap": {
+    "owner": "shin_r",
+    "under": "foot_r",
+    "px": 0,
+    "bbox": null,
+    "status": "EMPTY - needs paint (hidden in painting)",
+    "mask": "S/base/_underlap/foot_r.png"
+   }
+  },
+  "thigh_l": {
+   "file": "S/base/thigh_l.png",
+   "bbox": [
+    339,
+    455,
+    426,
+    546
+   ],
+   "pivot": [
+    362,
+    455
+   ],
+   "joint": "hip_l",
+   "parent": "torso",
+   "z": 0,
+   "px": 5527,
+   "underlap": {
+    "owner": "thigh_l",
+    "under": "torso",
+    "px": 541,
+    "bbox": [
+     344,
+     449,
+     407,
+     498
+    ],
+    "status": "EMPTY - needs paint (hidden in painting)",
+    "mask": "S/base/_underlap/thigh_l.png"
+   }
+  },
+  "shin_l": {
+   "file": "S/base/shin_l.png",
+   "bbox": [
+    352,
+    531,
+    412,
+    585
+   ],
+   "pivot": [
+    384,
+    522
+   ],
+   "joint": "kn_l",
+   "parent": "thigh_l",
+   "z": 1,
+   "px": 2186,
+   "underlap": {
+    "owner": "thigh_l",
+    "under": "shin_l",
+    "px": 282,
+    "bbox": [
+     354,
+     531,
+     403,
+     551
+    ],
+    "status": "EMPTY - needs paint (hidden in painting)",
+    "mask": "S/base/_underlap/shin_l.png"
+   }
+  },
+  "foot_l": {
+   "file": "S/base/foot_l.png",
+   "bbox": [
+    354,
+    579,
+    441,
+    630
+   ],
+   "pivot": [
+    384,
+    574
+   ],
+   "joint": "an_l",
+   "parent": "shin_l",
+   "z": 2,
+   "px": 2531,
+   "underlap": {
+    "owner": "shin_l",
+    "under": "foot_l",
+    "px": 351,
+    "bbox": [
+     355,
+     579,
+     415,
+     591
+    ],
+    "status": "EMPTY - needs paint (hidden in painting)",
+    "mask": "S/base/_underlap/foot_l.png"
+   }
+  }
+ }
+}
