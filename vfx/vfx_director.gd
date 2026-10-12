@@ -507,6 +507,7 @@ func _play_number(spec: Dictionary) -> void:
 	var cell := _Router.cell_of(spec.get("cell", Vector2i.ZERO))
 	var at := _body_pos(int(spec.get("seat", -1)), cell, false)
 	at += VfxBudget.HEAD_OFFSET
+	at.y -= float(spec.get("lift_px", 0.0))
 	at.y -= VfxBudget.NUMBER_STACK_PX * float(int(spec.get("stack", 0)))
 	node.position = at
 	node.z_as_relative = false
@@ -715,6 +716,12 @@ func _start_shake(amplitude: float, duration: float) -> void:
 		return
 	var pixels := shake_pixels(amplitude > 0.0, reduce_shake)
 	if pixels <= 0.0:
+		return
+	# Moving the board also moves its camera, so the view never shakes.
+	# The live board punches the camera in screen pixels instead.
+	if _board.has_method("punch_camera"):
+		var screen := amplitude if amplitude > VfxBudget.SHAKE_PX + 0.5 else 12.0
+		_board.call("punch_camera", screen, duration)
 		return
 	if _shaking and pixels < _shake_amp:
 		return

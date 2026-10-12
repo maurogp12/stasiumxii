@@ -328,9 +328,10 @@ static func _trap_spring_recipes(event: Dictionary) -> Array:
 	var flash := _hit_flash(seat, cell, 0.0)
 	flash["chest"] = false
 	flash["px"] = 76.0
-	var label := _number(seat, cell, "Trap!", "trap", 0.0, 1.2, "", Color(0, 0, 0, 0))
-	label["rise_sec"] = 0.34
-	label["fade_sec"] = 0.16
+	var label := _number(seat, cell, "Trap!", "trap", 0.0, 1.0, "", Color(0, 0, 0, 0))
+	label["rise_sec"] = 0.14
+	label["fade_sec"] = 0.10
+	label["lift_px"] = 36.0
 	return [
 		{
 			"id": "spark",
@@ -344,7 +345,7 @@ static func _trap_spring_recipes(event: Dictionary) -> Array:
 		flash,
 		_ring(cell, VfxPalette.KESTREL, false, 0.28, 0.0, "crack"),
 		label,
-		{"id": "shake", "block": 0.0, "amplitude": VfxBudget.SHAKE_PX * 1.15, "duration": 0.18},
+		{"id": "shake", "block": 0.0, "amplitude": 16.0, "duration": 0.22},
 	]
 
 

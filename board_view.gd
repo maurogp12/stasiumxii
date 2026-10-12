@@ -1858,6 +1858,32 @@ func _ensure_flourish() -> void:
 
 ## Impact punch (view only): a short decaying camera wobble. Bigger hits and
 ## knockouts shake more. A sine wobble, not dice, so it never touches the sim.
+## Screen-pixel camera bump. `screen_px` is how far the view travels on the
+## phone, independent of zoom. Two slow wobbles, then the offset clears.
+func punch_camera(screen_px: float, duration: float) -> void:
+	if _camera == null or not is_instance_valid(_camera) or not is_inside_tree():
+		return
+	if screen_px <= 0.0 or duration <= 0.0:
+		return
+	if _shake_tween != null and is_instance_valid(_shake_tween):
+		_shake_tween.kill()
+	_shake_tween = create_tween()
+	_shake_tween.tween_method(_apply_punch.bind(screen_px), 0.0, 1.0, duration)
+	_shake_tween.tween_callback(func() -> void:
+		if _camera != null and is_instance_valid(_camera):
+			_camera.offset = Vector2.ZERO
+	)
+
+
+func _apply_punch(t: float, screen_px: float) -> void:
+	if _camera == null or not is_instance_valid(_camera):
+		return
+	var fall := 1.0 - clampf(t, 0.0, 1.0)
+	var zoom := maxf(_camera.zoom.x, 0.001)
+	var wobble := Vector2(sin(t * TAU * 2.0), cos(t * TAU * 1.6) * 0.55)
+	_camera.offset = wobble * screen_px * fall / zoom
+
+
 func _shake_camera(dealt: float, knockout: bool) -> void:
 	if _camera == null or not is_instance_valid(_camera) or not is_inside_tree():
 		return

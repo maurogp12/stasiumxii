@@ -114,7 +114,8 @@ static func number_colors(kind: String) -> Dictionary:
 		"stagger":
 			return {"top": DAMAGE_TOP, "bottom": DAMAGE_BOTTOM, "size": VfxBudget.NUMBER_SIZE_SMALL}
 		"trap":
-			return {"top": KESTREL_AIR, "bottom": KESTREL, "size": 36}
+			# About a third of the old 36px word, so it sits above the victim.
+			return {"top": KESTREL_AIR, "bottom": KESTREL, "size": 14}
 		_:
 			return {"top": DAMAGE_TOP, "bottom": DAMAGE_BOTTOM, "size": VfxBudget.NUMBER_SIZE}
 
