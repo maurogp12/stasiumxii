@@ -748,6 +748,23 @@ func _test_inventory_screen() -> void:
 	inv.show_tab("equipment")
 	var tile := inv.find_child("Item_%d" % w, true, false)
 	truthy(tile != null and tile.icon_tex != null, "bag tiles draw the set art")
+	eq(inv.rarity_filter, "", "the equipment filter starts on All")
+	eq((inv.find_child("RarityAll", true, false) as Button).text, "All", "All is the first filter")
+	eq((inv.find_child("RarityUltra", true, false) as Button).text, "Ultra Legendary", "Ultra is labeled Ultra Legendary")
+	var legendary_box := (inv.find_child("RarityLegendary", true, false) as Button).get_theme_stylebox("normal") as StyleBoxFlat
+	eq(legendary_box.border_color, GearScreen.RARITY_TINT["Legendary"], "Legendary uses the rarity frame color")
+	var ultra_box := (inv.find_child("RarityUltra", true, false) as Button).get_theme_stylebox("normal") as StyleBoxFlat
+	eq(ultra_box.border_color, GearScreen.RARITY_TINT["Ultra"], "Ultra Legendary uses the purple frame")
+	inv.set_rarity_filter("Legendary")
+	eq(inv.find_child("Item_%d" % w, true, false) != null, true, "Legendary keeps the Brightedge weapon")
+	eq(inv.find_child("Item_%d" % a, true, false), null, "Legendary hides the Normal head")
+	inv.show_tab("consumables")
+	eq((inv.find_child("RarityRow", true, false) as Control).visible, false, "the filter hides off Equipment")
+	inv.show_tab("equipment")
+	eq(inv.rarity_filter, "Legendary", "the filter stays when the tab returns")
+	eq(inv.find_child("Item_%d" % a, true, false), null, "Legendary still hides Normal")
+	inv.set_rarity_filter("")
+	eq(inv.find_child("Item_%d" % a, true, false) != null, true, "All shows every piece again")
 	var weapon_slot := inv.find_child("Slot_weapon", true, false)
 	eq(weapon_slot.icon_tex, null, "Bastion's weapon slot is empty")
 	inv.pick_champion("kestrel")
@@ -1505,6 +1522,23 @@ func _test_prefight_loadout() -> void:
 	eq(screen.find_child("OpenSets", true, false), null, "sets do not open a second screen")
 	eq(screen.find_child("Slot_weapon", true, false) != null, true, "the paperdoll keeps worn slots")
 	eq(screen.find_child("Socket", true, false) != null, true, "the paperdoll keeps the Still socket")
+	eq((screen.find_child("RarityAll", true, false) as Button).text, "All", "the fight inventory filters by rarity")
+	var rare_uid := -1
+	var ultra_uid := -1
+	for it in screen.bag().items:
+		if str(it["item_id"]) == "ironveil.head":
+			rare_uid = int(it["uid"])
+		elif str(it["item_id"]) == "gatewarden.head":
+			ultra_uid = int(it["uid"])
+	screen.set_rarity_filter("Legendary")
+	eq(screen.find_child("Item_%d" % rare_uid, true, false), null, "Legendary hides a Rare piece")
+	eq(screen.find_child("Item_%d" % ultra_uid, true, false), null, "Legendary hides an Ultra piece")
+	screen.set_rarity_filter("Ultra")
+	eq((screen.find_child("RarityUltra", true, false) as Button).text, "Ultra Legendary", "the fight filter says Ultra Legendary")
+	eq(screen.find_child("Item_%d" % ultra_uid, true, false) != null, true, "Ultra Legendary keeps Gatewarden")
+	eq(screen.find_child("Item_%d" % rare_uid, true, false), null, "Ultra Legendary hides Rare")
+	screen.set_rarity_filter("")
+	eq(screen.find_child("Item_%d" % rare_uid, true, false) != null, true, "All restores the Rare piece")
 	var loose := -1
 	for it in screen.bag().items:
 		if str(it["item_id"]) == "ironveil.head" and not screen.bag().is_equipped(int(it["uid"])):

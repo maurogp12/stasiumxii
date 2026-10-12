@@ -35,10 +35,19 @@ const TAB_LABEL := {
 const LEFT_SLOTS: Array[String] = ["head", "weapon", "chest"]
 const RIGHT_SLOTS: Array[String] = ["legs", "boots"]
 const CONSUMABLES: Array[String] = ["consumable.room_tonic", "food.hearth", "food.stillwater"]
+const _RARITY_CHOICES: Array[Dictionary] = [
+	{"id": "", "node": "RarityAll", "label": "All"},
+	{"id": "Normal", "node": "RarityNormal", "label": "Normal"},
+	{"id": "Rare", "node": "RarityRare", "label": "Rare"},
+	{"id": "Legendary", "node": "RarityLegendary", "label": "Legendary"},
+	{"id": "Ultra", "node": "RarityUltra", "label": "Ultra Legendary"},
+]
 
 var font: Font
 var champion: String = "kestrel"
 var tab: String = "equipment"
+## Equipment grid filter. Empty string is All.
+var rarity_filter: String = ""
 ## Deployment inventory. Empty means the hub: every class, coins, consumables,
 ## cosmetics. While set, only these classes show, and mid-match chrome stays hidden.
 var fight_classes: Array = []
@@ -55,6 +64,7 @@ var _doll: Control
 var _stage: ChampionStage
 var _stats_box: VBoxContainer
 var _tab_row: HBoxContainer
+var _rarity_row: HBoxContainer
 var _grid: GridContainer
 var _detail: VBoxContainer
 var _body: VBoxContainer
@@ -142,6 +152,19 @@ func show_tab(id: String) -> void:
 	if _visible_tabs().has(id):
 		tab = id
 		picked = {}
+		_refresh()
+
+
+## Equipment grid only. "" is All. Normal, Rare, Legendary, or Ultra.
+func set_rarity_filter(rarity: String) -> void:
+	if rarity != "" and not GearScreen.RARITY_TINT.has(rarity):
+		return
+	rarity_filter = rarity
+	if str(picked.get("kind", "")) == "item" and _bag != null:
+		var item := _bag.item(int(picked.get("uid", -1)))
+		if not item.is_empty() and not _rarity_matches(str(item.get("item_id", ""))):
+			picked = {}
+	if is_inside_tree():
 		_refresh()
 
 
@@ -486,6 +509,10 @@ func _build() -> void:
 	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	right.add_theme_constant_override("separation", 6)
 	cols.add_child(right)
+	_rarity_row = HBoxContainer.new()
+	_rarity_row.name = "RarityRow"
+	_rarity_row.add_theme_constant_override("separation", 4)
+	right.add_child(_rarity_row)
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -535,6 +562,7 @@ func _refresh() -> void:
 	_refresh_doll()
 	_refresh_stats()
 	_refresh_tabs()
+	_refresh_rarity()
 	_refresh_grid()
 	_refresh_detail()
 	_apply_fight_section()
@@ -699,6 +727,65 @@ func _refresh_tabs() -> void:
 		_tab_row.add_child(b)
 
 
+func _refresh_rarity() -> void:
+	if _rarity_row == null:
+		return
+	_clear(_rarity_row)
+	_rarity_row.visible = tab == "equipment"
+	if tab != "equipment":
+		return
+	for spec in _RARITY_CHOICES:
+		var id := str(spec["id"])
+		var b := _button(str(spec["label"]))
+		b.name = str(spec["node"])
+		b.clip_text = false
+		b.custom_minimum_size = Vector2(0, 32)
+		b.add_theme_font_size_override("font_size", 12)
+		b.alignment = HORIZONTAL_ALIGNMENT_CENTER
+		_paint_rarity_button(b, _filter_tint(id), id == rarity_filter)
+		b.pressed.connect(set_rarity_filter.bind(id))
+		_rarity_row.add_child(b)
+
+
+func _filter_tint(id: String) -> Color:
+	if id == "":
+		return GOLD
+	return GearScreen.RARITY_TINT.get(id, GOLD)
+
+
+func _filter_label() -> String:
+	for spec in _RARITY_CHOICES:
+		if str(spec["id"]) == rarity_filter:
+			return str(spec["label"])
+	return "All"
+
+
+func _paint_rarity_button(button: Button, tint: Color, on: bool) -> void:
+	var fill := tint if on else Color(0.07, 0.06, 0.05, 0.95)
+	var ink := Color(0.12, 0.08, 0.05) if on else tint
+	button.add_theme_color_override("font_color", ink)
+	button.add_theme_color_override("font_hover_color", Color.WHITE if not on else ink)
+	button.add_theme_color_override("font_pressed_color", ink)
+	for style_name in ["normal", "hover", "pressed", "focus", "disabled"]:
+		var st := StyleBoxFlat.new()
+		st.bg_color = fill.lightened(0.08) if style_name == "hover" and not on else fill
+		st.border_color = tint
+		st.set_border_width_all(2 if on else 1)
+		st.set_corner_radius_all(4)
+		st.content_margin_left = 8
+		st.content_margin_right = 8
+		st.content_margin_top = 2
+		st.content_margin_bottom = 2
+		button.add_theme_stylebox_override(style_name, st)
+
+
+func _rarity_matches(item_id: String) -> bool:
+	if rarity_filter == "":
+		return true
+	var rarity := str(GearBag.FAMILIES.get(GearBag.family_of(item_id), {}).get("rarity", ""))
+	return rarity == rarity_filter
+
+
 func _refresh_grid() -> void:
 	_clear(_grid)
 	match tab:
@@ -712,12 +799,17 @@ func _refresh_grid() -> void:
 				if str(a["item_id"]) != str(b["item_id"]):
 					return GearBag.SLOTS.find(GearBag.slot_of(str(a["item_id"]))) < GearBag.SLOTS.find(GearBag.slot_of(str(b["item_id"])))
 				return int(a["plus"]) > int(b["plus"]))
+			var shown := 0
 			for it in sorted:
+				var item_id := str(it["item_id"])
+				if not _rarity_matches(item_id):
+					continue
+				shown += 1
 				var uid := int(it["uid"])
 				var t := _grid_tile("Item_%d" % uid)
-				t.glyph = GearBag.slot_of(str(it["item_id"]))
-				t.tint = _rarity_tint(str(it["item_id"]))
-				t.icon_tex = GearBag.icon(str(it["item_id"]), champion)
+				t.glyph = GearBag.slot_of(item_id)
+				t.tint = _rarity_tint(item_id)
+				t.icon_tex = GearBag.icon(item_id, champion)
 				t.filled = true
 				t.plus = int(it["plus"])
 				t.badge = "E" if _bag.is_equipped(uid) else ""
@@ -725,6 +817,8 @@ func _refresh_grid() -> void:
 				t.pressed.connect(select.bind({"kind": "item", "uid": uid}))
 			if sorted.is_empty():
 				_grid_note("Empty. Clear a Stasis door.")
+			elif shown == 0:
+				_grid_note("No %s pieces." % _filter_label())
 		"consumables":
 			var any := false
 			for sku in CONSUMABLES:

@@ -78,6 +78,33 @@ func _process(_delta: float) -> bool:
 			return true
 		_expect_equipment(screen)
 		_shot("inventory_equipment.png")
+		screen.set_rarity_filter("Legendary")
+		_phase = 9
+		_frames = 0
+		return false
+	if _phase == 9:
+		if _frames < 4:
+			return false
+		var screen := _inventory()
+		if screen == null or screen.rarity_filter != "Legendary":
+			push_error("legendary filter did not stick")
+			return true
+		_expect_rarity(screen, "Legendary")
+		_shot("inventory_filter_legendary.png")
+		screen.set_rarity_filter("Ultra")
+		_phase = 10
+		_frames = 0
+		return false
+	if _phase == 10:
+		if _frames < 4:
+			return false
+		var screen := _inventory()
+		if screen == null or screen.rarity_filter != "Ultra":
+			push_error("ultra filter did not stick")
+			return true
+		_expect_rarity(screen, "Ultra")
+		_shot("inventory_filter_ultra.png")
+		screen.set_rarity_filter("")
 		screen.show_tab("elements")
 		_phase = 3
 		_frames = 0
@@ -208,6 +235,33 @@ func _expect_equipment(screen: InventoryScreen) -> void:
 	for name in ["Champ_ironjaw", "Tab_consumables", "Tab_cosmetics", "OpenElements", "OpenSets"]:
 		if screen.find_child(name, true, false) != null:
 			push_error("should be hidden: %s" % name)
+
+
+func _expect_rarity(screen: InventoryScreen, rarity: String) -> void:
+	var node := "RarityUltra" if rarity == "Ultra" else "Rarity" + rarity
+	var label := "Ultra Legendary" if rarity == "Ultra" else rarity
+	var button := screen.find_child(node, true, false) as Button
+	if button == null or button.text != label:
+		push_error("filter button %s missing" % label)
+		return
+	print("FILTER BUTTON %s" % button.text)
+	var grid := screen.find_child("ItemGrid", true, false)
+	var count := 0
+	if grid == null:
+		push_error("item grid missing")
+		return
+	for child in grid.get_children():
+		var tile_name := str(child.name)
+		if not tile_name.begins_with("Item_"):
+			continue
+		count += 1
+		var item: Dictionary = screen.bag().item(tile_name.trim_prefix("Item_").to_int())
+		var got := str(GearBag.FAMILIES.get(GearBag.family_of(str(item.get("item_id", ""))), {}).get("rarity", ""))
+		if got != rarity:
+			push_error("tile %s is %s, wanted %s" % [str(item.get("item_id", "")), got, rarity])
+	print("FILTER %s tiles=%d" % [rarity, count])
+	if count == 0:
+		push_error("filter %s showed no pieces" % rarity)
 
 
 func _expect_combat_hud(hud: Node) -> void:
