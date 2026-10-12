@@ -1094,7 +1094,7 @@ func _test_northgate_snow_npcs() -> void:
 	eq(open, 0, "pine cells are forbidden to NPC walkers")
 	var decor_pines := 0
 	for d in w.decor_root.get_children():
-		if str(d.decor_type).begins_with("tree_pine_snow"):
+		if str(d.decor_type).begins_with("pine_snow") or str(d.decor_type).begins_with("tree_pine_snow"):
 			decor_pines += 1
 	eq(decor_pines, pines.size(), "every kept pine is planted in Northgate")
 	w.queue_free()

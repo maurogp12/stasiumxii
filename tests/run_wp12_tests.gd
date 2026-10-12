@@ -246,7 +246,7 @@ func _test_snow_town(w: Node2D) -> void:
 	var bare_trees := 0
 	for child in w.props_root.get_children():
 		if child.prop_type == "tree":
-			if str(child.art_id).begins_with("tree_pine_snow"):
+			if str(child.art_id).begins_with("pine_snow") or str(child.art_id).begins_with("tree_pine_snow"):
 				pines += 1
 			else:
 				bare_trees += 1

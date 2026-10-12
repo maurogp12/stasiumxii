@@ -1549,6 +1549,7 @@ func _refresh_plane() -> void:
 	var found: Variant = lay.get("offsets", {})
 	if typeof(found) == TYPE_DICTIONARY:
 		plane_offsets = found
+		Ground.plane_origins = plane_offsets.duplicate()
 
 
 func _origin_of(zone_id: String) -> Vector2i:
@@ -1959,7 +1960,10 @@ func _record_cell(record: Dictionary) -> Vector2i:
 ## Snowy pines ringing Northgate. View only, on cliff cells nobody can walk:
 ## never a path, door, exit or NPC cell, and never next to a building.
 const SNOW_PINE_TOWN := "crosshaven_northgate"
-const SNOW_PINE_IDS: Array[String] = ["tree_pine_snow_a", "tree_pine_snow_b", "tree_pine_snow_c"]
+const SNOW_PINE_IDS: Array[String] = [
+	"pine_snow_sapling", "pine_snow_small", "pine_snow_mid_a",
+	"pine_snow_mid_b", "pine_snow_tall", "pine_snow_giant",
+]
 
 
 ## `keep_clear` cells never take a pine (NPC posts, their talk ring and the

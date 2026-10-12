@@ -34,7 +34,17 @@ var snow_amount := 0.0:
 	set(value):
 		snow_amount = value
 		_sync_snow_shader()
+		_apply_snow_fringe()
 		queue_redraw()
+## Horizontal mirror of a snow pine. The art already varies; this only breaks twins.
+var _flip_h := false
+var _fringe_ready := false
+## Added to base_z when the prop stands on a chunk edge so the next ground row
+## does not slice the sprite. The hero one cell south stays in front (bias 4
+## vs this lift of 9).
+var _border_lift := 0
+## Cells from the nearest side of this chunk. Set in setup.
+var _edge_cells := 99
 ## Town snow on this cell (Northgate is 1). Set before setup: at 0.5 or more
 ## the prop takes the Northgate snow kit art when the kit has it.
 var snow_cover := 0.0
@@ -62,7 +72,11 @@ func setup(zone: WorldZone, record: Dictionary) -> void:
 		base_height = maxi(base_height, zone.height_at(c))
 	position = BoardVisualSort.cell_to_local(south_cell, float(base_height)) + Vector2(0, Pick.HALF_H)
 	z_as_relative = false
-	base_z = (south_cell.x + south_cell.y) * BoardVisualSort.TILE_Z_SCALE + 2
+	_border_lift = 0
+	_edge_cells = mini(mini(south_cell.x, south_cell.y), mini(zone.width - 1 - south_cell.x, zone.height - 1 - south_cell.y))
+	if prop_type == "tree" and _edge_cells <= 1:
+		_border_lift = 9
+	base_z = (south_cell.x + south_cell.y) * BoardVisualSort.TILE_Z_SCALE + 2 + _border_lift
 	z_index = base_z
 	if prop_type == "fence":
 		var o := footprint[0]
@@ -323,12 +337,60 @@ func hides_feet(feet: Vector2) -> bool:
 	return overlap and behind and prop_type != "fence" and cover_rect.size.y > 36.0
 
 
+func _apply_snow_fringe() -> void:
+	if prop_type != "tree":
+		return
+	var paint := maxf(snow_amount, snow_cover)
+	# Full town snow keeps every pine. Across the blend, trees thin out.
+	if snow_cover < 0.85 and paint > 0.05 and paint < 0.72:
+		var n := float(Art.h(south_cell.x, south_cell.y, 1000)) / 1000.0
+		visible = n <= 0.25 + paint * 0.9
+	else:
+		visible = true
+	if _fringe_ready:
+		return
+	if snowy_art or snow_amount > 0.15:
+		var n2 := float(Art.h(south_cell.x + 3, south_cell.y + 11, 1000)) / 1000.0
+		var sc := 0.94 + 0.12 * n2
+		scale = Vector2(sc, sc)
+		_flip_h = n2 > 0.62
+		_fringe_ready = true
+
+
+func _draw_bottom(art: Dictionary, alpha: float, flip: bool) -> void:
+	if art.is_empty() or alpha <= 0.02:
+		return
+	var s := Art.size_of(art)
+	var tex: Texture2D = art["tex"]
+	var dest := Rect2(Vector2(-s.x * 0.5, -s.y), s)
+	if flip:
+		dest = Rect2(Vector2(s.x * 0.5, -s.y), Vector2(-s.x, s.y))
+	var tint := Color(1, 1, 1, alpha)
+	draw_texture_rect(tex, dest, false, tint)
+
+
 func _draw() -> void:
 	var swayed := _sway != null and _sway.visible
 	if not swayed:
 		if _tex != null:
+			var pine_id := ""
+			if art_id.begins_with("pine_snow"):
+				pine_id = art_id
+			elif prop_type == "tree" and snow_amount > 0.05:
+				pine_id = Art.snow_pine_id(south_cell)
+			var flip := _flip_h and snowy_art
+			if pine_id != "":
+				var base := Art.texture("props", Art.pine_base_id(pine_id))
+				var base_a := 1.0 if snowy_art else clampf(snow_amount, 0.0, 1.0)
+				_draw_bottom(base, base_a, flip)
 			var s := Art.size_of(_art)
-			Art.draw_at(self, _art, Vector2(-s.x * 0.5, -s.y))
+			if flip:
+				_draw_bottom(_art, 1.0, true)
+			else:
+				Art.draw_at(self, _art, Vector2(-s.x * 0.5, -s.y))
+			if pine_id != "" and not snowy_art:
+				var overlay := Art.texture("props", pine_id)
+				_draw_bottom(overlay, clampf(snow_amount, 0.0, 0.92), false)
 			if not snowy_art:
 				_draw_window_glow(s)
 		else:
@@ -370,7 +432,8 @@ func _snow_kind() -> String:
 			return "roof"
 	for token in ["tree", "pine", "oak", "birch"]:
 		if name.find(token) >= 0:
-			return "tree"
+			# Painted pines carry their own snow. A flat white cap reads as a cut.
+			return ""
 	for token in ["fence", "wall", "hedge"]:
 		if name.find(token) >= 0:
 			return "fence"
@@ -516,14 +579,25 @@ func _snow_gathers_at_base() -> bool:
 
 
 ## Dead wood in the blight, olive trunks in the swamp, warm crowns on the beach.
+func _is_tree_art() -> bool:
+	var name := prop_type + " " + art_id
+	return prop_type == "tree" or name.find("tree") >= 0 or name.find("pine") >= 0 or name.find("oak") >= 0 or name.find("birch") >= 0
+
+
 func _apply_theme_tint() -> void:
-	var kind := _snow_kind()
-	if zone_id.find("westwatch") >= 0 and kind == "tree":
+	if not _is_tree_art():
+		return
+	if zone_id.find("westwatch") >= 0:
 		modulate = Color(0.55, 0.48, 0.66)
-	elif zone_id.find("southbridge") >= 0 and kind == "tree":
+	elif zone_id.find("southbridge") >= 0:
 		modulate = Color(0.66, 0.70, 0.55)
-	elif zone_id.find("eastmarch") >= 0 and kind == "tree":
+	elif zone_id.find("eastmarch") >= 0:
 		modulate = Color(0.98, 0.92, 0.80)
+	# Theme colour used to snap on the zone id, so a purple tree met a green
+	# one on the chunk line. Fade toward the painted sprite over the outer cells.
+	if _edge_cells < 6:
+		modulate = Color.WHITE.lerp(modulate, clampf(float(_edge_cells) / 6.0, 0.0, 1.0))
+		modulate.a = 1.0
 
 
 func _draw_window_glow(s: Vector2) -> void:
