@@ -1975,7 +1975,7 @@ func _flex_caster(actor: Dictionary, def: Dictionary) -> Array:
 	return tags
 
 
-func _stamp_riders(event: Dictionary, tags: Array, def: Dictionary) -> void:
+func _stamp_riders(event: Dictionary, tags: Array, def: Dictionary, target: Dictionary = {}) -> void:
 	if tags.is_empty():
 		return
 	var seen: Array = []
@@ -1985,9 +1985,30 @@ func _stamp_riders(event: Dictionary, tags: Array, def: Dictionary) -> void:
 	event["riders"] = seen
 	if seen.has("residue"):
 		event["residue"] = str(def.get("element", "")).to_lower()
+		event["residue_turns"] = int(target.get("residue_turns", RESIDUE_TURNS)) if not target.is_empty() else RESIDUE_TURNS
+	if seen.has("water_slow"):
+		event["water_turns"] = 1
+		event["water_mp"] = 1
+	if seen.has("fire_burn") and not target.is_empty():
+		event["burn_stacks"] = int(target.get("burn_stacks", 0))
+		event["burn_remaining"] = int(target.get("burn_remaining", 0))
+		event["burn_tick"] = _burn_tick_hp(int(target.get("burn_stacks", 0)))
+	if seen.has("grounded"):
+		event["grounded_turns"] = 1
 	for t in seen:
 		if str(t).begins_with("blend_"):
 			event["blend"] = str(t).substr(6)
+
+
+## A multi-body cast stamps each body, then the one hit row the log reads.
+func _copy_rider_facts(event: Dictionary, rows: Array) -> void:
+	for key in ["water_turns", "water_mp", "burn_stacks", "burn_remaining", "burn_tick", "residue_turns", "grounded_turns", "residue"]:
+		if event.has(key):
+			continue
+		for row in rows:
+			if typeof(row) == TYPE_DICTIONARY and (row as Dictionary).has(key):
+				event[key] = (row as Dictionary)[key]
+				break
 
 
 ## ---- Elements Step 3: Blends (Mauro 5 Oct 2026) ---------------------------
@@ -2073,22 +2094,34 @@ func _try_blend(actor: Dictionary, target: Dictionary, el: String) -> String:
 		"magma":
 			target["magma_pending"] = int(actor["seat"])
 			_still_on_debuff(target, "magma")
+			event["debuffs"] = [_debuff("Magma", 1, "%d HP" % MAGMA_TICK_HP)]
 			note = "the tile they end their next turn on burns for %d" % MAGMA_TICK_HP
 		"mire":
 			if _ultra_unbound(target):
+				event["ignored"] = "Unbound"
 				note = "Unbound ignores the Mire"
 			else:
 				target["mire_cell"] = target["pos"]
 				_still_on_debuff(target, "mire")
+				event["debuffs"] = [_debuff("Mire", 1, "+1 MP to leave")]
 				note = "leaving this tile costs +1 MP on their next turn"
 		"flare":
 			note = _blend_flare(actor, target, event)
 		"steam":
 			_add_element_tile("steam", target["pos"], int(actor["seat"]))
+			event["debuffs"] = [_debuff("Steam", 1, "blocks sight")]
 			note = "this tile blocks line of sight until %s's next turn" % str(actor.get("name", "the caster"))
 	event["coach"] = "BLEND %s on %s: %s." % [BLEND_NAMES[blend], str(target.get("name", "")), note]
+	if not event.has("debuffs"):
+		event["debuffs"] = []
+	if not event.has("damage"):
+		event["damage"] = 0
 	_blend_queue.append(event)
 	return blend
+
+
+func _debuff(debuff_name: String, turns: int, detail: String = "") -> Dictionary:
+	return {"name": debuff_name, "turns": turns, "detail": detail}
 
 
 ## Mender option A (Mauro 5 Oct 2026 "lets try a and b for mender"): a Mender
@@ -2133,6 +2166,14 @@ func _blend_drift_pin(actor: Dictionary, target: Dictionary, event: Dictionary) 
 	event["from"] = from
 	event["to"] = target["pos"]
 	event["slide"] = result.duplicate()
+	var extra := 0
+	if event.has("collision_hp"):
+		extra = int(event["collision_hp"])
+	elif bool(result.get("bounced", false)):
+		extra = int(result.get("stagger_hp", 0))
+	event["damage"] = extra
+	if bool(result.get("moved", false)):
+		event["slide_steps"] = 1
 	if not hit_something:
 		note += "; no Pin (nothing hit)"
 	elif bool(target.get("pinned", false)) or bool(target.get("pinned_last", false)):
@@ -2143,6 +2184,7 @@ func _blend_drift_pin(actor: Dictionary, target: Dictionary, event: Dictionary) 
 		target["pin_pending"] = true
 		_still_on_debuff(target, "pin")
 		event["pin"] = true
+		event["debuffs"] = [_debuff("Pin", 1)]
 		note += "; Pinned: cannot walk next turn"
 	return note
 
@@ -2163,6 +2205,7 @@ func _blend_spark(_actor: Dictionary, target: Dictionary, event: Dictionary) -> 
 	target["shield"] = shield - soaked
 	_lose_hp(target, chip - soaked)
 	event["chip"] = chip
+	event["damage"] = chip
 	event["shield_soaked"] = soaked
 	event["from"] = target["pos"]
 	event["to"] = target["pos"]
@@ -2171,6 +2214,7 @@ func _blend_spark(_actor: Dictionary, target: Dictionary, event: Dictionary) -> 
 	target["sparked"] = true
 	_still_on_debuff(target, "spark")
 	event["heal_cut"] = SPARK_HEAL_CUT
+	event["debuffs"] = [_debuff("Healing", 1, "-%d%%" % roundi(SPARK_HEAL_CUT * 100.0))]
 	return "%d damage (ignores resist), -%d%% healing" % [chip, roundi(SPARK_HEAL_CUT * 100.0)]
 
 
@@ -2192,6 +2236,7 @@ func _blend_flare(actor: Dictionary, target: Dictionary, event: Dictionary) -> S
 	var burn := _apply_burn(target)
 	event["revealed"] = revealed
 	event["burn_stacks"] = int(target.get("burn_stacks", 0))
+	event["debuffs"] = [_debuff("Burn", int(burn.get("remaining", 0)), "stack %d, %d HP" % [int(burn.get("stacks", 0)), int(burn.get("hp_per_tick", 0))])]
 	var note := "Burn %d" % int(burn.get("stacks", target.get("burn_stacks", 0)))
 	if not revealed.is_empty():
 		note += "; Invisible enemies nearby are revealed"
@@ -3494,7 +3539,7 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 		hit_event["skip_next_mp"] = true
 	var rider_tags := _flex_target(actor, target, def)
 	rider_tags.append_array(_flex_caster(actor, def))
-	_stamp_riders(hit_event, rider_tags, def)
+	_stamp_riders(hit_event, rider_tags, def, target)
 	_stamp_mitigation(hit_event, mitigation)
 	_last_events.append(hit_event)
 	if bool(push_result.get("blocked", false)):
@@ -7943,7 +7988,7 @@ func _resolve_aegis_break(intent: Dictionary, actor: Dictionary, def: Dictionary
 		}
 		_stamp_push_fields(row, push_result, burn_info, silence_info, slow_info)
 		_stamp_mitigation(row, mitigation)
-		_stamp_riders(row, _flex_target(actor, target, def), def)
+		_stamp_riders(row, _flex_target(actor, target, def), def, target)
 		targets.append(row)
 		if aim_row.is_empty() or cell == dest:
 			aim_row = row
@@ -7990,6 +8035,7 @@ func _resolve_aegis_break(intent: Dictionary, actor: Dictionary, def: Dictionary
 		var cast_tags: Array = (aim_row.get("riders", []) as Array).duplicate()
 		cast_tags.append_array(_flex_caster(actor, def))
 		_stamp_riders(hit_event, cast_tags, def)
+		_copy_rider_facts(hit_event, targets)
 	_last_events.append(hit_event)
 	_break_invisible_on_attack(actor)
 	return _accept()
@@ -8151,7 +8197,7 @@ func _resolve_hold_line(intent: Dictionary, actor: Dictionary, def: Dictionary, 
 			"back": is_back,
 		}
 		_stamp_mitigation(row, mitigation)
-		_stamp_riders(row, _flex_target(actor, target, def), def)
+		_stamp_riders(row, _flex_target(actor, target, def), def, target)
 		targets.append(row)
 		total += damage
 		hit_bodies += 1
@@ -8187,6 +8233,7 @@ func _resolve_hold_line(intent: Dictionary, actor: Dictionary, def: Dictionary, 
 		"coach": _last_coach,
 	})
 	_stamp_riders(_last_events[_last_events.size() - 1], hold_tags, def)
+	_copy_rider_facts(_last_events[_last_events.size() - 1], targets)
 	_break_invisible_on_attack(actor)
 	return _accept()
 
@@ -8342,7 +8389,7 @@ func _resolve_ambush(intent: Dictionary, actor: Dictionary, target: Dictionary, 
 	_stamp_mitigation(ambush_hit, mitigation)
 	var ambush_tags := _flex_target(actor, target, def)
 	ambush_tags.append_array(_flex_caster(actor, def))
-	_stamp_riders(ambush_hit, ambush_tags, def)
+	_stamp_riders(ambush_hit, ambush_tags, def, target)
 	_emit_immunity_spent(target, mitigation)
 	_ultra_on_hit(actor, target, def)
 	_check_death(target)

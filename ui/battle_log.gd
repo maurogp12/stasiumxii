@@ -160,6 +160,51 @@ static func sim_event_types() -> Array:
 	return out
 
 
+## Rider tags from the element functions. Blend ids are combos, logged on
+## their own event, so they are not reaction tags.
+static func reaction_tags() -> Array:
+	var found := {}
+	var rows := FileAccess.get_file_as_string("res://backend/combat_sim.gd").split("\n")
+	var watching := false
+	var pattern := RegEx.new()
+	pattern.compile("tags\\.append\\(\"([a-z_]+)\"\\)")
+	for line in rows:
+		if line.begins_with("func "):
+			watching = line.begins_with("func _add_element_rider(") or line.begins_with("func _flex_caster(") or line.begins_with("func _flex_target(")
+		if not watching:
+			continue
+		for match in pattern.search_all(line):
+			var tag := match.get_string(1)
+			if tag == "blend" or tag.begins_with("blend_"):
+				continue
+			found[tag] = true
+	var out: Array = found.keys()
+	out.sort()
+	return out
+
+
+## Combo ids in CombatSim.BLENDS. A new pair with no log line fails coverage.
+static func blend_ids() -> Array:
+	var found := {}
+	var rows := FileAccess.get_file_as_string("res://backend/combat_sim.gd").split("\n")
+	var watching := false
+	var pattern := RegEx.new()
+	pattern.compile("\"[a-z]+\\+[a-z]+\":\\s*\"([a-z_]+)\"")
+	for line in rows:
+		var stripped := line.strip_edges()
+		if stripped.begins_with("const BLENDS"):
+			watching = true
+		elif watching and (stripped.begins_with("const ") or stripped.begins_with("func ")):
+			watching = false
+		if not watching:
+			continue
+		for match in pattern.search_all(line):
+			found[match.get_string(1)] = true
+	var out: Array = found.keys()
+	out.sort()
+	return out
+
+
 static func _collect_types(buf: PackedStringArray, found: Dictionary) -> void:
 	var joined := "\n".join(buf)
 	if "_last_events" not in joined and "_blend_queue" not in joined:
@@ -396,14 +441,25 @@ static func _hit_extras(event: Dictionary) -> String:
 	var bits: PackedStringArray = []
 	var riders: Array = event.get("riders", []) if event.get("riders", []) is Array else []
 	if riders.has("water_slow"):
-		bits.append("Water slow")
+		var water_mp := int(event.get("water_mp", 1))
+		var water_turns := int(event.get("water_turns", 1))
+		bits.append("Water slow -%d MP %s" % [water_mp, _for_turns(water_turns)])
 	if riders.has("fire_burn"):
-		bits.append("Burn")
+		var stacks := int(event.get("burn_stacks", 0))
+		var turns := int(event.get("burn_remaining", 0))
+		var tick := int(event.get("burn_tick", 0))
+		if stacks > 0 and turns > 0:
+			bits.append("Burn stack %d, %d HP %s" % [stacks, tick, _for_turns(turns)])
+		else:
+			bits.append("Burn")
 	if riders.has("residue"):
 		var residue := str(event.get("residue", ""))
-		bits.append("Residue" if residue == "" else "Residue %s" % residue.capitalize())
+		var residue_name := "Residue" if residue == "" else "Residue %s" % residue.capitalize()
+		var residue_turns := int(event.get("residue_turns", 0))
+		bits.append(residue_name if residue_turns <= 0 else "%s %s" % [residue_name, _for_turns(residue_turns)])
 	if riders.has("grounded"):
-		bits.append("Grounded")
+		var grounded_turns := int(event.get("grounded_turns", 1))
+		bits.append("Grounded %s" % _for_turns(grounded_turns))
 	if riders.has("air_mp"):
 		bits.append("Air +1 MP")
 	if riders.has("unbound"):
@@ -526,12 +582,56 @@ static func _trap_line(event: Dictionary, snap: Dictionary) -> String:
 
 
 static func _blend_line(event: Dictionary, snap: Dictionary) -> String:
-	var who := _name(snap, int(event.get("target_seat", -1)))
+	var caster := _name(snap, int(event.get("seat", -1)))
+	var target := _name(snap, int(event.get("target_seat", -1)))
 	var name := str(event.get("name", event.get("blend", "Blend")))
-	var text := "Blend %s on %s" % [name, who]
-	if bool(event.get("pin", false)):
-		text += ", Pinned"
-	return text + "."
+	var text := "%s: %s on %s" % [name, caster, target]
+	var damage := int(event.get("damage", event.get("chip", 0)))
+	if damage > 0:
+		text += ", -%d HP" % damage
+	if int(event.get("shield_soaked", 0)) > 0:
+		text += ", shield %d" % int(event["shield_soaked"])
+	var effects: PackedStringArray = []
+	var debuffs: Variant = event.get("debuffs", [])
+	if typeof(debuffs) == TYPE_ARRAY:
+		for raw in debuffs:
+			if typeof(raw) != TYPE_DICTIONARY:
+				continue
+			var piece := _debuff_text(raw)
+			if piece != "":
+				effects.append(piece)
+	if int(event.get("slide_steps", 0)) > 0 and damage <= 0 and effects.is_empty():
+		effects.append("slides %d" % int(event["slide_steps"]))
+	var ignored := str(event.get("ignored", ""))
+	if ignored != "":
+		effects.append("%s ignores it" % ignored)
+	var revealed: Variant = event.get("revealed", [])
+	if typeof(revealed) == TYPE_ARRAY and not (revealed as Array).is_empty():
+		var names: PackedStringArray = []
+		for seat in revealed:
+			names.append(_name(snap, int(seat)))
+		effects.append("reveals %s" % ", ".join(names))
+	if effects.is_empty():
+		return text + "."
+	return "%s. %s." % [text, ", ".join(effects)]
+
+
+static func _debuff_text(debuff: Dictionary) -> String:
+	var debuff_name := str(debuff.get("name", ""))
+	if debuff_name == "":
+		return ""
+	var detail := str(debuff.get("detail", ""))
+	var text := debuff_name if detail == "" else "%s %s" % [debuff_name, detail]
+	var turns := int(debuff.get("turns", 0))
+	if turns > 0:
+		text += " " + _for_turns(turns)
+	return text
+
+
+static func _for_turns(turns: int) -> String:
+	if turns == 1:
+		return "for 1 turn"
+	return "for %d turns" % turns
 
 
 static func _still_line(event: Dictionary, snap: Dictionary) -> String:
@@ -648,7 +748,7 @@ static func _veiled_line(kind: String, event: Dictionary, snap: Dictionary) -> S
 		return "%s moves while hidden." % _name(snap, actor)
 	if kind == "cast" and str(event.get("spell", "")) == SpellKits.VAULT and _hide_motion(event, snap, actor):
 		return "%s moves while hidden." % _name(snap, actor)
-	if kind in ["trap", "lava_land", "blend", "push_bounce", "push_blocked"] and _hide_motion(event, snap, target):
+	if kind in ["trap", "lava_land", "push_bounce", "push_blocked"] and _hide_motion(event, snap, target):
 		return "%s moves while hidden." % _name(snap, target)
 	if kind == "still" and str(event.get("still", "")) == "mirror_hour" and (_hide_motion(event, snap, actor) or _hide_motion(event, snap, target)):
 		var who := actor if _hide_motion(event, snap, actor) else target
