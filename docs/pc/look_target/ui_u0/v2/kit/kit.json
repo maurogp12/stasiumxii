@@ -1,0 +1,445 @@
+{
+  "scale": "1920x1080 design px; margins are [left, top, right, bottom]",
+  "panel_9slice": {
+    "size": [
+      96,
+      96
+    ],
+    "margins": [
+      12,
+      12,
+      12,
+      12
+    ]
+  },
+  "files": {
+    "panel_9slice_dark.png": {
+      "size": [
+        96,
+        96
+      ],
+      "nine_slice": [
+        12,
+        12,
+        12,
+        12
+      ],
+      "variant": "dark"
+    },
+    "button_green_dark.png": {
+      "size": [
+        96,
+        32
+      ],
+      "nine_slice": [
+        8,
+        8,
+        8,
+        8
+      ],
+      "variant": "dark"
+    },
+    "button_orange_dark.png": {
+      "size": [
+        96,
+        32
+      ],
+      "nine_slice": [
+        8,
+        8,
+        8,
+        8
+      ],
+      "variant": "dark"
+    },
+    "button_dark_dark.png": {
+      "size": [
+        96,
+        32
+      ],
+      "nine_slice": [
+        8,
+        8,
+        8,
+        8
+      ],
+      "variant": "dark"
+    },
+    "button_dark_active_dark.png": {
+      "size": [
+        96,
+        32
+      ],
+      "nine_slice": [
+        8,
+        8,
+        8,
+        8
+      ],
+      "note": "gold trim = active/selected",
+      "variant": "dark"
+    },
+    "title_bar_dark.png": {
+      "size": [
+        96,
+        24
+      ],
+      "nine_slice": [
+        8,
+        6,
+        8,
+        6
+      ],
+      "variant": "dark"
+    },
+    "pill_dark.png": {
+      "size": [
+        48,
+        20
+      ],
+      "nine_slice": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "variant": "dark"
+    },
+    "banner_accent_dark.png": {
+      "size": [
+        6,
+        36
+      ],
+      "nine_slice": null,
+      "variant": "dark"
+    },
+    "slot_dark.png": {
+      "size": [
+        44,
+        44
+      ],
+      "nine_slice": null,
+      "variant": "dark"
+    },
+    "slot_rarity_normal_dark.png": {
+      "size": [
+        44,
+        44
+      ],
+      "nine_slice": null,
+      "variant": "dark"
+    },
+    "slot_rarity_rare_dark.png": {
+      "size": [
+        44,
+        44
+      ],
+      "nine_slice": null,
+      "variant": "dark"
+    },
+    "slot_rarity_legendary_dark.png": {
+      "size": [
+        44,
+        44
+      ],
+      "nine_slice": null,
+      "variant": "dark"
+    },
+    "slot_rarity_ultra_dark.png": {
+      "size": [
+        44,
+        44
+      ],
+      "nine_slice": null,
+      "variant": "dark"
+    },
+    "xp_bar_track_dark.png": {
+      "size": [
+        200,
+        6
+      ],
+      "nine_slice": [
+        4,
+        0,
+        4,
+        0
+      ],
+      "variant": "dark"
+    },
+    "xp_bar_fill_dark.png": {
+      "size": [
+        200,
+        6
+      ],
+      "nine_slice": [
+        4,
+        0,
+        4,
+        0
+      ],
+      "variant": "dark"
+    },
+    "checkbox_dark.png": {
+      "size": [
+        14,
+        14
+      ],
+      "nine_slice": null,
+      "variant": "dark"
+    },
+    "checkbox_checked_dark.png": {
+      "size": [
+        14,
+        14
+      ],
+      "nine_slice": null,
+      "variant": "dark"
+    },
+    "minimap_frame_dark.png": {
+      "size": [
+        200,
+        200
+      ],
+      "nine_slice": [
+        12,
+        12,
+        12,
+        12
+      ],
+      "note": "centre is transparent; fixed 200x200 (square)",
+      "variant": "dark"
+    },
+    "orb_dark.png": {
+      "size": [
+        96,
+        96
+      ],
+      "nine_slice": null,
+      "note": "96px; HP ring 75%, stamina arc, crest, level medallion '23'",
+      "variant": "dark"
+    },
+    "bar_dark.png": {
+      "size": [
+        1040,
+        64
+      ],
+      "nine_slice": null,
+      "variant": "dark",
+      "note": "panel_9slice stretched to the bottom bar size"
+    },
+    "panel_9slice_light.png": {
+      "size": [
+        96,
+        96
+      ],
+      "nine_slice": [
+        12,
+        12,
+        12,
+        12
+      ],
+      "variant": "light"
+    },
+    "button_green_light.png": {
+      "size": [
+        96,
+        32
+      ],
+      "nine_slice": [
+        8,
+        8,
+        8,
+        8
+      ],
+      "variant": "light"
+    },
+    "button_orange_light.png": {
+      "size": [
+        96,
+        32
+      ],
+      "nine_slice": [
+        8,
+        8,
+        8,
+        8
+      ],
+      "variant": "light"
+    },
+    "button_dark_light.png": {
+      "size": [
+        96,
+        32
+      ],
+      "nine_slice": [
+        8,
+        8,
+        8,
+        8
+      ],
+      "variant": "light"
+    },
+    "button_dark_active_light.png": {
+      "size": [
+        96,
+        32
+      ],
+      "nine_slice": [
+        8,
+        8,
+        8,
+        8
+      ],
+      "note": "gold trim = active/selected",
+      "variant": "light"
+    },
+    "title_bar_light.png": {
+      "size": [
+        96,
+        24
+      ],
+      "nine_slice": [
+        8,
+        6,
+        8,
+        6
+      ],
+      "variant": "light"
+    },
+    "pill_light.png": {
+      "size": [
+        48,
+        20
+      ],
+      "nine_slice": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "variant": "light"
+    },
+    "banner_accent_light.png": {
+      "size": [
+        6,
+        36
+      ],
+      "nine_slice": null,
+      "variant": "light"
+    },
+    "slot_light.png": {
+      "size": [
+        44,
+        44
+      ],
+      "nine_slice": null,
+      "variant": "light"
+    },
+    "slot_rarity_normal_light.png": {
+      "size": [
+        44,
+        44
+      ],
+      "nine_slice": null,
+      "variant": "light"
+    },
+    "slot_rarity_rare_light.png": {
+      "size": [
+        44,
+        44
+      ],
+      "nine_slice": null,
+      "variant": "light"
+    },
+    "slot_rarity_legendary_light.png": {
+      "size": [
+        44,
+        44
+      ],
+      "nine_slice": null,
+      "variant": "light"
+    },
+    "slot_rarity_ultra_light.png": {
+      "size": [
+        44,
+        44
+      ],
+      "nine_slice": null,
+      "variant": "light"
+    },
+    "xp_bar_track_light.png": {
+      "size": [
+        200,
+        6
+      ],
+      "nine_slice": [
+        4,
+        0,
+        4,
+        0
+      ],
+      "variant": "light"
+    },
+    "xp_bar_fill_light.png": {
+      "size": [
+        200,
+        6
+      ],
+      "nine_slice": [
+        4,
+        0,
+        4,
+        0
+      ],
+      "variant": "light"
+    },
+    "checkbox_light.png": {
+      "size": [
+        14,
+        14
+      ],
+      "nine_slice": null,
+      "variant": "light"
+    },
+    "checkbox_checked_light.png": {
+      "size": [
+        14,
+        14
+      ],
+      "nine_slice": null,
+      "variant": "light"
+    },
+    "minimap_frame_light.png": {
+      "size": [
+        200,
+        200
+      ],
+      "nine_slice": [
+        12,
+        12,
+        12,
+        12
+      ],
+      "note": "centre is transparent; fixed 200x200 (square)",
+      "variant": "light"
+    },
+    "orb_light.png": {
+      "size": [
+        96,
+        96
+      ],
+      "nine_slice": null,
+      "note": "96px; HP ring 75%, stamina arc, crest, level medallion '23'",
+      "variant": "light"
+    },
+    "bar_light.png": {
+      "size": [
+        1040,
+        64
+      ],
+      "nine_slice": null,
+      "variant": "light",
+      "note": "panel_9slice stretched to the bottom bar size"
+    }
+  }
+}

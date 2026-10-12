@@ -39,3 +39,15 @@ Luca: they "do not look like our game".
 ## Waiting on Claude
 
 Scenario Art is waiting for Claude's direction on which real frame, which hero sprite size, and any locked HUD look to use. If asked, it will redo the mockups on a real Crosshaven frame with the Ironjaw base sprite.
+
+## v2
+
+v2 follows Claude's direction. The files are under [v2/](v2/). The HUD is drawn on the real Crosshaven frame and covers about 7.6% of the screen. The bar is 1040×64, the slots are 44×44, the orb is 96 wide, and the minimap is 200×200. Text is real Nunito. The look is direction A, charcoal and teal, plus a light variant.
+
+Known gaps:
+
+- Built on the Crosshaven frame only. Frames 1 and 2 from PR #362 on branch `pc/ui-frames` weren't available yet.
+- The minimap is a stylised redraw, not the real Crossroads layout, and the zone text is hardcoded to Crossroads.
+- The level medallion overlaps the orb bottom edge.
+- Gems, weapons, and armour icons are placeholders, and quest, spell, and rank text is invented.
+- The real captured hero is about 156 px tall at 1080p, not 110–120 as in the spec, so HUD sizes may need rechecking against the real frames.
