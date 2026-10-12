@@ -27,11 +27,16 @@ extends SceneTree
 ## Run:
 ##   godot --headless --path . -s res://tests/pc/bench_northgate_walk.gd
 ## Optional: BENCH_SECS (walk length, default 20), BENCH_SIZE (e.g. 2560x1440).
+## Coast bench (same budgets, another walk): BENCH_ZONE=<zone id>,
+## BENCH_A=x,y and BENCH_B=x,y (the two ends of the walk), and BENCH_SHORE=0
+## to draw the old per-cell shore for an A/B. The Saltmaw beach:
+##   BENCH_ZONE=crosshaven_eastmarch_sea_caves BENCH_A=24,29 BENCH_B=26,3
 
 const WORLD := preload("res://scenes/world/crosshaven/crosshaven_world.tscn")
-const TOWN := "crosshaven_northgate"
-const SQUARE := Vector2i(20, 14)
-const SOUTH_ROAD := Vector2i(20, 27)
+const Ground := preload("res://scenes/world/crosshaven/crosshaven_ground.gd")
+var TOWN := "crosshaven_northgate"
+var SQUARE := Vector2i(20, 14)
+var SOUTH_ROAD := Vector2i(20, 27)
 const FRAME_BUDGET_MS := 100.0
 const P99_BUDGET_MS := 25.0
 const STEADY_RATIO := 2.0
@@ -47,6 +52,15 @@ func _initialize() -> void:
 
 
 func _go() -> void:
+	if OS.get_environment("BENCH_ZONE") != "":
+		TOWN = OS.get_environment("BENCH_ZONE")
+	if OS.get_environment("BENCH_A").contains(","):
+		SQUARE = _cell_env("BENCH_A")
+	if OS.get_environment("BENCH_B").contains(","):
+		SOUTH_ROAD = _cell_env("BENCH_B")
+	if OS.get_environment("BENCH_SHORE") == "0":
+		Ground.smooth_shore = false
+	print("BENCH zone=%s a=%s b=%s smooth_shore=%s" % [TOWN, SQUARE, SOUTH_ROAD, Ground.smooth_shore])
 	var size := Vector2i(1920, 1080)
 	var asked := OS.get_environment("BENCH_SIZE")
 	if asked.contains("x"):
@@ -103,9 +117,16 @@ func _go() -> void:
 	quit(0 if _ok else 1)
 
 
+func _cell_env(name: String) -> Vector2i:
+	var raw := OS.get_environment(name)
+	return Vector2i(int(raw.get_slice(",", 0)), int(raw.get_slice(",", 1)))
+
+
 ## Mean frame time (ms) standing still in `zone_id` once the ground is warm.
 func _steady(w: Node2D, zone_id: String, cell: Vector2i) -> float:
+	var load_t0 := Time.get_ticks_usec()
 	await w.enter_zone(zone_id, cell, false)
+	print("LOAD zone=%s ms=%.1f" % [zone_id, float(Time.get_ticks_usec() - load_t0) / 1000.0])
 	w.camera.position = w.walker.position
 	w.camera.reset_smoothing()
 	for i in WARMUP_FRAMES * 8:

@@ -576,7 +576,9 @@ func _cache_beach() -> void:
 		# the beach as grass under the owner's sand, and its next-row grass
 		# rims showed through as a grid of green lines on the sand.
 		margin = _view_margin()
+		_seen_memo_on = true
 		_cache_near_sea(margin)
+		_near_sea_ready = true
 	for y in range(-margin, zone.height + margin):
 		for x in range(-margin, zone.width + margin):
 			var cell := Vector2i(x, y)
@@ -584,6 +586,27 @@ func _cache_beach() -> void:
 			if family != "":
 				_beach[cell] = family
 	_near_sea.clear()
+	_near_sea_ready = false
+	_seen_memo_on = false
+	_seen_memo.clear()
+
+
+## Terrain seen per cell while the beach is classified (the cross-chunk
+## lookup is the slow part of that pass).
+var _seen_memo: Dictionary = {}
+var _near_sea_ready := false
+var _seen_memo_on := false
+
+
+func _seen_fast(cell: Vector2i) -> String:
+	if not _seen_memo_on:
+		return Art.terrain_seen(zone, cell)
+	var known: Variant = _seen_memo.get(cell)
+	if known != null:
+		return known
+	var seen := Art.terrain_seen(zone, cell)
+	_seen_memo[cell] = seen
+	return seen
 
 
 ## Chebyshev steps to the nearest water cell (what `_sea_dist` scans for),
@@ -600,7 +623,7 @@ func _cache_near_sea(margin: int) -> void:
 	for y in range(-pad, zone.height + pad):
 		for x in range(-pad, zone.width + pad):
 			var cell := Vector2i(x, y)
-			if Art.terrain_seen(zone, cell) == "water":
+			if _seen_fast(cell) == "water":
 				_near_sea[cell] = 0
 				queue.append(cell)
 	var head := 0
@@ -702,7 +725,7 @@ func _east_coast(cell: Vector2i) -> bool:
 func _sea_dist(cell: Vector2i) -> int:
 	if zone == null:
 		return 99
-	if not _near_sea.is_empty() and _near_sea_rect.has_point(cell):
+	if _near_sea_ready and _near_sea_rect.has_point(cell):
 		return int(_near_sea.get(cell, 99))
 	if Art.terrain_seen(zone, cell) == "water":
 		return 0
@@ -717,26 +740,32 @@ func _sea_dist(cell: Vector2i) -> int:
 
 
 func _classify_beach(cell: Vector2i) -> String:
-	if zone == null or not _east_coast(cell):
+	if zone == null:
 		return ""
-	var terrain := Art.terrain_seen(zone, cell)
+	var terrain := _seen_fast(cell)
+	# Cheap tests first: most cells are neither water nor near it, and the
+	# theme weights are the slow part.
+	if terrain != "water" and terrain != "golden_plains":
+		return ""
+	var dist := 0
+	if terrain == "golden_plains":
+		dist = _sea_dist(cell)
+		if dist > BEACH_REACH:
+			return ""
+	if not _east_coast(cell):
+		return ""
 	if terrain == "water":
 		if smooth_shore:
 			# The shallows, surf and wet sand come from the smoothed shore.
 			return "sea_deep"
 		for dir in _ORTHO:
-			var nb := Art.terrain_seen(zone, cell + dir)
+			var nb := _seen_fast(cell + dir)
 			if nb != "" and nb != "water":
 				return "sea_shallow"
 		return "sea_deep"
-	if terrain != "golden_plains":
-		return ""
-	var dist := _sea_dist(cell)
 	if dist == 1 and not smooth_shore:
 		return "wet_sand"
-	if dist <= BEACH_REACH:
-		return "sand"
-	return ""
+	return "sand"
 
 
 func _kit_sea(cell: Vector2i) -> bool:
@@ -2335,7 +2364,7 @@ func _defers_decor(cell: Vector2i) -> bool:
 ## SHORE_SOFT: flat land a beach can lie on. SHORE_HARD: cliffs, raised banks,
 ## rivers, swamp and unpainted void; they keep their own faces and foam.
 func _shore_kind(cell: Vector2i) -> int:
-	var seen := Art.terrain_seen(zone, cell)
+	var seen := _seen_fast(cell)
 	if seen == "":
 		if _void_sea.has(cell) or _kit_sea(cell):
 			return SHORE_SEA
@@ -2373,6 +2402,7 @@ func _cache_shore() -> void:
 	var n := size.x * size.y
 	var kind := PackedByteArray()
 	kind.resize(n)
+	_seen_memo_on = true
 	var any_sea := false
 	var any_soft := false
 	for y in size.y:
@@ -2381,6 +2411,8 @@ func _cache_shore() -> void:
 			kind[y * size.x + x] = k
 			any_sea = any_sea or k == SHORE_SEA
 			any_soft = any_soft or k == SHORE_SOFT
+	_seen_memo_on = false
+	_seen_memo.clear()
 	if not any_sea or not any_soft:
 		return
 	var dist := shore_distances(kind, size, SHORE_FIELD_CAP)
@@ -2396,6 +2428,10 @@ func _cache_shore() -> void:
 			if kind[i] != SHORE_SEA:
 				soft[i] = 1.0 if kind[i] == SHORE_SOFT else 0.0
 				snow[i] = maxf(cover_at(cell), snow_shore_at(cell))
+				continue
+			if dist[i] < -SHORE_SEA_REACH - 1.5:
+				# Open sea: no band reaches here, nothing to weigh.
+				soft[i] = 1.0
 				continue
 			var soft_n := 0.0
 			var hard_n := 0.0

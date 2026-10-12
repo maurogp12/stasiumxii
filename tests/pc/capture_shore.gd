@@ -23,8 +23,8 @@ const SPOTS := {
 	"northgate": {"zone": "crosshaven_northgate", "hero": Vector2i(7, 7), "cam": Vector2i(7, 6), "zoom": 1.6},
 	"crags_east": {"zone": "crosshaven_northgate_crags_east", "hero": Vector2i(8, 4), "cam": Vector2i(10, 3), "zoom": 1.6},
 }
-const WALK_FROM := Vector2i(27, 3)
-const WALK_TO := Vector2i(27, 31)
+const WALK_FROM := Vector2i(24, 29)
+const WALK_TO := Vector2i(26, 3)
 
 var _spots: Array[String] = ["saltmaw", "docks", "southbridge", "northgate"]
 var _out := "/tmp/shore"
