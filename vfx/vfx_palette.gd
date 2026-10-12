@@ -25,6 +25,9 @@ const CRIT_BOTTOM := Color("F6C445")
 const STUN := Color(0.95, 0.78, 0.2, 1.0)
 
 const KESTREL := Color("3FA35B")
+## Trap word. Warm white over gold, so the stacked fill stays bright on a phone.
+const TRAP_WORD := Color("FFF6D8")
+const TRAP_WORD_GOLD := Color("F6C445")
 const KESTREL_AIR := Color("EAF6F0")
 const KESTREL_MINT := Color("B8F0C8")
 const IRONJAW := Color("C23B2E")
@@ -119,6 +122,9 @@ static func number_colors(kind: String) -> Dictionary:
 			return {"top": DAMAGE_TOP, "bottom": DAMAGE_BOTTOM, "size": VfxBudget.NUMBER_SIZE_SMALL}
 		"crit":
 			return {"top": CRIT_TOP, "bottom": CRIT_BOTTOM, "size": 28}
+		"trap":
+			# 1.5x the 14px word. Warm white over gold, with the number's dark outline.
+			return {"top": TRAP_WORD, "bottom": TRAP_WORD_GOLD, "size": 21}
 		_:
 			return {"top": DAMAGE_TOP, "bottom": DAMAGE_BOTTOM, "size": VfxBudget.NUMBER_SIZE}
 

@@ -1146,6 +1146,7 @@ func play_view_plan(plan: Dictionary) -> float:
 				total += hit_play - sec
 				sec = hit_play
 			# A crit holds at the peak of the knock, not on the first cell.
+			# A trap passes stop 0 and uses the snare recoil instead.
 			tw.tween_method(_sample_hit.bind(hit_dir, hit_stop, force_knock, knock_px, sec), 0.0, 1.0, sec)
 		elif kind == "lift":
 			tw.tween_callback(_end_body_strip)
@@ -2198,17 +2199,22 @@ func _thaw_hit_strip() -> void:
 func _sample_hit(t: float, dir: Vector2, stop: float = 0.0, force_knock: bool = false, knock_px: float = 0.0, duration: float = 0.0) -> void:
 	if _sprite == null:
 		return
-	# The painted hit cell does not travel. A crit forces an eased knock.
+	# The painted hit cell does not travel. A crit forces the eased knock.
+	# A trap forces the snare recoil. A plain hit uses the short flinch.
 	var planted := _hit_strip_is_body() and not force_knock
 	var curve_stop := stop if stop >= 0.06 else -1.0
+	var crit_knock := force_knock and stop >= 0.06
 	var pos := Vector2.ZERO
 	var mul := Vector2.ONE
-	if force_knock:
+	if crit_knock:
 		var span := duration if duration > 0.05 else VIEW_MOTION.crit_motion_sec()
 		var knock := knock_px if knock_px > 1.0 else VIEW_MOTION.CRIT_KNOCK_PX
 		pos = VIEW_MOTION.crit_recoil(t, span, dir, knock)
 		mul = VIEW_MOTION.crit_squash(t, span)
 		_pin_crit_pose(t, span)
+	elif force_knock:
+		pos = VIEW_MOTION.recoil_offset(t, dir, knock_px if knock_px > 1.0 else 16.0)
+		mul = VIEW_MOTION.recoil_squash(t)
 	elif not planted:
 		pos = VIEW_MOTION.hit_offset(t, dir, curve_stop)
 		mul = VIEW_MOTION.hit_squash(t, curve_stop)

@@ -480,6 +480,21 @@ static func chrome_plans(events: Array) -> Dictionary:
 						# lantern attack; heals and wards keep the skill.
 						plan["strip"] = "attack"
 				plans[seat] = plan
+		if typ == "trap":
+			# The snare is not a spell hit, but the body still flinches.
+			# Contact is immediate: the board plays this when the foot lands.
+			var victim := int(event.get("target_seat", -1))
+			if victim < 0:
+				continue
+			var trap_plan: Dictionary = plans.get(victim, {})
+			trap_plan["hit"] = true
+			trap_plan["delay"] = true
+			trap_plan["contact"] = 0.0
+			# The painted hit cell does not travel. Force a readable flinch.
+			trap_plan["force_knock"] = true
+			trap_plan["knock_px"] = 16.0
+			plans[victim] = trap_plan
+			continue
 		if typ != "hit":
 			continue
 		var target := int(event.get("target_seat", -1))
@@ -564,6 +579,9 @@ static func steps_for(plan: Dictionary) -> Array:
 		if crit_hit:
 			hit_step["force_knock"] = true
 			hit_step["knock_px"] = float(plan.get("knock_px", CRIT_KNOCK_PX))
+		elif bool(plan.get("force_knock", false)):
+			hit_step["force_knock"] = true
+			hit_step["knock_px"] = float(plan.get("knock_px", 16.0))
 		steps.append(hit_step)
 	elif lift:
 		steps.append({"kind": "lift", "sec": support_sec()})
@@ -1014,6 +1032,40 @@ static func hit_squash(t: float, stop: float = -1.0) -> Vector2:
 		var bt := (time - shake_end) / maxf(HIT_RETURN_SEC, 0.0001)
 		k = 1.0 - _ease_in(bt)
 	return Vector2(lerpf(1.0, HIT_SQUASH_X, k), lerpf(1.0, HIT_SQUASH_Y, k))
+
+
+## Snare flinch. Eases off the tile, holds, staggers down, then eases home.
+## `knock` is board pixels. Zero at both ends so the next pose is clean.
+static func recoil_offset(t: float, away: Vector2, knock: float = 16.0) -> Vector2:
+	if t <= 0.0 or t >= 1.0:
+		return Vector2.ZERO
+	var dir := _unit(away)
+	if dir == Vector2.ZERO:
+		dir = Vector2(0.9, 0.4).normalized()
+	var u := clampf(t, 0.0, 1.0)
+	var along := 0.0
+	var dip := 0.0
+	if u < 0.28:
+		var k := u / 0.28
+		along = knock * (1.0 - (1.0 - k) * (1.0 - k))
+	elif u < 0.52:
+		along = knock
+	elif u < 0.70:
+		var k := (u - 0.52) / 0.18
+		along = knock + sin(k * PI) * 4.0
+		dip = sin(k * PI) * 6.0
+	else:
+		var k := (u - 0.70) / 0.30
+		along = knock * (1.0 - k) * (1.0 - k)
+	return dir * along + Vector2(0.0, dip)
+
+
+static func recoil_squash(t: float) -> Vector2:
+	var u := clampf(t, 0.0, 1.0)
+	if u < 0.52 or u >= 0.70:
+		return Vector2.ONE
+	var k := sin((u - 0.52) / 0.18 * PI)
+	return Vector2(lerpf(1.0, 1.14, k), lerpf(1.0, 0.78, k))
 
 
 static func hit_offset(t: float, away: Vector2, stop: float = -1.0) -> Vector2:
