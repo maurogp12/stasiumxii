@@ -16,6 +16,7 @@ func _initialize() -> void:
 	_test_turn_bar()
 	_test_grid_and_occluders()
 	_test_draw_slots_do_not_tie()
+	_test_shake_stays_off_the_camera()
 	_test_class_select_copy()
 	_test_hud_does_not_overlap()
 	_test_turn_targets_are_cards()
@@ -157,7 +158,34 @@ func _test_draw_slots_do_not_tie() -> void:
 	near(origin.y, roundf(origin.y), "the snapped camera lands on a whole pixel vertically")
 	var proj := FileAccess.get_file_as_string("res://project.godot")
 	truthy(proj.contains("2d/snap/snap_2d_transforms_to_pixel=true"), "canvas transforms snap to pixels")
+	var screen := VISUAL_SORT.shake_screen(Vector2(14.6, -3.2))
+	eq(screen, Vector2(15, -3), "shake offsets round to whole screen pixels")
+	var world := VISUAL_SORT.shake_world_offset(Vector2(14.6, -3.2), 1.55)
+	near(world.x * 1.55, 15.0, "shake x is 15 screen pixels at this zoom")
+	near(world.y * 1.55, -3.0, "shake y is -3 screen pixels at this zoom")
+	eq(VISUAL_SORT.SHAKE_CULL_MARGIN >= 48.0, true, "the cull margin covers the punch")
 	truthy(proj.contains("default_texture_filter=1"), "the canvas filter is linear, without mipmaps")
+
+
+## The punch moves the world parent in whole screen pixels. The camera offset
+## stays zero, so the tile cull does not follow the wobble.
+func _test_shake_stays_off_the_camera() -> void:
+	var board: Node2D = load("res://board_view.gd").new()
+	root.add_child(board)
+	var cam := Camera2D.new()
+	cam.zoom = Vector2(1.55, 1.55)
+	board._camera = cam
+	board.add_child(cam)
+	board._set_view_shake(Vector2(14.4, -6.6))
+	eq(cam.offset, Vector2.ZERO, "shake leaves the camera offset clear")
+	var host: Node2D = board._world
+	truthy(host != null, "shake has a world parent")
+	var expect := VISUAL_SORT.shake_world_offset(Vector2(14.4, -6.6), 1.55)
+	near(host.position.x, expect.x, "shake x lands on whole screen pixels")
+	near(host.position.y, expect.y, "shake y lands on whole screen pixels")
+	board._set_view_shake(Vector2.ZERO)
+	eq(host.position, Vector2.ZERO, "the shake returns home")
+	board.free()
 
 
 ## The painted crystal copy has to sit on the crystal tile. A corner park
