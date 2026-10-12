@@ -31,6 +31,14 @@ var _spots: Array[String] = ["saltmaw", "docks", "southbridge", "northgate"]
 var _out := "/tmp/shore"
 var _tag := "shot"
 var _walk := false
+var _tour := false
+## Tour legs: start zone and cell, target zone and cell, seconds. Each leg is
+## one cut; within a leg the hero walks across chunk and zone edges.
+const TOUR := [
+	["crosshaven_eastmarch_sea_caves", Vector2i(24, 29), "crosshaven_northgate_crags_far", Vector2i(26, 27), 22.0],
+	["crosshaven_road_east", Vector2i(8, 12), "crosshaven_crossroads", Vector2i(33, 17), 19.0],
+	["crosshaven_road_north", Vector2i(12, 18), "crosshaven_northgate", Vector2i(20, 25), 19.0],
+]
 var _lite := false
 var _secs := 20.0
 var _w: Node2D
@@ -50,6 +58,8 @@ func _initialize() -> void:
 			_tag = arg.trim_prefix("--tag=")
 		elif arg == "--walk":
 			_walk = true
+		elif arg == "--tour":
+			_tour = true
 		elif arg == "--lite":
 			_lite = true
 		elif arg.begins_with("--secs="):
@@ -72,7 +82,9 @@ func _go() -> void:
 	_w.weather.time_of_day = 12.0
 	_w.weather.time_scale = 0.0
 	_w.weather.settle()
-	if _walk:
+	if _tour:
+		await _tour_clip()
+	elif _walk:
 		await _walk_clip()
 	else:
 		for name in _spots:
@@ -110,6 +122,45 @@ func _still(name: String) -> void:
 	var path := "%s/%s_%s.png" % [_out, name, _tag]
 	image.save_png(path)
 	print("SHOT ", path)
+
+
+func _tour_clip() -> void:
+	_grabbing = false
+	RenderingServer.frame_post_draw.connect(_grab)
+	for leg in TOUR:
+		var z: WorldZone = _w.map.zone(str(leg[0]))
+		await _place(str(leg[0]), _stand(z, leg[1]))
+		_w.camera.position = _w.walker.position
+		_w.camera.reset_smoothing()
+		for i in 30:
+			await process_frame
+		var target_zone: WorldZone = _w.map.zone(str(leg[2]))
+		var target := _stand(target_zone, leg[3])
+		_grabbing = true
+		var frames := int(float(leg[4]) * 30.0)
+		for i in frames:
+			if i == 3 or (i % 45 == 0 and not _w.walker.is_moving() and _w.zone.zone_id != str(leg[2])):
+				var r: Dictionary = _w.walk_to_zone(str(leg[2]), target, "walk")
+				if i == 3:
+					print("LEG %s -> %s %s: %s" % [leg[0], leg[2], target, r.get("ok", false)])
+			await process_frame
+		_grabbing = false
+	print("TOUR frames=%d" % _frame_i)
+
+
+func _stand(z: WorldZone, at: Vector2i) -> Vector2i:
+	var best := z.spawn
+	var best_d := 1 << 30
+	for y in z.height:
+		for x in z.width:
+			var c := Vector2i(x, y)
+			if not z.walkable_at(c) or z.blocked_at(c):
+				continue
+			var d := (c - at).length_squared()
+			if d < best_d:
+				best_d = d
+				best = c
+	return best
 
 
 func _walk_clip() -> void:

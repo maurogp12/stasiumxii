@@ -2342,6 +2342,16 @@ func theme_weights(cell: Vector2i) -> Dictionary:
 	return raw
 
 
+## Sum of the raw theme weights (before they are normalised), 0 far from all.
+func _theme_presence(cell: Vector2i) -> float:
+	var world := Vector2(world_origin + cell)
+	var sum := 0.0
+	for id in ["stoneford", "northgate", "eastmarch", "southbridge", "westwatch"]:
+		var t := clampf(1.0 - world.distance_to(_theme_anchor(str(id))) / 52.0, 0.0, 1.0)
+		sum += t * t
+	return sum
+
+
 func _theme_anchor(theme: String) -> Vector2:
 	match theme:
 		"stoneford":
@@ -2391,7 +2401,12 @@ func _floor_modulate(cell: Vector2i, terrain: String) -> Color:
 		tint += _tint_of(id) * w
 	if not any:
 		tint = Color.WHITE
-	if terrain == "golden_plains" and _joins_kit_sand(cell):
+	elif smooth_shore:
+		# Normalised weights jump from no theme to a full theme where the
+		# last anchor's reach starts (a hard line across the plains, cell by
+		# cell). Fade the theme in with how much any anchor reaches here.
+		tint = Color.WHITE.lerp(tint, smoothstep(0.0, 0.2, _theme_presence(cell)))
+	if terrain == "golden_plains" and not smooth_shore and _joins_kit_sand(cell):
 		return _with_frost(Color.WHITE, cell, terrain)
 	if terrain == "cliff":
 		return _with_frost(tint.lerp(Color(0.90, 0.88, 0.84), 0.45), cell, terrain)
