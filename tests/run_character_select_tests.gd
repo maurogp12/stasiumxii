@@ -38,6 +38,7 @@ func _run() -> void:
 	_test_model(stage)
 	_test_colours_and_dye(stage)
 	_test_faces_and_gear(stage)
+	_test_ironjaw(stage)
 	_test_motion(stage)
 	_test_performance_and_list(stage)
 	await _test_release(stage)
@@ -165,7 +166,7 @@ func _test_viewport(stage: Node) -> void:
 
 
 func _test_model(stage: Node) -> void:
-	check(stage.show_model("ironjaw", "m") == false, "missing ironjaw male does not load")
+	check(stage.show_model("bastion", "m") == false, "missing bastion male does not load")
 	check(stage.loaded_path() == "", "a miss leaves nothing loaded")
 	check(stage.show_model("test", "m"), "test male loads the placeholder")
 	check(stage.gender() == "m" and stage.class_id() == "test", "stage remembers class and gender")
@@ -234,6 +235,110 @@ func _test_faces_and_gear(stage: Node) -> void:
 	stage.set_slot("chest", true)
 	check(stage.zone_node("base_legs").visible and stage.zone_node("base_body").visible, "a chest piece does not hide the other zones")
 	stage.set_slot("chest", false)
+
+
+func _test_ironjaw(stage: Node) -> void:
+	check(stage.show_model("ironjaw", "m"), "ironjaw male loads")
+	check(stage.loaded_path().ends_with("ironjaw_m.glb"), "ironjaw male uses its own GLB")
+	check(stage.class_id() == "ironjaw" and stage.gender() == "m", "stage is on ironjaw male")
+	check(stage.resolve_model_path("ironjaw", "f") == "", "ironjaw female is not in this package")
+	var player := stage.model_root().find_child("AnimationPlayer", true, false) as AnimationPlayer
+	check(player != null and player.has_animation("idle") and player.has_animation("select"), "ironjaw has idle and select")
+	if player != null and player.has_animation("idle") and player.has_animation("select"):
+		var idle: Animation = player.get_animation("idle")
+		var select_anim: Animation = player.get_animation("select")
+		check(idle.loop_mode == Animation.LOOP_LINEAR and idle.length >= 3.0 and idle.length <= 5.0, "ironjaw idle loops for 3 to 5 seconds")
+		check(select_anim.loop_mode == Animation.LOOP_NONE and select_anim.length >= 1.5 and select_anim.length <= 2.5, "ironjaw select is a one-shot of 1.5 to 2.5 seconds")
+	var skel := stage.model_root().find_child("Skeleton3D", true, false) as Skeleton3D
+	check(skel != null and skel.get_bone_count() > 0 and skel.get_bone_count() <= 60, "ironjaw skeleton stays within 60 bones")
+	var acc := {"tris": 0, "min_y": 1000.0, "max_y": -1000.0, "eye_z": -1000.0}
+	_bounds(stage.model_root(), stage.model_root(), acc)
+	check(int(acc["tris"]) > 0 and int(acc["tris"]) <= 15000, "ironjaw triangle count stays within 15k")
+	check(float(acc["min_y"]) >= -0.02 and float(acc["min_y"]) <= 0.05, "ironjaw origin is at the feet")
+	check(float(acc["max_y"]) >= 1.75 and float(acc["max_y"]) <= 1.95, "ironjaw height is 1.75 to 1.95 m")
+	check(float(acc["eye_z"]) > 0.05, "ironjaw eyes face +Z")
+	check(int(stage.face_count()) >= StageScript.FACE_MIN and int(stage.face_count()) <= StageScript.FACE_MAX, "ironjaw ships 3 to 5 face types")
+	for slot in StageScript.GEAR_SLOTS:
+		var base: Node = stage.zone_node("base_" + slot)
+		var gear: Node = stage.zone_node("gear_" + slot)
+		check(base != null and gear != null, "ironjaw slot %s has a base mesh and a gear mesh" % slot)
+		check(FileAccess.file_exists("res://art/pc/characters_3d/ironjaw/gear/cragmaw_%s.glb" % slot), "cragmaw %s is a separate GLB" % slot)
+	_test_ironjaw_mask()
+	check(stage.show_model("test", "m"), "restore the placeholder after the ironjaw checks")
+
+
+func _test_ironjaw_mask() -> void:
+	var mask := _png("res://art/pc/characters_3d/ironjaw/mask.png")
+	var albedo := _png("res://art/pc/characters_3d/ironjaw/albedo.png")
+	var dye := _png("res://art/pc/characters_3d/ironjaw/dye_mask.png")
+	check(mask != null and mask.get_width() == 2048 and mask.get_height() == 2048, "ironjaw mask is 2048")
+	check(albedo != null and albedo.get_width() == 2048 and albedo.get_height() == 2048, "ironjaw albedo is 2048")
+	check(dye != null and dye.get_width() == 2048 and dye.get_height() == 2048, "ironjaw dye mask is 2048")
+	if mask == null or albedo == null:
+		return
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://art/pc/characters_3d/ironjaw/uv_layout.json"))
+	check(parsed is Dictionary, "ironjaw uv layout is readable")
+	if not parsed is Dictionary:
+		return
+	var layout: Dictionary = parsed
+	var rects: Dictionary = layout["rects"]
+	check(_mask_is(_atlas(mask, rects["skin_head"]), "r"), "mask R is skin")
+	check(_mask_is(_atlas(mask, rects["hair"]), "g"), "mask G is hair")
+	check(_mask_is(_atlas(mask, rects["eyes"]), "b"), "mask B is eyes")
+	check(_mask_is(_atlas(mask, rects["tunic"]), "k"), "cloth stays off the recolour mask")
+	check(_mask_is(_atlas(mask, rects["steel"]), "k"), "steel stays off the recolour mask")
+	var cloth := _atlas(albedo, rects["tunic"])
+	check(cloth.r > 0.55 and cloth.r > cloth.b and cloth.g > cloth.b, "tunic albedo stays warm oatmeal")
+	var mixed := false
+	var saw_r := false
+	var saw_g := false
+	var saw_b := false
+	var saw_black := false
+	for y in range(0, mask.get_height(), 8):
+		for x in range(0, mask.get_width(), 8):
+			var c := mask.get_pixel(x, y)
+			var hot := 0
+			if c.r > 0.5:
+				hot += 1
+				saw_r = true
+			if c.g > 0.5:
+				hot += 1
+				saw_g = true
+			if c.b > 0.5:
+				hot += 1
+				saw_b = true
+			if c.r < 0.05 and c.g < 0.05 and c.b < 0.05:
+				saw_black = true
+			if hot > 1:
+				mixed = true
+	check(not mixed, "mask channels do not share a texel")
+	check(saw_r and saw_g and saw_b and saw_black, "ironjaw mask has skin, hair, eyes, and untouched texels")
+
+
+func _png(path: String) -> Image:
+	var img := Image.new()
+	var err := img.load_png_from_buffer(FileAccess.get_file_as_bytes(path))
+	if err != OK:
+		return null
+	return img
+
+
+func _atlas(img: Image, rect: Array) -> Color:
+	var u := (float(rect[0]) + float(rect[2])) * 0.5
+	var v := (float(rect[1]) + float(rect[3])) * 0.5
+	var x := int(round(u * float(img.get_width() - 1)))
+	var y := int(round((1.0 - v) * float(img.get_height() - 1)))
+	return img.get_pixel(x, y)
+
+
+func _mask_is(c: Color, which: String) -> bool:
+	if which == "r":
+		return c.r > 0.9 and c.g < 0.1 and c.b < 0.1
+	if which == "g":
+		return c.g > 0.9 and c.r < 0.1 and c.b < 0.1
+	if which == "b":
+		return c.b > 0.9 and c.r < 0.1 and c.g < 0.1
+	return c.r < 0.05 and c.g < 0.05 and c.b < 0.05
 
 
 func _test_motion(stage: Node) -> void:

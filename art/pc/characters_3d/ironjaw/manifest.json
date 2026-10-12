@@ -1,0 +1,25 @@
+{
+  "class_id": "ironjaw",
+  "gender": "m",
+  "tool": "Blender 4.2.23 LTS",
+  "script": "tools/pc/charselect_models/build_ironjaw_m.py",
+  "triangles": 2246,
+  "bones": 19,
+  "height_m": 1.892,
+  "min_z": 0.0,
+  "textures": 2048,
+  "mask": "R skin, G hair, B eyes",
+  "gear_set": "cragmaw",
+  "faces": 4,
+  "animations": {
+    "idle": 4.0,
+    "select": 2.0
+  },
+  "not_built": [
+    "ironjaw_f.glb \u2014 female, same slot names, narrower shoulders, wider hips, height about 1.78",
+    "face types stay face_<n>_* (this file ships 4). A later atlas can use the face_index uniform",
+    "hairstyles \u2014 base_head is the only hair mesh. A later pass can split it the way faces are split",
+    "kestrel, bastion, gloam, mender \u2014 same pipeline, own proportions and weapon",
+    "Tyrantjaw and Pitmaw \u2014 further gear sets. Cragmaw is the only set in this trial"
+  ]
+}

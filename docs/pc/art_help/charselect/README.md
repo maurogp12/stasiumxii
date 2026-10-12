@@ -100,3 +100,35 @@ The portrait is a `SubViewport` with its own 3D world and a transparent backgrou
 - Contact shadow: a 2D blob under the feet, not a real shadow.
 
 The viewport updates while the stage is on screen and the window is focused, and it stops when the stage is hidden or the window loses focus. `release()` frees it. The shader is spatial only, so it can run on the Compatibility renderer. The rest of the game is unchanged.
+
+## Ironjaw male (P4 trial)
+
+The first real figure is the Ironjaw male, built by `tools/pc/charselect_models/build_ironjaw_m.py` (Blender 4.2.23 LTS, headless). It is the only class GLB. The female file is not generated, and a missing class still does not fall back to the test capsule.
+
+| | |
+|---|---|
+| File | `art/pc/characters_3d/ironjaw/ironjaw_m.glb` |
+| Clothes | Oatmeal linen tunic, brown wool trousers, soft leather shoes, leather wrist wraps, plain iron sword |
+| Gear | Cragmaw, one mesh per slot, also exported as `gear/cragmaw_<slot>.glb` |
+| Rig | 19 bones, idle 4 s loop, select 2 s one-shot |
+| Size | Under 15k triangles, height inside 1.75–1.95, origin at the feet, facing +Z |
+| Textures | 2048 albedo, mask, and dye mask. Mask is R skin, G hair, B eyes |
+| Faces | `face_0` … `face_3` (spacing, brow, nose, mouth) |
+
+Regenerate with Blender:
+
+```
+blender --background --python tools/pc/charselect_models/build_ironjaw_m.py
+```
+
+`IRONJAW_RENDER=final` writes the raw albedo turnaround under `docs/pc/media/charselect/ironjaw_raw/` (no recolour; skin stays the neutral grey the mask tints). The comparison still is `docs/pc/media/charselect/ironjaw_turnaround.png`: the painted base and the v7 walk frame beside the Godot stage (creation colours, front, three-quarter, back). `ironjaw_stage_checks.png` is the same stage with a warm skin and a green skin, and two idle poses.
+
+This trial does **not** reach the painted Ironjaw sheet or the v7 dark-steel walk frames. The body is a low-poly loft with a disc face, and the cloth and steel are procedural tiles (thread, grain, a highlight band), not brushwork. Cragmaw reads as bulky plates, a dome helm, a red sash, and a wider jagged sword. It does not have the painted visor, mail, or cloth drape. The silhouette is a heavy man, and the slot contract works: equipping a piece hides that base zone.
+
+Left for later, and named in `art/pc/characters_3d/ironjaw/manifest.json`:
+
+- `ironjaw_f.glb` — same slot names, narrower shoulders, wider hips, a little shorter
+- More face types, or a real atlas on the `face_index` uniform (four meshes ship now)
+- Hairstyles beyond the single `base_head` mesh
+- Kestrel, Bastion, Gloam, Mender
+- Tyrantjaw and Pitmaw
