@@ -171,6 +171,8 @@ var _reach_key := ""
 var _reach_cache := {}
 var _movie := ""
 var _launch_class := ""
+## Debug launch. Regions stay off in the shipped flags; this opens the hollow.
+var _open_blightwood := false
 var _movie_t0 := 0
 var _bench: Array[float] = []
 var _bench_until := 0.0
@@ -344,12 +346,18 @@ func _ready() -> void:
 		_hide_debug_readout()
 		if _banner != null:
 			_banner.modulate.a = 0.0
+	elif _open_blightwood:
+		Regions.set_enabled(true)
+		enter_zone("blightwood_hollow_entry", Vector2i(0, 16), false)
+		_hide_debug_readout()
+		if _banner != null:
+			_banner.modulate.a = 0.0
 	else:
 		enter_zone(map.start_zone, map.start_cell, false)
 	_booting = false
 	transition_count = 0
 	seam_count = 0
-	if _movie == "" and DisplayServer.get_name() != "headless":
+	if _movie == "" and not _open_blightwood and DisplayServer.get_name() != "headless":
 		restore_place()
 		offer_performance()
 	_take_dungeon_outcome()
@@ -1002,7 +1010,10 @@ func _finish_arrival(cell: Vector2i) -> void:
 	if not bool(check.get("ok", false)):
 		walk_rejected.emit(str(check.get("reason", "bad_exit")))
 		return
-	if _seamless() and map.zone(target) != null and not Regions.is_outer(target):
+	# Blightwood chunks stream on one plane. Other outer regions still fade,
+	# and stay refused while the regions flag is off.
+	var blight_plane := map.region == "blightwood_hollow"
+	if _seamless() and map.zone(target) != null and (not Regions.is_outer(target) or blight_plane):
 		_load_zone(target, to_cell, false)
 		return
 	enter_zone(target, to_cell, true)
@@ -1533,7 +1544,9 @@ func _chunk_at(world: Vector2i) -> Dictionary:
 
 
 func _seamless() -> bool:
-	return map != null and map.region == "crosshaven" and not plane_offsets.is_empty()
+	if map == null or plane_offsets.is_empty():
+		return false
+	return map.region == "crosshaven" or map.region == "blightwood_hollow"
 
 
 func _refresh_plane() -> void:
@@ -1543,7 +1556,7 @@ func _refresh_plane() -> void:
 		return
 	_plane_map = map
 	plane_offsets = {}
-	if map == null or map.region != "crosshaven":
+	if map == null or (map.region != "crosshaven" and map.region != "blightwood_hollow"):
 		return
 	var lay: Dictionary = WorldPlane.layout(map)
 	var found: Variant = lay.get("offsets", {})
@@ -2517,6 +2530,8 @@ func _read_launch_args() -> void:
 	for i in args.size():
 		if args[i] == "--movie" and i + 1 < args.size():
 			_movie = str(args[i + 1])
+		elif args[i] == "--blightwood":
+			_open_blightwood = true
 		elif args[i] == "--bench" and i + 1 < args.size():
 			_movie = "bench:" + str(args[i + 1])
 		elif args[i] == "--class" and i + 1 < args.size():

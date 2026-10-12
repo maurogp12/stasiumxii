@@ -65,6 +65,53 @@
           }
         }
       ]
+    },
+    {
+      "id": "to_blightwood_hollow_middle_1",
+      "edge": "east",
+      "target_zone": "blightwood_hollow_middle_1",
+      "links": [
+        {
+          "from": {
+            "x": 31,
+            "y": 8
+          },
+          "to": {
+            "x": 0,
+            "y": 8
+          }
+        },
+        {
+          "from": {
+            "x": 31,
+            "y": 9
+          },
+          "to": {
+            "x": 0,
+            "y": 9
+          }
+        },
+        {
+          "from": {
+            "x": 31,
+            "y": 10
+          },
+          "to": {
+            "x": 0,
+            "y": 10
+          }
+        },
+        {
+          "from": {
+            "x": 31,
+            "y": 11
+          },
+          "to": {
+            "x": 0,
+            "y": 11
+          }
+        }
+      ]
     }
   ],
   "props": [
@@ -97,7 +144,7 @@
     },
     {
       "id": "blightwood_hollow_entry_border_north_0",
-      "type": "tree",
+      "type": "stone_wall_high_nwse",
       "blocks": false,
       "origin": {
         "x": 0,
@@ -112,7 +159,7 @@
     },
     {
       "id": "blightwood_hollow_entry_border_north_1",
-      "type": "tree",
+      "type": "stone_wall_high_nwse",
       "blocks": false,
       "origin": {
         "x": 1,
@@ -127,7 +174,7 @@
     },
     {
       "id": "blightwood_hollow_entry_border_north_2",
-      "type": "tree",
+      "type": "stone_wall_high_nwse",
       "blocks": false,
       "origin": {
         "x": 2,
@@ -142,7 +189,7 @@
     },
     {
       "id": "blightwood_hollow_entry_border_north_3",
-      "type": "tree",
+      "type": "stone_wall_high_nwse",
       "blocks": false,
       "origin": {
         "x": 3,
@@ -157,7 +204,7 @@
     },
     {
       "id": "blightwood_hollow_entry_border_north_4",
-      "type": "tree",
+      "type": "stone_wall_high_nwse",
       "blocks": false,
       "origin": {
         "x": 4,
@@ -172,7 +219,7 @@
     },
     {
       "id": "blightwood_hollow_entry_border_north_5",
-      "type": "tree",
+      "type": "stone_wall_high_nwse",
       "blocks": false,
       "origin": {
         "x": 5,
@@ -187,7 +234,7 @@
     },
     {
       "id": "blightwood_hollow_entry_border_north_6",
-      "type": "tree",
+      "type": "stone_wall_high_nwse",
       "blocks": false,
       "origin": {
         "x": 6,
@@ -202,7 +249,7 @@
     },
     {
       "id": "blightwood_hollow_entry_border_north_7",
-      "type": "tree",
+      "type": "stone_wall_high_nwse",
       "blocks": false,
       "origin": {
         "x": 7,
@@ -217,7 +264,7 @@
     },
     {
       "id": "blightwood_hollow_entry_border_north_8",
-      "type": "tree",
+      "type": "stone_wall_high_nwse",
       "blocks": false,
       "origin": {
         "x": 8,
@@ -232,7 +279,7 @@
     },
     {
       "id": "blightwood_hollow_entry_border_north_9",
-      "type": "tree",
+      "type": "stone_wall_high_nwse",
       "blocks": false,
       "origin": {
         "x": 9,
@@ -247,7 +294,7 @@
     },
     {
       "id": "blightwood_hollow_entry_border_north_10",
-      "type": "tree",
+      "type": "stone_wall_high_nwse",
       "blocks": false,
       "origin": {
         "x": 10,
@@ -262,7 +309,7 @@
     },
     {
       "id": "blightwood_hollow_entry_border_north_11",
-      "type": "tree",
+      "type": "stone_wall_high_nwse",
       "blocks": false,
       "origin": {
         "x": 11,
@@ -277,7 +324,7 @@
     },
     {
       "id": "blightwood_hollow_entry_border_north_12",
-      "type": "tree",
+      "type": "stone_wall_high_nwse",
       "blocks": false,
       "origin": {
         "x": 12,
@@ -292,8 +339,8 @@
     },
     {
       "id": "blightwood_hollow_entry_border_north_13",
-      "type": "tree",
-      "blocks": false,
+      "type": "wall_tower",
+      "blocks": true,
       "origin": {
         "x": 13,
         "y": 0
@@ -307,8 +354,8 @@
     },
     {
       "id": "blightwood_hollow_entry_border_north_14",
-      "type": "tree",
-      "blocks": false,
+      "type": "wall_tower",
+      "blocks": true,
       "origin": {
         "x": 19,
         "y": 0
@@ -322,7 +369,7 @@
     },
     {
       "id": "blightwood_hollow_entry_border_north_15",
-      "type": "tree",
+      "type": "stone_wall_high_nwse",
       "blocks": false,
       "origin": {
         "x": 20,
@@ -337,7 +384,7 @@
     },
     {
       "id": "blightwood_hollow_entry_border_north_16",
-      "type": "tree",
+      "type": "stone_wall_high_nwse",
       "blocks": false,
       "origin": {
         "x": 21,
@@ -352,7 +399,7 @@
     },
     {
       "id": "blightwood_hollow_entry_border_north_17",
-      "type": "tree",
+      "type": "stone_wall_high_nwse",
       "blocks": false,
       "origin": {
         "x": 22,
@@ -367,7 +414,7 @@
     },
     {
       "id": "blightwood_hollow_entry_border_north_18",
-      "type": "tree",
+      "type": "stone_wall_high_nwse",
       "blocks": false,
       "origin": {
         "x": 23,
@@ -382,7 +429,7 @@
     },
     {
       "id": "blightwood_hollow_entry_border_north_19",
-      "type": "tree",
+      "type": "stone_wall_high_nwse",
       "blocks": false,
       "origin": {
         "x": 26,
@@ -397,7 +444,7 @@
     },
     {
       "id": "blightwood_hollow_entry_border_north_20",
-      "type": "tree",
+      "type": "stone_wall_high_nwse",
       "blocks": false,
       "origin": {
         "x": 27,
@@ -412,7 +459,7 @@
     },
     {
       "id": "blightwood_hollow_entry_border_north_21",
-      "type": "tree",
+      "type": "stone_wall_high_nwse",
       "blocks": false,
       "origin": {
         "x": 28,
@@ -427,37 +474,7 @@
     },
     {
       "id": "blightwood_hollow_entry_border_north_22",
-      "type": "tree",
-      "blocks": false,
-      "origin": {
-        "x": 30,
-        "y": 0
-      },
-      "footprint": [
-        {
-          "x": 30,
-          "y": 0
-        }
-      ]
-    },
-    {
-      "id": "blightwood_hollow_entry_border_north_23",
-      "type": "tree",
-      "blocks": false,
-      "origin": {
-        "x": 31,
-        "y": 0
-      },
-      "footprint": [
-        {
-          "x": 31,
-          "y": 0
-        }
-      ]
-    },
-    {
-      "id": "blightwood_hollow_entry_border_north_24",
-      "type": "tree",
+      "type": "stone_wall_high_nwse",
       "blocks": false,
       "origin": {
         "x": 4,
@@ -471,8 +488,8 @@
       ]
     },
     {
-      "id": "blightwood_hollow_entry_border_north_25",
-      "type": "tree",
+      "id": "blightwood_hollow_entry_border_north_23",
+      "type": "stone_wall_high_nwse",
       "blocks": false,
       "origin": {
         "x": 5,
@@ -486,8 +503,8 @@
       ]
     },
     {
-      "id": "blightwood_hollow_entry_border_north_26",
-      "type": "tree",
+      "id": "blightwood_hollow_entry_border_north_24",
+      "type": "stone_wall_high_nwse",
       "blocks": false,
       "origin": {
         "x": 7,
@@ -501,8 +518,8 @@
       ]
     },
     {
-      "id": "blightwood_hollow_entry_border_north_27",
-      "type": "tree",
+      "id": "blightwood_hollow_entry_border_north_25",
+      "type": "stone_wall_high_nwse",
       "blocks": false,
       "origin": {
         "x": 9,
@@ -516,8 +533,8 @@
       ]
     },
     {
-      "id": "blightwood_hollow_entry_border_north_28",
-      "type": "tree",
+      "id": "blightwood_hollow_entry_border_north_26",
+      "type": "stone_wall_high_nwse",
       "blocks": false,
       "origin": {
         "x": 13,
@@ -531,8 +548,8 @@
       ]
     },
     {
-      "id": "blightwood_hollow_entry_border_north_29",
-      "type": "tree",
+      "id": "blightwood_hollow_entry_border_north_27",
+      "type": "stone_wall_high_nwse",
       "blocks": false,
       "origin": {
         "x": 19,
@@ -546,8 +563,8 @@
       ]
     },
     {
-      "id": "blightwood_hollow_entry_border_north_30",
-      "type": "tree",
+      "id": "blightwood_hollow_entry_border_north_28",
+      "type": "stone_wall_high_nwse",
       "blocks": false,
       "origin": {
         "x": 23,
@@ -561,8 +578,8 @@
       ]
     },
     {
-      "id": "blightwood_hollow_entry_border_north_31",
-      "type": "tree",
+      "id": "blightwood_hollow_entry_border_north_29",
+      "type": "stone_wall_high_nwse",
       "blocks": false,
       "origin": {
         "x": 24,
@@ -576,8 +593,8 @@
       ]
     },
     {
-      "id": "blightwood_hollow_entry_border_north_32",
-      "type": "tree",
+      "id": "blightwood_hollow_entry_border_north_30",
+      "type": "stone_wall_high_nwse",
       "blocks": false,
       "origin": {
         "x": 28,
@@ -591,8 +608,8 @@
       ]
     },
     {
-      "id": "blightwood_hollow_entry_border_north_33",
-      "type": "tree",
+      "id": "blightwood_hollow_entry_border_north_31",
+      "type": "stone_wall_high_nwse",
       "blocks": false,
       "origin": {
         "x": 29,
@@ -606,323 +623,8 @@
       ]
     },
     {
-      "id": "blightwood_hollow_entry_border_east_34",
-      "type": "tree",
-      "blocks": false,
-      "origin": {
-        "x": 31,
-        "y": 2
-      },
-      "footprint": [
-        {
-          "x": 31,
-          "y": 2
-        }
-      ]
-    },
-    {
-      "id": "blightwood_hollow_entry_border_east_35",
-      "type": "tree",
-      "blocks": false,
-      "origin": {
-        "x": 31,
-        "y": 4
-      },
-      "footprint": [
-        {
-          "x": 31,
-          "y": 4
-        }
-      ]
-    },
-    {
-      "id": "blightwood_hollow_entry_border_east_36",
-      "type": "tree",
-      "blocks": false,
-      "origin": {
-        "x": 31,
-        "y": 5
-      },
-      "footprint": [
-        {
-          "x": 31,
-          "y": 5
-        }
-      ]
-    },
-    {
-      "id": "blightwood_hollow_entry_border_east_37",
-      "type": "tree",
-      "blocks": false,
-      "origin": {
-        "x": 31,
-        "y": 6
-      },
-      "footprint": [
-        {
-          "x": 31,
-          "y": 6
-        }
-      ]
-    },
-    {
-      "id": "blightwood_hollow_entry_border_east_38",
-      "type": "tree",
-      "blocks": false,
-      "origin": {
-        "x": 31,
-        "y": 7
-      },
-      "footprint": [
-        {
-          "x": 31,
-          "y": 7
-        }
-      ]
-    },
-    {
-      "id": "blightwood_hollow_entry_border_east_39",
-      "type": "tree",
-      "blocks": false,
-      "origin": {
-        "x": 31,
-        "y": 8
-      },
-      "footprint": [
-        {
-          "x": 31,
-          "y": 8
-        }
-      ]
-    },
-    {
-      "id": "blightwood_hollow_entry_border_east_40",
-      "type": "tree",
-      "blocks": false,
-      "origin": {
-        "x": 31,
-        "y": 9
-      },
-      "footprint": [
-        {
-          "x": 31,
-          "y": 9
-        }
-      ]
-    },
-    {
-      "id": "blightwood_hollow_entry_border_east_41",
-      "type": "tree",
-      "blocks": false,
-      "origin": {
-        "x": 31,
-        "y": 10
-      },
-      "footprint": [
-        {
-          "x": 31,
-          "y": 10
-        }
-      ]
-    },
-    {
-      "id": "blightwood_hollow_entry_border_east_42",
-      "type": "tree",
-      "blocks": false,
-      "origin": {
-        "x": 31,
-        "y": 14
-      },
-      "footprint": [
-        {
-          "x": 31,
-          "y": 14
-        }
-      ]
-    },
-    {
-      "id": "blightwood_hollow_entry_border_east_43",
-      "type": "tree",
-      "blocks": false,
-      "origin": {
-        "x": 31,
-        "y": 15
-      },
-      "footprint": [
-        {
-          "x": 31,
-          "y": 15
-        }
-      ]
-    },
-    {
-      "id": "blightwood_hollow_entry_border_east_44",
-      "type": "tree",
-      "blocks": false,
-      "origin": {
-        "x": 31,
-        "y": 16
-      },
-      "footprint": [
-        {
-          "x": 31,
-          "y": 16
-        }
-      ]
-    },
-    {
-      "id": "blightwood_hollow_entry_border_east_45",
-      "type": "tree",
-      "blocks": false,
-      "origin": {
-        "x": 31,
-        "y": 17
-      },
-      "footprint": [
-        {
-          "x": 31,
-          "y": 17
-        }
-      ]
-    },
-    {
-      "id": "blightwood_hollow_entry_border_east_46",
-      "type": "tree",
-      "blocks": false,
-      "origin": {
-        "x": 31,
-        "y": 18
-      },
-      "footprint": [
-        {
-          "x": 31,
-          "y": 18
-        }
-      ]
-    },
-    {
-      "id": "blightwood_hollow_entry_border_east_47",
-      "type": "tree",
-      "blocks": false,
-      "origin": {
-        "x": 31,
-        "y": 19
-      },
-      "footprint": [
-        {
-          "x": 31,
-          "y": 19
-        }
-      ]
-    },
-    {
-      "id": "blightwood_hollow_entry_border_east_48",
-      "type": "tree",
-      "blocks": false,
-      "origin": {
-        "x": 31,
-        "y": 20
-      },
-      "footprint": [
-        {
-          "x": 31,
-          "y": 20
-        }
-      ]
-    },
-    {
-      "id": "blightwood_hollow_entry_border_east_49",
-      "type": "tree",
-      "blocks": false,
-      "origin": {
-        "x": 30,
-        "y": 2
-      },
-      "footprint": [
-        {
-          "x": 30,
-          "y": 2
-        }
-      ]
-    },
-    {
-      "id": "blightwood_hollow_entry_border_east_50",
-      "type": "tree",
-      "blocks": false,
-      "origin": {
-        "x": 30,
-        "y": 5
-      },
-      "footprint": [
-        {
-          "x": 30,
-          "y": 5
-        }
-      ]
-    },
-    {
-      "id": "blightwood_hollow_entry_border_east_51",
-      "type": "tree",
-      "blocks": false,
-      "origin": {
-        "x": 30,
-        "y": 8
-      },
-      "footprint": [
-        {
-          "x": 30,
-          "y": 8
-        }
-      ]
-    },
-    {
-      "id": "blightwood_hollow_entry_border_east_52",
-      "type": "tree",
-      "blocks": false,
-      "origin": {
-        "x": 30,
-        "y": 15
-      },
-      "footprint": [
-        {
-          "x": 30,
-          "y": 15
-        }
-      ]
-    },
-    {
-      "id": "blightwood_hollow_entry_border_east_53",
-      "type": "tree",
-      "blocks": false,
-      "origin": {
-        "x": 30,
-        "y": 17
-      },
-      "footprint": [
-        {
-          "x": 30,
-          "y": 17
-        }
-      ]
-    },
-    {
-      "id": "blightwood_hollow_entry_border_east_54",
-      "type": "tree",
-      "blocks": false,
-      "origin": {
-        "x": 30,
-        "y": 21
-      },
-      "footprint": [
-        {
-          "x": 30,
-          "y": 21
-        }
-      ]
-    },
-    {
-      "id": "blightwood_hollow_entry_border_west_55",
-      "type": "tree",
+      "id": "blightwood_hollow_entry_border_west_32",
+      "type": "stone_wall_high_nesw",
       "blocks": false,
       "origin": {
         "x": 0,
@@ -936,8 +638,8 @@
       ]
     },
     {
-      "id": "blightwood_hollow_entry_border_west_56",
-      "type": "tree",
+      "id": "blightwood_hollow_entry_border_west_33",
+      "type": "stone_wall_high_nesw",
       "blocks": false,
       "origin": {
         "x": 0,
@@ -951,8 +653,8 @@
       ]
     },
     {
-      "id": "blightwood_hollow_entry_border_west_57",
-      "type": "tree",
+      "id": "blightwood_hollow_entry_border_west_34",
+      "type": "stone_wall_high_nesw",
       "blocks": false,
       "origin": {
         "x": 0,
@@ -966,8 +668,8 @@
       ]
     },
     {
-      "id": "blightwood_hollow_entry_border_west_58",
-      "type": "tree",
+      "id": "blightwood_hollow_entry_border_west_35",
+      "type": "stone_wall_high_nesw",
       "blocks": false,
       "origin": {
         "x": 0,
@@ -981,8 +683,8 @@
       ]
     },
     {
-      "id": "blightwood_hollow_entry_border_west_59",
-      "type": "tree",
+      "id": "blightwood_hollow_entry_border_west_36",
+      "type": "stone_wall_high_nesw",
       "blocks": false,
       "origin": {
         "x": 0,
@@ -996,8 +698,8 @@
       ]
     },
     {
-      "id": "blightwood_hollow_entry_border_west_60",
-      "type": "tree",
+      "id": "blightwood_hollow_entry_border_west_37",
+      "type": "stone_wall_high_nesw",
       "blocks": false,
       "origin": {
         "x": 0,
@@ -1011,9 +713,9 @@
       ]
     },
     {
-      "id": "blightwood_hollow_entry_border_west_61",
-      "type": "tree",
-      "blocks": false,
+      "id": "blightwood_hollow_entry_border_west_38",
+      "type": "wall_tower",
+      "blocks": true,
       "origin": {
         "x": 0,
         "y": 10
@@ -1026,9 +728,9 @@
       ]
     },
     {
-      "id": "blightwood_hollow_entry_border_west_62",
-      "type": "tree",
-      "blocks": false,
+      "id": "blightwood_hollow_entry_border_west_39",
+      "type": "wall_tower",
+      "blocks": true,
       "origin": {
         "x": 0,
         "y": 19
@@ -1041,8 +743,8 @@
       ]
     },
     {
-      "id": "blightwood_hollow_entry_border_west_63",
-      "type": "tree",
+      "id": "blightwood_hollow_entry_border_west_40",
+      "type": "stone_wall_high_nesw",
       "blocks": false,
       "origin": {
         "x": 0,
@@ -1056,8 +758,8 @@
       ]
     },
     {
-      "id": "blightwood_hollow_entry_border_west_64",
-      "type": "tree",
+      "id": "blightwood_hollow_entry_border_west_41",
+      "type": "stone_wall_high_nesw",
       "blocks": false,
       "origin": {
         "x": 0,
@@ -1071,8 +773,8 @@
       ]
     },
     {
-      "id": "blightwood_hollow_entry_border_west_65",
-      "type": "tree",
+      "id": "blightwood_hollow_entry_border_west_42",
+      "type": "stone_wall_high_nesw",
       "blocks": false,
       "origin": {
         "x": 1,
@@ -1086,8 +788,8 @@
       ]
     },
     {
-      "id": "blightwood_hollow_entry_border_west_66",
-      "type": "tree",
+      "id": "blightwood_hollow_entry_border_west_43",
+      "type": "stone_wall_high_nesw",
       "blocks": false,
       "origin": {
         "x": 1,
@@ -1101,8 +803,8 @@
       ]
     },
     {
-      "id": "blightwood_hollow_entry_border_west_67",
-      "type": "tree",
+      "id": "blightwood_hollow_entry_border_west_44",
+      "type": "stone_wall_high_nesw",
       "blocks": false,
       "origin": {
         "x": 1,
@@ -1116,8 +818,8 @@
       ]
     },
     {
-      "id": "blightwood_hollow_entry_border_west_68",
-      "type": "tree",
+      "id": "blightwood_hollow_entry_border_west_45",
+      "type": "stone_wall_high_nesw",
       "blocks": false,
       "origin": {
         "x": 1,
@@ -1131,8 +833,8 @@
       ]
     },
     {
-      "id": "blightwood_hollow_entry_border_west_69",
-      "type": "tree",
+      "id": "blightwood_hollow_entry_border_west_46",
+      "type": "stone_wall_high_nesw",
       "blocks": false,
       "origin": {
         "x": 1,
@@ -5004,112 +4706,112 @@
     {
       "x": 0,
       "y": 16,
-      "terrain": "farm_soil",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 1,
       "y": 16,
-      "terrain": "farm_soil",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 2,
       "y": 16,
-      "terrain": "farm_plowed",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 3,
       "y": 16,
-      "terrain": "farm_fallow",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 4,
       "y": 16,
-      "terrain": "farm_plowed",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 5,
       "y": 16,
-      "terrain": "farm_plowed",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 6,
       "y": 16,
-      "terrain": "farm_soil",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 7,
       "y": 16,
-      "terrain": "farm_plowed",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 8,
       "y": 16,
-      "terrain": "farm_soil",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 9,
       "y": 16,
-      "terrain": "farm_soil",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 10,
       "y": 16,
-      "terrain": "farm_plowed",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 11,
       "y": 16,
-      "terrain": "farm_fallow",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 12,
       "y": 16,
-      "terrain": "farm_plowed",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 13,
       "y": 16,
-      "terrain": "farm_plowed",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 14,
       "y": 16,
-      "terrain": "farm_soil",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 15,
       "y": 16,
-      "terrain": "farm_plowed",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
@@ -6816,20 +6518,20 @@
     {
       "id": "blightwood_hollow_entry_decor_3",
       "type": "mushrooms_a",
-      "x": 13,
-      "y": 17
+      "x": 12,
+      "y": 19
     },
     {
       "id": "blightwood_hollow_entry_decor_4",
       "type": "mushrooms_a",
-      "x": 7,
-      "y": 15
+      "x": 6,
+      "y": 14
     },
     {
       "id": "blightwood_hollow_entry_decor_5",
       "type": "mushrooms_a",
-      "x": 6,
-      "y": 15
+      "x": 7,
+      "y": 14
     },
     {
       "id": "blightwood_hollow_entry_decor_6",
@@ -6858,14 +6560,14 @@
     {
       "id": "blightwood_hollow_entry_decor_10",
       "type": "mushrooms_b",
-      "x": 23,
-      "y": 14
+      "x": 20,
+      "y": 15
     },
     {
       "id": "blightwood_hollow_entry_decor_11",
       "type": "mushrooms_a",
-      "x": 21,
-      "y": 14
+      "x": 23,
+      "y": 15
     },
     {
       "id": "blightwood_hollow_entry_decor_12",
@@ -6906,14 +6608,14 @@
     {
       "id": "blightwood_hollow_entry_decor_18",
       "type": "mushrooms_a",
-      "x": 8,
-      "y": 15
+      "x": 9,
+      "y": 14
     },
     {
       "id": "blightwood_hollow_entry_decor_19",
       "type": "decal_moss",
       "x": 10,
-      "y": 15
+      "y": 14
     },
     {
       "id": "blightwood_hollow_entry_decor_20",
@@ -6930,14 +6632,14 @@
     {
       "id": "blightwood_hollow_entry_decor_22",
       "type": "mushrooms_b",
-      "x": 29,
+      "x": 31,
       "y": 20
     },
     {
       "id": "blightwood_hollow_entry_decor_23",
       "type": "decal_moss",
-      "x": 31,
-      "y": 21
+      "x": 29,
+      "y": 20
     },
     {
       "id": "blightwood_hollow_entry_decor_24",
@@ -6948,8 +6650,8 @@
     {
       "id": "blightwood_hollow_entry_decor_25",
       "type": "decal_moss",
-      "x": 30,
-      "y": 19
+      "x": 29,
+      "y": 16
     },
     {
       "id": "blightwood_hollow_entry_decor_26",
@@ -6984,8 +6686,8 @@
     {
       "id": "blightwood_hollow_entry_decor_31",
       "type": "mushrooms_a",
-      "x": 0,
-      "y": 22
+      "x": 3,
+      "y": 21
     },
     {
       "id": "blightwood_hollow_entry_decor_32",
@@ -7003,13 +6705,13 @@
       "id": "blightwood_hollow_entry_decor_34",
       "type": "decal_moss",
       "x": 9,
-      "y": 17
+      "y": 18
     },
     {
       "id": "blightwood_hollow_entry_decor_35",
       "type": "mushrooms_b",
       "x": 11,
-      "y": 16
+      "y": 18
     },
     {
       "id": "blightwood_hollow_entry_decor_36",
@@ -7026,14 +6728,14 @@
     {
       "id": "blightwood_hollow_entry_decor_38",
       "type": "mushrooms_a",
-      "x": 26,
-      "y": 18
+      "x": 27,
+      "y": 17
     },
     {
       "id": "blightwood_hollow_entry_decor_39",
       "type": "bush_small_a",
-      "x": 24,
-      "y": 18
+      "x": 25,
+      "y": 17
     },
     {
       "id": "blightwood_hollow_entry_decor_40",
@@ -7050,14 +6752,14 @@
     {
       "id": "blightwood_hollow_entry_decor_42",
       "type": "mushrooms_a",
-      "x": 11,
-      "y": 20
+      "x": 8,
+      "y": 22
     },
     {
       "id": "blightwood_hollow_entry_decor_43",
       "type": "mushrooms_b",
-      "x": 8,
-      "y": 20
+      "x": 9,
+      "y": 23
     },
     {
       "id": "blightwood_hollow_entry_decor_44",
@@ -7074,14 +6776,14 @@
     {
       "id": "blightwood_hollow_entry_decor_46",
       "type": "mushrooms_a",
-      "x": 20,
-      "y": 23
+      "x": 21,
+      "y": 20
     },
     {
       "id": "blightwood_hollow_entry_decor_47",
       "type": "mushrooms_a",
-      "x": 21,
-      "y": 23
+      "x": 22,
+      "y": 20
     },
     {
       "id": "blightwood_hollow_entry_decor_48",
@@ -7099,13 +6801,13 @@
       "id": "blightwood_hollow_entry_decor_50",
       "type": "decal_moss",
       "x": 28,
-      "y": 14
+      "y": 15
     },
     {
       "id": "blightwood_hollow_entry_decor_51",
       "type": "mushrooms_a",
       "x": 29,
-      "y": 14
+      "y": 15
     },
     {
       "id": "blightwood_hollow_entry_decor_52",
@@ -7164,26 +6866,26 @@
     {
       "id": "blightwood_hollow_entry_decor_61",
       "type": "decal_moss",
-      "x": 14,
-      "y": 16
+      "x": 12,
+      "y": 18
     },
     {
       "id": "blightwood_hollow_entry_decor_62",
       "type": "mushrooms_a",
-      "x": 12,
+      "x": 14,
       "y": 18
     },
     {
       "id": "blightwood_hollow_entry_decor_63",
       "type": "bush_small_a",
-      "x": 13,
-      "y": 16
+      "x": 14,
+      "y": 19
     },
     {
       "id": "blightwood_hollow_entry_decor_64",
       "type": "mushrooms_b",
-      "x": 14,
-      "y": 17
+      "x": 13,
+      "y": 19
     },
     {
       "id": "blightwood_hollow_entry_decor_65",
@@ -7194,44 +6896,44 @@
     {
       "id": "blightwood_hollow_entry_decor_66",
       "type": "mushrooms_a",
-      "x": 5,
-      "y": 15
-    },
-    {
-      "id": "blightwood_hollow_entry_decor_67",
-      "type": "mushrooms_a",
-      "x": 6,
-      "y": 14
-    },
-    {
-      "id": "blightwood_hollow_entry_decor_68",
-      "type": "mushrooms_a",
       "x": 19,
       "y": 5
     },
     {
-      "id": "blightwood_hollow_entry_decor_69",
-      "type": "bush_small_a",
-      "x": 18,
-      "y": 7
-    },
-    {
-      "id": "blightwood_hollow_entry_decor_70",
+      "id": "blightwood_hollow_entry_decor_67",
       "type": "mushrooms_a",
       "x": 18,
       "y": 4
     },
     {
+      "id": "blightwood_hollow_entry_decor_68",
+      "type": "mushrooms_a",
+      "x": 19,
+      "y": 7
+    },
+    {
+      "id": "blightwood_hollow_entry_decor_69",
+      "type": "bush_small_a",
+      "x": 19,
+      "y": 4
+    },
+    {
+      "id": "blightwood_hollow_entry_decor_70",
+      "type": "mushrooms_a",
+      "x": 12,
+      "y": 3
+    },
+    {
       "id": "blightwood_hollow_entry_decor_71",
       "type": "bush_small_a",
-      "x": 13,
-      "y": 3
+      "x": 12,
+      "y": 2
     },
     {
       "id": "blightwood_hollow_entry_decor_72",
       "type": "mushrooms_a",
-      "x": 12,
-      "y": 2
+      "x": 13,
+      "y": 3
     },
     {
       "id": "blightwood_hollow_entry_decor_73",
@@ -7241,69 +6943,57 @@
     },
     {
       "id": "blightwood_hollow_entry_decor_74",
-      "type": "bush_small_a",
-      "x": 12,
-      "y": 3
-    },
-    {
-      "id": "blightwood_hollow_entry_decor_75",
       "type": "mushrooms_a",
       "x": 21,
       "y": 15
     },
     {
-      "id": "blightwood_hollow_entry_decor_76",
-      "type": "bush_small_a",
-      "x": 20,
-      "y": 15
-    },
-    {
-      "id": "blightwood_hollow_entry_decor_77",
-      "type": "decal_moss",
-      "x": 23,
-      "y": 15
-    },
-    {
-      "id": "blightwood_hollow_entry_decor_78",
-      "type": "decal_moss",
+      "id": "blightwood_hollow_entry_decor_75",
+      "type": "mushrooms_a",
       "x": 22,
       "y": 15
     },
     {
-      "id": "blightwood_hollow_entry_decor_79",
-      "type": "bush_small_a",
+      "id": "blightwood_hollow_entry_decor_76",
+      "type": "decal_moss",
       "x": 1,
       "y": 1
     },
     {
-      "id": "blightwood_hollow_entry_decor_80",
-      "type": "bush_small_a",
+      "id": "blightwood_hollow_entry_decor_77",
+      "type": "decal_moss",
       "x": 2,
       "y": 2
     },
     {
-      "id": "blightwood_hollow_entry_decor_81",
-      "type": "mushrooms_a",
-      "x": 5,
+      "id": "blightwood_hollow_entry_decor_78",
+      "type": "bush_small_a",
+      "x": 4,
       "y": 21
     },
     {
-      "id": "blightwood_hollow_entry_decor_82",
+      "id": "blightwood_hollow_entry_decor_79",
       "type": "bush_small_a",
       "x": 7,
-      "y": 22
+      "y": 21
     },
     {
-      "id": "blightwood_hollow_entry_decor_83",
+      "id": "blightwood_hollow_entry_decor_80",
       "type": "mushrooms_a",
-      "x": 5,
-      "y": 22
+      "x": 10,
+      "y": 8
     },
     {
-      "id": "blightwood_hollow_entry_decor_84",
+      "id": "blightwood_hollow_entry_decor_81",
       "type": "mushrooms_a",
-      "x": 4,
-      "y": 22
+      "x": 8,
+      "y": 14
+    },
+    {
+      "id": "blightwood_hollow_entry_decor_82",
+      "type": "mushrooms_a",
+      "x": 11,
+      "y": 14
     }
   ]
 }

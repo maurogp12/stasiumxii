@@ -92,8 +92,8 @@ LOOKS = {
         "ground": "farm_plowed",
         "weather": ["light_cloud"],
         "grade": {
-            "warm_mul": [0.74, 0.66, 1.1], "haze_col": [0.26, 0.14, 0.4],
-            "haze_max": 0.18, "saturation": 0.7, "tint_col": [0.7, 0.08, 1.0], "tint_amount": 0.5,
+            "warm_mul": [0.45, 0.70, 1.15], "haze_col": [0.10, 0.06, 0.22],
+            "haze_max": 0.34, "saturation": 1.0, "tint_col": [0.55, 0.12, 0.90], "tint_amount": 0.15,
         },
     },
 }
@@ -222,6 +222,12 @@ def zone_doc(region: str, chunk: dict, built_ids: set[str]) -> dict:
                 "walkable": True,
                 "height": 0,
             })
+    # Rowanvale's gate lands at (0, 16). The cross road is y == 12, so the
+    # west road has to run across to the north-south road before dressing.
+    if chunk["id"] == "blightwood_hollow_entry":
+        for tile in tiles:
+            if tile["y"] == 16 and tile["x"] <= 16:
+                tile["terrain"] = "dirt_road"
     ox, oy = LANDMARK_ORIGIN
     footprint = []
     for dy in (0, 1):
@@ -315,6 +321,67 @@ def write_region(region: str, dress: bool = True) -> None:
             dress_region.load_npcs(),
             dress_region.load_gates(),
         )
+    if region == "blightwood_hollow":
+        _stamp_blightwood_watch(folder / "zones" / "blightwood_hollow_entry.json")
+
+
+def _stamp_blightwood_watch(path: Path) -> None:
+    """Turn the entry's north and west tree border into the ruined watch.
+
+    Towers flank the two road gaps. The rest of those borders stay
+    non-blocking, same as the tree wall they replace.
+    """
+    if not path.exists():
+        return
+    doc = json.loads(path.read_text())
+
+    def origin_of(prop: dict) -> tuple[int, int]:
+        origin = prop["origin"]
+        return int(origin["x"]), int(origin["y"])
+
+    def nearest(group: list[dict], axis: str, gap: int, side: int) -> dict | None:
+        best = None
+        best_d = 99
+        for prop in group:
+            x, y = origin_of(prop)
+            outer = x == 0 if axis == "y" else y == 0
+            if not outer:
+                continue
+            coord = y if axis == "y" else x
+            if side < 0 and coord >= gap:
+                continue
+            if side > 0 and coord <= gap:
+                continue
+            dist = abs(coord - gap)
+            if dist < best_d:
+                best_d = dist
+                best = prop
+        return best
+
+    props = doc["props"]
+    west = [prop for prop in props if "_border_west_" in str(prop["id"])]
+    north = [prop for prop in props if "_border_north_" in str(prop["id"])]
+    towers = []
+    for prop in (
+        nearest(west, "y", 16, -1),
+        nearest(west, "y", 16, 1),
+        nearest(north, "x", 16, -1),
+        nearest(north, "x", 16, 1),
+    ):
+        if prop is None:
+            continue
+        prop["type"] = "wall_tower"
+        prop["blocks"] = True
+        towers.append(id(prop))
+    for prop in west:
+        if id(prop) in towers:
+            continue
+        prop["type"] = "stone_wall_high_nesw"
+    for prop in north:
+        if id(prop) in towers:
+            continue
+        prop["type"] = "stone_wall_high_nwse"
+    path.write_text(json.dumps(doc, indent=2) + "\n")
 
 
 def write_all() -> None:

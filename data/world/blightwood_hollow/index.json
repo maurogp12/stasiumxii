@@ -20,6 +20,42 @@
       "height": 24
     },
     {
+      "zone_id": "blightwood_hollow_middle_1",
+      "file": "zones/blightwood_hollow_middle_1.json",
+      "width": 32,
+      "height": 24
+    },
+    {
+      "zone_id": "blightwood_hollow_middle_2",
+      "file": "zones/blightwood_hollow_middle_2.json",
+      "width": 32,
+      "height": 24
+    },
+    {
+      "zone_id": "blightwood_hollow_middle_3",
+      "file": "zones/blightwood_hollow_middle_3.json",
+      "width": 32,
+      "height": 24
+    },
+    {
+      "zone_id": "blightwood_hollow_middle_4",
+      "file": "zones/blightwood_hollow_middle_4.json",
+      "width": 32,
+      "height": 24
+    },
+    {
+      "zone_id": "blightwood_hollow_middle_5",
+      "file": "zones/blightwood_hollow_middle_5.json",
+      "width": 32,
+      "height": 24
+    },
+    {
+      "zone_id": "blightwood_hollow_middle_6",
+      "file": "zones/blightwood_hollow_middle_6.json",
+      "width": 32,
+      "height": 24
+    },
+    {
       "zone_id": "blightwood_hollow_door",
       "file": "zones/blightwood_hollow_door.json",
       "width": 32,

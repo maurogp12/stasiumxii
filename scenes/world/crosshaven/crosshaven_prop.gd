@@ -8,6 +8,7 @@ extends Node2D
 const PROP_ART_ROOT := "res://art/world/crosshaven/props/"
 const Pick := preload("res://scenes/world/crosshaven/crosshaven_pick.gd")
 const Art := preload("res://scenes/world/crosshaven/crosshaven_art.gd")
+const Blight := preload("res://scenes/world/crosshaven/blightwood_art.gd")
 const _SNOW_SHADER := preload("res://scenes/world/crosshaven/snow_cap.gdshader")
 
 const SPIRE_TINT := {
@@ -88,6 +89,13 @@ var _loops_ready := false
 
 
 func _attach_loops() -> void:
+	if zone_id.begins_with("blightwood_hollow"):
+		# Kit trees are painted already. Crosshaven sway and tavern smoke
+		# would put a bright loop on the hollow.
+		if art_id == "heart_of_the_blight":
+			Blight.attach_sap(self)
+		set_process(false)
+		return
 	if VisualSettings.still():
 		# Performance mode: no sway strips at all (no sheet in memory, no
 		# _process). Mills and the fountain keep one still frame; smoke goes.
@@ -210,6 +218,12 @@ func _clutter_scale(kind: String) -> float:
 
 
 func _load_art() -> Texture2D:
+	if zone_id.begins_with("blightwood_hollow"):
+		var origin := footprint[0] if not footprint.is_empty() else Vector2i.ZERO
+		art_id = Blight.prop_file(prop_type, prop_id, origin, zone_id)
+		_art = Blight.texture("props", art_id)
+		snowy_art = false
+		return _art.get("tex", null)
 	art_id = Art.prop_art_id(prop_type, footprint[0], _fence_axis, zone_id)
 	_art = Art.texture("props", art_id)
 	if _art.is_empty() and art_id != prop_type:
@@ -538,6 +552,8 @@ func _draw_window_glow(s: Vector2) -> void:
 
 
 func _glows() -> bool:
+	if zone_id.begins_with("blightwood_hollow"):
+		return false
 	for token in ["cottage", "house", "tavern", "bakery", "smithy", "mill"]:
 		if prop_type.contains(token):
 			return true

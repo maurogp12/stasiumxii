@@ -3,7 +3,7 @@
   "format_version": 1,
   "region": "blightwood_hollow",
   "seed": 4548,
-  "notes": "Crosshaven prop ids stand in until this region's art lands. stands_for is the WP10a painted name.",
+  "notes": "Zone ids stay the grass/stone/ash grammar. The kit draws them: blight soil, root ground, watch flagstone (Proposed family), the meadow blend, and the ruined watch. The Heart of the Blight is drawn on the door tavern; its 3x3 footprint stays Proposed. stands_for is the painted name.",
   "ground_mix": [
     {
       "terrain": "farm_plowed",

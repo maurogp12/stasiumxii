@@ -1,0 +1,705 @@
+{
+  "format": "stasium.art_atlas",
+  "format_version": 1,
+  "region": "blightwood_hollow",
+  "root": "res://art/world/blightwood_hollow/",
+  "grammar": [
+    "grass",
+    "stone",
+    "water",
+    "ash",
+    "dock"
+  ],
+  "grammar_notes": "blight_soil and meadow blends are grass, root_ground is ash, watch_flagstone and the road gap are stone. This kit has no water or dock pieces.",
+  "grid": {
+    "tile_w": 64,
+    "tile_h": 32,
+    "anchor": "bottom-centre on the south tip",
+    "master": "_2x drawn at 0.5"
+  },
+  "open_points": [
+    {
+      "id": "watch_flagstone",
+      "status": "Proposed",
+      "note": "Sunken watch road family. Zone terrain stays dirt_road. Renderer swaps the stone-grammar art."
+    },
+    {
+      "id": "heart_of_the_blight_footprint",
+      "status": "Proposed",
+      "note": "Art is a 3x3 landmark anchored on the south cell. Zone data keeps tavern_3x2. The sprite is drawn on that footprint's south cell."
+    }
+  ],
+  "tiles": [
+    {
+      "id": "blend_meadow_ne_s1",
+      "file": "tiles/blend_meadow_ne_s1.png",
+      "size": [
+        64,
+        32
+      ],
+      "anchor": "bottom-centre",
+      "pivot": "bottom-centre on the cell south tip",
+      "grammar": "grass",
+      "footprint": [
+        1,
+        1
+      ]
+    },
+    {
+      "id": "blend_meadow_ne_s2",
+      "file": "tiles/blend_meadow_ne_s2.png",
+      "size": [
+        64,
+        32
+      ],
+      "anchor": "bottom-centre",
+      "pivot": "bottom-centre on the cell south tip",
+      "grammar": "grass",
+      "footprint": [
+        1,
+        1
+      ]
+    },
+    {
+      "id": "blend_meadow_ne_s3",
+      "file": "tiles/blend_meadow_ne_s3.png",
+      "size": [
+        64,
+        32
+      ],
+      "anchor": "bottom-centre",
+      "pivot": "bottom-centre on the cell south tip",
+      "grammar": "grass",
+      "footprint": [
+        1,
+        1
+      ]
+    },
+    {
+      "id": "blend_meadow_ne_se",
+      "file": "tiles/blend_meadow_ne_se.png",
+      "size": [
+        64,
+        32
+      ],
+      "anchor": "bottom-centre",
+      "pivot": "bottom-centre on the cell south tip",
+      "grammar": "grass",
+      "footprint": [
+        1,
+        1
+      ]
+    },
+    {
+      "id": "blend_meadow_nw_ne",
+      "file": "tiles/blend_meadow_nw_ne.png",
+      "size": [
+        64,
+        32
+      ],
+      "anchor": "bottom-centre",
+      "pivot": "bottom-centre on the cell south tip",
+      "grammar": "grass",
+      "footprint": [
+        1,
+        1
+      ]
+    },
+    {
+      "id": "blend_meadow_nw_s1",
+      "file": "tiles/blend_meadow_nw_s1.png",
+      "size": [
+        64,
+        32
+      ],
+      "anchor": "bottom-centre",
+      "pivot": "bottom-centre on the cell south tip",
+      "grammar": "grass",
+      "footprint": [
+        1,
+        1
+      ]
+    },
+    {
+      "id": "blend_meadow_nw_s2",
+      "file": "tiles/blend_meadow_nw_s2.png",
+      "size": [
+        64,
+        32
+      ],
+      "anchor": "bottom-centre",
+      "pivot": "bottom-centre on the cell south tip",
+      "grammar": "grass",
+      "footprint": [
+        1,
+        1
+      ]
+    },
+    {
+      "id": "blend_meadow_nw_s3",
+      "file": "tiles/blend_meadow_nw_s3.png",
+      "size": [
+        64,
+        32
+      ],
+      "anchor": "bottom-centre",
+      "pivot": "bottom-centre on the cell south tip",
+      "grammar": "grass",
+      "footprint": [
+        1,
+        1
+      ]
+    },
+    {
+      "id": "blend_meadow_se_s1",
+      "file": "tiles/blend_meadow_se_s1.png",
+      "size": [
+        64,
+        32
+      ],
+      "anchor": "bottom-centre",
+      "pivot": "bottom-centre on the cell south tip",
+      "grammar": "grass",
+      "footprint": [
+        1,
+        1
+      ]
+    },
+    {
+      "id": "blend_meadow_se_s2",
+      "file": "tiles/blend_meadow_se_s2.png",
+      "size": [
+        64,
+        32
+      ],
+      "anchor": "bottom-centre",
+      "pivot": "bottom-centre on the cell south tip",
+      "grammar": "grass",
+      "footprint": [
+        1,
+        1
+      ]
+    },
+    {
+      "id": "blend_meadow_se_s3",
+      "file": "tiles/blend_meadow_se_s3.png",
+      "size": [
+        64,
+        32
+      ],
+      "anchor": "bottom-centre",
+      "pivot": "bottom-centre on the cell south tip",
+      "grammar": "grass",
+      "footprint": [
+        1,
+        1
+      ]
+    },
+    {
+      "id": "blend_meadow_se_sw",
+      "file": "tiles/blend_meadow_se_sw.png",
+      "size": [
+        64,
+        32
+      ],
+      "anchor": "bottom-centre",
+      "pivot": "bottom-centre on the cell south tip",
+      "grammar": "grass",
+      "footprint": [
+        1,
+        1
+      ]
+    },
+    {
+      "id": "blend_meadow_sw_nw",
+      "file": "tiles/blend_meadow_sw_nw.png",
+      "size": [
+        64,
+        32
+      ],
+      "anchor": "bottom-centre",
+      "pivot": "bottom-centre on the cell south tip",
+      "grammar": "grass",
+      "footprint": [
+        1,
+        1
+      ]
+    },
+    {
+      "id": "blend_meadow_sw_s1",
+      "file": "tiles/blend_meadow_sw_s1.png",
+      "size": [
+        64,
+        32
+      ],
+      "anchor": "bottom-centre",
+      "pivot": "bottom-centre on the cell south tip",
+      "grammar": "grass",
+      "footprint": [
+        1,
+        1
+      ]
+    },
+    {
+      "id": "blend_meadow_sw_s2",
+      "file": "tiles/blend_meadow_sw_s2.png",
+      "size": [
+        64,
+        32
+      ],
+      "anchor": "bottom-centre",
+      "pivot": "bottom-centre on the cell south tip",
+      "grammar": "grass",
+      "footprint": [
+        1,
+        1
+      ]
+    },
+    {
+      "id": "blend_meadow_sw_s3",
+      "file": "tiles/blend_meadow_sw_s3.png",
+      "size": [
+        64,
+        32
+      ],
+      "anchor": "bottom-centre",
+      "pivot": "bottom-centre on the cell south tip",
+      "grammar": "grass",
+      "footprint": [
+        1,
+        1
+      ]
+    },
+    {
+      "id": "blight_soil_a",
+      "file": "tiles/blight_soil_a.png",
+      "size": [
+        64,
+        32
+      ],
+      "anchor": "bottom-centre",
+      "pivot": "bottom-centre on the cell south tip",
+      "grammar": "grass",
+      "footprint": [
+        1,
+        1
+      ]
+    },
+    {
+      "id": "blight_soil_b",
+      "file": "tiles/blight_soil_b.png",
+      "size": [
+        64,
+        32
+      ],
+      "anchor": "bottom-centre",
+      "pivot": "bottom-centre on the cell south tip",
+      "grammar": "grass",
+      "footprint": [
+        1,
+        1
+      ]
+    },
+    {
+      "id": "blight_soil_c",
+      "file": "tiles/blight_soil_c.png",
+      "size": [
+        64,
+        32
+      ],
+      "anchor": "bottom-centre",
+      "pivot": "bottom-centre on the cell south tip",
+      "grammar": "grass",
+      "footprint": [
+        1,
+        1
+      ]
+    },
+    {
+      "id": "blight_soil_d",
+      "file": "tiles/blight_soil_d.png",
+      "size": [
+        64,
+        32
+      ],
+      "anchor": "bottom-centre",
+      "pivot": "bottom-centre on the cell south tip",
+      "grammar": "grass",
+      "footprint": [
+        1,
+        1
+      ]
+    },
+    {
+      "id": "road_gap_s1",
+      "file": "tiles/road_gap_s1.png",
+      "size": [
+        64,
+        32
+      ],
+      "anchor": "bottom-centre",
+      "pivot": "bottom-centre on the cell south tip",
+      "grammar": "stone",
+      "footprint": [
+        1,
+        1
+      ]
+    },
+    {
+      "id": "road_gap_s2",
+      "file": "tiles/road_gap_s2.png",
+      "size": [
+        64,
+        32
+      ],
+      "anchor": "bottom-centre",
+      "pivot": "bottom-centre on the cell south tip",
+      "grammar": "stone",
+      "footprint": [
+        1,
+        1
+      ]
+    },
+    {
+      "id": "road_gap_s3",
+      "file": "tiles/road_gap_s3.png",
+      "size": [
+        64,
+        32
+      ],
+      "anchor": "bottom-centre",
+      "pivot": "bottom-centre on the cell south tip",
+      "grammar": "stone",
+      "footprint": [
+        1,
+        1
+      ]
+    },
+    {
+      "id": "road_gap_wall",
+      "file": "tiles/road_gap_wall.png",
+      "size": [
+        64,
+        32
+      ],
+      "anchor": "bottom-centre",
+      "pivot": "bottom-centre on the cell south tip",
+      "grammar": "stone",
+      "footprint": [
+        1,
+        1
+      ]
+    },
+    {
+      "id": "root_ground_a",
+      "file": "tiles/root_ground_a.png",
+      "size": [
+        64,
+        32
+      ],
+      "anchor": "bottom-centre",
+      "pivot": "bottom-centre on the cell south tip",
+      "grammar": "ash",
+      "footprint": [
+        1,
+        1
+      ]
+    },
+    {
+      "id": "root_ground_b",
+      "file": "tiles/root_ground_b.png",
+      "size": [
+        64,
+        32
+      ],
+      "anchor": "bottom-centre",
+      "pivot": "bottom-centre on the cell south tip",
+      "grammar": "ash",
+      "footprint": [
+        1,
+        1
+      ]
+    },
+    {
+      "id": "root_ground_c",
+      "file": "tiles/root_ground_c.png",
+      "size": [
+        64,
+        32
+      ],
+      "anchor": "bottom-centre",
+      "pivot": "bottom-centre on the cell south tip",
+      "grammar": "ash",
+      "footprint": [
+        1,
+        1
+      ]
+    },
+    {
+      "id": "watch_flagstone_a",
+      "file": "tiles/watch_flagstone_a.png",
+      "size": [
+        64,
+        32
+      ],
+      "anchor": "bottom-centre",
+      "pivot": "bottom-centre on the cell south tip",
+      "grammar": "stone",
+      "footprint": [
+        1,
+        1
+      ],
+      "status": "Proposed",
+      "note": "watch_flagstone family is Proposed; zone data stays dirt_road (stone grammar)."
+    },
+    {
+      "id": "watch_flagstone_b",
+      "file": "tiles/watch_flagstone_b.png",
+      "size": [
+        64,
+        32
+      ],
+      "anchor": "bottom-centre",
+      "pivot": "bottom-centre on the cell south tip",
+      "grammar": "stone",
+      "footprint": [
+        1,
+        1
+      ],
+      "status": "Proposed",
+      "note": "watch_flagstone family is Proposed; zone data stays dirt_road (stone grammar)."
+    },
+    {
+      "id": "watch_flagstone_c",
+      "file": "tiles/watch_flagstone_c.png",
+      "size": [
+        64,
+        32
+      ],
+      "anchor": "bottom-centre",
+      "pivot": "bottom-centre on the cell south tip",
+      "grammar": "stone",
+      "footprint": [
+        1,
+        1
+      ],
+      "status": "Proposed",
+      "note": "watch_flagstone family is Proposed; zone data stays dirt_road (stone grammar)."
+    }
+  ],
+  "props": [
+    {
+      "id": "blight_mushrooms_a",
+      "file": "props/blight_mushrooms_a.png",
+      "size": [
+        32,
+        32
+      ],
+      "anchor": "bottom-centre",
+      "pivot": "bottom-centre on the south tip"
+    },
+    {
+      "id": "blight_mushrooms_b",
+      "file": "props/blight_mushrooms_b.png",
+      "size": [
+        32,
+        32
+      ],
+      "anchor": "bottom-centre",
+      "pivot": "bottom-centre on the south tip"
+    },
+    {
+      "id": "dead_snag_broken",
+      "file": "props/dead_snag_broken.png",
+      "size": [
+        64,
+        90
+      ],
+      "anchor": "bottom-centre",
+      "pivot": "bottom-centre on the south tip"
+    },
+    {
+      "id": "dead_snag_tall",
+      "file": "props/dead_snag_tall.png",
+      "size": [
+        64,
+        150
+      ],
+      "anchor": "bottom-centre",
+      "pivot": "bottom-centre on the south tip"
+    },
+    {
+      "id": "heart_of_the_blight",
+      "file": "props/heart_of_the_blight.png",
+      "size": [
+        192,
+        256
+      ],
+      "anchor": "bottom-centre",
+      "pivot": "bottom-centre on the south tip",
+      "status": "Proposed",
+      "footprint": "3x3 art; zone data stays tavern_3x2. Sprite is drawn on that footprint's south cell.",
+      "note": "Heart of the Blight 3x3 footprint is Proposed and is not a new zone prop id."
+    },
+    {
+      "id": "roots_decal_a",
+      "file": "props/roots_decal_a.png",
+      "size": [
+        64,
+        32
+      ],
+      "anchor": "bottom-centre",
+      "pivot": "bottom-centre on the south tip"
+    },
+    {
+      "id": "roots_decal_b",
+      "file": "props/roots_decal_b.png",
+      "size": [
+        64,
+        32
+      ],
+      "anchor": "bottom-centre",
+      "pivot": "bottom-centre on the south tip"
+    },
+    {
+      "id": "roots_decal_c",
+      "file": "props/roots_decal_c.png",
+      "size": [
+        64,
+        32
+      ],
+      "anchor": "bottom-centre",
+      "pivot": "bottom-centre on the south tip"
+    },
+    {
+      "id": "roots_decal_d",
+      "file": "props/roots_decal_d.png",
+      "size": [
+        64,
+        32
+      ],
+      "anchor": "bottom-centre",
+      "pivot": "bottom-centre on the south tip"
+    },
+    {
+      "id": "tw_tree_bare_hanging",
+      "file": "props/tw_tree_bare_hanging.png",
+      "size": [
+        112,
+        160
+      ],
+      "anchor": "bottom-centre",
+      "pivot": "bottom-centre on the south tip"
+    },
+    {
+      "id": "tw_tree_giant",
+      "file": "props/tw_tree_giant.png",
+      "size": [
+        160,
+        224
+      ],
+      "anchor": "bottom-centre",
+      "pivot": "bottom-centre on the south tip"
+    },
+    {
+      "id": "tw_tree_large_a",
+      "file": "props/tw_tree_large_a.png",
+      "size": [
+        128,
+        192
+      ],
+      "anchor": "bottom-centre",
+      "pivot": "bottom-centre on the south tip"
+    },
+    {
+      "id": "tw_tree_large_b",
+      "file": "props/tw_tree_large_b.png",
+      "size": [
+        128,
+        192
+      ],
+      "anchor": "bottom-centre",
+      "pivot": "bottom-centre on the south tip"
+    },
+    {
+      "id": "tw_tree_mid",
+      "file": "props/tw_tree_mid.png",
+      "size": [
+        112,
+        160
+      ],
+      "anchor": "bottom-centre",
+      "pivot": "bottom-centre on the south tip"
+    },
+    {
+      "id": "tw_tree_small",
+      "file": "props/tw_tree_small.png",
+      "size": [
+        80,
+        112
+      ],
+      "anchor": "bottom-centre",
+      "pivot": "bottom-centre on the south tip"
+    },
+    {
+      "id": "watch_tower_broken_stump",
+      "file": "props/watch_tower_broken_stump.png",
+      "size": [
+        64,
+        112
+      ],
+      "anchor": "bottom-centre",
+      "pivot": "bottom-centre on the south tip"
+    },
+    {
+      "id": "watch_tower_broken_tall",
+      "file": "props/watch_tower_broken_tall.png",
+      "size": [
+        64,
+        160
+      ],
+      "anchor": "bottom-centre",
+      "pivot": "bottom-centre on the south tip"
+    },
+    {
+      "id": "watch_wall_nesw_high",
+      "file": "props/watch_wall_nesw_high.png",
+      "size": [
+        64,
+        80
+      ],
+      "anchor": "bottom-centre",
+      "pivot": "bottom-centre on the south tip"
+    },
+    {
+      "id": "watch_wall_nesw_low",
+      "file": "props/watch_wall_nesw_low.png",
+      "size": [
+        64,
+        56
+      ],
+      "anchor": "bottom-centre",
+      "pivot": "bottom-centre on the south tip"
+    },
+    {
+      "id": "watch_wall_nwse_high",
+      "file": "props/watch_wall_nwse_high.png",
+      "size": [
+        64,
+        80
+      ],
+      "anchor": "bottom-centre",
+      "pivot": "bottom-centre on the south tip"
+    },
+    {
+      "id": "watch_wall_nwse_low",
+      "file": "props/watch_wall_nwse_low.png",
+      "size": [
+        64,
+        56
+      ],
+      "anchor": "bottom-centre",
+      "pivot": "bottom-centre on the south tip"
+    }
+  ]
+}
