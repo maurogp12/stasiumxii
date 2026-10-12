@@ -426,6 +426,16 @@ def cut_base(facing):
         rgb, parts[parent], parts[name], joints[name] = bridge(
             rgb, parts[parent], parts[name], joints[name]
         )
+    # Force a solid 12 px disk on both sides of every joint. The rig samples
+    # that exact pixel, so a one-pixel crack between the sleeve and the hand
+    # would fail the cross-section test.
+    for name, parent in order:
+        joint = np.array([round(float(joints[name][0])), round(float(joints[name][1]))], float)
+        blob = disk(joint, OVERLAP)
+        if parent != "hip" and parent in parts:
+            rgb, parts[parent] = fill_from(rgb, parts[parent], blob & ~parts[parent])
+        rgb, parts[name] = fill_from(rgb, parts[name], blob & ~parts[name])
+        joints[name] = joint
     # Eyes stay a layer on the face. Hair stays off the eye pixels.
     parts["eyes"] = parts["eyes"] & ndi.binary_dilation(eyes, iterations=1)
     parts["hair"] = parts["hair"] & ~parts["eyes"]
@@ -815,10 +825,13 @@ def overlap_report(parts, joints):
     ]
     for child, parent in pairs:
         joint = joints[child]
-        blob = disk(joint, 6)
-        both = parts[child] & parts[parent] & blob
-        if both.sum() < 8:
-            bad.append(f"{child}/{parent} overlap {int(both.sum())}")
+        cx, cy = int(round(float(joint[0]))), int(round(float(joint[1])))
+        points = ((cx, cy), (cx + 4, cy), (cx - 4, cy), (cx, cy + 4), (cx, cy - 4))
+        for px, py in points:
+            inside = 0 <= py < SH[0] and 0 <= px < SH[1]
+            if not inside or not parts[child][py, px] or not parts[parent][py, px]:
+                bad.append(f"{child}/{parent} hole at {px},{py}")
+                break
     return bad
 
 

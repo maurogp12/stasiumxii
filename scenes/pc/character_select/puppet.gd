@@ -1,7 +1,7 @@
 extends Node2D
 
 ## 2D cut-out puppet for the character select pedestal and island.
-## Parts are Sprite2D nodes in a parent chain. No Skeleton2D, no 3D.
+## Parts are Sprite2D nodes in a parent chain. No bone rig and no 3D.
 ## Idle and select are built from rig.json into an AnimationPlayer at 60 fps.
 ## S and E are painted. W is E mirrored. A turn is a 0.18 s cross-fade.
 

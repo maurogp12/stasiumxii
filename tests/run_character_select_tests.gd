@@ -441,7 +441,7 @@ func _test_puppet() -> void:
 	eq(puppet.rig.get("fps", 0), 60, "the rig is 60 fps")
 	eq(is_equal_approx(float(puppet.rig.get("turn", {}).get("sec", 0)), 0.18), true, "the turn is 0.18 s")
 	eq(is_equal_approx(float(puppet.rig.get("overlap_px", 0)), 12.0), true, "joints overlap by about 12 px")
-	var base_scale := puppet.scale_x_magnitude()
+	var base_scale: float = puppet.scale_x_magnitude()
 	puppet.apply_turn_sample(0.5)
 	eq(is_equal_approx(puppet.scale_x_magnitude(), base_scale * 0.96), true, "the turn squashes to 0.96 at the midpoint")
 	puppet.apply_turn_sample(1.0)
@@ -470,7 +470,7 @@ func _test_puppet() -> void:
 	puppet.clear_slots()
 	puppet.snap_facing("S")
 	puppet.seek_anim("select", 1.15)
-	var dust := puppet.part_node("dust")
+	var dust: Node2D = puppet.part_node("dust")
 	eq(dust.modulate.a > 0.5, true, "the select slam shows the dust puff")
 	puppet.set_performance(true)
 	truthy(puppet.texture_path("torso").contains("_1x"), "performance mode uses the 1x parts")
@@ -482,7 +482,7 @@ func _test_puppet() -> void:
 	puppet.set_face("sharp")
 	truthy(puppet.texture_path("head").contains("head_f4"), "the sharp face uses head_f4")
 	puppet.release()
-	eq(root.get_nodes_in_group("charselect_puppet").size(), 0, "release drops the puppet group")
+	eq(get_nodes_in_group("charselect_puppet").size(), 0, "release drops the puppet group")
 	puppet.free()
 	_wipe_roster_files()
 	var screen = _open_screen()
@@ -504,9 +504,9 @@ func _assert_gear_covers(puppet, family: String, slot: String) -> void:
 	var slots: Dictionary = puppet.rig.get("slots", {})
 	var names: Array = slots.get(slot, [])
 	for part_name in names:
-		var gear := puppet.part_image(str(part_name))
+		var gear: Image = puppet.part_image(str(part_name))
 		puppet.clear_slots()
-		var base := puppet.part_image(str(part_name))
+		var base: Image = puppet.part_image(str(part_name))
 		puppet.set_slot(slot, family)
 		if gear == null or base == null:
 			eq(false, true, "%s %s %s loaded" % [family, slot, part_name])
@@ -517,11 +517,11 @@ func _assert_gear_covers(puppet, family: String, slot: String) -> void:
 		var missing := 0
 		for y in base.get_height():
 			for x in base.get_width():
-				var bp := base.get_pixel(x, y)
+				var bp: Color = base.get_pixel(x, y)
 				if bp.a <= 0.5:
 					continue
 				counted += 1
-				var gp := gear.get_pixel(x, y)
+				var gp: Color = gear.get_pixel(x, y)
 				if gp.a <= 0.5:
 					missing += 1
 				else:
@@ -534,14 +534,14 @@ func _assert_joints(puppet, label: String) -> void:
 	for facing in ["S", "E"]:
 		puppet.snap_facing(facing)
 		for anim_name in ["idle", "select"]:
-			var length := puppet.anim_length(anim_name)
+			var length: float = puppet.anim_length(anim_name)
 			var cache := _puppet_images(puppet)
 			var t := 0.0
 			while t <= length + 0.0001:
 				puppet.seek_anim(anim_name, t)
 				puppet.force_update_transform()
 				for child in _JOINTS.keys():
-					var node := puppet.part_node(str(child))
+					var node: Node2D = puppet.part_node(str(child))
 					if node == null:
 						eq(false, true, "%s missing %s" % [label, child])
 						continue
@@ -573,8 +573,8 @@ func _joint_closed(puppet, cache: Dictionary, child: String, parent: String, ori
 
 
 func _sprite_hits(puppet, cache: Dictionary, part: String, world: Vector2) -> bool:
-	var node := puppet.part_node(part)
-	var sprite := puppet.sprite_of(part)
+	var node: Node2D = puppet.part_node(part)
+	var sprite: Sprite2D = puppet.sprite_of(part)
 	var image: Image = cache.get(part, null)
 	if node == null or sprite == null or image == null:
 		return false
