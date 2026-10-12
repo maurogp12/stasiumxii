@@ -909,6 +909,12 @@ static func toast_for_events(events: Array) -> String:
 	for event in events:
 		if typeof(event) == TYPE_DICTIONARY and str(event.get("type", "")) == "blend":
 			return str(event.get("coach", "BLEND %s" % str(event.get("name", ""))))
+	for event in events:
+		if typeof(event) == TYPE_DICTIONARY and str(event.get("type", "")) == "shield_blocked":
+			var source := str(event.get("source", "Shield"))
+			if source == "":
+				source = "Shield"
+			return "%s refused" % source
 	if events_include_push_blocked(events):
 		return PUSH_BLOCKED_TOAST
 	if events_include_lava_burn(events):

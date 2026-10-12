@@ -66,7 +66,9 @@ const _BLEND_CASES := {
 	},
 	"magma": {
 		"hit": "fire", "residue": "earth", "at": Vector2i(5, 5), "foe": Vector2i(6, 5),
-		"damage": 0, "debuffs": ["Magma"],
+		"damage": 0, "debuffs": [],
+		"line": "Magma: Ironjaw on Kestrel, Burn 3 stacks, no shields while burning.",
+		"stacks": 3,
 	},
 	"mire": {
 		"hit": "earth", "residue": "water", "at": Vector2i(5, 5), "foe": Vector2i(6, 5),
@@ -124,6 +126,7 @@ func _test_every_blend_and_reaction_is_logged() -> void:
 		_assert_reaction_logged(tag, reaction)
 	_assert_mire_unbound_logged()
 	_assert_hidden_spark_logged()
+	_assert_magma_shield_blocked()
 
 
 func _assert_blend_logged(blend_id: String, spec: Dictionary) -> void:
@@ -173,6 +176,11 @@ func _assert_blend_logged(blend_id: String, spec: Dictionary) -> void:
 		truthy(owner.contains("-%d HP" % int(spec["damage"])), "%s names the extra damage: %s" % [blend_id, owner])
 	for debuff_name in wanted:
 		truthy(owner.contains(str(debuff_name)) and owner.contains("turn"), "%s names the debuff and its duration: %s" % [blend_id, owner])
+	if str(spec.get("line", "")) != "":
+		eq(owner, str(spec["line"]), "%s log line: %s" % [blend_id, owner])
+	if int(spec.get("stacks", -1)) >= 0:
+		eq(int(row.get("burn_stacks", -1)), int(spec["stacks"]), "%s log keeps the Burn stacks" % blend_id)
+		eq(int(_sim._unit_by_seat(1).get("burn_stacks", -1)), int(spec["stacks"]), "%s leaves that many stacks" % blend_id)
 	eq(owner.contains("("), false, "%s log has no tile: %s" % [blend_id, owner])
 	if bool(spec.get("reveal", false)):
 		truthy(owner.contains("reveals Gloam"), "%s names who it revealed: %s" % [blend_id, owner])
@@ -269,6 +277,39 @@ func _assert_hidden_spark_logged() -> void:
 	eq(enemy_line, owner_line, "both phones show the same Spark line: %s" % enemy_line)
 	truthy(enemy_line.contains("Spark") and enemy_line.contains("-10 HP") and enemy_line.contains("Healing"), "the redacted line still records Spark: %s" % enemy_line)
 	eq(enemy_line.contains("("), false, "the redacted Spark line has no tile: %s" % enemy_line)
+
+
+func _assert_magma_shield_blocked() -> void:
+	_open_duel(Vector2i(5, 5), Vector2i(6, 5), ["ironjaw", "bastion"])
+	var actor: Dictionary = _sim._unit_by_seat(0)
+	actor["spell_elements"] = {"strike": "fire", "shoulder": "earth", "crush": "earth"}
+	var bastion: Dictionary = _sim._unit_by_seat(1)
+	bastion["residue"] = "earth"
+	bastion["residue_seat"] = 0
+	bastion["residue_turns"] = 2
+	var cast: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "seat": 0, "to": Vector2i(6, 5)})
+	eq(bool(cast.get("ok", false)), true, "Magma on Bastion connects")
+	var row := _find(_sim.snapshot()["battle_log"], "blend")
+	var line := LOG.plain(row, _view(0))
+	eq(line, LOG.plain(row, _view(1)), "Magma reads the same on both seats: %s" % line)
+	eq(line, "Magma: Ironjaw on Bastion, Burn 3 stacks, no shields while burning.", "Magma names the stacks and the shield rule: %s" % line)
+	eq(line.contains("("), false, "Magma log has no tile: %s" % line)
+	bastion = _sim._unit_by_seat(1)
+	bastion["shield"] = 18
+	_sim.submit({"type": "end_turn", "seat": 0})
+	eq(int(_sim._unit_by_seat(1).get("shield", 0)), 18, "the Burn tick leaves the old shield")
+	bastion = _sim._unit_by_seat(1)
+	bastion["aegis"] = 4
+	bastion["ap"] = 6
+	var ward: Dictionary = _sim.submit({"type": "cast", "spell": "ward", "seat": 1, "to": bastion["pos"]})
+	eq(bool(ward.get("ok", false)), true, "Ward resolves on a burning Bastion")
+	eq(int(_sim._unit_by_seat(1).get("shield", 0)), 18, "Ward adds nothing while he burns")
+	var blocked := _find(_sim.snapshot()["battle_log"], "shield_blocked")
+	eq(str(blocked.get("source", "")), "Ward", "the blocked event names Ward")
+	eq(int(blocked.get("target_seat", -1)), 1, "the blocked event names Bastion's seat")
+	var blocked_line := LOG.plain(blocked, _view(0))
+	eq(blocked_line, LOG.plain(blocked, _view(1)), "the blocked line matches on both seats: %s" % blocked_line)
+	eq(blocked_line, "Shield blocked (Ward). Bastion is burning.", "a refused shield is logged: %s" % blocked_line)
 
 
 func _open_duel(at: Vector2i, foe: Vector2i, classes: Array = ["ironjaw", "kestrel"]) -> void:
