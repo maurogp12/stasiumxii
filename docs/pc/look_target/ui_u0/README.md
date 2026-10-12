@@ -51,3 +51,11 @@ Known gaps:
 - The level medallion overlaps the orb bottom edge.
 - Gems, weapons, and armour icons are placeholders, and quest, spell, and rank text is invented.
 - The real captured hero is about 156 px tall at 1080p, not 110–120 as in the spec, so HUD sizes may need rechecking against the real frames.
+
+## v2 on the real frames
+
+[v2_real/](v2_real/) is the same HUD re-rendered at scale 1.3 on the real frames from PR #362, so it matches the captured hero at about 156 px. At 1920×1080 the bar is 1352×83, slots and buttons are 57 px, the orb is 125 wide, and the minimap is 220×220. Zone text and the minimap are set per frame. Dark and light, at 1920×1080 and 1280×720.
+
+Luca rejected the old fight frame for looking like the phone. Frame 2 uses the clean Granary capture (`frame2_granary_fight_clean.png`, PR #362, bd342c4, board zoom 1.417) and a new PC combat HUD: a timeline with portraits, round and timer; a hover target card; a room info panel; the orb with AP/MP pips; 2×8 spell slots with costs and a cooldown; End turn on Space; and a combat log. There is no face pad, because facing is by mouse. That HUD covers about 13.7% of the screen and leaves the fighters and the move tiles clear.
+
+Known gaps: the timeline sits close to the back-wall name plates, hotkey labels are tiny at 1280, portraits are crops from the frame, the menu windows are still at 1.0 design scale, the Map window covers the hero, and the minimap art is approximate.
