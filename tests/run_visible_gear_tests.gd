@@ -19,12 +19,13 @@ const WORLD := preload("res://scenes/world/crosshaven/crosshaven_world.tscn")
 const CHAR_WINDOW := preload("res://scenes/world/ui/character_window.gd")
 
 const SLOTS: Array[String] = ["weapon", "head", "chest", "legs", "boots"]
-const KINDS: Array[String] = ["walk", "idle", "attack", "skill", "hit", "death"]
+const KINDS: Array[String] = ["walk", "run", "idle", "attack", "skill", "hit", "death"]
 const OTHERS: Array[String] = ["bastion", "gloam", "kestrel", "mender"]
 const FAMILY := "cragmaw"
 const FAMILIES: Array[String] = ["cragmaw", "tyrantjaw", "pitmaw"]
 const GROUPS: Array[String] = ["weapon", "head", "chest", "legs", "boots", "skin"]
 const LEGS_JSON := "res://art/characters/painted/ironjaw_gear/legs_joints.json"
+const MOTION_JSON := "res://art/characters/painted/ironjaw_gear/motion.json"
 
 var passed := 0
 var failed := 0
@@ -52,6 +53,8 @@ func _run() -> void:
 	_test_stack_order()
 	_test_no_holes()
 	_test_legs()
+	_test_motion()
+	await _test_walker_beats()
 	await _test_walker_layers()
 	await _test_only_worn_load()
 	await _test_pawn_sync()
@@ -256,14 +259,15 @@ func _test_legs() -> void:
 					var r: Dictionary = rows[i][sd]
 					check(float(r["knee_cover"]) >= 0.9, "%s %s f%02d %s knee: thigh and shin meet (%.2f)" % [kind, art, i, sd, float(r["knee_cover"])])
 					check(float(r["ankle_cover"]) >= 0.9, "%s %s f%02d %s ankle: shin and boot meet (%.2f)" % [kind, art, i, sd, float(r["ankle_cover"])])
-					if kind == "walk" or kind == "idle":
-						check(absf(float(r["knee_deg"])) <= 130.0, "%s %s f%02d %s knee bends %.0f deg (not folded back)" % [kind, art, i, sd, float(r["knee_deg"])])
-					if kind == "walk":
-						# the walk loops: frame 0 follows frame 11
+					if kind == "walk" or kind == "idle" or kind == "run":
+						var lim := 150.0 if kind == "run" else 130.0
+						check(absf(float(r["knee_deg"])) <= lim, "%s %s f%02d %s knee bends %.0f deg (not folded back)" % [kind, art, i, sd, float(r["knee_deg"])])
+					if kind == "walk" or kind == "run":
+						# the cycle loops: frame 0 follows the last frame
 						var prev: Dictionary = rows[(i + rows.size() - 1) % rows.size()][sd]
 						var step := absf(float(r["knee_deg"]) - float(prev["knee_deg"]))
-						check(step <= 50.0, "walk %s f%02d %s knee angle is continuous (%.0f deg step)" % [art, i, sd, step])
-						check(signf(float(r["knee_deg"])) == signf(float(prev["knee_deg"])) or absf(float(r["knee_deg"])) < 10.0 or absf(float(prev["knee_deg"])) < 10.0, "walk %s f%02d %s knee never flips side" % [art, i, sd])
+						check(step <= 50.0, "%s %s f%02d %s knee angle is continuous (%.0f deg step)" % [kind, art, i, sd, step])
+						check(signf(float(r["knee_deg"])) == signf(float(prev["knee_deg"])) or absf(float(r["knee_deg"])) < 10.0 or absf(float(prev["knee_deg"])) < 10.0, "%s %s f%02d %s knee never flips side" % [kind, art, i, sd])
 					var kp: Array = r["knee"]
 					var px := Vector2i(int(round(float(kp[0]))) + i * cw, int(round(float(kp[1]))))
 					for st in sheets.keys():
@@ -277,6 +281,128 @@ func _test_legs() -> void:
 										hit = true
 						check(hit, "%s %s f%02d %s: %s is drawn at the knee joint" % [kind, art, i, sd, st])
 	LOOKS.clear_cache()
+
+
+## Motion (gear_motion.py, numbers of the rig in motion.json, gait numbers from
+## the specs): planted feet against the walker's ground speed, the bob, the
+## arm counter-swing, the axe trailing the arm, loop seams, a run that is its
+## own gait, an idle that is not one symmetric breath, and combat timing.
+func _test_motion() -> void:
+	check(FileAccess.file_exists(MOTION_JSON), "the build wrote the motion numbers")
+	var doc: Variant = JSON.parse_string(FileAccess.get_file_as_string(MOTION_JSON))
+	if not (doc is Dictionary):
+		return
+	var kinds: Dictionary = doc["kinds"]
+	var world: Dictionary = GSPECS.WORLD["ironjaw"]
+	var H := float(world["height"])
+	for gait in ["walk", "run"]:
+		var n := int(LOOKS.spec("ironjaw", gait)["frames"])
+		var frame_step := float(world[gait]["shown_stride"]) / float(n)
+		check(frame_step <= 2.0, "%s: one cell of ground travel is %.2f px at zoom 1 (<= 2)" % [gait, frame_step])
+		for art in ["S", "E"]:
+			var r: Dictionary = kinds[gait][art]
+			for sd in ["R", "L"]:
+				var sl: Dictionary = r["slide"][sd]
+				var slide := float(sl["rig_drift_world_px"]) + frame_step
+				check(slide <= 2.0, "%s %s %s: planted foot slides %.2f px at zoom 1 (<= 2)" % [gait, art, sd, slide])
+				check(float(sl["planted_share"]) >= (0.45 if gait == "walk" else 0.28), "%s %s %s: the foot is planted %.0f%% of the cycle" % [gait, art, sd, 100.0 * float(sl["planted_share"])])
+				var a: Dictionary = r["arms"][sd]
+				check(absf(float(a["arm_leg_phase_deg"])) >= 120.0, "%s %s %s: the arm swings against its own leg (%.0f deg)" % [gait, art, sd, float(a["arm_leg_phase_deg"])])
+				check(float(a["axe_lag_frames"]) >= 1.5 and float(a["axe_lag_frames"]) <= 2.5, "%s %s %s: the axe trails the arm by %.2f frames" % [gait, art, sd, float(a["axe_lag_frames"])])
+			var seam: Dictionary = r["seam"]
+			check(float(seam["last_to_first_px"]) <= float(seam["max_step_px"]), "%s %s: the last frame runs into the first (%.1f px, steps up to %.1f)" % [gait, art, float(seam["last_to_first_px"]), float(seam["max_step_px"])])
+		var bw := float(kinds["walk"]["S"]["bob_pct"])
+		var b := float(kinds[gait]["S"]["bob_pct"])
+		if gait == "walk":
+			check(b >= 2.0 and b <= 4.0, "walk bob %.2f%% of his height (2-4)" % b)
+		else:
+			check(b > bw + 0.5 and b <= 6.0, "run bob %.2f%% is bigger than the walk's %.2f%%" % [b, bw])
+	for art in ["S", "E"]:
+		var lw := _mean(kinds["walk"][art]["torso_deg"]) - _mean(kinds["idle"][art]["torso_deg"])
+		var lr := _mean(kinds["run"][art]["torso_deg"]) - _mean(kinds["idle"][art]["torso_deg"])
+		check(lw >= 1.5, "walk %s leans into the move (%.1f deg)" % [art, lw])
+		check(lr >= lw + 3.0, "run %s leans more than the walk (%.1f vs %.1f deg)" % [art, lr, lw])
+		var sw := float(kinds["walk"][art]["arms"]["R"]["arm_fwd_amp_px"]) + float(kinds["walk"][art]["arms"]["L"]["arm_fwd_amp_px"])
+		var sr := float(kinds["run"][art]["arms"]["R"]["arm_fwd_amp_px"]) + float(kinds["run"][art]["arms"]["L"]["arm_fwd_amp_px"])
+		check(sr > sw, "run %s swings the arms wider than the walk" % art)
+		# idle: loops, and its two halves are not the same breath
+		var idle: Dictionary = kinds["idle"][art]
+		var pel: Array = idle["pelvis"]
+		var half := pel.size() / 2
+		var differ := 0.0
+		for i in half:
+			differ = maxf(differ, Vector2(float(pel[i][0]) - float(pel[i + half][0]), float(pel[i][1]) - float(pel[i + half][1])).length())
+		check(pel.size() >= 24, "idle %s is %d frames (a weight shift and a re-grip fit)" % [art, pel.size()])
+		check(differ >= 1.5, "idle %s: the second half is not a copy of the first (%.1f px)" % [art, differ])
+		check(float(idle["sway_px"]) >= 2.0, "idle %s shifts his weight (%.1f px)" % [art, float(idle["sway_px"])])
+		var seam: Dictionary = idle["seam"]
+		check(float(seam["last_to_first_px"]) <= float(seam["max_step_px"]), "idle %s: the last frame runs into the first" % art)
+	check(float(world["run"]["foot_stride"]) >= 1.2 * float(world["foot_stride"]), "the run stride is longer than the walk's (%.1f vs %.1f px)" % [float(world["run"]["foot_stride"]), float(world["foot_stride"])])
+	check(LOOKS.sheet("ironjaw", "base", "run", "S") != null and LOOKS.sheet("ironjaw", "base", "run", "S") != LOOKS.sheet("ironjaw", "base", "walk", "S"), "the run is its own sheet, not the walk sped up")
+	# combat: anticipation back, the hit forward past rest, recovery that settles
+	for art in ["S", "E"]:
+		var at: Array = kinds["attack"][art]["torso_deg"]
+		var a0 := float(at[0])
+		check(_min(at, 2, 5) <= a0 - 1.0, "attack %s: the wind-up draws back before the chop" % art)
+		check(float(at[6]) >= a0 + 2.0, "attack %s: the chop drives forward past rest" % art)
+		check(absf(float(at[at.size() - 1]) - a0) <= 3.0, "attack %s: it settles back to the stance" % art)
+		var ht: Array = kinds["hit"][art]["torso_deg"]
+		var h0 := float(ht[0])
+		check(_min(ht, 1, 3) <= h0 - 4.0, "hit %s: the blow throws him back" % art)
+		check(_max(ht, 5, ht.size() - 1) >= h0 + 0.5, "hit %s: he rebounds past the stance before he settles" % art)
+
+
+func _mean(a: Array) -> float:
+	var s := 0.0
+	for v in a:
+		s += float(v)
+	return s / maxf(1.0, float(a.size()))
+
+
+func _min(a: Array, i0: int, i1: int) -> float:
+	var m := INF
+	for i in range(i0, i1 + 1):
+		m = minf(m, float(a[i]))
+	return m
+
+
+func _max(a: Array, i0: int, i1: int) -> float:
+	var m := -INF
+	for i in range(i0, i1 + 1):
+		m = maxf(m, float(a[i]))
+	return m
+
+
+## Walker beats: a turn narrows the figure for a moment, a start dips into the
+## step, a stop settles; all return to the draw scale.
+func _test_walker_beats() -> void:
+	var w := _walker("ironjaw")
+	await process_frame
+	w.set_gear_parts(_parts(SLOTS))
+	var sc: float = w._strips.draw_scale("idle", "e")
+	w.face("e")
+	w.advance(0.5)
+	check(is_equal_approx(w._sprite.scale.x, sc), "walker: at rest the draw scale is untouched")
+	w.face("n")
+	w.advance(w.TURN_SEC * 0.5)
+	check(w._sprite.scale.x < sc * 0.85, "walker: a facing change narrows him as he turns (%.3f of %.3f)" % [w._sprite.scale.x, sc])
+	w.advance(w.TURN_SEC)
+	check(is_equal_approx(w._sprite.scale.x, sc), "walker: the turn ends on the draw scale")
+	var steps: Array[Vector2i] = [w.cell + Vector2i(1, 0)]
+	w.walk(steps, "walk")
+	w.advance(w.START_SEC * 0.5)
+	check(w._sprite.scale.y < sc, "walker: the first step dips into the stride")
+	for i in 200:
+		if not w.is_moving():
+			break
+		w.advance(1.0 / 60.0)
+	check(not w.is_moving(), "walker: the step ends")
+	w.advance(w.SETTLE_SEC * 0.4)
+	check(w._sprite.scale.y < sc, "walker: the stop settles his weight")
+	w.advance(w.SETTLE_SEC)
+	check(is_equal_approx(w._sprite.scale.y, sc) and is_equal_approx(w._sprite.scale.x, sc), "walker: the settle ends on the draw scale")
+	w.queue_free()
+	await process_frame
 
 
 ## The order is the data's stack per facing; strips behind the body first.

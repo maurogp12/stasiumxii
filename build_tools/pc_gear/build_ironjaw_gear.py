@@ -44,9 +44,27 @@ SPECS_GD = os.path.join(ROOT, "units", "pc_gear_specs.gd")
 # The locked Ironjaw scale (units/pc_character_specs.gd, every kind): the
 # unarmoured body is drawn exactly as big as the v7 body.
 LOCKED_K = 0.5547
-KINDS = ("walk", "idle", "attack", "skill", "hit", "death")
+KINDS = ("walk", "run", "idle", "attack", "skill", "hit", "death")
 IMPACT = {"attack": 6, "skill": 6}
-FRAMES = {"walk": 12, "idle": 12, "attack": 12, "skill": 12, "hit": 8, "death": 13}
+# walk, run and idle come from the motion pass (gear_motion.LOOP_FRAMES)
+FRAMES = {"walk": 24, "run": 28, "idle": 24, "attack": 12, "skill": 12, "hit": 8, "death": 13}
+LOOPS = ("walk", "run", "idle")
+STAND = ("walk", "run", "idle")
+
+
+def world_gait(B, gait: str, foot_stride: float, n: int) -> dict:
+    """build_pc_characters.world_gait for a cycle of n cells (the leg-rate caps are per cycle:
+    MAX_LEG_RATE x the authored fps for 12 cells)."""
+    speed = B.WORLD_RUN_SPEED if gait == "run" else B.WORLD_WALK_SPEED
+    cap = (B.RUN_LEG_RATE if gait == "run" else B.MAX_LEG_RATE) * B.AUTHORED_FPS * n / 12.0
+    leg = speed * n / foot_stride
+    capped = leg > cap
+    if capped:
+        leg = cap
+    shown_stride = speed * n / leg
+    stride_mul = 1.0 if gait == "run" else B.walk_stride_scale()
+    return {"fps": leg / B.anim_scale(gait), "stride": shown_stride / stride_mul, "shown_fps": leg,
+            "shown_stride": shown_stride, "capped": capped}
 
 
 def pcb():
@@ -174,13 +192,13 @@ def build(work: str, strips: list[str]):
         return ext
 
     layout = {}
-    stand = extents(("walk", "idle"))
+    stand = extents(STAND)
     if stand["top"] * k > B.MAX_ABOVE:
         raise SystemExit("walk/idle taller than the sole line allows at the locked scale")
     reach = max(max(stand["L"].values()), max(stand["R"].values()))
     half = int(math.ceil(reach * k)) + B.PAD
     cell = (2 * half, B.FOOT_ROW + int(math.ceil(stand["below"] * k)) + B.PAD)
-    for kind in ("walk", "idle"):
+    for kind in STAND:
         layout[kind] = {"cell": cell, "piv": {"S": (cell[0] // 2, B.FOOT_ROW), "E": (cell[0] // 2, B.FOOT_ROW)}}
     for kind in ("attack", "skill", "hit", "death"):
         e = extents((kind,))
@@ -235,32 +253,33 @@ def build(work: str, strips: list[str]):
             F, mirror = B.LETTER_FROM_ART[letter]
             dst = lay["piv"][F]
             pivots[kind][letter] = [cw - dst[0] if mirror else dst[0], dst[1]]
-    # walk numbers, measured on the base walk like the locked build
-    walkS = load(("base", "walk", "S"))
-    stances = [B.stance_px_per_frame(walkS, 0), B.stance_px_per_frame(walkS, 6)]
-    good = [v for v in stances if v >= 0.5 * max(stances)]
-    ppf = sum(good) / len(good)
+    # gait numbers: the ground the motion pass moves under a planted foot per cell (gear_rig
+    # writes it), at the sheet scale and the world draw scale
+    ground = json.load(open(os.path.join(work, "frames", "_ground.json")))
+    draw = B.WORLD_IRONJAW_HEIGHT / B.PC_STATIC_ABOVE_SOLE["ironjaw"]
+    foot = {g: float(ground[f"S_{g}"]) * k * draw * FRAMES[g] for g in ("walk", "run")}
+    ppf = float(ground["S_walk"])
     board_ppf = ppf * k * B.PAWN_SPRITE_SCALE
     measured = B.TILE_STEP_PX / board_ppf
-    fpt = min(measured, B.MAX_LEG_RATE * B.AUTHORED_FPS * B.PAWN_WALK_TILE_SEC)
-    draw = B.WORLD_IRONJAW_HEIGHT / B.PC_STATIC_ABOVE_SOLE["ironjaw"]
-    foot = ppf * k * draw * B.FRAMES
+    fpt = min(measured, B.MAX_LEG_RATE * B.AUTHORED_FPS * B.PAWN_WALK_TILE_SEC * FRAMES["walk"] / 12.0)
     world = {
         "draw_scale": round(draw, 6),
         "height": round(B.PC_STATIC_ABOVE_SOLE["ironjaw"] * draw, 2),
-        "foot_stride": round(foot, 4),
-        "walk": {kk: (round(v, 6) if isinstance(v, float) else v) for kk, v in B.world_gait("walk", foot).items()},
-        "run": {kk: (round(v, 6) if isinstance(v, float) else v) for kk, v in B.world_gait("run", foot).items()},
+        "foot_stride": round(foot["walk"], 4),
+        "walk": {kk: (round(v, 6) if isinstance(v, float) else v) for kk, v in world_gait(B, "walk", foot["walk"], FRAMES["walk"]).items()},
+        "run": {kk: (round(v, 6) if isinstance(v, float) else v) for kk, v in world_gait(B, "run", foot["run"], FRAMES["run"]).items()},
         "idle": {"fps": B.AUTHORED_FPS},
     }
+    world["run"]["foot_stride"] = round(foot["run"], 4)
     specs = {}
     for kind in KINDS:
         s = {"cell": list(layout[kind]["cell"]), "pivots": pivots[kind], "frames": FRAMES[kind], "fps": B.AUTHORED_FPS,
-             "loop": kind in ("walk", "idle"), "scale": round(k, 4)}
+             "loop": kind in LOOPS, "scale": round(k, 4)}
         if kind in IMPACT:
             s["impact"] = IMPACT[kind]
         s["source"] = ("paper doll base: build_tools/pc_gear on the locked rig claude/ironjaw-actions @ 9d784a1"
-                       + (", walk on the TA walk joints of art/ironjaw-walk-help @ 0f3eeb8" if kind == "walk" else ""))
+                       + (", walk on the TA walk joints of art/ironjaw-walk-help @ 0f3eeb8" if kind in ("walk", "run") else "")
+                       + ", motion pass gear_motion.py")
         if kind == "walk":
             s["frames_per_tile"] = round(fpt, 3)
             s["frames_per_tile_no_slide"] = round(measured, 3)
@@ -285,7 +304,30 @@ def build(work: str, strips: list[str]):
                 out.setdefault(kind, {})[F] = rows
         with open(os.path.join(OUT, "legs_joints.json"), "w") as fh:
             json.dump({"notes": "Leg joints per kind, art facing (S/E) and frame, in sheet cell px (build_ironjaw_gear.py): hip, knee, ankle, the knee angle (deg, thigh to shin) and how much of a 4 px disc at the knee / ankle the two pieces cover in the base rig.", "legs": out}, fh)
+    write_motion(work, world)
     return specs, world, written
+
+
+def write_motion(work, world):
+    """the motion numbers of the rig (gear_motion.measure) at the shipped world gait numbers, for the tests."""
+    import gear_rig as GRig
+    import gear_motion as GM
+    R = GRig.load_rig(work)
+    for F in "SE":
+        R.PJ[F] = json.load(open(os.path.join(work, "parts", "base", f"ijoints_{F}.json")))
+    R.AP = os.path.join(work, "parts", "base")
+    m = GM.measure(R, [x for x in KINDS if x in R.ACTS], world)
+    keep = {"cell_to_world": m["cell_to_world"], "notes": "gear_motion.measure on the rig (512 px cell space; world px at zoom 1): bob, sway, planted-foot slide (rig drift + the ground one cell moves while it is held), arm-to-leg phase, forearm (axe) lag behind the upper arm, loop seam. Pelvis and lean tracks per frame.", "kinds": {}}
+    for act, fs in m["kinds"].items():
+        for F, r in fs.items():
+            row = {kk: v for kk, v in r.items() if kk != "frames"}
+            P = r["frames"]
+            row["pelvis"] = [[round(c, 2) for c in p["pelvis"]] for p in P]
+            row["torso_deg"] = [round(math.degrees(math.atan2(p["neck"][0] - p["pelvis"][0], p["pelvis"][1] - p["neck"][1])), 2) for p in P]
+            keep["kinds"].setdefault(act, {})[F] = row
+    with open(os.path.join(OUT, "motion.json"), "w") as fh:
+        json.dump(keep, fh)
+    print(GM.summary(m))
 
 
 def write_specs(B, specs, world, written):

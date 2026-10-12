@@ -36,6 +36,16 @@ const HERO_RUN_PACE := 2.0
 ## Above this playback factor the walk cycle looks frantic. The rest of the
 ## pace goes into a slightly longer stride instead.
 const WALK_ANIM_CAP := 1.8
+## Body language the cells cannot carry (the walker has no one-shot start, stop
+## or turn clips): a facing change narrows the figure for a beat as he turns,
+## a start dips him into the first step, and a stop settles his weight. Scale
+## only, about the feet, so worn gear (children of the sprite) follows.
+const TURN_SEC := 0.12
+const TURN_NARROW := 0.30
+const START_SEC := 0.10
+const START_DIP := 0.035
+const SETTLE_SEC := 0.18
+const SETTLE_DIP := 0.04
 
 var zone: WorldZone
 var cell := Vector2i.ZERO
@@ -79,6 +89,9 @@ var _blend_left := 0.0
 ## Path point of the drawn pivot. The painted cells keep the planted foot on
 ## the pivot, so this is the path point itself.
 var _visual := Vector2.ZERO
+var _turn_left := 0.0
+var _start_left := 0.0
+var _settle_left := 0.0
 
 
 func _ready() -> void:
@@ -201,6 +214,8 @@ func face(dir: String) -> void:
 	var next := dir.to_lower()
 	if next != "n" and next != "e" and next != "s" and next != "w":
 		return
+	if next != facing:
+		_turn_left = TURN_SEC
 	facing = next
 	if not _moving:
 		_show_idle()
@@ -285,6 +300,8 @@ func walk(steps: Array[Vector2i], pace_name: String = "auto") -> void:
 		return
 	if steps.is_empty():
 		return
+	_start_left = START_SEC
+	_settle_left = 0.0
 	_queue = steps.duplicate()
 	_phase = 0.0
 	_rebuild(cell, _cell_pos(cell))
@@ -303,6 +320,9 @@ func _process(delta: float) -> void:
 func advance(delta: float) -> void:
 	delta *= playback
 	_tick_blend(delta)
+	_turn_left = maxf(0.0, _turn_left - delta)
+	_start_left = maxf(0.0, _start_left - delta)
+	_settle_left = maxf(0.0, _settle_left - delta)
 	if not _moving:
 		_idle_t += delta
 		_show_idle()
@@ -320,6 +340,7 @@ func advance(delta: float) -> void:
 		_visual = position
 		z_index = _z_for(cell)
 		_bob = 0.0
+		_settle_left = SETTLE_SEC
 		_show_idle()
 		arrived.emit(cell)
 		return
@@ -594,6 +615,7 @@ func _sync_facing(_force: bool) -> void:
 	var want := _facing_ahead()
 	if want == "" or want == facing:
 		return
+	_turn_left = TURN_SEC
 	facing = want
 	_apply_strip_speed()
 
@@ -643,7 +665,7 @@ func _apply_gait(root: Vector2) -> void:
 	position = _visual
 	var sc: float = _strips.draw_scale(gait, facing)
 	_apply_pivot(_strips.draw_pivot(gait, facing))
-	_shown_kind = "walk"
+	_shown_kind = _strips.kind_of(gait)
 	_present(tex, true, Rect2(frame * cell_size.x, 0, cell_size.x, cell_size.y), Vector2(sc, sc), Vector2.ZERO, _strips.flipped(facing))
 	queue_redraw()
 
@@ -697,11 +719,27 @@ func _present(tex: Texture2D, region_on: bool, region: Rect2, sc: Vector2, foot:
 	_sprite.region_enabled = region_on
 	if region_on:
 		_sprite.region_rect = region
-	_sprite.scale = sc
+	_sprite.scale = sc * body_scale()
 	_sprite.position = foot
 	_shown_region = region
 	_sync_gear()
 	_sync_rim()
+
+
+## Scale on top of the draw scale for the turn, start and settle beats (1, 1 at rest).
+func body_scale() -> Vector2:
+	var s := Vector2.ONE
+	if _turn_left > 0.0:
+		s.x *= 1.0 - TURN_NARROW * sin(PI * (1.0 - _turn_left / TURN_SEC))
+	if _start_left > 0.0:
+		var u := sin(PI * (1.0 - _start_left / START_SEC))
+		s.y *= 1.0 - START_DIP * u
+		s.x *= 1.0 + START_DIP * 0.5 * u
+	if _settle_left > 0.0:
+		var v := sin(PI * (1.0 - _settle_left / SETTLE_SEC))
+		s.y *= 1.0 - SETTLE_DIP * v
+		s.x *= 1.0 + SETTLE_DIP * 0.5 * v
+	return s
 
 
 func _sync_gear() -> void:

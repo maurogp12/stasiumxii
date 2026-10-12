@@ -3,8 +3,10 @@ extends RefCounted
 ## Loads one world hero: the painted walk and idle of a class
 ## (`units/painted_looks.gd`, built by build_tools/pc_characters).
 ##
-## Gaits: walk and run share the painted walk sheet; run plays it faster with
-## a longer stride. idle is the painted idle loop. Every gait has the four
+## Gaits: walk, run and idle. A class whose specs have a "run" kind (the
+## visible-gear base, built with its own run cycle) runs on that sheet; every
+## other class runs on the walk sheet, played faster with a longer stride.
+## idle is the painted idle loop. Every gait has the four
 ## facings n, e, s, w. e (down-right) is the art S sheet and n (up-right) the
 ## art E sheet; s and w draw those sheets mirrored (`flipped`), so only two
 ## sheets per kind are in memory. Only the class passed to load_class loads.
@@ -42,7 +44,10 @@ func load_class(id: String) -> void:
 	pivot = _offset_for(_cell, _cell_pivot)
 	if _world.is_empty():
 		return
-	for kind in ["walk", "idle"]:
+	var kinds := ["walk", "idle"]
+	if not Painted.spec(class_id, "run").is_empty():
+		kinds.append("run")
+	for kind in kinds:
 		var art := {}
 		for letter in ["S", "E"]:
 			var tex := Painted.sheet(class_id, kind, letter)
@@ -57,7 +62,16 @@ static func _offset_for(cell: Vector2i, ground: Vector2i) -> Vector2:
 
 
 func _kind(gait: String) -> String:
-	return "idle" if gait == "idle" else "walk"
+	if gait == "idle":
+		return "idle"
+	if gait == "run" and (_sheets.get("run", {}) as Dictionary).size() == 2:
+		return "run"
+	return "walk"
+
+
+## The sheet kind a gait plays: "run" only when the class has its own run sheet.
+func kind_of(gait: String) -> String:
+	return _kind(gait)
 
 
 func has_gait(gait: String) -> bool:
@@ -112,7 +126,7 @@ func draw_pivot(_gait: String, dir: String) -> Vector2:
 
 
 func frame_count(gait: String, _dir: String = "s") -> int:
-	return int(_count.get(_kind(gait), 1))
+	return int(_count.get(_kind(gait), _count.get("walk", 1)))
 
 
 func fps_of(gait: String, _dir: String = "s") -> float:

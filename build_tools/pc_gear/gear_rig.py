@@ -42,7 +42,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import gear_cut as GC  # noqa: E402
 
-KINDS = ("walk", "idle", "attack", "skill", "hit", "death")
+KINDS = ("walk", "run", "idle", "attack", "skill", "hit", "death")
 
 
 def load_rig(work: str):
@@ -58,7 +58,11 @@ def load_rig(work: str):
     for F in "SE":
         R.head_top_t(F)
     add_walk(R, tree)
-    patch_walk_legs(R, tree)
+    if os.environ.get("GEAR_MOTION", "1") == "0":
+        patch_walk_legs(R, tree)        # the pre-motion-pass walk (review "before" only)
+    else:
+        import gear_motion
+        gear_motion.apply(R, tree)
     return R
 
 
@@ -367,6 +371,9 @@ def render_all(work: str, strips_wanted, acts):
         groups = [g for g in groups if g in strips_wanted or g.startswith("base_")]
     sets = {g: PartSet(R, os.path.join(parts, g)) for g in groups}
     frames_root = os.path.join(work, "frames")
+    os.makedirs(frames_root, exist_ok=True)
+    # cell px the ground moves under a planted foot per cell, per facing and gait (the build's gait numbers)
+    json.dump({f"{F}_{g}": v for (F, g), v in getattr(R, "GROUND_ADV", {}).items()}, open(os.path.join(frames_root, "_ground.json"), "w"))
     stats = {}
     legs_metrics = {}
     for F in "SE":
@@ -430,8 +437,16 @@ def render_all(work: str, strips_wanted, acts):
             base_full = None
             outs = sorted(names)
             print(F, act, len(outs), flush=True)
+    # a partial render (--acts) keeps the other kinds' numbers
+    lp = os.path.join(frames_root, "_legs.json")
+    if os.path.exists(lp) and set(acts) != set(KINDS):
+        old = json.load(open(lp))
+        for F, kinds in old.items():
+            for kd, rows in kinds.items():
+                if kd not in acts:
+                    legs_metrics.setdefault(F, {})[kd] = rows
     json.dump(stats, open(os.path.join(frames_root, "_stats.json"), "w"), indent=1)
-    json.dump(legs_metrics, open(os.path.join(frames_root, "_legs.json"), "w"))
+    json.dump(legs_metrics, open(lp, "w"))
     return stats
 
 

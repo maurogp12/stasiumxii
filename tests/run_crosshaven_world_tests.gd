@@ -114,7 +114,8 @@ func _test_hero_performance(w: Node2D) -> void:
 	check(w.settings.performance, "performance mode is on")
 	for gait in ["walk", "run", "idle"]:
 		for dir in ["n", "e", "s", "w"]:
-			check(w.walker._strips.texture(gait, dir) != null and w.walker.frame_count(gait, dir) == 12, "performance mode: %s %s keeps the 12-cell painted sheet" % [gait, dir])
+			var cells := Painted.frame_count(str(w.walker.class_id), w.walker._strips.kind_of(gait))
+			check(w.walker._strips.texture(gait, dir) != null and w.walker.frame_count(gait, dir) == cells, "performance mode: %s %s keeps the %d-cell painted sheet" % [gait, dir, cells])
 	check(str(w.walker.class_id) == cls, "performance mode keeps the hero class")
 	var zone: WorldZone = w.zone
 	w.walker.place(zone, zone.spawn)
@@ -161,13 +162,19 @@ func _test_strips(w: Node2D) -> void:
 			# (visible gear) when the class draws one.
 			if str(path).get_base_dir() != Painted.sheet_path(cls, "walk", "S").get_base_dir():
 				other += 1
-	check(loaded == 4 and other == 0, "the world loads only the hero's walk and idle sheets (%d loaded, %d other)" % [loaded, other])
+	# walk and idle, S and E, plus the run when the class has its own run sheet
+	var want := 6 if w.walker._strips.kind_of("run") == "run" else 4
+	check(loaded == want and other == 0, "the world loads only the hero's walk, idle (and run) sheets (%d loaded, %d other)" % [loaded, other])
 	var spec: Dictionary = Painted.world(cls)
 	for gait in ["walk", "run", "idle"]:
 		for dir in ["n", "e", "s", "w"]:
-			check(w.walker.frame_count(gait, dir) == 12, "%s %s is the 12-cell painted sheet" % [gait, dir])
+			var cells := Painted.frame_count(cls, w.walker._strips.kind_of(gait))
+			check(w.walker.frame_count(gait, dir) == cells and cells >= 12, "%s %s is the %d-cell painted sheet" % [gait, dir, cells])
 			check(w.walker._strips.texture(gait, dir) != null, "%s %s has a sheet" % [gait, dir])
-	check(w.walker._strips.texture("run", "e") == w.walker._strips.texture("walk", "e"), "run plays the walk sheet")
+	if w.walker._strips.kind_of("run") == "run":
+		check(w.walker._strips.texture("run", "e") == Painted.sheet(cls, "run", "S") and w.walker._strips.texture("run", "e") != w.walker._strips.texture("walk", "e"), "run plays its own run sheet")
+	else:
+		check(w.walker._strips.texture("run", "e") == w.walker._strips.texture("walk", "e"), "run plays the walk sheet")
 	check(is_equal_approx(w.walker.fps_of("walk"), float(spec["walk"]["fps"])), "walk fps is the built number")
 	check(is_equal_approx(w.walker.fps_of("run"), float(spec["run"]["fps"])), "run fps is the built number")
 	check(w.walker.fps_of("run") > w.walker.fps_of("walk"), "run plays faster than the walk")

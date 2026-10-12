@@ -3659,7 +3659,8 @@ func _movie_gear_walk(close: float = 0.0) -> void:
 		await get_tree().create_timer(1.0).timeout
 		for dir in ["e", "s", "w", "n"]:
 			await _cardinal(dir, 4 if pace == "walk" else 6, pace)
-			await get_tree().create_timer(0.4).timeout
+			# the close cut holds each stop long enough to see the settle and the idle
+			await get_tree().create_timer(1.2 if close > 0.0 else 0.4).timeout
 	walker.face("s")
 	await get_tree().create_timer(1.5).timeout
 	_mark("end")
