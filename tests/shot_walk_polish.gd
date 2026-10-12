@@ -230,7 +230,7 @@ func _progress(sample: Dictionary, src: Vector2, span: Vector2) -> float:
 
 func _rise_gap(run: Array[Dictionary], src_cell: Vector2i, dst_cell: Vector2i) -> Dictionary:
 	var dst: Vector2 = _board._cell_to_local(dst_cell)
-	var low_y := dst.y + (_board._elev_at(dst_cell) - _board._elev_at(src_cell)) * BoardVisualSort.ELEVATION_PIXELS
+	var low_y: float = dst.y + (float(_board._elev_at(dst_cell)) - float(_board._elev_at(src_cell))) * BoardVisualSort.ELEVATION_PIXELS
 	var y_above := -1.0
 	var x_hold := -1.0
 	var planted_x := 9999.0
