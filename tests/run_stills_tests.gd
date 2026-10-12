@@ -4,6 +4,7 @@ extends SceneTree
 ## forge / socket / online carry, and one fight check per Still per mode.
 ## Run: godot --headless --path . -s res://tests/run_stills_tests.gd
 
+const SIM_SCRIPT := preload("res://backend/combat_sim.gd")
 const TEST_STILL := "user://test_stills_vault.json"
 const TEST_BAG := "user://test_stills_bag.json"
 const TEST_HERO := "user://test_stills_hero.json"
@@ -46,6 +47,8 @@ func _run() -> void:
 	_test_screen()
 	_test_card_lines()
 	_test_still_action_button()
+	_test_still_target_rules()
+	await _test_still_target_board()
 	_wipe()
 	print("Stills tests: %d passed, %d failed" % [_passed, _failed])
 	quit(1 if _failed > 0 else 0)
@@ -816,6 +819,182 @@ func _test_still_action_button() -> void:
 	eq(hud._use_still_button.visible, false, "it stays gone for the rest of the match")
 	net.free()
 	hud.queue_free()
+
+
+## Bound and Mirror use the same Chebyshev count as every other range
+## (4 is legal, 5 is not). A diagonal of 4 is not Manhattan 8.
+## The bar text is the short coach, local and on the host sim.
+func _test_still_target_rules() -> void:
+	eq(SIM_SCRIPT.chebyshev(Vector2i(0, 0), Vector2i(4, 4)), 4, "a diagonal of 4 tiles is Chebyshev 4")
+	eq(SIM_SCRIPT.chebyshev(Vector2i(7, 9), Vector2i(7, 5)), 4, "four steps on one axis is 4")
+	eq(SIM_SCRIPT.chebyshev(Vector2i(7, 9), Vector2i(7, 3)), 6, "six steps on one axis is 6")
+	var spots := [
+		Vector2i(5, 5), Vector2i(9, 5), Vector2i(9, 9), Vector2i(1, 1), Vector2i(5, 10), Vector2i(12, 12),
+	]
+	_sim.reset_match({
+		"team_size": 3,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["bastion", "ironjaw", "mender", "gloam", "kestrel", "kestrel"],
+		"positions": spots,
+		"seat_gear": {0: _gear("bound_hour", "intact")},
+	})
+	eq(str(_u(2).get("name", "")), "Mender", "the ally's name is Mender")
+	eq(SIM_SCRIPT.chebyshev(_u(0)["pos"], _u(2)["pos"]), 4, "Mender stands 4 tiles away")
+	var offered := false
+	var enemy_offered := false
+	var far_offered := false
+	for intent in _sim.legal_intents(0):
+		if str(intent.get("type", "")) != "use_still":
+			continue
+		var who := int(intent.get("target_seat", -1))
+		if who == 2:
+			offered = true
+		if who == 1:
+			enemy_offered = true
+		if who == 4:
+			far_offered = true
+	eq(offered, true, "Bound Hour offers the ally at 4 tiles")
+	eq(enemy_offered, false, "Bound Hour does not offer an enemy")
+	eq(far_offered, false, "Bound Hour does not offer an ally at 5 tiles")
+	var diagonal: Dictionary = _sim.submit({"type": "use_still", "seat": 0, "target_seat": 2})
+	eq(bool(diagonal.get("ok", false)), true, "Chebyshev 4, including a diagonal, binds")
+	eq(str(_u(0).get("bound_name", "")), "Mender", "the bind names Mender")
+	_sim.reset_match({
+		"team_size": 3,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["bastion", "ironjaw", "mender", "gloam", "kestrel", "kestrel"],
+		"positions": spots,
+		"seat_gear": {0: _gear("bound_hour", "intact")},
+	})
+	var enemy: Dictionary = _sim.submit({"type": "use_still", "seat": 0, "target_seat": 1})
+	eq(bool(enemy.get("ok", false)), false, "an enemy is not a Bound Hour target")
+	eq(str(enemy.get("reason", "")), "not_ally", "the reason is not an ally")
+	eq(CombatHUD.coach_hint(str(enemy.get("snapshot", {}).get("coach", ""))), "not an ally", "the bar says not an ally")
+	eq(bool(_u(0).get("still_ready", false)), true, "a refused bind does not spend the Still")
+	var far: Dictionary = _sim.submit({"type": "use_still", "seat": 0, "target_seat": 4})
+	eq(str(far.get("reason", "")), "out_of_range", "5 tiles is out of range")
+	eq(CombatHUD.coach_hint(str(far.get("snapshot", {}).get("coach", ""))), "too far", "the bar says too far")
+	eq(str(far.get("snapshot", {}).get("coach", "")).contains("illegal"), false, "a far ally is not an illegal move")
+	var net: Node = (load("res://backend/net_session.gd") as Script).new()
+	net.attach_sim(_sim)
+	net.enter_host_offline()
+	var online_far: Dictionary = net.submit_for_seat({"type": "use_still", "target_seat": 4}, 0)
+	eq(str(online_far.get("reason", "")), "out_of_range", "the server says 5 tiles is too far")
+	eq(CombatHUD.coach_hint(str(online_far.get("snapshot", {}).get("coach", ""))), "too far", "the server coach is too far")
+	var online_enemy: Dictionary = net.submit_for_seat({"type": "use_still", "target_seat": 1}, 0)
+	eq(str(online_enemy.get("reason", "")), "not_ally", "the server refuses an enemy bind")
+	eq(CombatHUD.coach_hint(str(online_enemy.get("snapshot", {}).get("coach", ""))), "not an ally", "the server coach is not an ally")
+	var online_ok: Dictionary = net.submit_for_seat({"type": "use_still", "target_seat": 2}, 0)
+	eq(bool(online_ok.get("ok", false)), true, "the server binds an ally at 4 tiles")
+	eq(str(_u(0).get("bound_name", "")), "Mender", "the server bind names Mender")
+	net.free()
+	var mirror_spots := [Vector2i(5, 5), Vector2i(9, 9), Vector2i(6, 5), Vector2i(5, 11)]
+	_sim.reset_match({
+		"team_size": 2,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["kestrel", "ironjaw", "bastion", "gloam"],
+		"positions": mirror_spots,
+		"seat_gear": {0: _gear("mirror_hour", "intact")},
+	})
+	eq(SIM_SCRIPT.chebyshev(_u(0)["pos"], _u(1)["pos"]), 4, "the Mirror foe is 4 tiles away")
+	_u(1)["invisible"] = true
+	var unseen: Dictionary = _sim.submit({"type": "use_still", "seat": 0, "target_seat": 1})
+	eq(str(unseen.get("reason", "")), "invisible", "Mirror Hour refuses an invisible fighter")
+	eq(CombatHUD.coach_hint(str(unseen.get("snapshot", {}).get("coach", ""))), "not visible", "the bar says not visible")
+	var mirror_far: Dictionary = _sim.submit({"type": "use_still", "seat": 0, "target_seat": 3})
+	eq(str(mirror_far.get("reason", "")), "out_of_range", "Mirror Hour uses the same 4-tile range")
+	eq(CombatHUD.coach_hint(str(mirror_far.get("snapshot", {}).get("coach", ""))), "too far", "a far Mirror target says too far")
+	var mirror_ok: Dictionary = _sim.submit({"type": "use_still", "seat": 0, "target_seat": 2})
+	eq(bool(mirror_ok.get("ok", false)), true, "Mirror Hour swaps with a visible fighter inside 4")
+	net = (load("res://backend/net_session.gd") as Script).new()
+	net.attach_sim(_sim)
+	net.enter_host_offline()
+	_sim.reset_match({
+		"team_size": 2,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["kestrel", "ironjaw", "bastion", "gloam"],
+		"positions": mirror_spots,
+		"seat_gear": {0: _gear("mirror_hour", "intact")},
+	})
+	_u(1)["invisible"] = true
+	var online_hidden: Dictionary = net.submit_for_seat({"type": "use_still", "target_seat": 1}, 0)
+	eq(str(online_hidden.get("reason", "")), "invisible", "the server refuses an invisible Mirror target")
+	eq(CombatHUD.coach_hint(str(online_hidden.get("snapshot", {}).get("coach", ""))), "not visible", "the server coach is not visible")
+	var online_mirror: Dictionary = net.submit_for_seat({"type": "use_still", "target_seat": 2}, 0)
+	eq(bool(online_mirror.get("ok", false)), true, "the server swaps with a visible fighter inside 4")
+	net.free()
+
+
+## On the board: the Still pick highlights allies, hides walk cells, and a
+## tap on the fighter (cell or sprite) binds. An empty cell does not walk.
+func _test_still_target_board() -> void:
+	var packed: PackedScene = load("res://main.tscn")
+	var main := packed.instantiate()
+	root.add_child(main)
+	var board: Node = main.get_node("BoardView")
+	var guard := 0
+	while not bool(board.get("_booted")) and guard < 180:
+		await process_frame
+		guard += 1
+	truthy(bool(board.get("_booted")), "the board is up for a Still target pick")
+	if not bool(board.get("_booted")):
+		main.free()
+		return
+	var bastion := Vector2i(6, 8)
+	var mender := Vector2i(6, 4)
+	var ally := Vector2i(8, 7)
+	var enemy := Vector2i(10, 8)
+	var empty := Vector2i(7, 8)
+	_sim.reset_match({
+		"seed": 4,
+		"flat_board": true,
+		"team_size": 3,
+		"skip_deploy": true,
+		"classes": ["bastion", "ironjaw", "mender", "gloam", "kestrel", "kestrel"],
+		"positions": [bastion, enemy, mender, Vector2i(2, 2), ally, Vector2i(12, 12)],
+		"seat_gear": {0: _gear("bound_hour", "intact")},
+	})
+	board._rebuild_pawns()
+	board._refresh()
+	var hud: CombatHUD = board._hud
+	eq(hud._use_still_button.visible, true, "Bound Hour shows its button")
+	var walk_before := (board.tiles[empty] as BoardTile).highlight
+	eq(walk_before, "move", "the empty neighbor is a walk cell before the pick")
+	hud._use_still_button.pressed.emit()
+	eq(hud.still_aiming(), true, "the button arms the target pick")
+	eq(hud._selected_label.text.contains("tap a fighter"), true, "the bar asks for a fighter")
+	eq(hud._coach_label.text.contains("illegal"), false, "arming the pick clears a stale illegal-move line")
+	eq((board.tiles[mender] as BoardTile).highlight, "target", "Mender's cell is a highlighted target")
+	eq((board.tiles[ally] as BoardTile).highlight, "target", "the other ally inside 4 is highlighted")
+	eq((board.tiles[enemy] as BoardTile).highlight == "target", false, "an enemy inside 4 is not a Bound target")
+	eq((board.tiles[empty] as BoardTile).highlight == "move", false, "walk cells hide while picking a Still target")
+	var tile_pos: Vector2 = (board.tiles[mender] as BoardTile).position
+	eq(board._pick_local(tile_pos, true), mender, "a tap on Mender's cell selects her")
+	var pawn: Pawn = board.pawns_by_seat[2]
+	eq(board._pick_local(pawn.position + Vector2(0, -70), true), mender, "a tap on Mender's sprite selects her")
+	var stood: Vector2i = _u(0)["pos"]
+	board._handle_left_click(empty)
+	eq(_u(0)["pos"], stood, "an empty cell does not walk during the pick")
+	eq(str(_sim.snapshot().get("coach", "")).contains("illegal"), false, "an empty cell is not an illegal move")
+	eq(hud.still_aiming(), true, "the pick stays up after an empty tap")
+	board._handle_left_click(enemy)
+	eq(CombatHUD.coach_hint(hud._coach_label.text), "not an ally", "tapping the enemy says not an ally")
+	eq(hud.still_aiming(), true, "a bad target leaves the pick up")
+	eq(int(_u(0).get("bound_seat", -1)) < 0, true, "the enemy tap does not bind")
+	eq(hud.cancel_spell_selection(), true, "Back cancels the pick")
+	eq(hud.still_aiming(), false, "cancel leaves the Still unarmed")
+	eq((board.tiles[empty] as BoardTile).highlight, "move", "walk cells come back after cancel")
+	hud._use_still_button.pressed.emit()
+	board._handle_left_click(mender)
+	eq(str(_u(0).get("bound_name", "")), "Mender", "tapping Mender binds Bastion to her")
+	eq(hud.still_aiming(), false, "a successful bind leaves the pick")
+	eq(hud._kestrel_body.text.contains("Bound to Mender"), true, "Bastion's card says Bound to Mender")
+	eq((board.tiles[empty] as BoardTile).highlight, "move", "walk cells return once Bound Hour resolves")
+	main.free()
 
 
 func _wipe() -> void:

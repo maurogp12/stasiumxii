@@ -1075,8 +1075,12 @@ func select_walk() -> void:
 	spell_selected.emit("")
 
 
-## Esc / Walk-button cancel. Clears spell chrome only; right-click face is unchanged.
+## Esc / Walk-button cancel. Clears a Still target pick or spell chrome.
+## Right-click face is unchanged.
 func cancel_spell_selection() -> bool:
+	if _still_aim:
+		clear_still_aim()
+		return true
 	if _selected_spell == "":
 		return false
 	select_walk()
@@ -3037,9 +3041,12 @@ func still_aiming() -> bool:
 
 
 func clear_still_aim() -> void:
+	var was := _still_aim
 	_still_aim = false
 	_style_still_button(false)
 	_update_selected_label()
+	if was:
+		spell_selected.emit("")
 
 
 func _on_use_still_pressed() -> void:
@@ -3058,7 +3065,11 @@ func _on_use_still_pressed() -> void:
 	_still_aim = not _still_aim
 	if _still_aim:
 		_selected_spell = ""
-		spell_selected.emit("")
+		# A stale walk reject ("illegal move") must not sit under the pick.
+		if _coach_label != null:
+			_coach_label.text = ""
+			_coach_label.visible = false
+	spell_selected.emit("")
 	_style_still_button(_still_aim)
 	_update_selected_label()
 

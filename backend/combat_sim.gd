@@ -6520,7 +6520,7 @@ func _submit_use_still(intent: Dictionary, actor: Dictionary) -> Dictionary:
 	if int(target.get("seat", -1)) == int(actor.get("seat", -2)):
 		return _reject(intent, "no_target", "REJECT — pick another fighter.")
 	if chebyshev(actor["pos"], target["pos"]) > 4:
-		return _reject(intent, "out_of_range", "REJECT — that fighter is more than 4 tiles away.")
+		return _reject(intent, "out_of_range", "REJECT — too far")
 	if id == "mirror_hour":
 		return _still_mirror(intent, actor, target)
 	return _still_bind(intent, actor, target)
@@ -6563,7 +6563,7 @@ func _still_bleed(intent: Dictionary, actor: Dictionary) -> Dictionary:
 
 func _still_mirror(intent: Dictionary, actor: Dictionary, target: Dictionary) -> Dictionary:
 	if bool(target.get("invisible", false)):
-		return _reject(intent, "invisible", "REJECT — that fighter is not visible.")
+		return _reject(intent, "invisible", "REJECT — not visible")
 	var over := _still_over(actor)
 	var cost := 0 if over else 2
 	if int(actor.get("ap", 0)) < cost:
@@ -6596,7 +6596,7 @@ func _still_mirror(intent: Dictionary, actor: Dictionary, target: Dictionary) ->
 
 func _still_bind(intent: Dictionary, actor: Dictionary, target: Dictionary) -> Dictionary:
 	if not _allied(target, actor):
-		return _reject(intent, "not_ally", "REJECT — Bound Hour needs an ally.")
+		return _reject(intent, "not_ally", "REJECT — not an ally")
 	if int(actor.get("ap", 0)) < 2:
 		return _reject(intent, "not_enough_ap", "REJECT — Bound Hour needs 2 AP.")
 	actor["ap"] = int(actor["ap"]) - 2
