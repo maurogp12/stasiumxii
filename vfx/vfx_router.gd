@@ -204,6 +204,8 @@ static func _recipes_for_event(event: Dictionary) -> Array:
 			return _intercept_recipes(event)
 		"blend":
 			return _blend_recipes(event)
+		"trap":
+			return _trap_spring_recipes(event)
 		"magma":
 			var at := cell_of(event.get("to", Vector2i.ZERO))
 			return [_number(int(event.get("target_seat", -1)), at, "-%d MAGMA" % int(event.get("damage", 0)), "damage", 0.0, 1.0, "", Color(1.0, 0.42, 0.1))]
@@ -317,6 +319,36 @@ static func _blend_recipes(event: Dictionary) -> Array:
 	return out
 
 
+## A sprung snare has to read in one beat: burst and flash on the cell,
+## a snap ring, the "Trap!" label, and a short camera shake. The painted
+## snare_spring strip is added by choreography. Nothing here locks input.
+static func _trap_spring_recipes(event: Dictionary) -> Array:
+	var seat := int(event.get("target_seat", -1))
+	var cell := cell_of(event.get("to", Vector2i.ZERO))
+	var flash := _hit_flash(seat, cell, 0.0)
+	flash["chest"] = false
+	flash["px"] = 76.0
+	var label := _number(seat, cell, "Trap!", "trap", 0.0, 1.0, "", Color(0, 0, 0, 0))
+	label["rise_sec"] = 0.38
+	label["fade_sec"] = 0.12
+	label["lift_px"] = 36.0
+	return [
+		{
+			"id": "spark",
+			"block": 0.0,
+			"seat": seat,
+			"cell": cell,
+			"tint": VfxPalette.KESTREL,
+			"chest": false,
+			"amount": 14,
+		},
+		flash,
+		_ring(cell, VfxPalette.KESTREL, false, 0.28, 0.0, "crack"),
+		label,
+		{"id": "shake", "block": 0.0, "amplitude": 16.0, "duration": 0.22},
+	]
+
+
 static func _hit_recipes(event: Dictionary) -> Array:
 	var spell_id := str(event.get("spell", ""))
 	if spell_id == "nightfold":
@@ -356,7 +388,17 @@ static func _hit_recipes(event: Dictionary) -> Array:
 			"width": 4.0,
 		})
 	out.append_array(_resource_recipes(event, int(event.get("seat", -1)), cell_of(event.get("caster_cell", Vector2i.ZERO))))
-	if _wants_shake(event):
+	if bool(event.get("crit", false)) and int(event.get("damage", 0)) > 0:
+		# Punch when the blow lands, not at the start of the swing.
+		# A heavy crit uses this punch instead of the 4px board nudge.
+		out.append({
+			"id": "shake",
+			"block": 0.0,
+			"amplitude": 14.0,
+			"duration": 0.20,
+			"delay_spawn": ViewMotion.damage_resolve_sec(str(event.get("spell", ""))),
+		})
+	elif _wants_shake(event):
 		out.append({"id": "shake", "block": 0.0, "amplitude": VfxBudget.SHAKE_PX, "duration": VfxBudget.SHAKE_SEC})
 	return out
 
@@ -397,10 +439,29 @@ static func _damage_hit_recipes(event: Dictionary) -> Array:
 			spark["amount"] = clampi(8 + (marks - 1) * 4, 8, VfxBudget.SPARK_CAP)
 		out.append(spark)
 		var number_delay := float(spark.get("delay", 0.0))
-		out.append(_hit_flash(target_seat, cell, number_delay))
-		out.append(_damage_float(target_seat, cell, number_delay))
-		var damage_text := "%d CRIT" % damage if bool(event.get("crit", false)) else str(damage)
-		out.append(_number(target_seat, cell, damage_text, "damage", number_delay, _back_scale(event), _back_text(event, damage_text), _back_tint(event)))
+		var crit := bool(event.get("crit", false))
+		var flash := _hit_flash(target_seat, cell, number_delay)
+		var floater := _damage_float(target_seat, cell, number_delay)
+		if crit:
+			flash["px"] = 86.0
+			flash["alpha"] = 1.0
+			floater["px"] = VfxBudget.STAMP_FLOAT_PX * 1.4
+		out.append(flash)
+		out.append(floater)
+		if crit:
+			out.append(_ring(cell, VfxPalette.EMBER, false, 0.24, 0.0, "crack"))
+		var damage_text := ("CRIT %d" % damage) if crit else str(damage)
+		var pop := 1.35 if crit else _back_scale(event)
+		var kind := "crit" if crit else "damage"
+		# The back chevron still marks a backstab. The word stays CRIT, in gold.
+		var override := "" if crit else _back_text(event, damage_text)
+		var number_tint := Color(0, 0, 0, 0) if crit else _back_tint(event)
+		var label := _number(target_seat, cell, damage_text, kind, number_delay, pop, override, number_tint)
+		if crit:
+			label["rise_sec"] = 0.22
+			label["fade_sec"] = 0.14
+			label["lift_px"] = 28.0
+		out.append(label)
 		var back := _back_tag(event)
 		if not back.is_empty():
 			out.append(_chevron(target_seat, cell, event))
@@ -418,13 +479,22 @@ static func _damage_hit_recipes(event: Dictionary) -> Array:
 	return out
 
 
+static func _heal_number(seat: int, cell: Vector2i, healed: int, crit: bool) -> Dictionary:
+	if not crit:
+		return _number(seat, cell, "+%d" % healed, "heal", 0.0, 1.0, "", Color(0, 0, 0, 0))
+	var spec := _number(seat, cell, "CRIT +%d" % healed, "heal", 0.0, 1.45, "", Color(0, 0, 0, 0))
+	spec["rise_sec"] = 0.32
+	spec["fade_sec"] = 0.16
+	return spec
+
+
 static func _heal_recipes(event: Dictionary) -> Array:
 	var target_seat := int(event.get("target_seat", -1))
 	var cell := _target_cell(event)
 	var healed := int(event.get("healed", 0))
 	return [
 		{"id": "motes", "block": 0.0, "seat": target_seat, "cell": cell, "tint": VfxPalette.MENDER_CREAM, "chest": true},
-		_number(target_seat, cell, ("+%d CRIT" % healed) if bool(event.get("crit", false)) else ("+%d" % healed), "heal", 0.0, 1.0, "", Color(0, 0, 0, 0)),
+		_heal_number(target_seat, cell, healed, bool(event.get("crit", false))),
 	]
 
 

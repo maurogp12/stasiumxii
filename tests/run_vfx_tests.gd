@@ -38,6 +38,8 @@ func _run() -> void:
 	_test_lava_is_a_stub()
 	_test_burn_stun_heal_death_resource()
 	_test_shake_only_crush_and_aegis()
+	_test_crit_hit()
+	_test_trap_spring()
 	_test_hold_line_ambush_intercept_expire()
 	_test_support_and_absorb()
 	_test_stacks_and_lock_cap()
@@ -538,6 +540,152 @@ func _test_shake_only_crush_and_aegis() -> void:
 	truthy(_has(break_hit, "shake"), "Aegis Break shakes")
 	eq(_has(ROUTER.recipes_for([_damage("bash", 11)]), "shake"), false, "Bash does not shake")
 	eq(_has(ROUTER.recipes_for([_damage("detonate", 18)]), "shake"), false, "Detonate does not shake")
+
+
+## A crit is a bigger gold number, a harder flash, a small shake, and a
+## slightly longer hit-stop. A non-crit Detonate still does not shake.
+func _test_crit_hit() -> void:
+	var event := _damage("strike", 22)
+	event["crit"] = true
+	var recipes: Array = ROUTER.recipes_for([event])
+	var label: Dictionary = _first(recipes, "number")
+	eq(str(label.get("text", "")), "CRIT 22", "the crit number leads with CRIT")
+	eq(str(label.get("kind", "")), "crit", "the crit number uses the crit color")
+	eq(float(label.get("scale", 1.0)) > 1.3, true, "the crit number is larger than a normal hit")
+	eq(float(label.get("lift_px", 0.0)) >= 20.0, true, "the crit number sits above the victim")
+	eq(label.has("tint"), false, "a back hit does not replace the crit gold")
+	eq(float(label.get("rise_sec", 1.0)) + float(label.get("fade_sec", 1.0)) < 0.6, true, "the crit number is under 0.6s")
+	eq(float(label.get("block", 1.0)), 0.0, "the crit number does not lock input")
+	var flash: Dictionary = _sheet(recipes, "hit_flash")
+	eq(float(flash.get("px", 0.0)) > BUDGET.STAMP_HIT_PX, true, "a crit flash is stronger than a normal hit")
+	eq(float(_sheet(recipes, "damage_float").get("px", 0.0)) > BUDGET.STAMP_FLOAT_PX, true, "a crit impact stamp is larger")
+	eq(str(_first(recipes, "ring").get("style", "")), "crack", "a crit snaps its own ring")
+	var shake: Dictionary = _first(recipes, "shake")
+	eq(float(shake.get("duration", 1.0)) < 0.6, true, "the crit shake is brief")
+	eq(float(shake.get("amplitude", 0.0)) >= 12.0, true, "a crit punches the camera in screen pixels")
+	eq(is_equal_approx(float(shake.get("delay_spawn", -1.0)), ViewMotion.damage_resolve_sec("strike")), true, "the crit shake waits for the blow")
+	eq(float(shake.get("block", 1.0)), 0.0, "the crit shake does not lock input")
+	eq(_has(ROUTER.recipes_for([_damage("detonate", 18)]), "shake"), false, "a non-crit Detonate still does not shake")
+	var plain: Array = ROUTER.recipes_for([_damage("strike", 16)])
+	eq(str(_first(plain, "number").get("text", "")), "16", "a normal hit stays a plain number")
+	eq(_has(plain, "shake"), false, "a normal strike does not shake")
+	var colors: Dictionary = PALETTE.number_colors("crit")
+	eq(colors["top"], PALETTE.CRIT_TOP, "CRIT is hot gold")
+	eq((colors["top"] as Color).b < 0.45, true, "CRIT gold is not the cream damage color")
+	eq(int(colors["size"]) > BUDGET.NUMBER_SIZE, true, "CRIT is larger than a damage number")
+	var plans: Dictionary = ViewMotion.chrome_plans([event])
+	eq(bool(plans.get(1, {}).get("crit", false)), true, "the victim's flinch is marked as a crit")
+	eq(bool(plans.get(1, {}).get("force_knock", false)), true, "the crit flinch moves the body")
+	var steps: Array = ViewMotion.steps_for(plans.get(1, {}))
+	var hit_step := {}
+	for step in steps:
+		if str(step.get("kind", "")) == "hit":
+			hit_step = step
+	eq(is_equal_approx(float(hit_step.get("stop", 0.0)), ViewMotion.CRIT_HIT_STOP_SEC), true, "a crit holds for about 70ms")
+	eq(float(hit_step.get("stop", 0.0)) >= 0.06 and float(hit_step.get("stop", 0.0)) <= 0.08, true, "the crit hit-stop is 60–80ms")
+	eq(bool(hit_step.get("force_knock", false)), true, "the crit step pushes the body")
+	eq(is_equal_approx(ViewMotion.hit_sec(), ViewMotion.HIT_OUT_SEC + ViewMotion.HIT_STOP_SEC + ViewMotion.HIT_SHAKE_SEC + ViewMotion.HIT_RETURN_SEC), true, "a normal hit keeps the short stop")
+	var aim := Vector2(10, 0)
+	var span := ViewMotion.crit_motion_sec()
+	var hold_t := 0.0
+	for sample in 40:
+		var u := float(sample) / 39.0
+		if ViewMotion.crit_holding(u, span):
+			hold_t = u
+			break
+	eq(hold_t > 0.0, true, "the crit curve has a hold")
+	eq(ViewMotion.crit_recoil(hold_t, span, aim).length() > 16.0, true, "the crit stop holds a visible knock")
+	var stagger := Vector2.ZERO
+	for sample in 40:
+		var u := float(sample) / 39.0
+		var at := ViewMotion.crit_recoil(u, span, aim)
+		if at.y > stagger.y:
+			stagger = at
+	eq(stagger.y > 3.0, true, "the crit knock staggers")
+	eq(ViewMotion.crit_recoil(0.0, span, aim), Vector2.ZERO, "the crit knock starts on the tile")
+	eq(ViewMotion.crit_recoil(1.0, span, aim), Vector2.ZERO, "the crit knock ends on the tile")
+	var back_u := 0.0
+	for sample in 80:
+		var u := float(sample) / 79.0
+		if ViewMotion.crit_recover(u, span) > 0.0:
+			back_u = u
+			break
+	var home := ViewMotion.crit_recoil(back_u, span, aim)
+	var quarter := ViewMotion.crit_recoil(back_u + (1.0 - back_u) * 0.25, span, aim)
+	var hopped := ViewMotion.crit_recoil(back_u + (1.0 - back_u) * 0.5, span, aim)
+	eq(home.x - quarter.x < home.x * 0.25, true, "the return eases off instead of snapping")
+	eq(hopped.y < -4.0, true, "the return hops back onto the tile")
+	var view := FileAccess.get_file_as_string("res://board_view.gd")
+	truthy(view.contains("func punch_camera"), "the crit shake moves the camera, not the board")
+
+
+## A sprung snare is a short readable beat. The painted strip stays; the
+## burst, ring, label, and shake are the existing pools.
+func _test_trap_spring() -> void:
+	var event := {
+		"type": "trap",
+		"seat": 0,
+		"target_seat": 1,
+		"to": Vector2i(5, 4),
+		"damage": 6,
+		"pin": true,
+	}
+	var recipes: Array = ROUTER.recipes_for([event])
+	var spark: Dictionary = _first(recipes, "spark")
+	eq(spark.get("cell"), Vector2i(5, 4), "the trap burst sits on the sprung cell")
+	eq(bool(spark.get("chest", true)), false, "the trap burst is on the cell, not the chest")
+	eq(int(spark.get("amount", 0)) > 0, true, "the trap burst has sparks")
+	eq(float(spark.get("block", 1.0)), 0.0, "the trap burst does not lock input")
+	var flash: Dictionary = _sheet(recipes, "hit_flash")
+	eq(flash.is_empty(), false, "the trap flashes the cell")
+	eq(bool(flash.get("chest", true)), false, "the trap flash is on the cell")
+	eq(float(flash.get("life", 1.0)) < 0.6, true, "the trap flash is under 0.6s")
+	var ring: Dictionary = _first(recipes, "ring")
+	eq(str(ring.get("style", "")), "crack", "the trap snaps a crack ring")
+	eq(float(ring.get("life", 1.0)) < 0.6, true, "the trap ring is under 0.6s")
+	var label: Dictionary = _first(recipes, "number")
+	eq(str(label.get("text", "")), "Trap!", "the trap label reads Trap!")
+	eq(str(label.get("kind", "")), "trap", "the trap label uses the trap color")
+	var shown := float(label.get("rise_sec", 1.0)) + float(label.get("fade_sec", 1.0))
+	eq(shown > 0.45 and shown < 0.6, true, "the trap label stays up about half a second")
+	eq(float(label.get("lift_px", 0.0)) >= 30.0, true, "the trap label sits above the victim")
+	eq(is_equal_approx(float(label.get("scale", 1.0)), 1.0), true, "the trap label is not popped over the board")
+	var shake: Dictionary = _first(recipes, "shake")
+	eq(float(shake.get("duration", 1.0)) < 0.6, true, "the trap shake is brief")
+	eq(float(shake.get("amplitude", 0.0)) > 0.0, true, "the trap shakes the camera")
+	eq(float(shake.get("block", 1.0)), 0.0, "the trap shake does not lock input")
+	var sprung := false
+	for item in recipes:
+		if str(item.get("id", "")) == "spell_fx" and str(item.get("path", "")).contains("snare_spring"):
+			sprung = true
+	eq(sprung, true, "the existing snare snap strip still plays")
+	var colors: Dictionary = PALETTE.number_colors("trap")
+	eq(colors["top"], PALETTE.TRAP_WORD, "Trap! is warm white")
+	eq(colors["bottom"], PALETTE.TRAP_WORD_GOLD, "Trap! fills in gold")
+	eq(int(colors["size"]), 21, "Trap! is about 1.5x the 14px word")
+	var plans: Dictionary = ViewMotion.chrome_plans([event])
+	var victim: Dictionary = plans.get(1, {})
+	eq(bool(victim.get("hit", false)), true, "the victim recoils when the trap springs")
+	eq(bool(victim.get("force_knock", false)), true, "the trap flinch moves the body")
+	var recoil := ViewMotion.recoil_offset(0.4, Vector2(10, 0), 16.0)
+	eq(recoil.length() > 12.0, true, "the trap recoil is a visible knock")
+	eq(ViewMotion.recoil_offset(0.6, Vector2(10, 0), 16.0).y > 2.0, true, "the trap recoil staggers")
+	eq(ViewMotion.recoil_offset(0.0, Vector2(10, 0), 16.0), Vector2.ZERO, "the recoil starts at the feet")
+	eq(ViewMotion.recoil_offset(1.0, Vector2(10, 0), 16.0), Vector2.ZERO, "the recoil ends at the feet")
+	eq(is_equal_approx(float(victim.get("contact", -1.0)), 0.0), true, "the trap flinch starts on the landing")
+	eq(plans.has(0), false, "the trap owner does not flinch")
+	var art: Script = load("res://vfx/spell_art.gd")
+	var tokens: Dictionary = art.linger_specs({
+		"trap_tiles_visible": [{"pos": Vector2i(5, 4), "owner_seat": 0, "turns": 2}],
+	})
+	var token: Dictionary = tokens.get("snare_token:5,4", {})
+	eq(token.is_empty(), false, "an armed trap keeps the owner's token")
+	eq(str(token.get("path", "")).ends_with("snare_trap_token.png"), true, "the armed token is the existing trap art")
+	eq(float(token.get("scale", 0.0)) >= 0.5, true, "the armed token is large enough to read on a phone tile")
+	var view := FileAccess.get_file_as_string("res://board_view.gd")
+	truthy(view.contains("_spring_deferred_traps"), "the board springs the trap when the foot lands")
+	truthy(view.contains("func punch_camera"), "the trap shake moves the camera, not the board")
+	truthy(view.contains("_deferred_traps"), "the board holds the spring until the landing")
 	var crush_miss: Array = ROUTER.recipes_for([{
 		"type": "miss",
 		"spell": "crush",
