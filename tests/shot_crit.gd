@@ -168,6 +168,9 @@ func _open_log() -> void:
 func _dump_frame() -> void:
 	if _clip_i >= CLIP_MAX:
 		return
+	if OS.get_environment("CRIT_NODUMP") == "1":
+		_clip_i += 1
+		return
 	var image := root.get_texture().get_image()
 	if image == null:
 		return

@@ -2212,20 +2212,22 @@ func _await_view_motions() -> void:
 	_view_locked = true
 	if _hud != null:
 		_hud.set_locked(true)
-	var started := Time.get_ticks_msec()
 	var budget_sec := VIEW_MOTION.ACTION_LOCK_MAX
 	if _ambush_open_seat >= 0 or (_ambush_arrival_tween != null and is_instance_valid(_ambush_arrival_tween)):
 		# Collapse + plant hold + slash is longer than the 0.6s one-shot lock.
 		# Cutting here used to settle the strike in the same beat as the snap.
 		budget_sec = maxf(budget_sec, VIEW_MOTION.ambush_sequence_sec())
-	var budget_ms := int(budget_sec * 1000.0)
-	while Time.get_ticks_msec() - started < budget_ms:
+	# Fight time, not wall time. A slow frame (a capture, a hitch) must not
+	# settle the flinch before the blow lands.
+	var elapsed := 0.0
+	while elapsed < budget_sec:
 		if not _motions_active():
 			break
 		await get_tree().process_frame
 		if not is_inside_tree():
 			return
-	if Time.get_ticks_msec() == started:
+		elapsed += get_process_delta_time()
+	if elapsed <= 0.0:
 		await get_tree().process_frame
 		if not is_inside_tree():
 			return
