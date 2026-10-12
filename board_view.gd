@@ -192,6 +192,7 @@ func _ready() -> void:
 	_hud.hub_requested.connect(_on_hub_requested)
 	_hud.unit_card_tapped.connect(_on_unit_card_tapped)
 	_hud.elements_requested.connect(_on_elements_requested)
+	_hud.gear_requested.connect(_on_gear_requested)
 	_hud.ready_requested.connect(_on_ready_requested)
 	_hud.aim_dragged.connect(_on_hud_aim_dragged)
 	_hud.zoom_step_requested.connect(_on_zoom_step)
@@ -1220,6 +1221,45 @@ func _on_elements_requested() -> void:
 	screen.closed.connect(_apply_prefight_elements)
 
 
+## Set, stance, and Still. Same deployment lock as Elements.
+func _on_gear_requested() -> void:
+	var snap: Dictionary = _sim().snapshot()
+	if not CombatHUD.is_deployment_phase(snap) or _hud == null:
+		return
+	if _hud.get_node_or_null("PrefightGear") != null:
+		return
+	var screen: PrefightGear = load("res://scenes/prefight_gear.gd").new()
+	screen.name = "PrefightGear"
+	screen.font = _hud._ui_font
+	screen.set_classes(_prefight_classes(snap))
+	_hud.add_child(screen)
+	screen.changed.connect(_on_prefight_gear_changed)
+
+
+func _on_prefight_gear_changed(class_id: String) -> void:
+	_push_prefight_loadout(class_id)
+
+
+## This phone's fighters who can still change a loadout. Online is one
+## seat. Hot-seat is every class on a side that is not ready yet.
+func _prefight_classes(snap: Dictionary) -> Array:
+	var local := CombatHUD.snap_local_seat(snap)
+	var ready: Dictionary = snap.get("ready", {})
+	var out: Array = []
+	for unit in snap.get("units", []):
+		if typeof(unit) != TYPE_DICTIONARY:
+			continue
+		var seat := int(unit.get("seat", -1))
+		if local >= 0 and seat != local:
+			continue
+		if local < 0 and bool(ready.get(CombatHUD.unit_team(unit), false)):
+			continue
+		var class_id := str(unit.get("class_id", ""))
+		if class_id != "" and not out.has(class_id):
+			out.append(class_id)
+	return out
+
+
 ## The class whose elements a pre-fight change is most likely for: this
 ## phone's seat online, else the first seat that is not ready yet.
 ## Snare Traps only the owner's side may see: this phone's seat online, else
@@ -1254,6 +1294,13 @@ func _deploying_class(snap: Dictionary) -> String:
 
 
 func _apply_prefight_elements() -> void:
+	_push_prefight_loadout("")
+
+
+## Push the saved loadout into the live deployment. `only_class` limits a
+## hot-seat edit to that fighter. A client resends. A listen-host broadcasts.
+## Koliseo keeps part stats at +0.
+func _push_prefight_loadout(only_class: String) -> void:
 	var snap: Dictionary = _sim().snapshot()
 	if not CombatHUD.is_deployment_phase(snap):
 		return
@@ -1261,16 +1308,27 @@ func _apply_prefight_elements() -> void:
 	if net != null and net.mode_name() == "client":
 		net.resend_local_gear()
 		return
+	if net != null and net.mode_name() == "host":
+		net.push_host_gear(only_class)
+		_paint_highlights()
+		return
 	var gear_bag := GearBag.load_saved()
 	var local := CombatHUD.snap_local_seat(snap)
 	for unit in snap.get("units", []):
+		if typeof(unit) != TYPE_DICTIONARY:
+			continue
 		var seat := int(unit.get("seat", -1))
 		if local >= 0 and seat != local:
 			continue
 		if local < 0 and not _TestLoadoutRef.ACTIVE:
 			# Plain hot-seat fights without gear or picks.
 			continue
-		var kit := gear_bag.fight_gear(true, str(unit.get("class_id", "")))
+		var class_id := str(unit.get("class_id", ""))
+		if only_class != "" and class_id != only_class:
+			continue
+		var kit := gear_bag.fight_gear(true, class_id)
+		if bool(unit.get("gear_flat", false)) or _TestLoadoutRef.ACTIVE:
+			kit["flatten_plus"] = true
 		_sim().set_seat_gear(seat, kit.duplicate(true))
 	_paint_highlights()
 

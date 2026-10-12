@@ -38,6 +38,7 @@ func _run() -> void:
 	_test_loadouts()
 	_test_crit_cap_and_stun()
 	_test_ap_mp_matrix()
+	_test_prefight_loadout()
 	_wipe()
 	print("Gear tests: %d passed, %d failed" % [_passed, _failed])
 	quit(1 if _failed > 0 else 0)
@@ -1412,6 +1413,145 @@ func _assert_ap_mp_row(sheet: Script, select: Script, row: Dictionary) -> void:
 	var online_gear: Dictionary = online["seat_gear"][0]
 	eq(bool(online_gear.get("flatten_plus", false)), true, "%s online payload sets the Ultra switch" % row["label"])
 	_eq_pools(class_id, other, online_gear, want, "%s online Koliseo" % row["label"])
+
+
+func _test_prefight_loadout() -> void:
+	_wipe()
+	var bag := GearBag.new()
+	for slot in GearBag.SLOTS:
+		bag.add_item("gatewarden", slot, 5)
+		bag.add_item("ironveil", slot, 2)
+		bag.add_item("sandhawk", slot, 5)
+	var low := bag.add_item("ironveil", "head", 0)
+	var shared := bag.add_item("ashmantle", "weapon", 5)
+	bag.equip(shared, "kestrel")
+	eq(str(bag.wear_family("kestrel", "gatewarden")["reason"]), "wrong_class", "Kestrel cannot wear Gatewarden")
+	eq(str(bag.wear_family("bastion", "sandhawk")["reason"]), "wrong_class", "Bastion cannot wear Sandhawk")
+	eq(str(bag.wear_family("bastion", "oathgrave")["reason"]), "no_pieces", "an empty family does not change the loadout")
+	eq(bag.equipped_item("weapon", "kestrel")["uid"], shared, "a refused set leaves the other class's piece")
+	var worn: Dictionary = bag.wear_family("bastion", "gatewarden")
+	eq(bool(worn["ok"]), true, "Bastion wears Gatewarden from the bag")
+	eq(int(worn["worn"]), 5, "all five Gatewarden slots fill")
+	eq(bag.worn_family("bastion"), "gatewarden", "the worn family is Gatewarden")
+	eq(int(bag.equipped_item("head", "bastion")["plus"]), 5, "the higher plus wins")
+	eq(bag.find(low) >= 0, true, "the lower plus stays in the bag")
+	eq(bag.equipped_item("weapon", "kestrel")["uid"], shared, "wear does not steal another class's piece")
+	var spare := bag.add_item("ashmantle", "weapon", 1)
+	var took: Dictionary = bag.wear_family("bastion", "ashmantle")
+	eq(bool(took["ok"]), true, "Bastion can wear the free Ashmantle copy")
+	eq(bag.equipped_item("weapon", "bastion")["uid"], spare, "the free copy is the one that moves")
+	eq(bag.equipped_item("weapon", "kestrel")["uid"], shared, "Kestrel keeps the Ashmantle weapon")
+	eq(bag.equipped_item("head", "bastion").is_empty(), true, "slots with no piece of the new set come off")
+	eq(bag.families_in_bag("bastion").has("gatewarden"), true, "Gatewarden is offered once it is back in the bag")
+	eq(bag.families_in_bag("bastion").has("sandhawk"), false, "another class's Ultra is not offered")
+	eq(bag.families_in_bag("kestrel")[0], "ashmantle", "shared sets come before class sets")
+	bag.wear_family("bastion", "gatewarden")
+	eq(bag.worn_family("bastion"), "gatewarden", "wearing the set again is clean")
+	var tie := GearBag.new()
+	for slot in ["weapon", "head"]:
+		tie.add_item("rustward", slot, 0)
+		tie.add_item("ironveil", slot, 0)
+	for slot in ["weapon", "head"]:
+		tie.equip(tie.add_item("rustward", slot, 1), "bastion")
+	# Two and two: the earlier family stays the worn name when counts match.
+	tie.equip(tie.add_item("ironveil", "chest", 1), "bastion")
+	tie.equip(tie.add_item("ironveil", "legs", 1), "bastion")
+	eq(tie.worn_family("bastion"), "rustward", "a tie keeps the earlier family")
+	bag.set_stance("ranged_guard")
+	bag.save()
+	var vault := StillVault.new()
+	vault.set_focus("bastion")
+	vault.socket = "gathered_sand"
+	vault.set_mode("intact")
+	vault.save()
+	var screen := PrefightGear.new()
+	screen.set_classes(["bastion", "kestrel"])
+	root.add_child(screen)
+	eq(screen.find_child("Class_bastion", true, false) != null, true, "a shared phone shows a class chip")
+	eq(screen.find_child("Set_gatewarden", true, false) != null, true, "Gatewarden is a set button")
+	eq(screen.find_child("Set_ironveil", true, false) != null, true, "Ironveil is a set button")
+	eq(screen.find_child("Set_sandhawk", true, false), null, "Sandhawk is hidden on Bastion")
+	var set_button := screen.find_child("Set_gatewarden", true, false) as Button
+	eq(set_button.custom_minimum_size.y >= 48, true, "a set button is a fat tap target")
+	eq(screen.find_child("Stance_neutral", true, false) != null, true, "Gatewarden shows Neutral")
+	eq(screen.find_child("Stance_ranged_guard", true, false) != null, true, "Gatewarden shows Ranged Guard")
+	eq((screen.find_child("StanceLine", true, false) as Label).text.contains("20%"), true, "the stance line names the far cut")
+	eq(screen.find_child("Still_intact", true, false) != null, true, "a socketed Still shows Intact")
+	eq(screen.find_child("Still_overwound", true, false) != null, true, "a socketed Still shows Overwound")
+	eq((screen.find_child("StillTitle", true, false) as Label).text.contains("Gathered Sand"), true, "the Still name is on the row")
+	eq((screen.find_child("StillLine", true, false) as Label).text.contains("10%"), true, "Intact uses the short line")
+	var hits: Array = []
+	screen.changed.connect(func(cid: String) -> void: hits.append(cid))
+	eq(bool(screen.choose_stance("neutral")["ok"]), true, "Neutral is one tap")
+	eq(GearBag.load_saved().stance_of(), "neutral", "the stance is saved")
+	eq((screen.find_child("StanceLine", true, false) as Label).text, "+4 Resist.", "Neutral says +4 Resist")
+	eq(bool(screen.choose_still("overwound")["ok"]), true, "Overwound is one tap")
+	eq(StillVault.load_saved().mode_of("bastion"), "overwound", "the Still mode is saved")
+	eq((screen.find_child("StillLine", true, false) as Label).text.contains("20%"), true, "Overwound uses the short line")
+	eq(bool(screen.wear_set("ironveil")["ok"]), true, "Ironveil is one tap")
+	eq(GearBag.load_saved().worn_family("bastion"), "ironveil", "the set tap is saved")
+	eq(screen.find_child("Stance_neutral", true, false), null, "stance hides when Gatewarden is off")
+	screen.pick_class("kestrel")
+	eq(screen.find_child("Set_sandhawk", true, false) != null, true, "Kestrel's chip shows Sandhawk")
+	eq(screen.find_child("Still_intact", true, false), null, "an empty socket hides Still")
+	eq(hits.size() >= 3, true, "each tap tells the fight")
+	screen.free()
+	var sim: Node = root.get_node("/root/CombatSim")
+	sim.reset_match({"seed": 1, "flat_board": true, "classes": ["kestrel", "bastion"]})
+	var gear := {
+		"worn": _worn("gatewarden", GearBag.SLOTS, 5),
+		"stance": "ranged_guard",
+		"still": {"id": "gathered_sand", "mode": "overwound"},
+	}
+	var net: Node = (load("res://backend/net_session.gd") as Script).new()
+	net.mode = net.Mode.DEDICATED
+	net.attach_sim(sim)
+	eq(net.accept_seat_gear(1, gear), true, "deployment accepts the other phone's loadout")
+	var unit: Dictionary = sim._unit_by_seat(1)
+	eq(str(unit["gate_stance"]), "ranged_guard", "the other phone's stance lands")
+	eq(int(unit["far_cut"]), 20, "Ranged Guard cuts far hits")
+	eq(int(unit["near_amp"]), 15, "Ranged Guard raises close hits")
+	eq(str(unit["still"]), "gathered_sand", "the Still id lands")
+	eq(str(unit["still_mode"]), "overwound", "the Still mode lands")
+	eq(bool(unit["gear_flat"]), true, "Koliseo marks the fight as flattened")
+	eq(bool(net._seat_gear[1].get("flatten_plus", false)), false, "the stored kit stays clean")
+	var snap: Dictionary = sim.snapshot()
+	var seen := ""
+	for row in snap.get("units", []):
+		if int(row.get("seat", -1)) == 1:
+			seen = str(row.get("gate_stance", ""))
+	eq(seen, "ranged_guard", "the broadcast snapshot carries the stance")
+	sim.reset_match({
+		"seed": 1, "flat_board": true, "skip_deploy": true,
+		"classes": ["kestrel", "bastion"],
+		"positions": [Vector2i(0, 0), Vector2i(3, 0)],
+		"seat_gear": {1: {"worn": _worn("gatewarden", GearBag.SLOTS, 5), "stance": "neutral", "flatten_plus": true}},
+	})
+	eq(net.accept_seat_gear(1, gear), false, "a loadout is refused once the fight starts")
+	eq(str(sim._unit_by_seat(1)["gate_stance"]), "neutral", "the started fight keeps Neutral")
+	net.mode = net.Mode.HOST
+	net.local_seat = 0
+	net.selected_class_id = "bastion"
+	bag = GearBag.load_saved()
+	bag.wear_family("bastion", "gatewarden")
+	bag.set_stance("ranged_guard")
+	bag.save()
+	sim.reset_match({"seed": 1, "flat_board": true, "classes": ["bastion", "kestrel"]})
+	eq(net.push_host_gear("bastion"), true, "the listen-host pushes its pre-fight loadout")
+	var host_unit: Dictionary = sim._unit_by_seat(0)
+	eq(str(host_unit["gate_stance"]), "ranged_guard", "the host's stance is on the fighter")
+	eq(int(host_unit["far_cut"]), 20, "the host's Ranged Guard is live")
+	eq(str(host_unit["still_mode"]), "overwound", "the host's Still mode is live")
+	eq(bool(net._seat_gear[0].get("flatten_plus", false)), false, "the host stores a clean kit")
+	sim.reset_match({
+		"seed": 1, "flat_board": true, "skip_deploy": true,
+		"classes": ["bastion", "kestrel"],
+		"positions": [Vector2i(0, 0), Vector2i(3, 0)],
+		"seat_gear": {0: {"worn": _worn("gatewarden", GearBag.SLOTS, 5), "stance": "neutral", "flatten_plus": true}},
+	})
+	eq(net.push_host_gear("bastion"), false, "the host cannot push after the fight starts")
+	eq(str(sim._unit_by_seat(0)["gate_stance"]), "neutral", "the host's started fight keeps Neutral")
+	net.free()
 
 
 func _eq_pools(class_id: String, other: String, gear: Dictionary, want: Vector2i, label: String) -> void:

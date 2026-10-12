@@ -1248,7 +1248,11 @@ func accept_seat_gear(seat: int, payload: Variant) -> bool:
 	var host_sim := sim()
 	if host_sim == null or not host_sim.has_method("set_seat_gear"):
 		return false
-	if not host_sim.set_seat_gear(seat, gear):
+	# The stored kit stays a clean fight payload. Koliseo applies +0 parts
+	# on a copy so the live fight matches the match-start flatten.
+	var live := gear.duplicate(true)
+	live["flatten_plus"] = true
+	if not host_sim.set_seat_gear(seat, live):
 		return false
 	_cache_and_broadcast({
 		"ok": true, "illegal": false, "reason": "", "events": [],
@@ -1286,6 +1290,29 @@ func _authority_gear_config(config: Dictionary) -> Dictionary:
 func resend_local_gear() -> void:
 	_gear_sent_seat = -1
 	_send_local_gear()
+
+
+## Listen-host: this phone's pre-fight set, stance, or Still. The stored kit
+## stays clean. The live fight flattens parts, same as a guest's accept.
+func push_host_gear(class_id: String = "") -> bool:
+	if mode != Mode.HOST:
+		return false
+	var seat := local_seat if local_seat >= 0 else HOST_SEAT
+	var use := class_id if class_id != "" else selected_class_id
+	var gear := GearBag.clean_fight_gear(GearBag.load_saved().fight_gear(true, use))
+	_seat_gear[seat] = gear
+	var host_sim := sim()
+	if host_sim == null or not host_sim.has_method("set_seat_gear"):
+		return false
+	var live := gear.duplicate(true)
+	live["flatten_plus"] = true
+	if not host_sim.set_seat_gear(seat, live):
+		return false
+	_cache_and_broadcast({
+		"ok": true, "illegal": false, "reason": "", "events": [],
+		"snapshot": host_sim.snapshot(),
+	})
+	return true
 
 
 func _send_local_gear() -> void:
