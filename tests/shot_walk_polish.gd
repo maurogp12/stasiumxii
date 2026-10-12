@@ -1,5 +1,7 @@
 extends SceneTree
 
+const WALK_MOTION := preload("res://units/view_motion.gd")
+
 ## Phone-fit walk. Window 2400×1080, logical view 1600×720.
 ## Ironjaw walks east, turns the corner by climbing one elevation, and plants.
 ## Record with --fixed-fps 60 so each dumped frame is one 60fps process frame.
@@ -9,10 +11,16 @@ var _dir := "/opt/cursor/artifacts/walk_motion"
 var _mode := "after"
 var _board: Node
 var _dump := false
+var _log_motion := false
 var _clip_i := 0
 var _saved := false
 var _watchdog := 0
 var _samples: Array[Dictionary] = []
+var _zoom_follow := false
+var _fit_zoom := 0.0
+var _follow_seat := -1
+var _latched: Pawn = null
+var _prev_pos := {}
 const CLIP_MAX := 480
 
 
@@ -45,12 +53,17 @@ func _process(_delta: float) -> bool:
 		push_error("walk shot timed out")
 		quit(1)
 		return true
-	if _dump:
+	if _zoom_follow and _board != null:
+		_hold_walker(false)
+	if _dump or _log_motion:
 		_note_sample()
+	if _dump:
 		_dump_frame()
 		if not _saved and _on_rise():
 			_save("walk_%s.png" % _mode)
 			_saved = true
+	elif _log_motion:
+		_clip_i += 1
 	return false
 
 
@@ -65,7 +78,12 @@ func _drive() -> void:
 	await _frames(6)
 	_setup()
 	if _mode == "after":
+		_zoom_follow = true
+		_hold_walker(true)
+		await _frames(3)
 		_dump = true
+	elif _mode == "log":
+		_log_motion = true
 	await _frames(20)
 	await _board._submit({"type": "move", "to": Vector2i(7, 5), "seat": 0})
 	await _frames(12)
@@ -115,61 +133,219 @@ func _setup() -> void:
 		hud._layout_chrome()
 
 
+## Twice the fit zoom, locked on whoever is walking, so the stride fills the frame.
+func _hold_walker(snap: bool) -> void:
+	if _board == null:
+		return
+	var cam: Camera2D = _board._camera
+	if cam == null:
+		return
+	if _fit_zoom <= 0.0:
+		_fit_zoom = maxf(cam.zoom.x, 0.05)
+	var z := _fit_zoom * 2.0
+	cam.zoom = Vector2(z, z)
+	_board._pan_limit = Vector2(8000.0, 8000.0)
+	var glide: Tween = _board._focus_tween
+	if glide != null and glide.is_valid():
+		glide.kill()
+	var pawn := _moving_pawn()
+	if pawn == null:
+		_board._flush_camera()
+		return
+	var goal := pawn.position + Vector2(0.0, -36.0)
+	if snap or pawn.seat != _follow_seat:
+		cam.position = goal
+		_follow_seat = pawn.seat
+	else:
+		cam.position = cam.position.lerp(goal, 0.45)
+	cam.offset = Vector2.ZERO
+	_board._flush_camera()
+
+
+func _moving_pawn() -> Pawn:
+	var best: Pawn = null
+	var best_d := 0.0
+	for seat in [0, 1]:
+		if not _board.pawns_by_seat.has(seat):
+			continue
+		var pawn: Pawn = _board.pawns_by_seat[seat]
+		var prev: Vector2 = _prev_pos.get(seat, pawn.position)
+		var traveled := pawn.position.distance_to(prev)
+		_prev_pos[seat] = pawn.position
+		if traveled > best_d:
+			best_d = traveled
+			best = pawn
+	if best != null and best_d > 0.15:
+		_latched = best
+	if _latched != null:
+		return _latched
+	return _pawn()
+
+
 func _pawn() -> Pawn:
 	if _board == null or not _board.pawns_by_seat.has(0):
 		return null
 	return _board.pawns_by_seat[0]
 
 
+func _pose(pawn: Pawn) -> Dictionary:
+	var frame := -1
+	var anim := ""
+	var sampler := pawn.walk_sampler()
+	if sampler != null:
+		frame = sampler.frame
+		anim = str(sampler.animation)
+	var draw := pawn.get_node_or_null("WalkDraw") as Sprite2D
+	var sprite := pawn.get_node_or_null("Sprite") as Sprite2D
+	var vis := pawn.position
+	var bob := 0.0
+	var draw_on := false
+	var sprite_on := sprite != null and sprite.visible
+	var tex: Texture2D = null
+	if draw != null:
+		vis = draw.global_position
+		bob = draw.position.length()
+		draw_on = draw.visible
+		tex = draw.texture
+	var walk_i := _cell_index(pawn, "walk", tex)
+	var idle_i := _cell_index(pawn, "idle", tex)
+	return {
+		"frame": frame,
+		"anim": anim,
+		"vis": vis,
+		"bob": bob,
+		"draw_on": draw_on,
+		"sprite_on": sprite_on,
+		"walk_i": walk_i,
+		"idle_i": idle_i,
+		"sig": _tex_sig(tex),
+	}
+
+
+func _cell_index(pawn: Pawn, kind: String, tex: Texture2D) -> int:
+	if tex == null:
+		return -1
+	var face := pawn.facing.strip_edges().to_lower()
+	var cells := StripLibrary.painted_cells(pawn.class_id, kind, face)
+	return cells.find(tex)
+
+
+func _tex_sig(tex: Texture2D) -> String:
+	if tex == null:
+		return "nil"
+	var image := tex.get_image()
+	if image == null or image.is_empty():
+		return "empty"
+	var w := image.get_width()
+	var h := image.get_height()
+	var s := 0
+	for i in 24:
+		var c := image.get_pixel((i * 17) % w, (i * 13) % h)
+		s = (s * 33 + int(c.r * 255.0) + int(c.g * 255.0) * 3 + int(c.b * 255.0) * 7 + int(c.a * 255.0) * 11) & 0x7fffffff
+	return "%dx%d:%d" % [w, h, s]
+
+
 func _note_sample() -> void:
 	var pawn := _pawn()
 	if pawn == null:
 		return
-	var frame := -1
-	var sampler := pawn.walk_sampler()
-	if sampler != null:
-		frame = sampler.frame
-	var draw := pawn.get_node_or_null("WalkDraw") as Sprite2D
-	var vis := pawn.position
-	var bob := 0.0
-	if draw != null:
-		vis = draw.global_position
-		bob = draw.position.length()
+	var pose := _pose(pawn)
 	_samples.append({
 		"i": _clip_i,
 		"seat": 0,
 		"pos": pawn.position,
-		"vis": vis,
-		"bob": bob,
+		"vis": pose["vis"],
+		"bob": pose["bob"],
 		"cell": pawn.grid_position,
-		"frame": frame,
+		"frame": pose["frame"],
+		"anim": pose["anim"],
+		"draw_on": pose["draw_on"],
+		"sprite_on": pose["sprite_on"],
+		"walk_i": pose["walk_i"],
+		"idle_i": pose["idle_i"],
+		"sig": pose["sig"],
 	})
+	if _log_motion:
+		print("LIVE seat=0 i=%d cell=%s anim=%s frame=%d walk_i=%d idle_i=%d draw=%s sprite=%s sig=%s" % [
+			_clip_i, pawn.grid_position, pose["anim"], int(pose["frame"]), int(pose["walk_i"]), int(pose["idle_i"]), pose["draw_on"], pose["sprite_on"], pose["sig"],
+		])
+		_maybe_save_step(pawn, pose)
 	_note_mender()
+
+
+var _step_saved: Dictionary = {}
+
+
+## Six stills of the first Ironjaw stride, cropped from the rendered frame.
+func _maybe_save_step(pawn: Pawn, pose: Dictionary) -> void:
+	if str(pose["anim"]) != "walk_e" or int(pose["walk_i"]) < 0:
+		return
+	if pawn.grid_position != Vector2i(4, 4):
+		return
+	var index := int(pose["frame"])
+	if index > 5 or _step_saved.has(index):
+		return
+	_step_saved[index] = true
+	var draw := pawn.get_node_or_null("WalkDraw") as Sprite2D
+	if draw == null or draw.texture == null:
+		return
+	var tex_image := draw.texture.get_image()
+	if tex_image != null:
+		tex_image.save_png(_dir.path_join("cell_%d.png" % index))
+	var image := root.get_texture().get_image()
+	if image == null:
+		return
+	var rect := draw.get_rect()
+	var xf := draw.get_global_transform_with_canvas()
+	var corners: Array[Vector2] = [
+		xf * rect.position,
+		xf * Vector2(rect.end.x, rect.position.y),
+		xf * rect.end,
+		xf * Vector2(rect.position.x, rect.end.y),
+	]
+	var min_p := corners[0]
+	var max_p := corners[0]
+	for corner in corners:
+		min_p = min_p.min(corner)
+		max_p = max_p.max(corner)
+	var pad := 24.0
+	var box := Rect2i(
+		Vector2i(int(floor(min_p.x - pad)), int(floor(min_p.y - pad))),
+		Vector2i(int(ceil(max_p.x - min_p.x + pad * 2.0)), int(ceil(max_p.y - min_p.y + pad * 2.0)))
+	)
+	box = box.intersection(Rect2i(Vector2i.ZERO, image.get_size()))
+	if box.size.x < 4 or box.size.y < 4:
+		print("CROP miss frame=%d box=%s canvas=%s img=%s" % [index, box, min_p, image.get_size()])
+		return
+	var crop := image.get_region(box)
+	crop.save_png(_dir.path_join("screen_%d.png" % index))
+	print("CROP frame=%d box=%s img=%s" % [index, box, image.get_size()])
 
 
 func _note_mender() -> void:
 	if _board == null or not _board.pawns_by_seat.has(1):
 		return
 	var pawn: Pawn = _board.pawns_by_seat[1]
-	var frame := -1
-	var sampler := pawn.walk_sampler()
-	if sampler != null:
-		frame = sampler.frame
-	var draw := pawn.get_node_or_null("WalkDraw") as Sprite2D
-	var vis := pawn.position
-	var bob := 0.0
-	if draw != null:
-		vis = draw.global_position
-		bob = draw.position.length()
+	var pose := _pose(pawn)
 	_samples.append({
 		"i": _clip_i,
 		"seat": 1,
 		"pos": pawn.position,
-		"vis": vis,
-		"bob": bob,
+		"vis": pose["vis"],
+		"bob": pose["bob"],
 		"cell": pawn.grid_position,
-		"frame": frame,
+		"frame": pose["frame"],
+		"anim": pose["anim"],
+		"draw_on": pose["draw_on"],
+		"sprite_on": pose["sprite_on"],
+		"walk_i": pose["walk_i"],
+		"idle_i": pose["idle_i"],
+		"sig": pose["sig"],
 	})
+	if _log_motion and str(pose["anim"]) != "":
+		print("LIVE seat=1 i=%d cell=%s anim=%s frame=%d walk_i=%d idle_i=%d draw=%s sprite=%s sig=%s" % [
+			_clip_i, pawn.grid_position, pose["anim"], int(pose["frame"]), int(pose["walk_i"]), int(pose["idle_i"]), pose["draw_on"], pose["sprite_on"], pose["sig"],
+		])
 
 
 ## The climb from (5, 4) onto (6, 4): the foot has finished the step and the
@@ -226,9 +402,13 @@ func _report() -> void:
 	lines.append("climb_n=%d y_above=%.3f x_hold=%.3f" % [climb.size(), climb_rise["y_above"], climb_rise["x_hold"]])
 	lines.append("foot_miss=%d flat_contacts=%s climb_contacts=%s" % [feet, flat_contacts, climb_contacts])
 	for sample in flat:
-		lines.append("F %d pawn=%s vis=%s bob=%.2f frame=%d" % [int(sample["i"]), sample["pos"], sample["vis"], float(sample["bob"]), int(sample["frame"])])
+		lines.append("F %d pawn=%s vis=%s bob=%.2f anim=%s frame=%d walk_i=%d idle_i=%d" % [int(sample["i"]), sample["pos"], sample["vis"], float(sample["bob"]), str(sample.get("anim", "")), int(sample["frame"]), int(sample.get("walk_i", -1)), int(sample.get("idle_i", -1))])
 	for sample in climb:
-		lines.append("C %d pawn=%s vis=%s bob=%.2f frame=%d" % [int(sample["i"]), sample["pos"], sample["vis"], float(sample["bob"]), int(sample["frame"])])
+		lines.append("C %d pawn=%s vis=%s bob=%.2f anim=%s frame=%d walk_i=%d idle_i=%d" % [int(sample["i"]), sample["pos"], sample["vis"], float(sample["bob"]), str(sample.get("anim", "")), int(sample["frame"]), int(sample.get("walk_i", -1)), int(sample.get("idle_i", -1))])
+	for sample in _samples:
+		if int(sample.get("walk_i", -1)) < 0 and str(sample.get("anim", "")) == "":
+			continue
+		lines.append("LIVE i=%d seat=%d cell=%s anim=%s frame=%d walk_i=%d idle_i=%d" % [int(sample["i"]), int(sample.get("seat", 0)), sample["cell"], str(sample.get("anim", "")), int(sample["frame"]), int(sample.get("walk_i", -1)), int(sample.get("idle_i", -1))])
 	var file := FileAccess.open(_dir.path_join("probe.txt"), FileAccess.WRITE)
 	if file != null:
 		file.store_string("\n".join(lines))
@@ -330,7 +510,7 @@ func _foot_misses(run: Array[Dictionary], tile_i: int) -> int:
 	var misses := 0
 	for sample in run:
 		var h := _progress(sample, src, span)
-		var want := ViewMotion.walk_cycle_frame(h, 12, tile_i, 0)
+		var want := WALK_MOTION.walk_cycle_frame(h, 12, tile_i, 0)
 		var got := int(sample["frame"])
 		if got < 0:
 			misses += 1
@@ -346,6 +526,6 @@ func _edge_contacts(run: Array[Dictionary], tile_i: int) -> String:
 		return "none"
 	var first := int(run[0]["frame"])
 	var last := int(run[run.size() - 1]["frame"])
-	var arrival := ViewMotion.walk_cycle_frame(1.0, 12, tile_i, 0)
-	var depart := ViewMotion.walk_cycle_frame(0.0, 12, tile_i, 0)
+	var arrival := int(WALK_MOTION.walk_cycle_frame(1.0, 12, tile_i, 0))
+	var depart := int(WALK_MOTION.walk_cycle_frame(0.0, 12, tile_i, 0))
 	return "depart=%d(%d) arrive=%d(%d)" % [first, depart, last, arrival]
