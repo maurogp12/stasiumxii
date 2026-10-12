@@ -2,7 +2,7 @@
 
 Status: **Proposed.** Branch `claude/pc-mobile-gear`, from `pc/world-zones` at `eb5bfb9`. Do not merge without Mauro.
 
-Mauro, 11 Oct 2026: "Crea estos sets en el juego de pc", then "Ok entonces utiliza los de mobil". For dungeon drops: "Sí, como en el móvil". Earlier: "las piezas deberian ser random para cada clase y los jugadores podran tener la opcion de venderlas o intercambiarlas".
+Mauro, 11 Oct 2026: "Crea estos sets en el juego de pc", then "Ok entonces utiliza los de mobil". For dungeon drops: "Sí, como en el móvil". 12 Oct 2026: "Un cofre", "Sin límite", and "Para eso tiene que haber mobs en el openworld… debe de haber zonas de lvl". Earlier: "las piezas deberian ser random para cada clase y los jugadores podran tener la opcion de venderlas o intercambiarlas".
 
 The PC game's 43 level-tier sets (`rewards.json` format 1, slots head / cape / belt / boots / amulet) are replaced by the mobile gear ladder: the sets, parts, fusing, AP/MP rules, crit and chest odds of `origin/mobile` commit 7035f8f (`backend/gear_bag.gd`, `koliseo_wallet.gd`, `combat_sim.gd`), the same source as the reference PDF `Sets_stasium.pdf`.
 
@@ -35,14 +35,15 @@ A chest rolls a tier, then a set of that tier at equal odds, then a slot (weapon
 | ★1-★2 | 100% | - | - |
 | ★3-★4 | 70% | 30% | - |
 | ★5 | 60% | 30% | 10% |
-| Boss | 50% | 30% | 20% |
+| Boss (mobile only) | 50% | 30% | 20% |
 
 The PC dungeon star is the Stasis star. Equal odds over sets make every class equally likely, which is Mauro's "random para cada clase". The hero's class does not steer a drop (the old `class_bias` 0.6 is gone).
 
 ### Mapping choices (Proposed)
 
-- **Dungeon win: two chests a run.** Room A's chest rolls the star row, room B's boss chest rolls the boss row (`rewards.json` `gear.dungeon_chests`). Both are paid on the win, as before; a loss pays nothing. Mobile pays one chest per Stasis clear (the boss row once room B is cleared) and caps it at 5 clears a UTC day. PC dungeons had no daily cap and keep none. Open: one chest or two, and whether PC wants a daily cap.
-- **World fights:** the old 3% part chance stays (`gear.world_chance`); the piece is a Normal-tier piece (Ashmantle and the five class Normal sets at equal odds). Before, world fights dropped a level-tier set of the zone; the zone table (`zones`) is gone.
+- **Dungeon win: one chest, at the boss** (Mauro, 12 Oct 2026: "Un cofre"). When room B is won the boss chest rolls the **chosen star's row** (★1-2 Normal, ★3-4 70/30, ★5 60/30/10); the run pays it on the win, a loss pays nothing (`rewards.json` `gear.dungeon_chests` = one row, room b, row star). Mobile's boss row (50/30/20) stays in `pc_gear.gd` for parity and is not used on PC. **No daily clear cap** (Mauro: "Sin límite"; `gear.daily_clear_cap` null); mobile caps Stasis chests at 5 clears a UTC day.
+- **World fights: the gear source before dungeons.** Mauro, 12 Oct 2026: "Para eso tiene que haber mobs en el openworld… debe de haber zonas de lvl". Heroes level and gear up from open-world monsters in the level zones before they enter a dungeon; those monsters are a separate package. The pipe is ready: `pc_gear.roll_world_drop(zone_level, rng)` (and `pc_rewards.roll_world_drop`, which `roll("world", ...)` uses) gives one Normal-tier piece at +0 (Ashmantle and the five class Normal sets at equal odds, then a weighted slot) with chance `gear.world_chance`, and stamps the drop with its `zone_level` for the zone and level-gap rules to come.
+  - **Proposed rate: 0.08 a win** (was 0.03). On the normal mix a hero wins about 14 world fights a level (`balance_inputs.json`: world fights are 50% of the XP at 3.5% of a step each), so about 140 over a 10-level band. 140 x 0.08 is about 11 Normal pieces; 2 of the 6 Normal sets fit a class (its own and Ashmantle), so about 4 wearable pieces, which fill about **3 slots** (`pc_gear.world_band_estimate`; `run_pc_gear_tests.gd` simulates 400 bands of 140 wins for a Kestrel: about 3 slots filled). That is the sim's ★1 hero: three Normal pieces at +0. Duplicates are fuse material.
 - **Missions:** the rank table stays. Its box share is a Mystery Box, its regular share a Normal-tier piece, its rare share a Rare-tier piece (`gear.mission_tiers`). The 10th mission's Mystery Box stays.
 - **Mystery Box:** the coin row stays; the part rows are a Normal-tier (regular) or Rare-tier (rare) piece (`gear.box_tiers`).
 - **Separate layer kept:** epics, relics, the Mystery Box chance by star and the dungeons' `star_drops` roll as before, after the chests. The ★5 Mystery Box stays guaranteed. Retired with the old sets: the ★5 guaranteed Rare part, the Rare-part roll by star (`dungeon_rare_by_stars`), the dungeon-set / class-set split, and the blight's tier-50 Rotting Elder pool in `star_drops`.
@@ -94,13 +95,12 @@ Every dungeon left its curve (★1 100%), so every star row was retuned (`data/w
 
 The win rate jumps in steps (one more hit to kill or be killed flips a class from 8/8 to 0/8), so a few stars sit a little off the curve: the abbey's ★4 (52) is close to its ★3 (55), the blight's ★1 is 90. Kestrel and Gloam lose most of the higher stars, as before.
 
-**A bare hero now loses.** With the new rows a hero with no gear wins the cellar's ★1 15% of the time and ★2 2% (gear `none`). A first-time hero has no gear. Open: a starter kit (for example an Ashmantle set at +0 when the class is picked), or a gentler cellar ★1 row. The dungeon scene suites now give their autoplay hero an Ashmantle +0 kit (`hero_gear` in the launch context).
+**A bare hero loses, by design.** With the new rows a hero with no gear wins the cellar's ★1 15% of the time and ★2 2% (gear `none`). Mauro, 12 Oct 2026: no starter set and no softer ★1; a hero levels and gears up in the open-world zones first (see World fights). The ★1 rows stay as tuned. The dungeon scene suites give their autoplay hero an Ashmantle +0 kit (`hero_gear` in the launch context).
 
 ## Open points
 
-- One chest or two per dungeon run; a daily chest cap like mobile's 5 clears.
 - The sim's gear assumption by star.
-- A bare hero loses the cellar ★1 (15%): a starter kit or a softer first row.
+- The open-world zone monsters that pay `roll_world_drop` (separate package), and the 0.08 world rate once they exist.
 - PC points (Mastery / Vitality / Swift / Resist) do not reach the dungeon fight; gear does.
 - Class base HP (mobile 75-110) is not ported; PC stays at a flat 80.
 - Ultra Koliseo-only lines have no PC Koliseo fight to work in yet.
