@@ -812,6 +812,9 @@ static func _is_shield_grant(event: Dictionary) -> bool:
 		return false
 	var spell_id := str(event.get("spell", ""))
 	if spell_id == "ward":
+		# A refused Ward still reports the shield he already had. Only a real gain draws the shell.
+		if event.has("shield_gained"):
+			return int(event.get("shield_gained", 0)) > 0
 		return int(event.get("shield", 0)) > 0
 	var def: Dictionary = SpellKits.spell(spell_id)
 	return int(def.get("shield", 0)) > 0 and int(event.get("shield", 0)) > 0

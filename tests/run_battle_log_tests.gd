@@ -299,17 +299,44 @@ func _assert_magma_shield_blocked() -> void:
 	_sim.submit({"type": "end_turn", "seat": 0})
 	eq(int(_sim._unit_by_seat(1).get("shield", 0)), 18, "the Burn tick leaves the old shield")
 	bastion = _sim._unit_by_seat(1)
-	bastion["aegis"] = 4
 	bastion["ap"] = 6
+	bastion["aegis"] = 4
+	var kept_ap := 6
+	var kept_aegis := 4
+	var offered := false
+	for intent in _sim.legal_intents(1):
+		if str(intent.get("spell", "")) == "ward":
+			offered = true
+	eq(offered, false, "a burning Bastion with no ally is not offered Ward")
 	var ward: Dictionary = _sim.submit({"type": "cast", "spell": "ward", "seat": 1, "to": bastion["pos"]})
-	eq(bool(ward.get("ok", false)), true, "Ward resolves on a burning Bastion")
+	eq(bool(ward.get("ok", false)), false, "Ward does not resolve when he is the only burning target")
+	eq(str(ward.get("reason", "")), "burning", "the log refusal reason is burning")
+	eq(int(_sim._unit_by_seat(1).get("ap", 0)), kept_ap, "the refused Ward keeps AP")
+	eq(int(_sim._unit_by_seat(1).get("aegis", 0)), kept_aegis, "the refused Ward keeps Aegis")
 	eq(int(_sim._unit_by_seat(1).get("shield", 0)), 18, "Ward adds nothing while he burns")
+	eq(_find(_sim.snapshot()["battle_log"], "shield_blocked").is_empty(), true, "an uncast Ward is not a blocked-shield line")
+	# An ally in range is shielded. The burning body is the blocked line, and he pays.
+	_sim.reset_match({
+		"seed": 3, "flat_board": true, "skip_deploy": true, "team_size": 2,
+		"classes": ["bastion", "kestrel", "mender", "gloam"],
+		"positions": [Vector2i(4, 4), Vector2i(10, 10), Vector2i(5, 4), Vector2i(12, 12)],
+		"bastion_aegis": 4,
+	})
+	var caster: Dictionary = _sim._unit_by_seat(0)
+	caster["burn_stacks"] = 3
+	caster["burn_remaining"] = 4
+	caster["shield"] = 12
+	var paid: Dictionary = _sim.submit({"type": "cast", "spell": "ward", "seat": 0, "to": caster["pos"]})
+	eq(bool(paid.get("ok", false)), true, "Ward resolves for the clean ally")
+	eq(int(_sim._unit_by_seat(2).get("shield", 0)), 20, "the clean ally is shielded")
+	eq(int(_sim._unit_by_seat(0).get("shield", 0)), 12, "the burning Bastion is not shielded")
 	var blocked := _find(_sim.snapshot()["battle_log"], "shield_blocked")
 	eq(str(blocked.get("source", "")), "Ward", "the blocked event names Ward")
-	eq(int(blocked.get("target_seat", -1)), 1, "the blocked event names Bastion's seat")
+	eq(int(blocked.get("target_seat", -1)), 0, "the blocked event names Bastion's seat")
 	var blocked_line := LOG.plain(blocked, _view(0))
 	eq(blocked_line, LOG.plain(blocked, _view(1)), "the blocked line matches on both seats: %s" % blocked_line)
 	eq(blocked_line, "Shield blocked (Ward). Bastion is burning.", "a refused shield is logged: %s" % blocked_line)
+	eq(blocked_line.contains(","), false, "the blocked line has no tile: %s" % blocked_line)
 
 
 func _open_duel(at: Vector2i, foe: Vector2i, classes: Array = ["ironjaw", "kestrel"]) -> void:

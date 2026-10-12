@@ -1,7 +1,7 @@
 extends SceneTree
 
-## 2400×1080 phone fit: Bastion burning with Ward refused, then the log open
-## on the Magma line and the blocked-shield line.
+## 2400×1080 phone fit: Bastion burning with Ward disabled (label "burning",
+## no cost, no dome), then the log open on the Magma line.
 ## xvfb-run -s "-screen 0 2560x1440x24" godot --rendering-driver opengl3 --path . -s res://tests/shot_magma_log.gd -- /opt/cursor/artifacts/magma_burn --mobile-frame
 
 var _dir := "/opt/cursor/artifacts/magma_burn"
@@ -48,18 +48,8 @@ func _process(_delta: float) -> bool:
 		if _frames < 16:
 			return false
 		var hud: CombatHUD = _board._hud
-		var sim: Node = root.get_node("/root/CombatSim")
-		var events: Array = sim.snapshot().get("battle_log", [])
-		var toast := CombatHUD.toast_for_events(_tail_since_ward(events))
-		hud.show_toast(toast)
 		hud.focus_fighter(1)
 		hud._layout_chrome()
-		_phase = "toast"
-		_frames = 0
-		return false
-	if _phase == "toast":
-		if _frames < 12:
-			return false
 		if not _shoot_board():
 			return true
 		# Paint the Magma tile so the log also has its 4 HP line, then open it.
@@ -67,7 +57,6 @@ func _process(_delta: float) -> bool:
 		if not _act(sim, {"type": "end_turn", "seat": 1}, "end bastion"):
 			return true
 		_settle()
-		var hud: CombatHUD = _board._hud
 		if not hud._log_open:
 			hud._toggle_log()
 		hud._layout_chrome()
@@ -97,11 +86,25 @@ func _shoot_board() -> bool:
 	var titles := ""
 	for title in hud._banner_titles:
 		titles += title.text + " | "
-	var toast := hud.toast_caption()
+	var coach := "" if hud._coach_label == null else hud._coach_label.text
+	var button: Button = hud._spell_buttons.get("ward") as Button
+	var badge := ""
+	var disabled := false
+	if button != null:
+		disabled = button.disabled
+		var badge_label := button.get_node_or_null("CooldownBadge") as Label
+		badge = "" if badge_label == null else badge_label.text
+	var sim: Node = root.get_node("/root/CombatSim")
+	var bastion: Dictionary = sim._unit_by_seat(1)
 	print("LEFT %s" % left.replace("\n", " | "))
 	print("RIGHT %s" % right.replace("\n", " | "))
 	print("TITLES %s" % titles)
-	print("TOAST %s" % toast)
+	print("COACH %s" % coach)
+	print("WARD disabled=%s badge=%s" % [disabled, badge])
+	print("BASTION ap=%s aegis=%s shield=%s burn=%s/%s" % [
+		bastion.get("ap", 0), bastion.get("aegis", 0), bastion.get("shield", 0),
+		bastion.get("burn_stacks", 0), bastion.get("burn_remaining", 0),
+	])
 	_frame("board")
 	if not titles.contains("Bastion"):
 		push_error("Bastion's name is not on a card")
@@ -109,8 +112,17 @@ func _shoot_board() -> bool:
 	if not left.contains("BURN"):
 		push_error("Bastion's card is not burning")
 		return false
-	if not toast.contains("Ward refused"):
-		push_error("Ward refused toast is missing")
+	if button == null or not disabled or badge != "burning":
+		push_error("Ward button is not disabled with the burning label")
+		return false
+	if coach.contains("Ward:") or coach.contains("+20") or coach.contains("shield on"):
+		push_error("the bottom bar still claims a shield landed: %s" % coach)
+		return false
+	if int(bastion.get("shield", 0)) != 0:
+		push_error("Bastion has a shield, so the dome would draw")
+		return false
+	if int(bastion.get("ap", 0)) != 6 or int(bastion.get("aegis", 0)) != 4:
+		push_error("Ward spent AP or Aegis")
 		return false
 	var image := root.get_texture().get_image()
 	var path := _dir.path_join("magma_ward.png")
@@ -143,8 +155,8 @@ func _shoot_log() -> bool:
 	if not body.contains("Magma: Ironjaw on Bastion, Burn 3 stacks, no shields while burning"):
 		push_error("log is missing the Magma line")
 		return true
-	if not body.contains("Shield blocked (Ward). Bastion is burning."):
-		push_error("log is missing the blocked shield line")
+	if body.contains("Ward:") or body.contains("+20 shield") or body.contains("wards "):
+		push_error("the log claims a shield landed")
 		return true
 	if not body.contains("Magma, 4 HP"):
 		push_error("log is missing the Magma tile line")
@@ -206,33 +218,23 @@ func _play() -> bool:
 	bastion["residue_turns"] = 2
 	if not _act(sim, {"type": "cast", "spell": "strike", "seat": 0, "to": Vector2i(4, 5)}, "magma"):
 		return false
-	bastion = sim._unit_by_seat(1)
-	bastion["shield"] = 18
 	if not _act(sim, {"type": "end_turn", "seat": 0}, "end ironjaw"):
 		return false
 	bastion = sim._unit_by_seat(1)
-	if int(bastion.get("burn_stacks", 0)) != 3 or int(bastion.get("shield", 0)) != 18:
-		push_error("Bastion is not burning behind his old shield (stacks %s shield %s)" % [bastion.get("burn_stacks", 0), bastion.get("shield", 0)])
+	if int(bastion.get("burn_stacks", 0)) != 3 or int(bastion.get("shield", 0)) != 0:
+		push_error("Bastion should be burning with no shield (stacks %s shield %s)" % [bastion.get("burn_stacks", 0), bastion.get("shield", 0)])
 		return false
-	bastion["aegis"] = 4
-	bastion["ap"] = 6
-	if not _act(sim, {"type": "cast", "spell": "ward", "seat": 1, "to": bastion["pos"]}, "ward"):
+	if int(bastion.get("ap", 0)) != 6 or int(bastion.get("aegis", 0)) != 4:
+		push_error("turn start spent AP or Aegis (ap %s aegis %s)" % [bastion.get("ap", 0), bastion.get("aegis", 0)])
 		return false
-	if int(sim._unit_by_seat(1).get("shield", 0)) != 18:
-		push_error("Ward changed the shield")
+	var offered := false
+	for intent in sim.legal_intents(1):
+		if str(intent.get("spell", "")) == "ward":
+			offered = true
+	if offered:
+		push_error("Ward is still offered while Bastion is burning")
 		return false
 	return true
-
-
-func _tail_since_ward(events: Array) -> Array:
-	var out: Array = []
-	for raw in events:
-		if typeof(raw) != TYPE_DICTIONARY:
-			continue
-		var event: Dictionary = raw
-		if str(event.get("type", "")) == "shield_blocked" or str(event.get("spell", "")) == "ward":
-			out.append(event)
-	return out
 
 
 func _act(sim: Node, intent: Dictionary, label: String) -> bool:

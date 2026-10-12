@@ -9307,6 +9307,7 @@ func _test_magma_burn_through() -> void:
 	eq([int(_unit(1)["burn_stacks"]), int(_unit(1)["burn_remaining"])], [3, 4], "Magma cannot push Burn past 3")
 
 	# Ward and Oathgrave's larger ward_shield. A clean ally still gets the shield.
+	# Bastion pays only because that ally can receive it.
 	_sim.reset_match({
 		"seed": 1, "flat_board": true, "skip_deploy": true, "team_size": 2,
 		"classes": ["bastion", "kestrel", "mender", "gloam"],
@@ -9317,15 +9318,109 @@ func _test_magma_burn_through() -> void:
 	_live_unit(0)["burn_remaining"] = 4
 	_live_unit(0)["shield"] = 12
 	_live_unit(0)["ward_shield"] = 25
+	var ally_ap := int(_unit(0)["ap"])
+	var ally_aegis := int(_unit(0)["aegis"])
+	eq(_has_legal_cast(0, SpellKits.WARD), true, "Ward stays offered while a clean ally is in range")
+	_assert_kit_button(SpellKits.WARD, "", false)
 	var ward: Dictionary = _sim.submit({"type": "cast", "spell": "ward", "to": Vector2i(4, 4), "seat": 0})
 	eq(bool(ward.get("ok", false)), true, "Ward still resolves")
+	eq(int(_unit(0)["ap"]), ally_ap - 2, "Ward spends 2 AP when an ally is shielded")
+	eq(int(_unit(0)["aegis"]), ally_aegis - 2, "Ward spends 2 Aegis when an ally is shielded")
 	eq(int(_unit(0)["shield"]), 12, "a burning Bastion keeps the shield he had")
 	eq(int(_unit(2)["shield"]), 25, "Oathgrave's 25 still lands on a teammate who is not burning")
 	var blocked := _first_event_where(ward.get("events", []), "shield_blocked")
 	eq(int(blocked.get("target_seat", -1)), 0, "the refusal names Bastion")
 	eq(str(blocked.get("source", "")), "Ward", "the refusal names Ward")
+	var ward_coach := str(_sim.snapshot().get("coach", ""))
+	truthy(ward_coach.contains("shield on 1"), "the bar counts only the ally who gained a shield: %s" % ward_coach)
+	eq(ward_coach.contains("shield on 2"), false, "a refused Bastion is not counted: %s" % ward_coach)
+	var bastion_hit := false
+	for raw_event in ward.get("events", []):
+		if typeof(raw_event) != TYPE_DICTIONARY:
+			continue
+		var ward_event: Dictionary = raw_event
+		if str(ward_event.get("type", "")) == "hit" and str(ward_event.get("spell", "")) == "ward" and int(ward_event.get("target_seat", -1)) == 0:
+			bastion_hit = true
+	eq(bastion_hit, false, "a refused Ward does not emit a hit on the burning Bastion")
 	var hud: Script = load("res://ui/hud.gd")
 	eq(str(hud.toast_for_events(ward.get("events", []))), "Ward refused", "the board says Ward refused")
+
+	# Alone and burning: the button is dark, labeled burning, and the cast costs nothing.
+	_sim.reset_match({
+		"seed": 1, "flat_board": true, "skip_deploy": true,
+		"classes": ["bastion", "kestrel"],
+		"positions": [Vector2i(4, 4), Vector2i(8, 8)],
+		"bastion_aegis": 4,
+	})
+	_live_unit(0)["burn_stacks"] = 3
+	_live_unit(0)["burn_remaining"] = 4
+	_live_unit(0)["shield"] = 18
+	var solo_ap := int(_unit(0)["ap"])
+	var solo_aegis := int(_unit(0)["aegis"])
+	eq(_has_legal_cast(0, SpellKits.WARD), false, "Ward is not offered when Bastion is the only burning target")
+	_assert_kit_button(SpellKits.WARD, "burning", true)
+	var refused: Dictionary = _sim.submit({"type": "cast", "spell": "ward", "to": Vector2i(4, 4), "seat": 0})
+	eq(bool(refused.get("ok", false)), false, "a solo burning Ward does not resolve")
+	eq(str(refused.get("reason", "")), "burning", "the refusal reason is burning")
+	eq(int(_unit(0)["ap"]), solo_ap, "a refused Ward keeps AP")
+	eq(int(_unit(0)["aegis"]), solo_aegis, "a refused Ward keeps Aegis")
+	eq(int(_unit(0)["shield"]), 18, "a refused Ward does not change the shield")
+	eq(bool(_unit(0).get("ward_used", false)), false, "a refused Ward does not spend the once-per-turn")
+	var refused_coach := str(_sim.snapshot().get("coach", ""))
+	eq(refused_coach.contains("+20"), false, "a refused Ward does not claim +20 shield: %s" % refused_coach)
+	eq(refused_coach.contains("shield on"), false, "a refused Ward does not name a shielded count: %s" % refused_coach)
+	eq(_first_event_where(refused.get("events", []), "shield_blocked").is_empty(), true, "an uncast Ward writes no blocked line")
+	eq(_first_event_where(refused.get("events", []), "hit").is_empty(), true, "an uncast Ward writes no hit")
+
+	# Every ally in range is burning too. Still no payment.
+	_sim.reset_match({
+		"seed": 1, "flat_board": true, "skip_deploy": true, "team_size": 2,
+		"classes": ["bastion", "kestrel", "mender", "gloam"],
+		"positions": [Vector2i(4, 4), Vector2i(10, 10), Vector2i(5, 4), Vector2i(12, 12)],
+		"bastion_aegis": 4,
+	})
+	_live_unit(0)["burn_stacks"] = 3
+	_live_unit(0)["burn_remaining"] = 4
+	_live_unit(2)["burn_stacks"] = 2
+	_live_unit(2)["burn_remaining"] = 3
+	var both_ap := int(_unit(0)["ap"])
+	var both_aegis := int(_unit(0)["aegis"])
+	eq(_has_legal_cast(0, SpellKits.WARD), false, "Ward is not offered when every ally in range is burning")
+	_assert_kit_button(SpellKits.WARD, "burning", true)
+	var both: Dictionary = _sim.submit({"type": "cast", "spell": "ward", "to": Vector2i(4, 4), "seat": 0})
+	eq(str(both.get("reason", "")), "burning", "Ward refunds when every target is burning")
+	eq(int(_unit(0)["ap"]), both_ap, "no ally shielded means no AP")
+	eq(int(_unit(0)["aegis"]), both_aegis, "no ally shielded means no Aegis")
+	eq(int(_unit(2).get("shield", 0)), 0, "a burning ally gains no shield")
+
+	# Cleanse removes the whole Burn, every stack, and a shield can land again.
+	_sim.reset_match({
+		"seed": 1, "flat_board": true, "skip_deploy": true, "team_size": 2,
+		"classes": ["mender", "kestrel", "bastion", "ironjaw"],
+		"positions": [Vector2i(4, 4), Vector2i(12, 12), Vector2i(5, 4), Vector2i(14, 14)],
+		"bastion_aegis": 4,
+	})
+	_live_unit(2)["burn_stacks"] = 3
+	_live_unit(2)["burn_remaining"] = 4
+	_live_unit(2)["shield"] = 8
+	var cleansed: Dictionary = _sim.submit({"type": "cast", "spell": "cleanse", "to": Vector2i(5, 4), "seat": 0})
+	eq(bool(cleansed.get("ok", false)), true, "Cleanse reaches the burning Bastion")
+	var removed: Array = _first_event_where(cleansed.get("events", []), "hit").get("cc_removed", [])
+	truthy(removed.has("burn"), "Cleanse names Burn: %s" % str(removed))
+	eq(int(_unit(2)["burn_stacks"]), 0, "Cleanse clears all 3 Burn stacks")
+	eq(int(_unit(2)["burn_remaining"]), 0, "Cleanse clears the Burn clock")
+	eq(int(_unit(2)["shield"]), 8, "Cleanse leaves the shield he already had")
+	_sim.submit({"type": "end_turn", "seat": 0})
+	_sim.submit({"type": "end_turn", "seat": 1})
+	eq(_has_legal_cast(2, SpellKits.WARD), true, "Ward is offered again once Burn is gone")
+	var after_ap := int(_unit(2)["ap"])
+	var after_aegis := int(_unit(2)["aegis"])
+	var again: Dictionary = _sim.submit({"type": "cast", "spell": "ward", "to": Vector2i(5, 4), "seat": 2})
+	eq(bool(again.get("ok", false)), true, "Ward resolves after Cleanse")
+	eq(int(_unit(2)["shield"]), 28, "the shield lands once he is not burning")
+	eq(int(_unit(2)["ap"]), after_ap - 2, "the restored Ward spends 2 AP")
+	eq(int(_unit(2)["aegis"]), after_aegis - 2, "the restored Ward spends 2 Aegis")
+	eq(_first_event_where(again.get("events", []), "shield_blocked").is_empty(), true, "a cleansed Bastion is not refused")
 
 	# Ultra Rekindle's shield is refused on a burning body and still granted otherwise.
 	_sim.reset_match({
