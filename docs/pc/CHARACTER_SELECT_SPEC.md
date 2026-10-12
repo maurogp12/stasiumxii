@@ -151,11 +151,15 @@ The Ankama way (Dofus, Wakfu): the painted character is **cut into parts** and a
   - The roster's equipped gear (§2) picks the layers.
 - **Face types:** 3 to 5 `head` variants per class and gender (`head_f1` … `head_f5`), with the same pivot and size. The hairstyle can travel with the face if Luca wants.
 - **Godot build:** one `Node2D` per part in a parent chain (the hip, then the torso, upper arm, lower arm and hand, and so on), each holding a `Sprite2D`. That is plain cut-out animation, with no `Skeleton2D` or mesh deformation. Binary alpha, and z-order per part from the rig file.
-- **Joints overlap so no holes show.** Each child part is painted about 8 px (at master size) past its joint, under its parent. The cross-section test (§9) checks for gaps at every joint in every frame. This is the neck lesson from the visible gear.
+- **Joints overlap so no holes show.** Each child part is painted about 6 px (at master size) past its joint, under its parent. The cross-section test (§9) checks for gaps at every joint in every frame. This is the neck lesson from the visible gear.
 
 ### 5.2 Facings ("drag to turn" is replaced)
-- Two painted facings, as in the world rig: **S** (front three-quarter) and **E** (side). **W** is E mirrored, and **N** is not needed here.
-- **Turn:** arrows under the pedestal, or a horizontal drag of 60 px or more, step S → E → W → S. Each step is a 0.18 s cross-fade (squash 0.96 on x at the midpoint), which reads like a turntable without 3D.
+- **Revised 12 Oct 2026.** The puppet uses the two approved visible-gear paintings and makes no new views:
+  - **S** is the front three-quarter view, looking down a little like the game camera;
+  - **B** is the back view: the approved `base_E.jpg` and every `<family>_E_<slot>.jpg` are back views, and they stay that way;
+  - **S mirrored** gives the other front three-quarter view.
+  - A true side view is **not** painted. Repaints of new angles drifted, so this avoids the risk.
+- **Turn:** arrows under the pedestal, or a horizontal drag of 60 px or more, step S → S-mirrored → B → S. Each step is a 0.18 s cross-fade (squash 0.96 on x at the midpoint), which reads like a turntable without 3D.
 - The idle starts on **S**. After 4 s without input it goes back to S.
 
 ### 5.3 Animation
@@ -208,28 +212,30 @@ All pieces are painted in Scenario, team "Maurogarza06's Organization", project 
 
 ## 8. Puppet brief: files, sizes, who does what
 
-**Sizes (restated 12 Oct 2026 for Scenario's 1280×720 output limit):**
-- On screen the puppet is about **520 px tall at 1080p**.
-- The **master** is painted at Scenario's native size: the figure is about **650 px tall** (feet to the top of the head), cropped to a **640×720** canvas per facing from the 1280×720 output. **No upscaling.** The master is drawn at 0.8 scale on screen, so it is downsampled and stays sharp at 1080p and 1440p. Softness at 4K is accepted.
-- **Joint overlap:** about **8 px** at master size. The face variants, masks and overlaps are painted at master size too.
-- The build script makes a **half-size copy** (320×360) for Performance mode and the list-screen island.
-- **Drift check before cutting:** the base figures must match the approved visible-gear base (`art/characters/painted/ironjaw_gear/source/base_{S,E}.jpg`).
-  - The S figure has no metal jaw piece.
-  - The hair is the approved colour and style.
-  - E is a **strict side view**, not a 3/4 turn.
-  - Use those paintings as the image reference and keep the prompt strength low, so the design does not drift.
-- The world sprites are far too small to reuse here: the world cells are at most 256 px at 1x, and the gear sources are about 500 px tall. So the select puppet is painted at its own size, from the same designs.
+**Sizes and masters (revised 12 Oct 2026, after drift check try 2 on #366):**
+- **The masters ARE the approved paintings.** Cut the puppet straight from `art/characters/painted/ironjaw_gear/source/`:
+  - `base_S.jpg` and `base_E.jpg`, the back view;
+  - each set's `<family>_{S,E}_<slot>.jpg`.
+  - Each 1024×576 painting is cropped to a **640×720 canvas per facing**, with the figure about **520 px** tall. That is the pedestal size at 1080p, so the master is drawn 1:1. **No upscaling and no repaint of the figure.** That gives zero drift.
+  - Why: try 2 repaints were slimmer, and S had a third axe and a different face. Mauro approved these exact paintings.
+- **Scenario paints only:**
+  - the hidden areas under each joint, about **6 px** of overlap at master size, matched to the painting;
+  - the 3–5 face variants on the S head, and the back of the head for B where hair differs;
+  - the R/G/B masks.
+- **Half-size copies:** the build script makes them (320×360) for Performance mode and the list-screen island.
+- **Display:** the master shows at 1.0 on the pedestal. At 1440p and above the screen scale can enlarge it; light softness there is accepted.
+- **Later classes:** the visible-gear base and set paintings for each class become that class's masters too, so the paintings are made once, for the world and the select screen.
 
 **File layout per class and gender:**
 
 ```
 art/pc/character_select/puppets/ironjaw_m/
   rig.json                     # parts, parent, pivot, z, rest pose per facing; idle and select keys
-  S/base/<part>.png            # master (figure ~650 px), binary alpha
+  S/base/<part>.png            # master (figure ~520 px, cut from the approved painting), binary alpha
   S/base/<part>_mask.png       # R skin / G hair / B eyes, same size
   S/base/head_f1..f5.png (+ _mask)
   S/<family>_<slot>/<part>.png # gear layers, e.g. S/cragmaw_chest/torso.png
-  E/...                        # the same for the side facing
+  B/...                        # the same for the back view (cut from the *_E paintings)
   _half/...                    # generated half-size copies, do not edit
   source/                      # full-figure paintings, Scenario ids (.gdignore)
 ```
@@ -238,7 +244,7 @@ art/pc/character_select/puppets/ironjaw_m/
 
 | Who | Does |
 |---|---|
-| **Scenario Art** (Luca's team) | Paints, per class and gender, the **full-figure S and E** of the no-armour base and each gear set at master size (figure ~650 px, 640×720 crop), using the approved world designs as the guide: the visible-gear `source/` paintings and the sets PDF. Then paints the **part sheets**: each part with its joint overlap, the face variants, and the R/G/B masks. The part split follows the world walker's parts |
+| **Scenario Art** (Luca's team) | Cuts the parts from the **approved visible-gear paintings** (no new full figures). Paints only the hidden areas under the joints, the face variants and the R/G/B masks. The part split follows the world walker's parts |
 | **Build agents** (Luca's team) | `build_tools/pc_charselect/cut_puppet.py`: cuts or arranges parts from the sheets, writes the half-size copies and checks alpha and pivots. Then `rig.json` (pivots and parent chain), the idle and select keys, the puppet scene, the shader, the turn control, the roster hook and the tests |
 
 **First puppet: Ironjaw, male**, with the base plus Cragmaw, Tyrantjaw and Pitmaw, the three sets already approved for the world. It is the default hero, its look is the most seen, and its sets exist.
@@ -254,7 +260,7 @@ The female puppets wait on the female world bases (§11) so that both match.
 |---|---|---|---|
 | P1 | `pc/charselect-flow` | Roster save and migration (§2), both screens with **placeholder art** and the **painted-sprite fallback** (§5.6), the create/name/delete flow, keys, Performance mode hooks, and the containment test skeleton | none |
 | P2 | `pc/charselect-art` | All §6 2D art (Scenario) plus the manifest. The screens switch to it | P1 |
-| P3 | `pc/charselect-puppet-stage` | The puppet scene: part loader from `rig.json`, the `AnimationPlayer` built from data, the S/E/W turn, the body recolour shader (ported from #355), and gear layers switching by slot. Uses a **test puppet**: Ironjaw cut from the existing 1024×576 visible-gear sources, soft but enough to prove the pipeline | P1 |
+| P3 | `pc/charselect-puppet-stage` | The puppet scene: part loader from `rig.json`, the `AnimationPlayer` built from data, the S → S-mirrored → B turn, the body recolour shader (ported from #355), and gear layers switching by slot. Uses a **test puppet** cut from the approved Ironjaw visible-gear paintings | P1 |
 | P4 | `pc/charselect-puppet-ironjaw` | Ironjaw `m` at master size: base, 3 face types, masks, the Cragmaw / Tyrantjaw / Pitmaw layers, idle and select, and a clip. Then one package per class and gender | P3 |
 | P5 | later | Female world sprites and world-sprite recolour masks (see open questions) | Mauro's decision |
 
@@ -267,9 +273,9 @@ The female puppets wait on the female world bases (§11) so that both match.
 - X cancelling;
 - Performance mode using the half-size parts;
 - no 3D (§7);
-- no holes at any joint in any idle or select frame, in S and E, for the base and every gear layer;
+- no holes at any joint in any idle or select frame, in S and B, for the base and every gear layer;
 - each gear layer replacing its base parts, so no base pixels show in that zone;
-- the turn control stepping S → E → W;
+- the turn control stepping S → S-mirrored → B;
 - the screen working with zero puppets.
 
 ## 10. Open questions for Mauro and Luca
