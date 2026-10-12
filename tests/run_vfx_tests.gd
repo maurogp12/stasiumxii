@@ -603,6 +603,17 @@ func _test_crit_hit() -> void:
 	eq(stagger.y > 3.0, true, "the crit knock staggers")
 	eq(ViewMotion.crit_recoil(0.0, span, aim), Vector2.ZERO, "the crit knock starts on the tile")
 	eq(ViewMotion.crit_recoil(1.0, span, aim), Vector2.ZERO, "the crit knock ends on the tile")
+	var back_u := 0.0
+	for sample in 80:
+		var u := float(sample) / 79.0
+		if ViewMotion.crit_recover(u, span) > 0.0:
+			back_u = u
+			break
+	var home := ViewMotion.crit_recoil(back_u, span, aim)
+	var quarter := ViewMotion.crit_recoil(back_u + (1.0 - back_u) * 0.25, span, aim)
+	var hopped := ViewMotion.crit_recoil(back_u + (1.0 - back_u) * 0.5, span, aim)
+	eq(home.x - quarter.x < home.x * 0.25, true, "the return eases off instead of snapping")
+	eq(hopped.y < -4.0, true, "the return hops back onto the tile")
 	var view := FileAccess.get_file_as_string("res://board_view.gd")
 	truthy(view.contains("func punch_camera"), "the crit shake moves the camera, not the board")
 	var crush_miss: Array = ROUTER.recipes_for([{

@@ -1063,8 +1063,11 @@ static func crit_recoil(t: float, duration: float, away: Vector2, knock: float =
 		along = knock + sin(k * PI) * 5.0
 		dip = sin(k * PI) * 8.0
 	else:
+		# Smoothstep home, plus a hop, so the return is a step and not a slide.
 		var k := clampf((time - stag_end) / maxf(float(phase["back"]), 0.0001), 0.0, 1.0)
-		along = knock * (1.0 - k) * (1.0 - k)
+		var settled := k * k * (3.0 - 2.0 * k)
+		along = knock * (1.0 - settled)
+		dip = -sin(k * PI) * 11.0
 	return dir * along + Vector2(0.0, dip)
 
 
