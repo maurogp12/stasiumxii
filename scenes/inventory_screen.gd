@@ -10,6 +10,9 @@ class_name InventoryScreen
 ## open the full screens for spend points, forging and attune.
 
 signal closed
+## Fired after a saved equip, set, stance, or Still change while this screen
+## is the deployment inventory. The board pushes that class's loadout.
+signal changed(class_id: String)
 
 const GOLD := Color(0.855, 0.69, 0.4)
 const GOLD_BRIGHT := Color(0.95, 0.82, 0.52)
@@ -27,6 +30,9 @@ const CONSUMABLES: Array[String] = ["consumable.room_tonic", "food.hearth", "foo
 var font: Font
 var champion: String = "kestrel"
 var tab: String = "equipment"
+## Deployment inventory. Empty means the hub: every class, coins, consumables,
+## cosmetics. While set, only these classes show, and mid-match chrome stays hidden.
+var fight_classes: Array = []
 ## {"kind": "item", "uid": n} | {"kind": "slot", "slot": s} | {"kind": "sku", "sku": s} | {"kind": "still", "id": s}
 var picked: Dictionary = {}
 var _bag: GearBag
@@ -87,7 +93,24 @@ static func champion_stats(gear: GearBag, hero: HeroProgress, class_id: String) 
 	}
 
 
+func set_fight_classes(ids: Array) -> void:
+	fight_classes = []
+	for id in ids:
+		var cid := str(id)
+		if SpellKits.is_roster_class(cid) and not fight_classes.has(cid):
+			fight_classes.append(cid)
+	if _in_fight() and not fight_classes.has(champion):
+		champion = str(fight_classes[0])
+	if _in_fight() and not _visible_tabs().has(tab):
+		tab = "equipment"
+	if is_inside_tree():
+		_reload()
+		_refresh()
+
+
 func pick_champion(class_id: String) -> void:
+	if not _roster().has(class_id):
+		return
 	if SpellKits.is_roster_class(class_id):
 		champion = class_id
 		_bag.set_focus(class_id)
@@ -98,7 +121,7 @@ func pick_champion(class_id: String) -> void:
 
 
 func show_tab(id: String) -> void:
-	if TABS.has(id):
+	if _visible_tabs().has(id):
 		tab = id
 		picked = {}
 		_refresh()
@@ -132,11 +155,42 @@ func fuse(uid: int) -> Dictionary:
 	return result
 
 
+## One tap wears the best free piece of this family in every slot.
+func wear_set(family: String) -> Dictionary:
+	var result := _bag.wear_family(champion, family)
+	var set_name := str(GearBag.FAMILIES.get(family, {}).get("name", family))
+	_after_gear(result, "Wearing %s." % set_name)
+	return result
+
+
+func choose_stance(mode: String) -> Dictionary:
+	var result := _bag.set_stance(mode)
+	var label := "Neutral" if mode == GearBag.STANCE_NEUTRAL else "Ranged Guard"
+	_after_gear(result, "Gatewarden stance: %s." % label)
+	return result
+
+
+func choose_still(mode: String) -> Dictionary:
+	_vault.set_focus(champion)
+	var result := _vault.set_mode(mode)
+	if bool(result.get("ok", false)):
+		_vault.save()
+		_status.text = "Keep Intact." if mode == "intact" else "Overwound: stronger, with a drawback."
+	else:
+		_status.text = "Socket a Still first."
+	_refresh()
+	if bool(result.get("ok", false)):
+		_emit_changed()
+	return result
+
+
 func open_levels() -> CharacterScreen:
 	var screen: CharacterScreen = load("res://scenes/character_screen.gd").new()
 	screen.name = "CharacterScreen"
 	screen.font = font
 	screen.selected = champion
+	if _in_fight():
+		screen.only_classes = fight_classes.duplicate()
 	screen.closed.connect(_on_child_closed)
 	add_child(screen)
 	return screen
@@ -148,6 +202,8 @@ func open_elements() -> ElementsScreen:
 	screen.name = "ElementsScreen"
 	screen.font = font
 	screen.selected = champion
+	if _in_fight():
+		screen.only_classes = fight_classes.duplicate()
 	screen.closed.connect(_on_child_closed)
 	add_child(screen)
 	return screen
@@ -158,7 +214,10 @@ func open_stills() -> StillsScreen:
 	screen.name = "StillsScreen"
 	screen.font = font
 	screen.class_id = champion
+	if _in_fight():
+		screen.fight_classes = fight_classes.duplicate()
 	screen.closed.connect(_on_child_closed)
+	screen.changed.connect(_on_child_changed)
 	add_child(screen)
 	return screen
 
@@ -167,7 +226,11 @@ func open_sets() -> GearScreen:
 	var screen: GearScreen = load("res://scenes/gear_screen.gd").new()
 	screen.name = "GearScreen"
 	screen.font = font
+	if _in_fight():
+		screen.fight_classes = fight_classes.duplicate()
+		screen.focus_class_id = champion
 	screen.closed.connect(_on_child_closed)
+	screen.changed.connect(_on_child_changed)
 	add_child(screen)
 	return screen
 
@@ -180,6 +243,16 @@ func close() -> void:
 func _on_child_closed() -> void:
 	_reload()
 	_refresh()
+	# A child can edit a different class than the tab (Sets, Stills, Elements).
+	if _in_fight():
+		changed.emit("")
+
+
+func _on_child_changed() -> void:
+	_reload()
+	_refresh()
+	if _in_fight():
+		changed.emit("")
 
 
 func _reload() -> void:
@@ -189,6 +262,7 @@ func _reload() -> void:
 	_vault = StillVault.load_saved()
 	if SpellKits.is_roster_class(champion):
 		_bag.set_focus(champion)
+		_vault.set_focus(champion)
 
 
 func _after_gear(result: Dictionary, ok_text: String) -> void:
@@ -198,6 +272,33 @@ func _after_gear(result: Dictionary, ok_text: String) -> void:
 	else:
 		_status.text = GearScreen._reason_text(str(result.get("reason", "")))
 	_refresh()
+	if bool(result.get("ok", false)):
+		_emit_changed()
+
+
+func _in_fight() -> bool:
+	return not fight_classes.is_empty()
+
+
+func _roster() -> Array:
+	if not _in_fight():
+		var all: Array = []
+		all.append_array(SpellKits.LOCKED_ROSTER)
+		return all
+	return fight_classes
+
+
+func _visible_tabs() -> Array:
+	if _in_fight():
+		return ["equipment", "stills"]
+	var all: Array = []
+	all.append_array(TABS)
+	return all
+
+
+func _emit_changed() -> void:
+	if _in_fight():
+		changed.emit(champion)
 
 
 func _draw() -> void:
@@ -300,7 +401,12 @@ func _build() -> void:
 func _refresh() -> void:
 	if _header == null:
 		return
-	_header.text = "Inventory     Coins %d  ·  Trophies %d" % [_wallet.coins, _wallet.trophies]
+	if _in_fight() and not _visible_tabs().has(tab):
+		tab = "equipment"
+	if _in_fight():
+		_header.text = "Inventory"
+	else:
+		_header.text = "Inventory     Coins %d  ·  Trophies %d" % [_wallet.coins, _wallet.trophies]
 	_refresh_champions()
 	_refresh_doll()
 	_refresh_stats()
@@ -311,7 +417,7 @@ func _refresh() -> void:
 
 func _refresh_champions() -> void:
 	_clear(_champ_row)
-	for class_id in SpellKits.LOCKED_ROSTER:
+	for class_id in _roster():
 		var b := _button(SpellKits.display_name(class_id))
 		b.name = "Champ_" + class_id
 		b.custom_minimum_size = Vector2(72, 40)
@@ -416,9 +522,44 @@ func _refresh_stats() -> void:
 	_stats_box.add_child(grid)
 
 
+func _gatewarden_ready() -> bool:
+	return _in_fight() and _bag.worn_family(champion) == GearBag.STANCE_FAMILY and int(_bag.set_counts(champion).get(GearBag.STANCE_FAMILY, 0)) >= GearBag.STANCE_PIECES
+
+
+## Short line so the choice fits the fight screen. Sets keeps the long sentence.
+func _stance_short() -> String:
+	if _bag.stance_of() == GearBag.STANCE_RANGED:
+		return "20% less from 3+ tiles. 15% more from 1–2."
+	return "+4 Resist."
+
+
+## Sits in the detail well, which stays on screen. Under the paperdoll it was clipped.
+func _add_stance_pick() -> void:
+	if not _gatewarden_ready():
+		return
+	var stance_line := _label(_stance_short(), 14, GOLD_BRIGHT)
+	stance_line.name = "StanceLine"
+	stance_line.autowrap_mode = TextServer.AUTOWRAP_OFF
+	_detail.add_child(stance_line)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 4)
+	for mode in GearBag.STANCES:
+		var label := "Neutral" if str(mode) == GearBag.STANCE_NEUTRAL else "Ranged Guard"
+		var stance_button := _button(label)
+		stance_button.name = "Stance_%s" % str(mode)
+		stance_button.clip_text = false
+		stance_button.custom_minimum_size = Vector2(150, ROW_HEIGHT)
+		stance_button.alignment = HORIZONTAL_ALIGNMENT_CENTER
+		if _bag.stance_of() == str(mode):
+			_light(stance_button)
+		stance_button.pressed.connect(choose_stance.bind(str(mode)))
+		row.add_child(stance_button)
+	_detail.add_child(row)
+
+
 func _refresh_tabs() -> void:
 	_clear(_tab_row)
-	for id in TABS:
+	for id in _visible_tabs():
 		var b := _button(str(TAB_LABEL[id]))
 		b.name = "Tab_" + id
 		b.alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -581,6 +722,15 @@ func _refresh_detail() -> void:
 			fuse_button.text = "Fuse → +%d" % (int(item["plus"]) + 1)
 		fuse_button.pressed.connect(fuse.bind(uid))
 		row.add_child(fuse_button)
+		var family := GearBag.family_of(item_id)
+		if _bag.families_in_bag(champion).has(family):
+			var set_name := str(GearBag.FAMILIES.get(family, {}).get("name", family))
+			var set_button := _button("Wear %s" % set_name)
+			set_button.name = "WearSet"
+			set_button.clip_text = false
+			set_button.custom_minimum_size.x = 160
+			set_button.pressed.connect(wear_set.bind(family))
+			row.add_child(set_button)
 		_detail.add_child(row)
 		return
 	if kind == "sku":
@@ -600,6 +750,19 @@ func _refresh_detail() -> void:
 		var head := _label("%s Still" % StillVault.display_name(id), 18, still_tint)
 		head.name = "StillHead"
 		_detail.add_child(head)
+		if _vault.socket_of(champion) == id:
+			var modes := HBoxContainer.new()
+			modes.add_theme_constant_override("separation", 6)
+			for mode in ["intact", "overwound"]:
+				var mode_button := _button("Intact" if mode == "intact" else "Overwound")
+				mode_button.name = "Still_%s" % mode
+				mode_button.clip_text = false
+				mode_button.custom_minimum_size.x = 130
+				if _vault.mode_of(champion) == mode:
+					_light(mode_button)
+				mode_button.pressed.connect(choose_still.bind(mode))
+				modes.add_child(mode_button)
+			_detail.add_child(modes)
 		var have := _vault.count(id)
 		var line := "Fragments: %d.  %s" % [have, StillVault.forge_summary(have)]
 		if _vault.socket_of(champion) == id:
@@ -609,12 +772,14 @@ func _refresh_detail() -> void:
 		var soon := "" if bool(fx.get("built", true)) else "  (coming in the next update)"
 		_detail.add_child(_label("Intact — safe: %s%s" % [StillVault.plain(id, "intact"), soon], 14, GOLD_BRIGHT))
 		_detail.add_child(_label("Overwound — stronger, with a drawback: %s%s" % [StillVault.plain(id, "overwound"), soon], 14, GOLD_BRIGHT))
-		_detail.add_child(_label("  ".join(StillVault.HOW_TO), 12, GOLD_DIM))
+		if not _in_fight():
+			_detail.add_child(_label("  ".join(StillVault.HOW_TO), 12, GOLD_DIM))
 		var vault_button := _button("Open the Vault to forge")
 		vault_button.name = "OpenVault"
 		vault_button.pressed.connect(open_stills)
 		_detail.add_child(vault_button)
 		return
+	_add_stance_pick()
 	_detail.add_child(_label("Tap an item to see it. Tap a worn slot to take it off.", 13, GOLD_DIM))
 
 

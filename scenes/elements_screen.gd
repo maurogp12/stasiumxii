@@ -57,6 +57,8 @@ const BLEND_ROWS := [
 
 var font: Font
 var selected: String = "kestrel"
+## Empty shows every class. A deployment inventory passes only this fight.
+var only_classes: Array = []
 var _hero: HeroProgress
 var _wallet: KoliseoWallet
 ## The pick being edited (saved with Save): pair [a, b] and spell → element.
@@ -73,6 +75,8 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	_hero = HeroProgress.load_saved()
 	_wallet = KoliseoWallet.load_saved()
+	if not only_classes.is_empty() and not only_classes.has(selected):
+		selected = str(only_classes[0])
 	_build()
 	_load_pick()
 	_refresh()
@@ -91,6 +95,8 @@ func status_text() -> String:
 
 
 func pick_class(class_id: String) -> void:
+	if not _roster().has(class_id):
+		return
 	if HeroProgress.GROWTH.has(class_id):
 		selected = class_id
 		if _status != null:
@@ -234,7 +240,7 @@ func _refresh() -> void:
 		for child in box.get_children():
 			box.remove_child(child)
 			child.queue_free()
-	for class_id in SpellKits.LOCKED_ROSTER:
+	for class_id in _roster():
 		var saved: Array = _hero.elements_of(class_id).get("pair", [])
 		var b := _button("%s\n%s" % [SpellKits.display_name(class_id), _pair_text(saved) if saved.size() == 2 else "no elements yet"])
 		b.name = "Class_" + class_id
@@ -372,6 +378,14 @@ func _tint_button(b: Button, el: String, on: bool) -> void:
 		style.set_border_width_all(3 if on else 1)
 		b.add_theme_stylebox_override(style_name, style)
 	b.add_theme_color_override("font_color", Color.WHITE if on else tint)
+
+
+func _roster() -> Array:
+	if only_classes.is_empty():
+		var all: Array = []
+		all.append_array(SpellKits.LOCKED_ROSTER)
+		return all
+	return only_classes
 
 
 func _label(text: String, font_size: int, tint: Color) -> Label:

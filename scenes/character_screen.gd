@@ -16,6 +16,8 @@ const ROW_HEIGHT := 48
 
 var font: Font
 var selected: String = "kestrel"
+## Empty shows every class. A deployment inventory passes only this fight.
+var only_classes: Array = []
 var _hero: HeroProgress
 var _class_box: VBoxContainer
 var _detail: VBoxContainer
@@ -26,6 +28,8 @@ func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	_hero = HeroProgress.load_saved()
+	if not only_classes.is_empty() and not only_classes.has(selected):
+		selected = str(only_classes[0])
 	_build()
 	_refresh()
 
@@ -35,6 +39,8 @@ func hero() -> HeroProgress:
 
 
 func pick(class_id: String) -> void:
+	if not _roster().has(class_id):
+		return
 	if HeroProgress.GROWTH.has(class_id):
 		selected = class_id
 		if _status != null:
@@ -121,7 +127,7 @@ func _refresh() -> void:
 		for child in box.get_children():
 			box.remove_child(child)
 			child.queue_free()
-	for class_id in SpellKits.LOCKED_ROSTER:
+	for class_id in _roster():
 		var b := _button("%s  Lv %d" % [SpellKits.display_name(class_id), _hero.level_of(class_id)])
 		b.name = "Class_" + class_id
 		if class_id == selected:
@@ -190,6 +196,14 @@ func _refresh() -> void:
 	sum.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_detail.add_child(sum)
 	_detail.add_child(_label("Ward only guards the element of an active 2-piece attune. +1 AP at level 20. XP: Stasis clear 60 per star (20 with no chest), online Koliseo win 50 / loss 15.", 12, GOLD_DIM))
+
+
+func _roster() -> Array:
+	if only_classes.is_empty():
+		var all: Array = []
+		all.append_array(SpellKits.LOCKED_ROSTER)
+		return all
+	return only_classes
 
 
 func _label(text: String, font_size: int, tint: Color) -> Label:

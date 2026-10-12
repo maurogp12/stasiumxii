@@ -8422,6 +8422,7 @@ func _test_prefight_elements_button() -> void:
 	var view := FileAccess.get_file_as_string("res://board_view.gd")
 	truthy(view.contains("_hud.elements_requested.connect(_on_elements_requested)"), "the board opens the Elements screen")
 	truthy(view.contains("_hud.gear_requested.connect(_on_gear_requested)"), "the board opens the Gear screen")
+	truthy(view.contains("InventoryScreen"), "deployment Gear opens the inventory")
 	truthy(view.contains("set_seat_gear(seat, kit.duplicate(true))"), "closing it re-applies the fighter's pick")
 
 

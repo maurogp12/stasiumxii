@@ -7,6 +7,7 @@ class_name GearScreen
 ## clamp. Worn gear goes into Stasis and online Koliseo fights.
 
 signal closed
+signal changed
 
 const GOLD := Color(0.855, 0.69, 0.4)
 const GOLD_BRIGHT := Color(0.95, 0.82, 0.52)
@@ -22,6 +23,10 @@ const RARITY_TINT := {
 }
 
 var font: Font
+## Empty shows every class. A deployment inventory passes only this fight.
+var fight_classes: Array = []
+## Applied once, before the class row is built.
+var focus_class_id: String = ""
 var _bag: GearBag
 var _header: Label
 var _status: Label
@@ -37,6 +42,11 @@ func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	_bag = GearBag.load_saved()
+	var use := focus_class_id
+	if not fight_classes.is_empty() and (use == "" or not fight_classes.has(use)):
+		use = str(fight_classes[0])
+	if use != "" and GearBag.CLASS_IDS.has(use):
+		_bag.set_focus(use)
 	_build()
 	_refresh()
 
@@ -118,6 +128,7 @@ func _after(result: Dictionary, ok_text: String) -> void:
 	if bool(result.get("ok", false)):
 		_bag.save()
 		_status.text = ok_text
+		changed.emit()
 	else:
 		_status.text = _reason_text(str(result.get("reason", "")))
 	_refresh()
@@ -165,7 +176,7 @@ func _build() -> void:
 	var classes := HBoxContainer.new()
 	classes.add_theme_constant_override("separation", 6)
 	body.add_child(classes)
-	for cid in GearBag.CLASS_IDS:
+	for cid in _roster():
 		var tab := _button(SpellKits.display_name(cid))
 		tab.name = "ClassGear_%s" % cid
 		tab.pressed.connect(_focus_class.bind(cid))
@@ -201,7 +212,17 @@ func _column(parent: Control, title: String, stretch: float) -> VBoxContainer:
 	return list
 
 
+func _roster() -> Array:
+	if fight_classes.is_empty():
+		var all: Array = []
+		all.append_array(GearBag.CLASS_IDS)
+		return all
+	return fight_classes
+
+
 func _focus_class(class_id: String) -> void:
+	if not _roster().has(class_id):
+		return
 	_bag.set_focus(class_id)
 	_bag.save()
 	_refresh()
