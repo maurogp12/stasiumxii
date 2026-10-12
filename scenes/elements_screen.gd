@@ -11,6 +11,8 @@ class_name ElementsScreen
 ## two picked elements is free (HeroProgress.set_elements).
 
 signal closed
+## Fired after a saved pick. The deployment inventory syncs the fight from this.
+signal changed
 
 const GOLD := Color(0.855, 0.69, 0.4)
 const GOLD_BRIGHT := Color(0.95, 0.82, 0.52)
@@ -59,6 +61,8 @@ var font: Font
 var selected: String = "kestrel"
 ## Empty shows every class. A deployment inventory passes only this fight.
 var only_classes: Array = []
+## Drawn inside the fight inventory. No dim, no Close, no second class column.
+var embedded := false
 var _hero: HeroProgress
 var _wallet: KoliseoWallet
 ## The pick being edited (saved with Save): pair [a, b] and spell → element.
@@ -145,6 +149,7 @@ func save_pick() -> Dictionary:
 		if int(result.get("cost", 0)) > 0:
 			_status.text += " −%d trophies." % int(result["cost"])
 		_load_pick()
+		changed.emit()
 	elif str(result.get("reason", "")) == "no_trophies":
 		_status.text = "Changing your 2 elements costs %d trophies. You have %d. Win online Koliseo fights to earn trophies." % [int(result.get("cost", 0)), _wallet.trophies]
 	else:
@@ -178,21 +183,29 @@ func _load_pick() -> void:
 
 
 func _draw() -> void:
+	if embedded:
+		return
 	draw_rect(Rect2(Vector2.ZERO, size), Color(0, 0, 0, 0.74))
 
 
 func _build() -> void:
 	var panel := PanelContainer.new()
 	panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	panel.offset_left = 30
-	panel.offset_top = 20
-	panel.offset_right = -30
-	panel.offset_bottom = -20
+	if embedded:
+		panel.offset_left = 0
+		panel.offset_top = 0
+		panel.offset_right = 0
+		panel.offset_bottom = 0
+	else:
+		panel.offset_left = 30
+		panel.offset_top = 20
+		panel.offset_right = -30
+		panel.offset_bottom = -20
 	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.02, 0.045, 0.09, 0.97)
+	style.bg_color = Color(0, 0, 0, 0) if embedded else Color(0.02, 0.045, 0.09, 0.97)
 	style.border_color = GOLD
-	style.set_border_width_all(1)
-	style.set_content_margin_all(12)
+	style.set_border_width_all(0 if embedded else 1)
+	style.set_content_margin_all(4 if embedded else 12)
 	panel.add_theme_stylebox_override("panel", style)
 	add_child(panel)
 	var body := VBoxContainer.new()
@@ -204,11 +217,12 @@ func _build() -> void:
 	_header.autowrap_mode = TextServer.AUTOWRAP_OFF
 	_header.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	top.add_child(_header)
-	var close_button := _button("Close")
-	close_button.name = "CloseElements"
-	close_button.alignment = HORIZONTAL_ALIGNMENT_CENTER
-	close_button.pressed.connect(close)
-	top.add_child(close_button)
+	if not embedded:
+		var close_button := _button("Close")
+		close_button.name = "CloseElements"
+		close_button.alignment = HORIZONTAL_ALIGNMENT_CENTER
+		close_button.pressed.connect(close)
+		top.add_child(close_button)
 	body.add_child(top)
 	var cols := HBoxContainer.new()
 	cols.add_theme_constant_override("separation", 16)
@@ -216,7 +230,8 @@ func _build() -> void:
 	body.add_child(cols)
 	_class_box = VBoxContainer.new()
 	_class_box.add_theme_constant_override("separation", 6)
-	_class_box.custom_minimum_size = Vector2(190, 0)
+	_class_box.custom_minimum_size = Vector2(0 if embedded else 190, 0)
+	_class_box.visible = not embedded
 	cols.add_child(_class_box)
 	var scroll := ScrollContainer.new()
 	scroll.name = "ElementsScroll"
@@ -235,25 +250,29 @@ func _build() -> void:
 
 
 func _refresh() -> void:
-	_header.text = "Elements     Trophies %d" % _wallet.trophies
+	if embedded:
+		_header.text = "Elements"
+	else:
+		_header.text = "Elements     Trophies %d" % _wallet.trophies
 	for box in [_class_box, _detail]:
 		for child in box.get_children():
 			box.remove_child(child)
 			child.queue_free()
-	for class_id in _roster():
-		var saved: Array = _hero.elements_of(class_id).get("pair", [])
-		var b := _button("%s\n%s" % [SpellKits.display_name(class_id), _pair_text(saved) if saved.size() == 2 else "no elements yet"])
-		b.name = "Class_" + class_id
-		b.custom_minimum_size = Vector2(180, 56)
-		if class_id == selected:
-			var lit := StyleBoxFlat.new()
-			lit.bg_color = Color(0.30, 0.24, 0.10)
-			lit.border_color = GOLD_BRIGHT
-			lit.set_border_width_all(2)
-			lit.content_margin_left = 10
-			b.add_theme_stylebox_override("normal", lit)
-		b.pressed.connect(pick_class.bind(class_id))
-		_class_box.add_child(b)
+	if not embedded:
+		for class_id in _roster():
+			var saved: Array = _hero.elements_of(class_id).get("pair", [])
+			var b := _button("%s\n%s" % [SpellKits.display_name(class_id), _pair_text(saved) if saved.size() == 2 else "no elements yet"])
+			b.name = "Class_" + class_id
+			b.custom_minimum_size = Vector2(180, 56)
+			if class_id == selected:
+				var lit := StyleBoxFlat.new()
+				lit.bg_color = Color(0.30, 0.24, 0.10)
+				lit.border_color = GOLD_BRIGHT
+				lit.set_border_width_all(2)
+				lit.content_margin_left = 10
+				b.add_theme_stylebox_override("normal", lit)
+			b.pressed.connect(pick_class.bind(class_id))
+			_class_box.add_child(b)
 
 	_section("How elements work")
 	_text("Pick 2 elements for %s. Every spell uses one of them. A spell that hits an enemy marks them with that element (a gem on its ring). A spell on yourself, an ally, or a move marks every enemy next to you, the ally, or the landing. A heal does not mark the ally. The mark fades if you go a whole turn without attacking that enemy. Hit that marked enemy with your OTHER element and the two mix into a Blend — a free extra effect. Example: a Water Snap Wall, then an Earth Bash = Mire." % SpellKits.display_name(selected))

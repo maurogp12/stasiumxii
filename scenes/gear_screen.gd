@@ -27,6 +27,8 @@ var font: Font
 var fight_classes: Array = []
 ## Applied once, before the class row is built.
 var focus_class_id: String = ""
+## Drawn inside the fight inventory. No dim, no Close, no second class row.
+var embedded := false
 var _bag: GearBag
 var _header: Label
 var _status: Label
@@ -124,6 +126,15 @@ func close() -> void:
 	queue_free()
 
 
+## Inventory class tabs drive this when the Sets page is embedded.
+func focus_class(class_id: String) -> void:
+	if not is_inside_tree():
+		focus_class_id = class_id
+		return
+	_bag = GearBag.load_saved()
+	_focus_class(class_id)
+
+
 func _after(result: Dictionary, ok_text: String) -> void:
 	if bool(result.get("ok", false)):
 		_bag.save()
@@ -135,21 +146,29 @@ func _after(result: Dictionary, ok_text: String) -> void:
 
 
 func _draw() -> void:
+	if embedded:
+		return
 	draw_rect(Rect2(Vector2.ZERO, size), Color(0, 0, 0, 0.74))
 
 
 func _build() -> void:
 	var panel := PanelContainer.new()
 	panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	panel.offset_left = 24
-	panel.offset_top = 20
-	panel.offset_right = -24
-	panel.offset_bottom = -20
+	if embedded:
+		panel.offset_left = 0
+		panel.offset_top = 0
+		panel.offset_right = 0
+		panel.offset_bottom = 0
+	else:
+		panel.offset_left = 24
+		panel.offset_top = 20
+		panel.offset_right = -24
+		panel.offset_bottom = -20
 	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.02, 0.045, 0.09, 0.97)
+	style.bg_color = Color(0, 0, 0, 0) if embedded else Color(0.02, 0.045, 0.09, 0.97)
 	style.border_color = GOLD
-	style.set_border_width_all(1)
-	style.set_content_margin_all(14)
+	style.set_border_width_all(0 if embedded else 1)
+	style.set_content_margin_all(4 if embedded else 14)
 	panel.add_theme_stylebox_override("panel", style)
 	add_child(panel)
 	var body := VBoxContainer.new()
@@ -161,27 +180,28 @@ func _build() -> void:
 	_header = _label("", 18, GOLD_BRIGHT)
 	_header.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	top.add_child(_header)
-	var levels_button := _button("Levels")
-	levels_button.name = "OpenLevels"
-	levels_button.pressed.connect(open_levels)
-	top.add_child(levels_button)
-	var stills_button := _button("Stills")
-	stills_button.name = "OpenStills"
-	stills_button.pressed.connect(open_stills)
-	top.add_child(stills_button)
-	var close_button := _button("Close")
-	close_button.name = "CloseGear"
-	close_button.pressed.connect(close)
-	top.add_child(close_button)
-	var classes := HBoxContainer.new()
-	classes.add_theme_constant_override("separation", 6)
-	body.add_child(classes)
-	for cid in _roster():
-		var tab := _button(SpellKits.display_name(cid))
-		tab.name = "ClassGear_%s" % cid
-		tab.pressed.connect(_focus_class.bind(cid))
-		classes.add_child(tab)
-		_class_buttons[cid] = tab
+	if not embedded:
+		var levels_button := _button("Levels")
+		levels_button.name = "OpenLevels"
+		levels_button.pressed.connect(open_levels)
+		top.add_child(levels_button)
+		var stills_button := _button("Stills")
+		stills_button.name = "OpenStills"
+		stills_button.pressed.connect(open_stills)
+		top.add_child(stills_button)
+		var close_button := _button("Close")
+		close_button.name = "CloseGear"
+		close_button.pressed.connect(close)
+		top.add_child(close_button)
+		var classes := HBoxContainer.new()
+		classes.add_theme_constant_override("separation", 6)
+		body.add_child(classes)
+		for cid in _roster():
+			var tab := _button(SpellKits.display_name(cid))
+			tab.name = "ClassGear_%s" % cid
+			tab.pressed.connect(_focus_class.bind(cid))
+			classes.add_child(tab)
+			_class_buttons[cid] = tab
 	var columns := HBoxContainer.new()
 	columns.add_theme_constant_override("separation", 18)
 	columns.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -244,11 +264,14 @@ func _refresh() -> void:
 	var st := GearBag.sheet_stats(_bag.worn_list(), _bag.attune, _pvp_lines, _bag.stance_of())
 	var base_hp := int(preload("res://backend/combat_sim.gd").class_base_hp(_bag.focus_class))
 	var hp := roundi(float(base_hp + int(st["hp_flat"])) * (1.0 + float(st["hp_pct"]) / 100.0))
-	_header.text = "%s   HP %d   Mastery %d   Init %d   Crit %d%%   AP %d/%d   MP %d/%d%s   Loot today %d/%d" % [
-		SpellKits.display_name(_bag.focus_class), hp, int(st["mastery"]), int(st["init"]), int(st["crit"]),
-		int(apmp["ap"]), GearBag.AP_CAP, int(apmp["mp"]), GearBag.MP_CAP, grey,
-		_bag.loot_clears_left(int(Time.get_unix_time_from_system())), GearBag.LOOT_CLEARS_PER_DAY,
-	]
+	if embedded:
+		_header.text = "%s   HP %d   AP %d   MP %d" % [SpellKits.display_name(_bag.focus_class), hp, int(apmp["ap"]), int(apmp["mp"])]
+	else:
+		_header.text = "%s   HP %d   Mastery %d   Init %d   Crit %d%%   AP %d/%d   MP %d/%d%s   Loot today %d/%d" % [
+			SpellKits.display_name(_bag.focus_class), hp, int(st["mastery"]), int(st["init"]), int(st["crit"]),
+			int(apmp["ap"]), GearBag.AP_CAP, int(apmp["mp"]), GearBag.MP_CAP, grey,
+			_bag.loot_clears_left(int(Time.get_unix_time_from_system())), GearBag.LOOT_CLEARS_PER_DAY,
+		]
 	_clear(_slots_box)
 	for slot in GearBag.SLOTS:
 		var worn := _bag.equipped_item(slot)
