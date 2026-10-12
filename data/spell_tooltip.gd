@@ -43,6 +43,9 @@ static func card_lines(preview: Dictionary) -> PackedStringArray:
 		lines.append(effect)
 	if spell_id == SpellKits.VAULT:
 		lines.append("Cooldown %d turns. Button says 2 turns, then 1 turn. No match limit." % int(kit.get("cooldown", 2)))
+	var residue := _residue_card_line(spell_id)
+	if residue != "":
+		lines.append(residue)
 	var duration := _duration_line(str(preview.get("spell_id", "")))
 	if duration != "":
 		lines.append(duration)
@@ -79,6 +82,26 @@ static func _short_effect(preview: Dictionary, needs_marks: bool) -> String:
 	if bits.is_empty():
 		return ""
 	return " · ".join(bits)
+
+
+static func _residue_card_line(spell_id: String) -> String:
+	if not SpellKits.is_flex(spell_id):
+		return ""
+	match spell_id:
+		SpellKits.SNAP_WALL:
+			return "Residue on enemies next to the wall"
+		SpellKits.PLANT, SpellKits.FADE, SpellKits.WARD:
+			return "Residue on enemies next to you"
+		SpellKits.VAULT, SpellKits.ADVANCE:
+			return "Residue on enemies next to the landing"
+		SpellKits.DROP_SHADE:
+			return "Residue on enemies next to the shadow"
+		SpellKits.SNARE_TRAP:
+			return "Residue on enemies next to the trap"
+		SpellKits.MEND, SpellKits.PULSE_TAP, SpellKits.HEARTSTOP, SpellKits.CLEANSE, SpellKits.REKINDLE:
+			return "Residue on enemies next to the ally, not on the ally"
+		_:
+			return "Residue on the enemy hit"
 
 
 static func _duration_line(spell_id: String) -> String:
@@ -206,8 +229,31 @@ static func simple_lines(spell_id: String, preview: Dictionary = {}) -> PackedSt
 	elif not bool(def.get("gated", false)):
 		out.append("No dice: it always works.")
 	if SpellKits.is_flex(spell_id):
+		out.append(_residue_blurb(spell_id))
 		out.append("Element: the one you picked on the Elements screen.")
 	return out
+
+
+static func _residue_blurb(spell_id: String) -> String:
+	match spell_id:
+		SpellKits.ADVANCE, SpellKits.VAULT:
+			return "Enemies next to where you land get this element's Residue, so your next hit can Blend."
+		SpellKits.FADE:
+			return "Enemies next to you get this element's Residue. Your position is not sent."
+		SpellKits.WARD:
+			return "Enemies next to you get this element's Residue. Allies do not."
+		SpellKits.PLANT:
+			return "Enemies next to you get this element's Residue. Enemies next to the flag do not, unless they are also next to you."
+		SpellKits.SNAP_WALL:
+			return "Every enemy next to the wall gets this element's Residue, so your next hit can Blend. Knocking down your own wall does not."
+		SpellKits.DROP_SHADE:
+			return "Enemies next to the shadow get this element's Residue. Removing a shadow does not. The log never says where the shadow is."
+		SpellKits.SNARE_TRAP:
+			return "Enemies next to the trap get this element's Residue when you set it, and the enemy who steps on it gets it too. The log does not say where you hid it."
+		SpellKits.MEND, SpellKits.PULSE_TAP, SpellKits.HEARTSTOP, SpellKits.CLEANSE, SpellKits.REKINDLE:
+			return "Enemies next to the teammate get this element's Residue. The teammate does not, and a heal leaves no Residue on them."
+		_:
+			return "A hit leaves this element's Residue on that enemy, so your other element can Blend."
 
 
 static func _reach_words(def: Dictionary, preview: Dictionary) -> String:

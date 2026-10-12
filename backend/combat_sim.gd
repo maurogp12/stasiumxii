@@ -1760,7 +1760,7 @@ func _preview_reason(def: Dictionary, actor: Dictionary, target: Dictionary, fro
 func _preview_kit_lines(spell_id: String) -> Dictionary:
 	match spell_id:
 		SpellKits.REKINDLE:
-			return {"on_connect": "Spends 6 Pulse. A fallen teammate stands up with 30% HP. Once per match.", "on_miss": "No roll."}
+			return {"on_connect": "Spends 6 Pulse. A fallen teammate stands up with 30% HP. Once per match. Enemies next to them get this element's Residue. The teammate does not.", "on_miss": "No roll."}
 		SpellKits.MARK_SHOT:
 			return {"on_connect": "8 Air. +1 Mark on the target.", "on_miss": "AP/MP stay spent. No Mark."}
 		SpellKits.DETONATE:
@@ -1772,15 +1772,27 @@ func _preview_kit_lines(spell_id: String) -> Dictionary:
 		SpellKits.CRUSH:
 			return {"on_connect": "%d Earth. Spends 2 Impact. Stun 1 if Impact was full (5); a stunning Crush spends all." % int(SpellKits.spell(SpellKits.CRUSH).get("base_damage", 0)), "on_miss": "Impact retained. AP/MP stay spent."}
 		SpellKits.ADVANCE:
-			return {"on_connect": "Teleport snap. +1 Impact if adjacent. Facing unchanged.", "on_miss": "No roll."}
+			return {"on_connect": "Teleport snap. +1 Impact if adjacent. Facing unchanged. Enemies next to the landing get this element's Residue.", "on_miss": "No roll."}
 		SpellKits.AMBUSH:
 			return {"on_connect": "Hit spends all Umbral, +3 each.", "on_miss": "Miss keeps Umbral."}
 		SpellKits.AEGIS_BREAK:
 			return {"on_connect": "26 Earth per body in range 1–2. Push 1. Clears all Aegis.", "on_miss": "Spends 0 Aegis. Does not clear Aegis."}
 		SpellKits.WARD:
-			return {"on_connect": "+20 shield on every ally within 3 tiles, you too. Stacks to 40. Lasts until broken. Spends %d Aegis. Once per turn." % int(SpellKits.spell(SpellKits.WARD).get("spend_aegis", 2)), "on_miss": "No roll."}
+			return {"on_connect": "+20 shield on every ally within 3 tiles, you too. Stacks to 40. Lasts until broken. Spends %d Aegis. Once per turn. Enemies next to you get this element's Residue. Allies do not." % int(SpellKits.spell(SpellKits.WARD).get("spend_aegis", 2)), "on_miss": "No roll."}
 		SpellKits.SNAP_WALL:
-			return {"on_connect": "Blocked tile for 2 Bastion turn-starts. Spends 2 Aegis. On your own wall: knocks it down, +2 Aegis back.", "on_miss": "No roll."}
+			return {"on_connect": "Blocked tile for 2 Bastion turn-starts. Spends 2 Aegis. Every enemy next to the wall gets this element's Residue. On your own wall: knocks it down, +2 Aegis back.", "on_miss": "No roll."}
+		SpellKits.PLANT:
+			return {"on_connect": "Flag for 3 turns. +1 Aegis. Enemies next to you get this element's Residue.", "on_miss": "No roll."}
+		SpellKits.FADE:
+			return {"on_connect": "Invisible. Enemies next to you get this element's Residue. Your position is not sent.", "on_miss": "No roll."}
+		SpellKits.VAULT:
+			return {"on_connect": "Jump 2. Enemies next to the landing get this element's Residue.", "on_miss": "No roll."}
+		SpellKits.CLEANSE, SpellKits.MEND, SpellKits.PULSE_TAP, SpellKits.HEARTSTOP:
+			return {"on_connect": "Enemies next to the teammate get this element's Residue. The teammate does not.", "on_miss": "No roll."}
+		SpellKits.DROP_SHADE:
+			return {"on_connect": "Enemies next to the shadow get this element's Residue. The log does not say where it is.", "on_miss": "No roll."}
+		SpellKits.SNARE_TRAP:
+			return {"on_connect": "Enemies next to the trap get this element's Residue. The enemy who steps on it gets it too.", "on_miss": "No roll."}
 		_:
 			return {"on_connect": "", "on_miss": ""}
 
@@ -1966,6 +1978,68 @@ func _add_element_rider(target: Dictionary, el: String, tags: Array) -> void:
 
 
 ## Once per connecting cast: Air melee +1 MP, Earth Grounded.
+## Residue without a hit's riders. A Blend with this caster's own Residue still
+## fires (one per body until that body's next turn). Burn, Water slow, Earth
+## Grounded and Air's +1 MP stay on connecting hits. Allies and the dead get
+## nothing. Returns "blend", "residue", or "".
+func _apply_residue_mark(actor: Dictionary, target: Dictionary, el: String) -> String:
+	if el == "" or el == "neutral" or target.is_empty():
+		return ""
+	if not bool(target.get("alive", false)) or int(target.get("hp", 0)) <= 0:
+		return ""
+	if _team_of(target) == _team_of(actor):
+		return ""
+	if _try_blend(actor, target, el, false) != "":
+		return "blend"
+	target["residue"] = el
+	target["residue_turns"] = RESIDUE_TURNS
+	target["residue_seat"] = int(actor["seat"])
+	_still_on_debuff(target, "residue")
+	return "residue"
+
+
+## Living enemies at Chebyshev 1 from `center`. The ally who was healed, and
+## the caster, are not in this list.
+func _enemies_adjacent_to(actor: Dictionary, center: Vector2i) -> Array:
+	var foes: Array = []
+	for raw in _units:
+		var unit: Dictionary = raw
+		if not bool(unit.get("alive", false)) or not bool(unit.get("placed", true)):
+			continue
+		if int(unit.get("hp", 0)) <= 0 or _team_of(unit) == _team_of(actor):
+			continue
+		var pos: Vector2i = _as_cell(unit.get("pos", UNPLACED))
+		if pos == UNPLACED or chebyshev(center, pos) != 1:
+			continue
+		foes.append(unit)
+	foes.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		return int(a.get("seat", 0)) < int(b.get("seat", 0))
+	)
+	return foes
+
+
+## Self, ally, movement and placement casts. Writes Residue (or Blends) on
+## each adjacent enemy and returns log rows. No row when the body Blended:
+## the Blend event is the record. Neutral writes nothing.
+func _splash_residue(actor: Dictionary, center: Vector2i, def: Dictionary) -> Array:
+	var el := _rider_element(actor, def)
+	var rows: Array = []
+	if el == "":
+		return rows
+	for raw in _enemies_adjacent_to(actor, center):
+		var unit: Dictionary = raw
+		if _apply_residue_mark(actor, unit, el) != "residue":
+			continue
+		rows.append({"target_seat": int(unit["seat"]), "residue": el})
+	return rows
+
+
+func _stamp_residue_on(event: Dictionary, rows: Array) -> void:
+	if rows.is_empty():
+		return
+	event["residue_on"] = rows
+
+
 func _flex_caster(actor: Dictionary, def: Dictionary) -> Array:
 	var el := _rider_element(actor, def)
 	var tags: Array = []
@@ -2058,7 +2132,7 @@ static func blend_of(a: String, b: String) -> String:
 
 ## Fires the Blend if this hit pairs with the caster's own Residue (or with a
 ## Mender infusion on the caster). Returns the Blend id or "".
-func _try_blend(actor: Dictionary, target: Dictionary, el: String) -> String:
+func _try_blend(actor: Dictionary, target: Dictionary, el: String, allow_infusion: bool = true) -> String:
 	if bool(target.get("blend_lock", false)):
 		return ""
 	var other := ""
@@ -2066,7 +2140,7 @@ func _try_blend(actor: Dictionary, target: Dictionary, el: String) -> String:
 	var residue := str(target.get("residue", ""))
 	if residue != "" and residue != el and int(target.get("residue_seat", -1)) == int(actor["seat"]):
 		other = residue
-	elif str(actor.get("infusion", "")) != "" and str(actor["infusion"]) != el:
+	elif allow_infusion and str(actor.get("infusion", "")) != "" and str(actor["infusion"]) != el:
 		other = str(actor["infusion"])
 		used_infusion = true
 	if other == "":
@@ -2142,6 +2216,10 @@ func _debuff(debuff_name: String, turns: int, detail: String = "") -> Dictionary
 ## its next turn. Its next hit of another element fires that pair's Blend.
 func _infuse(actor: Dictionary, target: Dictionary, def: Dictionary) -> String:
 	if str(actor.get("class_id", "")) != SpellKits.CLASS_MENDER or int(actor["seat"]) == int(target["seat"]):
+		return ""
+	# Heals only. Cleanse and the other ally spells now carry an element, and
+	# that element is Residue on nearby enemies, not an infusion on the ally.
+	if int(def.get("base_heal", 0)) <= 0:
 		return ""
 	var el := _rider_element(actor, def)
 	if el == "":
@@ -3319,8 +3397,9 @@ func _resolve_advance(intent: Dictionary, actor: Dictionary, _def: Dictionary, d
 		_last_coach = "%s Advance to %s (−%d AP). Adjacent, Impact already capped." % [actor["name"], _cell_text(dest), ap_cost]
 	else:
 		_last_coach = "%s Advance to %s (−%d AP). No Impact (not adjacent)." % [actor["name"], _cell_text(dest), ap_cost]
-	_last_events.append({
+	var advance_event := {
 		"type": "advance",
+		"spell": SpellKits.ADVANCE,
 		"seat": actor["seat"],
 		"from": from,
 		"to": dest,
@@ -3331,7 +3410,9 @@ func _resolve_advance(intent: Dictionary, actor: Dictionary, _def: Dictionary, d
 		"adjacent": adjacent,
 		"impact_gained": impact_gained,
 		"coach": _last_coach,
-	})
+	}
+	_stamp_residue_on(advance_event, _splash_residue(actor, dest, _def))
+	_last_events.append(advance_event)
 	return _accept()
 
 
@@ -3815,7 +3896,7 @@ func _resolve_vault(intent: Dictionary, actor: Dictionary, def: Dictionary, dest
 		_last_coach = "%s vaults to %s (free). Cooldown: next %d turns." % [actor["name"], _cell_text(dest), cool]
 	else:
 		_last_coach = "%s vaults to %s (−%d AP). Cooldown: next %d turns." % [actor["name"], _cell_text(dest), ap_cost, cool]
-	_last_events.append({
+	var vault_event := {
 		"type": "cast",
 		"spell": SpellKits.VAULT,
 		"seat": actor["seat"],
@@ -3827,7 +3908,9 @@ func _resolve_vault(intent: Dictionary, actor: Dictionary, def: Dictionary, dest
 		"ap_spent": ap_cost,
 		"mp_spent": 0,
 		"coach": _last_coach,
-	})
+	}
+	_stamp_residue_on(vault_event, _splash_residue(actor, dest, def))
+	_last_events.append(vault_event)
 	_trigger_trap(actor)
 	return _accept()
 
@@ -3853,16 +3936,22 @@ func _trigger_trap(unit: Dictionary) -> bool:
 			unit["pin_pending"] = true
 			_still_on_debuff(unit, "pin")
 		_clear_invisible(unit)
-		_last_events.append({
+		var trap_event := {
 			"type": "trap",
+			"spell": SpellKits.SNARE_TRAP,
 			"seat": int(owner["seat"]),
 			"target_seat": int(unit["seat"]),
 			"to": unit["pos"],
 			"damage": damage,
 			"pin": bool(unit.get("pin_pending", false)),
 			"coach": "SNARE! %s is caught: −%d, −1 MP, Pinned next turn." % [str(unit.get("name", "")), damage],
-		})
+		}
+		var trap_el := _rider_element(owner, SpellKits.spell_for(owner, SpellKits.SNARE_TRAP))
+		if _apply_residue_mark(owner, unit, trap_el) == "residue":
+			trap_event["residue_on"] = [{"target_seat": int(unit["seat"]), "residue": trap_el}]
+		_last_events.append(trap_event)
 		_check_death(unit)
+		_reflect_gathered_sand(owner, unit, report)
 		return true
 	return false
 
@@ -6872,7 +6961,9 @@ func _still_bound_portion(unit: Dictionary, amount: int) -> int:
 
 
 ## HP actually removed. Bound Hour splits an ally's loss with the wearer.
-## Rewind and Gathered Sand read the loss. from_bind stops the split looping.
+## Rewind reads the loss. from_bind stops the split looping.
+## Gathered Sand does not read this: DoTs, lava, and Burn ticks come through
+## here, and only a direct enemy hit reflects.
 func _lose_hp(unit: Dictionary, amount: int, from_bind: bool = false) -> int:
 	if unit.is_empty() or amount <= 0 or not bool(unit.get("alive", true)):
 		return 0
@@ -6900,11 +6991,6 @@ func _lose_hp(unit: Dictionary, amount: int, from_bind: bool = false) -> int:
 func _still_note_hp_loss(unit: Dictionary, dealt: int) -> void:
 	if dealt <= 0 or unit.is_empty():
 		return
-	if _still_id(unit) == "gathered_sand" and not bool(unit.get("sand_released", false)):
-		var pct := 0.25 if _still_over(unit) else 0.15
-		var cap := 25 if _still_over(unit) else 15
-		var add := roundi(float(dealt) * pct)
-		unit["sand_stored"] = mini(int(unit.get("sand_stored", 0)) + add, cap)
 	if _still_id(unit) == "rewind" and not bool(unit.get("rewind_used", false)):
 		var foe := _unit_by_seat(_active_seat)
 		if not foe.is_empty() and foe != unit and not _allied(foe, unit):
@@ -6947,11 +7033,6 @@ func _still_on_hit(actor: Dictionary, target: Dictionary, damage: int) -> int:
 		damage += int(actor["wither_bonus"])
 		actor["wither_bonus"] = 0
 		_still_fired(actor, "withering_sand")
-	if _still_id(actor) == "gathered_sand" and int(actor.get("sand_stored", 0)) > 0 and not bool(actor.get("sand_released", false)):
-		damage += int(actor["sand_stored"])
-		actor["sand_stored"] = 0
-		actor["sand_released"] = true
-		_still_fired(actor, "gathered_sand")
 	if _still_id(actor) == "held_hour" and not bool(actor.get("held_used", false)) and not _allied(actor, target):
 		actor["held_used"] = true
 		if _still_over(actor):
@@ -6970,7 +7051,7 @@ func _still_on_hit(actor: Dictionary, target: Dictionary, damage: int) -> int:
 func _still_note_kite(actor: Dictionary, target: Dictionary) -> void:
 	if _still_id(target) != "long_shadow" or _allied(actor, target):
 		return
-	if chebyshev(actor["pos"], target["pos"]) < 4:
+	if chebyshev(actor["pos"], target["pos"]) < 3:
 		return
 	var cap := 3 if _still_over(target) else 1
 	if int(target.get("shadow_hits", 0)) >= cap:
@@ -7298,6 +7379,8 @@ func _mitigate_hit(actor: Dictionary, target: Dictionary, damage: int) -> Dictio
 ## back, no resist. The hit lands first: if it kills Bastion, Thorns does not
 ## fire, so one blow cannot name two winners.
 const THORNS_REFLECT := 0.2
+## Gathered Sand: share of a direct hit sent back, then a per-hit cap.
+const GATHERED_SAND_CAP := 12
 ## Balance tool knob: > 0 overrides the reflect share in % (sim_duels reads
 ## THORNS_PCT).
 static var thorns_pct := 0.0
@@ -7330,11 +7413,39 @@ func _reflect_thorns_after_hit(actor: Dictionary, target: Dictionary, report: Di
 	if target.is_empty() or not bool(target.get("alive", false)) or _match_over:
 		return
 	_bastion_thorns(actor, target, int(report.get("thorns_basis", 0)), report)
-	if not report.has("thorns") or event.is_empty():
+	if report.has("thorns") and not event.is_empty():
+		event["thorns"] = int(report["thorns"])
+		event["thorns_seat"] = int(report["thorns_seat"])
+		event["coach"] = str(event.get("coach", "")) + " Thorns: %d back." % int(report["thorns"])
+	_reflect_gathered_sand(actor, target, report)
+
+
+## Intact 10%, Overwound 20%, never more than GATHERED_SAND_CAP per hit.
+## Same post-stills, pre-shield basis as Thorns, so a shield does not erase
+## it and the two stack. Any range. A dead wearer does not reflect, and the
+## damage itself is plain HP loss so it cannot bounce.
+func _reflect_gathered_sand(actor: Dictionary, target: Dictionary, report: Dictionary) -> void:
+	if actor.is_empty() or target.is_empty() or actor == target:
 		return
-	event["thorns"] = int(report["thorns"])
-	event["thorns_seat"] = int(report["thorns_seat"])
-	event["coach"] = str(event.get("coach", "")) + " Thorns: %d back." % int(report["thorns"])
+	if not bool(target.get("alive", false)) or not bool(actor.get("alive", false)) or _match_over:
+		return
+	if _allied(actor, target) or _still_id(target) != "gathered_sand":
+		return
+	var basis := int(report.get("thorns_basis", 0))
+	if basis <= 0:
+		return
+	var pct := 0.2 if _still_over(target) else 0.1
+	var reflected := mini(GATHERED_SAND_CAP, roundi(float(basis) * pct))
+	if reflected <= 0:
+		return
+	reflected = _lose_hp(actor, reflected)
+	if reflected <= 0:
+		return
+	_check_death(actor)
+	_still_fired(target, "gathered_sand", {
+		"target_seat": int(actor.get("seat", -1)),
+		"damage": reflected,
+	})
 
 
 func _stamp_mitigation(event: Dictionary, report: Dictionary) -> void:
@@ -7446,7 +7557,7 @@ func _apply_heal(target: Dictionary, amount: int, healer: Dictionary = {}) -> in
 		return 0
 	if int(target.get("bleed_lock", 0)) > 0:
 		return 0
-	if _still_id(target) == "gathered_sand" and _still_over(target) and int(target.get("sand_stored", 0)) > 0:
+	if _still_id(target) == "gathered_sand" and _still_over(target):
 		return 0
 	if bool(target.get("rewind_block_ally", false)) and not healer.is_empty() and healer != target and _allied(healer, target):
 		return 0
@@ -7530,7 +7641,7 @@ func _resolve_revive(intent: Dictionary, actor: Dictionary, def: Dictionary, des
 	_refresh_last_stand()
 	_intent_log.append(intent)
 	_last_coach = "%s Rekindles %s (−%d AP): back on their feet with %d HP." % [actor["name"], body["name"], ap_cost, hp]
-	_last_events.append({
+	var revive_event := {
 		"type": "hit",
 		"seat": actor["seat"],
 		"spell": spell_id,
@@ -7546,7 +7657,10 @@ func _resolve_revive(intent: Dictionary, actor: Dictionary, def: Dictionary, des
 		"engine": "pulse",
 		"engine_spent": pulse_spent,
 		"coach": _last_coach,
-	})
+	}
+	# The revived ally keeps no Residue. Enemies next to them do.
+	_stamp_residue_on(revive_event, _splash_residue(actor, dest, def))
+	_last_events.append(revive_event)
 	return _accept()
 
 
@@ -7659,6 +7773,9 @@ func _resolve_support(intent: Dictionary, actor: Dictionary, target: Dictionary,
 	if infused != "":
 		hit_event["infusion"] = infused
 		hit_event["coach"] = str(hit_event["coach"]) + " %s carries %s: their next hit of another element fires a Blend." % [str(target.get("name", "")), infused.capitalize()]
+	# The ally is not marked. Enemies next to the ally (or next to you, on a
+	# self cast) take the element's Residue. A Last Stand hit is not this path.
+	_stamp_residue_on(hit_event, _splash_residue(actor, _as_cell(target.get("pos", dest)), def))
 	_last_events.append(hit_event)
 	return _accept()
 
@@ -7847,8 +7964,10 @@ func _resolve_team_ward(intent: Dictionary, actor: Dictionary, def: Dictionary, 
 		})
 	_intent_log.append(intent)
 	_last_coach = "%s Ward: +%d shield on %d (−%d AP, −%d Aegis)." % [actor["name"], add, shielded.size(), ap_cost, spent]
+	var ward_residue := _splash_residue(actor, actor["pos"], def)
+	var ward_first := true
 	for row in shielded:
-		_last_events.append({
+		var ward_event := {
 			"type": "hit",
 			"seat": actor["seat"],
 			"spell": SpellKits.WARD,
@@ -7856,16 +7975,20 @@ func _resolve_team_ward(intent: Dictionary, actor: Dictionary, def: Dictionary, 
 			"target_seat": row["seat"],
 			"to": row["pos"],
 			"rolled": false,
-			"ap_spent": ap_cost if row == shielded[0] else 0,
-			"mp_spent": mp_cost if row == shielded[0] else 0,
+			"ap_spent": ap_cost if ward_first else 0,
+			"mp_spent": mp_cost if ward_first else 0,
 			"healed": 0,
 			"damage": 0,
 			"shield": row["shield"],
 			"shield_gained": row["gained"],
 			"engine": "aegis",
-			"engine_spent": spent if row == shielded[0] else 0,
+			"engine_spent": spent if ward_first else 0,
 			"coach": _last_coach,
-		})
+		}
+		if ward_first:
+			_stamp_residue_on(ward_event, ward_residue)
+			ward_first = false
+		_last_events.append(ward_event)
 	return _accept()
 
 
@@ -7902,6 +8025,9 @@ func _resolve_fade(intent: Dictionary, actor: Dictionary, def: Dictionary, ap_co
 		"engine_gained": gained,
 		"coach": _last_coach,
 	}
+	# Names and seats only. The cast cell stays on caster_cell, which the
+	# enemy wire already drops while Gloam is hidden.
+	_stamp_residue_on(fade_event, _splash_residue(actor, caster_cell, def))
 	_last_events.append(fade_event)
 	_still_on_invisible(actor)
 	if not bool(actor.get("invisible", false)):
@@ -7938,7 +8064,7 @@ func _resolve_empty_tile(intent: Dictionary, actor: Dictionary, def: Dictionary,
 		_intent_log.append(intent)
 		# No tile in the coach: Shades are secret to their owner.
 		_last_coach = "%s drops a Shade (−%d AP)." % [actor["name"], ap_cost]
-		_last_events.append({
+		var shade_event := {
 			"type": "cast",
 			"spell": spell_id,
 			"seat": actor["seat"],
@@ -7949,7 +8075,11 @@ func _resolve_empty_tile(intent: Dictionary, actor: Dictionary, def: Dictionary,
 			"mp_spent": mp_cost,
 			"shades": int(actor.get("shades", 0)),
 			"coach": _last_coach,
-		})
+		}
+		# Around the shadow, not Gloam. The log row names seats only; `to`
+		# stays the hidden cell the enemy wire already strips.
+		_stamp_residue_on(shade_event, _splash_residue(actor, dest, def))
+		_last_events.append(shade_event)
 		return _accept()
 	if spell_id == SpellKits.SNARE_TRAP:
 		actor["ap"] = int(actor["ap"]) - ap_cost
@@ -7958,7 +8088,7 @@ func _resolve_empty_tile(intent: Dictionary, actor: Dictionary, def: Dictionary,
 		_intent_log.append(intent)
 		# No tile in the coach: the trap is hidden from the enemy.
 		_last_coach = "%s sets a Snare Trap (−%d AP)." % [actor["name"], ap_cost]
-		_last_events.append({
+		var trap_set := {
 			"type": "cast",
 			"spell": spell_id,
 			"seat": actor["seat"],
@@ -7968,7 +8098,9 @@ func _resolve_empty_tile(intent: Dictionary, actor: Dictionary, def: Dictionary,
 			"ap_spent": ap_cost,
 			"mp_spent": mp_cost,
 			"coach": _last_coach,
-		})
+		}
+		_stamp_residue_on(trap_set, _splash_residue(actor, dest, def))
+		_last_events.append(trap_set)
 		return _accept()
 	if spell_id == SpellKits.SNAP_WALL:
 		var spent := _spend_resource(actor, "aegis", int(def.get("spend_aegis", 2)))
@@ -7977,7 +8109,7 @@ func _resolve_empty_tile(intent: Dictionary, actor: Dictionary, def: Dictionary,
 		_add_snap_wall(dest, int(def.get("wall_turns", 2)), int(actor["seat"]))
 		_intent_log.append(intent)
 		_last_coach = "%s Snap Wall on %s (−%d AP, −%d Aegis)." % [actor["name"], _cell_text(dest), ap_cost, spent]
-		_last_events.append({
+		var wall_event := {
 			"type": "snap_wall",
 			"spell": spell_id,
 			"seat": actor["seat"],
@@ -7989,7 +8121,9 @@ func _resolve_empty_tile(intent: Dictionary, actor: Dictionary, def: Dictionary,
 			"aegis_spent": spent,
 			"turns": int(def.get("wall_turns", 2)),
 			"coach": _last_coach,
-		})
+		}
+		_stamp_residue_on(wall_event, _splash_residue(actor, dest, def))
+		_last_events.append(wall_event)
 		return _accept()
 	return _reject(intent, "unknown_spell", "REJECT — unknown empty-tile spell.")
 
@@ -8007,7 +8141,7 @@ func _resolve_plant(intent: Dictionary, actor: Dictionary, def: Dictionary, dest
 	})
 	_intent_log.append(intent)
 	_last_coach = "%s Plant on %s (−%d AP). +%d Aegis." % [actor["name"], _cell_text(dest), ap_cost, gained]
-	_last_events.append({
+	var plant_event := {
 		"type": "cast",
 		"spell": SpellKits.PLANT,
 		"seat": actor["seat"],
@@ -8018,7 +8152,10 @@ func _resolve_plant(intent: Dictionary, actor: Dictionary, def: Dictionary, dest
 		"mp_spent": mp_cost,
 		"engine_gained": gained,
 		"coach": _last_coach,
-	})
+	}
+	# Around Bastion, not the flag.
+	_stamp_residue_on(plant_event, _splash_residue(actor, caster_cell, def))
+	_last_events.append(plant_event)
 	return _accept()
 
 

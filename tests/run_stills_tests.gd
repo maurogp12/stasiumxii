@@ -286,8 +286,15 @@ func _test_rewind() -> void:
 
 
 func _test_long_shadow() -> void:
-	_fight({}, _gear("long_shadow", "intact"), ["kestrel", "ironjaw"], [], [Vector2i(2, 7), Vector2i(6, 7)])
-	eq(_sim.chebyshev(_u(0)["pos"], _u(1)["pos"]), 4, "the hit is from 4 tiles")
+	truthy(StillVault.plain("long_shadow", "intact").contains("3 or more tiles"), "inventory text says 3 or more tiles")
+	truthy(StillVault.plain("long_shadow", "overwound").contains("3 or more tiles"), "Overwound inventory text says 3 or more tiles")
+	eq(StillVault.plain("long_shadow", "intact").contains("4 or more"), false, "the old 4-tile line is gone")
+	_fight({}, _gear("long_shadow", "intact"), ["kestrel", "ironjaw"], [], [Vector2i(2, 7), Vector2i(4, 7)])
+	eq(_sim.chebyshev(_u(0)["pos"], _u(1)["pos"]), 2, "2 tiles is not a long hit")
+	_sim._mitigate_hit(_u(0), _u(1), 20)
+	eq(int(_u(1).get("shadow_mp_next", 0)), 0, "Long Shadow does not trigger at 2 tiles")
+	_fight({}, _gear("long_shadow", "intact"), ["kestrel", "ironjaw"], [], [Vector2i(2, 7), Vector2i(5, 7)])
+	eq(_sim.chebyshev(_u(0)["pos"], _u(1)["pos"]), 3, "the hit is from 3 tiles")
 	var far := int(_sim._mitigate_hit(_u(0), _u(1), 20)["damage"])
 	eq(far, 20, "Long Shadow Intact does not change the hit")
 	eq(int(_u(1).get("shadow_mp_next", 0)), 2, "the next turn gains +2 MP")
@@ -295,6 +302,10 @@ func _test_long_shadow() -> void:
 	eq(int(_u(1).get("shadow_hits", 0)), 1, "Intact grants the bonus once")
 	_end_turns(1)
 	eq(int(_u(1)["mp"]), 5, "the +2 MP is capped at 5")
+	_fight({}, _gear("long_shadow", "intact"), ["kestrel", "ironjaw"], [], [Vector2i(2, 7), Vector2i(6, 7)])
+	eq(_sim.chebyshev(_u(0)["pos"], _u(1)["pos"]), 4, "4 tiles still counts")
+	_sim._mitigate_hit(_u(0), _u(1), 20)
+	eq(int(_u(1).get("shadow_mp_next", 0)), 2, "a 4-tile hit still grants +2 MP")
 	_fight({}, _gear("long_shadow", "overwound"))
 	var near := int(_sim._mitigate_hit(_u(0), _u(1), 20)["damage"])
 	eq(near, 22, "adjacent enemies deal +10% even before a long hit")
@@ -532,21 +543,134 @@ func _test_bound_hour() -> void:
 
 
 func _test_gathered_sand() -> void:
+	truthy(StillVault.plain("gathered_sand", "intact").contains("reflects 10%"), "inventory text says 10%")
+	truthy(StillVault.plain("gathered_sand", "overwound").contains("reflects 20%"), "inventory text says 20%")
+	truthy(StillVault.plain("gathered_sand", "overwound").contains("cannot be healed"), "Overwound names the heal lock")
+	eq(StillVault.plain("gathered_sand", "intact").contains("stored"), false, "the store sentence is gone")
 	_fight(_gear("gathered_sand", "intact"))
-	_sim._mitigate_hit(_u(0), _u(1), 10)
-	eq(bool(_u(0).get("sand_released", false)), false, "a hit while empty does not spend the release")
+	var foe_hp := int(_u(1)["hp"])
 	_sim._lose_hp(_u(0), 40)
-	eq(int(_u(0).get("sand_stored", 0)), 6, "15% of 40 is stored")
-	eq(int(_sim._mitigate_hit(_u(0), _u(1), 10)["damage"]), 16, "the next hit releases the store")
-	eq(int(_u(0).get("sand_stored", 0)), 0, "the store is empty")
-	eq(bool(_u(0).get("sand_released", false)), true, "the release is once")
-	_fight(_gear("gathered_sand", "overwound"))
-	_sim._lose_hp(_u(0), 40)
-	eq(int(_u(0).get("sand_stored", 0)), 10, "Overwound stores 25%")
+	eq(int(_u(1)["hp"]), foe_hp, "plain HP loss does not reflect")
+	eq(_u(0).has("sand_stored"), false, "nothing is stored")
+	_u(0)["burn_stacks"] = 2
+	_u(0)["burn_remaining"] = 3
+	_sim._tick_burn(_u(0))
+	eq(int(_u(1)["hp"]), foe_hp, "a burn tick does not reflect")
+	_sim._apply_lava_land(_u(0), 1)
+	eq(int(_u(1)["hp"]), foe_hp, "lava does not reflect")
 	_u(0)["hp"] = 40
-	eq(int(_sim._apply_heal(_u(0), 12, _u(0))), 0, "no heals while sand is stored")
-	_sim._mitigate_hit(_u(0), _u(1), 10)
-	eq(int(_sim._apply_heal(_u(0), 12, _u(0))), 12, "heals work again after the release")
+	eq(int(_sim._apply_heal(_u(0), 12, _u(0))), 12, "Intact can still be healed")
+	eq(int(_sim._mitigate_hit(_u(0), _u(1), 10)["damage"]), 10, "the next hit does not release a store")
+	var first := _enemy_strike()
+	var hit: Dictionary = first["hit"]
+	var sand: Dictionary = first["sand"]
+	var basis := int(hit.get("damage", 0)) + int(hit.get("shield_absorbed", 0))
+	var expect := mini(12, roundi(float(basis) * 0.1))
+	eq(expect > 0, true, "the strike is big enough to reflect")
+	eq(int(sand.get("damage", 0)), expect, "Intact reflects 10% of the hit")
+	eq(int(_u(1)["hp"]), int(first["foe_hp"]) - expect, "the attacker loses that much")
+	var log: Script = load("res://ui/battle_log.gd")
+	var snap: Dictionary = _sim.snapshot()
+	var mine := snap.duplicate(true)
+	mine["local_seat"] = 0
+	var theirs := snap.duplicate(true)
+	theirs["local_seat"] = 1
+	var line := str(log.plain(sand, mine))
+	eq(line, str(log.plain(sand, theirs)), "both phones show the same reflect line")
+	eq(line, "Gathered Sand: Kestrel reflects %d to Ironjaw." % expect, "log line: %s" % line)
+	eq(line.contains("("), false, "the reflect line has no tile")
+	var again := _enemy_strike()
+	eq(int(again["sand"].get("damage", 0)), mini(12, roundi(float(int(again["hit"].get("damage", 0)) + int(again["hit"].get("shield_absorbed", 0))) * 0.1)), "a later hit reflects too")
+	var capped_hp := int(_u(1)["hp"])
+	_sim._reflect_gathered_sand(_u(1), _u(0), {"thorns_basis": 200})
+	eq(int(_u(1)["hp"]), capped_hp - 12, "the reflect caps at 12")
+	var quiet := int(_u(1)["hp"])
+	var before_events := int(_sim._last_events.size())
+	_sim._reflect_gathered_sand(_u(1), _u(0), {"thorns_basis": 4})
+	eq(int(_u(1)["hp"]), quiet, "10% of 4 rounds to 0 and does not reflect")
+	eq(_sim._last_events.size(), before_events, "a zero reflect writes no log line")
+	_fight(_gear("gathered_sand", "intact"), {}, ["kestrel", "gloam"], [1])
+	_u(0)["shield"] = 80
+	_u(0)["shield_turns"] = 2
+	var wearer_hp := int(_u(0)["hp"])
+	var shielded := _enemy_strike("cut")
+	eq(int(_u(0)["hp"]), wearer_hp, "the shield takes the hit")
+	eq(int(shielded["hit"].get("damage", 0)), 0, "no HP gets through the shield")
+	eq(int(shielded["sand"].get("damage", 0)) > 0, true, "a shielded hit still reflects")
+	_fight(_gear("gathered_sand", "overwound"))
+	_u(0)["hp"] = 40
+	eq(int(_sim._apply_heal(_u(0), 12, _u(0))), 0, "Overwound blocks heals all fight")
+	eq(int(_sim._apply_heal(_u(0), 12, _u(1))), 0, "an enemy heal is blocked too")
+	var heavy := _enemy_strike()
+	var heavy_basis := int(heavy["hit"].get("damage", 0)) + int(heavy["hit"].get("shield_absorbed", 0))
+	eq(int(heavy["sand"].get("damage", 0)), mini(12, roundi(float(heavy_basis) * 0.2)), "Overwound reflects 20%")
+	_fight(_gear("gathered_sand", "intact"), {}, ["bastion", "ironjaw"], [1])
+	var stacked := _enemy_strike()
+	var stack_basis := int(stacked["hit"].get("damage", 0)) + int(stacked["hit"].get("shield_absorbed", 0))
+	eq(int(stacked["hit"].get("thorns", 0)), maxi(1, roundi(float(stack_basis) * _sim.THORNS_REFLECT)), "Thorns still takes its 20%")
+	eq(int(stacked["sand"].get("damage", 0)), mini(12, roundi(float(stack_basis) * 0.1)), "Gathered Sand adds its own 10%")
+	eq(int(_u(1)["hp"]), int(stacked["foe_hp"]) - int(stacked["hit"]["thorns"]) - int(stacked["sand"]["damage"]), "both come off the attacker")
+	_fight(_gear("gathered_sand", "intact"), {}, ["ironjaw", "kestrel"], [1], [Vector2i(2, 7), Vector2i(6, 7)])
+	_sim._active_seat = 1
+	_u(1)["ap"] = 6
+	var far_hp := int(_u(1)["hp"])
+	var far: Dictionary = _sim.submit({"type": "cast", "spell": "mark_shot", "seat": 1, "to": _u(0)["pos"]})
+	eq(bool(far.get("ok", false)), true, "a ranged hit resolves")
+	var far_sand := _sand_event(far.get("events", []))
+	eq(int(far_sand.get("damage", 0)) > 0, true, "a ranged hit reflects")
+	eq(int(_u(1)["hp"]), far_hp - int(far_sand["damage"]), "the ranged attacker takes the reflect")
+	eq(int(_hit_event(far.get("events", [])).get("thorns", 0)), 0, "Thorns does not reach that shot")
+	_fight(_gear("gathered_sand", "intact"), _gear("gathered_sand", "intact"))
+	var once := _enemy_strike()
+	eq(_sand_count(once["events"]), 1, "the reflect does not bounce back")
+	_fight(_gear("gathered_sand", "intact"))
+	_sim._trap_tiles.append({"pos": _u(0)["pos"], "owner_seat": 1, "turns": 3})
+	var trap_hp := int(_u(1)["hp"])
+	eq(_sim._trigger_trap(_u(0)), true, "the snare springs")
+	eq(int(_u(1)["hp"]), trap_hp - mini(12, roundi(6.0 * 0.1)), "a sprung trap reflects")
+	_fight(_gear("gathered_sand", "intact"))
+	_u(0)["hp"] = 1
+	var killer := int(_u(1)["hp"])
+	var trade := _enemy_strike()
+	eq(bool(_u(0).get("alive", true)), false, "the hit kills the wearer")
+	eq(int(_u(1)["hp"]), killer, "a killing blow does not reflect")
+	eq(trade["sand"].is_empty(), true, "a killing blow writes no Gathered Sand line")
+
+
+func _enemy_strike(spell: String = "strike") -> Dictionary:
+	_sim._active_seat = 1
+	_u(1)["ap"] = 6
+	var foe_hp := int(_u(1)["hp"])
+	var result: Dictionary = _sim.submit({"type": "cast", "spell": spell, "seat": 1, "to": _u(0)["pos"]})
+	eq(bool(result.get("ok", false)), true, "the enemy strike resolves")
+	return {
+		"events": result.get("events", []),
+		"hit": _hit_event(result.get("events", [])),
+		"sand": _sand_event(result.get("events", [])),
+		"foe_hp": foe_hp,
+	}
+
+
+func _hit_event(events: Array) -> Dictionary:
+	for raw in events:
+		if typeof(raw) == TYPE_DICTIONARY and str(raw.get("type", "")) == "hit":
+			return raw
+	return {}
+
+
+func _sand_event(events: Array) -> Dictionary:
+	for raw in events:
+		if typeof(raw) == TYPE_DICTIONARY and str(raw.get("type", "")) == "still" and str(raw.get("still", "")) == "gathered_sand":
+			return raw
+	return {}
+
+
+func _sand_count(events: Array) -> int:
+	var n := 0
+	for raw in events:
+		if typeof(raw) == TYPE_DICTIONARY and str(raw.get("type", "")) == "still" and str(raw.get("still", "")) == "gathered_sand":
+			n += 1
+	return n
 
 
 func _test_carry_and_online() -> void:
@@ -707,7 +831,7 @@ func _test_card_lines() -> void:
 		"hp": 40, "max_hp": 75, "ap": 6, "mp": 3, "alive": true, "class_id": "kestrel",
 		"still": "gathered_sand", "still_mode": "intact", "sand_stored": 9, "name": "Kestrel",
 	}
-	eq(hud._unit_card_text(sand, true).contains("Gathered Sand 9/15"), true, "the corner card shows stored sand")
+	eq(hud._unit_card_text(sand, true).contains("Gathered Sand 9/15"), false, "the corner card no longer meters stored sand")
 	var bound := {
 		"hp": 75, "max_hp": 75, "ap": 4, "mp": 3, "alive": true, "class_id": "kestrel", "seat": 0,
 		"still": "bound_hour", "still_mode": "intact", "bound_seat": 2, "bound_name": "Bastion", "name": "Kestrel",

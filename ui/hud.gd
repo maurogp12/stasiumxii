@@ -3065,9 +3065,6 @@ func _still_state_line(unit: Dictionary) -> String:
 		return ""
 	var over := str(unit.get("still_mode", "")) == "overwound"
 	var parts: PackedStringArray = PackedStringArray()
-	if id == "gathered_sand" and int(unit.get("sand_stored", 0)) > 0:
-		var cap := 25 if over else 15
-		parts.append("Gathered Sand %d/%d" % [int(unit["sand_stored"]), cap])
 	if id == "bound_hour" and int(unit.get("bound_seat", -1)) >= 0 and str(unit.get("bound_name", "")) != "":
 		parts.append("Bound to %s" % str(unit["bound_name"]))
 	if id == "rewind" and int(unit.get("rewind_pending", 0)) > 0:
@@ -4034,7 +4031,7 @@ static func unit_info_text(unit: Dictionary) -> String:
 		var def: Dictionary = SpellKits.SPELLS.get(str(spell_id), {})
 		if def.is_empty() or bool(def.get("gated", false)):
 			continue
-		var el := str(spell_elements.get(str(spell_id), def.get("element", "neutral"))).to_lower()
+		var el := SpellKits.element_for(unit, str(spell_id))
 		if el != "neutral" and not used.has(el.capitalize()):
 			used.append(el.capitalize())
 		var what := ""

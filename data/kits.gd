@@ -608,7 +608,9 @@ static func is_gated(spell_id: String) -> bool:
 ## Tests and the duel simulator can switch riders off to compare.
 static var element_riders: bool = true
 const AIR_RANGE_MIN_MAX := 3
-const AIR_RANGE_EXCLUDED: Array[String] = [MARK_SHOT]
+## Mark Shot is excluded on purpose. Advance and Vault are exactly 2 tiles;
+## Air must not stretch that jump even if a later pass raises their max.
+const AIR_RANGE_EXCLUDED: Array[String] = [MARK_SHOT, ADVANCE, VAULT]
 const WATER_HEAL_RIDER := 4
 static var _rider_cache: Dictionary = {}
 
@@ -621,8 +623,8 @@ static func spell(spell_id: String) -> Dictionary:
 
 ## Elements Step 3 (Mauro 5 Oct 2026: "everyone will choose their own elements
 ## there is no primary"): a FLEX spell cast in the element the player set for
-## it. Geometry spells (kit element Neutral) and gated spells ignore `element`.
-## "neutral" is a FLEX spell with no element picked yet: no rider, no Residue.
+## it. Gated spells ignore `element`. "neutral" is a FLEX spell with no element
+## picked yet: no rider, no Residue.
 static func spell_as(spell_id: String, element: String) -> Dictionary:
 	if not SPELLS.has(spell_id):
 		return {}
@@ -664,14 +666,13 @@ const ELEMENTS: Array[String] = ["air", "earth", "fire", "water"]
 const ELEMENT_CHANGE_TROPHIES := 2
 
 
-## A spell that takes an element (FLEX): its kit element is not Neutral and it
-## is not gated. Advance, Drop Shade, Fade, Cleanse, Plant, Snap Wall stay Neutral.
+## A spell that takes an element (FLEX): every roster spell except a gated one.
+## Nightfold stays out of the picker. Advance, Vault, Fade, Ward, Plant, Snap
+## Wall, Cleanse, Rekindle and the other old Neutral spells are included.
 static func is_flex(spell_id: String) -> bool:
 	if not SPELLS.has(spell_id):
 		return false
-	var def: Dictionary = SPELLS[spell_id]
-	# Rekindle (revive) has nothing for an element to change.
-	return str(def.get("element", "neutral")).to_lower() != "neutral" and not bool(def.get("gated", false)) and str(def.get("target", "")) != "fallen_ally"
+	return not bool(SPELLS[spell_id].get("gated", false))
 
 
 static func flex_spells(class_id: String) -> Array:
@@ -692,7 +693,17 @@ static func element_for(unit: Dictionary, spell_id: String) -> String:
 	var picks: Variant = unit.get("spell_elements", null)
 	if typeof(picks) != TYPE_DICTIONARY:
 		return kit
-	return str((picks as Dictionary).get(spell_id, "neutral"))
+	var chosen := str((picks as Dictionary).get(spell_id, "")).to_lower()
+	if ELEMENTS.has(chosen):
+		return chosen
+	# Empty map stays Neutral (no pick yet). A saved pair that never named this
+	# spell — old saves, from when it was Neutral — uses the main pick, the
+	# first real element already stored.
+	for id in (picks as Dictionary).keys():
+		var el := str((picks as Dictionary)[id]).to_lower()
+		if ELEMENTS.has(el):
+			return el
+	return "neutral"
 
 
 static func spell_for(unit: Dictionary, spell_id: String) -> Dictionary:

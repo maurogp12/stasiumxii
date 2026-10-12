@@ -250,8 +250,8 @@ func _refresh() -> void:
 		_class_box.add_child(b)
 
 	_section("How elements work")
-	_text("Pick 2 elements for %s. Each attack spell uses one of them, and every hit adds that element's effect. A hit also marks the enemy with your element (a gem on its ring). The mark fades if you go a whole turn without attacking that enemy. Hit that marked enemy with your OTHER element and the two mix into a Blend — a free extra effect. Example: Earth hit, then Water hit = Mire." % SpellKits.display_name(selected))
-	_text("Only your own two hits make a Blend (Mender's heals are the exception, see below). One Blend per enemy until its next turn ends. Advance, Drop Shade, Fade, Cleanse, Plant and Snap Wall never take an element. Without a pick, your spells fight Neutral: no element effects, no Blends.", GOLD_DIM)
+	_text("Pick 2 elements for %s. Every spell uses one of them. A spell that hits an enemy marks them with that element (a gem on its ring). A spell on yourself, an ally, or a move marks every enemy next to you, the ally, or the landing. A heal does not mark the ally. The mark fades if you go a whole turn without attacking that enemy. Hit that marked enemy with your OTHER element and the two mix into a Blend — a free extra effect. Example: a Water Snap Wall, then an Earth Bash = Mire." % SpellKits.display_name(selected))
+	_text("Only your own Residue makes a Blend (Mender's heals are the exception, see below). One Blend per enemy until its next turn ends. Nightfold is not ready, so it takes no element. Without a pick, your spells fight Neutral: no element effects, no Blends.", GOLD_DIM)
 	_text("First pick is free. Changing your 2 elements costs %d trophies. Moving a spell between your 2 elements is free." % SpellKits.ELEMENT_CHANGE_TROPHIES, GOLD_DIM)
 
 	_section("1. Pick 2 elements")
@@ -270,7 +270,7 @@ func _refresh() -> void:
 		if _pair.has(el):
 			_text("%s — %s" % [el.capitalize(), ELEMENT_TEXT[el]], TINT[el])
 
-	_section("2. Set each attack spell")
+	_section("2. Set each spell")
 	if _pair.size() != 2:
 		_text("Pick 2 elements above, then choose which one each spell uses.", GOLD_DIM)
 	else:
