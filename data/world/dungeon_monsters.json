@@ -1264,24 +1264,24 @@
     },
     "scale": {
       "1": [
-        1.0,
-        1.0
+        1.25,
+        1.4
       ],
       "2": [
-        1.1,
-        1.05
+        1.65,
+        1.75
       ],
       "3": [
-        1.15,
-        1.1
+        1.72,
+        1.76
       ],
       "4": [
-        1.2,
-        1.1
+        1.9,
+        1.95
       ],
       "5": [
-        1.0,
-        1.0
+        1.75,
+        1.85
       ]
     },
     "packs_note": "Room A packs by star (Mauro: at least 6 monsters in the first room): ★1-★2 2 rats + 2 Sling Rats + 2 Drudges; ★3-★4 3 + 2 + 2; ★5 3 radioactive rats + 3 radioactive Sling Rats + 2 Drudges. Room B: the Ratking + escort (2 rats, 1 Drudge); at ★5 the Radioactive Ratking with radioactive escort rats. Packs live in run.json (packs by star).",
@@ -1290,6 +1290,30 @@
       "frostspire_archive": {
         "note": "Frostspire Archive rows (solo, level 10-20). Tuned with tests/sim_dungeon_stars.gd frostspire_archive 8 12 (solo bot, level 12, 8 runs x 5 classes): ★1 78%, ★2 62%, ★3 58%, ★4 48%, ★5 35%. See data/world/dungeons/frostspire_archive/README.md.",
         "scale": {
+          "1": [
+            1.2,
+            1.35
+          ],
+          "2": [
+            1.5,
+            1.6
+          ],
+          "3": [
+            1.55,
+            1.58
+          ],
+          "4": [
+            1.95,
+            1.95
+          ],
+          "5": [
+            1.6,
+            1.65
+          ]
+        },
+        "packs_note": "Room A: ★1-★2 2 Ice Constructs + 4 Book Wraiths; ★3-★4 3 + 4; ★5 2 Frozen Ice Constructs + 1 Ice Construct + 4 Frozen Book Wraiths + 1 Book Wraith. Room B: the Pale Archivist + escort (2 Book Wraiths, 1 Ice Construct); ★5 the Frozen Archivist with frozen escort wraiths.",
+        "star5": "★5 boss form: the Frozen Archivist. Unbound Frozen Pages calls frozen wraiths on his 2nd turn and every 3rd after (4 alive, 6 in all, vs 3 and 4 for the Pale Archivist). Every other turn (from his 1st) Rime Patches freezes 2-3 cells around the hero (the hero's cell first) for 3 hero turns: a hero who ends a turn on one takes 5 frost (x the star's damage row) and has 2 MP less next turn. Walking across is safe. Frozen monsters chill: a hit takes 1 MP off the hero's next turn (no stacking). A rune pad thaws: a turn that starts on one keeps its full MP.",
+        "pre_gear_scale": {
           "1": [
             1.0,
             1.0
@@ -1310,13 +1334,35 @@
             0.875,
             0.85
           ]
-        },
-        "packs_note": "Room A: ★1-★2 2 Ice Constructs + 4 Book Wraiths; ★3-★4 3 + 4; ★5 2 Frozen Ice Constructs + 1 Ice Construct + 4 Frozen Book Wraiths + 1 Book Wraith. Room B: the Pale Archivist + escort (2 Book Wraiths, 1 Ice Construct); ★5 the Frozen Archivist with frozen escort wraiths.",
-        "star5": "★5 boss form: the Frozen Archivist. Unbound Frozen Pages calls frozen wraiths on his 2nd turn and every 3rd after (4 alive, 6 in all, vs 3 and 4 for the Pale Archivist). Every other turn (from his 1st) Rime Patches freezes 2-3 cells around the hero (the hero's cell first) for 3 hero turns: a hero who ends a turn on one takes 5 frost (x the star's damage row) and has 2 MP less next turn. Walking across is safe. Frozen monsters chill: a hit takes 1 MP off the hero's next turn (no stacking). A rune pad thaws: a turn that starts on one keeps its full MP."
+        }
       },
       "saltmaw_grotto": {
         "note": "Saltmaw Grotto rows (solo, level 20-30). Tuned with tests/sim_dungeon_stars.gd saltmaw_grotto 8 22 (solo bot, level 22, 8 runs x 5 classes): ★1 80%, ★2 62%, ★3 52%, ★4 42%, ★5 38%. See data/world/dungeons/saltmaw_grotto/README.md.",
         "scale": {
+          "1": [
+            1.32,
+            1.48
+          ],
+          "2": [
+            1.8,
+            1.9
+          ],
+          "3": [
+            2.0,
+            1.95
+          ],
+          "4": [
+            2.3,
+            2.2
+          ],
+          "5": [
+            1.95,
+            2.05
+          ]
+        },
+        "packs_note": "Room A: ★1-★2 2 Reef Crabs + 2 Drowned Sailors + 2 Drowned Harpooners; ★3-★4 + 1 Harpooner; ★5 the abyssal pack of 8. Room B: Old Saltmaw + escort (1 Reef Crab, 1 Drowned Sailor, 1 Drowned Harpooner); ★5 the Abyssal Saltmaw with an abyssal escort.",
+        "star5": "★5 boss form: the Abyssal Saltmaw (100 HP, Abyssal Bite 11 at level 20). Abyssal Lure pulls 3 cells on the same rhythm; from his 2nd turn and every 2nd after, Riptide churns 2-3 cells around the hero (the hero's cell first) for 3 hero turns: a hero who ends a turn on one takes 5 (x the star's damage row) and is dragged 1 cell toward him. Walking across is safe. Abyssal monsters soak: a hit takes 1 MP off the hero's next turn (no stacking). A coral pad or the whirlpool rinses it off.",
+        "pre_gear_scale": {
           "1": [
             1.0,
             1.0
@@ -1337,13 +1383,35 @@
             1.05,
             1.05
           ]
-        },
-        "packs_note": "Room A: ★1-★2 2 Reef Crabs + 2 Drowned Sailors + 2 Drowned Harpooners; ★3-★4 + 1 Harpooner; ★5 the abyssal pack of 8. Room B: Old Saltmaw + escort (1 Reef Crab, 1 Drowned Sailor, 1 Drowned Harpooner); ★5 the Abyssal Saltmaw with an abyssal escort.",
-        "star5": "★5 boss form: the Abyssal Saltmaw (100 HP, Abyssal Bite 11 at level 20). Abyssal Lure pulls 3 cells on the same rhythm; from his 2nd turn and every 2nd after, Riptide churns 2-3 cells around the hero (the hero's cell first) for 3 hero turns: a hero who ends a turn on one takes 5 (x the star's damage row) and is dragged 1 cell toward him. Walking across is safe. Abyssal monsters soak: a hit takes 1 MP off the hero's next turn (no stacking). A coral pad or the whirlpool rinses it off."
+        }
       },
       "drowned_abbey": {
         "note": "Drowned Abbey rows (solo, level 30-40). Tuned with tests/sim_dungeon_stars.gd drowned_abbey 8 32 (solo bot, level 32, 8 runs x 5 classes): ★1 78%, ★2 55%, ★3 52%, ★4 38%, ★5 35%. See data/world/dungeons/drowned_abbey/README.md.",
         "scale": {
+          "1": [
+            1.3,
+            1.45
+          ],
+          "2": [
+            1.6,
+            1.7
+          ],
+          "3": [
+            1.85,
+            1.85
+          ],
+          "4": [
+            2.2,
+            2.08
+          ],
+          "5": [
+            2.08,
+            1.85
+          ]
+        },
+        "packs_note": "Room A: ★1 4 Bog Dead + 2 Mire Leeches; ★2-★4 + 1 Mire Leech; ★5 the bellbound pack of 8 (4 Bellbound Bog Dead, 1 Bog Dead, 3 Bellbound Mire Leeches). Room B: the Mire Abbess + escort (2 Bog Dead, 1 Mire Leech); ★5 the Bell Wraith with a bellbound escort.",
+        "star5": "★5 boss form: the Bell Wraith, the Abbess transformed: a ghost risen out of the chained bronze bell (she floats). Her Tolling Rite raises Bog Dead and Mire Leeches at 60% HP (4 in a fight, vs 2 Bog Dead at 50%). From her 1st turn and every 2nd after, she tolls the bell and the Grasping Mire turns 2-3 cells around the hero (the hero's cell first) to bog water for 3 hero turns: a hero who ends a turn on one takes 5 (x the star's damage row) and is rooted (no MP next turn). Walking across is safe. Bellbound monsters mire: a hit takes 1 MP off the hero's next turn (no stacking). A candle pad or the rune circle cleanses both.",
+        "pre_gear_scale": {
           "1": [
             1.0,
             1.0
@@ -1364,13 +1432,35 @@
             1.0,
             0.9
           ]
-        },
-        "packs_note": "Room A: ★1 4 Bog Dead + 2 Mire Leeches; ★2-★4 + 1 Mire Leech; ★5 the bellbound pack of 8 (4 Bellbound Bog Dead, 1 Bog Dead, 3 Bellbound Mire Leeches). Room B: the Mire Abbess + escort (2 Bog Dead, 1 Mire Leech); ★5 the Bell Wraith with a bellbound escort.",
-        "star5": "★5 boss form: the Bell Wraith, the Abbess transformed: a ghost risen out of the chained bronze bell (she floats). Her Tolling Rite raises Bog Dead and Mire Leeches at 60% HP (4 in a fight, vs 2 Bog Dead at 50%). From her 1st turn and every 2nd after, she tolls the bell and the Grasping Mire turns 2-3 cells around the hero (the hero's cell first) to bog water for 3 hero turns: a hero who ends a turn on one takes 5 (x the star's damage row) and is rooted (no MP next turn). Walking across is safe. Bellbound monsters mire: a hit takes 1 MP off the hero's next turn (no stacking). A candle pad or the rune circle cleanses both."
+        }
       },
       "heart_of_the_blight": {
         "note": "Heart of the Blight rows (solo, level 40-50). Tuned with tests/sim_dungeon_stars.gd heart_of_the_blight 8 42 (solo bot, level 42, 8 runs x 5 classes): ★1 85%, ★2 70%, ★3 55%, ★4 50%, ★5 38%. ★2's step is the extra Blight Horror. See data/world/dungeons/heart_of_the_blight/README.md.",
         "scale": {
+          "1": [
+            1.32,
+            1.46
+          ],
+          "2": [
+            1.55,
+            1.65
+          ],
+          "3": [
+            1.92,
+            1.87
+          ],
+          "4": [
+            2.35,
+            2.1
+          ],
+          "5": [
+            1.96,
+            1.82
+          ]
+        },
+        "packs_note": "Room A: ★1 4 Blight Hounds + 2 Blight Horrors; ★2-★4 + 1 Blight Horror; ★5 the crystal pack of 8 (4 Crystal Hounds, 4 Crystal Horrors). Room B: the Rotting Elder + escort (2 Blight Hounds, 1 Blight Horror); ★5 the Crystal Colossus with a crystal escort.",
+        "star5": "★5 boss form: the Crystal Colossus (Mauro's pick, 11 Oct: the violet crystal has consumed the Elder; an angular crystal golem with a crystal spear-staff, his own rig). His Crystal Wall raises 4 root cells on the same beat. From his 1st turn and every 2nd after, Crystal Bloom swells 2-3 crystal pods round the hero (the hero's cell first): when the hero ends the next turn they shatter, and a hero on or next to a pod takes 6 (x the star's damage row) and is crystallised (2 AP less next turn). Pods do not block; step two cells clear. Crystal Horrors crystallise: a spore hit takes 1 AP off the hero's next turn (no stacking). A blight pad or the rune circle cleanses it.",
+        "pre_gear_scale": {
           "1": [
             1.0,
             1.0
@@ -1391,10 +1481,31 @@
             0.8,
             0.8
           ]
-        },
-        "packs_note": "Room A: ★1 4 Blight Hounds + 2 Blight Horrors; ★2-★4 + 1 Blight Horror; ★5 the crystal pack of 8 (4 Crystal Hounds, 4 Crystal Horrors). Room B: the Rotting Elder + escort (2 Blight Hounds, 1 Blight Horror); ★5 the Crystal Colossus with a crystal escort.",
-        "star5": "★5 boss form: the Crystal Colossus (Mauro's pick, 11 Oct: the violet crystal has consumed the Elder; an angular crystal golem with a crystal spear-staff, his own rig). His Crystal Wall raises 4 root cells on the same beat. From his 1st turn and every 2nd after, Crystal Bloom swells 2-3 crystal pods round the hero (the hero's cell first): when the hero ends the next turn they shatter, and a hero on or next to a pod takes 6 (x the star's damage row) and is crystallised (2 AP less next turn). Pods do not block; step two cells clear. Crystal Horrors crystallise: a spore hit takes 1 AP off the hero's next turn (no stacking). A blight pad or the rune circle cleanses it."
+        }
       }
-    }
+    },
+    "pre_gear_scale": {
+      "1": [
+        1.0,
+        1.0
+      ],
+      "2": [
+        1.1,
+        1.05
+      ],
+      "3": [
+        1.15,
+        1.1
+      ],
+      "4": [
+        1.2,
+        1.1
+      ],
+      "5": [
+        1.0,
+        1.0
+      ]
+    },
+    "gear_note": "Rows retuned 12 Oct 2026 (claude/pc-mobile-gear) when worn gear (the mobile ladder, backend/pc_gear.gd) started to reach the dungeon fight. Sim hero wears its class set by star (tests/sim_dungeon_stars.gd GEAR_BY_STAR: 1 three Normal +0, 2 Normal 5pc +0, 3 Normal +1, 4 Rare 5pc +0, 5 Rare +1). pre_gear_scale keeps each old row. Proposed; numbers in docs/pc/GEAR_SYSTEM_PC.md."
   }
 }
