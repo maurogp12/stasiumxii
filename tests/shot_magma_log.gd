@@ -91,15 +91,23 @@ func _process(_delta: float) -> bool:
 
 func _shoot_board() -> bool:
 	var hud: CombatHUD = _board._hud
-	var card := ""
-	if hud._ironjaw_body != null:
-		card = hud._ironjaw_body.get_parsed_text()
+	# The left card is whoever is acting. Bastion's turn puts him there.
+	var left := "" if hud._kestrel_body == null else hud._kestrel_body.get_parsed_text()
+	var right := "" if hud._ironjaw_body == null else hud._ironjaw_body.get_parsed_text()
+	var titles := ""
+	for title in hud._banner_titles:
+		titles += title.text + " | "
 	var toast := hud.toast_caption()
-	print("CARD %s" % card.replace("\n", " | "))
+	print("LEFT %s" % left.replace("\n", " | "))
+	print("RIGHT %s" % right.replace("\n", " | "))
+	print("TITLES %s" % titles)
 	print("TOAST %s" % toast)
 	_frame("board")
-	if not card.contains("BURN"):
-		push_error("Bastion card is not burning")
+	if not titles.contains("Bastion"):
+		push_error("Bastion's name is not on a card")
+		return false
+	if not left.contains("BURN"):
+		push_error("Bastion's card is not burning")
 		return false
 	if not toast.contains("Ward refused"):
 		push_error("Ward refused toast is missing")
@@ -159,10 +167,21 @@ func _shoot_log() -> bool:
 	var crop := image.get_region(Rect2i(origin, size))
 	var close := _dir.path_join("magma_log_close.png")
 	crop.save_png(close)
-	var mid := image.get_pixel(origin.x + size.x / 2, origin.y + size.y / 2)
-	print("PANEL PIXEL %s" % mid)
-	print("CROP %s %dx%d" % [close, crop.get_width(), crop.get_height()])
-	if mid.r > 0.35 or mid.g > 0.35:
+	# The panel center can land on a colored name. The fill around it is navy.
+	var dark := 0
+	var samples := 0
+	for gy in range(1, 4):
+		for gx in range(1, 4):
+			var px := origin.x + size.x * gx / 4
+			var py := origin.y + size.y * gy / 4
+			var pixel := image.get_pixel(px, py)
+			samples += 1
+			if pixel.r < 0.2 and pixel.g < 0.25 and pixel.b < 0.35:
+				dark += 1
+			print("PANEL PIXEL %s,%s %s" % [px, py, pixel])
+	print("CROP %s %dx%d dark %d/%d" % [close, crop.get_width(), crop.get_height(), dark, samples])
+	# A text-filled panel still has navy fill. A crop of the board does not.
+	if dark < 2:
 		push_error("log crop is not the dark panel")
 		return true
 	return true
