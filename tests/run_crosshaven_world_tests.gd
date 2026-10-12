@@ -82,7 +82,7 @@ func _test_hero_pace(w: Node2D) -> void:
 	check(is_equal_approx(walker.anim_scale("run"), 2.0), "run playback is 2.0x")
 	check(is_equal_approx(walker.stride_scale("walk"), 2.2 / 1.8), "walk stride grows by 2.2/1.8")
 	check(is_equal_approx(walker.stride_scale("run"), 1.0), "run keeps the painted stride")
-	var spec: Dictionary = Specs.WORLD[str(walker.class_id)]
+	var spec: Dictionary = Painted.world(str(walker.class_id))
 	check(is_equal_approx(walker.shown_fps_of("walk"), float(spec["walk"]["shown_fps"])), "walk shows the built leg rate (%.2f fps)" % walker.shown_fps_of("walk"))
 	check(is_equal_approx(walker.shown_fps_of("run"), float(spec["run"]["shown_fps"])), "run shows the built leg rate (%.2f fps)" % walker.shown_fps_of("run"))
 	for gait in ["walk", "run"]:
@@ -106,7 +106,8 @@ func _test_hero_pace(w: Node2D) -> void:
 
 
 ## Performance mode (1x art, still NPCs) keeps the painted hero: walk, run
-## and idle sheets, the same class, Ironjaw on the dark-steel v7.
+## and idle sheets, the same class, Ironjaw on his painted walk (the dark-steel
+## v7, or the visible-gear base when the paper doll is on).
 func _test_hero_performance(w: Node2D) -> void:
 	var cls := str(w.walker.class_id)
 	w.settings.set_performance(true)
@@ -137,7 +138,9 @@ func _test_hero_performance(w: Node2D) -> void:
 	check(w.walker._sprite.texture == w.walker._strips.texture("idle", w.walker.facing), "performance mode: the hero idles on the painted idle")
 	var iron = Strips.new()
 	iron.load_class("ironjaw")
-	check(iron.texture("walk", "e") == Painted.sheet("ironjaw", "walk", "S") and str(Painted.spec("ironjaw", "walk")["source"]).contains("ironjaw_walk/v7"), "performance mode: Ironjaw is still the dark-steel v7")
+	var iron_src := str(Painted.spec("ironjaw", "walk")["source"])
+	var iron_look := iron_src.contains("ironjaw_walk/v7") or (Painted.uses_gear_base("ironjaw") and iron_src.contains("paper doll base"))
+	check(iron.texture("walk", "e") == Painted.sheet("ironjaw", "walk", "S") and iron_look, "performance mode: Ironjaw keeps his painted walk (the v7, or the visible-gear base)")
 	w.settings.set_performance(false)
 	w.walker.place(zone, zone.spawn)
 
@@ -154,10 +157,12 @@ func _test_strips(w: Node2D) -> void:
 	for path in Painted._sheets.keys():
 		if Painted._sheets[path] is Texture2D:
 			loaded += 1
-			if not str(path).begins_with("%s%s/" % [Painted.ROOT, cls]):
+			# The hero's own folder: its locked sheets, or its paper-doll base
+			# (visible gear) when the class draws one.
+			if str(path).get_base_dir() != Painted.sheet_path(cls, "walk", "S").get_base_dir():
 				other += 1
 	check(loaded == 4 and other == 0, "the world loads only the hero's walk and idle sheets (%d loaded, %d other)" % [loaded, other])
-	var spec: Dictionary = Specs.WORLD.get(cls, {})
+	var spec: Dictionary = Painted.world(cls)
 	for gait in ["walk", "run", "idle"]:
 		for dir in ["n", "e", "s", "w"]:
 			check(w.walker.frame_count(gait, dir) == 12, "%s %s is the 12-cell painted sheet" % [gait, dir])
