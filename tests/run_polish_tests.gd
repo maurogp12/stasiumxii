@@ -15,6 +15,7 @@ func _initialize() -> void:
 	_test_pan_is_queued()
 	_test_turn_bar()
 	_test_grid_and_occluders()
+	_test_draw_slots_do_not_tie()
 	_test_class_select_copy()
 	_test_hud_does_not_overlap()
 	_test_turn_targets_are_cards()
@@ -96,6 +97,67 @@ func _test_grid_and_occluders() -> void:
 	)
 	eq(CombatHUD.coach_hint("REJECT — that path needs 5 MP (you have 1)."), "Needs 5 MP (have 1)", "the path reject is one short line")
 	truthy(CombatHUD.PORTRAIT_CHIP.y >= 96.0, "turn portraits are at least 96px tall")
+
+
+## Same-row tiles, lava, and a prop on a block each have their own z.
+## Fighters on that row still tie, and the camera snap does not walk.
+func _test_draw_slots_do_not_tie() -> void:
+	var seen := {}
+	for y in 15:
+		for x in 15:
+			var cell := Vector2i(x, y)
+			var z := VISUAL_SORT.tile_z_index(cell, 0.0)
+			eq(seen.has(z), false, "flat cell %s does not share a tile z" % cell)
+			seen[z] = true
+			var hazard := VISUAL_SORT.hazard_z_index(cell, 0.0)
+			var block := VISUAL_SORT.occluder_z_index(cell, 0.0)
+			var prop := VISUAL_SORT.prop_z_index(cell, 0.0)
+			eq(hazard < z, true, "the hazard decal sits under its tile")
+			eq(block, z + VISUAL_SORT.OCCLUDER_Z_BIAS, "the elevation block stays two above the tile")
+			eq(prop, z + VISUAL_SORT.PROP_Z_BIAS, "a prop on the block is the next slot")
+			truthy(prop < VISUAL_SORT.unit_z_index(cell, 0.0), "the fighter on the cell paints over its prop")
+			truthy(z + 4 < VISUAL_SORT.tile_z_index(cell + Vector2i(1, 0), 0.0), "a raised diamond stays behind the next row")
+	eq(VISUAL_SORT.unit_z_index(Vector2i(4, 6), 0.0), VISUAL_SORT.unit_z_index(Vector2i(6, 4), 0.0), "fighters on one depth line still tie")
+	eq(VISUAL_SORT.tile_z_index(Vector2i(4, 6), 0.0) < VISUAL_SORT.tile_z_index(Vector2i(6, 4), 0.0), true, "the right-hand tile on that line paints in front")
+	var worst := 0
+	for tx in 15:
+		for ty in 15:
+			var tower := Vector2i(tx, ty)
+			var cover := 0
+			for dx in range(-2, 3):
+				for dy in range(-2, 3):
+					var cell := tower + Vector2i(dx, dy)
+					if cell.x < 0 or cell.y < 0 or cell.x > 14 or cell.y > 14:
+						continue
+					cover = maxi(cover, VISUAL_SORT.occluder_z_index(cell, 2.0))
+					cover = maxi(cover, VISUAL_SORT.tile_z_index(cell, 2.0) + 3)
+			var tower_z := cover + 1
+			for fx in 15:
+				for fy in 15:
+					var ahead := fx + fy - tx - ty
+					if ahead < 0:
+						continue
+					var lifted := tower_z + 1 + ahead * VISUAL_SORT.TILE_Z_SCALE + int(round(2.0 * float(VISUAL_SORT.ELEVATION_Z_SCALE)))
+					worst = maxi(worst, lifted)
+	truthy(worst < VISUAL_SORT.WEATHER_Z, "a fighter in front of the tower stays under the snow (%d)" % worst)
+	truthy(VISUAL_SORT.unit_z_index(Vector2i(14, 14), 2.0) < VISUAL_SORT.SHADE_Z, "Shade paints above the far raised cell")
+	truthy(VISUAL_SORT.WEATHER_Z < VISUAL_SORT.LIFE_Z, "the rim light stays above the snow")
+	truthy(VISUAL_SORT.LIFE_Z < VISUAL_SORT.SHADE_Z, "Shade stays above the weather")
+	truthy(VISUAL_SORT.SHADE_Z < VISUAL_SORT.AIM_Z, "the aim line stays above Shade")
+	truthy(VISUAL_SORT.FLOAT_Z > VISUAL_SORT.AIM_Z and VISUAL_SORT.FLOAT_Z < 4096, "numbers stay above the aim line and under Godot's z clamp")
+	var view := Vector2(2400, 1080)
+	var zoom := Vector2(1.35, 1.35)
+	var once := VISUAL_SORT.snap_camera_position(Vector2(12.4, -8.2), zoom, view)
+	var twice := VISUAL_SORT.snap_camera_position(once, zoom, view)
+	near(twice.x, once.x, "camera snap does not walk on x")
+	near(twice.y, once.y, "camera snap does not walk on y")
+	var center := view * 0.5
+	var origin := Vector2(center.x - once.x * zoom.x, center.y - once.y * zoom.y)
+	near(origin.x, roundf(origin.x), "the snapped camera lands on a whole pixel")
+	near(origin.y, roundf(origin.y), "the snapped camera lands on a whole pixel vertically")
+	var proj := FileAccess.get_file_as_string("res://project.godot")
+	truthy(proj.contains("2d/snap/snap_2d_transforms_to_pixel=true"), "canvas transforms snap to pixels")
+	truthy(proj.contains("default_texture_filter=1"), "the canvas filter is linear, without mipmaps")
 
 
 ## The painted crystal copy has to sit on the crystal tile. A corner park

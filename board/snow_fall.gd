@@ -25,7 +25,7 @@ var _gust_t := 0.0
 func _ready() -> void:
 	z_as_relative = false
 	# Same band as the storm bolts: above tiles and fighters, under numbers.
-	z_index = 470
+	z_index = BoardVisualSort.WEATHER_Z
 	_rng.randomize()
 	_reseed()
 

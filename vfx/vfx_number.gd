@@ -37,7 +37,7 @@ func play(spec: Dictionary) -> void:
 	scale = Vector2.ONE * pop
 	modulate.a = 0.0
 	z_as_relative = false
-	z_index = 900
+	z_index = BoardVisualSort.FLOAT_Z
 	var delay := float(spec.get("delay", 0.0))
 	var drift := Vector2(0, -VfxBudget.NUMBER_RISE_PX)
 	if _kind == "miss":

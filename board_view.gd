@@ -75,8 +75,8 @@ const SHADE_MARKER := preload("res://board/shade_marker.gd")
 const AIM_LINE := preload("res://board/aim_line.gd")
 const _TestLoadoutRef := preload("res://backend/test_loadout.gd")
 ## Marker z is this plus the cell, above every tile and pawn, under combat
-## numbers (z 900) so the "Shade" floater still reads.
-const SHADE_LAYER_Z := 640
+## numbers so the "Shade" floater still reads.
+const SHADE_LAYER_Z := VISUAL_SORT.SHADE_Z
 const TOUCH := preload("res://ui/touch_adapter.gd")
 const HANDOFF_SEC: float = 1.0
 ## Playable band between the top chrome and the touch-sized bottom bar.
@@ -721,7 +721,7 @@ func _ensure_pick_ring() -> PickRing:
 		return _pick_ring
 	var ring := PickRing.new()
 	ring.name = "PickRing"
-	ring.z_index = 900
+	ring.z_index = VISUAL_SORT.FLOAT_Z
 	ring.visible = false
 	add_child(ring)
 	_pick_ring = ring
@@ -790,7 +790,10 @@ func _raise_nearer_units(bodies: Array) -> void:
 		items.append({"z": pawn.z_index, "pos": pawn.position, "seat": pawn.seat})
 	VISUAL_SORT.resolve_camera_z(items)
 	for i in bodies.size():
-		(bodies[i] as Pawn).z_index = int(items[i]["z"])
+		var pawn: Pawn = bodies[i]
+		var z := int(items[i]["z"])
+		if pawn.z_index != z:
+			pawn.z_index = z
 
 
 func _raise_shade_unit(pawn: Pawn) -> void:
@@ -815,7 +818,8 @@ func _publish_pawn_depth(pawn: Pawn) -> void:
 		sort_cell = _step_dst if along >= 0.5 else _step_src
 	var z := VISUAL_SORT.unit_z_from_local(pawn.position, elev)
 	z = PAINTED.adjust_unit_z(sort_cell, elev, z)
-	pawn.z_index = z
+	if pawn.z_index != z:
+		pawn.z_index = z
 
 
 func _order_unit_nodes(bodies: Array) -> void:
@@ -3058,6 +3062,7 @@ func _apply_board_tiles(snap: Dictionary) -> void:
 				# standing in that row. Painted occluders sort on their own.
 				_tile_at(cell).z_index += VISUAL_SORT.TILE_Z_SCALE + 1
 	_apply_edge_glow(map_key)
+	VISUAL_SORT.order_children($Tiles)
 	_ensure_koliseo_life()
 	if _koliseo_life != null:
 		_koliseo_life.bind(map_key, _board_size)
@@ -3363,7 +3368,17 @@ func _glide_camera_to(t: float) -> void:
 
 
 func _flush_camera() -> void:
-	if _camera != null and is_instance_valid(_camera) and _camera.has_method("force_update_scroll"):
+	if _camera == null or not is_instance_valid(_camera):
+		return
+	# A node built in a headless check is not on a viewport yet. Snapping
+	# there would move the queued-pan fixture. Live cameras land on pixels.
+	if is_inside_tree():
+		var view := get_viewport_rect().size
+		if view.x >= 64.0 and view.y >= 64.0:
+			var snapped := VISUAL_SORT.snap_camera_position(_camera.position, _camera.zoom, view)
+			if not _camera.position.is_equal_approx(snapped):
+				_camera.position = snapped
+	if _camera.has_method("force_update_scroll"):
 		_camera.force_update_scroll()
 
 

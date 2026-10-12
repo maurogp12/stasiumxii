@@ -19,7 +19,7 @@ var _label: Label
 
 func _ready() -> void:
 	z_as_relative = false
-	z_index = 860
+	z_index = BoardVisualSort.AIM_Z
 	_label = Label.new()
 	_label.name = "AimFloat"
 	_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
