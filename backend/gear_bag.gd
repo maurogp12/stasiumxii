@@ -16,7 +16,9 @@ extends RefCounted
 ## Koliseo. Clamped to 8/5; Hourglass Overwound may pass the cap.
 ## Koliseo flattens part HP / Mastery / Resist / Init to +0. The Rare +5
 ## AP/MP gates still look at the real plus. Ultra special lines (not the
-## +1/+1) apply only when the fight sets flatten_plus.
+## +1/+1) apply only when the fight sets flatten_plus. Gatewarden's 5pc
+## stance is the exception: Neutral and Ranged Guard apply in a dungeon
+## and in Koliseo. The Ultra 5pc +1 AP +1 MP still always applies.
 ## Stasis loot rolls a tier, then a family of that tier, then a weighted slot.
 ## ★1 is 100% Normal. ★3 is 70/30 Normal/Rare. ★5 is 60/30/10. A boss chest
 ## is 50/30/20. ★2 uses the ★1 table and ★4 uses the ★3 table. 5 clears a
@@ -63,8 +65,8 @@ const FAMILIES := {
 	"ironveil": {
 		"name": "Ironveil", "rarity": "Rare", "owner": "bastion", "resist_all": true,
 		"source": "Stasis ★3+", "min_star": 3,
-		"bonus": {2: "+10% HP", 4: "+6 Resist. Hits from 3 or more tiles away deal 20% less. Damage over time is not reduced.", 5: "First hit you take each turn deals 6 less"},
-		"stats": {2: {"hp_pct": 10}, 4: {"resist": 6, "far_cut": 20}, 5: {"guard_flat": 6}},
+		"bonus": {2: "+10% HP", 4: "+6 Resist", 5: "First hit you take each turn deals 6 less"},
+		"stats": {2: {"hp_pct": 10}, 4: {"resist": 6}, 5: {"guard_flat": 6}},
 	},
 	"oathgrave": {
 		"name": "Oathgrave", "rarity": "Legendary", "owner": "bastion", "resist_all": true,
@@ -150,9 +152,10 @@ const FAMILIES := {
 		"bonus": {2: "+4% crit", 4: "+6 Mastery", 5: "+1 AP +1 MP"},
 		"stats": {2: {"crit": 4}, 4: {"mastery": 6}, 5: {"ap": 1, "mp": 1}},
 	},
-	# Ultra. pvp_only: special lines need a Koliseo fight (flatten_plus).
-	# The 5pc +1 AP +1 MP always applies. Plain HP / Mastery / Resist / Init
-	# always apply. They never drop.
+# Ultra. pvp_only: special lines need a Koliseo fight (flatten_plus).
+# The 5pc +1 AP +1 MP always applies. Plain HP / Mastery / Resist / Init
+# always apply. They never drop. Gatewarden's 5pc stance (Neutral or
+# Ranged Guard) also applies in a dungeon; it is not one of those lines.
 	"gatewarden": {
 		"name": "Gatewarden", "rarity": "Ultra", "owner": "bastion", "resist_all": true, "pvp_only": true,
 		"source": "Koliseo shop", "min_star": 99,
@@ -342,6 +345,17 @@ const ULTRA_BY_CLASS := {
 	"mender": "mercywell",
 }
 const RARITIES: Array[String] = ["Normal", "Rare", "Legendary"]
+## Gatewarden 5pc stance. Picked in the Sets list, like Intact / Overwound.
+## Default Neutral. Both modes count in dungeons and in Koliseo. +4 Resist
+## is one step under Ironveil's +6, the same modest step as Rustward 4pc.
+const STANCE_FAMILY := "gatewarden"
+const STANCE_PIECES := 5
+const STANCE_NEUTRAL := "neutral"
+const STANCE_RANGED := "ranged_guard"
+const STANCE_NEUTRAL_RESIST := 4
+const STANCE_FAR_CUT := 20
+const STANCE_NEAR_AMP := 15
+const STANCES: Array[String] = ["neutral", "ranged_guard"]
 ## Chest tier weights, out of 100. ★2 reads 1, ★4 reads 3. Boss is its own row.
 const DROP_WEIGHTS := {
 	1: {"Normal": 100, "Rare": 0, "Legendary": 0},
@@ -363,6 +377,8 @@ var equipped: Dictionary = {}
 var focus_class: String = "kestrel"
 ## family → element. Unused on this ladder (no attune). Kept for old saves.
 var attune: Dictionary = {}
+## Gatewarden 5pc. "neutral" or "ranged_guard". Missing saves stay Neutral.
+var stance: String = "neutral"
 var next_uid: int = 1
 var loot_day: int = -1
 var loot_clears_today: int = 0
@@ -605,6 +621,7 @@ func to_dict() -> Dictionary:
 		"loot_day": loot_day,
 		"loot_clears_today": loot_clears_today,
 		"test_grant": test_grant,
+		"stance": stance,
 	}
 
 
@@ -691,6 +708,7 @@ func from_dict(data: Dictionary) -> void:
 	loot_day = int(data.get("loot_day", -1))
 	loot_clears_today = maxi(int(data.get("loot_clears_today", 0)), 0)
 	test_grant = bool(data.get("test_grant", false))
+	stance = clean_stance(data.get("stance", ""))
 
 
 func find(uid: int) -> int:
@@ -867,7 +885,10 @@ func active_bonuses() -> Array:
 		var bonus: Dictionary = FAMILIES[fam]["bonus"]
 		for tier in [2, 4, 5]:
 			if pieces >= tier:
-				out.append({"family": fam, "pieces": pieces, "tier": tier, "text": str(bonus[tier])})
+				var text := str(bonus[tier])
+				if fam == STANCE_FAMILY and int(tier) == STANCE_PIECES:
+					text = "%s. %s" % [text, stance_sentence(stance_of())]
+				out.append({"family": fam, "pieces": pieces, "tier": tier, "text": text})
 	return out
 
 
@@ -988,7 +1009,7 @@ static func ap_mp_of_worn(worn: Array, pvp: bool = true) -> Dictionary:
 ## that class cannot wear. `flatten_plus`: Koliseo arena — part HP,
 ## Mastery, Resist and Init count as +0, and Ultra special lines turn on.
 ## AP/MP (5pc and the Rare +5 gates) does not change with that switch.
-static func combat_stats(raw_worn: Variant, attune_map: Dictionary = {}, flatten_plus: bool = false, class_id: String = "", drop_debug: bool = false) -> Dictionary:
+static func combat_stats(raw_worn: Variant, attune_map: Dictionary = {}, flatten_plus: bool = false, class_id: String = "", drop_debug: bool = false, stance_mode: String = "") -> Dictionary:
 	var worn := clean_worn(raw_worn, drop_debug)
 	if class_id != "":
 		var filtered: Array = []
@@ -1000,12 +1021,49 @@ static func combat_stats(raw_worn: Variant, attune_map: Dictionary = {}, flatten
 	if flatten_plus:
 		for entry in worn:
 			entry["plus"] = 0
-	return _sum_worn(worn, attune_map, flatten_plus, gates)
+	return apply_stance(_sum_worn(worn, attune_map, flatten_plus, gates), worn, stance_mode)
 
 
 ## Gear-screen numbers. Same sum as a fight, without flattening +plus.
-static func sheet_stats(raw_worn: Variant, attune_map: Dictionary = {}, pvp: bool = true) -> Dictionary:
-	return _sum_worn(clean_worn(raw_worn, false), attune_map, pvp)
+static func sheet_stats(raw_worn: Variant, attune_map: Dictionary = {}, pvp: bool = true, stance_mode: String = "") -> Dictionary:
+	var worn := clean_worn(raw_worn, false)
+	return apply_stance(_sum_worn(worn, attune_map, pvp), worn, stance_mode)
+
+
+## Unknown or missing input is Neutral. A client cannot send a third mode.
+static func clean_stance(raw: Variant) -> String:
+	if str(raw) == STANCE_RANGED:
+		return STANCE_RANGED
+	return STANCE_NEUTRAL
+
+
+static func stance_sentence(mode: String) -> String:
+	if clean_stance(mode) == STANCE_RANGED:
+		return "Ranged Guard (5 pieces): hits from 3 or more tiles away deal %d%% less, and hits from 1 or 2 tiles away deal %d%% more. Damage over time is not changed." % [STANCE_FAR_CUT, STANCE_NEAR_AMP]
+	return "Neutral (5 pieces): +%d Resist. No range modifier." % STANCE_NEUTRAL_RESIST
+
+
+## Full Gatewarden only. Both modes apply whether or not the fight is Koliseo.
+## Other Ultra lines stay on the pvp switch inside _sum_worn.
+static func apply_stance(stats: Dictionary, worn: Array, stance_mode: String) -> Dictionary:
+	var pieces := 0
+	for entry in worn:
+		if family_of(str(entry.get("item_id", ""))) == STANCE_FAMILY:
+			pieces += 1
+	stats["near_amp"] = int(stats.get("near_amp", 0))
+	stats["gate_stance"] = ""
+	if pieces < STANCE_PIECES:
+		return stats
+	var mode := clean_stance(stance_mode)
+	stats["gate_stance"] = mode
+	if mode == STANCE_RANGED:
+		stats["far_cut"] = STANCE_FAR_CUT
+		stats["near_amp"] = STANCE_NEAR_AMP
+	else:
+		stats["resist"] = int(stats.get("resist", 0)) + STANCE_NEUTRAL_RESIST
+		stats["far_cut"] = 0
+		stats["near_amp"] = 0
+	return stats
 
 
 static func _sum_worn(worn: Array, attune_map: Dictionary, pvp: bool, preserved_gates: Variant = null) -> Dictionary:
@@ -1142,10 +1200,11 @@ func ap_mp(class_id: String = "", pvp: bool = true) -> Dictionary:
 
 ## Sanitised fight gear from any source (a peer, a save): worn + attune.
 static func clean_fight_gear(raw: Variant) -> Dictionary:
-	var out := {"worn": [], "attune": {}}
+	var out := {"worn": [], "attune": {}, "stance": STANCE_NEUTRAL}
 	if typeof(raw) != TYPE_DICTIONARY:
 		return out
 	out["worn"] = clean_worn(raw.get("worn", []))
+	out["stance"] = clean_stance(raw.get("stance", ""))
 	var att: Variant = raw.get("attune", {})
 	if typeof(att) == TYPE_DICTIONARY:
 		for fam in att:
@@ -1186,12 +1245,24 @@ static func clean_spell_elements(class_id: String, raw: Variant) -> Dictionary:
 	return out if seen.size() <= 2 else {}
 
 
+## Gatewarden 5pc. Saved with the bag. Default Neutral when the key is missing.
+func set_stance(mode: String) -> Dictionary:
+	if not STANCES.has(mode):
+		return _fail("bad_stance")
+	stance = mode
+	return {"ok": true, "reason": ""}
+
+
+func stance_of() -> String:
+	return clean_stance(stance)
+
+
 ## Everything a fight needs from one class loadout.
 ## While the kit is off, test pieces are stripped. While it is on they are
 ## sent as normal items (no test flag) so Koliseo keeps them. Debug pieces
 ## stay flagged; the online send path runs clean_fight_gear, which drops debug.
 func fight_gear(with_still: bool = false, class_id: String = "") -> Dictionary:
-	var out := {"worn": clean_worn(worn_list(class_id), false), "attune": attune.duplicate(), "heroes": HeroProgress.load_saved().fight_heroes()}
+	var out := {"worn": clean_worn(worn_list(class_id), false), "attune": attune.duplicate(), "heroes": HeroProgress.load_saved().fight_heroes(), "stance": stance_of()}
 	if with_still:
 		var still_class := class_id if class_id != "" else focus_class
 		var still := StillVault.load_saved().fight_still(still_class)

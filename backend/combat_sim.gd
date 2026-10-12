@@ -152,6 +152,8 @@ var _rng := RandomNumberGenerator.new()
 var _scripted_rolls: Array[int] = []
 var _last_crit := false
 var _last_crit_mult := 1.0
+## "far", "near", or "" after the last _gear_strike_damage. Cleared by _take_range_band.
+var _last_range_band := ""
 var _last_events: Array = []
 ## Fight history. last_events is only the latest action; this keeps the tail.
 var _battle_log: Array = []
@@ -1877,14 +1879,27 @@ func _gear_strike_damage(actor: Dictionary, target: Dictionary, damage: int, dis
 		out += int(actor["first_back"])
 		if resolve:
 			actor["first_back_ready"] = false
-	# Ironveil 4pc. Chebyshev, same band as Long Shadow. DoTs never call this.
+	# Gatewarden 5pc Ranged Guard. Chebyshev, same band as Long Shadow.
+	# Far hits are cut; hits from 1 or 2 tiles are increased. DoTs never
+	# call this. Neutral leaves both rates at 0. Counts in every fight.
+	_last_range_band = ""
 	if dist >= 3 and int(target.get("far_cut", 0)) > 0 and out > 0:
 		out = roundi(float(out) * (1.0 - float(int(target["far_cut"])) / 100.0))
+		_last_range_band = "far"
+	elif dist >= 1 and dist <= 2 and int(target.get("near_amp", 0)) > 0 and out > 0:
+		out = roundi(float(out) * (1.0 + float(int(target["near_amp"])) / 100.0))
+		_last_range_band = "near"
 	if bool(target.get("guard_ready", false)) and int(target.get("guard_flat", 0)) > 0 and out > 0:
 		out = maxi(0, out - int(target["guard_flat"]))
 		if resolve:
 			target["guard_ready"] = false
 	return out
+
+
+func _take_range_band() -> String:
+	var band := _last_range_band
+	_last_range_band = ""
+	return band
 
 
 ## Mauro 29 Sep 2026 (Characteristics sheet): Kestrel Longshot ×1.15 when the
@@ -3485,6 +3500,7 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 	gear_crit = _last_crit
 	gear_crit_mult = _last_crit_mult
 	pre_mitigation = _gear_strike_damage(actor, target, pre_mitigation, dist, is_back, true)
+	var range_band := _take_range_band()
 	var mitigation := _mitigate_hit(actor, target, pre_mitigation)
 	var damage := int(mitigation["damage"])
 	_lose_hp(target, damage)
@@ -3597,6 +3613,8 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 		"engine_spent": engine_spent,
 		"coach": _last_coach,
 	}
+	if range_band != "":
+		hit_event["range_band"] = range_band
 	if spell_id == SpellKits.DETONATE:
 		hit_event["marks_consumed"] = marks_consumed
 		hit_event["marks_remaining"] = int(target.get("marks", 0))
@@ -4510,7 +4528,7 @@ func _apply_gear(unit: Dictionary, raw: Variant) -> void:
 	var gear: Dictionary = raw
 	var attune_raw: Variant = gear.get("attune", {})
 	var class_id := str(unit.get("class_id", ""))
-	var stats := GearBag.combat_stats(gear.get("worn", []), attune_raw if typeof(attune_raw) == TYPE_DICTIONARY else {}, bool(gear.get("flatten_plus", false)), class_id, false)
+	var stats := GearBag.combat_stats(gear.get("worn", []), attune_raw if typeof(attune_raw) == TYPE_DICTIONARY else {}, bool(gear.get("flatten_plus", false)), class_id, false, str(gear.get("stance", "")))
 	# Levels (HeroProgress): inherent growth + spent points, recomputed here.
 	var hero_raw: Variant = gear.get("hero", {})
 	var heroes: Variant = gear.get("heroes", {})
@@ -4551,6 +4569,8 @@ func _apply_gear(unit: Dictionary, raw: Variant) -> void:
 	unit["guard_flat"] = int(stats["guard_flat"])
 	unit["guard_ready"] = int(stats["guard_flat"]) > 0
 	unit["far_cut"] = int(stats.get("far_cut", 0))
+	unit["near_amp"] = int(stats.get("near_amp", 0))
+	unit["gate_stance"] = str(stats.get("gate_stance", ""))
 	unit["heal_flat"] = int(stats["heal_flat"])
 	unit["ward_shield"] = int(stats["ward_shield"])
 	if int(stats["start_aegis"]) > 0:
@@ -5962,6 +5982,7 @@ func _submit_foe_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
 		foe_back = bool(foe_guarded[1])
 		var pre := _phase_a_damage(_foe_base_damage(actor, def), facing_mult, actor, target, _foe_element(actor, def), true)
 		pre = _gear_strike_damage(actor, target, pre, dist, foe_back, true)
+		var range_band := _take_range_band()
 		var mitigation := _mitigate_hit(actor, target, pre)
 		var damage := int(mitigation["damage"])
 		_lose_hp(target, damage)
@@ -5971,6 +5992,8 @@ func _submit_foe_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
 		event["type"] = "hit"
 		event["damage"] = damage
 		event["facing_mult"] = facing_mult
+		if range_band != "":
+			event["range_band"] = range_band
 		_stamp_mitigation(event, mitigation)
 		var push_result := {}
 		if int(def.get("push", 0)) > 0:
@@ -8315,6 +8338,7 @@ func _resolve_aegis_break(intent: Dictionary, actor: Dictionary, def: Dictionary
 		is_back = bool(aegis_guarded[1])
 		var pre_mitigation := _phase_a_damage(int(def.get("base_damage", 26)), facing_mult, actor, target, str(def.get("element", "")), true)
 		pre_mitigation = _gear_strike_damage(actor, target, pre_mitigation, chebyshev(actor["pos"], target["pos"]), is_back, true)
+		var range_band := _take_range_band()
 		var mitigation := _mitigate_hit(actor, target, pre_mitigation)
 		var damage := int(mitigation["damage"])
 		_lose_hp(target, damage)
@@ -8336,6 +8360,8 @@ func _resolve_aegis_break(intent: Dictionary, actor: Dictionary, def: Dictionary
 			"facing_mult": facing_mult,
 			"back": is_back,
 		}
+		if range_band != "":
+			row["range_band"] = range_band
 		_stamp_push_fields(row, push_result, burn_info, silence_info, slow_info)
 		_stamp_mitigation(row, mitigation)
 		_stamp_riders(row, _flex_target(actor, target, def), def, target)
@@ -8533,6 +8559,7 @@ func _resolve_hold_line(intent: Dictionary, actor: Dictionary, def: Dictionary, 
 		is_back = bool(hold_guarded[1])
 		var pre_mitigation := _phase_a_damage(int(def.get("base_damage", 7)), facing_mult, actor, target, str(def.get("element", "")), true)
 		pre_mitigation = _gear_strike_damage(actor, target, pre_mitigation, chebyshev(actor["pos"], target["pos"]), is_back, true)
+		var range_band := _take_range_band()
 		var mitigation := _mitigate_hit(actor, target, pre_mitigation)
 		var damage := int(mitigation["damage"])
 		_lose_hp(target, damage)
@@ -8546,6 +8573,8 @@ func _resolve_hold_line(intent: Dictionary, actor: Dictionary, def: Dictionary, 
 			"facing_mult": facing_mult,
 			"back": is_back,
 		}
+		if range_band != "":
+			row["range_band"] = range_band
 		_stamp_mitigation(row, mitigation)
 		_stamp_riders(row, _flex_target(actor, target, def), def, target)
 		targets.append(row)
@@ -8683,6 +8712,7 @@ func _resolve_ambush(intent: Dictionary, actor: Dictionary, target: Dictionary, 
 	var pre_mitigation := _phase_a_damage(base, facing_mult, actor, target, str(def.get("element", "")), true)
 	var ambush_crit := _last_crit
 	pre_mitigation = _gear_strike_damage(actor, target, pre_mitigation, 1, backstab, true)
+	var range_band := _take_range_band()
 	var mitigation := _mitigate_hit(actor, target, pre_mitigation)
 	var damage := int(mitigation["damage"])
 	# Pos was assigned above. Damage is the strike from that tile. A reorder
@@ -8735,6 +8765,8 @@ func _resolve_ambush(intent: Dictionary, actor: Dictionary, target: Dictionary, 
 		"shades": int(actor.get("shades", 0)),
 		"coach": _last_coach,
 	})
+	if range_band != "":
+		_last_events[_last_events.size() - 1]["range_band"] = range_band
 	var ambush_hit: Dictionary = _last_events[_last_events.size() - 1]
 	_stamp_mitigation(ambush_hit, mitigation)
 	var ambush_tags := _flex_target(actor, target, def)

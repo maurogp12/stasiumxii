@@ -69,7 +69,7 @@ func stats() -> Dictionary:
 ## fight starts from: base 6/3, Legendary and Ultra 5pc +1/+1, Rare +5
 ## weapon / boots, +1 AP from level 20, then the socketed Hourglass.
 static func champion_stats(gear: GearBag, hero: HeroProgress, class_id: String) -> Dictionary:
-	var st := GearBag.combat_stats(gear.worn_list(class_id), gear.attune, false, class_id)
+	var st := GearBag.combat_stats(gear.worn_list(class_id), gear.attune, false, class_id, false, gear.stance_of())
 	var lv := HeroProgress.combat_stats(hero.fight_hero(class_id), class_id)
 	var apmp := gear.ap_mp(class_id)
 	var vault := StillVault.load_saved()

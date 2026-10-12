@@ -102,6 +102,11 @@ static func lines(event: Dictionary, snap: Dictionary) -> Array:
 			out.append(push)
 		out.append_array(extra)
 		return out
+	if kind == "combat_start":
+		var started: Array = ["Fight starts."]
+		started.append_array(_gate_stance_lines(snap))
+		started.append_array(extra)
+		return started
 	var text := _line(kind, event, snap)
 	if text == "" and extra.is_empty():
 		return []
@@ -486,6 +491,23 @@ static func _hit_line(event: Dictionary, snap: Dictionary) -> String:
 	return _finish(head, event, true)
 
 
+static func _gate_stance_lines(snap: Dictionary) -> Array:
+	var rows: Array = []
+	for raw in snap.get("units", []):
+		if typeof(raw) != TYPE_DICTIONARY:
+			continue
+		var unit: Dictionary = raw
+		var mode := str(unit.get("gate_stance", ""))
+		if mode == "":
+			continue
+		var who := _name(snap, int(unit.get("seat", -1)))
+		if mode == GearBag.STANCE_RANGED:
+			rows.append("%s: Gatewarden Ranged Guard. Hits from 3 or more tiles deal %d%% less. Hits from 1 or 2 tiles deal %d%% more." % [who, GearBag.STANCE_FAR_CUT, GearBag.STANCE_NEAR_AMP])
+		else:
+			rows.append("%s: Gatewarden Neutral. +%d Resist." % [who, GearBag.STANCE_NEUTRAL_RESIST])
+	return rows
+
+
 static func _hit_extras(event: Dictionary) -> String:
 	var bits: PackedStringArray = []
 	var riders: Array = event.get("riders", []) if event.get("riders", []) is Array else []
@@ -513,6 +535,11 @@ static func _hit_extras(event: Dictionary) -> String:
 		bits.append("Air +1 MP")
 	if riders.has("unbound"):
 		bits.append("Unbound")
+	var band := str(event.get("range_band", ""))
+	if band == "far":
+		bits.append("Ranged Guard -%d%%" % GearBag.STANCE_FAR_CUT)
+	elif band == "near":
+		bits.append("Ranged Guard +%d%%" % GearBag.STANCE_NEAR_AMP)
 	var engine := str(event.get("engine", ""))
 	if int(event.get("engine_gained", 0)) > 0 and engine != "":
 		bits.append("%s +%d" % [engine.capitalize(), int(event["engine_gained"])])
