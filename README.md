@@ -1,11 +1,11 @@
-# STASIUM XII 0.1.168-mobile debug APK (sideload)
+# STASIUM XII 0.1.169-mobile debug APK (sideload)
 
 Download-only branch. It holds no source code.
 
-- Built from claude/stasium-xii-development-6ni8g2 at d7ab4f2f
-- Battle log records element combos and reactions
-- Version 0.1.168-mobile (code 169), arm64-v8a, debug
+- Built from claude/stasium-xii-development-6ni8g2 at 6ab39034
+- Magma burn-through: two extra Burn stacks, and no new shield while burning
+- Version 0.1.169-mobile (code 170), arm64-v8a, debug
 - Cert SHA-256 3725b12ee58cf1d911c373bc5ef0b6be3c47afb41421777f2b505bb4aa6063e2 (pinned)
-- APK SHA-256 2ea104198763a148a9383d5a57fe89af42c1caa8aebad2fd151cc82f8d39d793, 177025091 bytes
+- APK SHA-256 28f16bfbeed67caf118e5c24e0dddd13d52eee48d670148c143ec987caeec0e1, 177049826 bytes
 - Stored as 90 MB parts; the release workflow joins them and checks the SHA-256
 - Full change record: docs/CHANGE_LOG_CLAUDE.md on the work branch
