@@ -8,6 +8,7 @@ class_name StillsScreen
 ## Keep Intact / Overwind choice for its next fight.
 
 signal closed
+signal changed
 
 const GOLD := Color(0.855, 0.69, 0.4)
 const GOLD_BRIGHT := Color(0.95, 0.82, 0.52)
@@ -19,6 +20,8 @@ var font: Font
 var selected: String = "steadfast"
 ## Class whose socket Forge and Intact / Overwound edit. Empty uses the vault focus.
 var class_id: String = ""
+## Empty shows every class. A deployment inventory passes only this fight.
+var fight_classes: Array = []
 var _vault: StillVault
 var _grid: GridContainer
 var _detail: VBoxContainer
@@ -31,7 +34,8 @@ func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	_vault = StillVault.load_saved()
-	var use := class_id if StillVault.CLASS_IDS.has(class_id) else _vault.focus_class
+	var allowed := _roster()
+	var use := class_id if allowed.has(class_id) else (str(allowed[0]) if not allowed.is_empty() else _vault.focus_class)
 	_vault.set_focus(use)
 	class_id = use
 	if _vault.socket != "":
@@ -49,7 +53,7 @@ func status_text() -> String:
 
 
 func _focus_class(cid: String) -> void:
-	if not StillVault.CLASS_IDS.has(cid):
+	if not _roster().has(cid):
 		return
 	class_id = cid
 	_vault.set_focus(cid)
@@ -78,6 +82,7 @@ func forge() -> Dictionary:
 			_status.text = "Swapped %s to %s. The old Still's fragments are back." % [who, StillVault.display_name(selected)]
 		else:
 			_status.text = "%s forged for %s. It powers that class's next fight, then breaks." % [StillVault.display_name(selected), who]
+		changed.emit()
 	else:
 		_status.text = {"needs_12": "Needs 12 fragments of the same Still.", "socket_full": "The socket is full — use that Still in a fight first."}.get(str(result.get("reason", "")), "Cannot forge.")
 	_refresh()
@@ -89,6 +94,7 @@ func choose_mode(mode: String) -> Dictionary:
 	if bool(result.get("ok", false)):
 		_vault.save()
 		_status.text = "Keep Intact." if mode == "intact" else "Overwind: stronger, with a drawback."
+		changed.emit()
 	_refresh()
 	return result
 
@@ -132,7 +138,7 @@ func _build() -> void:
 	classes.name = "StillClasses"
 	classes.add_theme_constant_override("separation", 6)
 	body.add_child(classes)
-	for cid in StillVault.CLASS_IDS:
+	for cid in _roster():
 		var tab := _button(SpellKits.display_name(cid))
 		tab.name = "StillClass_%s" % cid
 		tab.pressed.connect(_focus_class.bind(cid))
@@ -247,6 +253,14 @@ func _refresh() -> void:
 				b.add_theme_stylebox_override("normal", lit)
 			b.pressed.connect(choose_mode.bind(mode))
 			_socket_box.add_child(b)
+
+
+func _roster() -> Array:
+	if fight_classes.is_empty():
+		var all: Array = []
+		all.append_array(StillVault.CLASS_IDS)
+		return all
+	return fight_classes
 
 
 func _label(text: String, font_size: int, tint: Color) -> Label:

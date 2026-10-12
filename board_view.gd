@@ -1221,23 +1221,38 @@ func _on_elements_requested() -> void:
 	screen.closed.connect(_apply_prefight_elements)
 
 
-## Set, stance, and Still. Same deployment lock as Elements.
+## The player's inventory, fitted over the fight. Same deployment lock as Elements.
 func _on_gear_requested() -> void:
 	var snap: Dictionary = _sim().snapshot()
 	if not CombatHUD.is_deployment_phase(snap) or _hud == null:
 		return
-	if _hud.get_node_or_null("PrefightGear") != null:
+	if _hud.get_node_or_null("InventoryScreen") != null:
 		return
-	var screen: PrefightGear = load("res://scenes/prefight_gear.gd").new()
-	screen.name = "PrefightGear"
+	var classes := _prefight_classes(snap)
+	if classes.is_empty():
+		return
+	var screen: InventoryScreen = load("res://scenes/inventory_screen.gd").new()
+	screen.name = "InventoryScreen"
 	screen.font = _hud._ui_font
-	screen.set_classes(_prefight_classes(snap))
+	var class_id := _deploying_class(snap)
+	if class_id != "":
+		screen.champion = class_id
+	screen.set_fight_classes(classes)
 	_hud.add_child(screen)
 	screen.changed.connect(_on_prefight_gear_changed)
 
 
 func _on_prefight_gear_changed(class_id: String) -> void:
 	_push_prefight_loadout(class_id)
+
+
+## Combat start locks the loadout. An open inventory cannot keep editing.
+func _close_fight_inventory(snap: Dictionary) -> void:
+	if _hud == null or CombatHUD.is_deployment_phase(snap):
+		return
+	var screen := _hud.get_node_or_null("InventoryScreen")
+	if screen != null and screen.has_method("close"):
+		screen.close()
 
 
 ## This phone's fighters who can still change a loadout. Online is one
@@ -2451,6 +2466,7 @@ func _maybe_drain_net() -> void:
 
 func _refresh() -> void:
 	var snap: Dictionary = _sim().snapshot()
+	_close_fight_inventory(snap)
 	var legal: Array = _sim().legal_intents(CombatHUD.kit_seat(snap))
 	_apply_board_tiles(snap)
 	_apply_units(snap)
