@@ -1500,7 +1500,11 @@ static func resolve_flash_kind(event: Dictionary) -> String:
 		return "support"
 	var shield_now := int(event.get("shield", 0))
 	var grants_shield := int(def.get("shield", 0)) > 0 and shield_now > 0 and dealt <= 0
-	if spell_id == SpellKits.WARD or grants_shield:
+	if spell_id == SpellKits.WARD:
+		if event.has("shield_gained") and int(event.get("shield_gained", 0)) <= 0:
+			return ""
+		return "ward"
+	if grants_shield:
 		return "ward"
 	if int(def.get("base_heal", 0)) > 0 and dealt <= 0 and event.has("healed"):
 		return "support"

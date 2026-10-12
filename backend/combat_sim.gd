@@ -577,6 +577,10 @@ func legal_intents(seat: int) -> Array:
 		if target_kind == "self":
 			if bool(def.get("once_per_turn", false)) and bool(actor.get("ward_used", false)):
 				continue
+			# A burning Bastion with nobody else to shield does not get a Ward
+			# cast. The button stays dark and the submit refunds.
+			if str(spell_id) == SpellKits.WARD and not _ward_has_gain(actor, def):
+				continue
 			out.append({"type": "cast", "spell": spell_id, "to": from, "seat": seat})
 			continue
 		if target_kind == "fallen_ally":
@@ -1902,7 +1906,8 @@ func _spend_mp(actor: Dictionary, amount: int) -> void:
 ##         Earth pushes into a wall: 8 instead of the stagger 4, once per target
 ##         per turn (see _apply_bounce_stagger).
 ##   Water damage: the target loses 1 MP at the start of its next turn (once).
-##   Fire  Burn 4 at the target's next turn start, no stack (no class is Fire yet).
+##   Fire  Burn 4 per stack at the target's turn start: 1 stack 4 for 2 turns,
+##         2 stacks 8 for 3, 3 stacks 12 for 4. A shield never soaks the tick.
 ## Residue: the hit writes its element on the target for 2 of the target's own
 ## turns; one per body, same element refreshes, a new one overwrites, death
 ## clears it, Cleanse does not. Heals to allies write none. Neutral: nothing.
@@ -2092,10 +2097,18 @@ func _try_blend(actor: Dictionary, target: Dictionary, el: String) -> String:
 		"spark":
 			note = _blend_spark(actor, target, event)
 		"magma":
+			# Mauro: the combo adds 2 Burn stacks. A Fire hit already added its
+			# own +1 before this blend. Cap stays 3. The 4 HP tile is unchanged.
 			target["magma_pending"] = int(actor["seat"])
 			_still_on_debuff(target, "magma")
-			event["debuffs"] = [_debuff("Magma", 1, "%d HP" % MAGMA_TICK_HP)]
-			note = "the tile they end their next turn on burns for %d" % MAGMA_TICK_HP
+			_apply_burn(target)
+			var burn := _apply_burn(target)
+			var stacks := int(burn.get("stacks", target.get("burn_stacks", 0)))
+			event["burn_stacks"] = stacks
+			event["burn_remaining"] = int(burn.get("remaining", 0))
+			event["burn_tick"] = int(burn.get("hp_per_tick", _burn_tick_hp(stacks)))
+			event["debuffs"] = []
+			note = "Burn %d stacks, no shields while burning" % stacks
 		"mire":
 			if _ultra_unbound(target):
 				event["ignored"] = "Unbound"
@@ -5757,9 +5770,16 @@ func _submit_foe_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
 	var caster_cell: Vector2i = actor["pos"]
 	var name := str(def.get("name", spell_id))
 	if shape == "self":
-		_still_gain_shield(actor, int(def.get("ward", 0)))
-		actor["shield_turns"] = maxi(int(actor.get("shield_turns", 0)), 2)
-		_last_coach = "%s raises %s (+%d Ward)." % [actor["name"], name, int(def.get("ward", 0))]
+		var ward_add := int(def.get("ward", 0))
+		var before_shield := int(actor.get("shield", 0))
+		var after_shield := _still_gain_shield(actor, ward_add, "Ward")
+		if after_shield > before_shield:
+			actor["shield_turns"] = maxi(int(actor.get("shield_turns", 0)), 2)
+			_last_coach = "%s raises %s (+%d Ward)." % [actor["name"], name, ward_add]
+		elif _is_burning(actor):
+			_last_coach = "Shield blocked. %s is burning." % str(actor.get("name", "Unit"))
+		else:
+			_last_coach = "%s raises %s (+%d Ward)." % [actor["name"], name, ward_add]
 		_last_events.append({"type": "cast", "spell": spell_id, "seat": actor["seat"], "caster_cell": caster_cell, "shield": int(actor["shield"]), "ap_spent": ap_cost, "foe": true, "coach": _last_coach})
 		return _accept()
 	if shape == "step":
@@ -6968,9 +6988,30 @@ func _still_can_shield(unit: Dictionary) -> bool:
 	return id != "shatterglass" and id != "withering_sand"
 
 
-func _still_gain_shield(unit: Dictionary, add: int) -> int:
+func _is_burning(unit: Dictionary) -> bool:
+	if unit.is_empty():
+		return false
+	return int(unit.get("burn_stacks", 0)) > 0 and int(unit.get("burn_remaining", 0)) > 0
+
+
+## A new shield is refused while Burn is live. The shield already there stays.
+func _note_shield_blocked(unit: Dictionary, source: String, amount: int) -> void:
+	_last_events.append({
+		"type": "shield_blocked",
+		"target_seat": int(unit.get("seat", -1)),
+		"source": source,
+		"amount": amount,
+		"burn_stacks": int(unit.get("burn_stacks", 0)),
+		"coach": "Shield blocked. %s is burning." % str(unit.get("name", "Unit")),
+	})
+
+
+func _still_gain_shield(unit: Dictionary, add: int, source: String = "Ward") -> int:
 	var before := int(unit.get("shield", 0))
 	if add <= 0 or not _still_can_shield(unit):
+		return before
+	if _is_burning(unit):
+		_note_shield_blocked(unit, source, add)
 		return before
 	unit["shield"] = before + add
 	return int(unit["shield"])
@@ -7470,12 +7511,17 @@ func _resolve_revive(intent: Dictionary, actor: Dictionary, def: Dictionary, des
 	var hp := maxi(roundi(float(max_hp) * float(def.get("revive_pct", 30)) / 100.0), 1)
 	body["alive"] = true
 	body["hp"] = hp
+	var revive_shield := int(def.get("revive_shield", 0))
+	# Checked before the status wipe. A burning body does not stand up shielded.
+	if revive_shield > 0 and _is_burning(body):
+		_note_shield_blocked(body, "Rekindle", revive_shield)
+		revive_shield = 0
 	for key in ["stun_remaining", "burn_remaining", "burn_stacks", "marks", "shield", "hit_immunity"]:
 		if body.has(key):
 			body[key] = 0
 	body["stunned"] = false
-	if int(def.get("revive_shield", 0)) > 0 and _still_can_shield(body):
-		body["shield"] = int(def["revive_shield"])
+	if revive_shield > 0 and _still_can_shield(body):
+		body["shield"] = revive_shield
 		body["shield_turns"] = 0
 	if bool(body.get("invisible", false)):
 		_end_invisible(body, false)
@@ -7559,8 +7605,10 @@ func _resolve_support(intent: Dictionary, actor: Dictionary, target: Dictionary,
 		"spend_pulse":
 			engine_spent = _spend_resource(actor, "pulse", int(def.get("spend_pulse", 1)))
 	if spell_id == SpellKits.WARD and _still_can_shield(target):
-		target["shield"] = int(def.get("shield", 20))
-		target["shield_turns"] = int(def.get("shield_turns", 2))
+		var before_shield := int(target.get("shield", 0))
+		var after_shield := _still_gain_shield(target, int(def.get("shield", 20)), "Ward")
+		if after_shield > before_shield:
+			target["shield_turns"] = int(def.get("shield_turns", 2))
 	var cc_removed: Array = []
 	if spell_id == SpellKits.CLEANSE:
 		# Mauro 6 Oct 2026: "cleanse from mender can cleanse every debuff but 1
@@ -7707,32 +7755,96 @@ func _strip_family(unit: Dictionary, family: String) -> void:
 ## then: T+2 is locked, T+3 is legal. An attack, a hurt, or a trap reveals
 ## at once and starts the same one-turn cooldown. A fixture with invisible
 ## but no invisible_turns has no clock (tests / old snapshots).
-## Mauro 9 Oct 2026: Bastion's Ward. 2 AP + 2 Aegis, once per turn. Every living
-## ally within `ward_radius` (Chebyshev, Bastion included) gains +20 shield,
-## capped at 40. The shield has no clock: it lasts until hits break it.
-func _resolve_team_ward(intent: Dictionary, actor: Dictionary, def: Dictionary, ap_cost: int, mp_cost: int) -> Dictionary:
-	actor["ap"] = int(actor["ap"]) - ap_cost
-	_spend_mp(actor, mp_cost)
-	var spent := _spend_resource(actor, "aegis", int(def.get("spend_aegis", 2)))
-	actor["ward_used"] = true
+## Who Ward would actually touch. `gain` is the shield that would land (0 at
+## the cap, while Withering, or while Burn is live). `blocked` is a burning
+## body that would have gained some. Nothing here is spent or written.
+func _ward_recipients(actor: Dictionary, def: Dictionary) -> Array:
 	var radius := int(def.get("ward_radius", 3))
 	var add := int(def.get("shield", 20))
 	if int(actor.get("ward_shield", 0)) > 0:
 		add = int(actor["ward_shield"])
 	var cap := int(def.get("shield_cap", 40))
-	var shielded: Array = []
-	for unit in _units:
+	var rows: Array = []
+	for raw in _units:
+		var unit: Dictionary = raw
 		if not bool(unit.get("alive", false)) or not bool(unit.get("placed", true)):
 			continue
-		if not _allied(unit, actor) and unit != actor:
+		if not _allied(unit, actor):
 			continue
 		if chebyshev(actor["pos"], unit["pos"]) > radius:
 			continue
 		var before := int(unit.get("shield", 0))
-		var gain := add if _still_can_shield(unit) else 0
-		unit["shield"] = mini(before + gain, cap) if gain > 0 else before
+		var gain := 0
+		var blocked := false
+		if add > 0 and _still_can_shield(unit):
+			if _is_burning(unit):
+				blocked = true
+			else:
+				gain = mini(before + add, cap) - before
+		rows.append({
+			"seat": int(unit.get("seat", -1)),
+			"pos": unit["pos"],
+			"before": before,
+			"gain": gain,
+			"blocked": blocked,
+			"add": add,
+		})
+	return rows
+
+
+func _ward_has_gain(actor: Dictionary, def: Dictionary) -> bool:
+	for raw in _ward_recipients(actor, def):
+		var row: Dictionary = raw
+		if int(row.get("gain", 0)) > 0:
+			return true
+	return false
+
+
+## Mauro 9 Oct 2026: Bastion's Ward. 2 AP + 2 Aegis, once per turn. Every living
+## ally within `ward_radius` (Chebyshev, Bastion included) gains +20 shield,
+## capped at 40. The shield has no clock: it lasts until hits break it.
+## A burning body is skipped. If nobody would gain, the cast is refused before
+## AP, Aegis, or the once-per-turn flag are spent.
+func _resolve_team_ward(intent: Dictionary, actor: Dictionary, def: Dictionary, ap_cost: int, mp_cost: int) -> Dictionary:
+	var rows := _ward_recipients(actor, def)
+	var gainers := 0
+	var burning_block := _is_burning(actor)
+	for raw in rows:
+		var row: Dictionary = raw
+		if int(row.get("gain", 0)) > 0:
+			gainers += 1
+		if bool(row.get("blocked", false)):
+			burning_block = true
+	if gainers <= 0:
+		if burning_block:
+			return _reject(intent, "burning", "REJECT — %s is burning. Ward refunded." % str(actor.get("name", "Bastion")))
+		return _reject(intent, "no_target", "REJECT — Ward would shield no one (refund).")
+	actor["ap"] = int(actor["ap"]) - ap_cost
+	_spend_mp(actor, mp_cost)
+	var spent := _spend_resource(actor, "aegis", int(def.get("spend_aegis", 2)))
+	actor["ward_used"] = true
+	var add := int(def.get("shield", 20))
+	var shielded: Array = []
+	for raw in rows:
+		var row: Dictionary = raw
+		var unit := _unit_by_seat(int(row.get("seat", -1)))
+		if unit.is_empty():
+			continue
+		add = int(row.get("add", add))
+		if bool(row.get("blocked", false)):
+			_note_shield_blocked(unit, "Ward", add)
+			continue
+		var gain := int(row.get("gain", 0))
+		if gain <= 0:
+			continue
+		unit["shield"] = int(row.get("before", 0)) + gain
 		unit["shield_turns"] = 0
-		shielded.append({"seat": int(unit["seat"]), "pos": unit["pos"], "shield": int(unit["shield"]), "gained": int(unit["shield"]) - before})
+		shielded.append({
+			"seat": int(unit["seat"]),
+			"pos": unit["pos"],
+			"shield": int(unit["shield"]),
+			"gained": gain,
+		})
 	_intent_log.append(intent)
 	_last_coach = "%s Ward: +%d shield on %d (−%d AP, −%d Aegis)." % [actor["name"], add, shielded.size(), ap_cost, spent]
 	for row in shielded:

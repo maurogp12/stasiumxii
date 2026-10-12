@@ -39,6 +39,7 @@ const LINES := {
 	"sudden_death": true,
 	"time_up": true,
 	"reject": true,
+	"shield_blocked": true,
 }
 
 const CLASS_COLOR := {
@@ -321,6 +322,8 @@ static func _line(kind: String, event: Dictionary, snap: Dictionary) -> String:
 			return "Time. The side with more HP left wins."
 		"reject":
 			return "Illegal: %s" % _reject_text(str(event.get("coach", event.get("reason", "that action"))))
+		"shield_blocked":
+			return _shield_blocked_line(event, snap)
 		_:
 			return ""
 	return ""
@@ -581,10 +584,21 @@ static func _trap_line(event: Dictionary, snap: Dictionary) -> String:
 	return text + "."
 
 
+static func _shield_blocked_line(event: Dictionary, snap: Dictionary) -> String:
+	var who := _name(snap, int(event.get("target_seat", event.get("seat", -1))))
+	var source := str(event.get("source", ""))
+	if source != "":
+		return "Shield blocked (%s). %s is burning." % [source, who]
+	return "Shield blocked. %s is burning." % who
+
+
 static func _blend_line(event: Dictionary, snap: Dictionary) -> String:
 	var caster := _name(snap, int(event.get("seat", -1)))
 	var target := _name(snap, int(event.get("target_seat", -1)))
 	var name := str(event.get("name", event.get("blend", "Blend")))
+	if str(event.get("blend", "")) == "magma":
+		var stacks := int(event.get("burn_stacks", 0))
+		return "%s: %s on %s, Burn %d stacks, no shields while burning." % [name, caster, target, stacks]
 	var text := "%s: %s on %s" % [name, caster, target]
 	var damage := int(event.get("damage", event.get("chip", 0)))
 	if damage > 0:

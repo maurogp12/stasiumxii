@@ -9237,6 +9237,7 @@ func _test_element_blends() -> void:
 	eq(str(mb.get("blend", "")), "mire", "Ironjaw's Earth Strike + Mender's Water = Mire")
 	eq(bool(mb.get("infused", false)), true, "the Blend says it came from the infusion")
 	eq(str(_unit(2).get("infusion", "")), "", "the infusion is spent")
+	_test_magma_burn_through()
 
 	# Saved picks: first free, a new pair costs 2 trophies, the same pair is free.
 	var hero := HeroProgress.new()
@@ -9257,6 +9258,209 @@ func _test_element_blends() -> void:
 	eq(HeroProgress.clean_elements("kestrel", {"pair": ["air", "neutral"]}), {}, "Neutral is not a pick")
 	eq(GearBag.clean_spell_elements("ironjaw", {"strike": "air", "shoulder": "fire", "crush": "water"}), {}, "a fight never takes a third element")
 	eq(GearBag.clean_spell_elements("ironjaw", {"strike": "air", "advance": "fire"}), {"strike": "air"}, "only FLEX spells take an element")
+
+
+## Mauro: Magma adds 2 Burn stacks (Fire's +1 still applies, cap 3). Burn stays
+## 4/8/12 for 2/3/4 turns. A burning body takes no new shield. The old shield
+## and the 4 HP tile are unchanged.
+func _test_magma_burn_through() -> void:
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1], "classes": ["ironjaw", "kestrel"], "positions": [Vector2i(5, 5), Vector2i(6, 5)]})
+	_live_unit(0)["spell_elements"] = {"strike": "fire", "shoulder": "earth", "crush": "earth"}
+	_live_unit(1)["residue"] = "earth"
+	_live_unit(1)["residue_seat"] = 0
+	_live_unit(1)["residue_turns"] = 2
+	_sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(6, 5), "seat": 0})
+	eq([int(_unit(1)["burn_stacks"]), int(_unit(1)["burn_remaining"])], [3, 4], "Fire +1 and Magma +2 is stack 3 for 4 turns")
+	eq(_sim._burn_tick_hp(3), 12, "stack 3 ticks 12")
+	_live_unit(1)["shield"] = 30
+	var hp_before := int(_unit(1)["hp"])
+	_sim.submit({"type": "end_turn", "seat": 0})
+	eq(int(_unit(1)["shield"]), 30, "the Burn tick does not spend the shield")
+	eq(hp_before - int(_unit(1)["hp"]), 12, "stack 3 burns 12 through the shield")
+	_sim.submit({"type": "move", "to": Vector2i(8, 5), "seat": 1})
+	var hp_tile := int(_unit(1)["hp"])
+	var end_tile: Dictionary = _sim.submit({"type": "end_turn", "seat": 1})
+	eq(_first_event_where(end_tile.get("events", []), "magma").is_empty(), false, "the Magma tile still ticks")
+	eq(int(_first_event_where(end_tile.get("events", []), "magma").get("damage", 0)), 4, "the Magma tile is still 4 HP")
+	eq(hp_tile - int(_unit(1)["hp"]), 4, "the tile's 4 HP ignores the shield")
+	eq(int(_unit(1)["shield"]), 30, "the tile does not spend the shield")
+
+	# Earth on a Fire residue: Magma's 2 stacks, no Fire rider.
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1], "classes": ["ironjaw", "kestrel"], "positions": [Vector2i(5, 5), Vector2i(6, 5)]})
+	_live_unit(0)["spell_elements"] = {"strike": "earth", "shoulder": "fire", "crush": "fire"}
+	_live_unit(1)["residue"] = "fire"
+	_live_unit(1)["residue_seat"] = 0
+	_live_unit(1)["residue_turns"] = 2
+	_sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(6, 5), "seat": 0})
+	eq([int(_unit(1)["burn_stacks"]), int(_unit(1)["burn_remaining"])], [2, 3], "Earth + Fire is 2 stacks for 3 turns")
+	eq(_sim._burn_tick_hp(int(_unit(1)["burn_stacks"])), 8, "stack 2 ticks 8")
+
+	# Already at 2: Fire's +1 reaches the cap and Magma's extra stacks stop there.
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1], "classes": ["ironjaw", "kestrel"], "positions": [Vector2i(5, 5), Vector2i(6, 5)]})
+	_live_unit(0)["spell_elements"] = {"strike": "fire", "shoulder": "earth", "crush": "earth"}
+	_live_unit(1)["burn_stacks"] = 2
+	_live_unit(1)["burn_remaining"] = 3
+	_live_unit(1)["residue"] = "earth"
+	_live_unit(1)["residue_seat"] = 0
+	_live_unit(1)["residue_turns"] = 2
+	_sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(6, 5), "seat": 0})
+	eq([int(_unit(1)["burn_stacks"]), int(_unit(1)["burn_remaining"])], [3, 4], "Magma cannot push Burn past 3")
+
+	# Ward and Oathgrave's larger ward_shield. A clean ally still gets the shield.
+	# Bastion pays only because that ally can receive it.
+	_sim.reset_match({
+		"seed": 1, "flat_board": true, "skip_deploy": true, "team_size": 2,
+		"classes": ["bastion", "kestrel", "mender", "gloam"],
+		"positions": [Vector2i(4, 4), Vector2i(10, 10), Vector2i(5, 4), Vector2i(12, 12)],
+		"bastion_aegis": 4,
+	})
+	_live_unit(0)["burn_stacks"] = 3
+	_live_unit(0)["burn_remaining"] = 4
+	_live_unit(0)["shield"] = 12
+	_live_unit(0)["ward_shield"] = 25
+	var ally_ap := int(_unit(0)["ap"])
+	var ally_aegis := int(_unit(0)["aegis"])
+	eq(_has_legal_cast(0, SpellKits.WARD), true, "Ward stays offered while a clean ally is in range")
+	_assert_kit_button(SpellKits.WARD, "", false)
+	var ward: Dictionary = _sim.submit({"type": "cast", "spell": "ward", "to": Vector2i(4, 4), "seat": 0})
+	eq(bool(ward.get("ok", false)), true, "Ward still resolves")
+	eq(int(_unit(0)["ap"]), ally_ap - 2, "Ward spends 2 AP when an ally is shielded")
+	eq(int(_unit(0)["aegis"]), ally_aegis - 2, "Ward spends 2 Aegis when an ally is shielded")
+	eq(int(_unit(0)["shield"]), 12, "a burning Bastion keeps the shield he had")
+	eq(int(_unit(2)["shield"]), 25, "Oathgrave's 25 still lands on a teammate who is not burning")
+	var blocked := _first_event_where(ward.get("events", []), "shield_blocked")
+	eq(int(blocked.get("target_seat", -1)), 0, "the refusal names Bastion")
+	eq(str(blocked.get("source", "")), "Ward", "the refusal names Ward")
+	var ward_coach := str(_sim.snapshot().get("coach", ""))
+	truthy(ward_coach.contains("shield on 1"), "the bar counts only the ally who gained a shield: %s" % ward_coach)
+	eq(ward_coach.contains("shield on 2"), false, "a refused Bastion is not counted: %s" % ward_coach)
+	var bastion_hit := false
+	for raw_event in ward.get("events", []):
+		if typeof(raw_event) != TYPE_DICTIONARY:
+			continue
+		var ward_event: Dictionary = raw_event
+		if str(ward_event.get("type", "")) == "hit" and str(ward_event.get("spell", "")) == "ward" and int(ward_event.get("target_seat", -1)) == 0:
+			bastion_hit = true
+	eq(bastion_hit, false, "a refused Ward does not emit a hit on the burning Bastion")
+	var hud: Script = load("res://ui/hud.gd")
+	eq(str(hud.toast_for_events(ward.get("events", []))), "Ward refused", "the board says Ward refused")
+
+	# Alone and burning: the button is dark, labeled burning, and the cast costs nothing.
+	_sim.reset_match({
+		"seed": 1, "flat_board": true, "skip_deploy": true,
+		"classes": ["bastion", "kestrel"],
+		"positions": [Vector2i(4, 4), Vector2i(8, 8)],
+		"bastion_aegis": 4,
+	})
+	_live_unit(0)["burn_stacks"] = 3
+	_live_unit(0)["burn_remaining"] = 4
+	_live_unit(0)["shield"] = 18
+	var solo_ap := int(_unit(0)["ap"])
+	var solo_aegis := int(_unit(0)["aegis"])
+	eq(_has_legal_cast(0, SpellKits.WARD), false, "Ward is not offered when Bastion is the only burning target")
+	_assert_kit_button(SpellKits.WARD, "burning", true)
+	var refused: Dictionary = _sim.submit({"type": "cast", "spell": "ward", "to": Vector2i(4, 4), "seat": 0})
+	eq(bool(refused.get("ok", false)), false, "a solo burning Ward does not resolve")
+	eq(str(refused.get("reason", "")), "burning", "the refusal reason is burning")
+	eq(int(_unit(0)["ap"]), solo_ap, "a refused Ward keeps AP")
+	eq(int(_unit(0)["aegis"]), solo_aegis, "a refused Ward keeps Aegis")
+	eq(int(_unit(0)["shield"]), 18, "a refused Ward does not change the shield")
+	eq(bool(_unit(0).get("ward_used", false)), false, "a refused Ward does not spend the once-per-turn")
+	var refused_coach := str(_sim.snapshot().get("coach", ""))
+	eq(refused_coach.contains("+20"), false, "a refused Ward does not claim +20 shield: %s" % refused_coach)
+	eq(refused_coach.contains("shield on"), false, "a refused Ward does not name a shielded count: %s" % refused_coach)
+	eq(_first_event_where(refused.get("events", []), "shield_blocked").is_empty(), true, "an uncast Ward writes no blocked line")
+	eq(_first_event_where(refused.get("events", []), "hit").is_empty(), true, "an uncast Ward writes no hit")
+
+	# Every ally in range is burning too. Still no payment.
+	_sim.reset_match({
+		"seed": 1, "flat_board": true, "skip_deploy": true, "team_size": 2,
+		"classes": ["bastion", "kestrel", "mender", "gloam"],
+		"positions": [Vector2i(4, 4), Vector2i(10, 10), Vector2i(5, 4), Vector2i(12, 12)],
+		"bastion_aegis": 4,
+	})
+	_live_unit(0)["burn_stacks"] = 3
+	_live_unit(0)["burn_remaining"] = 4
+	_live_unit(2)["burn_stacks"] = 2
+	_live_unit(2)["burn_remaining"] = 3
+	var both_ap := int(_unit(0)["ap"])
+	var both_aegis := int(_unit(0)["aegis"])
+	eq(_has_legal_cast(0, SpellKits.WARD), false, "Ward is not offered when every ally in range is burning")
+	_assert_kit_button(SpellKits.WARD, "burning", true)
+	var both: Dictionary = _sim.submit({"type": "cast", "spell": "ward", "to": Vector2i(4, 4), "seat": 0})
+	eq(str(both.get("reason", "")), "burning", "Ward refunds when every target is burning")
+	eq(int(_unit(0)["ap"]), both_ap, "no ally shielded means no AP")
+	eq(int(_unit(0)["aegis"]), both_aegis, "no ally shielded means no Aegis")
+	eq(int(_unit(2).get("shield", 0)), 0, "a burning ally gains no shield")
+
+	# Cleanse removes the whole Burn, every stack, and a shield can land again.
+	_sim.reset_match({
+		"seed": 1, "flat_board": true, "skip_deploy": true, "team_size": 2,
+		"classes": ["mender", "kestrel", "bastion", "ironjaw"],
+		"positions": [Vector2i(4, 4), Vector2i(12, 12), Vector2i(5, 4), Vector2i(14, 14)],
+		"bastion_aegis": 4,
+	})
+	_live_unit(2)["burn_stacks"] = 3
+	_live_unit(2)["burn_remaining"] = 4
+	_live_unit(2)["shield"] = 8
+	var cleansed: Dictionary = _sim.submit({"type": "cast", "spell": "cleanse", "to": Vector2i(5, 4), "seat": 0})
+	eq(bool(cleansed.get("ok", false)), true, "Cleanse reaches the burning Bastion")
+	var removed: Array = _first_event_where(cleansed.get("events", []), "hit").get("cc_removed", [])
+	truthy(removed.has("burn"), "Cleanse names Burn: %s" % str(removed))
+	eq(int(_unit(2)["burn_stacks"]), 0, "Cleanse clears all 3 Burn stacks")
+	eq(int(_unit(2)["burn_remaining"]), 0, "Cleanse clears the Burn clock")
+	eq(int(_unit(2)["shield"]), 8, "Cleanse leaves the shield he already had")
+	_sim.submit({"type": "end_turn", "seat": 0})
+	_sim.submit({"type": "end_turn", "seat": 1})
+	eq(_has_legal_cast(2, SpellKits.WARD), true, "Ward is offered again once Burn is gone")
+	var after_ap := int(_unit(2)["ap"])
+	var after_aegis := int(_unit(2)["aegis"])
+	var again: Dictionary = _sim.submit({"type": "cast", "spell": "ward", "to": Vector2i(5, 4), "seat": 2})
+	eq(bool(again.get("ok", false)), true, "Ward resolves after Cleanse")
+	eq(int(_unit(2)["shield"]), 28, "the shield lands once he is not burning")
+	eq(int(_unit(2)["ap"]), after_ap - 2, "the restored Ward spends 2 AP")
+	eq(int(_unit(2)["aegis"]), after_aegis - 2, "the restored Ward spends 2 Aegis")
+	eq(_first_event_where(again.get("events", []), "shield_blocked").is_empty(), true, "a cleansed Bastion is not refused")
+
+	# Ultra Rekindle's shield is refused on a burning body and still granted otherwise.
+	_sim.reset_match({
+		"seed": 1, "flat_board": true, "skip_deploy": true, "team_size": 2,
+		"classes": ["mender", "kestrel", "ironjaw", "gloam"],
+		"positions": [Vector2i(4, 4), Vector2i(10, 10), Vector2i(5, 4), Vector2i(11, 11)],
+	})
+	_live_unit(0)["rekindle_ultra"] = true
+	_live_unit(2)["hp"] = 0
+	_sim._check_death(_live_unit(2))
+	_live_unit(2)["burn_stacks"] = 2
+	_live_unit(2)["burn_remaining"] = 3
+	_live_unit(0)["ap"] = 6
+	_live_unit(0)["pulse"] = 6
+	var revived: Dictionary = _sim.submit({"type": "cast", "spell": "rekindle", "to": Vector2i(5, 4), "seat": 0})
+	eq(bool(revived.get("ok", false)), true, "Rekindle brings a burning ally back")
+	eq(bool(_unit(2)["alive"]), true, "the ally is standing")
+	eq(int(_unit(2).get("shield", 0)), 0, "revive shield is refused while they were burning")
+	eq(int(_unit(2).get("burn_stacks", 0)), 0, "Rekindle still clears the Burn")
+	eq(str(_first_event_where(revived.get("events", []), "shield_blocked").get("source", "")), "Rekindle", "the log names the refused revive shield")
+
+	# A foe's own Ward uses the same grant.
+	_sim.reset_match({
+		"seed": 1, "flat_board": true, "skip_deploy": true,
+		"classes": ["kestrel", "ironjaw"],
+		"positions": [Vector2i(2, 2), Vector2i(8, 8)],
+		"stasis_roster": [
+			{"seat": 0, "name": "Kestrel"},
+			{"seat": 1, "name": "Sheaf", "foe_kit": ["sheaf.wall"], "hp": 80, "max_hp": 80},
+		],
+	})
+	_sim.submit({"type": "end_turn", "seat": 0})
+	_live_unit(1)["burn_stacks"] = 1
+	_live_unit(1)["burn_remaining"] = 2
+	_live_unit(1)["shield"] = 5
+	_live_unit(1)["ap"] = 4
+	var wall: Dictionary = _sim.submit({"type": "cast", "spell": "sheaf.wall", "to": _unit(1)["pos"], "seat": 1})
+	eq(bool(wall.get("ok", false)), true, "Sheaf Wall resolves")
+	eq(int(_unit(1)["shield"]), 5, "a burning foe does not gain Ward")
+	eq(str(_first_event_where(wall.get("events", []), "shield_blocked").get("source", "")), "Ward", "the foe Ward is logged as blocked")
 
 
 func _test_element_riders() -> void:

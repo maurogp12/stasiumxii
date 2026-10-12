@@ -550,6 +550,33 @@ static func vault_button_reason(unit: Dictionary, snap: Dictionary, vault_legal:
 	return "no tile"
 
 
+## Why Ward is dark on Bastion's own turn. Blank when he can cast, when the
+## turn is not his, or when the lock is AP / Aegis / silence / already used.
+## "burning" only when he is burning and nobody else in range would gain a shield.
+static func ward_button_reason(unit: Dictionary, snap: Dictionary, ward_legal: bool) -> String:
+	if unit.is_empty() or str(unit.get("class_id", "")) != SpellKits.CLASS_BASTION:
+		return ""
+	if ward_legal or bool(snap.get("match_over", false)) or is_deployment_phase(snap):
+		return ""
+	if int(snap.get("active_seat", -1)) != int(unit.get("seat", -2)):
+		return ""
+	if unit_is_stunned(unit):
+		return ""
+	if bool(unit.get("ward_used", false)):
+		return ""
+	var ward: Dictionary = SpellKits.spell(SpellKits.WARD)
+	if int(unit.get("ap", 0)) < int(ward.get("ap", 2)):
+		return ""
+	if int(unit.get("aegis", 0)) < int(ward.get("requires_aegis", 2)):
+		return ""
+	var silenced: Variant = unit.get("silenced_spells", [])
+	if typeof(silenced) == TYPE_ARRAY and (silenced as Array).has(SpellKits.WARD):
+		return ""
+	if int(unit.get("burn_stacks", 0)) <= 0 or int(unit.get("burn_remaining", 0)) <= 0:
+		return ""
+	return "burning"
+
+
 static func _vault_enemy_adjacent(unit: Dictionary, snap: Dictionary) -> bool:
 	var pos := _reason_cell(unit.get("pos", null))
 	var seat := int(unit.get("seat", -1))
@@ -909,6 +936,12 @@ static func toast_for_events(events: Array) -> String:
 	for event in events:
 		if typeof(event) == TYPE_DICTIONARY and str(event.get("type", "")) == "blend":
 			return str(event.get("coach", "BLEND %s" % str(event.get("name", ""))))
+	for event in events:
+		if typeof(event) == TYPE_DICTIONARY and str(event.get("type", "")) == "shield_blocked":
+			var source := str(event.get("source", "Shield"))
+			if source == "":
+				source = "Shield"
+			return "%s refused" % source
 	if events_include_push_blocked(events):
 		return PUSH_BLOCKED_TOAST
 	if events_include_lava_burn(events):
@@ -3744,11 +3777,15 @@ func _sync_cooldown_badge(button: Button, spell_id: String) -> void:
 		_apply_display_font(badge)
 		button.add_child(badge)
 	var unit := unit_for_seat(_last_snap.get("units", []), kit_seat(_last_snap))
+	var legal_now := legal_cast_ids(_last_legal)
 	if str(spell_id) == SpellKits.VAULT:
-		badge.text = vault_button_reason(unit, _last_snap, legal_cast_ids(_last_legal).has(SpellKits.VAULT))
+		badge.text = vault_button_reason(unit, _last_snap, legal_now.has(SpellKits.VAULT))
+	elif str(spell_id) == SpellKits.WARD:
+		badge.text = ward_button_reason(unit, _last_snap, legal_now.has(SpellKits.WARD))
 	else:
 		badge.text = spell_cooldown_badge(unit, spell_id)
-	var phrase := badge.text.find(" ") >= 0
+	# A word such as "burning" uses the small face. Digits stay large.
+	var phrase := badge.text.find(" ") >= 0 or (badge.text != "" and not badge.text.is_valid_int())
 	badge.add_theme_font_size_override("font_size", 16 if phrase else 28)
 	badge.add_theme_constant_override("outline_size", 3 if phrase else 8)
 	# The dark button multiplies children by 0.72. Lift the phrase so
