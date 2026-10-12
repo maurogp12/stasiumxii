@@ -1631,6 +1631,7 @@ func _mount_neighbours(zone_id: String, everything: bool = false) -> void:
 		var reuse: bool = touch.has(zid) and zid != zone_id and g != null and is_instance_valid(g) \
 			and child.get_meta("origin", Vector2i(-99999, -99999)) == _origin_of(zid) \
 			and child.get_meta("snow_kit", not Ground.snow_kit) == Ground.snow_kit \
+			and child.get_meta("smooth_shore", not Ground.smooth_shore) == Ground.smooth_shore \
 			and child.get_meta("map", 0) == (map.get_instance_id() if map != null else 0)
 		if reuse:
 			kept[zid] = child
@@ -1698,6 +1699,7 @@ func _mount_neighbours(zone_id: String, everything: bool = false) -> void:
 		host.set_meta("bounds", rect)
 		host.set_meta("origin", origin)
 		host.set_meta("snow_kit", Ground.snow_kit)
+		host.set_meta("smooth_shore", Ground.smooth_shore)
 		host.set_meta("map", map.get_instance_id())
 		host.set_meta("wide", other.width)
 		host.set_meta("tall", other.height)
@@ -1738,7 +1740,7 @@ func _ground_for(z: WorldZone, origin: Vector2i) -> Node2D:
 		_grounds_root.name = "Grounds"
 		add_child(_grounds_root)
 		move_child(_grounds_root, 1)
-	var key := "%s|%s|%s|%d" % [z.zone_id, origin, Ground.snow_kit, map.get_instance_id() if map != null else 0]
+	var key := "%s|%s|%s|%s|%d" % [z.zone_id, origin, Ground.snow_kit, Ground.smooth_shore, map.get_instance_id() if map != null else 0]
 	var known: Node2D = _ground_pool.get(key)
 	if known != null and is_instance_valid(known):
 		return known

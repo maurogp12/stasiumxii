@@ -88,7 +88,8 @@ static var _memo: Dictionary = {}
 const MEMO_FIELDS: Array[String] = [
 	"_void_ranks", "_beach", "_skirt_dist", "_sea_body", "_void_sea", "_void_dist",
 	"_edge_fade", "_mouth_mix", "_snow_shore", "_cover", "_water_rows",
-	"_corner_cache", "_foam_cells", "_row_parts",
+	"_corner_cache", "_foam_cells", "_row_parts", "_shore_cells", "_shore_rows",
+	"_shore_field",
 ]
 ## Foam row diagonal -> its foam cells.
 var _foam_cells: Dictionary = {}
@@ -137,6 +138,32 @@ static var _sea_tex_loaded := false
 ## Painted sea past the last water cell, so the view edge is not a flat fill.
 const SEA_SKIRT := 22
 
+## Smoothed shoreline (see `_cache_shore`). Off draws the old per-cell
+## sand and surf pieces (bench and A/B stills).
+static var smooth_shore := true
+const SHORE_SHADER := preload("res://scenes/world/crosshaven/crosshaven_shore.gdshader")
+## Cells (local) whose diamond takes the smoothed shore bands.
+var _shore_cells: Dictionary = {}
+## Diagonal -> its shore cells, west to east.
+var _shore_rows: Dictionary = {}
+## {"origin": local cell of texel (0, 0), "size", "tex": the field texture,
+## "s": local cell -> signed cell distance, "kit": kit sand or plain sand}.
+var _shore_field: Dictionary = {}
+var _shore_mat: ShaderMaterial
+## Diagonal -> [shore node, shore decor node].
+var _shore_nodes: Dictionary = {}
+var _shore_animate := -1.0
+## Every live shore material, so the main ground can still or wake them all
+## (neighbour grounds do not process).
+static var _shore_mats: Array[WeakRef] = []
+static var _shore_anim_now := -1.0
+## How far the bands reach from the cell coast (cells): land side, sea side.
+const SHORE_LAND_REACH := 1.0
+const SHORE_SEA_REACH := 2.3
+## Distances past this are all the same to the bands.
+const SHORE_FIELD_CAP := 4.0
+enum { SHORE_SEA, SHORE_SOFT, SHORE_HARD }
+
 
 ## Ground is split into one canvas item per diagonal (x+y), z = diagonal * 10,
 ## so a raised tile in front covers the walker standing behind it.
@@ -168,6 +195,9 @@ func setup(target: WorldZone) -> void:
 	_foam_rows = {}
 	_runs = {}
 	_anim_items = []
+	_shore_nodes = {}
+	_shore_mat = null
+	_shore_animate = -1.0
 	_pond_shapes = {}
 	var key := _memo_key()
 	var memo: Dictionary = _memo.get(key, {}) if key != "" else {}
@@ -181,6 +211,7 @@ func setup(target: WorldZone) -> void:
 		_cache_snow_shore()
 		_cache_cover()
 		_mark_water_rows()
+		_cache_shore()
 	else:
 		for field in MEMO_FIELDS:
 			set(field, memo[field])
@@ -204,6 +235,8 @@ func setup(target: WorldZone) -> void:
 			row.add_child(seg)
 			(runs[i] as Dictionary)["node"] = seg
 		_runs[d] = runs
+		if _shore_rows.has(d):
+			_add_shore_nodes(row, d)
 		if _row_has_foam(d):
 			# Foam reaches past its own diamond onto the next water cell and up
 			# the face of a raised bank, so it sorts just after the next row.
@@ -246,6 +279,7 @@ func _mark_water_rows() -> void:
 
 
 func _process(_delta: float) -> void:
+	_sync_shore_animate()
 	if zone == null or _water_rows.is_empty():
 		return
 	var on := VisualSettings.current != null and VisualSettings.current.enabled("animations")
@@ -258,6 +292,7 @@ func _process(_delta: float) -> void:
 	if frame != _ripple_frame:
 		_ripple_frame = frame
 		_anim_stale = true
+		_sync_shore_material()
 	if _anim_stale:
 		_redraw_water()
 
@@ -310,6 +345,10 @@ func redraw_all() -> void:
 	for foam in _foam_rows.values():
 		if is_instance_valid(foam):
 			(foam as Node2D).queue_redraw()
+	for pair in _shore_nodes.values():
+		for node in pair:
+			if is_instance_valid(node):
+				(node as Node2D).queue_redraw()
 
 
 ## Rows draw once, when first shown. `start_cold` hides them all; `warm`
@@ -322,6 +361,11 @@ func start_cold() -> void:
 			_chill(run["node"], run["cells"])
 	for d in _foam_rows.keys():
 		_chill(_foam_rows[d], _row_foam_cells(d))
+	for d in _shore_nodes.keys():
+		var cells: Array[Vector2i] = []
+		cells.assign(_shore_rows[d])
+		for node in _shore_nodes[d]:
+			_chill(node, cells)
 
 
 func _chill(node: Node2D, cells: Array[Vector2i]) -> void:
@@ -362,7 +406,7 @@ func warm(view: Rect2, budget: int) -> int:
 func _memo_key() -> String:
 	if cache_tag == "" or zone == null:
 		return ""
-	return "%s|%s|%s|%d|%s|%s|%s" % [cache_tag, zone.zone_id, world_origin, blend_margin, snow_kit, Kit.has_theme("eastmarch"), str(snow_rects)]
+	return "%s|%s|%s|%d|%s|%s|%s|%s" % [cache_tag, zone.zone_id, world_origin, blend_margin, snow_kit, Kit.has_theme("eastmarch"), str(snow_rects), smooth_shore]
 
 
 static func clear_memo() -> void:
@@ -522,15 +566,59 @@ func _faces_void(cell: Vector2i) -> bool:
 ## Zone terrain ids stay as they are.
 func _cache_beach() -> void:
 	_beach.clear()
+	_near_sea.clear()
 	if zone == null or not Kit.has_theme("eastmarch"):
 		return
 	var margin := blend_margin
+	if smooth_shore:
+		# Every cell this ground draws gets the family its own chunk gives it.
+		# With only the seam blend classified, a neighbour drew the rest of
+		# the beach as grass under the owner's sand, and its next-row grass
+		# rims showed through as a grid of green lines on the sand.
+		margin = _view_margin()
+		_cache_near_sea(margin)
 	for y in range(-margin, zone.height + margin):
 		for x in range(-margin, zone.width + margin):
 			var cell := Vector2i(x, y)
 			var family := _classify_beach(cell)
 			if family != "":
 				_beach[cell] = family
+	_near_sea.clear()
+
+
+## Chebyshev steps to the nearest water cell (what `_sea_dist` scans for),
+## for every cell of the drawn range at once, up to BEACH_REACH.
+var _near_sea: Dictionary = {}
+var _near_sea_rect := Rect2i()
+
+
+func _cache_near_sea(margin: int) -> void:
+	_near_sea.clear()
+	var pad := margin + BEACH_REACH
+	_near_sea_rect = Rect2i(-margin, -margin, zone.width + margin * 2, zone.height + margin * 2)
+	var queue: Array[Vector2i] = []
+	for y in range(-pad, zone.height + pad):
+		for x in range(-pad, zone.width + pad):
+			var cell := Vector2i(x, y)
+			if Art.terrain_seen(zone, cell) == "water":
+				_near_sea[cell] = 0
+				queue.append(cell)
+	var head := 0
+	while head < queue.size():
+		var at: Vector2i = queue[head]
+		head += 1
+		var here := int(_near_sea[at])
+		if here >= BEACH_REACH:
+			continue
+		for dy in range(-1, 2):
+			for dx in range(-1, 2):
+				var nb := at + Vector2i(dx, dy)
+				if _near_sea.has(nb):
+					continue
+				if nb.x < -pad or nb.y < -pad or nb.x >= zone.width + pad or nb.y >= zone.height + pad:
+					continue
+				_near_sea[nb] = here + 1
+				queue.append(nb)
 
 
 func _beach_at(cell: Vector2i) -> String:
@@ -614,6 +702,8 @@ func _east_coast(cell: Vector2i) -> bool:
 func _sea_dist(cell: Vector2i) -> int:
 	if zone == null:
 		return 99
+	if not _near_sea.is_empty() and _near_sea_rect.has_point(cell):
+		return int(_near_sea.get(cell, 99))
 	if Art.terrain_seen(zone, cell) == "water":
 		return 0
 	for radius in range(1, BEACH_REACH + 1):
@@ -631,6 +721,9 @@ func _classify_beach(cell: Vector2i) -> String:
 		return ""
 	var terrain := Art.terrain_seen(zone, cell)
 	if terrain == "water":
+		if smooth_shore:
+			# The shallows, surf and wet sand come from the smoothed shore.
+			return "sea_deep"
 		for dir in _ORTHO:
 			var nb := Art.terrain_seen(zone, cell + dir)
 			if nb != "" and nb != "water":
@@ -639,7 +732,7 @@ func _classify_beach(cell: Vector2i) -> String:
 	if terrain != "golden_plains":
 		return ""
 	var dist := _sea_dist(cell)
-	if dist == 1:
+	if dist == 1 and not smooth_shore:
 		return "wet_sand"
 	if dist <= BEACH_REACH:
 		return "sand"
@@ -933,7 +1026,8 @@ func _shore_prop(cell: Vector2i, family: String) -> String:
 		return ""
 	if _cave_id(cell) != "" or _cave_id(cell + Vector2i(1, 0)) != "":
 		return ""
-	if family == "wet_sand" and Art.h(cell.x, cell.y, 9) == 0:
+	var wet_row := family == "wet_sand" or (family == "sand" and smooth_shore and _sea_dist(cell) == 1)
+	if wet_row and Art.h(cell.x, cell.y, 9) == 0:
 		var wet := ["mooring_post", "shell_heap", "driftwood_fork"]
 		return str(wet[Art.h(cell.x + 1, cell.y, wet.size())])
 	if family == "sand" and _sea_dist(cell) == 2 and Art.h(cell.x, cell.y, 7) == 0:
@@ -947,16 +1041,28 @@ func _draw_beach(ci: Node2D, cell: Vector2i, family: String, steps: int) -> void
 	var south_tip := center + Vector2(0, Pick.HALF_H)
 	var modulate := Color.WHITE
 	var sea := family == "sea_shallow" or family == "sea_deep"
+	var shore := _on_shore(cell)
 	# One sea surface. The kit tiles are regraded to the same blue as the fill.
 	if sea:
-		ci.draw_colored_polygon(_sea_diamond(cell, steps), Color("246e9e"))
+		ci.draw_colored_polygon(Pick.diamond(cell, float(steps)) if shore else _sea_diamond(cell, steps), Color("246e9e"))
 		modulate = Color.WHITE
 	var pick: Dictionary = Kit.pick("eastmarch", family, cell, Callable(self, "_family_seen"))
 	var floor := str(pick.get("floor", ""))
-	if floor != "":
+	if floor != "" and sea and shore:
+		# Exactly its diamond: a bleed past it would cut the smoothed bands
+		# of the row behind along the cell edge.
+		_paint_exact(ci, Kit.texture("eastmarch", floor), cell, steps, modulate)
+	elif floor != "":
 		var floor_art := Kit.texture("eastmarch", floor)
 		if sea:
 			_paint_clamped(ci, floor_art, south_tip, modulate, WATER_OVERLAP, bool(pick.get("flip_h", false)), bool(pick.get("flip_v", false)))
+		elif smooth_shore:
+			# Exactly the diamond, without the 1 px rim: the rims of two
+			# neighbours let the ground behind show as a grid of lines.
+			# Off the shore it reaches a hair past its edges, so the chunk
+			# drawn under it (seam margin) cannot show through as a line.
+			var pad := 0.0 if shore else 0.8
+			_paint_exact_flip(ci, floor_art, cell, steps, modulate, bool(pick.get("flip_h", false)), bool(pick.get("flip_v", false)), pad)
 		else:
 			Kit.draw(ci, floor_art, south_tip, modulate, bool(pick.get("flip_h", false)), bool(pick.get("flip_v", false)))
 	for corner_id in pick.get("corners", []):
@@ -965,8 +1071,14 @@ func _draw_beach(ci: Node2D, cell: Vector2i, family: String, steps: int) -> void
 			_paint_clamped(ci, corner_art, south_tip, modulate, WATER_OVERLAP, false, false)
 		else:
 			Kit.draw(ci, corner_art, south_tip, modulate, false, false)
+	if not _defers_decor(cell):
+		_draw_shore_prop(ci, cell, family, steps)
+
+
+func _draw_shore_prop(ci: Node2D, cell: Vector2i, family: String, steps: int) -> void:
 	var prop := _shore_prop(cell, family)
 	if prop != "":
+		var south_tip := BoardVisualSort.cell_to_local(cell, float(steps)) + Vector2(0, Pick.HALF_H)
 		Kit.draw(ci, Kit.texture("eastmarch", prop), south_tip, Color.WHITE, false, false)
 
 
@@ -1003,7 +1115,7 @@ func _draw_cells(row: Node2D, cells: Array[Vector2i]) -> void:
 		if not zone.in_bounds(cell) and Art.terrain_seen(zone, cell) == "" and _beach_at(cell) == "" and not _void_sea.has(cell):
 			continue
 		_draw_cell(row, cell)
-		if _exit_dirs.has(cell):
+		if _exit_dirs.has(cell) and not _defers_decor(cell):
 			_draw_exit(row, cell, _exit_dirs[cell])
 
 
@@ -1091,7 +1203,8 @@ func _draw_cell(ci: Node2D, cell: Vector2i) -> void:
 			ci.draw_line(c + Vector2(-8, -1 + 3 * n), c + Vector2(6, -1 + 3 * n), Color(1, 1, 1, 0.22), 1.0)
 		var edge := Color(0, 0, 0, 0.06)
 		ci.draw_polyline(PackedVector2Array([lifted[0], lifted[1], lifted[2], lifted[3], lifted[0]]), edge, 1.0)
-	_draw_cave(ci, cell, steps)
+	if not _defers_decor(cell):
+		_draw_cave(ci, cell, steps)
 	_theme_marks(ci, cell, terrain, steps)
 	if not _kit_sea(cell):
 		_fade_void_edge(ci, cell, steps, rank, terrain)
@@ -1651,6 +1764,9 @@ func _draw_sea_foam(ci: Node2D, cell: Vector2i, steps: int, front: bool) -> void
 		var kit := _beach_at(nb)
 		if kit == "sand" or kit == "wet_sand":
 			continue
+		# Sand and snow coasts take the smoothed shore's foam line.
+		if _on_shore(cell) and _on_shore(nb):
+			continue
 		# A raised bank in front hides the plain edge. The line follows the
 		# visible top of that bank instead.
 		var lift := Vector2.ZERO
@@ -1759,6 +1875,11 @@ func _draw_snow_lip(ci: Node2D, cell: Vector2i, steps: int, amount: float) -> vo
 	var south_tip := center + Vector2(0, Pick.HALF_H)
 	var crusts: Array[String] = ["snow_crust_a", "snow_crust_b", "snow_crust_c"]
 	var art := Art.texture("tiles", crusts[Art.h(cell.x, cell.y, crusts.size())])
+	if _on_shore(cell):
+		# The smoothed shore draws the waterline (ice and foam). The crust
+		# stays inside the cell so it does not cut that line on a cell edge.
+		_paint_exact(ci, art, cell, steps, Color(1, 1, 1, amount))
+		return
 	if not art.is_empty():
 		var tex: Texture2D = art["tex"]
 		# A touch larger than the cell so neighbouring lips share their ragged edge.
@@ -1952,6 +2073,25 @@ func _paint_exact(ci: Node2D, art: Dictionary, cell: Vector2i, steps: int, tint:
 	var uvs := PackedVector2Array([Vector2(0.5, 0.03), Vector2(0.97, 0.5), Vector2(0.5, 0.97), Vector2(0.03, 0.5)])
 	var cols := PackedColorArray([tint, tint, tint, tint])
 	ci.draw_polygon(d, cols, uvs, art["tex"])
+
+
+func _paint_exact_flip(ci: Node2D, art: Dictionary, cell: Vector2i, steps: int, tint: Color, flip_h: bool, flip_v: bool, pad: float = 0.0) -> void:
+	if art.is_empty():
+		return
+	var d := Pick.diamond(cell, float(steps))
+	if pad > 0.0:
+		var mid := (d[0] + d[2]) * 0.5
+		for i in 4:
+			d[i] = d[i] + (d[i] - mid).normalized() * pad
+	var uvs := PackedVector2Array()
+	for uv in [Vector2(0.5, 0.03), Vector2(0.97, 0.5), Vector2(0.5, 0.97), Vector2(0.03, 0.5)]:
+		var at: Vector2 = uv
+		if flip_h:
+			at.x = 1.0 - at.x
+		if flip_v:
+			at.y = 1.0 - at.y
+		uvs.append(at)
+	ci.draw_polygon(d, PackedColorArray([tint, tint, tint, tint]), uvs, art["tex"])
 
 
 func _alpha_colors(alphas: PackedFloat32Array, scale: float) -> PackedColorArray:
@@ -2168,3 +2308,381 @@ static func _hash(cell: Vector2i) -> float:
 	var h := (cell.x * 73856093) ^ (cell.y * 19349663)
 	h = (h ^ (h >> 13)) * 1274126177
 	return float(absi(h) % 1000) / 1000.0
+
+
+# --- Smoothed shoreline -------------------------------------------------------
+# The coast used to be drawn per cell: surf and sand edge pieces on each
+# diamond, so a coast read as a sawtooth of diamonds with flaps at the
+# corners. Now every chunk keeps one signed distance per cell (land +, sea -,
+# measured to the cell coast) in a small texture, and the shore cells draw
+# their diamonds through `crosshaven_shore.gdshader`, which reads that field
+# smoothly and paints dry sand -> wet sand -> foam -> shallows -> open sea from
+# it. The cells themselves only draw plain sand and plain sea under it.
+# Walk data is untouched: this only decides what is painted where.
+
+
+func _on_shore(cell: Vector2i) -> bool:
+	return _shore_cells.has(cell)
+
+
+## Rows with shore bands draw their props, cave mouths and exit arrows after
+## the bands, so a band never covers the foot of a tall sprite in its row.
+func _defers_decor(cell: Vector2i) -> bool:
+	return _shore_rows.has(cell.x + cell.y)
+
+
+## SHORE_SEA: open sea a coast can meet (sea water, kit sea, painted void sea).
+## SHORE_SOFT: flat land a beach can lie on. SHORE_HARD: cliffs, raised banks,
+## rivers, swamp and unpainted void; they keep their own faces and foam.
+func _shore_kind(cell: Vector2i) -> int:
+	var seen := Art.terrain_seen(zone, cell)
+	if seen == "":
+		if _void_sea.has(cell) or _kit_sea(cell):
+			return SHORE_SEA
+		return SHORE_HARD
+	if seen == "water":
+		if _kit_sea(cell) or _water_grade(cell) == "sea":
+			return SHORE_SEA
+		return SHORE_HARD
+	if seen == "cliff" or Art.height_seen(zone, cell) != 0:
+		return SHORE_HARD
+	return SHORE_SOFT
+
+
+## Soft land whose own floor is sand or snow, so the bands may paint it.
+func _shore_land_cell(cell: Vector2i) -> bool:
+	var fam := _beach_at(cell)
+	if fam == "sand" or fam == "wet_sand":
+		return true
+	if cover_at(cell) >= 0.999 or snow_shore_at(cell) > 0.0:
+		return true
+	return _shore_land(cell)
+
+
+func _cache_shore() -> void:
+	_shore_cells.clear()
+	_shore_rows.clear()
+	_shore_field.clear()
+	if zone == null or not smooth_shore:
+		return
+	var margin := _view_margin()
+	# Two cells past the drawn range for the smooth read, one more to spare.
+	var pad := margin + 3
+	var origin := Vector2i(-pad, -pad)
+	var size := Vector2i(zone.width + pad * 2, zone.height + pad * 2)
+	var n := size.x * size.y
+	var kind := PackedByteArray()
+	kind.resize(n)
+	var any_sea := false
+	var any_soft := false
+	for y in size.y:
+		for x in size.x:
+			var k := _shore_kind(origin + Vector2i(x, y))
+			kind[y * size.x + x] = k
+			any_sea = any_sea or k == SHORE_SEA
+			any_soft = any_soft or k == SHORE_SOFT
+	if not any_sea or not any_soft:
+		return
+	var dist := shore_distances(kind, size, SHORE_FIELD_CAP)
+	# How much of the coast near each cell is soft, and how snowy it is.
+	var soft := PackedFloat32Array()
+	soft.resize(n)
+	var snow := PackedFloat32Array()
+	snow.resize(n)
+	for y in size.y:
+		for x in size.x:
+			var i := y * size.x + x
+			var cell := origin + Vector2i(x, y)
+			if kind[i] != SHORE_SEA:
+				soft[i] = 1.0 if kind[i] == SHORE_SOFT else 0.0
+				snow[i] = maxf(cover_at(cell), snow_shore_at(cell))
+				continue
+			var soft_n := 0.0
+			var hard_n := 0.0
+			var cold := 0.0
+			for dy in range(-2, 3):
+				for dx in range(-2, 3):
+					var nx := x + dx
+					var ny := y + dy
+					if nx < 0 or ny < 0 or nx >= size.x or ny >= size.y:
+						continue
+					var k := kind[ny * size.x + nx]
+					if k == SHORE_SEA:
+						continue
+					var wgt := 1.0 / float(1 + absi(dx) + absi(dy))
+					if k == SHORE_SOFT:
+						soft_n += wgt
+					else:
+						hard_n += wgt
+					if absi(dx) <= 1 and absi(dy) <= 1:
+						var nb := cell + Vector2i(dx, dy)
+						cold = maxf(cold, maxf(cover_at(nb), snow_shore_at(nb)))
+			soft[i] = 1.0 if soft_n + hard_n <= 0.0 else soft_n / (soft_n + hard_n)
+			snow[i] = cold
+	# Shore cells: drawn sea and sand cells the bands reach.
+	var kit := false
+	for y in range(-margin, zone.height + margin):
+		for x in range(-margin, zone.width + margin):
+			var cell := Vector2i(x, y)
+			var i := (y - origin.y) * size.x + (x - origin.x)
+			var sd: float = dist[i]
+			if kind[i] == SHORE_SEA:
+				if sd < -SHORE_SEA_REACH or soft[i] < 0.3:
+					continue
+				if Art.terrain_seen(zone, cell) != "" and Art.height_seen(zone, cell) != 0:
+					continue
+				if not zone.in_bounds(cell) and Art.terrain_seen(zone, cell) == "" and _beach_at(cell) == "" and not _void_sea.has(cell):
+					continue
+			elif kind[i] == SHORE_SOFT:
+				if sd > SHORE_LAND_REACH or not _shore_land_cell(cell):
+					continue
+				var fam := _beach_at(cell)
+				kit = kit or fam == "sand" or fam == "wet_sand"
+			else:
+				continue
+			_shore_cells[cell] = true
+	if _shore_cells.is_empty():
+		return
+	for cell in _shore_cells.keys():
+		var at: Vector2i = cell
+		var d := at.x + at.y
+		if not _shore_rows.has(d):
+			_shore_rows[d] = [] as Array[Vector2i]
+		(_shore_rows[d] as Array[Vector2i]).append(at)
+	for d in _shore_rows.keys():
+		(_shore_rows[d] as Array[Vector2i]).sort_custom(func(a: Vector2i, b: Vector2i) -> bool: return a.x < b.x)
+	var bytes := PackedByteArray()
+	bytes.resize(n * 4)
+	for i in n:
+		var enc := clampf((dist[i] + SHORE_FIELD_CAP) / (SHORE_FIELD_CAP * 2.0), 0.0, 1.0)
+		bytes[i * 4] = roundi(enc * 255.0)
+		bytes[i * 4 + 1] = roundi(clampf(snow[i], 0.0, 1.0) * 255.0)
+		bytes[i * 4 + 2] = roundi(clampf(soft[i], 0.0, 1.0) * 255.0)
+		bytes[i * 4 + 3] = 255
+	var image := Image.create_from_data(size.x, size.y, false, Image.FORMAT_RGBA8, bytes)
+	_shore_field = {
+		"origin": origin,
+		"size": size,
+		"tex": ImageTexture.create_from_image(image),
+		"dist": dist,
+		"kit": kit,
+	}
+
+
+## Signed distance from each cell centre to the cell coast, in cells: land +,
+## sea -, 0.5 on a cell beside the other side, 0.71 across a corner, then a
+## chamfer walk (1 straight, 1.41 diagonal) capped at `cap`. `kind` is
+## SHORE_SEA or not per cell, row-major over `size`.
+static func shore_distances(kind: PackedByteArray, size: Vector2i, cap: float) -> PackedFloat32Array:
+	var n := size.x * size.y
+	var dist := PackedFloat32Array()
+	dist.resize(n)
+	var diag := sqrt(2.0)
+	for y in size.y:
+		for x in size.x:
+			var i := y * size.x + x
+			var sea := kind[i] == SHORE_SEA
+			var best := cap
+			for dy in range(-1, 2):
+				for dx in range(-1, 2):
+					if dx == 0 and dy == 0:
+						continue
+					var nx := x + dx
+					var ny := y + dy
+					if nx < 0 or ny < 0 or nx >= size.x or ny >= size.y:
+						continue
+					if (kind[ny * size.x + nx] == SHORE_SEA) == sea:
+						continue
+					best = minf(best, 0.5 if dx == 0 or dy == 0 else diag * 0.5)
+			dist[i] = best
+	var fwd: Array[Vector2i] = [Vector2i(-1, 0), Vector2i(0, -1), Vector2i(-1, -1), Vector2i(1, -1)]
+	var back: Array[Vector2i] = [Vector2i(1, 0), Vector2i(0, 1), Vector2i(1, 1), Vector2i(-1, 1)]
+	for pass_i in 2:
+		for y in size.y:
+			for x in size.x:
+				_chamfer(dist, kind, size, x, y, fwd, diag)
+		for y in range(size.y - 1, -1, -1):
+			for x in range(size.x - 1, -1, -1):
+				_chamfer(dist, kind, size, x, y, back, diag)
+	for i in n:
+		var d := minf(dist[i], cap)
+		dist[i] = -d if kind[i] == SHORE_SEA else d
+	return dist
+
+
+static func _chamfer(dist: PackedFloat32Array, kind: PackedByteArray, size: Vector2i, x: int, y: int, steps: Array[Vector2i], diag: float) -> void:
+	var i := y * size.x + x
+	var sea := kind[i] == SHORE_SEA
+	var best: float = dist[i]
+	for step in steps:
+		var nx := x + step.x
+		var ny := y + step.y
+		if nx < 0 or ny < 0 or nx >= size.x or ny >= size.y:
+			continue
+		var j := ny * size.x + nx
+		if (kind[j] == SHORE_SEA) != sea:
+			continue
+		var cost := 1.0 if step.x == 0 or step.y == 0 else diag
+		best = minf(best, dist[j] + cost)
+	dist[i] = best
+
+
+## Signed cell distance the field holds at a local cell (land +, sea -).
+## 0 when the chunk has no smoothed shore.
+func shore_field_at(cell: Vector2i) -> float:
+	if _shore_field.is_empty():
+		return 0.0
+	var origin: Vector2i = _shore_field["origin"]
+	var size: Vector2i = _shore_field["size"]
+	var at := cell - origin
+	at = Vector2i(clampi(at.x, 0, size.x - 1), clampi(at.y, 0, size.y - 1))
+	var dist: PackedFloat32Array = _shore_field["dist"]
+	return dist[at.y * size.x + at.x]
+
+
+## The smooth read the shader makes (Catmull-Rom over the cell field), at a
+## fractional local cell position. Tests use it to bound the drawn coast.
+func shore_smooth_at(p: Vector2) -> float:
+	if _shore_field.is_empty():
+		return 0.0
+	var base := Vector2i(floori(p.x), floori(p.y))
+	var f := p - Vector2(base)
+	var wx := _cr_weights(f.x)
+	var wy := _cr_weights(f.y)
+	var total := 0.0
+	for j in 4:
+		var row := 0.0
+		for i in 4:
+			var v := _field_encoded(base + Vector2i(i - 1, j - 1))
+			row += v * wx[i]
+		total += row * wy[j]
+	return total
+
+
+## Field value as the texture stores it (8-bit), so the test reads what the GPU reads.
+func _field_encoded(cell: Vector2i) -> float:
+	var d := shore_field_at(cell)
+	var enc := float(roundi(clampf((d + SHORE_FIELD_CAP) / (SHORE_FIELD_CAP * 2.0), 0.0, 1.0) * 255.0)) / 255.0
+	return enc * SHORE_FIELD_CAP * 2.0 - SHORE_FIELD_CAP
+
+
+static func _cr_weights(t: float) -> PackedFloat32Array:
+	var t2 := t * t
+	var t3 := t2 * t
+	return PackedFloat32Array([
+		-0.5 * t3 + t2 - 0.5 * t,
+		1.5 * t3 - 2.5 * t2 + 1.0,
+		-1.5 * t3 + 2.0 * t2 + 0.5 * t,
+		0.5 * t3 - 0.5 * t2,
+	])
+
+
+func shore_cells() -> Dictionary:
+	return _shore_cells
+
+
+func _add_shore_nodes(row: Node2D, d: int) -> void:
+	var band := Node2D.new()
+	band.name = "Shore"
+	band.z_as_relative = false
+	band.z_index = row_z(d)
+	band.material = _shore_material()
+	band.draw.connect(_draw_shore_row.bind(band, d))
+	row.add_child(band)
+	# Props, cave mouths and exit arrows of the row go on top of the bands.
+	var decor := Node2D.new()
+	decor.name = "ShoreDecor"
+	decor.z_as_relative = false
+	decor.z_index = row_z(d)
+	decor.draw.connect(_draw_shore_decor_row.bind(decor, d))
+	row.add_child(decor)
+	_shore_nodes[d] = [band, decor]
+
+
+func _shore_material() -> ShaderMaterial:
+	if _shore_mat != null:
+		return _shore_mat
+	var mat := ShaderMaterial.new()
+	mat.shader = SHORE_SHADER
+	var origin: Vector2i = _shore_field["origin"]
+	var size: Vector2i = _shore_field["size"]
+	mat.set_shader_parameter("field", _shore_field["tex"])
+	mat.set_shader_parameter("field_size", Vector2(size))
+	mat.set_shader_parameter("field_origin", Vector2(world_origin + origin))
+	var sand := {}
+	if bool(_shore_field["kit"]):
+		sand = Kit.texture("eastmarch", "sand_a")
+	if sand.is_empty():
+		sand = Art.texture("tiles", "golden_plains_sand_a")
+	if not sand.is_empty():
+		mat.set_shader_parameter("sand_tex", sand["tex"])
+	_load_sea_textures()
+	if _sea_surface_tex != null:
+		mat.set_shader_parameter("sea_tex", _sea_surface_tex.diffuse_texture)
+	mat.set_shader_parameter("sea_period", SEA_PERIOD)
+	_load_snow_textures()
+	if _snow_field_tex != null:
+		mat.set_shader_parameter("snow_tex", _snow_field_tex.diffuse_texture)
+	mat.set_shader_parameter("snow_period", SNOW_PERIOD)
+	_shore_mat = mat
+	_shore_mats.append(weakref(mat))
+	_sync_shore_material()
+	return mat
+
+
+## Sea sway follows the ripple frame; foam laps only move with animations on
+## and Performance mode off.
+func _sync_shore_material() -> void:
+	if _shore_mat == null:
+		return
+	var phase := _sea_phase()
+	_shore_mat.set_shader_parameter("sway", Vector2(cos(phase), sin(phase)) * 2.0)
+	_shore_animate = _shore_motion()
+	_shore_mat.set_shader_parameter("animate", _shore_animate)
+
+
+static func _shore_motion() -> float:
+	var on := VisualSettings.current != null and VisualSettings.current.enabled("animations") and not VisualSettings.still()
+	return 1.0 if on else 0.0
+
+
+## Foam laps only move with animations on and Performance mode off.
+static func _sync_shore_animate() -> void:
+	var animate := _shore_motion()
+	if animate == _shore_anim_now:
+		return
+	_shore_anim_now = animate
+	var live: Array[WeakRef] = []
+	for ref in _shore_mats:
+		var mat := ref.get_ref() as ShaderMaterial
+		if mat == null:
+			continue
+		mat.set_shader_parameter("animate", animate)
+		live.append(ref)
+	_shore_mats = live
+
+
+func _draw_shore_row(ci: Node2D, d: int) -> void:
+	if _shore_field.is_empty():
+		return
+	var origin: Vector2i = _shore_field["origin"]
+	var white := PackedColorArray([Color.WHITE, Color.WHITE, Color.WHITE, Color.WHITE])
+	for cell in _shore_rows.get(d, []):
+		var at: Vector2i = cell
+		var c := Vector2(at - origin)
+		var uvs := PackedVector2Array([c + Vector2(-0.5, -0.5), c + Vector2(0.5, -0.5), c + Vector2(0.5, 0.5), c + Vector2(-0.5, 0.5)])
+		ci.draw_polygon(Pick.diamond(at, 0.0), white, uvs)
+
+
+func _draw_shore_decor_row(ci: Node2D, d: int) -> void:
+	for cell in _row_cells(d):
+		var at: Vector2i = cell
+		if not zone.in_bounds(at) and Art.terrain_seen(zone, at) == "":
+			continue
+		var steps := Art.height_seen(zone, at)
+		var fam := _beach_at(at)
+		if fam == "sand" or fam == "wet_sand":
+			_draw_shore_prop(ci, at, fam, steps)
+		_draw_cave(ci, at, steps)
+		if _exit_dirs.has(at):
+			_draw_exit(ci, at, _exit_dirs[at])
