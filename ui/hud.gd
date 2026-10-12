@@ -35,6 +35,7 @@ const CREAM := Color(0.96, 0.92, 0.84)
 ## Dofus read: AP is a blue pool, MP a green pool; seats are blue and red.
 const DOFUS_AP := Color(0.28, 0.62, 1.0)
 const DOFUS_MP := Color(0.36, 0.86, 0.34)
+const BattleLog := preload("res://ui/battle_log.gd")
 const TEAM_BLUE := Color(0.26, 0.54, 1.0)
 const TEAM_RED := Color(0.94, 0.28, 0.26)
 ## Corner-card stack names. The number stays the cream of the HP line.
@@ -139,6 +140,11 @@ var _still_aim: bool = false
 var _new_match_button: Button
 var _hub_button: Button
 var _elements_button: Button
+var _log_button: Button
+var _log_panel: Panel
+var _log_scroll: ScrollContainer
+var _log_body: RichTextLabel
+var _log_open := false
 var _match_left: float = -1.0
 var _sudden: bool = false
 var _new_match_holder: Button
@@ -1253,6 +1259,7 @@ func render(snap: Dictionary, legal: Array) -> void:
 	# After the armed spell settles, so a legal target lights the portrait.
 	_sync_turn_strip(snap)
 	_fit_corner_cards()
+	_sync_battle_log()
 
 
 func _apply_controls(match_over: bool) -> void:
@@ -1590,6 +1597,16 @@ func _build() -> void:
 	_elements_button.clip_text = true
 	_elements_button.visible = false
 	_elements_button.pressed.connect(func() -> void: elements_requested.emit())
+	_log_button = Button.new()
+	_log_button.name = "LogButton"
+	_log_button.text = "Log"
+	_log_button.custom_minimum_size = TOUCH.NEW_MATCH_BUTTON_SIZE
+	_log_button.add_theme_font_size_override("font_size", 15)
+	_log_button.add_theme_color_override("font_color", CREAM)
+	_style_chrome_button(_log_button, false)
+	_log_button.clip_text = true
+	_apply_display_font(_log_button)
+	_log_button.pressed.connect(_toggle_log)
 
 	# Solid strip under the buttons. The line used to float on the tiles.
 	var hint := Panel.new()
@@ -1674,6 +1691,9 @@ func _build() -> void:
 		side_column.add_child(_hub_button)
 	if _elements_button != null:
 		side_column.add_child(_elements_button)
+	if _log_button != null:
+		side_column.add_child(_log_button)
+	_build_log_panel(root)
 
 	_handoff_overlay = ColorRect.new()
 	_handoff_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -4155,6 +4175,10 @@ func claims_screen_point(point: Vector2) -> bool:
 		return true
 	if _control_claims(_elements_button, point):
 		return true
+	if _control_claims(_log_button, point):
+		return true
+	if _log_open and _control_claims(_log_panel, point):
+		return true
 	if _control_claims(_new_match_button, point):
 		return true
 	if _control_claims(_ready_p1_button, point):
@@ -4396,6 +4420,60 @@ func _sync_matchup(snap: Dictionary) -> void:
 	_opp_label.text = "OPPONENT  %s" % seat_caption(unit_for_seat(units, seats.y))
 
 
+func _build_log_panel(root: Control) -> void:
+	_log_panel = Panel.new()
+	_log_panel.name = "BattleLog"
+	_log_panel.visible = false
+	_log_panel.mouse_filter = Control.MOUSE_FILTER_STOP
+	_log_panel.add_theme_stylebox_override("panel", _fighter_frame(true, GOLD))
+	root.add_child(_log_panel)
+	_log_scroll = ScrollContainer.new()
+	_log_scroll.name = "BattleLogScroll"
+	_log_scroll.mouse_filter = Control.MOUSE_FILTER_STOP
+	_log_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER
+	_log_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	_log_panel.add_child(_log_scroll)
+	_log_body = RichTextLabel.new()
+	_log_body.name = "BattleLogBody"
+	_log_body.bbcode_enabled = true
+	_log_body.fit_content = true
+	_log_body.scroll_active = false
+	_log_body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_log_body.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_log_body.add_theme_font_size_override("font_size", 13)
+	_log_body.add_theme_constant_override("line_separation", 2)
+	_log_body.add_theme_color_override("default_color", CREAM)
+	_apply_display_font(_log_body)
+	_log_scroll.add_child(_log_body)
+
+
+func _toggle_log() -> void:
+	_log_open = not _log_open
+	_sync_battle_log()
+
+
+func _sync_battle_log() -> void:
+	if _log_button != null:
+		_log_button.text = "Close" if _log_open else "Log"
+	if _log_panel == null:
+		return
+	_log_panel.visible = _log_open
+	if not _log_open or _log_body == null:
+		return
+	var events: Variant = _last_snap.get("battle_log", [])
+	_log_body.text = BattleLog.bbcode(events if events is Array else [], _last_snap)
+	call_deferred("_scroll_log_end")
+
+
+func _scroll_log_end() -> void:
+	if _log_scroll == null:
+		return
+	var bar := _log_scroll.get_v_scroll_bar()
+	if bar == null:
+		return
+	_log_scroll.scroll_vertical = int(bar.max_value)
+
+
 func _layout_chrome(forced: Vector2 = Vector2.ZERO) -> void:
 	var view := forced
 	if view.x < 2.0 or view.y < 2.0:
@@ -4496,6 +4574,19 @@ func _layout_chrome(forced: Vector2 = Vector2.ZERO) -> void:
 		_clock_track.custom_minimum_size = Vector2(_clock_bar_max_width, 8)
 		_clock_track.size = Vector2(_clock_bar_max_width, 8)
 	var bottom_top := view.y + TOUCH.HUD_BOTTOM_OFFSET
+	if _log_panel != null:
+		var log_y := margin + maxf(banner_h, top_h) + 8.0
+		var log_x := margin + 136.0
+		var cluster_left := view.x - TOUCH.CLUSTER_SIZE.x - TOUCH.CLUSTER_EDGE
+		var log_w := minf(420.0, maxf(cluster_left - log_x - 12.0, 180.0))
+		var log_h := maxf(view.y - log_y - 44.0, 96.0)
+		_log_panel.position = Vector2(log_x, log_y)
+		_log_panel.size = Vector2(log_w, log_h)
+		if _log_scroll != null:
+			_log_scroll.position = Vector2(10, 8)
+			_log_scroll.size = Vector2(maxf(log_w - 20.0, 1.0), maxf(log_h - 16.0, 1.0))
+		if _log_body != null:
+			_log_body.custom_minimum_size = Vector2(maxf(log_w - 36.0, 1.0), 0)
 	if _side_column != null:
 		var side_y := margin + maxf(banner_h, top_h) + 8.0
 		var room := bottom_top - side_y - 8.0

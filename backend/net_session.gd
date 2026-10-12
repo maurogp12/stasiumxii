@@ -817,6 +817,9 @@ func _redact_invisible_for_viewer(snap: Dictionary, events: Array, viewer_seat: 
 	var last: Variant = out_snap.get("last_events", [])
 	if last is Array:
 		_redact_events(last, hidden_seats, hidden_cells, secret)
+	var logged: Variant = out_snap.get("battle_log", [])
+	if logged is Array:
+		_redact_events(logged, hidden_seats, hidden_cells, secret)
 	if out_snap.has("coach"):
 		out_snap["coach"] = _scrub_coach(str(out_snap.get("coach", "")), secret)
 	return {"snapshot": out_snap, "events": out_events, "hidden_cells": hidden_cells}
@@ -836,6 +839,8 @@ func _redact_shades_for_viewer(out_snap: Dictionary, out_events: Array, viewer_s
 	var lists: Array = [out_events]
 	if out_snap.get("last_events", null) is Array:
 		lists.append(out_snap["last_events"])
+	if out_snap.get("battle_log", null) is Array:
+		lists.append(out_snap["battle_log"])
 	for list in lists:
 		for event in list:
 			if typeof(event) != TYPE_DICTIONARY:
@@ -862,6 +867,8 @@ func _redact_traps_for_viewer(out_snap: Dictionary, out_events: Array, viewer_se
 	var lists: Array = [out_events]
 	if out_snap.get("last_events", null) is Array:
 		lists.append(out_snap["last_events"])
+	if out_snap.get("battle_log", null) is Array:
+		lists.append(out_snap["battle_log"])
 	for list in lists:
 		for event in list:
 			if typeof(event) != TYPE_DICTIONARY:
@@ -889,6 +896,28 @@ func _seat_team(snap: Dictionary, seat: int) -> int:
 	return seat
 
 
+## While the fighter is invisible, the opponent's copy loses the step cost,
+## facing, and terrain. A reveal puts the stopped tile back on the wire.
+func _strip_hidden_motion(event: Dictionary) -> void:
+	var kind := str(event.get("type", ""))
+	for key in ["dir", "facing", "facing_from", "facing_hops"]:
+		event.erase(key)
+	if kind in ["move", "advance"]:
+		event.erase("mp_spent")
+		event.erase("trap_mp")
+		event.erase("coach")
+	if kind == "face":
+		event.erase("from")
+		event.erase("coach")
+	if kind in ["face", "trap", "push_bounce", "push_blocked", "lava_land"]:
+		event.erase("coach")
+		event.erase("reason")
+	if kind in ["hit", "trap", "lava_land", "blend", "push_bounce", "move", "advance"]:
+		event.erase("slow_applied")
+		event.erase("burn_applied")
+		event.erase("silence_applied")
+
+
 func _redact_events(events: Array, hidden_seats: Dictionary, hidden_cells: Array, secret: Array) -> void:
 	for event in events:
 		if typeof(event) != TYPE_DICTIONARY:
@@ -914,6 +943,7 @@ func _redact_event(event: Dictionary, hidden_seats: Dictionary, hidden_cells: Ar
 		if kind in ["move", "advance", "place", "reposition"]:
 			_null_cell_field(event, "from", secret)
 			_null_cell_field(event, "to", secret)
+		_strip_hidden_motion(event)
 		if spell == SpellKits.AMBUSH and bool(event.get("teleported", false)):
 			_null_cell_field(event, "to", secret)
 	if spell == SpellKits.AMBUSH:
@@ -931,6 +961,7 @@ func _redact_event(event: Dictionary, hidden_seats: Dictionary, hidden_cells: Ar
 			_null_cell_field(event, "from", secret)
 			_null_cell_field(event, "to", secret)
 			_null_cell_field(event, "attempted", secret)
+		_strip_hidden_motion(event)
 	if kind == "expire" and (actor_hidden or target_hidden or hidden_seats.has(owner)):
 		_null_cell_field(event, "pos", secret)
 	if hidden_seats.has(int(event.get("for_seat", -999))):
