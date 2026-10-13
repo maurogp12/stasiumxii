@@ -130,14 +130,30 @@ static func prop_z_index(cell: Vector2i, elevation: float = 0.0) -> int:
 	return tile_z_index(cell, elevation) + PROP_Z_BIAS
 
 
-## Whole pixels in the viewport. A fractional camera makes linear-filtered
-## plates crawl (the phone shimmer). Idempotent: snapping twice is a no-op.
-static func snap_camera_position(pos: Vector2, zoom: Vector2, view_size: Vector2) -> Vector2:
+## Window pixels per canvas pixel. A 1080-tall phone stretches the 720-tall
+## canvas by 1.5, so a whole canvas pixel is a half device pixel. Passing a
+## zero window (a headless node with no frame yet) keeps the canvas snap.
+static func viewport_pixel_scale(view_size: Vector2, window_size: Vector2) -> Vector2:
+	if view_size.x < 1.0 or view_size.y < 1.0 or window_size.x < 64.0 or window_size.y < 64.0:
+		return Vector2.ONE
+	return Vector2(window_size.x / view_size.x, window_size.y / view_size.y)
+
+
+## Whole device pixels. A fractional camera makes linear-filtered plates crawl.
+## Snapping only the canvas pixel still lands on a half device pixel every
+## other pan step when the phone scale is 1.5, and the ice edges swap
+## brightness. `pixel_scale` is window pixels per canvas pixel. Idempotent.
+static func snap_camera_position(pos: Vector2, zoom: Vector2, view_size: Vector2, pixel_scale: Vector2 = Vector2.ONE) -> Vector2:
 	if is_zero_approx(zoom.x) or is_zero_approx(zoom.y):
 		return pos
+	var scale := pixel_scale
+	if scale.x < 0.01 or scale.y < 0.01:
+		scale = Vector2.ONE
 	var center := view_size * 0.5
 	var origin := Vector2(center.x - pos.x * zoom.x, center.y - pos.y * zoom.y)
-	var snapped := Vector2(roundf(origin.x), roundf(origin.y))
+	var device := Vector2(origin.x * scale.x, origin.y * scale.y)
+	var snapped_device := Vector2(roundf(device.x), roundf(device.y))
+	var snapped := Vector2(snapped_device.x / scale.x, snapped_device.y / scale.y)
 	return Vector2((center.x - snapped.x) / zoom.x, (center.y - snapped.y) / zoom.y)
 
 

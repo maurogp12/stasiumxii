@@ -17,6 +17,7 @@ func _initialize() -> void:
 	_test_turn_bar()
 	_test_grid_and_occluders()
 	_test_draw_slots_do_not_tie()
+	_test_phone_pan_stays_on_device_pixels()
 	_test_shake_stays_off_the_camera()
 	_test_class_select_copy()
 	_test_hud_does_not_overlap()
@@ -193,6 +194,43 @@ func _test_draw_slots_do_not_tie() -> void:
 	near(world.y * 1.55, -3.0, "shake y is -3 screen pixels at this zoom")
 	eq(VISUAL_SORT.SHAKE_CULL_MARGIN >= 48.0, true, "the cull margin covers the punch")
 	truthy(proj.contains("default_texture_filter=1"), "the canvas filter is linear, without mipmaps")
+
+
+## A 1080p phone stretches the 720 canvas by 1.5. The camera has to land on a
+## device pixel, or each pan step flips the ice onto a half pixel and back.
+func _test_phone_pan_stays_on_device_pixels() -> void:
+	var view := Vector2(1600, 720)
+	var window := Vector2(2400, 1080)
+	var scale := VISUAL_SORT.viewport_pixel_scale(view, window)
+	near(scale.x, 1.5, "a 1080p phone is 1.5 device pixels per canvas pixel")
+	near(scale.y, 1.5, "the phone stretch is the same on y")
+	eq(VISUAL_SORT.viewport_pixel_scale(view, Vector2.ZERO), Vector2.ONE, "a headless window keeps the canvas snap")
+	var zoom := Vector2(1.823529, 1.823529)
+	var center := view * 0.5
+	var prev_device := Vector2.ZERO
+	var pos := Vector2(12.4, 194.7)
+	for step in 8:
+		var snapped := VISUAL_SORT.snap_camera_position(pos, zoom, view, scale)
+		var again := VISUAL_SORT.snap_camera_position(snapped, zoom, view, scale)
+		near(again.x, snapped.x, "phone snap does not walk on x")
+		near(again.y, snapped.y, "phone snap does not walk on y")
+		var origin := Vector2(center.x - snapped.x * zoom.x, center.y - snapped.y * zoom.y)
+		var device := Vector2(origin.x * scale.x, origin.y * scale.y)
+		near(device.x, roundf(device.x), "the pan lands on a whole device pixel")
+		near(device.y, roundf(device.y), "the pan lands on a whole device pixel vertically")
+		if step > 0:
+			near(device.x - prev_device.x, roundf(device.x - prev_device.x), "the pan step is whole device pixels")
+			near(device.y - prev_device.y, roundf(device.y - prev_device.y), "the pan step is whole device pixels vertically")
+		prev_device = device
+		# The same drag the phone uses: screen pixels divided by zoom.
+		pos = snapped - Vector2(3.0, 2.0) / zoom.x
+	var desk := Vector2(2400, 1080)
+	var desk_zoom := Vector2(1.35, 1.35)
+	var once := VISUAL_SORT.snap_camera_position(Vector2(12.4, -8.2), desk_zoom, desk)
+	var desk_origin := Vector2(desk.x * 0.5 - once.x * desk_zoom.x, desk.y * 0.5 - once.y * desk_zoom.y)
+	near(desk_origin.x, roundf(desk_origin.x), "a 1:1 window still snaps to a canvas pixel")
+	var view_src := FileAccess.get_file_as_string("res://board_view.gd")
+	truthy(view_src.contains("viewport_pixel_scale"), "the live camera snaps in device pixels")
 
 
 ## The punch moves the world parent in whole screen pixels. The camera offset
