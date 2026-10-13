@@ -234,11 +234,11 @@ func _play() -> bool:
 	for intent in sim.legal_intents(1):
 		if str(intent.get("spell", "")) == "ward":
 			offered = true
-	if not offered:
-		push_error("Ward should be offered on his next turn while he is still burning")
+	if offered:
+		push_error("Ward should stay dark for his whole locked turn")
 		return false
-	if int(bastion.get("no_shield", 0)) != 0:
-		push_error("the shield lock should have ended at his turn start")
+	if int(bastion.get("no_shield", 0)) != 1:
+		push_error("the shield lock should cover his whole next turn (got %s)" % bastion.get("no_shield", 0))
 		return false
 	return true
 

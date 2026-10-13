@@ -95,6 +95,7 @@ func _run() -> void:
 	_test_view_does_not_roll_or_own_hp()
 	_test_hud_chrome_kit_gated()
 	_test_line_of_sight()
+	_test_mark_shot_past_pillar_corner()
 	_test_windmere_crystal_blocks_sight()
 	_test_hold_line_pull()
 	_test_plant_blocks_sight()
@@ -3873,6 +3874,57 @@ func _test_line_of_sight() -> void:
 	# Water and mud do not block: Crosshaven row 8 has water at (4,8).
 	eq(_sim.has_line_of_sight(Vector2i(3, 8), Vector2i(8, 8)), true, "water on the line does not block sight")
 	_sim.reset_match({"seed": 1, "skip_deploy": true})
+
+
+## Slagcrown pillar (7, 0). The shot from (8, 0) to (3, 4) used to clip the
+## square corner of that pillar and come back with no sight. The line never
+## enters the diamond of the tile. Vault then reads "no foe" because she
+## walked out of melee, and Mark Shot stayed dark even with AP left and MP 0.
+func _test_mark_shot_past_pillar_corner() -> void:
+	var kestrel := Vector2i(8, 0)
+	var bastion := Vector2i(3, 4)
+	var pillar := Vector2i(7, 0)
+	_sim.reset_match({
+		"seed": 1,
+		"skip_deploy": true,
+		"map_id": "slagcrown",
+		"classes": ["kestrel", "bastion"],
+		"positions": [kestrel, bastion],
+	})
+	eq(_unit(0)["pos"], kestrel, "Kestrel stands on the corner of the pillar")
+	eq(_unit(1)["pos"], bastion, "Bastion stands across the open shot")
+	eq(_sim.chebyshev(kestrel, bastion), 5, "the shot is inside Mark Shot's 2–5")
+	eq(_sim.sight_blocker(kestrel, bastion, false), Vector2i(-1, -1), "the pillar corner is not on the diamond")
+	eq(_sim.has_line_of_sight(kestrel, bastion), true, "she can see him past the pillar")
+	_live_unit(0)["mp"] = 0
+	_live_unit(0)["ap"] = 8
+	truthy(_has_legal_cast_to(0, "mark_shot", bastion), "MP 0 does not hide Mark Shot on a clear line")
+	eq(_has_legal_cast(0, "vault"), false, "Vault is dark once she is no longer adjacent")
+	eq(CombatHUD.vault_button_reason(_unit(0), _sim.snapshot(), false), "no foe", "the Vault badge says no foe")
+	var shot: Dictionary = _sim.submit({"type": "cast", "spell": "mark_shot", "to": bastion, "seat": 0})
+	eq(bool(shot.get("ok", false)), true, "the shot resolves with AP left and MP 0")
+	eq(str(shot.get("reason", "")), "", "the shot is not refused for sight")
+	# A pillar the line actually crosses still blocks.
+	_sim.reset_match({
+		"seed": 1,
+		"skip_deploy": true,
+		"map_id": "slagcrown",
+		"classes": ["kestrel", "bastion"],
+		"positions": [Vector2i(4, 0), Vector2i(8, 0)],
+	})
+	eq(_sim.sight_blocker(Vector2i(4, 0), Vector2i(8, 0), false), pillar, "a pillar on the line is still a wall")
+	eq(_has_legal_cast_to(0, "mark_shot", Vector2i(8, 0)), false, "Mark Shot is not offered through the pillar")
+	# Flat floor, MP already spent: the attack is the spell, not the walk.
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["kestrel", "bastion"],
+		"positions": [Vector2i(2, 2), Vector2i(6, 2)],
+	})
+	_live_unit(0)["mp"] = 0
+	_live_unit(0)["ap"] = 8
+	truthy(_has_legal_cast_to(0, "mark_shot", Vector2i(6, 2)), "MP 0 on open ground still offers Mark Shot")
 
 
 ## Windmere crystals are walls: the tile blocks a walk and a ranged shot.
@@ -9819,6 +9871,7 @@ func _test_magma_burn_through() -> void:
 	var lock_replica = load("res://backend/combat_sim.gd").new()
 	lock_replica.apply_host_snapshot(_sim.snapshot())
 	eq(int(lock_replica.snapshot()["units"][1]["no_shield"]), 1, "a guest snapshot keeps the shield lock")
+	eq(int(lock_replica.snapshot()["units"][1]["no_shield_from_turn"]), int(_sim.snapshot()["turn_index"]), "a guest snapshot keeps the turn the lock was written")
 	eq(int(lock_replica.snapshot()["units"][1]["burn_remaining"]), 2, "a guest snapshot keeps the 2-turn Burn")
 	lock_replica.free()
 	eq(_sim._burn_tick_hp(3), 12, "stack 3 ticks 12")
@@ -10022,8 +10075,10 @@ func _test_magma_burn_through() -> void:
 	eq(int(_unit(1)["shield"]), 5, "a shield-locked foe does not gain Ward")
 	eq(str(_first_event_where(wall.get("events", []), "shield_blocked").get("source", "")), "Ward", "the foe Ward is logged as blocked")
 
-	# Magma on the enemy's turn: his next turn he can Ward while still burning.
-	# A second Magma puts the lock back to 1.
+	# Magma on the attacker's turn: the lock covers Bastion's whole next turn.
+	# Ward, a new shield, and an Aegis gain are refused. The Plant flag still
+	# lands. The lock ends when he ends that turn. A Magma during the locked
+	# turn stays up through the following turn. Burn stays a 2-turn clock.
 	_sim.reset_match({
 		"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1, 1],
 		"classes": ["ironjaw", "bastion"],
@@ -10039,14 +10094,33 @@ func _test_magma_burn_through() -> void:
 	_sim._apply_shield_lock(_live_unit(1))
 	eq(int(_unit(1)["no_shield"]), 1, "a second Magma in the same window does not stack the lock")
 	_sim.submit({"type": "end_turn", "seat": 0})
-	eq(int(_unit(1)["no_shield"]), 0, "his next turn opens with the lock gone")
+	eq(int(_unit(1)["no_shield"]), 1, "his next turn opens with the lock still up")
 	eq([int(_unit(1)["burn_stacks"]), int(_unit(1)["burn_remaining"])], [3, 1], "Burn is still ticking")
-	eq(_has_legal_cast(1, SpellKits.WARD), true, "he can Ward while still burning")
-	var opened: Dictionary = _sim.submit({"type": "cast", "spell": "ward", "to": Vector2i(6, 5), "seat": 1})
-	eq(bool(opened.get("ok", false)), true, "Ward resolves on the turn after Magma")
-	eq(int(_unit(1)["shield"]), 20, "the shield lands while Burn remains")
-	eq(_first_event_where(opened.get("events", []), "shield_blocked").is_empty(), true, "that Ward is not blocked")
+	var turn_hud := CombatHUD.new()
+	turn_hud._build()
+	turn_hud.render(_sim.snapshot(), [])
+	var locked_card := _card_text(turn_hud, 1)
+	turn_hud.free()
+	truthy(locked_card.contains("[b]NO SHIELD[/b] 1"), "the card still says NO SHIELD on his locked turn: %s" % locked_card)
+	eq(_has_legal_cast(1, SpellKits.WARD), false, "Ward is not offered on the locked turn")
+	_live_unit(1)["aegis"] = 2
+	var aegis_before := int(_unit(1)["aegis"])
+	var locked_ap := int(_unit(1)["ap"])
+	var locked_ward: Dictionary = _sim.submit({"type": "cast", "spell": "ward", "to": Vector2i(6, 5), "seat": 1})
+	eq(bool(locked_ward.get("ok", false)), false, "Ward does not resolve on the locked turn")
+	eq(str(locked_ward.get("reason", "")), "no_shield", "the locked Ward is refused")
+	eq(int(_unit(1)["ap"]), locked_ap, "the refused Ward spends no AP")
+	eq(int(_unit(1)["shield"]), 0, "no shield lands on the locked turn")
+	var locked_plant: Dictionary = _sim.submit({"type": "cast", "spell": "plant", "to": Vector2i(5, 6), "seat": 1})
+	eq(bool(locked_plant.get("ok", false)), true, "Plant still places the flag")
+	eq((_sim.snapshot().get("plant_tiles", []) as Array).is_empty(), false, "the flag is on the board")
+	eq(int(_unit(1)["aegis"]), aegis_before, "Plant does not gain Aegis while locked")
+	eq(str(_first_event_where(locked_plant.get("events", []), "shield_blocked").get("source", "")), "Aegis", "the refused Aegis is logged")
+	eq(str(locked_plant.get("coach", "")).contains("+1 Aegis"), false, "the Plant line does not claim an Aegis gain")
 	_sim.submit({"type": "end_turn", "seat": 1})
+	eq(int(_unit(1)["no_shield"]), 0, "the lock ends when his locked turn ends")
+	eq(int(_unit(1)["burn_stacks"]), 3, "Burn is still there after the lock ends")
+	eq(int(_unit(1)["burn_remaining"]), 1, "Burn still has its second turn")
 	_live_unit(1)["residue"] = "earth"
 	_live_unit(1)["residue_seat"] = 0
 	_live_unit(1)["residue_turns"] = 2
@@ -10054,11 +10128,17 @@ func _test_magma_burn_through() -> void:
 	eq(bool(_sim.submit({"type": "cast", "spell": "strike", "to": _unit(1)["pos"], "seat": 0}).get("ok", false)), true, "Magma hits him again")
 	eq(int(_unit(1)["no_shield"]), 1, "the new Magma refreshes the lock to 1")
 	eq(int(_unit(1)["burn_remaining"]), 2, "the new Magma refreshes Burn to 2 turns")
-	var held := int(_unit(1)["shield"])
-	eq(_sim._still_gain_shield(_live_unit(1), 20, "Ward"), held, "the refreshed lock blocks a new shield")
+	var shield_held := int(_unit(1)["shield"])
+	eq(_sim._still_gain_shield(_live_unit(1), 20, "Ward"), shield_held, "the refreshed lock blocks a new shield")
 	_sim.submit({"type": "end_turn", "seat": 0})
-	eq(int(_unit(1)["no_shield"]), 0, "the refreshed lock ends on his following turn")
-	eq(int(_unit(1)["burn_stacks"]) > 0, true, "Burn is still there after the lock ends")
+	eq(int(_unit(1)["no_shield"]), 1, "the refreshed lock is still up when his next turn opens")
+	_sim._apply_shield_lock(_live_unit(1))
+	_sim.submit({"type": "end_turn", "seat": 1})
+	eq(int(_unit(1)["no_shield"]), 1, "a Magma during the locked turn covers the following turn")
+	_sim.submit({"type": "end_turn", "seat": 0})
+	eq(int(_unit(1)["no_shield"]), 1, "the following turn opens still locked")
+	_sim.submit({"type": "end_turn", "seat": 1})
+	eq(int(_unit(1)["no_shield"]), 0, "that following turn spends the refreshed lock")
 
 
 func _test_element_riders() -> void:

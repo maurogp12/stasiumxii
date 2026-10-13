@@ -1947,7 +1947,8 @@ func _spend_mp(actor: Dictionary, amount: int) -> void:
 ##   Water damage: the target loses 1 MP at the start of its next turn (once).
 ##   Fire  Burn 4 per stack at the target's turn start, 2 turns at every stack
 ##         (4 / 8 / 12). A shield never soaks the tick. Magma, not Burn itself,
-##         blocks new shields for 1 turn (see no_shield).
+##         blocks new shields, Aegis gains, and Ward for the victim's next
+##         turn (see no_shield). A later Magma refreshes that turn.
 ## Residue: the hit writes its element on the target for 2 of the target's own
 ## turns; one per body, same element refreshes, a new one overwrites, death
 ## clears it, Cleanse does not. Heals to allies write none. Neutral: nothing.
@@ -2648,8 +2649,11 @@ func _make_unit(seat: int, class_id: String, unit_name: String, element: String,
 		# Soft Lock lava Burn. Stacks 0–3 and turns left. Both 0 means not burning.
 		"burn_stacks": 0,
 		"burn_remaining": 0,
-		# Magma's shield lock. 1 until this unit's next turn start. Burn alone is 0.
+		# Magma's shield lock. 1 through this unit's next full turn. Burn alone is 0.
+		# no_shield_from_turn is the turn the latest Magma landed, so that
+		# turn's end does not spend a lock that was just refreshed.
 		"no_shield": 0,
+		"no_shield_from_turn": -1,
 		# Soft Lock water: spell ids silenced on landing. One-shot, no duration.
 		"silenced_spells": [],
 		# Map push stacks. Slow (mud) −stack MP next turn.
@@ -2974,6 +2978,9 @@ func _handoff_seat(actor: Dictionary, auto_skip: bool, skip_reason: String = "")
 	_expire_turn_statuses(actor)
 	_tick_residue(actor)
 	_end_turn_elements(actor)
+	# The lock covers this unit's whole turn, then ends here. A Magma that
+	# landed on this same turn is a refresh and stays up for the next one.
+	_spend_shield_lock(actor)
 	_drop_unattended_marks(actor)
 	_active_seat = next_seat
 	_turn_index += 1
@@ -3065,8 +3072,6 @@ func _handoff_seat(actor: Dictionary, auto_skip: bool, skip_reason: String = "")
 	# Mud Slow: −stack MP for this turn only. A stunned skip still consumes it.
 	_consume_mud_slow(next_unit)
 	_consume_electrocuted(next_unit)
-	# Magma's shield lock ends as this turn opens, before he can Ward.
-	_tick_shield_lock(next_unit)
 	# Soft Lock Burn ticks once this turn has started, including a stunned skip.
 	_tick_burn(next_unit)
 	return next_unit
@@ -6662,17 +6667,23 @@ func _elevation_at(cell: Vector2i) -> int:
 	return int(tile.elevation) if tile != null else 0
 
 
-## The segment between two tile centres passes through the tile's inside. The
-## tile is shrunk a hair so a line that only grazes a corner does not count.
+## The segment between two tile centres passes through the painted diamond.
+## A square around the same tile sticks out at the corners, and those corners
+## were refusing shots that never crossed the tile (Kestrel at AP, "no foe"
+## on Vault, Mark Shot dark). The diamond is shrunk a hair so a line that
+## only touches a point does not count.
 static func _segment_crosses_cell(a: Vector2, b: Vector2, cell: Vector2i) -> bool:
-	var h := 0.499
-	var lo := Vector2(cell) - Vector2(h, h)
-	var hi := Vector2(cell) + Vector2(h, h)
+	var h := 0.49
+	var origin := Vector2(a.x + a.y, a.x - a.y)
+	var dest := Vector2(b.x + b.y, b.x - b.y)
+	var center := Vector2(float(cell.x + cell.y), float(cell.x - cell.y))
+	var lo := center - Vector2(h, h)
+	var hi := center + Vector2(h, h)
 	var t0 := 0.0
 	var t1 := 1.0
-	var d := b - a
+	var d := dest - origin
 	for axis in 2:
-		var p := a[axis]
+		var p := origin[axis]
 		var v := d[axis]
 		if absf(v) < 0.000001:
 			if p < lo[axis] or p > hi[axis]:
@@ -6813,6 +6824,12 @@ func _gain_resource(unit: Dictionary, field: String, amount: int) -> int:
 	if cap <= 0 or amount <= 0:
 		return 0
 	var before := int(unit.get(field, 0))
+	# Magma's lock refuses a new Aegis the same way it refuses a new shield.
+	# Plant still places the flag. Snap Wall still spends Aegis to build.
+	if field == "aegis" and _shield_locked(unit):
+		if before < cap:
+			_note_shield_blocked(unit, "Aegis", amount)
+		return 0
 	unit[field] = mini(before + amount, cap)
 	return int(unit[field]) - before
 
@@ -7268,20 +7285,27 @@ func _shield_locked(unit: Dictionary) -> bool:
 	return int(unit.get("no_shield", 0)) > 0
 
 
-## Latest Magma. Does not stack past 1.
+## Latest Magma. Does not stack past 1. The turn it lands does not spend it,
+## so the victim's whole next turn stays locked. A hit during that turn
+## writes this turn's index and the end of the turn leaves it up.
 func _apply_shield_lock(unit: Dictionary) -> void:
 	if unit.is_empty():
 		return
 	unit["no_shield"] = SHIELD_LOCK_TURNS
+	unit["no_shield_from_turn"] = _turn_index
 
 
-## Spent at the victim's turn start, before he can cast. A stunned skip spends it too.
-func _tick_shield_lock(unit: Dictionary) -> void:
+## Called when this unit's turn ends, before the turn index advances.
+## A lock from an earlier turn is spent. A lock written this turn is a refresh.
+func _spend_shield_lock(unit: Dictionary) -> void:
 	if unit.is_empty() or not bool(unit.get("alive", false)):
 		return
 	if int(unit.get("no_shield", 0)) <= 0:
 		return
-	unit["no_shield"] = int(unit["no_shield"]) - 1
+	if int(unit.get("no_shield_from_turn", -1)) == _turn_index:
+		return
+	unit["no_shield"] = 0
+	unit["no_shield_from_turn"] = -1
 
 
 ## A new shield is refused while the Magma lock is up. The shield already there stays.
@@ -7376,6 +7400,7 @@ func _still_clear_debuff(unit: Dictionary, kind: String) -> void:
 			unit["burn_remaining"] = 0
 			unit["burn_stacks"] = 0
 			unit["no_shield"] = 0
+			unit["no_shield_from_turn"] = -1
 		"slow":
 			unit["slow_remaining"] = 0
 			unit["slow_stacks"] = 0
@@ -7843,7 +7868,7 @@ func _resolve_revive(intent: Dictionary, actor: Dictionary, def: Dictionary, des
 	if revive_shield > 0 and _shield_locked(body):
 		_note_shield_blocked(body, "Rekindle", revive_shield)
 		revive_shield = 0
-	for key in ["stun_remaining", "burn_remaining", "burn_stacks", "no_shield", "marks", "shield", "hit_immunity"]:
+	for key in ["stun_remaining", "burn_remaining", "burn_stacks", "no_shield", "no_shield_from_turn", "marks", "shield", "hit_immunity"]:
 		if body.has(key):
 			body[key] = 0
 	body["stunned"] = false
@@ -8078,6 +8103,7 @@ func _strip_family(unit: Dictionary, family: String) -> void:
 	unit[keys[1]] = 0
 	if family == "burn":
 		unit["no_shield"] = 0
+		unit["no_shield_from_turn"] = -1
 	if family == "breathless":
 		unit["breathless_spell"] = ""
 		unit["silenced_spells"] = []
