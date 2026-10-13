@@ -6848,17 +6848,12 @@ func _still_turn_start(unit: Dictionary) -> void:
 		var cap := int(unit.get("max_hp", class_base_hp(str(unit.get("class_id", "")))))
 		unit["hp"] = mini(int(unit.get("hp", 0)) + refund, cap)
 		_still_fired(unit, "rewind", {"healed": refund})
-	var bonus := int(unit.get("shadow_mp_next", 0))
+	# The hits already added this MP and showed +MP. Refill just replaced the
+	# pool with max, so put the same bonus back on top. It is not leftover MP.
+	var bonus := int(unit.get("shadow_mp_kept", 0))
 	if bonus > 0:
-		unit["shadow_mp_next"] = 0
-		if _still_id(unit) == "long_shadow" and _still_over(unit):
-			unit["mp"] = int(unit.get("mp", 0)) + bonus
-		else:
-			var room := GearBag.MP_CAP
-			if int(unit.get("mp", 0)) > room:
-				room = int(unit["mp"])
-			unit["mp"] = mini(int(unit.get("mp", 0)) + bonus, room)
-		_still_fired(unit, "long_shadow", {"mp_gained": bonus})
+		unit["shadow_mp_kept"] = 0
+		unit["mp"] = int(unit.get("mp", 0)) + bonus
 	_still_resolve_echo(unit)
 
 
@@ -7191,7 +7186,6 @@ func _still_on_hit(actor: Dictionary, target: Dictionary, damage: int) -> int:
 		damage = maxi(roundi(float(damage) * 0.9), 0)
 	if _still_id(target) == "long_shadow" and _still_over(target) and not _allied(actor, target) and chebyshev(actor["pos"], target["pos"]) == 1:
 		damage = roundi(float(damage) * 1.1)
-	_still_note_kite(actor, target)
 	if int(actor.get("wither_bonus", 0)) > 0 and int(actor.get("wither_seat", -2)) == int(target.get("seat", -3)):
 		damage += int(actor["wither_bonus"])
 		actor["wither_bonus"] = 0
@@ -7211,18 +7205,24 @@ func _still_on_hit(actor: Dictionary, target: Dictionary, damage: int) -> int:
 	return damage
 
 
-## Chebyshev between the attacker and the wearer at the moment of the hit.
-## _mitigate_hit runs this before any pull or push. Any class can wear it,
-## Bastion included. Every far hit stores +2 MP for the wearer's next turn,
-## added after that turn's refill. The old Intact first-hit and Overwound
-## first-three caps are gone.
-func _still_note_kite(actor: Dictionary, target: Dictionary) -> void:
+## Chebyshev at the moment of the hit, and 3 counts (two empty tiles between
+## the fighters). Runs before shield, immunity, and any pull or push. A hit
+## that connects and then loses all of its HP to a shield still grants.
+## +2 MP lands on the wearer immediately. shadow_mp_kept is added again after
+## the next refill, which would otherwise replace that MP with max.
+func _still_note_kite(actor: Dictionary, target: Dictionary) -> int:
+	if actor.is_empty() or target.is_empty():
+		return 0
 	if _still_id(target) != "long_shadow" or _allied(actor, target):
-		return
+		return 0
 	if chebyshev(actor["pos"], target["pos"]) < 3:
-		return
+		return 0
+	var gain := 2
+	target["mp"] = int(target.get("mp", 0)) + gain
 	target["shadow_hits"] = int(target.get("shadow_hits", 0)) + 1
-	target["shadow_mp_next"] = int(target.get("shadow_mp_next", 0)) + 2
+	target["shadow_mp_kept"] = int(target.get("shadow_mp_kept", 0)) + gain
+	_still_fired(target, "long_shadow", {"mp_gained": gain, "mp_left": int(target["mp"])})
+	return gain
 
 
 func _still_can_shield(unit: Dictionary) -> bool:
@@ -7494,6 +7494,9 @@ func _mitigate_hit(actor: Dictionary, target: Dictionary, damage: int) -> Dictio
 		"shield_remaining": int(target.get("shield", 0)),
 		"intercepted": 0,
 	}
+	var gained := _still_note_kite(actor, target)
+	if gained > 0:
+		report["mp_gained"] = gained
 	if damage > 0:
 		damage = _still_on_hit(actor, target, damage)
 		report["damage"] = damage
@@ -7627,6 +7630,8 @@ func _stamp_mitigation(event: Dictionary, report: Dictionary) -> void:
 		event["coach"] = str(event.get("coach", "")) + " Shield shattered!"
 	event["shield_remaining"] = int(report.get("shield_remaining", 0))
 	event["intercepted"] = int(report.get("intercepted", 0))
+	if int(report.get("mp_gained", 0)) > 0:
+		event["mp_gained"] = int(report["mp_gained"])
 
 
 ## Heartstop ally immunity is a hit charge, not a turn clock. The badge ends

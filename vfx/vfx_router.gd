@@ -455,6 +455,9 @@ static func _damage_hit_recipes(event: Dictionary) -> Array:
 		var swallowed := int(event.get("immunity_amount", 0))
 		if swallowed > 0:
 			out.append(_number(target_seat, cell, str(swallowed), "absorb", 0.0, 1.0, "", Color(0, 0, 0, 0)))
+	var mp_gain := int(event.get("mp_gained", 0))
+	if mp_gain > 0:
+		out.append(_number(target_seat, cell, "+%d MP" % mp_gain, "heal", 0.15, 1.0, "", Color(0, 0, 0, 0)))
 	return out
 
 

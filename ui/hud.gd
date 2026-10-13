@@ -3098,8 +3098,8 @@ func _still_state_line(unit: Dictionary) -> String:
 		parts.append("Bound to %s" % str(unit["bound_name"]))
 	if id == "rewind" and int(unit.get("rewind_pending", 0)) > 0:
 		parts.append("Rewind +%d" % int(unit["rewind_pending"]))
-	if id == "long_shadow" and int(unit.get("shadow_mp_next", 0)) > 0:
-		parts.append("Long Shadow +%d MP" % int(unit["shadow_mp_next"]))
+	if id == "long_shadow" and int(unit.get("shadow_mp_kept", 0)) > 0:
+		parts.append("Long Shadow +%d MP" % int(unit["shadow_mp_kept"]))
 	if id == "withering_sand" and int(unit.get("wither_bonus", 0)) > 0:
 		parts.append("Wither +%d" % int(unit["wither_bonus"]))
 	if id == "held_hour" and int(unit.get("held_echo", 0)) > 0:
