@@ -457,7 +457,8 @@ const SPELLS := {
 		"id": PLANT,
 		"name": "Plant",
 		"class_id": CLASS_BASTION,
-		"ap": 2,
+		# Mauro 13 Oct 2026: 2 AP → 1 AP. Range, Aegis, and duration stay.
+		"ap": 1,
 		"mp": 0,
 		"range_mode": "chebyshev",
 		"min_range": 1,

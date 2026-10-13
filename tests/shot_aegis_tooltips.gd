@@ -42,6 +42,7 @@ func _process(_delta: float) -> bool:
 		board._refresh()
 		if hud != null:
 			hud.focus_fighter(_class_seat(sim, "bastion"))
+			hud._on_spell_pressed(SpellKits.PLANT)
 			hud.show_spell_tooltip(SpellKits.PLANT)
 			hud._layout_chrome()
 		_phase = 1
@@ -50,8 +51,14 @@ func _process(_delta: float) -> bool:
 	if _phase == 1:
 		if _frames < 12:
 			return false
-		if not _save(hud, "plant.png", "+1 Aegis (max 4)"):
+		if not _save(hud, "plant_1ap.png", "+1 Aegis (max 4)"):
 			return true
+		var plant_ap := int(SpellKits.spell(SpellKits.PLANT)["ap"])
+		var tip := hud.tooltip_caption() if hud != null else ""
+		if plant_ap != 1 or not tip.contains("%d AP / 0 MP" % plant_ap):
+			push_error("Plant tooltip AP is not the kit cost %d: %s" % [plant_ap, tip])
+			return true
+		hud._on_spell_pressed(SpellKits.SNAP_WALL)
 		hud.show_spell_tooltip(SpellKits.SNAP_WALL)
 		hud._layout_chrome()
 		_phase = 2
