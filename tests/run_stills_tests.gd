@@ -405,6 +405,27 @@ func _test_long_shadow_casts() -> void:
 	eq(int(_sim.snapshot()["active_seat"]), 1, "it is Bastion's turn")
 	eq(int(_u(1)["mp"]), cap + 6, "his refill does not throw away the +6 MP")
 	eq(int(_u(1).get("shadow_mp_kept", 0)), 0, "the bonus now lives in his MP")
+	# Another Bastion yanks this one from 4 tiles. The pull ends next door, so
+	# the distance has to be the gap at the hit, not the tile he lands on.
+	_sim.reset_match({
+		"seed": 1, "flat_board": true, "skip_deploy": true,
+		"classes": ["bastion", "bastion"],
+		"positions": [Vector2i(1, 1), Vector2i(5, 1)],
+		"rolls": [1, 1],
+		"seat_gear": {1: _gear("long_shadow", "intact")},
+	})
+	eq(_sim.chebyshev(_u(0)["pos"], _u(1)["pos"]), 4, "Hold the Line starts 4 tiles away")
+	var pulled_mp := int(_u(1)["mp"])
+	var pulled: Dictionary = _sim.submit({"type": "cast", "spell": "hold_line", "to": Vector2i(5, 1), "seat": 0})
+	eq(bool(pulled.get("ok", false)), true, "Hold the Line from 4 tiles connects")
+	eq(_u(1)["pos"], Vector2i(2, 1), "the pull lands Bastion next to the caster")
+	eq(_sim.chebyshev(_u(0)["pos"], _u(1)["pos"]), 1, "after the pull he is adjacent")
+	eq(int(_u(1)["mp"]), pulled_mp + 2, "the 4-tile gap still grants +2 MP")
+	eq(int(_u(1).get("shadow_hits", 0)), 1, "the pull counted as one far hit")
+	var again: Dictionary = _sim.submit({"type": "cast", "spell": "hold_line", "to": _u(1)["pos"], "seat": 0})
+	eq(bool(again.get("ok", false)), true, "a second Hold the Line connects from next door")
+	eq(int(_u(1)["mp"]), pulled_mp + 2, "the adjacent follow-up does not grant MP")
+	eq(int(_u(1).get("shadow_hits", 0)), 1, "only the hit that started 4 tiles away counted")
 	_sim.reset_match({
 		"seed": 1, "flat_board": true, "skip_deploy": true,
 		"classes": ["kestrel", "bastion"],
