@@ -353,8 +353,8 @@ const STANCE_PIECES := 5
 const STANCE_NEUTRAL := "neutral"
 const STANCE_RANGED := "ranged_guard"
 const STANCE_NEUTRAL_RESIST := 4
-const STANCE_FAR_CUT := 20
-const STANCE_NEAR_AMP := 15
+const STANCE_FAR_CUT := 15
+const STANCE_NEAR_AMP := 10
 const STANCES: Array[String] = ["neutral", "ranged_guard"]
 ## Chest tier weights, out of 100. ★2 reads 1, ★4 reads 3. Boss is its own row.
 const DROP_WEIGHTS := {

@@ -3916,15 +3916,19 @@ func _test_windmere_crystal_blocks_sight() -> void:
 	eq(str(onto.get("reason", "")), "not_walkable", "the crystal walk reason is not_walkable")
 
 
-## Hold Line yanks one enemy up to 4 tiles toward Bastion. The old cone
-## only reached the tile in front, so the cast range is now 1–4.
+## Hold Line yanks one enemy up to 4 tiles toward Bastion, and only when
+## that enemy is on the same row or the same column.
 func _test_hold_line_pull() -> void:
 	eq(int(SpellKits.spell(SpellKits.HOLD_LINE)["ap"]), 3, "Hold Line still costs 3 AP")
 	eq(str(SpellKits.spell(SpellKits.HOLD_LINE)["element"]), "earth", "Hold Line stays earth")
 	eq(int(SpellKits.spell(SpellKits.HOLD_LINE)["max_range"]), 4, "Hold Line reaches 4 tiles")
+	eq(str(SpellKits.spell(SpellKits.HOLD_LINE)["range_mode"]), "cardinal", "Hold Line is a straight line")
 	eq(int(SpellKits.spell_as(SpellKits.HOLD_LINE, "air")["max_range"]), 4, "Air does not stretch Hold Line")
+	eq(str(SpellKits.spell_as(SpellKits.HOLD_LINE, "air")["range_mode"]), "cardinal", "Air does not open the diagonals")
 	var card := " ".join(SpellTooltip.simple_lines(SpellKits.HOLD_LINE))
 	truthy(card.contains("up to 4 tiles straight toward you"), "the Hold Line card describes the pull")
+	truthy(card.contains("same row or same column"), "the Hold Line card says the line is orthogonal")
+	truthy(card.contains("not a target"), "the Hold Line card says a blocker is not a target")
 	var listed := SpellTooltip.card_text({"name": "Hold Line", "spell_id": SpellKits.HOLD_LINE, "ap": 3, "mp": 0, "range_text": "range 1–4", "sample_damage": 7})
 	truthy(listed.contains("Pull 4"), "the spells list names Pull 4")
 	truthy(listed.contains("Residue on the enemy hit"), "Hold Line still leaves Residue on the enemy hit")
@@ -3946,48 +3950,90 @@ func _test_hold_line_pull() -> void:
 	eq(str(_unit(1).get("residue", "")), "earth", "the hit still leaves earth Residue")
 	var rows: Array = log_script.lines(hit, _sim.snapshot())
 	truthy(rows.size() > 1 and str(rows[1]).contains("pulled 3 tiles"), "the log names the pull distance: %s" % str(rows))
-	# The pull steps (5,3) -> (4,2) -> (3,1). (3,1) is off the shot, so the
-	# cast still lands and the yank stops on the near side.
-	var prey := Vector2i(5, 3)
-	var jam := Vector2i(3, 1)
+	# Mud on the line does not hide the target. The pull lands on it and stops.
 	_sim.reset_match({
 		"seed": 1, "flat_board": true, "skip_deploy": true,
 		"classes": ["bastion", "kestrel"],
-		"positions": [Vector2i(1, 1), prey],
+		"positions": [Vector2i(1, 1), Vector2i(5, 1)],
+		"kestrel_facing": "W", "rolls": [1],
+		"tiles": [{"pos": Vector2i(3, 1), "terrain": "mud", "elevation": 0}],
+	})
+	eq(_sim.has_line_of_sight(Vector2i(1, 1), Vector2i(5, 1)), true, "mud on the line does not block the shot")
+	var mudded: Dictionary = _sim.submit({"type": "cast", "spell": "hold_line", "to": Vector2i(5, 1), "seat": 0})
+	eq(int(_first_event_where(mudded.get("events", []), "hit").get("pull_tiles", -1)), 2, "the pull stops on the mud")
+	eq(_unit(1)["pos"], Vector2i(3, 1), "the target lands on the mud and stops")
+	# Anything standing on the straight line makes the target illegal.
+	# Not highlighted as a cast, and the cast spends no AP. The bot and the
+	# other phone use the same legal list.
+	var jam := Vector2i(3, 1)
+	var line_prey := Vector2i(5, 1)
+	_sim.reset_match({
+		"seed": 1, "flat_board": true, "skip_deploy": true,
+		"classes": ["bastion", "kestrel"],
+		"positions": [Vector2i(1, 1), line_prey],
 		"kestrel_facing": "W", "rolls": [1],
 		"snap_walls": [jam],
 	})
-	eq(_sim.has_line_of_sight(Vector2i(1, 1), prey), true, "the wall is off the shot")
-	var walled: Dictionary = _sim.submit({"type": "cast", "spell": "hold_line", "to": prey, "seat": 0})
-	var wall_hit := _first_event_where(walled.get("events", []), "hit")
-	eq(int(wall_hit.get("pull_tiles", -1)), 1, "a Snap Wall stops the pull")
-	eq(_unit(1)["pos"], Vector2i(4, 2), "the target stops on the near side of the wall")
+	_expect_hold_line_blocked("Snap Wall")
 	_sim.reset_match({
 		"seed": 1, "flat_board": true, "skip_deploy": true,
 		"classes": ["bastion", "kestrel"],
-		"positions": [Vector2i(1, 1), prey],
+		"positions": [Vector2i(1, 1), line_prey],
 		"kestrel_facing": "W", "rolls": [1],
 	})
 	var blocker: Dictionary = _sim._make_unit(2, "ironjaw", "Blocker", "earth", jam, "W", true)
 	_sim._units.append(blocker)
-	eq(_sim.has_line_of_sight(Vector2i(1, 1), prey), true, "the fighter is off the shot")
-	var blocked: Dictionary = _sim.submit({"type": "cast", "spell": "hold_line", "to": prey, "seat": 0})
-	var block_hit := _first_event_where(blocked.get("events", []), "hit")
-	eq(int(block_hit.get("pull_tiles", -1)), 1, "a fighter stops the pull")
-	eq(_unit(1)["pos"], Vector2i(4, 2), "the target stops on the near side of the fighter")
-	eq(blocker["pos"], jam, "the fighter in the way does not move")
-	eq(int(blocker["hp"]), int(blocker["max_hp"]), "the fighter in the way is not hit")
+	var blocker_hp := int(blocker["hp"])
+	_expect_hold_line_blocked("enemy")
+	eq(int(blocker["hp"]), blocker_hp, "the fighter in the way is not hit")
 	_sim.reset_match({
 		"seed": 1, "flat_board": true, "skip_deploy": true,
 		"classes": ["bastion", "kestrel"],
-		"positions": [Vector2i(1, 1), prey],
+		"positions": [Vector2i(1, 1), line_prey],
+		"kestrel_facing": "W", "rolls": [1],
+	})
+	var ally: Dictionary = _sim._make_unit(2, "mender", "Ally", "water", jam, "E", true)
+	ally["team"] = 0
+	_sim._units.append(ally)
+	_expect_hold_line_blocked("ally")
+	_sim.reset_match({
+		"seed": 1, "flat_board": true, "skip_deploy": true,
+		"classes": ["bastion", "kestrel"],
+		"positions": [Vector2i(1, 1), line_prey],
 		"kestrel_facing": "W", "rolls": [1],
 		"blockers": [jam],
 	})
-	eq(_sim.has_line_of_sight(Vector2i(1, 1), prey), true, "the obstacle is off the shot")
-	var obst: Dictionary = _sim.submit({"type": "cast", "spell": "hold_line", "to": prey, "seat": 0})
-	eq(int(_first_event_where(obst.get("events", []), "hit").get("pull_tiles", -1)), 1, "an obstacle stops the pull")
-	eq(_unit(1)["pos"], Vector2i(4, 2), "the target stops on the near side of the obstacle")
+	eq(_has_legal_cast_to(0, "hold_line", line_prey), false, "a blocker cell is not a legal Hold Line target")
+	var block_ap := int(_unit(0)["ap"])
+	var obst: Dictionary = _sim.submit({"type": "cast", "spell": "hold_line", "to": line_prey, "seat": 0})
+	eq(str(obst.get("reason", "")), "no_line_of_sight", "Hold Line does not shoot through an obstacle")
+	eq(int(_unit(0)["ap"]), block_ap, "the obstacle costs no AP")
+	_sim.reset_match({
+		"seed": 1, "flat_board": true, "skip_deploy": true,
+		"classes": ["bastion", "kestrel"],
+		"positions": [Vector2i(1, 1), line_prey],
+		"kestrel_facing": "W", "rolls": [1],
+		"tiles": [{"pos": jam, "terrain": "ground", "elevation": 0, "walkable": false}],
+	})
+	_expect_hold_line_blocked("wall")
+	_sim.reset_match({
+		"seed": 1, "flat_board": true, "skip_deploy": true,
+		"classes": ["bastion", "kestrel"],
+		"positions": [Vector2i(1, 1), line_prey],
+		"kestrel_facing": "W", "rolls": [1],
+	})
+	_sim._paint_only[jam] = ["rock_cluster"]
+	load("res://backend/cell_tag_map.gd").seal_blocking_props(_sim._board, _sim._paint_only, "")
+	_expect_hold_line_blocked("rock")
+	_sim.reset_match({
+		"seed": 1, "flat_board": true, "skip_deploy": true,
+		"classes": ["bastion", "kestrel"],
+		"positions": [Vector2i(1, 1), line_prey],
+		"kestrel_facing": "W", "rolls": [1],
+	})
+	var planted: Dictionary = _sim.submit({"type": "cast", "spell": "plant", "to": jam, "seat": 0})
+	eq(bool(planted.get("ok", false)), true, "Plant places a flag on the line")
+	_expect_hold_line_blocked("Plant flag")
 	# Already next to Bastion: the pull distance is 0, and the log says so.
 	_sim.reset_match({
 		"seed": 1, "flat_board": true, "skip_deploy": true,
@@ -4001,16 +4047,63 @@ func _test_hold_line_pull() -> void:
 	eq(_unit(1)["pos"], Vector2i(2, 1), "an adjacent target stays put")
 	var close_rows: Array = log_script.lines(close_hit, _sim.snapshot())
 	truthy(str(close_rows).contains("pulled 0 tiles"), "the log names a pull of 0: %s" % str(close_rows))
-	# A diagonal step still moves straight toward Bastion.
+	# Off the row and off the column: not highlighted, and the cast spends nothing.
+	# The same legal_intents list is what the bot offers and what the host packs.
+	_sim.reset_match({
+		"seed": 1, "flat_board": true, "skip_deploy": true,
+		"classes": ["bastion", "kestrel"],
+		"positions": [Vector2i(1, 1), Vector2i(5, 1)],
+		"kestrel_facing": "W", "rolls": [1],
+	})
+	var ring: Array = _sim.range_highlight_cells(0, "hold_line")
+	eq(ring.has(Vector2i(5, 1)), true, "the range preview includes the enemy on the row")
+	eq(ring.has(Vector2i(1, 5)), true, "the range preview includes the column")
+	eq(ring.has(Vector2i(5, 4)), false, "the range preview leaves out a diagonal")
+	eq(ring.has(Vector2i(5, 3)), false, "the range preview leaves out a knight step")
+	eq(ring.has(Vector2i(2, 2)), false, "the range preview leaves out the near diagonal")
+	for cell in ring:
+		var at: Vector2i = cell
+		eq(at.x == 1 or at.y == 1, true, "every preview cell is on Bastion's row or column: %s" % at)
+	eq(_has_legal_cast_to(0, "hold_line", Vector2i(5, 1)), true, "the in-line enemy is a legal target")
+	eq(_has_legal_cast_to(0, "hold_line", Vector2i(5, 4)), false, "a diagonal is not offered")
+	eq(_has_legal_cast_to(0, "hold_line", Vector2i(5, 3)), false, "a knight step is not offered")
+	eq(str(_sim.preview_cast("hold_line", Vector2i(1, 1), Vector2i(5, 4)).get("reason", "")), "out_of_range", "the preview rejects a diagonal")
+	eq(str(_sim.preview_cast("hold_line", Vector2i(1, 1), Vector2i(5, 3)).get("reason", "")), "out_of_range", "the preview rejects a knight step")
+	var hero_ai = load("res://backend/hero_ai.gd")
+	var bot: Dictionary = hero_ai.plan(_sim, 0)
+	if str(bot.get("spell", "")) == "hold_line":
+		var bot_to: Vector2i = bot.get("to", Vector2i(-1, -1))
+		eq(bot_to.x == 1 or bot_to.y == 1, true, "the bot only aims Hold Line on the line")
+	var guest_script := load("res://backend/combat_sim.gd")
+	var guest: Node = guest_script.new()
+	guest.apply_host_snapshot(_sim.snapshot())
+	eq(guest.range_highlight_cells(0, "hold_line").has(Vector2i(5, 4)), false, "the other phone leaves the diagonal out of the preview")
+	eq(guest.legal_intents(0).any(func(intent): return str(intent.get("spell", "")) == "hold_line" and intent.get("to") == Vector2i(5, 1)), true, "the other phone still offers the enemy on the row")
+	var side_ap := int(_unit(0)["ap"])
+	var diag: Dictionary = _sim.submit({"type": "cast", "spell": "hold_line", "to": Vector2i(5, 4), "seat": 0})
+	eq(bool(diag.get("ok", false)), false, "a diagonal Hold Line does not resolve")
+	eq(str(diag.get("reason", "")), "out_of_range", "a diagonal Hold Line is out of range")
+	eq(int(_unit(0)["ap"]), side_ap, "a diagonal Hold Line spends no AP")
+	eq(_unit(1)["pos"], Vector2i(5, 1), "a rejected Hold Line does not move the enemy")
+	var knight: Dictionary = _sim.submit({"type": "cast", "spell": "hold_line", "to": Vector2i(5, 3), "seat": 0})
+	eq(str(knight.get("reason", "")), "out_of_range", "a knight-step Hold Line is out of range")
+	eq(int(_unit(0)["ap"]), side_ap, "a knight-step Hold Line spends no AP")
+	guest.apply_host_snapshot(_sim.snapshot())
+	var guest_ap := -1
+	for unit in guest.snapshot()["units"]:
+		if int(unit.get("seat", -1)) == 0:
+			guest_ap = int(unit.get("ap", -1))
+	eq(guest_ap, side_ap, "the other phone keeps the same AP after the reject")
+	guest.free()
 	_sim.reset_match({
 		"seed": 1, "flat_board": true, "skip_deploy": true,
 		"classes": ["bastion", "kestrel"],
 		"positions": [Vector2i(1, 1), Vector2i(5, 4)],
-		"kestrel_facing": "W", "rolls": [1],
+		"rolls": [1],
 	})
-	var diag: Dictionary = _sim.submit({"type": "cast", "spell": "hold_line", "to": Vector2i(5, 4), "seat": 0})
-	eq(int(_first_event_where(diag.get("events", []), "hit").get("pull_tiles", -1)), 3, "a diagonal target is pulled 3")
-	eq(_unit(1)["pos"], Vector2i(2, 1), "each step moves straight toward Bastion")
+	eq(_has_legal_cast(0, "hold_line"), false, "an off-line enemy does not arm Hold Line")
+	var off_plan: Dictionary = hero_ai.plan(_sim, 0)
+	eq(str(off_plan.get("spell", "")) == "hold_line", false, "the bot does not cast Hold Line at an off-line enemy")
 	# A miss does not pull. A target past 4 is out of range. A killing blow stays put.
 	_sim.reset_match({
 		"seed": 1, "flat_board": true, "skip_deploy": true,
@@ -9113,6 +9206,32 @@ func _complete_opponent_turn() -> void:
 	var opponent := int(_sim.snapshot()["active_seat"])
 	var finished: Dictionary = _sim.submit({"type": "end_turn", "seat": opponent})
 	eq(bool(finished.get("ok", false)), true, "the opponent completes one full turn")
+
+
+## Bastion at (1,1), prey at (5,1), something already on (3,1).
+func _expect_hold_line_blocked(label: String) -> void:
+	var origin := Vector2i(1, 1)
+	var prey := Vector2i(5, 1)
+	var ring: Array = _sim.range_highlight_cells(0, "hold_line")
+	eq(ring.has(prey), false, "%s: the target is not in the range preview" % label)
+	eq(ring.has(Vector2i(1, 4)), true, "%s: an open column cell stays in the preview" % label)
+	eq(_sim.sight_blocked_cells(0, "hold_line").has(prey), true, "%s: the target is marked blocked" % label)
+	eq(_has_legal_cast_to(0, "hold_line", prey), false, "%s: the target is not a legal cast" % label)
+	eq(str(_sim.preview_cast("hold_line", origin, prey).get("reason", "")), "no_line_of_sight", "%s: the preview rejects the blocked line" % label)
+	var hero_ai = load("res://backend/hero_ai.gd")
+	var bot: Dictionary = hero_ai.plan(_sim, 0)
+	eq(str(bot.get("spell", "")) == "hold_line" and bot.get("to") == prey, false, "%s: the bot does not cast Hold Line through the block" % label)
+	var guest: Node = load("res://backend/combat_sim.gd").new()
+	guest.apply_host_snapshot(_sim.snapshot())
+	eq(guest.range_highlight_cells(0, "hold_line").has(prey), false, "%s: the other phone leaves the target out" % label)
+	eq(guest.legal_intents(0).any(func(intent): return str(intent.get("spell", "")) == "hold_line" and intent.get("to") == prey), false, "%s: the other phone does not offer the target" % label)
+	guest.free()
+	var ap := int(_unit(0)["ap"])
+	var denied: Dictionary = _sim.submit({"type": "cast", "spell": "hold_line", "to": prey, "seat": 0})
+	eq(bool(denied.get("ok", false)), false, "%s: the cast does not resolve" % label)
+	eq(str(denied.get("reason", "")), "no_line_of_sight", "%s: the cast is rejected" % label)
+	eq(int(_unit(0)["ap"]), ap, "%s: the cast spends no AP" % label)
+	eq(_unit(1)["pos"], prey, "%s: the target is not pulled" % label)
 
 
 func _has_legal_cast(seat: int, spell_id: String) -> bool:

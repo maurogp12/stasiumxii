@@ -684,7 +684,7 @@ func _gatewarden_ready() -> bool:
 ## Short line so the choice fits the fight screen. Sets keeps the long sentence.
 func _stance_short() -> String:
 	if _bag.stance_of() == GearBag.STANCE_RANGED:
-		return "20% less from 3+ tiles. 15% more from 1–2."
+		return "%d%% less from 3+ tiles. %d%% more from 1–2." % [GearBag.STANCE_FAR_CUT, GearBag.STANCE_NEAR_AMP]
 	return "+4 Resist."
 
 
