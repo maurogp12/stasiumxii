@@ -151,6 +151,7 @@ static func simple_lines(spell_id: String, preview: Dictionary = {}) -> PackedSt
 		SpellKits.DETONATE:
 			out.append("Blow up the Marks on an enemy: %d damage + %d more for each Mark (3 Marks = %d)." % [dmg, int(def.get("damage_per_mark", 6)), dmg + 3 * int(def.get("damage_per_mark", 6))])
 			out.append("The enemy needs at least 1 Mark. All their Marks get used up.")
+			out.append("Ignores shields, including Ward, plus Ranged Guard, Neutral resist, element resist, and every other damage cut. The full hit goes straight to HP.")
 		SpellKits.VAULT:
 			out.append("Jump exactly 2 tiles in a straight line (up, down, left or right) to get away. Only works when an enemy is right next to you. Once per turn. Never misses.")
 			out.append("Cooldown: %d turns. After you cast it, your next two turns cannot, and the turn after those can. The button says 2 turns right after you use it, then 1 turn. It never says 3 turns. Still once on the turn it is ready. There is no match limit." % int(def.get("cooldown", 2)))

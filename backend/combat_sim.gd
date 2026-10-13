@@ -1636,7 +1636,8 @@ func preview_cast(spell_or_intent: Variant, from: Variant = null, to: Variant = 
 			base = int(actor["stasis_attack_base"])
 		# Locked Phase A sample: CritMult=1.0, Passive=1, Mastery=0. WindMod omitted.
 		# Resist 0 is not invented as Locked — provisional Open A05, labeled below.
-		out["sample_damage"] = _phase_a_damage(base, facing_mult, actor, target, str(def.get("element", "")))
+		var pierce_preview := spell_id == SpellKits.DETONATE
+		out["sample_damage"] = _phase_a_damage(base, facing_mult, actor, target, str(def.get("element", "")), false, pierce_preview)
 		notes.append("Resist 0 (provisional Open A05)")
 
 	if spell_id == SpellKits.DETONATE:
@@ -1775,7 +1776,7 @@ func _preview_kit_lines(spell_id: String) -> Dictionary:
 		SpellKits.MARK_SHOT:
 			return {"on_connect": "8 Air. +1 Mark on the target.", "on_miss": "AP/MP stay spent. No Mark."}
 		SpellKits.DETONATE:
-			return {"on_connect": "6+6×M Air. Consumes Marks on the target.", "on_miss": "Marks stay. AP/MP stay spent."}
+			return {"on_connect": "6+6×M Air. Pierces defenses. Consumes Marks on the target.", "on_miss": "Marks stay. AP/MP stay spent."}
 		SpellKits.STRIKE:
 			return {"on_connect": "14 Earth. +1 Impact.", "on_miss": "AP/MP stay spent. No Impact."}
 		SpellKits.SHOULDER:
@@ -1815,17 +1816,19 @@ func _preview_kit_lines(spell_id: String) -> Dictionary:
 ## Gear crits (CRIT_MULT) apply only when resolve is true, the actor is the
 ## active fighter, they have not crit yet this turn, and the roll lands.
 ## A preview and a 0% chance leave the hit unchanged and do not roll.
-func _phase_a_damage(base: int, facing_mult: float, actor: Dictionary = {}, target: Dictionary = {}, element: String = "", resolve: bool = false) -> int:
+func _phase_a_damage(base: int, facing_mult: float, actor: Dictionary = {}, target: Dictionary = {}, element: String = "", resolve: bool = false, ignore_defenses: bool = false) -> int:
 	var mastery: float = MASTERY + float(actor.get("mastery", 0))
 	var el := element.to_lower()
-	var resist: float = RESIST + float(target.get("resist", 0))
-	var by_elem: Variant = target.get("resist_elem", {})
-	if typeof(by_elem) == TYPE_DICTIONARY and el != "":
-		resist += float((by_elem as Dictionary).get(el, 0))
+	var resist := 0.0
+	if not ignore_defenses:
+		resist = RESIST + float(target.get("resist", 0))
+		var by_elem: Variant = target.get("resist_elem", {})
+		if typeof(by_elem) == TYPE_DICTIONARY and el != "":
+			resist += float((by_elem as Dictionary).get(el, 0))
 	var flex := _flex_bonus(actor, el, resolve)
 	var passive := PASSIVE * _class_passive(actor, target)
 	var crit_mult := _gear_crit_mult(actor, resolve, false)
-	if _last_crit and _negate_nearby_crit(target):
+	if not ignore_defenses and _last_crit and _negate_nearby_crit(target):
 		crit_mult = 1.0
 	var raw: float = float(base) * crit_mult * passive * (1.0 + mastery / 100.0) * (1.0 + flex / 100.0) * (1.0 - clampf(resist, 0.0, RESIST_CAP) / 100.0) * facing_mult
 	if bool(target.get("berserk_on", false)):
@@ -1867,7 +1870,7 @@ func _gear_crit_mult(actor: Dictionary, resolve: bool, heals: bool) -> float:
 ## first hit of the turn, the first back hit, and the first hit taken.
 ## Flats are not run through resist, so +4 stays +4. Flags are spent only
 ## when the hit is resolved.
-func _gear_strike_damage(actor: Dictionary, target: Dictionary, damage: int, dist: int, is_back: bool, resolve: bool) -> int:
+func _gear_strike_damage(actor: Dictionary, target: Dictionary, damage: int, dist: int, is_back: bool, resolve: bool, ignore_defenses: bool = false) -> int:
 	var out := damage
 	var back_pct := int(actor.get("back_pct", 0))
 	if is_back and back_pct > 0 and out > 0:
@@ -1891,17 +1894,19 @@ func _gear_strike_damage(actor: Dictionary, target: Dictionary, damage: int, dis
 	# Gatewarden 5pc Ranged Guard. Chebyshev, same band as Long Shadow.
 	# Far hits are cut; hits from 1 or 2 tiles are increased. DoTs never
 	# call this. Neutral leaves both rates at 0. Counts in every fight.
+	# Detonate ignores the stance and the first-hit flat, and does not spend them.
 	_last_range_band = ""
-	if dist >= 3 and int(target.get("far_cut", 0)) > 0 and out > 0:
-		out = roundi(float(out) * (1.0 - float(int(target["far_cut"])) / 100.0))
-		_last_range_band = "far"
-	elif dist >= 1 and dist <= 2 and int(target.get("near_amp", 0)) > 0 and out > 0:
-		out = roundi(float(out) * (1.0 + float(int(target["near_amp"])) / 100.0))
-		_last_range_band = "near"
-	if bool(target.get("guard_ready", false)) and int(target.get("guard_flat", 0)) > 0 and out > 0:
-		out = maxi(0, out - int(target["guard_flat"]))
-		if resolve:
-			target["guard_ready"] = false
+	if not ignore_defenses:
+		if dist >= 3 and int(target.get("far_cut", 0)) > 0 and out > 0:
+			out = roundi(float(out) * (1.0 - float(int(target["far_cut"])) / 100.0))
+			_last_range_band = "far"
+		elif dist >= 1 and dist <= 2 and int(target.get("near_amp", 0)) > 0 and out > 0:
+			out = roundi(float(out) * (1.0 + float(int(target["near_amp"])) / 100.0))
+			_last_range_band = "near"
+		if bool(target.get("guard_ready", false)) and int(target.get("guard_flat", 0)) > 0 and out > 0:
+			out = maxi(0, out - int(target["guard_flat"]))
+			if resolve:
+				target["guard_ready"] = false
 	return out
 
 
@@ -3466,14 +3471,17 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 	var chance: int = _spell_hit_chance(def, dist)
 	var roll: int = _roll_d100()
 	var connected: bool = roll <= chance
+	var spell_id := str(def["id"])
+	# Detonate skips every defense, including the one-shot back guard.
+	var pierce := spell_id == SpellKits.DETONATE
 	var facing_mult: float = _facing_multiplier(actor["pos"], target["pos"], str(target["facing"]))
 	var is_back: bool = facing_mult > FRONT_SIDE_FACING + 0.001
 	if str(actor.get("class_id", "")) == SpellKits.CLASS_GLOAM and is_back:
 		facing_mult = SpellKits.BACKSTAB_MULT
-	var guarded := _guard_back(target, facing_mult, is_back)
-	facing_mult = float(guarded[0])
-	is_back = bool(guarded[1])
-	var spell_id := str(def["id"])
+	if not pierce:
+		var guarded := _guard_back(target, facing_mult, is_back)
+		facing_mult = float(guarded[0])
+		is_back = bool(guarded[1])
 	var marks_on_target: int = int(target.get("marks", 0))
 	var impact_before: int = int(actor.get("impact", 0))
 	_intent_log.append(intent)
@@ -3519,12 +3527,12 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 	# carry the key, so kit damage is unchanged.
 	if int(actor.get("stasis_attack_base", -1)) >= 0:
 		base = int(actor["stasis_attack_base"])
-	var pre_mitigation := _phase_a_damage(base, facing_mult, actor, target, str(def.get("element", "")), true)
+	var pre_mitigation := _phase_a_damage(base, facing_mult, actor, target, str(def.get("element", "")), true, pierce)
 	gear_crit = _last_crit
 	gear_crit_mult = _last_crit_mult
-	pre_mitigation = _gear_strike_damage(actor, target, pre_mitigation, dist, is_back, true)
+	pre_mitigation = _gear_strike_damage(actor, target, pre_mitigation, dist, is_back, true, pierce)
 	var range_band := _take_range_band()
-	var mitigation := _mitigate_hit(actor, target, pre_mitigation)
+	var mitigation := _pierce_defenses(actor, target, pre_mitigation) if pierce else _mitigate_hit(actor, target, pre_mitigation)
 	var damage := int(mitigation["damage"])
 	_lose_hp(target, damage)
 	_reveal_if_hurt(target, damage)
@@ -3612,6 +3620,8 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 	_last_coach = "HIT %d %s — %s vs %s (%d vs %d%%) %s.%s" % [damage, str(def["element"]).capitalize(), strike_name, target["name"], roll, chance, facing_note, extra_note]
 	if gear_crit:
 		_last_coach += " CRIT"
+	if pierce:
+		_last_coach += " Pierces defenses."
 	var hit_event := {
 		"type": "hit",
 		"seat": actor["seat"],
@@ -7552,6 +7562,38 @@ func _still_on_invisible(hidden: Dictionary) -> void:
 		return
 
 
+## Detonate. Resist, element resist, Ranged Guard, Neutral resist, the
+## first-hit flat, shields (Ward included), immunity, and Intercept are
+## already out. The number goes straight to HP. One-shot charges stay up
+## for a later hit. Held Hour does not defer it, and Tolling Bell does not
+## cut it. A bonus that adds damage (Wither, an overwound Long Shadow next
+## to him) still applies.
+func _pierce_defenses(actor: Dictionary, target: Dictionary, damage: int) -> Dictionary:
+	var report := {
+		"damage": damage,
+		"immunity_absorbed": false,
+		"immunity_amount": 0,
+		"shield_absorbed": 0,
+		"shield_broken": false,
+		"shield_remaining": int(target.get("shield", 0)),
+		"intercepted": 0,
+		"pierces": true,
+	}
+	var gained := _still_note_kite(actor, target)
+	if gained > 0:
+		report["mp_gained"] = gained
+	if damage > 0:
+		if _still_id(target) == "long_shadow" and _still_over(target) and not _allied(actor, target) and chebyshev(actor["pos"], target["pos"]) == 1:
+			damage = roundi(float(damage) * 1.1)
+		if int(actor.get("wither_bonus", 0)) > 0 and int(actor.get("wither_seat", -2)) == int(target.get("seat", -3)):
+			damage += int(actor["wither_bonus"])
+			actor["wither_bonus"] = 0
+			_still_fired(actor, "withering_sand")
+	report["thorns_basis"] = damage
+	report["damage"] = damage
+	return report
+
+
 func _mitigate_hit(actor: Dictionary, target: Dictionary, damage: int) -> Dictionary:
 	var report := {
 		"damage": damage,
@@ -7689,6 +7731,8 @@ func _stamp_mitigation(event: Dictionary, report: Dictionary) -> void:
 		event["thorns"] = int(report["thorns"])
 		event["thorns_seat"] = int(report["thorns_seat"])
 		event["coach"] = str(event.get("coach", "")) + " Thorns: %d back." % int(report["thorns"])
+	if bool(report.get("pierces", false)):
+		event["pierces_defenses"] = true
 	event["immunity_absorbed"] = bool(report.get("immunity_absorbed", false))
 	event["immunity_amount"] = int(report.get("immunity_amount", 0))
 	event["shield_absorbed"] = int(report.get("shield_absorbed", 0))
