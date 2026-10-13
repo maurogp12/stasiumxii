@@ -510,6 +510,8 @@ static func _gate_stance_lines(snap: Dictionary) -> Array:
 
 static func _hit_extras(event: Dictionary) -> String:
 	var bits: PackedStringArray = []
+	if bool(event.get("pierces_defenses", false)):
+		bits.append("pierces defenses")
 	var riders: Array = event.get("riders", []) if event.get("riders", []) is Array else []
 	if riders.has("water_slow"):
 		var water_mp := int(event.get("water_mp", 1))

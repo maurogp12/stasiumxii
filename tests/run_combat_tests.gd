@@ -114,6 +114,7 @@ func _run() -> void:
 	_test_turn_clock_auto_end_turn()
 	_test_turn_clock_ticks_during_hops()
 	_test_detonate_gates_and_damage()
+	_test_detonate_pierces_defenses()
 	_test_drop_shade_range()
 	_test_detonate_miss_retains_marks()
 	_test_shoulder_push_and_impact()
@@ -5368,6 +5369,188 @@ func _test_detonate_gates_and_damage() -> void:
 	eq(_unit(0)["ap"], 1, "2+3 AP spent")
 
 
+## Mauro 13 Oct 2026: Detonate ignores every defense and the full hit lands on HP.
+func _test_detonate_pierces_defenses() -> void:
+	var log_script = load("res://ui/battle_log.gd")
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["kestrel", "bastion"],
+		"positions": [Vector2i(0, 0), Vector2i(4, 0)],
+		"kestrel_facing": "E",
+		"bastion_facing": "W",
+		"bastion_marks": 1,
+		"rolls": [1, 1],
+	})
+	var kestrel := _live_unit(0)
+	var bastion := _live_unit(1)
+	bastion["facing"] = "W"
+	kestrel["crit"] = 100
+	bastion["shield"] = 40
+	bastion["resist"] = 20
+	bastion["resist_elem"] = {"air": 15}
+	bastion["far_cut"] = 15
+	bastion["near_amp"] = 10
+	bastion["guard_flat"] = 4
+	bastion["guard_ready"] = true
+	bastion["hit_immunity"] = 1
+	bastion["crit_ward"] = 1
+	bastion["crit_ward_used"] = false
+	bastion["gate_stance"] = "ranged_guard"
+	var hp_before := int(bastion["hp"])
+	var piled: Dictionary = _sim.submit({"type": "cast", "spell": "detonate", "to": Vector2i(4, 0), "seat": 0})
+	var hit := _first_event_where(piled.get("events", []), "hit")
+	eq(bool(piled.get("ok", false)), true, "Detonate connects through the stacked defenses")
+	eq(int(hit.get("damage", 0)), 18, "1 Mark at range 4 crits for 18 (12 × 1.30 × 1.15) with no cuts")
+	eq(bool(hit.get("crit", false)), true, "Gatewarden crit ward does not cancel the crit")
+	eq(bool(hit.get("pierces_defenses", false)), true, "the hit is flagged as piercing")
+	eq(int(hit.get("shield_absorbed", 0)), 0, "the shield absorbs nothing")
+	eq(hit.has("range_band"), false, "Ranged Guard does not tag the hit")
+	eq(int(bastion["hp"]), hp_before - 18, "the 18 lands on HP")
+	eq(int(bastion["shield"]), 40, "the shield is untouched")
+	eq(int(bastion["hit_immunity"]), 1, "hit immunity is not spent")
+	eq(bool(bastion["guard_ready"]), true, "the first-hit guard is not spent")
+	eq(bool(bastion["crit_ward_used"]), false, "the crit ward is not spent")
+	var hit_text := " ".join(log_script.lines(hit, _sim.snapshot()))
+	truthy(hit_text.contains("pierces defenses"), "the log says pierces defenses: %s" % hit_text)
+	eq(hit_text.contains("shield"), false, "the hit line does not name a shield soak: %s" % hit_text)
+	eq(hit_text.contains("Ranged Guard"), false, "the hit line does not name Ranged Guard: %s" % hit_text)
+	eq(hit_text.contains("immunity"), false, "the hit line does not name immunity: %s" % hit_text)
+
+	# Close Ranged Guard would add 10%. Detonate stays at the raw 12.
+	_sim.reset_match({
+		"seed": 1, "flat_board": true, "skip_deploy": true,
+		"classes": ["kestrel", "bastion"],
+		"positions": [Vector2i(0, 0), Vector2i(2, 0)],
+		"bastion_facing": "W", "bastion_marks": 1, "rolls": [1],
+	})
+	bastion = _live_unit(1)
+	bastion["facing"] = "W"
+	bastion["near_amp"] = 10
+	bastion["far_cut"] = 15
+	bastion["shield"] = 30
+	var close_hp := int(bastion["hp"])
+	var close: Dictionary = _sim.submit({"type": "cast", "spell": "detonate", "to": Vector2i(2, 0), "seat": 0})
+	eq(int(_first_event_where(close.get("events", []), "hit").get("damage", 0)), 12, "a close Detonate is not raised by Ranged Guard")
+	eq(int(bastion["hp"]), close_hp - 12, "the close 12 lands on HP")
+	eq(int(bastion["shield"]), 30, "the close shield stays")
+
+	# Gatewarden no-back would strip the rear bonus. Detonate keeps it.
+	_sim.reset_match({
+		"seed": 1, "flat_board": true, "skip_deploy": true,
+		"classes": ["kestrel", "bastion"],
+		"positions": [Vector2i(0, 0), Vector2i(4, 0)],
+		"bastion_facing": "E", "bastion_marks": 1, "rolls": [1],
+	})
+	bastion = _live_unit(1)
+	bastion["facing"] = "E"
+	bastion["no_back"] = 1
+	bastion["back_guard_ready"] = true
+	var rear: Dictionary = _sim.submit({"type": "cast", "spell": "detonate", "to": Vector2i(4, 0), "seat": 0})
+	var rear_hit := _first_event_where(rear.get("events", []), "hit")
+	eq(bool(rear_hit.get("back", false)), true, "Detonate still counts as a back hit")
+	eq(int(rear_hit.get("damage", 0)), 17, "the back bonus stays (12 × 1.20 × 1.15 = 17)")
+	eq(bool(bastion["back_guard_ready"]), true, "the back guard charge is not spent")
+
+	# Mark Shot still respects the far cut and the shield.
+	_sim.reset_match({
+		"seed": 1, "flat_board": true, "skip_deploy": true,
+		"classes": ["kestrel", "bastion"],
+		"positions": [Vector2i(0, 0), Vector2i(3, 0)],
+		"bastion_facing": "W", "rolls": [1],
+	})
+	bastion = _live_unit(1)
+	bastion["facing"] = "W"
+	bastion["far_cut"] = 15
+	bastion["shield"] = 40
+	var shot_hp := int(bastion["hp"])
+	var shot: Dictionary = _sim.submit({"type": "cast", "spell": "mark_shot", "to": Vector2i(3, 0), "seat": 0})
+	var shot_hit := _first_event_where(shot.get("events", []), "hit")
+	eq(int(shot_hit.get("shield_absorbed", 0)), 7, "Mark Shot still loses 15% and soaks into the shield")
+	eq(int(shot_hit.get("damage", 0)), 0, "Mark Shot deals no HP through a full shield")
+	eq(int(bastion["hp"]), shot_hp, "Mark Shot does not pierce")
+	eq(int(bastion["shield"]), 33, "Mark Shot chips the shield by 7")
+	eq(bool(shot_hit.get("pierces_defenses", false)), false, "Mark Shot is not a pierce")
+
+	# Koliseo Gatewarden: Ward's 25 shield, Ranged Guard, part resist, and Air resist.
+	var worn: Array = []
+	for slot in ["weapon", "head", "chest", "legs", "boots"]:
+		worn.append({"item_id": "gatewarden.%s" % slot, "plus": 0})
+	_sim.reset_match({
+		"seed": 1, "flat_board": true, "skip_deploy": true,
+		"classes": ["kestrel", "bastion"],
+		"positions": [Vector2i(0, 0), Vector2i(4, 0)],
+		"kestrel_facing": "E", "bastion_facing": "W",
+		"bastion_marks": 3, "bastion_aegis": 2,
+		"rolls": [1, 1, 1, 1],
+		"seat_gear": {1: {"worn": worn, "stance": "ranged_guard", "flatten_plus": true}},
+	})
+	bastion = _live_unit(1)
+	eq(str(bastion["gate_stance"]), "ranged_guard", "the Koliseo set is Ranged Guard")
+	eq(int(bastion["far_cut"]), 15, "Ranged Guard cuts far hits by 15%")
+	eq(int(bastion["ward_shield"]), 25, "Gatewarden Ward shield is 25")
+	eq(int(bastion["resist"]) > 0, true, "the plates still have resist")
+	var elem: Dictionary = bastion["resist_elem"]
+	elem["air"] = int(elem.get("air", 0)) + 20
+	bastion["resist_elem"] = elem
+	eq(bool(_sim.submit({"type": "end_turn", "seat": 0}).get("ok", false)), true, "Kestrel passes so Bastion can Ward")
+	var ward: Dictionary = _sim.submit({"type": "cast", "spell": "ward", "to": Vector2i(4, 0), "seat": 1})
+	eq(bool(ward.get("ok", false)), true, "Ward resolves")
+	eq(int(_live_unit(1)["shield"]), 25, "Ward shield 25 is up")
+	_live_unit(1)["facing"] = "W"
+	eq(bool(_sim.submit({"type": "end_turn", "seat": 1}).get("ok", false)), true, "Bastion ends his turn")
+	var warded_hp := int(_unit(1)["hp"])
+	var blown: Dictionary = _sim.submit({"type": "cast", "spell": "detonate", "to": Vector2i(4, 0), "seat": 0})
+	var blown_hit := _first_event_where(blown.get("events", []), "hit")
+	eq(bool(blown.get("ok", false)), true, "Detonate hits the warded Bastion")
+	eq(int(blown_hit.get("damage", 0)), 28, "3 Marks at range 4 stay 28 through Ward, resist, and Ranged Guard")
+	eq(int(_unit(1)["hp"]), warded_hp - 28, "28 comes off HP")
+	eq(int(_unit(1)["shield"]), 25, "the Ward shield is still 25")
+	eq(int(_unit(1)["hit_immunity"]), 0, "no immunity was invented")
+	var ward_text := " ".join(log_script.lines(blown_hit, _sim.snapshot()))
+	truthy(ward_text.contains("pierces defenses"), "the Ward hit log says pierces defenses: %s" % ward_text)
+	eq(ward_text.contains("Ranged Guard"), false, "the hit does not apply Ranged Guard: %s" % ward_text)
+
+	# Neutral is +4 Resist. Detonate ignores that too.
+	_sim.reset_match({
+		"seed": 1, "flat_board": true, "skip_deploy": true,
+		"classes": ["kestrel", "bastion"],
+		"positions": [Vector2i(0, 0), Vector2i(4, 0)],
+		"bastion_facing": "W", "bastion_marks": 1, "rolls": [1],
+		"seat_gear": {1: {"worn": worn, "stance": "neutral", "flatten_plus": true}},
+	})
+	bastion = _live_unit(1)
+	bastion["facing"] = "W"
+	eq(str(bastion["gate_stance"]), "neutral", "Neutral stance is armed")
+	eq(int(bastion["resist"]) >= GearBag.STANCE_NEUTRAL_RESIST, true, "Neutral added resist")
+	eq(int(bastion["far_cut"]), 0, "Neutral has no far cut")
+	bastion["shield"] = 20
+	var neutral_hp := int(bastion["hp"])
+	var neutral: Dictionary = _sim.submit({"type": "cast", "spell": "detonate", "to": Vector2i(4, 0), "seat": 0})
+	eq(int(_first_event_where(neutral.get("events", []), "hit").get("damage", 0)), 14, "1 Mark at range 4 ignores Neutral resist (12 × 1.15 = 14)")
+	eq(int(bastion["hp"]), neutral_hp - 14, "Neutral resist does not save HP")
+	eq(int(bastion["shield"]), 20, "the plain shield stays too")
+
+	# A Bastion standing next to the target does not Intercept a Detonate.
+	_sim.reset_match({
+		"seed": 1, "flat_board": true, "skip_deploy": true,
+		"team_size": 2,
+		"classes": ["kestrel", "mender", "gloam", "bastion"],
+		"positions": [Vector2i(0, 0), Vector2i(4, 0), Vector2i(14, 14), Vector2i(4, 1)],
+		"mender_marks": 1, "rolls": [1],
+	})
+	_live_unit(1)["facing"] = "W"
+	var mender_hp := int(_unit(1)["hp"])
+	var guard_hp := int(_unit(3)["hp"])
+	var intercepted: Dictionary = _sim.submit({"type": "cast", "spell": "detonate", "to": Vector2i(4, 0), "seat": 0})
+	var intercept_hit := _first_event_where(intercepted.get("events", []), "hit")
+	eq(int(intercept_hit.get("damage", 0)), 14, "the guarded body still takes the full 14")
+	eq(int(intercept_hit.get("intercepted", 0)), 0, "Intercept moves none of it")
+	eq(int(_unit(1)["hp"]), mender_hp - 14, "Mender's HP takes the whole hit")
+	eq(int(_unit(3)["hp"]), guard_hp, "the guarding Bastion loses no HP")
+
+
 func _test_drop_shade_range() -> void:
 	eq(int(SpellKits.spell(SpellKits.DROP_SHADE)["ap"]), 1, "Drop Shade costs 1 AP")
 	eq(int(SpellKits.spell(SpellKits.DROP_SHADE)["mp"]), 0, "Drop Shade costs 0 MP")
@@ -7344,7 +7527,7 @@ func _test_preview_cast() -> void:
 	eq(preview["sample_damage"], 24, "Detonate M=3 samples 6+6*3 = 24")
 	eq(preview["hit_chance"], 75, "Detonate Chebyshev 2 uses Kestrel 75%")
 	eq(preview["legal"], true, "Detonate with M=3 is legal")
-	eq(preview["on_connect_text"], "6+6×M Air. Consumes Marks on the target.", "Detonate connect kit line")
+	eq(preview["on_connect_text"], "6+6×M Air. Pierces defenses. Consumes Marks on the target.", "Detonate connect kit line")
 	eq(preview["on_miss_text"], "Marks stay. AP/MP stay spent.", "Detonate miss kit line")
 	_assert_preview_did_not_mutate(before, "Detonate preview is read-only")
 	eq(_unit(1)["marks"], 3, "Detonate preview does not consume Marks")
@@ -7363,7 +7546,7 @@ func _test_preview_cast() -> void:
 	eq(preview["marks_on_target"], 0, "Detonate M=0 still reports marks_on_target")
 	eq(preview["sample_damage"], null, "Detonate M=0 does not lead with sample_damage=6")
 	eq(preview["formula"], "6+6*M", "needs_marks still names 6+6*M for when Marks exist")
-	eq(preview["on_connect_text"], "6+6×M Air. Consumes Marks on the target.", "needs_marks on_connect still explains 6+6×M")
+	eq(preview["on_connect_text"], "6+6×M Air. Pierces defenses. Consumes Marks on the target.", "needs_marks on_connect still explains 6+6×M")
 	truthy(_notes_has(preview["notes"], "6+6×M"), "needs_marks notes explain 6+6×M when Marks exist")
 	eq(_unit(0)["ap"], 6, "needs_marks preview does not spend AP")
 
