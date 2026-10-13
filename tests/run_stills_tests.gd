@@ -368,12 +368,15 @@ func _test_long_shadow() -> void:
 	eq(far, 20, "Long Shadow Intact does not change the hit")
 	eq(int(_u(1)["mp"]), pool + 2, "a 3-tile hit adds +2 MP immediately")
 	eq(int(_u(1).get("shadow_mp_kept", 0)), 2, "that +2 is remembered through the refill")
+	eq(bool(_u(1).get("shadow_this_turn", false)), true, "the first far hit spends this turn's grant")
 	_sim._mitigate_hit(_u(0), _u(1), 20)
-	eq(int(_u(1).get("shadow_hits", 0)), 2, "a second far hit in the same turn also counts")
-	eq(int(_u(1)["mp"]), pool + 4, "each far hit adds another +2 MP")
+	_sim._mitigate_hit(_u(0), _u(1), 20)
+	eq(int(_u(1).get("shadow_hits", 0)), 1, "later far hits in the same turn do not grant")
+	eq(int(_u(1)["mp"]), pool + 2, "three far hits in one turn add +2 MP total")
 	_end_turns(1)
-	eq(int(_u(1)["mp"]), int(_u(1)["max_mp"]) + 4, "the refill keeps the MP the hits added")
+	eq(int(_u(1)["mp"]), int(_u(1)["max_mp"]) + 2, "the refill keeps the MP the hit added")
 	eq(int(_u(1).get("shadow_mp_kept", 0)), 0, "the kept MP is folded into the refilled pool")
+	eq(bool(_u(1).get("shadow_this_turn", false)), false, "the next turn starts with the grant available")
 	_fight({}, _gear("long_shadow", "intact"), ["kestrel", "bastion"], [], [Vector2i(2, 7), Vector2i(6, 7)])
 	eq(_sim.chebyshev(_u(0)["pos"], _u(1)["pos"]), 4, "4 tiles still counts")
 	pool = int(_u(1)["mp"])
@@ -383,13 +386,15 @@ func _test_long_shadow() -> void:
 	var near := int(_sim._mitigate_hit(_u(0), _u(1), 20)["damage"])
 	eq(near, 22, "adjacent enemies deal +10% even before a long hit")
 	_fight({}, _gear("long_shadow", "overwound"), ["kestrel", "bastion"], [], [Vector2i(2, 7), Vector2i(6, 7)])
+	_u(1)["max_mp"] = 5
+	_u(1)["mp"] = 5
 	for n in 4:
 		_sim._mitigate_hit(_u(0), _u(1), 10)
-	eq(int(_u(1).get("shadow_hits", 0)), 4, "Overwound has no first-three cap")
-	eq(int(_u(1).get("shadow_mp_kept", 0)), 8, "every long hit adds +2 MP")
-	eq(int(_u(1)["mp"]), int(_u(1)["max_mp"]) + 8, "the MP is on Bastion before his turn")
+	eq(int(_u(1).get("shadow_hits", 0)), 1, "Overwound still grants once per turn")
+	eq(int(_u(1).get("shadow_mp_kept", 0)), 2, "four far hits add +2 MP, not +2 each")
+	eq(int(_u(1)["mp"]), 7, "the MP is on Bastion before his turn")
 	_end_turns(1)
-	eq(int(_u(1)["mp"]), int(_u(1)["max_mp"]) + 8, "Overwound MP stays past 5 after the refill")
+	eq(int(_u(1)["mp"]), 7, "Overwound MP stays past 5 after the refill")
 	_fight({}, _gear("long_shadow", "intact"), ["kestrel", "bastion"], [], [Vector2i(2, 7), Vector2i(4, 9)])
 	eq(_sim.chebyshev(_u(0)["pos"], _u(1)["pos"]), 2, "a diagonal of 2 is still 2 tiles")
 	eq(_sim.manhattan(_u(0)["pos"], _u(1)["pos"]), 4, "that same gap is 4 by Manhattan")
@@ -403,7 +408,8 @@ func _test_long_shadow() -> void:
 
 
 ## Kestrel's turn, distance 3 (two empty tiles between). Mark Shot soaked by
-## the shield, a second Mark Shot, then Detonate. Each one adds +2 MP now.
+## the shield, a second Mark Shot, then Detonate. The first far hit adds +2 MP.
+## The other two in that same turn do not. The next enemy turn can add +2 again.
 func _test_long_shadow_casts() -> void:
 	_sim.reset_match({
 		"seed": 1, "flat_board": true, "skip_deploy": true,
@@ -420,7 +426,7 @@ func _test_long_shadow_casts() -> void:
 		"seed": 1, "flat_board": true, "skip_deploy": true,
 		"classes": ["kestrel", "bastion"],
 		"positions": [Vector2i(1, 1), Vector2i(4, 1)],
-		"rolls": [1, 1, 1],
+		"rolls": [1, 1, 1, 1, 1],
 		"seat_gear": {1: _gear("long_shadow", "intact")},
 	})
 	eq(_sim.chebyshev(_u(0)["pos"], _u(1)["pos"]), 3, "two empty tiles between them is distance 3")
@@ -443,36 +449,66 @@ func _test_long_shadow_casts() -> void:
 	var shot: Dictionary = _sim.submit({"type": "cast", "spell": "mark_shot", "seat": 0, "to": _u(1)["pos"]})
 	var shot_hit := _hit_event(shot.get("events", []))
 	eq(int(shot_hit.get("damage", 0)) > 0, true, "the second Mark Shot deals HP damage")
-	eq(int(_u(1)["mp"]), 5, "the second Mark Shot gives another +2 MP")
-	eq(_gained_mp(shot.get("events", [])), 2, "the second hit records +2 MP")
+	eq(int(_u(1)["mp"]), 3, "the second Mark Shot does not give more MP")
+	eq(_gained_mp(shot.get("events", [])), 0, "the second hit records no MP")
+	eq(_float_says_mp(shot_hit), false, "the second hit does not show +2 MP")
 	var boom: Dictionary = _sim.submit({"type": "cast", "spell": "detonate", "seat": 0, "to": _u(1)["pos"]})
 	var boom_hit := _hit_event(boom.get("events", []))
 	eq(bool(boom.get("ok", false)), true, "Detonate connects from 3 tiles")
 	eq(int(boom_hit.get("damage", 0)) > 0, true, "Detonate deals HP damage")
-	eq(int(_u(1)["mp"]), 7, "Detonate gives the third +2 MP")
-	eq(int(_u(1).get("shadow_hits", 0)), 3, "all three hits granted MP")
-	eq(_gained_mp(boom.get("events", [])), 2, "Detonate records +2 MP")
-	eq(_float_says_mp(boom_hit), true, "Detonate shows +2 MP")
+	eq(int(_u(1)["mp"]), 3, "three far hits in one turn add +2 MP total")
+	eq(int(_u(1).get("shadow_hits", 0)), 1, "only the first far hit granted MP")
+	eq(_gained_mp(boom.get("events", [])), 0, "Detonate records no MP after the first hit")
+	eq(_float_says_mp(boom_hit), false, "Detonate does not show +2 MP after the first hit")
 	var hud := CombatHUD.new()
-	eq(hud._still_state_line(_u(1)).contains("Long Shadow +6 MP"), true, "Bastion's card names the gained MP")
+	eq(hud._still_state_line(_u(1)).contains("Long Shadow +2 MP"), true, "Bastion's card names the gained MP")
 	hud.free()
 	var guest_script := load("res://backend/combat_sim.gd")
 	var guest: Node = guest_script.new()
 	guest.apply_host_snapshot(_sim.snapshot())
 	var guest_mp := -1
 	var guest_kept := -1
+	var guest_spent := false
 	for unit in guest.snapshot()["units"]:
 		if int(unit.get("seat", -1)) == 1:
 			guest_mp = int(unit.get("mp", -1))
 			guest_kept = int(unit.get("shadow_mp_kept", -1))
-	eq(guest_mp, 7, "the other phone shows the MP gained on her turn")
-	eq(guest_kept, 6, "the other phone keeps the bonus through the refill")
+			guest_spent = bool(unit.get("shadow_this_turn", false))
+	eq(guest_mp, 3, "the other phone shows the MP gained on her turn")
+	eq(guest_kept, 2, "the other phone keeps the bonus through the refill")
+	eq(guest_spent, true, "the other phone already spent this turn's grant")
 	guest.free()
 	var cap := int(_u(1)["max_mp"])
 	_end_turns(1)
 	eq(int(_sim.snapshot()["active_seat"]), 1, "it is Bastion's turn")
-	eq(int(_u(1)["mp"]), cap + 6, "his refill does not throw away the +6 MP")
+	eq(int(_u(1)["mp"]), cap + 2, "his refill does not throw away the +2 MP")
 	eq(int(_u(1).get("shadow_mp_kept", 0)), 0, "the bonus now lives in his MP")
+	eq(bool(_u(1).get("shadow_this_turn", false)), false, "his turn start clears the once-per-turn flag")
+	_end_turns(1)
+	eq(int(_sim.snapshot()["active_seat"]), 0, "it is Kestrel's turn again")
+	var again_mp := int(_u(1)["mp"])
+	var again_shot: Dictionary = _sim.submit({"type": "cast", "spell": "mark_shot", "seat": 0, "to": _u(1)["pos"]})
+	eq(bool(again_shot.get("ok", false)), true, "the next turn's Mark Shot connects")
+	eq(int(_u(1)["mp"]), again_mp + 2, "a far hit on a later turn gives +2 MP again")
+	eq(int(_u(1).get("shadow_hits", 0)), 2, "each turn can grant once")
+	eq(_gained_mp(again_shot.get("events", [])), 2, "the later turn records +2 MP")
+	# Detonate is the first far hit of the turn, so it is the one that grants.
+	_sim.reset_match({
+		"seed": 1, "flat_board": true, "skip_deploy": true,
+		"classes": ["kestrel", "bastion"],
+		"positions": [Vector2i(1, 1), Vector2i(4, 1)],
+		"rolls": [1],
+		"seat_gear": {1: _gear("long_shadow", "intact")},
+	})
+	_u(0)["ap"] = 8
+	_u(1)["mp"] = 1
+	_u(1)["marks"] = 2
+	var only_boom: Dictionary = _sim.submit({"type": "cast", "spell": "detonate", "seat": 0, "to": _u(1)["pos"]})
+	var only_hit := _hit_event(only_boom.get("events", []))
+	eq(bool(only_boom.get("ok", false)), true, "Detonate is a hit from 3 tiles")
+	eq(int(_u(1)["mp"]), 3, "Detonate grants +2 MP when it is the first far hit")
+	eq(_gained_mp(only_boom.get("events", [])), 2, "Detonate records +2 MP")
+	eq(_float_says_mp(only_hit), true, "Detonate shows +2 MP")
 	# Another Bastion yanks this one from 4 tiles. The pull ends next door, so
 	# the distance has to be the gap at the hit, not the tile he lands on.
 	_sim.reset_match({
