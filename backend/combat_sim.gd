@@ -6826,6 +6826,9 @@ func _clear_resource(unit: Dictionary, field: String) -> int:
 func _still_turn_start(unit: Dictionary) -> void:
 	if unit.is_empty():
 		return
+	# Long Shadow may grant again on the first far hit of this turn.
+	for fighter in _units:
+		fighter["shadow_this_turn"] = false
 	unit["own_turn"] = int(unit.get("own_turn", 0)) + 1
 	var pen := int(unit.get("steadfast_ap", 0))
 	if pen > 0:
@@ -7207,7 +7210,9 @@ func _still_on_hit(actor: Dictionary, target: Dictionary, damage: int) -> int:
 
 ## Chebyshev at the moment of the hit, and 3 counts (two empty tiles between
 ## the fighters). Runs before shield, immunity, and any pull or push. A hit
-## that connects and then loses all of its HP to a shield still grants.
+## that connects and then loses all of its HP to a shield still grants, and
+## so does Detonate. Only the first such hit each turn grants. The flag
+## clears at the next turn start, so the next turn can grant again.
 ## +2 MP lands on the wearer immediately. shadow_mp_kept is added again after
 ## the next refill, which would otherwise replace that MP with max.
 func _still_note_kite(actor: Dictionary, target: Dictionary) -> int:
@@ -7217,7 +7222,10 @@ func _still_note_kite(actor: Dictionary, target: Dictionary) -> int:
 		return 0
 	if chebyshev(actor["pos"], target["pos"]) < 3:
 		return 0
+	if bool(target.get("shadow_this_turn", false)):
+		return 0
 	var gain := 2
+	target["shadow_this_turn"] = true
 	target["mp"] = int(target.get("mp", 0)) + gain
 	target["shadow_hits"] = int(target.get("shadow_hits", 0)) + 1
 	target["shadow_mp_kept"] = int(target.get("shadow_mp_kept", 0)) + gain
