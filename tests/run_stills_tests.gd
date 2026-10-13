@@ -183,6 +183,9 @@ func _test_still_categories() -> void:
 			if screen.find_child("Still_" + id, true, false) != null:
 				listed += 1
 		eq(listed, 14, "%s All lists every Still" % where)
+		var compact := screen.find_child("Still_gathered_sand", true, false) as InventoryScreen.InvTile
+		eq(compact.custom_minimum_size, InventoryScreen.STILL_TILE, "%s Still tiles use the compact size" % where)
+		eq(compact.custom_minimum_size.x < 112, true, "%s Still tiles are smaller than the old grid" % where)
 		eq((screen.find_child("Still_gathered_sand", true, false) as InventoryScreen.InvTile).tag, "Defensive", "%s Gathered Sand is tagged Defensive" % where)
 		screen.set_still_filter("offensive")
 		eq(screen.find_child("Still_shatterglass", true, false) != null, true, "%s Offensive keeps Shatterglass" % where)

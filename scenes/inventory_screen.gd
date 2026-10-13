@@ -48,7 +48,10 @@ const _STILL_CHOICES: Array[Dictionary] = [
 	{"id": "defensive", "node": "StillFilterDefensive", "label": "Defensive"},
 	{"id": "support", "node": "StillFilterSupport", "label": "Support"},
 ]
-const STILL_TILE := Vector2(112, 108)
+## Equipment tiles are 64px. A Still tile is that icon, plus a compact
+## status line and category bar, so fourteen of them fit the phone panel.
+const STILL_ICON := 60.0
+const STILL_TILE := Vector2(96, 86)
 
 var font: Font
 var champion: String = "kestrel"
@@ -536,6 +539,7 @@ func _build() -> void:
 	_rarity_row.add_theme_constant_override("separation", 4)
 	right.add_child(_rarity_row)
 	var scroll := ScrollContainer.new()
+	scroll.name = "ItemScroll"
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	right.add_child(scroll)
@@ -841,7 +845,7 @@ func _still_matches(still_id: String) -> bool:
 
 func _refresh_grid() -> void:
 	_clear(_grid)
-	_grid.columns = 5 if tab == "stills" else 6
+	_grid.columns = _still_columns() if tab == "stills" else 6
 	if tab != "stills" and _fragments != null:
 		_fragments.visible = false
 		_fragments.text = ""
@@ -923,6 +927,7 @@ func _refresh_grid() -> void:
 			if shown == 0:
 				_grid_note("No %s Stills." % StillVault.category_label(still_filter))
 			_paint_still_fragments()
+			call_deferred("_fit_still_columns")
 		"cosmetics":
 			var any := false
 			for sku in KoliseoWallet.SHOP_ORDER:
@@ -937,6 +942,25 @@ func _refresh_grid() -> void:
 				t.pressed.connect(select.bind({"kind": "sku", "sku": sku}))
 			if not any:
 				_grid_note("No cosmetics yet. The trophy Shop sells frames, titles, tints and the pet.")
+
+
+## As many columns as the panel is wide, so the fourteen Stills stay
+## in view instead of running off the right or into a third clipped row.
+func _still_columns() -> int:
+	var scroll := _grid.get_parent() as ScrollContainer
+	var width := scroll.size.x if scroll != null else 0.0
+	if width < STILL_TILE.x:
+		return 7
+	var sep := float(_grid.get_theme_constant("h_separation"))
+	return maxi(1, int((width + sep) / (STILL_TILE.x + sep)))
+
+
+func _fit_still_columns() -> void:
+	if tab != "stills" or _grid == null:
+		return
+	var cols := _still_columns()
+	if _grid.columns != cols:
+		_grid.columns = cols
 
 
 func _grid_tile(node_name: String, tile_size: Vector2 = Vector2(TILE, TILE)) -> InvTile:
@@ -1088,7 +1112,7 @@ func _refresh_detail() -> void:
 		var frag_icon := TextureRect.new()
 		frag_icon.name = "StillFragmentIcon"
 		frag_icon.texture = StillVault.icon(id, true)
-		frag_icon.custom_minimum_size = Vector2(36, 36)
+		frag_icon.custom_minimum_size = Vector2(64, 64)
 		frag_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		frag_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		frag_row.add_child(frag_icon)
@@ -1213,8 +1237,8 @@ class InvTile extends Button:
 		draw_rect(r.grow(-3), Color(0.20, 0.17, 0.12, 0.9) if filled else Color(0.09, 0.08, 0.06, 0.9))
 		var frame := tint if filled else (Color(0.42, 0.42, 0.42) if icon_tex != null else Color(0.45, 0.37, 0.24))
 		draw_rect(r, Color(1.0, 0.9, 0.55) if picked else frame, false, 3.0 if picked else 1.5)
-		var tag_h := 16.0 if tag != "" else 0.0
-		var foot_h := 14.0 if foot != "" or count > 0 or plus > 0 else 0.0
+		var tag_h := 13.0 if tag != "" else 0.0
+		var foot_h := (12.0 if tag != "" else 14.0) if foot != "" or count > 0 or plus > 0 else 0.0
 		var c := Vector2(size.x * 0.5, (size.y - tag_h - foot_h) * 0.5)
 		var s := size.x * 0.28
 		var ink := tint if filled else Color(0.40, 0.34, 0.24)
@@ -1223,10 +1247,16 @@ class InvTile extends Button:
 			art.size.y = maxf(8.0, art.size.y - tag_h - foot_h)
 		if icon_tex != null:
 			# Soft rarity glow behind the item art, then the art. Locked Stills stay grey.
+			# Still tiles keep the hourglass near an equipment icon (about 60px),
+			# centered above the status line and the category bar.
+			var dest := art
+			if tag != "":
+				var side := minf(InventoryScreen.STILL_ICON, minf(art.size.x - 4.0, art.size.y))
+				dest = Rect2(Vector2((size.x - side) * 0.5, art.position.y + maxf(0.0, (art.size.y - side) * 0.5)), Vector2(side, side))
 			if filled:
-				draw_circle(c, minf(art.size.x, art.size.y) * 0.34, Color(tint.r, tint.g, tint.b, 0.16))
+				draw_circle(dest.get_center(), minf(dest.size.x, dest.size.y) * 0.34, Color(tint.r, tint.g, tint.b, 0.16))
 			var ink_mod := Color(1, 1, 1, 1) if filled else Color(0.55, 0.55, 0.55, 0.45)
-			draw_texture_rect(icon_tex, art, false, ink_mod)
+			draw_texture_rect(icon_tex, dest, false, ink_mod)
 		else:
 			_glyph(c, s, ink)
 		var f := font if font != null else ThemeDB.fallback_font
@@ -1242,13 +1272,16 @@ class InvTile extends Button:
 		elif foot != "":
 			var fs := 10
 			var fw := f.get_string_size(foot, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
-			draw_rect(Rect2(Vector2(2, foot_y - 14), Vector2(size.x - 4, 13)), Color(0.04, 0.03, 0.02, 0.82))
-			draw_string(f, Vector2(maxf((size.x - fw) * 0.5, 2), foot_y - 3), foot, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color(0.75, 0.75, 0.75) if not filled else Color(1, 0.95, 0.7))
+			while fw > size.x - 6.0 and fs > 8:
+				fs -= 1
+				fw = f.get_string_size(foot, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+			draw_rect(Rect2(Vector2(2, foot_y - foot_h), Vector2(size.x - 4, foot_h - 1)), Color(0.04, 0.03, 0.02, 0.82))
+			draw_string(f, Vector2(maxf((size.x - fw) * 0.5, 2), foot_y - 2), foot, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color(0.75, 0.75, 0.75) if not filled else Color(1, 0.95, 0.7))
 		if tag != "":
-			var strip := Rect2(Vector2(2, size.y - tag_h), Vector2(size.x - 4, tag_h - 2))
+			var strip := Rect2(Vector2(2, size.y - tag_h + 1), Vector2(size.x - 4, tag_h - 2))
 			draw_rect(strip, tag_tint)
-			var tw := f.get_string_size(tag, HORIZONTAL_ALIGNMENT_LEFT, -1, 11).x
-			draw_string(f, Vector2((size.x - tw) * 0.5, size.y - 5), tag, HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color(0.10, 0.06, 0.04))
+			var tw := f.get_string_size(tag, HORIZONTAL_ALIGNMENT_LEFT, -1, 10).x
+			draw_string(f, Vector2((size.x - tw) * 0.5, size.y - 3), tag, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color(0.10, 0.06, 0.04))
 		if badge != "":
 			draw_circle(Vector2(size.x - 9, 9), 8, Color(0.66, 0.84, 0.25) if badge == "E" else Color(0.62, 0.36, 0.95))
 			var bw := f.get_string_size(badge, HORIZONTAL_ALIGNMENT_LEFT, -1, 10).x
