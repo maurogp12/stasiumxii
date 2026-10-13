@@ -1,7 +1,7 @@
 extends SceneTree
 
-## 2400×1080 phone fit: Bastion burning with Ward disabled (label "burning",
-## no cost, no dome), then the log open on the Magma line.
+## 2400×1080 phone fit: Bastion's next turn, still burning, Ward available
+## (the 1-turn shield lock already ended), then the log open on the Magma line.
 ## xvfb-run -s "-screen 0 2560x1440x24" godot --rendering-driver opengl3 --path . -s res://tests/shot_magma_log.gd -- /opt/cursor/artifacts/magma_burn --mobile-frame
 
 var _dir := "/opt/cursor/artifacts/magma_burn"
@@ -112,8 +112,11 @@ func _shoot_board() -> bool:
 	if not left.contains("BURN"):
 		push_error("Bastion's card is not burning")
 		return false
-	if button == null or not disabled or badge != "burning":
-		push_error("Ward button is not disabled with the burning label")
+	if left.contains("NO SHIELD"):
+		push_error("the shield lock is still on his card after his turn opened")
+		return false
+	if button == null or disabled or badge != "":
+		push_error("Ward should be available while he is still burning (disabled=%s badge=%s)" % [disabled, badge])
 		return false
 	if coach.contains("Ward:") or coach.contains("+20") or coach.contains("shield on"):
 		push_error("the bottom bar still claims a shield landed: %s" % coach)
@@ -152,7 +155,7 @@ func _shoot_log() -> bool:
 	if hud._log_panel == null or not hud._log_panel.visible:
 		push_error("log panel is not visible")
 		return true
-	if not body.contains("Magma: Ironjaw on Bastion, Burn 3 stacks, no shields while burning"):
+	if not body.contains("Magma: Ironjaw on Bastion, Burn 3 stacks for 2 turns, no shields for 1 turn"):
 		push_error("log is missing the Magma line")
 		return true
 	if body.contains("Ward:") or body.contains("+20 shield") or body.contains("wards "):
@@ -231,8 +234,11 @@ func _play() -> bool:
 	for intent in sim.legal_intents(1):
 		if str(intent.get("spell", "")) == "ward":
 			offered = true
-	if offered:
-		push_error("Ward is still offered while Bastion is burning")
+	if not offered:
+		push_error("Ward should be offered on his next turn while he is still burning")
+		return false
+	if int(bastion.get("no_shield", 0)) != 0:
+		push_error("the shield lock should have ended at his turn start")
 		return false
 	return true
 

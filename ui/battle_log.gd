@@ -672,8 +672,8 @@ static func _shield_blocked_line(event: Dictionary, snap: Dictionary) -> String:
 	var who := _name(snap, int(event.get("target_seat", event.get("seat", -1))))
 	var source := str(event.get("source", ""))
 	if source != "":
-		return "Shield blocked (%s). %s is burning." % [source, who]
-	return "Shield blocked. %s is burning." % who
+		return "Shield blocked (%s). %s cannot take a shield." % [source, who]
+	return "Shield blocked. %s cannot take a shield." % who
 
 
 static func _blend_line(event: Dictionary, snap: Dictionary) -> String:
@@ -682,7 +682,7 @@ static func _blend_line(event: Dictionary, snap: Dictionary) -> String:
 	var name := str(event.get("name", event.get("blend", "Blend")))
 	if str(event.get("blend", "")) == "magma":
 		var stacks := int(event.get("burn_stacks", 0))
-		return "%s: %s on %s, Burn %d stacks, no shields while burning." % [name, caster, target, stacks]
+		return "%s: %s on %s, Burn %d stacks for 2 turns, no shields for 1 turn." % [name, caster, target, stacks]
 	var text := "%s: %s on %s" % [name, caster, target]
 	var damage := int(event.get("damage", event.get("chip", 0)))
 	if damage > 0:
