@@ -83,11 +83,15 @@ const HAZARD_MAX_STACKS := 3
 ## Lava: enter damage (Fire) then Burn ticks at the victim's turn start.
 const LAVA_ENTER_HP: Array[int] = [0, 10, 10, 15]
 # Mauro 6 Oct 2026: "each stack is 4 points burn" (was 4 / 5 / 5).
+# Mauro 13 Oct 2026: every stack lasts 2 turns (was 2 / 3 / 4).
 const BURN_STACK_HP: Array[int] = [0, 4, 8, 12]
-const BURN_STACK_TURNS: Array[int] = [0, 2, 3, 4]
+const BURN_STACK_TURNS: Array[int] = [0, 2, 2, 2]
 const BURN_MAX_STACKS := 3
 const LAVA_LAND_HP := 10
-const BURN_DURATION := 4
+const BURN_DURATION := 2
+## Magma only. 1 until the victim's next turn starts, then he can take shields
+## again while Burn is still ticking. A later Magma sets it back to 1.
+const SHIELD_LOCK_TURNS := 1
 ## Mud Slow: −1/−2/−3 MP on the victim's next turn (1 turn, refresh).
 const SLOW_MP := 1
 const SLOW_TURNS := 1
@@ -128,7 +132,7 @@ const FACING_VEC := {
 ## Castigo is per terrain: lava is Soft Lock (6 HP on land, then stacked Burn),
 ## water silences one random spell (one-shot, no duration), mud is Slow −1 MP
 ## for 1 turn. Superseded by the Map push stacks sheet (see HAZARD_MAX_STACKS): Burn stacks tick 4/5/5 HP at the
-## victim's turn start, duration 4, max 3. Re-push adds a stack up to 3 and
+## victim's turn start, 2 turns at every stack, max 3. Re-push adds a stack up to 3 and
 ## refreshes duration. Cleanse clears Burn. Burn continues after leaving lava.
 ## Death is checked after each tick. burn_stacks and burn_remaining live on
 ## the unit snapshot for Godot chrome and host sync.
@@ -579,8 +583,8 @@ func legal_intents(seat: int) -> Array:
 		if target_kind == "self":
 			if bool(def.get("once_per_turn", false)) and bool(actor.get("ward_used", false)):
 				continue
-			# A burning Bastion with nobody else to shield does not get a Ward
-			# cast. The button stays dark and the submit refunds.
+			# A shield-locked Bastion with nobody else to shield does not get a
+			# Ward cast. The button stays dark and the submit refunds.
 			if str(spell_id) == SpellKits.WARD and not _ward_has_gain(actor, def):
 				continue
 			out.append({"type": "cast", "spell": spell_id, "to": from, "seat": seat})
@@ -1158,7 +1162,7 @@ func snapshot() -> Dictionary:
 		"open_notes": {
 			"A03": "Omitted: Gust/wind heading. WindMod omitted (not invented as 1.0).",
 			"A04": "Crit *roll* OFF. CritMult held at 1.0. No elemental riders.",
-			"A05": "Open: Resist 0, damage rounded to nearest int. WindMod omitted from the formula. Locked Stun (A′): stun_remaining on the unit; reject move/cast/face with stunned_cannot_act; auto end_turn on that seat's turn start (player never presses End Turn). Decrement at start of that unit's turn after setting stunned-this-turn so Stun 1 covers the incoming (skipped) turn. Director Locked Shoulder: occupied dest is push_blocked (hard body-block, no bounce/stagger; Impact stays the hit +1). Walkable empty dest pushes for +1 Impact. OOB / truly blocked (not lava) bounces (target stays) and staggers (4 HP; +1 MP if current MP >= 1) for +2 Impact only (no stack with +1). Map push stacks (Mauro 29 Sep 2026): a forced push onto a hazard stacks 1–3 while live. Lava enter 10/10/15 Fire then Burn 4×2 / 8×3 / 12×4 (4 per stack, Mauro 6 Oct 2026); water Breathless (1 spell silenced 1/2/3 turns, same slot); mud Slow −1/−2/−3 MP; Windmere ice Frozen (no melee 1/2 turns, 3 = Paralyzed); Stormspire charge Electrocuted −1/−2/−3 AP. Cleanse takes away one debuff per cast (Mauro 6 Oct 2026). Voluntary walk onto hazards stays impassable.",
+			"A05": "Open: Resist 0, damage rounded to nearest int. WindMod omitted from the formula. Locked Stun (A′): stun_remaining on the unit; reject move/cast/face with stunned_cannot_act; auto end_turn on that seat's turn start (player never presses End Turn). Decrement at start of that unit's turn after setting stunned-this-turn so Stun 1 covers the incoming (skipped) turn. Director Locked Shoulder: occupied dest is push_blocked (hard body-block, no bounce/stagger; Impact stays the hit +1). Walkable empty dest pushes for +1 Impact. OOB / truly blocked (not lava) bounces (target stays) and staggers (4 HP; +1 MP if current MP >= 1) for +2 Impact only (no stack with +1). Map push stacks (Mauro 29 Sep 2026): a forced push onto a hazard stacks 1–3 while live. Lava enter 10/10/15 Fire then Burn 4/8/12 HP for 2 turns (Mauro 13 Oct 2026); Magma blocks new shields for 1 turn from the latest hit; water Breathless (1 spell silenced 1/2/3 turns, same slot); mud Slow −1/−2/−3 MP; Windmere ice Frozen (no melee 1/2 turns, 3 = Paralyzed); Stormspire charge Electrocuted −1/−2/−3 AP. Cleanse takes away one debuff per cast (Mauro 6 Oct 2026). Voluntary walk onto hazards stays impassable.",
 			"A06": "Advance (Locked teleport): dest-click snap, 3 AP / 0 MP, client path ignored. Range gate is exactly 2 cardinal spaces (N/S/E/W at Manhattan 2). Manhattan 1, diagonals, and any non-cardinal are rejected. Dest must pass the same stand-on gates as walk (not mud, water, or lava, not occupied, climb<=1 / drop<=2). Gate only — no terrain+elev MP spend. Illegal dest refunds. legal_intents / preview_cast use the shared helper. leftover MP still walks (legal_intents is mp>0, not AP). No hop path. +1 Impact if Chebyshev 1 to an enemy after landing. Facing unchanged — Advance does not auto-face.",
 			"A07": "Provisional Open: back = 90° rear cone (facing-axis dominates and is opposite). Front/side ×1.00, back ×1.20.",
 			"deploy": "Locked flow: simultaneous place/reposition, Ready gated on place, both ready → lock → Turn 1. Proposed (shipped live): seed-sampled ~6-cell blobs (2×3 or organic), interior allowed, min opening Chebyshev 3 (prefer 4–6), reject overlap and same-edge camping. Open: fog/hidden enemy, deploy timer, multi-unit. No networking.",
@@ -1654,7 +1658,7 @@ func preview_cast(spell_or_intent: Variant, from: Variant = null, to: Variant = 
 		out["impact_before"] = impact_before
 		out["would_stun"] = impact_before == int(def.get("stun_if_impact_before", SpellKits.IMPACT_CAP)) and impact_before >= spend
 	elif spell_id == SpellKits.SHOULDER:
-		notes.append("Push 1 along the line. Director Locked Shoulder: walkable empty dest pushes (+1 Impact). Occupied dest is push_blocked (hard body-block). OOB / truly blocked dest bounces + staggers (4 HP; +1 MP if MP>=1) for +2 Impact only (no stack with +1). Hazard pushes stack 1–3 (Map push stacks): lava 10/10/15 + Burn 4×2 / 8×3 / 12×4 (4 per stack, Mauro 6 Oct 2026), water Breathless, mud Slow −1/−2/−3 MP, Windmere ice Frozen, Stormspire charge Electrocuted. Voluntary walk and Advance refuse mud and water.")
+		notes.append("Push 1 along the line. Director Locked Shoulder: walkable empty dest pushes (+1 Impact). Occupied dest is push_blocked (hard body-block). OOB / truly blocked dest bounces + staggers (4 HP; +1 MP if MP>=1) for +2 Impact only (no stack with +1). Hazard pushes stack 1–3 (Map push stacks): lava 10/10/15 + Burn 4/8/12 HP for 2 turns (Mauro 13 Oct 2026), water Breathless, mud Slow −1/−2/−3 MP, Windmere ice Frozen, Stormspire charge Electrocuted. Voluntary walk and Advance refuse mud and water.")
 
 	out["notes"] = notes
 	out["reason"] = _preview_reason(def, actor, target, from_cell, to_cell, out["in_range"])
@@ -1941,8 +1945,9 @@ func _spend_mp(actor: Dictionary, amount: int) -> void:
 ##         Earth pushes into a wall: 8 instead of the stagger 4, once per target
 ##         per turn (see _apply_bounce_stagger).
 ##   Water damage: the target loses 1 MP at the start of its next turn (once).
-##   Fire  Burn 4 per stack at the target's turn start: 1 stack 4 for 2 turns,
-##         2 stacks 8 for 3, 3 stacks 12 for 4. A shield never soaks the tick.
+##   Fire  Burn 4 per stack at the target's turn start, 2 turns at every stack
+##         (4 / 8 / 12). A shield never soaks the tick. Magma, not Burn itself,
+##         blocks new shields for 1 turn (see no_shield).
 ## Residue: the hit writes its element on the target for 2 of the target's own
 ## turns; one per body, same element refreshes, a new one overwrites, death
 ## clears it, Cleanse does not. Heals to allies write none. Neutral: nothing.
@@ -2200,12 +2205,16 @@ func _try_blend(actor: Dictionary, target: Dictionary, el: String, allow_infusio
 			_still_on_debuff(target, "magma")
 			_apply_burn(target)
 			var burn := _apply_burn(target)
+			# Once per Magma, not once per extra stack. A later Magma sets it
+			# back to 1. It is not the Burn clock.
+			_apply_shield_lock(target)
 			var stacks := int(burn.get("stacks", target.get("burn_stacks", 0)))
 			event["burn_stacks"] = stacks
 			event["burn_remaining"] = int(burn.get("remaining", 0))
 			event["burn_tick"] = int(burn.get("hp_per_tick", _burn_tick_hp(stacks)))
+			event["no_shield"] = int(target.get("no_shield", 0))
 			event["debuffs"] = []
-			note = "Burn %d stacks, no shields while burning" % stacks
+			note = "Burn %d stacks for %d turns, no shields for 1 turn" % [stacks, int(burn.get("remaining", 0))]
 		"mire":
 			if _ultra_unbound(target):
 				event["ignored"] = "Unbound"
@@ -2639,6 +2648,8 @@ func _make_unit(seat: int, class_id: String, unit_name: String, element: String,
 		# Soft Lock lava Burn. Stacks 0–3 and turns left. Both 0 means not burning.
 		"burn_stacks": 0,
 		"burn_remaining": 0,
+		# Magma's shield lock. 1 until this unit's next turn start. Burn alone is 0.
+		"no_shield": 0,
 		# Soft Lock water: spell ids silenced on landing. One-shot, no duration.
 		"silenced_spells": [],
 		# Map push stacks. Slow (mud) −stack MP next turn.
@@ -3054,6 +3065,8 @@ func _handoff_seat(actor: Dictionary, auto_skip: bool, skip_reason: String = "")
 	# Mud Slow: −stack MP for this turn only. A stunned skip still consumes it.
 	_consume_mud_slow(next_unit)
 	_consume_electrocuted(next_unit)
+	# Magma's shield lock ends as this turn opens, before he can Ward.
+	_tick_shield_lock(next_unit)
 	# Soft Lock Burn ticks once this turn has started, including a stunned skip.
 	_tick_burn(next_unit)
 	return next_unit
@@ -5379,7 +5392,7 @@ func _append_lava_castigo(target: Dictionary, burn_info: Dictionary) -> void:
 		"refreshed": refreshed,
 		"previous": int(burn_info.get("previous", 0)),
 		"target_seat": target["seat"],
-		"soft_lock": "Map push stack — lava enter 10/10/15 Fire, Burn 4×2 / 8×3 / 12×4 (4 per stack, Mauro 6 Oct 2026), max 3",
+		"soft_lock": "Map push stack — lava enter 10/10/15 Fire, Burn 4/8/12 HP for 2 turns (Mauro 13 Oct 2026), max 3",
 		"coach": burn_coach,
 	})
 
@@ -5463,7 +5476,7 @@ func _tick_burn(unit: Dictionary) -> void:
 		"stacks": int(unit.get("burn_stacks", 0)),
 		"remaining": left,
 		"duration": BURN_DURATION,
-		"soft_lock": "Soft Lock CASTIGO — Burn tick uses current stacks, duration 4",
+		"soft_lock": "Soft Lock CASTIGO — Burn tick uses current stacks, duration 2",
 		"coach": "%s burns for %d HP (stack %d, %d tick%s left)." % [
 			str(unit.get("name", "Unit")),
 			tick,
@@ -5904,8 +5917,8 @@ func _submit_foe_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
 		if after_shield > before_shield:
 			actor["shield_turns"] = maxi(int(actor.get("shield_turns", 0)), 2)
 			_last_coach = "%s raises %s (+%d Ward)." % [actor["name"], name, ward_add]
-		elif _is_burning(actor):
-			_last_coach = "Shield blocked. %s is burning." % str(actor.get("name", "Unit"))
+		elif _shield_locked(actor):
+			_last_coach = "Shield blocked. %s cannot take a shield." % str(actor.get("name", "Unit"))
 		else:
 			_last_coach = "%s raises %s (+%d Ward)." % [actor["name"], name, ward_add]
 		_last_events.append({"type": "cast", "spell": spell_id, "seat": actor["seat"], "caster_cell": caster_cell, "shield": int(actor["shield"]), "ap_spent": ap_cost, "foe": true, "coach": _last_coach})
@@ -7248,7 +7261,30 @@ func _is_burning(unit: Dictionary) -> bool:
 	return int(unit.get("burn_stacks", 0)) > 0 and int(unit.get("burn_remaining", 0)) > 0
 
 
-## A new shield is refused while Burn is live. The shield already there stays.
+## Magma's 1-turn lock. Burn by itself does not block shields.
+func _shield_locked(unit: Dictionary) -> bool:
+	if unit.is_empty():
+		return false
+	return int(unit.get("no_shield", 0)) > 0
+
+
+## Latest Magma. Does not stack past 1.
+func _apply_shield_lock(unit: Dictionary) -> void:
+	if unit.is_empty():
+		return
+	unit["no_shield"] = SHIELD_LOCK_TURNS
+
+
+## Spent at the victim's turn start, before he can cast. A stunned skip spends it too.
+func _tick_shield_lock(unit: Dictionary) -> void:
+	if unit.is_empty() or not bool(unit.get("alive", false)):
+		return
+	if int(unit.get("no_shield", 0)) <= 0:
+		return
+	unit["no_shield"] = int(unit["no_shield"]) - 1
+
+
+## A new shield is refused while the Magma lock is up. The shield already there stays.
 func _note_shield_blocked(unit: Dictionary, source: String, amount: int) -> void:
 	_last_events.append({
 		"type": "shield_blocked",
@@ -7256,7 +7292,8 @@ func _note_shield_blocked(unit: Dictionary, source: String, amount: int) -> void
 		"source": source,
 		"amount": amount,
 		"burn_stacks": int(unit.get("burn_stacks", 0)),
-		"coach": "Shield blocked. %s is burning." % str(unit.get("name", "Unit")),
+		"no_shield": int(unit.get("no_shield", 0)),
+		"coach": "Shield blocked. %s cannot take a shield." % str(unit.get("name", "Unit")),
 	})
 
 
@@ -7264,7 +7301,7 @@ func _still_gain_shield(unit: Dictionary, add: int, source: String = "Ward") -> 
 	var before := int(unit.get("shield", 0))
 	if add <= 0 or not _still_can_shield(unit):
 		return before
-	if _is_burning(unit):
+	if _shield_locked(unit):
 		_note_shield_blocked(unit, source, add)
 		return before
 	unit["shield"] = before + add
@@ -7338,6 +7375,7 @@ func _still_clear_debuff(unit: Dictionary, kind: String) -> void:
 		"burn":
 			unit["burn_remaining"] = 0
 			unit["burn_stacks"] = 0
+			unit["no_shield"] = 0
 		"slow":
 			unit["slow_remaining"] = 0
 			unit["slow_stacks"] = 0
@@ -7801,11 +7839,11 @@ func _resolve_revive(intent: Dictionary, actor: Dictionary, def: Dictionary, des
 	body["alive"] = true
 	body["hp"] = hp
 	var revive_shield := int(def.get("revive_shield", 0))
-	# Checked before the status wipe. A burning body does not stand up shielded.
-	if revive_shield > 0 and _is_burning(body):
+	# Checked before the status wipe. A shield-locked body does not stand up shielded.
+	if revive_shield > 0 and _shield_locked(body):
 		_note_shield_blocked(body, "Rekindle", revive_shield)
 		revive_shield = 0
-	for key in ["stun_remaining", "burn_remaining", "burn_stacks", "marks", "shield", "hit_immunity"]:
+	for key in ["stun_remaining", "burn_remaining", "burn_stacks", "no_shield", "marks", "shield", "hit_immunity"]:
 		if body.has(key):
 			body[key] = 0
 	body["stunned"] = false
@@ -8038,6 +8076,8 @@ func _strip_family(unit: Dictionary, family: String) -> void:
 	var keys: Array = _FAMILY_KEYS[family]
 	unit[keys[0]] = 0
 	unit[keys[1]] = 0
+	if family == "burn":
+		unit["no_shield"] = 0
 	if family == "breathless":
 		unit["breathless_spell"] = ""
 		unit["silenced_spells"] = []
@@ -8051,8 +8091,8 @@ func _strip_family(unit: Dictionary, family: String) -> void:
 ## at once and starts the same one-turn cooldown. A fixture with invisible
 ## but no invisible_turns has no clock (tests / old snapshots).
 ## Who Ward would actually touch. `gain` is the shield that would land (0 at
-## the cap, while Withering, or while Burn is live). `blocked` is a burning
-## body that would have gained some. Nothing here is spent or written.
+## the cap, while Withering, or while the Magma shield lock is up). `blocked`
+## is a locked body that would have gained some. Nothing here is spent or written.
 func _ward_recipients(actor: Dictionary, def: Dictionary) -> Array:
 	var radius := int(def.get("ward_radius", 3))
 	var add := int(def.get("shield", 20))
@@ -8072,7 +8112,7 @@ func _ward_recipients(actor: Dictionary, def: Dictionary) -> Array:
 		var gain := 0
 		var blocked := false
 		if add > 0 and _still_can_shield(unit):
-			if _is_burning(unit):
+			if _shield_locked(unit):
 				blocked = true
 			else:
 				gain = mini(before + add, cap) - before
@@ -8098,21 +8138,21 @@ func _ward_has_gain(actor: Dictionary, def: Dictionary) -> bool:
 ## Mauro 9 Oct 2026: Bastion's Ward. 2 AP + 2 Aegis, once per turn. Every living
 ## ally within `ward_radius` (Chebyshev, Bastion included) gains +20 shield,
 ## capped at 40. The shield has no clock: it lasts until hits break it.
-## A burning body is skipped. If nobody would gain, the cast is refused before
-## AP, Aegis, or the once-per-turn flag are spent.
+## A shield-locked body is skipped. If nobody would gain, the cast is refused
+## before AP, Aegis, or the once-per-turn flag are spent.
 func _resolve_team_ward(intent: Dictionary, actor: Dictionary, def: Dictionary, ap_cost: int, mp_cost: int) -> Dictionary:
 	var rows := _ward_recipients(actor, def)
 	var gainers := 0
-	var burning_block := _is_burning(actor)
+	var shield_block := _shield_locked(actor)
 	for raw in rows:
 		var row: Dictionary = raw
 		if int(row.get("gain", 0)) > 0:
 			gainers += 1
 		if bool(row.get("blocked", false)):
-			burning_block = true
+			shield_block = true
 	if gainers <= 0:
-		if burning_block:
-			return _reject(intent, "burning", "REJECT — %s is burning. Ward refunded." % str(actor.get("name", "Bastion")))
+		if shield_block:
+			return _reject(intent, "no_shield", "REJECT — %s cannot take a shield. Ward refunded." % str(actor.get("name", "Bastion")))
 		return _reject(intent, "no_target", "REJECT — Ward would shield no one (refund).")
 	actor["ap"] = int(actor["ap"]) - ap_cost
 	_spend_mp(actor, mp_cost)

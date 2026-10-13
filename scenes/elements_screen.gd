@@ -32,7 +32,7 @@ const TINT := {
 const ELEMENT_TEXT := {
 	"air": "Reach and speed. Spells that reach 3+ tiles reach 1 farther (not Mark Shot). A melee hit gives you +1 MP to step away.",
 	"earth": "Weight. After the hit you are Grounded until your next turn (Bastion: no push can move you). Your pushes into a wall or the edge hit for 8 instead of 4.",
-	"fire": "Burn. Each Fire hit adds a Burn stack (up to 3). It burns 4 per stack at the start of its turns: 1 stack 4 for 2 turns, 2 stacks 8 for 3 turns, 3 stacks 12 for 4 turns. A shield does not stop those ticks, and while it is burning it cannot gain a new shield. Mender's Cleanse takes it off.",
+	"fire": "Burn. Each Fire hit adds a Burn stack (up to 3). It burns 4 per stack at the start of its turns, for 2 turns: 1 stack 4, 2 stacks 8, 3 stacks 12. A shield does not stop those ticks. Mender's Cleanse takes it off.",
 	"water": "Flow. Damage takes 1 MP from the enemy at its next turn start. Your heals heal 4 more.",
 }
 
@@ -43,7 +43,7 @@ const ELEMENT_TEXT := {
 const COUNTER_TIPS := [
 	["Ironjaw vs Kestrel", "Water hits take 1 MP from her and Mire (Earth + Water) taxes her first step: catch her before she kites away. Air gives you +1 MP after a melee hit."],
 	["Kestrel vs Gloam", "Flare (Air + Fire) reveals him when he dives Invisible; Drift-Pin (Air + Earth) throws him back into a wall."],
-	["Gloam vs Bastion", "Fire: Burn hurts him through his shield and does not trigger Thorns. While he is burning he cannot Ward or gain any new shield."],
+	["Gloam vs Bastion", "Fire: Burn hurts him through his shield and does not trigger Thorns. Magma locks new shields for 1 turn; after that he can Ward while he is still burning."],
 	["Bastion vs Ironjaw", "Hold Line pulls him in. Water slows what is left of his approach. Earth keeps you from being pushed."],
 	["Team vs Mender", "Spark (Air + Water) the Mender: her heals get 40% weaker and Cleanse cannot remove it."],
 ]
@@ -52,7 +52,7 @@ const BLEND_ROWS := [
 	["air", "earth", "Drift-Pin", "Slides the enemy 1 tile away from you. If a wall, the edge or a body is in the way it hits for 8 instead and is Pinned: it cannot walk on its next turn (Advance and Ambush still work). Never twice in a row on the same enemy.", "Ranged fighters keeping melee away; slamming enemies into walls."],
 	["air", "water", "Spark", "Electricity: 10 damage that ignores resist (a shield soaks it first). Until the end of its next turn the enemy gets 40% less healing, and if it is a healer its own heals are 40% weaker. Cleanse cannot remove it.", "Beating Mender: Spark the healer and the team she keeps alive."],
 	["air", "fire", "Flare", "A burst of light: every Invisible enemy within 2 tiles of the target is revealed, and the target gets a Burn stack (4 per stack, up to 3).", "Kestrel against a diving Gloam; burning through Bastion's shield (Burn ignores shields and Thorns)."],
-	["earth", "fire", "Magma", "Adds 2 Burn stacks. The Fire hit's own +1 still applies, up to 3 (4, then 8, then 12 per tick). While burning, the enemy cannot gain a new shield; a shield it already has does not stop the ticks. The tile they end their next turn on still burns for 4 until your next turn.", "Bastion, who cannot Ward while he burns, and enemies stuck on a tile."],
+	["earth", "fire", "Magma", "Adds 2 Burn stacks. The Fire hit's own +1 still applies, up to 3 (4, then 8, then 12 per tick, for 2 turns). For 1 turn from this hit he cannot gain a new shield or cast Ward. On his next turn he can, even if he is still burning. Hitting him with Magma again refreshes that 1 turn. A shield he already has does not stop the ticks. The tile they end their next turn on still burns for 4 until your next turn. Cleanse takes the Burn and the shield lock off.", "Bastion, for that one locked turn, and enemies stuck on a tile."],
 	["earth", "water", "Mire", "On its next turn, the enemy's first step off its tile costs +1 MP. Being pushed is free.", "Melee fighters holding an enemy next to them."],
 	["fire", "water", "Steam", "The enemy's tile blocks line of sight until your next turn. The enemy standing there can still be hit; once it moves, nobody can shoot through that tile.", "Blocking enemy archers and casters, covering a retreat."],
 ]

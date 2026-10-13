@@ -561,7 +561,8 @@ static func vault_button_reason(unit: Dictionary, snap: Dictionary, vault_legal:
 
 ## Why Ward is dark on Bastion's own turn. Blank when he can cast, when the
 ## turn is not his, or when the lock is AP / Aegis / silence / already used.
-## "burning" only when he is burning and nobody else in range would gain a shield.
+## "no shield" only while Magma's 1-turn lock is up and nobody else in range
+## would gain a shield. Burn by itself does not darken the button.
 static func ward_button_reason(unit: Dictionary, snap: Dictionary, ward_legal: bool) -> String:
 	if unit.is_empty() or str(unit.get("class_id", "")) != SpellKits.CLASS_BASTION:
 		return ""
@@ -581,9 +582,9 @@ static func ward_button_reason(unit: Dictionary, snap: Dictionary, ward_legal: b
 	var silenced: Variant = unit.get("silenced_spells", [])
 	if typeof(silenced) == TYPE_ARRAY and (silenced as Array).has(SpellKits.WARD):
 		return ""
-	if int(unit.get("burn_stacks", 0)) <= 0 or int(unit.get("burn_remaining", 0)) <= 0:
+	if int(unit.get("no_shield", 0)) <= 0:
 		return ""
-	return "burning"
+	return "no shield"
 
 
 static func _vault_enemy_adjacent(unit: Dictionary, snap: Dictionary) -> bool:
@@ -3078,6 +3079,8 @@ func _unit_card_text(unit: Dictionary, _active: bool, snap: Dictionary = {}) -> 
 		notes += "  [b]STUN[/b]"
 	if unit_is_burning(unit):
 		notes += "  [b]BURN[/b] ×%d %d" % [unit_burn_stacks(unit), unit_burn_remaining(unit)]
+	if int(unit.get("no_shield", 0)) > 0:
+		notes += "\n[b]NO SHIELD[/b] %d" % int(unit["no_shield"])
 	notes += push_stack_notes(unit)
 	var meter := _resource_meter_line(unit, snap)
 	var text := "%s\nAP %d  MP %d" % [head, int(unit["ap"]), int(unit["mp"])]
@@ -4099,6 +4102,8 @@ static func unit_info_text(unit: Dictionary) -> String:
 		effects = ("STUNNED  " + effects).strip_edges()
 	if int(unit.get("burn_stacks", 0)) > 0:
 		effects = ("BURN %d  " % int(unit["burn_stacks"]) + effects).strip_edges()
+	if int(unit.get("no_shield", 0)) > 0:
+		effects = ("NO SHIELD %d  " % int(unit["no_shield"]) + effects).strip_edges()
 	if effects != "":
 		lines.append("On them now: %s" % effects)
 	lines.append("Spells:")
