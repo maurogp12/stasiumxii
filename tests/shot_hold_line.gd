@@ -84,6 +84,32 @@ func _process(_delta: float) -> bool:
 		if _frames < 8:
 			return false
 		_shot("hold_line_pull.png")
+		var sim: Node = root.get_node("/root/CombatSim")
+		sim.reset_match({
+			"seed": 1,
+			"flat_board": true,
+			"skip_deploy": true,
+			"classes": ["bastion", "kestrel"],
+			"positions": [Vector2i(7, 7), Vector2i(11, 7)],
+			"kestrel_facing": "W",
+			"rolls": [1],
+			"snap_walls": [Vector2i(9, 7)],
+		})
+		_board._rebuild_pawns()
+		_board._refresh()
+		_board._hud._selected_spell = "hold_line"
+		_board._hud._refresh_spell_buttons()
+		_board._paint_highlights()
+		_frame()
+		_phase = 3
+		_frames = 0
+		return false
+	if _phase == 3:
+		if _frames < 8:
+			return false
+		if not _expect_blocked():
+			return true
+		_shot("hold_line_blocked.png")
 		return true
 	return false
 
@@ -108,6 +134,30 @@ func _expect_cross() -> bool:
 	var diagonal = _board.tiles.get(Vector2i(8, 8))
 	if diagonal != null and str(diagonal.highlight) != "":
 		push_error("the diagonal is highlighted")
+		return false
+	return true
+
+
+func _expect_blocked() -> bool:
+	var prey := Vector2i(11, 7)
+	var wall := Vector2i(9, 7)
+	var foe = _board.tiles.get(prey)
+	var block = _board.tiles.get(wall)
+	if foe == null or block == null:
+		push_error("blocked shot is missing a tile")
+		return false
+	var foe_kind := str(foe.highlight)
+	var wall_kind := str(block.highlight)
+	print("BLOCKED foe=%s wall=%s" % [foe_kind, wall_kind])
+	if foe_kind == "target" or foe_kind == "range":
+		push_error("the blocked target is highlighted as castable (%s)" % foe_kind)
+		return false
+	if wall_kind != "blocked":
+		push_error("the Snap Wall did not paint (%s)" % wall_kind)
+		return false
+	var open = _board.tiles.get(Vector2i(7, 10))
+	if open == null or str(open.highlight) == "":
+		push_error("the open line lost its preview")
 		return false
 	return true
 

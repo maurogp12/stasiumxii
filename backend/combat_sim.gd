@@ -6075,8 +6075,9 @@ func _foe_pull(actor: Dictionary, target: Dictionary) -> Dictionary:
 
 
 ## Hold Line. Step toward Bastion, at most `max_steps` tiles. Stop on the
-## tile next to him, and before a wall, a fighter, or an obstacle. A hazard
-## tile is an obstacle you land on and then stop. A killing blow does not pull.
+## tile next to him. A hazard tile is landed on, then the pull stops. A
+## killing blow does not pull. A wall, a rock, a flag, a Snap Wall, or a
+## fighter between the two is not a legal target (see _hold_line_lane_blocked).
 func _hold_line_pull(actor: Dictionary, target: Dictionary, max_steps: int) -> Dictionary:
 	var origin: Vector2i = actor["pos"]
 	var from: Vector2i = target["pos"]
@@ -6557,7 +6558,36 @@ func _sight_bodies(def: Dictionary) -> bool:
 
 
 func _spell_sees(def: Dictionary, from_cell: Vector2i, to_cell: Vector2i) -> bool:
-	return not spell_needs_sight(def) or has_line_of_sight(from_cell, to_cell, _sight_bodies(def))
+	if spell_needs_sight(def) and not has_line_of_sight(from_cell, to_cell, _sight_bodies(def)):
+		return false
+	# Hold Line cannot yank through anything that would stop the pull.
+	if str(def.get("id", "")) == SpellKits.HOLD_LINE and _hold_line_lane_blocked(from_cell, to_cell):
+		return false
+	return true
+
+
+## Cells strictly between Bastion and the target, on one row or one column.
+## A blocker there makes the target illegal: not offered, not highlighted as
+## a cast, and the submit spends no AP. Mud, water, and lava stay open. An
+## Invisible fighter stays open, or the grey tile would give them away.
+func _hold_line_lane_blocked(from_cell: Vector2i, to_cell: Vector2i) -> bool:
+	var step := _sign_step(to_cell - from_cell)
+	if step == Vector2i.ZERO or (step.x != 0 and step.y != 0):
+		return false
+	var cursor := from_cell + step
+	var guard := 0
+	while cursor != to_cell and guard < 16:
+		guard += 1
+		if not _in_bounds(cursor):
+			return true
+		# Props, Plant flags, Snap Walls, steam, blockers, and visible fighters.
+		if _blocks_sight(cursor, 0, true):
+			return true
+		# A plain wall tile is not a sight prop, but the pull cannot cross it.
+		if not _board.is_voluntary_impassable(cursor) and not _board.is_walkable(cursor):
+			return true
+		cursor += step
+	return false
 
 
 ## First tile that blocks the line, or (-1, -1) when the line is clear.

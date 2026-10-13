@@ -1197,7 +1197,9 @@ func _test_crit_cap_and_stun() -> void:
 	eq(gate_tip.begins_with("+1 AP +1 MP"), true, "Gatewarden 5pc still leads with +1 AP +1 MP")
 	truthy(gate_tip.contains("crit"), "Gatewarden 5pc still wards a crit")
 	var sentence := GearBag.stance_sentence("ranged_guard")
-	truthy(sentence.contains("20%") and sentence.contains("15%") and sentence.contains("Damage over time"), "the Ranged Guard tooltip names both rates and leaves damage over time alone")
+	eq(GearBag.STANCE_FAR_CUT, 15, "Ranged Guard cuts far hits by 15%")
+	eq(GearBag.STANCE_NEAR_AMP, 10, "Ranged Guard raises close hits by 10%")
+	truthy(sentence.contains("15%") and sentence.contains("10%") and sentence.contains("Damage over time"), "the Ranged Guard tooltip names both rates and leaves damage over time alone")
 	truthy(GearBag.stance_sentence("neutral").contains("+4 Resist"), "the Neutral tooltip names +4 Resist")
 	var full_neutral: Dictionary = GearBag.combat_stats(_worn("gatewarden", GearBag.SLOTS), {}, false, "bastion", false, "neutral")
 	eq(int(full_neutral["far_cut"]), 0, "Neutral has no far cut in a dungeon")
@@ -1212,16 +1214,16 @@ func _test_crit_cap_and_stun() -> void:
 	eq(str(four_ranged["gate_stance"]), "", "four Gatewarden pieces do not arm the stance")
 	eq(int(four_ranged["far_cut"]), 0, "four pieces do not cut far hits")
 	eq(int(four_ranged["near_amp"]), 0, "four pieces do not raise close hits")
-	var ranged_target := {"far_cut": 20, "near_amp": 15}
-	eq(int(sim._gear_strike_damage({}, ranged_target, 10, 3, false, true)), 8, "a hit from 3 tiles deals 20% less")
-	eq(int(sim._gear_strike_damage({}, ranged_target, 10, 4, false, true)), 8, "a hit from 4 tiles deals 20% less")
-	eq(int(sim._gear_strike_damage({}, ranged_target, 10, 2, false, true)), 12, "a hit from 2 tiles deals 15% more")
-	eq(int(sim._gear_strike_damage({}, ranged_target, 10, 1, false, true)), 12, "a hit from 1 tile deals 15% more")
+	var ranged_target := {"far_cut": 15, "near_amp": 10}
+	eq(int(sim._gear_strike_damage({}, ranged_target, 10, 3, false, true)), 9, "a hit from 3 tiles deals 15% less")
+	eq(int(sim._gear_strike_damage({}, ranged_target, 10, 4, false, true)), 9, "a hit from 4 tiles deals 15% less")
+	eq(int(sim._gear_strike_damage({}, ranged_target, 10, 2, false, true)), 11, "a hit from 2 tiles deals 10% more")
+	eq(int(sim._gear_strike_damage({}, ranged_target, 10, 1, false, true)), 11, "a hit from 1 tile deals 10% more")
 	eq(int(sim._gear_strike_damage({}, ranged_target, 10, 0, false, true)), 10, "a same-tile hit is not a close hit")
-	var guarded_far := {"guard_ready": true, "guard_flat": 4, "far_cut": 20, "near_amp": 15}
-	eq(int(sim._gear_strike_damage({}, guarded_far, 10, 3, false, true)), 4, "the far cut happens before the first-hit guard")
-	var guarded_near := {"guard_ready": true, "guard_flat": 4, "far_cut": 20, "near_amp": 15}
-	eq(int(sim._gear_strike_damage({}, guarded_near, 10, 2, false, true)), 8, "the close increase happens before the first-hit guard")
+	var guarded_far := {"guard_ready": true, "guard_flat": 4, "far_cut": 15, "near_amp": 10}
+	eq(int(sim._gear_strike_damage({}, guarded_far, 10, 3, false, true)), 5, "the far cut happens before the first-hit guard")
+	var guarded_near := {"guard_ready": true, "guard_flat": 4, "far_cut": 15, "near_amp": 10}
+	eq(int(sim._gear_strike_damage({}, guarded_near, 10, 2, false, true)), 7, "the close increase happens before the first-hit guard")
 	sim.reset_match({
 		"seed": 1, "flat_board": true, "skip_deploy": true,
 		"classes": ["kestrel", "bastion"],
@@ -1232,8 +1234,8 @@ func _test_crit_cap_and_stun() -> void:
 	})
 	var wearer: Dictionary = sim._unit_by_seat(1)
 	eq(str(wearer["gate_stance"]), "ranged_guard", "the fight copies Ranged Guard")
-	eq(int(wearer["far_cut"]), 20, "the fight copies the far cut")
-	eq(int(wearer["near_amp"]), 15, "the fight copies the close increase")
+	eq(int(wearer["far_cut"]), 15, "the fight copies the far cut")
+	eq(int(wearer["near_amp"]), 10, "the fight copies the close increase")
 	eq(int(wearer["max_ap"]), 7, "the fight keeps Gatewarden +1 AP")
 	eq(int(wearer["max_mp"]), 4, "the fight keeps Gatewarden +1 MP")
 	wearer["facing"] = "W"
@@ -1242,7 +1244,7 @@ func _test_crit_cap_and_stun() -> void:
 	var hp_before := int(wearer["hp"])
 	var shot: Dictionary = sim.submit({"type": "cast", "spell": "mark_shot", "to": Vector2i(3, 0), "seat": 0})
 	eq(bool(shot.get("ok", false)), true, "Mark Shot from 3 tiles connects")
-	eq(hp_before - int(wearer["hp"]), 6, "Ranged Guard turns an 8-damage far hit into 6")
+	eq(hp_before - int(wearer["hp"]), 7, "Ranged Guard turns an 8-damage far hit into 7")
 	var log_script: Script = load("res://ui/battle_log.gd")
 	var snap: Dictionary = sim.snapshot()
 	var hit_text := ""
@@ -1255,8 +1257,8 @@ func _test_crit_cap_and_stun() -> void:
 			hit_text = row_text
 		if str(ev.get("type", "")) == "combat_start":
 			start_text = row_text
-	truthy(hit_text.contains("Ranged Guard -20%"), "the hit log names the far cut: %s" % hit_text)
-	truthy(start_text.contains("Ranged Guard") and start_text.contains("20%") and start_text.contains("15%"), "the fight log names Ranged Guard: %s" % start_text)
+	truthy(hit_text.contains("Ranged Guard -15%"), "the hit log names the far cut: %s" % hit_text)
+	truthy(start_text.contains("Ranged Guard") and start_text.contains("15%") and start_text.contains("10%"), "the fight log names Ranged Guard: %s" % start_text)
 	sim.reset_match({
 		"seed": 1, "flat_board": true, "skip_deploy": true,
 		"classes": ["kestrel", "bastion"],
@@ -1277,7 +1279,7 @@ func _test_crit_cap_and_stun() -> void:
 	for ev in near.get("events", []):
 		if typeof(ev) == TYPE_DICTIONARY and str(ev.get("type", "")) == "hit":
 			near_text = " ".join(log_script.lines(ev, snap))
-	truthy(near_text.contains("Ranged Guard +15%"), "the hit log names the close increase: %s" % near_text)
+	truthy(near_text.contains("Ranged Guard +10%"), "the hit log names the close increase: %s" % near_text)
 	sim.reset_match({
 		"seed": 1, "flat_board": true, "skip_deploy": true,
 		"classes": ["kestrel", "bastion"],
@@ -1329,7 +1331,7 @@ func _test_crit_cap_and_stun() -> void:
 	eq(bool(screen.choose_stance("ranged_guard")["ok"]), true, "the set list can pick Ranged Guard")
 	eq(GearBag.load_saved().stance_of(), "ranged_guard", "the pick is saved")
 	stance_label = screen.find_child("GatewardenStance", true, false) as Label
-	truthy(stance_label.text.contains("20%") and stance_label.text.contains("15%"), "the set list shows Ranged Guard")
+	truthy(stance_label.text.contains("15%") and stance_label.text.contains("10%"), "the set list shows Ranged Guard")
 	screen.queue_free()
 
 
@@ -1560,7 +1562,7 @@ func _test_prefight_loadout() -> void:
 	eq(bool(screen.wear_set("gatewarden")["ok"]), true, "Gatewarden goes back on")
 	eq(screen.find_child("Stance_neutral", true, false) != null, true, "five Gatewarden pieces show Neutral")
 	eq(screen.find_child("Stance_ranged_guard", true, false) != null, true, "five Gatewarden pieces show Ranged Guard")
-	eq((screen.find_child("StanceLine", true, false) as Label).text.contains("20%"), true, "the stance line names the far cut")
+	eq((screen.find_child("StanceLine", true, false) as Label).text.contains("15%") and (screen.find_child("StanceLine", true, false) as Label).text.contains("10%"), true, "the stance line names both rates")
 	eq(bool(screen.choose_stance("neutral")["ok"]), true, "Neutral is one tap")
 	eq(GearBag.load_saved().stance_of(), "neutral", "the stance is saved")
 	eq((screen.find_child("StanceLine", true, false) as Label).text.contains("+4"), true, "Neutral says +4 Resist")
@@ -1619,8 +1621,8 @@ func _test_prefight_loadout() -> void:
 	eq(net.accept_seat_gear(1, gear), true, "deployment accepts the other phone's loadout")
 	var unit: Dictionary = sim._unit_by_seat(1)
 	eq(str(unit["gate_stance"]), "ranged_guard", "the other phone's stance lands")
-	eq(int(unit["far_cut"]), 20, "Ranged Guard cuts far hits")
-	eq(int(unit["near_amp"]), 15, "Ranged Guard raises close hits")
+	eq(int(unit["far_cut"]), 15, "Ranged Guard cuts far hits")
+	eq(int(unit["near_amp"]), 10, "Ranged Guard raises close hits")
 	eq(str(unit["still"]), "gathered_sand", "the Still id lands")
 	eq(str(unit["still_mode"]), "overwound", "the Still mode lands")
 	eq(bool(unit["gear_flat"]), true, "Koliseo marks the fight as flattened")
@@ -1650,7 +1652,7 @@ func _test_prefight_loadout() -> void:
 	eq(net.push_host_gear("bastion"), true, "the listen-host pushes its pre-fight loadout")
 	var host_unit: Dictionary = sim._unit_by_seat(0)
 	eq(str(host_unit["gate_stance"]), "ranged_guard", "the host's stance is on the fighter")
-	eq(int(host_unit["far_cut"]), 20, "the host's Ranged Guard is live")
+	eq(int(host_unit["far_cut"]), 15, "the host's Ranged Guard is live")
 	eq(str(host_unit["still_mode"]), "overwound", "the host's Still mode is live")
 	eq(bool(net._seat_gear[0].get("flatten_plus", false)), false, "the host stores a clean kit")
 	sim.reset_match({
