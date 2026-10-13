@@ -1790,11 +1790,14 @@ func _preview_kit_lines(spell_id: String) -> Dictionary:
 		SpellKits.AEGIS_BREAK:
 			return {"on_connect": "26 Earth per body in range 1–2. Push 1. Clears all Aegis.", "on_miss": "Spends 0 Aegis. Does not clear Aegis."}
 		SpellKits.WARD:
-			return {"on_connect": "+20 shield on every ally within 3 tiles, you too. Stacks to 40. Lasts until broken. Spends %d Aegis. Once per turn. Enemies next to you get this element's Residue. Allies do not." % int(SpellKits.spell(SpellKits.WARD).get("spend_aegis", 2)), "on_miss": "No roll."}
+			return {"on_connect": "+20 shield on every ally within 3 tiles, you too. Stacks to 40. Lasts until broken. Spends %d Aegis. Once per turn. Enemies next to you get this element's Residue. Allies do not." % int(SpellKits.spell(SpellKits.WARD).get("spend_aegis", 0)), "on_miss": "No roll."}
 		SpellKits.SNAP_WALL:
-			return {"on_connect": "Blocked tile for 2 Bastion turn-starts. Spends 2 Aegis. Every enemy next to the wall gets this element's Residue. On your own wall: knocks it down, +2 Aegis back.", "on_miss": "No roll."}
+			var wall: Dictionary = SpellKits.spell(SpellKits.SNAP_WALL)
+			var wall_spend := int(wall.get("spend_aegis", 0))
+			return {"on_connect": "Blocked tile for %d Bastion turn-starts. Spends %d Aegis. Every enemy next to the wall gets this element's Residue. On your own wall: knocks it down, +%d Aegis back." % [int(wall.get("wall_turns", 0)), wall_spend, wall_spend], "on_miss": "No roll."}
 		SpellKits.PLANT:
-			return {"on_connect": "Flag for 3 turns. +1 Aegis. Enemies next to you get this element's Residue.", "on_miss": "No roll."}
+			var plant: Dictionary = SpellKits.spell(SpellKits.PLANT)
+			return {"on_connect": "Flag for %d turns. +%d Aegis. Enemies next to you get this element's Residue." % [int(plant.get("plant_turns", 0)), int(plant.get("gain_aegis", 0))], "on_miss": "No roll."}
 		SpellKits.FADE:
 			return {"on_connect": "Invisible. Enemies next to you get this element's Residue. Your position is not sent.", "on_miss": "No roll."}
 		SpellKits.VAULT:
@@ -3570,7 +3573,7 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 			engine_gained = _gain_resource(actor, "umbral", 1)
 			engine_name = "Umbral"
 		"aegis":
-			engine_gained = _gain_resource(actor, "aegis", 1)
+			engine_gained = _gain_resource(actor, "aegis", int(def.get("gain_aegis", 0)))
 			engine_name = "Aegis"
 		"pulse":
 			engine_gained = _gain_resource(actor, "pulse", 1)
@@ -8420,7 +8423,7 @@ func _resolve_plant(intent: Dictionary, actor: Dictionary, def: Dictionary, dest
 	var caster_cell: Vector2i = actor["pos"]
 	actor["ap"] = int(actor["ap"]) - ap_cost
 	_spend_mp(actor, mp_cost)
-	var gained := _gain_resource(actor, "aegis", 1)
+	var gained := _gain_resource(actor, "aegis", int(def.get("gain_aegis", 0)))
 	_plant_tiles.append({
 		"pos": dest,
 		"turns": int(def.get("plant_turns", 3)),
@@ -8752,7 +8755,7 @@ func _resolve_hold_line(intent: Dictionary, actor: Dictionary, def: Dictionary, 
 			break
 	var gained := 0
 	if hit_bodies > 0 and not _match_over:
-		gained = _gain_resource(actor, "aegis", 1)
+		gained = _gain_resource(actor, "aegis", int(def.get("gain_aegis", 0)))
 	var hold_tags: Array = []
 	if hit_bodies > 0:
 		for r in targets:
