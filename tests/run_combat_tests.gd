@@ -152,6 +152,7 @@ func _run() -> void:
 	_test_enemy_card_tap_and_hold()
 	_test_kestrel_aims_better_far()
 	_test_bastion_team_ward_and_thorns()
+	_test_bastion_aegis_tooltips()
 	_test_spark_counters_mender()
 	_test_prefight_elements_button()
 	_test_crush_breaks_shields()
@@ -8636,6 +8637,72 @@ func _test_kestrel_aims_better_far() -> void:
 	eq(_sim._spell_hit_chance(SpellKits.spell(SpellKits.STRIKE), 1), 90, "other classes keep the shared table")
 	eq(_sim._spell_hit_chance(SpellKits.spell(SpellKits.MEND), 4), 75, "Mender keeps the shared table")
 
+
+
+## Hover cards name the Aegis a Bastion spell gains or spends, and the cap.
+## The numbers are the kit fields the fight reads, so the card cannot drift.
+func _test_bastion_aegis_tooltips() -> void:
+	var cap := SpellKits.AEGIS_CAP
+	eq(cap, 4, "Aegis still caps at 4")
+	_sim.reset_match({
+		"seed": 1, "flat_board": true, "skip_deploy": true,
+		"classes": ["bastion", "kestrel"],
+		"positions": [Vector2i(1, 1), Vector2i(6, 6)],
+	})
+	var plant_gain := int(SpellKits.spell(SpellKits.PLANT).get("gain_aegis", 0))
+	var bash_gain := int(SpellKits.spell(SpellKits.BASH).get("gain_aegis", 0))
+	var hold_gain := int(SpellKits.spell(SpellKits.HOLD_LINE).get("gain_aegis", 0))
+	eq(plant_gain > 0 and bash_gain > 0 and hold_gain > 0, true, "Bash, Plant, and Hold Line name an Aegis gain")
+	var plant := SpellTooltip.card_text(_sim.preview_cast(SpellKits.PLANT, Vector2i(1, 1), Vector2i(2, 1), 0))
+	truthy(plant.contains("+%d Aegis (max %d)" % [plant_gain, cap]), "Plant's hover card names the Aegis gain and the cap: %s" % plant)
+	var bash := SpellTooltip.card_text(_sim.preview_cast(SpellKits.BASH, Vector2i(1, 1), Vector2i(2, 1), 1))
+	truthy(bash.contains("Hit +%d Aegis (max %d)" % [bash_gain, cap]), "Bash's hover card names the Aegis gain and the cap: %s" % bash)
+	var hold := SpellTooltip.card_text(_sim.preview_cast(SpellKits.HOLD_LINE, Vector2i(1, 1), Vector2i(5, 1), 1))
+	truthy(hold.contains("Hit +%d Aegis (max %d)" % [hold_gain, cap]), "Hold Line's hover card names the Aegis gain and the cap: %s" % hold)
+	var wall_spend := int(SpellKits.spell(SpellKits.SNAP_WALL).get("spend_aegis", 0))
+	var ward_spend := int(SpellKits.spell(SpellKits.WARD).get("spend_aegis", 0))
+	eq(wall_spend > 0 and ward_spend > 0, true, "Snap Wall and Ward name an Aegis spend")
+	var wall := SpellTooltip.card_text(_sim.preview_cast(SpellKits.SNAP_WALL, Vector2i(1, 1), Vector2i(2, 1), 0))
+	truthy(wall.contains("Uses %d Aegis (max %d)" % [wall_spend, cap]), "Snap Wall's hover card names the Aegis spend and the cap: %s" % wall)
+	truthy(wall.contains("Knock down gives %d Aegis back" % wall_spend), "Snap Wall's hover card names the Aegis refund")
+	var ward := SpellTooltip.card_text(_sim.preview_cast(SpellKits.WARD, Vector2i(1, 1), Vector2i(1, 1), 0))
+	truthy(ward.contains("Uses %d Aegis (max %d)" % [ward_spend, cap]), "Ward's hover card names the Aegis spend and the cap: %s" % ward)
+	truthy(ward.contains("%d AP / %d Aegis" % [int(SpellKits.spell(SpellKits.WARD)["ap"]), ward_spend]), "Ward's cost line still names the Aegis spend")
+	var needs := int(SpellKits.spell(SpellKits.AEGIS_BREAK).get("requires_aegis", 0))
+	var brk := SpellTooltip.card_text({"name": "Aegis Break", "spell_id": SpellKits.AEGIS_BREAK, "ap": 4, "mp": 0, "range_text": "range 1–2", "sample_damage": 26})
+	truthy(brk.contains("Needs %d Aegis (max %d)" % [needs, cap]), "Aegis Break's card names the Aegis gate and the cap")
+	truthy(brk.contains("A hit uses all Aegis"), "Aegis Break's card says a hit spends the whole stack")
+	var before := int(_unit(0).get("aegis", 0))
+	eq(bool(_sim.submit({"type": "cast", "spell": "plant", "to": Vector2i(2, 1), "seat": 0}).get("ok", false)), true, "Plant resolves for the Aegis tooltip check")
+	eq(int(_unit(0).get("aegis", 0)), before + plant_gain, "Plant grants the kit's gain_aegis")
+	_sim.reset_match({
+		"seed": 1, "flat_board": true, "skip_deploy": true,
+		"classes": ["bastion", "kestrel"],
+		"positions": [Vector2i(1, 1), Vector2i(6, 6)],
+		"bastion_aegis": wall_spend,
+		"rolls": [1],
+	})
+	eq(bool(_sim.submit({"type": "cast", "spell": "snap_wall", "to": Vector2i(2, 1), "seat": 0}).get("ok", false)), true, "Snap Wall resolves for the Aegis tooltip check")
+	eq(int(_unit(0)["aegis"]), 0, "Snap Wall spends the kit's spend_aegis")
+	eq(bool(_sim.submit({"type": "cast", "spell": "snap_wall", "to": Vector2i(2, 1), "seat": 0}).get("ok", false)), true, "the knock-down resolves for the Aegis tooltip check")
+	eq(int(_unit(0)["aegis"]), wall_spend, "the knock-down refunds the kit's spend_aegis")
+	_sim.reset_match({
+		"seed": 1, "flat_board": true, "skip_deploy": true,
+		"classes": ["bastion", "kestrel"],
+		"positions": [Vector2i(1, 1), Vector2i(2, 1)],
+		"rolls": [1],
+	})
+	var bash_before := int(_unit(0).get("aegis", 0))
+	eq(bool(_sim.submit({"type": "cast", "spell": "bash", "to": Vector2i(2, 1), "seat": 0}).get("ok", false)), true, "Bash resolves for the Aegis tooltip check")
+	eq(int(_unit(0).get("aegis", 0)), bash_before + bash_gain, "Bash grants the kit's gain_aegis")
+	var plant_plain := " ".join(SpellTooltip.simple_lines(SpellKits.PLANT))
+	truthy(plant_plain.contains("+%d Aegis (max %d)" % [plant_gain, cap]), "Plant's plain card uses the kit gain and the cap")
+	var wall_plain := " ".join(SpellTooltip.simple_lines(SpellKits.SNAP_WALL))
+	truthy(wall_plain.contains("Uses %d Aegis (max %d)" % [wall_spend, cap]), "Snap Wall's plain card uses the kit spend and the cap")
+	truthy(wall_plain.contains("knock it down"), "Snap Wall's plain card still explains the knock-down")
+	truthy(wall_plain.contains("%d Aegis back" % wall_spend), "Snap Wall's plain card refunds the kit spend")
+	var ward_plain := " ".join(SpellTooltip.simple_lines(SpellKits.WARD))
+	truthy(ward_plain.contains("Uses %d Aegis (max %d)" % [ward_spend, cap]), "Ward's plain card uses the kit spend and the cap")
 
 
 ## Mauro 9 Oct 2026: Ward is Bastion's (2 AP + 2 Aegis, once per turn): +20

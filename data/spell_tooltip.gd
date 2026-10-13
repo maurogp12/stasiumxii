@@ -33,7 +33,7 @@ static func card_lines(preview: Dictionary) -> PackedStringArray:
 	var kit: Dictionary = SpellKits.SPELLS.get(spell_id, {})
 	var cost := "%d AP / %d MP" % [int(preview.get("ap", 0)), int(preview.get("mp", 0))]
 	if spell_id == SpellKits.WARD:
-		cost = "%d AP / %d Aegis" % [int(preview.get("ap", 0)), int(kit.get("spend_aegis", 2))]
+		cost = "%d AP / %d Aegis" % [int(preview.get("ap", 0)), int(kit.get("spend_aegis", 0))]
 		range_line = "you and every teammate within %d tiles" % int(kit.get("ward_radius", 3))
 	lines.append("%s · %s" % [cost, range_line])
 	if preview.get("sample_damage", null) != null and int(preview["sample_damage"]) > 0 and not needs_marks:
@@ -51,6 +51,7 @@ static func card_lines(preview: Dictionary) -> PackedStringArray:
 		lines.append(duration)
 	if bool(preview.get("would_stun", false)):
 		lines.append("Stun")
+	lines.append_array(_aegis_card_lines(spell_id))
 	return lines
 
 
@@ -112,6 +113,45 @@ static func _duration_line(spell_id: String) -> String:
 		if def.has(key):
 			return "Dur %d turns" % int(def[key])
 	return ""
+
+
+## Hover line for a Bastion spell that gains or spends Aegis. The amounts are
+## the kit fields CombatSim grants and spends, and the cap is AEGIS_CAP.
+static func _aegis_card_lines(spell_id: String) -> PackedStringArray:
+	var def: Dictionary = SpellKits.SPELLS.get(spell_id, {})
+	var out := PackedStringArray()
+	var gain := _aegis_gain_text(def)
+	if gain != "":
+		if bool(def.get("rolls", false)):
+			out.append("Hit %s" % gain)
+		else:
+			out.append(gain)
+	var spend := _aegis_spend_text(def)
+	if spend != "":
+		out.append(spend)
+	var spent := int(def.get("spend_aegis", 0))
+	if spell_id == SpellKits.SNAP_WALL and spent > 0:
+		out.append("Knock down gives %d Aegis back" % spent)
+	if str(def.get("engine_on_connect", "")) == "clear_aegis":
+		var needs := int(def.get("requires_aegis", 0))
+		if needs > 0:
+			out.append("Needs %d Aegis (max %d)" % [needs, SpellKits.AEGIS_CAP])
+		out.append("A hit uses all Aegis")
+	return out
+
+
+static func _aegis_gain_text(def: Dictionary) -> String:
+	var gain := int(def.get("gain_aegis", 0))
+	if gain <= 0:
+		return ""
+	return "+%d Aegis (max %d)" % [gain, SpellKits.AEGIS_CAP]
+
+
+static func _aegis_spend_text(def: Dictionary) -> String:
+	var spend := int(def.get("spend_aegis", 0))
+	if spend <= 0:
+		return ""
+	return "Uses %d Aegis (max %d)" % [spend, SpellKits.AEGIS_CAP]
 
 
 static func _preview_needs_marks(preview: Dictionary) -> bool:
@@ -178,7 +218,7 @@ static func simple_lines(spell_id: String, preview: Dictionary = {}) -> PackedSt
 			out.append("Tap a teammate (or yourself) to heal %d HP. Uses 1 Pulse." % heal)
 			out.append("Last Stand: when you are the last one alive and cannot Rekindle anyone, it can also hit an enemy for %d." % int(SpellKits.LAST_STAND_DAMAGE[SpellKits.PULSE_TAP]))
 		SpellKits.WARD:
-			out.append("Give every teammate within %d tiles, you too, a shield of +%d. Cast it again to stack it up to %d. Hits break the shield before they hurt you; it stays until it breaks. Uses %d Aegis. Once per turn." % [int(def.get("ward_radius", 3)), int(def.get("shield", 20)), int(def.get("shield_cap", 40)), int(def.get("spend_aegis", 2))])
+			out.append("Give every teammate within %d tiles, you too, a shield of +%d. Cast it again to stack it up to %d. Hits break the shield before they hurt you; it stays until it breaks. %s. Once per turn." % [int(def.get("ward_radius", 3)), int(def.get("shield", 20)), int(def.get("shield_cap", 40)), _aegis_spend_text(def)])
 			out.append("Thorns (always on): enemies who hit Bastion from right next to him take 20% of that hit back.")
 		SpellKits.CLEANSE:
 			out.append("Take away 1 bad effect from a teammate (Stun first). 3 bad effects? Use it 3 times. +1 Pulse.")
@@ -203,16 +243,16 @@ static func simple_lines(spell_id: String, preview: Dictionary = {}) -> PackedSt
 		SpellKits.NIGHTFOLD:
 			out.append("Not ready yet. This spell comes later.")
 		SpellKits.BASH:
-			out.append("Hit an enemy next to you with your shield for %d damage. Hit = +1 Aegis." % dmg)
+			out.append("Hit an enemy next to you with your shield for %d damage. Hit = %s." % [dmg, _aegis_gain_text(def)])
 		SpellKits.PLANT:
-			out.append("Plant your flag on a tile. +1 Aegis. Stand on it and the first push against you does nothing. Shots cannot pass through the flag. Lasts %d turns." % int(def.get("plant_turns", 3)))
+			out.append("Plant your flag on a tile. %s. Stand on it and the first push against you does nothing. Shots cannot pass through the flag. Lasts %d turns." % [_aegis_gain_text(def), int(def.get("plant_turns", 3))])
 		SpellKits.HOLD_LINE:
-			out.append("Yank one enemy up to %d tiles straight toward you for %d damage. They must stand in a straight line from you, same row or same column, with nothing blocking the tiles between you. A wall, a rock, a Plant flag, a Snap Wall, or another fighter in the way is not a target. They stop next to you. +1 Aegis." % [int(def.get("pull_cells", 4)), dmg])
+			out.append("Yank one enemy up to %d tiles straight toward you for %d damage. They must stand in a straight line from you, same row or same column, with nothing blocking the tiles between you. A wall, a rock, a Plant flag, a Snap Wall, or another fighter in the way is not a target. They stop next to you. Hit %s." % [int(def.get("pull_cells", 4)), dmg, _aegis_gain_text(def)])
 		SpellKits.SNAP_WALL:
-			out.append("Build a wall on an empty tile. Nobody can walk or shoot through it. Lasts %d of your turns. Uses 2 Aegis." % int(def.get("wall_turns", 2)))
-			out.append("Use it on your own wall to knock it down and get the 2 Aegis back.")
+			out.append("Build a wall on an empty tile. Nobody can walk or shoot through it. Lasts %d of your turns. %s." % [int(def.get("wall_turns", 2)), _aegis_spend_text(def)])
+			out.append("Use it on your own wall to knock it down and get the %d Aegis back." % int(def.get("spend_aegis", 0)))
 		SpellKits.AEGIS_BREAK:
-			out.append("Slam the ground: %d damage to every enemy 1-2 tiles from you, and push them 1 tile. Needs %d Aegis." % [dmg, int(def.get("requires_aegis", 3))])
+			out.append("Slam the ground: %d damage to every enemy 1-2 tiles from you, and push them 1 tile. Needs %d Aegis (max %d)." % [dmg, int(def.get("requires_aegis", 0)), SpellKits.AEGIS_CAP])
 			out.append("A hit uses all your Aegis. A miss keeps it.")
 		_:
 			pass

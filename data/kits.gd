@@ -450,6 +450,8 @@ const SPELLS := {
 		"base_damage": 13,
 		"target": "enemy",
 		"engine_on_connect": "aegis",
+		# The fight and the tooltip both read this. A hit grants it, up to AEGIS_CAP.
+		"gain_aegis": 1,
 	},
 	PLANT: {
 		"id": PLANT,
@@ -464,6 +466,7 @@ const SPELLS := {
 		"element": "neutral",
 		"target": "tile",
 		"engine_on_connect": "aegis",
+		"gain_aegis": 1,
 		"plant_turns": 3,
 	},
 	HOLD_LINE: {
@@ -484,6 +487,7 @@ const SPELLS := {
 		"base_damage": 7,
 		"target": "enemy",
 		"engine_on_connect": "aegis",
+		"gain_aegis": 1,
 		"pull_cells": 4,
 	},
 	SNAP_WALL: {
