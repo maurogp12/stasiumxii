@@ -156,6 +156,10 @@ var _focus_tween: Tween
 var _focus_goal := Vector2.ZERO
 var _focus_from := Vector2.ZERO
 var _framed_cell := Vector2i(-999, -999)
+## Last turn_index the camera framed. A new turn glides back to the fighter.
+var _framed_turn := -1
+## The player dragged the board. Cleared when the view snaps home.
+var _user_panned := false
 var _panning := false
 var _touch_panning := false
 var _touch_down := Vector2.ZERO
@@ -196,6 +200,7 @@ func _ready() -> void:
 	_hud.ready_requested.connect(_on_ready_requested)
 	_hud.aim_dragged.connect(_on_hud_aim_dragged)
 	_hud.zoom_step_requested.connect(_on_zoom_step)
+	_hud.recenter_requested.connect(recenter_camera)
 	# VFX pass 1. Motion pass owns pawn tweens. This node only plays pooled effects.
 	_ensure_world()
 	_vfx = VFX_DIRECTOR.new()
@@ -3536,7 +3541,19 @@ func _rebuild_grid(size: int) -> void:
 ## Desktop stays the 960×720 fit. A phone keeps most of the iso diamond
 ## on screen and frames the active fighter. Middle-mouse can pan past the
 ## fit. A phone drag stays inside the board.
-func _fit_board_camera(glide: bool = false) -> void:
+## Snap the view onto the fighter whose turn it is. Client-only: the
+## camera is not part of the match, so both phones keep their own frame.
+func recenter_camera() -> void:
+	_user_panned = false
+	if _focus_tween != null and _focus_tween.is_valid():
+		_focus_tween.kill()
+	var actor := _active_unit(_sim().snapshot())
+	if not actor.is_empty():
+		_framed_cell = _as_cell(actor.get("pos", Vector2i(-999, -999)))
+	_fit_board_camera(false, true)
+
+
+func _fit_board_camera(glide: bool = false, focus_active: bool = false) -> void:
 	_ensure_camera()
 	var n := _board_size
 	if n < 1:
@@ -3566,7 +3583,9 @@ func _fit_board_camera(glide: bool = false) -> void:
 	var room := TOUCH.pan_room(board_w, board_h, viewport, zoom, mobile)
 	_pan_limit = room
 	var look := center
-	if mobile and _follow_local_fighter(_sim().snapshot()):
+	var framed: Dictionary = _sim().snapshot()
+	var track := focus_active or (mobile and _follow_local_fighter(framed))
+	if track:
 		var focus := _frame_focus_local()
 		if focus.x < 1.0e8:
 			look = TOUCH.focus_point(center, focus, room)
@@ -3592,6 +3611,10 @@ func _fit_board_camera(glide: bool = false) -> void:
 	var goal := _fit_camera_pos + (look - center)
 	var delta := _clamp_pan_delta(goal - _fit_camera_pos)
 	goal = _fit_camera_pos + delta
+	# Already on the fighter. A fresh tween here is the one-frame camera jump.
+	if glide and not zoom_changed and _camera.position.distance_to(goal) <= 3.0:
+		_focus_goal = goal
+		return
 	var same_glide := glide and _focus_goal.is_equal_approx(goal) and not zoom_changed and _focus_tween != null and _focus_tween.is_valid() and _focus_tween.is_running()
 	if same_glide:
 		_flush_camera()
@@ -3630,11 +3653,25 @@ func _frame_focus_local() -> Vector2:
 
 
 func _maybe_reframe(snap: Dictionary) -> void:
+	var turn := int(snap.get("turn_index", -1))
+	var opened := _framed_turn >= 0 and turn != _framed_turn
+	if turn >= 0:
+		_framed_turn = turn
+	# A new turn puts the camera back on the fighter who has to act.
+	# A finger that is still dragging keeps the view until it lifts.
+	var actor := _active_unit(snap)
+	# Back to the resting frame. If the view was not dragged, the goal is
+	# where the camera already sits and the glide does not start.
+	if opened and not _touch_panning and not _panning:
+		_user_panned = false
+		if not actor.is_empty():
+			_framed_cell = _as_cell(actor.get("pos", Vector2i(-999, -999)))
+		_fit_board_camera(true)
+		return
 	if not TOUCH.use_mobile_pick():
 		return
 	if not _follow_local_fighter(snap):
 		return
-	var actor := _active_unit(snap)
 	if actor.is_empty():
 		return
 	var cell := _as_cell(actor.get("pos", Vector2i(-1, -1)))
@@ -3694,9 +3731,12 @@ func _queue_pan(screen_delta: Vector2) -> void:
 func _apply_pending_pan() -> void:
 	if _camera == null or _pan_pending == Vector2.ZERO:
 		return
+	var before := _camera.position
 	_camera.position += _pan_pending
 	_pan_pending = Vector2.ZERO
 	_clamp_camera()
+	if not _camera.position.is_equal_approx(before):
+		_user_panned = true
 	_flush_camera()
 
 
@@ -3744,14 +3784,20 @@ func _flush_camera() -> void:
 ## Pan room. The fit already drops the frame by the portrait-bar inset, so
 ## the resting view keeps top-row names below the turn bar. Positive pan
 ## adds that inset back on top of the geometric room, which puts the far
-## edge of the board back in reach.
+## edge of the board back in reach. Chrome clearance is extra on each side
+## so an edge tile can slide out from under the buttons. It is the chrome
+## size, not the board size, so the diamond cannot be dragged off screen.
 func _clamp_pan_delta(delta: Vector2) -> Vector2:
-	delta.x = clampf(delta.x, -_pan_limit.x, _pan_limit.x)
-	var y_max := _pan_limit.y
-	if TOUCH.use_mobile_pick() and _camera != null:
-		var zoom := maxf(_camera.zoom.x, 0.001)
+	var zoom := 1.0
+	if _camera != null:
+		zoom = maxf(_camera.zoom.x, 0.001)
+	var extra := TOUCH.pan_chrome(zoom, TOUCH.use_mobile_pick())
+	delta.x = clampf(delta.x, -_pan_limit.x - extra.x, _pan_limit.x + extra.z)
+	var y_max := _pan_limit.y + extra.w
+	var y_min := -_pan_limit.y - extra.y
+	if TOUCH.use_mobile_pick():
 		y_max += TOUCH.PORTRAIT_BAR_INSET / zoom
-	delta.y = clampf(delta.y, -_pan_limit.y, y_max)
+	delta.y = clampf(delta.y, y_min, y_max)
 	return delta
 
 

@@ -21,6 +21,8 @@ signal ready_requested(seat: int)
 signal aim_dragged(screen_pos: Vector2, committing: bool)
 ## +1 zooms in, -1 zooms out. The board keeps the step for the session.
 signal zoom_step_requested(direction: int)
+## Snap the fight camera back onto the fighter whose turn it is.
+signal recenter_requested
 
 const KESTREL_GREEN := Color("#2E5A3C")
 const IRONJAW_RED := Color("#8B2E2E")
@@ -144,6 +146,7 @@ var _hub_button: Button
 var _elements_button: Button
 var _gear_button: Button
 var _log_button: Button
+var _recenter_button: Button
 var _log_panel: Panel
 var _log_scroll: ScrollContainer
 var _log_body: RichTextLabel
@@ -1753,6 +1756,19 @@ func _build() -> void:
 		side_column.add_child(_gear_button)
 	if _log_button != null:
 		side_column.add_child(_log_button)
+	# Not a child of the column. The column stays New Match / Hub / Gear / Log.
+	# Sits under the opponent card so it does not cover another left-edge tile.
+	_recenter_button = Button.new()
+	_recenter_button.name = "RecenterButton"
+	_recenter_button.text = "Center"
+	_recenter_button.focus_mode = Control.FOCUS_NONE
+	_recenter_button.custom_minimum_size = Vector2(96, 48)
+	_recenter_button.add_theme_font_size_override("font_size", 15)
+	_recenter_button.add_theme_color_override("font_color", CREAM)
+	_style_chrome_button(_recenter_button, false)
+	_recenter_button.pressed.connect(func() -> void: recenter_requested.emit())
+	_apply_display_font(_recenter_button)
+	root.add_child(_recenter_button)
 	_build_log_panel(root)
 
 	_handoff_overlay = ColorRect.new()
@@ -4246,6 +4262,8 @@ func claims_screen_point(point: Vector2) -> bool:
 		return true
 	if _control_claims(_new_match_button, point):
 		return true
+	if _control_claims(_recenter_button, point):
+		return true
 	if _control_claims(_ready_p1_button, point):
 		return true
 	if _control_claims(_ready_p2_button, point):
@@ -4693,6 +4711,9 @@ func _layout_chrome(forced: Vector2 = Vector2.ZERO) -> void:
 		if room < 220.0 and room > 8.0:
 			var fit := clampf(room / 232.0, 0.35, 1.0)
 			_side_column.scale = Vector2(fit, fit)
+	if _recenter_button != null:
+		_recenter_button.position = Vector2(view.x - margin - 104.0, margin + banner_h + 8.0)
+		_recenter_button.size = Vector2(96, 48)
 	if _stun_badge != null:
 		_stun_badge.position = Vector2(center_x + maxf(center_w - 110.0, 0.0), margin + top_h + 4.0)
 	if _toast_label != null:
