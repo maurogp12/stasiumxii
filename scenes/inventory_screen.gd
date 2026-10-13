@@ -42,12 +42,24 @@ const _RARITY_CHOICES: Array[Dictionary] = [
 	{"id": "Legendary", "node": "RarityLegendary", "label": "Legendary"},
 	{"id": "Ultra", "node": "RarityUltra", "label": "Ultra Legendary"},
 ]
+const _STILL_CHOICES: Array[Dictionary] = [
+	{"id": "", "node": "StillFilterAll", "label": "All"},
+	{"id": "offensive", "node": "StillFilterOffensive", "label": "Offensive"},
+	{"id": "defensive", "node": "StillFilterDefensive", "label": "Defensive"},
+	{"id": "support", "node": "StillFilterSupport", "label": "Support"},
+]
+## Equipment tiles are 64px. A Still tile is that icon, plus a compact
+## status line and category bar, so fourteen of them fit the phone panel.
+const STILL_ICON := 60.0
+const STILL_TILE := Vector2(96, 86)
 
 var font: Font
 var champion: String = "kestrel"
 var tab: String = "equipment"
 ## Equipment grid filter. Empty string is All.
 var rarity_filter: String = ""
+## Stills grid filter. Empty string is All. offensive, defensive, or support.
+var still_filter: String = ""
 ## Deployment inventory. Empty means the hub: every class, coins, consumables,
 ## cosmetics. While set, only these classes show, and mid-match chrome stays hidden.
 var fight_classes: Array = []
@@ -66,6 +78,7 @@ var _stats_box: VBoxContainer
 var _tab_row: HBoxContainer
 var _rarity_row: HBoxContainer
 var _grid: GridContainer
+var _fragments: Label
 var _detail: VBoxContainer
 var _body: VBoxContainer
 var _left: VBoxContainer
@@ -168,6 +181,17 @@ func set_rarity_filter(rarity: String) -> void:
 		_refresh()
 
 
+## Stills grid only. "" is All. offensive, defensive, or support.
+func set_still_filter(category: String) -> void:
+	if category != "" and not StillVault.CATEGORIES.has(category):
+		return
+	still_filter = category
+	if str(picked.get("kind", "")) == "still" and not _still_matches(str(picked.get("id", ""))):
+		picked = {}
+	if is_inside_tree():
+		_refresh()
+
+
 func select(sel: Dictionary) -> void:
 	picked = sel
 	_status.text = ""
@@ -225,7 +249,8 @@ func choose_still(mode: String) -> Dictionary:
 	return result
 
 
-## Deployment only. Swap which Still is socketed. Locks with the rest of the loadout.
+## Hub and deployment. Swap which Still is socketed. Intact / Overwound stays.
+## A deployment change also pushes that class's loadout, local and online.
 func socket_still(id: String) -> Dictionary:
 	_vault.set_focus(champion)
 	var result := _vault.deploy_swap(id)
@@ -514,6 +539,7 @@ func _build() -> void:
 	_rarity_row.add_theme_constant_override("separation", 4)
 	right.add_child(_rarity_row)
 	var scroll := ScrollContainer.new()
+	scroll.name = "ItemScroll"
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	right.add_child(scroll)
@@ -523,6 +549,10 @@ func _build() -> void:
 	_grid.add_theme_constant_override("h_separation", 6)
 	_grid.add_theme_constant_override("v_separation", 6)
 	scroll.add_child(_grid)
+	_fragments = _label("", 13, GOLD_DIM)
+	_fragments.name = "StillFragments"
+	_fragments.visible = false
+	right.add_child(_fragments)
 	var detail_panel := PanelContainer.new()
 	var dstyle := StyleBoxFlat.new()
 	dstyle.bg_color = Color(0.07, 0.06, 0.05, 0.95)
@@ -731,26 +761,47 @@ func _refresh_rarity() -> void:
 	if _rarity_row == null:
 		return
 	_clear(_rarity_row)
-	_rarity_row.visible = tab == "equipment"
-	if tab != "equipment":
+	if tab == "equipment":
+		_rarity_row.visible = true
+		for spec in _RARITY_CHOICES:
+			var id := str(spec["id"])
+			var b := _filter_button(str(spec["label"]), str(spec["node"]))
+			_paint_rarity_button(b, _filter_tint(id), id == rarity_filter)
+			b.pressed.connect(set_rarity_filter.bind(id))
+			_rarity_row.add_child(b)
 		return
-	for spec in _RARITY_CHOICES:
-		var id := str(spec["id"])
-		var b := _button(str(spec["label"]))
-		b.name = str(spec["node"])
-		b.clip_text = false
-		b.custom_minimum_size = Vector2(0, 32)
-		b.add_theme_font_size_override("font_size", 12)
-		b.alignment = HORIZONTAL_ALIGNMENT_CENTER
-		_paint_rarity_button(b, _filter_tint(id), id == rarity_filter)
-		b.pressed.connect(set_rarity_filter.bind(id))
-		_rarity_row.add_child(b)
+	if tab == "stills":
+		_rarity_row.visible = true
+		for spec in _STILL_CHOICES:
+			var id := str(spec["id"])
+			var b := _filter_button(str(spec["label"]), str(spec["node"]))
+			_paint_rarity_button(b, _still_filter_tint(id), id == still_filter)
+			b.pressed.connect(set_still_filter.bind(id))
+			_rarity_row.add_child(b)
+		return
+	_rarity_row.visible = false
+
+
+func _filter_button(label: String, node_name: String) -> Button:
+	var b := _button(label)
+	b.name = node_name
+	b.clip_text = false
+	b.custom_minimum_size = Vector2(0, 32)
+	b.add_theme_font_size_override("font_size", 12)
+	b.alignment = HORIZONTAL_ALIGNMENT_CENTER
+	return b
 
 
 func _filter_tint(id: String) -> Color:
 	if id == "":
 		return GOLD
 	return GearScreen.RARITY_TINT.get(id, GOLD)
+
+
+func _still_filter_tint(id: String) -> Color:
+	if id == "":
+		return GOLD
+	return StillVault.category_tint(id)
 
 
 func _filter_label() -> String:
@@ -786,8 +837,18 @@ func _rarity_matches(item_id: String) -> bool:
 	return rarity == rarity_filter
 
 
+func _still_matches(still_id: String) -> bool:
+	if still_filter == "":
+		return true
+	return StillVault.category_of(still_id) == still_filter
+
+
 func _refresh_grid() -> void:
 	_clear(_grid)
+	_grid.columns = _still_columns() if tab == "stills" else 6
+	if tab != "stills" and _fragments != null:
+		_fragments.visible = false
+		_fragments.text = ""
 	match tab:
 		"equipment":
 			var sorted := _bag.items.duplicate(true)
@@ -837,23 +898,36 @@ func _refresh_grid() -> void:
 			if not any:
 				_grid_note("No consumables. Room Tonics cost 1 coin in the Shop.")
 		"stills":
-			var any := false
+			# Every Still this class can socket, once. Short piles stay listed,
+			# greyed, and the fragment totals stay on their own line.
+			var shown := 0
 			for id in StillVault.IDS:
-				if _vault.count(id) <= 0 and _vault.socket_of(champion) != id:
+				if not _still_matches(id):
 					continue
-				any = true
-				var t := _grid_tile("Still_" + id)
+				shown += 1
+				var owned := _vault.socket_of(champion) == id
+				var forgeable := _vault.count(id) >= StillVault.FORGE_COST
+				var locked := not owned and not forgeable
+				var t := _grid_tile("Still_" + id, STILL_TILE)
 				t.glyph = "still"
-				# Fragments show the shard; a socketed Still with none left shows the hourglass.
-				t.icon_tex = StillVault.icon(id, _vault.count(id) > 0)
-				t.tint = StillVault.COLORS[id]
-				t.filled = true
-				t.count = _vault.count(id)
-				t.badge = "S" if _vault.socket_of(champion) == id else ""
+				t.icon_tex = StillVault.icon(id, false)
+				t.tint = Color(0.45, 0.45, 0.45) if locked else StillVault.COLORS[id]
+				t.filled = not locked
+				if owned:
+					t.foot = "Owned"
+				elif forgeable:
+					t.foot = "Forgeable"
+				else:
+					t.foot = "%d/12 fragments" % _vault.count(id)
+				t.badge = "S" if owned else ""
+				t.tag = StillVault.category_label(StillVault.category_of(id))
+				t.tag_tint = StillVault.category_tint(StillVault.category_of(id))
 				t.picked = str(picked.get("id", "")) == id
 				t.pressed.connect(select.bind({"kind": "still", "id": id}))
-			if not any:
-				_grid_note("No Still fragments yet. Stasis chests drop them.")
+			if shown == 0:
+				_grid_note("No %s Stills." % StillVault.category_label(still_filter))
+			_paint_still_fragments()
+			call_deferred("_fit_still_columns")
 		"cosmetics":
 			var any := false
 			for sku in KoliseoWallet.SHOP_ORDER:
@@ -870,13 +944,44 @@ func _refresh_grid() -> void:
 				_grid_note("No cosmetics yet. The trophy Shop sells frames, titles, tints and the pet.")
 
 
-func _grid_tile(node_name: String) -> InvTile:
+## As many columns as the panel is wide, so the fourteen Stills stay
+## in view instead of running off the right or into a third clipped row.
+func _still_columns() -> int:
+	var scroll := _grid.get_parent() as ScrollContainer
+	var width := scroll.size.x if scroll != null else 0.0
+	if width < STILL_TILE.x:
+		return 7
+	var sep := float(_grid.get_theme_constant("h_separation"))
+	return maxi(1, int((width + sep) / (STILL_TILE.x + sep)))
+
+
+func _fit_still_columns() -> void:
+	if tab != "stills" or _grid == null:
+		return
+	var cols := _still_columns()
+	if _grid.columns != cols:
+		_grid.columns = cols
+
+
+func _grid_tile(node_name: String, tile_size: Vector2 = Vector2(TILE, TILE)) -> InvTile:
 	var t := InvTile.new()
 	t.name = node_name
 	t.font = font
-	t.custom_minimum_size = Vector2(TILE, TILE)
+	t.custom_minimum_size = tile_size
 	_grid.add_child(t)
 	return t
+
+
+func _paint_still_fragments() -> void:
+	if _fragments == null:
+		return
+	var parts: PackedStringArray = PackedStringArray()
+	for id in StillVault.IDS:
+		var n := _vault.count(id)
+		if n > 0:
+			parts.append("%s %d" % [StillVault.display_name(id), n])
+	_fragments.visible = not parts.is_empty()
+	_fragments.text = "Fragments: %s" % ", ".join(parts) if not parts.is_empty() else ""
 
 
 func _grid_note(text: String) -> void:
@@ -971,6 +1076,10 @@ func _refresh_detail() -> void:
 		var head := _label("%s Still" % StillVault.display_name(id), 18, still_tint)
 		head.name = "StillHead"
 		_detail.add_child(head)
+		var category := StillVault.category_of(id)
+		var cat := _label(StillVault.category_label(category), 13, StillVault.category_tint(category))
+		cat.name = "StillCategory"
+		_detail.add_child(cat)
 		if _vault.socket_of(champion) == id:
 			var modes := HBoxContainer.new()
 			modes.add_theme_constant_override("separation", 6)
@@ -984,7 +1093,7 @@ func _refresh_detail() -> void:
 				mode_button.pressed.connect(choose_still.bind(mode))
 				modes.add_child(mode_button)
 			_detail.add_child(modes)
-		elif _in_fight():
+		else:
 			var swap := _button("Socket" if _vault.socket_of(champion) == "" else "Swap in")
 			swap.name = "SocketStill"
 			swap.clip_text = false
@@ -998,7 +1107,21 @@ func _refresh_detail() -> void:
 		if _vault.socket_of(champion) == id:
 			var how := "Intact" if _vault.mode_of(champion) == "intact" else "Overwound"
 			line = "In %s's Still socket (%s).  %s" % [SpellKits.display_name(champion), how, line]
-		_detail.add_child(_label(line, 14, GOLD_BRIGHT))
+		var frag_row := HBoxContainer.new()
+		frag_row.add_theme_constant_override("separation", 8)
+		var frag_icon := TextureRect.new()
+		frag_icon.name = "StillFragmentIcon"
+		frag_icon.texture = StillVault.icon(id, true)
+		frag_icon.custom_minimum_size = Vector2(64, 64)
+		frag_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		frag_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		frag_row.add_child(frag_icon)
+		var frag_label := _label(line, 14, GOLD_BRIGHT)
+		frag_label.name = "StillFragmentCount"
+		frag_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		frag_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		frag_row.add_child(frag_label)
+		_detail.add_child(frag_row)
 		var soon := "" if bool(fx.get("built", true)) else "  (coming in the next update)"
 		_detail.add_child(_label("Intact — safe: %s%s" % [StillVault.plain(id, "intact"), soon], 14, GOLD_BRIGHT))
 		_detail.add_child(_label("Overwound — stronger, with a drawback: %s%s" % [StillVault.plain(id, "overwound"), soon], 14, GOLD_BRIGHT))
@@ -1094,8 +1217,11 @@ class InvTile extends Button:
 	var picked := false
 	var plus := 0
 	var count := 0
+	var foot := ""
 	var badge := ""
 	var caption := ""
+	var tag := ""
+	var tag_tint := Color.WHITE
 	var icon_tex: Texture2D
 	var font: Font
 
@@ -1109,27 +1235,53 @@ class InvTile extends Button:
 		var r := Rect2(Vector2.ZERO, size)
 		draw_rect(r, Color(0.13, 0.11, 0.08, 0.95))
 		draw_rect(r.grow(-3), Color(0.20, 0.17, 0.12, 0.9) if filled else Color(0.09, 0.08, 0.06, 0.9))
-		var frame := tint if filled else Color(0.45, 0.37, 0.24)
+		var frame := tint if filled else (Color(0.42, 0.42, 0.42) if icon_tex != null else Color(0.45, 0.37, 0.24))
 		draw_rect(r, Color(1.0, 0.9, 0.55) if picked else frame, false, 3.0 if picked else 1.5)
-		var c := size * 0.5
+		var tag_h := 13.0 if tag != "" else 0.0
+		var foot_h := (12.0 if tag != "" else 14.0) if foot != "" or count > 0 or plus > 0 else 0.0
+		var c := Vector2(size.x * 0.5, (size.y - tag_h - foot_h) * 0.5)
 		var s := size.x * 0.28
 		var ink := tint if filled else Color(0.40, 0.34, 0.24)
+		var art := r.grow(-4)
+		if tag_h + foot_h > 0.0:
+			art.size.y = maxf(8.0, art.size.y - tag_h - foot_h)
 		if icon_tex != null:
-			# Soft rarity glow behind the item art, then the art.
+			# Soft rarity glow behind the item art, then the art. Locked Stills stay grey.
+			# Still tiles keep the hourglass near an equipment icon (about 60px),
+			# centered above the status line and the category bar.
+			var dest := art
+			if tag != "":
+				var side := minf(InventoryScreen.STILL_ICON, minf(art.size.x - 4.0, art.size.y))
+				dest = Rect2(Vector2((size.x - side) * 0.5, art.position.y + maxf(0.0, (art.size.y - side) * 0.5)), Vector2(side, side))
 			if filled:
-				draw_circle(c, size.x * 0.34, Color(tint.r, tint.g, tint.b, 0.16))
-			draw_texture_rect(icon_tex, r.grow(-4), false)
+				draw_circle(dest.get_center(), minf(dest.size.x, dest.size.y) * 0.34, Color(tint.r, tint.g, tint.b, 0.16))
+			var ink_mod := Color(1, 1, 1, 1) if filled else Color(0.55, 0.55, 0.55, 0.45)
+			draw_texture_rect(icon_tex, dest, false, ink_mod)
 		else:
 			_glyph(c, s, ink)
 		var f := font if font != null else ThemeDB.fallback_font
+		var foot_y := size.y - tag_h
 		if plus > 0:
-			draw_string(f, Vector2(4, size.y - 5), "+%d" % plus, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color(1, 0.95, 0.7))
+			draw_string(f, Vector2(4, foot_y - 5), "+%d" % plus, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color(1, 0.95, 0.7))
 		if count > 0:
 			var ct := "x%d" % count
 			var w := f.get_string_size(ct, HORIZONTAL_ALIGNMENT_LEFT, -1, 12).x
 			# Dark plate so the count reads over painted icons.
-			draw_rect(Rect2(Vector2(size.x - w - 7, size.y - 18), Vector2(w + 5, 15)), Color(0.04, 0.03, 0.02, 0.82))
-			draw_string(f, Vector2(size.x - w - 4, size.y - 5), ct, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color(1, 0.95, 0.7))
+			draw_rect(Rect2(Vector2(size.x - w - 7, foot_y - 18), Vector2(w + 5, 15)), Color(0.04, 0.03, 0.02, 0.82))
+			draw_string(f, Vector2(size.x - w - 4, foot_y - 5), ct, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color(1, 0.95, 0.7))
+		elif foot != "":
+			var fs := 10
+			var fw := f.get_string_size(foot, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+			while fw > size.x - 6.0 and fs > 8:
+				fs -= 1
+				fw = f.get_string_size(foot, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+			draw_rect(Rect2(Vector2(2, foot_y - foot_h), Vector2(size.x - 4, foot_h - 1)), Color(0.04, 0.03, 0.02, 0.82))
+			draw_string(f, Vector2(maxf((size.x - fw) * 0.5, 2), foot_y - 2), foot, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color(0.75, 0.75, 0.75) if not filled else Color(1, 0.95, 0.7))
+		if tag != "":
+			var strip := Rect2(Vector2(2, size.y - tag_h + 1), Vector2(size.x - 4, tag_h - 2))
+			draw_rect(strip, tag_tint)
+			var tw := f.get_string_size(tag, HORIZONTAL_ALIGNMENT_LEFT, -1, 10).x
+			draw_string(f, Vector2((size.x - tw) * 0.5, size.y - 3), tag, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color(0.10, 0.06, 0.04))
 		if badge != "":
 			draw_circle(Vector2(size.x - 9, 9), 8, Color(0.66, 0.84, 0.25) if badge == "E" else Color(0.62, 0.36, 0.95))
 			var bw := f.get_string_size(badge, HORIZONTAL_ALIGNMENT_LEFT, -1, 10).x

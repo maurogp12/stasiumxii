@@ -59,6 +59,36 @@ const COLORS := {
 	"bound_hour": Color(0.35, 0.55, 0.42),
 	"gathered_sand": Color(0.82, 0.68, 0.40),
 }
+## What the Still does. Offensive is your hits or the AP to land them.
+## Defensive protects you. Support is movement, positioning, allies, or information.
+const CATEGORIES: Array[String] = ["offensive", "defensive", "support"]
+const CATEGORY := {
+	"hourglass_fist": "offensive",
+	"withering_sand": "offensive",
+	"shatterglass": "offensive",
+	"bleeding_hour": "offensive",
+	"held_hour": "offensive",
+	"steadfast": "defensive",
+	"tide": "defensive",
+	"rewind": "defensive",
+	"gathered_sand": "defensive",
+	"hourglass_step": "support",
+	"long_shadow": "support",
+	"tolling_bell": "support",
+	"mirror_hour": "support",
+	"bound_hour": "support",
+}
+const CATEGORY_LABEL := {
+	"": "All",
+	"offensive": "Offensive",
+	"defensive": "Defensive",
+	"support": "Support",
+}
+const CATEGORY_TINT := {
+	"offensive": Color(0.90, 0.34, 0.22),
+	"defensive": Color(0.38, 0.62, 0.95),
+	"support": Color(0.42, 0.78, 0.40),
+}
 ## Short lines plus built (every locked Still is in the fight).
 const EFFECTS := {
 	"steadfast": {"intact": "First Stun becomes −3 AP, not a skipped turn", "overwound": "First Stun ignored; other debuffs last +1 turn", "built": true},
@@ -128,6 +158,18 @@ var mode: String:
 
 static func display_name(id: String) -> String:
 	return str(NAMES.get(id, id.capitalize()))
+
+
+static func category_of(id: String) -> String:
+	return str(CATEGORY.get(id, ""))
+
+
+static func category_label(category: String) -> String:
+	return str(CATEGORY_LABEL.get(category, ""))
+
+
+static func category_tint(category: String) -> Color:
+	return CATEGORY_TINT.get(category, Color.WHITE)
 
 
 ## Plain sentence for a Still's mode, with the not-built note.
@@ -311,9 +353,9 @@ func forge(id: String) -> Dictionary:
 	return {"ok": true, "reason": "", "still": id, "swapped": replacing, "class_id": focus_class}
 
 
-## Deployment inventory only. Replaces the socketed Still: refund 12 of the
-## old one, spend 12 of the new one, keep Intact / Overwound. The hub forge
-## path stays empty-socket unless the test kit is swapping.
+## Inventory swap, hub and deployment. Replaces the socketed Still: refund 12
+## of the old one, spend 12 of the new one, keep Intact / Overwound. The Vault
+## forge path stays empty-socket unless the test kit is swapping.
 func deploy_swap(id: String) -> Dictionary:
 	if not is_id(id):
 		return {"ok": false, "reason": "unknown_still"}

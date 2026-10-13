@@ -177,7 +177,7 @@ func _refresh() -> void:
 		tile.count = _vault.count(id)
 		tile.picked = id == selected
 		tile.font = font
-		tile.custom_minimum_size = Vector2(108, 104)
+		tile.custom_minimum_size = Vector2(108, 122)
 		tile.pressed.connect(pick.bind(id))
 		_grid.add_child(tile)
 	var fx: Dictionary = StillVault.EFFECTS[selected]
@@ -194,6 +194,10 @@ func _refresh() -> void:
 	var head := _label("%s Still" % StillVault.display_name(selected), 20, StillVault.COLORS[selected].lerp(GOLD_BRIGHT, 0.4))
 	head.name = "StillHead"
 	head_text.add_child(head)
+	var category := StillVault.category_of(selected)
+	var cat := _label(StillVault.category_label(category), 14, StillVault.category_tint(category))
+	cat.name = "StillCategory"
+	head_text.add_child(cat)
 	var have := _vault.count(selected)
 	head_text.add_child(_label("Fragments: %d / %d.  %s" % [have, StillVault.FORGE_COST, StillVault.forge_summary(have)], 15, GREEN if have >= StillVault.FORGE_COST else GOLD))
 	head_row.add_child(head_text)
@@ -320,10 +324,10 @@ class StillTile extends Button:
 		if art != null:
 			# Painted icon: the hourglass once 12 are in hand, else the shard
 			# (dimmed with none). A bar under it fills toward 12.
-			var side := minf(size.x - 12.0, size.y - 40.0)
+			var side := minf(size.x - 12.0, size.y - 58.0)
 			var box := Rect2(Vector2((size.x - side) * 0.5, 4.0), Vector2(side, side))
 			draw_texture_rect(art, box, false, Color(1, 1, 1, 1.0 if count > 0 else 0.35))
-			var bar := Rect2(Vector2(8, size.y - 34), Vector2(size.x - 16, 5))
+			var bar := Rect2(Vector2(8, size.y - 54), Vector2(size.x - 16, 4))
 			draw_rect(bar, Color(0.18, 0.14, 0.24))
 			draw_rect(Rect2(bar.position, Vector2(bar.size.x * clampf(float(count) / float(StillVault.FORGE_COST), 0.0, 1.0), bar.size.y)), tint if count < StillVault.FORGE_COST else Color(0.66, 0.84, 0.25))
 			_draw_caption()
@@ -350,6 +354,12 @@ class StillTile extends Button:
 
 	func _draw_caption() -> void:
 		var f := font if font != null else ThemeDB.fallback_font
+		var category := StillVault.category_of(still_id)
+		var tag := StillVault.category_label(category)
+		var tag_w := f.get_string_size(tag, HORIZONTAL_ALIGNMENT_LEFT, -1, 10).x
+		var tag_box := Rect2(Vector2((size.x - tag_w - 10.0) * 0.5, size.y - 48), Vector2(tag_w + 10.0, 13))
+		draw_rect(tag_box, StillVault.category_tint(category))
+		draw_string(f, Vector2(tag_box.position.x + 5, size.y - 38), tag, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color(0.10, 0.06, 0.04))
 		var name := StillVault.display_name(still_id)
 		var fs := 12
 		var tw := f.get_string_size(name, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
