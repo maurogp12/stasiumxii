@@ -472,8 +472,9 @@ const SPELLS := {
 		"class_id": CLASS_BASTION,
 		"ap": 3,
 		"mp": 0,
-		"range_mode": "chebyshev",
-		# Was a 1-tile cone. The pull reaches 4, so the cast does too.
+		"range_mode": "cardinal",
+		# Same row or same column only, 1–4 tiles. A diagonal or a knight
+		# step is not a target. The pull still stops next to Bastion.
 		# AP stays 3, the element stays earth, Residue stays on the enemy hit.
 		# Air does not add a fifth tile (AIR_RANGE_EXCLUDED).
 		"min_range": 1,
