@@ -7211,13 +7211,15 @@ func _still_on_hit(actor: Dictionary, target: Dictionary, damage: int) -> int:
 	return damage
 
 
+## Chebyshev between the attacker and the wearer at the moment of the hit.
+## _mitigate_hit runs this before any pull or push. Any class can wear it,
+## Bastion included. Every far hit stores +2 MP for the wearer's next turn,
+## added after that turn's refill. The old Intact first-hit and Overwound
+## first-three caps are gone.
 func _still_note_kite(actor: Dictionary, target: Dictionary) -> void:
 	if _still_id(target) != "long_shadow" or _allied(actor, target):
 		return
 	if chebyshev(actor["pos"], target["pos"]) < 3:
-		return
-	var cap := 3 if _still_over(target) else 1
-	if int(target.get("shadow_hits", 0)) >= cap:
 		return
 	target["shadow_hits"] = int(target.get("shadow_hits", 0)) + 1
 	target["shadow_mp_next"] = int(target.get("shadow_mp_next", 0)) + 2

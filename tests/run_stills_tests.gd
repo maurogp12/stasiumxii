@@ -289,32 +289,115 @@ func _test_long_shadow() -> void:
 	truthy(StillVault.plain("long_shadow", "intact").contains("3 or more tiles"), "inventory text says 3 or more tiles")
 	truthy(StillVault.plain("long_shadow", "overwound").contains("3 or more tiles"), "Overwound inventory text says 3 or more tiles")
 	eq(StillVault.plain("long_shadow", "intact").contains("4 or more"), false, "the old 4-tile line is gone")
-	_fight({}, _gear("long_shadow", "intact"), ["kestrel", "ironjaw"], [], [Vector2i(2, 7), Vector2i(4, 7)])
+	_fight({}, _gear("long_shadow", "intact"), ["kestrel", "bastion"], [], [Vector2i(2, 7), Vector2i(4, 7)])
 	eq(_sim.chebyshev(_u(0)["pos"], _u(1)["pos"]), 2, "2 tiles is not a long hit")
 	_sim._mitigate_hit(_u(0), _u(1), 20)
 	eq(int(_u(1).get("shadow_mp_next", 0)), 0, "Long Shadow does not trigger at 2 tiles")
-	_fight({}, _gear("long_shadow", "intact"), ["kestrel", "ironjaw"], [], [Vector2i(2, 7), Vector2i(5, 7)])
+	_fight({}, _gear("long_shadow", "intact"), ["kestrel", "bastion"], [], [Vector2i(2, 7), Vector2i(5, 7)])
 	eq(_sim.chebyshev(_u(0)["pos"], _u(1)["pos"]), 3, "the hit is from 3 tiles")
 	var far := int(_sim._mitigate_hit(_u(0), _u(1), 20)["damage"])
 	eq(far, 20, "Long Shadow Intact does not change the hit")
 	eq(int(_u(1).get("shadow_mp_next", 0)), 2, "the next turn gains +2 MP")
+	eq(int(_u(1)["mp"]), int(_u(1)["max_mp"]), "the MP waits until that next turn")
 	_sim._mitigate_hit(_u(0), _u(1), 20)
-	eq(int(_u(1).get("shadow_hits", 0)), 1, "Intact grants the bonus once")
+	eq(int(_u(1).get("shadow_hits", 0)), 2, "a second far hit in the same turn also counts")
+	eq(int(_u(1).get("shadow_mp_next", 0)), 4, "each far hit stores another +2 MP")
 	_end_turns(1)
-	eq(int(_u(1)["mp"]), 5, "the +2 MP is capped at 5")
-	_fight({}, _gear("long_shadow", "intact"), ["kestrel", "ironjaw"], [], [Vector2i(2, 7), Vector2i(6, 7)])
+	eq(int(_u(1)["mp"]), 5, "the stored MP is added after the refill and capped at 5")
+	_fight({}, _gear("long_shadow", "intact"), ["kestrel", "bastion"], [], [Vector2i(2, 7), Vector2i(6, 7)])
 	eq(_sim.chebyshev(_u(0)["pos"], _u(1)["pos"]), 4, "4 tiles still counts")
 	_sim._mitigate_hit(_u(0), _u(1), 20)
 	eq(int(_u(1).get("shadow_mp_next", 0)), 2, "a 4-tile hit still grants +2 MP")
-	_fight({}, _gear("long_shadow", "overwound"))
+	_fight({}, _gear("long_shadow", "overwound"), ["kestrel", "bastion"])
 	var near := int(_sim._mitigate_hit(_u(0), _u(1), 20)["damage"])
 	eq(near, 22, "adjacent enemies deal +10% even before a long hit")
-	_fight({}, _gear("long_shadow", "overwound"), ["kestrel", "ironjaw"], [], [Vector2i(2, 7), Vector2i(6, 7)])
-	for n in 3:
+	_fight({}, _gear("long_shadow", "overwound"), ["kestrel", "bastion"], [], [Vector2i(2, 7), Vector2i(6, 7)])
+	for n in 4:
 		_sim._mitigate_hit(_u(0), _u(1), 10)
-	eq(int(_u(1).get("shadow_mp_next", 0)), 6, "the first 3 long hits each store +2 MP")
+	eq(int(_u(1).get("shadow_hits", 0)), 4, "Overwound has no first-three cap")
+	eq(int(_u(1).get("shadow_mp_next", 0)), 8, "every long hit stores +2 MP")
 	_end_turns(1)
-	eq(int(_u(1)["mp"]), 9, "Overwound MP may pass 5")
+	eq(int(_u(1)["mp"]), 11, "Overwound MP may pass 5")
+	_fight({}, _gear("long_shadow", "intact"), ["kestrel", "bastion"], [], [Vector2i(2, 7), Vector2i(4, 9)])
+	eq(_sim.chebyshev(_u(0)["pos"], _u(1)["pos"]), 2, "a diagonal of 2 is still 2 tiles")
+	eq(_sim.manhattan(_u(0)["pos"], _u(1)["pos"]), 4, "that same gap is 4 by Manhattan")
+	_sim._mitigate_hit(_u(0), _u(1), 20)
+	eq(int(_u(1).get("shadow_mp_next", 0)), 0, "Long Shadow uses Chebyshev, so 2 tiles does not grant")
+	_fight({}, _gear("long_shadow", "intact"), ["kestrel", "bastion"], [], [Vector2i(2, 7), Vector2i(5, 9)])
+	eq(_sim.chebyshev(_u(0)["pos"], _u(1)["pos"]), 3, "a diagonal of 3 counts")
+	_sim._mitigate_hit(_u(0), _u(1), 20)
+	eq(int(_u(1).get("shadow_mp_next", 0)), 2, "Chebyshev 3 grants even when the steps are not in a straight line")
+	_test_long_shadow_casts()
+
+
+## Kestrel's Mark Shots are the hits in the screenshot: Bastion wears Long
+## Shadow, she shoots from 3+ tiles, and his card stays on the turn refill
+## until his own turn adds the stored MP.
+func _test_long_shadow_casts() -> void:
+	_sim.reset_match({
+		"seed": 1, "flat_board": true, "skip_deploy": true,
+		"classes": ["kestrel", "bastion"],
+		"positions": [Vector2i(1, 1), Vector2i(3, 1)],
+		"rolls": [1],
+		"seat_gear": {1: _gear("long_shadow", "intact")},
+	})
+	eq(_sim.chebyshev(_u(0)["pos"], _u(1)["pos"]), 2, "Mark Shot at 2 tiles is in range")
+	var close: Dictionary = _sim.submit({"type": "cast", "spell": "mark_shot", "seat": 0, "to": _u(1)["pos"]})
+	eq(bool(close.get("ok", false)), true, "the 2-tile Mark Shot connects")
+	eq(int(_u(1).get("shadow_mp_next", 0)), 0, "a 2-tile Mark Shot does not grant Bastion MP")
+	_sim.reset_match({
+		"seed": 1, "flat_board": true, "skip_deploy": true,
+		"classes": ["kestrel", "bastion"],
+		"positions": [Vector2i(1, 1), Vector2i(3, 3)],
+		"rolls": [1],
+		"seat_gear": {1: _gear("long_shadow", "intact")},
+	})
+	eq(_sim.chebyshev(_u(0)["pos"], _u(1)["pos"]), 2, "the diagonal is 2 tiles")
+	eq(_sim.manhattan(_u(0)["pos"], _u(1)["pos"]), 4, "the same diagonal is 4 by Manhattan")
+	var diagonal: Dictionary = _sim.submit({"type": "cast", "spell": "mark_shot", "seat": 0, "to": _u(1)["pos"]})
+	eq(bool(diagonal.get("ok", false)), true, "the diagonal Mark Shot connects")
+	eq(int(_u(1).get("shadow_mp_next", 0)), 0, "Manhattan 4 does not grant when Chebyshev is 2")
+	_sim.reset_match({
+		"seed": 1, "flat_board": true, "skip_deploy": true,
+		"classes": ["kestrel", "bastion"],
+		"positions": [Vector2i(1, 1), Vector2i(5, 1)],
+		"rolls": [1, 1, 1],
+		"seat_gear": {1: _gear("long_shadow", "intact")},
+	})
+	eq(_sim.chebyshev(_u(0)["pos"], _u(1)["pos"]), 4, "Kestrel is 4 tiles from Bastion")
+	var hero_ai = load("res://backend/hero_ai.gd")
+	var bot: Dictionary = hero_ai.plan(_sim, 0)
+	eq(str(bot.get("spell", "")), "mark_shot", "the bot shoots Mark Shot from 4 tiles")
+	eq(bot.get("to"), _u(1)["pos"], "the bot aims at Bastion")
+	var first: Dictionary = _sim.submit(bot)
+	eq(bool(first.get("ok", false)), true, "the bot's Mark Shot connects")
+	eq(_u(1)["pos"], Vector2i(5, 1), "Mark Shot does not move Bastion")
+	eq(int(_u(1).get("shadow_mp_next", 0)), 2, "the first far hit stores +2 MP")
+	eq(int(_u(1)["mp"]), int(_u(1)["max_mp"]), "Bastion's MP number does not change on her turn")
+	var second: Dictionary = _sim.submit({"type": "cast", "spell": "mark_shot", "seat": 0, "to": _u(1)["pos"]})
+	eq(bool(second.get("ok", false)), true, "a second Mark Shot in the same turn connects")
+	eq(int(_u(1).get("shadow_hits", 0)), 2, "both far hits in one turn count")
+	eq(int(_u(1).get("shadow_mp_next", 0)), 4, "each far hit stores another +2 MP")
+	var hud := CombatHUD.new()
+	eq(hud._still_state_line(_u(1)).contains("Long Shadow +4 MP"), true, "Bastion's card names the pending MP")
+	hud.free()
+	var guest_script := load("res://backend/combat_sim.gd")
+	var guest: Node = guest_script.new()
+	guest.apply_host_snapshot(_sim.snapshot())
+	var guest_mp := -1
+	var guest_pending := -1
+	for unit in guest.snapshot()["units"]:
+		if int(unit.get("seat", -1)) == 1:
+			guest_mp = int(unit.get("mp", -1))
+			guest_pending = int(unit.get("shadow_mp_next", -1))
+	eq(guest_pending, 4, "the other phone keeps the pending MP")
+	eq(guest_mp, int(_u(1)["max_mp"]), "the other phone still shows the unrefilled pool")
+	guest.free()
+	_u(1)["mp"] = 0
+	_end_turns(1)
+	eq(int(_sim.snapshot()["active_seat"]), 1, "it is Bastion's turn")
+	eq(int(_u(1)["mp"]), 5, "his turn adds the stored MP on top of the refill, capped at 5")
+	eq(int(_u(1).get("shadow_mp_next", 0)), 0, "the pending MP is spent at turn start")
 
 
 func _test_withering() -> void:
