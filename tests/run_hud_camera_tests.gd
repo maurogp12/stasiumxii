@@ -124,7 +124,8 @@ func _test_live_updates() -> void:
 	board._submit({"type": "cast", "spell": "fade", "to": fade_at})
 	await _watch(board, hud, "hot-seat Fade", false, 0)
 	board._on_end_turn_button_pressed()
-	await _watch(board, hud, "hot-seat turn change", false, 0, true)
+	# A new turn may glide back to the fighter. A one-frame teleport still fails the step cap.
+	await _watch(board, hud, "hot-seat turn change", true, 0, true)
 	# Applied snapshot, including an enemy walk while this phone is Gloam's.
 	# Dedicated skips the listen-host clock, which would otherwise rebroadcast
 	# and re-enter the same handler mid-watch.
@@ -153,9 +154,51 @@ func _test_live_updates() -> void:
 	var ended: Dictionary = _sim().submit({"type": "end_turn"})
 	eq(bool(ended.get("ok", false)), true, "snapshot end turn is legal")
 	board._on_net_state(ended.get("events", []), {})
-	await _watch(board, hud, "snapshot turn change", false, 0, true)
+	await _watch(board, hud, "snapshot turn change", true, 0, true)
+	await _drain_focus_glide(board, hud)
 	net.mode = prev_mode
 	net.local_seat = prev_seat
+	var cam: Camera2D = board.get("_camera")
+	board.recenter_camera()
+	var home: Vector2 = cam.position
+	board._queue_pan(Vector2(-420.0, 60.0))
+	board._apply_pending_pan()
+	var shifted: float = cam.position.distance_to(home)
+	truthy(shifted > 20.0, "a one-finger drag moves the board (%.1f)" % shifted)
+	board.recenter_camera()
+	var snapped: float = cam.position.distance_to(home)
+	truthy(snapped < 8.0, "Center snaps back to the active fighter (%.1f)" % snapped)
+	board._queue_pan(Vector2(-420.0, 0.0))
+	board._apply_pending_pan()
+	var away: Vector2 = cam.position
+	truthy(away.distance_to(home) > 20.0, "the board stays where the finger left it")
+	board._on_end_turn_button_pressed()
+	var prev_pan := cam.position
+	var saw_banner := false
+	var idle := 0
+	for _i in 180:
+		await process_frame
+		if not _assert_hud(hud, "panned turn change"):
+			break
+		var glide_step := prev_pan.distance_to(cam.position)
+		# World units. A phone zoom makes a smooth glide a larger world step
+		# than the 48px walk cap. A one-frame teleport of the whole board is bigger.
+		truthy(glide_step <= 160.0, "panned turn change camera step is smooth (%.1f)" % glide_step)
+		prev_pan = cam.position
+		var banner := hud._handoff_overlay != null and hud._handoff_overlay.visible
+		saw_banner = saw_banner or banner
+		var locked := bool(board.get("_busy")) or bool(board.get("_view_locked"))
+		if not locked and not banner:
+			idle += 1
+			if idle >= 3:
+				break
+		else:
+			idle = 0
+	truthy(saw_banner, "panned turn change shows the turn banner")
+	await _drain_focus_glide(board, hud)
+	truthy(cam.position.distance_to(away) > 20.0, "a new turn leaves the dragged view")
+	if not mobile:
+		truthy(cam.position.distance_to(home) < 8.0, "a new turn glides back to the framed fighter (%.1f)" % cam.position.distance_to(home))
 	main.free()
 
 

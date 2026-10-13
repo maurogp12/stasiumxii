@@ -131,8 +131,18 @@ const PLAYER_ZOOM_BIAS_MAX := 2.6
 const PLAYER_ZOOM_MIN := 1.5
 const PLAYER_ZOOM_MAX := 3.0
 static var player_zoom_bias: float = 1.0
-## A short finger slide still picks a cell. A longer drag pans the cropped map.
-const PAN_SLOP := 48.0
+## A short finger slide still picks a cell. Past this, a one-finger drag
+## pans the board instead of walking. 12px keeps a tap a tap.
+const PAN_SLOP := 12.0
+## Screen pixels of fight chrome a drag must be able to clear.
+## Left: New Match / Hub / Log and the Face pad. Right: the spell cluster.
+## Top: the corner cards. Bottom: the Face pad and the thumb row.
+## The geometric pan room only reaches the screen edge, which is where
+## those buttons sit, so an edge fighter stays hidden without this extra.
+const PAN_CHROME_LEFT := 208.0
+const PAN_CHROME_RIGHT := 288.0
+const PAN_CHROME_TOP := 176.0
+const PAN_CHROME_BOTTOM := 268.0
 
 const AIM := "aim"
 const COMMIT := "commit"
@@ -361,6 +371,16 @@ static func drag_is_pan(from: Vector2, to: Vector2, spell_armed: bool) -> bool:
 	if spell_armed:
 		return false
 	return from.distance_to(to) >= PAN_SLOP
+
+
+## Extra world-space pan past the geometric overflow, one side each:
+## (left, top, right, bottom). A drag can slide an edge tile out from under
+## the buttons. The limit is that chrome, so the board cannot leave the screen.
+static func pan_chrome(zoom: float, mobile: bool = false) -> Vector4:
+	var z := maxf(zoom, 0.001)
+	var top := PAN_CHROME_TOP if mobile else 0.0
+	var bottom := PAN_CHROME_BOTTOM if mobile else 0.0
+	return Vector4(PAN_CHROME_LEFT / z, top / z, PAN_CHROME_RIGHT / z, bottom / z)
 
 
 ## Flat iso cell. Matches the fallback in pick_board_cell.

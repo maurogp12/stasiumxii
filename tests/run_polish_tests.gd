@@ -13,6 +13,7 @@ var _passed: int = 0
 
 func _initialize() -> void:
 	_test_pan_is_queued()
+	_test_pan_clears_chrome()
 	_test_turn_bar()
 	_test_grid_and_occluders()
 	_test_draw_slots_do_not_tie()
@@ -46,6 +47,33 @@ func _test_pan_is_queued() -> void:
 	truthy(src.contains("func _apply_pending_pan"), "pan is applied from the frame")
 	truthy(src.contains("func _apply_wheel_zoom"), "the mouse wheel uses the zoom limits")
 	truthy(src.contains("func _follow_local_fighter"), "the camera only follows the local fighter")
+	board.free()
+
+
+func _test_pan_clears_chrome() -> void:
+	var board: Node2D = load("res://board_view.gd").new()
+	var cam := Camera2D.new()
+	cam.zoom = Vector2(2, 2)
+	cam.position = Vector2.ZERO
+	board._camera = cam
+	board._fit_camera_pos = Vector2.ZERO
+	board._pan_limit = Vector2.ZERO
+	board._board_px = Vector2(960, 500)
+	board._queue_pan(Vector2(4000, 0))
+	board._apply_pending_pan()
+	near(cam.position.x, -TouchAdapter.PAN_CHROME_LEFT / 2.0, "dragging right slides the left edge clear of the buttons")
+	eq(board._user_panned, true, "a drag marks the view as player-panned")
+	board._queue_pan(Vector2(-4000, 0))
+	board._apply_pending_pan()
+	near(cam.position.x, TouchAdapter.PAN_CHROME_RIGHT / 2.0, "dragging left slides the right edge clear of the spells")
+	var stuck := cam.position.x
+	board._queue_pan(Vector2(-4000, 0))
+	board._apply_pending_pan()
+	near(cam.position.x, stuck, "the board stops once that edge clears the buttons")
+	board._queue_pan(Vector2(0, 4000))
+	board._apply_pending_pan()
+	# Desktop clamp has no vertical chrome. The portrait inset is phone-only.
+	near(cam.position.y, 0.0, "desktop pan does not drag the board off the top of the play band")
 	board.free()
 
 
