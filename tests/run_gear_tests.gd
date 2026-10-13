@@ -1582,9 +1582,21 @@ func _test_prefight_loadout() -> void:
 	eq(int(tide_tile.count), 0, "a forgeable Still is not a fragment stack")
 	eq(str(sand.icon_tex.resource_path), StillVault.icon_path("gathered_sand", false), "the tile is the forged Still")
 	eq(str(tide_tile.icon_tex.resource_path).contains("_fragment"), false, "the swap list is not fragment art")
-	eq(screen.find_child("Still_steadfast", true, false), null, "a Still with no fragments is not a swap tile")
+	var locked := screen.find_child("Still_steadfast", true, false)
+	truthy(locked != null, "a Still with no fragments is still listed")
+	eq(str(locked.foot), "0/12 fragments", "zero fragments read as 0/12")
+	eq(bool(locked.filled), false, "a short Still is greyed")
+	eq(str(locked.tag), "Defensive", "Steadfast is tagged Defensive")
+	var listed := 0
+	for id in StillVault.IDS:
+		if screen.find_child("Still_" + id, true, false) != null:
+			listed += 1
+	eq(listed, StillVault.IDS.size(), "the fight Stills tab lists every Still")
 	var frag_line := (screen.find_child("StillFragments", true, false) as Label).text
 	eq(frag_line.contains("Tide 24") and frag_line.contains("Gathered Sand 12"), true, "fragments sit on their own line")
+	screen.select({"kind": "still", "id": "steadfast"})
+	var locked_swap := screen.find_child("SocketStill", true, false) as Button
+	truthy(locked_swap != null and locked_swap.disabled, "a locked Still cannot be socketed")
 	screen.select({"kind": "still", "id": "tide"})
 	var swap := screen.find_child("SocketStill", true, false) as Button
 	truthy(swap != null and swap.text == "Swap in", "a different Still offers Swap in")
@@ -1693,8 +1705,19 @@ func _test_prefight_loadout() -> void:
 	eq(owned != null and str(owned.foot) == "Owned" and int(owned.count) == 0, true, "the hub lists the socketed Still once")
 	eq(str(owned.icon_tex.resource_path), StillVault.icon_path("hourglass_fist", false), "the hub tile is the forged Still")
 	eq(ready != null and str(ready.foot) == "Forgeable" and int(ready.count) == 0, true, "the hub lists a forgeable Still once")
-	eq(hub_screen.find_child("Still_rewind", true, false), null, "a short pile is not a swap tile")
+	var short := hub_screen.find_child("Still_rewind", true, false)
+	eq(short != null and str(short.foot) == "4/12 fragments" and not bool(short.filled), true, "a short pile stays listed and locked")
+	var hub_listed := 0
+	for id in StillVault.IDS:
+		if hub_screen.find_child("Still_" + id, true, false) != null:
+			hub_listed += 1
+	eq(hub_listed, StillVault.IDS.size(), "the hub Stills tab lists every Still")
 	eq((hub_screen.find_child("StillFragments", true, false) as Label).text.contains("Rewind 4"), true, "short piles stay in the fragment line")
+	hub_screen.set_still_filter("defensive")
+	eq(hub_screen.find_child("Still_tide", true, false) != null, true, "Defensive keeps Tide")
+	eq(hub_screen.find_child("Still_rewind", true, false) != null, true, "Defensive keeps a locked Rewind")
+	eq(hub_screen.find_child("Still_hourglass_fist", true, false), null, "Defensive hides Hourglass Fist")
+	hub_screen.set_still_filter("")
 	hub_screen.select({"kind": "still", "id": "tide"})
 	var hub_swap := hub_screen.find_child("SocketStill", true, false) as Button
 	truthy(hub_swap != null and hub_swap.text == "Swap in" and not hub_swap.disabled, "the hub offers Swap in")

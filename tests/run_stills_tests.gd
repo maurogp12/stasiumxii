@@ -27,6 +27,7 @@ func _run() -> void:
 	_sim = root.get_node("/root/CombatSim")
 	_wipe()
 	_test_vault()
+	_test_still_categories()
 	_test_hourglass()
 	_test_set_still_pools()
 	_test_steadfast()
@@ -143,6 +144,70 @@ func _test_vault() -> void:
 	eq(reloaded.count("tide"), 12, "vault saves and reloads")
 	eq(reloaded.socket_of("kestrel"), "mirror_hour", "Kestrel's socket reloads")
 	eq(reloaded.socket_of("ironjaw"), "", "Ironjaw's broken socket stays empty")
+
+
+func _test_still_categories() -> void:
+	var counts := {"offensive": 0, "defensive": 0, "support": 0}
+	for id in StillVault.IDS:
+		var cat := StillVault.category_of(id)
+		truthy(StillVault.CATEGORIES.has(cat), "%s has one category" % id)
+		counts[cat] += 1
+		eq(StillVault.category_label(cat) != "", true, "%s has a category label" % id)
+	eq(counts["offensive"] + counts["defensive"] + counts["support"], 14, "every Still is in one category")
+	eq(counts["offensive"], 5, "five Offensive Stills")
+	eq(counts["defensive"], 4, "four Defensive Stills")
+	eq(counts["support"], 5, "five Support Stills")
+	eq(StillVault.category_of("gathered_sand"), "defensive", "Gathered Sand reflect is Defensive")
+	eq(StillVault.category_of("hourglass_fist"), "offensive", "Hourglass Fist is Offensive")
+	eq(StillVault.category_of("bound_hour"), "support", "Bound Hour is Support")
+	_wipe()
+	var vault := StillVault.new()
+	for id in StillVault.IDS:
+		vault.fragments[id] = 24
+	vault.set_focus("bastion")
+	vault.socket = "gathered_sand"
+	vault.save()
+	for fight in [true, false]:
+		var screen := InventoryScreen.new()
+		screen.champion = "bastion"
+		if fight:
+			screen.set_fight_classes(["bastion"])
+		root.add_child(screen)
+		var where := "fight" if fight else "hub"
+		screen.show_tab("stills")
+		eq(screen.still_filter, "", "%s Stills start on All" % where)
+		eq((screen.find_child("StillFilterAll", true, false) as Button).text, "All", "%s filter starts with All" % where)
+		eq((screen.find_child("StillFilterDefensive", true, false) as Button).text, "Defensive", "%s filter offers Defensive" % where)
+		var listed := 0
+		for id in StillVault.IDS:
+			if screen.find_child("Still_" + id, true, false) != null:
+				listed += 1
+		eq(listed, 14, "%s All lists every Still" % where)
+		eq((screen.find_child("Still_gathered_sand", true, false) as InventoryScreen.InvTile).tag, "Defensive", "%s Gathered Sand is tagged Defensive" % where)
+		screen.set_still_filter("offensive")
+		eq(screen.find_child("Still_shatterglass", true, false) != null, true, "%s Offensive keeps Shatterglass" % where)
+		eq(screen.find_child("Still_gathered_sand", true, false), null, "%s Offensive hides Gathered Sand" % where)
+		eq(screen.find_child("Socket", true, false) != null, true, "%s paperdoll socket stays while the grid filters" % where)
+		screen.set_still_filter("defensive")
+		eq(screen.find_child("Still_gathered_sand", true, false) != null, true, "%s Defensive keeps Gathered Sand" % where)
+		eq(screen.find_child("Still_shatterglass", true, false), null, "%s Defensive hides Shatterglass" % where)
+		eq(screen.find_child("Still_steadfast", true, false) != null, true, "%s Defensive keeps Steadfast" % where)
+		screen.set_still_filter("support")
+		eq(screen.find_child("Still_bound_hour", true, false) != null, true, "%s Support keeps Bound Hour" % where)
+		eq(screen.find_child("Still_gathered_sand", true, false), null, "%s Support hides Gathered Sand" % where)
+		screen.show_tab("equipment")
+		eq((screen.find_child("RarityRow", true, false) as Control).visible, true, "%s equipment keeps the rarity row" % where)
+		eq(screen.find_child("StillFilterOffensive", true, false), null, "%s equipment hides the Still filter" % where)
+		eq(screen.still_filter, "support", "%s Still filter stays when the tab returns" % where)
+		screen.show_tab("stills")
+		eq(screen.find_child("Still_bound_hour", true, false) != null, true, "%s Support is still on when Stills returns" % where)
+		screen.set_still_filter("")
+		eq(screen.find_child("Still_gathered_sand", true, false) != null, true, "%s All shows Gathered Sand again" % where)
+		if not fight:
+			screen.show_tab("consumables")
+			eq((screen.find_child("RarityRow", true, false) as Control).visible, false, "the filter hides off Equipment and Stills")
+		screen.free()
+	_wipe()
 
 
 func _test_hourglass() -> void:
