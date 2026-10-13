@@ -301,7 +301,7 @@ func _assert_magma_shield_blocked() -> void:
 	bastion["shield"] = 18
 	_sim.submit({"type": "end_turn", "seat": 0})
 	eq(int(_sim._unit_by_seat(1).get("shield", 0)), 18, "the Burn tick leaves the old shield")
-	eq(int(_sim._unit_by_seat(1).get("no_shield", 0)), 0, "the lock ends as his turn starts")
+	eq(int(_sim._unit_by_seat(1).get("no_shield", 0)), 1, "the lock covers his whole next turn")
 	eq(int(_sim._unit_by_seat(1).get("burn_stacks", 0)), 3, "he is still burning")
 	bastion = _sim._unit_by_seat(1)
 	bastion["ap"] = 6
@@ -310,11 +310,14 @@ func _assert_magma_shield_blocked() -> void:
 	for intent in _sim.legal_intents(1):
 		if str(intent.get("spell", "")) == "ward":
 			offered = true
-	eq(offered, true, "on his next turn Ward is offered while he still burns")
+	eq(offered, false, "Ward is not offered while the lock covers this turn")
 	var ward: Dictionary = _sim.submit({"type": "cast", "spell": "ward", "seat": 1, "to": bastion["pos"]})
-	eq(bool(ward.get("ok", false)), true, "Ward resolves while he is still burning")
-	eq(int(_sim._unit_by_seat(1).get("shield", 0)), 38, "Ward adds 20 on top of the old shield")
-	eq(_find(_sim.snapshot()["battle_log"], "shield_blocked").is_empty(), true, "a Ward that lands is not a blocked-shield line")
+	eq(bool(ward.get("ok", false)), false, "Ward does not resolve on the locked turn")
+	eq(int(_sim._unit_by_seat(1).get("shield", 0)), 18, "the old shield stays and no new shield lands")
+	var blocked_turn := _find(_sim.snapshot()["battle_log"], "shield_blocked")
+	eq(blocked_turn.is_empty(), true, "a Ward refused before it spends is not a second blocked line")
+	_sim.submit({"type": "end_turn", "seat": 1})
+	eq(int(_sim._unit_by_seat(1).get("no_shield", 0)), 0, "the lock ends when his turn ends")
 	# An ally in range is shielded. The burning body is the blocked line, and he pays.
 	_sim.reset_match({
 		"seed": 3, "flat_board": true, "skip_deploy": true, "team_size": 2,
