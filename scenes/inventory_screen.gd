@@ -66,6 +66,7 @@ var _stats_box: VBoxContainer
 var _tab_row: HBoxContainer
 var _rarity_row: HBoxContainer
 var _grid: GridContainer
+var _fragments: Label
 var _detail: VBoxContainer
 var _body: VBoxContainer
 var _left: VBoxContainer
@@ -225,7 +226,8 @@ func choose_still(mode: String) -> Dictionary:
 	return result
 
 
-## Deployment only. Swap which Still is socketed. Locks with the rest of the loadout.
+## Hub and deployment. Swap which Still is socketed. Intact / Overwound stays.
+## A deployment change also pushes that class's loadout, local and online.
 func socket_still(id: String) -> Dictionary:
 	_vault.set_focus(champion)
 	var result := _vault.deploy_swap(id)
@@ -523,6 +525,10 @@ func _build() -> void:
 	_grid.add_theme_constant_override("h_separation", 6)
 	_grid.add_theme_constant_override("v_separation", 6)
 	scroll.add_child(_grid)
+	_fragments = _label("", 13, GOLD_DIM)
+	_fragments.name = "StillFragments"
+	_fragments.visible = false
+	right.add_child(_fragments)
 	var detail_panel := PanelContainer.new()
 	var dstyle := StyleBoxFlat.new()
 	dstyle.bg_color = Color(0.07, 0.06, 0.05, 0.95)
@@ -788,6 +794,9 @@ func _rarity_matches(item_id: String) -> bool:
 
 func _refresh_grid() -> void:
 	_clear(_grid)
+	if tab != "stills" and _fragments != null:
+		_fragments.visible = false
+		_fragments.text = ""
 	match tab:
 		"equipment":
 			var sorted := _bag.items.duplicate(true)
@@ -837,23 +846,27 @@ func _refresh_grid() -> void:
 			if not any:
 				_grid_note("No consumables. Room Tonics cost 1 coin in the Shop.")
 		"stills":
+			# One forged Still per id this class can socket. Fragment piles are
+			# a line under the grid, not stack tiles.
 			var any := false
 			for id in StillVault.IDS:
-				if _vault.count(id) <= 0 and _vault.socket_of(champion) != id:
+				var owned := _vault.socket_of(champion) == id
+				var forgeable := _vault.count(id) >= StillVault.FORGE_COST
+				if not owned and not forgeable:
 					continue
 				any = true
 				var t := _grid_tile("Still_" + id)
 				t.glyph = "still"
-				# Fragments show the shard; a socketed Still with none left shows the hourglass.
-				t.icon_tex = StillVault.icon(id, _vault.count(id) > 0)
+				t.icon_tex = StillVault.icon(id, false)
 				t.tint = StillVault.COLORS[id]
 				t.filled = true
-				t.count = _vault.count(id)
-				t.badge = "S" if _vault.socket_of(champion) == id else ""
+				t.foot = "Owned" if owned else "Forgeable"
+				t.badge = "S" if owned else ""
 				t.picked = str(picked.get("id", "")) == id
 				t.pressed.connect(select.bind({"kind": "still", "id": id}))
 			if not any:
-				_grid_note("No Still fragments yet. Stasis chests drop them.")
+				_grid_note("No Stills ready to socket. 12 fragments of one Still forge it.")
+			_paint_still_fragments()
 		"cosmetics":
 			var any := false
 			for sku in KoliseoWallet.SHOP_ORDER:
@@ -877,6 +890,18 @@ func _grid_tile(node_name: String) -> InvTile:
 	t.custom_minimum_size = Vector2(TILE, TILE)
 	_grid.add_child(t)
 	return t
+
+
+func _paint_still_fragments() -> void:
+	if _fragments == null:
+		return
+	var parts: PackedStringArray = PackedStringArray()
+	for id in StillVault.IDS:
+		var n := _vault.count(id)
+		if n > 0:
+			parts.append("%s %d" % [StillVault.display_name(id), n])
+	_fragments.visible = not parts.is_empty()
+	_fragments.text = "Fragments: %s" % ", ".join(parts) if not parts.is_empty() else ""
 
 
 func _grid_note(text: String) -> void:
@@ -984,7 +1009,7 @@ func _refresh_detail() -> void:
 				mode_button.pressed.connect(choose_still.bind(mode))
 				modes.add_child(mode_button)
 			_detail.add_child(modes)
-		elif _in_fight():
+		else:
 			var swap := _button("Socket" if _vault.socket_of(champion) == "" else "Swap in")
 			swap.name = "SocketStill"
 			swap.clip_text = false
@@ -998,7 +1023,9 @@ func _refresh_detail() -> void:
 		if _vault.socket_of(champion) == id:
 			var how := "Intact" if _vault.mode_of(champion) == "intact" else "Overwound"
 			line = "In %s's Still socket (%s).  %s" % [SpellKits.display_name(champion), how, line]
-		_detail.add_child(_label(line, 14, GOLD_BRIGHT))
+		var frag_label := _label(line, 14, GOLD_BRIGHT)
+		frag_label.name = "StillFragmentCount"
+		_detail.add_child(frag_label)
 		var soon := "" if bool(fx.get("built", true)) else "  (coming in the next update)"
 		_detail.add_child(_label("Intact — safe: %s%s" % [StillVault.plain(id, "intact"), soon], 14, GOLD_BRIGHT))
 		_detail.add_child(_label("Overwound — stronger, with a drawback: %s%s" % [StillVault.plain(id, "overwound"), soon], 14, GOLD_BRIGHT))
@@ -1094,6 +1121,7 @@ class InvTile extends Button:
 	var picked := false
 	var plus := 0
 	var count := 0
+	var foot := ""
 	var badge := ""
 	var caption := ""
 	var icon_tex: Texture2D
@@ -1130,6 +1158,11 @@ class InvTile extends Button:
 			# Dark plate so the count reads over painted icons.
 			draw_rect(Rect2(Vector2(size.x - w - 7, size.y - 18), Vector2(w + 5, 15)), Color(0.04, 0.03, 0.02, 0.82))
 			draw_string(f, Vector2(size.x - w - 4, size.y - 5), ct, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color(1, 0.95, 0.7))
+		elif foot != "":
+			var fs := 10
+			var fw := f.get_string_size(foot, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+			draw_rect(Rect2(Vector2(2, size.y - 16), Vector2(size.x - 4, 14)), Color(0.04, 0.03, 0.02, 0.82))
+			draw_string(f, Vector2(maxf((size.x - fw) * 0.5, 2), size.y - 4), foot, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color(1, 0.95, 0.7))
 		if badge != "":
 			draw_circle(Vector2(size.x - 9, 9), 8, Color(0.66, 0.84, 0.25) if badge == "E" else Color(0.62, 0.36, 0.95))
 			var bw := f.get_string_size(badge, HORIZONTAL_ALIGNMENT_LEFT, -1, 10).x

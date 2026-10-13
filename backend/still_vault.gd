@@ -311,9 +311,9 @@ func forge(id: String) -> Dictionary:
 	return {"ok": true, "reason": "", "still": id, "swapped": replacing, "class_id": focus_class}
 
 
-## Deployment inventory only. Replaces the socketed Still: refund 12 of the
-## old one, spend 12 of the new one, keep Intact / Overwound. The hub forge
-## path stays empty-socket unless the test kit is swapping.
+## Inventory swap, hub and deployment. Replaces the socketed Still: refund 12
+## of the old one, spend 12 of the new one, keep Intact / Overwound. The Vault
+## forge path stays empty-socket unless the test kit is swapping.
 func deploy_swap(id: String) -> Dictionary:
 	if not is_id(id):
 		return {"ok": false, "reason": "unknown_still"}
