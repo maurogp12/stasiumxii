@@ -1947,8 +1947,8 @@ func _spend_mp(actor: Dictionary, amount: int) -> void:
 ##   Water damage: the target loses 1 MP at the start of its next turn (once).
 ##   Fire  Burn 4 per stack at the target's turn start, 2 turns at every stack
 ##         (4 / 8 / 12). A shield never soaks the tick. Magma, not Burn itself,
-##         blocks new shields, Aegis gains, and Ward for the victim's next
-##         turn (see no_shield). A later Magma refreshes that turn.
+##         blocks new shields and Ward for the victim's next turn (see
+##         no_shield). Aegis still charges. A later Magma refreshes that turn.
 ## Residue: the hit writes its element on the target for 2 of the target's own
 ## turns; one per body, same element refreshes, a new one overwrites, death
 ## clears it, Cleanse does not. Heals to allies write none. Neutral: nothing.
@@ -6824,12 +6824,8 @@ func _gain_resource(unit: Dictionary, field: String, amount: int) -> int:
 	if cap <= 0 or amount <= 0:
 		return 0
 	var before := int(unit.get(field, 0))
-	# Magma's lock refuses a new Aegis the same way it refuses a new shield.
-	# Plant still places the flag. Snap Wall still spends Aegis to build.
-	if field == "aegis" and _shield_locked(unit):
-		if before < cap:
-			_note_shield_blocked(unit, "Aegis", amount)
-		return 0
+	# Aegis, Umbral, and Pulse still charge while Magma's shield lock is up.
+	# The lock refuses a new shield and Ward, not these stacks.
 	unit[field] = mini(before + amount, cap)
 	return int(unit[field]) - before
 
@@ -7278,7 +7274,8 @@ func _is_burning(unit: Dictionary) -> bool:
 	return int(unit.get("burn_stacks", 0)) > 0 and int(unit.get("burn_remaining", 0)) > 0
 
 
-## Magma's 1-turn lock. Burn by itself does not block shields.
+## Magma's 1-turn lock. It refuses a new shield and Ward. Aegis still charges.
+## Burn by itself does not block shields.
 func _shield_locked(unit: Dictionary) -> bool:
 	if unit.is_empty():
 		return false

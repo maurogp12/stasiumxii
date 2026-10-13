@@ -10076,9 +10076,9 @@ func _test_magma_burn_through() -> void:
 	eq(str(_first_event_where(wall.get("events", []), "shield_blocked").get("source", "")), "Ward", "the foe Ward is logged as blocked")
 
 	# Magma on the attacker's turn: the lock covers Bastion's whole next turn.
-	# Ward, a new shield, and an Aegis gain are refused. The Plant flag still
-	# lands. The lock ends when he ends that turn. A Magma during the locked
-	# turn stays up through the following turn. Burn stays a 2-turn clock.
+	# Ward and a new shield are refused. Plant still grants +1 Aegis. The lock
+	# ends when he ends that turn. A Magma during the locked turn stays up
+	# through the following turn. Burn stays a 2-turn clock.
 	_sim.reset_match({
 		"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1, 1],
 		"classes": ["ironjaw", "bastion"],
@@ -10114,9 +10114,9 @@ func _test_magma_burn_through() -> void:
 	var locked_plant: Dictionary = _sim.submit({"type": "cast", "spell": "plant", "to": Vector2i(5, 6), "seat": 1})
 	eq(bool(locked_plant.get("ok", false)), true, "Plant still places the flag")
 	eq((_sim.snapshot().get("plant_tiles", []) as Array).is_empty(), false, "the flag is on the board")
-	eq(int(_unit(1)["aegis"]), aegis_before, "Plant does not gain Aegis while locked")
-	eq(str(_first_event_where(locked_plant.get("events", []), "shield_blocked").get("source", "")), "Aegis", "the refused Aegis is logged")
-	eq(str(locked_plant.get("coach", "")).contains("+1 Aegis"), false, "the Plant line does not claim an Aegis gain")
+	eq(int(_unit(1)["aegis"]), aegis_before + 1, "Plant still gains 1 Aegis while locked")
+	eq(_first_event_where(locked_plant.get("events", []), "shield_blocked").is_empty(), true, "an Aegis gain is not a blocked shield")
+	truthy(str(locked_plant.get("coach", "")).contains("+1 Aegis"), "the Plant line names the Aegis gain")
 	_sim.submit({"type": "end_turn", "seat": 1})
 	eq(int(_unit(1)["no_shield"]), 0, "the lock ends when his locked turn ends")
 	eq(int(_unit(1)["burn_stacks"]), 3, "Burn is still there after the lock ends")
