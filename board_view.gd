@@ -3774,7 +3774,9 @@ func _flush_camera() -> void:
 	if is_inside_tree():
 		var view := get_viewport_rect().size
 		if view.x >= 64.0 and view.y >= 64.0:
-			var snapped := VISUAL_SORT.snap_camera_position(_camera.position, _camera.zoom, view)
+			var window := Vector2(DisplayServer.window_get_size())
+			var scale := VISUAL_SORT.viewport_pixel_scale(view, window)
+			var snapped := VISUAL_SORT.snap_camera_position(_camera.position, _camera.zoom, view, scale)
 			if not _camera.position.is_equal_approx(snapped):
 				_camera.position = snapped
 	if _camera.has_method("force_update_scroll"):
