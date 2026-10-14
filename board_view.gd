@@ -2145,13 +2145,20 @@ func _animate_path(seat: int, path: Array, origin: Vector2i = Vector2i(-1, -1)) 
 			# A climb rises only after that step has finished.
 			var first := cell_i == 0
 			var last := cell_i == cells.size() - 1
+			var step_px := _cell_to_local(prev).distance_to(_cell_to_local(cell))
+			var measured := pawn.measured_tile_sec(step_px)
 			var per := pawn.painted_walk_frames_per_tile()
 			var dur := Pawn.WALK_TILE_SEC
-			if per > 0.0:
+			if measured > 0.0:
+				# Full-size px/s times the draw scale. Do not also apply a class pace.
+				dur = measured
+			elif per > 0.0:
 				var climbing := absf(_elev_at(prev) - _elev_at(cell)) > 0.001
 				dur = VIEW_MOTION.walk_span(per, float(cell_i) * per, climbing)
-			dur *= pace
-			_walk_tween.tween_method(_sample_glide_step.bind(pawn, prev, cell, first, last, cell_i), 0.0, 1.0, dur)
+				dur *= pace
+			else:
+				dur *= pace
+			_walk_tween.tween_method(_sample_glide_step.bind(pawn, prev, cell, first, last, cell_i, step_px), 0.0, 1.0, dur)
 			if dust:
 				_walk_tween.tween_callback(_puff_footstep.bind(pawn, cell))
 		else:
@@ -2236,12 +2243,22 @@ func _sample_walk_step(t: float, pawn: Pawn, src: Vector2i, dst: Vector2i) -> vo
 
 ## Glide sample. Painted classes keep moving. The walk cycle follows the
 ## ground speed, and a climb rises after the step.
-func _sample_glide_step(t: float, pawn: Pawn, src: Vector2i, dst: Vector2i, _first: bool, _last: bool, tile_i: int) -> void:
+func _sample_glide_step(t: float, pawn: Pawn, src: Vector2i, dst: Vector2i, _first: bool, _last: bool, tile_i: int, step_px: float = 0.0) -> void:
 	if pawn == null or not is_instance_valid(pawn):
 		return
 	var dir := VIEW_MOTION.walk_segment_facing(src, dst, _cell_to_local(dst) - _cell_to_local(src))
 	if dir == "":
 		dir = str(pawn.facing)
+	if step_px > 0.0 and pawn.uses_measured_stride():
+		var straight := clampf(t, 0.0, 1.0)
+		_step_along = straight
+		_step_elev = 0.0
+		pawn.position = _cell_to_local(src).lerp(_cell_to_local(dst), straight)
+		if pawn.begin_segment_walk(dir):
+			pawn.show_measured_stride(tile_i, straight, step_px)
+		_track_step_sort(straight, pawn, src, dst)
+		_follow_walker(pawn)
+		return
 	var src_e := _elev_at(src)
 	var dst_e := _elev_at(dst)
 	var climbing := absf(dst_e - src_e) > 0.001

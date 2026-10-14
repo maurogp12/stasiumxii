@@ -84,6 +84,9 @@ var _boss_mirror: float = 0.0
 ## Boss walk: tiles stepped on this path (one step per tile) and the last
 ## gait clock, so a new tile is seen when the clock wraps.
 var _boss_tile: int = 0
+var _measured_tile: int = -1
+var _measured_base_px: float = 0.0
+var _measured_step_px: float = 0.0
 var _boss_last_t: float = 0.0
 var hp: int = 80
 var max_hp: int = 80
@@ -261,6 +264,31 @@ func _monster_scale() -> float:
 	if stasis_sprite == "":
 		return 1.0
 	return BOSS_SCALE if stasis_boss else TRASH_SCALE
+
+
+## World scale of a Stasis painting. The 320-tall crop is drawn at half
+## size, then the class and monster scales. A measured walk uses this so
+## full-size px/s becomes on-screen speed.
+func foe_draw_scale() -> float:
+	var h := 320.0
+	var tex := _stasis_texture(stasis_sprite)
+	if tex != null and tex.get_height() > 0:
+		h = float(tex.get_height())
+	return sprite_scale_for(class_id).y * _monster_scale() * (160.0 / h)
+
+
+## A regular monster can own a painted walk. The boss flag is not required.
+func uses_measured_stride() -> bool:
+	return stasis_sprite != "" and not BOSS_SHEETS.stride_for(stasis_sprite).is_empty()
+
+
+## Seconds to cross `step_px` of screen at the painted full-size speed.
+func measured_tile_sec(step_px: float) -> float:
+	var stride := BOSS_SHEETS.stride_for(stasis_sprite)
+	if stride.is_empty() or step_px <= 0.0:
+		return 0.0
+	var scale := maxf(foe_draw_scale(), 0.001)
+	return step_px / (float(stride["px_per_sec"]) * scale)
 
 
 ## Stasis foe art may be drawn at 2x (288x320): same world size, more detail.
@@ -782,6 +810,9 @@ func _sync_walk_draw_xform() -> void:
 func arm_driven_walk() -> void:
 	_driven_step = 0
 	_stride_tile = 0
+	_measured_tile = -1
+	_measured_base_px = 0.0
+	_measured_step_px = 0.0
 	_driven_open = false
 	_driven_walk = true
 	begin_path_walk()
@@ -907,6 +938,10 @@ func sample_step_anticipation(t: float) -> void:
 	if VIEW_MOTION.reduce_motion() or not is_inside_tree():
 		return
 	_kill_bounce()
+	if uses_measured_stride():
+		_place_body(Vector2.ZERO)
+		_ride_chrome(Vector2.ZERO)
+		return
 	var lean := VIEW_MOTION.step_anticipation_offset(t, facing_screen())
 	_place_body(lean)
 	_ride_chrome(Vector2.ZERO)
@@ -1025,10 +1060,15 @@ func end_path_walk() -> void:
 	_driven_walk = false
 	_boss_tile = 0
 	_boss_last_t = 0.0
+	_measured_tile = -1
+	_measured_base_px = 0.0
+	_measured_step_px = 0.0
 	_kill_bounce()
 	_kill_action()
 	_motion_playing = false
 	_plant_sprite()
+	if uses_measured_stride():
+		_sync_sprite()
 	# The stride already took its plant squash. A walk frame-0 plant does not
 	# squash again. A missing strip still lands.
 	if not _walk_idle_plant:
@@ -1635,6 +1675,38 @@ func _boss_rest(seconds: float = 0.0) -> bool:
 	var frames: Array = info["frames"]
 	_show_boss_cell(frames[BOSS_SHEETS.idle_index(seconds, frames.size())], bool(info["mirror"]))
 	return true
+
+
+## Painted walk for a regular monster (or a boss) with a measured stride.
+## `step_px` is this tile's on-screen length. Frames follow that distance at
+## the full-size speed, scaled by foe_draw_scale, so the feet do not slide.
+func show_measured_stride(tile_i: int, u: float, step_px: float) -> void:
+	if not uses_measured_stride():
+		return
+	_ensure_visuals()
+	if _sprite == null or not is_instance_valid(_sprite):
+		return
+	var info := BOSS_SHEETS.frames_for(stasis_sprite, "walk", str(facing))
+	if info.is_empty():
+		return
+	var frames: Array = info["frames"]
+	if frames.is_empty():
+		return
+	var stride := BOSS_SHEETS.stride_for(stasis_sprite)
+	var px_per_frame := float(stride.get("cycle_px", 72.0)) / float(frames.size())
+	if tile_i != _measured_tile:
+		if _measured_tile >= 0:
+			_measured_base_px += _measured_step_px
+		_measured_tile = tile_i
+		_measured_step_px = step_px
+	var scale := maxf(foe_draw_scale(), 0.001)
+	var source_px := (_measured_base_px + clampf(u, 0.0, 1.0) * step_px) / scale
+	var index := posmod(int(floor(source_px / maxf(px_per_frame, 0.001))), frames.size())
+	_show_boss_cell(frames[index], bool(info["mirror"]))
+	_place_body(Vector2.ZERO)
+	_ride_chrome(Vector2.ZERO)
+	_apply_sprite_mul(Vector2.ONE)
+	_set_foe_body(0.0, 0.0)
 
 
 func _show_boss_cell(cell: Texture2D, mirror: bool) -> void:

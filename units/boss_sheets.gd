@@ -5,7 +5,8 @@ extends RefCounted
 ## View only. A boss with no sheet keeps its painting and the foe gait.
 ##
 ## Files: res://art/stasis/bosses/<art>/<art>_<anim>_<dir>.png
-##   art  = the boss painting's name (e.g. warden_of_the_sheaves)
+##   art  = the painting's name (a boss, or a regular monster that has a
+##          painted walk, e.g. scarecrow_drudge)
 ##   anim = idle | walk | attack | cast | hit
 ##   dir  = the artist's letter (Mauro 2 Oct 2026 boss rule): s = front walking
 ##          down-right, w = front walking down-left, e = back walking up-right,
@@ -24,6 +25,12 @@ const ANIMS := ["idle", "walk", "attack", "cast", "hit"]
 const IDLE_FPS := 6.0
 ## Engine grid facing → artist file letter.
 const FILE_LETTER := {"e": "s", "s": "w", "n": "e", "w": "n"}
+## Painted foot travel in the strip's own pixels (scale 1). The scarecrow
+## cycle is 12 frames at 58.33 ms, and the feet cover 72 px, so full-size
+## speed is about 103 px/s. The board multiplies by the draw scale.
+const STRIDE := {
+	"scarecrow_drudge": {"px_per_sec": 103.0, "cycle_px": 72.0},
+}
 ## Engine facings tried in order, with the screen mirror flag.
 const _DIR_ORDER := {
 	"e": [["e", false], ["s", true], ["n", false], ["w", true]],
@@ -43,6 +50,15 @@ static func art_name(art_path: String) -> String:
 
 static func sheet_path(art: String, anim: String, dir: String) -> String:
 	return "%s%s/%s_%s_%s.png" % [DIR, art, art, anim, dir]
+
+
+## {} when this painting has no measured stride. Regular monsters use the
+## same lookup as bosses; the boss flag is not required.
+static func stride_for(art_path: String) -> Dictionary:
+	var row: Variant = STRIDE.get(art_name(art_path), {})
+	if typeof(row) != TYPE_DICTIONARY:
+		return {}
+	return row
 
 
 ## {"frames": Array of Texture2D, "mirror": bool} for anim facing dir, or {}.
