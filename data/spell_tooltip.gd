@@ -89,7 +89,7 @@ static func _short_effect(preview: Dictionary, needs_marks: bool) -> String:
 	if spell_id == SpellKits.DETONATE:
 		bits.append("Uses Marks")
 	if spell_id == SpellKits.AMBUSH:
-		bits.append("+%d per Umbral" % int(def.get("damage_per_umbral", 3)))
+		bits.append("+%d per Umbral" % int(def.get("damage_per_umbral", 4)))
 	if bits.is_empty():
 		return ""
 	return " · ".join(bits)
@@ -248,7 +248,7 @@ static func simple_lines(spell_id: String, preview: Dictionary = {}) -> PackedSt
 			out.append("Tap one of your shadows to remove it. That costs nothing.")
 			out.append("After the enemy plays one turn, Ambush can jump from it.")
 		SpellKits.AMBUSH:
-			out.append("Teleport behind an enemy and stab them for %d damage. Hit spends all Umbral, +%d each." % [dmg, int(def.get("damage_per_umbral", 3))])
+			out.append("Teleport behind an enemy and stab them for %d damage. Hit spends all Umbral, +%d each." % [dmg, int(def.get("damage_per_umbral", 4))])
 			out.append("The enemy must be 1-2 tiles away in a straight line from you or from your Shade. Behind them blocked? You land in front. Their back = 35% more damage. Miss = you stay put, and Umbral stays.")
 		SpellKits.FADE:
 			out.append("Turn invisible for %d turns. You stay hidden through the enemy's next two turns, and you appear again when your second turn after this one starts. Getting hurt, attacking, or a trap shows you again. +1 Umbral." % CombatSim.INVISIBLE_TURNS)

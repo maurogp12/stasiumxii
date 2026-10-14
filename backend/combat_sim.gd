@@ -1722,7 +1722,7 @@ func preview_cast(spell_or_intent: Variant, from: Variant = null, to: Variant = 
 	elif spell_id == SpellKits.AMBUSH:
 		var umbral_now := mini(maxi(int(actor.get("umbral", 0)), 0), SpellKits.UMBRAL_CAP)
 		out["umbral"] = umbral_now
-		notes.append("Hit spends all Umbral, +3 each.")
+		notes.append("Hit spends all Umbral, +%d each." % int(def.get("damage_per_umbral", 4)))
 	elif spell_id == SpellKits.CRUSH:
 		var impact_before := int(actor.get("impact", 0))
 		var spend := int(def.get("spend_impact", 2))
@@ -1860,7 +1860,7 @@ func _preview_kit_lines(spell_id: String) -> Dictionary:
 		SpellKits.ADVANCE:
 			return {"on_connect": "Teleport snap. +1 Impact if adjacent. Facing unchanged. Enemies next to the landing get this element's Residue.", "on_miss": "No roll."}
 		SpellKits.AMBUSH:
-			return {"on_connect": "Hit spends all Umbral, +3 each.", "on_miss": "Miss keeps Umbral."}
+			return {"on_connect": "Hit spends all Umbral, +%d each." % int(SpellKits.spell(SpellKits.AMBUSH).get("damage_per_umbral", 4)), "on_miss": "Miss keeps Umbral."}
 		SpellKits.AEGIS_BREAK:
 			return {"on_connect": "26 Earth per body in range 1–2. Push 1. Clears all Aegis.", "on_miss": "Spends 0 Aegis. Does not clear Aegis."}
 		SpellKits.WARD:
@@ -5171,11 +5171,11 @@ func _connect_base_damage(def: Dictionary, target: Dictionary) -> int:
 	return int(def.get("base_damage", 0))
 
 
-## Ambush: 26 + 3×Umbral, capped at 4 stacks (+12), before the back/front multiplier.
+## Ambush: 26 + 4×Umbral, capped at 4 stacks (+16), before the back/front multiplier.
 ## The caster's Umbral, not a stack on the target. A miss does not call this to spend.
 func _ambush_strike_base(def: Dictionary, actor: Dictionary) -> int:
 	var stacks := mini(maxi(int(actor.get("umbral", 0)), 0), SpellKits.UMBRAL_CAP)
-	return int(def.get("base_damage", 26)) + int(def.get("damage_per_umbral", 3)) * stacks
+	return int(def.get("base_damage", 26)) + int(def.get("damage_per_umbral", 4)) * stacks
 
 
 func _connect_extra_note(engine_gained: int, engine_name: String, marks_consumed: int, engine_spent: int, stun_applied: int, push_result: Dictionary) -> String:
@@ -9113,7 +9113,7 @@ func _resolve_ambush(intent: Dictionary, actor: Dictionary, target: Dictionary, 
 	if ambush_crit:
 		_last_coach += " CRIT"
 	if umbral_spent > 0:
-		_last_coach += " Umbral spent (%d), +%d." % [umbral_spent, int(def.get("damage_per_umbral", 3)) * mini(umbral_before, SpellKits.UMBRAL_CAP)]
+		_last_coach += " Umbral spent (%d), +%d." % [umbral_spent, int(def.get("damage_per_umbral", 4)) * mini(umbral_before, SpellKits.UMBRAL_CAP)]
 	_last_events.append({
 		"type": "hit",
 		"seat": actor["seat"],
