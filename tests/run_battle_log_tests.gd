@@ -440,6 +440,11 @@ func _test_named_lines() -> void:
 	eq(lone_end, "Plant ended on Kestrel.", "a lone Plant expiry stays the short line")
 	var wall_end := LOG.plain({"type": "expire", "status": "plant", "owner_seat": 0, "walled": true, "pos": Vector2i(2, 1)}, snap)
 	eq(wall_end, "Plant wall ended on Kestrel.", "a Plant wall expiry names the wall")
+	var blocked_shot := LOG.plain({
+		"type": "reject", "reason": "no_line_of_sight", "seat": 0,
+		"coach": "REJECT — Mark Shot has no line of sight: a Plant and Snap Wall at (4,7) blocks it (refund).",
+	}, snap)
+	truthy(blocked_shot.contains("Plant and Snap Wall") and blocked_shot.begins_with("Illegal:"), "a blocked shot names the Plant and Snap Wall: %s" % blocked_shot)
 	var fade := LOG.plain({
 		"type": "cast", "spell": "fade", "seat": 0, "invisible": true, "invisible_turns": 2,
 		"ap_spent": 2, "mp_spent": 0, "ap_left": 4, "mp_left": 3, "engine_gained": 1,
