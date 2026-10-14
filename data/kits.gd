@@ -457,7 +457,9 @@ const SPELLS := {
 		"id": PLANT,
 		"name": "Plant",
 		"class_id": CLASS_BASTION,
-		# Mauro 13 Oct 2026: 2 AP → 1 AP. Range, Aegis, and duration stay.
+		# Mauro 13 Oct 2026: 2 AP → 1 AP.
+		# A lone banner lasts one owner turn. Orthogonal banners form a wall
+		# and keep the old 3-turn clock. At most plants_per_turn casts a turn.
 		"ap": 1,
 		"mp": 0,
 		"range_mode": "chebyshev",
@@ -468,7 +470,9 @@ const SPELLS := {
 		"target": "tile",
 		"engine_on_connect": "aegis",
 		"gain_aegis": 1,
-		"plant_turns": 3,
+		"plant_turns": 1,
+		"plant_wall_turns": 3,
+		"plants_per_turn": 3,
 	},
 	HOLD_LINE: {
 		"id": HOLD_LINE,

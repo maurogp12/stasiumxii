@@ -592,7 +592,8 @@ func _test_shade_and_plant_snapshot() -> void:
 	var plants: Array = _sim.snapshot()["plant_tiles"]
 	eq(plants.size(), 1, "snapshot lists the Plant")
 	eq(plants[0].get("pos"), Vector2i(3, 1), "Plant pos")
-	eq(int(plants[0].get("turns", -1)), 3, "Plant duration is 3")
+	eq(int(plants[0].get("turns", -1)), 1, "a lone Plant lasts 1 turn")
+	eq(bool(plants[0].get("walled", true)), false, "a lone Plant is not a wall")
 	eq(int(plants[0].get("owner_seat", -1)), 0, "Plant owner is Bastion's seat")
 	eq(bool(plants[0].get("push_resist", false)), true, "Plant still resists the next push")
 
@@ -636,6 +637,8 @@ func _test_shade_and_plant_snapshot() -> void:
 	eq(guest_plants.size(), 1, "guest rebuilds the Plant")
 	eq(guest_plants[0].get("pos"), Vector2i(5, 6), "guest Plant pos matches the host")
 	eq(bool(guest_plants[0].get("push_resist", false)), true, "guest Plant keeps push resist")
+	eq(int(guest_plants[0].get("turns", -1)), 1, "guest Plant keeps the lone clock")
+	eq(bool(guest_plants[0].get("walled", true)), false, "guest Plant keeps the lone flag")
 	eq((_guest.snapshot().get("shade_tokens", []) as Array).size(), 1, "guest still has the Shade after Plant")
 
 
@@ -678,18 +681,38 @@ func _test_expiry_events() -> void:
 	})
 	_sim.submit({"type": "cast", "spell": "plant", "to": Vector2i(2, 1), "seat": 0})
 	_sim.submit({"type": "end_turn", "seat": 0})
-	eq(int(_sim.snapshot()["plant_tiles"][0]["turns"]), 3, "enemy turn-start does not tick Plant")
-	_sim.submit({"type": "end_turn", "seat": 1})
-	eq(int(_sim.snapshot()["plant_tiles"][0]["turns"]), 2, "first Bastion turn-start ticks Plant 3 to 2")
-	_sim.submit({"type": "end_turn", "seat": 0})
-	_sim.submit({"type": "end_turn", "seat": 1})
-	eq(int(_sim.snapshot()["plant_tiles"][0]["turns"]), 1, "second Bastion turn-start ticks Plant 2 to 1")
-	_sim.submit({"type": "end_turn", "seat": 0})
+	eq(int(_sim.snapshot()["plant_tiles"][0]["turns"]), 1, "enemy turn-start does not tick a lone Plant")
 	var plant_end: Dictionary = _sim.submit({"type": "end_turn", "seat": 1})
 	var plant_expire := _expire(plant_end.get("events", []), "plant")
 	eq(plant_expire.get("pos"), Vector2i(2, 1), "Plant expiry names the tile")
 	eq(int(plant_expire.get("owner_seat", -2)), 0, "Plant expiry names Bastion")
-	eq((_sim.snapshot().get("plant_tiles", []) as Array).is_empty(), true, "expired Plant leaves the snapshot after 3 owner turn-starts")
+	eq(bool(plant_expire.get("walled", false)), false, "a lone Plant expiry is not a wall")
+	eq((_sim.snapshot().get("plant_tiles", []) as Array).is_empty(), true, "a lone Plant leaves after 1 owner turn-start")
+
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["bastion", "kestrel"],
+		"positions": [Vector2i(1, 1), Vector2i(6, 6)],
+	})
+	_sim.submit({"type": "cast", "spell": "plant", "to": Vector2i(2, 1), "seat": 0})
+	_sim.submit({"type": "cast", "spell": "plant", "to": Vector2i(2, 2), "seat": 0})
+	eq(int(_sim.snapshot()["plant_tiles"][0]["turns"]), 3, "a Plant wall starts at 3")
+	eq(bool(_sim.snapshot()["plant_tiles"][0].get("walled", false)), true, "orthogonal Plants form a wall")
+	eq(bool(_sim.snapshot()["plant_tiles"][1].get("walled", false)), true, "the joined Plant is a wall too")
+	_sim.submit({"type": "end_turn", "seat": 0})
+	eq(int(_sim.snapshot()["plant_tiles"][0]["turns"]), 3, "enemy turn-start does not tick a Plant wall")
+	_sim.submit({"type": "end_turn", "seat": 1})
+	eq(int(_sim.snapshot()["plant_tiles"][0]["turns"]), 2, "first Bastion turn-start ticks a Plant wall 3 to 2")
+	_sim.submit({"type": "end_turn", "seat": 0})
+	_sim.submit({"type": "end_turn", "seat": 1})
+	eq(int(_sim.snapshot()["plant_tiles"][0]["turns"]), 1, "second Bastion turn-start ticks a Plant wall 2 to 1")
+	_sim.submit({"type": "end_turn", "seat": 0})
+	var wall_plant_end: Dictionary = _sim.submit({"type": "end_turn", "seat": 1})
+	var wall_plant_expire := _expire(wall_plant_end.get("events", []), "plant")
+	eq(bool(wall_plant_expire.get("walled", false)), true, "a wall expiry stays marked after the neighbour is gone")
+	eq((_sim.snapshot().get("plant_tiles", []) as Array).is_empty(), true, "a Plant wall leaves after 3 owner turn-starts")
 
 	_sim.reset_match({
 		"seed": 1,

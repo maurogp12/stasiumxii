@@ -426,6 +426,20 @@ func _open_duel(at: Vector2i, foe: Vector2i, classes: Array = ["ironjaw", "kestr
 
 func _test_named_lines() -> void:
 	var snap := _snap()
+	var banner := LOG.plain({
+		"type": "cast", "spell": "plant", "seat": 0, "turns": 1, "walled": false,
+		"ap_spent": 1, "ap_left": 5, "mp_left": 3,
+	}, snap)
+	truthy(banner.contains("plants a banner, 1 turn") and banner.contains("-1 AP"), "a lone Plant names its turn: %s" % banner)
+	var wall_cast := LOG.plain({
+		"type": "cast", "spell": "plant", "seat": 0, "turns": 3, "walled": true,
+		"ap_spent": 1, "ap_left": 4, "mp_left": 3,
+	}, snap)
+	truthy(wall_cast.contains("plants a wall, 3 turns"), "a Plant wall names its clock: %s" % wall_cast)
+	var lone_end := LOG.plain({"type": "expire", "status": "plant", "owner_seat": 0, "pos": Vector2i(2, 1)}, snap)
+	eq(lone_end, "Plant ended on Kestrel.", "a lone Plant expiry stays the short line")
+	var wall_end := LOG.plain({"type": "expire", "status": "plant", "owner_seat": 0, "walled": true, "pos": Vector2i(2, 1)}, snap)
+	eq(wall_end, "Plant wall ended on Kestrel.", "a Plant wall expiry names the wall")
 	var fade := LOG.plain({
 		"type": "cast", "spell": "fade", "seat": 0, "invisible": true, "invisible_turns": 2,
 		"ap_spent": 2, "mp_spent": 0, "ap_left": 4, "mp_left": 3, "engine_gained": 1,

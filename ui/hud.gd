@@ -587,6 +587,30 @@ static func ward_button_reason(unit: Dictionary, snap: Dictionary, ward_legal: b
 	return "no shield"
 
 
+## Why Plant is dark on Bastion's own turn. Blank when he can cast, when the
+## turn is not his, or when the lock is AP / silence rather than the per-turn
+## cap. The number is plants_per_turn from the kit.
+static func plant_button_reason(unit: Dictionary, snap: Dictionary, plant_legal: bool) -> String:
+	if unit.is_empty() or str(unit.get("class_id", "")) != SpellKits.CLASS_BASTION:
+		return ""
+	if plant_legal or bool(snap.get("match_over", false)) or is_deployment_phase(snap):
+		return ""
+	if int(snap.get("active_seat", -1)) != int(unit.get("seat", -2)):
+		return ""
+	if unit_is_stunned(unit):
+		return ""
+	var kit: Dictionary = SpellKits.spell(SpellKits.PLANT)
+	var cap := int(kit.get("plants_per_turn", 0))
+	if cap <= 0 or int(unit.get("plants_this_turn", 0)) < cap:
+		return ""
+	if int(unit.get("ap", 0)) < int(kit.get("ap", 1)):
+		return ""
+	var silenced: Variant = unit.get("silenced_spells", [])
+	if typeof(silenced) == TYPE_ARRAY and (silenced as Array).has(SpellKits.PLANT):
+		return ""
+	return "max %d" % cap
+
+
 static func _vault_enemy_adjacent(unit: Dictionary, snap: Dictionary) -> bool:
 	var pos := _reason_cell(unit.get("pos", null))
 	var seat := int(unit.get("seat", -1))
@@ -3827,6 +3851,8 @@ func _sync_cooldown_badge(button: Button, spell_id: String) -> void:
 		badge.text = vault_button_reason(unit, _last_snap, legal_now.has(SpellKits.VAULT))
 	elif str(spell_id) == SpellKits.WARD:
 		badge.text = ward_button_reason(unit, _last_snap, legal_now.has(SpellKits.WARD))
+	elif str(spell_id) == SpellKits.PLANT:
+		badge.text = plant_button_reason(unit, _last_snap, legal_now.has(SpellKits.PLANT))
 	else:
 		badge.text = spell_cooldown_badge(unit, spell_id)
 	# A word such as "burning" uses the small face. Digits stay large.

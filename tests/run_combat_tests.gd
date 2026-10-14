@@ -100,6 +100,7 @@ func _run() -> void:
 	_test_hold_line_pull()
 	_test_plant_blocks_sight()
 	_test_plant_one_flag_per_tile()
+	_test_plant_banner_rules()
 	_test_blind_attacks_on_invisible()
 	_test_handoff_timer_is_client_only()
 	_test_advance_teleport_costs()
@@ -4293,6 +4294,147 @@ func _test_plant_one_flag_per_tile() -> void:
 	eq(bool(again.get("ok", false)), true, "Plant still places a flag on a clear tile")
 	eq((_sim.snapshot()["plant_tiles"] as Array).size(), 2, "two tiles can each hold one flag")
 	guest.free()
+
+
+## A lone banner lasts one owner turn. Orthogonal banners form a wall and
+## keep the 3-turn clock. Bastion can plant at most plants_per_turn times
+## each turn; the button says why, and the log names the duration.
+func _test_plant_banner_rules() -> void:
+	var kit: Dictionary = SpellKits.spell(SpellKits.PLANT)
+	var lone_turns := int(kit.get("plant_turns", 0))
+	var wall_turns := int(kit.get("plant_wall_turns", 0))
+	var per_turn := int(kit.get("plants_per_turn", 0))
+	eq(lone_turns, 1, "a lone Plant lasts 1 owner turn")
+	eq(wall_turns, 3, "a Plant wall keeps the 3-turn clock")
+	eq(per_turn, 3, "Plant is capped at 3 casts a turn")
+	var bastion := Vector2i(4, 4)
+	var wall_a := Vector2i(5, 4)
+	var wall_b := Vector2i(5, 5)
+	var lone := Vector2i(4, 6)
+	var diagonal := Vector2i(2, 4)
+	var blocked := Vector2i(4, 3)
+	_sim.reset_match({
+		"seed": 1, "flat_board": true, "skip_deploy": true,
+		"classes": ["bastion", "kestrel"],
+		"positions": [bastion, Vector2i(10, 10)],
+	})
+	var card := SpellTooltip.card_text(_sim.preview_cast(SpellKits.PLANT, bastion, wall_a, 0))
+	var dur := "Dur 1 turn" if lone_turns == 1 else "Dur %d turns" % lone_turns
+	truthy(card.contains(dur), "Plant's hover card names the lone duration: %s" % card)
+	truthy(card.contains("Max %d per turn" % per_turn), "Plant's hover card names the per-turn cap: %s" % card)
+	var plain := " ".join(SpellTooltip.simple_lines(SpellKits.PLANT))
+	truthy(plain.contains("Shots cannot pass through the flag"), "Plant's plain card still says the flag blocks shots")
+	truthy(plain.contains("lasts %d turn" % lone_turns), "Plant's plain card names the lone duration")
+	truthy(plain.contains("last %d turns" % wall_turns), "Plant's plain card names the wall duration")
+	truthy(plain.contains("Max %d per turn" % per_turn), "Plant's plain card names the per-turn cap")
+	var connect := str(_sim.preview_cast(SpellKits.PLANT, bastion, wall_a, 0).get("on_connect_text", ""))
+	truthy(connect.contains("Max %d per turn" % per_turn), "Plant's connect line names the cap: %s" % connect)
+	truthy(connect.contains("%d turn" % lone_turns) and connect.contains("%d turns" % wall_turns), "Plant's connect line names both clocks: %s" % connect)
+	var log_script: Script = load("res://ui/battle_log.gd")
+	var first: Dictionary = _sim.submit({"type": "cast", "spell": "plant", "to": wall_a, "seat": 0})
+	eq(bool(first.get("ok", false)), true, "the first Plant places a lone banner")
+	var first_tile := _plant_tile(wall_a)
+	eq(int(first_tile.get("turns", -1)), lone_turns, "a lone banner starts at the short clock")
+	eq(bool(first_tile.get("walled", true)), false, "one banner is not a wall")
+	var first_line := str(log_script.plain(_plant_cast_event(first), _sim.snapshot()))
+	truthy(first_line.contains("plants a banner, %d turn" % lone_turns), "the log names the lone banner: %s" % first_line)
+	var second: Dictionary = _sim.submit({"type": "cast", "spell": "plant", "to": wall_b, "seat": 0})
+	eq(bool(second.get("ok", false)), true, "an orthogonal Plant joins the first")
+	eq(bool(_plant_tile(wall_a).get("walled", false)), true, "the first banner becomes a wall")
+	eq(int(_plant_tile(wall_a).get("turns", -1)), wall_turns, "joining raises the first banner to the wall clock")
+	eq(bool(_plant_tile(wall_b).get("walled", false)), true, "the second banner is a wall")
+	eq(int(_plant_tile(wall_b).get("turns", -1)), wall_turns, "the second banner uses the wall clock")
+	var second_line := str(log_script.plain(_plant_cast_event(second), _sim.snapshot()))
+	truthy(second_line.contains("plants a wall, %d turns" % wall_turns), "the log names the wall: %s" % second_line)
+	var third: Dictionary = _sim.submit({"type": "cast", "spell": "plant", "to": lone, "seat": 0})
+	eq(bool(third.get("ok", false)), true, "a separated Plant is still a lone banner")
+	eq(bool(_plant_tile(lone).get("walled", true)), false, "a banner with no orthogonal neighbour stays lone")
+	eq(int(_plant_tile(lone).get("turns", -1)), lone_turns, "the separated banner keeps the short clock")
+	var side: Dictionary = _sim.submit({"type": "cast", "spell": "plant", "to": diagonal, "seat": 0})
+	eq(bool(side.get("ok", false)), false, "the fourth Plant this turn does not resolve")
+	eq(str(side.get("reason", "")), "plant_limit", "the fourth Plant is the per-turn cap")
+	var capped_ap := int(_unit(0)["ap"])
+	var capped_aegis := int(_unit(0).get("aegis", 0))
+	eq(int(_unit(0).get("plants_this_turn", 0)), per_turn, "the counter matches the kit cap")
+	eq(_has_legal_cast(0, SpellKits.PLANT), false, "Plant is not offered at the cap")
+	eq(_sim.range_highlight_cells(0, SpellKits.PLANT).is_empty(), true, "the range ring closes at the cap")
+	eq(str(_sim.preview_cast(SpellKits.PLANT, bastion, blocked, 0).get("reason", "")), "plant_limit", "the preview names the cap")
+	eq(CombatHUD.plant_button_reason(_unit(0), _sim.snapshot(), false), "max %d" % per_turn, "the Plant button says the kit cap")
+	_live_unit(0)["ap"] = 0
+	eq(CombatHUD.plant_button_reason(_unit(0), _sim.snapshot(), false), "", "low AP does not wear the cap badge")
+	_live_unit(0)["ap"] = capped_ap
+	var refused: Dictionary = _sim.submit({"type": "cast", "spell": "plant", "to": blocked, "seat": 0})
+	eq(bool(refused.get("ok", false)), false, "a submit past the cap is refused")
+	eq(int(_unit(0)["ap"]), capped_ap, "the refused Plant spends no AP")
+	eq(int(_unit(0).get("aegis", 0)), capped_aegis, "the refused Plant grants no Aegis")
+	var guest_script := load("res://backend/combat_sim.gd")
+	var guest: Node = guest_script.new()
+	guest.apply_host_snapshot(_sim.snapshot())
+	var guest_wall: Dictionary = {}
+	var guest_lone: Dictionary = {}
+	for item in guest.snapshot()["plant_tiles"]:
+		if item.get("pos") == wall_a:
+			guest_wall = item
+		if item.get("pos") == lone:
+			guest_lone = item
+	eq(bool(guest_wall.get("walled", false)), true, "the other phone keeps the wall")
+	eq(int(guest_wall.get("turns", -1)), wall_turns, "the other phone keeps the wall clock")
+	eq(bool(guest_lone.get("walled", true)), false, "the other phone keeps the lone banner")
+	eq(int(guest.snapshot()["units"][0].get("plants_this_turn", -1)), per_turn, "the other phone keeps the cast count")
+	guest.free()
+	_sim.submit({"type": "end_turn", "seat": 0})
+	eq(int(_plant_tile(lone).get("turns", -1)), lone_turns, "the enemy turn does not tick a lone banner")
+	eq(int(_plant_tile(wall_a).get("turns", -1)), wall_turns, "the enemy turn does not tick a wall")
+	var owner: Dictionary = _sim.submit({"type": "end_turn", "seat": 1})
+	eq(_plant_tile(lone).is_empty(), true, "a lone banner is gone on the next owner turn")
+	var lone_end := _plant_expire_event(owner)
+	eq(lone_end.get("pos"), lone, "the lone expiry names its tile")
+	eq(bool(lone_end.get("walled", false)), false, "the lone expiry is not a wall")
+	eq(log_script.plain(lone_end, _sim.snapshot()).contains("Plant ended"), true, "the log says the lone banner ended")
+	eq(int(_plant_tile(wall_a).get("turns", -1)), wall_turns - 1, "the wall ticks on the owner turn")
+	eq(bool(_plant_tile(wall_a).get("walled", false)), true, "the wall stays a wall after the neighbour clock")
+	eq(int(_unit(0).get("plants_this_turn", -1)), 0, "the next turn clears the Plant cap")
+	eq(_has_legal_cast(0, SpellKits.PLANT), true, "Plant is offered again next turn")
+	eq(CombatHUD.plant_button_reason(_unit(0), _sim.snapshot(), true), "", "the cap badge is gone when Plant is legal")
+	var apart: Dictionary = _sim.submit({"type": "cast", "spell": "plant", "to": diagonal, "seat": 0})
+	eq(bool(apart.get("ok", false)), true, "a diagonal Plant places on the fresh turn")
+	eq(bool(_plant_tile(diagonal).get("walled", true)), false, "a diagonal banner does not join the wall")
+	eq(int(_plant_tile(diagonal).get("turns", -1)), lone_turns, "a diagonal banner uses the short clock")
+	_sim.submit({"type": "end_turn", "seat": 0})
+	_sim.submit({"type": "end_turn", "seat": 1})
+	eq(int(_plant_tile(wall_a).get("turns", -1)), wall_turns - 2, "the second owner turn ticks the wall again")
+	_sim.submit({"type": "end_turn", "seat": 0})
+	var ended: Dictionary = _sim.submit({"type": "end_turn", "seat": 1})
+	eq(_plant_tile(wall_a).is_empty(), true, "the wall expires after three owner turns")
+	eq(_plant_tile(wall_b).is_empty(), true, "the joined banner expires with the wall")
+	var wall_end := _plant_expire_event(ended)
+	eq(bool(wall_end.get("walled", false)), true, "the wall expiry is marked")
+	eq(log_script.plain(wall_end, _sim.snapshot()), "Plant wall ended on Bastion.", "the log names the ended wall")
+
+
+func _plant_tile(cell: Vector2i) -> Dictionary:
+	for item in _sim.snapshot().get("plant_tiles", []):
+		if typeof(item) == TYPE_DICTIONARY and item.get("pos") == cell:
+			return item
+	return {}
+
+
+func _plant_cast_event(result: Dictionary) -> Dictionary:
+	for event in result.get("events", []):
+		if typeof(event) != TYPE_DICTIONARY:
+			continue
+		if str(event.get("type", "")) == "cast" and str(event.get("spell", "")) == SpellKits.PLANT:
+			return event
+	return {}
+
+
+func _plant_expire_event(result: Dictionary) -> Dictionary:
+	for event in result.get("events", []):
+		if typeof(event) != TYPE_DICTIONARY:
+			continue
+		if str(event.get("type", "")) == "expire" and str(event.get("status", "")) == "plant":
+			return event
+	return {}
 
 
 ## Mauro 30 Sep 2026: "Gloam should be invisible for enemies turn, also player
@@ -8660,6 +8802,11 @@ func _test_bastion_aegis_tooltips() -> void:
 	var plant := SpellTooltip.card_text(_sim.preview_cast(SpellKits.PLANT, Vector2i(1, 1), Vector2i(2, 1), 0))
 	truthy(plant.contains("%d AP / 0 MP" % plant_ap), "Plant's hover card names the kit AP: %s" % plant)
 	truthy(plant.contains("+%d Aegis (max %d)" % [plant_gain, cap]), "Plant's hover card names the Aegis gain and the cap: %s" % plant)
+	var plant_turns := int(SpellKits.spell(SpellKits.PLANT).get("plant_turns", 0))
+	var plant_cap := int(SpellKits.spell(SpellKits.PLANT).get("plants_per_turn", 0))
+	var plant_dur := "Dur 1 turn" if plant_turns == 1 else "Dur %d turns" % plant_turns
+	truthy(plant.contains(plant_dur), "Plant's hover card names the kit duration: %s" % plant)
+	truthy(plant.contains("Max %d per turn" % plant_cap), "Plant's hover card names the kit cap: %s" % plant)
 	var bash := SpellTooltip.card_text(_sim.preview_cast(SpellKits.BASH, Vector2i(1, 1), Vector2i(2, 1), 1))
 	truthy(bash.contains("Hit +%d Aegis (max %d)" % [bash_gain, cap]), "Bash's hover card names the Aegis gain and the cap: %s" % bash)
 	var hold := SpellTooltip.card_text(_sim.preview_cast(SpellKits.HOLD_LINE, Vector2i(1, 1), Vector2i(5, 1), 1))
@@ -8705,6 +8852,8 @@ func _test_bastion_aegis_tooltips() -> void:
 	var plant_plain := " ".join(SpellTooltip.simple_lines(SpellKits.PLANT))
 	truthy(plant_plain.contains("Costs %d AP" % plant_ap), "Plant's plain card names the kit AP")
 	truthy(plant_plain.contains("+%d Aegis (max %d)" % [plant_gain, cap]), "Plant's plain card uses the kit gain and the cap")
+	truthy(plant_plain.contains("Shots cannot pass through the flag"), "Plant's plain card still says the flag blocks shots")
+	truthy(plant_plain.contains("Max %d per turn" % plant_cap), "Plant's plain card names the kit cap")
 	var wall_plain := " ".join(SpellTooltip.simple_lines(SpellKits.SNAP_WALL))
 	truthy(wall_plain.contains("Uses %d Aegis (max %d)" % [wall_spend, cap]), "Snap Wall's plain card uses the kit spend and the cap")
 	truthy(wall_plain.contains("knock it down"), "Snap Wall's plain card still explains the knock-down")
