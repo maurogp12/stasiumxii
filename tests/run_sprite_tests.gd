@@ -29,6 +29,7 @@ func _run() -> void:
 	_test_adjacent_units_stay_readable()
 	_test_foe_bodies()
 	_test_boss_sheets()
+	_test_scarecrow_drudge_walk()
 
 
 func _test_texture_paths_and_imports() -> void:
@@ -693,3 +694,54 @@ func _test_boss_sheets() -> void:
 	truthy(absf(hound.foe_body_lean()) > 0.05, "the hound leans into its stride on the glide walk (%.3f)" % hound.foe_body_lean())
 	hound.queue_free()
 	ViewMotion.glide = was_glide
+
+
+## Mauro 14 Oct 2026: the painted scarecrow walk. Regular monster, not a boss.
+## Strips are 12×288×336, feet on y=300. w is the mirror of s. Full-size
+## speed is ~103 px/s (72 px per cycle) so the feet stay with the tile.
+func _test_scarecrow_drudge_walk() -> void:
+	var Sheets: GDScript = load("res://units/boss_sheets.gd")
+	Sheets.clear_cache()
+	var art := "res://art/stasis/foes/scarecrow_drudge.png"
+	for letter in ["s", "w", "e", "n"]:
+		var path: String = Sheets.sheet_path("scarecrow_drudge", "walk", letter)
+		truthy(ResourceLoader.exists(path), "scarecrow walk %s is on disk" % letter)
+		var tex: Texture2D = load(path)
+		eq(tex.get_width(), 288 * 12, "scarecrow walk %s is 12 frames" % letter)
+		eq(tex.get_height(), 336, "scarecrow walk %s keeps the 336 feet line" % letter)
+	eq(Sheets.FILE_LETTER["e"], "s", "engine east plays the front down-right sheet")
+	eq(Sheets.FILE_LETTER["n"], "e", "engine north plays the back up-right sheet")
+	eq(Sheets.FILE_LETTER["w"], "n", "engine west plays the back up-left sheet")
+	var east: Dictionary = Sheets.frames_for(art, "walk", "E")
+	eq((east["frames"] as Array).size(), 12, "a regular monster walk resolves without the boss flag")
+	eq(bool(east["mirror"]), false, "east uses the s sheet, not a mirror")
+	var south: Dictionary = Sheets.frames_for(art, "walk", "S")
+	eq(bool(south["mirror"]), false, "west-facing file w is used as itself, the mirror of s")
+	eq((Sheets.frames_for(art, "walk", "N")["frames"] as Array).size(), 12, "back up-right sheet")
+	eq((Sheets.frames_for(art, "walk", "W")["frames"] as Array).size(), 12, "back up-left sheet")
+	var stride: Dictionary = Sheets.stride_for(art)
+	eq(float(stride["px_per_sec"]), 103.0, "full-size speed is 103 px/s")
+	eq(float(stride["cycle_px"]), 72.0, "one cycle covers 72 px")
+	var frame_ms := float(stride["cycle_px"]) / float(stride["px_per_sec"]) / 12.0 * 1000.0
+	truthy(absf(frame_ms - 58.33) < 0.15, "the cycle is 12 frames at about 58.33 ms (%.2f)" % frame_ms)
+	var pawn := Pawn.new()
+	root.add_child(pawn)
+	pawn.apply_snapshot({"seat": 1, "class_id": "ironjaw", "name": "Plaza Guard", "pos": Vector2i(4, 5), "facing": "E", "hp": 22, "max_hp": 22, "alive": true, "stasis_sprite": art, "stasis_boss": false}, 0)
+	eq(pawn.stasis_boss, false, "the scarecrow is a regular monster")
+	eq(pawn.uses_measured_stride(), true, "the regular monster uses the painted stride")
+	var step := BoardVisualSort.cell_to_local(Vector2i.ZERO).distance_to(BoardVisualSort.cell_to_local(Vector2i(1, 0)))
+	var scale := pawn.foe_draw_scale()
+	var tile_sec := pawn.measured_tile_sec(step)
+	var expect := step / (103.0 * scale)
+	truthy(absf(tile_sec - expect) < 0.001, "tile time matches 103 px/s at the draw scale (%.3f vs %.3f)" % [tile_sec, expect])
+	pawn.show_measured_stride(0, 0.0, step)
+	eq((pawn._sprite.texture as AtlasTexture).region.position.x, 0.0, "the stride starts on frame 0")
+	eq(pawn._sprite.offset.y, -136.0, "feet at y=300 sit on the tile for a 336 cell")
+	pawn.show_measured_stride(0, 1.0, step)
+	var px_per_frame := 72.0 / 12.0
+	var source_px := step / scale
+	var index := posmod(int(floor(source_px / px_per_frame)), 12)
+	eq((pawn._sprite.texture as AtlasTexture).region.position.x, 288.0 * float(index), "one tile advances by the painted foot travel, not half a cycle")
+	truthy(index != 6, "one tile is not the boss half-cycle")
+	pawn.queue_free()
+	Sheets.clear_cache()
