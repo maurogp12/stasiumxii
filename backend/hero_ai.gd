@@ -219,7 +219,18 @@ static func _best_hit(casts: Array, snap: Dictionary, team: int, role: String, h
 	var best := {}
 	var best_score := MIN_HIT_SCORE
 	var back := _back_line(snap, team)
+	# A hidden fighter offers empty-tile punches. Do not spend one of those
+	# while a real enemy is already in reach.
+	var aimed := false
 	for intent in casts:
+		if bool(intent.get("blind", false)):
+			continue
+		if intent.has("target_seat"):
+			aimed = true
+			break
+	for intent in casts:
+		if aimed and bool(intent.get("blind", false)):
+			continue
 		var spell := str(intent.get("spell", ""))
 		var def := SpellKits.spell(spell)
 		if def.is_empty() or not str(def.get("target", "")) in ["enemy", "burst", "cone", "any"]:

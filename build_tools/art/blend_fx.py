@@ -451,6 +451,35 @@ def steam_loop(f):
     return fr.done()
 
 
+# --------------------------------------------------------------------- Flare
+def flare(f):
+    # Air + Fire: a burst of light. Cyan ring, then a gold-white flash.
+    t = f / (FRAMES - 1)
+    fr = Frame()
+    ring = fr.layer()
+    d = ImageDraw.Draw(ring)
+    spread = ease_out(min(1, t * 1.4))
+    a = 230 * bell(t, 0.0, 0.35, 1.0)
+    ground_ellipse(d, 8 + 40 * spread, mix(AIR, WHITE, 0.45), a, width=4)
+    ground_ellipse(d, 6 + 26 * spread, mix(FIRE, (255, 220, 120), 0.45), a * 0.9, width=3)
+    fr.paste(ring, 4, 0.9)
+    burst = fr.layer()
+    d = ImageDraw.Draw(burst)
+    core = 220 * bell(t, 0.05, 0.28, 0.7)
+    blob(d, 0, -28, 10 + 16 * spread, mix(FIRE, WHITE, 0.55), core)
+    blob(d, 0, -36, 5 + 8 * spread, WHITE, core)
+    rng = random.Random(17)
+    for i in range(14):
+        ang = rng.uniform(0, math.tau)
+        dist = (8 + 46 * spread) * rng.uniform(0.55, 1.0)
+        x = math.cos(ang) * dist
+        y = math.sin(ang) * dist * 0.55 - 30
+        spark_a = 240 * bell(t, 0.05, 0.4, 0.95)
+        blob(d, x, y, rng.uniform(1.6, 3.2), mix(FIRE, WHITE, rng.uniform(0.2, 0.8)), spark_a)
+    fr.paste(burst, 3, 1.0)
+    return fr.done()
+
+
 EFFECTS = {
     "drift_pin": (drift_pin, FRAMES),
     "spark": (spark, FRAMES),
@@ -458,6 +487,7 @@ EFFECTS = {
     "magma": (magma, FRAMES),
     "mire": (mire, FRAMES),
     "steam": (steam, FRAMES),
+    "flare": (flare, FRAMES),
     "magma_loop": (magma_loop, LOOP_FRAMES),
     "steam_loop": (steam_loop, LOOP_FRAMES),
 }

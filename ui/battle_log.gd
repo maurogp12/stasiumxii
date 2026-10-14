@@ -448,7 +448,11 @@ static func _miss_line(event: Dictionary, snap: Dictionary) -> String:
 	var who := _name(snap, int(event.get("seat", -1)))
 	var spell := _spell_name(str(event.get("spell", "")))
 	if bool(event.get("blind", false)):
-		return _finish("%s misses %s, empty air" % [who, spell], event, true)
+		var hung := str(event.get("cast_element", ""))
+		var air := "%s misses %s, empty air" % [who, spell]
+		if hung != "":
+			air += ", %s hangs for a Blend" % hung.capitalize()
+		return _finish(air, event, true)
 	var target := ""
 	if event.has("target_seat"):
 		target = " on " + _name(snap, int(event["target_seat"]))
@@ -687,10 +691,11 @@ static func _blend_line(event: Dictionary, snap: Dictionary) -> String:
 	var caster := _name(snap, int(event.get("seat", -1)))
 	var target := _name(snap, int(event.get("target_seat", -1)))
 	var name := str(event.get("name", event.get("blend", "Blend")))
-	if str(event.get("blend", "")) == "magma":
+	var in_air := not event.has("target_seat")
+	if str(event.get("blend", "")) == "magma" and not in_air:
 		var stacks := int(event.get("burn_stacks", 0))
 		return "%s: %s on %s, Burn %d stacks for 2 turns, no shields for 1 turn." % [name, caster, target, stacks]
-	var text := "%s: %s on %s" % [name, caster, target]
+	var text := "%s: %s in the air" % [name, caster] if in_air else "%s: %s on %s" % [name, caster, target]
 	var damage := int(event.get("damage", event.get("chip", 0)))
 	if damage > 0:
 		text += ", -%d HP" % damage

@@ -313,7 +313,7 @@ static func _residue_blurb(spell_id: String) -> String:
 		SpellKits.MEND, SpellKits.PULSE_TAP, SpellKits.HEARTSTOP, SpellKits.CLEANSE, SpellKits.REKINDLE:
 			return "Enemies next to the teammate get this element's Residue. The teammate does not, and a heal leaves no Residue on them."
 		_:
-			return "A hit leaves this element's Residue on that enemy, so your other element can Blend."
+			return "A hit leaves this element's Residue on that enemy, so your other element can Blend. Thrown into an empty tile, the element hangs in the air and the other element fires the Blend there."
 
 
 static func _reach_words(def: Dictionary, preview: Dictionary) -> String:

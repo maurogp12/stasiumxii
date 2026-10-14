@@ -27,6 +27,7 @@ func _finish_shade_board() -> void:
 func _run() -> void:
 	_test_element_riders()
 	_test_element_blends()
+	_test_air_blends()
 	_test_utility_residue()
 	_test_marks_fade_without_attack()
 	_test_reset_and_turn_order()
@@ -1136,9 +1137,13 @@ func _test_soft_lock_target() -> void:
 	eq(_unit(1)["pos"], Vector2i(4, 0), "the snap does not move the foe")
 	eq(int(_unit(1)["hp"]) < int(_unit(1)["max_hp"]), true, "the snap deals Mark Shot damage")
 	eq(_sim.soft_lock_dest(0, SpellKits.MARK_SHOT, Vector2i(4, 1)), Vector2i(4, 0), "selection snap names the one neighbor")
-	# Chebyshev 2 is outside the #194 neighborhood.
+	# Chebyshev 2 is outside the #194 neighborhood. The tile does not snap onto
+	# the foe. An element spell still spends itself in the empty air there.
+	var hp_before := int(_unit(1)["hp"])
 	var far: Dictionary = _sim.submit({"type": "cast", "spell": "mark_shot", "to": Vector2i(4, 2), "seat": 0})
-	eq(str(far.get("reason", "")), "no_target", "a tile two away from the foe stays empty")
+	eq(bool(far.get("ok", false)), true, "a tile two away from the foe is an empty-air cast (%s)" % str(far.get("reason", "")))
+	eq(_unit(1)["pos"], Vector2i(4, 0), "the empty-air cast does not move the foe")
+	eq(int(_unit(1)["hp"]), hp_before, "the empty-air cast does not hit the foe")
 	eq(_sim.soft_lock_dest(0, SpellKits.MARK_SHOT, Vector2i(4, 2)), Vector2i(4, 2), "selection does not snap across two tiles")
 	# The far side of Strike is out of range. Do not pull an in-range body back.
 	_sim.reset_match({
@@ -1154,7 +1159,9 @@ func _test_soft_lock_target() -> void:
 	eq(_unit(1)["hp"], 75, "the out-of-range tap does not hit")
 	# Only the caster is beside this tile. Do not snap onto yourself.
 	var self_side: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(4, 5), "seat": 0})
-	eq(str(self_side.get("reason", "")), "no_target", "a tile beside only the caster stays empty")
+	eq(bool(self_side.get("ok", false)), true, "a tile beside only the caster is an empty-air cast (%s)" % str(self_side.get("reason", "")))
+	eq(int(_unit(0)["ap"]), 3, "the empty-air Strike spends its AP")
+	eq(_unit(1)["hp"], 75, "the empty-air Strike does not hit the foe")
 	# Detonate with no Marks is not a legal neighbor.
 	_sim.reset_match({
 		"seed": 1,
@@ -1194,10 +1201,10 @@ func _test_soft_lock_target() -> void:
 	})
 	eq(_sim.snapshot()["units"].size(), 3, "the pack test has the player and two foes")
 	var gap: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(6, 5), "seat": 0})
-	eq(str(gap.get("reason", "")), "no_target", "two neighbors do not snap")
+	eq(bool(gap.get("ok", false)), true, "two neighbors do not snap; the gap is empty air (%s)" % str(gap.get("reason", "")))
 	eq(int(_sim.snapshot()["units"][1]["hp"]), 80, "the north foe is untouched")
 	eq(int(_sim.snapshot()["units"][2]["hp"]), 80, "the south foe is untouched")
-	eq(int(_unit(0)["ap"]), 6, "the refused snap refunds AP")
+	eq(int(_unit(0)["ap"]), 3, "the empty-air Strike spends its AP")
 	eq(_sim.soft_lock_dest(0, SpellKits.STRIKE, Vector2i(6, 5)), Vector2i(6, 5), "selection keeps the gap")
 	var lone: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(5, 4), "seat": 0})
 	eq(bool(lone.get("ok", false)), true, "one neighbor in the pack still snaps (%s)" % str(lone.get("reason", "")))
@@ -10613,6 +10620,136 @@ func _test_utility_residue() -> void:
 	truthy(vault_card.contains("where you land"), "Vault's card names the landing")
 	eq(" ".join(SpellTooltip.simple_lines(SpellKits.NIGHTFOLD)).contains("Element: the one you picked"), false, "Nightfold stays out of the picker")
 	truthy(SpellTooltip.card_text({"name": "Snap Wall", "spell_id": SpellKits.SNAP_WALL, "ap": 1, "mp": 0, "range_text": "range 1–2"}).contains("Residue on enemies next to the wall"), "the Snap Wall hold card names Residue")
+
+
+## Mauro 14 Oct 2026: two elements thrown into empty tiles fire the Blend
+## on the second tile, and an Invisible enemy in that Blend's area is revealed.
+func _test_air_blends() -> void:
+	var Log: GDScript = load("res://ui/battle_log.gd")
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1, 1], "classes": ["ironjaw", "gloam"], "positions": [Vector2i(5, 5), Vector2i(8, 5)], "gloam_invisible": true})
+	_live_unit(0)["spell_elements"] = {"strike": "air", "shoulder": "fire", "crush": "fire", "advance": "air"}
+	var offered := false
+	for intent in _sim.legal_intents(0):
+		if bool(intent.get("blind", false)) and str(intent.get("spell", "")) == "strike" and intent.get("to", Vector2i.ZERO) == Vector2i(6, 5):
+			offered = true
+	truthy(offered, "Strike can be aimed at an empty tile while Gloam is hidden")
+	var hung: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(6, 5), "seat": 0})
+	eq(bool(hung.get("ok", false)), true, "Strike into empty air resolves")
+	eq(str(_unit(0).get("cast_element", "")), "air", "the first element hangs on the caster")
+	eq(bool(_unit(1).get("invisible", false)), true, "the first cast does not reveal Gloam")
+	var hang_row := _first_event_where(hung.get("events", []), "miss")
+	eq(hang_row.get("to", Vector2i.ZERO), Vector2i(6, 5), "the miss names the aimed tile, not Gloam")
+	eq(str(hang_row.get("cast_element", "")), "air", "the miss records the hanging element")
+	var hang_line := str(Log.plain(hang_row, _sim.snapshot()))
+	truthy(hang_line.contains("Air hangs for a Blend"), "the log says the element is hanging: %s" % hang_line)
+	var net: Node = root.get_node("NetSession")
+	var hidden: Dictionary = net._redact_invisible_for_viewer(_sim.snapshot(), [], 0)
+	var hidden_gloam := {}
+	for unit in hidden["snapshot"].get("units", []):
+		if int(unit.get("seat", -1)) == 1:
+			hidden_gloam = unit
+	eq(hidden_gloam.get("pos", Vector2i.ZERO), null, "Gloam's tile stays off Ironjaw's wire before the Blend")
+	var flare: Dictionary = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(6, 4), "seat": 0})
+	eq(bool(flare.get("ok", false)), true, "Shoulder into empty air resolves")
+	var flare_row := _first_event_where(flare.get("events", []), "blend")
+	eq(str(flare_row.get("blend", "")), "flare", "Air then Fire in the air is Flare")
+	eq(flare_row.has("target_seat"), false, "the air Blend has no body")
+	eq(flare_row.get("to", Vector2i.ZERO), Vector2i(6, 4), "Flare lands on the second cast")
+	eq(bool(_unit(1).get("invisible", true)), false, "Gloam within 2 tiles of Flare is revealed")
+	eq(str(_unit(0).get("cast_element", "")), "", "the Blend spends the hanging element")
+	var flare_line := str(Log.plain(flare_row, _sim.snapshot()))
+	truthy(flare_line.contains("Flare") and flare_line.contains("in the air") and flare_line.contains("reveals") and flare_line.contains("Gloam"), "the log names the air Flare and Gloam: %s" % flare_line)
+	eq(flare_line.contains("("), false, "the air Flare log has no tile")
+	var visible_line := ""
+	for event in flare.get("events", []):
+		if str(event.get("type", "")) == "expire" and str(event.get("status", "")) == "invisible":
+			visible_line = str(Log.plain(event, _sim.snapshot()))
+	eq(visible_line, "Gloam is visible.", "the reveal log is the existing visible line: %s" % visible_line)
+	var shown: Dictionary = net._redact_invisible_for_viewer(_sim.snapshot(), [], 0)
+	var shown_pos: Variant = null
+	for unit in shown["snapshot"].get("units", []):
+		if int(unit.get("seat", -1)) == 1:
+			shown_pos = unit.get("pos", null)
+	truthy(shown_pos != null, "once revealed, Gloam's tile is on the wire")
+
+	# Outside Flare's 2 tiles he stays hidden.
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1, 1], "classes": ["ironjaw", "gloam"], "positions": [Vector2i(5, 5), Vector2i(9, 5)], "gloam_invisible": true})
+	_live_unit(0)["spell_elements"] = {"strike": "air", "shoulder": "fire", "crush": "fire", "advance": "air"}
+	_sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(6, 5), "seat": 0})
+	var far: Dictionary = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(6, 5), "seat": 0})
+	eq(str(_first_event_where(far.get("events", []), "blend").get("blend", "")), "flare", "the far cast still fires Flare")
+	eq(bool(_unit(1).get("invisible", false)), true, "Gloam 3 tiles away stays hidden")
+
+	# The same element twice does not Blend.
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1, 1], "classes": ["ironjaw", "kestrel"], "positions": [Vector2i(5, 5), Vector2i(8, 5)]})
+	_live_unit(0)["spell_elements"] = {"strike": "earth", "shoulder": "earth", "crush": "earth", "advance": "earth"}
+	_sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(6, 5), "seat": 0})
+	var same: Dictionary = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(6, 4), "seat": 0})
+	eq(_first_event_where(same.get("events", []), "blend").is_empty(), true, "Earth then Earth does not Blend")
+	eq(str(_unit(0).get("cast_element", "")), "earth", "the same element refreshes the hang")
+
+	# Another class, another Blend: Fire then Water is Steam on the empty tile,
+	# and it reveals one tile out.
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1, 1], "classes": ["ironjaw", "gloam"], "positions": [Vector2i(5, 5), Vector2i(7, 5)], "gloam_invisible": true})
+	_live_unit(0)["spell_elements"] = {"strike": "fire", "shoulder": "water", "crush": "water", "advance": "fire"}
+	_sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(6, 5), "seat": 0})
+	var steam: Dictionary = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(6, 5), "seat": 0})
+	eq(str(_first_event_where(steam.get("events", []), "blend").get("blend", "")), "steam", "Fire then Water in the air is Steam")
+	eq(_sim.element_tile_at(Vector2i(6, 5), "steam"), true, "Steam is painted on the empty tile")
+	eq(bool(_unit(1).get("invisible", true)), false, "Steam reveals an Invisible enemy one tile away")
+
+	# A hanging element also Blends when the next cast hits a body.
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1, 1], "classes": ["ironjaw", "kestrel"], "positions": [Vector2i(5, 5), Vector2i(6, 5)]})
+	_live_unit(0)["spell_elements"] = {"strike": "air", "shoulder": "fire", "crush": "fire", "advance": "air"}
+	_sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(4, 5), "seat": 0})
+	var onto: Dictionary = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(6, 5), "seat": 0})
+	eq(str(_first_event_where(onto.get("events", []), "blend").get("blend", "")), "flare", "a hanging element Blends on the next hit")
+	eq(int(_first_event_where(onto.get("events", []), "blend").get("target_seat", -1)), 1, "that Blend is on the body")
+
+	# No element pick: empty tiles are not targets once nobody is hidden.
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "classes": ["ironjaw", "kestrel"], "positions": [Vector2i(5, 5), Vector2i(6, 5)]})
+	_live_unit(0)["spell_elements"] = {}
+	eq(_sim.legal_intents(0).any(func(i): return bool(i.get("blind", false))), false, "Neutral spells are not thrown into empty air")
+	var neutral: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(4, 5), "seat": 0})
+	eq(str(neutral.get("reason", "")), "no_target", "Neutral Strike into empty air is refused")
+	eq(int(_unit(0)["ap"]), 6, "the refused Neutral Strike refunds AP")
+	eq((_sim.snapshot().get("air_casts", []) as Array).has("strike"), false, "Neutral Strike is not an air cast")
+
+	# The enemy is out of Strike range, so the button used to stay dark.
+	# The element can still be thrown at an empty adjacent tile.
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "classes": ["ironjaw", "kestrel"], "positions": [Vector2i(5, 5), Vector2i(8, 5)]})
+	_live_unit(0)["spell_elements"] = {"strike": "air", "shoulder": "fire", "crush": "fire", "advance": "air"}
+	eq(_has_legal_cast(0, "strike"), false, "Strike lists no enemy when the foe is out of range")
+	eq(_sim.legal_intents(0).filter(func(i): return str(i.get("spell", "")) == "strike").size(), 0, "empty tiles are not legal Strike dests")
+	truthy((_sim.snapshot().get("air_casts", []) as Array).has("strike"), "Strike is armed as an air cast")
+	eq((_sim.snapshot().get("air_casts", []) as Array).has("crush"), false, "Crush without Impact is not an air cast")
+	var hud := CombatHUD.new()
+	hud._build()
+	hud.render(_sim.snapshot(), _sim.legal_intents(0))
+	eq((hud._spell_buttons["strike"] as Button).disabled, false, "the Strike button arms for an empty-air cast")
+	eq((hud._spell_buttons["crush"] as Button).disabled, true, "Crush stays locked without Impact")
+	hud.free()
+	var thrown: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(6, 5), "seat": 0})
+	eq(bool(thrown.get("ok", false)), true, "Strike into empty air resolves with no enemy in range")
+	eq(str(_unit(0).get("cast_element", "")), "air", "that cast hangs Air")
+
+	# The companion keeps hitting the enemy instead of the empty tiles.
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "classes": ["ironjaw", "kestrel"], "positions": [Vector2i(5, 5), Vector2i(6, 5)]})
+	_live_unit(0)["spell_elements"] = {"strike": "air", "shoulder": "fire", "crush": "fire", "advance": "air"}
+	var HeroAi: GDScript = load("res://backend/hero_ai.gd")
+	var plan: Dictionary = HeroAi.plan(_sim, 0)
+	eq(bool(plan.get("blind", false)), false, "the companion does not spend the turn on empty air")
+	eq(int(plan.get("target_seat", -1)), 1, "the companion hits the visible enemy")
+
+	# The hang lasts through the next own turn, then drops.
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "classes": ["ironjaw", "kestrel"], "positions": [Vector2i(5, 5), Vector2i(8, 5)]})
+	_live_unit(0)["spell_elements"] = {"strike": "air", "shoulder": "fire", "crush": "fire", "advance": "air"}
+	_sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(6, 5), "seat": 0})
+	_sim.submit({"type": "end_turn", "seat": 0})
+	eq(str(_unit(0).get("cast_element", "")), "air", "the hang survives the cast turn")
+	_sim.submit({"type": "end_turn", "seat": 1})
+	_sim.submit({"type": "end_turn", "seat": 0})
+	eq(str(_unit(0).get("cast_element", "")), "", "the hang ends after the caster's next turn")
 
 
 func _test_element_blends() -> void:

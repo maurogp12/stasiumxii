@@ -653,6 +653,16 @@ static func legal_cast_ids(legal: Array) -> Dictionary:
 	return out
 
 
+## An element spell with no enemy in reach can still be armed, so the player
+## can throw it into an empty highlighted tile. legal_intents stays the list
+## of bodies. Ambush is never in air_casts.
+static func cast_armed(spell_id: String, legal: Array, snap: Dictionary) -> bool:
+	if legal_cast_ids(legal).has(spell_id):
+		return true
+	var extra: Variant = snap.get("air_casts", [])
+	return typeof(extra) == TYPE_ARRAY and (extra as Array).has(spell_id)
+
+
 static func terrain_legend_text() -> String:
 	return TERRAIN_LEGEND
 
@@ -1315,7 +1325,7 @@ func render(snap: Dictionary, legal: Array) -> void:
 	_update_selected_label()
 	for spell_id in _spell_buttons.keys():
 		var button: Button = _spell_buttons[spell_id]
-		var can_submit: bool = legal_spells.has(spell_id) and not match_over and not _stunned and not _deploying and is_local_turn(snap)
+		var can_submit: bool = cast_armed(str(spell_id), legal, snap) and not match_over and not _stunned and not _deploying and is_local_turn(snap)
 		_set_spell_button_clickable(button, can_submit)
 		_apply_spell_modulate(str(spell_id), button, can_submit)
 	_refresh_walk_button()
@@ -3804,11 +3814,10 @@ func _on_face_pressed(dir: String) -> void:
 func _refresh_spell_buttons() -> void:
 	_drop_illegal_ambush_selection()
 	_refresh_walk_button()
-	var legal_spells := legal_cast_ids(_last_legal)
 	var match_over := bool(_last_snap.get("match_over", false))
 	for spell_id in _spell_buttons.keys():
 		var button: Button = _spell_buttons[spell_id]
-		var can_submit: bool = legal_spells.has(spell_id) and not match_over and not _stunned and not _deploying and is_local_turn(_last_snap)
+		var can_submit: bool = cast_armed(str(spell_id), _last_legal, _last_snap) and not match_over and not _stunned and not _deploying and is_local_turn(_last_snap)
 		_set_spell_button_clickable(button, can_submit)
 		_apply_spell_modulate(str(spell_id), button, can_submit)
 
