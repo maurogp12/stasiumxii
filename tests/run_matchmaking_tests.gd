@@ -511,9 +511,13 @@ func _test_snap_wall_cast() -> void:
 		"positions": [Vector2i(1, 1), Vector2i(6, 6)],
 		"bastion_aegis": 2,
 	})
+	eq(bool(_sim.submit({"type": "cast", "spell": "plant", "to": Vector2i(2, 1), "seat": 0}).get("ok", false)), true, "the banner the wall stands on is planted")
+	var bastion: Dictionary = _sim._unit_by_seat(0)
+	bastion["aegis"] = 2
+	var ap_before := int(bastion["ap"])
 	var casted: Dictionary = _sim.submit({"type": "cast", "spell": "snap_wall", "to": Vector2i(2, 1), "seat": 0})
 	eq(bool(casted.get("ok", false)), true, "Snap Wall places without a roll")
-	eq(int(_sim.snapshot()["units"][0]["ap"]), 5, "Snap Wall costs 1 AP")
+	eq(int(_sim.snapshot()["units"][0]["ap"]), ap_before - 1, "Snap Wall costs 1 AP")
 	eq(int(_sim.snapshot()["units"][0]["aegis"]), 0, "Snap Wall spends 2 Aegis")
 	var tiles: Array = _sim.snapshot()["blocked_tiles"]
 	eq(tiles.size(), 1, "blocked_tiles lists the Snap Wall")
