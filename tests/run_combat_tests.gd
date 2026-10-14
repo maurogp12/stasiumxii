@@ -1930,14 +1930,14 @@ func _test_ambush_front_landing() -> void:
 
 
 func _test_ambush_umbral_payoff() -> void:
-	# Hit spends every Umbral for +3 each, added before the back/front multiplier.
-	# 0 Umbral stays the old 26 / 35. Miss keeps the stack. A quiet turn keeps it.
+	# Hit spends every Umbral for +4 each, added before the back/front multiplier.
+	# 0 Umbral stays 26 / 35. Miss keeps the stack. A quiet turn keeps it.
 	eq(int(SpellKits.spell(SpellKits.AMBUSH)["base_damage"]), 26, "Ambush base stays 26")
-	eq(int(SpellKits.spell(SpellKits.AMBUSH).get("damage_per_umbral", 0)), 3, "Ambush adds 3 per Umbral")
+	eq(int(SpellKits.spell(SpellKits.AMBUSH).get("damage_per_umbral", 0)), 4, "Ambush adds 4 per Umbral")
 	eq(SpellKits.spell(SpellKits.AMBUSH).has("requires_umbral"), false, "Ambush has no Umbral requirement")
 	eq(SpellKits.UMBRAL_CAP, 4, "Umbral cap stays 4")
-	var front_dmg := {0: 26, 2: 32, 4: 38}
-	var back_dmg := {0: 35, 2: 43, 4: 51}
+	var front_dmg := {0: 26, 2: 34, 4: 42}
+	var back_dmg := {0: 35, 2: 46, 4: 57}
 	var gloam := Vector2i(2, 2)
 	var prey := Vector2i(4, 2)
 	for stacks in [0, 2, 4]:
@@ -2048,10 +2048,10 @@ func _test_ambush_umbral_payoff() -> void:
 	})
 	eq(int(_unit(0)["umbral"]), 4, "setup clamps Umbral to 4")
 	var capped: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": prey, "seat": 0})
-	eq(int(capped["events"][0].get("damage", -1)), 51, "cap 4 is +12 before the backstab")
+	eq(int(capped["events"][0].get("damage", -1)), 57, "cap 4 is +16 before the backstab")
 	eq(int(_unit(0)["umbral"]), 0, "the capped hit still spends all Umbral")
 	var card := " ".join(SpellTooltip.simple_lines(SpellKits.AMBUSH))
-	truthy(card.contains("+3"), "Ambush tooltip names +3")
+	truthy(card.contains("+4"), "Ambush tooltip names +4")
 	truthy(card.contains("Umbral"), "Ambush tooltip names Umbral")
 	var net := FileAccess.get_file_as_string("res://backend/net_session.gd")
 	truthy(net.contains("host_sim.submit"), "the dedicated authority submits through the same CombatSim")
@@ -2925,7 +2925,7 @@ func _test_ambush_rules_keeper_lock() -> void:
 	eq(east_hit["events"][0].get("caster_cell"), Vector2i(6, 0), "east cast cell stays the pre-blink tile")
 	eq(bool(east_hit["events"][0].get("teleported", false)), true, "east Invisible hit teleports")
 	eq(bool(east_hit["events"][0].get("backstab", true)), false, "east landing in front is not a backstab")
-	eq(int(_unit(1)["hp"]), 46, "east front Ambush is 26 + Fade's 1 Umbral")
+	eq(int(_unit(1)["hp"]), 45, "east front Ambush is 26 + Fade's 1 Umbral")
 	eq(bool(_unit(0)["invisible"]), false, "east hit ends Invisible")
 	_sim.reset_match({
 		"seed": 1,
@@ -3052,7 +3052,7 @@ func _test_invisible_shade_origin_ambush() -> void:
 	eq(jumped["events"][0].get("caster_cell"), gloam, "caster_cell stays the pre-blink body")
 	eq(int(_unit(0)["shades"]), 0, "the Shade jump spends the Shade")
 	eq(bool(_unit(0)["invisible"]), false, "the Shade jump ends Invisible")
-	eq(int(_unit(1)["hp"]), 46, "the Shade jump front hit is 26 + Fade's 1 Umbral")
+	eq(int(_unit(1)["hp"]), 45, "the Shade jump front hit is 26 + Fade's 1 Umbral")
 
 	_sim.reset_match({
 		"seed": 1,
@@ -3190,7 +3190,7 @@ func _test_invisible_breaks_on_attack() -> void:
 	eq(bool(hit.get("ok", false)), true, "Invisible Ambush hit resolves")
 	eq(_unit(0)["pos"], back, "Invisible Ambush hit relocates to the back tile")
 	eq(hit["events"][0].get("struck_from"), back, "Invisible Ambush damage is struck after the relocate")
-	eq(int(_unit(1)["hp"]), 36, "Invisible Ambush hit is (26 + Fade's 1 Umbral) × 1.35")
+	eq(int(_unit(1)["hp"]), 34, "Invisible Ambush hit is (26 + Fade's 1 Umbral) × 1.35")
 	eq(bool(_unit(0)["invisible"]), false, "Invisible Ambush hit ends Invisible")
 	eq(bool(hit["events"][0].get("invisible_retained", true)), false, "Invisible Ambush hit does not retain Invisible")
 
@@ -3270,7 +3270,7 @@ func _test_instant_invisible_ambush_relocates_before_damage() -> void:
 	var event: Dictionary = hit.get("events", [{}])[0]
 	var dealt := hp_before - int(_unit(1)["hp"])
 	eq(dealt > 0, true, "Instant Invisible Ambush deals damage")
-	eq(dealt, 29, "Instant Invisible front hit is 26 + Fade's 1 Umbral")
+	eq(dealt, 30, "Instant Invisible front hit is 26 + Fade's 1 Umbral")
 	eq(int(event.get("damage", 0)), dealt, "Instant Invisible damage is the HP drop")
 	eq(_unit(0)["pos"], back, "Instant Invisible Ambush relocates to the back tile")
 	eq(_unit(0)["pos"] == cast, false, "Instant Invisible Ambush does not stay on the cast cell")
@@ -3328,7 +3328,7 @@ func _test_instant_invisible_ambush_relocates_before_damage() -> void:
 	eq(far_hit["events"][0].get("struck_from"), far_back, "distant Invisible damage is struck after the plant")
 	eq(far_hit["events"][0].get("caster_cell"), far, "distant Invisible cast cell stays the pre-blink tile")
 	eq(bool(far_hit["events"][0].get("teleported", false)), true, "distant Invisible Shade Ambush teleports")
-	eq(int(_unit(1)["hp"]), 46, "front Shade Ambush while Invisible is 26 + Fade's 1 Umbral")
+	eq(int(_unit(1)["hp"]), 45, "front Shade Ambush while Invisible is 26 + Fade's 1 Umbral")
 	eq(int(_unit(0)["shades"]), 0, "Shade origin spends the Shade while Invisible")
 	eq(bool(_unit(0)["invisible"]), false, "Shade Ambush while Invisible ends Invisible")
 
