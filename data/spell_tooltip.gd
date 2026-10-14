@@ -53,6 +53,10 @@ static func card_lines(preview: Dictionary) -> PackedStringArray:
 		var per_turn := int(kit.get("plants_per_turn", 0))
 		if per_turn > 0:
 			lines.append("Max %d per turn" % per_turn)
+		lines.append("Shots pass through banners")
+		lines.append("A banner beside a Snap Wall blocks shots")
+	if spell_id == SpellKits.SNAP_WALL:
+		lines.append("A Plant beside it blocks shots")
 	if bool(preview.get("would_stun", false)):
 		lines.append("Stun")
 	lines.append_array(_aegis_card_lines(spell_id))
@@ -255,11 +259,11 @@ static func simple_lines(spell_id: String, preview: Dictionary = {}) -> PackedSt
 			var lone := int(def.get("plant_turns", 1))
 			var wall := int(def.get("plant_wall_turns", 3))
 			var per_turn := int(def.get("plants_per_turn", 3))
-			out.append("Plant your flag on a tile. %s. Stand on it and the first push against you does nothing. Shots cannot pass through the flag. A banner on its own lasts %d %s. Banners that form a wall last %d %s. Max %d per turn." % [_aegis_gain_text(def), lone, "turn" if lone == 1 else "turns", wall, "turn" if wall == 1 else "turns", per_turn])
+			out.append("Plant your flag on a tile. %s. Stand on it and the first push against you does nothing. Shots pass through a banner, and through a wall of banners. A banner next to a Snap Wall blocks shots. A banner on its own lasts %d %s. Banners that form a wall last %d %s. Max %d per turn." % [_aegis_gain_text(def), lone, "turn" if lone == 1 else "turns", wall, "turn" if wall == 1 else "turns", per_turn])
 		SpellKits.HOLD_LINE:
 			out.append("Yank one enemy up to %d tiles straight toward you for %d damage. They must stand in a straight line from you, same row or same column, with nothing blocking the tiles between you. A wall, a rock, a Plant flag, a Snap Wall, or another fighter in the way is not a target. They stop next to you. Hit %s." % [int(def.get("pull_cells", 4)), dmg, _aegis_gain_text(def)])
 		SpellKits.SNAP_WALL:
-			out.append("Build a wall on an empty tile. Nobody can walk or shoot through it. Lasts %d of your turns. %s." % [int(def.get("wall_turns", 2)), _aegis_spend_text(def)])
+			out.append("Build a wall on an empty tile. Nobody can walk or shoot through it. A Plant banner next to it blocks shots too. Lasts %d of your turns. %s." % [int(def.get("wall_turns", 2)), _aegis_spend_text(def)])
 			out.append("Use it on your own wall to knock it down and get the %d Aegis back." % int(def.get("spend_aegis", 0)))
 		SpellKits.AEGIS_BREAK:
 			out.append("Slam the ground: %d damage to every enemy 1-2 tiles from you, and push them 1 tile. Needs %d Aegis (max %d)." % [dmg, int(def.get("requires_aegis", 0)), SpellKits.AEGIS_CAP])

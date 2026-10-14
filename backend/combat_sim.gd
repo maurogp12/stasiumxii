@@ -1806,7 +1806,7 @@ func _preview_kit_lines(spell_id: String) -> Dictionary:
 			var lone := int(plant.get("plant_turns", 1))
 			var wall := int(plant.get("plant_wall_turns", 3))
 			var per := int(plant.get("plants_per_turn", 3))
-			return {"on_connect": "Flag for %d %s, or %d %s in a wall. Max %d per turn. +%d Aegis. Enemies next to you get this element's Residue." % [lone, _turn_word(lone), wall, _turn_word(wall), per, int(plant.get("gain_aegis", 0))], "on_miss": "No roll."}
+			return {"on_connect": "Flag for %d %s, or %d %s in a wall. Max %d per turn. Shots pass through a banner and a wall of banners. A banner next to a Snap Wall blocks shots. +%d Aegis. Enemies next to you get this element's Residue." % [lone, _turn_word(lone), wall, _turn_word(wall), per, int(plant.get("gain_aegis", 0))], "on_miss": "No roll."}
 		SpellKits.FADE:
 			return {"on_connect": "Invisible. Enemies next to you get this element's Residue. Your position is not sent.", "on_miss": "No roll."}
 		SpellKits.VAULT:
@@ -3362,7 +3362,7 @@ func _submit_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
 		return _reject(intent, "out_of_range", "REJECT — %s Chebyshev %d has no locked hit %% (refund)." % [def["name"], dist])
 	if not _spell_sees(def, range_from, dest):
 		var wall := sight_blocker(range_from, dest, _sight_bodies(def))
-		return _reject(intent, "no_line_of_sight", "REJECT — %s has no line of sight: a wall at (%d,%d) blocks it (refund)." % [def["name"], wall.x, wall.y])
+		return _reject(intent, "no_line_of_sight", "REJECT — %s has no line of sight: %s at (%d,%d) blocks it (refund)." % [def["name"], _sight_block_name(wall), wall.x, wall.y])
 
 	var ap_cost := int(def["ap"])
 	var mp_cost := int(def["mp"])
@@ -6622,8 +6622,9 @@ func _hold_line_lane_blocked(from_cell: Vector2i, to_cell: Vector2i) -> bool:
 		guard += 1
 		if not _in_bounds(cursor):
 			return true
-		# Props, Plant flags, Snap Walls, steam, blockers, and visible fighters.
-		if _blocks_sight(cursor, 0, true):
+		# Props, Snap Walls, steam, blockers, and visible fighters.
+		# A Plant flag stops the pull even when it does not block a shot.
+		if _blocks_sight(cursor, 0, true) or _tile_has_plant(cursor):
 			return true
 		# A plain wall tile is not a sight prop, but the pull cannot cross it.
 		if not _board.is_voluntary_impassable(cursor) and not _board.is_walkable(cursor):
@@ -6664,7 +6665,8 @@ func _blocks_sight(cell: Vector2i, _top: int, bodies: bool = true) -> bool:
 		return true
 	if _snap_wall_blocks(cell):
 		return true
-	# Plant is a flag you can stand on. It still blocks a shot, like a crystal.
+	# A lone banner, and a wall of banners, do not block a shot.
+	# A banner next to a Snap Wall does.
 	if _plant_blocks_sight(cell):
 		return true
 	if _map_steam_at(cell):
@@ -9726,8 +9728,27 @@ func _link_plant_walls() -> void:
 		tile["turns"] = maxi(int(tile.get("turns", 0)), wall_turns)
 
 
+## A Plant blocks a shot only when that banner is orthogonally next to a
+## Snap Wall. A lone banner does not. A wall of banners does not, even when
+## one end of that wall touches a Snap Wall: the block does not travel
+## through other banners. A diagonal Snap Wall does not count.
 func _plant_blocks_sight(cell: Vector2i) -> bool:
-	return _tile_has_plant(cell)
+	if not _tile_has_plant(cell):
+		return false
+	if _snap_wall_blocks(cell):
+		return true
+	for step in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+		if _snap_wall_blocks(cell + step):
+			return true
+	return false
+
+
+## Coach name for the first cell that stops a shot. A banner joined to a
+## Snap Wall is named as the pair. The Snap Wall cell itself stays a wall.
+func _sight_block_name(cell: Vector2i) -> String:
+	if _plant_blocks_sight(cell) and not _snap_wall_blocks(cell):
+		return "a Plant and Snap Wall"
+	return "a wall"
 
 
 func _snap_wall_blocks(cell: Vector2i) -> bool:
