@@ -46,6 +46,8 @@ func _process(_delta: float) -> bool:
 		_frames = 0
 		return false
 	if _phase == "flare":
+		if _frames == 8:
+			_save("flare_firing.png")
 		if _frames < 18:
 			return false
 		var hud: CombatHUD = _board._hud

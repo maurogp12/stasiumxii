@@ -220,6 +220,7 @@ const BLEND_FX := {
 	"magma": {"frames": 12, "fps": 15.0, "ground": true},
 	"mire": {"frames": 12, "fps": 15.0, "ground": true},
 	"steam": {"frames": 12, "fps": 13.0, "ground": false},
+	"flare": {"frames": 12, "fps": 16.0, "ground": false},
 }
 ## Slagcrown's boiling pools steam all match long: a tall thin plume
 ## (build_tools/art/steam_plume.py), no floor puff so the pool shows.
