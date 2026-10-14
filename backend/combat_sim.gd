@@ -6634,6 +6634,9 @@ func _hold_line_lane_blocked(from_cell: Vector2i, to_cell: Vector2i) -> bool:
 
 
 ## First tile that blocks the line, or (-1, -1) when the line is clear.
+## The sample is the open segment between the two centres. The shooter's
+## tile and the target's tile never block. A Snap Wall or banner past the
+## target is outside this box, so it cannot grey the fighter in front of it.
 func sight_blocker(from_cell: Vector2i, to_cell: Vector2i, bodies: bool = true) -> Vector2i:
 	var none := Vector2i(-1, -1)
 	if from_cell == to_cell or not _in_bounds(from_cell) or not _in_bounds(to_cell):
@@ -9728,9 +9731,11 @@ func _link_plant_walls() -> void:
 		tile["turns"] = maxi(int(tile.get("turns", 0)), wall_turns)
 
 
-## A Plant blocks a shot only when that banner is orthogonally next to a
-## Snap Wall. A lone banner does not. A wall of banners does not, even when
-## one end of that wall touches a Snap Wall: the block does not travel
+## A Plant blocks a shot only when the path crosses that banner tile and the
+## banner is orthogonally next to a live Snap Wall. Standing beside the pair
+## does not block: the neighbour tiles, the shooter's tile, and the target's
+## tile are not the banner. A lone banner does not block. A wall of banners
+## does not, even when one end touches a Snap Wall: the block does not travel
 ## through other banners. A diagonal Snap Wall does not count.
 func _plant_blocks_sight(cell: Vector2i) -> bool:
 	if not _tile_has_plant(cell):
