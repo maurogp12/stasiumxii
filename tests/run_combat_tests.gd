@@ -99,6 +99,7 @@ func _run() -> void:
 	_test_windmere_crystal_blocks_sight()
 	_test_hold_line_pull()
 	_test_plant_blocks_sight()
+	_test_banner_behind_target_does_not_block()
 	_test_plant_one_flag_per_tile()
 	_test_plant_banner_rules()
 	_test_blind_attacks_on_invisible()
@@ -4308,6 +4309,111 @@ func _test_plant_blocks_sight() -> void:
 	var wall_card := " ".join(SpellTooltip.simple_lines(SpellKits.SNAP_WALL))
 	truthy(wall_card.contains("Nobody can walk or shoot through it"), "Snap Wall still blocks walk and shots")
 	truthy(wall_card.contains("A Plant banner next to it blocks shots too"), "Snap Wall's card names the joined banner")
+
+
+## Mauro 14 Oct 2026, 0.1.188 video. Kestrel (-3,1), Bastion (-1,0), banner
+## (0,-1), Snap Wall (0,0). The pair sits beside and behind Bastion. The two
+## tiles between them are clear. The shot must stay legal: a banner blocks
+## only when the path crosses that banner, and only while it stands
+## orthogonally beside a live Snap Wall. The shooter's tile and the target's
+## tile never block. Shifted +3,+1 so the same vectors sit on the board.
+func _test_banner_behind_target_does_not_block() -> void:
+	var shift := Vector2i(3, 1)
+	var kestrel := Vector2i(-3, 1) + shift
+	var between_n := Vector2i(-2, 1) + shift
+	var between_s := Vector2i(-2, 0) + shift
+	var bastion := Vector2i(-1, 0) + shift
+	var wall := Vector2i(0, 0) + shift
+	var banner := Vector2i(0, -1) + shift
+	eq(kestrel, Vector2i(0, 2), "the video Kestrel shifts onto the board")
+	eq(bastion, Vector2i(2, 1), "the video Bastion shifts onto the board")
+	eq(wall, Vector2i(3, 1), "the Snap Wall stays one step behind Bastion")
+	eq(banner, Vector2i(3, 0), "the banner stays beside the wall, off the shot")
+	_sim.reset_match({
+		"seed": 1, "flat_board": true, "skip_deploy": true,
+		"classes": ["bastion", "kestrel"],
+		"positions": [bastion, kestrel],
+		"snap_walls": [wall],
+		"rolls": [1],
+	})
+	eq(_sim.chebyshev(kestrel, bastion), 2, "Bastion is inside Mark Shot 2–5")
+	eq(_sim.chebyshev(kestrel, between_n), 1, "the north between-tile is inside the minimum range")
+	eq(_sim.chebyshev(kestrel, between_s), 1, "the south between-tile is inside the minimum range")
+	var planted: Dictionary = _sim.submit({"type": "cast", "spell": "plant", "to": banner, "seat": 0})
+	eq(bool(planted.get("ok", false)), true, "the banner behind Bastion plants")
+	var coach := str(planted.get("events", [{}])[0].get("coach", ""))
+	truthy(coach.contains("−1 AP"), "this Plant spends 1 AP: %s" % coach)
+	truthy(coach.contains("Banner, 1 turn"), "a lone banner is 1 turn: %s" % coach)
+	eq(coach.contains("Banner, 3"), false, "a lone banner is not the 3-turn wall")
+	eq(_sim.sight_blocker(kestrel, bastion), Vector2i(-1, -1), "nothing on the open segment blocks")
+	eq(_sim.sight_blocker(kestrel, bastion) == bastion, false, "Bastion's own tile is not the blocker")
+	eq(_sim.sight_blocker(kestrel, bastion) == kestrel, false, "Kestrel's tile is not the blocker")
+	eq(_sim.sight_blocker(kestrel, bastion) == wall, false, "the Snap Wall behind him is not on the shot")
+	eq(_sim.sight_blocker(kestrel, bastion) == banner, false, "the banner beside that wall is not on the shot")
+	eq(_sim.has_line_of_sight(kestrel, bastion), true, "the pair behind Bastion does not hide him")
+	eq(_sim.sight_blocked_cells(1, "mark_shot").has(bastion), false, "Bastion's tile is not grey")
+	truthy(_sim.range_highlight_cells(1, "mark_shot").has(bastion), "Bastion's tile stays in the gold ring")
+	eq(_sim.sight_blocked_cells(1, "mark_shot").has(between_n), false, "the north between-tile is not grey")
+	eq(_sim.sight_blocked_cells(1, "mark_shot").has(between_s), false, "the south between-tile is not grey")
+	_sim.submit({"type": "end_turn", "seat": 0})
+	truthy(_has_legal_cast_to(1, "mark_shot", bastion), "Mark Shot is offered at the fighter in front of the pair")
+	var shot: Dictionary = _sim.submit({"type": "cast", "spell": "mark_shot", "to": bastion, "seat": 1})
+	eq(bool(shot.get("ok", false)), true, "the shot resolves")
+	eq(str(shot.get("reason", "")), "", "the shot is not refused for sight")
+	truthy(int(_unit(0)["hp"]) < int(_unit(0)["max_hp"]), "the shot deals damage")
+	# The same rule still blocks when the path does cross that banner.
+	var row_bastion := Vector2i(2, 7)
+	var row_kestrel := Vector2i(6, 7)
+	var row_banner := Vector2i(4, 7)
+	var row_wall := Vector2i(4, 8)
+	_sim.reset_match({
+		"seed": 1, "flat_board": true, "skip_deploy": true,
+		"classes": ["bastion", "kestrel"],
+		"positions": [row_bastion, row_kestrel],
+		"snap_walls": [row_wall],
+		"rolls": [1],
+	})
+	eq(bool(_sim.submit({"type": "cast", "spell": "plant", "to": row_banner, "seat": 0}).get("ok", false)), true, "the banner on the shot plants")
+	eq(_sim.sight_blocker(row_kestrel, row_bastion), row_banner, "a shot that crosses the banner is blocked by that tile")
+	eq(_sim.has_line_of_sight(row_kestrel, row_bastion), false, "crossing the banner beside the Snap Wall still blocks")
+	eq(_sim.sight_blocker(row_kestrel, row_bastion) == row_bastion, false, "the crossed shot is not blamed on the target tile")
+	eq(_sim.sight_blocker(row_kestrel, row_bastion) == row_kestrel, false, "the crossed shot is not blamed on the shooter tile")
+	# Knock the wall down, then plant on that cell. No ghost wall, and the
+	# lone banner does not block the line it sits on.
+	var old_wall := Vector2i(12, 11)
+	var bastion_row := Vector2i(12, 9)
+	var kestrel_row := Vector2i(12, 13)
+	_sim.reset_match({
+		"seed": 1, "flat_board": true, "skip_deploy": true,
+		"classes": ["bastion", "kestrel"],
+		"positions": [bastion_row, kestrel_row],
+		"bastion_aegis": 4,
+		"rolls": [1],
+	})
+	eq(bool(_sim.submit({"type": "cast", "spell": "snap_wall", "to": old_wall, "seat": 0}).get("ok", false)), true, "the wall on the line is built")
+	eq(_sim.has_line_of_sight(kestrel_row, bastion_row), false, "the live Snap Wall blocks the shot")
+	var broke: Dictionary = _sim.submit({"type": "cast", "spell": "snap_wall", "to": old_wall, "seat": 0})
+	eq(bool(broke.get("ok", false)), true, "knock-down removes the wall")
+	eq((_sim.snapshot()["snap_walls"] as Array).is_empty(), true, "knock-down clears snap_walls")
+	eq((_sim.snapshot()["blocked_tiles"] as Array).is_empty(), true, "knock-down clears blocked_tiles")
+	eq(_sim.has_line_of_sight(kestrel_row, bastion_row), true, "the line is open after knock-down")
+	var ap_before := int(_unit(0)["ap"])
+	var replant: Dictionary = _sim.submit({"type": "cast", "spell": "plant", "to": old_wall, "seat": 0})
+	eq(bool(replant.get("ok", false)), true, "Plant on the old wall cell is not a flag refund")
+	eq(str(replant.get("reason", "")), "", "the old wall cell is empty for a flag")
+	eq(int(_unit(0)["ap"]), ap_before - 1, "that Plant spends 1 AP")
+	var tile := _plant_tile(old_wall)
+	eq(int(tile.get("turns", -1)), 1, "the banner on the old wall cell lasts 1 turn")
+	eq(bool(tile.get("walled", true)), false, "one banner is not a wall")
+	eq(_sim.has_line_of_sight(kestrel_row, bastion_row), true, "the lone banner does not put the wall back")
+	eq(_sim.sight_blocker(kestrel_row, bastion_row), Vector2i(-1, -1), "no ghost wall remains on the line")
+	var guest_script := load("res://backend/combat_sim.gd")
+	var guest: Node = guest_script.new()
+	guest.apply_host_snapshot(_sim.snapshot())
+	eq((guest.snapshot()["snap_walls"] as Array).is_empty(), true, "the other phone has no Snap Wall")
+	eq((guest.snapshot()["blocked_tiles"] as Array).is_empty(), true, "the other phone has no blocked tile")
+	eq(guest.has_line_of_sight(kestrel_row, bastion_row), true, "the other phone can see through the lone banner")
+	guest.free()
 
 
 ## One flag per tile. A second Plant on that tile is not a target, spends no
