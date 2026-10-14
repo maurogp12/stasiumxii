@@ -942,6 +942,18 @@ func range_highlight_cells(seat: int, spell_id: String) -> Array:
 			if intent.has("to"):
 				out.append(intent["to"])
 		return out
+	# Mauro 14 Oct 2026: Snap Wall only highlights a tile that is a legal
+	# target. That is his own Plant banner, or his own wall to knock it down.
+	# A bare tile stays dark.
+	if spell_id == SpellKits.SNAP_WALL:
+		for intent in legal_intents(seat):
+			if typeof(intent) != TYPE_DICTIONARY:
+				continue
+			if str(intent.get("type", "")) != "cast" or str(intent.get("spell", "")) != SpellKits.SNAP_WALL:
+				continue
+			if intent.has("to"):
+				out.append(intent["to"])
+		return out
 	var from: Vector2i = actor["pos"]
 	if spell_id == SpellKits.PLANT and _plant_at_cap(actor, def):
 		return out
@@ -1738,6 +1750,8 @@ func _preview_reason(def: Dictionary, actor: Dictionary, target: Dictionary, fro
 			return "body_on_tile"
 		if not _is_empty(to_cell):
 			return "destination_occupied"
+		if spell_id == SpellKits.SNAP_WALL and not _own_plant_at(actor, to_cell):
+			return "needs_plant"
 		return ""
 	if target_kind == "tile":
 		if spell_id == SpellKits.PLANT and _plant_at_cap(actor, def):
@@ -1800,7 +1814,7 @@ func _preview_kit_lines(spell_id: String) -> Dictionary:
 		SpellKits.SNAP_WALL:
 			var wall: Dictionary = SpellKits.spell(SpellKits.SNAP_WALL)
 			var wall_spend := int(wall.get("spend_aegis", 0))
-			return {"on_connect": "Blocked tile for %d Bastion turn-starts. Spends %d Aegis. Every enemy next to the wall gets this element's Residue. On your own wall: knocks it down, +%d Aegis back." % [int(wall.get("wall_turns", 0)), wall_spend, wall_spend], "on_miss": "No roll."}
+			return {"on_connect": "Needs your Plant banner on that tile. Blocked tile for %d Bastion turn-starts. Spends %d Aegis. Every enemy next to the wall gets this element's Residue. On your own wall: knocks it down, +%d Aegis back." % [int(wall.get("wall_turns", 0)), wall_spend, wall_spend], "on_miss": "No roll."}
 		SpellKits.PLANT:
 			var plant: Dictionary = SpellKits.spell(SpellKits.PLANT)
 			var lone := int(plant.get("plant_turns", 1))
@@ -6752,6 +6766,11 @@ func _append_ranged_cells(out: Array, actor: Dictionary, def: Dictionary, spell_
 				continue
 			if (spell_id == SpellKits.SNAP_WALL or spell_id == SpellKits.SNARE_TRAP) and _fallen_body_at(cell):
 				continue
+			# A wall is built on the caster's own banner. Someone else's flag,
+			# or no flag, is not a target. Knock-down of his own wall is listed
+			# earlier and does not come through this empty-tile pass.
+			if spell_id == SpellKits.SNAP_WALL and not _own_plant_at(actor, cell):
+				continue
 			if spell_id == SpellKits.PLANT and _tile_has_plant(cell):
 				continue
 			out.append({"type": "cast", "spell": spell_id, "to": cell, "seat": seat})
@@ -8349,6 +8368,8 @@ func _resolve_empty_tile(intent: Dictionary, actor: Dictionary, def: Dictionary,
 	var spell_id := str(def.get("id", ""))
 	if (spell_id == SpellKits.SNAP_WALL or spell_id == SpellKits.SNARE_TRAP) and _fallen_body_at(dest):
 		return _reject(intent, "body_on_tile", "REJECT — a fallen fighter is on that tile (refund).")
+	if spell_id == SpellKits.SNAP_WALL and not _own_plant_at(actor, dest):
+		return _reject(intent, "needs_plant", "REJECT — Snap Wall needs your Plant banner on that tile (refund).")
 	if spell_id == SpellKits.DROP_SHADE:
 		# At the cap the new shadow replaces the oldest. Same silent drop as
 		# a third Snare Trap: no expire, the marker just goes.
@@ -9690,6 +9711,14 @@ func _plant_at(cell: Vector2i) -> Dictionary:
 		if tile.get("pos") == cell:
 			return tile
 	return {}
+
+
+## The caster's own live Plant banner. An enemy flag does not count.
+func _own_plant_at(actor: Dictionary, cell: Vector2i) -> bool:
+	var tile := _plant_at(cell)
+	if tile.is_empty():
+		return false
+	return int(tile.get("owner_seat", -1)) == int(actor.get("seat", -2))
 
 
 func _plant_at_cap(actor: Dictionary, def: Dictionary) -> bool:

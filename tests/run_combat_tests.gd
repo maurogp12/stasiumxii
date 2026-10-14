@@ -151,6 +151,7 @@ func _run() -> void:
 	_test_aegis_break_burst()
 	_test_snap_wall_bastion_turns()
 	_test_snap_wall_knock_down()
+	_test_snap_wall_needs_own_banner()
 	_test_every_spell_explained()
 	_test_enemy_card_tap_and_hold()
 	_test_kestrel_aims_better_far()
@@ -4374,8 +4375,8 @@ func _test_banner_behind_target_does_not_block() -> void:
 	eq(_sim.has_line_of_sight(row_kestrel, row_bastion), true, "the banner on the line stays open when the wall is beside it")
 	eq(_sim.sight_blocker(row_kestrel, row_bastion) == row_banner, false, "the banner tile is not the blocker")
 	eq(_sim.sight_blocker(row_kestrel, row_bastion) == row_wall, false, "the Snap Wall beside the line is not the blocker")
-	# Knock the wall down, then plant on that cell. No ghost wall, and the
-	# lone banner does not block the line it sits on.
+	# The wall stands on the banner. Knock it down. The banner stays, and that
+	# lone banner does not put the wall back on the line.
 	var old_wall := Vector2i(12, 11)
 	var bastion_row := Vector2i(12, 9)
 	var kestrel_row := Vector2i(12, 13)
@@ -4386,6 +4387,7 @@ func _test_banner_behind_target_does_not_block() -> void:
 		"bastion_aegis": 4,
 		"rolls": [1],
 	})
+	eq(bool(_sim.submit({"type": "cast", "spell": "plant", "to": old_wall, "seat": 0}).get("ok", false)), true, "the banner on the line plants")
 	eq(bool(_sim.submit({"type": "cast", "spell": "snap_wall", "to": old_wall, "seat": 0}).get("ok", false)), true, "the wall on the line is built")
 	eq(_sim.has_line_of_sight(kestrel_row, bastion_row), false, "the live Snap Wall blocks the shot")
 	var broke: Dictionary = _sim.submit({"type": "cast", "spell": "snap_wall", "to": old_wall, "seat": 0})
@@ -4393,11 +4395,6 @@ func _test_banner_behind_target_does_not_block() -> void:
 	eq((_sim.snapshot()["snap_walls"] as Array).is_empty(), true, "knock-down clears snap_walls")
 	eq((_sim.snapshot()["blocked_tiles"] as Array).is_empty(), true, "knock-down clears blocked_tiles")
 	eq(_sim.has_line_of_sight(kestrel_row, bastion_row), true, "the line is open after knock-down")
-	var ap_before := int(_unit(0)["ap"])
-	var replant: Dictionary = _sim.submit({"type": "cast", "spell": "plant", "to": old_wall, "seat": 0})
-	eq(bool(replant.get("ok", false)), true, "Plant on the old wall cell is not a flag refund")
-	eq(str(replant.get("reason", "")), "", "the old wall cell is empty for a flag")
-	eq(int(_unit(0)["ap"]), ap_before - 1, "that Plant spends 1 AP")
 	var tile := _plant_tile(old_wall)
 	eq(int(tile.get("turns", -1)), 1, "the banner on the old wall cell lasts 1 turn")
 	eq(bool(tile.get("walled", true)), false, "one banner is not a wall")
@@ -8924,6 +8921,7 @@ func _test_snap_wall_bastion_turns() -> void:
 		"positions": [Vector2i(1, 1), Vector2i(3, 1)],
 		"bastion_aegis": 2,
 	})
+	eq(bool(_sim.submit({"type": "cast", "spell": "plant", "to": Vector2i(2, 1), "seat": 0}).get("ok", false)), true, "the banner the wall stands on is planted")
 	var casted: Dictionary = _sim.submit({"type": "cast", "spell": "snap_wall", "to": Vector2i(2, 1), "seat": 0})
 	eq(casted.get("ok", false), true, "Snap Wall places")
 	eq(int(_sim.snapshot()["blocked_tiles"][0]["turns"]), 2, "Snap Wall starts at 2 Bastion turn-starts")
@@ -8959,6 +8957,8 @@ func _test_snap_wall_knock_down() -> void:
 		"positions": [Vector2i(1, 1), Vector2i(6, 6)],
 		"bastion_aegis": 2,
 	})
+	eq(bool(_sim.submit({"type": "cast", "spell": "plant", "to": Vector2i(2, 1), "seat": 0}).get("ok", false)), true, "the banner the wall stands on is planted")
+	_live_unit(0)["aegis"] = 2
 	var ap0 := int(_unit(0)["ap"])
 	eq(_sim.submit({"type": "cast", "spell": "snap_wall", "to": Vector2i(2, 1), "seat": 0}).get("ok", false), true, "Snap Wall places")
 	eq(int(_unit(0)["aegis"]), 0, "the wall spends 2 Aegis")
@@ -8977,6 +8977,7 @@ func _test_snap_wall_knock_down() -> void:
 	eq(_sim.submit({"type": "move", "to": Vector2i(2, 1), "seat": 0}).get("ok", false), true, "the cell is walkable again")
 	# Aegis cap 4 still holds.
 	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "classes": ["bastion", "kestrel"], "positions": [Vector2i(1, 1), Vector2i(6, 6)], "bastion_aegis": 4})
+	eq(bool(_sim.submit({"type": "cast", "spell": "plant", "to": Vector2i(2, 1), "seat": 0}).get("ok", false)), true, "the refund wall stands on a banner")
 	_sim.submit({"type": "cast", "spell": "snap_wall", "to": Vector2i(2, 1), "seat": 0})
 	_live_unit(0)["aegis"] = 3
 	_sim.submit({"type": "cast", "spell": "snap_wall", "to": Vector2i(2, 1), "seat": 0})
@@ -8989,6 +8990,141 @@ func _test_snap_wall_knock_down() -> void:
 	eq(int(_unit(0)["aegis"]), 2, "a refused knock-down keeps the Aegis")
 	eq(_sim.snapshot()["blocked_tiles"].size(), 1, "that wall stays up")
 
+
+## Mauro 14 Oct 2026: Snap Wall is only legal on Bastion's own Plant banner.
+## A bare tile, an enemy banner, and a banner he is standing too far from are
+## not highlighted and a forged cast is refunded. The host sim is the online
+## rule. Bots only receive legal_intents, so they cannot offer the bare tile.
+## Knocking down his own wall stays legal after the banner expires.
+func _test_snap_wall_needs_own_banner() -> void:
+	var bastion := Vector2i(4, 4)
+	var bare := Vector2i(5, 4)
+	var banner := Vector2i(4, 5)
+	var far := Vector2i(4, 7)
+	_sim.reset_match({
+		"seed": 1, "flat_board": true, "skip_deploy": true,
+		"classes": ["bastion", "kestrel"],
+		"positions": [bastion, Vector2i(10, 10)],
+		"bastion_aegis": 4,
+	})
+	var ap0 := int(_unit(0)["ap"])
+	var aegis0 := int(_unit(0)["aegis"])
+	var bare_cast: Dictionary = _sim.submit({"type": "cast", "spell": "snap_wall", "to": bare, "seat": 0})
+	eq(bool(bare_cast.get("ok", false)), false, "a bare tile is not a Snap Wall")
+	eq(str(bare_cast.get("reason", "")), "needs_plant", "the reject names the missing banner")
+	eq(int(_unit(0)["ap"]), ap0, "a refused wall refunds AP")
+	eq(int(_unit(0)["aegis"]), aegis0, "a refused wall refunds Aegis")
+	eq((_sim.snapshot()["blocked_tiles"] as Array).is_empty(), true, "no wall was built on the bare tile")
+	eq(_snap_wall_offered(bare), false, "a bare tile is not offered")
+	eq(_sim.range_highlight_cells(0, "snap_wall").has(bare), false, "a bare tile is not highlighted")
+	eq(str(_sim.preview_cast("snap_wall", bastion, bare).get("reason", "")), "needs_plant", "the preview refuses a bare tile")
+	var plain := " ".join(SpellTooltip.simple_lines(SpellKits.SNAP_WALL))
+	truthy(plain.contains("your Plant banner"), "the Snap Wall card says the wall goes on your Plant banner")
+
+	eq(bool(_sim.submit({"type": "cast", "spell": "plant", "to": banner, "seat": 0}).get("ok", false)), true, "Bastion plants his banner")
+	_sim._plant_tiles.append({
+		"pos": far,
+		"turns": 1,
+		"owner_seat": 0,
+		"push_resist": false,
+		"walled": false,
+	})
+	var highlights: Array = _sim.range_highlight_cells(0, "snap_wall")
+	eq(highlights.has(banner), true, "his banner is a highlighted target")
+	eq(highlights.has(bare), false, "the empty tile beside the banner stays dark")
+	eq(highlights.has(far), false, "a banner outside range 2 is not highlighted")
+	eq(_snap_wall_offered(banner), true, "Snap Wall is offered on his banner")
+	eq(_snap_wall_offered(bare), false, "the bare tile is still not offered")
+	eq(_snap_wall_offered(far), false, "the far banner is not offered")
+	var hero_ai = load("res://backend/hero_ai.gd")
+	var legal: Array = _sim.legal_intents(0)
+	var pick: Dictionary = hero_ai.plan(_sim, 0)
+	var pick_legal := false
+	for intent in legal:
+		if str(intent.get("type", "")) != str(pick.get("type", "")):
+			continue
+		if str(intent.get("spell", "")) != str(pick.get("spell", "")):
+			continue
+		if intent.get("to", null) != pick.get("to", null):
+			continue
+		pick_legal = true
+	eq(pick_legal, true, "the bot only plays an intent the sim offered")
+	eq(str(pick.get("spell", "")) == "snap_wall" and pick.get("to") == bare, false, "the bot does not wall a bare tile")
+	var guest_script := load("res://backend/combat_sim.gd")
+	var guest: Node = guest_script.new()
+	guest.apply_host_snapshot(_sim.snapshot())
+	eq(guest.range_highlight_cells(0, "snap_wall").has(bare), false, "the other phone does not highlight the bare tile")
+	eq(guest.range_highlight_cells(0, "snap_wall").has(banner), true, "the other phone highlights his banner")
+	eq(guest.legal_intents(0).any(func(intent): return str(intent.get("spell", "")) == "snap_wall" and intent.get("to") == bare), false, "the other phone does not offer the bare tile")
+	var guest_ap := int(guest.snapshot()["units"][0]["ap"])
+	var guest_aegis := int(guest.snapshot()["units"][0]["aegis"])
+	var forged: Dictionary = guest.submit({"type": "cast", "spell": "snap_wall", "to": bare, "seat": 0})
+	eq(bool(forged.get("ok", false)), false, "a forged wall on the other phone is rejected")
+	eq(str(forged.get("reason", "")), "needs_plant", "the other phone names the missing banner")
+	eq(int(guest.snapshot()["units"][0]["ap"]), guest_ap, "the other phone refunds the AP")
+	eq(int(guest.snapshot()["units"][0]["aegis"]), guest_aegis, "the other phone refunds the Aegis")
+	eq((guest.snapshot()["blocked_tiles"] as Array).is_empty(), true, "the other phone built no wall")
+	guest.free()
+	var built: Dictionary = _sim.submit({"type": "cast", "spell": "snap_wall", "to": banner, "seat": 0})
+	eq(bool(built.get("ok", false)), true, "the wall stands on his banner: %s" % str(built.get("reason", "")))
+	eq(_sim.snapshot()["blocked_tiles"][0]["pos"], banner, "the wall cell is the banner")
+
+	# The banner lasts one of his turns. The wall lasts two. After the banner
+	# is gone, knocking the wall down is still legal at 0 Aegis.
+	_sim.submit({"type": "end_turn", "seat": 0})
+	_sim.submit({"type": "end_turn", "seat": 1})
+	eq(_plant_tile(banner).is_empty(), true, "the banner expired on his next turn")
+	eq(_sim.snapshot()["blocked_tiles"].size(), 1, "the wall is still up")
+	_live_unit(0)["aegis"] = 0
+	eq(_snap_wall_offered(banner), true, "knock-down stays offered after the banner is gone")
+	eq(_snap_wall_offered(bare), false, "a bare tile is still not a wall")
+	eq(_sim.range_highlight_cells(0, "snap_wall").has(banner), true, "his own wall stays highlighted for the knock-down")
+	eq(_sim.range_highlight_cells(0, "snap_wall").has(bare), false, "the bare tile stays dark after the banner expires")
+	var broke: Dictionary = _sim.submit({"type": "cast", "spell": "snap_wall", "to": banner, "seat": 0})
+	eq(bool(broke.get("ok", false)), true, "he can still knock his wall down")
+	eq(_sim.snapshot()["blocked_tiles"].size(), 0, "the knock-down removes the wall")
+	eq(int(_unit(0)["aegis"]), 2, "the knock-down still refunds the 2 Aegis")
+
+	# An enemy banner is not his.
+	var enemy_banner := Vector2i(5, 4)
+	_sim.reset_match({
+		"seed": 1, "flat_board": true, "skip_deploy": true,
+		"classes": ["bastion", "bastion"],
+		"positions": [Vector2i(4, 4), Vector2i(6, 4)],
+		"bastion_aegis": 4,
+	})
+	_sim.submit({"type": "end_turn", "seat": 0})
+	eq(bool(_sim.submit({"type": "cast", "spell": "plant", "to": enemy_banner, "seat": 1}).get("ok", false)), true, "the other Bastion plants his own banner")
+	_sim.submit({"type": "end_turn", "seat": 1})
+	# A quiet turn drops Aegis. Put it back so the reject is the banner, not the cost.
+	_live_unit(0)["aegis"] = 4
+	var enemy_cast: Dictionary = _sim.submit({"type": "cast", "spell": "snap_wall", "to": enemy_banner, "seat": 0})
+	eq(bool(enemy_cast.get("ok", false)), false, "he cannot wall the other Bastion's banner")
+	eq(str(enemy_cast.get("reason", "")), "needs_plant", "an enemy banner is not his plant")
+	eq(_snap_wall_offered(enemy_banner), false, "the enemy banner is not offered")
+	eq(_sim.range_highlight_cells(0, "snap_wall").has(enemy_banner), false, "the enemy banner is not highlighted")
+	eq((_sim.snapshot()["blocked_tiles"] as Array).is_empty(), true, "no wall was built on the enemy banner")
+
+	# A fighter standing on the banner blocks the build. The body rule still
+	# wins when the fallen fighter is the one on the tile.
+	_sim.reset_match({
+		"seed": 1, "flat_board": true, "skip_deploy": true,
+		"classes": ["bastion", "kestrel"],
+		"positions": [Vector2i(4, 4), Vector2i(5, 4)],
+		"bastion_aegis": 4,
+	})
+	eq(bool(_sim.submit({"type": "cast", "spell": "plant", "to": Vector2i(5, 4), "seat": 0}).get("ok", false)), true, "the banner can sit under Kestrel")
+	var stood: Dictionary = _sim.submit({"type": "cast", "spell": "snap_wall", "to": Vector2i(5, 4), "seat": 0})
+	eq(str(stood.get("reason", "")), "destination_occupied", "a living fighter on the banner blocks the wall")
+	eq(_snap_wall_offered(Vector2i(5, 4)), false, "the occupied banner is not offered")
+	eq(_sim.range_highlight_cells(0, "snap_wall").has(Vector2i(5, 4)), false, "the occupied banner is not highlighted")
+
+
+func _snap_wall_offered(cell: Vector2i) -> bool:
+	for intent in _sim.legal_intents(0):
+		if str(intent.get("spell", "")) == "snap_wall" and intent.get("to") == cell:
+			return true
+	return false
 
 
 ## Mauro 6 Oct 2026: every spell's hold card explains cost, reach and what it
@@ -9095,6 +9231,8 @@ func _test_bastion_aegis_tooltips() -> void:
 		"bastion_aegis": wall_spend,
 		"rolls": [1],
 	})
+	eq(bool(_sim.submit({"type": "cast", "spell": "plant", "to": Vector2i(2, 1), "seat": 0}).get("ok", false)), true, "the tooltip wall stands on a banner")
+	_live_unit(0)["aegis"] = wall_spend
 	eq(bool(_sim.submit({"type": "cast", "spell": "snap_wall", "to": Vector2i(2, 1), "seat": 0}).get("ok", false)), true, "Snap Wall resolves for the Aegis tooltip check")
 	eq(int(_unit(0)["aegis"]), 0, "Snap Wall spends the kit's spend_aegis")
 	eq(bool(_sim.submit({"type": "cast", "spell": "snap_wall", "to": Vector2i(2, 1), "seat": 0}).get("ok", false)), true, "the knock-down resolves for the Aegis tooltip check")
@@ -10123,6 +10261,7 @@ func _test_utility_residue() -> void:
 	var bastion_picks := {"bash": "earth", "plant": "water", "hold_line": "earth", "snap_wall": "water", "ward": "water"}
 	# Around the wall, not a hit: Residue only, then Earth Bash blends to Mire.
 	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1, 1], "classes": ["bastion", "kestrel"], "positions": [Vector2i(5, 5), Vector2i(6, 5)], "bastion_aegis": 4})
+	eq(bool(_sim.submit({"type": "cast", "spell": "plant", "to": Vector2i(5, 6), "seat": 0}).get("ok", false)), true, "the Residue wall stands on a banner")
 	_live_unit(0)["spell_elements"] = bastion_picks
 	var wall: Dictionary = _sim.submit({"type": "cast", "spell": "snap_wall", "to": Vector2i(5, 6), "seat": 0})
 	eq(bool(wall.get("ok", false)), true, "Snap Wall resolves")
@@ -10138,6 +10277,7 @@ func _test_utility_residue() -> void:
 
 	# A Fire wall still does not Burn. Knocking the wall down adds no Residue.
 	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "classes": ["bastion", "kestrel"], "positions": [Vector2i(1, 1), Vector2i(8, 8)], "bastion_aegis": 4})
+	eq(bool(_sim.submit({"type": "cast", "spell": "plant", "to": Vector2i(2, 1), "seat": 0}).get("ok", false)), true, "the far wall stands on a banner")
 	_live_unit(0)["spell_elements"] = {"bash": "fire", "plant": "fire", "hold_line": "fire", "snap_wall": "fire", "ward": "fire"}
 	var far_wall: Dictionary = _sim.submit({"type": "cast", "spell": "snap_wall", "to": Vector2i(2, 1), "seat": 0})
 	eq(bool(far_wall.get("ok", false)), true, "a far Snap Wall resolves")
@@ -10149,6 +10289,7 @@ func _test_utility_residue() -> void:
 
 	# No pick: the kit is still Neutral, so nothing is written.
 	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "classes": ["bastion", "kestrel"], "positions": [Vector2i(5, 5), Vector2i(6, 5)], "bastion_aegis": 4})
+	eq(bool(_sim.submit({"type": "cast", "spell": "plant", "to": Vector2i(5, 6), "seat": 0}).get("ok", false)), true, "the Neutral wall stands on a banner")
 	var bare: Dictionary = _sim.submit({"type": "cast", "spell": "snap_wall", "to": Vector2i(5, 6), "seat": 0})
 	eq(bool(bare.get("ok", false)), true, "a Neutral Snap Wall still builds")
 	eq(str(_unit(1).get("residue", "")), "", "Neutral Snap Wall writes no Residue")

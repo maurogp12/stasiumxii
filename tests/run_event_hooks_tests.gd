@@ -722,6 +722,7 @@ func _test_expiry_events() -> void:
 		"positions": [Vector2i(1, 1), Vector2i(6, 6)],
 		"bastion_aegis": 2,
 	})
+	_sim.submit({"type": "cast", "spell": "plant", "to": Vector2i(2, 1), "seat": 0})
 	_sim.submit({"type": "cast", "spell": "snap_wall", "to": Vector2i(2, 1), "seat": 0})
 	var wall_enemy: Dictionary = _sim.submit({"type": "end_turn", "seat": 0})
 	eq(_expire(wall_enemy.get("events", []), "wall").is_empty(), true, "wall does not expire on the enemy turn-start")

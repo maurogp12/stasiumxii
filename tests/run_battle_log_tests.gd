@@ -347,6 +347,8 @@ func _assert_utility_residue_logged() -> void:
 	_open_duel(Vector2i(5, 5), Vector2i(6, 5), ["bastion", "kestrel"])
 	_sim._active_seat = 0
 	var bastion: Dictionary = _sim._unit_by_seat(0)
+	bastion["aegis"] = 4
+	eq(bool(_sim.submit({"type": "cast", "spell": "plant", "seat": 0, "to": Vector2i(5, 6)}).get("ok", false)), true, "the logged wall stands on a banner")
 	bastion["spell_elements"] = {"bash": "earth", "plant": "water", "hold_line": "earth", "snap_wall": "water", "ward": "earth"}
 	bastion["aegis"] = 4
 	var wall: Dictionary = _sim.submit({"type": "cast", "spell": "snap_wall", "seat": 0, "to": Vector2i(5, 6)})

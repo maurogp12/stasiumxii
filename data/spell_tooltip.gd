@@ -263,7 +263,7 @@ static func simple_lines(spell_id: String, preview: Dictionary = {}) -> PackedSt
 		SpellKits.HOLD_LINE:
 			out.append("Yank one enemy up to %d tiles straight toward you for %d damage. They must stand in a straight line from you, same row or same column, with nothing blocking the tiles between you. A wall, a rock, a Plant flag, a Snap Wall, or another fighter in the way is not a target. They stop next to you. Hit %s." % [int(def.get("pull_cells", 4)), dmg, _aegis_gain_text(def)])
 		SpellKits.SNAP_WALL:
-			out.append("Build a wall on an empty tile. Nobody can walk or shoot through it. A Plant banner next to it does not block shots. Lasts %d of your turns. %s." % [int(def.get("wall_turns", 2)), _aegis_spend_text(def)])
+			out.append("Build a wall on a tile that has your Plant banner. Nobody can walk or shoot through it. A Plant banner next to it does not block shots. Lasts %d of your turns. %s." % [int(def.get("wall_turns", 2)), _aegis_spend_text(def)])
 			out.append("Use it on your own wall to knock it down and get the %d Aegis back." % int(def.get("spend_aegis", 0)))
 		SpellKits.AEGIS_BREAK:
 			out.append("Slam the ground: %d damage to every enemy 1-2 tiles from you, and push them 1 tile. Needs %d Aegis (max %d)." % [dmg, int(def.get("requires_aegis", 0)), SpellKits.AEGIS_CAP])
