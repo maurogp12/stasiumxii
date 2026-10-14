@@ -2124,8 +2124,11 @@ func _animate_path(seat: int, path: Array, origin: Vector2i = Vector2i(-1, -1)) 
 		if not walk_armed:
 			_walk_tween.tween_callback(_arm_path_walk.bind(pawn))
 			walk_armed = true
+		var pace := 1.0
+		if str(pawn.stasis_sprite) == "":
+			pace = VIEW_MOTION.walk_pace(str(pawn.class_id))
 		if VIEW_MOTION.anticipate_segment(cell_i, facing_changed) or about:
-			_walk_tween.tween_method(_sample_step_anticipation.bind(pawn), 0.0, 1.0, VIEW_MOTION.STEP_SETTLE_SEC)
+			_walk_tween.tween_method(_sample_step_anticipation.bind(pawn), 0.0, 1.0, VIEW_MOTION.STEP_SETTLE_SEC * pace)
 		if dir != "":
 			visual = dir
 		if turn:
@@ -2147,14 +2150,15 @@ func _animate_path(seat: int, path: Array, origin: Vector2i = Vector2i(-1, -1)) 
 			if per > 0.0:
 				var climbing := absf(_elev_at(prev) - _elev_at(cell)) > 0.001
 				dur = VIEW_MOTION.walk_span(per, float(cell_i) * per, climbing)
+			dur *= pace
 			_walk_tween.tween_method(_sample_glide_step.bind(pawn, prev, cell, first, last, cell_i), 0.0, 1.0, dur)
 			if dust:
 				_walk_tween.tween_callback(_puff_footstep.bind(pawn, cell))
 		else:
-			_walk_tween.tween_method(_sample_walk_step.bind(pawn, prev, cell), 0.0, VIEW_MOTION.HOP_PLANT_AT, Pawn.WALK_TILE_SEC * VIEW_MOTION.HOP_PLANT_AT)
+			_walk_tween.tween_method(_sample_walk_step.bind(pawn, prev, cell), 0.0, VIEW_MOTION.HOP_PLANT_AT, Pawn.WALK_TILE_SEC * VIEW_MOTION.HOP_PLANT_AT * pace)
 			if dust:
 				_walk_tween.tween_callback(_puff_footstep.bind(pawn, cell))
-			_walk_tween.tween_method(_sample_walk_step.bind(pawn, prev, cell), VIEW_MOTION.HOP_PLANT_AT, 1.0, Pawn.WALK_TILE_SEC * (1.0 - VIEW_MOTION.HOP_PLANT_AT))
+			_walk_tween.tween_method(_sample_walk_step.bind(pawn, prev, cell), VIEW_MOTION.HOP_PLANT_AT, 1.0, Pawn.WALK_TILE_SEC * (1.0 - VIEW_MOTION.HOP_PLANT_AT) * pace)
 		_walk_tween.tween_callback(_commit_walk_cell.bind(pawn, cell))
 		prev = cell
 	# Landed contact, then one readable idle before the face pad unlocks.
