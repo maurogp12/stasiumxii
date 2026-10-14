@@ -844,7 +844,12 @@ static func walk_span(no_slide: float, _frame0: float, climbing: bool) -> float:
 
 
 ## First step eases in and arrives at cruise speed. Last step leaves at
-## cruise speed and eases out. A one-tile path does both. Middle tiles are linear.
+## cruise speed and eases out. A one-tile path does both. A middle tile keeps
+## cruise speed at both seams (no hitch) and surges a little through the
+## stride, the way a run transfers weight onto the front foot and settles.
+const WALK_WEIGHT := 0.9
+
+
 static func walk_ground(k: float, first: bool, last: bool) -> float:
 	var u := clampf(k, 0.0, 1.0)
 	if first and last:
@@ -853,7 +858,23 @@ static func walk_ground(k: float, first: bool, last: bool) -> float:
 		return u * u * (2.0 - u)
 	if last:
 		return u + u * u * (1.0 - u)
-	return u
+	var settle := u * u * (1.0 - u) * (1.0 - u)
+	return u + WALK_WEIGHT * settle
+
+
+## How long one tile feels for this class. Bastion plants heavier, Kestrel and
+## Gloam lighter. Ironjaw and Mender stay on the measured 0.34s stride.
+## Multiplies the board tween. Does not change walk_travel_sec.
+static func walk_pace(class_id: String) -> float:
+	match class_id:
+		"bastion":
+			return 1.20
+		"kestrel":
+			return 0.84
+		"gloam":
+			return 0.76
+		_:
+			return 1.0
 
 
 ## t is 0..1 across walk_span. `u` is horizontal progress and keeps moving
