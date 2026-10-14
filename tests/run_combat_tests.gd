@@ -100,6 +100,7 @@ func _run() -> void:
 	_test_hold_line_pull()
 	_test_plant_blocks_sight()
 	_test_banner_behind_target_does_not_block()
+	_test_video_banner_beside_wall_stays_open()
 	_test_plant_one_flag_per_tile()
 	_test_plant_banner_rules()
 	_test_blind_attacks_on_invisible()
@@ -4244,30 +4245,25 @@ func _test_plant_blocks_sight() -> void:
 	_sim.submit({"type": "end_turn", "seat": 0})
 	var through_wall: Dictionary = _sim.submit({"type": "cast", "spell": "mark_shot", "to": bastion, "seat": 1})
 	eq(bool(through_wall.get("ok", false)), true, "the shot through a banner wall resolves")
-	# The same banner blocks once a Snap Wall stands on an orthogonal neighbour.
+	# A Snap Wall on the next tile does not turn the banner into a wall.
 	_sim.reset_match({
 		"seed": 1, "flat_board": true, "skip_deploy": true,
 		"classes": ["bastion", "kestrel"],
 		"positions": [bastion, kestrel],
 		"snap_walls": [beside],
+		"rolls": [1],
 	})
 	eq(bool(_sim.submit({"type": "cast", "spell": "plant", "to": flag, "seat": 0}).get("ok", false)), true, "the banner next to the Snap Wall plants")
-	eq(_sim.sight_blocker(kestrel, bastion), flag, "the joined banner is the cell that blocks")
-	eq(_sim.has_line_of_sight(kestrel, bastion), false, "a Plant next to a Snap Wall blocks the shot")
-	eq(_sim.range_highlight_cells(1, "mark_shot").has(bastion), false, "no gold range tile behind the Plant and Snap Wall")
-	truthy(_sim.sight_blocked_cells(1, "mark_shot").has(bastion), "the tile behind the Plant and Snap Wall is listed as no sight")
-	eq(str(_sim.preview_cast("mark_shot", kestrel, bastion).get("reason", "")), "no_line_of_sight", "the preview says no sight")
+	eq(_sim.sight_blocker(kestrel, bastion), Vector2i(-1, -1), "the banner beside the Snap Wall is not the blocker")
+	eq(_sim.has_line_of_sight(kestrel, bastion), true, "a Plant next to a Snap Wall does not block the shot")
+	truthy(_sim.range_highlight_cells(1, "mark_shot").has(bastion), "Bastion stays in the gold range when the wall is beside the banner")
+	eq(_sim.sight_blocked_cells(1, "mark_shot").has(bastion), false, "Bastion's tile is not grey when the wall is beside the banner")
+	eq(str(_sim.preview_cast("mark_shot", kestrel, bastion).get("reason", "")), "", "the preview allows the shot past the banner")
 	_sim.submit({"type": "end_turn", "seat": 0})
-	eq(shot.call(_sim.legal_intents(1), "mark_shot", bastion), false, "Mark Shot is not offered through the Plant and Snap Wall")
-	var ap_before := int(_unit(1)["ap"])
-	var denied: Dictionary = _sim.submit({"type": "cast", "spell": "mark_shot", "to": bastion, "seat": 1})
-	eq(str(denied.get("reason", "")), "no_line_of_sight", "the shot through the Plant and Snap Wall is rejected")
-	eq(int(_unit(1)["ap"]), ap_before, "the rejected shot costs no AP")
-	var coach := str(denied.get("events", [{}])[0].get("coach", ""))
-	truthy(coach.contains("a Plant and Snap Wall"), "the reject names the Plant and Snap Wall: %s" % coach)
-	var log_script: Script = load("res://ui/battle_log.gd")
-	var log_line := str(log_script.plain(denied.get("events", [{}])[0], _sim.snapshot()))
-	truthy(log_line.contains("Plant and Snap Wall"), "the log names the Plant and Snap Wall: %s" % log_line)
+	truthy(shot.call(_sim.legal_intents(1), "mark_shot", bastion), "Mark Shot is offered past a banner beside a Snap Wall")
+	var beside_shot: Dictionary = _sim.submit({"type": "cast", "spell": "mark_shot", "to": bastion, "seat": 1})
+	eq(bool(beside_shot.get("ok", false)), true, "the shot past the banner beside the Snap Wall resolves")
+	truthy(int(_unit(0)["hp"]) < int(_unit(0)["max_hp"]), "the shot past the banner deals damage")
 	# A Snap Wall on the line keeps the old wall wording.
 	_sim.reset_match({
 		"seed": 1, "flat_board": true, "skip_deploy": true,
@@ -4304,11 +4300,11 @@ func _test_plant_blocks_sight() -> void:
 	var plant_card := " ".join(SpellTooltip.simple_lines(SpellKits.PLANT))
 	truthy(plant_card.contains("Shots pass through a banner"), "Plant's card says shots pass through a banner")
 	truthy(plant_card.contains("through a wall of banners"), "Plant's card says a wall of banners does not block shots")
-	truthy(plant_card.contains("A banner next to a Snap Wall blocks shots"), "Plant's card says the Snap Wall pair blocks shots")
+	truthy(plant_card.contains("A banner next to a Snap Wall does not block shots"), "Plant's card says a banner beside a Snap Wall stays open")
 	eq(plant_card.contains("Shots cannot pass through the flag"), false, "Plant's card no longer says every flag blocks shots")
 	var wall_card := " ".join(SpellTooltip.simple_lines(SpellKits.SNAP_WALL))
 	truthy(wall_card.contains("Nobody can walk or shoot through it"), "Snap Wall still blocks walk and shots")
-	truthy(wall_card.contains("A Plant banner next to it blocks shots too"), "Snap Wall's card names the joined banner")
+	truthy(wall_card.contains("A Plant banner next to it does not block shots"), "Snap Wall's card says a banner beside it stays open")
 
 
 ## Mauro 14 Oct 2026, 0.1.188 video. Kestrel (-3,1), Bastion (-1,0), banner
@@ -4374,10 +4370,10 @@ func _test_banner_behind_target_does_not_block() -> void:
 		"rolls": [1],
 	})
 	eq(bool(_sim.submit({"type": "cast", "spell": "plant", "to": row_banner, "seat": 0}).get("ok", false)), true, "the banner on the shot plants")
-	eq(_sim.sight_blocker(row_kestrel, row_bastion), row_banner, "a shot that crosses the banner is blocked by that tile")
-	eq(_sim.has_line_of_sight(row_kestrel, row_bastion), false, "crossing the banner beside the Snap Wall still blocks")
-	eq(_sim.sight_blocker(row_kestrel, row_bastion) == row_bastion, false, "the crossed shot is not blamed on the target tile")
-	eq(_sim.sight_blocker(row_kestrel, row_bastion) == row_kestrel, false, "the crossed shot is not blamed on the shooter tile")
+	eq(_sim.sight_blocker(row_kestrel, row_bastion), Vector2i(-1, -1), "crossing the banner beside the Snap Wall does not block")
+	eq(_sim.has_line_of_sight(row_kestrel, row_bastion), true, "the banner on the line stays open when the wall is beside it")
+	eq(_sim.sight_blocker(row_kestrel, row_bastion) == row_banner, false, "the banner tile is not the blocker")
+	eq(_sim.sight_blocker(row_kestrel, row_bastion) == row_wall, false, "the Snap Wall beside the line is not the blocker")
 	# Knock the wall down, then plant on that cell. No ghost wall, and the
 	# lone banner does not block the line it sits on.
 	var old_wall := Vector2i(12, 11)
@@ -4414,6 +4410,91 @@ func _test_banner_behind_target_does_not_block() -> void:
 	eq((guest.snapshot()["blocked_tiles"] as Array).is_empty(), true, "the other phone has no blocked tile")
 	eq(guest.has_line_of_sight(kestrel_row, bastion_row), true, "the other phone can see through the lone banner")
 	guest.free()
+
+
+## Stormspire phone recording, 0.1.189. Kestrel ends at (11,0). The 85% shots
+## are chebyshev 4, and the later 2 MP walk to (9,0) then (7,0) puts Bastion
+## at (7,0) for the stuck turn. Banners (8,0) and (8,1) are a wall on and
+## beside that row. Snap Wall is cast on (8,1), the banner cell, not on the
+## shot. (9,0) stays in the gold ring. Bastion must stay targetable. The same
+## shape on Windmere is Kestrel (2,9), Bastion (6,9), banners (5,9)/(5,8),
+## Snap Wall on (5,8).
+func _test_video_banner_beside_wall_stays_open() -> void:
+	var kestrel := Vector2i(11, 0)
+	var bastion := Vector2i(7, 0)
+	var between := Vector2i(9, 0)
+	var banner := Vector2i(8, 0)
+	var wall_banner := Vector2i(8, 1)
+	var far_banner := Vector2i(5, 2)
+	var far_join := Vector2i(5, 1)
+	_sim.reset_match({
+		"seed": 1, "flat_board": true, "skip_deploy": true,
+		"classes": ["bastion", "kestrel"],
+		"positions": [bastion, kestrel],
+		"bastion_aegis": 6,
+		"rolls": [1],
+	})
+	eq(_sim.chebyshev(kestrel, bastion), 4, "the Stormspire recording is a range-4 shot")
+	eq(bool(_sim.submit({"type": "cast", "spell": "plant", "to": banner, "seat": 0}).get("ok", false)), true, "the banner on the shot plants")
+	eq(bool(_sim.submit({"type": "cast", "spell": "plant", "to": wall_banner, "seat": 0}).get("ok", false)), true, "the banner beside the shot joins it")
+	eq(bool(_plant_tile(banner).get("walled", false)), true, "the two banners are a wall")
+	eq(_sim.has_line_of_sight(kestrel, bastion), true, "the banner wall does not block before the Snap Wall")
+	_sim.submit({"type": "end_turn", "seat": 0})
+	var before: Dictionary = _sim.submit({"type": "cast", "spell": "mark_shot", "to": bastion, "seat": 1})
+	eq(bool(before.get("ok", false)), true, "Mark Shot resolves through the banner wall")
+	_sim.submit({"type": "end_turn", "seat": 1})
+	eq(bool(_sim.submit({"type": "cast", "spell": "plant", "to": far_banner, "seat": 0}).get("ok", false)), true, "the far banner plants")
+	eq(bool(_sim.submit({"type": "cast", "spell": "plant", "to": far_join, "seat": 0}).get("ok", false)), true, "the far banner joins")
+	var walled: Dictionary = _sim.submit({"type": "cast", "spell": "snap_wall", "to": wall_banner, "seat": 0})
+	eq(bool(walled.get("ok", false)), true, "Snap Wall can stand on the banner cell: %s" % str(walled.get("reason", "")))
+	eq(_sim.sight_blocker(kestrel, bastion), Vector2i(-1, -1), "nothing on the open segment blocks")
+	eq(_sim.sight_blocker(kestrel, bastion) == banner, false, "the banner on the line is not a wall")
+	eq(_sim.sight_blocker(kestrel, bastion) == wall_banner, false, "the Snap Wall beside the line is not on the shot")
+	eq(_sim.has_line_of_sight(kestrel, bastion), true, "Bastion stays in sight")
+	eq(_sim.sight_blocked_cells(1, "mark_shot").has(bastion), false, "Bastion's tile is not grey")
+	eq(_sim.sight_blocked_cells(1, "mark_shot").has(between), false, "the between tile is not grey")
+	truthy(_sim.range_highlight_cells(1, "mark_shot").has(bastion), "Bastion's tile stays in the gold ring")
+	truthy(_sim.range_highlight_cells(1, "mark_shot").has(between), "the between tile stays in the gold ring")
+	_sim.submit({"type": "end_turn", "seat": 0})
+	eq(CombatHUD.vault_button_reason(_unit(1), _sim.snapshot(), false), "no foe", "Vault still says no foe at range 4")
+	truthy(_has_legal_cast_to(1, "mark_shot", bastion), "Mark Shot is offered at Bastion")
+	var shot: Dictionary = _sim.submit({"type": "cast", "spell": "mark_shot", "to": bastion, "seat": 1})
+	eq(bool(shot.get("ok", false)), true, "the Stormspire shot resolves")
+	eq(str(shot.get("reason", "")), "", "the Stormspire shot is not refused for sight")
+	var guest_script := load("res://backend/combat_sim.gd")
+	var guest: Node = guest_script.new()
+	guest.apply_host_snapshot(_sim.snapshot())
+	eq(guest.has_line_of_sight(kestrel, bastion), true, "the other phone sees Bastion too")
+	eq(guest.sight_blocked_cells(1, "mark_shot").has(bastion), false, "the other phone does not grey Bastion")
+	guest.free()
+	# The Snap Wall itself still blocks when the shot crosses that cell.
+	_sim.reset_match({
+		"seed": 1, "flat_board": true, "skip_deploy": true,
+		"classes": ["kestrel", "bastion"],
+		"positions": [kestrel, bastion],
+		"snap_walls": [between],
+	})
+	eq(_sim.sight_blocker(kestrel, bastion), between, "a Snap Wall on the shot still blocks")
+	eq(_sim.has_line_of_sight(kestrel, bastion), false, "the stone on the line still hides Bastion")
+	# Windmere recording: same shape, one row lower on the board.
+	var ice_kestrel := Vector2i(2, 9)
+	var ice_bastion := Vector2i(6, 9)
+	var ice_banner := Vector2i(5, 9)
+	var ice_wall := Vector2i(5, 8)
+	_sim.reset_match({
+		"seed": 1, "flat_board": true, "skip_deploy": true,
+		"classes": ["bastion", "kestrel"],
+		"positions": [ice_bastion, ice_kestrel],
+		"bastion_aegis": 4,
+		"rolls": [1],
+	})
+	eq(_sim.chebyshev(ice_kestrel, ice_bastion), 4, "the Windmere recording is a range-4 shot")
+	eq(bool(_sim.submit({"type": "cast", "spell": "plant", "to": ice_banner, "seat": 0}).get("ok", false)), true, "the Windmere banner on the shot plants")
+	eq(bool(_sim.submit({"type": "cast", "spell": "plant", "to": ice_wall, "seat": 0}).get("ok", false)), true, "the Windmere banner beside the shot joins it")
+	eq(bool(_sim.submit({"type": "cast", "spell": "snap_wall", "to": ice_wall, "seat": 0}).get("ok", false)), true, "the Windmere Snap Wall stands on the side banner")
+	eq(_sim.has_line_of_sight(ice_kestrel, ice_bastion), true, "Windmere Bastion stays in sight")
+	eq(_sim.sight_blocked_cells(1, "mark_shot").has(ice_bastion), false, "Windmere Bastion is not grey")
+	truthy(_sim.range_highlight_cells(1, "mark_shot").has(ice_bastion), "Windmere Bastion stays in the gold ring")
 
 
 ## One flag per tile. A second Plant on that tile is not a target, spends no
@@ -4496,7 +4577,7 @@ func _test_plant_banner_rules() -> void:
 	truthy(card.contains("Max %d per turn" % per_turn), "Plant's hover card names the per-turn cap: %s" % card)
 	var plain := " ".join(SpellTooltip.simple_lines(SpellKits.PLANT))
 	truthy(plain.contains("Shots pass through a banner"), "Plant's plain card says shots pass through a banner")
-	truthy(plain.contains("A banner next to a Snap Wall blocks shots"), "Plant's plain card names the Snap Wall pair")
+	truthy(plain.contains("A banner next to a Snap Wall does not block shots"), "Plant's plain card says a banner beside a Snap Wall stays open")
 	truthy(plain.contains("lasts %d turn" % lone_turns), "Plant's plain card names the lone duration")
 	truthy(plain.contains("last %d turns" % wall_turns), "Plant's plain card names the wall duration")
 	truthy(plain.contains("Max %d per turn" % per_turn), "Plant's plain card names the per-turn cap")
@@ -4504,9 +4585,9 @@ func _test_plant_banner_rules() -> void:
 	truthy(connect.contains("Max %d per turn" % per_turn), "Plant's connect line names the cap: %s" % connect)
 	truthy(connect.contains("%d turn" % lone_turns) and connect.contains("%d turns" % wall_turns), "Plant's connect line names both clocks: %s" % connect)
 	truthy(connect.contains("Shots pass through a banner"), "Plant's connect line says shots pass: %s" % connect)
-	truthy(connect.contains("A banner next to a Snap Wall blocks shots"), "Plant's connect line names the Snap Wall pair: %s" % connect)
+	truthy(connect.contains("A banner next to a Snap Wall does not block shots"), "Plant's connect line says a banner beside a Snap Wall stays open: %s" % connect)
 	truthy(card.contains("Shots pass through banners"), "Plant's hover card says shots pass: %s" % card)
-	truthy(card.contains("A banner beside a Snap Wall blocks shots"), "Plant's hover card names the Snap Wall pair: %s" % card)
+	truthy(card.contains("A banner beside a Snap Wall does not block shots"), "Plant's hover card says a banner beside a Snap Wall stays open: %s" % card)
 	var log_script: Script = load("res://ui/battle_log.gd")
 	var first: Dictionary = _sim.submit({"type": "cast", "spell": "plant", "to": wall_a, "seat": 0})
 	eq(bool(first.get("ok", false)), true, "the first Plant places a lone banner")
@@ -8994,7 +9075,7 @@ func _test_bastion_aegis_tooltips() -> void:
 	var wall := SpellTooltip.card_text(_sim.preview_cast(SpellKits.SNAP_WALL, Vector2i(1, 1), Vector2i(2, 1), 0))
 	truthy(wall.contains("Uses %d Aegis (max %d)" % [wall_spend, cap]), "Snap Wall's hover card names the Aegis spend and the cap: %s" % wall)
 	truthy(wall.contains("Knock down gives %d Aegis back" % wall_spend), "Snap Wall's hover card names the Aegis refund")
-	truthy(wall.contains("A Plant beside it blocks shots"), "Snap Wall's hover card names the joined banner")
+	truthy(wall.contains("A Plant beside it does not block shots"), "Snap Wall's hover card says a banner beside it stays open")
 	var ward := SpellTooltip.card_text(_sim.preview_cast(SpellKits.WARD, Vector2i(1, 1), Vector2i(1, 1), 0))
 	truthy(ward.contains("Uses %d Aegis (max %d)" % [ward_spend, cap]), "Ward's hover card names the Aegis spend and the cap: %s" % ward)
 	truthy(ward.contains("%d AP / %d Aegis" % [int(SpellKits.spell(SpellKits.WARD)["ap"]), ward_spend]), "Ward's cost line still names the Aegis spend")
@@ -9032,12 +9113,12 @@ func _test_bastion_aegis_tooltips() -> void:
 	truthy(plant_plain.contains("+%d Aegis (max %d)" % [plant_gain, cap]), "Plant's plain card uses the kit gain and the cap")
 	truthy(plant_plain.contains("Shots pass through a banner"), "Plant's plain card says shots pass through a banner")
 	truthy(plant.contains("Shots pass through banners"), "Plant's hover card says shots pass through banners: %s" % plant)
-	truthy(plant.contains("A banner beside a Snap Wall blocks shots"), "Plant's hover card names the Snap Wall pair: %s" % plant)
+	truthy(plant.contains("A banner beside a Snap Wall does not block shots"), "Plant's hover card says a banner beside a Snap Wall stays open: %s" % plant)
 	truthy(plant_plain.contains("Max %d per turn" % plant_cap), "Plant's plain card names the kit cap")
 	var wall_plain := " ".join(SpellTooltip.simple_lines(SpellKits.SNAP_WALL))
 	truthy(wall_plain.contains("Uses %d Aegis (max %d)" % [wall_spend, cap]), "Snap Wall's plain card uses the kit spend and the cap")
 	truthy(wall_plain.contains("knock it down"), "Snap Wall's plain card still explains the knock-down")
-	truthy(wall_plain.contains("A Plant banner next to it blocks shots too"), "Snap Wall's plain card names the joined banner")
+	truthy(wall_plain.contains("A Plant banner next to it does not block shots"), "Snap Wall's plain card says a banner beside it stays open")
 	truthy(wall_plain.contains("%d Aegis back" % wall_spend), "Snap Wall's plain card refunds the kit spend")
 	var ward_plain := " ".join(SpellTooltip.simple_lines(SpellKits.WARD))
 	truthy(ward_plain.contains("Uses %d Aegis (max %d)" % [ward_spend, cap]), "Ward's plain card uses the kit spend and the cap")

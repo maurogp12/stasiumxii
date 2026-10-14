@@ -146,6 +146,9 @@ var _pinch_dist := 0.0
 var _pinch_zoom := 0.0
 var _board_px := Vector2(960, 500)
 var _fit_camera_pos := Vector2.ZERO
+## Diamond centre in the same space as a pawn's position. Walk follow aims
+## at the fitted frame, not at the raw foot, or the phone view lunges.
+var _board_center := Vector2.ZERO
 var _pan_limit := Vector2(PAN_LIMIT, PAN_LIMIT)
 ## Screen-space pan accumulated during input. Applied once per frame so a
 ## gesture does not move the camera on every motion event.
@@ -211,8 +214,8 @@ func _ready() -> void:
 	_ensure_aim_line()
 	_ensure_camera()
 	_rebuild_grid(BoardSize.SHIP)
-	if not get_viewport().size_changed.is_connected(_fit_board_camera):
-		get_viewport().size_changed.connect(_fit_board_camera)
+	if not get_viewport().size_changed.is_connected(_on_viewport_resized):
+		get_viewport().size_changed.connect(_on_viewport_resized)
 	call_deferred("_boot")
 
 
@@ -2277,8 +2280,13 @@ func _follow_walker(pawn: Pawn) -> void:
 		return
 	if _pan_limit.x <= 1.0 and _pan_limit.y <= 1.0:
 		return
-	var target := (pawn.global_position - global_position)
-	_camera.position = _camera.position.lerp(target, 0.08)
+	# Same goal as the turn frame. The raw foot sits off the play band, and
+	# lerping onto it yanked the arena for a few frames at the start of a walk
+	# (Stormspire, Kestrel walking to (11,0); Windmere walks do the same).
+	var look := pawn.position
+	var goal := _fit_camera_pos + (look - _board_center)
+	goal = _fit_camera_pos + _clamp_pan_delta(goal - _fit_camera_pos)
+	_camera.position = _camera.position.lerp(goal, 0.08)
 	_clamp_camera()
 	_flush_camera()
 
@@ -3568,6 +3576,8 @@ func _fit_board_camera(glide: bool = false, focus_active: bool = false) -> void:
 	var board_w := maxf(max_x - min_x, 1.0)
 	var board_h := maxf(max_y - min_y, 1.0)
 	_board_px = Vector2(board_w, board_h)
+	var center := Vector2((min_x + max_x) * 0.5, (min_y + max_y) * 0.5)
+	_board_center = center
 	var mobile := TOUCH.use_mobile_pick()
 	var viewport := Vector2(VIEW_W, VIEW_H)
 	if mobile:
@@ -3579,7 +3589,6 @@ func _fit_board_camera(glide: bool = false, focus_active: bool = false) -> void:
 			return
 	var band := TOUCH.play_band_for(viewport, mobile)
 	var zoom := TOUCH.player_board_zoom(board_w, board_h, viewport, mobile)
-	var center := Vector2((min_x + max_x) * 0.5, (min_y + max_y) * 0.5)
 	var room := TOUCH.pan_room(board_w, board_h, viewport, zoom, mobile)
 	_pan_limit = room
 	var look := center
@@ -3633,6 +3642,14 @@ func _fit_board_camera(glide: bool = false, focus_active: bool = false) -> void:
 		_camera.position = goal
 		_clamp_camera()
 		_flush_camera()
+
+
+## A size blip used to snap the camera (and kill a turn glide) for one frame.
+## Keep a glide that is already running. Otherwise ease to the new fit.
+func _on_viewport_resized() -> void:
+	if _focus_tween != null and _focus_tween.is_valid() and _focus_tween.is_running():
+		return
+	_fit_board_camera(true)
 
 
 func _on_zoom_step(direction: int) -> void:

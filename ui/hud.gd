@@ -1798,7 +1798,10 @@ func _build() -> void:
 
 	_handoff_overlay = ColorRect.new()
 	_handoff_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	_handoff_overlay.color = Color(0.06, 0.05, 0.07, 0.42)
+	# No full-screen dim. The plaque is the turn call. A 42% black veil
+	# dropped Windmere from bright snow to half brightness for a full
+	# second on every handoff, and did the same on Stormspire.
+	_handoff_overlay.color = Color(0.06, 0.05, 0.07, 0.0)
 	_handoff_overlay.visible = false
 	_handoff_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(_handoff_overlay)
