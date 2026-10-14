@@ -26,8 +26,11 @@ func _test_source_contract() -> void:
 	eq(view.contains("_hud.render(snap, [])"), false, "a walk does not clear the spell bar")
 	truthy(view.contains("force_update_scroll"), "camera writes publish the canvas transform in the same frame")
 	truthy(view.contains("_fit_board_camera(true)"), "a new turn still glides the camera to the active fighter")
+	truthy(view.contains("_board_center"), "walk follow uses the fitted frame, not the raw foot")
 	eq(view.contains("_camera.position -="), false, "pan handlers do not write the camera on each motion event")
 	var hud := FileAccess.get_file_as_string("res://ui/hud.gd")
+	eq(hud.contains("Color(0.06, 0.05, 0.07, 0.42)"), false, "the turn plaque does not dim the whole screen")
+	truthy(hud.contains("Color(0.06, 0.05, 0.07, 0.0)"), "the turn veil is clear")
 	eq(hud.contains("return Vector2(1, 1)"), false, "turn portraits are never built at 1×1")
 
 

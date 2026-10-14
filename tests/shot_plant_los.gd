@@ -67,9 +67,9 @@ func _process(_delta: float) -> bool:
 	if _phase == "blocked":
 		if _frames < 20:
 			return false
-		if not _check(board, "grey", "blocked by a Plant and Snap Wall"):
+		if not _check(board, "target", "open beside a Snap Wall"):
 			return true
-		_save("blocked_plant_snap.png")
+		_save("beside_snap_open.png")
 		return true
 	return false
 
@@ -106,8 +106,8 @@ func _place(board: Node, with_wall: bool) -> bool:
 	var blocker: Vector2i = sim.sight_blocker(_kestrel, _bastion)
 	print("LANE wall=%s sees=%s blocker=%s banner=%s snap=%s" % [with_wall, sees, blocker, _banner, _wall])
 	if with_wall:
-		if sees or blocker != _banner:
-			push_error("the Plant and Snap Wall should block, sees=%s blocker=%s" % [sees, blocker])
+		if not sees or blocker != Vector2i(-1, -1):
+			push_error("a banner beside a Snap Wall should stay open, sees=%s blocker=%s" % [sees, blocker])
 			return false
 	elif not sees:
 		push_error("a lone banner should not block")

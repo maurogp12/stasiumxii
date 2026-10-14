@@ -1806,7 +1806,7 @@ func _preview_kit_lines(spell_id: String) -> Dictionary:
 			var lone := int(plant.get("plant_turns", 1))
 			var wall := int(plant.get("plant_wall_turns", 3))
 			var per := int(plant.get("plants_per_turn", 3))
-			return {"on_connect": "Flag for %d %s, or %d %s in a wall. Max %d per turn. Shots pass through a banner and a wall of banners. A banner next to a Snap Wall blocks shots. +%d Aegis. Enemies next to you get this element's Residue." % [lone, _turn_word(lone), wall, _turn_word(wall), per, int(plant.get("gain_aegis", 0))], "on_miss": "No roll."}
+			return {"on_connect": "Flag for %d %s, or %d %s in a wall. Max %d per turn. Shots pass through a banner and a wall of banners. A banner next to a Snap Wall does not block shots. +%d Aegis. Enemies next to you get this element's Residue." % [lone, _turn_word(lone), wall, _turn_word(wall), per, int(plant.get("gain_aegis", 0))], "on_miss": "No roll."}
 		SpellKits.FADE:
 			return {"on_connect": "Invisible. Enemies next to you get this element's Residue. Your position is not sent.", "on_miss": "No roll."}
 		SpellKits.VAULT:
@@ -6668,8 +6668,7 @@ func _blocks_sight(cell: Vector2i, _top: int, bodies: bool = true) -> bool:
 		return true
 	if _snap_wall_blocks(cell):
 		return true
-	# A lone banner, and a wall of banners, do not block a shot.
-	# A banner next to a Snap Wall does.
+	# Banners never block. A Snap Wall on the next tile is not this tile.
 	if _plant_blocks_sight(cell):
 		return true
 	if _map_steam_at(cell):
@@ -9731,20 +9730,14 @@ func _link_plant_walls() -> void:
 		tile["turns"] = maxi(int(tile.get("turns", 0)), wall_turns)
 
 
-## A Plant blocks a shot only when the path crosses that banner tile and the
-## banner is orthogonally next to a live Snap Wall. Standing beside the pair
-## does not block: the neighbour tiles, the shooter's tile, and the target's
-## tile are not the banner. A lone banner does not block. A wall of banners
-## does not, even when one end touches a Snap Wall: the block does not travel
-## through other banners. A diagonal Snap Wall does not count.
-func _plant_blocks_sight(cell: Vector2i) -> bool:
-	if not _tile_has_plant(cell):
-		return false
-	if _snap_wall_blocks(cell):
-		return true
-	for step in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
-		if _snap_wall_blocks(cell + step):
-			return true
+## A Plant banner never blocks a shot. A lone banner does not. A wall of
+## banners does not. A banner orthogonally beside a live Snap Wall does not
+## either: the stone is the next tile, and the shot stops only when the
+## segment actually crosses that Snap Wall cell. Phone recordings on 0.1.189
+## (Stormspire and Windmere): Kestrel at (11,0), Bastion at (7,0), banners
+## at (8,0) and (8,1), Snap Wall on (8,1). The line crosses the banner at
+## (8,0) and misses the wall, and the old neighbour rule greyed Bastion.
+func _plant_blocks_sight(_cell: Vector2i) -> bool:
 	return false
 
 
