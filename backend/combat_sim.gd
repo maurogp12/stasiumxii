@@ -9399,44 +9399,43 @@ func _ambush_ray_walled(origin_cell: Vector2i, target_cell: Vector2i) -> bool:
 
 
 func _ambush_legal_picks(actor: Dictionary, enemy: Dictionary) -> Array:
-	var out: Array = []
+	var shades: Array = []
+	var selves: Array = []
 	for item in _ambush_candidates(actor, enemy):
 		var cand: Dictionary = item
-		if str(cand.get("block", "x")) == "":
-			out.append(cand)
-	return out
+		if str(cand.get("block", "x")) != "":
+			continue
+		if bool(cand.get("from_shade", false)):
+			shades.append(cand)
+		else:
+			selves.append(cand)
+	# Mauro 14 Oct 2026: a Shade is only an origin when Gloam's own tile cannot
+	# resolve the cast (out of range, a wall on his ray, or no legal landing).
+	# Offering the Shade while he can strike from his own tile is what made
+	# Ambush always jump from the cloak.
+	if not selves.is_empty():
+		return selves
+	return shades
 
 
-## Shade jump that actually leaves the cast cell, then a self jump, then an
-## identity landing. A Shade whose back tile is the tile Gloam already occupies
-## must not win over a self-origin that plants somewhere else: that reads as a
-## slash from the body.
+## A jump that leaves the cast cell, then an identity landing. Self and Shade
+## are never mixed here: _ambush_legal_picks already drops Shades when Gloam's
+## own tile can resolve. A Shade whose back tile is the tile Gloam already
+## occupies must not win over a Shade that plants somewhere else.
 func _ambush_prefer(picks: Array, caster_pos: Vector2i) -> Dictionary:
-	var relocating_shade: Dictionary = {}
-	var relocating_self: Dictionary = {}
-	var identity_shade: Dictionary = {}
-	var identity_self: Dictionary = {}
+	var relocating: Dictionary = {}
+	var identity: Dictionary = {}
 	for item in picks:
 		var pick: Dictionary = item
 		var landing: Dictionary = pick.get("landing", {})
 		var land_cell: Vector2i = landing.get("cell", caster_pos)
-		var away := land_cell != caster_pos
-		var from_shade := bool(pick.get("from_shade", false))
-		if from_shade and away and relocating_shade.is_empty():
-			relocating_shade = pick
-		elif not from_shade and away and relocating_self.is_empty():
-			relocating_self = pick
-		elif from_shade and identity_shade.is_empty():
-			identity_shade = pick
-		elif identity_self.is_empty():
-			identity_self = pick
-	if not relocating_shade.is_empty():
-		return relocating_shade
-	if not relocating_self.is_empty():
-		return relocating_self
-	if not identity_shade.is_empty():
-		return identity_shade
-	return identity_self
+		if land_cell != caster_pos and relocating.is_empty():
+			relocating = pick
+		elif identity.is_empty():
+			identity = pick
+	if not relocating.is_empty():
+		return relocating
+	return identity
 
 
 func _ambush_selected(actor: Dictionary, enemy: Dictionary, intent: Dictionary) -> Dictionary:

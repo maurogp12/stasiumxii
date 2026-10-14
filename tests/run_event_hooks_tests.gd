@@ -263,8 +263,9 @@ func _test_ambush_origin_and_destination() -> void:
 	eq(int(_sim.snapshot()["units"][0]["shades"]), shades_before, "Invisible origin still does not spend Shade")
 	eq(int(_sim.snapshot()["units"][1]["hp"]), 40, "true back stays 26 × 1.35 = 35")
 
-	# Auto Shade lands at (0, 0). The prey sits Manhattan 2 cardinal from that cell.
-	# The Shade arms only after the opponent completes a turn.
+	# Auto Shade lands at (0, 0). The prey is Manhattan 2 cardinal from that cell
+	# and from Gloam. Gloam can reach, so the Shade is not the origin. The back
+	# tile past the prey is off the board, so he plants on the near side.
 	var near := Vector2i(2, 0)
 	_sim.reset_match({
 		"seed": 1,
@@ -280,7 +281,7 @@ func _test_ambush_origin_and_destination() -> void:
 	_sim.submit({"type": "end_turn", "seat": 1})
 	var missed: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": near, "seat": 0})
 	var miss := _event_of(missed.get("events", []), "miss")
-	eq(miss.get("origin"), shade_cell, "Shade Ambush miss origin is the Shade cell")
+	eq(miss.get("origin"), gloam, "Ambush miss starts on Gloam when he can reach")
 	eq(miss.has("destination"), false, "Ambush miss emits no destination")
 	eq(bool(miss.get("teleported", true)), false, "Ambush miss teleported is false")
 	eq(_sim.snapshot()["units"][0]["pos"], gloam, "Ambush miss still stays put")
@@ -301,11 +302,12 @@ func _test_ambush_origin_and_destination() -> void:
 	_sim.submit({"type": "end_turn", "seat": 1})
 	var shade_cast: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": near, "seat": 0})
 	var shade_hit := _event_of(shade_cast.get("events", []), "hit")
-	eq(shade_hit.get("origin"), shade_cell, "Shade Ambush origin is the Shade cell")
-	eq(shade_hit.get("destination"), Vector2i(3, 0), "Shade Ambush destination is the empty back tile")
-	eq(bool(shade_hit.get("teleported", false)), true, "Shade Ambush hit teleported")
-	eq(int(_sim.snapshot()["units"][0]["shades"]), 0, "Shade origin still spends one Shade")
-	eq(int(_sim.snapshot()["units"][1]["hp"]), 40, "empty back stays 26 × 1.35 = 35")
+	eq(shade_hit.get("origin"), gloam, "Ambush origin is Gloam when he can reach")
+	eq(shade_hit.get("destination"), Vector2i(2, 1), "a blocked back plants on the near tile")
+	eq(bool(shade_hit.get("teleported", false)), true, "self-origin Ambush hit teleported")
+	eq(int(_sim.snapshot()["units"][0]["shades"]), 1, "a reachable self origin does not spend the Shade")
+	eq(_sim.snapshot()["shade_tokens"][0]["pos"], shade_cell, "the unused Shade stays on its tile")
+	eq(int(_sim.snapshot()["units"][1]["hp"]), 49, "the near landing is a side, so the hit is 26")
 
 	_sim.reset_match({
 		"seed": 1,
