@@ -3031,28 +3031,28 @@ func _test_invisible_shade_origin_ambush() -> void:
 			shade_intent = true
 		if intent.get("origin") == gloam:
 			self_intent = true
-	eq(shade_intent, true, "Invisible legal_intents keep the Shade origin")
+	eq(shade_intent, false, "a Shade is not offered while Gloam's own tile can reach")
 	eq(self_intent, true, "Invisible legal_intents keep the self origin")
-	eq(origins.has(shade_at), true, "the Shade cell is an Ambush origin while Invisible")
+	eq(origins.has(shade_at), false, "the Shade cell is not an Ambush origin while Gloam can reach")
 	eq(origins.has(gloam), true, "Gloam's cell is an Ambush origin while Invisible")
 	var both_hud := CombatHUD.new()
 	both_hud._build()
 	both_hud.render(_sim.snapshot(), _sim.legal_intents(0))
 	var both_button: Button = both_hud._spell_buttons[SpellKits.AMBUSH]
-	eq(both_button.disabled, false, "Ambush is not grey when a Shade origin is legal while Invisible")
-	eq(both_button.modulate, CombatHUD.AMBUSH_SHADE_MODULATE, "a legal Shade origin keeps the shade highlight while Invisible")
-	truthy(both_hud._selected_label.text.contains(CombatHUD.AMBUSH_SHADE_TIP), "Walk names Ambush from Shade while Invisible")
+	eq(both_button.disabled, false, "Ambush stays armed from Gloam while a Shade is also beside the foe")
+	eq(both_button.modulate, CombatHUD.AMBUSH_SHADE_MODULATE, "a legal self origin keeps the Ambush highlight")
+	eq(both_hud._selected_label.text.contains(CombatHUD.AMBUSH_SHADE_TIP), false, "Walk does not say Ambush from Shade when Gloam can reach")
 	both_hud.free()
 	var jumped: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": prey, "seat": 0})
-	eq(bool(jumped.get("ok", false)), true, "enemy tap while Invisible jumps from the Shade")
-	eq(jumped["events"][0].get("origin"), shade_at, "the default Invisible hit origin is the Shade")
-	eq(_unit(0)["pos"], shade_back, "Shade-origin Invisible Ambush plants past the foe")
-	eq(_unit(0)["pos"] == gloam, false, "Shade-origin Invisible Ambush does not slash from the body")
-	eq(jumped["events"][0].get("struck_from"), shade_back, "damage is struck from the Shade's back tile")
+	eq(bool(jumped.get("ok", false)), true, "enemy tap while Invisible starts on Gloam")
+	eq(jumped["events"][0].get("origin"), gloam, "the default hit origin is Gloam, not the Shade")
+	eq(_unit(0)["pos"], self_back, "self-origin Ambush plants on its own back tile")
+	eq(_unit(0)["pos"] == shade_back, false, "the cast does not plant on the Shade's back tile")
+	eq(jumped["events"][0].get("struck_from"), self_back, "damage is struck from Gloam's back tile")
 	eq(jumped["events"][0].get("caster_cell"), gloam, "caster_cell stays the pre-blink body")
-	eq(int(_unit(0)["shades"]), 0, "the Shade jump spends the Shade")
-	eq(bool(_unit(0)["invisible"]), false, "the Shade jump ends Invisible")
-	eq(int(_unit(1)["hp"]), 45, "the Shade jump front hit is 26 + Fade's 1 Umbral")
+	eq(int(_unit(0)["shades"]), 1, "a reachable self origin does not spend the Shade")
+	eq(bool(_unit(0)["invisible"]), false, "the self jump ends Invisible")
+	eq(int(_unit(1)["hp"]), 34, "the self backstab is (26 + Fade's 1 Umbral) × 1.35")
 
 	_sim.reset_match({
 		"seed": 1,
@@ -3073,8 +3073,8 @@ func _test_invisible_shade_origin_ambush() -> void:
 	eq(int(_unit(0)["shades"]), 1, "self-origin does not spend the Shade")
 	eq(bool(_unit(0)["invisible"]), false, "self-origin Ambush ends Invisible")
 
-	# Shade back tile is the cell Gloam already occupies. Default cast must
-	# take the self-origin that relocates, and still list the Shade.
+	# Shade back tile is the cell Gloam already occupies. Gloam can reach, so
+	# the Shade is not offered and the default cast plants from his own tile.
 	var clip_gloam := Vector2i(4, 4)
 	var clip_shade := Vector2i(4, 2)
 	var clip_prey := Vector2i(4, 3)
@@ -3097,7 +3097,7 @@ func _test_invisible_shade_origin_ambush() -> void:
 	for intent in _sim.legal_intents(0):
 		if str(intent.get("spell", "")) == SpellKits.AMBUSH and intent.get("origin") == clip_shade:
 			clip_shade_listed = true
-	eq(clip_shade_listed, true, "clip legal_intents still list the Shade origin while Invisible")
+	eq(clip_shade_listed, false, "clip legal_intents omit the Shade while Gloam can reach")
 	var clip_hit: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": clip_prey, "seat": 0})
 	eq(bool(clip_hit.get("ok", false)), true, "clip Invisible Ambush resolves")
 	eq(clip_hit["events"][0].get("origin"), clip_gloam, "clip default origin relocates instead of slashing in place")
@@ -3124,10 +3124,81 @@ func _test_invisible_shade_origin_ambush() -> void:
 	eq(bool(missed.get("ok", false)), true, "Invisible Shade Ambush miss resolves")
 	eq(bool(missed["events"][0].get("teleported", true)), false, "Invisible Shade Ambush miss does not teleport")
 	eq(_unit(0)["pos"], gloam, "Invisible Shade Ambush miss stays on the body")
-	eq(missed["events"][0].get("origin"), shade_at, "the miss origin is still the Shade")
+	eq(missed["events"][0].get("origin"), gloam, "the miss origin is Gloam when he can reach")
 	eq(int(_unit(0)["shades"]), 1, "Invisible Shade Ambush miss keeps the Shade")
 	eq(bool(_unit(0)["invisible"]), false, "Invisible Shade Ambush miss ends Invisible")
 	eq(int(_unit(1)["hp"]), 75, "Invisible Shade Ambush miss deals no damage")
+
+	# Video layout: Gloam is in front of the enemy and a Shade stands beside
+	# him. Range and the ray are clear from Gloam, so Ambush starts there.
+	# Tapping the Shade plate must not spend it. Bots only see legal_intents.
+	var front := Vector2i(5, 6)
+	var beside := Vector2i(6, 5)
+	var foe := Vector2i(5, 5)
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["gloam", "kestrel"],
+		"positions": [front, foe],
+		"kestrel_facing": "S",
+		"rolls": [1],
+	})
+	eq(bool(_sim.submit({"type": "cast", "spell": "drop_shade", "to": beside, "seat": 0}).get("ok", false)), true, "video layout plants the Shade beside the foe")
+	_complete_opponent_turn()
+	eq(_sim._cardinal_axis_len(front, foe), 1, "Gloam is one tile in front of the foe")
+	eq(_sim._ambush_ray_walled(front, foe), false, "Gloam's ray to the foe is clear")
+	var offered_shade := false
+	for intent in _sim.legal_intents(0):
+		if str(intent.get("spell", "")) == SpellKits.AMBUSH and bool(intent.get("from_shade", false)):
+			offered_shade = true
+	eq(offered_shade, false, "legal_intents do not offer the Shade while Gloam can reach")
+	var tapped: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": foe, "origin": beside, "seat": 0})
+	eq(bool(tapped.get("ok", false)), true, "tapping the Shade plate still resolves")
+	eq(tapped["events"][0].get("origin"), front, "the tapped Shade does not become the origin")
+	eq(int(_unit(0)["shades"]), 1, "the Shade is not spent")
+	eq(_unit(0)["pos"] != beside, true, "Gloam does not teleport onto the Shade")
+
+	# Out of range: the Shade is the only origin, and it is spent.
+	# The body stays inside Drop Shade of the cloak, and outside Ambush range.
+	var far_body := Vector2i(8, 5)
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["gloam", "kestrel"],
+		"positions": [far_body, foe],
+		"kestrel_facing": "S",
+		"rolls": [1],
+	})
+	eq(bool(_sim.submit({"type": "cast", "spell": "drop_shade", "to": beside, "seat": 0}).get("ok", false)), true, "far layout plants the Shade")
+	_complete_opponent_turn()
+	eq(_sim._cardinal_axis_len(far_body, foe) > 2, true, "Gloam is out of Ambush range")
+	var far_cast: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": foe, "seat": 0})
+	eq(bool(far_cast.get("ok", false)), true, "out-of-range Gloam still Ambushes from the Shade")
+	eq(far_cast["events"][0].get("origin"), beside, "the out-of-range origin is the Shade")
+	eq(int(_unit(0)["shades"]), 0, "the Shade is spent when it is the only origin")
+
+	# A wall on Gloam's ray: he is in range, but the Shade on the open side is the origin.
+	var walled_body := Vector2i(5, 3)
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["gloam", "kestrel"],
+		"positions": [walled_body, foe],
+		"kestrel_facing": "S",
+		"rolls": [1],
+	})
+	eq(bool(_sim.submit({"type": "cast", "spell": "drop_shade", "to": beside, "seat": 0}).get("ok", false)), true, "walled layout plants the Shade")
+	_complete_opponent_turn()
+	_sim._blocked_cells.append(Vector2i(5, 4))
+	eq(_sim._cardinal_axis_len(walled_body, foe), 2, "the walled body is Manhattan 2")
+	eq(_sim._ambush_ray_walled(walled_body, foe), true, "a blocker between Gloam and the foe walls the ray")
+	var walled: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": foe, "seat": 0})
+	eq(bool(walled.get("ok", false)), true, "a walled Gloam Ambushes from the Shade")
+	eq(walled["events"][0].get("origin"), beside, "the walled origin is the Shade")
+	eq(int(_unit(0)["shades"]), 0, "the Shade is spent when Gloam's ray is blocked")
 
 
 func _test_invisible_breaks_on_attack() -> void:
@@ -10740,6 +10811,62 @@ func _test_air_blends() -> void:
 	var plan: Dictionary = HeroAi.plan(_sim, 0)
 	eq(bool(plan.get("blind", false)), false, "the companion does not spend the turn on empty air")
 	eq(int(plan.get("target_seat", -1)), 1, "the companion hits the visible enemy")
+
+	# Screenshot, 14 Oct 2026. Ironjaw walks 3, then Strike hits the next empty
+	# tile and Fire hangs. That miss does not reveal. The Blend that follows
+	# measures from the tile the second spell lands on, not from Ironjaw.
+	# Gloam two tiles from Ironjaw and three from that landing stays hidden.
+	# Flare still reveals at exactly 2 from the landing (three from Ironjaw).
+	# Steam reveals at 1 and not at 2.
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1, 1], "classes": ["ironjaw", "gloam"], "positions": [Vector2i(2, 5), Vector2i(5, 3)], "gloam_invisible": true})
+	_live_unit(0)["spell_elements"] = {"strike": "fire", "shoulder": "air", "crush": "fire", "advance": "air"}
+	var walked: Dictionary = _sim.submit({"type": "move", "to": Vector2i(5, 5), "seat": 0})
+	eq(bool(walked.get("ok", false)), true, "Ironjaw walks 3")
+	eq(_unit(0)["pos"], Vector2i(5, 5), "the walk ends on the cast tile")
+	eq(int(_unit(0)["mp"]), 0, "the walk spends 3 MP")
+	var hang_only: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(5, 6), "seat": 0})
+	eq(bool(hang_only.get("ok", false)), true, "Strike into the next empty tile resolves")
+	eq(str(_first_event_where(hang_only.get("events", []), "miss").get("cast_element", "")), "fire", "Fire hangs for a Blend")
+	eq(_sim.chebyshev(_unit(0)["pos"], _unit(1)["pos"]), 2, "Gloam is 2 tiles from Ironjaw")
+	eq(_sim.chebyshev(Vector2i(5, 6), _unit(1)["pos"]), 3, "Gloam is 3 tiles from the Strike tile")
+	eq(bool(_unit(1).get("invisible", false)), true, "a miss does not reveal Gloam")
+	var far_flare: Dictionary = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(5, 6), "seat": 0})
+	var far_flare_row := _first_event_where(far_flare.get("events", []), "blend")
+	eq(str(far_flare_row.get("blend", "")), "flare", "Air on the hanging Fire is Flare")
+	eq(far_flare_row.get("to", Vector2i.ZERO), Vector2i(5, 6), "Flare lands on the Strike tile")
+	eq(far_flare_row.get("revealed", []), [], "Flare does not list Gloam three tiles from the landing")
+	eq(bool(_unit(1).get("invisible", false)), true, "Gloam three tiles from the landing stays hidden")
+
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1, 1], "classes": ["ironjaw", "gloam"], "positions": [Vector2i(2, 5), Vector2i(5, 8)], "gloam_invisible": true})
+	_live_unit(0)["spell_elements"] = {"strike": "fire", "shoulder": "air", "crush": "fire", "advance": "air"}
+	_sim.submit({"type": "move", "to": Vector2i(5, 5), "seat": 0})
+	_sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(5, 6), "seat": 0})
+	eq(_sim.chebyshev(Vector2i(5, 5), _unit(1)["pos"]), 3, "this Gloam is 3 tiles from Ironjaw")
+	eq(_sim.chebyshev(Vector2i(5, 6), _unit(1)["pos"]), 2, "and 2 tiles from the landing")
+	eq(bool(_unit(1).get("invisible", false)), true, "the hang still does not reveal him")
+	var edge: Dictionary = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(5, 6), "seat": 0})
+	eq(str(_first_event_where(edge.get("events", []), "blend").get("blend", "")), "flare", "the edge cast is still Flare")
+	eq(bool(_unit(1).get("invisible", true)), false, "Flare reveals Gloam exactly 2 tiles from the landing")
+
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1, 1], "classes": ["ironjaw", "gloam"], "positions": [Vector2i(2, 5), Vector2i(5, 7)], "gloam_invisible": true})
+	_live_unit(0)["spell_elements"] = {"strike": "fire", "shoulder": "water", "crush": "water", "advance": "fire"}
+	_sim.submit({"type": "move", "to": Vector2i(5, 5), "seat": 0})
+	var steam_hang: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(5, 6), "seat": 0})
+	eq(bool(_unit(1).get("invisible", false)), true, "a Fire hang beside Gloam does not reveal him")
+	eq(_first_event_where(steam_hang.get("events", []), "blend").is_empty(), true, "the first cast is not a Blend")
+	var steam_near: Dictionary = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(5, 6), "seat": 0})
+	eq(str(_first_event_where(steam_near.get("events", []), "blend").get("blend", "")), "steam", "Fire then Water is Steam")
+	eq(bool(_unit(1).get("invisible", true)), false, "Steam reveals Gloam 1 tile from the landing")
+
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1, 1], "classes": ["ironjaw", "gloam"], "positions": [Vector2i(2, 5), Vector2i(5, 4)], "gloam_invisible": true})
+	_live_unit(0)["spell_elements"] = {"strike": "fire", "shoulder": "water", "crush": "water", "advance": "fire"}
+	_sim.submit({"type": "move", "to": Vector2i(5, 5), "seat": 0})
+	_sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(5, 6), "seat": 0})
+	eq(_sim.chebyshev(Vector2i(5, 5), _unit(1)["pos"]), 1, "Gloam is beside Ironjaw")
+	eq(_sim.chebyshev(Vector2i(5, 6), _unit(1)["pos"]), 2, "and 2 tiles from the Steam landing")
+	var steam_far: Dictionary = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(5, 6), "seat": 0})
+	eq(str(_first_event_where(steam_far.get("events", []), "blend").get("blend", "")), "steam", "the far Steam still fires")
+	eq(bool(_unit(1).get("invisible", false)), true, "Steam does not reveal Gloam 2 tiles from the landing")
 
 	# The hang lasts through the next own turn, then drops.
 	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "classes": ["ironjaw", "kestrel"], "positions": [Vector2i(5, 5), Vector2i(8, 5)]})
