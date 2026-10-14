@@ -82,6 +82,9 @@ func _place(board: Node) -> bool:
 	if not bool(sim.submit({"type": "cast", "spell": "snap_wall", "to": _wall, "seat": 0}).get("ok", false)):
 		push_error("Snap Wall did not stand on the banner")
 		return false
+	if not bool(sim.submit({"type": "end_turn", "seat": 0}).get("ok", false)):
+		push_error("Bastion did not end his turn")
+		return false
 	board._rebuild_grid(int(sim.snapshot().get("board_size", 15)))
 	board._rebuild_pawns()
 	board._refresh()
@@ -116,9 +119,11 @@ func _check(board: Node) -> bool:
 	print("BASTION HIGHLIGHT %s BETWEEN %s" % [highlight, between_hl])
 	if highlight != "target":
 		push_error("Bastion's tile is %s, wanted target" % highlight)
+		quit(1)
 		return false
 	if between_hl == "grey":
 		push_error("the tile between them is grey")
+		quit(1)
 		return false
 	return true
 
