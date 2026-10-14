@@ -2539,9 +2539,10 @@ func _note_attacks(actor: Dictionary) -> void:
 	actor["attacked_this_turn"] = seen
 
 
-## Stacks a fighter keeps on itself. Impact and Aegis drop on a turn with no
-## attack. Pulse drops on a turn with no spell. Umbral is not in this list:
-## it stays until a connecting Ambush spends it.
+## Stacks a fighter keeps on itself. Impact drops on a turn with no attack.
+## Aegis drops on a turn with no attack and no Plant. Pulse drops on a turn
+## with no spell. Umbral is not in this list: it stays until a connecting
+## Ambush spends it.
 const SELF_STACKS := ["impact", "aegis", "pulse"]
 
 
@@ -2564,9 +2565,16 @@ func _drop_unattended_marks(actor: Dictionary) -> void:
 	# Mauro 6 Oct 2026: Mender's Pulse stays while she keeps using her spells
 	# ("if he keep healing team mates he does not need to attack an enemy");
 	# only a turn with no spell at all drops it.
+	# Mauro 14 Oct 2026: Bastion keeps every Aegis point if this turn he
+	# attacked a foe (a damaging spell that hit or missed them) or cast Plant.
+	# A walk, Ward, or Snap Wall alone drops the whole stack.
 	var cast_any := bool(actor.get("cast_this_turn", false))
+	var attacked_foe := not attacked.is_empty()
+	var planted := int(actor.get("plants_this_turn", 0)) > 0
 	for field in SELF_STACKS:
-		var kept := cast_any if field == "pulse" else not attacked.is_empty()
+		var kept := cast_any if field == "pulse" else attacked_foe
+		if field == "aegis":
+			kept = attacked_foe or planted
 		if not kept and int(actor.get(field, 0)) > 0:
 			_clear_resource(actor, field)
 			_emit_expire(field, actor["pos"], me, me)
