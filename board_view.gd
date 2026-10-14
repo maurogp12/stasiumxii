@@ -2147,6 +2147,11 @@ func _animate_path(seat: int, path: Array, origin: Vector2i = Vector2i(-1, -1)) 
 			if per > 0.0:
 				var climbing := absf(_elev_at(prev) - _elev_at(cell)) > 0.001
 				dur = VIEW_MOTION.walk_span(per, float(cell_i) * per, climbing)
+			elif str(pawn.stasis_sprite) != "":
+				var climbing := absf(_elev_at(prev) - _elev_at(cell)) > 0.001
+				dur = VIEW_MOTION.walk_span(6.0, 0.0, climbing)
+				if pawn.stasis_boss:
+					dur *= 1.22
 			_walk_tween.tween_method(_sample_glide_step.bind(pawn, prev, cell, first, last, cell_i), 0.0, 1.0, dur)
 			if dust:
 				_walk_tween.tween_callback(_puff_footstep.bind(pawn, cell))
@@ -2254,6 +2259,17 @@ func _sample_glide_step(t: float, pawn: Pawn, src: Vector2i, dst: Vector2i, _fir
 		if pawn.begin_segment_walk(dir):
 			pawn.show_stride_frame(float(sample["frame"]))
 			pawn.set_stride_bob(float(sample["bob"]))
+	elif str(pawn.stasis_sprite) != "":
+		# Same cruise as a hero: ease the first step, hold speed across the
+		# middle, ease only into the last plant. A per-tile ease was a hitch.
+		var sample := VIEW_MOTION.walk_sample(t, 6.0, float(tile_i) * 6.0, climbing, _first, _last)
+		along = float(sample["u"])
+		elev_u = float(sample["elev"])
+		_step_along = along
+		_step_elev = elev_u
+		pawn.position = VIEW_MOTION.foot_at(_cell_to_local(src), _cell_to_local(dst), src_e, dst_e, along, elev_u)
+		if pawn.begin_segment_walk(dir):
+			pawn.sample_driven_gait(along)
 	else:
 		var split := VIEW_MOTION.stride_split(t, climbing)
 		along = split.x

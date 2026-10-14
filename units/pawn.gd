@@ -2019,25 +2019,31 @@ static func foe_gait(kind: String, boss: bool, t: float, dir_x: float) -> Dictio
 	var arc := sin(u * PI)
 	var land := clampf((u - 0.78) / 0.22, 0.0, 1.0)
 	var land_squash := sin(land * PI)
+	# Gather before the foot leaves. Zero at the seam and gone by the
+	# middle of the tile, so the bound at mid-stride stays the same.
+	var wind := 0.0
+	if u > 0.0 and u < 0.18:
+		wind = sin(u / 0.18 * PI)
 	var lean := 0.0
 	var squash := 0.0
 	var off := Vector2.ZERO
 	match kind:
 		"beast":
-			off = Vector2(0.0, -7.0 * arc)
-			lean = dir_x * 0.11 * arc
+			off = Vector2(-dir_x * 3.4 * wind, -7.0 * arc)
+			lean = dir_x * 0.11 * arc - dir_x * 0.09 * wind
 			squash = 0.05 * land_squash - 0.03 * arc
 		"crawler":
-			off = Vector2(sin(u * TAU * 2.0) * 1.6, -2.0 * absf(sin(u * TAU)))
-			lean = dir_x * 0.05 + sin(u * TAU * 2.0) * 0.03
+			off = Vector2(sin(u * TAU * 2.0) * 1.6 - dir_x * 1.5 * wind, -2.0 * absf(sin(u * TAU)))
+			lean = dir_x * 0.05 + sin(u * TAU * 2.0) * 0.03 - dir_x * 0.04 * wind
 			squash = 0.03 * absf(sin(u * TAU))
 		"flyer":
-			off = Vector2(0.0, -2.5 * arc)
-			lean = dir_x * 0.13 * arc
+			off = Vector2(-dir_x * 2.2 * wind, -2.5 * arc)
+			lean = dir_x * 0.13 * arc - dir_x * 0.05 * wind
 		_:
-			var heavy := 1.5 if boss else 1.0
-			off = Vector2(0.0, -3.5 * arc * (0.8 if boss else 1.0))
-			lean = dir_x * 0.06 * arc
+			var heavy := 1.85 if boss else 1.0
+			var crouch := (3.2 if boss else 1.8) * wind
+			off = Vector2(-dir_x * (4.2 if boss else 2.4) * wind, -3.5 * arc * (0.8 if boss else 1.0) + crouch)
+			lean = dir_x * 0.06 * arc - dir_x * (0.08 if boss else 0.05) * wind
 			squash = 0.09 * heavy * land_squash
 	return {"offset": off, "lean": lean, "squash": squash}
 
@@ -2104,7 +2110,7 @@ func _sample_attack(t: float, dir: Vector2, reach: float = -1.0) -> void:
 		return
 	var pose: Dictionary = VIEW_MOTION.attack_pose(t, dir, reach)
 	_boss_frame("attack", t)
-	_apply_body_pose(pose)
+	_apply_body_pose(pose, t)
 	_sync_impact_freeze(t, false)
 	_place_gesture(VIEW_MOTION.attack_phase(t), dir, pose.get("pos", Vector2.ZERO))
 
@@ -2115,18 +2121,24 @@ func _sample_cast(t: float, dir: Vector2 = Vector2.ZERO) -> void:
 		return
 	var pose: Dictionary = VIEW_MOTION.cast_pose(t, dir)
 	_boss_frame("cast", t)
-	_apply_body_pose(pose)
+	_apply_body_pose(pose, t)
 	_sync_impact_freeze(t, true)
 	var aim := dir if dir.length_squared() > 0.01 else facing_screen()
 	_place_gesture(VIEW_MOTION.cast_phase(t), aim, pose.get("pos", Vector2.ZERO))
 
 
-func _apply_body_pose(pose: Dictionary) -> void:
+func _apply_body_pose(pose: Dictionary, t: float = -1.0) -> void:
 	var pos: Vector2 = pose.get("pos", Vector2.ZERO)
 	var mul: Vector2 = pose.get("scale", Vector2.ONE)
 	# A foe painting has no attack sheet: the body winds back, then throws its
 	# weight into the lunge instead of sliding as a flat card.
 	if stasis_sprite != "":
+		var wind := 0.0
+		if t > 0.0 and t < 0.24:
+			wind = sin(t / 0.24 * PI)
+		var extra := (11.0 if stasis_boss else 7.0) * wind
+		if pos.length_squared() > 1.0:
+			pos -= pos.normalized() * extra
 		_set_foe_body(clampf(pos.x / maxf(VIEW_MOTION.ATTACK_LUNGE_PX, 1.0), -1.0, 1.0) * FOE_LEAN, (1.0 - mul.y) * 0.3)
 		mul = Vector2.ONE.lerp(mul, 0.35)
 	var scaled := _body_scale_mul(mul)
@@ -2485,9 +2497,10 @@ func _sample_idle(_t: float) -> void:
 	var bob := Vector2(0.0, sin((now + phase) * TAU / VIEW_MOTION.IDLE_PERIOD) * VIEW_MOTION.IDLE_BOB_PX)
 	if stasis_sprite != "":
 		bob = foe_idle_offset(foe_body_for(stasis_sprite, stasis_boss), now + phase)
-		# A boss idle sheet breathes on its own frames.
+		# A boss idle sheet already breathes. Keep a smaller weight shift
+		# on top of those frames.
 		if _boss_rest(now + phase):
-			bob = Vector2.ZERO
+			bob *= 0.4
 	# The painted idle breathes in its own cells. No sprite bob on top.
 	if stasis_sprite == "" and _show_painted_idle():
 		bob = Vector2.ZERO
@@ -2505,8 +2518,10 @@ func _sample_idle(_t: float) -> void:
 static func foe_idle_offset(body: Dictionary, t: float) -> Vector2:
 	var hover := float(body.get("hover", 0.0))
 	if hover > 0.0:
-		return Vector2(sin(t * 1.3) * 1.6, -sin(t * TAU / 2.4) * hover * 0.45)
-	return Vector2(0.0, sin(t * TAU / VIEW_MOTION.IDLE_PERIOD) * float(body.get("bob", VIEW_MOTION.IDLE_BOB_PX)))
+		return Vector2(sin(t * 1.1) * 2.2, -sin(t * TAU / 2.4) * hover * 0.45)
+	var bob := float(body.get("bob", VIEW_MOTION.IDLE_BOB_PX))
+	var sway := 2.2 if str(body.get("kind", "")) == "brute" else 1.5
+	return Vector2(sin(t * 1.35) * sway, sin(t * TAU / VIEW_MOTION.IDLE_PERIOD) * bob)
 
 
 func _stop_idle() -> void:
