@@ -428,7 +428,12 @@ static func _damage_hit_recipes(event: Dictionary) -> Array:
 		out.append(flash)
 		out.append(floater)
 		if crit:
-			out.append(_ring(cell, VfxPalette.EMBER, false, 0.24, 0.0, "crack"))
+			var crack := _ring(cell, VfxPalette.EMBER, false, 0.30, 0.0, "crack")
+			crack["delay_spawn"] = number_delay
+			out.append(crack)
+			var gold := _ring(cell, VfxPalette.CRIT_TOP, false, 0.24, 0.0)
+			gold["delay_spawn"] = number_delay + 0.06
+			out.append(gold)
 		var damage_text := ("CRIT %d" % damage) if crit else str(damage)
 		var pop := 1.35 if crit else _back_scale(event)
 		var kind := "crit" if crit else "damage"
@@ -931,12 +936,21 @@ static func _choreography(event: Dictionary, snapshot: Dictionary) -> Array:
 				out.append(_status_on("marks", target, to_cell, _stack_count(snapshot, target, "marks", maxi(int(event.get("engine_gained", 1)), 1))))
 		"detonate":
 			if typ == "hit":
-				var line := _shot(caster_cell, to_cell, VfxPalette.KESTREL_AIR, 0.0, 0.08, 2.0, false)
+				var release := STRIPS.release_sec("kestrel", "cast")
+				# A short thick streak, then the burst, then a crack and a
+				# second ring so the mark pops instead of blinking off.
+				var line := _shot(caster_cell, to_cell, VfxPalette.KESTREL_AIR, 0.0, 0.16, 3.2, false)
 				line["hand"] = true
 				line["seat"] = caster
-				line["delay"] = STRIPS.release_sec("kestrel", "cast")
+				line["delay"] = release
 				out.append(line)
-				out.append(_stamp("detonate_burst", target, to_cell, STRIPS.release_sec("kestrel", "cast"), VfxBudget.STAMP_DETONATE_PX, VfxBudget.STAMP_SPELL_LIFE))
+				out.append(_stamp("detonate_burst", target, to_cell, release, 142.0, VfxBudget.STAMP_SPELL_LIFE))
+				var crack := _ring(to_cell, VfxPalette.KESTREL_AIR, false, 0.32, 0.0, "crack")
+				crack["delay_spawn"] = release
+				out.append(crack)
+				var echo := _ring(to_cell, VfxPalette.EMBER, false, 0.36, 0.35)
+				echo["delay_spawn"] = release + 0.08
+				out.append(echo)
 				if event.has("marks_remaining") and int(event.get("marks_remaining", 0)) <= 0:
 					out.append(_status_off("marks", target, to_cell))
 				elif int(event.get("marks_remaining", 0)) > 0:
