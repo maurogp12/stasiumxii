@@ -2231,7 +2231,7 @@ const BLEND_NAMES := {
 	"drift_pin": "Drift-Pin", "spark": "Spark",
 	"magma": "Magma", "mire": "Mire", "steam": "Steam", "flare": "Flare",
 }
-const FLARE_REVEAL_RADIUS := 2
+const FLARE_REVEAL_RADIUS := 4
 const SPARK_CHIP := 10  # Mauro 6 Oct 2026 (was 4)
 const DRIFT_COLLISION_HP := 8
 const MAGMA_TICK_HP := 4
@@ -2448,9 +2448,9 @@ func _blend_flare(_actor: Dictionary, target: Dictionary, event: Dictionary) -> 
 	return "Burn %d" % int(burn.get("stacks", target.get("burn_stacks", 0)))
 
 
-## How far from the landing an invisible enemy is revealed. Flare keeps its
-## published 2 tiles. The other Blends have no published radius; they reveal
-## one tile out from the landing, which is "around" that cast.
+## How far from the landing an invisible enemy is revealed. Flare is 4 tiles
+## (Mauro 14 Oct 2026, was 2), Chebyshev from the landing tile. The other
+## Blends have no published radius; they reveal one tile out from the landing.
 func _blend_reveal_radius(blend: String) -> int:
 	return FLARE_REVEAL_RADIUS if blend == "flare" else 1
 
