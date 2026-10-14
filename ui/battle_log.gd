@@ -436,6 +436,11 @@ static func _cast_line(event: Dictionary, snap: Dictionary) -> String:
 		return _finish("%s sets a Snare Trap" % who, event, true)
 	if spell == SpellKits.DROP_SHADE:
 		return _finish("%s drops a Shade" % who, event, true)
+	if spell == SpellKits.PLANT:
+		var turns := int(event.get("turns", int(SpellKits.spell(SpellKits.PLANT).get("plant_turns", 1))))
+		var word := "turn" if turns == 1 else "turns"
+		var kind := "wall" if bool(event.get("walled", false)) else "banner"
+		return _finish("%s plants a %s, %d %s" % [who, kind, turns, word], event, true)
 	return _finish("%s casts %s" % [who, _spell_name(spell)], event, true)
 
 
@@ -793,6 +798,8 @@ static func _expire_line(event: Dictionary, snap: Dictionary) -> String:
 	var who := _name(snap, seat)
 	if status == "invisible":
 		return "%s is visible." % who
+	if status == "plant" and bool(event.get("walled", false)):
+		return "Plant wall ended on %s." % who
 	return "%s ended on %s." % [label, who]
 
 

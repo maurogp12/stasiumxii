@@ -115,6 +115,8 @@ func play(spec: Dictionary) -> void:
 	visible = _wait <= 0.0
 	if _additive:
 		modulate = Color(1, 1, 1, 0.82)
+	elif spec.has("alpha"):
+		modulate = Color(1, 1, 1, float(spec["alpha"]))
 
 
 ## A lingering (looping) strip leaves when its tile does: quick fade, then free.
@@ -132,6 +134,11 @@ func retarget(spec: Dictionary) -> void:
 		position = spec["pos"]
 	if spec.has("z"):
 		z_index = int(spec["z"])
+	if spec.has("scale"):
+		var s := float(spec["scale"])
+		scale = Vector2(s, s)
+	if spec.has("alpha") and not _additive:
+		modulate.a = float(spec["alpha"])
 
 
 func release() -> void:

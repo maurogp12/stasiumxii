@@ -579,6 +579,8 @@ func legal_intents(seat: int) -> Array:
 			continue
 		if int(actor.get("mp", 0)) < int(def.get("mp", 0)):
 			continue
+		if str(spell_id) == SpellKits.PLANT and _plant_at_cap(actor, def):
+			continue
 		var target_kind := str(def.get("target", "enemy"))
 		if target_kind == "self":
 			if bool(def.get("once_per_turn", false)) and bool(actor.get("ward_used", false)):
@@ -941,6 +943,8 @@ func range_highlight_cells(seat: int, spell_id: String) -> Array:
 				out.append(intent["to"])
 		return out
 	var from: Vector2i = actor["pos"]
+	if spell_id == SpellKits.PLANT and _plant_at_cap(actor, def):
+		return out
 	if spell_id == SpellKits.AMBUSH:
 		var origin_cell := _ambush_range_origin(actor)
 		if origin_cell == UNPLACED:
@@ -1736,6 +1740,8 @@ func _preview_reason(def: Dictionary, actor: Dictionary, target: Dictionary, fro
 			return "destination_occupied"
 		return ""
 	if target_kind == "tile":
+		if spell_id == SpellKits.PLANT and _plant_at_cap(actor, def):
+			return "plant_limit"
 		if spell_id == SpellKits.PLANT and _tile_has_plant(to_cell):
 			return "flag_present"
 		return ""
@@ -1797,7 +1803,10 @@ func _preview_kit_lines(spell_id: String) -> Dictionary:
 			return {"on_connect": "Blocked tile for %d Bastion turn-starts. Spends %d Aegis. Every enemy next to the wall gets this element's Residue. On your own wall: knocks it down, +%d Aegis back." % [int(wall.get("wall_turns", 0)), wall_spend, wall_spend], "on_miss": "No roll."}
 		SpellKits.PLANT:
 			var plant: Dictionary = SpellKits.spell(SpellKits.PLANT)
-			return {"on_connect": "Flag for %d turns. +%d Aegis. Enemies next to you get this element's Residue." % [int(plant.get("plant_turns", 0)), int(plant.get("gain_aegis", 0))], "on_miss": "No roll."}
+			var lone := int(plant.get("plant_turns", 1))
+			var wall := int(plant.get("plant_wall_turns", 3))
+			var per := int(plant.get("plants_per_turn", 3))
+			return {"on_connect": "Flag for %d %s, or %d %s in a wall. Max %d per turn. +%d Aegis. Enemies next to you get this element's Residue." % [lone, _turn_word(lone), wall, _turn_word(wall), per, int(plant.get("gain_aegis", 0))], "on_miss": "No roll."}
 		SpellKits.FADE:
 			return {"on_connect": "Invisible. Enemies next to you get this element's Residue. Your position is not sent.", "on_miss": "No roll."}
 		SpellKits.VAULT:
@@ -2621,6 +2630,7 @@ func _make_unit(seat: int, class_id: String, unit_name: String, element: String,
 		"pulse_cap": SpellKits.PULSE_CAP if class_id == SpellKits.CLASS_MENDER else 0,
 		"aegis": 0,
 		"aegis_cap": SpellKits.AEGIS_CAP if class_id == SpellKits.CLASS_BASTION else 0,
+		"plants_this_turn": 0,
 		# shade bool mirrors shades > 0. Tokens live on the board (max 2).
 		"shade": false,
 		"shades": 0,
@@ -4895,6 +4905,7 @@ func _begin_unit_turn(unit: Dictionary) -> void:
 	unit["advance_uses"] = 0
 	unit["vault_used"] = false
 	unit["ward_used"] = false
+	unit["plants_this_turn"] = 0
 	_tick_traps(unit)
 	_tick_foe_cooldowns(unit)
 	_tick_spell_cooldowns(unit)
@@ -8417,21 +8428,31 @@ func _resolve_empty_tile(intent: Dictionary, actor: Dictionary, def: Dictionary,
 
 
 func _resolve_plant(intent: Dictionary, actor: Dictionary, def: Dictionary, dest: Vector2i, ap_cost: int, mp_cost: int) -> Dictionary:
-	# One flag per tile. A second Plant on the same cell spends nothing.
+	# The per-turn cap spends nothing. A second flag on the same tile spends nothing.
+	if _plant_at_cap(actor, def):
+		var cap := int(def.get("plants_per_turn", 3))
+		return _reject(intent, "plant_limit", "REJECT — Plant is limited to %d per turn." % cap)
 	if _tile_has_plant(dest):
 		return _reject(intent, "flag_present", "REJECT — that tile already has a flag (refund).")
 	var caster_cell: Vector2i = actor["pos"]
 	actor["ap"] = int(actor["ap"]) - ap_cost
 	_spend_mp(actor, mp_cost)
+	actor["plants_this_turn"] = int(actor.get("plants_this_turn", 0)) + 1
 	var gained := _gain_resource(actor, "aegis", int(def.get("gain_aegis", 0)))
 	_plant_tiles.append({
 		"pos": dest,
-		"turns": int(def.get("plant_turns", 3)),
+		"turns": int(def.get("plant_turns", 1)),
 		"owner_seat": int(actor["seat"]),
 		"push_resist": true,
+		"walled": false,
 	})
+	_link_plant_walls()
+	var placed := _plant_at(dest)
+	var planted_turns := int(placed.get("turns", int(def.get("plant_turns", 1))))
+	var planted_wall := bool(placed.get("walled", false))
 	_intent_log.append(intent)
-	_last_coach = "%s Plant on %s (−%d AP). +%d Aegis." % [actor["name"], _cell_text(dest), ap_cost, gained]
+	var kind := "wall" if planted_wall else "banner"
+	_last_coach = "%s Plant on %s (−%d AP). +%d Aegis. %s, %d %s." % [actor["name"], _cell_text(dest), ap_cost, gained, kind.capitalize(), planted_turns, _turn_word(planted_turns)]
 	var plant_event := {
 		"type": "cast",
 		"spell": SpellKits.PLANT,
@@ -8442,6 +8463,8 @@ func _resolve_plant(intent: Dictionary, actor: Dictionary, def: Dictionary, dest
 		"ap_spent": ap_cost,
 		"mp_spent": mp_cost,
 		"engine_gained": gained,
+		"turns": planted_turns,
+		"walled": planted_wall,
 		"coach": _last_coach,
 	}
 	# Around Bastion, not the flag.
@@ -9454,6 +9477,7 @@ func _placed_token_snapshot(items: Array, include_resist: bool) -> Array:
 		}
 		if include_resist:
 			rec["push_resist"] = bool(token.get("push_resist", false))
+			rec["walled"] = bool(token.get("walled", false))
 		if token.has("opponent_turns_completed"):
 			rec["opponent_turns_completed"] = int(token.get("opponent_turns_completed", 0))
 		out.append(rec)
@@ -9474,6 +9498,8 @@ func _restore_placed_tokens(into: Array, raw: Variant) -> void:
 		}
 		if rec.has("push_resist"):
 			token["push_resist"] = bool(rec.get("push_resist", false))
+		if rec.has("walled"):
+			token["walled"] = bool(rec.get("walled", false))
 		if rec.has("opponent_turns_completed"):
 			token["opponent_turns_completed"] = int(rec.get("opponent_turns_completed", 0))
 		into.append(token)
@@ -9584,7 +9610,10 @@ func _decay_board_durations(unit: Dictionary) -> void:
 		if int(tile["turns"]) > 0:
 			plants.append(tile)
 		else:
+			var walled := bool(tile.get("walled", false))
 			_emit_expire("plant", tile["pos"], int(tile.get("owner_seat", -1)))
+			if walled and not _last_events.is_empty():
+				_last_events[_last_events.size() - 1]["walled"] = true
 	_plant_tiles = plants
 	_sync_shade_flags()
 
@@ -9648,10 +9677,53 @@ func _bastion_in_match() -> bool:
 
 
 func _tile_has_plant(cell: Vector2i) -> bool:
+	return not _plant_at(cell).is_empty()
+
+
+func _plant_at(cell: Vector2i) -> Dictionary:
 	for item in _plant_tiles:
-		if (item as Dictionary).get("pos") == cell:
-			return true
-	return false
+		var tile: Dictionary = item
+		if tile.get("pos") == cell:
+			return tile
+	return {}
+
+
+func _plant_at_cap(actor: Dictionary, def: Dictionary) -> bool:
+	var cap := int(def.get("plants_per_turn", 0))
+	if cap <= 0:
+		return false
+	return int(actor.get("plants_this_turn", 0)) >= cap
+
+
+func _turn_word(turns: int) -> String:
+	return "turn" if turns == 1 else "turns"
+
+
+## Orthogonal Plant banners (not diagonals) become a wall. A banner that
+## joins keeps the wall clock from then on, even if a neighbour later expires.
+## An already-walled banner does not restart its clock.
+func _link_plant_walls() -> void:
+	var wall_turns := int(SpellKits.spell(SpellKits.PLANT).get("plant_wall_turns", 3))
+	var index := {}
+	for item in _plant_tiles:
+		var tile: Dictionary = item
+		var cell: Vector2i = tile["pos"]
+		index["%d,%d" % [cell.x, cell.y]] = tile
+	for item in _plant_tiles:
+		var tile: Dictionary = item
+		if bool(tile.get("walled", false)):
+			continue
+		var cell: Vector2i = tile["pos"]
+		var linked := false
+		for step in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+			var next: Vector2i = cell + step
+			if index.has("%d,%d" % [next.x, next.y]):
+				linked = true
+				break
+		if not linked:
+			continue
+		tile["walled"] = true
+		tile["turns"] = maxi(int(tile.get("turns", 0)), wall_turns)
 
 
 func _plant_blocks_sight(cell: Vector2i) -> bool:

@@ -8,6 +8,13 @@ const PLAYBACK := "res://art/vfx/spells/playback.json"
 const STAMP := preload("res://vfx/vfx_stamp.gd")
 const MOTION := preload("res://units/view_motion.gd")
 
+## Standing Plant banners. The authored idle scale stays in playback.json.
+## These multiply that scale and set the cloth alpha so tiles and fighters
+## behind the flag stay readable. Snap Wall does not use them.
+const PLANT_BANNER_SCALE := 0.70
+const PLANT_BANNER_ALPHA := 0.55
+const PLANT_BANNER_BEHIND_ALPHA := 0.32
+
 ## Melee contact art waits for the same resolve as the hit flash.
 const CONTACT := {
 	"strike_axes": true,
@@ -74,7 +81,7 @@ static func linger_specs(snapshot: Dictionary) -> Dictionary:
 		if typeof(raw) == TYPE_DICTIONARY:
 			by_id[str(raw.get("id", ""))] = raw
 	var wanted := {}
-	_linger_tiles(wanted, by_id.get("plant_banner_idle", {}), snapshot.get("plant_tiles", []), "plant_banner")
+	_linger_plant_banners(wanted, by_id.get("plant_banner_idle", {}), snapshot)
 	_linger_tiles(wanted, by_id.get("snap_wall_block", {}), snapshot.get("blocked_tiles", []), "snap_wall")
 	_linger_tiles(wanted, by_id.get("snare_trap_token", {}), snapshot.get("trap_tiles_visible", []), "snare_token")
 	var ward: Dictionary = by_id.get("ward_shell_loop", {})
@@ -216,6 +223,41 @@ static func _element_recipe(accent: Dictionary, event: Dictionary, cell: Vector2
 		"seat": int(event.get("target_seat", -1)),
 		"cell": cell,
 	}
+
+
+static func _linger_plant_banners(wanted: Dictionary, spec: Variant, snapshot: Dictionary) -> void:
+	if typeof(spec) != TYPE_DICTIONARY or (spec as Dictionary).is_empty():
+		return
+	var raw: Variant = snapshot.get("plant_tiles", [])
+	if typeof(raw) != TYPE_ARRAY:
+		return
+	var units: Array = snapshot.get("units", []) if snapshot.get("units", []) is Array else []
+	for item in raw:
+		if typeof(item) != TYPE_DICTIONARY:
+			continue
+		var rec: Dictionary = item
+		var cell := _cell(rec.get("pos", Vector2i(int(rec.get("x", 0)), int(rec.get("y", 0)))))
+		var seat := int(rec.get("owner_seat", -1))
+		var payload := _linger_payload(spec, cell, seat)
+		payload["scale"] = float(payload.get("scale", 1.0)) * PLANT_BANNER_SCALE
+		payload["alpha"] = PLANT_BANNER_BEHIND_ALPHA if _banner_has_unit_behind(cell, units) else PLANT_BANNER_ALPHA
+		wanted["plant_banner:%d,%d" % [cell.x, cell.y]] = payload
+
+
+## A fighter on the flag, or on a tile the cloth rises over, fades the banner
+## further. Iso screen-up is the lower x+y, so the orthogonal steps toward
+## smaller x or smaller y sit behind the hanging cloth.
+static func _banner_has_unit_behind(cell: Vector2i, units: Array) -> bool:
+	var covered := [cell, cell + Vector2i(-1, 0), cell + Vector2i(0, -1)]
+	for raw in units:
+		if typeof(raw) != TYPE_DICTIONARY:
+			continue
+		var unit: Dictionary = raw
+		if not bool(unit.get("alive", true)):
+			continue
+		if covered.has(_cell(unit.get("pos", Vector2i(-999, -999)))):
+			return true
+	return false
 
 
 static func _linger_tiles(wanted: Dictionary, spec: Variant, raw: Variant, prefix: String) -> void:

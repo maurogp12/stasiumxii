@@ -40,6 +40,7 @@ func _run() -> void:
 	_test_shake_only_crush_and_aegis()
 	_test_crit_hit()
 	_test_trap_spring()
+	_test_plant_banner_readability()
 	_test_hold_line_ambush_intercept_expire()
 	_test_support_and_absorb()
 	_test_stacks_and_lock_cap()
@@ -700,6 +701,35 @@ func _test_trap_spring() -> void:
 		"damage": 0,
 	}])
 	eq(_has(crush_miss, "shake"), false, "a Crush miss does not shake")
+
+
+func _test_plant_banner_readability() -> void:
+	var art: Script = load("res://vfx/spell_art.gd")
+	eq(is_equal_approx(float(art.PLANT_BANNER_SCALE), 0.70), true, "Plant banners draw at 70% of the authored size")
+	eq(float(art.PLANT_BANNER_ALPHA) >= 0.50 and float(art.PLANT_BANNER_ALPHA) <= 0.60, true, "Plant banners sit around half opacity")
+	eq(float(art.PLANT_BANNER_BEHIND_ALPHA) < float(art.PLANT_BANNER_ALPHA), true, "a fighter behind a banner fades it further")
+	var tokens: Dictionary = art.linger_specs({
+		"plant_tiles": [
+			{"pos": Vector2i(4, 4), "owner_seat": 0},
+			{"pos": Vector2i(6, 4), "owner_seat": 0},
+		],
+		"blocked_tiles": [{"pos": Vector2i(2, 2), "owner_seat": 0}],
+		"units": [{"pos": Vector2i(3, 4), "alive": true, "seat": 1}],
+	})
+	var behind: Dictionary = tokens.get("plant_banner:4,4", {})
+	var clear: Dictionary = tokens.get("plant_banner:6,4", {})
+	var wall: Dictionary = tokens.get("snap_wall:2,2", {})
+	eq(behind.is_empty(), false, "a Plant tile still lingers")
+	eq(is_equal_approx(float(behind.get("alpha", -1.0)), float(art.PLANT_BANNER_BEHIND_ALPHA)), true, "a unit on the behind tile fades the banner")
+	eq(is_equal_approx(float(clear.get("alpha", -1.0)), float(art.PLANT_BANNER_ALPHA)), true, "an open banner keeps the standing alpha")
+	eq(is_equal_approx(float(clear.get("scale", 0.0)), 0.594 * float(art.PLANT_BANNER_SCALE)), true, "the banner scale is the authored idle times 0.70")
+	eq(is_equal_approx(float(wall.get("scale", 0.0)), 0.569), true, "Snap Wall keeps its authored scale")
+	eq(wall.has("alpha"), false, "Snap Wall is not faded with the banners")
+	var on_flag: Dictionary = art.linger_specs({
+		"plant_tiles": [{"pos": Vector2i(4, 4), "owner_seat": 0}],
+		"units": [{"pos": Vector2i(4, 4), "alive": true, "seat": 0}],
+	}).get("plant_banner:4,4", {})
+	eq(is_equal_approx(float(on_flag.get("alpha", -1.0)), float(art.PLANT_BANNER_BEHIND_ALPHA)), true, "a unit standing on the flag fades the banner")
 
 
 func _test_hold_line_ambush_intercept_expire() -> void:

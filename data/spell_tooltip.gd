@@ -49,6 +49,10 @@ static func card_lines(preview: Dictionary) -> PackedStringArray:
 	var duration := _duration_line(str(preview.get("spell_id", "")))
 	if duration != "":
 		lines.append(duration)
+	if spell_id == SpellKits.PLANT:
+		var per_turn := int(kit.get("plants_per_turn", 0))
+		if per_turn > 0:
+			lines.append("Max %d per turn" % per_turn)
 	if bool(preview.get("would_stun", false)):
 		lines.append("Stun")
 	lines.append_array(_aegis_card_lines(spell_id))
@@ -111,7 +115,10 @@ static func _duration_line(spell_id: String) -> String:
 	var def: Dictionary = SpellKits.SPELLS.get(spell_id, {})
 	for key in ["trap_turns", "shade_turns", "plant_turns", "wall_turns"]:
 		if def.has(key):
-			return "Dur %d turns" % int(def[key])
+			var turns := int(def[key])
+			if turns == 1:
+				return "Dur 1 turn"
+			return "Dur %d turns" % turns
 	return ""
 
 
@@ -245,7 +252,10 @@ static func simple_lines(spell_id: String, preview: Dictionary = {}) -> PackedSt
 		SpellKits.BASH:
 			out.append("Hit an enemy next to you with your shield for %d damage. Hit = %s." % [dmg, _aegis_gain_text(def)])
 		SpellKits.PLANT:
-			out.append("Plant your flag on a tile. %s. Stand on it and the first push against you does nothing. Shots cannot pass through the flag. Lasts %d turns." % [_aegis_gain_text(def), int(def.get("plant_turns", 3))])
+			var lone := int(def.get("plant_turns", 1))
+			var wall := int(def.get("plant_wall_turns", 3))
+			var per_turn := int(def.get("plants_per_turn", 3))
+			out.append("Plant your flag on a tile. %s. Stand on it and the first push against you does nothing. Shots cannot pass through the flag. A banner on its own lasts %d %s. Banners that form a wall last %d %s. Max %d per turn." % [_aegis_gain_text(def), lone, "turn" if lone == 1 else "turns", wall, "turn" if wall == 1 else "turns", per_turn])
 		SpellKits.HOLD_LINE:
 			out.append("Yank one enemy up to %d tiles straight toward you for %d damage. They must stand in a straight line from you, same row or same column, with nothing blocking the tiles between you. A wall, a rock, a Plant flag, a Snap Wall, or another fighter in the way is not a target. They stop next to you. Hit %s." % [int(def.get("pull_cells", 4)), dmg, _aegis_gain_text(def)])
 		SpellKits.SNAP_WALL:
