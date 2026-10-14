@@ -10876,6 +10876,35 @@ func _test_air_blends() -> void:
 	eq(str(_first_event_where(steam_far.get("events", []), "blend").get("blend", "")), "steam", "the far Steam still fires")
 	eq(bool(_unit(1).get("invisible", false)), true, "Steam does not reveal Gloam 2 tiles from the landing")
 
+	# Video, 14 Oct 2026 (0.1.198). Ironjaw stood on (12,10). Shoulder hung,
+	# then Strike — the second spell — landed on (12,9). Gloam stood on (10,6).
+	# Chebyshev from that landing is 3, so Flare reveals him. The same caster
+	# with Gloam 5 tiles from the landing (and 4 from Ironjaw) does not.
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1, 1], "classes": ["ironjaw", "gloam"], "positions": [Vector2i(12, 10), Vector2i(10, 6)], "gloam_invisible": true})
+	_live_unit(0)["spell_elements"] = {"strike": "fire", "shoulder": "air", "crush": "fire", "advance": "air"}
+	var video_hang: Dictionary = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(12, 9), "seat": 0})
+	eq(bool(video_hang.get("ok", false)), true, "the video Shoulder into (12,9) hangs")
+	eq(bool(_unit(1).get("invisible", false)), true, "the hang on (12,9) does not reveal Gloam")
+	eq(_sim.chebyshev(Vector2i(12, 9), _unit(1)["pos"]), 3, "Gloam on (10,6) is 3 tiles from the second landing")
+	eq(_sim.chebyshev(_unit(0)["pos"], _unit(1)["pos"]), 4, "Gloam is 4 tiles from Ironjaw on (12,10)")
+	var video_flare: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(12, 9), "seat": 0})
+	var video_row := _first_event_where(video_flare.get("events", []), "blend")
+	eq(str(video_row.get("blend", "")), "flare", "Strike on the hanging Shoulder is Flare")
+	eq(video_row.get("to", Vector2i.ZERO), Vector2i(12, 9), "Flare is measured from the Strike tile (12,9)")
+	eq(video_row.get("revealed", []), [1], "Flare reveals Gloam 3 tiles from (12,9)")
+	eq(bool(_unit(1).get("invisible", true)), false, "Gloam on (10,6) is visible after that Flare")
+	var video_coach := str(video_flare.get("snapshot", {}).get("coach", ""))
+	truthy(video_coach.contains("(12,9)") and video_coach.contains("Fade cooldown 1"), "the video coach names (12,9) and the Fade cooldown: %s" % video_coach)
+
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1, 1], "classes": ["ironjaw", "gloam"], "positions": [Vector2i(12, 10), Vector2i(12, 14)], "gloam_invisible": true})
+	_live_unit(0)["spell_elements"] = {"strike": "fire", "shoulder": "air", "crush": "fire", "advance": "air"}
+	_sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(12, 9), "seat": 0})
+	eq(_sim.chebyshev(Vector2i(12, 9), _unit(1)["pos"]), 5, "this Gloam is 5 tiles from the landing")
+	eq(_sim.chebyshev(_unit(0)["pos"], _unit(1)["pos"]), 4, "and 4 tiles from the caster")
+	var video_far: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(12, 9), "seat": 0})
+	eq(str(_first_event_where(video_far.get("events", []), "blend").get("blend", "")), "flare", "the far video cast still fires Flare")
+	eq(bool(_unit(1).get("invisible", false)), true, "Flare does not reveal Gloam 5 tiles from the landing")
+
 	# The hang lasts through the next own turn, then drops.
 	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "classes": ["ironjaw", "kestrel"], "positions": [Vector2i(5, 5), Vector2i(8, 5)]})
 	_live_unit(0)["spell_elements"] = {"strike": "air", "shoulder": "fire", "crush": "fire", "advance": "air"}
