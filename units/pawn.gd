@@ -903,15 +903,40 @@ func sample_driven_gait(t: float) -> void:
 
 ## Facing is already the segment letter. A short lean, then the tween.
 ## The pawn node does not move. Frame 0 stays up so the settle is not a slide.
+## Foes take a longer, readable gather: heroes stay on the 2px settle.
 func sample_step_anticipation(t: float) -> void:
 	if VIEW_MOTION.reduce_motion() or not is_inside_tree():
 		return
 	_kill_bounce()
 	var lean := VIEW_MOTION.step_anticipation_offset(t, facing_screen())
+	if stasis_sprite != "":
+		lean = _foe_step_gather(t)
 	_place_body(lean)
 	_ride_chrome(Vector2.ZERO)
 	_hold_walk_contact()
-	_reset_walk_scale()
+	if stasis_sprite == "":
+		_reset_walk_scale()
+		return
+	var u := sin(clampf(t, 0.0, 1.0) * PI)
+	var face := facing_screen()
+	var dir_x := signf(face.x) if absf(face.x) > 0.01 else 1.0
+	var coil := u * (1.0 if stasis_boss else 0.78)
+	_set_foe_body(-dir_x * 0.26 * coil, 0.10 * coil)
+	_apply_sprite_mul(Vector2(1.0 + 0.16 * coil, 1.0 - 0.18 * coil))
+
+
+## Lean back and crouch before the foot leaves. Zero at both ends.
+func _foe_step_gather(t: float) -> Vector2:
+	var u := sin(clampf(t, 0.0, 1.0) * PI)
+	if u <= 0.0:
+		return Vector2.ZERO
+	var face := facing_screen()
+	var back := FOE_BOSS_GATHER_PX if stasis_boss else FOE_GATHER_PX
+	var crouch := FOE_BOSS_GATHER_CROUCH if stasis_boss else FOE_GATHER_CROUCH
+	var lean := Vector2(0.0, crouch * u)
+	if face.length_squared() >= 1.0:
+		lean += -face.normalized() * back * u
+	return lean
 
 
 func _apply_driven_cycle(t: float) -> void:
@@ -1780,6 +1805,24 @@ const FOE_KIND := {
 ## Max lean of a foe body into a lunge / away from a blow (UV shear per height).
 const FOE_LEAN := 0.16
 const FOE_HIT_LEAN := 0.12
+## Phone-readable life (Mauro: the last pass did not show). World pixels and
+## shader shear, big enough at board zoom, still a weight shift rather than a hop.
+const FOE_IDLE_SWAY := 14.0
+const FOE_IDLE_BOB := 7.0
+const FOE_BOSS_IDLE_SWAY := 20.0
+const FOE_BOSS_IDLE_BOB := 10.0
+const FOE_IDLE_SWAY_SEC := 1.55
+const FOE_IDLE_BOB_SEC := 1.12
+const FOE_BOSS_IDLE_SWAY_SEC := 1.9
+const FOE_BOSS_IDLE_BOB_SEC := 1.4
+const FOE_GATHER_PX := 16.0
+const FOE_BOSS_GATHER_PX := 26.0
+const FOE_GATHER_CROUCH := 8.0
+const FOE_BOSS_GATHER_CROUCH := 12.0
+const FOE_ATTACK_COIL_PX := 26.0
+const FOE_BOSS_ATTACK_COIL_PX := 38.0
+const FOE_ATTACK_FOLLOW_PX := 14.0
+const FOE_BOSS_ATTACK_FOLLOW_PX := 22.0
 
 
 static func foe_body_for(art_path: String, boss: bool = false) -> Dictionary:
@@ -1787,6 +1830,7 @@ static func foe_body_for(art_path: String, boss: bool = false) -> Dictionary:
 	var body: Dictionary = (FOE_BODY[entry[0]] as Dictionary).duplicate()
 	body["kind"] = entry[0]
 	body["faces"] = entry[1]
+	body["boss"] = boss
 	if boss:
 		body["breath"] = float(body["breath"]) * 1.25
 		body["rate"] = float(body["rate"]) * 0.75
@@ -2019,32 +2063,32 @@ static func foe_gait(kind: String, boss: bool, t: float, dir_x: float) -> Dictio
 	var arc := sin(u * PI)
 	var land := clampf((u - 0.78) / 0.22, 0.0, 1.0)
 	var land_squash := sin(land * PI)
-	# Gather before the foot leaves. Zero at the seam and gone by the
-	# middle of the tile, so the bound at mid-stride stays the same.
+	# Gather before the foot leaves. Zero at the seam and gone before
+	# mid-stride, so the bound at the middle of the tile stays the bound.
 	var wind := 0.0
-	if u > 0.0 and u < 0.18:
-		wind = sin(u / 0.18 * PI)
+	if u > 0.0 and u < 0.28:
+		wind = sin(u / 0.28 * PI)
 	var lean := 0.0
 	var squash := 0.0
 	var off := Vector2.ZERO
 	match kind:
 		"beast":
-			off = Vector2(-dir_x * 3.4 * wind, -7.0 * arc)
-			lean = dir_x * 0.11 * arc - dir_x * 0.09 * wind
-			squash = 0.05 * land_squash - 0.03 * arc
+			off = Vector2(-dir_x * 14.0 * wind, -12.0 * arc)
+			lean = dir_x * 0.18 * arc - dir_x * 0.22 * wind
+			squash = 0.08 * land_squash - 0.04 * arc
 		"crawler":
-			off = Vector2(sin(u * TAU * 2.0) * 1.6 - dir_x * 1.5 * wind, -2.0 * absf(sin(u * TAU)))
-			lean = dir_x * 0.05 + sin(u * TAU * 2.0) * 0.03 - dir_x * 0.04 * wind
-			squash = 0.03 * absf(sin(u * TAU))
+			off = Vector2(sin(u * TAU * 2.0) * 3.4 - dir_x * 6.0 * wind, -2.0 * absf(sin(u * TAU)))
+			lean = dir_x * 0.08 + sin(u * TAU * 2.0) * 0.05 - dir_x * 0.10 * wind
+			squash = 0.04 * absf(sin(u * TAU))
 		"flyer":
-			off = Vector2(-dir_x * 2.2 * wind, -2.5 * arc)
-			lean = dir_x * 0.13 * arc - dir_x * 0.05 * wind
+			off = Vector2(-dir_x * 8.0 * wind, -6.0 * arc)
+			lean = dir_x * 0.16 * arc - dir_x * 0.14 * wind
 		_:
 			var heavy := 1.85 if boss else 1.0
-			var crouch := (3.2 if boss else 1.8) * wind
-			off = Vector2(-dir_x * (4.2 if boss else 2.4) * wind, -3.5 * arc * (0.8 if boss else 1.0) + crouch)
-			lean = dir_x * 0.06 * arc - dir_x * (0.08 if boss else 0.05) * wind
-			squash = 0.09 * heavy * land_squash
+			var crouch := (14.0 if boss else 8.0) * wind
+			off = Vector2(-dir_x * (20.0 if boss else 12.0) * wind, -8.0 * arc * (0.7 if boss else 1.0) + crouch)
+			lean = dir_x * 0.16 * arc - dir_x * (0.26 if boss else 0.18) * wind
+			squash = 0.18 * heavy * land_squash
 	return {"offset": off, "lean": lean, "squash": squash}
 
 
@@ -2058,13 +2102,20 @@ func _apply_foe_gait(t: float) -> void:
 		_boss_tile += 1
 	_boss_last_t = t
 	if _boss_frame("walk", t, true):
-		gait = {"offset": gait["offset"] * 0.25, "lean": float(gait["lean"]) * 0.3, "squash": float(gait["squash"]) * 0.3}
+		# The sheet already steps. Keep the gather and the whole land;
+		# only quiet the mid-stride hop so the painted feet stay near the tile.
+		var off: Vector2 = gait["offset"]
+		off.y *= 0.8
+		gait = {"offset": off, "lean": float(gait["lean"]), "squash": float(gait["squash"])}
 	_place_body(gait["offset"])
 	_ride_chrome(Vector2.ZERO)
-	_apply_sprite_mul(Vector2.ONE)
-	_set_foe_body(float(gait["lean"]), float(gait["squash"]))
+	var sq := clampf(float(gait["squash"]), -0.2, 0.55)
+	# Camera stays still. The body itself widens and drops on the plant.
+	_apply_sprite_mul(Vector2(1.0 + maxf(sq, 0.0) * 0.7, 1.0 - maxf(sq, 0.0) * 0.55))
+	_set_foe_body(float(gait["lean"]), sq)
 	if t >= 1.0:
 		_set_foe_body(0.0, 0.0)
+		_apply_sprite_mul(Vector2.ONE)
 
 
 func _apply_sprite_mul(mul: Vector2) -> void:
@@ -2110,7 +2161,7 @@ func _sample_attack(t: float, dir: Vector2, reach: float = -1.0) -> void:
 		return
 	var pose: Dictionary = VIEW_MOTION.attack_pose(t, dir, reach)
 	_boss_frame("attack", t)
-	_apply_body_pose(pose, t)
+	_apply_body_pose(pose, t, true)
 	_sync_impact_freeze(t, false)
 	_place_gesture(VIEW_MOTION.attack_phase(t), dir, pose.get("pos", Vector2.ZERO))
 
@@ -2127,20 +2178,41 @@ func _sample_cast(t: float, dir: Vector2 = Vector2.ZERO) -> void:
 	_place_gesture(VIEW_MOTION.cast_phase(t), aim, pose.get("pos", Vector2.ZERO))
 
 
-func _apply_body_pose(pose: Dictionary, t: float = -1.0) -> void:
+func _apply_body_pose(pose: Dictionary, t: float = -1.0, attack: bool = false) -> void:
 	var pos: Vector2 = pose.get("pos", Vector2.ZERO)
 	var mul: Vector2 = pose.get("scale", Vector2.ONE)
 	# A foe painting has no attack sheet: the body winds back, then throws its
-	# weight into the lunge instead of sliding as a flat card.
-	if stasis_sprite != "":
+	# weight past the hit and settles. Heroes keep the shared pose.
+	if stasis_sprite != "" and attack:
+		var raw: Vector2 = pos
+		var aim := Vector2.ZERO
+		if raw.length_squared() > 0.25:
+			# The shared pose points backward during the coil and forward after.
+			aim = -raw.normalized() if t < 0.20 else raw.normalized()
+		var coil := 0.0
+		if t > 0.0 and t < 0.24:
+			coil = sin(t / 0.24 * PI)
+		var punch := 0.0
+		if t >= 0.18 and t < 0.76:
+			punch = sin((t - 0.18) / 0.58 * PI)
+		var back_px := (FOE_BOSS_ATTACK_COIL_PX if stasis_boss else FOE_ATTACK_COIL_PX) * coil
+		var thru_px := (FOE_BOSS_ATTACK_FOLLOW_PX if stasis_boss else FOE_ATTACK_FOLLOW_PX) * punch
+		pos = raw - aim * back_px + aim * thru_px
+		var crouch := 0.34 if stasis_boss else 0.26
+		var widen := 0.18 if stasis_boss else 0.14
+		mul = Vector2(1.0 + widen * coil - 0.08 * punch, 1.0 - crouch * coil + 0.16 * punch)
+		var lean_x := clampf(pos.x / maxf(VIEW_MOTION.ATTACK_LUNGE_PX, 1.0), -1.25, 1.25)
+		_set_foe_body(lean_x * (0.34 if stasis_boss else 0.26), maxf(1.0 - mul.y, 0.0) * 0.65)
+	elif stasis_sprite != "":
 		var wind := 0.0
 		if t > 0.0 and t < 0.24:
 			wind = sin(t / 0.24 * PI)
-		var extra := (11.0 if stasis_boss else 7.0) * wind
+		var extra := (16.0 if stasis_boss else 10.0) * wind
 		if pos.length_squared() > 1.0:
-			pos -= pos.normalized() * extra
-		_set_foe_body(clampf(pos.x / maxf(VIEW_MOTION.ATTACK_LUNGE_PX, 1.0), -1.0, 1.0) * FOE_LEAN, (1.0 - mul.y) * 0.3)
-		mul = Vector2.ONE.lerp(mul, 0.35)
+			# Dip poses point down. Push further along that crouch, not against it.
+			pos += pos.normalized() * extra
+		_set_foe_body(clampf(pos.x / maxf(VIEW_MOTION.ATTACK_LUNGE_PX, 1.0), -1.0, 1.0) * FOE_LEAN, (1.0 - mul.y) * 0.45)
+		mul = Vector2.ONE.lerp(mul, 0.65)
 	var scaled := _body_scale_mul(mul)
 	_ride_chrome(Vector2.ZERO)
 	if _sprite != null and is_instance_valid(_sprite):
@@ -2496,11 +2568,12 @@ func _sample_idle(_t: float) -> void:
 	var now := Time.get_ticks_msec() / 1000.0
 	var bob := Vector2(0.0, sin((now + phase) * TAU / VIEW_MOTION.IDLE_PERIOD) * VIEW_MOTION.IDLE_BOB_PX)
 	if stasis_sprite != "":
-		bob = foe_idle_offset(foe_body_for(stasis_sprite, stasis_boss), now + phase)
-		# A boss idle sheet already breathes. Keep a smaller weight shift
-		# on top of those frames.
-		if _boss_rest(now + phase):
-			bob *= 0.4
+		var body := foe_body_for(stasis_sprite, stasis_boss)
+		bob = foe_idle_offset(body, now + phase)
+		# A boss idle sheet changes frames. The node still breathes and
+		# shifts weight; the shader breath stays off so it is not doubled.
+		_boss_rest(now + phase)
+		_sprite.scale = _body_scale_mul(foe_idle_scale(body, now + phase))
 	# The painted idle breathes in its own cells. No sprite bob on top.
 	if stasis_sprite == "" and _show_painted_idle():
 		bob = Vector2.ZERO
@@ -2513,15 +2586,29 @@ func _sample_idle(_t: float) -> void:
 		_foot.queue_redraw()
 
 
-## Foe idle body offset: flyers (already raised by their sprite offset) rise,
-## sink and drift; walkers shift their weight a little.
+## Foe idle body offset: flyers drift, walkers shift their weight. The
+## cycle is about a second so a phone can see one breath without staring.
 static func foe_idle_offset(body: Dictionary, t: float) -> Vector2:
+	var boss := bool(body.get("boss", false))
+	var sway_sec := FOE_BOSS_IDLE_SWAY_SEC if boss else FOE_IDLE_SWAY_SEC
+	var bob_sec := FOE_BOSS_IDLE_BOB_SEC if boss else FOE_IDLE_BOB_SEC
 	var hover := float(body.get("hover", 0.0))
 	if hover > 0.0:
-		return Vector2(sin(t * 1.1) * 2.2, -sin(t * TAU / 2.4) * hover * 0.45)
-	var bob := float(body.get("bob", VIEW_MOTION.IDLE_BOB_PX))
-	var sway := 2.2 if str(body.get("kind", "")) == "brute" else 1.5
-	return Vector2(sin(t * 1.35) * sway, sin(t * TAU / VIEW_MOTION.IDLE_PERIOD) * bob)
+		var drift := 14.0 if boss else 10.0
+		return Vector2(sin(t * TAU / sway_sec) * drift, -sin(t * TAU / bob_sec) * maxf(hover, 8.0))
+	var brute := str(body.get("kind", "")) == "brute"
+	var sway := FOE_BOSS_IDLE_SWAY if boss else (FOE_IDLE_SWAY if brute else 10.0)
+	var bob := FOE_BOSS_IDLE_BOB if boss else (FOE_IDLE_BOB if brute else 5.0)
+	return Vector2(sin(t * TAU / sway_sec) * sway, sin(t * TAU / bob_sec) * bob)
+
+
+## Scale breath from the feet. Positive k rises and narrows.
+static func foe_idle_scale(body: Dictionary, t: float) -> Vector2:
+	var boss := bool(body.get("boss", false))
+	var period := FOE_BOSS_IDLE_BOB_SEC if boss else FOE_IDLE_BOB_SEC
+	var k := sin(t * TAU / period)
+	var lift := (0.11 if boss else 0.07) * k
+	return Vector2(1.0 - lift * 0.45, 1.0 + lift)
 
 
 func _stop_idle() -> void:

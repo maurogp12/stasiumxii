@@ -2125,7 +2125,7 @@ func _animate_path(seat: int, path: Array, origin: Vector2i = Vector2i(-1, -1)) 
 			_walk_tween.tween_callback(_arm_path_walk.bind(pawn))
 			walk_armed = true
 		if VIEW_MOTION.anticipate_segment(cell_i, facing_changed) or about:
-			_walk_tween.tween_method(_sample_step_anticipation.bind(pawn), 0.0, 1.0, VIEW_MOTION.STEP_SETTLE_SEC)
+			_walk_tween.tween_method(_sample_step_anticipation.bind(pawn), 0.0, 1.0, _foe_step_settle(pawn, VIEW_MOTION.STEP_SETTLE_SEC))
 		if dir != "":
 			visual = dir
 		if turn:
@@ -2211,6 +2211,13 @@ func _sample_step_anticipation(t: float, pawn: Pawn) -> void:
 	if pawn == null or not is_instance_valid(pawn):
 		return
 	pawn.sample_step_anticipation(t)
+
+
+## Heroes keep the short settle. A monster needs a beat long enough to see the lean.
+func _foe_step_settle(pawn: Pawn, hero_sec: float) -> float:
+	if pawn != null and is_instance_valid(pawn) and str(pawn.stasis_sprite) != "":
+		return 0.22 if pawn.stasis_boss else 0.16
+	return hero_sec
 
 
 func _sample_walk_step(t: float, pawn: Pawn, src: Vector2i, dst: Vector2i) -> void:
