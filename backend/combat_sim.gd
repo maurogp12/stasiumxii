@@ -2448,9 +2448,10 @@ func _blend_flare(_actor: Dictionary, target: Dictionary, event: Dictionary) -> 
 	return "Burn %d" % int(burn.get("stacks", target.get("burn_stacks", 0)))
 
 
-## How far from the landing an invisible enemy is revealed. Flare is 4 tiles
-## (Mauro 14 Oct 2026, was 2), Chebyshev from the landing tile. The other
-## Blends have no published radius; they reveal one tile out from the landing.
+## How far from the landing an invisible enemy is revealed. Flare is 4 tiles,
+## counted in straight steps (Manhattan: |dx| + |dy|, a diagonal step counts
+## as 2). Mauro 14 Oct 2026: was 2, then a square of 4, then straight steps.
+## The other Blends reveal one straight step (orthogonal neighbors only).
 func _blend_reveal_radius(blend: String) -> int:
 	return FLARE_REVEAL_RADIUS if blend == "flare" else 1
 
@@ -2467,7 +2468,7 @@ func _stamp_blend_reveal(actor: Dictionary, center: Vector2i, blend: String, eve
 			continue
 		if not bool(unit.get("invisible", false)):
 			continue
-		if chebyshev(unit["pos"], center) > radius:
+		if manhattan(unit["pos"], center) > radius:
 			continue
 		if not _end_invisible(unit, false):
 			continue
