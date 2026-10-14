@@ -157,6 +157,7 @@ func _run() -> void:
 	_test_kestrel_aims_better_far()
 	_test_bastion_team_ward_and_thorns()
 	_test_bastion_aegis_tooltips()
+	_test_bastion_idle_aegis()
 	_test_spark_counters_mender()
 	_test_prefight_elements_button()
 	_test_crush_breaks_shields()
@@ -9196,6 +9197,7 @@ func _test_bastion_aegis_tooltips() -> void:
 	var plant := SpellTooltip.card_text(_sim.preview_cast(SpellKits.PLANT, Vector2i(1, 1), Vector2i(2, 1), 0))
 	truthy(plant.contains("%d AP / 0 MP" % plant_ap), "Plant's hover card names the kit AP: %s" % plant)
 	truthy(plant.contains("+%d Aegis (max %d)" % [plant_gain, cap]), "Plant's hover card names the Aegis gain and the cap: %s" % plant)
+	truthy(plant.contains("An idle turn (no attack and no Plant) loses all Aegis. Attacking or planting keeps it."), "Plant's hover card states the idle Aegis rule: %s" % plant)
 	var plant_turns := int(SpellKits.spell(SpellKits.PLANT).get("plant_turns", 0))
 	var plant_cap := int(SpellKits.spell(SpellKits.PLANT).get("plants_per_turn", 0))
 	var plant_dur := "Dur 1 turn" if plant_turns == 1 else "Dur %d turns" % plant_turns
@@ -9249,6 +9251,7 @@ func _test_bastion_aegis_tooltips() -> void:
 	var plant_plain := " ".join(SpellTooltip.simple_lines(SpellKits.PLANT))
 	truthy(plant_plain.contains("Costs %d AP" % plant_ap), "Plant's plain card names the kit AP")
 	truthy(plant_plain.contains("+%d Aegis (max %d)" % [plant_gain, cap]), "Plant's plain card uses the kit gain and the cap")
+	truthy(plant_plain.contains("An idle turn (no attack and no Plant) loses all of them. Attacking or planting keeps them."), "Plant's plain card states the idle Aegis rule")
 	truthy(plant_plain.contains("Shots pass through a banner"), "Plant's plain card says shots pass through a banner")
 	truthy(plant.contains("Shots pass through banners"), "Plant's hover card says shots pass through banners: %s" % plant)
 	truthy(plant.contains("A banner beside a Snap Wall does not block shots"), "Plant's hover card says a banner beside a Snap Wall stays open: %s" % plant)
@@ -9260,6 +9263,202 @@ func _test_bastion_aegis_tooltips() -> void:
 	truthy(wall_plain.contains("%d Aegis back" % wall_spend), "Snap Wall's plain card refunds the kit spend")
 	var ward_plain := " ".join(SpellTooltip.simple_lines(SpellKits.WARD))
 	truthy(ward_plain.contains("Uses %d Aegis (max %d)" % [ward_spend, cap]), "Ward's plain card uses the kit spend and the cap")
+
+
+## Mauro 14 Oct 2026: Bastion loses every Aegis point at the end of a turn where
+## he neither attacked a foe nor cast Plant. A hit, a miss on a foe, or Plant
+## keeps the stack. Ward and Snap Wall do not. Local, the other phone, and the
+## bot all go through CombatSim.submit, which is also the dedicated server.
+func _test_bastion_idle_aegis() -> void:
+	var log = load("res://ui/battle_log.gd")
+	var idle_line := "Aegis lost: idle turn"
+	# Walk only.
+	_sim.reset_match({
+		"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1],
+		"classes": ["bastion", "kestrel"],
+		"positions": [Vector2i(4, 5), Vector2i(12, 5)],
+		"bastion_aegis": 3,
+	})
+	eq(bool(_sim.submit({"type": "move", "to": Vector2i(5, 5), "seat": 0}).get("ok", false)), true, "Bastion walks")
+	var walked: Dictionary = _sim.submit({"type": "end_turn", "seat": 0})
+	eq(int(_unit(0)["aegis"]), 0, "a walk with no attack and no Plant drops all Aegis")
+	eq(_idle_aegis_lines(log, walked.get("events", [])), 1, "the walk turn logs the idle Aegis line once")
+	eq(_idle_aegis_text(log, walked.get("events", [])), idle_line, "the walk turn log line is exact")
+	var guest: Node = load("res://backend/combat_sim.gd").new()
+	guest.apply_host_snapshot(_sim.snapshot())
+	eq(int(guest._unit_by_seat(0)["aegis"]), 0, "the other phone shows Aegis at 0 after the idle turn")
+	guest.free()
+	# Plant keeps the stack, including the point Plant just granted.
+	_sim.reset_match({
+		"seed": 1, "flat_board": true, "skip_deploy": true,
+		"classes": ["bastion", "kestrel"],
+		"positions": [Vector2i(4, 5), Vector2i(12, 5)],
+		"bastion_aegis": 2,
+	})
+	eq(bool(_sim.submit({"type": "cast", "spell": "plant", "to": Vector2i(5, 5), "seat": 0}).get("ok", false)), true, "Plant resolves")
+	var planted_aegis := int(_unit(0)["aegis"])
+	eq(planted_aegis, 3, "Plant grants 1 Aegis before the turn ends")
+	var planted: Dictionary = _sim.submit({"type": "end_turn", "seat": 0})
+	eq(int(_unit(0)["aegis"]), planted_aegis, "Plant keeps Aegis through the end of the turn")
+	eq(_idle_aegis_lines(log, planted.get("events", [])), 0, "a Plant turn does not log an idle Aegis loss")
+	guest = load("res://backend/combat_sim.gd").new()
+	guest.apply_host_snapshot(_sim.snapshot())
+	eq(int(guest._unit_by_seat(0)["aegis"]), planted_aegis, "the other phone keeps the Aegis after Plant")
+	guest.free()
+	# A hit on a foe keeps it.
+	_sim.reset_match({
+		"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1],
+		"classes": ["bastion", "kestrel"],
+		"positions": [Vector2i(4, 5), Vector2i(5, 5)],
+		"bastion_aegis": 2,
+	})
+	eq(bool(_sim.submit({"type": "cast", "spell": "bash", "to": Vector2i(5, 5), "seat": 0}).get("ok", false)), true, "Bash hits")
+	var bash_aegis := int(_unit(0)["aegis"])
+	eq(bash_aegis, 3, "Bash grants 1 Aegis")
+	var bashed: Dictionary = _sim.submit({"type": "end_turn", "seat": 0})
+	eq(int(_unit(0)["aegis"]), bash_aegis, "an attack keeps Aegis")
+	eq(_idle_aegis_lines(log, bashed.get("events", [])), 0, "an attack does not log an idle Aegis loss")
+	# A miss that still targeted a foe keeps it. A refused cast does not.
+	_sim.reset_match({
+		"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [100],
+		"classes": ["bastion", "kestrel"],
+		"positions": [Vector2i(4, 5), Vector2i(5, 5)],
+		"bastion_aegis": 3,
+	})
+	var missed: Dictionary = _sim.submit({"type": "cast", "spell": "bash", "to": Vector2i(5, 5), "seat": 0})
+	eq(bool(missed.get("ok", false)), true, "Bash miss still resolves")
+	eq(int(_unit(0)["aegis"]), 3, "a miss grants no Aegis")
+	var missed_end: Dictionary = _sim.submit({"type": "end_turn", "seat": 0})
+	eq(int(_unit(0)["aegis"]), 3, "a miss on a foe keeps Aegis")
+	eq(_idle_aegis_lines(log, missed_end.get("events", [])), 0, "a miss is not an idle turn")
+	_sim.reset_match({
+		"seed": 1, "flat_board": true, "skip_deploy": true,
+		"classes": ["bastion", "kestrel"],
+		"positions": [Vector2i(4, 5), Vector2i(12, 5)],
+		"bastion_aegis": 3,
+	})
+	var refused: Dictionary = _sim.submit({"type": "cast", "spell": "bash", "to": Vector2i(12, 5), "seat": 0})
+	eq(bool(refused.get("ok", false)), false, "Bash out of reach is refused")
+	eq(int(_unit(0)["aegis"]), 3, "a refused Bash spends nothing")
+	var refused_end: Dictionary = _sim.submit({"type": "end_turn", "seat": 0})
+	eq(int(_unit(0)["aegis"]), 0, "a refused cast does not count as an attack")
+	eq(_idle_aegis_text(log, refused_end.get("events", [])), idle_line, "the refused turn still logs the idle line")
+	# Hold Line, hit or miss, is an attack.
+	_sim.reset_match({
+		"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1],
+		"classes": ["bastion", "kestrel"],
+		"positions": [Vector2i(4, 5), Vector2i(7, 5)],
+		"bastion_aegis": 1,
+	})
+	eq(bool(_sim.submit({"type": "cast", "spell": "hold_line", "to": Vector2i(7, 5), "seat": 0}).get("ok", false)), true, "Hold Line hits")
+	var hold_aegis := int(_unit(0)["aegis"])
+	eq(hold_aegis > 1, true, "Hold Line grants Aegis")
+	_sim.submit({"type": "end_turn", "seat": 0})
+	eq(int(_unit(0)["aegis"]), hold_aegis, "Hold Line keeps Aegis")
+	_sim.reset_match({
+		"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [100],
+		"classes": ["bastion", "kestrel"],
+		"positions": [Vector2i(4, 5), Vector2i(7, 5)],
+		"bastion_aegis": 2,
+	})
+	eq(bool(_sim.submit({"type": "cast", "spell": "hold_line", "to": Vector2i(7, 5), "seat": 0}).get("ok", false)), true, "Hold Line miss resolves")
+	_sim.submit({"type": "end_turn", "seat": 0})
+	eq(int(_unit(0)["aegis"]), 2, "a missed Hold Line keeps Aegis")
+	# Ward alone spends some and the rest is lost.
+	_sim.reset_match({
+		"seed": 1, "flat_board": true, "skip_deploy": true,
+		"classes": ["bastion", "kestrel"],
+		"positions": [Vector2i(4, 5), Vector2i(12, 5)],
+		"bastion_aegis": 4,
+	})
+	eq(bool(_sim.submit({"type": "cast", "spell": "ward", "to": Vector2i(4, 5), "seat": 0}).get("ok", false)), true, "Ward resolves")
+	eq(int(_unit(0)["aegis"]), 2, "Ward spends 2 Aegis")
+	var warded: Dictionary = _sim.submit({"type": "end_turn", "seat": 0})
+	eq(int(_unit(0)["aegis"]), 0, "Ward without an attack or Plant drops the rest")
+	eq(_idle_aegis_text(log, warded.get("events", [])), idle_line, "Ward's idle turn logs the loss")
+	# Snap Wall on a banner planted last turn is not Plant this turn.
+	_sim.reset_match({
+		"seed": 1, "flat_board": true, "skip_deploy": true,
+		"classes": ["bastion", "kestrel"],
+		"positions": [Vector2i(4, 5), Vector2i(12, 5)],
+		"bastion_aegis": 4,
+	})
+	eq(bool(_sim.submit({"type": "cast", "spell": "plant", "to": Vector2i(4, 6), "seat": 0}).get("ok", false)), true, "the first banner of the wall plants")
+	eq(bool(_sim.submit({"type": "cast", "spell": "plant", "to": Vector2i(4, 7), "seat": 0}).get("ok", false)), true, "the second banner makes a wall that lasts")
+	_sim.submit({"type": "end_turn", "seat": 0})
+	eq(int(_unit(0)["aegis"]), 4, "planting keeps Aegis at the cap")
+	_sim.submit({"type": "end_turn", "seat": 1})
+	eq(_has_legal_cast_to(0, "snap_wall", Vector2i(4, 6)), true, "the wall banner is still a Snap Wall target next turn")
+	eq(bool(_sim.submit({"type": "cast", "spell": "snap_wall", "to": Vector2i(4, 6), "seat": 0}).get("ok", false)), true, "Snap Wall builds without a Plant this turn")
+	eq(int(_unit(0)["aegis"]), 2, "Snap Wall spends 2 Aegis")
+	var walled: Dictionary = _sim.submit({"type": "end_turn", "seat": 0})
+	eq(int(_unit(0)["aegis"]), 0, "Snap Wall alone drops the Aegis that is left")
+	eq(_idle_aegis_text(log, walled.get("events", [])), idle_line, "Snap Wall's idle turn logs the loss")
+	# Already empty: nothing to lose, so no line.
+	_sim.reset_match({
+		"seed": 1, "flat_board": true, "skip_deploy": true,
+		"classes": ["bastion", "kestrel"],
+		"positions": [Vector2i(4, 5), Vector2i(12, 5)],
+	})
+	eq(int(_unit(0)["aegis"]), 0, "Bastion starts with no Aegis")
+	var empty: Dictionary = _sim.submit({"type": "end_turn", "seat": 0})
+	eq(_idle_aegis_lines(log, empty.get("events", [])), 0, "no Aegis means no idle line")
+	# The bot uses the same end-turn. Far away he can only walk, so the stack drops.
+	_sim.reset_match({
+		"seed": 1, "flat_board": true, "skip_deploy": true,
+		"classes": ["bastion", "kestrel"],
+		"positions": [Vector2i(2, 5), Vector2i(12, 5)],
+		"bastion_aegis": 3,
+	})
+	var hero_ai = load("res://backend/hero_ai.gd")
+	var bot_spells: Array = []
+	var guard := 0
+	while int(_sim.snapshot()["active_seat"]) == 0 and guard < 8:
+		var intent: Dictionary = hero_ai.plan(_sim, 0)
+		if str(intent.get("type", "")) == "cast":
+			bot_spells.append(str(intent.get("spell", "")))
+		eq(bool(_sim.submit(intent).get("ok", false)), true, "the bot's intent resolves")
+		guard += 1
+	eq(bot_spells.is_empty(), true, "the far bot does not attack or Plant: %s" % str(bot_spells))
+	eq(int(_unit(0)["aegis"]), 0, "the bot's idle turn drops all Aegis")
+	# Next to a foe the bot attacks, and that attack keeps the Aegis it gained.
+	_sim.reset_match({
+		"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1, 1, 1, 1],
+		"classes": ["bastion", "kestrel"],
+		"positions": [Vector2i(4, 5), Vector2i(5, 5)],
+	})
+	var opening: Dictionary = hero_ai.plan(_sim, 0)
+	eq(str(opening.get("spell", "")) in ["bash", "hold_line"], true, "the bot opens with an attack: %s" % str(opening.get("spell", "")))
+	eq(bool(_sim.submit(opening).get("ok", false)), true, "the bot's attack resolves")
+	var bot_aegis := int(_unit(0)["aegis"])
+	eq(bot_aegis > 0, true, "the bot's attack grants Aegis")
+	eq(bool(_sim.submit({"type": "end_turn", "seat": 0}).get("ok", false)), true, "the bot ends the turn")
+	eq(int(_unit(0)["aegis"]), bot_aegis, "the bot keeps Aegis after attacking")
+	var net_src := FileAccess.get_file_as_string("res://backend/net_session.gd")
+	truthy(net_src.contains("host_sim.submit"), "the dedicated server submits through the same CombatSim")
+
+
+func _idle_aegis_lines(log, events: Array) -> int:
+	var n := 0
+	var snap: Dictionary = _sim.snapshot()
+	for event in events:
+		if typeof(event) != TYPE_DICTIONARY:
+			continue
+		for row in log.lines(event, snap):
+			if str(row) == "Aegis lost: idle turn":
+				n += 1
+	return n
+
+
+func _idle_aegis_text(log, events: Array) -> String:
+	var snap: Dictionary = _sim.snapshot()
+	for event in events:
+		if typeof(event) != TYPE_DICTIONARY:
+			continue
+		for row in log.lines(event, snap):
+			if str(row) == "Aegis lost: idle turn":
+				return str(row)
+	return ""
 
 
 ## Mauro 9 Oct 2026: Ward is Bastion's (2 AP + 2 Aegis, once per turn): +20

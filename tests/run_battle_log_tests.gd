@@ -442,6 +442,11 @@ func _test_named_lines() -> void:
 	eq(lone_end, "Plant ended on Kestrel.", "a lone Plant expiry stays the short line")
 	var wall_end := LOG.plain({"type": "expire", "status": "plant", "owner_seat": 0, "walled": true, "pos": Vector2i(2, 1)}, snap)
 	eq(wall_end, "Plant wall ended on Kestrel.", "a Plant wall expiry names the wall")
+	var idle_aegis := LOG.plain({"type": "expire", "status": "aegis", "owner_seat": 0, "target_seat": 0, "pos": Vector2i(2, 2)}, snap)
+	eq(idle_aegis, "Aegis lost: idle turn", "an idle turn names the Aegis loss")
+	var other_seat := snap.duplicate(true)
+	other_seat["local_seat"] = 1
+	eq(LOG.plain({"type": "expire", "status": "aegis", "owner_seat": 0, "target_seat": 0, "pos": Vector2i(2, 2)}, other_seat), idle_aegis, "both phones show the same idle Aegis line")
 	var blocked_shot := LOG.plain({
 		"type": "reject", "reason": "no_line_of_sight", "seat": 0,
 		"coach": "REJECT — Mark Shot has no line of sight: a Plant and Snap Wall at (4,7) blocks it (refund).",

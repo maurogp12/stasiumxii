@@ -800,6 +800,9 @@ static func _expire_line(event: Dictionary, snap: Dictionary) -> String:
 		return "%s is visible." % who
 	if status == "plant" and bool(event.get("walled", false)):
 		return "Plant wall ended on %s." % who
+	# Mauro 14 Oct 2026: the only Aegis expiry is an idle Bastion turn.
+	if status == "aegis":
+		return "Aegis lost: idle turn"
 	return "%s ended on %s." % [label, who]
 
 

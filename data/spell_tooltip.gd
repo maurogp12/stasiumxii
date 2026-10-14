@@ -148,6 +148,9 @@ static func _aegis_card_lines(spell_id: String) -> PackedStringArray:
 		if needs > 0:
 			out.append("Needs %d Aegis (max %d)" % [needs, SpellKits.AEGIS_CAP])
 		out.append("A hit uses all Aegis")
+	# Mauro 14 Oct 2026: shown on every Bastion card that talks about Aegis.
+	if _class_of(spell_id) == SpellKits.CLASS_BASTION and not out.is_empty():
+		out.append("An idle turn (no attack and no Plant) loses all Aegis. Attacking or planting keeps it.")
 	return out
 
 
@@ -346,7 +349,7 @@ static func _engine_words(class_id: String, spell_id: String) -> String:
 		SpellKits.CLASS_MENDER:
 			return "Pulse = Mender's power dots (max %d). They fade on a turn you cast no spell." % SpellKits.PULSE_CAP
 		SpellKits.CLASS_BASTION:
-			return "Aegis = Bastion's power dots (max %d). They fade on a turn you do not attack." % SpellKits.AEGIS_CAP
+			return "Aegis = Bastion's power dots (max %d). An idle turn (no attack and no Plant) loses all of them. Attacking or planting keeps them." % SpellKits.AEGIS_CAP
 		SpellKits.CLASS_GLOAM:
 			if spell_id == SpellKits.CUT or spell_id == SpellKits.FADE:
 				return "Umbral = Gloam's power dots (max %d), saved for Nightfold." % SpellKits.UMBRAL_CAP
