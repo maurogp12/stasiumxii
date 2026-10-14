@@ -701,8 +701,56 @@ func _has_invisible_hostile(seat: int) -> bool:
 	return false
 
 
+## Spell ids the acting fighter can throw into an empty in-range tile. This
+## arms the button without listing every cell in legal_intents. Neutral,
+## Ambush, and gated casts (Detonate without Marks, Crush without Impact)
+## stay off. A hidden foe is not named.
+func _air_throw_spell_ids() -> Array:
+	var out: Array = []
+	if _match_over or _flow.is_deployment():
+		return out
+	var actor := _unit_by_seat(_active_seat)
+	if actor.is_empty() or not bool(actor.get("alive", false)) or _is_stunned(actor):
+		return out
+	var from: Vector2i = actor["pos"]
+	for spell_id in actor.get("spells", []):
+		var id := str(spell_id)
+		var def: Dictionary = SpellKits.spell_for(actor, id)
+		if def.is_empty() or str(def.get("target", "")) != "enemy" or id == SpellKits.AMBUSH:
+			continue
+		var el := _rider_element(actor, def)
+		if el == "" or el == "neutral":
+			continue
+		if _is_spell_silenced(actor, id) or _is_spell_frozen(actor, id) or SpellKits.is_gated(id):
+			continue
+		if int(actor.get("ap", 0)) < int(def.get("ap", 0)) or int(actor.get("mp", 0)) < int(def.get("mp", 0)):
+			continue
+		if _resource_gate(actor, def) != "" or _cast_gate_reason(actor, {}, def) != "":
+			continue
+		if not _has_empty_reach(def, from):
+			continue
+		out.append(id)
+	return out
+
+
+func _has_empty_reach(def: Dictionary, from: Vector2i) -> bool:
+	for y in range(_board_size):
+		for x in range(_board_size):
+			var cell := Vector2i(x, y)
+			if cell == from or not _in_spell_reach(def, from, cell):
+				continue
+			var body := _living_unit_at(cell)
+			if body.is_empty() or bool(body.get("invisible", false)):
+				return true
+	return false
+
+
 func _append_blind_casts(out: Array, actor: Dictionary) -> void:
 	var seat := int(actor["seat"])
+	# Offers stay the hunt for a hidden body. An element thrown into empty
+	# air is accepted in submit and arms the button through air_casts, but
+	# it is not a named dest here: bots, Mark Shot, and the range tests read
+	# this list as "who you can hit".
 	if not _has_invisible_hostile(seat):
 		return
 	var from: Vector2i = actor["pos"]
@@ -739,7 +787,8 @@ func _resolve_whiff(intent: Dictionary, actor: Dictionary, def: Dictionary, dest
 		actor["facing"] = face
 	_break_invisible_on_attack(actor)
 	_last_coach = "%s strikes the empty air at %s (−%d AP)." % [actor["name"], _cell_text(dest), ap_cost]
-	_last_events.append({
+	var el := _rider_element(actor, def)
+	var miss := {
 		"type": "miss",
 		"blind": true,
 		"seat": actor["seat"],
@@ -750,7 +799,11 @@ func _resolve_whiff(intent: Dictionary, actor: Dictionary, def: Dictionary, dest
 		"mp_spent": mp_cost,
 		"damage": 0,
 		"coach": _last_coach,
-	})
+	}
+	if el != "" and el != "neutral":
+		miss["element"] = el
+	_last_events.append(miss)
+	_hang_or_blend_air(actor, el, dest)
 	return _accept()
 
 
@@ -1090,6 +1143,7 @@ func snapshot() -> Dictionary:
 		"mastery": MASTERY,
 		"momentum": true,
 		"residue": SpellKits.element_riders,
+		"air_casts": _air_throw_spell_ids(),
 		"blends": false,
 		"gust": false,
 		"longshot": true,
@@ -2197,12 +2251,17 @@ func _try_blend(actor: Dictionary, target: Dictionary, el: String, allow_infusio
 		return ""
 	var other := ""
 	var used_infusion := false
+	var used_cast := false
 	var residue := str(target.get("residue", ""))
 	if residue != "" and residue != el and int(target.get("residue_seat", -1)) == int(actor["seat"]):
 		other = residue
 	elif allow_infusion and str(actor.get("infusion", "")) != "" and str(actor["infusion"]) != el:
 		other = str(actor["infusion"])
 		used_infusion = true
+	elif str(actor.get("cast_element", "")) != "" and str(actor.get("cast_element", "")) != el and int(actor.get("cast_element_turns", 0)) > 0:
+		# An element hung in the air pairs with this hit the same way Residue does.
+		other = str(actor["cast_element"])
+		used_cast = true
 	if other == "":
 		return ""
 	var blend := blend_of(el, other)
@@ -2211,6 +2270,9 @@ func _try_blend(actor: Dictionary, target: Dictionary, el: String, allow_infusio
 	if used_infusion:
 		actor["infusion"] = ""
 		_emit_expire("infusion", actor["pos"], int(actor["seat"]), int(actor["seat"]))
+	if used_cast:
+		actor["cast_element"] = ""
+		actor["cast_element_turns"] = 0
 	target["residue"] = ""
 	target["residue_turns"] = 0
 	target["blend_lock"] = true
@@ -2262,6 +2324,9 @@ func _try_blend(actor: Dictionary, target: Dictionary, el: String, allow_infusio
 			_add_element_tile("steam", target["pos"], int(actor["seat"]))
 			event["debuffs"] = [_debuff("Steam", 1, "blocks sight")]
 			note = "this tile blocks line of sight until %s's next turn" % str(actor.get("name", "the caster"))
+	var revealed_note := _stamp_blend_reveal(actor, target["pos"], blend, event)
+	if revealed_note != "":
+		note = note + "; " + revealed_note if note != "" else revealed_note
 	event["coach"] = "BLEND %s on %s: %s." % [BLEND_NAMES[blend], str(target.get("name", "")), note]
 	if not event.has("debuffs"):
 		event["debuffs"] = []
@@ -2376,26 +2441,103 @@ func _blend_spark(_actor: Dictionary, target: Dictionary, event: Dictionary) -> 
 ## Flare (Air + Fire): every Invisible enemy of the caster within
 ## FLARE_REVEAL_RADIUS of the target is revealed, and the target gains a Burn
 ## stack (same Burn as Fire / lava: 4 per stack, cap 3).
-func _blend_flare(actor: Dictionary, target: Dictionary, event: Dictionary) -> String:
+func _blend_flare(_actor: Dictionary, target: Dictionary, event: Dictionary) -> String:
+	var burn := _apply_burn(target)
+	event["burn_stacks"] = int(target.get("burn_stacks", 0))
+	event["debuffs"] = [_debuff("Burn", int(burn.get("remaining", 0)), "stack %d, %d HP" % [int(burn.get("stacks", 0)), int(burn.get("hp_per_tick", 0))])]
+	return "Burn %d" % int(burn.get("stacks", target.get("burn_stacks", 0)))
+
+
+## How far from the landing an invisible enemy is revealed. Flare keeps its
+## published 2 tiles. The other Blends have no published radius; they reveal
+## one tile out from the landing, which is "around" that cast.
+func _blend_reveal_radius(blend: String) -> int:
+	return FLARE_REVEAL_RADIUS if blend == "flare" else 1
+
+
+## Same reveal as a hurting blow: Invisible ends, Fade's cooldown arms, and
+## the expire carries the tile only after the flag is down so a still-hidden
+## fighter's cell is not in the event. Returns the coach fragment, or "".
+func _stamp_blend_reveal(actor: Dictionary, center: Vector2i, blend: String, event: Dictionary) -> String:
 	var revealed: Array = []
-	for unit in _units:
+	var radius := _blend_reveal_radius(blend)
+	for raw in _units:
+		var unit: Dictionary = raw
 		if not bool(unit.get("alive", false)) or _allied(unit, actor):
 			continue
 		if not bool(unit.get("invisible", false)):
 			continue
-		if chebyshev(unit["pos"], target["pos"]) > FLARE_REVEAL_RADIUS:
+		if chebyshev(unit["pos"], center) > radius:
 			continue
-		_end_invisible(unit, false)
+		if not _end_invisible(unit, false):
+			continue
 		_emit_expire("invisible", unit["pos"], int(unit["seat"]), int(unit["seat"]))
 		revealed.append(int(unit["seat"]))
-	var burn := _apply_burn(target)
+	if revealed.is_empty():
+		return ""
 	event["revealed"] = revealed
-	event["burn_stacks"] = int(target.get("burn_stacks", 0))
-	event["debuffs"] = [_debuff("Burn", int(burn.get("remaining", 0)), "stack %d, %d HP" % [int(burn.get("stacks", 0)), int(burn.get("hp_per_tick", 0))])]
-	var note := "Burn %d" % int(burn.get("stacks", target.get("burn_stacks", 0)))
-	if not revealed.is_empty():
-		note += "; Invisible enemies nearby are revealed"
-	return note
+	return "Invisible enemies nearby are revealed"
+
+
+## An element thrown into empty air. The first one hangs on the caster for
+## RESIDUE_TURNS of that caster's own turns. A different element fires the
+## pair's Blend on this landing tile. The aimed cell is the one the player
+## picked; a hidden fighter's tile is not written onto the event.
+func _hang_or_blend_air(actor: Dictionary, el: String, dest: Vector2i) -> void:
+	if el == "" or el == "neutral":
+		return
+	var held := str(actor.get("cast_element", ""))
+	var turns := int(actor.get("cast_element_turns", 0))
+	if held != "" and held != el and turns > 0:
+		var blend := blend_of(el, held)
+		if blend != "":
+			actor["cast_element"] = ""
+			actor["cast_element_turns"] = 0
+			_fire_air_blend(actor, blend, held, el, dest)
+			return
+	actor["cast_element"] = el
+	actor["cast_element_turns"] = RESIDUE_TURNS
+	if not _last_events.is_empty() and _last_events[_last_events.size() - 1] is Dictionary:
+		var last: Dictionary = _last_events[_last_events.size() - 1]
+		if str(last.get("type", "")) == "miss":
+			last["cast_element"] = el
+
+
+func _fire_air_blend(actor: Dictionary, blend: String, other: String, el: String, dest: Vector2i) -> void:
+	var event := {
+		"type": "blend",
+		"blend": blend,
+		"name": BLEND_NAMES[blend],
+		"elements": [other, el],
+		"seat": int(actor["seat"]),
+		"to": dest,
+		"air": true,
+		"damage": 0,
+	}
+	var note := "the element bursts on the empty tile"
+	match blend:
+		"steam":
+			_add_element_tile("steam", dest, int(actor["seat"]))
+			event["debuffs"] = [_debuff("Steam", 1, "blocks sight")]
+			note = "this tile blocks line of sight until %s's next turn" % str(actor.get("name", "the caster"))
+		"magma":
+			_add_element_tile("magma", dest, int(actor["seat"]))
+			note = "the tile burns for 4 when a turn ends on it"
+		"flare":
+			note = "a burst of light"
+		"spark":
+			note = "electricity in the air"
+		"mire":
+			note = "the empty tile is mired"
+		"drift_pin":
+			note = "a shove through empty air"
+	var revealed_note := _stamp_blend_reveal(actor, dest, blend, event)
+	if revealed_note != "":
+		note += "; " + revealed_note
+	event["coach"] = "BLEND %s in the air: %s." % [BLEND_NAMES[blend], note]
+	if not event.has("debuffs"):
+		event["debuffs"] = []
+	_blend_queue.append(event)
 
 
 func _add_element_tile(kind: String, cell: Vector2i, owner_seat: int) -> void:
@@ -2592,8 +2734,16 @@ func _push_immune(target: Dictionary) -> bool:
 	return bool(target.get("grounded", false)) and str(target.get("class_id", "")) == SpellKits.CLASS_BASTION
 
 
-## The target's own turn ended: its Residue clock ticks.
+## The target's own turn ended: its Residue clock ticks. A caster's own turn
+## ending also ticks an element they hung in the air. That hang is not Residue
+## and does not write an expire line.
 func _tick_residue(unit: Dictionary) -> void:
+	var hung := int(unit.get("cast_element_turns", 0))
+	if hung > 0 and str(unit.get("cast_element", "")) != "":
+		hung -= 1
+		unit["cast_element_turns"] = hung
+		if hung <= 0:
+			unit["cast_element"] = ""
 	var left := int(unit.get("residue_turns", 0))
 	if left <= 0 or str(unit.get("residue", "")) == "":
 		return
@@ -3437,8 +3587,16 @@ func _submit_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
 			dest = beside["pos"]
 			dist = _range_distance(def, range_from, dest)
 	var target := _living_unit_at(dest)
-	if target.is_empty() and target_kind == "enemy" and _has_invisible_hostile(int(actor["seat"])) and _in_spell_reach(def, range_from, dest):
-		return _resolve_whiff(intent, actor, def, dest, ap_cost, mp_cost)
+	if target.is_empty() and target_kind == "enemy" and _in_spell_reach(def, range_from, dest):
+		var thrown := _rider_element(actor, def)
+		# Element spells may be thrown into empty air even when nobody is
+		# hidden. Neutral punches stay limited to the invisible-foe case.
+		# Detonate and Crush still need their gates: an empty tile has no
+		# Marks and does not spend Impact, so those stay a refund.
+		var hunting := _has_invisible_hostile(int(actor["seat"]))
+		var elemental := thrown != "" and thrown != "neutral"
+		if (hunting or elemental) and _cast_gate_reason(actor, {}, def) == "":
+			return _resolve_whiff(intent, actor, def, dest, ap_cost, mp_cost)
 	if target.is_empty():
 		return _reject(intent, "no_target", "REJECT — %s needs a living unit (refund)." % def["name"])
 	var support := target_kind == "ally" or (target_kind == "any" and _allied(target, actor))
