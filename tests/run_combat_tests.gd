@@ -10726,7 +10726,7 @@ func _test_air_blends() -> void:
 	eq(str(flare_row.get("blend", "")), "flare", "Air then Fire in the air is Flare")
 	eq(flare_row.has("target_seat"), false, "the air Blend has no body")
 	eq(flare_row.get("to", Vector2i.ZERO), Vector2i(6, 4), "Flare lands on the second cast")
-	eq(bool(_unit(1).get("invisible", true)), false, "Gloam within 2 tiles of Flare is revealed")
+	eq(bool(_unit(1).get("invisible", true)), false, "Gloam within 4 tiles of Flare is revealed")
 	eq(str(_unit(0).get("cast_element", "")), "", "the Blend spends the hanging element")
 	var flare_line := str(Log.plain(flare_row, _sim.snapshot()))
 	truthy(flare_line.contains("Flare") and flare_line.contains("in the air") and flare_line.contains("reveals") and flare_line.contains("Gloam"), "the log names the air Flare and Gloam: %s" % flare_line)
@@ -10743,13 +10743,22 @@ func _test_air_blends() -> void:
 			shown_pos = unit.get("pos", null)
 	truthy(shown_pos != null, "once revealed, Gloam's tile is on the wire")
 
-	# Outside Flare's 2 tiles he stays hidden.
-	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1, 1], "classes": ["ironjaw", "gloam"], "positions": [Vector2i(5, 5), Vector2i(9, 5)], "gloam_invisible": true})
+	# Four tiles from the landing is still inside Flare. Five is not.
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1, 1], "classes": ["ironjaw", "gloam"], "positions": [Vector2i(5, 5), Vector2i(10, 5)], "gloam_invisible": true})
+	_live_unit(0)["spell_elements"] = {"strike": "air", "shoulder": "fire", "crush": "fire", "advance": "air"}
+	_sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(6, 5), "seat": 0})
+	eq(_sim.chebyshev(Vector2i(6, 5), _unit(1)["pos"]), 4, "this Gloam is 4 tiles from the landing")
+	var edge4: Dictionary = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(6, 5), "seat": 0})
+	eq(str(_first_event_where(edge4.get("events", []), "blend").get("blend", "")), "flare", "the 4-tile cast still fires Flare")
+	eq(bool(_unit(1).get("invisible", true)), false, "Flare reveals Gloam exactly 4 tiles from the landing")
+
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1, 1], "classes": ["ironjaw", "gloam"], "positions": [Vector2i(5, 5), Vector2i(11, 5)], "gloam_invisible": true})
 	_live_unit(0)["spell_elements"] = {"strike": "air", "shoulder": "fire", "crush": "fire", "advance": "air"}
 	_sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(6, 5), "seat": 0})
 	var far: Dictionary = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(6, 5), "seat": 0})
 	eq(str(_first_event_where(far.get("events", []), "blend").get("blend", "")), "flare", "the far cast still fires Flare")
-	eq(bool(_unit(1).get("invisible", false)), true, "Gloam 3 tiles away stays hidden")
+	eq(_sim.chebyshev(Vector2i(6, 5), _unit(1)["pos"]), 5, "this Gloam is 5 tiles from the landing")
+	eq(bool(_unit(1).get("invisible", false)), true, "Gloam 5 tiles away stays hidden")
 
 	# The same element twice does not Blend.
 	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1, 1], "classes": ["ironjaw", "kestrel"], "positions": [Vector2i(5, 5), Vector2i(8, 5)]})
@@ -10814,10 +10823,9 @@ func _test_air_blends() -> void:
 
 	# Screenshot, 14 Oct 2026. Ironjaw walks 3, then Strike hits the next empty
 	# tile and Fire hangs. That miss does not reveal. The Blend that follows
-	# measures from the tile the second spell lands on, not from Ironjaw.
-	# Gloam two tiles from Ironjaw and three from that landing stays hidden.
-	# Flare still reveals at exactly 2 from the landing (three from Ironjaw).
-	# Steam reveals at 1 and not at 2.
+	# measures Chebyshev from the tile the second spell lands on, not from
+	# Ironjaw. Flare reveals at 4 from that landing (Mauro 14 Oct 2026, was 2).
+	# Steam still reveals at 1 and not at 2.
 	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1, 1], "classes": ["ironjaw", "gloam"], "positions": [Vector2i(2, 5), Vector2i(5, 3)], "gloam_invisible": true})
 	_live_unit(0)["spell_elements"] = {"strike": "fire", "shoulder": "air", "crush": "fire", "advance": "air"}
 	var walked: Dictionary = _sim.submit({"type": "move", "to": Vector2i(5, 5), "seat": 0})
@@ -10834,8 +10842,8 @@ func _test_air_blends() -> void:
 	var far_flare_row := _first_event_where(far_flare.get("events", []), "blend")
 	eq(str(far_flare_row.get("blend", "")), "flare", "Air on the hanging Fire is Flare")
 	eq(far_flare_row.get("to", Vector2i.ZERO), Vector2i(5, 6), "Flare lands on the Strike tile")
-	eq(far_flare_row.get("revealed", []), [], "Flare does not list Gloam three tiles from the landing")
-	eq(bool(_unit(1).get("invisible", false)), true, "Gloam three tiles from the landing stays hidden")
+	eq(far_flare_row.get("revealed", []), [1], "Flare lists Gloam three tiles from the landing")
+	eq(bool(_unit(1).get("invisible", true)), false, "Gloam three tiles from the landing is revealed")
 
 	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1, 1], "classes": ["ironjaw", "gloam"], "positions": [Vector2i(2, 5), Vector2i(5, 8)], "gloam_invisible": true})
 	_live_unit(0)["spell_elements"] = {"strike": "fire", "shoulder": "air", "crush": "fire", "advance": "air"}
