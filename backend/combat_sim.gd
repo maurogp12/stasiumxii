@@ -4028,6 +4028,12 @@ func _check_death(target: Dictionary, cause: String = "damage") -> void:
 		"cause": cause,
 		"coach": "%s falls." % target["name"],
 	})
+	# A scorpling killed before it arrives detonates where it died.
+	if bool(target.get("scorpling", false)) and cause != "detonate" and not bool(target.get("detonated", false)):
+		target["detonated"] = true
+		_scorpling_blast(target)
+		if _match_over:
+			return
 	_refresh_last_stand()
 	# Stasis Room A keeps fighting until the player or every hostile is down.
 	# Koliseo is still one death ends the match.
@@ -6033,6 +6039,9 @@ func _foe_casts(actor: Dictionary) -> Array:
 					out.append({"type": "cast", "spell": id, "to": v["pos"], "target_seat": v["seat"], "seat": seat})
 			"self":
 				out.append({"type": "cast", "spell": id, "to": from, "seat": seat})
+			"summon":
+				if not _brood_cells(from, 1).is_empty():
+					out.append({"type": "cast", "spell": id, "to": from, "seat": seat})
 			"step":
 				for dir in FACING_VEC.keys():
 					var cell: Vector2i = from + FACING_VEC[dir]
@@ -6128,6 +6137,114 @@ func _foe_base_damage(actor: Dictionary, def: Dictionary) -> int:
 	return roundi(float(base) * float(actor.get("foe_dmg_mult", 1.0)))
 
 
+## Empty tiles one step from the boss, cardinals first, then diagonals.
+## Never the boss's own tile. Up to `count` (Brood Storm summons 4).
+func _brood_cells(origin: Vector2i, count: int) -> Array[Vector2i]:
+	var ring: Array[Vector2i] = [
+		Vector2i(1, 0), Vector2i(0, 1), Vector2i(-1, 0), Vector2i(0, -1),
+		Vector2i(1, -1), Vector2i(1, 1), Vector2i(-1, 1), Vector2i(-1, -1),
+	]
+	var out: Array[Vector2i] = []
+	for step in ring:
+		var cell: Vector2i = origin + step
+		if not _foe_free_cell(cell):
+			continue
+		out.append(cell)
+		if out.size() >= maxi(count, 1):
+			break
+	return out
+
+
+func _next_foe_seat() -> int:
+	var seat := 2
+	while not _unit_by_seat(seat).is_empty():
+		seat += 1
+	return seat
+
+
+## A Brood Storm scorpling. 20 HP and 5 MP stay fixed (not the star scale).
+## It walks toward heroes and spends itself in a 1-tile blast.
+func _spawn_scorpling(owner: Dictionary, cell: Vector2i, hp: int, mp: int) -> Dictionary:
+	var seat := _next_foe_seat()
+	var unit := _make_unit(seat, SpellKits.CLASS_IRONJAW, "Scorpling", "Air", cell, "S", true)
+	unit["team"] = 1
+	unit["hp"] = maxi(hp, 1)
+	unit["max_hp"] = int(unit["hp"])
+	unit["max_ap"] = 3
+	unit["ap"] = 3
+	unit["max_mp"] = maxi(mp, 0)
+	unit["mp"] = int(unit["max_mp"])
+	unit["foe_kit"] = ["scorpling.burst"]
+	unit["foe_cd"] = {}
+	unit["foe_role"] = "scorpling"
+	unit["foe_door"] = str(owner.get("foe_door", "stormspire"))
+	unit["foe_dmg_mult"] = 1.0
+	unit["stasis_sprite"] = StasisCatalog.art_path("scorpling")
+	unit["stasis_boss"] = false
+	unit["scorpling"] = true
+	unit["detonated"] = false
+	unit["placed"] = true
+	var nearest := 999
+	for hero in _foe_victims(unit):
+		var dist := chebyshev(cell, hero["pos"])
+		if dist < nearest:
+			nearest = dist
+			var face := _dir_name(hero["pos"] - cell)
+			if face != "":
+				unit["facing"] = face
+	_units.append(unit)
+	return unit
+
+
+## Area burst where a scorpling died. Same 10 Air radius as the arrival cast.
+func _scorpling_blast(actor: Dictionary) -> void:
+	var def := FoeKits.spell("scorpling.burst")
+	var area := _foe_area_cells(actor, def, Vector2i.ZERO)
+	var spell_name := str(def.get("name", "Burst"))
+	for raw in _foe_victims(actor):
+		var target: Dictionary = raw
+		if not area.has(target["pos"]):
+			continue
+		var dist := maxi(chebyshev(actor["pos"], target["pos"]), 1)
+		var chance := hit_chance(dist)
+		var roll := _roll_d100()
+		var event := {
+			"seat": actor["seat"],
+			"spell": "scorpling.burst",
+			"spell_name": spell_name,
+			"caster_cell": actor["pos"],
+			"target_seat": target["seat"],
+			"to": target["pos"],
+			"range": dist,
+			"hit_chance": chance,
+			"roll": roll,
+			"foe": true,
+			"shape": "radius",
+			"area": area.duplicate(),
+			"element": "Air",
+			"detonate": true,
+		}
+		if roll > chance:
+			event["type"] = "miss"
+			event["damage"] = 0
+			event["coach"] = "%s's burst misses %s." % [actor["name"], target["name"]]
+			_last_events.append(event)
+			continue
+		var facing_mult := _facing_multiplier(actor["pos"], target["pos"], str(target.get("facing", "")))
+		var pre := _phase_a_damage(_foe_base_damage(actor, def), facing_mult, actor, target, "Air", true)
+		var mitigation := _mitigate_hit(actor, target, pre)
+		var damage := int(mitigation["damage"])
+		_lose_hp(target, damage)
+		_reveal_if_hurt(target, damage)
+		event["type"] = "hit"
+		event["damage"] = damage
+		event["coach"] = "%s detonates for %d." % [actor["name"], damage]
+		_last_events.append(event)
+		_check_death(target)
+		if _match_over:
+			return
+
+
 func _submit_foe_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
 	var spell_id := str(intent.get("spell", ""))
 	var def: Dictionary = FoeKits.spell(spell_id)
@@ -6172,6 +6289,29 @@ func _submit_foe_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
 			actor["facing"] = face
 		_last_coach = "%s: %s to %s." % [actor["name"], name, _cell_text(dest)]
 		_last_events.append({"type": "move", "seat": actor["seat"], "from": caster_cell, "to": dest, "path": [dest], "facing_from": str(actor["facing"]), "facing": str(actor["facing"]), "facing_hops": [str(actor["facing"])], "mp_spent": 0, "ap_spent": ap_cost, "spell": spell_id, "foe": true, "coach": _last_coach})
+		return _accept()
+	if shape == "summon":
+		var summoned: Array = []
+		for cell in _brood_cells(caster_cell, int(def.get("summon_count", 4))):
+			var baby := _spawn_scorpling(actor, cell, int(def.get("summon_hp", 20)), int(def.get("summon_mp", 5)))
+			summoned.append({"seat": int(baby["seat"]), "pos": cell, "name": str(baby["name"])})
+		# Room B starts as a 1v1. Scorplings have to take turns, and the room
+		# is not won while any of them still live.
+		_stasis_pack = true
+		_last_coach = "%s summons %d scorplings." % [actor["name"], summoned.size()]
+		_last_events.append({
+			"type": "cast",
+			"spell": spell_id,
+			"spell_name": name,
+			"seat": actor["seat"],
+			"caster_cell": caster_cell,
+			"to": caster_cell,
+			"ap_spent": ap_cost,
+			"foe": true,
+			"shape": shape,
+			"summons": summoned,
+			"coach": _last_coach,
+		})
 		return _accept()
 	var victims: Array = []
 	var area: Array = []
@@ -6290,6 +6430,10 @@ func _submit_foe_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
 	for e in _last_events:
 		if typeof(e) == TYPE_DICTIONARY and str(e.get("spell", "")) == spell_id and not e.has("coach"):
 			e["coach"] = _last_coach
+	# Arrival blast spends the scorpling. Death from that blast must not fire a second one.
+	if bool(def.get("suicide", false)) and bool(actor.get("alive", true)):
+		actor["hp"] = 0
+		_check_death(actor, "detonate")
 	return _accept()
 
 

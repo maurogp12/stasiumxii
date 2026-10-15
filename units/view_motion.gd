@@ -283,7 +283,7 @@ static func caster_motion(spell_id: String) -> String:
 		var shape := str(_FoeKits.spell(spell_id).get("shape", ""))
 		if shape in ["melee", "dash", "cone", "radius"]:
 			return "attack"
-		if shape in ["shot", "line", "pads", "blast"]:
+		if shape in ["shot", "line", "pads", "blast", "summon"]:
 			return "cast"
 		return ""
 	var def := SpellKits.spell(spell_id)
@@ -325,8 +325,10 @@ const MARK_WINDUP_SEC := 0.30
 ## Painted 5-star boss effects: the body frame that fires (artist NOTES) and
 ## the cannonball flight. VfxRouter.BOSS_FX draws them.
 const BOSS_FX_TIMING := {
-	"brine.cannon": {"body": "cast", "frames": 8, "fire": 3, "flight": 0.42},
-	"slag.caldera": {"body": "attack", "frames": 6, "fire": 2, "flight": 0.0},
+	# Oct 14 cannon strip is 10 frames. The shot leaves on frame 3.
+	"brine.cannon": {"body": "cast", "frames": 10, "fire": 3, "flight": 0.42},
+	# Caldera Punch plays the eruption sheet (10 frames). The fist meets the floor on frame 4.
+	"slag.caldera": {"body": "attack", "frames": 10, "fire": 4, "flight": 0.0},
 }
 
 
@@ -462,6 +464,7 @@ static func chrome_plans(events: Array) -> Dictionary:
 			if kind != "":
 				var seat := int(event.get("seat", -1))
 				var plan: Dictionary = plans.get(seat, {})
+				plan["spell"] = spell_id
 				if kind == "attack":
 					plan["attack"] = true
 					if spell_id == SpellKits.AMBUSH:
