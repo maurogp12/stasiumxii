@@ -6,6 +6,9 @@ extends RefCounted
 ## (Normal, Rare, Legendary, and Ultra) at +5. Pieces stay tagged "test"
 ## in the save so flipping ACTIVE to false strips them. The fight payload
 ## leaves that tag off, so Koliseo keeps a normal item id.
+## A class with nothing worn gets its Ultra 5pc (Pitmaw on Ironjaw,
+## Hushring on Gloam, and the other three). That is +1 AP and +1 MP.
+## A class that already wears something keeps that loadout.
 ## false: load_saved does not grant, and a leftover test_grant is stripped.
 ## Turning the kit off does NOT copy test_backup back onto classes.
 ## ProgressEpoch is the one-time wipe. The Koliseo wallet is never written.
@@ -28,6 +31,7 @@ const DEFAULT_HERO_PATH := "user://hero_progress.json"
 
 ## Called by GearBag.load_saved on the real save only (tests use other paths).
 static func sync_bag(bag) -> bool:
+	var changed := false
 	if ACTIVE and not bag.test_grant:
 		var families: Array = []
 		families.append_array(bag.FAMILY_ORDER)
@@ -39,11 +43,29 @@ static func sync_bag(bag) -> bool:
 				if index != -1:
 					bag.items[index]["test"] = true
 		bag.test_grant = true
-		return true
+		changed = true
 	if not ACTIVE and bag.test_grant:
 		revoke_bag(bag)
 		return true
-	return false
+	# Once per bag. An old grant already has the pieces and an empty body,
+	# which is why a fight stayed at base 3 MP. Do not replace a chosen set.
+	if ACTIVE and not bag.test_ultra_worn:
+		_wear_empty_ultra(bag)
+		bag.test_ultra_worn = true
+		changed = true
+	return changed
+
+
+## Ultra 5pc on every class that is wearing nothing. The kit's +5 copy wins.
+## A piece another class already wears stays there.
+static func _wear_empty_ultra(bag) -> void:
+	for cid in bag.CLASS_IDS:
+		if not bag.worn_list(cid).is_empty():
+			continue
+		var fam := str(bag.ULTRA_BY_CLASS.get(cid, ""))
+		if fam == "":
+			continue
+		bag.wear_family(cid, fam)
 
 
 ## What ACTIVE = false does to a bag that still carries the grant.
@@ -56,6 +78,7 @@ static func revoke_bag(bag) -> void:
 				slots.erase(slot)
 	bag.items = bag.items.filter(func(it): return not bool(it.get("test", false)))
 	bag.test_grant = false
+	bag.test_ultra_worn = false
 	bag._bind_focus()
 
 

@@ -39,6 +39,7 @@ func _run() -> void:
 	_test_crit_cap_and_stun()
 	_test_ap_mp_matrix()
 	_test_fight_mp_is_sheet_not_flat()
+	_test_ultra_on_ironjaw_and_gloam()
 	_test_prefight_loadout()
 	_wipe()
 	print("Gear tests: %d passed, %d failed" % [_passed, _failed])
@@ -402,6 +403,14 @@ func _test_temporary_kit() -> void:
 		saw[GearBag.family_of(str(it["item_id"]))] = true
 	eq(all_plus, true, "every kit piece is +5")
 	eq(all_tagged, true, "kit pieces stay tagged in the bag")
+	eq(bag.worn_family("ironjaw"), "pitmaw", "an empty Ironjaw wears Pitmaw")
+	eq(int(bag.set_counts("ironjaw").get("pitmaw", 0)), 5, "Ironjaw's Ultra is 5 pieces")
+	eq(bag.worn_family("gloam"), "hushring", "an empty Gloam wears Hushring")
+	eq(int(bag.set_counts("gloam").get("hushring", 0)), 5, "Gloam's Ultra is 5 pieces")
+	var ironjaw_pools: Dictionary = GearBag.turn_pools(bag.worn_list("ironjaw"), {"level": 30, "spent": {}}, "", "", true, "ironjaw")
+	var gloam_pools: Dictionary = GearBag.turn_pools(bag.worn_list("gloam"), {"level": 30, "spent": {}}, "", "", true, "gloam")
+	eq(Vector2i(int(ironjaw_pools["ap"]), int(ironjaw_pools["mp"])), Vector2i(8, 4), "kit Pitmaw is 8 AP / 4 MP")
+	eq(Vector2i(int(gloam_pools["ap"]), int(gloam_pools["mp"])), Vector2i(8, 4), "kit Hushring is 8 AP / 4 MP")
 	for fam in GearBag.ULTRA_ORDER:
 		eq(bool(saw.get(fam, false)), true, "%s Ultra is in the bag" % fam)
 	for fam in ["ashmantle", "undertow", "gallowsight", "ravenmourn", "brightedge"]:
@@ -1388,6 +1397,73 @@ func _test_fight_mp_is_sheet_not_flat() -> void:
 	_expect_fight_pools(sheet, "kestrel", "", [], 0, 1, "", "", 6, 3)
 	_expect_fight_pools(sheet, "ironjaw", "", [], 0, 1, "", "", 6, 3)
 	_expect_fight_pools(sheet, "gloam", "", [], 0, 1, "", "", 6, 3)
+
+
+## One fight, both bodies. Pitmaw on Ironjaw and Hushring on Gloam, the way
+## the test kit stores them (tagged in the bag, untagged on the wire).
+## Level 30, no Still: 8 AP / 4 MP. Base 3 plus the Ultra 5pc, on both seats,
+## through the hot-seat config and through deployment.
+func _test_ultra_on_ironjaw_and_gloam() -> void:
+	var sheet: Script = load("res://scenes/inventory_screen.gd")
+	var select: Script = load("res://scenes/class_select.gd")
+	var bag := GearBag.new()
+	for slot in GearBag.SLOTS:
+		var jaw := bag.add_item("pitmaw", str(slot), 5)
+		bag.items[bag.find(jaw)]["test"] = true
+		eq(bool(bag.equip(jaw, "ironjaw").get("ok", false)), true, "Ironjaw wears test Pitmaw %s" % str(slot))
+		var shade := bag.add_item("hushring", str(slot), 5)
+		bag.items[bag.find(shade)]["test"] = true
+		eq(bool(bag.equip(shade, "gloam").get("ok", false)), true, "Gloam wears test Hushring %s" % str(slot))
+	bag.save()
+	var hero := HeroProgress.new()
+	hero.classes["ironjaw"] = {"xp": 0, "level": 30, "spent": {}}
+	hero.classes["gloam"] = {"xp": 0, "level": 30, "spent": {}}
+	hero.save()
+	var vault := StillVault.new()
+	vault.save()
+	var loaded := GearBag.load_saved()
+	var heroes := HeroProgress.load_saved()
+	for cid in ["ironjaw", "gloam"]:
+		var stats: Dictionary = sheet.champion_stats(loaded, heroes, cid)
+		eq(int(stats["ap"]), 8, "%s inventory AP is base + Ultra + level 20" % cid)
+		eq(int(stats["mp"]), 4, "%s inventory MP is base 3 + Ultra 5pc" % cid)
+		eq(loaded.fight_gear(true, cid)["worn"].size(), 5, "%s fight payload keeps the Ultra 5pc" % cid)
+	select.hotseat_team_size = 1
+	var roster: Array[String] = ["ironjaw", "gloam"]
+	select.hotseat_classes = roster
+	select.hotseat_map_id = ""
+	var local: Dictionary = select.local_match_config()
+	eq((local["classes"] as Array)[0], "ironjaw", "seat 0 is Ironjaw")
+	eq((local["classes"] as Array)[1], "gloam", "seat 1 is Gloam")
+	var sim: Node = root.get_node("/root/CombatSim")
+	sim.reset_match(local)
+	for seat in [0, 1]:
+		var unit: Dictionary = sim._unit_by_seat(seat)
+		eq((unit.get("gear", []) as Array).size(), 5, "%s deployment is wearing the Ultra set" % str(unit.get("class_id", "")))
+		eq(Vector2i(int(unit["max_ap"]), int(unit["max_mp"])), Vector2i(8, 4), "%s max pool is the inventory total" % str(unit.get("class_id", "")))
+	var zone_a: Array = sim.legal_deploy_cells(0)
+	var zone_b: Array = sim.legal_deploy_cells(1)
+	eq(zone_a.is_empty() or zone_b.is_empty(), false, "Ironjaw and Gloam have deploy cells")
+	eq(bool(sim.submit({"type": "place", "seat": 0, "to": zone_a[0]}).get("ok", false)), true, "Ironjaw places")
+	eq(bool(sim.submit({"type": "place", "seat": 1, "to": zone_b[0]}).get("ok", false)), true, "Gloam places")
+	eq(bool(sim.submit({"type": "ready", "seat": 0}).get("ok", false)), true, "Ironjaw readies")
+	eq(bool(sim.submit({"type": "ready", "seat": 1}).get("ok", false)), true, "Gloam readies")
+	for seat in [0, 1]:
+		var live: Dictionary = sim._unit_by_seat(seat)
+		eq(Vector2i(int(live["ap"]), int(live["mp"])), Vector2i(8, 4), "%s fight card is 8 AP / 4 MP" % str(live.get("class_id", "")))
+	eq(str(sim.snapshot()["coach"]).contains("8 AP / 4 MP"), true, "the opening coach names the Ultra pool")
+	var kept := GearBag.new()
+	kept.test_grant = true
+	for slot in GearBag.SLOTS:
+		kept.equip(kept.add_item("tyrantjaw", str(slot), 0), "ironjaw")
+		var uid := kept.add_item("hushring", str(slot), 5)
+		kept.items[kept.find(uid)]["test"] = true
+	var TL := preload("res://backend/test_loadout.gd")
+	eq(TL.sync_bag(kept), true, "an older kit grant wears Ultra onto an empty class")
+	eq(kept.worn_family("ironjaw"), "tyrantjaw", "Ironjaw's chosen set stays")
+	eq(kept.worn_family("gloam"), "hushring", "empty Gloam receives Hushring")
+	eq(TL.sync_bag(kept), false, "the Ultra wear does not run again")
+	select.hotseat_classes = [] as Array[String]
 
 
 func _expect_fight_pools(sheet: Script, class_id: String, family: String, slots: Array, plus: int, level: int, still: String, mode: String, want_ap: int, want_mp: int) -> void:
