@@ -91,7 +91,7 @@ var _gear_sent_seat: int = -1
 
 func _ready() -> void:
 	_parse_user_args()
-	if _cli_classes.size() == 3:
+	if _cli_classes.size() == 2 or _cli_classes.size() == 3:
 		select_roster(_cli_classes)
 	elif _cli_class != "":
 		select_class(_cli_class)
@@ -422,7 +422,7 @@ func select_class(class_id: String) -> Dictionary:
 	return {"ok": true, "illegal": false, "reason": "", "class_id": normalized}
 
 
-## Local confirm of three different Locked classes before the 3v3 queue.
+## Local confirm of two or three different Locked classes before the 2v2 or 3v3 queue.
 ## A duplicate or a class outside the roster does not clear a stored pick.
 func select_roster(class_ids: Array) -> Dictionary:
 	var normalized: Array[String] = []
@@ -443,14 +443,14 @@ func select_roster(class_ids: Array) -> Dictionary:
 				"class_id": selected_class_id,
 			}
 		normalized.append(class_id)
-	if normalized.size() != 3:
+	if normalized.size() != 2 and normalized.size() != 3:
 		return {
 			"ok": false,
 			"illegal": true,
 			"reason": "class_required",
 			"class_id": selected_class_id,
 		}
-	queue_format = "3v3"
+	queue_format = "2v2" if normalized.size() == 2 else "3v3"
 	selected_class_ids = normalized
 	selected_class_id = normalized[0]
 	if not _match_live:
@@ -460,14 +460,19 @@ func select_roster(class_ids: Array) -> Dictionary:
 	return {"ok": true, "illegal": false, "reason": "", "class_id": normalized[0], "class_ids": normalized.duplicate()}
 
 
-## Online menu switches 1v1 / 3v3. Clears the pick so a 1v1 class cannot enter the 3v3 queue.
+## Online menu switches 1v1 / 2v2 / 3v3. Clears the pick so one format cannot enter another queue.
 func set_queue_format(format: String) -> void:
-	queue_format = "3v3" if format == "3v3" else "1v1"
+	if format == "2v2" or format == "3v3":
+		queue_format = format
+	else:
+		queue_format = "1v1"
 	selected_class_id = ""
 	selected_class_ids = []
 
 
 func _queue_roster_ready() -> bool:
+	if queue_format == "2v2":
+		return selected_class_ids.size() == 2
 	if queue_format == "3v3":
 		return selected_class_ids.size() == 3
 	return SpellKits.is_roster_class(selected_class_id)
@@ -590,9 +595,9 @@ func reset_match(config: Dictionary = {}) -> Dictionary:
 	config = _authority_gear_config(config)
 	if mode == Mode.DEDICATED:
 		var chosen: Array[String] = _class_ids_from_config(config)
-		if chosen.size() == 2 or chosen.size() == 6:
+		if chosen.size() == 2 or chosen.size() == 4 or chosen.size() == 6:
 			_match_class_ids = chosen
-			_match_team_size = 3 if chosen.size() == 6 else 1
+			_match_team_size = int(chosen.size() / 2)
 			_match_live = true
 			_match_finished = false
 			_prematch_phase = "MATCH"
@@ -1474,9 +1479,9 @@ func _send_local_gear() -> void:
 func _local_fighter_seats() -> Array[int]:
 	if not _owned_seats.is_empty():
 		return _owned_seats.duplicate()
-	if queue_format == "3v3" and local_seat >= 0 and selected_class_ids.size() == 3:
+	if local_seat >= 0 and ((queue_format == "2v2" and selected_class_ids.size() == 2) or (queue_format == "3v3" and selected_class_ids.size() == 3)):
 		var built: Array[int] = []
-		for i in 3:
+		for i in selected_class_ids.size():
 			built.append(local_seat + i * 2)
 		return built
 	if local_seat >= 0:
@@ -1515,7 +1520,7 @@ func rpc_select_class(class_id: String) -> void:
 	_send_class_result(peer_id, true, str(result.get("class_id", "")), "")
 
 
-## Client → dedicated authority. Three different Locked classes for the 3v3 queue.
+## Client → dedicated authority. Two or three different Locked classes for 2v2 or 3v3.
 @rpc("any_peer", "reliable")
 func rpc_select_roster(class_ids: Array) -> void:
 	if not is_authority():
@@ -1613,19 +1618,19 @@ func rpc_queue_result(payload: Dictionary) -> void:
 func rpc_match_assigned(payload: Dictionary) -> void:
 	if mode != Mode.CLIENT:
 		return
-	var team_size := int(payload.get("team_size", 1))
-	_match_team_size = 3 if team_size >= 3 else 1
+	var team_size := clampi(int(payload.get("team_size", 1)), 1, 3)
+	_match_team_size = team_size
 	_owned_seats.clear()
 	var owned_raw: Variant = payload.get("owned_seats", [])
 	if owned_raw is Array:
 		for item in owned_raw:
 			_owned_seats.append(int(item))
 	var owned_classes: Variant = payload.get("owned_classes", [])
-	if owned_classes is Array and (owned_classes as Array).size() >= 3 and _match_team_size >= 3:
+	if owned_classes is Array and (owned_classes as Array).size() >= team_size and team_size > 1:
 		selected_class_ids = []
 		for item in owned_classes:
 			selected_class_ids.append(str(item))
-		queue_format = "3v3"
+		queue_format = "2v2" if team_size == 2 else "3v3"
 	var seat := int(payload.get("seat", -1))
 	if seat >= 0:
 		local_seat = seat
@@ -1742,12 +1747,12 @@ func accept_reset_request(_config: Dictionary, seat: int) -> Dictionary:
 		return _fail("not_authority")
 	if seat != HOST_SEAT:
 		return _cache_and_broadcast(_gate_reject("not_your_seat"))
-	if mode == Mode.DEDICATED and (_match_class_ids.size() == 2 or _match_class_ids.size() == 6):
+	if mode == Mode.DEDICATED and (_match_class_ids.size() == 2 or _match_class_ids.size() == 4 or _match_class_ids.size() == 6):
 		var again: Array[String] = []
 		for class_id in _match_class_ids:
 			again.append(class_id)
 		var again_config := {"classes": again}
-		if _match_team_size >= 3:
+		if _match_team_size > 1:
 			again_config["team_size"] = _match_team_size
 		return reset_match(again_config)
 	return reset_match({})
@@ -1891,10 +1896,10 @@ func _on_connected_to_server() -> void:
 			_dial_live_attempt = -1
 		connection_changed.emit("joined")
 		print("STASIUM XII client connected to %s:%d" % [join_address, listen_port])
-		if _queue_client and queue_format == "3v3" and selected_class_ids.size() == 3:
+		if _queue_client and ((queue_format == "2v2" and selected_class_ids.size() == 2) or (queue_format == "3v3" and selected_class_ids.size() == 3)):
 			rpc_select_roster.rpc_id(1, selected_class_ids)
 			rpc_enqueue.rpc_id(1)
-		elif _queue_client and SpellKits.is_roster_class(selected_class_id):
+		elif _queue_client and queue_format != "2v2" and queue_format != "3v3" and SpellKits.is_roster_class(selected_class_id):
 			rpc_select_class.rpc_id(1, selected_class_id)
 			rpc_enqueue.rpc_id(1)
 		_update_window_title()
@@ -2103,7 +2108,7 @@ func _class_ids_from_config(config: Dictionary) -> Array[String]:
 	else:
 		return []
 	var team_size := clampi(int(config.get("team_size", 1)), 1, 3)
-	var want := 6 if team_size >= 3 else 2
+	var want := team_size * 2
 	if incoming.size() < want:
 		return []
 	var out: Array[String] = []
@@ -2136,8 +2141,8 @@ func _send_queue_result(peer_id: int, status: String, reason: String) -> void:
 
 func _boot_dedicated_match(match: Dictionary) -> void:
 	var raw: Array = match.get("class_ids", [])
-	var team_size := 3 if int(match.get("team_size", 1)) >= 3 else 1
-	var need := 6 if team_size >= 3 else 2
+	var team_size := clampi(int(match.get("team_size", 1)), 1, 3)
+	var need := team_size * 2
 	if raw.size() < need:
 		return
 	var ids: Array[String] = []
@@ -2147,7 +2152,7 @@ func _boot_dedicated_match(match: Dictionary) -> void:
 	lobby_text = "Match %s — seat 0 %s, seat 1 %s" % [match_id, SpellKits.display_name(ids[0]), SpellKits.display_name(ids[1])]
 	print("STASIUM server: match start id=%s seat0=%s seat1=%s team=%d" % [match_id, ids[0], ids[1], team_size])
 	var boot := {"classes": ids}
-	if team_size >= 3:
+	if team_size > 1:
 		boot["team_size"] = team_size
 	reset_match(boot)
 	if not _rpc_ready():
@@ -2173,7 +2178,7 @@ func _boot_dedicated_match(match: Dictionary) -> void:
 
 
 func _owned_for_connection(connection_seat: int, team_size: int) -> Array:
-	var count := 1 if team_size < 3 else team_size
+	var count := 1 if team_size <= 1 else team_size
 	var out: Array = []
 	for i in count:
 		out.append(connection_seat + i * 2)
@@ -2182,7 +2187,7 @@ func _owned_for_connection(connection_seat: int, team_size: int) -> Array:
 
 func _classes_for_connection(ids: Array, connection_seat: int, team_size: int) -> Array:
 	var out: Array = []
-	var count := 1 if team_size < 3 else team_size
+	var count := 1 if team_size <= 1 else team_size
 	for i in count:
 		var index := connection_seat + i * 2
 		if index >= 0 and index < ids.size():
@@ -2191,7 +2196,7 @@ func _classes_for_connection(ids: Array, connection_seat: int, team_size: int) -
 
 
 func _connection_owns_fighter(connection_seat: int, fighter: int) -> bool:
-	if _match_team_size >= 3:
+	if _match_team_size > 1:
 		if fighter < 0 or fighter >= _match_team_size * 2:
 			return false
 		return fighter % 2 == connection_seat
@@ -2199,7 +2204,7 @@ func _connection_owns_fighter(connection_seat: int, fighter: int) -> bool:
 
 
 func _queue_display_name() -> String:
-	if queue_format == "3v3" and selected_class_ids.size() == 3:
+	if (queue_format == "2v2" and selected_class_ids.size() == 2) or (queue_format == "3v3" and selected_class_ids.size() == 3):
 		var names: Array[String] = []
 		for class_id in selected_class_ids:
 			names.append(SpellKits.display_name(class_id))
@@ -2229,7 +2234,7 @@ func _prematch_block() -> Dictionary:
 	if mode == Mode.HOTSEAT or mode == Mode.HOST:
 		phase = "MATCH"
 		live = true
-	elif mode == Mode.DEDICATED and (_match_class_ids.size() == 2 or _match_class_ids.size() == 6):
+	elif mode == Mode.DEDICATED and (_match_class_ids.size() == 2 or _match_class_ids.size() == 4 or _match_class_ids.size() == 6):
 		phase = "MATCH"
 		live = true
 	elif mode == Mode.DEDICATED and not _match_live:

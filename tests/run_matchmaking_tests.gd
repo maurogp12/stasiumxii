@@ -54,6 +54,8 @@ func _run() -> void:
 	_test_mender_option_b()
 	_test_3v3_queue_is_separate()
 	_test_3v3_gear_and_control()
+	_test_2v2_queue_is_separate()
+	_test_2v2_gear_and_control()
 
 
 func _test_roster_gate() -> void:
@@ -828,6 +830,111 @@ func _test_3v3_gear_and_control() -> void:
 	var shades: Array = viewed.get("shade_tokens", [])
 	eq(shades.size(), 1, "a player sees Shades from their own fighters only")
 	eq(int(shades[0].get("owner_seat", -1)), 2, "the kept Shade belongs to that player's fighter")
+	host.free()
+	sim.free()
+
+
+func _test_2v2_queue_is_separate() -> void:
+	var queue := MatchQueue.new()
+	queue.select_class("solo", "kestrel")
+	var roster: Dictionary = queue.select_roster("pair", ["ironjaw", "mender"])
+	eq(bool(roster.get("ok", false)), true, "two different classes confirm a 2v2 roster")
+	var dup: Dictionary = queue.select_roster("dup", ["kestrel", "kestrel"])
+	eq(bool(dup.get("ok", true)), false, "a repeated 2v2 class does not confirm")
+	eq(str(dup.get("reason", "")), "duplicate_class", "2v2 repeat reason is duplicate_class")
+	eq(queue.session("dup").is_empty(), true, "a rejected 2v2 roster is not stored")
+	var bad: Dictionary = queue.select_roster("bad", ["kestrel", "pulse"])
+	eq(bool(bad.get("ok", true)), false, "a 2v2 roster outside the allowlist is rejected")
+	eq(str(queue.select_roster("short", ["kestrel"]).get("reason", "")), "class_required", "one class is not a 2v2 roster")
+	eq(str(queue.select_roster("long", ["kestrel", "ironjaw", "mender", "gloam"]).get("reason", "")), "class_required", "four classes are not a 2v2 roster")
+	eq(queue.session("pair").is_empty(), false, "the valid 2v2 roster stays after a bad one")
+	var waiting_a: Dictionary = queue.enqueue("solo")
+	var waiting_b: Dictionary = queue.enqueue("pair")
+	eq(bool(waiting_a.get("matched", true)), false, "a 1v1 player does not pair with a 2v2 roster")
+	eq(bool(waiting_b.get("matched", true)), false, "a 2v2 roster does not pair with a 1v1 player")
+	queue.select_roster("trio", ["bastion", "kestrel", "mender"])
+	var waiting_c: Dictionary = queue.enqueue("trio")
+	eq(bool(waiting_c.get("matched", true)), false, "a 3v3 roster does not pair with a 2v2 roster")
+	eq(queue.queued_count(), 1, "the 1v1 queue still has its one waiter")
+	eq(queue.queued_count_for("2v2"), 1, "the 2v2 queue still has its one waiter")
+	eq(queue.queued_count_for("3v3"), 1, "the 3v3 queue still has its one waiter")
+	queue.select_roster("p2", ["gloam", "bastion"])
+	var paired: Dictionary = queue.enqueue("p2")
+	eq(bool(paired.get("matched", false)), true, "two 2v2 rosters pair")
+	var class_ids: Array = paired.get("match", {}).get("class_ids", [])
+	eq(class_ids, ["ironjaw", "gloam", "mender", "bastion"], "2v2 seats interleave the two rosters")
+	eq(int(paired.get("match", {}).get("team_size", 0)), 2, "the paired match asks for team size 2")
+	eq(bool(queue.enqueue("solo").get("matched", true)), false, "the 1v1 waiter is still waiting")
+	eq(bool(queue.enqueue("trio").get("matched", true)), false, "the 3v3 waiter is still waiting")
+	var bound := MatchQueue.new()
+	bound.select_roster("early", ["kestrel", "ironjaw"])
+	bound.bind_seat("early", 1)
+	bound.select_roster("late", ["gloam", "bastion"])
+	bound.bind_seat("late", 0)
+	bound.enqueue("early")
+	var swapped: Dictionary = bound.enqueue("late")
+	var swapped_ids: Array = swapped.get("match", {}).get("class_ids", [])
+	eq(str(swapped_ids[0]), "gloam", "bound seat 0 keeps that player's first 2v2 class")
+	eq(str(swapped_ids[1]), "kestrel", "bound seat 1 keeps that player's first 2v2 class")
+	eq(str(swapped_ids[2]), "bastion", "bound seat 0 keeps that player's second class")
+	eq(str(swapped_ids[3]), "ironjaw", "bound seat 1 keeps that player's second class")
+
+
+func _test_2v2_gear_and_control() -> void:
+	var sim_script := load("res://backend/combat_sim.gd")
+	var host_script := load("res://backend/net_session.gd")
+	var sim: Node = sim_script.new()
+	var host: Node = host_script.new()
+	host.attach_sim(sim)
+	host.enter_dedicated_offline()
+	var a: Array = ["kestrel", "ironjaw"]
+	var b: Array = ["gloam", "bastion"]
+	host.server_select_roster("a", a)
+	host.server_select_roster("b", b)
+	host.server_enqueue("a")
+	var paired: Dictionary = host.server_enqueue("b")
+	eq(bool(paired.get("matched", false)), true, "dedicated 2v2 enqueue boots a match")
+	var snap: Dictionary = sim.snapshot()
+	eq(int(snap.get("team_size", 0)), 2, "the live match uses the existing team size 2")
+	eq((snap.get("units", []) as Array).size(), 4, "the live match has four fighters")
+	eq(str(snap.get("phase", "")), "DEPLOYMENT", "2v2 still starts in deployment")
+	var seen: Array = []
+	for unit in snap.get("units", []):
+		seen.append(str(unit.get("class_id", "")))
+	eq(seen, ["kestrel", "gloam", "ironjaw", "bastion"], "2v2 seat order is the interleaved roster")
+	var fist := {"worn": [], "attune": {}, "stance": "neutral", "still": {"id": "hourglass_fist", "mode": "intact"}}
+	var step := {"worn": [], "attune": {}, "stance": "neutral", "still": {"id": "hourglass_step", "mode": "intact"}}
+	var applied: bool = host.accept_seat_gear(0, {"by_seat": {0: fist, 2: step, 1: fist}})
+	eq(applied, true, "a 2v2 player's gear applies to that player's fighters")
+	var by_seat := {}
+	for unit in sim.snapshot().get("units", []):
+		by_seat[int(unit.get("seat", -1))] = unit
+	eq(str(by_seat[0].get("still", "")), "hourglass_fist", "2v2 seat 0 keeps that fighter's Still")
+	eq(str(by_seat[2].get("still", "")), "hourglass_step", "2v2 seat 2 keeps a different Still")
+	eq(str(by_seat[1].get("still", "")), "", "2v2 seat 0 cannot write the other player's gear")
+	var deploy_cells: Array = sim.legal_deploy_cells(2)
+	var cell: Vector2i = deploy_cells[0]
+	var placed: Dictionary = host.submit_for_seat({"type": "place", "seat": 2, "to": cell}, 0)
+	eq(bool(placed.get("ok", false)), true, "connection 0 can place its second 2v2 fighter")
+	var stolen: Dictionary = host.submit_for_seat({"type": "place", "seat": 2, "to": cell}, 1)
+	eq(bool(stolen.get("ok", true)), false, "connection 1 cannot place the other 2v2 fighter")
+	eq(str(stolen.get("reason", "")), "not_your_seat", "the other 2v2 fighter is still not_your_seat")
+	var packed: Dictionary = host.pack_result({"ok": true, "snapshot": sim.snapshot(), "events": []}, 0)
+	var decoded: Dictionary = IntentCodec.decode(packed)
+	var legal: Dictionary = decoded.get("legal_deploy_cells", {})
+	eq(legal.has(2), true, "the phone receives deploy cells for its second 2v2 fighter")
+	eq((legal.get(1, [1]) as Array).is_empty(), true, "the phone does not receive the other 2v2 team's deploy cells")
+	sim._match_time_left = -1.0
+	sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"team_size": 2,
+		"classes": ["kestrel", "gloam", "ironjaw", "bastion"],
+	})
+	sim._match_time_left = -1.0
+	sim._start_turn_timer()
+	eq(float(sim.snapshot().get("match_time_left", 0.0)), 600.0, "a 2v2 match keeps the existing 10 minute clock")
 	host.free()
 	sim.free()
 

@@ -9809,6 +9809,10 @@ func _test_sudden_death_clock() -> void:
 	_sim._match_time_left = -1.0
 	_sim._start_turn_timer()
 	eq(float(_sim.snapshot().get("match_time_left", 0.0)), 900.0, "a 3v3 match has 15 minutes")
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "team_size": 2, "classes": ["kestrel", "ironjaw", "gloam", "bastion"]})
+	_sim._match_time_left = -1.0
+	_sim._start_turn_timer()
+	eq(float(_sim.snapshot().get("match_time_left", 0.0)), 600.0, "a 2v2 match keeps the 10 minute clock")
 	eq(CombatHUD.match_clock_text(170.0, true), "  ·  SUDDEN DEATH 2:50", "the top bar shows sudden death")
 
 

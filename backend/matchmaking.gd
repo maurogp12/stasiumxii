@@ -7,15 +7,17 @@ extends RefCounted
 ## and does not confirm the session. Two confirmed sessions pair in queue
 ## order unless both sessions have a bound transport seat: then the class
 ## stays on that seat. Seats are not remapped so that seat 0 is always Kestrel.
-## 1v1 and 3v3 are separate queues. A 1v1 session never pairs with a 3v3 roster.
+## 1v1, 2v2, and 3v3 are separate queues. Different formats never pair.
 
 const SELECT_CLASS := "SELECT_CLASS"
 const ENQUEUE := "ENQUEUE"
 const FORMAT_1V1 := "1v1"
+const FORMAT_2V2 := "2v2"
 const FORMAT_3V3 := "3v3"
 
 var _sessions: Dictionary = {}
 var _queue: Array[String] = []
+var _queue_2v2: Array[String] = []
 var _queue_3v3: Array[String] = []
 var _matches: Dictionary = {}
 var _bound_seats: Dictionary = {}
@@ -60,8 +62,9 @@ func select_class(session_id: String, class_id: String) -> Dictionary:
 	return _ok(id, normalized)
 
 
-## Three different Locked classes. Duplicates and any other id are rejected
-## and do not confirm the session. The roster waits on the 3v3 queue only.
+## Two or three different Locked classes. Duplicates and any other id are
+## rejected and do not confirm the session. Two classes wait on the 2v2
+## queue. Three wait on the 3v3 queue.
 func select_roster(session_id: String, class_ids: Array) -> Dictionary:
 	var id := str(session_id)
 	if id == "":
@@ -71,7 +74,7 @@ func select_roster(session_id: String, class_ids: Array) -> Dictionary:
 		return _fail("already_queued", id)
 	if str(existing.get("match_id", "")) != "":
 		return _fail("already_matched", id)
-	if class_ids.size() != 3:
+	if class_ids.size() != 2 and class_ids.size() != 3:
 		return _fail("class_required", id)
 	var normalized: Array[String] = []
 	for raw in class_ids:
@@ -86,7 +89,7 @@ func select_roster(session_id: String, class_ids: Array) -> Dictionary:
 		"id": id,
 		"class_id": normalized[0],
 		"class_ids": normalized,
-		"format": FORMAT_3V3,
+		"format": FORMAT_2V2 if normalized.size() == 2 else FORMAT_3V3,
 		"confirmed": true,
 		"queued": false,
 		"match_id": "",
@@ -120,6 +123,8 @@ func enqueue(session_id: String) -> Dictionary:
 		return _fail("class_required", id)
 	var format := str(session.get("format", FORMAT_1V1))
 	var roster: Array = session.get("class_ids", [])
+	if format == FORMAT_2V2 and roster.size() != 2:
+		return _fail("class_required", id)
 	if format == FORMAT_3V3 and roster.size() != 3:
 		return _fail("class_required", id)
 	if str(session.get("match_id", "")) != "":
@@ -188,6 +193,7 @@ func queued_count_for(format: String) -> int:
 func forget(session_id: String) -> void:
 	var id := str(session_id)
 	_queue.erase(id)
+	_queue_2v2.erase(id)
 	_queue_3v3.erase(id)
 	_sessions.erase(id)
 	_bound_seats.erase(id)
@@ -201,13 +207,18 @@ func drop(session_id: String) -> void:
 	if bool(session.get("queued", false)):
 		session["queued"] = false
 		_queue.erase(id)
+		_queue_2v2.erase(id)
 		_queue_3v3.erase(id)
 		_sessions[id] = session
 
 
 func _try_pair(format: String = FORMAT_1V1) -> Dictionary:
 	var bucket := _bucket(format)
-	var team_size := 3 if format == FORMAT_3V3 else 1
+	var team_size := 1
+	if format == FORMAT_2V2:
+		team_size = 2
+	elif format == FORMAT_3V3:
+		team_size = 3
 	if bucket.size() < 2:
 		return {}
 	var first: String = str(bucket.pop_front())
@@ -228,7 +239,7 @@ func _try_pair(format: String = FORMAT_1V1) -> Dictionary:
 	var match_id := "m%d" % _next_match
 	_next_match += 1
 	# Queue order is seat order. Do not force seat 0 = Kestrel.
-	# 3v3 interleaves so seat % 2 is the player: A0 B0 A1 B1 A2 B2.
+	# 2v2 / 3v3 interleave so seat % 2 is the player: A0 B0 A1 B1 (A2 B2).
 	var a_ids := _roster_of(a, team_size)
 	var b_ids := _roster_of(b, team_size)
 	var class_ids: Array[String] = []
@@ -270,6 +281,8 @@ func _roster_of(session: Dictionary, team_size: int) -> Array[String]:
 
 
 func _bucket(format: String) -> Array[String]:
+	if format == FORMAT_2V2:
+		return _queue_2v2
 	if format == FORMAT_3V3:
 		return _queue_3v3
 	return _queue
