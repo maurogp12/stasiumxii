@@ -1090,6 +1090,18 @@ static func ap_mp_of_worn(worn: Array, pvp: bool = true) -> Dictionary:
 	}
 
 
+## Fight-start AP/MP. The inventory sheet calls this too, so a fight cannot
+## keep a flat pool of its own. Base 6 AP / 3 MP, plus 5pc and Rare +5
+## gates (Koliseo flatten does not drop them), plus +1 AP at level 20, then
+## the socketed Hourglass. Intact stays inside 8/5. Overwound may pass them.
+static func turn_pools(raw_worn: Variant, hero_raw: Variant, still_id: String, still_mode: String, flatten_plus: bool, class_id: String, stance_mode: String = "") -> Dictionary:
+	var stats := combat_stats(raw_worn, {}, flatten_plus, class_id, false, stance_mode)
+	var hero := HeroProgress.combat_stats(hero_raw, class_id)
+	var ap := mini(int(stats.get("ap", BASE_AP)) + int(hero.get("ap", 0)), AP_CAP)
+	var mp := int(stats.get("mp", BASE_MP))
+	return StillVault.adjust_ap_mp(ap, mp, still_id, still_mode)
+
+
 ## What a fight uses from worn gear. Part numbers × fuse multiplier (not
 ## crit), plus set bonuses. resist_all families add part resist to the
 ## universal resist, which hits every element. A class_id drops pieces

@@ -4804,17 +4804,19 @@ func _apply_gear(unit: Dictionary, raw: Variant) -> void:
 	unit["ward_shield"] = int(stats["ward_shield"])
 	if int(stats["start_aegis"]) > 0:
 		unit["aegis"] = maxi(int(unit.get("aegis", 0)), int(stats["start_aegis"]))
-	unit["max_ap"] = mini(int(stats["ap"]) + int(hero["ap"]), GearBag.AP_CAP)
-	unit["max_mp"] = int(stats["mp"])
 	_copy_ultra(unit, stats)
 	unit["gear"] = GearBag.clean_worn(gear.get("worn", []), false)
 	# XII Still (one fight). Ready flags arm the one-shot effects.
+	# AP/MP is GearBag.turn_pools, the same total the inventory sheet shows
+	# (base 6/3 + set + Rare gates + level 20 AP + this Hourglass). Not a flat 4 MP.
 	var still := StillVault.clean(gear.get("still", {}))
 	unit["still"] = str(still.get("id", ""))
 	unit["still_mode"] = str(still.get("mode", ""))
 	unit["still_ready"] = unit["still"] != ""
 	unit["own_turn"] = 0
-	_still_apply_hourglass(unit)
+	var pools := GearBag.turn_pools(gear.get("worn", []), hero_raw, str(still.get("id", "")), str(still.get("mode", "")), bool(gear.get("flatten_plus", false)), class_id, str(gear.get("stance", "")))
+	unit["max_ap"] = int(pools["ap"])
+	unit["max_mp"] = int(pools["mp"])
 	if bool(unit.get("placed", false)) and _flow != null and _flow.is_combat():
 		unit["ap"] = mini(int(unit.get("ap", 0)), int(unit["max_ap"]))
 		unit["mp"] = mini(int(unit.get("mp", 0)), int(unit["max_mp"]))
@@ -5049,9 +5051,11 @@ func init_note() -> String:
 func _opening_turn_coach(lead: String) -> String:
 	var actor := _unit_by_seat(0)
 	var who := str(actor.get("name", "Kestrel"))
+	var ap := int(actor.get("max_ap", MAX_AP))
+	var mp := int(actor.get("max_mp", MAX_MP))
 	if lead == "":
-		return "%s's turn. 6 AP / 3 MP." % who
-	return "%s %s's turn. 6 AP / 3 MP." % [lead, who]
+		return "%s's turn. %d AP / %d MP." % [who, ap, mp]
+	return "%s %s's turn. %d AP / %d MP." % [lead, who, ap, mp]
 
 
 ## Mender Last Stand (Mauro 6 Oct 2026): on while no teammate is alive and
@@ -7119,12 +7123,6 @@ func _still_id(unit: Dictionary) -> String:
 
 func _still_over(unit: Dictionary) -> bool:
 	return str(unit.get("still_mode", "")) == "overwound"
-
-
-func _still_apply_hourglass(unit: Dictionary) -> void:
-	var pools := StillVault.adjust_ap_mp(int(unit.get("max_ap", MAX_AP)), int(unit.get("max_mp", MAX_MP)), _still_id(unit), str(unit.get("still_mode", "")))
-	unit["max_ap"] = int(pools["ap"])
-	unit["max_mp"] = int(pools["mp"])
 
 
 ## Active Stills offer a use_still intent. Mirror and Bound name a target.

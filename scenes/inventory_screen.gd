@@ -115,10 +115,10 @@ func stats() -> Dictionary:
 ## weapon / boots, +1 AP from level 20, then the socketed Hourglass.
 static func champion_stats(gear: GearBag, hero: HeroProgress, class_id: String) -> Dictionary:
 	var st := GearBag.combat_stats(gear.worn_list(class_id), gear.attune, false, class_id, false, gear.stance_of())
-	var lv := HeroProgress.combat_stats(hero.fight_hero(class_id), class_id)
-	var apmp := gear.ap_mp(class_id)
+	var hero_raw := hero.fight_hero(class_id)
+	var lv := HeroProgress.combat_stats(hero_raw, class_id)
 	var vault := StillVault.load_saved()
-	var pools := StillVault.adjust_ap_mp(mini(int(apmp["ap"]) + int(lv["ap"]), GearBag.AP_CAP), int(apmp["mp"]), vault.socket_of(class_id), vault.mode_of(class_id))
+	var pools := GearBag.turn_pools(gear.worn_list(class_id), hero_raw, vault.socket_of(class_id), vault.mode_of(class_id), false, class_id, gear.stance_of())
 	var base_hp := preload("res://backend/combat_sim.gd").class_base_hp(class_id)
 	return {
 		"level": int(lv["level"]),
