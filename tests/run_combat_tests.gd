@@ -11079,30 +11079,40 @@ func _test_air_blends() -> void:
 	truthy(stamp_body.contains("manhattan(cell, center)"), "every Flare reveal counts straight steps")
 	eq(stamp_body.contains("chebyshev"), false, "the reveal path does not use a square count")
 
-	# 0.1.205 phone clip. The sprite is on (2,0), four straight steps from the
-	# yellow tile (6,0). grid_position was still (1,0), five steps, and that
-	# leftover cell was what the radius counted, so he stayed hidden. The
-	# drawn tile is now the only pos. Four reveals, and the opponent's wire
-	# gets that same cell.
-	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1, 1], "classes": ["ironjaw", "gloam"], "positions": [Vector2i(5, 0), Vector2i(1, 0)], "gloam_invisible": true})
+	# 0.1.205 screenshot. Mauro marked four straight steps from the Flare:
+	# (6,0) flare, (5,0) Ironjaw, (4,0), (3,0), (2,0) Gloam. The card still
+	# read Invisible 2, because a leftover grid cell on (1,0) was five steps
+	# and that was the cell the radius used. The drawn tile is the only pos.
+	var flare_cell := Vector2i(6, 0)
+	var mark_1 := Vector2i(5, 0)
+	var mark_2 := Vector2i(4, 0)
+	var mark_3 := Vector2i(3, 0)
+	var mark_4 := Vector2i(2, 0)
+	eq(_sim.manhattan(flare_cell, mark_1), 1, "mark 1 is the first step, Ironjaw on (5,0)")
+	eq(_sim.manhattan(flare_cell, mark_2), 2, "mark 2 is (4,0)")
+	eq(_sim.manhattan(flare_cell, mark_3), 3, "mark 3 is (3,0)")
+	eq(_sim.manhattan(flare_cell, mark_4), 4, "mark 4 is Gloam on (2,0)")
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1, 1], "classes": ["ironjaw", "gloam"], "positions": [mark_1, Vector2i(1, 0)], "gloam_invisible": true})
 	_live_unit(0)["spell_elements"] = {"strike": "air", "shoulder": "fire", "crush": "fire", "advance": "air"}
-	_live_unit(1)["invisible_turns"] = 3
-	eq(_sim.manhattan(Vector2i(6, 0), Vector2i(1, 0)), 5, "the leftover cell (1,0) is 5 straight steps from (6,0)")
-	eq(_sim.manhattan(Vector2i(6, 0), Vector2i(2, 0)), 4, "the drawn cell (2,0) is 4 straight steps from (6,0)")
-	_sim.commit_drawn_cell(1, Vector2i(2, 0))
-	eq(_unit(1)["pos"], Vector2i(2, 0), "the drawn tile is the only position")
-	_sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(6, 0), "seat": 0})
-	var clip_near: Dictionary = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(6, 0), "seat": 0})
+	_live_unit(1)["invisible_turns"] = 2
+	eq(int(_live_unit(1)["invisible_turns"]), 2, "the card starts at Invisible 2")
+	eq(_sim.manhattan(flare_cell, Vector2i(1, 0)), 5, "the leftover cell (1,0) is 5 straight steps from (6,0)")
+	eq(_sim.manhattan(flare_cell, mark_4), 4, "the drawn cell (2,0) is mark 4")
+	_sim.commit_drawn_cell(1, mark_4)
+	eq(_unit(1)["pos"], mark_4, "the drawn tile is the only position")
+	_sim.submit({"type": "cast", "spell": "strike", "to": flare_cell, "seat": 0})
+	var clip_near: Dictionary = _sim.submit({"type": "cast", "spell": "shoulder", "to": flare_cell, "seat": 0})
 	var clip_near_row := _first_event_where(clip_near.get("events", []), "blend")
 	var near_steps := -1
 	for raw_near in clip_near_row.get("reveal_checks", []):
 		if typeof(raw_near) == TYPE_DICTIONARY and int(raw_near.get("seat", -1)) == 1:
 			near_steps = int(raw_near.get("steps", -1))
-			eq(raw_near.get("pos", Vector2i.ZERO), Vector2i(2, 0), "the check names the drawn cell")
-	eq(near_steps, 4, "the radius logs 4 from the drawn cell (2,0)")
-	eq(clip_near_row.get("revealed", []), [1], "Flare lists Gloam 4 straight steps from (6,0)")
-	eq(bool(_unit(1).get("invisible", true)), false, "Flare reveals the drawn cell at 4 straight steps")
-	eq(_unit(1)["pos"], Vector2i(2, 0), "reveal does not move him off the drawn cell")
+			eq(raw_near.get("pos", Vector2i.ZERO), mark_4, "the check names Gloam on (2,0)")
+	eq(near_steps, 4, "the radius logs the hand count of 4")
+	eq(clip_near_row.get("revealed", []), [1], "Flare lists Gloam on mark 4")
+	eq(bool(_unit(1).get("invisible", true)), false, "mark 4 reveals him")
+	eq(int(_unit(1).get("invisible_turns", 0)), 0, "Invisible 2 does not stay on the card")
+	eq(_unit(1)["pos"], mark_4, "reveal does not move him off (2,0)")
 	var near_coach := str(clip_near.get("snapshot", {}).get("coach", ""))
 	truthy(near_coach.contains("Fade cooldown"), "4 straight steps from the drawn cell ends Fade: %s" % near_coach)
 	var near_net: Node = root.get_node("NetSession")
@@ -11120,7 +11130,7 @@ func _test_air_blends() -> void:
 	eq(replica._unit_by_seat(1)["pos"], Vector2i(2, 0), "the online replica stands on the drawn cell")
 	eq(bool(replica._unit_by_seat(1).get("invisible", true)), false, "the online replica is revealed")
 	replica.free()
-	print("CLIP205 landing (6,0) Gloam drawn (2,0) stale grid (1,0) code steps %s" % near_steps)
+	print("CLIP205 landing (6,0) marks (5,0) (4,0) (3,0) Gloam (2,0) Invisible 2 stale grid (1,0) code steps %s" % near_steps)
 
 	# Same clip, one step closer. (6,4) is 4 straight steps from the yellow
 	# landing and only 3 from Ironjaw. Shoulder reveals. The 3 AP hang does not.
