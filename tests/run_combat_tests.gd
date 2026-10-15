@@ -11030,6 +11030,46 @@ func _test_air_blends() -> void:
 	eq(clip_coach.contains("Fade cooldown"), false, "the picture at 5 does not end Fade: %s" % clip_coach)
 	print("CLIP204 landing (6,0) Gloam picture (1,0) stored (2,0) code steps %s" % clip_steps)
 
+	# Three diagonal steps is a square of 3 and Manhattan 6. A square count of 4
+	# would reveal him. Straight steps do not, and Fade does not start. The
+	# air cast and a blend on a body both go through _stamp_blend_reveal, which
+	# is also what the server runs.
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1, 1], "classes": ["ironjaw", "gloam"], "positions": [Vector2i(5, 5), Vector2i(9, 8)], "gloam_invisible": true})
+	_live_unit(0)["spell_elements"] = {"strike": "air", "shoulder": "fire", "crush": "fire", "advance": "air"}
+	_live_unit(1)["invisible_turns"] = 3
+	eq(_sim.chebyshev(Vector2i(6, 5), _unit(1)["pos"]), 3, "three diagonal steps is a square of 3")
+	eq(_sim.manhattan(Vector2i(6, 5), _unit(1)["pos"]), 6, "three diagonal steps is Manhattan 6")
+	_sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(6, 5), "seat": 0})
+	var diag6: Dictionary = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(6, 5), "seat": 0})
+	var diag6_row := _first_event_where(diag6.get("events", []), "blend")
+	eq(str(diag6_row.get("blend", "")), "flare", "the diagonal cast still fires Flare")
+	eq(diag6_row.get("to", Vector2i.ZERO), Vector2i(6, 5), "this Flare is measured from the landing (6,5)")
+	var diag6_steps := -1
+	for raw_diag in diag6_row.get("reveal_checks", []):
+		if typeof(raw_diag) == TYPE_DICTIONARY and int(raw_diag.get("seat", -1)) == 1:
+			diag6_steps = int(raw_diag.get("steps", -1))
+	eq(diag6_steps, 6, "the radius logged Manhattan 6, not the square of 3")
+	eq(diag6_row.get("revealed", []), [], "Flare does not list Gloam at Manhattan 6")
+	eq(str(diag6_row.get("coach", "")).contains("Invisible enemies nearby are revealed"), false, "the nearby-reveal line stays off at Manhattan 6")
+	eq(bool(_unit(1).get("invisible", false)), true, "three diagonal steps stays Invisible")
+	eq(int(_unit(1).get("invisible_turns", 0)), 3, "the Invisible clock stays at 3")
+	var diag_cds: Variant = _unit(1).get("spell_cd", {})
+	var diag_fade := 0
+	if typeof(diag_cds) == TYPE_DICTIONARY:
+		diag_fade = int((diag_cds as Dictionary).get("fade", 0))
+	eq(diag_fade, 0, "Manhattan 6 does not start Fade cooldown")
+	eq(str(diag6.get("snapshot", {}).get("coach", "")).contains("Fade cooldown"), false, "Manhattan 6 coach has no Fade cooldown")
+	var body_event := {}
+	var body_note: String = _sim._stamp_blend_reveal(_unit(0), Vector2i(6, 5), "flare", body_event)
+	eq(body_note, "", "a Flare on a body also stays quiet at Manhattan 6")
+	eq(body_event.get("revealed", []), [], "the on-body path does not list him")
+	eq(bool(_unit(1).get("invisible", false)), true, "the on-body path leaves him Invisible")
+	var stamp_at := FileAccess.get_file_as_string("res://backend/combat_sim.gd").find("func _stamp_blend_reveal")
+	var stamp_src := FileAccess.get_file_as_string("res://backend/combat_sim.gd")
+	var stamp_body := stamp_src.substr(stamp_at, stamp_src.find("func _hang_or_blend_air", stamp_at) - stamp_at)
+	truthy(stamp_body.contains("manhattan(foot, center)"), "every Flare reveal counts straight steps")
+	eq(stamp_body.contains("chebyshev"), false, "the reveal path does not use a square count")
+
 	# Same picture, one step closer. (2,0) is 4 straight steps and does reveal.
 	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1, 1], "classes": ["ironjaw", "gloam"], "positions": [Vector2i(5, 0), Vector2i(2, 0)], "gloam_invisible": true})
 	_live_unit(0)["spell_elements"] = {"strike": "air", "shoulder": "fire", "crush": "fire", "advance": "air"}
