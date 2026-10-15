@@ -17,11 +17,19 @@ He faces the direction of travel or his target. The blade always points toward t
   From 0.5 s: 7 smoke crows with gold ember eyes burst from the chest and dive at the heroes.
   About 1.4–2.45 s: they peck, the heroes play their hit frames with a subtle tint, and feathers and smoke fly.
   2.3–2.8 s: the crows unravel into smoke. He returns to idle float by 3.25 s.
+- warden_attack_4dir_v3.mp4: 3.0 s melee slash. See Attack.
 - warden_hit_death_4dir_v2.mp4: 6.5 s.
   Ironjaw's first hit lands at 1.15 s: recoil, stagger, warm tint, a chest flash and a smoke puff, then he recovers by 2.5 s.
   The second hit lands at 3.35 s: a sideways shake with motion blur, then the ribs flare from 3.4 to 4.2 s.
   4.0–5.6 s: a black smoke burst, with 7 painted crows flapping out on curved paths and falling feathers.
   From 4.45 s: the painted remains plate fades in on the unit's spot and holds to 6.5 s.
+
+## Attack
+Melee, at 1 tile (adjacent). `video/warden_attack_4dir_v3.mp4`. Scripts: `scripts/attack4_v3.py` (also `attack4.py`, `attack2.py`).
+- 3.0 s total: float idle 0–0.45 s, scythe wind-up 0.45–1.05 s.
+- A small 0.15-tile glide and slash at 1.05–1.37 s, leaving a black smoke wave with a faint purple rim that follows the blade tip (no gold).
+- Ironjaw hit at 1.38–1.95 s with a dark impact flash.
+- Recovery to float by 3.0 s.
 
 ## Rules
 - Exact limb and prop counts; palette kept from the keys.
@@ -35,7 +43,7 @@ Run from scripts/ with keys/ and plates/ copied alongside:
 - python3 rig4.py: walk.
 - python3 crows4.py: spell.
 - python3 hd4.py: hit/death.
+- python3 attack4_v3.py: attack.
 
 Paths inside the scripts point at /workspace/foe_walks/harvest_v2 and need adjusting.
 Hero sprites (Ironjaw, Kestrel) come from /workspace/art and are not included.
-The attack is NOT approved and is excluded.
