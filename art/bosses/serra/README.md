@@ -3,7 +3,7 @@ Approved by Mauro. Preview art only; not yet wired into the game.
 
 ## Variants
 - Stars 1-4: Glacier Empress (evil). Approved: keys_turned, walk_v3, attack_v2, spell_v2 (blizzard + icicle rain), hitdeath_v3 (dissolve, crystal-cluster remains with crown + staff).
-- Star 5: Frost Wraith. Approved: s5_walk, s5_attack_v4 (staff blizzard = NORMAL attack, not a spell), s5_spell_v1 (ice prison: staff slam, rune ring, crystal cage grows on targets, shatters; looks per s5_spell_stills_v2), s5_hitdeath_v1 (hit strips + remains_s5_170_v2; hit+death video pending).
+- Star 5: Frost Wraith. Approved: s5_walk, s5_attack_v4 (staff blizzard = NORMAL attack, not a spell), s5_spell_v1 (ice prison: staff slam, rune ring, crystal cage grows on targets, shatters; looks per s5_spell_stills_v2), s5_hitdeath_v1 (approved, hit+death video done).
 
 ## Method
 - Painted, direction-turned keys -> matted -> jointed rig (arm split at elbow) -> glide animation (3 px bob, lean into travel, trailing robe/smoke).
