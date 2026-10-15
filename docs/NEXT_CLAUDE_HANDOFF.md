@@ -64,6 +64,13 @@ README).
 Hero walk redraw, then the five bosses, reviewed by Claude, then stop and
 wait for Mauro: `docs/ART_HANDOFF.md` (rules, checklist, status).
 
+**15 Oct 2026 — Serra frost boss art is in the repo, preview only.**
+PNG strips, turned keys, Python build scripts, and 4-direction preview mp4s
+for stars 1–4 (Glacier Empress) and star 5 (Frost Wraith) are under
+`art/bosses/serra/`. Method and Mauro's art rules: `art/bosses/serra/README.md`
+(same text as `SERRA_ART_NOTES.md`). Not wired into the game. Do not hook
+these files up until Mauro says so.
+
 ## Waiting on Mauro (ask, don't decide)
 
 - **Bastion's walk sheet** turns to face the camera mid-step (east / west).
