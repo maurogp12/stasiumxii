@@ -38,6 +38,7 @@ func _run() -> void:
 	_test_loadouts()
 	_test_crit_cap_and_stun()
 	_test_ap_mp_matrix()
+	_test_fight_mp_is_sheet_not_flat()
 	_test_prefight_loadout()
 	_wipe()
 	print("Gear tests: %d passed, %d failed" % [_passed, _failed])
@@ -1367,6 +1368,87 @@ func _test_ap_mp_matrix() -> void:
 		_assert_ap_mp_row(sheet, select, row)
 	StasisCatalog.clear_run()
 	StasisCatalog.clear_run_party()
+
+
+## Kestrel, Ironjaw and Gloam (and the other two) start a fight at base 3 MP
+## plus only what the worn set, Rare +5 boots, and Hourglass add. A flat 4
+## fails. The number is the inventory sheet, including through deployment.
+func _test_fight_mp_is_sheet_not_flat() -> void:
+	var sheet: Script = load("res://scenes/inventory_screen.gd")
+	var normal := {"kestrel": "undertow", "ironjaw": "cragmaw", "gloam": "nightglass", "mender": "vesperwell", "bastion": "rustward"}
+	var ultra := {"kestrel": "sandhawk", "ironjaw": "pitmaw", "gloam": "hushring", "mender": "mercywell", "bastion": "gatewarden"}
+	var rare_boots := {"kestrel": "gallowsight", "ironjaw": "maulgrave", "gloam": "stillcut", "mender": "sheaf", "bastion": "ironveil"}
+	for cid in GearBag.CLASS_IDS:
+		_expect_fight_pools(sheet, cid, "", [], 0, 30, "", "", 7, 3)
+		_expect_fight_pools(sheet, cid, str(normal[cid]), GearBag.SLOTS, 5, 30, "", "", 7, 3)
+		_expect_fight_pools(sheet, cid, str(ultra[cid]), GearBag.SLOTS, 5, 30, "", "", 8, 4)
+		_expect_fight_pools(sheet, cid, str(ultra[cid]), GearBag.SLOTS, 5, 30, "hourglass_step", "intact", 7, 5)
+		_expect_fight_pools(sheet, cid, str(ultra[cid]), GearBag.SLOTS, 5, 30, "hourglass_step", "overwound", 6, 7)
+		_expect_fight_pools(sheet, cid, str(rare_boots[cid]), ["boots"], 5, 30, "", "", 7, 4)
+	_expect_fight_pools(sheet, "kestrel", "", [], 0, 1, "", "", 6, 3)
+	_expect_fight_pools(sheet, "ironjaw", "", [], 0, 1, "", "", 6, 3)
+	_expect_fight_pools(sheet, "gloam", "", [], 0, 1, "", "", 6, 3)
+
+
+func _expect_fight_pools(sheet: Script, class_id: String, family: String, slots: Array, plus: int, level: int, still: String, mode: String, want_ap: int, want_mp: int) -> void:
+	var label := "%s %s +%d lv%d %s %s" % [class_id, family if family != "" else "empty", plus, level, still, mode]
+	var other := "ironjaw" if class_id != "ironjaw" else "kestrel"
+	var bag := GearBag.new()
+	if family != "":
+		for slot in slots:
+			var worn: Dictionary = bag.equip(bag.add_item(family, str(slot), plus), class_id)
+			eq(bool(worn.get("ok", false)), true, "%s wears %s %s" % [label, family, str(slot)])
+	bag.save()
+	var hero := HeroProgress.new()
+	hero.classes[class_id] = {"xp": 0, "level": level, "spent": {}}
+	hero.save()
+	var vault := StillVault.new()
+	if still != "":
+		vault.set_focus(class_id)
+		vault.socket = still
+		vault.mode = mode
+	vault.save()
+	var hero_raw: Dictionary = hero.fight_hero(class_id)
+	var sheet_stats: Dictionary = sheet.champion_stats(bag, hero, class_id)
+	eq(int(sheet_stats["ap"]), want_ap, "%s inventory AP is %d" % [label, want_ap])
+	eq(int(sheet_stats["mp"]), want_mp, "%s inventory MP is %d, not a flat 4" % [label, want_mp])
+	var bare: Dictionary = GearBag.turn_pools(bag.worn_list(class_id), hero_raw, still, mode, false, class_id)
+	var flat: Dictionary = GearBag.turn_pools(bag.worn_list(class_id), hero_raw, still, mode, true, class_id)
+	eq(Vector2i(int(bare["ap"]), int(bare["mp"])), Vector2i(want_ap, want_mp), "%s sheet pools" % label)
+	eq(Vector2i(int(flat["ap"]), int(flat["mp"])), Vector2i(want_ap, want_mp), "%s Koliseo pools keep the AP/MP gates" % label)
+	var gear: Dictionary = bag.fight_gear(true, class_id)
+	gear["flatten_plus"] = true
+	var sim: Node = root.get_node("/root/CombatSim")
+	sim.reset_match({
+		"classes": [class_id, other],
+		"skip_deploy": true,
+		"flat_board": true,
+		"seed": 1,
+		"positions": [Vector2i(2, 2), Vector2i(5, 2)],
+		"seat_gear": {0: gear},
+	})
+	var unit: Dictionary = sim._unit_by_seat(0)
+	eq(Vector2i(int(unit["max_ap"]), int(unit["max_mp"])), Vector2i(want_ap, want_mp), "%s fight max is the inventory total" % label)
+	eq(Vector2i(int(unit["ap"]), int(unit["mp"])), Vector2i(want_ap, want_mp), "%s fight starts on that total" % label)
+	eq(str(sim.snapshot()["coach"]).contains("%d AP / %d MP" % [want_ap, want_mp]), true, "%s coach names the inventory total" % label)
+	if class_id in ["kestrel", "ironjaw", "gloam"] and family == "" and still == "":
+		sim.reset_match({
+			"classes": [class_id, other],
+			"flat_board": true,
+			"seed": 1,
+			"seat_gear": {0: gear},
+		})
+		eq(bool(sim.set_seat_gear(0, gear)), true, "%s deployment accepts the inventory loadout" % label)
+		var zone_a: Array = sim.legal_deploy_cells(0)
+		var zone_b: Array = sim.legal_deploy_cells(1)
+		eq(zone_a.is_empty() or zone_b.is_empty(), false, "%s has deploy cells" % label)
+		if not zone_a.is_empty() and not zone_b.is_empty():
+			eq(bool(sim.submit({"type": "place", "seat": 0, "to": zone_a[0]}).get("ok", false)), true, "%s places" % label)
+			eq(bool(sim.submit({"type": "place", "seat": 1, "to": zone_b[0]}).get("ok", false)), true, "%s foe places" % label)
+			eq(bool(sim.submit({"type": "ready", "seat": 0}).get("ok", false)), true, "%s readies" % label)
+			eq(bool(sim.submit({"type": "ready", "seat": 1}).get("ok", false)), true, "%s foe readies" % label)
+			var live: Dictionary = sim._unit_by_seat(0)
+			eq(Vector2i(int(live["ap"]), int(live["mp"])), Vector2i(want_ap, want_mp), "%s deployment fight is not a flat 4 MP" % label)
 
 
 func _ap_case(class_id: String, family: String, slots: Array, plus: int, level: int, still: String, mode: String) -> Dictionary:
