@@ -40,6 +40,7 @@ func _run() -> void:
 	_test_ap_mp_matrix()
 	_test_fight_mp_is_sheet_not_flat()
 	_test_ultra_on_ironjaw_and_gloam()
+	_test_set_bonus_and_still()
 	_test_prefight_loadout()
 	_wipe()
 	print("Gear tests: %d passed, %d failed" % [_passed, _failed])
@@ -1463,6 +1464,70 @@ func _test_ultra_on_ironjaw_and_gloam() -> void:
 	eq(kept.worn_family("ironjaw"), "tyrantjaw", "Ironjaw's chosen set stays")
 	eq(kept.worn_family("gloam"), "hushring", "empty Gloam receives Hushring")
 	eq(TL.sync_bag(kept), false, "the Ultra wear does not run again")
+	select.hotseat_classes = [] as Array[String]
+
+
+## Base 6 AP / 3 MP, plus every source, on every class. A Legendary or Ultra
+## 5pc is +1/+1. A Rare +5 weapon is +1 AP and Rare +5 boots are +1 MP.
+## Hourglass then adds or takes from that total. Overwound may pass 8/5,
+## so a cap cannot hide a missing piece or a missing set. The fight card
+## after deploy is that same total, on both seats at once.
+func _test_set_bonus_and_still() -> void:
+	var sheet: Script = load("res://scenes/inventory_screen.gd")
+	var select: Script = load("res://scenes/class_select.gd")
+	var legend := {"kestrel": "ravenmourn", "ironjaw": "tyrantjaw", "mender": "hallowmourn", "gloam": "gravewhisper", "bastion": "oathgrave"}
+	var rare := {"kestrel": "gallowsight", "ironjaw": "maulgrave", "mender": "sheaf", "gloam": "stillcut", "bastion": "ironveil"}
+	for cid in GearBag.CLASS_IDS:
+		# 6 + set 1 + Fist Overwound 3 = 10 AP. 3 + set 1 − 2 = 2 MP.
+		_expect_fight_pools(sheet, cid, str(legend[cid]), GearBag.SLOTS, 0, 1, "hourglass_fist", "overwound", 10, 2)
+		# 6 + Rare weapon 1 − Step Overwound 2 = 5 AP. 3 + Rare boots 1 + 3 = 7 MP.
+		_expect_fight_pools(sheet, cid, str(rare[cid]), ["weapon", "boots"], 5, 1, "hourglass_step", "overwound", 5, 7)
+	var bag := GearBag.new()
+	for slot in GearBag.SLOTS:
+		eq(bool(bag.equip(bag.add_item("tyrantjaw", str(slot), 0), "ironjaw").get("ok", false)), true, "Ironjaw wears Tyrantjaw %s" % str(slot))
+		eq(bool(bag.equip(bag.add_item("hushring", str(slot), 5), "gloam").get("ok", false)), true, "Gloam wears Hushring %s" % str(slot))
+	bag.save()
+	var hero := HeroProgress.new()
+	hero.classes["ironjaw"] = {"xp": 0, "level": 30, "spent": {}}
+	hero.classes["gloam"] = {"xp": 0, "level": 30, "spent": {}}
+	hero.save()
+	var vault := StillVault.new()
+	vault.set_focus("ironjaw")
+	vault.socket = "hourglass_step"
+	vault.mode = "intact"
+	vault.set_focus("gloam")
+	vault.socket = "hourglass_fist"
+	vault.mode = "overwound"
+	vault.save()
+	var loaded := GearBag.load_saved()
+	var heroes := HeroProgress.load_saved()
+	# Ironjaw: 6 + Legendary 1 + level 1 − Step 1 = 7 AP. min(3 + 1 + 2, 5) = 5 MP.
+	# Gloam: 6 + Ultra 1 + level 1 + Fist Overwound 3 = 11 AP. 3 + 1 − 2 = 2 MP.
+	var jaw_stats: Dictionary = sheet.champion_stats(loaded, heroes, "ironjaw")
+	var shade_stats: Dictionary = sheet.champion_stats(loaded, heroes, "gloam")
+	eq(Vector2i(int(jaw_stats["ap"]), int(jaw_stats["mp"])), Vector2i(7, 5), "Ironjaw inventory is the Legendary set plus Hourglass Step")
+	eq(Vector2i(int(shade_stats["ap"]), int(shade_stats["mp"])), Vector2i(11, 2), "Gloam inventory is the Ultra set plus Hourglass Fist")
+	select.hotseat_team_size = 1
+	var roster: Array[String] = ["ironjaw", "gloam"]
+	select.hotseat_classes = roster
+	select.hotseat_map_id = ""
+	var local: Dictionary = select.local_match_config()
+	eq(str(local["seat_gear"][0].get("still", {}).get("id", "")), "hourglass_step", "Ironjaw's fight payload keeps Hourglass Step")
+	eq(str(local["seat_gear"][1].get("still", {}).get("id", "")), "hourglass_fist", "Gloam's fight payload keeps Hourglass Fist")
+	var sim: Node = root.get_node("/root/CombatSim")
+	sim.reset_match(local)
+	var zone_a: Array = sim.legal_deploy_cells(0)
+	var zone_b: Array = sim.legal_deploy_cells(1)
+	eq(zone_a.is_empty() or zone_b.is_empty(), false, "both fighters have deploy cells")
+	eq(bool(sim.submit({"type": "place", "seat": 0, "to": zone_a[0]}).get("ok", false)), true, "Ironjaw places with the set and the Still")
+	eq(bool(sim.submit({"type": "place", "seat": 1, "to": zone_b[0]}).get("ok", false)), true, "Gloam places with the set and the Still")
+	eq(bool(sim.submit({"type": "ready", "seat": 0}).get("ok", false)), true, "Ironjaw readies")
+	eq(bool(sim.submit({"type": "ready", "seat": 1}).get("ok", false)), true, "Gloam readies")
+	var jaw: Dictionary = sim._unit_by_seat(0)
+	var shade: Dictionary = sim._unit_by_seat(1)
+	eq(Vector2i(int(jaw["ap"]), int(jaw["mp"])), Vector2i(7, 5), "Ironjaw's card is base + Legendary + level 20 + Hourglass Step")
+	eq(Vector2i(int(shade["ap"]), int(shade["mp"])), Vector2i(11, 2), "Gloam's card is base + Ultra + level 20 + Hourglass Fist")
+	eq(str(sim.snapshot()["coach"]).contains("7 AP / 5 MP") or str(sim.snapshot()["coach"]).contains("11 AP / 2 MP"), true, "the opening coach names a set-plus-Still pool")
 	select.hotseat_classes = [] as Array[String]
 
 
