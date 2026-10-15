@@ -171,6 +171,11 @@ var _last_coach: String = ""
 var _intent_log: Array = []
 ## Test/setup occupancy only. Occupied dest is hard body-block (push_blocked).
 var _blocked_cells: Array[Vector2i] = []
+## Walk MP the green highlight used at the start of each seat's turn.
+## Flare reveals inside that area even after the caster spends the MP.
+var _turn_walk_mp: Dictionary = {}
+## The hidden fighter's own tile is open while Flare measures walk reach.
+var _flare_open_cell := Vector2i(-9999, -9999)
 ## Snap Wall cells. They block walk (and would block Gust) only while a
 ## bastion is in the match. Each wall is one tile for wall_turns (Locked: 2
 ## owner Bastion turn-starts, same family as Burn). Gust itself is not
@@ -248,6 +253,7 @@ func reset_match(config: Dictionary = {}) -> Dictionary:
 	_match_time_left = -1.0
 	_units.clear()
 	_blocked_cells.clear()
+	_turn_walk_mp.clear()
 	_snap_wall_cells.clear()
 	_snap_wall_state.clear()
 	_element_tiles.clear()
@@ -2234,7 +2240,6 @@ const BLEND_NAMES := {
 	"drift_pin": "Drift-Pin", "spark": "Spark",
 	"magma": "Magma", "mire": "Mire", "steam": "Steam", "flare": "Flare",
 }
-const FLARE_REVEAL_RADIUS := 4
 const SPARK_CHIP := 10  # Mauro 6 Oct 2026 (was 4)
 const DRIFT_COLLISION_HP := 8
 const MAGMA_TICK_HP := 4
@@ -2441,22 +2446,14 @@ func _blend_spark(_actor: Dictionary, target: Dictionary, event: Dictionary) -> 
 	return "%d damage (ignores resist), -%d%% healing" % [chip, roundi(SPARK_HEAL_CUT * 100.0)]
 
 
-## Flare (Air + Fire): every Invisible enemy of the caster within
-## FLARE_REVEAL_RADIUS of the target is revealed, and the target gains a Burn
-## stack (same Burn as Fire / lava: 4 per stack, cap 3).
+## Flare (Air + Fire): Invisible enemies in the caster's green walk range are
+## revealed, and the target gains a Burn stack (same Burn as Fire / lava:
+## 4 per stack, cap 3). The reveal itself is _stamp_blend_reveal.
 func _blend_flare(_actor: Dictionary, target: Dictionary, event: Dictionary) -> String:
 	var burn := _apply_burn(target)
 	event["burn_stacks"] = int(target.get("burn_stacks", 0))
 	event["debuffs"] = [_debuff("Burn", int(burn.get("remaining", 0)), "stack %d, %d HP" % [int(burn.get("stacks", 0)), int(burn.get("hp_per_tick", 0))])]
 	return "Burn %d" % int(burn.get("stacks", target.get("burn_stacks", 0)))
-
-
-## How far from the landing an invisible enemy is revealed. Flare is 4 tiles,
-## counted in straight steps (Manhattan: |dx| + |dy|, a diagonal step counts
-## as 2). Mauro 14 Oct 2026: was 2, then a square of 4, then straight steps.
-## The other Blends reveal one straight step (orthogonal neighbors only).
-func _blend_reveal_radius(blend: String) -> int:
-	return FLARE_REVEAL_RADIUS if blend == "flare" else 1
 
 
 ## The drawn tile is the only position. The board writes it here before a
@@ -2472,13 +2469,52 @@ func commit_drawn_cell(seat: int, cell: Vector2i) -> void:
 
 ## Same reveal as a hurting blow: Invisible ends, Fade's cooldown arms, and
 ## the expire carries the tile only after the flag is down so a still-hidden
-## fighter's cell is not in the event. Distance is straight steps from the
-## landing to unit pos, which is the cell he is drawn on. Returns the coach
-## fragment, or "".
+## fighter's cell is not in the event. Flare uses the caster's green walk
+## range. Every other Blend counts straight steps from the landing to unit
+## pos, which is the cell he is drawn on. Returns the coach fragment, or "".
 func _stamp_blend_reveal(actor: Dictionary, center: Vector2i, blend: String, event: Dictionary) -> String:
 	var revealed: Array = []
 	var checks: Array = []
-	var radius := _blend_reveal_radius(blend)
+	if blend == "flare":
+		_stamp_flare_walk_reveal(actor, checks, revealed)
+	else:
+		var radius := 1
+		for raw in _units:
+			var unit: Dictionary = raw
+			if not bool(unit.get("alive", false)) or _allied(unit, actor):
+				continue
+			if not bool(unit.get("invisible", false)):
+				continue
+			var cell := _as_cell(unit.get("pos", Vector2i.ZERO))
+			var steps := manhattan(cell, center)
+			checks.append({
+				"seat": int(unit["seat"]),
+				"steps": steps,
+				"pos": cell,
+				"center": center,
+			})
+			if steps > radius:
+				continue
+			if not _end_invisible(unit, false):
+				continue
+			_emit_expire("invisible", unit["pos"], int(unit["seat"]), int(unit["seat"]))
+			revealed.append(int(unit["seat"]))
+	# How far each hidden enemy stood. The coach stays the short fragment.
+	event["reveal_checks"] = checks
+	if revealed.is_empty():
+		return ""
+	event["revealed"] = revealed
+	return "Invisible enemies nearby are revealed"
+
+
+## Flare's area is the green walk range measured from the caster, not from
+## the landing. The budget is the full turn MP (the highlight at turn start).
+## Obstacles and other bodies stop the path. The hidden fighter's own tile
+## is open, so a body standing on a tile in that area is revealed whichever
+## way the attack was aimed. Outside it, Invisible stays and Fade does not arm.
+func _stamp_flare_walk_reveal(actor: Dictionary, checks: Array, revealed: Array) -> void:
+	var origin := _as_cell(actor.get("pos", Vector2i.ZERO))
+	var budget := _flare_walk_budget(actor)
 	for raw in _units:
 		var unit: Dictionary = raw
 		if not bool(unit.get("alive", false)) or _allied(unit, actor):
@@ -2486,26 +2522,59 @@ func _stamp_blend_reveal(actor: Dictionary, center: Vector2i, blend: String, eve
 		if not bool(unit.get("invisible", false)):
 			continue
 		var cell := _as_cell(unit.get("pos", Vector2i.ZERO))
-		var steps := manhattan(cell, center)
+		var steps := _flare_walk_steps(origin, cell, budget)
 		checks.append({
 			"seat": int(unit["seat"]),
 			"steps": steps,
 			"pos": cell,
-			"center": center,
+			"center": origin,
 		})
-		if steps > radius:
+		if cell == origin or steps < 0 or steps > budget:
 			continue
 		if not _end_invisible(unit, false):
 			continue
 		_emit_expire("invisible", unit["pos"], int(unit["seat"]), int(unit["seat"]))
 		revealed.append(int(unit["seat"]))
-	# How far each hidden enemy stood from the landing. The coach stays the
-	# short fragment; this is the count the radius used.
-	event["reveal_checks"] = checks
-	if revealed.is_empty():
-		return ""
-	event["revealed"] = revealed
-	return "Invisible enemies nearby are revealed"
+
+
+func _flare_walk_budget(actor: Dictionary) -> int:
+	var seat := int(actor.get("seat", -1))
+	if _turn_walk_mp.has(seat):
+		return int(_turn_walk_mp[seat])
+	return _walk_highlight_mp(actor)
+
+
+func _stamp_turn_walk_mp(unit: Dictionary) -> void:
+	if unit.is_empty():
+		return
+	_turn_walk_mp[int(unit.get("seat", -1))] = _walk_highlight_mp(unit)
+
+
+## MP the green walk highlight spends: current MP minus exit tax and Mire,
+## or none while Pinned.
+func _walk_highlight_mp(actor: Dictionary) -> int:
+	var mp := maxi(int(actor.get("mp", 0)) - _walk_tax(actor), 0)
+	if bool(actor.get("pinned", false)):
+		mp = 0
+	return mp
+
+
+func _flare_walk_steps(origin: Vector2i, cell: Vector2i, budget: int) -> int:
+	_flare_open_cell = cell
+	var occupied := Callable(self, "_flare_reveal_occupied")
+	var reach: Dictionary = _board.reachable(origin, maxi(budget, 0), occupied)
+	if reach.has(cell):
+		return int(reach[cell]["cost"])
+	var far: Dictionary = _board.reachable(origin, 9999, occupied)
+	if far.has(cell):
+		return int(far[cell]["cost"])
+	return -1
+
+
+func _flare_reveal_occupied(cell: Vector2i, ignore: Vector2i) -> bool:
+	if cell == _flare_open_cell:
+		return false
+	return _walk_occupied(cell, ignore)
 
 
 ## An element thrown into empty air. The first one hangs on the caster for
@@ -3124,6 +3193,7 @@ func _begin_combat(coach: String) -> void:
 	var steadfast_cut := int(opener.get("steadfast_ap", 0))
 	var bound_ap_cut := int(opener.get("bound_ap_pen", 0))
 	_still_turn_start(opener)
+	_stamp_turn_walk_mp(opener)
 	_start_turn_timer()
 	_last_coach = coach
 	_last_events = [{
@@ -3291,6 +3361,8 @@ func _handoff_seat(actor: Dictionary, auto_skip: bool, skip_reason: String = "")
 	# Mud Slow: −stack MP for this turn only. A stunned skip still consumes it.
 	_consume_mud_slow(next_unit)
 	_consume_electrocuted(next_unit)
+	# Green tiles are this pool. Flare keeps it after the fighter walks.
+	_stamp_turn_walk_mp(next_unit)
 	# Soft Lock Burn ticks once this turn has started, including a stunned skip.
 	_tick_burn(next_unit)
 	return next_unit

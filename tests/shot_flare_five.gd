@@ -448,8 +448,8 @@ func _play_clip_204() -> bool:
 		if typeof(raw_check) == TYPE_DICTIONARY and int(raw_check.get("seat", -1)) == 1:
 			steps = int(raw_check.get("steps", -1))
 	print("CLIP204 landing (6,0) ironjaw (5,0) gloam picture (1,0) stored (2,0) code steps %s" % steps)
-	if steps != 5:
-		return _fail("code computed %s steps, not 5" % steps)
+	if steps != 4:
+		return _fail("code computed %s steps, not the walk cost 4" % steps)
 	if not (blend.get("revealed", []) as Array).is_empty():
 		return _fail("Flare listed a reveal at 5 picture steps")
 	if not bool(sim._unit_by_seat(1).get("invisible", false)):
@@ -530,8 +530,8 @@ func _play_clip_205() -> bool:
 		if typeof(raw_check) == TYPE_DICTIONARY and int(raw_check.get("seat", -1)) == 1:
 			steps = int(raw_check.get("steps", -1))
 	print("CLIP205 landing (6,0) marks (5,0) (4,0) (3,0) gloam (2,0) Invisible 2 stale grid (1,0) code steps %s" % steps)
-	if steps != 4:
-		return _fail("code computed %s steps, not 4" % steps)
+	if steps != 3:
+		return _fail("code computed %s steps, not the walk cost 3" % steps)
 	if (blend.get("revealed", []) as Array) != [1]:
 		return _fail("Flare did not list the drawn cell at 4 steps")
 	if bool(sim._unit_by_seat(1).get("invisible", true)):
