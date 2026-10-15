@@ -283,7 +283,7 @@ static func caster_motion(spell_id: String) -> String:
 		var shape := str(_FoeKits.spell(spell_id).get("shape", ""))
 		if shape in ["melee", "dash", "cone", "radius"]:
 			return "attack"
-		if shape in ["shot", "line", "pads", "blast"]:
+		if shape in ["shot", "line", "pads", "blast", "summon"]:
 			return "cast"
 		return ""
 	var def := SpellKits.spell(spell_id)

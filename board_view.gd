@@ -2683,7 +2683,10 @@ func _apply_units(snap: Dictionary) -> void:
 	for unit in snap.get("units", []):
 		var seat := int(unit["seat"])
 		if not pawns_by_seat.has(seat):
-			continue
+			# A summon (Brood Storm) joins after the pawns were built.
+			var made := PAWN_SCENE.instantiate() as Pawn
+			_units_root().add_child(made)
+			pawns_by_seat[seat] = made
 		var pawn: Pawn = pawns_by_seat[seat]
 		var raw_pos: Variant = unit.get("pos", Vector2i(-1, -1))
 		var cell: Vector2i = _as_cell(raw_pos)
