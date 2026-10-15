@@ -384,6 +384,8 @@ var loot_day: int = -1
 var loot_clears_today: int = 0
 ## TEMPORARY balance-test kit granted (backend/test_loadout.gd).
 var test_grant: bool = false
+## The kit has already put an Ultra 5pc on each empty class once.
+var test_ultra_worn: bool = false
 
 
 func _init() -> void:
@@ -621,6 +623,7 @@ func to_dict() -> Dictionary:
 		"loot_day": loot_day,
 		"loot_clears_today": loot_clears_today,
 		"test_grant": test_grant,
+		"test_ultra_worn": test_ultra_worn,
 		"stance": stance,
 	}
 
@@ -708,6 +711,7 @@ func from_dict(data: Dictionary) -> void:
 	loot_day = int(data.get("loot_day", -1))
 	loot_clears_today = maxi(int(data.get("loot_clears_today", 0)), 0)
 	test_grant = bool(data.get("test_grant", false))
+	test_ultra_worn = bool(data.get("test_ultra_worn", false))
 	stance = clean_stance(data.get("stance", ""))
 
 
