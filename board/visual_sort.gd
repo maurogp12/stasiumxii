@@ -48,6 +48,14 @@ static func cell_to_local(cell: Vector2i, elevation: float = 0.0) -> Vector2:
 	return iso
 
 
+## Inverse of cell_to_local. The pawn's drawn foot is the cell, including while
+## a tween has moved the sprite off the last committed grid_position.
+static func local_to_cell(local: Vector2, elevation: float = 0.0) -> Vector2i:
+	var sum := (local.y + elevation * ELEVATION_PIXELS) / 16.0
+	var diff := local.x / 32.0
+	return Vector2i(int(round((sum + diff) * 0.5)), int(round((sum - diff) * 0.5)))
+
+
 static func _depth_z(cell: Vector2i, elevation: float) -> int:
 	return (cell.x + cell.y) * TILE_Z_SCALE + int(round(elevation * float(ELEVATION_Z_SCALE)))
 

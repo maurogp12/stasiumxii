@@ -1405,23 +1405,39 @@ func _on_new_match() -> void:
 	_hydrate_turn_clock()
 
 
-## The pawn's cell, before this cast moves anyone. Flare measures from this
-## tile, not from a sim pos that has already stepped closer than the picture.
-func _stamp_feet() -> void:
+## One cell. The sprite's foot is the position Flare counts, and it is written
+## onto the unit so a leftover grid_position cannot disagree with the picture.
+## A pure client does not own that cell; the server snapshot does.
+func _sync_drawn_cells() -> void:
+	if _online() and _net().is_client():
+		return
 	var sim := _sim()
-	if sim == null or not sim.has_method("note_foot_cell"):
+	if sim == null or not sim.has_method("commit_drawn_cell"):
 		return
 	for seat in pawns_by_seat.keys():
 		var pawn: Pawn = pawns_by_seat[seat]
 		if pawn == null or not is_instance_valid(pawn):
 			continue
-		sim.note_foot_cell(int(seat), pawn.grid_position)
+		var drawn := _drawn_cell(pawn)
+		if not _in_bounds(drawn):
+			continue
+		sim.commit_drawn_cell(int(seat), drawn)
+		pawn.grid_position = drawn
+		pawn.position = _cell_to_local(drawn)
+		pawn.z_index = _pawn_z(drawn)
+
+
+## Nearest cell to the drawn foot. grid_position updates only when a walk
+## step commits, so it can sit one tile farther than the sprite.
+func _drawn_cell(pawn: Pawn) -> Vector2i:
+	var guess := VISUAL_SORT.local_to_cell(pawn.position, 0.0)
+	return VISUAL_SORT.local_to_cell(pawn.position, _elev_at(guess))
 
 
 func _submit(intent: Dictionary) -> void:
 	if _busy or _view_locked:
 		return
-	_stamp_feet()
+	_sync_drawn_cells()
 	_mark_local_net_echo()
 	var result: Dictionary
 	if _online() and _net().is_client():
