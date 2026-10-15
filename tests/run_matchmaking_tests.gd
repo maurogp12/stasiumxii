@@ -397,7 +397,7 @@ func _test_ambush_miss_keeps_shade() -> void:
 	eq(actor["pos"], before, "Ambush miss does not teleport")
 	eq(bool(actor["shade"]), true, "Ambush miss keeps Shade")
 	eq(int(actor["shades"]), shades_before, "Ambush miss does not spend a Shade token")
-	eq(bool(actor["invisible"]), false, "Ambush miss ends Invisible")
+	eq(bool(actor["invisible"]), true, "Ambush miss keeps Invisible")
 	eq(int(actor["ap"]), 2, "Ambush miss spends 4 AP")
 	eq(int(actor["mp"]), 3, "Ambush miss does not spend MP")
 	eq(int(_sim.snapshot()["units"][1]["hp"]), 75, "Ambush miss deals no damage")

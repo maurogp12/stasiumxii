@@ -385,8 +385,8 @@ static func run(host: SceneTree) -> void:
 	for unit in miss_snap.get("units", []):
 		if typeof(unit) == TYPE_DICTIONARY and int(unit.get("seat", -1)) == 0:
 			miss_unit = unit
-	host.eq(bool(miss_unit.get("invisible", false)), false, "submit-path Ambush miss ends Invisible")
-	host.eq(bool(miss_pawn.invisible), false, "submit-path Ambush miss draws Gloam")
+	host.eq(bool(miss_unit.get("invisible", false)), true, "submit-path Ambush miss keeps Invisible")
+	host.eq(bool(miss_pawn.invisible), true, "submit-path Ambush miss stays hidden")
 
 	# Luca clip: Shades 0/2, Invisible, walked adjacent, then Ambush.
 	# The foot has to be on the enemy's back tile before the slash or the 22.

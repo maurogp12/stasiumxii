@@ -2115,7 +2115,8 @@ func _test_ambush_destination_locked() -> void:
 	eq(int(_unit(0)["shades"]), shades_miss, "Ambush miss keeps the Shade token")
 	eq(str(_unit(0).get("facing", "")), str(miss_setup["units"][0].get("facing", "")), "Ambush miss does not turn Gloam")
 	eq(bool(_unit(0)["shade"]), true, "Ambush miss keeps Shade")
-	eq(bool(_unit(0)["invisible"]), false, "Ambush miss ends Invisible")
+	eq(bool(_unit(0)["invisible"]), true, "Ambush miss keeps Invisible")
+	eq(_fade_cd(0), 0, "Ambush miss does not start Fade cooldown")
 	eq(int(_unit(1)["hp"]), 75, "Ambush miss deals no damage")
 	var miss_event: Dictionary = missed["events"][0]
 	eq(str(miss_event.get("type", "")), "miss", "Ambush miss emits miss")
@@ -2942,7 +2943,8 @@ func _test_ambush_rules_keeper_lock() -> void:
 	eq(bool(east_miss["events"][0].get("teleported", true)), false, "east miss does not teleport")
 	eq(east_miss["events"][0].has("struck_from"), false, "east miss has no strike cell")
 	eq(_unit(0)["pos"], Vector2i(6, 0), "east miss leaves Gloam on the cast cell")
-	eq(bool(_unit(0)["invisible"]), false, "east miss ends Invisible")
+	eq(bool(_unit(0)["invisible"]), true, "east miss keeps Invisible")
+	eq(_fade_cd(0), 0, "east miss does not start Fade cooldown")
 	eq(int(_unit(1)["hp"]), 75, "east miss deals no damage")
 	eq(int(_unit(0)["ap"]), 0, "east miss spends Fade 2 plus Ambush 4")
 
@@ -2967,7 +2969,7 @@ func _test_ambush_rules_keeper_lock() -> void:
 	eq(_unit(0)["pos"], gloam, "illegal_back does not teleport")
 	eq(int(_unit(0)["shades"]), 1, "illegal_back keeps the Shade")
 
-	# MISS: no teleport, keep Shade, end Invisible, 4 AP spent.
+	# MISS: no teleport, keep Shade, keep Invisible, 4 AP spent.
 	_sim.reset_match({
 		"seed": 1,
 		"flat_board": true,
@@ -2984,7 +2986,8 @@ func _test_ambush_rules_keeper_lock() -> void:
 	eq(bool(missed.get("ok", false)), true, "Ambush miss resolves")
 	eq(_unit(0)["pos"], Vector2i(2, 2), "Ambush miss does not teleport")
 	eq(int(_unit(0)["shades"]), shades_miss, "Ambush miss keeps the Shade")
-	eq(bool(_unit(0)["invisible"]), false, "Ambush miss ends Invisible")
+	eq(bool(_unit(0)["invisible"]), true, "Ambush miss keeps Invisible")
+	eq(_fade_cd(0), 0, "Ambush miss does not start Fade cooldown")
 	eq(int(_unit(0)["ap"]), 2, "Ambush miss spends 4 AP")
 	eq(int(_unit(0)["mp"]), 3, "Ambush miss spends 0 MP")
 	eq(int(_unit(1)["hp"]), 75, "Ambush miss deals no damage")
@@ -3107,7 +3110,7 @@ func _test_invisible_shade_origin_ambush() -> void:
 	eq(int(_unit(0)["shades"]), 1, "clip self-origin keeps the Shade")
 	eq(bool(_unit(0)["invisible"]), false, "clip Ambush ends Invisible")
 
-	# Miss from the Shade while Invisible: no teleport, Shade stays, Invisible ends.
+	# Miss from the Shade while Invisible: no teleport, Shade stays, Invisible stays.
 	_sim.reset_match({
 		"seed": 1,
 		"flat_board": true,
@@ -3126,7 +3129,8 @@ func _test_invisible_shade_origin_ambush() -> void:
 	eq(_unit(0)["pos"], gloam, "Invisible Shade Ambush miss stays on the body")
 	eq(missed["events"][0].get("origin"), gloam, "the miss origin is Gloam when he can reach")
 	eq(int(_unit(0)["shades"]), 1, "Invisible Shade Ambush miss keeps the Shade")
-	eq(bool(_unit(0)["invisible"]), false, "Invisible Shade Ambush miss ends Invisible")
+	eq(bool(_unit(0)["invisible"]), true, "Invisible Shade Ambush miss keeps Invisible")
+	eq(_fade_cd(0), 0, "Invisible Shade Ambush miss does not start Fade cooldown")
 	eq(int(_unit(1)["hp"]), 75, "Invisible Shade Ambush miss deals no damage")
 
 	# Video layout: Gloam is in front of the enemy and a Shade stands beside
@@ -3239,9 +3243,12 @@ func _test_invisible_breaks_on_attack() -> void:
 	eq(bool(missed.get("ok", false)), true, "Invisible Ambush miss resolves")
 	eq(_unit(0)["pos"], gloam, "Invisible Ambush miss does not relocate")
 	eq(int(_unit(1)["hp"]), hp_before, "Invisible Ambush miss deals no damage")
-	eq(bool(_unit(0)["invisible"]), false, "Invisible Ambush miss ends Invisible")
+	eq(bool(_unit(0)["invisible"]), true, "Invisible Ambush miss keeps Invisible")
+	eq(int(_unit(0).get("invisible_turns", 0)) > 0, true, "Ambush miss keeps the Fade clock")
+	eq(_fade_cd(0), 0, "Ambush miss does not start Fade cooldown")
+	eq(str(missed.get("snapshot", {}).get("coach", "")).contains("Fade cooldown"), false, "Ambush miss coach does not arm Fade")
 	eq(bool(missed["events"][0].get("teleported", true)), false, "Invisible Ambush miss is not a teleport")
-	eq(bool(missed["events"][0].get("invisible_retained", true)), false, "Invisible Ambush miss does not retain Invisible")
+	eq(bool(missed["events"][0].get("invisible_retained", false)), true, "Invisible Ambush miss retains Invisible")
 	eq(int(SpellKits.spell(SpellKits.AMBUSH)["base_damage"]), 26, "Ambush damage stays 26")
 	eq(int(SpellKits.spell(SpellKits.AMBUSH)["ap"]), 4, "Ambush cost stays 4 AP")
 	eq(_sim.ambush_damage_if_planted(gloam, back, 22), 0, "Ambush damage without the relocate is zero")
@@ -3263,6 +3270,7 @@ func _test_invisible_breaks_on_attack() -> void:
 	eq(hit["events"][0].get("struck_from"), back, "Invisible Ambush damage is struck after the relocate")
 	eq(int(_unit(1)["hp"]), 34, "Invisible Ambush hit is (26 + Fade's 1 Umbral) × 1.35")
 	eq(bool(_unit(0)["invisible"]), false, "Invisible Ambush hit ends Invisible")
+	eq(_fade_cd(0), 1, "a connecting Ambush starts Fade cooldown")
 	eq(bool(hit["events"][0].get("invisible_retained", true)), false, "Invisible Ambush hit does not retain Invisible")
 
 	_sim.reset_match({
