@@ -468,12 +468,17 @@ func _play_clip_204() -> bool:
 	return true
 
 
-## 0.1.205 clip. The sprite sits on (2,0), four straight steps from the yellow
-## tile (6,0). grid_position was left on (1,0). Counting that leftover cell
-## hid him. The drawn foot is the position, so Flare reveals him.
+## 0.1.205 screenshot. Mauro marked four straight steps from the Flare:
+## (6,0) flare, (5,0), (4,0), (3,0), (2,0) Gloam. The card still read
+## Invisible 2. grid_position was left on (1,0), five steps, and that leftover
+## cell is what the radius counted. The drawn foot is the position, so Flare
+## reveals him and the card drops Invisible 2.
 func _play_clip_205() -> bool:
 	var sim: Node = root.get_node("/root/CombatSim")
 	var landing := Vector2i(6, 0)
+	var mark_1 := Vector2i(5, 0)
+	var mark_2 := Vector2i(4, 0)
+	var mark_3 := Vector2i(3, 0)
 	var drawn := Vector2i(2, 0)
 	var stale := Vector2i(1, 0)
 	sim.reset_match({
@@ -482,20 +487,25 @@ func _play_clip_205() -> bool:
 		"skip_deploy": true,
 		"rolls": [1, 1],
 		"classes": ["ironjaw", "gloam"],
-		"positions": [Vector2i(5, 0), stale],
+		"positions": [mark_1, stale],
 		"gloam_invisible": true,
 	})
 	sim._unit_by_seat(0)["spell_elements"] = {"strike": "air", "shoulder": "fire", "crush": "fire", "advance": "air"}
-	sim._unit_by_seat(1)["invisible_turns"] = 3
+	sim._unit_by_seat(1)["invisible_turns"] = 2
 	_board._rebuild_pawns()
 	_board._refresh()
+	var before := _gloam_card()
+	if not before.contains("Invisible 2"):
+		return _fail("card did not start at Invisible 2: %s" % before)
 	var pawn: Pawn = _board.pawns_by_seat[1]
 	pawn.grid_position = stale
 	pawn.position = _board._cell_to_local(drawn)
 	pawn.visible = true
 	pawn.invisible = true
+	if sim.manhattan(landing, mark_1) != 1 or sim.manhattan(landing, mark_2) != 2 or sim.manhattan(landing, mark_3) != 3:
+		return _fail("hand marks are not 1, 2, 3 straight steps from (6,0)")
 	if sim.manhattan(landing, drawn) != 4:
-		return _fail("clip205 drawn cell is not 4 steps")
+		return _fail("clip205 drawn cell is not mark 4")
 	if sim.manhattan(landing, stale) != 5:
 		return _fail("clip205 stale grid is not 5 steps")
 	_board._sync_drawn_cells()
@@ -519,7 +529,7 @@ func _play_clip_205() -> bool:
 	for raw_check in blend.get("reveal_checks", []):
 		if typeof(raw_check) == TYPE_DICTIONARY and int(raw_check.get("seat", -1)) == 1:
 			steps = int(raw_check.get("steps", -1))
-	print("CLIP205 landing (6,0) ironjaw (5,0) gloam drawn (2,0) stale grid (1,0) code steps %s" % steps)
+	print("CLIP205 landing (6,0) marks (5,0) (4,0) (3,0) gloam (2,0) Invisible 2 stale grid (1,0) code steps %s" % steps)
 	if steps != 4:
 		return _fail("code computed %s steps, not 4" % steps)
 	if (blend.get("revealed", []) as Array) != [1]:
