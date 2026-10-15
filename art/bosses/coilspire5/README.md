@@ -30,3 +30,15 @@ Alternating on a 1 s cycle. No planted-foot slip. 14 px lift. 2.5 px bob. The ta
 
 - Video: `coilspire5_walk_4dir.mp4`, 2x2 at 1920x1080, 24 fps.
 - Scripts: `mk_keys.py`, `anim5.py`, `vid.py`, and `check.py`.
+
+## Attack: pincer strike (`attack_v2/`)
+
+Approved by Mauro on 2026-10-15. Preview only; not wired into the game.
+
+A wind-up with the pincers opening (capped at 18° front and 16° back so the claws don't tear), the tail cocked and the orb charging. A 40 px two-beat lunge step to melee range with the feet planted. A 2-frame snap to -22° and a tail flick that fires a short zap into Ironjaw. A burst with a 10% hit tint. Then the step back and a settle to walk frame 0.
+
+It is 80 frames on one fixed camera, 1920x1080 at 24 fps (`coilspire5_attack_4dir.mp4`).
+
+The earlier tail-sting attempt failed because the painted tail can't reach forward (`tail_swing_test_W.png`). The heavy orb beam (`attack_v1` stills) is being reused in the ★5 spell.
+
+Scripts: `pincer.py` and `sting.py`.
