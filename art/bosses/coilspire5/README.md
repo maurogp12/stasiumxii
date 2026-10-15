@@ -3,6 +3,8 @@
 Approved by Mauro on 2026-10-15. Preview art only; not yet wired into the game.
 Boss rules are the same as `art/bosses/coilspire/README.md`.
 
+**Coilspire is complete** (★1–4 and ★5): walk, attack, spell, and hit/death. ★1–4 lives in `art/bosses/coilspire/`.
+
 ## Walk (`walk_v1/`)
 
 ### Keys
@@ -60,3 +62,13 @@ Gameplay rules:
 Facing: scorplings face their travel direction. W/S use the front plate (flipped by travel side); N uses the back plate as painted (head left), E uses it mirrored (head right).
 
 Sources: `svid5v6.py` (render), `rig/scorp_rig.py` + `rig/scorpling_front_matte.png`, `rig/scorp_rig_back.py` + `rig/scorpling_back_matte.png`. Rig scripts read the original plates from `/workspace/c5_fw.png` / `/workspace/c5_bv.png` (copies included in `rig/plates/`).
+
+## Hit and death (`hitdeath_v1/`)
+
+Approved by Mauro on 2026-10-15. Preview only; not wired into the game. This completes Coilspire ★5, and with ★1–4 the boss is complete.
+
+Hit: Kestrel's arrow, 16% tint, 5 px recoil. Death: orb overload, then a lightning burst, then an obsidian husk with the orb's crystal shards as remains. No falling. Remains: W as painted, E/S mirrored, N as painted.
+
+- Video: `coilspire5_hit_death_4dir.mp4`.
+- Remains plate: `remains_src.png`, matted as `remains5_matte.png`.
+- Scripts: `hd5.py` and `hdvid5.py`.
