@@ -1,0 +1,1 @@
+- 2026-10-15: Warden ★1–4 redesign approved: float walk v6, smoke-crow spell (4 dir), hit/death v2 with painted crows and remains plate; attack pending.
