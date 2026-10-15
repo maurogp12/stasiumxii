@@ -674,20 +674,26 @@ func _test_boss_sheets() -> void:
 	plain.queue_free()
 	Sheets.overrides = {}
 	Sheets.clear_cache()
-	# The shipped pairs (Mauro 2 Oct 2026): every facing and animation is on disk.
-	for boss_art in ["warden_of_the_sheaves", "sheaf_sovereign", "captain_brineclaw", "brineclaw_sovereign", "slagheart_the_emberbrute", "slagheart_caldera_crown"]:
+	# Harvest Warden and Sheaf Sovereign stay on the Oct 2 set until their approved pack is uploaded.
+	for boss_art in ["warden_of_the_sheaves", "sheaf_sovereign"]:
 		for anim in ["idle", "walk", "attack", "hit"]:
 			for face in ["E", "S", "N", "W"]:
 				var info: Dictionary = Sheets.frames_for("res://art/stasis/foes/%s.png" % boss_art, anim, face)
 				truthy(not info.is_empty() and not bool(info["mirror"]), "%s %s %s has its own sheet" % [boss_art, anim, face])
+		eq(ResourceLoader.exists(Sheets.sheet_path(boss_art, "death", "s")), false, "%s has no death sheet yet" % boss_art)
+		eq(ResourceLoader.exists(Sheets.sheet_path(boss_art, "cast", "s")), false, "%s has no cast sheet yet" % boss_art)
 	eq((Sheets.frames_for("res://art/stasis/foes/captain_brineclaw.png", "walk", "E")["frames"] as Array).size(), 8, "the Brineclaw walk is 8 frames")
-	# Serra and Coilspire (Mauro 14–15 Oct 2026): walk, attack, spell, hit, death, four directions.
-	for boss_art in ["serra_the_gale_sentinel", "serra_frost_wraith", "tyrant_coilspire", "coilspire_demon"]:
+	# Serra, Coilspire, Brineclaw, and Slagheart: walk, attack, spell, hit, death, four directions.
+	for boss_art in ["serra_the_gale_sentinel", "serra_frost_wraith", "tyrant_coilspire", "coilspire_demon", "captain_brineclaw", "brineclaw_sovereign", "slagheart_the_emberbrute", "slagheart_caldera_crown"]:
 		for anim in ["idle", "walk", "attack", "cast", "hit", "death"]:
 			for face in ["E", "S", "N", "W"]:
 				var sheet: Dictionary = Sheets.frames_for("res://art/stasis/foes/%s.png" % boss_art, anim, face)
 				truthy(not sheet.is_empty() and not bool(sheet["mirror"]), "%s %s %s has its own sheet" % [boss_art, anim, face])
 				truthy((sheet["frames"] as Array).size() >= 4, "%s %s has frames" % [boss_art, anim])
+	eq(Sheets.anim_for_spell("brine.cannon"), "cannon", "the Sovereign cannon plays its own strip")
+	eq(Sheets.anim_for_spell("slag.caldera"), "cast_eruption", "Caldera Punch plays the eruption strip")
+	eq((Sheets.frames_for("res://art/stasis/foes/brineclaw_sovereign.png", "cannon", "E")["frames"] as Array).size(), 10, "the Sovereign cannon is 10 frames")
+	eq((Sheets.frames_for("res://art/stasis/foes/slagheart_caldera_crown.png", "cast_eruption", "E")["frames"] as Array).size(), 10, "the Crown eruption is 10 frames")
 	Sheets.clear_cache()
 	# Glide walk: a monster takes its gait instead of sliding as a card.
 	var was_glide := ViewMotion.glide

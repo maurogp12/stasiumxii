@@ -1199,7 +1199,7 @@ static func _foe_choreography(event: Dictionary) -> Array:
 ## artist's preview sizes). Damage and area stay the kit numbers.
 const BOSS_FX_DIR := "res://art/stasis/bosses/"
 const BOSS_FX := {
-	# Ghostfire Cannon: cast strip fires on frame 3 of 8; the ball lobs from
+	# Ghostfire Cannon: cast strip fires on frame 3 of 10; the ball lobs from
 	# the muzzle and the explosion's bottom centre lands on the impact tile.
 	"brine.cannon": {
 		"ball": {
@@ -1226,7 +1226,7 @@ const BOSS_FX := {
 			"ground": false,
 		},
 	},
-	# Caldera Punch: the eruption starts on attack frame 2 (fist on the
+	# Caldera Punch: the eruption starts on attack frame 4 (fist on the
 	# floor), on the floor layer under the boss, with the camera shake.
 	"slag.caldera": {
 		"burst": {

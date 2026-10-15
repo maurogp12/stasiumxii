@@ -88,6 +88,8 @@ var _measured_tile: int = -1
 var _measured_base_px: float = 0.0
 var _measured_step_px: float = 0.0
 var _boss_last_t: float = 0.0
+## Foe spell whose approved sheet should play for this gesture. Empty uses attack/cast.
+var _boss_spell: String = ""
 var hp: int = 80
 var max_hp: int = 80
 var alive: bool = true
@@ -1161,6 +1163,7 @@ func play_view_plan(plan: Dictionary) -> float:
 		return 0.0
 	_ensure_motion_strips()
 	_plan_died = bool(plan.get("death", false))
+	_boss_spell = str(plan.get("spell", ""))
 	_death_tilt = float(plan.get("tilt", (1.0 if int(seat) % 2 == 0 else -1.0)))
 	_held_death_strip = false
 	var steps: Array = VIEW_MOTION.steps_for(plan)
@@ -1683,7 +1686,11 @@ func _boss_frame(anim: String, t: float, cycle: bool = false) -> bool:
 	# A measured walk already plays its strip. Don't paint a second cycle on top.
 	if anim == "walk" and uses_measured_stride():
 		return false
-	var info := BOSS_SHEETS.frames_for(stasis_sprite, anim, str(facing))
+	var use := anim
+	var spell_anim := BOSS_SHEETS.anim_for_spell(_boss_spell)
+	if spell_anim != "" and not BOSS_SHEETS.frames_for(stasis_sprite, spell_anim, str(facing)).is_empty():
+		use = spell_anim
+	var info := BOSS_SHEETS.frames_for(stasis_sprite, use, str(facing))
 	if info.is_empty():
 		return false
 	var frames: Array = info["frames"]

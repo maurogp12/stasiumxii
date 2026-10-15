@@ -69,8 +69,8 @@ func _test_boss_fx_recipes() -> void:
 	eq(ViewMotion.caster_motion("slag.caldera"), "attack", "the punch plays the Crown's attack strip")
 	for d in ["e", "n", "s", "w"]:
 		eq(ResourceLoader.exists("res://art/stasis/bosses/brineclaw_sovereign/brineclaw_sovereign_cast_%s.png" % d), true, "Sovereign cast %s is in the game" % d)
-	near(ViewMotion.boss_fx_fire_sec("brine.cannon"), ViewMotion.cast_sec() * 3.0 / 8.0, "the cannon fires on cast frame 3 of 8")
-	near(ViewMotion.boss_fx_fire_sec("slag.caldera"), ViewMotion.attack_sec() * 2.0 / 6.0, "the eruption starts on attack frame 2 of 6")
+	near(ViewMotion.boss_fx_fire_sec("brine.cannon"), ViewMotion.cast_sec() * 3.0 / 10.0, "the cannon fires on cast frame 3 of 10")
+	near(ViewMotion.boss_fx_fire_sec("slag.caldera"), ViewMotion.attack_sec() * 4.0 / 10.0, "the eruption starts on attack frame 4 of 10")
 	near(ViewMotion.boss_fx_impact_sec("brine.cannon"), ViewMotion.boss_fx_fire_sec("brine.cannon") + ViewMotion.boss_fx_flight_sec("brine.cannon"), "the explosion waits for the flight")
 	near(ViewMotion.damage_resolve_sec("brine.cannon"), ViewMotion.boss_fx_impact_sec("brine.cannon"), "the flinch waits for the explosion")
 	var area := [Vector2i(5, 6), Vector2i(5, 5), Vector2i(5, 7), Vector2i(4, 6), Vector2i(6, 6)]
