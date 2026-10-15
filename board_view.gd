@@ -1700,8 +1700,8 @@ func _conceal_ambush_caster(event: Dictionary) -> void:
 		pawn.conceal_for_ambush()
 
 
-## A miss does not relocate. It still ends Invisible, and the body has to
-## be drawn again. A slash stamp is not part of this beat.
+## A miss does not relocate and does not end Invisible. The body stays
+## hidden when the snapshot still says so. A slash stamp is not this beat.
 func _reveal_ambush_miss(events: Array) -> void:
 	for event in events:
 		if typeof(event) != TYPE_DICTIONARY:
@@ -2499,6 +2499,10 @@ func _maybe_drain_net() -> void:
 
 
 func _refresh() -> void:
+	# A finished Ambush plant used to leave _ambush_open_seat set. The side
+	# card then skipped this render and stayed on "Invisible 3" while the
+	# body had already been drawn.
+	_abandon_ambush_arrival()
 	var snap: Dictionary = _sim().snapshot()
 	_close_fight_inventory(snap)
 	var legal: Array = _sim().legal_intents(CombatHUD.kit_seat(snap))
@@ -2666,6 +2670,9 @@ func _apply_units(snap: Dictionary) -> void:
 		if _vfx != null and _vfx.has_method("set_seat_hidden"):
 			_vfx.call("set_seat_hidden", seat, unseen)
 		if not placed:
+			pawn.mark_snapshot_unseen(unseen)
+			if unseen:
+				pawn.force_unseen_body()
 			continue
 		var raw_events: Variant = snap.get("last_events", [])
 		var burn_events: Array = raw_events if typeof(raw_events) == TYPE_ARRAY else []
@@ -2693,6 +2700,18 @@ func _apply_units(snap: Dictionary) -> void:
 				_hop_seat = -1
 				_busy = false
 			walk_live = false
+		if revealing and (arrival_live or holding or _ambush_open_seat == seat):
+			# Same cell the Manhattan check used. A live plant was still
+			# painting the pre-Fade tile, which read as five steps away.
+			_stop_ambush_arrival_tween()
+			if _ambush_hold_seat == seat:
+				_ambush_hold_seat = -1
+				_ambush_hold_event = {}
+			if _ambush_open_seat == seat:
+				_ambush_open_seat = -1
+				_release_ambush_vitals()
+			arrival_live = false
+			holding = false
 		var hold_live := holding and arrival_live
 		if hold_live:
 			# The plant already happened. A refresh during the face-hold keeps
@@ -2717,6 +2736,12 @@ func _apply_units(snap: Dictionary) -> void:
 			pawn.grid_position = cell
 			pawn.position = _cell_to_local(cell)
 			pawn.z_index = _pawn_z(cell)
+		# A plant flag used to leave the sprite solid after the snapshot had
+		# already put Invisible back on the card. Hide that body unless the
+		# arrival tween is still the strike itself.
+		pawn.mark_snapshot_unseen(unseen)
+		if unseen and not hold_live:
+			pawn.force_unseen_body()
 		pawn.rewrite_frozen_vitals()
 
 

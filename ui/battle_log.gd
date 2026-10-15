@@ -80,7 +80,7 @@ const _EXPIRE_NAME := {
 
 static func plain(event: Dictionary, snap: Dictionary) -> String:
 	var rows := lines(event, snap)
-	return "" if rows.is_empty() else str(rows[0])
+	return "" if rows.is_empty() else _clean_sentence(rows[0])
 
 
 static func lines(event: Dictionary, snap: Dictionary) -> Array:
@@ -134,7 +134,10 @@ static func text(events: Array, snap: Dictionary) -> String:
 			blocks.append("Fight starts.")
 			continue
 		for row in lines(event, snap):
-			blocks.append(("  " if grouped else "") + str(row))
+			var sentence := _clean_sentence(row)
+			if sentence == "":
+				continue
+			blocks.append(("  " if grouped else "") + sentence)
 	if blocks.is_empty():
 		return "No events yet."
 	return "\n".join(blocks)
@@ -687,10 +690,57 @@ static func _shield_blocked_line(event: Dictionary, snap: Dictionary) -> String:
 	return "Shield blocked. %s cannot take a shield." % who
 
 
+## Display name only. A raw list in the name field is not the Blend.
+static func _blend_title(event: Dictionary) -> String:
+	var raw: Variant = event.get("name", "")
+	if typeof(raw) == TYPE_STRING:
+		var title := str(raw).strip_edges()
+		if title != "" and not _raw_number_list(title):
+			return title
+	var blend: Variant = event.get("blend", "")
+	if typeof(blend) == TYPE_STRING and str(blend).strip_edges() != "":
+		return str(blend).capitalize()
+	return "Blend"
+
+
+## Drop a leading "[0, 1, 0]" (or "[0,1,0]"). A Blend's element list is data
+## for the rules. It is not the start of the sentence.
+static func _clean_sentence(row: Variant) -> String:
+	if typeof(row) != TYPE_STRING:
+		return ""
+	var text := str(row).strip_edges()
+	while text.begins_with("["):
+		var end := text.find("]")
+		if end < 1:
+			break
+		if not _raw_number_list(text.substr(0, end + 1)):
+			break
+		text = text.substr(end + 1).strip_edges()
+		if text.begins_with(":"):
+			text = text.substr(1).strip_edges()
+	return text
+
+
+static func _raw_number_list(text: String) -> bool:
+	var body := text.strip_edges()
+	if body.length() < 3 or not body.begins_with("[") or not body.ends_with("]"):
+		return false
+	var inside := body.substr(1, body.length() - 2).strip_edges()
+	if inside == "":
+		return false
+	for part in inside.split(","):
+		var token := part.strip_edges()
+		if token == "" or not token.is_valid_int():
+			return false
+	return true
+
+
 static func _blend_line(event: Dictionary, snap: Dictionary) -> String:
 	var caster := _name(snap, int(event.get("seat", -1)))
 	var target := _name(snap, int(event.get("target_seat", -1)))
-	var name := str(event.get("name", event.get("blend", "Blend")))
+	# The event also carries `elements` as an array for the rules. That array
+	# is not a title. A non-string name used to lead the line as "[0, 1, 0]".
+	var name := _blend_title(event)
 	var in_air := not event.has("target_seat")
 	if str(event.get("blend", "")) == "magma" and not in_air:
 		var stacks := int(event.get("burn_stacks", 0))
