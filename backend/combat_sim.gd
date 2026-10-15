@@ -171,6 +171,11 @@ var _last_coach: String = ""
 var _intent_log: Array = []
 ## Test/setup occupancy only. Occupied dest is hard body-block (push_blocked).
 var _blocked_cells: Array[Vector2i] = []
+## Walk MP the green highlight used at the start of each seat's turn.
+## Flare reveals inside that area even after the caster spends the MP.
+var _turn_walk_mp: Dictionary = {}
+## The hidden fighter's own tile is open while Flare measures walk reach.
+var _flare_open_cell := Vector2i(-9999, -9999)
 ## Snap Wall cells. They block walk (and would block Gust) only while a
 ## bastion is in the match. Each wall is one tile for wall_turns (Locked: 2
 ## owner Bastion turn-starts, same family as Burn). Gust itself is not
@@ -248,6 +253,7 @@ func reset_match(config: Dictionary = {}) -> Dictionary:
 	_match_time_left = -1.0
 	_units.clear()
 	_blocked_cells.clear()
+	_turn_walk_mp.clear()
 	_snap_wall_cells.clear()
 	_snap_wall_state.clear()
 	_element_tiles.clear()
@@ -2234,7 +2240,6 @@ const BLEND_NAMES := {
 	"drift_pin": "Drift-Pin", "spark": "Spark",
 	"magma": "Magma", "mire": "Mire", "steam": "Steam", "flare": "Flare",
 }
-const FLARE_REVEAL_RADIUS := 4
 const SPARK_CHIP := 10  # Mauro 6 Oct 2026 (was 4)
 const DRIFT_COLLISION_HP := 8
 const MAGMA_TICK_HP := 4
@@ -2441,22 +2446,14 @@ func _blend_spark(_actor: Dictionary, target: Dictionary, event: Dictionary) -> 
 	return "%d damage (ignores resist), -%d%% healing" % [chip, roundi(SPARK_HEAL_CUT * 100.0)]
 
 
-## Flare (Air + Fire): every Invisible enemy of the caster within
-## FLARE_REVEAL_RADIUS of the target is revealed, and the target gains a Burn
-## stack (same Burn as Fire / lava: 4 per stack, cap 3).
+## Flare (Air + Fire): Invisible enemies in the caster's green walk range are
+## revealed, and the target gains a Burn stack (same Burn as Fire / lava:
+## 4 per stack, cap 3). The reveal itself is _stamp_blend_reveal.
 func _blend_flare(_actor: Dictionary, target: Dictionary, event: Dictionary) -> String:
 	var burn := _apply_burn(target)
 	event["burn_stacks"] = int(target.get("burn_stacks", 0))
 	event["debuffs"] = [_debuff("Burn", int(burn.get("remaining", 0)), "stack %d, %d HP" % [int(burn.get("stacks", 0)), int(burn.get("hp_per_tick", 0))])]
 	return "Burn %d" % int(burn.get("stacks", target.get("burn_stacks", 0)))
-
-
-## How far from the landing an invisible enemy is revealed. Flare is 4 tiles,
-## counted in straight steps (Manhattan: |dx| + |dy|, a diagonal step counts
-## as 2). Mauro 14 Oct 2026: was 2, then a square of 4, then straight steps.
-## The other Blends reveal one straight step (orthogonal neighbors only).
-func _blend_reveal_radius(blend: String) -> int:
-	return FLARE_REVEAL_RADIUS if blend == "flare" else 1
 
 
 ## The drawn tile is the only position. The board writes it here before a
@@ -2472,13 +2469,52 @@ func commit_drawn_cell(seat: int, cell: Vector2i) -> void:
 
 ## Same reveal as a hurting blow: Invisible ends, Fade's cooldown arms, and
 ## the expire carries the tile only after the flag is down so a still-hidden
-## fighter's cell is not in the event. Distance is straight steps from the
-## landing to unit pos, which is the cell he is drawn on. Returns the coach
-## fragment, or "".
+## fighter's cell is not in the event. Flare uses the caster's green walk
+## range. Every other Blend counts straight steps from the landing to unit
+## pos, which is the cell he is drawn on. Returns the coach fragment, or "".
 func _stamp_blend_reveal(actor: Dictionary, center: Vector2i, blend: String, event: Dictionary) -> String:
 	var revealed: Array = []
 	var checks: Array = []
-	var radius := _blend_reveal_radius(blend)
+	if blend == "flare":
+		_stamp_flare_walk_reveal(actor, checks, revealed)
+	else:
+		var radius := 1
+		for raw in _units:
+			var unit: Dictionary = raw
+			if not bool(unit.get("alive", false)) or _allied(unit, actor):
+				continue
+			if not bool(unit.get("invisible", false)):
+				continue
+			var cell := _as_cell(unit.get("pos", Vector2i.ZERO))
+			var steps := manhattan(cell, center)
+			checks.append({
+				"seat": int(unit["seat"]),
+				"steps": steps,
+				"pos": cell,
+				"center": center,
+			})
+			if steps > radius:
+				continue
+			if not _end_invisible(unit, false):
+				continue
+			_emit_expire("invisible", unit["pos"], int(unit["seat"]), int(unit["seat"]))
+			revealed.append(int(unit["seat"]))
+	# How far each hidden enemy stood. The coach stays the short fragment.
+	event["reveal_checks"] = checks
+	if revealed.is_empty():
+		return ""
+	event["revealed"] = revealed
+	return "Invisible enemies nearby are revealed"
+
+
+## Flare's area is the green walk range measured from the caster, not from
+## the landing. The budget is the full turn MP (the highlight at turn start).
+## Obstacles and other bodies stop the path. The hidden fighter's own tile
+## is open, so a body standing on a tile in that area is revealed whichever
+## way the attack was aimed. Outside it, Invisible stays and Fade does not arm.
+func _stamp_flare_walk_reveal(actor: Dictionary, checks: Array, revealed: Array) -> void:
+	var origin := _as_cell(actor.get("pos", Vector2i.ZERO))
+	var budget := _flare_walk_budget(actor)
 	for raw in _units:
 		var unit: Dictionary = raw
 		if not bool(unit.get("alive", false)) or _allied(unit, actor):
@@ -2486,26 +2522,59 @@ func _stamp_blend_reveal(actor: Dictionary, center: Vector2i, blend: String, eve
 		if not bool(unit.get("invisible", false)):
 			continue
 		var cell := _as_cell(unit.get("pos", Vector2i.ZERO))
-		var steps := manhattan(cell, center)
+		var steps := _flare_walk_steps(origin, cell, budget)
 		checks.append({
 			"seat": int(unit["seat"]),
 			"steps": steps,
 			"pos": cell,
-			"center": center,
+			"center": origin,
 		})
-		if steps > radius:
+		if cell == origin or steps < 0 or steps > budget:
 			continue
 		if not _end_invisible(unit, false):
 			continue
 		_emit_expire("invisible", unit["pos"], int(unit["seat"]), int(unit["seat"]))
 		revealed.append(int(unit["seat"]))
-	# How far each hidden enemy stood from the landing. The coach stays the
-	# short fragment; this is the count the radius used.
-	event["reveal_checks"] = checks
-	if revealed.is_empty():
-		return ""
-	event["revealed"] = revealed
-	return "Invisible enemies nearby are revealed"
+
+
+func _flare_walk_budget(actor: Dictionary) -> int:
+	var seat := int(actor.get("seat", -1))
+	if _turn_walk_mp.has(seat):
+		return int(_turn_walk_mp[seat])
+	return _walk_highlight_mp(actor)
+
+
+func _stamp_turn_walk_mp(unit: Dictionary) -> void:
+	if unit.is_empty():
+		return
+	_turn_walk_mp[int(unit.get("seat", -1))] = _walk_highlight_mp(unit)
+
+
+## MP the green walk highlight spends: current MP minus exit tax and Mire,
+## or none while Pinned.
+func _walk_highlight_mp(actor: Dictionary) -> int:
+	var mp := maxi(int(actor.get("mp", 0)) - _walk_tax(actor), 0)
+	if bool(actor.get("pinned", false)):
+		mp = 0
+	return mp
+
+
+func _flare_walk_steps(origin: Vector2i, cell: Vector2i, budget: int) -> int:
+	_flare_open_cell = cell
+	var occupied := Callable(self, "_flare_reveal_occupied")
+	var reach: Dictionary = _board.reachable(origin, maxi(budget, 0), occupied)
+	if reach.has(cell):
+		return int(reach[cell]["cost"])
+	var far: Dictionary = _board.reachable(origin, 9999, occupied)
+	if far.has(cell):
+		return int(far[cell]["cost"])
+	return -1
+
+
+func _flare_reveal_occupied(cell: Vector2i, ignore: Vector2i) -> bool:
+	if cell == _flare_open_cell:
+		return false
+	return _walk_occupied(cell, ignore)
 
 
 ## An element thrown into empty air. The first one hangs on the caster for
@@ -3124,6 +3193,7 @@ func _begin_combat(coach: String) -> void:
 	var steadfast_cut := int(opener.get("steadfast_ap", 0))
 	var bound_ap_cut := int(opener.get("bound_ap_pen", 0))
 	_still_turn_start(opener)
+	_stamp_turn_walk_mp(opener)
 	_start_turn_timer()
 	_last_coach = coach
 	_last_events = [{
@@ -3291,6 +3361,8 @@ func _handoff_seat(actor: Dictionary, auto_skip: bool, skip_reason: String = "")
 	# Mud Slow: −stack MP for this turn only. A stunned skip still consumes it.
 	_consume_mud_slow(next_unit)
 	_consume_electrocuted(next_unit)
+	# Green tiles are this pool. Flare keeps it after the fighter walks.
+	_stamp_turn_walk_mp(next_unit)
 	# Soft Lock Burn ticks once this turn has started, including a stunned skip.
 	_tick_burn(next_unit)
 	return next_unit
@@ -4028,6 +4100,12 @@ func _check_death(target: Dictionary, cause: String = "damage") -> void:
 		"cause": cause,
 		"coach": "%s falls." % target["name"],
 	})
+	# A scorpling killed before it arrives detonates where it died.
+	if bool(target.get("scorpling", false)) and cause != "detonate" and not bool(target.get("detonated", false)):
+		target["detonated"] = true
+		_scorpling_blast(target)
+		if _match_over:
+			return
 	_refresh_last_stand()
 	# Stasis Room A keeps fighting until the player or every hostile is down.
 	# Koliseo is still one death ends the match.
@@ -6033,6 +6111,9 @@ func _foe_casts(actor: Dictionary) -> Array:
 					out.append({"type": "cast", "spell": id, "to": v["pos"], "target_seat": v["seat"], "seat": seat})
 			"self":
 				out.append({"type": "cast", "spell": id, "to": from, "seat": seat})
+			"summon":
+				if not _brood_cells(from, 1).is_empty():
+					out.append({"type": "cast", "spell": id, "to": from, "seat": seat})
 			"step":
 				for dir in FACING_VEC.keys():
 					var cell: Vector2i = from + FACING_VEC[dir]
@@ -6128,6 +6209,114 @@ func _foe_base_damage(actor: Dictionary, def: Dictionary) -> int:
 	return roundi(float(base) * float(actor.get("foe_dmg_mult", 1.0)))
 
 
+## Empty tiles one step from the boss, cardinals first, then diagonals.
+## Never the boss's own tile. Up to `count` (Brood Storm summons 4).
+func _brood_cells(origin: Vector2i, count: int) -> Array[Vector2i]:
+	var ring: Array[Vector2i] = [
+		Vector2i(1, 0), Vector2i(0, 1), Vector2i(-1, 0), Vector2i(0, -1),
+		Vector2i(1, -1), Vector2i(1, 1), Vector2i(-1, 1), Vector2i(-1, -1),
+	]
+	var out: Array[Vector2i] = []
+	for step in ring:
+		var cell: Vector2i = origin + step
+		if not _foe_free_cell(cell):
+			continue
+		out.append(cell)
+		if out.size() >= maxi(count, 1):
+			break
+	return out
+
+
+func _next_foe_seat() -> int:
+	var seat := 2
+	while not _unit_by_seat(seat).is_empty():
+		seat += 1
+	return seat
+
+
+## A Brood Storm scorpling. 20 HP and 5 MP stay fixed (not the star scale).
+## It walks toward heroes and spends itself in a 1-tile blast.
+func _spawn_scorpling(owner: Dictionary, cell: Vector2i, hp: int, mp: int) -> Dictionary:
+	var seat := _next_foe_seat()
+	var unit := _make_unit(seat, SpellKits.CLASS_IRONJAW, "Scorpling", "Air", cell, "S", true)
+	unit["team"] = 1
+	unit["hp"] = maxi(hp, 1)
+	unit["max_hp"] = int(unit["hp"])
+	unit["max_ap"] = 3
+	unit["ap"] = 3
+	unit["max_mp"] = maxi(mp, 0)
+	unit["mp"] = int(unit["max_mp"])
+	unit["foe_kit"] = ["scorpling.burst"]
+	unit["foe_cd"] = {}
+	unit["foe_role"] = "scorpling"
+	unit["foe_door"] = str(owner.get("foe_door", "stormspire"))
+	unit["foe_dmg_mult"] = 1.0
+	unit["stasis_sprite"] = StasisCatalog.art_path("scorpling")
+	unit["stasis_boss"] = false
+	unit["scorpling"] = true
+	unit["detonated"] = false
+	unit["placed"] = true
+	var nearest := 999
+	for hero in _foe_victims(unit):
+		var dist := chebyshev(cell, hero["pos"])
+		if dist < nearest:
+			nearest = dist
+			var face := _dir_name(hero["pos"] - cell)
+			if face != "":
+				unit["facing"] = face
+	_units.append(unit)
+	return unit
+
+
+## Area burst where a scorpling died. Same 10 Air radius as the arrival cast.
+func _scorpling_blast(actor: Dictionary) -> void:
+	var def := FoeKits.spell("scorpling.burst")
+	var area := _foe_area_cells(actor, def, Vector2i.ZERO)
+	var spell_name := str(def.get("name", "Burst"))
+	for raw in _foe_victims(actor):
+		var target: Dictionary = raw
+		if not area.has(target["pos"]):
+			continue
+		var dist := maxi(chebyshev(actor["pos"], target["pos"]), 1)
+		var chance := hit_chance(dist)
+		var roll := _roll_d100()
+		var event := {
+			"seat": actor["seat"],
+			"spell": "scorpling.burst",
+			"spell_name": spell_name,
+			"caster_cell": actor["pos"],
+			"target_seat": target["seat"],
+			"to": target["pos"],
+			"range": dist,
+			"hit_chance": chance,
+			"roll": roll,
+			"foe": true,
+			"shape": "radius",
+			"area": area.duplicate(),
+			"element": "Air",
+			"detonate": true,
+		}
+		if roll > chance:
+			event["type"] = "miss"
+			event["damage"] = 0
+			event["coach"] = "%s's burst misses %s." % [actor["name"], target["name"]]
+			_last_events.append(event)
+			continue
+		var facing_mult := _facing_multiplier(actor["pos"], target["pos"], str(target.get("facing", "")))
+		var pre := _phase_a_damage(_foe_base_damage(actor, def), facing_mult, actor, target, "Air", true)
+		var mitigation := _mitigate_hit(actor, target, pre)
+		var damage := int(mitigation["damage"])
+		_lose_hp(target, damage)
+		_reveal_if_hurt(target, damage)
+		event["type"] = "hit"
+		event["damage"] = damage
+		event["coach"] = "%s detonates for %d." % [actor["name"], damage]
+		_last_events.append(event)
+		_check_death(target)
+		if _match_over:
+			return
+
+
 func _submit_foe_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
 	var spell_id := str(intent.get("spell", ""))
 	var def: Dictionary = FoeKits.spell(spell_id)
@@ -6172,6 +6361,29 @@ func _submit_foe_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
 			actor["facing"] = face
 		_last_coach = "%s: %s to %s." % [actor["name"], name, _cell_text(dest)]
 		_last_events.append({"type": "move", "seat": actor["seat"], "from": caster_cell, "to": dest, "path": [dest], "facing_from": str(actor["facing"]), "facing": str(actor["facing"]), "facing_hops": [str(actor["facing"])], "mp_spent": 0, "ap_spent": ap_cost, "spell": spell_id, "foe": true, "coach": _last_coach})
+		return _accept()
+	if shape == "summon":
+		var summoned: Array = []
+		for cell in _brood_cells(caster_cell, int(def.get("summon_count", 4))):
+			var baby := _spawn_scorpling(actor, cell, int(def.get("summon_hp", 20)), int(def.get("summon_mp", 5)))
+			summoned.append({"seat": int(baby["seat"]), "pos": cell, "name": str(baby["name"])})
+		# Room B starts as a 1v1. Scorplings have to take turns, and the room
+		# is not won while any of them still live.
+		_stasis_pack = true
+		_last_coach = "%s summons %d scorplings." % [actor["name"], summoned.size()]
+		_last_events.append({
+			"type": "cast",
+			"spell": spell_id,
+			"spell_name": name,
+			"seat": actor["seat"],
+			"caster_cell": caster_cell,
+			"to": caster_cell,
+			"ap_spent": ap_cost,
+			"foe": true,
+			"shape": shape,
+			"summons": summoned,
+			"coach": _last_coach,
+		})
 		return _accept()
 	var victims: Array = []
 	var area: Array = []
@@ -6290,6 +6502,10 @@ func _submit_foe_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
 	for e in _last_events:
 		if typeof(e) == TYPE_DICTIONARY and str(e.get("spell", "")) == spell_id and not e.has("coach"):
 			e["coach"] = _last_coach
+	# Arrival blast spends the scorpling. Death from that blast must not fire a second one.
+	if bool(def.get("suicide", false)) and bool(actor.get("alive", true)):
+		actor["hp"] = 0
+		_check_death(actor, "detonate")
 	return _accept()
 
 
