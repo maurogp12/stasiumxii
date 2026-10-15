@@ -1,0 +1,122 @@
+{
+ "idle_s": {
+  "frames": 6,
+  "residue_px": 0,
+  "semi_alpha_px": 0
+ },
+ "walk_s": {
+  "frames": 8,
+  "residue_px": 0,
+  "semi_alpha_px": 0
+ },
+ "attack_s": {
+  "frames": 12,
+  "residue_px": 8059,
+  "semi_alpha_px": 7663
+ },
+ "hit_s": {
+  "frames": 6,
+  "residue_px": 0,
+  "semi_alpha_px": 0
+ },
+ "cast_s": {
+  "frames": 14,
+  "residue_px": 23306,
+  "semi_alpha_px": 79037
+ },
+ "death_s": {
+  "frames": 16,
+  "residue_px": 37104,
+  "semi_alpha_px": 92565
+ },
+ "idle_w": {
+  "frames": 6,
+  "residue_px": 0,
+  "semi_alpha_px": 0
+ },
+ "walk_w": {
+  "frames": 8,
+  "residue_px": 0,
+  "semi_alpha_px": 0
+ },
+ "attack_w": {
+  "frames": 12,
+  "residue_px": 8059,
+  "semi_alpha_px": 7663
+ },
+ "hit_w": {
+  "frames": 6,
+  "residue_px": 0,
+  "semi_alpha_px": 0
+ },
+ "cast_w": {
+  "frames": 14,
+  "residue_px": 23306,
+  "semi_alpha_px": 79037
+ },
+ "death_w": {
+  "frames": 16,
+  "residue_px": 37104,
+  "semi_alpha_px": 92565
+ },
+ "idle_e": {
+  "frames": 6,
+  "residue_px": 0,
+  "semi_alpha_px": 0
+ },
+ "walk_e": {
+  "frames": 8,
+  "residue_px": 0,
+  "semi_alpha_px": 0
+ },
+ "attack_e": {
+  "frames": 12,
+  "residue_px": 13176,
+  "semi_alpha_px": 12851
+ },
+ "hit_e": {
+  "frames": 6,
+  "residue_px": 0,
+  "semi_alpha_px": 0
+ },
+ "cast_e": {
+  "frames": 14,
+  "residue_px": 24225,
+  "semi_alpha_px": 83525
+ },
+ "death_e": {
+  "frames": 16,
+  "residue_px": 42338,
+  "semi_alpha_px": 90209
+ },
+ "idle_n": {
+  "frames": 6,
+  "residue_px": 0,
+  "semi_alpha_px": 0
+ },
+ "walk_n": {
+  "frames": 8,
+  "residue_px": 0,
+  "semi_alpha_px": 0
+ },
+ "attack_n": {
+  "frames": 12,
+  "residue_px": 13176,
+  "semi_alpha_px": 12851
+ },
+ "hit_n": {
+  "frames": 6,
+  "residue_px": 0,
+  "semi_alpha_px": 0
+ },
+ "cast_n": {
+  "frames": 14,
+  "residue_px": 24225,
+  "semi_alpha_px": 83525
+ },
+ "death_n": {
+  "frames": 16,
+  "residue_px": 42338,
+  "semi_alpha_px": 90209
+ }
+}

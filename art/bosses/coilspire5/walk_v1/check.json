@@ -1,0 +1,54 @@
+{
+ "n": {
+  "travel": [
+   -0.894,
+   -0.447
+  ],
+  "facing": [
+   -0.894,
+   -0.447
+  ],
+  "planted_slip_max_px": 0.0,
+  "legs_min": 1,
+  "legs_max": 1
+ },
+ "e": {
+  "travel": [
+   0.894,
+   -0.447
+  ],
+  "facing": [
+   0.894,
+   -0.447
+  ],
+  "planted_slip_max_px": 0.0,
+  "legs_min": 1,
+  "legs_max": 1
+ },
+ "s": {
+  "travel": [
+   0.894,
+   0.447
+  ],
+  "facing": [
+   0.894,
+   0.447
+  ],
+  "planted_slip_max_px": 0.0,
+  "legs_min": 1,
+  "legs_max": 1
+ },
+ "w": {
+  "travel": [
+   -0.894,
+   0.447
+  ],
+  "facing": [
+   -0.894,
+   0.447
+  ],
+  "planted_slip_max_px": 0.0,
+  "legs_min": 1,
+  "legs_max": 1
+ }
+}
