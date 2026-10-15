@@ -2658,6 +2658,10 @@ func _apply_units(snap: Dictionary) -> void:
 		# Mauro 30 Sep 2026: an Invisible fighter is not drawn at all (no ghost,
 		# ring or status dots) for the player whose turn it is not.
 		var unseen := bool(unit.get("invisible", false)) and bool(unit.get("alive", true)) and not _viewer_sees_seat(seat, snap)
+		# Before this refresh hides or shows him. A Fade wire leaves the pawn
+		# invisible or simply not drawn; the reveal snapshot is the first time
+		# the measured cell is allowed on screen.
+		var was_shown := pawn.visible and not pawn.invisible
 		pawn.visible = placed and not unseen
 		if _vfx != null and _vfx.has_method("set_seat_hidden"):
 			_vfx.call("set_seat_hidden", seat, unseen)
@@ -2674,11 +2678,22 @@ func _apply_units(snap: Dictionary) -> void:
 		# A live walk tween, or an Ambush plant whose arrival tween is still
 		# running, may keep the picture on the tile the foot has reached.
 		# A hold or a hop flag left over after that tween finished must not.
-		# Flare measures the snapshot cell. Painting an older tile put a
-		# revealed Gloam five straight steps from the yellow landing while
-		# the cell the burst used was inside the radius (0.1.199 phone clip).
+		# Open-seat alone is not a live plant: the arrival tween is. Leaving
+		# that flag set pinned a revealed Gloam on the pre-Fade tile, five
+		# straight steps from the yellow landing, while Flare had measured a
+		# cell inside the radius (0.1.200 phone clip).
+		var revealing := not bool(unit.get("invisible", false)) and not was_shown
 		var walk_live := hopping and _walk_tween != null and is_instance_valid(_walk_tween) and _walk_tween.is_running()
-		var hold_live := holding and (_ambush_open_seat == seat or (_ambush_arrival_tween != null and is_instance_valid(_ambush_arrival_tween) and _ambush_arrival_tween.is_running()))
+		var arrival_live := _ambush_arrival_tween != null and is_instance_valid(_ambush_arrival_tween) and _ambush_arrival_tween.is_running()
+		if revealing and walk_live:
+			# The burst used the snapshot cell. Do not finish the step on the
+			# tile he was drawn on before Fade.
+			_stop_walk_tween()
+			if _hop_seat == seat:
+				_hop_seat = -1
+				_busy = false
+			walk_live = false
+		var hold_live := holding and arrival_live
 		if hold_live:
 			# The plant already happened. A refresh during the face-hold keeps
 			# that back tile and the strike facing.
@@ -2696,7 +2711,10 @@ func _apply_units(snap: Dictionary) -> void:
 			if holding:
 				_ambush_hold_seat = -1
 				_ambush_hold_event = {}
+				if _ambush_open_seat == seat:
+					_ambush_open_seat = -1
 				_release_ambush_vitals()
+			pawn.grid_position = cell
 			pawn.position = _cell_to_local(cell)
 			pawn.z_index = _pawn_z(cell)
 		pawn.rewrite_frozen_vitals()
