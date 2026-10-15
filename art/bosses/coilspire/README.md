@@ -3,12 +3,15 @@
 Mauro rejected the old coil-tower look on Oct 14 2026 and picked the evil redesign.
 Preview art only; not yet wired into the game.
 
+**Coilspire ★1-4 is complete** (walk, attack, spell, hit/death). Star 5 is not in this set.
+
 ## What's here
 
 - `coilspire_v2/`: ★1-4 walk. Keys, strips, scripts, check frames, and `coilspire14_walk_4dir.mp4`.
 - ★1-4 has 6 legs in a tripod gait.
 - `attack_v1/`: ★1-4 attack, approved by Mauro on 2026-10-14. See below.
 - `spell_v1/`: ★1-4 spell Grave Web, approved by Mauro on 2026-10-14. See below.
+- `hitdeath_v1/`: ★1-4 hit and death, approved by Mauro on 2026-10-15. See below.
 
 ## Concept art in `coilspire_v2/keys/`
 
@@ -36,6 +39,15 @@ The spell charges the orb and spine, slams its front legs, and a painted skull-c
 - The 4 painted plates are in `plates/` (`charge.jpg`, `web.jpg`, `snare.jpg`, `burst.jpg`), keyed by luminance with screen blending. No procedural effects.
 - Video: `coilspire14_spell_4dir.mp4`, 132 frames at 24 fps, 1920x1080.
 - `sheet.py` drives both the stills and the video.
+
+## ★1-4 hit and death (`hitdeath_v1/`)
+
+Approved by Mauro on 2026-10-15. Preview only; not wired into the game. This completes Coilspire ★1-4 (walk, attack, spell, hit/death).
+
+A subtle hit flinch (5% tint on W/S, 3% on E/N). Death with no falling: a violet overload, then a painted burst while the body dissolves. Remains are made from a painted plate (`remains_plate_src.jpg`: a heap of 6 broken legs with the skull on top and the coil spine snapped in two), matted, with a soft shadow, flickering spine sparks and pulsing eyes.
+
+- Video: `coilspire14_hit_death_4dir.mp4`, 5.1 s at 24 fps, 1920x1080.
+- Scripts: `remains.py`, `sheet_hd.py`, `mk_rem.py`, `cutfn.py`, `hdvid.py`.
 
 ## Mauro's rules (all bosses)
 
