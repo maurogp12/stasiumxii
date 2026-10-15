@@ -2,6 +2,8 @@
 
 Approved by Mauro Oct 14 2026. Preview art only; not yet wired into the game.
 
+This `oct14_approved` folder supersedes the older strips in `art/stasis/bosses/brineclaw_sovereign/`. The same is true for Captain Brineclaw, Slagheart the Emberbrute, and Slagheart Caldera Crown. The full list is in `art/bosses/slagheart_caldera_crown/README.md`.
+
 ## oct14_approved
 
 Strips are in `oct14_approved/sovereign_v2/`. Each action has n, e, s, and w. The `body_only/` copies were duplicates and are not included. The cast strips kept here are the full sheets.

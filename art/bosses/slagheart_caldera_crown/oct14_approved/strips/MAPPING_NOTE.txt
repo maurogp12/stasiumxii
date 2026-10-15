@@ -1,0 +1,6 @@
+Oct 14 2026 (Mauro): N and E kept exactly as before (verify.json naming). Only S and W changed.
+  n = back key mirrored, faces/walks UP-LEFT     (unchanged)
+  e = back key as rigged, faces/walks UP-RIGHT   (unchanged)
+  s = front key MIRRORED, faces/walks DOWN-RIGHT = -n   (was: front key as rigged, which faces down-left -> moonwalk)
+  w = front key as rigged, faces/walks DOWN-LEFT  = -e  (was: front key mirrored)
+The front key as painted faces down-LEFT (face and chest turned to screen-left).

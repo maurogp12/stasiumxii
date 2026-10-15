@@ -2,6 +2,8 @@
 
 Approved by Mauro Oct 14 2026. Preview art only; not yet wired into the game.
 
+This `oct14_approved` folder supersedes the older strips in `art/stasis/bosses/slagheart_the_emberbrute/`. The same is true for Captain Brineclaw, Brineclaw Sovereign, and Slagheart Caldera Crown. The full list is in `art/bosses/slagheart_caldera_crown/README.md`.
+
 ## oct14_approved
 
 Full strips are in `oct14_approved/strips/`. Each action has n, e, s, and w. `strips/body_only/` is the body-only set from the first part (walk and idle match the full strips; slam, stomp, cast, hit, and death are the smaller body-only sheets).

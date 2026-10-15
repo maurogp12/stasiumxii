@@ -2,6 +2,8 @@
 
 Approved by Mauro Oct 14 2026. Preview art only; not yet wired into the game.
 
+This `oct14_approved` folder supersedes the older strips in `art/stasis/bosses/captain_brineclaw/`. The same is true for Brineclaw Sovereign, Slagheart the Emberbrute, and Slagheart Caldera Crown. The full list is in `art/bosses/slagheart_caldera_crown/README.md`.
+
 ## oct14_approved
 
 Strips are in `oct14_approved/captain_brineclaw_v3/`. Each action has n, e, s, and w.
