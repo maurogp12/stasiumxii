@@ -209,6 +209,9 @@ var _winner_team: int = -1
 ## (Mauro 29 Sep 2026). Test fixtures that do not ask for it keep seat 0.
 var _first_by_init: bool = false
 var _init_note: String = ""
+## Hot-seat only. Combat start re-reads the saved bag so the pools are the
+## inventory sheet for a set the player equipped, not only an empty kit class.
+var _saved_loadout: bool = false
 var _demo_map: String = ""
 var _elev_seed: int = 0
 var _elevation_gen: String = "tags"
@@ -276,6 +279,7 @@ func reset_match(config: Dictionary = {}) -> Dictionary:
 	_turn_order.clear()
 	_winner_team = -1
 	_first_by_init = bool(config.get("first_by_init", false))
+	_saved_loadout = bool(config.get("saved_loadout", false))
 	_init_note = ""
 	# New Match generates a fresh seed unless MatchConfig.seed / elev_seed is set.
 	_seed = int(config.get("seed", Time.get_ticks_usec()))
@@ -2821,7 +2825,8 @@ func _make_unit(seat: int, class_id: String, unit_name: String, element: String,
 		"impact": 0,
 		"marks_cap": SpellKits.MARKS_CAP,
 		"impact_cap": SpellKits.IMPACT_CAP,
-		# Mauro 30 Sep 2026: class base HP. Mastery 0, Resist 0. Combat refill stays 6 AP / 3 MP.
+		# Mauro 30 Sep 2026: class base HP. Mastery 0, Resist 0.
+		# The refill copies max_ap / max_mp. Gear and the socketed Still set those.
 		"mastery": 0,
 		"resist": 0,
 		# Umbral 0–4 is Gloam only. Pulse 0–6 is Mender only. Aegis 0–4 is Bastion only.
@@ -3107,9 +3112,29 @@ static func facing_toward(from: Vector2i, to: Vector2i, fallback: String = "S") 
 	return "S" if delta.y > 0 else "N"
 
 
+## Hot-seat combat start. The bag on disk is what the inventory sheet just
+## showed, including a Still socketed during deployment. Online seats keep
+## the payload they sent; this phone does not have the other phone's bag.
+func _apply_saved_loadout() -> void:
+	if not _saved_loadout:
+		return
+	var bag := GearBag.load_saved()
+	for unit in _units:
+		var class_id := str(unit.get("class_id", ""))
+		if not SpellKits.is_roster_class(class_id):
+			continue
+		var kit := bag.fight_gear(true, class_id)
+		kit["flatten_plus"] = true
+		_apply_gear(unit, kit)
+
+
 func _begin_combat(coach: String) -> void:
 	_active_seat = 0
 	_turn_index = 1
+	# The sheet may have changed during deployment. Read it again so the
+	# opening pools are the inventory total, including a set the player
+	# equipped himself (the empty-class kit wear does not cover that).
+	_apply_saved_loadout()
 	for unit in _units:
 		unit["ap"] = int(unit.get("max_ap", MAX_AP))
 		unit["mp"] = int(unit.get("max_mp", MAX_MP))
@@ -3326,7 +3351,7 @@ func _auto_skip_stunned_turns() -> void:
 	if depth > 0 and not _match_over:
 		var active := _unit_by_seat(_active_seat)
 		if not active.is_empty() and not _is_stunned(active):
-			_last_coach = "Stunned seat skipped (Locked A′). %s's turn. AP/MP refilled to 6/3." % active["name"]
+			_last_coach = "Stunned seat skipped (Locked A′). %s's turn. AP/MP refilled to %d/%d." % [active["name"], int(active.get("ap", 0)), int(active.get("mp", 0))]
 			if not _last_events.is_empty():
 				_last_events[_last_events.size() - 1]["coach"] = _last_coach
 

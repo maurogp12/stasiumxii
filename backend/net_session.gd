@@ -1318,6 +1318,10 @@ func push_host_gear(class_id: String = "") -> bool:
 func _send_local_gear() -> void:
 	if mode != Mode.CLIENT or local_seat < 0 or _gear_sent_seat == local_seat:
 		return
+	# An empty class would send the focused loadout and then refuse a second
+	# send. Wait until this match's class is known.
+	if not SpellKits.is_roster_class(selected_class_id):
+		return
 	if not _rpc_ready():
 		return
 	_gear_sent_seat = local_seat
@@ -1429,13 +1433,16 @@ func rpc_queue_result(payload: Dictionary) -> void:
 func rpc_match_assigned(payload: Dictionary) -> void:
 	if mode != Mode.CLIENT:
 		return
-	var seat := int(payload.get("seat", -1))
-	if seat >= 0:
-		local_seat = seat
-		_send_local_gear()
 	var class_id := str(payload.get("class_id", ""))
 	if class_id != "":
 		selected_class_id = class_id
+	var seat := int(payload.get("seat", -1))
+	if seat >= 0:
+		local_seat = seat
+		# The snapshot push may have sent gear before this class arrived.
+		# Send the saved loadout for the class the server actually assigned.
+		_gear_sent_seat = -1
+		_send_local_gear()
 	_local_queued = true
 	_opponent_queued = true
 	_match_live = true

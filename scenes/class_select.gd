@@ -120,9 +120,11 @@ static func local_match_config() -> Dictionary:
 	# Higher Init acts first. A tie is a coin flip (Mauro 29 Sep 2026).
 	config["first_by_init"] = true
 	# TEMPORARY balance-test kit (backend/test_loadout.gd): each hot-seat seat
-	# wears that class's loadout and Still. flatten_plus is the Koliseo switch,
-	# so an Ultra 5-piece's +1 AP +1 MP counts here the same way it does online.
-	# A normal hot-seat sends no gear.
+	# wears that class's saved loadout and Still. flatten_plus is the Koliseo
+	# switch, so an Ultra 5-piece's +1 AP +1 MP counts here the same way it
+	# does online. saved_loadout makes combat start read the bag again, so a
+	# set the player equipped is the inventory total even when the empty-class
+	# kit wear did not touch that class. A normal hot-seat sends no gear.
 	if _TestLoadout.ACTIVE:
 		var bag := GearBag.load_saved()
 		var seat_gear := {}
@@ -132,6 +134,7 @@ static func local_match_config() -> Dictionary:
 			kit["flatten_plus"] = true
 			seat_gear[seat] = kit
 		config["seat_gear"] = seat_gear
+		config["saved_loadout"] = true
 	return config
 
 

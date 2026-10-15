@@ -40,6 +40,7 @@ func _run() -> void:
 	_test_ap_mp_matrix()
 	_test_fight_mp_is_sheet_not_flat()
 	_test_ultra_on_ironjaw_and_gloam()
+	_test_saved_ultra_loadout()
 	_test_set_bonus_and_still()
 	_test_prefight_loadout()
 	_wipe()
@@ -1465,6 +1466,162 @@ func _test_ultra_on_ironjaw_and_gloam() -> void:
 	eq(kept.worn_family("gloam"), "hushring", "empty Gloam receives Hushring")
 	eq(TL.sync_bag(kept), false, "the Ultra wear does not run again")
 	select.hotseat_classes = [] as Array[String]
+
+
+## A saved loadout the player equipped himself, not an empty class the kit
+## filled in. Real untagged Pitmaw and Hushring sit on the body. Test-tagged
+## copies sit in the bag and must not replace them. The inventory sheet, the
+## hot-seat start (even when the match payload is stale), the per-turn refill,
+## and the online deployment payload are the same total. Hourglass Fist
+## Intact cancels the Ultra +1 MP, so that same path is 8 AP / 3 MP.
+func _test_saved_ultra_loadout() -> void:
+	var sheet: Script = load("res://scenes/inventory_screen.gd")
+	var select: Script = load("res://scenes/class_select.gd")
+	var TL := preload("res://backend/test_loadout.gd")
+	var bag := GearBag.new()
+	for slot in GearBag.SLOTS:
+		var jaw := bag.add_item("pitmaw", str(slot), 5)
+		eq(bool(bag.equip(jaw, "ironjaw").get("ok", false)), true, "Ironjaw equips a real Pitmaw %s" % str(slot))
+		var shade := bag.add_item("hushring", str(slot), 5)
+		eq(bool(bag.equip(shade, "gloam").get("ok", false)), true, "Gloam equips a real Hushring %s" % str(slot))
+	for slot in GearBag.SLOTS:
+		var spare_jaw := bag.add_item("pitmaw", str(slot), 5)
+		bag.items[bag.find(spare_jaw)]["test"] = true
+		var spare_shade := bag.add_item("hushring", str(slot), 5)
+		bag.items[bag.find(spare_shade)]["test"] = true
+	bag.test_grant = true
+	bag.test_ultra_worn = true
+	bag.save()
+	var hero := HeroProgress.new()
+	hero.classes["ironjaw"] = {"xp": 0, "level": 30, "spent": {}}
+	hero.classes["gloam"] = {"xp": 0, "level": 30, "spent": {}}
+	hero.save()
+	var vault := StillVault.new()
+	vault.set_focus("ironjaw")
+	vault.socket = "tide"
+	vault.mode = "intact"
+	vault.set_focus("gloam")
+	vault.socket = "mirror_hour"
+	vault.mode = "intact"
+	vault.save()
+	var loaded := GearBag.load_saved()
+	eq(TL.sync_bag(loaded), false, "the kit does not replace a set the player already equipped")
+	eq(loaded.worn_family("ironjaw"), "pitmaw", "Ironjaw keeps the saved Pitmaw")
+	eq(loaded.worn_family("gloam"), "hushring", "Gloam keeps the saved Hushring")
+	eq(loaded.worn_list("ironjaw").size(), 5, "Ironjaw's saved loadout is the Ultra 5pc")
+	eq(loaded.worn_list("gloam").size(), 5, "Gloam's saved loadout is the Ultra 5pc")
+	var tagged := 0
+	for it in loaded.items:
+		if bool(it.get("test", false)):
+			tagged += 1
+			eq(loaded.is_equipped(int(it["uid"])), false, "a kit copy stays off the body")
+	eq(tagged, 10, "the kit copies stay in the bag")
+	var heroes := HeroProgress.load_saved()
+	for cid in ["ironjaw", "gloam"]:
+		var stats: Dictionary = sheet.champion_stats(loaded, heroes, cid)
+		eq(Vector2i(int(stats["ap"]), int(stats["mp"])), Vector2i(8, 4), "%s sheet is base + Ultra + level 20" % cid)
+		var wire: Dictionary = GearBag.clean_fight_gear(loaded.fight_gear(true, cid))
+		eq((wire["worn"] as Array).size(), 5, "%s online payload keeps the real Ultra 5pc" % cid)
+	var sim: Node = root.get_node("/root/CombatSim")
+	var stale := {
+		"classes": ["ironjaw", "gloam"],
+		"flat_board": true,
+		"seed": 1,
+		"saved_loadout": true,
+		"first_by_init": true,
+		"seat_gear": {
+			0: {"worn": [], "heroes": {"ironjaw": {"level": 30, "spent": {}}}, "flatten_plus": true},
+			1: {"worn": [], "heroes": {"gloam": {"level": 30, "spent": {}}}, "flatten_plus": true},
+		},
+	}
+	sim.reset_match(stale)
+	eq(Vector2i(int(sim._unit_by_seat(0)["max_ap"]), int(sim._unit_by_seat(0)["max_mp"])), Vector2i(7, 3), "a stale empty payload is level only until combat starts")
+	_ready_both(sim, "stale hot-seat")
+	_assert_live_pools(sim, 8, 4, "stale hot-seat")
+	select.hotseat_team_size = 1
+	var roster: Array[String] = ["ironjaw", "gloam"]
+	select.hotseat_classes = roster
+	select.hotseat_map_id = ""
+	var local: Dictionary = select.local_match_config()
+	eq(bool(local.get("saved_loadout", false)), true, "hot-seat combat re-reads the saved loadout")
+	eq((local["seat_gear"][0]["worn"] as Array).size(), 5, "the hot-seat payload is the equipped Pitmaw")
+	eq((local["seat_gear"][1]["worn"] as Array).size(), 5, "the hot-seat payload is the equipped Hushring")
+	sim.reset_match(local)
+	_ready_both(sim, "saved hot-seat")
+	_assert_live_pools(sim, 8, 4, "saved hot-seat")
+	sim.reset_match({
+		"classes": ["ironjaw", "gloam"],
+		"flat_board": true,
+		"seed": 1,
+	})
+	eq(bool(sim._saved_loadout), false, "an online match does not read this phone's bag")
+	for seat in [0, 1]:
+		var cid := "ironjaw" if seat == 0 else "gloam"
+		var sent: Dictionary = GearBag.clean_fight_gear(loaded.fight_gear(true, cid))
+		sent["flatten_plus"] = true
+		eq(bool(sim.set_seat_gear(seat, sent)), true, "%s deployment accepts the saved loadout" % cid)
+	_ready_both(sim, "online")
+	_assert_live_pools(sim, 8, 4, "online")
+	var before_fist: Dictionary = select.local_match_config()
+	vault = StillVault.load_saved()
+	vault.set_focus("ironjaw")
+	vault.socket = "hourglass_fist"
+	vault.mode = "intact"
+	vault.set_focus("gloam")
+	vault.socket = "hourglass_fist"
+	vault.mode = "intact"
+	vault.save()
+	loaded = GearBag.load_saved()
+	eq(TL.sync_bag(loaded), false, "socketing Fist does not replace the Ultra set")
+	eq(loaded.worn_family("ironjaw"), "pitmaw", "Ironjaw is still wearing Pitmaw")
+	eq(loaded.worn_family("gloam"), "hushring", "Gloam is still wearing Hushring")
+	heroes = HeroProgress.load_saved()
+	for cid in ["ironjaw", "gloam"]:
+		var fist_stats: Dictionary = sheet.champion_stats(loaded, heroes, cid)
+		eq(Vector2i(int(fist_stats["ap"]), int(fist_stats["mp"])), Vector2i(8, 3), "%s sheet with Fist Intact is 8 AP / 3 MP" % cid)
+	sim.reset_match(before_fist)
+	_ready_both(sim, "Fist after a stale payload")
+	_assert_live_pools(sim, 8, 3, "Fist after a stale payload")
+	sim.reset_match(select.local_match_config())
+	_ready_both(sim, "Fist hot-seat")
+	_assert_live_pools(sim, 8, 3, "Fist hot-seat")
+	sim.reset_match({
+		"classes": ["ironjaw", "gloam"],
+		"flat_board": true,
+		"seed": 1,
+	})
+	for seat in [0, 1]:
+		var cid2 := "ironjaw" if seat == 0 else "gloam"
+		var fist_wire: Dictionary = GearBag.clean_fight_gear(loaded.fight_gear(true, cid2))
+		fist_wire["flatten_plus"] = true
+		eq(str(fist_wire.get("still", {}).get("id", "")), "hourglass_fist", "%s online payload keeps Hourglass Fist" % cid2)
+		eq(bool(sim.set_seat_gear(seat, fist_wire)), true, "%s deployment accepts Fist" % cid2)
+	_ready_both(sim, "Fist online")
+	_assert_live_pools(sim, 8, 3, "Fist online")
+	select.hotseat_classes = [] as Array[String]
+
+
+func _ready_both(sim: Node, label: String) -> void:
+	var zone_a: Array = sim.legal_deploy_cells(0)
+	var zone_b: Array = sim.legal_deploy_cells(1)
+	eq(zone_a.is_empty() or zone_b.is_empty(), false, "%s has deploy cells" % label)
+	if zone_a.is_empty() or zone_b.is_empty():
+		return
+	eq(bool(sim.submit({"type": "place", "seat": 0, "to": zone_a[0]}).get("ok", false)), true, "%s Ironjaw places" % label)
+	eq(bool(sim.submit({"type": "place", "seat": 1, "to": zone_b[0]}).get("ok", false)), true, "%s Gloam places" % label)
+	eq(bool(sim.submit({"type": "ready", "seat": 0}).get("ok", false)), true, "%s Ironjaw readies" % label)
+	eq(bool(sim.submit({"type": "ready", "seat": 1}).get("ok", false)), true, "%s Gloam readies" % label)
+
+
+func _assert_live_pools(sim: Node, ap: int, mp: int, label: String) -> void:
+	for seat in [0, 1]:
+		var live: Dictionary = sim._unit_by_seat(seat)
+		eq(Vector2i(int(live["max_ap"]), int(live["max_mp"])), Vector2i(ap, mp), "%s %s max is the inventory total" % [label, str(live.get("class_id", ""))])
+		eq(Vector2i(int(live["ap"]), int(live["mp"])), Vector2i(ap, mp), "%s %s card is the inventory total" % [label, str(live.get("class_id", ""))])
+	eq(str(sim.snapshot()["coach"]).contains("%d AP / %d MP" % [ap, mp]), true, "%s opening coach names %d/%d" % [label, ap, mp])
+	var active := int(sim.snapshot().get("active_seat", 0))
+	eq(bool(sim.submit({"type": "end_turn", "seat": active}).get("ok", false)), true, "%s opener ends the turn" % label)
+	eq(str(sim.snapshot()["coach"]).contains("refilled to %d/%d" % [ap, mp]), true, "%s refill uses the inventory total" % label)
 
 
 ## Base 6 AP / 3 MP, plus every source, on every class. A Legendary or Ultra
