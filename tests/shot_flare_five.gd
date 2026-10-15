@@ -73,6 +73,12 @@ func _process(_delta: float) -> bool:
 	if _phase == "clip204":
 		if not _play_clip_204():
 			return true
+		_phase = "clip205"
+		_frames = 0
+		return false
+	if _phase == "clip205":
+		if not _play_clip_205():
+			return true
 		print("FLARE FIVE ok")
 		return true
 	return true
@@ -412,15 +418,19 @@ func _play_clip_204() -> bool:
 	_board._rebuild_pawns()
 	_board._refresh()
 	var pawn: Pawn = _board.pawns_by_seat[1]
-	pawn.grid_position = picture
+	pawn.grid_position = stored
 	pawn.position = _board._cell_to_local(picture)
 	pawn.visible = false
 	pawn.invisible = true
-	_board._stamp_feet()
+	_board._sync_drawn_cells()
+	if sim._unit_by_seat(1)["pos"] != picture:
+		return _fail("sync left Gloam on %s instead of the drawn cell" % sim._unit_by_seat(1)["pos"])
+	if pawn.grid_position != picture:
+		return _fail("grid_position stayed off the drawn cell")
 	if sim.manhattan(landing, picture) != 5:
 		return _fail("clip picture is not 5 steps")
-	if sim.manhattan(landing, sim._unit_by_seat(1)["pos"]) != 4:
-		return _fail("clip stored pos is not 4 steps")
+	if sim.manhattan(landing, sim._unit_by_seat(1)["pos"]) != 5:
+		return _fail("synced pos is not the 5-step drawn cell")
 	var hang: Dictionary = sim.submit({"type": "cast", "spell": "strike", "to": landing, "seat": 0})
 	if not bool(hang.get("ok", false)):
 		return _fail("clip204 Strike failed: %s" % str(hang.get("reason", "")))
@@ -455,6 +465,80 @@ func _play_clip_204() -> bool:
 	var card := _gloam_card()
 	if not card.contains("Invisible"):
 		return _fail("card lost Invisible at 5 picture steps: %s" % card)
+	return true
+
+
+## 0.1.205 clip. The sprite sits on (2,0), four straight steps from the yellow
+## tile (6,0). grid_position was left on (1,0). Counting that leftover cell
+## hid him. The drawn foot is the position, so Flare reveals him.
+func _play_clip_205() -> bool:
+	var sim: Node = root.get_node("/root/CombatSim")
+	var landing := Vector2i(6, 0)
+	var drawn := Vector2i(2, 0)
+	var stale := Vector2i(1, 0)
+	sim.reset_match({
+		"seed": 4,
+		"flat_board": true,
+		"skip_deploy": true,
+		"rolls": [1, 1],
+		"classes": ["ironjaw", "gloam"],
+		"positions": [Vector2i(5, 0), stale],
+		"gloam_invisible": true,
+	})
+	sim._unit_by_seat(0)["spell_elements"] = {"strike": "air", "shoulder": "fire", "crush": "fire", "advance": "air"}
+	sim._unit_by_seat(1)["invisible_turns"] = 3
+	_board._rebuild_pawns()
+	_board._refresh()
+	var pawn: Pawn = _board.pawns_by_seat[1]
+	pawn.grid_position = stale
+	pawn.position = _board._cell_to_local(drawn)
+	pawn.visible = true
+	pawn.invisible = true
+	if sim.manhattan(landing, drawn) != 4:
+		return _fail("clip205 drawn cell is not 4 steps")
+	if sim.manhattan(landing, stale) != 5:
+		return _fail("clip205 stale grid is not 5 steps")
+	_board._sync_drawn_cells()
+	if sim._unit_by_seat(1)["pos"] != drawn:
+		return _fail("sync did not take the drawn cell %s" % sim._unit_by_seat(1)["pos"])
+	if pawn.grid_position != drawn:
+		return _fail("grid_position did not follow the drawn cell")
+	var hang: Dictionary = sim.submit({"type": "cast", "spell": "strike", "to": landing, "seat": 0})
+	if not bool(hang.get("ok", false)):
+		return _fail("clip205 Strike failed: %s" % str(hang.get("reason", "")))
+	var flare: Dictionary = sim.submit({"type": "cast", "spell": "shoulder", "to": landing, "seat": 0})
+	if not bool(flare.get("ok", false)):
+		return _fail("clip205 Shoulder failed: %s" % str(flare.get("reason", "")))
+	var blend := {}
+	for event in flare.get("events", []):
+		if typeof(event) == TYPE_DICTIONARY and str(event.get("type", "")) == "blend":
+			blend = event
+	if str(blend.get("blend", "")) != "flare" or blend.get("to", Vector2i(-1, -1)) != landing:
+		return _fail("clip205 flare landing %s" % str(blend.get("to", "")))
+	var steps := -1
+	for raw_check in blend.get("reveal_checks", []):
+		if typeof(raw_check) == TYPE_DICTIONARY and int(raw_check.get("seat", -1)) == 1:
+			steps = int(raw_check.get("steps", -1))
+	print("CLIP205 landing (6,0) ironjaw (5,0) gloam drawn (2,0) stale grid (1,0) code steps %s" % steps)
+	if steps != 4:
+		return _fail("code computed %s steps, not 4" % steps)
+	if (blend.get("revealed", []) as Array) != [1]:
+		return _fail("Flare did not list the drawn cell at 4 steps")
+	if bool(sim._unit_by_seat(1).get("invisible", true)):
+		return _fail("Gloam stayed hidden 4 steps from the drawn cell")
+	var coach := str(flare.get("snapshot", {}).get("coach", ""))
+	if not coach.contains("Fade cooldown"):
+		return _fail("4 drawn steps did not end Fade: %s" % coach)
+	_board.select_tile(landing)
+	_board._refresh()
+	pawn = _board.pawns_by_seat[1]
+	if pawn.grid_position != drawn:
+		return _fail("revealed Gloam is drawn at %s" % pawn.grid_position)
+	if not pawn.visible or pawn.invisible:
+		return _fail("the revealed model stayed hidden")
+	var card := _gloam_card()
+	if card.contains("Invisible"):
+		return _fail("card still says Invisible after a 4-step reveal: %s" % card)
 	return true
 
 
