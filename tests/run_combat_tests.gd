@@ -10938,6 +10938,25 @@ func _test_air_blends() -> void:
 	eq(video_row.get("revealed", []), [], "Flare does not list Gloam 5 straight steps from (12,9)")
 	eq(bool(_unit(1).get("invisible", false)), true, "Gloam on (10,6) stays hidden")
 
+	# 0.1.199 phone: yellow landing (6,0), Ironjaw on the next tile, Gloam
+	# five straight steps up that line. The status line was the empty-air
+	# strike plus "Fade cooldown 1", which only prints when Invisible ended.
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1, 1], "classes": ["ironjaw", "gloam"], "positions": [Vector2i(6, 1), Vector2i(6, 5)], "gloam_invisible": true})
+	_live_unit(0)["spell_elements"] = {"strike": "air", "shoulder": "fire", "crush": "fire", "advance": "air"}
+	var phone_hang: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(6, 0), "seat": 0})
+	eq(bool(phone_hang.get("ok", false)), true, "Strike into (6,0) is the empty-air hang")
+	eq(bool(_unit(1).get("invisible", false)), true, "the hang at (6,0) does not reveal Gloam")
+	eq(_sim.manhattan(Vector2i(6, 0), _unit(1)["pos"]), 5, "Gloam on (6,5) is 5 straight steps from (6,0)")
+	var phone_flare: Dictionary = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(6, 0), "seat": 0})
+	var phone_row := _first_event_where(phone_flare.get("events", []), "blend")
+	eq(str(phone_row.get("blend", "")), "flare", "Shoulder on the hanging Strike is Flare")
+	eq(phone_row.get("to", Vector2i.ZERO), Vector2i(6, 0), "this Flare is measured from the yellow landing (6,0)")
+	eq(phone_row.get("revealed", []), [], "Flare does not list Gloam 5 straight steps from (6,0)")
+	eq(bool(_unit(1).get("invisible", false)), true, "Gloam on (6,5) stays hidden")
+	var phone_coach := str(phone_flare.get("snapshot", {}).get("coach", ""))
+	truthy(phone_coach.contains("(6,0)"), "the coach names the landing (6,0): %s" % phone_coach)
+	eq(phone_coach.contains("Fade cooldown"), false, "five steps does not end Fade: %s" % phone_coach)
+
 	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1, 1], "classes": ["ironjaw", "gloam"], "positions": [Vector2i(11, 9), Vector2i(12, 7)], "gloam_invisible": true})
 	_live_unit(0)["spell_elements"] = {"strike": "air", "shoulder": "fire", "crush": "fire", "advance": "air"}
 	var too_far: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(7, 9), "seat": 0})
