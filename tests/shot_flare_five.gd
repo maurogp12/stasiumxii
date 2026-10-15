@@ -41,6 +41,18 @@ func _process(_delta: float) -> bool:
 	if _phase == "pinned":
 		if not _play_pinned():
 			return true
+		_phase = "stuck"
+		_frames = 0
+		return false
+	if _phase == "stuck":
+		if not _play_stuck_seat():
+			return true
+		_phase = "walking"
+		_frames = 0
+		return false
+	if _phase == "walking":
+		if not _play_live_walk():
+			return true
 		print("FLARE FIVE ok")
 		return true
 	return true
@@ -84,8 +96,13 @@ func _play_five() -> bool:
 	var coach := str(second.get("snapshot", {}).get("coach", ""))
 	if not coach.contains("(6,0)"):
 		return _fail("coach missing the landing: %s" % coach)
+	if not coach.contains("2 AP"):
+		return _fail("the revealing cast is Shoulder, 2 AP: %s" % coach)
 	if coach.contains("Fade cooldown"):
 		return _fail("Fade cooldown fired at 5 steps: %s" % coach)
+	var hang_coach := str(first.get("snapshot", {}).get("coach", ""))
+	if not hang_coach.contains("3 AP") or hang_coach.contains("Fade cooldown"):
+		return _fail("the 3 AP hang must not reveal: %s" % hang_coach)
 	_board.select_tile(landing)
 	_board._rebuild_pawns()
 	_board._refresh()
@@ -158,6 +175,105 @@ func _play_pinned() -> bool:
 	var drawn: Vector2i = pawn.grid_position
 	var steps: int = sim.manhattan(landing, drawn)
 	print("PINNED drawn %s steps %s visible %s invisible %s" % [drawn, steps, pawn.visible, pawn.invisible])
+	if not pawn.visible or pawn.invisible:
+		return _fail("revealed Gloam is not drawn")
+	if pawn.unit_name != "Gloam":
+		return _fail("revealed name is %s" % pawn.unit_name)
+	if drawn != measured:
+		return _fail("Gloam is drawn on %s (%s steps from the yellow tile), not the measured tile %s" % [drawn, steps, measured])
+	if pawn.position.distance_to(_board._cell_to_local(measured)) > 1.0:
+		return _fail("name tag is not on the measured tile")
+	if steps > 4:
+		return _fail("revealed Gloam is still %s steps from the yellow landing" % steps)
+	var selected = _board.selected_tile
+	if selected == null or selected.grid_position != landing:
+		return _fail("yellow landing moved")
+	return true
+
+
+## 0.1.200 phone clip. Strike (3 AP) hangs at (6,0). Shoulder (2 AP) is the
+## Flare. Gloam's measured cell is 4 straight steps from that landing, so
+## Fade ends. The picture was still the pre-Fade tile, 5 steps away, because
+## an Ambush open-seat flag outlived its arrival tween.
+func _play_stuck_seat() -> bool:
+	return _play_revealed_on_measured(false)
+
+
+## Same clip while the hidden step's walk tween is still running. The name
+## has to land on the cell Flare measured, not the tile the tween was painting.
+func _play_live_walk() -> bool:
+	return _play_revealed_on_measured(true)
+
+
+func _play_revealed_on_measured(live_walk: bool) -> bool:
+	var sim: Node = root.get_node("/root/CombatSim")
+	var landing := Vector2i(6, 0)
+	var stale := Vector2i(6, 5)
+	var measured := Vector2i(6, 4)
+	sim.reset_match({
+		"seed": 4,
+		"flat_board": true,
+		"skip_deploy": true,
+		"rolls": [1, 1],
+		"classes": ["ironjaw", "gloam"],
+		"positions": [Vector2i(6, 1), measured],
+		"gloam_invisible": true,
+	})
+	sim._unit_by_seat(0)["spell_elements"] = {"strike": "air", "shoulder": "fire", "crush": "fire", "advance": "air"}
+	if sim.manhattan(landing, measured) != 4:
+		return _fail("measured cell is not 4 straight steps from (6,0)")
+	if sim.manhattan(landing, stale) != 5:
+		return _fail("stale cell is not 5 straight steps from (6,0)")
+	_board._rebuild_pawns()
+	_board._refresh()
+	var pawn: Pawn = _board.pawns_by_seat[1]
+	pawn.grid_position = stale
+	pawn.position = _board._cell_to_local(stale)
+	pawn.visible = false
+	pawn.invisible = true
+	var hang: Dictionary = sim.submit({"type": "cast", "spell": "strike", "to": landing, "seat": 0})
+	if not bool(hang.get("ok", false)):
+		return _fail("clip Strike failed: %s" % str(hang.get("reason", "")))
+	var hang_coach := str(hang.get("snapshot", {}).get("coach", ""))
+	if not hang_coach.contains("(6,0)") or not hang_coach.contains("3 AP") or hang_coach.contains("Fade cooldown"):
+		return _fail("Strike hang coach: %s" % hang_coach)
+	if not bool(sim._unit_by_seat(1).get("invisible", false)):
+		return _fail("the first element, hanging on Ironjaw, revealed Gloam")
+	_board._ambush_hold_seat = 1
+	_board._ambush_hold_cell = stale
+	_board._ambush_hold_pos = _board._cell_to_local(stale)
+	_board._ambush_hold_facing = "S"
+	_board._ambush_hold_event = {"type": "hit", "spell": "ambush", "seat": 1}
+	_board._ambush_open_seat = 1
+	_board._ambush_arrival_tween = null
+	if live_walk:
+		_board._busy = true
+		_board._hop_seat = 1
+		_board._stop_walk_tween()
+		_board._walk_tween = _board.create_tween()
+		_board._walk_tween.tween_interval(30.0)
+		if not _board._walk_tween.is_running():
+			return _fail("walk tween was not live before the reveal refresh")
+	else:
+		_board._busy = false
+		_board._hop_seat = -1
+		_board._walk_tween = null
+	var flare: Dictionary = sim.submit({"type": "cast", "spell": "shoulder", "to": landing, "seat": 0})
+	if not bool(flare.get("ok", false)):
+		return _fail("clip Shoulder failed: %s" % str(flare.get("reason", "")))
+	var coach := str(flare.get("snapshot", {}).get("coach", ""))
+	if not coach.contains("(6,0)") or not coach.contains("2 AP") or not coach.contains("Fade cooldown"):
+		return _fail("Shoulder Flare coach: %s" % coach)
+	if bool(sim._unit_by_seat(1).get("invisible", true)):
+		return _fail("Flare did not reveal Gloam 4 straight steps from (6,0)")
+	if sim.manhattan(landing, sim._unit_by_seat(1)["pos"]) != 4:
+		return _fail("measured tile is no longer 4 steps from the landing")
+	_board.select_tile(landing)
+	_board._refresh()
+	pawn = _board.pawns_by_seat[1]
+	var drawn: Vector2i = pawn.grid_position
+	var steps: int = sim.manhattan(landing, drawn)
+	print("CLIP live_walk %s drawn %s steps %s" % [live_walk, drawn, steps])
 	if not pawn.visible or pawn.invisible:
 		return _fail("revealed Gloam is not drawn")
 	if pawn.unit_name != "Gloam":

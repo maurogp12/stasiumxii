@@ -10961,9 +10961,33 @@ func _test_air_blends() -> void:
 	eq(phone_row.get("to", Vector2i.ZERO), Vector2i(6, 0), "this Flare is measured from the yellow landing (6,0)")
 	eq(phone_row.get("revealed", []), [], "Flare does not list Gloam 5 straight steps from (6,0)")
 	eq(bool(_unit(1).get("invisible", false)), true, "Gloam on (6,5) stays hidden")
+	var phone_hang_coach := str(phone_hang.get("snapshot", {}).get("coach", ""))
+	truthy(phone_hang_coach.contains("(6,0)"), "the hang coach names (6,0): %s" % phone_hang_coach)
+	truthy(phone_hang_coach.contains("3 AP"), "the hang is Strike, 3 AP: %s" % phone_hang_coach)
+	eq(phone_hang_coach.contains("Fade cooldown"), false, "the element hanging on Ironjaw does not end Fade: %s" % phone_hang_coach)
 	var phone_coach := str(phone_flare.get("snapshot", {}).get("coach", ""))
 	truthy(phone_coach.contains("(6,0)"), "the coach names the landing (6,0): %s" % phone_coach)
+	truthy(phone_coach.contains("2 AP"), "the second cast is Shoulder, 2 AP: %s" % phone_coach)
 	eq(phone_coach.contains("Fade cooldown"), false, "five steps does not end Fade: %s" % phone_coach)
+
+	# Same clip, one step closer. (6,4) is 4 straight steps from the yellow
+	# landing and only 3 from Ironjaw. Shoulder reveals. The 3 AP hang does not.
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1, 1], "classes": ["ironjaw", "gloam"], "positions": [Vector2i(6, 1), Vector2i(6, 4)], "gloam_invisible": true})
+	_live_unit(0)["spell_elements"] = {"strike": "air", "shoulder": "fire", "crush": "fire", "advance": "air"}
+	var edge_hang: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(6, 0), "seat": 0})
+	eq(bool(_unit(1).get("invisible", false)), true, "the 3 AP hang does not reveal Gloam 4 steps from (6,0)")
+	eq(str(edge_hang.get("snapshot", {}).get("coach", "")).contains("Fade cooldown"), false, "the hang coach has no Fade cooldown")
+	var edge_flare: Dictionary = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(6, 0), "seat": 0})
+	var edge_row := _first_event_where(edge_flare.get("events", []), "blend")
+	eq(str(edge_row.get("blend", "")), "flare", "Shoulder on the hanging Strike is Flare at 4 steps")
+	eq(edge_row.get("to", Vector2i.ZERO), Vector2i(6, 0), "the 4-step Flare is still measured from (6,0)")
+	eq(_sim.manhattan(Vector2i(6, 0), _unit(1)["pos"]), 4, "Gloam on (6,4) is 4 straight steps from (6,0)")
+	eq(edge_row.get("revealed", []), [1], "Flare lists Gloam exactly 4 straight steps from (6,0)")
+	eq(bool(_unit(1).get("invisible", true)), false, "Flare reveals Gloam exactly 4 straight steps from (6,0)")
+	var edge_coach := str(edge_flare.get("snapshot", {}).get("coach", ""))
+	truthy(edge_coach.contains("(6,0)"), "the 4-step coach names (6,0): %s" % edge_coach)
+	truthy(edge_coach.contains("2 AP"), "the 4-step cast is the 2 AP Shoulder: %s" % edge_coach)
+	truthy(edge_coach.contains("Fade cooldown"), "4 straight steps ends Fade: %s" % edge_coach)
 
 	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1, 1], "classes": ["ironjaw", "gloam"], "positions": [Vector2i(11, 9), Vector2i(12, 7)], "gloam_invisible": true})
 	_live_unit(0)["spell_elements"] = {"strike": "air", "shoulder": "fire", "crush": "fire", "advance": "air"}
