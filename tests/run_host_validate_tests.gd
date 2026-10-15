@@ -58,7 +58,8 @@ func _test_intent_shape() -> void:
 	eq(HostValidate.validate_intent({"type": "move"})["reason"], "missing_destination", "move without to is missing_destination")
 	eq(HostValidate.validate_intent({"type": "cast", "to": Vector2i(1, 0)})["reason"], "missing_spell", "cast without spell is missing_spell")
 	eq(HostValidate.validate_intent({"type": "ready"})["reason"], "missing_seat", "ready without seat is missing_seat")
-	eq(HostValidate.validate_intent({"type": "end_turn", "seat": 3})["reason"], "bad_seat", "seat 3 is bad_seat")
+	eq(HostValidate.validate_intent({"type": "end_turn", "seat": 3})["ok"], true, "seat 3 is a 3v3 fighter")
+	eq(HostValidate.validate_intent({"type": "end_turn", "seat": 6})["reason"], "bad_seat", "seat 6 is bad_seat")
 
 
 func _test_client_must_not_roll() -> void:

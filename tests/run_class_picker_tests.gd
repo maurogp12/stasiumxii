@@ -23,6 +23,7 @@ func _run() -> void:
 	_test_hotseat_default_pair()
 	_test_hotseat_teams()
 	_test_online_select_class()
+	_test_online_3v3_roster()
 	_test_dedicated_hides_picker()
 	_test_board_uses_roster()
 	print("Class-picker tests: %d passed, %d failed" % [_passed, _failed])
@@ -193,6 +194,33 @@ func _test_online_select_class() -> void:
 	truthy(src.contains("select_class"), "select_class stays the class RPC path")
 	picker.free()
 	net.selected_class_id = ""
+
+
+func _test_online_3v3_roster() -> void:
+	var net := _net()
+	net.set_queue_format("1v1")
+	var picker := _picker()
+	picker.choose_mode("online")
+	picker.set_online_format("3v3")
+	truthy(picker.prompt_text().contains("3 different"), "3v3 asks for three different classes")
+	var early: Dictionary = picker.request_queue()
+	eq(bool(early.get("ok", true)), false, "3v3 queue before three classes is rejected")
+	eq(str(early.get("reason", "")), "class_required", "3v3 queue reason is class_required")
+	picker.pick_class("kestrel")
+	picker.pick_class("ironjaw")
+	eq(net.selected_class_ids.size(), 0, "two classes do not join the 3v3 queue yet")
+	picker.pick_class("kestrel")
+	eq(net.queue_format, "3v3", "removing a class stays on the 3v3 queue")
+	picker.pick_class("kestrel")
+	var sealed: Dictionary = picker.pick_class("mender")
+	eq(bool(sealed.get("ok", false)), true, "the third different class confirms the roster")
+	eq(net.selected_class_ids, ["ironjaw", "kestrel", "mender"], "the roster keeps three different classes")
+	eq(net.queue_format, "3v3", "the confirmed roster is the 3v3 queue")
+	picker.set_online_format("1v1")
+	eq(net.queue_format, "1v1", "the online menu can return to the 1v1 queue")
+	eq(net.selected_class_id, "", "switching back to 1v1 clears the roster")
+	picker.free()
+	net.set_queue_format("1v1")
 
 
 func _test_dedicated_hides_picker() -> void:

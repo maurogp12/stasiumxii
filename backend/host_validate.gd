@@ -38,7 +38,9 @@ static func validate_intent(intent: Dictionary) -> Dictionary:
 		return _fail("missing_type")
 	if not INTENT_TYPES.has(kind):
 		return _fail("unknown_intent")
-	if intent.has("seat") and int(intent["seat"]) not in [0, 1]:
+	# 1v1 uses seats 0 and 1. 3v3 uses seats 0–5 (seat % 2 is the player).
+	# NetSession still rejects a seat that connection does not own.
+	if intent.has("seat") and (int(intent["seat"]) < 0 or int(intent["seat"]) > 5):
 		return _fail("bad_seat")
 	match kind:
 		"face":

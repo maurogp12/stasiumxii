@@ -1283,6 +1283,7 @@ func apply_host_snapshot(snap: Dictionary) -> void:
 	_turn_time_limit = float(snap.get("turn_time_limit", TURN_TIME_LIMIT))
 	_turn_time_remaining = float(snap.get("turn_time_remaining", 0.0))
 	_match_time_left = float(snap.get("match_time_left", -1.0))
+	_team_size = clampi(int(snap.get("team_size", 1)), 1, 3)
 	_turn_time_running = bool(snap.get("turn_time_running", false))
 	_last_coach = str(snap.get("coach", ""))
 	_last_events = []
