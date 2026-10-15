@@ -122,6 +122,8 @@ const DOORS := {
 		"door": "Galevault",
 		"boss": "Serra White-Spire Regent",
 		"boss_art": "serra_the_gale_sentinel",
+		# ★5 Frost Wraith (Mauro 14 Oct 2026). The blizzard is her attack sheet.
+		"boss_art_5": "serra_frost_wraith",
 		"boss_attack": "Shard",
 		"trash": [
 			{"name": "Ice Warden", "role": "brute", "attack": "Hit", "art": "frost_wisp"},
@@ -135,6 +137,8 @@ const DOORS := {
 		"door": "Coilgate",
 		"boss": "High Coilspire",
 		"boss_art": "tyrant_coilspire",
+		# ★5 demon scorpion (Mauro 15 Oct 2026). Brood Storm is the extra spell.
+		"boss_art_5": "coilspire_demon",
 		"boss_attack": "Arc",
 		"trash": [
 			{"name": "Coil Brute", "role": "brute", "attack": "Hit", "art": "sparkin"},

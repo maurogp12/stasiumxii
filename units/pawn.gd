@@ -1678,7 +1678,10 @@ func _sync_boss_aura() -> void:
 ## Shows frame t (0..1) of a boss sheet for the current facing. False when
 ## this is not a boss or the sheet is missing (the painting stays up).
 func _boss_frame(anim: String, t: float, cycle: bool = false) -> bool:
-	if not stasis_boss or _sprite == null or not is_instance_valid(_sprite):
+	if stasis_sprite == "" or _sprite == null or not is_instance_valid(_sprite):
+		return false
+	# A measured walk already plays its strip. Don't paint a second cycle on top.
+	if anim == "walk" and uses_measured_stride():
 		return false
 	var info := BOSS_SHEETS.frames_for(stasis_sprite, anim, str(facing))
 	if info.is_empty():
@@ -1692,11 +1695,11 @@ func _boss_frame(anim: String, t: float, cycle: bool = false) -> bool:
 ## Boss at rest: the idle sheet loop (clock in seconds), else the painting.
 ## True when an idle sheet drew the body.
 func _boss_rest(seconds: float = 0.0) -> bool:
-	if not stasis_boss or _sprite == null or not is_instance_valid(_sprite):
+	if stasis_sprite == "" or _sprite == null or not is_instance_valid(_sprite):
 		return false
 	var info := BOSS_SHEETS.frames_for(stasis_sprite, "idle", str(facing))
 	if info.is_empty():
-		if _sprite.texture != _stasis_texture(stasis_sprite) and BOSS_SHEETS.has_any(stasis_sprite):
+		if stasis_boss and _sprite.texture != _stasis_texture(stasis_sprite) and BOSS_SHEETS.has_any(stasis_sprite):
 			_sprite.texture = _stasis_texture(stasis_sprite)
 			_sprite.offset = _foe_offset(float(_sprite.texture.get_height()) if _sprite.texture != null else 320.0)
 			_apply_figure_read()
@@ -1860,7 +1863,10 @@ const FOE_KIND := {
 	"captain_brineclaw": ["brute", ""],
 	"slagheart_the_emberbrute": ["brute", ""],
 	"serra_the_gale_sentinel": ["flyer", ""],
+	"serra_frost_wraith": ["flyer", ""],
 	"tyrant_coilspire": ["brute", ""],
+	"coilspire_demon": ["brute", ""],
+	"scorpling": ["crawler", ""],
 	# 5-star bosses (Mauro 2 Oct 2026): framed sheets; the portrait is idle frame 0.
 	"sheaf_sovereign": ["brute", ""],
 	"brineclaw_sovereign": ["brute", ""],
@@ -2437,6 +2443,13 @@ func _sample_lift(t: float) -> void:
 func _sample_death(t: float, tilt_sign: float) -> void:
 	if _sprite == null:
 		return
+	# Authored death: dissolve in place and hold the remains. No fall.
+	if _boss_frame("death", t):
+		_sprite.position = Vector2.ZERO
+		_sprite.rotation_degrees = 0.0
+		_sprite.scale = _body_scale()
+		_sprite.modulate = Color.WHITE
+		return
 	if not _death_sampled:
 		_death_from = _sprite.modulate
 		_death_sampled = true
@@ -2469,6 +2482,15 @@ func _sample_death_strip(t: float, _tilt_sign: float) -> void:
 func _apply_downed_pose() -> void:
 	_stop_idle()
 	if _hold_death_strip():
+		return
+	if _boss_frame("death", 1.0):
+		_ensure_visuals()
+		if _sprite != null and is_instance_valid(_sprite):
+			_sprite.visible = true
+			_sprite.position = Vector2.ZERO
+			_sprite.rotation_degrees = 0.0
+			_sprite.scale = _body_scale()
+			_sprite.modulate = Color.WHITE
 		return
 	_end_body_strip()
 	_ensure_visuals()

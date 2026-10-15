@@ -58,6 +58,14 @@ const SPELLS := {
 	"coil.pulse": {"name": "Grid Pulse", "ap": 4, "shape": "pads", "damage": 10, "element": "Air", "aoe": true},
 	"coil.lash": {"name": "Lash", "ap": 3, "shape": "shot", "min": 2, "max": 6, "damage": 6, "element": "Air", "push": 1, "bolt": true},
 	"coil.step": {"name": "Coil Step", "ap": 2, "shape": "step"},
+	# ★5 Tormenta de Crías (Mauro 15 Oct 2026). The cast itself deals no damage.
+	# It summons up to 4 scorplings on empty tiles 1 away (never on his legs).
+	# 20 HP and 5 MP are fixed; the burst's 10 Air matches Grid Pulse. The
+	# README locks the summon, not a damage number.
+	"coil.brood": {"name": "Brood Storm", "ap": 4, "shape": "summon", "damage": 0, "element": "Air", "aoe": true, "summon_count": 4, "summon_hp": 20, "summon_mp": 5},
+	# Scorpling arrival (and a death detonation): Chebyshev 1 around itself.
+	# suicide: the body is spent by the blast. A killing blow detonates too.
+	"scorpling.burst": {"name": "Burst", "ap": 3, "shape": "radius", "size": 1, "damage": 10, "element": "Air", "aoe": true, "suicide": true},
 }
 
 ## Boss kits by door (map id).
@@ -72,6 +80,7 @@ const BOSS_KITS := {
 const BOSS_KITS_STAR5_EXTRA := {
 	"brinewake": ["brine.cannon"],
 	"slagcrown": ["slag.caldera"],
+	"stormspire": ["coil.brood"],
 }
 ## Ranged bodies never walk into 0–1 when a shot is legal; they keep 3+.
 const RANGED_BOSS := {"windmere": true, "stormspire": true}
