@@ -9008,7 +9008,8 @@ static func ambush_damage_if_planted(struck_from: Vector2i, landing: Vector2i, d
 
 
 ## Soft Lock 2026-09-26: a resolved attack ends Invisible, hit or miss.
-## Drop Shade, Fade, walks, and a rejected cast do not. Fade still grants it.
+## A missed Ambush does not call this. Only a connecting Ambush, or taking
+## damage, ends Fade. Drop Shade, Fade, walks, and a rejected cast do not.
 func _break_invisible_on_attack(actor: Dictionary) -> void:
 	if not _end_invisible(actor, false):
 		actor["invisible_turns"] = 0
@@ -9036,15 +9037,15 @@ func _resolve_ambush(intent: Dictionary, actor: Dictionary, target: Dictionary, 
 	var connected := roll <= chance
 	_intent_log.append(intent)
 	if not connected:
-		# MISS does not teleport and does not spend Shade. It is still an attack,
-		# so Invisible ends. A rejected cast never reaches this branch.
+		# MISS does not teleport, spend Shade, or end Invisible. Fade's
+		# cooldown stays down. A connecting hit still ends it, and so does
+		# taking damage. A rejected cast never reaches this branch.
 		var was_invisible := bool(actor.get("invisible", false))
-		_break_invisible_on_attack(actor)
 		var notes := "No teleport."
 		if bool(actor.get("shade", false)):
 			notes += " Shade stays."
 		if was_invisible:
-			notes += " Invisible ends."
+			notes += " Invisible stays."
 		var umbral_kept := int(actor.get("umbral", 0))
 		if umbral_kept > 0:
 			notes += " Umbral stays."
