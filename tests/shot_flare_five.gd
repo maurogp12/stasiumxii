@@ -67,6 +67,12 @@ func _process(_delta: float) -> bool:
 	if _phase == "clip_near":
 		if not _play_clip_panel(Vector2i(9, 8), false):
 			return true
+		_phase = "clip204"
+		_frames = 0
+		return false
+	if _phase == "clip204":
+		if not _play_clip_204():
+			return true
 		print("FLARE FIVE ok")
 		return true
 	return true
@@ -380,6 +386,75 @@ func _play_clip_panel(gloam_at: Vector2i, stay_hidden: bool) -> bool:
 		return _fail("revealed name is not on the measured tile")
 	if card.contains("Invisible"):
 		return _fail("card still says Invisible after the reveal: %s" % card)
+	return true
+
+
+## 0.1.204 clip. Yellow landing (6,0). Ironjaw is on (5,0), one step toward
+## Gloam. The body on screen is (1,0), five straight steps along that line.
+## The stored pos is (2,0), four steps, which is the shorter count that used
+## to reveal him. The radius must log 5 and leave the model and the card hidden.
+func _play_clip_204() -> bool:
+	var sim: Node = root.get_node("/root/CombatSim")
+	var landing := Vector2i(6, 0)
+	var picture := Vector2i(1, 0)
+	var stored := Vector2i(2, 0)
+	sim.reset_match({
+		"seed": 4,
+		"flat_board": true,
+		"skip_deploy": true,
+		"rolls": [1, 1],
+		"classes": ["ironjaw", "gloam"],
+		"positions": [Vector2i(5, 0), stored],
+		"gloam_invisible": true,
+	})
+	sim._unit_by_seat(0)["spell_elements"] = {"strike": "air", "shoulder": "fire", "crush": "fire", "advance": "air"}
+	sim._unit_by_seat(1)["invisible_turns"] = 3
+	_board._rebuild_pawns()
+	_board._refresh()
+	var pawn: Pawn = _board.pawns_by_seat[1]
+	pawn.grid_position = picture
+	pawn.position = _board._cell_to_local(picture)
+	pawn.visible = false
+	pawn.invisible = true
+	_board._stamp_feet()
+	if sim.manhattan(landing, picture) != 5:
+		return _fail("clip picture is not 5 steps")
+	if sim.manhattan(landing, sim._unit_by_seat(1)["pos"]) != 4:
+		return _fail("clip stored pos is not 4 steps")
+	var hang: Dictionary = sim.submit({"type": "cast", "spell": "strike", "to": landing, "seat": 0})
+	if not bool(hang.get("ok", false)):
+		return _fail("clip204 Strike failed: %s" % str(hang.get("reason", "")))
+	var flare: Dictionary = sim.submit({"type": "cast", "spell": "shoulder", "to": landing, "seat": 0})
+	if not bool(flare.get("ok", false)):
+		return _fail("clip204 Shoulder failed: %s" % str(flare.get("reason", "")))
+	var blend := {}
+	for event in flare.get("events", []):
+		if typeof(event) == TYPE_DICTIONARY and str(event.get("type", "")) == "blend":
+			blend = event
+	if str(blend.get("blend", "")) != "flare" or blend.get("to", Vector2i(-1, -1)) != landing:
+		return _fail("clip204 flare landing %s" % str(blend.get("to", "")))
+	var steps := -1
+	for raw_check in blend.get("reveal_checks", []):
+		if typeof(raw_check) == TYPE_DICTIONARY and int(raw_check.get("seat", -1)) == 1:
+			steps = int(raw_check.get("steps", -1))
+	print("CLIP204 landing (6,0) ironjaw (5,0) gloam picture (1,0) stored (2,0) code steps %s" % steps)
+	if steps != 5:
+		return _fail("code computed %s steps, not 5" % steps)
+	if not (blend.get("revealed", []) as Array).is_empty():
+		return _fail("Flare listed a reveal at 5 picture steps")
+	if not bool(sim._unit_by_seat(1).get("invisible", false)):
+		return _fail("sim revealed the picture 5 steps from (6,0)")
+	var coach := str(flare.get("snapshot", {}).get("coach", ""))
+	if coach.contains("Fade cooldown"):
+		return _fail("Fade cooldown fired at 5 picture steps: %s" % coach)
+	_board.select_tile(landing)
+	_board._refresh()
+	pawn = _board.pawns_by_seat[1]
+	if pawn.visible or not pawn.invisible:
+		return _fail("Gloam is drawn at %s after a 5-step picture" % pawn.grid_position)
+	var card := _gloam_card()
+	if not card.contains("Invisible"):
+		return _fail("card lost Invisible at 5 picture steps: %s" % card)
 	return true
 
 

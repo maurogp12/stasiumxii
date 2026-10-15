@@ -11002,6 +11002,48 @@ func _test_air_blends() -> void:
 	truthy(phone_coach.contains("2 AP"), "the second cast is Shoulder, 2 AP: %s" % phone_coach)
 	eq(phone_coach.contains("Fade cooldown"), false, "five steps does not end Fade: %s" % phone_coach)
 
+	# 0.1.204 phone clip. Yellow landing (6,0). Ironjaw stands on (5,0), one
+	# step toward Gloam. The picture is (1,0): five straight steps along that
+	# line. The stored pos had already stepped to (2,0), which is 4, and that
+	# shorter count is what revealed him. The picture's count is the one that
+	# matters. The radius logs 5 and leaves him hidden.
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1, 1], "classes": ["ironjaw", "gloam"], "positions": [Vector2i(5, 0), Vector2i(2, 0)], "gloam_invisible": true})
+	_live_unit(0)["spell_elements"] = {"strike": "air", "shoulder": "fire", "crush": "fire", "advance": "air"}
+	_sim.note_foot_cell(1, Vector2i(1, 0))
+	eq(_sim.manhattan(Vector2i(6, 0), Vector2i(1, 0)), 5, "the picture (1,0) is 5 straight steps from (6,0)")
+	eq(_sim.manhattan(Vector2i(6, 0), _unit(1)["pos"]), 4, "the stored pos (2,0) is the shorter count")
+	var clip_hang: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(6, 0), "seat": 0})
+	eq(bool(clip_hang.get("ok", false)), true, "clip Strike into (6,0) hangs")
+	eq(bool(_unit(1).get("invisible", false)), true, "the 3 AP hang does not reveal the picture at 5")
+	var clip_flare: Dictionary = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(6, 0), "seat": 0})
+	var clip_row := _first_event_where(clip_flare.get("events", []), "blend")
+	eq(str(clip_row.get("blend", "")), "flare", "clip Shoulder is Flare")
+	eq(clip_row.get("to", Vector2i.ZERO), Vector2i(6, 0), "clip Flare lands on the yellow tile (6,0)")
+	var clip_steps := -1
+	for raw_check in clip_row.get("reveal_checks", []):
+		if typeof(raw_check) == TYPE_DICTIONARY and int(raw_check.get("seat", -1)) == 1:
+			clip_steps = int(raw_check.get("steps", -1))
+	eq(clip_steps, 5, "the radius logged 5 straight steps from (6,0) to the picture (1,0)")
+	eq(clip_row.get("revealed", []), [], "Flare does not list Gloam 5 steps from the picture")
+	eq(bool(_unit(1).get("invisible", false)), true, "Gloam stays hidden when the picture is 5 steps from (6,0)")
+	var clip_coach := str(clip_flare.get("snapshot", {}).get("coach", ""))
+	eq(clip_coach.contains("Fade cooldown"), false, "the picture at 5 does not end Fade: %s" % clip_coach)
+	print("CLIP204 landing (6,0) Gloam picture (1,0) stored (2,0) code steps %s" % clip_steps)
+
+	# Same picture, one step closer. (2,0) is 4 straight steps and does reveal.
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1, 1], "classes": ["ironjaw", "gloam"], "positions": [Vector2i(5, 0), Vector2i(2, 0)], "gloam_invisible": true})
+	_live_unit(0)["spell_elements"] = {"strike": "air", "shoulder": "fire", "crush": "fire", "advance": "air"}
+	_sim.note_foot_cell(1, Vector2i(2, 0))
+	_sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(6, 0), "seat": 0})
+	var clip_near: Dictionary = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(6, 0), "seat": 0})
+	var clip_near_row := _first_event_where(clip_near.get("events", []), "blend")
+	var near_steps := -1
+	for raw_near in clip_near_row.get("reveal_checks", []):
+		if typeof(raw_near) == TYPE_DICTIONARY and int(raw_near.get("seat", -1)) == 1:
+			near_steps = int(raw_near.get("steps", -1))
+	eq(near_steps, 4, "the radius logs 4 when the picture is (2,0)")
+	eq(bool(_unit(1).get("invisible", true)), false, "Flare reveals the picture at 4 straight steps from (6,0)")
+
 	# Same clip, one step closer. (6,4) is 4 straight steps from the yellow
 	# landing and only 3 from Ironjaw. Shoulder reveals. The 3 AP hang does not.
 	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1, 1], "classes": ["ironjaw", "gloam"], "positions": [Vector2i(6, 1), Vector2i(6, 4)], "gloam_invisible": true})

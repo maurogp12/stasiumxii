@@ -1405,9 +1405,23 @@ func _on_new_match() -> void:
 	_hydrate_turn_clock()
 
 
+## The pawn's cell, before this cast moves anyone. Flare measures from this
+## tile, not from a sim pos that has already stepped closer than the picture.
+func _stamp_feet() -> void:
+	var sim := _sim()
+	if sim == null or not sim.has_method("note_foot_cell"):
+		return
+	for seat in pawns_by_seat.keys():
+		var pawn: Pawn = pawns_by_seat[seat]
+		if pawn == null or not is_instance_valid(pawn):
+			continue
+		sim.note_foot_cell(int(seat), pawn.grid_position)
+
+
 func _submit(intent: Dictionary) -> void:
 	if _busy or _view_locked:
 		return
+	_stamp_feet()
 	_mark_local_net_echo()
 	var result: Dictionary
 	if _online() and _net().is_client():
@@ -2740,7 +2754,9 @@ func _apply_units(snap: Dictionary) -> void:
 		# already put Invisible back on the card. Hide that body unless the
 		# arrival tween is still the strike itself.
 		pawn.mark_snapshot_unseen(unseen)
-		if unseen and not hold_live:
+		# A finished hold used to keep the sprite solid on the pre-Fade tile
+		# after the snapshot had already decided he was still hidden.
+		if unseen:
 			pawn.force_unseen_body()
 		pawn.rewrite_frozen_vitals()
 

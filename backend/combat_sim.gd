@@ -146,6 +146,10 @@ const TURN_TIME_LIMIT := 30.0
 var _invisible_wore_off := false
 ## Set when Invisible ends and Fade's cooldown arms. _accept appends it to the coach.
 var _fade_cd_log := ""
+## Seat -> cell the pawn is standing on. The board stamps this before a cast.
+## A sim pos that already stepped closer than the picture is not the tile
+## counted on screen. Absent means "use pos" (bots, the server, tests).
+var _foot_cells: Dictionary = {}
 var _units: Array[Dictionary] = []
 var _active_seat: int = 0
 var _turn_index: int = 1
@@ -244,6 +248,7 @@ func clear_to_lobby() -> void:
 func reset_match(config: Dictionary = {}) -> Dictionary:
 	_match_time_left = -1.0
 	_units.clear()
+	_foot_cells.clear()
 	_blocked_cells.clear()
 	_snap_wall_cells.clear()
 	_snap_wall_state.clear()
@@ -2456,11 +2461,32 @@ func _blend_reveal_radius(blend: String) -> int:
 	return FLARE_REVEAL_RADIUS if blend == "flare" else 1
 
 
+## The cell the fighter is standing on. The board stamps the pawn's cell
+## before the cast. That is the tile counted on screen. A sim pos that has
+## already moved closer (an Ambush landing, a walk tween that has not
+## caught up) must not shrink the count.
+func note_foot_cell(seat: int, cell: Vector2i) -> void:
+	_foot_cells[seat] = cell
+
+
+func _standing_cell(unit: Dictionary) -> Vector2i:
+	var pos: Vector2i = _as_cell(unit.get("pos", Vector2i.ZERO))
+	var seat := int(unit.get("seat", -1))
+	if not _foot_cells.has(seat):
+		return pos
+	var foot: Vector2i = _as_cell(_foot_cells[seat])
+	if not _in_bounds(foot):
+		return pos
+	return foot
+
+
 ## Same reveal as a hurting blow: Invisible ends, Fade's cooldown arms, and
 ## the expire carries the tile only after the flag is down so a still-hidden
-## fighter's cell is not in the event. Returns the coach fragment, or "".
+## fighter's cell is not in the event. Distance is straight steps from the
+## landing to the cell he is standing on. Returns the coach fragment, or "".
 func _stamp_blend_reveal(actor: Dictionary, center: Vector2i, blend: String, event: Dictionary) -> String:
 	var revealed: Array = []
+	var checks: Array = []
 	var radius := _blend_reveal_radius(blend)
 	for raw in _units:
 		var unit: Dictionary = raw
@@ -2468,12 +2494,24 @@ func _stamp_blend_reveal(actor: Dictionary, center: Vector2i, blend: String, eve
 			continue
 		if not bool(unit.get("invisible", false)):
 			continue
-		if manhattan(unit["pos"], center) > radius:
+		var foot := _standing_cell(unit)
+		var steps := manhattan(foot, center)
+		checks.append({
+			"seat": int(unit["seat"]),
+			"steps": steps,
+			"foot": foot,
+			"pos": _as_cell(unit.get("pos", Vector2i.ZERO)),
+			"center": center,
+		})
+		if steps > radius:
 			continue
 		if not _end_invisible(unit, false):
 			continue
 		_emit_expire("invisible", unit["pos"], int(unit["seat"]), int(unit["seat"]))
 		revealed.append(int(unit["seat"]))
+	# How far each hidden enemy stood from the landing. The coach stays the
+	# short fragment; this is the count the radius used.
+	event["reveal_checks"] = checks
 	if revealed.is_empty():
 		return ""
 	event["revealed"] = revealed
