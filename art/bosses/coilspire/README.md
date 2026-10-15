@@ -8,6 +8,7 @@ Preview art only; not yet wired into the game.
 - `coilspire_v2/`: ★1-4 walk. Keys, strips, scripts, check frames, and `coilspire14_walk_4dir.mp4`.
 - ★1-4 has 6 legs in a tripod gait.
 - `attack_v1/`: ★1-4 attack, approved by Mauro on 2026-10-14. See below.
+- `spell_v1/`: ★1-4 spell Grave Web, approved by Mauro on 2026-10-14. See below.
 
 ## Concept art in `coilspire_v2/keys/`
 
@@ -25,6 +26,16 @@ The attack is a rear-back with the hind legs pinned to the ground, a raised fron
 - Video: `coilspire14_attack_4dir.mp4`, 1920x1080 at 24 fps, H.264.
 - Scripts: `stills.py` and `avid.py`.
 - Stills sheet: `coilspire14_attack_stills_WE.png`.
+
+## ★1-4 spell Grave Web (`spell_v1/`)
+
+Approved by Mauro on 2026-10-14. Preview only; not wired into the game.
+
+The spell charges the orb and spine, slams its front legs, and a painted skull-centered web of violet chain lightning spreads across the floor from its feet under both targets. Lightning pillars then snare Ironjaw and Kestrel (10% hit tint), the web bursts into sparks at 60% opacity, it fades, and Coilspire settles to walk frame 0.
+
+- The 4 painted plates are in `plates/` (`charge.jpg`, `web.jpg`, `snare.jpg`, `burst.jpg`), keyed by luminance with screen blending. No procedural effects.
+- Video: `coilspire14_spell_4dir.mp4`, 132 frames at 24 fps, 1920x1080.
+- `sheet.py` drives both the stills and the video.
 
 ## Mauro's rules (all bosses)
 
