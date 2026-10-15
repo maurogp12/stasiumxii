@@ -10773,6 +10773,38 @@ func _test_air_blends() -> void:
 	eq(_sim.manhattan(Vector2i(6, 5), _unit(1)["pos"]), 5, "this Gloam is 5 straight steps from the landing")
 	eq(bool(_unit(1).get("invisible", false)), true, "Gloam 5 tiles away stays hidden")
 
+	# Phone clip: Shoulder into empty (9, 4). Five straight steps keeps
+	# Invisible 3. Four straight steps reveals, and the log never leads with
+	# the raw element list.
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1, 1], "classes": ["ironjaw", "gloam"], "positions": [Vector2i(9, 5), Vector2i(9, 9)], "gloam_invisible": true})
+	_live_unit(0)["spell_elements"] = {"strike": "air", "shoulder": "fire", "crush": "fire", "advance": "air"}
+	_live_unit(1)["invisible_turns"] = 3
+	eq(_sim.manhattan(Vector2i(9, 4), _unit(1)["pos"]), 5, "clip Gloam is 5 straight steps from (9,4)")
+	eq(bool(_sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(9, 4), "seat": 0}).get("ok", false)), true, "Strike into empty (9,4) resolves")
+	var clip5: Dictionary = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(9, 4), "seat": 0})
+	eq(bool(clip5.get("ok", false)), true, "Shoulder into empty (9,4) resolves")
+	eq(_first_event_where(clip5.get("events", []), "blend").get("to", Vector2i.ZERO), Vector2i(9, 4), "Flare lands on (9,4)")
+	eq(bool(_unit(1).get("invisible", false)), true, "Gloam 5 steps from (9,4) stays Invisible")
+	eq(int(_unit(1).get("invisible_turns", 0)), 3, "the Invisible clock stays at 3")
+	var clip_log := str(Log.text(_sim.snapshot().get("battle_log", []), _sim.snapshot()))
+	eq(clip_log.contains("[0"), false, "the (9,4) log has no raw array prefix: %s" % clip_log)
+	eq(str(clip5.get("snapshot", {}).get("coach", "")).contains("[0"), false, "the (9,4) coach has no raw array prefix")
+	var junk := {"type": "blend", "blend": "flare", "name": [0, 1, 0], "elements": [0, 1, 0], "seat": 0, "to": Vector2i(9, 4), "air": true, "damage": 0}
+	var junk_line := str(Log.plain(junk, _sim.snapshot()))
+	eq(junk_line.begins_with("Flare"), true, "a raw name is not the Blend title: %s" % junk_line)
+	eq(junk_line.contains("[0"), false, "the log does not print [0,1,0]: %s" % junk_line)
+
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1, 1], "classes": ["ironjaw", "gloam"], "positions": [Vector2i(9, 5), Vector2i(9, 8)], "gloam_invisible": true})
+	_live_unit(0)["spell_elements"] = {"strike": "air", "shoulder": "fire", "crush": "fire", "advance": "air"}
+	_live_unit(1)["invisible_turns"] = 3
+	eq(_sim.manhattan(Vector2i(9, 4), _unit(1)["pos"]), 4, "clip Gloam is 4 straight steps from (9,4)")
+	_sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(9, 4), "seat": 0})
+	var clip4: Dictionary = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(9, 4), "seat": 0})
+	eq(bool(clip4.get("ok", false)), true, "Shoulder at the 4-step edge resolves")
+	eq(bool(_unit(1).get("invisible", true)), false, "Gloam 4 steps from (9,4) is revealed")
+	eq(int(_unit(1).get("invisible_turns", 0)), 0, "the reveal clears the Invisible clock")
+	eq(_unit(1)["pos"], Vector2i(9, 8), "the revealed cell is the cell Flare measured")
+
 	# The same element twice does not Blend.
 	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1, 1], "classes": ["ironjaw", "kestrel"], "positions": [Vector2i(5, 5), Vector2i(8, 5)]})
 	_live_unit(0)["spell_elements"] = {"strike": "earth", "shoulder": "earth", "crush": "earth", "advance": "earth"}

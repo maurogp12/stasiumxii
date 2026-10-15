@@ -1,5 +1,7 @@
 extends SceneTree
 
+const LOG := preload("res://ui/battle_log.gd")
+
 ## Real fight scene, not the sim alone. Phone clip on 0.1.199: Ironjaw stands
 ## on the tile next to the yellow landing (6,0) and Gloam's name is five
 ## straight steps away. Flare must leave that Gloam hidden. A finished Ambush
@@ -52,6 +54,18 @@ func _process(_delta: float) -> bool:
 		return false
 	if _phase == "walking":
 		if not _play_live_walk():
+			return true
+		_phase = "clip_far"
+		_frames = 0
+		return false
+	if _phase == "clip_far":
+		if not _play_clip_panel(Vector2i(9, 9), true):
+			return true
+		_phase = "clip_near"
+		_frames = 0
+		return false
+	if _phase == "clip_near":
+		if not _play_clip_panel(Vector2i(9, 8), false):
 			return true
 		print("FLARE FIVE ok")
 		return true
@@ -288,6 +302,92 @@ func _play_revealed_on_measured(live_walk: bool) -> bool:
 	if selected == null or selected.grid_position != landing:
 		return _fail("yellow landing moved")
 	return true
+
+
+## Shoulder into empty (9, 4). Five straight steps keeps the model hidden
+## and the card on "Invisible 3". Four straight steps reveals both together,
+## on the cell Flare measured, even if a finished Ambush hold is still open.
+func _play_clip_panel(gloam_at: Vector2i, stay_hidden: bool) -> bool:
+	var sim: Node = root.get_node("/root/CombatSim")
+	var landing := Vector2i(9, 4)
+	var stale := Vector2i(9, 9)
+	sim.reset_match({
+		"seed": 4,
+		"flat_board": true,
+		"skip_deploy": true,
+		"rolls": [1, 1],
+		"classes": ["ironjaw", "gloam"],
+		"positions": [Vector2i(9, 5), gloam_at],
+		"gloam_invisible": true,
+	})
+	sim._unit_by_seat(0)["spell_elements"] = {"strike": "air", "shoulder": "fire", "crush": "fire", "advance": "air"}
+	sim._unit_by_seat(1)["invisible_turns"] = 3
+	var steps: int = sim.manhattan(landing, gloam_at)
+	if steps != (5 if stay_hidden else 4):
+		return _fail("(9,4) distance is %s" % steps)
+	_board._rebuild_pawns()
+	_board._refresh()
+	var hang: Dictionary = sim.submit({"type": "cast", "spell": "strike", "to": landing, "seat": 0})
+	if not bool(hang.get("ok", false)):
+		return _fail("(9,4) Strike failed: %s" % str(hang.get("reason", "")))
+	var flare: Dictionary = sim.submit({"type": "cast", "spell": "shoulder", "to": landing, "seat": 0})
+	if not bool(flare.get("ok", false)):
+		return _fail("(9,4) Shoulder failed: %s" % str(flare.get("reason", "")))
+	var coach := str(flare.get("snapshot", {}).get("coach", ""))
+	if not coach.contains("(9,4)") or coach.contains("[0"):
+		return _fail("(9,4) coach: %s" % coach)
+	var logged := str(LOG.text(sim.snapshot().get("battle_log", []), sim.snapshot()))
+	if logged.contains("[0,1,0]") or logged.contains("[0, 1, 0]") or logged.contains("[0"):
+		return _fail("(9,4) log prefix: %s" % logged)
+	var pawn: Pawn = _board.pawns_by_seat[1]
+	# Drawn solid on the far tile, with the arrival flag still open. That
+	# pair used to show the body and leave the card on Invisible.
+	pawn.grid_position = stale
+	pawn.position = _board._cell_to_local(stale)
+	pawn.visible = true
+	pawn.invisible = false
+	pawn._ambush_strike_visible = true
+	_board._ambush_open_seat = 1
+	_board._ambush_hold_seat = 1
+	_board._ambush_hold_cell = stale
+	_board._ambush_hold_pos = _board._cell_to_local(stale)
+	_board._ambush_arrival_tween = null
+	_board._ambush_contact_armed = false
+	_board.select_tile(landing)
+	_board._refresh()
+	pawn = _board.pawns_by_seat[1]
+	var card := _gloam_card()
+	print("CLIP94 hidden %s drawn %s visible %s invisible %s card [%s]" % [stay_hidden, pawn.grid_position, pawn.visible, pawn.invisible, card])
+	if stay_hidden:
+		if not bool(sim._unit_by_seat(1).get("invisible", false)):
+			return _fail("sim revealed Gloam 5 steps from (9,4)")
+		if int(sim._unit_by_seat(1).get("invisible_turns", 0)) != 3:
+			return _fail("Invisible clock is %s" % str(sim._unit_by_seat(1).get("invisible_turns", 0)))
+		if pawn.visible or not pawn.invisible:
+			return _fail("Gloam is drawn while the card says Invisible")
+		if pawn.grid_position != gloam_at:
+			return _fail("hidden Gloam is drawn on %s, not %s" % [pawn.grid_position, gloam_at])
+		if not card.contains("Invisible 3"):
+			return _fail("card lost Invisible 3: %s" % card)
+		return true
+	if bool(sim._unit_by_seat(1).get("invisible", true)):
+		return _fail("sim left Gloam hidden 4 steps from (9,4)")
+	if not pawn.visible or pawn.invisible:
+		return _fail("revealed Gloam is not drawn")
+	if pawn.grid_position != gloam_at:
+		return _fail("revealed Gloam is drawn on %s, not the measured tile %s" % [pawn.grid_position, gloam_at])
+	if pawn.position.distance_to(_board._cell_to_local(gloam_at)) > 1.0:
+		return _fail("revealed name is not on the measured tile")
+	if card.contains("Invisible"):
+		return _fail("card still says Invisible after the reveal: %s" % card)
+	return true
+
+
+func _gloam_card() -> String:
+	var hud: CombatHUD = _board._hud
+	if hud == null or hud._ironjaw_body == null:
+		return ""
+	return hud._ironjaw_body.text
 
 
 func _fail(message: String) -> bool:

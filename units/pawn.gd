@@ -381,6 +381,11 @@ func apply_snapshot(unit: Dictionary, active_seat: int, events: Array = []) -> v
 	stasis_boss = bool(unit.get("stasis_boss", false)) and stasis_sprite != ""
 	facing = str(unit["facing"])
 	invisible = bool(unit.get("invisible", false))
+	# A plant flag outlives the cast. Left set, it paints a solid body while
+	# the side card still says Invisible.
+	if invisible:
+		_ambush_strike_visible = false
+		_ambush_conceal = false
 	seat = int(unit.get("seat", seat))
 	team = int(unit.get("team", 0 if seat == 0 else 1))
 	hp = int(unit["hp"])
@@ -1457,6 +1462,26 @@ func conceal_for_ambush() -> void:
 	_apply_rest_color()
 
 
+## The last snapshot hid this body from the viewer. A later Ambush miss must
+## not paint him while the panel still says Invisible.
+var _snapshot_unseen := false
+
+
+func mark_snapshot_unseen(unseen: bool) -> void:
+	_snapshot_unseen = unseen
+
+
+## The snapshot says this fighter is hidden. Drop a plant flag that would
+## keep the sprite solid after Fade, and do not leave him on another tile.
+func force_unseen_body() -> void:
+	_snapshot_unseen = true
+	visible = false
+	invisible = true
+	_ambush_strike_visible = false
+	_ambush_conceal = false
+	_apply_rest_color()
+
+
 ## Reveal Gloam on the back tile. The cast cell stays hidden.
 func show_ambush_plant() -> void:
 	_ambush_conceal = false
@@ -1465,8 +1490,12 @@ func show_ambush_plant() -> void:
 	_apply_rest_color()
 
 
-## Miss, or any Ambush that does not plant. Invisible is over. No slash pose.
+## Miss, or any Ambush that does not plant. A miss does not end Invisible, so
+## a body the snapshot still hides stays hidden. No slash pose.
 func reveal_after_ambush() -> void:
+	if _snapshot_unseen:
+		force_unseen_body()
+		return
 	_ambush_conceal = false
 	invisible = false
 	_ambush_strike_visible = false
