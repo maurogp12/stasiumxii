@@ -78,6 +78,11 @@ var _back_button: Button
 var _mode_buttons: Dictionary = {}
 var _size_row: HBoxContainer
 var _size_buttons: Dictionary = {}
+## Online only. Hot-seat keeps its own size row, including duplicates.
+var _online_format: String = "1v1"
+var _online_picks: Array[String] = []
+var _format_row: HBoxContainer
+var _format_buttons: Dictionary = {}
 ## Team picks in seat order: A1, B1, A2, B2, A3, B3.
 var _team_picks: Array[String] = []
 var _class_buttons: Dictionary = {}
@@ -194,6 +199,9 @@ func choose_mode(which: String) -> void:
 		_status.text = ""
 	elif which == "online":
 		_phase = "online"
+		_online_format = "1v1"
+		_online_picks.clear()
+		NetSession.set_queue_format("1v1")
 		_status.text = "Pick a class, then Play Online."
 	else:
 		return
@@ -235,6 +243,8 @@ func pick_class(class_id: String) -> Dictionary:
 		_begin_hotseat_match()
 		return {"ok": true, "reason": "", "class_id": id, "seat": 1, "classes": hotseat_classes.duplicate()}
 	if _phase == "online":
+		if _online_format == "3v3":
+			return _toggle_online_roster(id)
 		return _confirm_online_class(id)
 	return {"ok": false, "reason": "mode_required", "class_id": id}
 
@@ -269,8 +279,28 @@ func team_picks() -> Array[String]:
 	return _team_picks.duplicate()
 
 
+func set_online_format(which: String) -> void:
+	if _phase != "online":
+		return
+	if which != "1v1" and which != "3v3":
+		return
+	_online_format = which
+	_online_picks.clear()
+	NetSession.set_queue_format(which)
+	_reject.text = ""
+	if which == "3v3":
+		_status.text = "Pick 3 different classes, then Play Online."
+	else:
+		_status.text = "Pick a class, then Play Online."
+	_refresh_all()
+
+
 func request_queue() -> Dictionary:
-	if not SpellKits.is_roster_class(NetSession.selected_class_id):
+	if _online_format == "3v3":
+		if NetSession.selected_class_ids.size() != 3:
+			_show_reject("class_required", _picked)
+			return {"ok": false, "illegal": true, "reason": "class_required", "class_id": NetSession.selected_class_id}
+	elif not SpellKits.is_roster_class(NetSession.selected_class_id):
 		_show_reject("class_required", _picked)
 		return {"ok": false, "illegal": true, "reason": "class_required", "class_id": NetSession.selected_class_id}
 	if NetSession.is_auto_dialing():
@@ -352,6 +382,8 @@ func go_back() -> void:
 	if NetSession.is_online() or (NetSession.is_queue_client() and NetSession.is_client()):
 		NetSession.return_to_hotseat()
 	_phase = "mode"
+	_online_picks.clear()
+	_online_format = "1v1"
 	_p1 = ""
 	_p2 = ""
 	_queue_panel.visible = false
@@ -479,6 +511,19 @@ func _build() -> void:
 		b.pressed.connect(set_team_size.bind(size))
 		_size_buttons[size] = b
 		_size_row.add_child(b)
+
+	_format_row = HBoxContainer.new()
+	_format_row.add_theme_constant_override("separation", 12)
+	_format_row.visible = false
+	col.add_child(_format_row)
+	for fmt in ["1v1", "3v3"]:
+		var fmt_button := Button.new()
+		fmt_button.text = fmt
+		fmt_button.custom_minimum_size = Vector2(120, 48)
+		fmt_button.add_theme_font_size_override("font_size", 18)
+		fmt_button.pressed.connect(set_online_format.bind(fmt))
+		_format_buttons[fmt] = fmt_button
+		_format_row.add_child(fmt_button)
 
 	_prompt = Label.new()
 	_apply_ui_font(_prompt, 16, CREAM)
@@ -765,6 +810,45 @@ func _on_card_gui(event: InputEvent, class_id: String) -> void:
 		accept_event()
 
 
+func _roster_label() -> String:
+	var names: Array[String] = []
+	for class_id in _online_picks:
+		names.append(SpellKits.display_name(class_id))
+	return ", ".join(names)
+
+
+func _toggle_online_roster(class_id: String) -> Dictionary:
+	var idx := _online_picks.find(class_id)
+	if idx >= 0:
+		_online_picks.remove_at(idx)
+		NetSession.set_queue_format("3v3")
+		_online_format = "3v3"
+		_reject.text = ""
+		_status.text = "Pick 3 different classes (%d/3)." % _online_picks.size()
+		_refresh_all()
+		return {"ok": true, "reason": "", "class_id": class_id, "removed": true}
+	if _online_picks.size() >= 3:
+		return {"ok": false, "reason": "roster_full", "class_id": class_id}
+	_online_picks.append(class_id)
+	_reject.text = ""
+	if _online_picks.size() < 3:
+		NetSession.set_queue_format("3v3")
+		_online_format = "3v3"
+		_status.text = "Pick 3 different classes (%d/3)." % _online_picks.size()
+		_refresh_all()
+		return {"ok": true, "reason": "", "class_id": class_id, "count": _online_picks.size()}
+	var result: Dictionary = NetSession.select_roster(_online_picks)
+	_picked = str(result.get("class_id", class_id))
+	if not bool(result.get("ok", false)):
+		_online_picks.pop_back()
+		_show_reject(str(result.get("reason", "invalid_class")), class_id)
+		_refresh_all()
+		return result
+	_status.text = "Roster confirmed: %s." % _roster_label()
+	_refresh_all()
+	return result
+
+
 func _confirm_online_class(class_id: String) -> Dictionary:
 	var result: Dictionary = NetSession.select_class(class_id)
 	_picked = str(result.get("class_id", class_id))
@@ -801,7 +885,11 @@ func _refresh_all() -> void:
 	_apply_mode_styles()
 	_apply_cards()
 	if _queue_button != null:
-		var confirmed := SpellKits.is_roster_class(NetSession.selected_class_id)
+		var confirmed := false
+		if _online_format == "3v3":
+			confirmed = NetSession.selected_class_ids.size() == 3
+		else:
+			confirmed = SpellKits.is_roster_class(NetSession.selected_class_id)
 		_queue_button.disabled = _phase != "online" or not confirmed or NetSession.match_assigned()
 	if _back_button != null:
 		_back_button.visible = _phase != "mode"
@@ -822,6 +910,11 @@ func _apply_prompt() -> void:
 		for size in _size_buttons.keys():
 			var sb: Button = _size_buttons[size]
 			sb.add_theme_stylebox_override("normal", _mode_style("hotseat", int(size) == hotseat_team_size))
+	if _format_row != null:
+		_format_row.visible = _phase == "online"
+		for fmt in _format_buttons.keys():
+			var fb: Button = _format_buttons[fmt]
+			fb.add_theme_stylebox_override("normal", _mode_style("online", str(fmt) == _online_format))
 	if hotseat_team_size > 1 and (_phase == "hotseat_p1" or _phase == "hotseat_p2" or _phase == "hotseat_done"):
 		var n := mini(_team_picks.size(), 2 * hotseat_team_size - 1)
 		var team_a := n % 2 == 0
@@ -845,7 +938,13 @@ func _apply_prompt() -> void:
 		_prompt.add_theme_color_override("font_color", SEAT_P2_TEXT)
 		_prompt_seat = 1
 	elif _phase == "online":
-		_prompt.text = "Pick your class"
+		if _online_format == "3v3":
+			_prompt.text = "Pick 3 different classes (%d/3)" % _online_picks.size()
+			_p1_chip.visible = not _online_picks.is_empty()
+			if not _online_picks.is_empty():
+				_p1_chip_label.text = _roster_label()
+		else:
+			_prompt.text = "Pick your class"
 		_prompt.add_theme_color_override("font_color", Color(0.86, 0.9, 0.98))
 		_prompt_seat = -1
 	else:
@@ -870,11 +969,14 @@ func _apply_cards() -> void:
 	var selected := ""
 	if _phase == "hotseat_p1" or _phase == "hotseat_p2" or _phase == "hotseat_done":
 		selected = _p1 if _phase == "hotseat_p1" else _p2
-	elif _phase == "online":
+	elif _phase == "online" and _online_format != "3v3":
 		selected = NetSession.selected_class_id
 	for class_id in _class_buttons.keys():
 		var panel: Panel = _class_buttons[class_id]
-		panel.add_theme_stylebox_override("panel", _card_style(str(class_id) == selected and selected != ""))
+		var picked := str(class_id) == selected and selected != ""
+		if _phase == "online" and _online_format == "3v3":
+			picked = _online_picks.has(str(class_id))
+		panel.add_theme_stylebox_override("panel", _card_style(picked))
 
 
 func _on_connection(status: String) -> void:

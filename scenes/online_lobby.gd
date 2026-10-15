@@ -18,6 +18,9 @@ var _advanced_row: HBoxContainer
 var _retry_btn: Button
 var _advanced_open: bool = false
 var _class_buttons: Dictionary = {}
+var _format: String = "1v1"
+var _roster: Array[String] = []
+var _format_buttons: Dictionary = {}
 
 
 func _ready() -> void:
@@ -60,9 +63,17 @@ func _build() -> void:
 
 	_blurb = Label.new()
 	_blurb.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_blurb.text = "Locked roster: Kestrel, Ironjaw, Mender, Gloam, Bastion. Choose one before Play Online. The dedicated host stores that class_id on your session and starts the match with each seat's choice."
+	_blurb.text = "Locked roster: Kestrel, Ironjaw, Mender, Gloam, Bastion. Choose 1v1 or 3v3, then Play Online. 3v3 needs three different classes. The dedicated host stores that choice on your session."
 	_blurb.add_theme_color_override("font_color", Color(0.78, 0.74, 0.7))
 	col.add_child(_blurb)
+
+	var format_row := HBoxContainer.new()
+	format_row.add_theme_constant_override("separation", 8)
+	col.add_child(format_row)
+	for fmt in ["1v1", "3v3"]:
+		var fmt_button := _button(fmt, _set_format.bind(fmt))
+		_format_buttons[fmt] = fmt_button
+		format_row.add_child(fmt_button)
 
 	_class_row = HBoxContainer.new()
 	_class_row.add_theme_constant_override("separation", 8)
@@ -156,7 +167,21 @@ func _label(text: String) -> Label:
 	return lab
 
 
+func _set_format(which: String) -> void:
+	if which != "1v1" and which != "3v3":
+		return
+	_format = which
+	_roster.clear()
+	NetSession.set_queue_format(which)
+	_class_label.text = "Class: none" if which == "1v1" else "Roster: 0/3"
+	_status.text = "Pick a Locked class, then Play Online." if which == "1v1" else "Pick 3 different classes, then Play Online."
+	_sync_class_buttons()
+
+
 func _pick(class_id: String) -> void:
+	if _format == "3v3":
+		_toggle_roster(class_id)
+		return
 	var result: Dictionary = NetSession.select_class(class_id)
 	if not bool(result.get("ok", false)):
 		_status.text = "Rejected class (%s)." % str(result.get("reason", "invalid_class"))
@@ -167,12 +192,46 @@ func _pick(class_id: String) -> void:
 	_sync_class_buttons()
 
 
+func _toggle_roster(class_id: String) -> void:
+	var idx := _roster.find(class_id)
+	if idx >= 0:
+		_roster.remove_at(idx)
+		NetSession.set_queue_format("3v3")
+		_format = "3v3"
+	elif _roster.size() < 3:
+		_roster.append(class_id)
+		if _roster.size() == 3:
+			var result: Dictionary = NetSession.select_roster(_roster)
+			if not bool(result.get("ok", false)):
+				_roster.pop_back()
+				_status.text = "Rejected roster (%s)." % str(result.get("reason", "invalid_class"))
+				_sync_class_buttons()
+				return
+		else:
+			NetSession.set_queue_format("3v3")
+			_format = "3v3"
+	var names: Array[String] = []
+	for id in _roster:
+		names.append(SpellKits.display_name(id))
+	_class_label.text = "Roster: %s" % (", ".join(names) if not names.is_empty() else "0/3")
+	if _roster.size() == 3:
+		_status.text = "Roster confirmed. Play Online, or host a dedicated match in another window."
+	else:
+		_status.text = "Pick 3 different classes (%d/3)." % _roster.size()
+	_sync_class_buttons()
+
+
 func _sync_class_buttons() -> void:
 	var picked := NetSession.selected_class_id
-	_queue_btn.disabled = not SpellKits.is_roster_class(picked)
+	var ready := NetSession.selected_class_ids.size() == 3 if _format == "3v3" else SpellKits.is_roster_class(picked)
+	_queue_btn.disabled = not ready
 	for class_id in _class_buttons.keys():
 		var button: Button = _class_buttons[class_id]
-		button.modulate = Color(0.85, 0.78, 0.45) if str(class_id) == picked else Color.WHITE
+		var on := _roster.has(str(class_id)) if _format == "3v3" else str(class_id) == picked
+		button.modulate = Color(0.85, 0.78, 0.45) if on else Color.WHITE
+	for fmt in _format_buttons.keys():
+		var button: Button = _format_buttons[fmt]
+		button.modulate = Color(0.85, 0.78, 0.45) if str(fmt) == _format else Color.WHITE
 
 
 func _on_dedicated() -> void:
@@ -186,7 +245,11 @@ func _on_dedicated() -> void:
 
 
 func _on_queue() -> void:
-	if not SpellKits.is_roster_class(NetSession.selected_class_id):
+	if _format == "3v3":
+		if NetSession.selected_class_ids.size() != 3:
+			_status.text = "Pick 3 different classes before Play Online."
+			return
+	elif not SpellKits.is_roster_class(NetSession.selected_class_id):
 		_status.text = "Pick a Locked class before Play Online."
 		return
 	if NetSession.is_auto_dialing():

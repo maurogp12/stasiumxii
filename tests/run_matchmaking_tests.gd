@@ -52,6 +52,8 @@ func _run() -> void:
 	_test_heartstop()
 	_test_gloam_backstab()
 	_test_mender_option_b()
+	_test_3v3_queue_is_separate()
+	_test_3v3_gear_and_control()
 
 
 func _test_roster_gate() -> void:
@@ -713,6 +715,121 @@ func _test_gloam_backstab() -> void:
 	eq(bool(cut.get("ok", false)), true, "Cut hits")
 	eq(int(_sim.snapshot()["units"][1]["hp"]), 57, "Gloam backstab is 13 × 1.35 = 18")
 	eq(int(_sim.snapshot()["units"][0]["umbral"]), 1, "Cut gains 1 Umbral")
+
+
+func _test_3v3_queue_is_separate() -> void:
+	var queue := MatchQueue.new()
+	queue.select_class("solo", "kestrel")
+	var roster: Dictionary = queue.select_roster("trio", ["ironjaw", "mender", "gloam"])
+	eq(bool(roster.get("ok", false)), true, "three different classes confirm a 3v3 roster")
+	var dup: Dictionary = queue.select_roster("dup", ["kestrel", "kestrel", "ironjaw"])
+	eq(bool(dup.get("ok", true)), false, "a repeated class does not confirm")
+	eq(str(dup.get("reason", "")), "duplicate_class", "repeat reason is duplicate_class")
+	eq(queue.session("dup").is_empty(), true, "a rejected roster is not stored")
+	var bad: Dictionary = queue.select_roster("bad", ["kestrel", "ironjaw", "pulse"])
+	eq(bool(bad.get("ok", true)), false, "a roster with a class outside the allowlist is rejected")
+	eq(queue.session("trio").is_empty(), false, "the valid roster stays after a bad one")
+	var waiting_a: Dictionary = queue.enqueue("solo")
+	var waiting_b: Dictionary = queue.enqueue("trio")
+	eq(bool(waiting_a.get("matched", true)), false, "a 1v1 player does not pair with a 3v3 roster")
+	eq(bool(waiting_b.get("matched", true)), false, "a 3v3 roster does not pair with a 1v1 player")
+	eq(queue.queued_count(), 1, "the 1v1 queue still has its one waiter")
+	eq(queue.queued_count_for("3v3"), 1, "the 3v3 queue still has its one waiter")
+	queue.select_roster("t2", ["bastion", "kestrel", "mender"])
+	var paired: Dictionary = queue.enqueue("t2")
+	eq(bool(paired.get("matched", false)), true, "two 3v3 rosters pair")
+	var class_ids: Array = paired.get("match", {}).get("class_ids", [])
+	eq(class_ids, ["ironjaw", "bastion", "mender", "kestrel", "gloam", "mender"], "3v3 seats interleave the two rosters")
+	eq(int(paired.get("match", {}).get("team_size", 0)), 3, "the paired match asks for team size 3")
+	eq(bool(queue.enqueue("solo").get("matched", true)), false, "the 1v1 waiter is still waiting")
+	var bound := MatchQueue.new()
+	bound.select_roster("early", ["kestrel", "ironjaw", "mender"])
+	bound.bind_seat("early", 1)
+	bound.select_roster("late", ["gloam", "bastion", "kestrel"])
+	bound.bind_seat("late", 0)
+	bound.enqueue("early")
+	var swapped: Dictionary = bound.enqueue("late")
+	var swapped_ids: Array = swapped.get("match", {}).get("class_ids", [])
+	eq(str(swapped_ids[0]), "gloam", "bound seat 0 keeps that player's first class")
+	eq(str(swapped_ids[1]), "kestrel", "bound seat 1 keeps that player's first class")
+	eq(str(swapped_ids[4]), "kestrel", "bound seat 0 keeps that player's third class")
+	eq(str(swapped_ids[5]), "mender", "bound seat 1 keeps that player's third class")
+
+
+func _test_3v3_gear_and_control() -> void:
+	var sim_script := load("res://backend/combat_sim.gd")
+	var host_script := load("res://backend/net_session.gd")
+	var sim: Node = sim_script.new()
+	var host: Node = host_script.new()
+	host.attach_sim(sim)
+	host.enter_dedicated_offline()
+	var a: Array = ["kestrel", "ironjaw", "mender"]
+	var b: Array = ["gloam", "bastion", "kestrel"]
+	host.server_select_roster("a", a)
+	host.server_select_roster("b", b)
+	host.server_enqueue("a")
+	var paired: Dictionary = host.server_enqueue("b")
+	eq(bool(paired.get("matched", false)), true, "dedicated 3v3 enqueue boots a match")
+	var snap: Dictionary = sim.snapshot()
+	eq(int(snap.get("team_size", 0)), 3, "the live match uses the existing team size 3")
+	eq((snap.get("units", []) as Array).size(), 6, "the live match has six fighters")
+	eq(str(snap.get("phase", "")), "DEPLOYMENT", "3v3 still starts in deployment")
+	var seen: Array = []
+	for unit in snap.get("units", []):
+		seen.append(str(unit.get("class_id", "")))
+	eq(seen, ["kestrel", "gloam", "ironjaw", "bastion", "mender", "kestrel"], "seat order is the interleaved roster")
+	var fist := {"worn": [], "attune": {}, "stance": "neutral", "still": {"id": "hourglass_fist", "mode": "intact"}}
+	var step := {"worn": [], "attune": {}, "stance": "neutral", "still": {"id": "hourglass_step", "mode": "intact"}}
+	var tide := {"worn": [], "attune": {}, "stance": "neutral", "still": {"id": "tide", "mode": "intact"}}
+	var applied: bool = host.accept_seat_gear(0, {"by_seat": {0: fist, 2: step, 4: tide, 1: fist}})
+	eq(applied, true, "a player's gear applies to that player's fighters")
+	var by_seat := {}
+	for unit in sim.snapshot().get("units", []):
+		by_seat[int(unit.get("seat", -1))] = unit
+	eq(str(by_seat[0].get("still", "")), "hourglass_fist", "seat 0 keeps that fighter's Still")
+	eq(str(by_seat[2].get("still", "")), "hourglass_step", "seat 2 keeps a different Still")
+	eq(str(by_seat[4].get("still", "")), "tide", "seat 4 keeps its own Still")
+	eq(str(by_seat[1].get("still", "")), "", "seat 0 cannot write the other player's gear")
+	var deploy_cells: Array = sim.legal_deploy_cells(2)
+	var cell: Vector2i = deploy_cells[0]
+	var placed: Dictionary = host.submit_for_seat({"type": "place", "seat": 2, "to": cell}, 0)
+	eq(bool(placed.get("ok", false)), true, "connection 0 can place its second fighter")
+	var stolen: Dictionary = host.submit_for_seat({"type": "place", "seat": 2, "to": cell}, 1)
+	eq(bool(stolen.get("ok", true)), false, "connection 1 cannot place the other team")
+	eq(str(stolen.get("reason", "")), "not_your_seat", "the other team is still not_your_seat")
+	var packed: Dictionary = host.pack_result({"ok": true, "snapshot": sim.snapshot(), "events": []}, 0)
+	var decoded: Dictionary = IntentCodec.decode(packed)
+	var legal: Dictionary = decoded.get("legal_deploy_cells", {})
+	eq(legal.has(2), true, "the phone receives deploy cells for its second fighter")
+	eq((legal.get(1, [1]) as Array).is_empty(), true, "the phone does not receive the other team's deploy cells")
+	var hidden := {
+		"team_size": 3,
+		"units": [
+			{"seat": 0, "team": 0, "invisible": false, "pos": Vector2i(1, 1)},
+			{"seat": 2, "team": 0, "invisible": true, "pos": Vector2i(2, 1), "x": 2, "y": 1},
+			{"seat": 1, "team": 1, "invisible": true, "pos": Vector2i(8, 8), "x": 8, "y": 8},
+		],
+		"shade_tokens": [
+			{"owner_seat": 2, "pos": Vector2i(3, 1)},
+			{"owner_seat": 1, "pos": Vector2i(9, 8)},
+		],
+	}
+	var view: Dictionary = IntentCodec.decode(host.pack_result({"ok": true, "snapshot": hidden, "events": []}, 0))
+	var viewed: Dictionary = view.get("snapshot", {})
+	var ally_hidden := false
+	var foe_hidden := false
+	for unit in viewed.get("units", []):
+		if int(unit.get("seat", -1)) == 2:
+			ally_hidden = unit.get("pos") == null
+		if int(unit.get("seat", -1)) == 1:
+			foe_hidden = unit.get("pos") == null
+	eq(ally_hidden, false, "a player still sees their own hidden fighter")
+	eq(foe_hidden, true, "the other team's hidden fighter stays hidden")
+	var shades: Array = viewed.get("shade_tokens", [])
+	eq(shades.size(), 1, "a player sees Shades from their own fighters only")
+	eq(int(shades[0].get("owner_seat", -1)), 2, "the kept Shade belongs to that player's fighter")
+	host.free()
+	sim.free()
 
 
 func _move_offered(seat: int, cell: Vector2i) -> bool:
