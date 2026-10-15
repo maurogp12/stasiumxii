@@ -3,7 +3,7 @@
 Mauro rejected the old coil-tower look on Oct 14 2026 and picked the evil redesign.
 Preview art only; not yet wired into the game.
 
-**Coilspire ★1-4 is complete** (walk, attack, spell, hit/death). Star 5 is not in this set.
+**Coilspire ★1-4 is complete** (walk, attack, spell, hit/death). Star 5 is not in this set. The ★5 demon-scorpion walk is in `art/bosses/coilspire5/`.
 
 ## What's here
 
