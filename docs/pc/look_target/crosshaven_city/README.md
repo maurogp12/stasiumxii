@@ -61,3 +61,21 @@ Where the target image breaks these rules, the rule wins:
 - Exterior tiers are swapped in place on the same plot anchor, with clearance 200 / 260 / 350 px.
 - The tier art and plots come from Luca's `housing_tiers/` and the 5 plot houses in `cx_built`, requested on #252.
 - The city layout must leave room for the plot houses.
+
+### The 5 player plots in the prototype (`player_plots_p1_p5.jpg`, from Mauro, 16 Oct)
+
+The plots sit in the south-east of `cx_built`, along the south wall, between the east road and the river.
+
+**Key:** red box = footprint; yellow ellipse = base and clearance; magenta dot = anchor and entrance (bottom centre).
+
+| Plot | House tier | Garden tier |
+|---|---|---|
+| P1 | Rare | Rare |
+| P2 | Legendary (walled manor) | Legendary |
+| P3 | Rare | Normal |
+| P4 | Normal | Rare |
+| P5 | Normal | Normal |
+
+**To fix in the build:**
+- P3, P4 and P5 sit tight against the wall, and P3's anchor touches a tower. The game needs walkable entrance cells in front of every anchor, plus room for a house to grow to Legendary (350 px clearance) without hitting the wall.
+- "Garden" here is a tier label only. Per Luca's rule there are no garden beds inside Crosshaven.
