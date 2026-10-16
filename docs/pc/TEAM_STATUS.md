@@ -38,6 +38,22 @@ When those land, Claude reads them, copies the key facts into this file, and con
 
 ---
 
+## 0. MUST BUILD: the map backlog (Mauro, 16 Oct 2026: "hay que construirlo, asegúrate de que recordemos que tenemos que construirlo")
+
+These exist only as paintings or box-only work on Luca's computer. **None of it is in the game yet.** Every item has to be built in the game (zone data, walkable cells, painted art, joins, tests), and each goes to Mauro for approval, one at a time.
+
+| # | What | Look target | Current state | Status |
+|---|---|---|---|---|
+| B1 | **Crosshaven walled city**: walls and towers, a castle on the north wall, a gothic cathedral, a forge quarter, a garden and canal quarter, dense houses, the river and boat, forest and snowy hills | `docs/pc/look_target/crosshaven_city/mauro_target_crosshaven.jpg` | Luca's box-only `cx_built` (octagon wall, river, 3 bridges), last edited 15 Oct, not in the repo | **TO BUILD** |
+| B2 | **The swamp** (West Southbridge / Gloomfen): mossy islands on boardwalks, the witch hut and cauldron, ruins with a glowing pool, stilt huts, cypress, fog, bones and a wrecked boat | `docs/pc/look_target/swamp/` (the v15 video); Scenario's map v8 is the layout | Paintings only (v8 map, v15 scene), not in the game | **TO BUILD** |
+| B3 | Map life: NPCs and animals by day and night (v8–v8i) | (in Luca's package) | Box-only, not in the repo | TO BUILD |
+| B4 | Open-world monsters, Stoneford Z1 (Boar, Mandrake, Puffball, Flour Moth; the bosses Grimhoot, Old Gulp and the Thresher Stag) | the approved sheet v1 | WIP pushed: `claude/pc-world-mobs` 3183d05f | IN PROGRESS |
+| B5 | Seams and Blightwood finish: #375 (terrain switches at borders, the Westwatch cliff, 53 roads ending at chunk edges), #378 (joins, road gap, `regions_enabled`) | the seamless rule | Draft PRs | TO FINISH |
+| B6 | The remaining regions in level order (Rowanvale → Windmere → Brinewake → Slagcrown / Fen Edge → Gloomfen → Stormspire → Ashen Shardfields), each with its monsters and its dungeon moved out of town | ZONES_BUILD_SPEC | Not built | TO BUILD |
+
+- **Tool:** Meshy, used behind the scenes (3D blockout, then an iso camera render, then a Scenario paint-over to 2D). Nothing 3D ships.
+- **Waiting on:** Luca's `docs/pc-map-handoff` package (the B1–B3 sources).
+
 ## 1. World zones bot (Cursor agent, suffix `a156`): map, zones, NPCs, missions (base `pc/world-zones`)
 
 | Work | PR / branch | Head (last push) | Where it stopped | Next step |
