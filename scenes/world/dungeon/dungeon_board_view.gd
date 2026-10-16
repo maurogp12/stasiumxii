@@ -154,6 +154,7 @@ func _dress_room() -> void:
 		tile.pad_mark = str(style.get("mark", ""))
 		tile.pad_color = _cfg_color(style.get("color", null), Color(0.55, 0.95, 0.45) if tile.pad_decal else Color(1.0, 0.72, 0.28))
 		tile.floor_style = view_cfg.get("floor", {})
+		tile.world_walk = bool(sim_node().tile_at(c).get("walkable", true))
 		tile.floor_tex = null
 		if not floors.is_empty():
 			tile.floor_tex = (floors[absi(c.x * 7 + c.y * 13 + c.x * c.y) % floors.size()] as Dictionary)["tex"]

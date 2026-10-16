@@ -1,0 +1,475 @@
+{
+ "id": "old_gulp_millpond_toad",
+ "name": "Old Gulp, the Millpond Toad",
+ "star5": false,
+ "base_of": null,
+ "dir": "monsters/old_gulp_millpond_toad",
+ "cell": [
+  768,
+  540
+ ],
+ "pivot": [
+  384,
+  494
+ ],
+ "fps": 17.144,
+ "facings": [
+  "S",
+  "E"
+ ],
+ "mirror": {
+  "W": "E",
+  "N": "S"
+ },
+ "actions": {
+  "idle": {
+   "frames": 12,
+   "loop": true,
+   "files": {
+    "S": "monsters/old_gulp_millpond_toad/idle/idle_S_fNN.png",
+    "E": "monsters/old_gulp_millpond_toad/idle/idle_E_fNN.png"
+   }
+  },
+  "walk": {
+   "frames": 12,
+   "loop": true,
+   "files": {
+    "S": "monsters/old_gulp_millpond_toad/walk/walk_S_fNN.png",
+    "E": "monsters/old_gulp_millpond_toad/walk/walk_E_fNN.png"
+   }
+  },
+  "attack": {
+   "frames": 12,
+   "loop": false,
+   "files": {
+    "S": "monsters/old_gulp_millpond_toad/attack/attack_S_fNN.png",
+    "E": "monsters/old_gulp_millpond_toad/attack/attack_E_fNN.png"
+   }
+  }
+ },
+ "qa": {
+  "hole_fill_px_S": 54919,
+  "px_outside_cell_idle_S": 0,
+  "keep_in_shift_px_idle_S": 0.0,
+  "px_outside_cell_walk_S": 0,
+  "keep_in_shift_px_walk_S": 0.0,
+  "px_outside_cell_attack_S": 0,
+  "keep_in_shift_px_attack_S": 0.0,
+  "hole_fill_px_E": 61616,
+  "px_outside_cell_idle_E": 0,
+  "keep_in_shift_px_idle_E": 0.0,
+  "px_outside_cell_walk_E": 0,
+  "keep_in_shift_px_walk_E": 21.3,
+  "px_outside_cell_attack_E": 0,
+  "keep_in_shift_px_attack_E": 0.0
+ },
+ "role": "boss",
+ "gait": {
+  "S": {
+   "speed_px_per_frame": 2.5253,
+   "dir": [
+    0.8944271909999159,
+    0.4472135954999579
+   ],
+   "stance": {
+    "front_l": [
+     true,
+     true,
+     true,
+     true,
+     true,
+     true,
+     true,
+     true,
+     false,
+     false,
+     false,
+     false
+    ],
+    "hind_l": [
+     true,
+     true,
+     true,
+     true,
+     false,
+     false,
+     false,
+     false,
+     false,
+     true,
+     true,
+     true
+    ],
+    "front_r": [
+     false,
+     false,
+     false,
+     false,
+     false,
+     true,
+     true,
+     true,
+     true,
+     true,
+     true,
+     true
+    ]
+   },
+   "feet": {
+    "hind_l": [
+     [
+      243.67,
+      477.0
+     ],
+     [
+      241.41,
+      475.87
+     ],
+     [
+      239.15,
+      474.74
+     ],
+     [
+      236.89,
+      473.61
+     ],
+     [
+      232.98,
+      468.4
+     ],
+     [
+      229.11,
+      457.73
+     ],
+     [
+      235.47,
+      462.2
+     ],
+     [
+      245.46,
+      473.59
+     ],
+     [
+      250.56,
+      479.87
+     ],
+     [
+      250.44,
+      480.39
+     ],
+     [
+      248.18,
+      479.26
+     ],
+     [
+      245.93,
+      478.13
+     ]
+    ],
+    "front_l": [
+     [
+      393.56,
+      515.52
+     ],
+     [
+      391.3,
+      514.39
+     ],
+     [
+      389.04,
+      513.26
+     ],
+     [
+      386.78,
+      512.13
+     ],
+     [
+      384.52,
+      511.0
+     ],
+     [
+      382.26,
+      509.87
+     ],
+     [
+      380.0,
+      508.74
+     ],
+     [
+      377.75,
+      507.61
+     ],
+     [
+      371.26,
+      505.09
+     ],
+     [
+      361.86,
+      500.34
+     ],
+     [
+      367.66,
+      502.25
+     ],
+     [
+      380.9,
+      509.65
+     ]
+    ],
+    "front_r": [
+     [
+      503.49,
+      509.49
+     ],
+     [
+      491.25,
+      509.28
+     ],
+     [
+      495.7,
+      505.2
+     ],
+     [
+      509.67,
+      505.67
+     ],
+     [
+      520.61,
+      514.29
+     ],
+     [
+      523.23,
+      514.34
+     ],
+     [
+      520.97,
+      513.21
+     ],
+     [
+      518.71,
+      512.08
+     ],
+     [
+      516.45,
+      510.95
+     ],
+     [
+      514.19,
+      509.82
+     ],
+     [
+      511.94,
+      508.7
+     ],
+     [
+      509.68,
+      507.57
+     ]
+    ]
+   }
+  },
+  "E": {
+   "speed_px_per_frame": 2.5253,
+   "dir": [
+    0.8944271909999159,
+    -0.4472135954999579
+   ],
+   "stance": {
+    "front_l": [
+     true,
+     true,
+     true,
+     true,
+     true,
+     true,
+     true,
+     true,
+     false,
+     false,
+     false,
+     false
+    ],
+    "hind_l": [
+     true,
+     true,
+     true,
+     true,
+     false,
+     false,
+     false,
+     false,
+     false,
+     true,
+     true,
+     true
+    ],
+    "front_r": [
+     false,
+     false,
+     false,
+     false,
+     false,
+     true,
+     true,
+     true,
+     true,
+     true,
+     true,
+     true
+    ]
+   },
+   "feet": {
+    "hind_l": [
+     [
+      263.63,
+      490.23
+     ],
+     [
+      261.37,
+      491.36
+     ],
+     [
+      259.11,
+      492.49
+     ],
+     [
+      256.85,
+      493.62
+     ],
+     [
+      257.62,
+      492.68
+     ],
+     [
+      265.69,
+      485.21
+     ],
+     [
+      277.73,
+      484.1
+     ],
+     [
+      283.32,
+      486.16
+     ],
+     [
+      275.46,
+      485.83
+     ],
+     [
+      270.41,
+      486.85
+     ],
+     [
+      268.15,
+      487.98
+     ],
+     [
+      265.89,
+      489.1
+     ]
+    ],
+    "front_l": [
+     [
+      452.83,
+      544.9
+     ],
+     [
+      450.57,
+      546.03
+     ],
+     [
+      448.31,
+      547.16
+     ],
+     [
+      446.05,
+      548.29
+     ],
+     [
+      443.79,
+      549.42
+     ],
+     [
+      441.53,
+      550.55
+     ],
+     [
+      439.27,
+      551.68
+     ],
+     [
+      437.02,
+      552.81
+     ],
+     [
+      445.78,
+      546.58
+     ],
+     [
+      462.58,
+      532.46
+     ],
+     [
+      479.05,
+      522.18
+     ],
+     [
+      480.81,
+      526.09
+     ]
+    ],
+    "front_r": [
+     [
+      524.28,
+      469.58
+     ],
+     [
+      536.18,
+      460.19
+     ],
+     [
+      548.56,
+      445.23
+     ],
+     [
+      552.3,
+      440.89
+     ],
+     [
+      542.77,
+      455.51
+     ],
+     [
+      535.92,
+      461.09
+     ],
+     [
+      533.66,
+      462.22
+     ],
+     [
+      531.4,
+      463.35
+     ],
+     [
+      529.15,
+      464.47
+     ],
+     [
+      526.89,
+      465.6
+     ],
+     [
+      524.63,
+      466.73
+     ],
+     [
+      522.37,
+      467.86
+     ]
+    ]
+   }
+  }
+ }
+}

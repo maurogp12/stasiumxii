@@ -1,0 +1,352 @@
+{
+ "id": "thistle_puffball",
+ "name": "Thistle Puffball",
+ "star5": false,
+ "base_of": null,
+ "dir": "monsters/thistle_puffball",
+ "cell": [
+  512,
+  360
+ ],
+ "pivot": [
+  256,
+  329
+ ],
+ "fps": 17.144,
+ "facings": [
+  "S",
+  "E"
+ ],
+ "mirror": {
+  "W": "E",
+  "N": "S"
+ },
+ "actions": {
+  "idle": {
+   "frames": 12,
+   "loop": true,
+   "files": {
+    "S": "monsters/thistle_puffball/idle/idle_S_fNN.png",
+    "E": "monsters/thistle_puffball/idle/idle_E_fNN.png"
+   }
+  },
+  "walk": {
+   "frames": 12,
+   "loop": true,
+   "files": {
+    "S": "monsters/thistle_puffball/walk/walk_S_fNN.png",
+    "E": "monsters/thistle_puffball/walk/walk_E_fNN.png"
+   }
+  },
+  "attack": {
+   "frames": 12,
+   "loop": false,
+   "files": {
+    "S": "monsters/thistle_puffball/attack/attack_S_fNN.png",
+    "E": "monsters/thistle_puffball/attack/attack_E_fNN.png"
+   }
+  }
+ },
+ "qa": {
+  "hole_fill_px_S": 25119,
+  "px_outside_cell_idle_S": 0,
+  "keep_in_shift_px_idle_S": 0.0,
+  "px_outside_cell_walk_S": 0,
+  "keep_in_shift_px_walk_S": 0.0,
+  "px_outside_cell_attack_S": 0,
+  "keep_in_shift_px_attack_S": 0.0,
+  "hole_fill_px_E": 22368,
+  "px_outside_cell_idle_E": 0,
+  "keep_in_shift_px_idle_E": 0.0,
+  "px_outside_cell_walk_E": 0,
+  "keep_in_shift_px_walk_E": 0.0,
+  "px_outside_cell_attack_E": 0,
+  "keep_in_shift_px_attack_E": 0.0
+ },
+ "role": "ranged",
+ "gait": {
+  "S": {
+   "speed_px_per_frame": 1.6129,
+   "dir": [
+    0.8944271909999159,
+    0.4472135954999579
+   ],
+   "stance": {
+    "foot_l": [
+     true,
+     true,
+     true,
+     true,
+     true,
+     true,
+     true,
+     true,
+     false,
+     false,
+     false,
+     false
+    ],
+    "foot_r": [
+     true,
+     true,
+     false,
+     false,
+     false,
+     false,
+     true,
+     true,
+     true,
+     true,
+     true,
+     true
+    ]
+   },
+   "feet": {
+    "foot_l": [
+     [
+      226.95,
+      337.95
+     ],
+     [
+      225.5,
+      337.23
+     ],
+     [
+      224.06,
+      336.5
+     ],
+     [
+      222.62,
+      335.78
+     ],
+     [
+      221.18,
+      335.06
+     ],
+     [
+      219.73,
+      334.34
+     ],
+     [
+      218.29,
+      333.62
+     ],
+     [
+      216.85,
+      332.9
+     ],
+     [
+      212.91,
+      329.08
+     ],
+     [
+      212.51,
+      325.75
+     ],
+     [
+      215.49,
+      326.83
+     ],
+     [
+      220.43,
+      331.63
+     ]
+    ],
+    "foot_r": [
+     [
+      288.3,
+      326.98
+     ],
+     [
+      286.86,
+      326.26
+     ],
+     [
+      283.9,
+      323.76
+     ],
+     [
+      284.26,
+      321.56
+     ],
+     [
+      287.43,
+      322.97
+     ],
+     [
+      291.97,
+      327.07
+     ],
+     [
+      296.95,
+      331.31
+     ],
+     [
+      295.51,
+      330.59
+     ],
+     [
+      294.07,
+      329.87
+     ],
+     [
+      292.63,
+      329.15
+     ],
+     [
+      291.18,
+      328.42
+     ],
+     [
+      289.74,
+      327.7
+     ]
+    ]
+   }
+  },
+  "E": {
+   "speed_px_per_frame": 1.6129,
+   "dir": [
+    0.8944271909999159,
+    -0.4472135954999579
+   ],
+   "stance": {
+    "foot_l": [
+     true,
+     true,
+     true,
+     true,
+     true,
+     true,
+     true,
+     true,
+     false,
+     false,
+     false,
+     false
+    ],
+    "foot_r": [
+     true,
+     true,
+     false,
+     false,
+     false,
+     false,
+     true,
+     true,
+     true,
+     true,
+     true,
+     true
+    ]
+   },
+   "feet": {
+    "foot_l": [
+     [
+      222.12,
+      328.3
+     ],
+     [
+      220.68,
+      329.02
+     ],
+     [
+      219.23,
+      329.74
+     ],
+     [
+      217.79,
+      330.47
+     ],
+     [
+      216.35,
+      331.19
+     ],
+     [
+      214.91,
+      331.91
+     ],
+     [
+      213.46,
+      332.63
+     ],
+     [
+      212.02,
+      333.35
+     ],
+     [
+      215.06,
+      331.64
+     ],
+     [
+      219.94,
+      327.3
+     ],
+     [
+      223.99,
+      325.17
+     ],
+     [
+      225.35,
+      325.91
+     ]
+    ],
+    "foot_r": [
+     [
+      280.34,
+      336.87
+     ],
+     [
+      278.9,
+      337.6
+     ],
+     [
+      282.15,
+      333.96
+     ],
+     [
+      287.25,
+      328.34
+     ],
+     [
+      291.41,
+      325.92
+     ],
+     [
+      292.79,
+      327.63
+     ],
+     [
+      289.0,
+      332.55
+     ],
+     [
+      287.56,
+      333.27
+     ],
+     [
+      286.11,
+      333.99
+     ],
+     [
+      284.67,
+      334.71
+     ],
+     [
+      283.23,
+      335.43
+     ],
+     [
+      281.78,
+      336.15
+     ]
+    ]
+   }
+  }
+ },
+ "release": {
+  "action": "attack",
+  "frame": 7,
+  "point_px": {}
+ }
+}

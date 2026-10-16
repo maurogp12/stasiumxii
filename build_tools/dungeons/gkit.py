@@ -39,6 +39,19 @@ def use(dungeon: str) -> None:
     OUT = os.path.join(OUT_ROOT, dungeon)
 
 
+# Open-world monster kits (package Z1): sources and output per level zone.
+WORLD_ZONES = {"stoneford": "stoneford_src"}
+WORLD_OUT_ROOT = os.environ.get("GKIT_WORLD_OUT_ROOT") or os.path.join(REPO, "art", "pc", "world")
+
+
+def use_world(zone: str) -> None:
+    """Point SRC/OUT at an open-world zone's monster kit (art/pc/world/<zone>)."""
+    global DUNGEON, SRC, OUT
+    DUNGEON = zone
+    SRC = os.path.join(HERE, WORLD_ZONES[zone])
+    OUT = os.path.join(WORLD_OUT_ROOT, zone)
+
+
 def load_rgb(name: str) -> np.ndarray:
     path = name if os.path.isabs(name) else os.path.join(SRC, name)
     return np.asarray(Image.open(path).convert("RGB"), np.float32)

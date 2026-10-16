@@ -1,0 +1,347 @@
+{
+ "id": "mandrake_rootling",
+ "name": "Mandrake Rootling",
+ "star5": false,
+ "base_of": null,
+ "dir": "monsters/mandrake_rootling",
+ "cell": [
+  512,
+  360
+ ],
+ "pivot": [
+  256,
+  329
+ ],
+ "fps": 17.144,
+ "facings": [
+  "S",
+  "E"
+ ],
+ "mirror": {
+  "W": "E",
+  "N": "S"
+ },
+ "actions": {
+  "idle": {
+   "frames": 12,
+   "loop": true,
+   "files": {
+    "S": "monsters/mandrake_rootling/idle/idle_S_fNN.png",
+    "E": "monsters/mandrake_rootling/idle/idle_E_fNN.png"
+   }
+  },
+  "walk": {
+   "frames": 12,
+   "loop": true,
+   "files": {
+    "S": "monsters/mandrake_rootling/walk/walk_S_fNN.png",
+    "E": "monsters/mandrake_rootling/walk/walk_E_fNN.png"
+   }
+  },
+  "attack": {
+   "frames": 12,
+   "loop": false,
+   "files": {
+    "S": "monsters/mandrake_rootling/attack/attack_S_fNN.png",
+    "E": "monsters/mandrake_rootling/attack/attack_E_fNN.png"
+   }
+  }
+ },
+ "qa": {
+  "hole_fill_px_S": 39429,
+  "px_outside_cell_idle_S": 0,
+  "keep_in_shift_px_idle_S": 0.0,
+  "px_outside_cell_walk_S": 0,
+  "keep_in_shift_px_walk_S": 0.0,
+  "px_outside_cell_attack_S": 0,
+  "keep_in_shift_px_attack_S": 0.0,
+  "hole_fill_px_E": 35333,
+  "px_outside_cell_idle_E": 0,
+  "keep_in_shift_px_idle_E": 0.0,
+  "px_outside_cell_walk_E": 0,
+  "keep_in_shift_px_walk_E": 0.0,
+  "px_outside_cell_attack_E": 0,
+  "keep_in_shift_px_attack_E": 0.0
+ },
+ "role": "basic",
+ "gait": {
+  "S": {
+   "speed_px_per_frame": 3.3333,
+   "dir": [
+    0.8944271909999159,
+    0.4472135954999579
+   ],
+   "stance": {
+    "leg_l": [
+     true,
+     true,
+     true,
+     true,
+     true,
+     true,
+     false,
+     false,
+     false,
+     false,
+     false,
+     false
+    ],
+    "leg_r": [
+     false,
+     false,
+     false,
+     false,
+     false,
+     false,
+     true,
+     true,
+     true,
+     true,
+     true,
+     true
+    ]
+   },
+   "feet": {
+    "leg_l": [
+     [
+      235.0,
+      333.3
+     ],
+     [
+      232.02,
+      331.81
+     ],
+     [
+      229.04,
+      330.32
+     ],
+     [
+      226.05,
+      328.83
+     ],
+     [
+      223.07,
+      327.34
+     ],
+     [
+      220.09,
+      325.85
+     ],
+     [
+      214.39,
+      324.19
+     ],
+     [
+      211.12,
+      317.46
+     ],
+     [
+      211.2,
+      312.64
+     ],
+     [
+      214.53,
+      312.5
+     ],
+     [
+      220.18,
+      317.48
+     ],
+     [
+      226.65,
+      325.24
+     ]
+    ],
+    "leg_r": [
+     [
+      269.57,
+      338.96
+     ],
+     [
+      264.63,
+      333.95
+     ],
+     [
+      263.44,
+      330.37
+     ],
+     [
+      266.36,
+      330.81
+     ],
+     [
+      272.6,
+      335.6
+     ],
+     [
+      280.49,
+      342.23
+     ],
+     [
+      291.28,
+      346.98
+     ],
+     [
+      288.29,
+      345.49
+     ],
+     [
+      285.31,
+      344.0
+     ],
+     [
+      282.33,
+      342.51
+     ],
+     [
+      279.35,
+      341.02
+     ],
+     [
+      276.37,
+      339.53
+     ]
+    ]
+   }
+  },
+  "E": {
+   "speed_px_per_frame": 3.3333,
+   "dir": [
+    0.8944271909999159,
+    -0.4472135954999579
+   ],
+   "stance": {
+    "leg_l": [
+     true,
+     true,
+     true,
+     true,
+     true,
+     true,
+     false,
+     false,
+     false,
+     false,
+     false,
+     false
+    ],
+    "leg_r": [
+     false,
+     false,
+     false,
+     false,
+     false,
+     false,
+     true,
+     true,
+     true,
+     true,
+     true,
+     true
+    ]
+   },
+   "feet": {
+    "leg_l": [
+     [
+      231.64,
+      314.87
+     ],
+     [
+      228.66,
+      316.36
+     ],
+     [
+      225.68,
+      317.85
+     ],
+     [
+      222.7,
+      319.35
+     ],
+     [
+      219.71,
+      320.84
+     ],
+     [
+      216.73,
+      322.33
+     ],
+     [
+      216.18,
+      325.01
+     ],
+     [
+      221.72,
+      319.23
+     ],
+     [
+      228.24,
+      312.74
+     ],
+     [
+      233.95,
+      308.81
+     ],
+     [
+      237.29,
+      308.88
+     ],
+     [
+      237.4,
+      311.77
+     ]
+    ],
+    "leg_r": [
+     [
+      275.7,
+      337.28
+     ],
+     [
+      282.05,
+      329.3
+     ],
+     [
+      289.02,
+      321.14
+     ],
+     [
+      294.84,
+      316.5
+     ],
+     [
+      297.99,
+      317.08
+     ],
+     [
+      297.6,
+      321.66
+     ],
+     [
+      290.52,
+      328.55
+     ],
+     [
+      287.54,
+      330.04
+     ],
+     [
+      284.55,
+      331.54
+     ],
+     [
+      281.57,
+      333.03
+     ],
+     [
+      278.59,
+      334.52
+     ],
+     [
+      275.61,
+      336.01
+     ]
+    ]
+   }
+  }
+ }
+}

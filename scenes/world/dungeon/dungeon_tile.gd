@@ -18,6 +18,9 @@ var floor_style: Dictionary = {}
 var blocked := false
 ## A floor decal (the drain grate) is drawn under this tile; draw no floor.
 var skip_floor := false
+## World fights (view.floor.world): the world's own painted cells are the
+## backdrop; a walkable cell draws only a soft grid line, a blocked one nothing.
+var world_walk := true
 var pad_glow_tex: Texture2D
 var pad_glow_scale := 1.0
 var _t := 0.0
@@ -171,6 +174,22 @@ func _process(delta: float) -> void:
 
 func _draw() -> void:
 	var pts := _diamond_points()
+	if bool(floor_style.get("world", false)):
+		if world_walk:
+			var ring := pts.duplicate()
+			ring.append(pts[0])
+			draw_colored_polygon(pts, Color(0.1, 0.12, 0.05, 0.10))
+			draw_polyline(ring, Color(0.12, 0.1, 0.04, 0.42), 1.2)
+		if pad:
+			_draw_pad(pts)
+		if danger and not pool:
+			var wp := 0.6 + 0.4 * sin(_pool_t * 5.0)
+			var wf := danger_color
+			wf.a *= wp
+			draw_colored_polygon(pts, wf)
+		if pool:
+			_draw_pool(pts)
+		return
 	if skip_floor:
 		if pad and pad_tex == null and not _is_decal_pad():
 			_draw_pad(pts)

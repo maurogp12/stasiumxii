@@ -45,6 +45,9 @@ const DungeonDoor := preload("res://scenes/world/dungeon/dungeon_door.gd")
 const DungeonArt := preload("res://scenes/world/dungeon/dungeon_art.gd")
 const DoorPanel := preload("res://scenes/world/ui/door_panel.gd")
 const Launcher := preload("res://scenes/world/dungeon/dungeon_launcher.gd")
+const MobLayer := preload("res://scenes/world/monster/world_mob_layer.gd")
+const FightLauncher := preload("res://scenes/world/monster/world_fight_launcher.gd")
+const MobBook := preload("res://backend/world_monsters.gd")
 
 ## Kit deep sea, so the margin past Eastmarch matches the painted tiles.
 const SEA := Color("246e9e")
@@ -93,6 +96,11 @@ var doors_root: Node2D
 var door_nodes: Dictionary = {}
 var _pending_door := ""
 var _door_outcome: Dictionary = {}
+## Open-world monster packs and bosses (package Z1).
+var mobs: Node2D
+var _pending_pack := ""
+var _fight_starting := false
+var _mob_outcome: Dictionary = {}
 ## False keeps every NPC at its post (spec 4.5a movement off).
 ## Performance mode keeps them at their posts too, whatever this says.
 var npc_roam := true
@@ -213,11 +221,17 @@ func _ready() -> void:
 	npcs_root = Node2D.new()
 	npcs_root.name = "Npcs"
 	add_child(npcs_root)
+	mobs = MobLayer.new()
+	mobs.name = "Mobs"
+	add_child(mobs)
 	# Above the grade (layer 6), so Gloomfen fog does not wash the names out.
 	npc_plates = CanvasLayer.new()
 	npc_plates.name = "NpcPlates"
 	npc_plates.layer = 7
 	add_child(npc_plates)
+	mobs.setup(self, npc_plates)
+	mobs.boss_event.connect(_on_boss_event)
+	settings.bind(mobs, VisualSettings.PERFORMANCE, mobs.set_performance)
 	decor_root = Node2D.new()
 	decor_root.name = "Decor"
 	add_child(decor_root)
@@ -243,6 +257,7 @@ func _ready() -> void:
 	walker.arrived.connect(_on_arrived)
 	walker.stepped.connect(func(_c): _refresh_hud())
 	add_child(walker)
+	walker.stepped.connect(_on_hero_stepped)
 
 	camera = Camera2D.new()
 	camera.position_smoothing_enabled = true
@@ -353,6 +368,7 @@ func _ready() -> void:
 		restore_place()
 		offer_performance()
 	_take_dungeon_outcome()
+	_take_mob_outcome()
 	if _movie != "":
 		get_tree().process_frame.connect(_start_movie, CONNECT_ONE_SHOT)
 
@@ -439,6 +455,7 @@ func _load_zone(zone_id: String, cell: Vector2i, snap: bool = true) -> void:
 	_hover.queue_redraw()
 	_spawn_npcs()
 	npcs_root.position = pix
+	_restock_mobs(origin)
 	_raise_sort(npcs_root, origin)
 	_mount_neighbours(zone_id)
 	_sync_doors()
@@ -473,6 +490,7 @@ func walk_to(target: Vector2i, pace: String = "auto") -> Dictionary:
 	_route.clear()
 	_pending_talk = {}
 	_pending_door = ""
+	_pending_pack = ""
 	_release_held()
 	var from: Vector2i = walker.anchor_cell()
 	if from == target:
@@ -735,6 +753,9 @@ func _extra_blocked() -> Dictionary:
 				continue
 			for at in node.occupied_cells():
 				blocked[WorldWalk.cell_key(zone.zone_id, at)] = true
+	if mobs != null:
+		for at in mobs.occupied().keys():
+			blocked[WorldWalk.cell_key(zone.zone_id, at)] = true
 	if neighbours == null or npc_book == null:
 		return blocked
 	for host in neighbours.get_children():
@@ -980,6 +1001,14 @@ func _finish_arrival(cell: Vector2i) -> void:
 	if not _pending_talk.is_empty() and cell == (_pending_talk["stand"] as Vector2i):
 		_open_talk()
 		return
+	if _pending_pack != "":
+		var pack_id := _pending_pack
+		_pending_pack = ""
+		if mobs != null:
+			for e in mobs.live_entries():
+				if str(e["id"]) == pack_id and _touches(e, cell):
+					start_pack_fight(e)
+					return
 	if _pending_door != "":
 		var door_id := _pending_door
 		_pending_door = ""
@@ -1108,10 +1137,13 @@ func _unhandled_input(event: InputEvent) -> void:
 					var c: Vector2i = hit["cell"]
 					var record := _npc_record(hit_zone.zone_id, c)
 					var door_row := door_at(hit_zone.zone_id, c)
+					var pack_hit: Dictionary = mobs.entry_at(c) if mobs != null and hit_zone == zone else {}
 					if not record.is_empty():
 						_approach_npc_in(hit_zone, record)
 					elif not door_row.is_empty():
 						approach_door(str(door_row["id"]))
+					elif not pack_hit.is_empty():
+						approach_pack(str(pack_hit["id"]))
 					else:
 						click_cell(hit_zone, c)
 			MOUSE_BUTTON_WHEEL_UP:
@@ -1139,6 +1171,10 @@ func _unhandled_input(event: InputEvent) -> void:
 			KEY_J:
 				if mission_log != null:
 					mission_log.toggle()
+			KEY_B:
+				# Dev: force the zone's next world boss up (captures, tests).
+				if event.ctrl_pressed and event.shift_pressed:
+					force_next_boss()
 			KEY_C:
 				if character_window != null:
 					character_window.toggle()
@@ -1277,6 +1313,8 @@ func _refresh_hover() -> void:
 		_set_hover(null, Vector2i(-1, -1))
 	else:
 		_set_hover(motion["zone"], motion["cell"])
+	if mobs != null:
+		mobs.hover(hover_cell if _hover_zone == zone else Vector2i(-1, -1), _mouse_pos, int(progress.level) if progress != null else 1)
 
 
 func _set_hover(z: WorldZone, c: Vector2i) -> void:
@@ -1338,6 +1376,8 @@ func _process(delta: float) -> void:
 	if walker == null or zone == null:
 		return
 	tick_run(delta)
+	if mobs != null and not _fight_starting:
+		mobs.tick(delta, mob_env(), walker.cell)
 	var aim: Vector2 = walker.position + walker.visual_offset()
 	if walker.is_moving():
 		var step: Vector2 = _facing_step(walker.facing)
@@ -2560,6 +2600,9 @@ func _report_bench() -> void:
 
 func _play_movie(mode: String) -> void:
 	weather.auto_rotate = false
+	if mode.begins_with("mobs"):
+		# Driven by tests/pc/capture_world_mobs.gd (world fights autoplay).
+		return
 	if mode == "granary" or mode == "granary_stills":
 		# The run swaps scenes; the world comes back and finishes the movie.
 		if not _door_outcome.is_empty():
@@ -4400,3 +4443,253 @@ func _movie_granary_stills() -> void:
 	await get_tree().create_timer(0.8).timeout
 	print("MOVIE at ", walker.cell, " panel ", door_panel.is_open())
 	await _grab(folder.path_join("02_entry_panel.png"))
+
+
+# --- Open-world monsters (package Z1) -----------------------------------------
+
+func _restock_mobs(origin: Vector2i) -> void:
+	if mobs == null or zone == null:
+		return
+	if walker != null and walker.has_method("visual_height"):
+		mobs.hero_px = maxf(float(walker.visual_height()), 30.0)
+	mobs.performance = settings != null and settings.performance
+	var npc_cells: Array = []
+	if npc_book != null:
+		for record in npc_book.for_zone(zone.zone_id):
+			npc_cells.append(_record_cell(record))
+	mobs.restock(zone, origin, npc_cells, _door_cells_in(zone.zone_id).keys())
+
+
+## What the boss conditions read: the hour and weather on the HUD clock.
+func mob_env() -> Dictionary:
+	return {
+		"hour": float(weather.time_of_day) if weather != null else 12.0,
+		"weather": str(weather.weather) if weather != null else "clear",
+	}
+
+
+static func _touches(entry: Dictionary, cell: Vector2i) -> bool:
+	for c in entry["cells"]:
+		if absi((c as Vector2i).x - cell.x) + absi((c as Vector2i).y - cell.y) <= 1:
+			return true
+	return false
+
+
+## Click on a pack: walk next to it, then the fight starts.
+func approach_pack(entry_id: String) -> Dictionary:
+	if mobs == null or zone == null or _fight_starting:
+		return {"ok": false, "reason": "busy"}
+	var entry := {}
+	for e in mobs.live_entries():
+		if str(e["id"]) == entry_id:
+			entry = e
+	if entry.is_empty():
+		return {"ok": false, "reason": "gone"}
+	var here: Vector2i = walker.anchor_cell()
+	if _touches(entry, here):
+		start_pack_fight(entry)
+		return {"ok": true, "reason": "adjacent"}
+	var reach := reachable_here()
+	var best := Vector2i(-1, -1)
+	var bd := 1 << 30
+	for c in entry["cells"]:
+		for d in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+			var s: Vector2i = (c as Vector2i) + d
+			if not reach.has(s):
+				continue
+			var dist := absi(s.x - here.x) + absi(s.y - here.y)
+			if dist < bd:
+				bd = dist
+				best = s
+	if best.x < 0:
+		_show_banner("Can't reach that pack from here.")
+		return {"ok": false, "reason": "unreachable"}
+	var result := walk_to(best)
+	if bool(result.get("ok", false)):
+		_pending_pack = entry_id
+	return result
+
+
+## Walking into a pack (a step next to one of its bodies) starts the fight.
+func _on_hero_stepped(cell: Vector2i) -> void:
+	if mobs == null or _fight_starting or _pending_pack != "":
+		return
+	for e in mobs.live_entries():
+		if _touches(e, cell):
+			start_pack_fight(e)
+			return
+
+
+## Start a world fight on the cells round the pack (world_monsters.fight_config),
+## with a picture of those cells as the board's backdrop.
+func start_pack_fight(entry: Dictionary) -> Dictionary:
+	if _fight_starting or mobs == null or mobs.book == null:
+		return {"ok": false, "reason": "busy"}
+	var here: Vector2i = walker.anchor_cell()
+	var others: Array = []
+	for e in mobs.live_entries():
+		if str(e["id"]) != str(entry["id"]):
+			others.append_array(e["cells"])
+	if npc_book != null:
+		for record in npc_book.for_zone(zone.zone_id):
+			others.append(_record_cell(record))
+	others.append_array(_door_cells_in(zone.zone_id).keys())
+	var config: Dictionary = mobs.book.fight_config(zone, entry, {"class_id": hero_combat_class(), "pos": here}, 1 if _movie != "" else -1, others)
+	if config.is_empty():
+		_show_banner("No room to fight here.")
+		return {"ok": false, "reason": "no_board"}
+	_fight_starting = true
+	walker.place(zone, here)
+	var pack: Dictionary = entry["pack"]
+	var safe := _safe_point()
+	var ctx := {
+		"config": config,
+		"pack": pack,
+		"entry_id": str(entry["id"]),
+		"zone_id": mobs.book.zone_of_chunk(zone.zone_id),
+		"chunk_id": zone.zone_id,
+		"place": Pick.zone_name(zone),
+		"class_id": hero_combat_class(),
+		"return_zone": zone.zone_id,
+		"return_cell": here,
+		"safe_zone": str(safe.get("zone", zone.zone_id)),
+		"safe_cell": safe.get("cell", here),
+		"autoplay": _movie.begins_with("mobs"),
+		"movie": _movie,
+		"boss_banner": str((mobs.book.row(str(pack.get("boss_id", ""))).get("boss", {}) as Dictionary).get("banner", "")),
+	}
+	if progress != null:
+		progress.note_place(zone.zone_id, here)
+		progress.save()
+	if DisplayServer.get_name() != "headless" and not FightLauncher.dry_run:
+		var shot := await _capture_board(config)
+		ctx["backdrop"] = shot.get("image", null)
+		ctx["backdrop_cell00"] = shot.get("cell00", Vector2.ZERO)
+		ctx["backdrop_scale"] = float(shot.get("scale", 1.0))
+	var started: Dictionary = FightLauncher.enter(get_tree(), ctx)
+	if not bool(started.get("ok", false)):
+		_fight_starting = false
+	return started
+
+
+## The zone's safe point: the town chunk's spawn (data: zones[].safe_chunk).
+func _safe_point() -> Dictionary:
+	if mobs == null or mobs.book == null or zone == null:
+		return {}
+	var zid: String = mobs.book.zone_of_chunk(zone.zone_id)
+	var chunk := str(mobs.book.zone_cfg(zid).get("safe_chunk", ""))
+	if chunk == "" or atlas == null:
+		return {}
+	var m: Variant = atlas.map_for_chunk(chunk)
+	if m == null or (m as WorldMap).zone(chunk) == null:
+		return {}
+	return {"zone": chunk, "cell": (m as WorldMap).zone(chunk).spawn}
+
+
+## A picture of the fight window's world cells, with the hero, the packs,
+## NPCs and the screen layers hidden. cell00 = board cell (0, 0)'s centre
+## in the picture; scale = board px per picture px.
+func _capture_board(config: Dictionary) -> Dictionary:
+	var n := int(config.get("board_size", 14))
+	var origin: Vector2i = config.get("world_origin", Vector2i.ZERO)
+	var po := _origin_of(zone.zone_id)
+	var base_h := float(zone.height_at(Vector2i(clampi(origin.x + n / 2, 0, zone.width - 1), clampi(origin.y + n / 2, 0, zone.height - 1))))
+	var corners: Array = []
+	for b in [Vector2i(0, 0), Vector2i(n - 1, 0), Vector2i(n - 1, n - 1), Vector2i(0, n - 1)]:
+		corners.append(BoardVisualSort.cell_to_local(po + origin + b, base_h))
+	var lo := Vector2(INF, INF)
+	var hi := Vector2(-INF, -INF)
+	for p in corners:
+		lo = Vector2(minf(lo.x, p.x), minf(lo.y, p.y))
+		hi = Vector2(maxf(hi.x, p.x), maxf(hi.y, p.y))
+	lo += Vector2(-90, -230)
+	hi += Vector2(90, 70)
+	var vis := get_viewport().get_visible_rect().size
+	var z := minf(1.0, minf((vis.x - 8.0) / (hi.x - lo.x), (vis.y - 8.0) / (hi.y - lo.y)))
+	var hidden: Array = []
+	for node in [walker, mobs, npcs_root, _hover]:
+		if node != null and (node as CanvasItem).visible:
+			(node as CanvasItem).visible = false
+			hidden.append(node)
+	for child in get_children():
+		if child is CanvasLayer and ((child as CanvasLayer).layer >= 7 or (child as CanvasLayer).layer == 5) and (child as CanvasLayer).visible:
+			(child as CanvasLayer).visible = false
+			hidden.append(child)
+	var keep_zoom := camera.zoom
+	var keep_smooth := camera.position_smoothing_enabled
+	camera.position_smoothing_enabled = false
+	camera.zoom = Vector2(z, z)
+	camera.position = (lo + hi) * 0.5
+	camera.reset_smoothing()
+	_warm_grounds(true)
+	for i in 3:
+		await get_tree().process_frame
+	await RenderingServer.frame_post_draw
+	var img := get_viewport().get_texture().get_image()
+	var xf := get_canvas_transform()
+	var a: Vector2 = xf * lo
+	var b2: Vector2 = xf * hi
+	var rect := Rect2i(Vector2i(a.floor()), Vector2i((b2 - a).ceil())).intersection(Rect2i(Vector2i.ZERO, img.get_size()))
+	var out := {}
+	if rect.size.x > 8 and rect.size.y > 8:
+		var crop := img.get_region(rect)
+		var c00: Vector2 = xf * BoardVisualSort.cell_to_local(po + origin, base_h) - Vector2(rect.position)
+		out = {"image": crop, "cell00": c00, "scale": 1.0 / z}
+	for node in hidden:
+		(node as CanvasItem).visible = true
+	camera.zoom = keep_zoom
+	camera.position_smoothing_enabled = keep_smooth
+	return out
+
+
+## Back from a world fight: win stands the hero where they were and the pack
+## is gone (it respawns later); a loss sends them to the zone's safe point.
+func _take_mob_outcome() -> void:
+	var back: Dictionary = FightLauncher.take_outcome()
+	if back.is_empty():
+		return
+	_mob_outcome = back
+	var zid := str(back.get("return_zone", ""))
+	var cell: Vector2i = back.get("return_cell", Vector2i(-1, -1))
+	var won := str(back.get("result", "")) == "win"
+	if won and mobs != null:
+		mobs.mark_defeated(str(back.get("entry_id", "")), str(back.get("boss_id", "")))
+	if zid != "" and cell.x >= 0:
+		enter_zone(zid, cell, false)
+	if progress != null:
+		progress.load()
+	_refresh_hud()
+	var summary: Dictionary = back.get("summary", {})
+	if won:
+		_show_banner("+%d XP  ·  +%d Crypto Coins" % [int(summary.get("xp", 0)), int(summary.get("coins", 0))])
+	else:
+		_show_banner("Defeated. You wake up in town.")
+
+
+func _on_boss_event(ev: Dictionary) -> void:
+	var line := str(ev.get("banner", ""))
+	if line != "":
+		_show_banner(line)
+
+
+## Dev / capture: force a world boss up now (Ctrl+Shift+B cycles the zone's
+## bosses; --mob-boss <id> on the command line).
+func force_boss(boss_id: String) -> Dictionary:
+	if mobs == null:
+		return {}
+	return mobs.force_boss(boss_id)
+
+
+func force_next_boss() -> Dictionary:
+	if mobs == null or mobs.book == null or zone == null:
+		return {}
+	var zid: String = mobs.book.zone_of_chunk(zone.zone_id)
+	var list: Array = mobs.book.bosses_in(zid)
+	if list.is_empty():
+		_show_banner("No world boss lives here.")
+		return {}
+	var clock = mobs.boss_clock(zid)
+	for b in list:
+		if not clock.is_up(str(b["id"])):
+			return force_boss(str(b["id"]))
+	return {}

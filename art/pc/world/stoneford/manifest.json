@@ -1,0 +1,301 @@
+{
+ "format": "stasium.dungeon_art",
+ "format_version": 1,
+ "zone": "stoneford",
+ "name": "Stoneford world monsters",
+ "root": "res://art/pc/world/stoneford/",
+ "conventions": "Painted-part rigs, 512x360 cells pivot (256,329), bosses 768x540 pivot (384,494), 17.144 fps, S and E painted, W and N mirrored, binary alpha. Open-world monsters only: never a dungeon monster (Mauro).",
+ "monsters": [
+  {
+   "id": "bristleback_boar",
+   "name": "Bristleback Boar",
+   "dir": "monsters/bristleback_boar",
+   "cell": [
+    512,
+    360
+   ],
+   "pivot": [
+    256,
+    329
+   ],
+   "fps": 17.144,
+   "facings": [
+    "S",
+    "E"
+   ],
+   "mirror": {
+    "W": "E",
+    "N": "S"
+   },
+   "actions": {
+    "idle": {
+     "frames": 12,
+     "loop": true,
+     "files": {
+      "S": "monsters/bristleback_boar/idle/idle_S_fNN.png",
+      "E": "monsters/bristleback_boar/idle/idle_E_fNN.png"
+     }
+    },
+    "walk": {
+     "frames": 12,
+     "loop": true,
+     "files": {
+      "S": "monsters/bristleback_boar/walk/walk_S_fNN.png",
+      "E": "monsters/bristleback_boar/walk/walk_E_fNN.png"
+     }
+    },
+    "attack": {
+     "frames": 12,
+     "loop": false,
+     "files": {
+      "S": "monsters/bristleback_boar/attack/attack_S_fNN.png",
+      "E": "monsters/bristleback_boar/attack/attack_E_fNN.png"
+     }
+    }
+   },
+   "role": "basic"
+  },
+  {
+   "id": "mandrake_rootling",
+   "name": "Mandrake Rootling",
+   "dir": "monsters/mandrake_rootling",
+   "cell": [
+    512,
+    360
+   ],
+   "pivot": [
+    256,
+    329
+   ],
+   "fps": 17.144,
+   "facings": [
+    "S",
+    "E"
+   ],
+   "mirror": {
+    "W": "E",
+    "N": "S"
+   },
+   "actions": {
+    "idle": {
+     "frames": 12,
+     "loop": true,
+     "files": {
+      "S": "monsters/mandrake_rootling/idle/idle_S_fNN.png"
+     }
+    },
+    "walk": {
+     "frames": 12,
+     "loop": true,
+     "files": {
+      "S": "monsters/mandrake_rootling/walk/walk_S_fNN.png"
+     }
+    },
+    "attack": {
+     "frames": 12,
+     "loop": false,
+     "files": {
+      "S": "monsters/mandrake_rootling/attack/attack_S_fNN.png"
+     }
+    }
+   },
+   "role": "basic"
+  },
+  {
+   "id": "thistle_puffball",
+   "name": "Thistle Puffball",
+   "dir": "monsters/thistle_puffball",
+   "cell": [
+    512,
+    360
+   ],
+   "pivot": [
+    256,
+    329
+   ],
+   "fps": 17.144,
+   "facings": [
+    "S",
+    "E"
+   ],
+   "mirror": {
+    "W": "E",
+    "N": "S"
+   },
+   "actions": {
+    "idle": {
+     "frames": 12,
+     "loop": true,
+     "files": {
+      "S": "monsters/thistle_puffball/idle/idle_S_fNN.png"
+     }
+    },
+    "walk": {
+     "frames": 12,
+     "loop": true,
+     "files": {
+      "S": "monsters/thistle_puffball/walk/walk_S_fNN.png"
+     }
+    },
+    "attack": {
+     "frames": 12,
+     "loop": false,
+     "files": {
+      "S": "monsters/thistle_puffball/attack/attack_S_fNN.png"
+     }
+    }
+   },
+   "release": {
+    "action": "attack",
+    "frame": 7,
+    "point_px": {}
+   },
+   "role": "ranged"
+  },
+  {
+   "id": "flour_moth",
+   "name": "Flour Moth",
+   "dir": "monsters/flour_moth",
+   "cell": [
+    512,
+    360
+   ],
+   "pivot": [
+    256,
+    329
+   ],
+   "fps": 17.144,
+   "facings": [
+    "S",
+    "E"
+   ],
+   "mirror": {
+    "W": "E",
+    "N": "S"
+   },
+   "actions": {
+    "idle": {
+     "frames": 12,
+     "loop": true,
+     "files": {
+      "S": "monsters/flour_moth/idle/idle_S_fNN.png"
+     }
+    },
+    "walk": {
+     "frames": 12,
+     "loop": true,
+     "files": {
+      "S": "monsters/flour_moth/walk/walk_S_fNN.png"
+     }
+    },
+    "attack": {
+     "frames": 12,
+     "loop": false,
+     "files": {
+      "S": "monsters/flour_moth/attack/attack_S_fNN.png"
+     }
+    }
+   },
+   "release": {
+    "action": "attack",
+    "frame": 7,
+    "point_px": {}
+   },
+   "role": "ranged",
+   "flies": true
+  },
+  {
+   "id": "grimhoot_orchard_owl",
+   "name": "Grimhoot, the Orchard Owl",
+   "dir": "monsters/grimhoot_orchard_owl",
+   "cell": [
+    768,
+    540
+   ],
+   "pivot": [
+    384,
+    494
+   ],
+   "fps": 17.144,
+   "facings": [
+    "S",
+    "E"
+   ],
+   "mirror": {
+    "W": "E",
+    "N": "S"
+   },
+   "actions": {
+    "idle": {
+     "frames": 12,
+     "loop": true,
+     "files": {
+      "S": "monsters/grimhoot_orchard_owl/idle/idle_S_fNN.png"
+     }
+    },
+    "walk": {
+     "frames": 12,
+     "loop": true,
+     "files": {
+      "S": "monsters/grimhoot_orchard_owl/walk/walk_S_fNN.png"
+     }
+    },
+    "attack": {
+     "frames": 12,
+     "loop": false,
+     "files": {
+      "S": "monsters/grimhoot_orchard_owl/attack/attack_S_fNN.png"
+     }
+    }
+   },
+   "role": "boss",
+   "flies": true
+  },
+  {
+   "id": "old_gulp_millpond_toad",
+   "name": "Old Gulp, the Millpond Toad",
+   "dir": "monsters/old_gulp_millpond_toad",
+   "cell": [
+    768,
+    540
+   ],
+   "pivot": [
+    384,
+    494
+   ],
+   "fps": 17.144,
+   "facings": [
+    "S",
+    "E"
+   ],
+   "mirror": {
+    "W": "E",
+    "N": "S"
+   },
+   "actions": {
+    "idle": {
+     "frames": 12,
+     "loop": true,
+     "files": {
+      "S": "monsters/old_gulp_millpond_toad/idle/idle_S_fNN.png"
+     }
+    },
+    "walk": {
+     "frames": 12,
+     "loop": true,
+     "files": {
+      "S": "monsters/old_gulp_millpond_toad/walk/walk_S_fNN.png"
+     }
+    },
+    "attack": {
+     "frames": 12,
+     "loop": false,
+     "files": {
+      "S": "monsters/old_gulp_millpond_toad/attack/attack_S_fNN.png"
+     }
+    }
+   },
+   "role": "boss"
+  }
+ ]
+}

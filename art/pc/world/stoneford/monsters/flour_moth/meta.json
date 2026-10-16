@@ -1,0 +1,74 @@
+{
+ "id": "flour_moth",
+ "name": "Flour Moth",
+ "star5": false,
+ "base_of": null,
+ "dir": "monsters/flour_moth",
+ "cell": [
+  512,
+  360
+ ],
+ "pivot": [
+  256,
+  329
+ ],
+ "fps": 17.144,
+ "facings": [
+  "S",
+  "E"
+ ],
+ "mirror": {
+  "W": "E",
+  "N": "S"
+ },
+ "actions": {
+  "idle": {
+   "frames": 12,
+   "loop": true,
+   "files": {
+    "S": "monsters/flour_moth/idle/idle_S_fNN.png",
+    "E": "monsters/flour_moth/idle/idle_E_fNN.png"
+   }
+  },
+  "walk": {
+   "frames": 12,
+   "loop": true,
+   "files": {
+    "S": "monsters/flour_moth/walk/walk_S_fNN.png",
+    "E": "monsters/flour_moth/walk/walk_E_fNN.png"
+   }
+  },
+  "attack": {
+   "frames": 12,
+   "loop": false,
+   "files": {
+    "S": "monsters/flour_moth/attack/attack_S_fNN.png",
+    "E": "monsters/flour_moth/attack/attack_E_fNN.png"
+   }
+  }
+ },
+ "qa": {
+  "hole_fill_px_S": 21713,
+  "px_outside_cell_idle_S": 0,
+  "keep_in_shift_px_idle_S": 0.0,
+  "px_outside_cell_walk_S": 0,
+  "keep_in_shift_px_walk_S": 0.0,
+  "px_outside_cell_attack_S": 0,
+  "keep_in_shift_px_attack_S": 0.0,
+  "hole_fill_px_E": 13956,
+  "px_outside_cell_idle_E": 0,
+  "keep_in_shift_px_idle_E": 0.0,
+  "px_outside_cell_walk_E": 0,
+  "keep_in_shift_px_walk_E": 0.0,
+  "px_outside_cell_attack_E": 0,
+  "keep_in_shift_px_attack_E": 0.0
+ },
+ "role": "ranged",
+ "gait": {},
+ "release": {
+  "action": "attack",
+  "frame": 7,
+  "point_px": {}
+ },
+ "flies": true
+}

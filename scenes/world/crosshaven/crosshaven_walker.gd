@@ -224,6 +224,13 @@ func shown_pace() -> String:
 
 ## Sprite shift that keeps a planted sole in the world. The camera follows this
 ## so the shift is not a bob against the view.
+## Drawn hero height in world px (the monster packs size from it).
+func visual_height() -> float:
+	if _strips != null and _strips.height() > 0.0:
+		return float(_strips.height())
+	return 54.0
+
+
 func visual_offset() -> Vector2:
 	if _sprite == null:
 		return Vector2.ZERO

@@ -1,0 +1,69 @@
+{
+ "id": "grimhoot_orchard_owl",
+ "name": "Grimhoot, the Orchard Owl",
+ "star5": false,
+ "base_of": null,
+ "dir": "monsters/grimhoot_orchard_owl",
+ "cell": [
+  768,
+  540
+ ],
+ "pivot": [
+  384,
+  494
+ ],
+ "fps": 17.144,
+ "facings": [
+  "S",
+  "E"
+ ],
+ "mirror": {
+  "W": "E",
+  "N": "S"
+ },
+ "actions": {
+  "idle": {
+   "frames": 12,
+   "loop": true,
+   "files": {
+    "S": "monsters/grimhoot_orchard_owl/idle/idle_S_fNN.png",
+    "E": "monsters/grimhoot_orchard_owl/idle/idle_E_fNN.png"
+   }
+  },
+  "walk": {
+   "frames": 12,
+   "loop": true,
+   "files": {
+    "S": "monsters/grimhoot_orchard_owl/walk/walk_S_fNN.png",
+    "E": "monsters/grimhoot_orchard_owl/walk/walk_E_fNN.png"
+   }
+  },
+  "attack": {
+   "frames": 12,
+   "loop": false,
+   "files": {
+    "S": "monsters/grimhoot_orchard_owl/attack/attack_S_fNN.png",
+    "E": "monsters/grimhoot_orchard_owl/attack/attack_E_fNN.png"
+   }
+  }
+ },
+ "qa": {
+  "hole_fill_px_S": 18830,
+  "px_outside_cell_idle_S": 0,
+  "keep_in_shift_px_idle_S": 0.0,
+  "px_outside_cell_walk_S": 0,
+  "keep_in_shift_px_walk_S": 0.0,
+  "px_outside_cell_attack_S": 0,
+  "keep_in_shift_px_attack_S": 0.0,
+  "hole_fill_px_E": 11455,
+  "px_outside_cell_idle_E": 0,
+  "keep_in_shift_px_idle_E": 0.0,
+  "px_outside_cell_walk_E": 0,
+  "keep_in_shift_px_walk_E": 0.0,
+  "px_outside_cell_attack_E": 0,
+  "keep_in_shift_px_attack_E": 0.0
+ },
+ "role": "boss",
+ "gait": {},
+ "flies": true
+}

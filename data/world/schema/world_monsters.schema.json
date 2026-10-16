@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://stasiumxii.local/schemas/world_monsters.v1.json",
+  "title": "Stasium PC open-world monsters",
+  "description": "Sidecar stasium.world_monsters version 1 (spec 4.10a, package Z1). Open-world packs (2-10 monsters) per level zone and its rare world bosses. Rule: never a dungeon monster (id, name, art or sheet). backend/world_monsters.gd reads it; tests/run_world_mobs_tests.gd checks it.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["format", "format_version", "status", "scaling", "rules", "rewards", "size_weights", "zones", "monsters", "bosses", "boss_loot"],
+  "properties": {
+    "format": {"const": "stasium.world_monsters"},
+    "format_version": {"const": 1},
+    "status": {"const": "proposed"},
+    "notes": {"type": "array", "items": {"type": "string"}},
+    "scaling": {"type": "object", "properties": {"hp_per_level": {"type": "number"}, "damage_per_level": {"type": "number"}}},
+    "rules": {"type": "object"},
+    "rewards": {"type": "object", "properties": {"base_pack": {"type": "number"}, "size_exponent": {"type": "number"}, "drop_per_extra": {"type": "number"}}},
+    "size_weights": {"type": "array", "items": {"type": "object", "required": ["depth_max", "weights"]}},
+    "zones": {"type": "array", "items": {"$ref": "#/$defs/zone"}},
+    "monsters": {"type": "array", "items": {"$ref": "#/$defs/monster"}},
+    "bosses": {"type": "array", "items": {"allOf": [{"$ref": "#/$defs/monster"}, {"required": ["boss"]}]}},
+    "boss_loot": {"type": "object"}
+  },
+  "$defs": {
+    "zone": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["zone", "art", "chunks"],
+      "properties": {
+        "zone": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+        "art": {"type": "string"},
+        "safe_chunk": {"type": "string"},
+        "reward_rows": {"type": "array"},
+        "chunks": {"type": "object", "additionalProperties": {"type": "object", "required": ["packs", "pool"], "properties": {"packs": {"type": "integer", "minimum": 0}, "max_size": {"type": "integer", "minimum": 2, "maximum": 10}, "pool": {"type": "object", "additionalProperties": {"type": "number"}}}}}
+      }
+    },
+    "monster": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "zone", "role", "level_min", "level_max", "hp", "ap", "mp", "attack", "art"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+        "name": {"type": "string"},
+        "zone": {"type": "string"},
+        "role": {"enum": ["basic", "ranged", "boss"]},
+        "level_min": {"type": "integer"},
+        "level_max": {"type": "integer"},
+        "hp": {"type": "integer"},
+        "ap": {"type": "integer"},
+        "mp": {"type": "integer"},
+        "attack": {"type": "object"},
+        "signature": {"type": "object"},
+        "signature2": {"type": "object"},
+        "art": {"type": "string"},
+        "map_scale": {"type": "number"},
+        "boss": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["condition", "chunks", "level", "escort", "roll_per_minute", "cooldown_s", "timeout_s"],
+          "properties": {
+            "condition": {"type": "object", "additionalProperties": false, "properties": {
+              "time": {"type": "array", "items": {"enum": ["night", "dawn", "day", "dusk"]}},
+              "weather": {"type": "array", "items": {"enum": ["clear", "cloud", "rain", "wind", "fog", "storm", "snow"]}},
+              "season": {"type": "array", "items": {"type": "string"}}}},
+            "chunks": {"type": "array", "items": {"type": "string"}},
+            "level": {"type": "integer"},
+            "escort": {"type": "array"},
+            "roll_per_minute": {"type": "number"},
+            "cooldown_s": {"type": "number"},
+            "timeout_s": {"type": "number"},
+            "banner": {"type": "string"},
+            "leave_text": {"type": "string"},
+            "trophy": {"type": "object"},
+            "title": {"type": "string"},
+            "aura": {"type": "array"}
+          }
+        }
+      }
+    }
+  }
+}

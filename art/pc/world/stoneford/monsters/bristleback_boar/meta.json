@@ -1,0 +1,603 @@
+{
+ "id": "bristleback_boar",
+ "name": "Bristleback Boar",
+ "star5": false,
+ "base_of": null,
+ "dir": "monsters/bristleback_boar",
+ "cell": [
+  512,
+  360
+ ],
+ "pivot": [
+  256,
+  329
+ ],
+ "fps": 17.144,
+ "facings": [
+  "S",
+  "E"
+ ],
+ "mirror": {
+  "W": "E",
+  "N": "S"
+ },
+ "actions": {
+  "idle": {
+   "frames": 12,
+   "loop": true,
+   "files": {
+    "S": "monsters/bristleback_boar/idle/idle_S_fNN.png",
+    "E": "monsters/bristleback_boar/idle/idle_E_fNN.png"
+   }
+  },
+  "walk": {
+   "frames": 12,
+   "loop": true,
+   "files": {
+    "S": "monsters/bristleback_boar/walk/walk_S_fNN.png",
+    "E": "monsters/bristleback_boar/walk/walk_E_fNN.png"
+   }
+  },
+  "attack": {
+   "frames": 12,
+   "loop": false,
+   "files": {
+    "S": "monsters/bristleback_boar/attack/attack_S_fNN.png",
+    "E": "monsters/bristleback_boar/attack/attack_E_fNN.png"
+   }
+  }
+ },
+ "qa": {
+  "hole_fill_px_S": 71221,
+  "px_outside_cell_idle_S": 0,
+  "keep_in_shift_px_idle_S": 0.0,
+  "px_outside_cell_walk_S": 0,
+  "keep_in_shift_px_walk_S": 0.0,
+  "px_outside_cell_attack_S": 0,
+  "keep_in_shift_px_attack_S": 0.0,
+  "hole_fill_px_E": 64579,
+  "px_outside_cell_idle_E": 0,
+  "keep_in_shift_px_idle_E": 0.0,
+  "px_outside_cell_walk_E": 0,
+  "keep_in_shift_px_walk_E": 0.0,
+  "px_outside_cell_attack_E": 0,
+  "keep_in_shift_px_attack_E": 0.0
+ },
+ "role": "basic",
+ "gait": {
+  "S": {
+   "speed_px_per_frame": 3.9394,
+   "dir": [
+    0.8944271909999159,
+    0.4472135954999579
+   ],
+   "stance": {
+    "front_near": [
+     true,
+     true,
+     true,
+     true,
+     true,
+     true,
+     true,
+     false,
+     false,
+     false,
+     false,
+     false
+    ],
+    "hind_far": [
+     true,
+     true,
+     true,
+     true,
+     true,
+     true,
+     true,
+     false,
+     false,
+     false,
+     false,
+     false
+    ],
+    "front_far": [
+     true,
+     false,
+     false,
+     false,
+     false,
+     false,
+     true,
+     true,
+     true,
+     true,
+     true,
+     true
+    ],
+    "hind_near": [
+     true,
+     false,
+     false,
+     false,
+     false,
+     false,
+     true,
+     true,
+     true,
+     true,
+     true,
+     true
+    ]
+   },
+   "feet": {
+    "front_near": [
+     [
+      287.32,
+      345.22
+     ],
+     [
+      283.8,
+      343.46
+     ],
+     [
+      280.28,
+      341.7
+     ],
+     [
+      276.75,
+      339.94
+     ],
+     [
+      273.23,
+      338.17
+     ],
+     [
+      269.71,
+      336.41
+     ],
+     [
+      266.18,
+      334.65
+     ],
+     [
+      257.21,
+      330.66
+     ],
+     [
+      256.11,
+      326.47
+     ],
+     [
+      260.11,
+      327.07
+     ],
+     [
+      267.15,
+      332.46
+     ],
+     [
+      275.12,
+      339.91
+     ]
+    ],
+    "front_far": [
+     [
+      311.32,
+      319.76
+     ],
+     [
+      305.41,
+      317.57
+     ],
+     [
+      306.76,
+      312.8
+     ],
+     [
+      311.95,
+      312.69
+     ],
+     [
+      318.74,
+      317.89
+     ],
+     [
+      325.04,
+      325.53
+     ],
+     [
+      332.46,
+      330.33
+     ],
+     [
+      328.94,
+      328.57
+     ],
+     [
+      325.41,
+      326.81
+     ],
+     [
+      321.89,
+      325.05
+     ],
+     [
+      318.37,
+      323.29
+     ],
+     [
+      314.84,
+      321.53
+     ]
+    ],
+    "hind_near": [
+     [
+      181.26,
+      305.78
+     ],
+     [
+      175.24,
+      298.72
+     ],
+     [
+      176.55,
+      296.53
+     ],
+     [
+      182.0,
+      299.36
+     ],
+     [
+      189.32,
+      305.49
+     ],
+     [
+      196.24,
+      312.11
+     ],
+     [
+      202.4,
+      316.35
+     ],
+     [
+      198.88,
+      314.59
+     ],
+     [
+      195.35,
+      312.83
+     ],
+     [
+      191.83,
+      311.07
+     ],
+     [
+      188.31,
+      309.31
+     ],
+     [
+      184.78,
+      307.55
+     ]
+    ],
+    "hind_far": [
+     [
+      246.69,
+      308.8
+     ],
+     [
+      243.17,
+      307.04
+     ],
+     [
+      239.65,
+      305.28
+     ],
+     [
+      236.12,
+      303.52
+     ],
+     [
+      232.6,
+      301.76
+     ],
+     [
+      229.08,
+      300.0
+     ],
+     [
+      225.55,
+      298.23
+     ],
+     [
+      220.77,
+      293.73
+     ],
+     [
+      223.08,
+      291.29
+     ],
+     [
+      229.0,
+      293.36
+     ],
+     [
+      236.24,
+      298.95
+     ],
+     [
+      242.51,
+      305.32
+     ]
+    ]
+   }
+  },
+  "E": {
+   "speed_px_per_frame": 3.9394,
+   "dir": [
+    0.8944271909999159,
+    -0.4472135954999579
+   ],
+   "stance": {
+    "front_near": [
+     true,
+     true,
+     true,
+     true,
+     true,
+     true,
+     true,
+     false,
+     false,
+     false,
+     false,
+     false
+    ],
+    "hind_far": [
+     true,
+     true,
+     true,
+     true,
+     true,
+     true,
+     true,
+     false,
+     false,
+     false,
+     false,
+     false
+    ],
+    "front_far": [
+     true,
+     false,
+     false,
+     false,
+     false,
+     false,
+     true,
+     true,
+     true,
+     true,
+     true,
+     true
+    ],
+    "hind_near": [
+     true,
+     false,
+     false,
+     false,
+     false,
+     false,
+     true,
+     true,
+     true,
+     true,
+     true,
+     true
+    ]
+   },
+   "feet": {
+    "front_near": [
+     [
+      336.2,
+      302.73
+     ],
+     [
+      332.68,
+      304.5
+     ],
+     [
+      329.16,
+      306.26
+     ],
+     [
+      325.63,
+      308.02
+     ],
+     [
+      322.11,
+      309.78
+     ],
+     [
+      318.59,
+      311.54
+     ],
+     [
+      315.06,
+      313.3
+     ],
+     [
+      315.29,
+      309.25
+     ],
+     [
+      321.89,
+      299.09
+     ],
+     [
+      329.71,
+      292.24
+     ],
+     [
+      336.0,
+      291.82
+     ],
+     [
+      338.71,
+      296.76
+     ]
+    ],
+    "front_far": [
+     [
+      277.98,
+      297.54
+     ],
+     [
+      277.79,
+      295.14
+     ],
+     [
+      283.03,
+      286.89
+     ],
+     [
+      289.96,
+      280.96
+     ],
+     [
+      296.11,
+      279.62
+     ],
+     [
+      299.5,
+      282.28
+     ],
+     [
+      299.12,
+      286.97
+     ],
+     [
+      295.6,
+      288.73
+     ],
+     [
+      292.07,
+      290.5
+     ],
+     [
+      288.55,
+      292.26
+     ],
+     [
+      285.02,
+      294.02
+     ],
+     [
+      281.5,
+      295.78
+     ]
+    ],
+    "hind_near": [
+     [
+      205.38,
+      336.62
+     ],
+     [
+      209.62,
+      330.87
+     ],
+     [
+      218.93,
+      324.09
+     ],
+     [
+      227.82,
+      319.88
+     ],
+     [
+      232.75,
+      319.53
+     ],
+     [
+      232.24,
+      322.13
+     ],
+     [
+      226.52,
+      326.05
+     ],
+     [
+      223.0,
+      327.81
+     ],
+     [
+      219.47,
+      329.58
+     ],
+     [
+      215.95,
+      331.34
+     ],
+     [
+      212.42,
+      333.1
+     ],
+     [
+      208.9,
+      334.86
+     ]
+    ],
+    "hind_far": [
+     [
+      269.7,
+      333.86
+     ],
+     [
+      266.18,
+      335.63
+     ],
+     [
+      262.66,
+      337.39
+     ],
+     [
+      259.13,
+      339.15
+     ],
+     [
+      255.61,
+      340.91
+     ],
+     [
+      252.09,
+      342.67
+     ],
+     [
+      248.56,
+      344.43
+     ],
+     [
+      252.79,
+      338.23
+     ],
+     [
+      262.12,
+      329.48
+     ],
+     [
+      270.98,
+      324.11
+     ],
+     [
+      275.9,
+      324.2
+     ],
+     [
+      275.33,
+      328.47
+     ]
+    ]
+   }
+  }
+ }
+}

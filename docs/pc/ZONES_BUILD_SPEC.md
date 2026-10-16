@@ -1336,6 +1336,56 @@ Rules:
 - About 3–4 families per level zone (Proposed), with names and art by
   Scenario; each zone's dungeon boss is not a world monster.
 
+### 4.10a World monsters as built (package Z1, Stoneford first)
+
+Built in `data/world/world_monsters.json` (`backend/world_monsters.gd`), one
+level zone at a time, each approved by Mauro. Stoneford (1–10) is the first.
+
+**Rule for every zone (Mauro, 12 Oct 2026: "Asegúrate que en el open world
+sean monstruos diferentes a la dungeon"):** open-world monsters and world
+bosses never reuse a dungeon monster. Not its id, display name, art id, art
+path, sheet or a recolour, for any room pack, escort, summon or boss of any
+PC dungeon (`data/world/dungeon_monsters.json`, `art/pc/dungeons/`).
+`tests/run_world_mobs_tests.gd` fails on a match (ids, names and art in the
+data, and an md5 check of the world frames against every dungeon sheet).
+Every zone's design sheet shows that zone's dungeon monsters beside the new
+designs.
+
+- **Packs:** 2 to 10 monsters (Mauro, Wakfu style). Most are 2–4, some 5–7
+  and a few 8–10, with big packs rarer near the zone entry (`size_weights`
+  by depth). A pack is one kind or a mix. On the map the group stands
+  together, up to 6 bodies, with a count badge for more. Hovering shows the
+  size, the level range and the total level, red when the pack is 5+ levels
+  above the hero.
+- **Levels:** each chunk's `depth` (4.2) places it inside the zone band. The
+  shallowest pack chunk starts at the band floor, the deepest reaches the
+  top, and a pack spans 3 levels.
+- **Where:** passable cells of the zone's pack chunks only. Never in the
+  Crossroads or a town chunk, never within 2 cells of an exit, gate, NPC,
+  dungeon door or point of interest, and never on a chunk edge.
+- **Fight:** clicking a pack, or stepping next to one, starts a fight on the
+  world cells around it: a 14×14 cut of the chunk for CombatSim's dungeon
+  mode, drawn over a picture of those cells. Win: XP and coins. Loss: back
+  to the zone's safe point (its town spawn). A beaten pack respawns after
+  90 s, re-rolled.
+- **Rewards:** the 4.8 world fight is for a pack of 3. A pack of n pays
+  (n/3)^0.8 of it (×0.72 for 2, ×1.26 for 4, ×1.97 for 7, ×2.62 for 10), and
+  coins scale the same way. The gear chance is ×(1 + 0.12(n−1)). Gear also
+  goes through one seam, `world_drop()`, which calls
+  `pc_gear.roll_world_drop(zone_level, rng)` once that exists.
+- **World bosses:** 1–3 per zone, each with a `boss` block: a condition
+  (time `night`/`dawn`/`day`/`dusk`, weather `rain`/`wind`/`cloud`/`clear`/
+  `fog`/`storm`/`snow`, season), a deep chunk, an escort (10 enemies at most,
+  summons included), 1–2 signatures (the dungeon kinds), a chest one tier
+  row up, an epic/relic chance through `star_drops`, and a trophy and title.
+  Each boss rolls 1/150 per in-condition minute, about one sighting per 2.5 h
+  of in-condition play. It leaves when its condition ends or after 30 min,
+  then has a 4 h cooldown. Dev: Ctrl+Shift+B force-spawns the zone's next
+  boss.
+- **Motion:** every creature walks with a gait solved so planted feet stay
+  still at the map speed (test: at most 2 px). Pack members never move in
+  lockstep.
+
 ---
 
 ## 5. Work packages
