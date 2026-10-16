@@ -674,17 +674,10 @@ func _test_boss_sheets() -> void:
 	plain.queue_free()
 	Sheets.overrides = {}
 	Sheets.clear_cache()
-	# Harvest Warden and Sheaf Sovereign stay on the Oct 2 set until their approved pack is uploaded.
-	for boss_art in ["warden_of_the_sheaves", "sheaf_sovereign"]:
-		for anim in ["idle", "walk", "attack", "hit"]:
-			for face in ["E", "S", "N", "W"]:
-				var info: Dictionary = Sheets.frames_for("res://art/stasis/foes/%s.png" % boss_art, anim, face)
-				truthy(not info.is_empty() and not bool(info["mirror"]), "%s %s %s has its own sheet" % [boss_art, anim, face])
-		eq(ResourceLoader.exists(Sheets.sheet_path(boss_art, "death", "s")), false, "%s has no death sheet yet" % boss_art)
-		eq(ResourceLoader.exists(Sheets.sheet_path(boss_art, "cast", "s")), false, "%s has no cast sheet yet" % boss_art)
 	eq((Sheets.frames_for("res://art/stasis/foes/captain_brineclaw.png", "walk", "E")["frames"] as Array).size(), 8, "the Brineclaw walk is 8 frames")
-	# Serra, Coilspire, Brineclaw, and Slagheart: walk, attack, spell, hit, death, four directions.
-	for boss_art in ["serra_the_gale_sentinel", "serra_frost_wraith", "tyrant_coilspire", "coilspire_demon", "captain_brineclaw", "brineclaw_sovereign", "slagheart_the_emberbrute", "slagheart_caldera_crown"]:
+	# Serra, Coilspire, Brineclaw, Slagheart, and the approved Harvest pack:
+	# walk, attack, spell, hit, death, four directions.
+	for boss_art in ["serra_the_gale_sentinel", "serra_frost_wraith", "tyrant_coilspire", "coilspire_demon", "captain_brineclaw", "brineclaw_sovereign", "slagheart_the_emberbrute", "slagheart_caldera_crown", "warden_of_the_sheaves", "sheaf_sovereign"]:
 		for anim in ["idle", "walk", "attack", "cast", "hit", "death"]:
 			for face in ["E", "S", "N", "W"]:
 				var sheet: Dictionary = Sheets.frames_for("res://art/stasis/foes/%s.png" % boss_art, anim, face)
