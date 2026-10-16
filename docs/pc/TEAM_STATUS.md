@@ -53,6 +53,7 @@ These exist only as paintings or box-only work on Luca's computer. **None of it 
 
 - **Tool:** Meshy, used behind the scenes (3D blockout, then an iso camera render, then a Scenario paint-over to 2D). Nothing 3D ships.
 - **Waiting on:** Luca's `docs/pc-map-handoff` package (the B1–B3 sources).
+- **Priority (Mauro, 16 Oct): finish Crosshaven first (B1)** ("hay que enfocarnos en acabar Crosshaven"). The others wait until B1 is approved.
 
 ## 1. World zones bot (Cursor agent, suffix `a156`): map, zones, NPCs, missions (base `pc/world-zones`)
 
