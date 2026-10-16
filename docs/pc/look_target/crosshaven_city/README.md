@@ -76,6 +76,12 @@ The plots sit in the south-east of `cx_built`, along the south wall, between the
 | P4 | Normal | Rare |
 | P5 | Normal | Normal |
 
-**To fix in the build:**
+**MUST FIX in the build** (Mauro: "hay que arreglar todo eso"):
 - P3, P4 and P5 sit tight against the wall, and P3's anchor touches a tower. The game needs walkable entrance cells in front of every anchor, plus room for a house to grow to Legendary (350 px clearance) without hitting the wall.
 - "Garden" here is a tier label only. Per Luca's rule there are no garden beds inside Crosshaven.
+- **Acceptance for the plots:**
+  - every anchor has at least 2 walkable cells in front, reachable from a street;
+  - a Legendary footprint (350 px clearance) fits on every plot without touching the wall, a tower, a street or another plot;
+  - there are no garden beds;
+  - P3 is moved off the tower.
+  - A test checks all of this.
