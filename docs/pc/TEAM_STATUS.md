@@ -38,6 +38,11 @@ When those land, Claude reads them, copies the key facts into this file, and con
 
 ---
 
+> **RULE FOR EVERY TEAM (Mauro, 16 Oct 2026):** "Jamás hagan otra vez lo de las imágenes. Siempre tiene que ser algo construido en el juego. Podemos usar imágenes para prototipos, pero que me dejen saber que es una imagen y que todavía hay que crearlo."
+> - Progress is shown only as **real game captures** (🎮 EN EL JUEGO, with branch and commit).
+> - Every concept, painting, mockup, render or scripted pan must be labelled **🖼️ IMAGEN / CONCEPTO, TODAVÍA HAY QUE CONSTRUIRLO**.
+> - A concept is never reported as done.
+
 ## 0. MUST BUILD: the map backlog (Mauro, 16 Oct 2026: "hay que construirlo, asegúrate de que recordemos que tenemos que construirlo")
 
 These exist only as paintings or box-only work on Luca's computer. **None of it is in the game yet.** Every item has to be built in the game (zone data, walkable cells, painted art, joins, tests), and each goes to Mauro for approval, one at a time.
