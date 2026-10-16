@@ -50,6 +50,7 @@ These exist only as paintings or box-only work on Luca's computer. **None of it 
 | B4 | Open-world monsters, Stoneford Z1 (Boar, Mandrake, Puffball, Flour Moth; the bosses Grimhoot, Old Gulp and the Thresher Stag) | the approved sheet v1 | WIP pushed: `claude/pc-world-mobs` 3183d05f | IN PROGRESS |
 | B5 | Seams and Blightwood finish: #375 (terrain switches at borders, the Westwatch cliff, 53 roads ending at chunk edges), #378 (joins, road gap, `regions_enabled`) | the seamless rule | Draft PRs | TO FINISH |
 | B6 | The remaining regions in level order (Rowanvale → Windmere → Brinewake → Slagcrown / Fen Edge → Gloomfen → Stormspire → Ashen Shardfields), each with its monsters and its dungeon moved out of town | ZONES_BUILD_SPEC | Not built | TO BUILD |
+| B7 | **Player houses: open questions for Luca** (Mauro: "déjalo ahí como recordatorio hasta que ya acabemos todo"). (1) how a player gets a house; (2) visiting other players' houses; (3) storage; (4) limits per account or character; (5) how decorations are unlocked and placed. Settled: Normal/Rare/Legendary; rooms 1/3/5 by tier; upgrades in place | `docs/pc/look_target/crosshaven_city/README.md` (Player houses) | Concept art in #425 | **REMINDER: decide after everything else is done** |
 
 - **Tool:** Meshy, used behind the scenes (3D blockout, then an iso camera render, then a Scenario paint-over to 2D). Nothing 3D ships.
 - **Waiting on:** Luca's `docs/pc-map-handoff` package (the B1–B3 sources).
