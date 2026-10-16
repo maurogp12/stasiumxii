@@ -173,3 +173,4 @@ PC game only. Never merged into `main` or `mobile` by an agent; only Mauro merge
 | 16 Oct 2026 | Player-house crafting workshops (Luca): Normal = none, Rare = 2, Legendary = all. | Luca via #252 | `claude/pc-zones-spec` | |
 | 16 Oct 2026 | Correction (Luca): workshops per house tier are Normal = **1**, Rare = 2, Legendary = all. This replaces "Normal = none". | Luca via #252 | `claude/pc-zones-spec` | |
 | 16 Oct 2026 | **Rule for every team (Mauro):** progress must be built in the game. Images are allowed only as prototypes, always labelled "🖼️ IMAGEN / CONCEPTO, TODAVÍA HAY QUE CONSTRUIRLO"; real captures are labelled "🎮 EN EL JUEGO" with branch and commit. Posted on #252. | Mauro | `claude/pc-zones-spec` | |
+| 16 Oct 2026 | **Zone PvP** (Mauro): PvP is per zone. In high-risk zones, dying can lose your items and backpack. Protection comes from amulets and blessings. Backlog B8; details to design. | Mauro | `claude/pc-zones-spec` | |
