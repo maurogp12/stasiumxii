@@ -52,3 +52,9 @@ Where the target image breaks these rules, the rule wins:
   - `housing_tiers/`.
 - **It is not in Godot yet.** Building Crosshaven means bringing this into the game's iso cell world: walkable cells, y-sorted sprites and fades.
 - **Open (Luca):** whether it replaces the Crossroads plaza, and where the 5 towns and the dungeon doors go.
+
+## Player houses (Mauro, 16 Oct 2026)
+
+- Player houses come in rarity tiers: **Normal, Rare and Legendary** ("van de normales, raras a legendarias").
+- The tier art and plots come from Luca's `housing_tiers/` and the 5 plot houses in `cx_built`, requested on #252.
+- The city layout must leave room for the plot houses.
