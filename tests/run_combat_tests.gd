@@ -9809,6 +9809,10 @@ func _test_sudden_death_clock() -> void:
 	_sim._match_time_left = -1.0
 	_sim._start_turn_timer()
 	eq(float(_sim.snapshot().get("match_time_left", 0.0)), 900.0, "a 3v3 match has 15 minutes")
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "team_size": 2, "classes": ["kestrel", "ironjaw", "gloam", "bastion"]})
+	_sim._match_time_left = -1.0
+	_sim._start_turn_timer()
+	eq(float(_sim.snapshot().get("match_time_left", 0.0)), 600.0, "a 2v2 match keeps the 10 minute clock")
 	eq(CombatHUD.match_clock_text(170.0, true), "  ·  SUDDEN DEATH 2:50", "the top bar shows sudden death")
 
 
@@ -10709,7 +10713,7 @@ func _test_air_blends() -> void:
 	for row in ElementsScreen.BLEND_ROWS:
 		if str(row[2]) == "Flare":
 			flare_copy = str(row[3])
-	truthy(flare_copy.contains("4 tiles, counted in straight steps"), "the Elements Flare line counts straight steps")
+	truthy(flare_copy.contains("green walk range"), "the Elements Flare line uses the caster's walk range")
 	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1, 1], "classes": ["ironjaw", "gloam"], "positions": [Vector2i(5, 5), Vector2i(8, 5)], "gloam_invisible": true})
 	_live_unit(0)["spell_elements"] = {"strike": "air", "shoulder": "fire", "crush": "fire", "advance": "air"}
 	var offered := false
@@ -10756,14 +10760,17 @@ func _test_air_blends() -> void:
 			shown_pos = unit.get("pos", null)
 	truthy(shown_pos != null, "once revealed, Gloam's tile is on the wire")
 
-	# Four tiles from the landing is still inside Flare. Five is not.
+	# Four tiles from the landing used to be inside Flare. The walk from
+	# Ironjaw is 5, past his 3 MP, so this Gloam stays hidden. Five from the
+	# landing stays hidden too.
 	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1, 1], "classes": ["ironjaw", "gloam"], "positions": [Vector2i(5, 5), Vector2i(10, 5)], "gloam_invisible": true})
 	_live_unit(0)["spell_elements"] = {"strike": "air", "shoulder": "fire", "crush": "fire", "advance": "air"}
 	_sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(6, 5), "seat": 0})
 	eq(_sim.manhattan(Vector2i(6, 5), _unit(1)["pos"]), 4, "this Gloam is 4 straight steps from the landing")
+	eq(_sim.manhattan(_unit(0)["pos"], _unit(1)["pos"]), 5, "and 5 straight steps from Ironjaw, past a 3 MP walk")
 	var edge4: Dictionary = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(6, 5), "seat": 0})
-	eq(str(_first_event_where(edge4.get("events", []), "blend").get("blend", "")), "flare", "the 4-tile cast still fires Flare")
-	eq(bool(_unit(1).get("invisible", true)), false, "Flare reveals Gloam exactly 4 tiles from the landing")
+	eq(str(_first_event_where(edge4.get("events", []), "blend").get("blend", "")), "flare", "the far cast still fires Flare")
+	eq(bool(_unit(1).get("invisible", false)), true, "Gloam outside the green walk range stays hidden")
 
 	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1, 1], "classes": ["ironjaw", "gloam"], "positions": [Vector2i(5, 5), Vector2i(11, 5)], "gloam_invisible": true})
 	_live_unit(0)["spell_elements"] = {"strike": "air", "shoulder": "fire", "crush": "fire", "advance": "air"}
@@ -11024,7 +11031,7 @@ func _test_air_blends() -> void:
 	for raw_check in clip_row.get("reveal_checks", []):
 		if typeof(raw_check) == TYPE_DICTIONARY and int(raw_check.get("seat", -1)) == 1:
 			clip_steps = int(raw_check.get("steps", -1))
-	eq(clip_steps, 5, "the radius logged 5 straight steps from (6,0) to the picture (1,0)")
+	eq(clip_steps, 4, "the walk from Ironjaw on (5,0) to the picture (1,0) costs 4")
 	eq(clip_row.get("revealed", []), [], "Flare does not list Gloam 5 steps from the picture")
 	eq(bool(_unit(1).get("invisible", false)), true, "Gloam stays hidden when the picture is 5 steps from (6,0)")
 	var clip_coach := str(clip_flare.get("snapshot", {}).get("coach", ""))
@@ -11057,7 +11064,7 @@ func _test_air_blends() -> void:
 	for raw_diag in diag6_row.get("reveal_checks", []):
 		if typeof(raw_diag) == TYPE_DICTIONARY and int(raw_diag.get("seat", -1)) == 1:
 			diag6_steps = int(raw_diag.get("steps", -1))
-	eq(diag6_steps, 6, "the radius logged Manhattan 6, not the square of 3")
+	eq(diag6_steps, 7, "the walk from Ironjaw to (9,8) costs 7, not the square of 3")
 	eq(diag6_row.get("revealed", []), [], "Flare does not list Gloam at Manhattan 6")
 	eq(str(diag6_row.get("coach", "")).contains("Invisible enemies nearby are revealed"), false, "the nearby-reveal line stays off at Manhattan 6")
 	eq(bool(_unit(1).get("invisible", false)), true, "three diagonal steps stays Invisible")
@@ -11076,7 +11083,8 @@ func _test_air_blends() -> void:
 	var stamp_at := FileAccess.get_file_as_string("res://backend/combat_sim.gd").find("func _stamp_blend_reveal")
 	var stamp_src := FileAccess.get_file_as_string("res://backend/combat_sim.gd")
 	var stamp_body := stamp_src.substr(stamp_at, stamp_src.find("func _hang_or_blend_air", stamp_at) - stamp_at)
-	truthy(stamp_body.contains("manhattan(cell, center)"), "every Flare reveal counts straight steps")
+	truthy(stamp_body.contains("manhattan(cell, center)"), "the other Blends still count straight steps from the landing")
+	truthy(stamp_body.contains("reachable("), "Flare uses the walk path")
 	eq(stamp_body.contains("chebyshev"), false, "the reveal path does not use a square count")
 
 	# 0.1.205 screenshot. Mauro marked four straight steps from the Flare:
@@ -11108,7 +11116,7 @@ func _test_air_blends() -> void:
 		if typeof(raw_near) == TYPE_DICTIONARY and int(raw_near.get("seat", -1)) == 1:
 			near_steps = int(raw_near.get("steps", -1))
 			eq(raw_near.get("pos", Vector2i.ZERO), mark_4, "the check names Gloam on (2,0)")
-	eq(near_steps, 4, "the radius logs the hand count of 4")
+	eq(near_steps, 3, "the walk from Ironjaw on (5,0) to the drawn cell costs 3")
 	eq(clip_near_row.get("revealed", []), [1], "Flare lists Gloam on mark 4")
 	eq(bool(_unit(1).get("invisible", true)), false, "mark 4 reveals him")
 	eq(int(_unit(1).get("invisible_turns", 0)), 0, "Invisible 2 does not stay on the card")
@@ -11156,6 +11164,83 @@ func _test_air_blends() -> void:
 	var too_far: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(7, 9), "seat": 0})
 	eq(bool(too_far.get("ok", true)), false, "Strike from (11,9) to (7,9) is out of range")
 	eq(bool(_unit(1).get("invisible", false)), true, "the rejected strike does not reveal Gloam on (12,7)")
+
+	# Mauro 15 Oct 2026. Flare's reveal is the caster's green walk range,
+	# measured from Ironjaw with his full turn MP. Aim does not matter.
+	# Inside it, Gloam is revealed. One step past it, he stays Invisible and
+	# Fade does not start. A blocker on the short path hides him even when
+	# the straight count from the landing is small.
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1, 1], "classes": ["ironjaw", "gloam"], "positions": [Vector2i(5, 5), Vector2i(8, 5)], "gloam_invisible": true})
+	_live_unit(0)["spell_elements"] = {"strike": "air", "shoulder": "fire", "crush": "fire", "advance": "air"}
+	_live_unit(1)["invisible_turns"] = 3
+	eq(_sim.manhattan(_unit(0)["pos"], _unit(1)["pos"]), 3, "Gloam is on the edge of a 3 MP walk")
+	var green_north := false
+	for intent in _sim.legal_intents(0):
+		if str(intent.get("type", "")) == "move" and intent.get("to", Vector2i.ZERO) == Vector2i(5, 8):
+			green_north = true
+	truthy(green_north, "the same 3 MP paints a green tile three steps north")
+	_sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(4, 5), "seat": 0})
+	var in_area: Dictionary = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(4, 5), "seat": 0})
+	var in_row := _first_event_where(in_area.get("events", []), "blend")
+	eq(str(in_row.get("blend", "")), "flare", "the away-aimed cast is still Flare")
+	eq(in_row.get("to", Vector2i.ZERO), Vector2i(4, 5), "this Flare lands west, away from Gloam")
+	var in_steps := -1
+	var in_center := Vector2i(-1, -1)
+	for raw_in in in_row.get("reveal_checks", []):
+		if typeof(raw_in) == TYPE_DICTIONARY and int(raw_in.get("seat", -1)) == 1:
+			in_steps = int(raw_in.get("steps", -1))
+			in_center = raw_in.get("center", Vector2i(-1, -1))
+	eq(in_center, Vector2i(5, 5), "the walk is measured from Ironjaw")
+	eq(in_steps, 3, "Gloam's tile costs the full 3 MP")
+	eq(in_row.get("revealed", []), [1], "Flare lists Gloam inside the walk range")
+	eq(bool(_unit(1).get("invisible", true)), false, "an Invisible enemy inside the walk range is revealed")
+	truthy(str(in_area.get("snapshot", {}).get("coach", "")).contains("Fade cooldown"), "a reveal inside the walk range ends Fade")
+
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1, 1], "classes": ["ironjaw", "gloam"], "positions": [Vector2i(5, 5), Vector2i(9, 5)], "gloam_invisible": true})
+	_live_unit(0)["spell_elements"] = {"strike": "air", "shoulder": "fire", "crush": "fire", "advance": "air"}
+	_live_unit(1)["invisible_turns"] = 3
+	eq(_sim.manhattan(_unit(0)["pos"], _unit(1)["pos"]), 4, "Gloam is one step past a 3 MP walk")
+	eq(_sim.manhattan(Vector2i(6, 5), _unit(1)["pos"]), 3, "and only 3 straight steps from the landing")
+	_sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(6, 5), "seat": 0})
+	var outside: Dictionary = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(6, 5), "seat": 0})
+	var out_row := _first_event_where(outside.get("events", []), "blend")
+	eq(str(out_row.get("blend", "")), "flare", "the outside cast still fires Flare")
+	eq(out_row.get("revealed", []), [], "Flare does not list Gloam outside the walk range")
+	eq(bool(_unit(1).get("invisible", false)), true, "Gloam outside the walk range stays Invisible")
+	eq(int(_unit(1).get("invisible_turns", 0)), 3, "the Invisible clock stays at 3 outside the walk range")
+	var out_cds: Variant = _unit(1).get("spell_cd", {})
+	var out_fade := 0
+	if typeof(out_cds) == TYPE_DICTIONARY:
+		out_fade = int((out_cds as Dictionary).get("fade", 0))
+	eq(out_fade, 0, "outside the walk range does not start Fade cooldown")
+	eq(str(outside.get("snapshot", {}).get("coach", "")).contains("Fade cooldown"), false, "the outside coach has no Fade cooldown")
+
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "rolls": [1, 1], "classes": ["ironjaw", "gloam"], "positions": [Vector2i(5, 5), Vector2i(7, 5)], "gloam_invisible": true, "blockers": [Vector2i(6, 5)]})
+	_live_unit(0)["spell_elements"] = {"strike": "air", "shoulder": "fire", "crush": "fire", "advance": "air"}
+	_live_unit(1)["invisible_turns"] = 3
+	eq(_sim.manhattan(_unit(0)["pos"], _unit(1)["pos"]), 2, "Gloam is 2 straight steps from Ironjaw")
+	eq(_sim.manhattan(Vector2i(5, 6), _unit(1)["pos"]), 3, "and 3 straight steps from the landing")
+	_sim._flare_open_cell = Vector2i(7, 5)
+	var open_reach: Dictionary = _sim._board.reachable(Vector2i(5, 5), 3, Callable(_sim, "_flare_reveal_occupied"))
+	eq(open_reach.has(Vector2i(7, 5)), false, "the blocker keeps Gloam's tile out of a 3 MP walk")
+	_sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(5, 6), "seat": 0})
+	var walled: Dictionary = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(5, 6), "seat": 0})
+	var wall_row := _first_event_where(walled.get("events", []), "blend")
+	eq(str(wall_row.get("blend", "")), "flare", "the blocked cast still fires Flare")
+	var wall_steps := -1
+	for raw_wall in wall_row.get("reveal_checks", []):
+		if typeof(raw_wall) == TYPE_DICTIONARY and int(raw_wall.get("seat", -1)) == 1:
+			wall_steps = int(raw_wall.get("steps", -1))
+	eq(wall_steps, 4, "the path around the blocker costs 4")
+	eq(wall_row.get("revealed", []), [], "Flare does not list Gloam behind the blocker")
+	eq(bool(_unit(1).get("invisible", false)), true, "Gloam behind an obstacle stays Invisible")
+	eq(int(_unit(1).get("invisible_turns", 0)), 3, "the Invisible clock stays at 3 behind an obstacle")
+	var wall_cds: Variant = _unit(1).get("spell_cd", {})
+	var wall_fade := 0
+	if typeof(wall_cds) == TYPE_DICTIONARY:
+		wall_fade = int((wall_cds as Dictionary).get("fade", 0))
+	eq(wall_fade, 0, "an obstacle does not start Fade cooldown")
+	eq(str(walled.get("snapshot", {}).get("coach", "")).contains("Fade cooldown"), false, "the blocked coach has no Fade cooldown")
 
 	# The hang lasts through the next own turn, then drops.
 	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "classes": ["ironjaw", "kestrel"], "positions": [Vector2i(5, 5), Vector2i(8, 5)]})

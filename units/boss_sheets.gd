@@ -30,6 +30,18 @@ const FILE_LETTER := {"e": "s", "s": "w", "n": "e", "w": "n"}
 ## speed is about 103 px/s. The board multiplies by the draw scale.
 const STRIDE := {
 	"scarecrow_drudge": {"px_per_sec": 103.0, "cycle_px": 72.0},
+	# Scorplings: one cycle is two steps, and they scuttle at about two steps a second.
+	"scorpling": {"px_per_sec": 64.0, "cycle_px": 64.0},
+}
+## Approved Oct 14 sheets that are not the generic attack/cast file.
+## A missing sheet falls back to the motion (attack or cast).
+const SPELL_ANIM := {
+	"brine.cannon": "cannon",
+	"slag.slam": "slam",
+	"slag.cleave": "stomp",
+	"slag.shoulder": "stomp",
+	"slag.burst": "cast",
+	"slag.caldera": "cast_eruption",
 }
 ## Engine facings tried in order, with the screen mirror flag.
 const _DIR_ORDER := {
@@ -46,6 +58,11 @@ static var overrides: Dictionary = {}
 
 static func art_name(art_path: String) -> String:
 	return art_path.get_file().get_basename()
+
+
+## Sheet name for a foe spell, or "" when the generic attack/cast file is enough.
+static func anim_for_spell(spell_id: String) -> String:
+	return str(SPELL_ANIM.get(spell_id, ""))
 
 
 static func sheet_path(art: String, anim: String, dir: String) -> String:

@@ -50,6 +50,9 @@ var _seat_peer: Array[int] = [0, 0]
 var _seat_held: Array[bool] = [false, false]
 ## SELECT_CLASS on the dedicated queue. Listen-host ignores this and stays fixed.
 var selected_class_id: String = ""
+## 1v1 is one class. 3v3 is three different classes on the separate queue.
+var queue_format: String = "1v1"
+var selected_class_ids: Array[String] = []
 var lobby_text: String = ""
 var _queue_client: bool = false
 ## Play Online walks ServerDial.address_order. One probe at a time.
@@ -63,7 +66,11 @@ var _dial_port: int = DEFAULT_PORT
 var _dial_suppress: bool = false
 var _match_queue: MatchQueue
 var _match_class_ids: Array[String] = []
+var _match_team_size: int = 1
+## Fighter seats this connection plays. Empty means "only local_seat" (1v1, listen-host).
+var _owned_seats: Array[int] = []
 var _cli_class: String = ""
+var _cli_classes: Array = []
 var _cli_queue: bool = false
 var _local_queued: bool = false
 var _opponent_queued: bool = false
@@ -84,7 +91,9 @@ var _gear_sent_seat: int = -1
 
 func _ready() -> void:
 	_parse_user_args()
-	if _cli_class != "":
+	if _cli_classes.size() == 2 or _cli_classes.size() == 3:
+		select_roster(_cli_classes)
+	elif _cli_class != "":
 		select_class(_cli_class)
 	if _cli_dedicated:
 		start_dedicated(listen_port)
@@ -151,7 +160,22 @@ func has_view_state() -> bool:
 func owns_seat(seat: int) -> bool:
 	if mode == Mode.HOTSEAT:
 		return true
+	if not _owned_seats.is_empty():
+		return _owned_seats.has(seat)
 	return seat == local_seat
+
+
+## Seats this phone may place, ready, and act with. 1v1 is just local_seat.
+func owned_seats() -> Array[int]:
+	if not _owned_seats.is_empty():
+		return _owned_seats.duplicate()
+	if local_seat >= 0:
+		return [local_seat]
+	return []
+
+
+func match_team_size() -> int:
+	return _match_team_size
 
 
 ## Authority may reset. A dedicated client may ask only for seat 0.
@@ -197,6 +221,9 @@ func return_to_hotseat() -> void:
 	_close_peer()
 	mode = Mode.HOTSEAT
 	local_seat = -1
+	_owned_seats.clear()
+	_gear_sent_seat = -1
+	_match_team_size = 1
 	guest_peer_id = 0
 	last_snapshot = {}
 	last_events = []
@@ -295,6 +322,7 @@ func start_dedicated(port: int = DEFAULT_PORT) -> Dictionary:
 		_match_live = false
 		_match_finished = false
 		_match_class_ids = []
+		_match_team_size = 1
 		_prematch_phase = "SELECT_CLASS"
 		lobby_text = "Dedicated queue listening on UDP %d. Pick a Locked class, then join." % port
 		print("STASIUM server: listening port=%d" % port)
@@ -312,6 +340,9 @@ func start_client(address: String, port: int = DEFAULT_PORT) -> Dictionary:
 	_match_live = false
 	_local_queued = false
 	_opponent_queued = false
+	_owned_seats.clear()
+	_gear_sent_seat = -1
+	_match_team_size = 1
 	_cancel_hub_return()
 	_close_peer()
 	last_snapshot = {}
@@ -382,6 +413,8 @@ func select_class(class_id: String) -> Dictionary:
 			"class_id": selected_class_id,
 		}
 	selected_class_id = normalized
+	selected_class_ids = [normalized]
+	queue_format = "1v1"
 	if not _match_live:
 		_prematch_phase = "SELECT_CLASS"
 	if _queue_client and mode == Mode.CLIENT and _rpc_ready():
@@ -389,8 +422,64 @@ func select_class(class_id: String) -> Dictionary:
 	return {"ok": true, "illegal": false, "reason": "", "class_id": normalized}
 
 
+## Local confirm of two or three different Locked classes before the 2v2 or 3v3 queue.
+## A duplicate or a class outside the roster does not clear a stored pick.
+func select_roster(class_ids: Array) -> Dictionary:
+	var normalized: Array[String] = []
+	for raw in class_ids:
+		var class_id := SpellKits.normalize_class_id(str(raw))
+		if not SpellKits.is_roster_class(class_id):
+			return {
+				"ok": false,
+				"illegal": true,
+				"reason": "invalid_class",
+				"class_id": selected_class_id,
+			}
+		if normalized.has(class_id):
+			return {
+				"ok": false,
+				"illegal": true,
+				"reason": "duplicate_class",
+				"class_id": selected_class_id,
+			}
+		normalized.append(class_id)
+	if normalized.size() != 2 and normalized.size() != 3:
+		return {
+			"ok": false,
+			"illegal": true,
+			"reason": "class_required",
+			"class_id": selected_class_id,
+		}
+	queue_format = "2v2" if normalized.size() == 2 else "3v3"
+	selected_class_ids = normalized
+	selected_class_id = normalized[0]
+	if not _match_live:
+		_prematch_phase = "SELECT_CLASS"
+	if _queue_client and mode == Mode.CLIENT and _rpc_ready():
+		rpc_select_roster.rpc_id(1, normalized)
+	return {"ok": true, "illegal": false, "reason": "", "class_id": normalized[0], "class_ids": normalized.duplicate()}
+
+
+## Online menu switches 1v1 / 2v2 / 3v3. Clears the pick so one format cannot enter another queue.
+func set_queue_format(format: String) -> void:
+	if format == "2v2" or format == "3v3":
+		queue_format = format
+	else:
+		queue_format = "1v1"
+	selected_class_id = ""
+	selected_class_ids = []
+
+
+func _queue_roster_ready() -> bool:
+	if queue_format == "2v2":
+		return selected_class_ids.size() == 2
+	if queue_format == "3v3":
+		return selected_class_ids.size() == 3
+	return SpellKits.is_roster_class(selected_class_id)
+
+
 func start_queue_client(address: String, port: int = DEFAULT_PORT) -> Dictionary:
-	if not SpellKits.is_roster_class(selected_class_id):
+	if not _queue_roster_ready():
 		return {"ok": false, "illegal": true, "reason": "class_required", "class_id": selected_class_id}
 	_queue_client = true
 	var opened: Dictionary = start_client(address, port)
@@ -404,7 +493,7 @@ func start_queue_client(address: String, port: int = DEFAULT_PORT) -> Dictionary
 ## (the hidden Advanced field). Empty uses the saved address, then the chain.
 ## Does not add an RPC. Each hop is still start_queue_client.
 func begin_auto_queue(override_address: String = "", override_port: int = -1) -> Dictionary:
-	if not SpellKits.is_roster_class(selected_class_id):
+	if not _queue_roster_ready():
 		return {"ok": false, "illegal": true, "reason": "class_required", "class_id": selected_class_id}
 	var head := override_address.strip_edges()
 	if head == "":
@@ -470,6 +559,10 @@ func server_select_class(session_id: String, class_id: String) -> Dictionary:
 	return _queue().select_class(session_id, class_id)
 
 
+func server_select_roster(session_id: String, class_ids: Array) -> Dictionary:
+	return _queue().select_roster(session_id, class_ids)
+
+
 func server_enqueue(session_id: String) -> Dictionary:
 	var result: Dictionary = _queue().enqueue(session_id)
 	if bool(result.get("matched", false)) and mode == Mode.DEDICATED:
@@ -502,8 +595,9 @@ func reset_match(config: Dictionary = {}) -> Dictionary:
 	config = _authority_gear_config(config)
 	if mode == Mode.DEDICATED:
 		var chosen: Array[String] = _class_ids_from_config(config)
-		if chosen.size() == 2:
+		if chosen.size() == 2 or chosen.size() == 4 or chosen.size() == 6:
 			_match_class_ids = chosen
+			_match_team_size = int(chosen.size() / 2)
 			_match_live = true
 			_match_finished = false
 			_prematch_phase = "MATCH"
@@ -750,31 +844,51 @@ func pack_result(result: Dictionary, viewer_seat: int = -1) -> Dictionary:
 	snap = viewed["snapshot"]
 	var events: Array = viewed["events"]
 	var hidden_cells: Array = viewed["hidden_cells"]
-	var legal0: Array = []
-	var legal1: Array = []
-	var deploy0: Array[Vector2i] = []
-	var deploy1: Array[Vector2i] = []
+	var team_size := 1
+	if host_sim != null and host_sim.has_method("team_size"):
+		team_size = int(host_sim.team_size())
+	elif not snap.is_empty():
+		team_size = int(snap.get("team_size", 1))
+	var fighter_count := 2 if team_size <= 1 else team_size * 2
+	var visible := _packed_fighter_seats(viewer_seat, team_size)
+	var legal := {}
+	var deploy := {}
+	for seat in fighter_count:
+		legal[seat] = []
+		deploy[seat] = []
 	if host_sim != null:
-		if viewer_seat != 1:
-			legal0 = host_sim.legal_intents(0)
-			deploy0 = host_sim.legal_deploy_cells(0)
-		if viewer_seat != 0:
-			legal1 = host_sim.legal_intents(1)
-			deploy1 = host_sim.legal_deploy_cells(1)
-	if viewer_seat == HOST_SEAT:
-		legal0 = _redact_hidden_intent_cells(legal0, hidden_cells)
-	elif viewer_seat == GUEST_SEAT:
-		legal1 = _redact_hidden_intent_cells(legal1, hidden_cells)
+		for seat in visible:
+			var intents: Array = host_sim.legal_intents(seat)
+			if viewer_seat == HOST_SEAT or viewer_seat == GUEST_SEAT:
+				intents = _redact_hidden_intent_cells(intents, hidden_cells)
+			legal[seat] = intents
+			deploy[seat] = host_sim.legal_deploy_cells(seat)
 	return IntentCodec.encode({
 		"ok": bool(result.get("ok", false)),
 		"illegal": bool(result.get("illegal", false)),
 		"reason": str(result.get("reason", "")),
 		"events": events,
 		"snapshot": decorate_snapshot(snap),
-		"legal_intents": {0: legal0, 1: legal1},
-		"legal_deploy_cells": {0: deploy0, 1: deploy1},
+		"legal_intents": legal,
+		"legal_deploy_cells": deploy,
 		"viewer_seat": viewer_seat,
 	}) as Dictionary
+
+
+## Authority cache (viewer < 0) includes every fighter. A phone includes the
+## seats that connection plays: 1v1 is that seat, 3v3 is seat, seat+2, seat+4.
+func _packed_fighter_seats(viewer_seat: int, team_size: int) -> Array[int]:
+	var count := 1 if team_size <= 1 else team_size
+	var out: Array[int] = []
+	if viewer_seat < 0:
+		for seat in count * 2:
+			out.append(seat)
+		return out
+	if viewer_seat != HOST_SEAT and viewer_seat != GUEST_SEAT:
+		return out
+	for i in count:
+		out.append(viewer_seat + i * 2)
+	return out
 
 
 ## Per-viewer wire copy. Does not mutate CombatSim.
@@ -802,7 +916,7 @@ func _redact_invisible_for_viewer(snap: Dictionary, events: Array, viewer_seat: 
 		if not bool(rec.get("invisible", false)):
 			continue
 		var seat := int(rec.get("seat", -1))
-		if seat == viewer_seat:
+		if _viewer_shares_fighter(out_snap, seat, viewer_seat):
 			continue
 		hidden_seats[seat] = true
 		_remember_cells(hidden_cells, rec.get("pos", null))
@@ -831,7 +945,7 @@ func _redact_invisible_for_viewer(snap: Dictionary, events: Array, viewer_seat: 
 func _redact_shades_for_viewer(out_snap: Dictionary, out_events: Array, viewer_seat: int) -> void:
 	var kept: Array = []
 	for token in out_snap.get("shade_tokens", []):
-		if typeof(token) == TYPE_DICTIONARY and int(token.get("owner_seat", -1)) != viewer_seat:
+		if typeof(token) == TYPE_DICTIONARY and not _viewer_shares_fighter(out_snap, int(token.get("owner_seat", -1)), viewer_seat):
 			continue
 		kept.append(token)
 	if out_snap.has("shade_tokens"):
@@ -845,9 +959,9 @@ func _redact_shades_for_viewer(out_snap: Dictionary, out_events: Array, viewer_s
 		for event in list:
 			if typeof(event) != TYPE_DICTIONARY:
 				continue
-			if str(event.get("spell", "")) == SpellKits.DROP_SHADE and int(event.get("seat", -1)) != viewer_seat:
+			if str(event.get("spell", "")) == SpellKits.DROP_SHADE and not _viewer_shares_fighter(out_snap, int(event.get("seat", -1)), viewer_seat):
 				event.erase("to")
-			if str(event.get("type", "")) == "expire" and str(event.get("status", "")) == "shade" and int(event.get("owner_seat", -1)) != viewer_seat:
+			if str(event.get("type", "")) == "expire" and str(event.get("status", "")) == "shade" and not _viewer_shares_fighter(out_snap, int(event.get("owner_seat", -1)), viewer_seat):
 				event.erase("pos")
 
 
@@ -884,7 +998,15 @@ func _redact_traps_for_viewer(out_snap: Dictionary, out_events: Array, viewer_se
 func _trap_hidden_from(snap: Dictionary, owner_seat: int, viewer_seat: int) -> bool:
 	if owner_seat < 0:
 		return true
-	return _seat_team(snap, owner_seat) != _seat_team(snap, viewer_seat)
+	return not _viewer_shares_fighter(snap, owner_seat, viewer_seat)
+
+
+## 1v1: only the viewer's own seat. 3v3: every fighter on that player's team,
+## so the phone that controls all three can see its own hidden fighter and Shades.
+func _viewer_shares_fighter(snap: Dictionary, owner_seat: int, viewer_seat: int) -> bool:
+	if int(snap.get("team_size", 1)) <= 1:
+		return owner_seat == viewer_seat
+	return _seat_team(snap, owner_seat) == _seat_team(snap, viewer_seat)
 
 
 func _seat_team(snap: Dictionary, seat: int) -> int:
@@ -1101,16 +1223,8 @@ func apply_packed_state(packed: Dictionary, hydrate: bool = true) -> Dictionary:
 		last_result["events"] = last_events
 		if bool(filtered.get("finished", false)):
 			arm_hub_return(HUB_FALLBACK_SEC)
-	var legal_raw: Dictionary = decoded.get("legal_intents", {})
-	last_legal = {
-		0: legal_raw.get(0, legal_raw.get("0", [])),
-		1: legal_raw.get(1, legal_raw.get("1", [])),
-	}
-	var deploy_raw: Dictionary = decoded.get("legal_deploy_cells", {})
-	last_legal_deploy = {
-		0: deploy_raw.get(0, deploy_raw.get("0", [])),
-		1: deploy_raw.get(1, deploy_raw.get("1", [])),
-	}
+	last_legal = _packed_seat_map(decoded.get("legal_intents", {}))
+	last_legal_deploy = _packed_seat_map(decoded.get("legal_deploy_cells", {}))
 	if mode == Mode.CLIENT:
 		var viewer := int(decoded.get("viewer_seat", -1))
 		if viewer >= 0 and viewer != local_seat:
@@ -1243,6 +1357,29 @@ func rpc_submit_gear(payload: Dictionary) -> void:
 func accept_seat_gear(seat: int, payload: Variant) -> bool:
 	if seat < 0:
 		return false
+	if typeof(payload) == TYPE_DICTIONARY and (payload as Dictionary).has("by_seat"):
+		var applied := false
+		var by_seat: Dictionary = (payload as Dictionary).get("by_seat", {})
+		for key in by_seat:
+			var fighter := int(key)
+			if not _connection_owns_fighter(seat, fighter):
+				continue
+			if _store_seat_gear(fighter, by_seat[key]):
+				applied = true
+		if applied:
+			var host_sim := sim()
+			if host_sim != null:
+				_cache_and_broadcast({
+					"ok": true, "illegal": false, "reason": "", "events": [],
+					"snapshot": host_sim.snapshot(),
+				})
+		return applied
+	return _store_seat_gear(seat, payload, true)
+
+
+func _store_seat_gear(seat: int, payload: Variant, broadcast: bool = false) -> bool:
+	if seat < 0:
+		return false
 	var gear := GearBag.clean_fight_gear(payload)
 	_seat_gear[seat] = gear
 	var host_sim := sim()
@@ -1254,10 +1391,11 @@ func accept_seat_gear(seat: int, payload: Variant) -> bool:
 	live["flatten_plus"] = true
 	if not host_sim.set_seat_gear(seat, live):
 		return false
-	_cache_and_broadcast({
-		"ok": true, "illegal": false, "reason": "", "events": [],
-		"snapshot": host_sim.snapshot(),
-	})
+	if broadcast:
+		_cache_and_broadcast({
+			"ok": true, "illegal": false, "reason": "", "events": [],
+			"snapshot": host_sim.snapshot(),
+		})
 	return true
 
 
@@ -1321,7 +1459,34 @@ func _send_local_gear() -> void:
 	if not _rpc_ready():
 		return
 	_gear_sent_seat = local_seat
-	rpc_submit_gear.rpc_id(1, GearBag.clean_fight_gear(GearBag.load_saved().fight_gear(true, selected_class_id)))
+	var fighters := _local_fighter_seats()
+	if fighters.size() <= 1:
+		var only := selected_class_id
+		if fighters.size() == 1 and selected_class_ids.size() == 1:
+			only = selected_class_ids[0]
+		rpc_submit_gear.rpc_id(1, GearBag.clean_fight_gear(GearBag.load_saved().fight_gear(true, only)))
+		return
+	var by_seat := {}
+	for i in fighters.size():
+		var fighter := int(fighters[i])
+		var class_id := selected_class_id
+		if i < selected_class_ids.size():
+			class_id = selected_class_ids[i]
+		by_seat[fighter] = GearBag.clean_fight_gear(GearBag.load_saved().fight_gear(true, class_id))
+	rpc_submit_gear.rpc_id(1, {"by_seat": by_seat})
+
+
+func _local_fighter_seats() -> Array[int]:
+	if not _owned_seats.is_empty():
+		return _owned_seats.duplicate()
+	if local_seat >= 0 and ((queue_format == "2v2" and selected_class_ids.size() == 2) or (queue_format == "3v3" and selected_class_ids.size() == 3)):
+		var built: Array[int] = []
+		for i in selected_class_ids.size():
+			built.append(local_seat + i * 2)
+		return built
+	if local_seat >= 0:
+		return [local_seat]
+	return []
 
 
 @rpc("authority", "reliable")
@@ -1351,6 +1516,30 @@ func rpc_select_class(class_id: String) -> void:
 	var result: Dictionary = _queue().select_class(session_id, class_id)
 	if not bool(result.get("ok", false)):
 		_send_class_result(peer_id, false, class_id, str(result.get("reason", "invalid_class")))
+		return
+	_send_class_result(peer_id, true, str(result.get("class_id", "")), "")
+
+
+## Client → dedicated authority. Two or three different Locked classes for 2v2 or 3v3.
+@rpc("any_peer", "reliable")
+func rpc_select_roster(class_ids: Array) -> void:
+	if not is_authority():
+		return
+	var peer_id := multiplayer.get_remote_sender_id()
+	if mode != Mode.DEDICATED:
+		_send_class_result(peer_id, false, "", "not_dedicated")
+		return
+	var seat := seat_for_peer(peer_id)
+	if seat < 0:
+		seat = assign_peer_seat(peer_id)
+	if seat < 0:
+		_send_class_result(peer_id, false, "", "no_seat")
+		return
+	var session_id := _session_for_peer(peer_id)
+	_queue().bind_seat(session_id, seat)
+	var result: Dictionary = _queue().select_roster(session_id, class_ids)
+	if not bool(result.get("ok", false)):
+		_send_class_result(peer_id, false, str(result.get("class_id", "")), str(result.get("reason", "invalid_class")))
 		return
 	_send_class_result(peer_id, true, str(result.get("class_id", "")), "")
 
@@ -1410,7 +1599,7 @@ func rpc_queue_result(payload: Dictionary) -> void:
 		_local_queued = true
 		_opponent_queued = false
 		_prematch_phase = "MATCHMAKING"
-		lobby_text = "Queued as %s. Waiting for an opponent." % SpellKits.display_name(selected_class_id)
+		lobby_text = "Queued as %s. Waiting for an opponent." % _queue_display_name()
 		connection_changed.emit("waiting")
 		return
 	if status == "matched":
@@ -1429,9 +1618,25 @@ func rpc_queue_result(payload: Dictionary) -> void:
 func rpc_match_assigned(payload: Dictionary) -> void:
 	if mode != Mode.CLIENT:
 		return
+	var team_size := clampi(int(payload.get("team_size", 1)), 1, 3)
+	_match_team_size = team_size
+	_owned_seats.clear()
+	var owned_raw: Variant = payload.get("owned_seats", [])
+	if owned_raw is Array:
+		for item in owned_raw:
+			_owned_seats.append(int(item))
+	var owned_classes: Variant = payload.get("owned_classes", [])
+	if owned_classes is Array and (owned_classes as Array).size() >= team_size and team_size > 1:
+		selected_class_ids = []
+		for item in owned_classes:
+			selected_class_ids.append(str(item))
+		queue_format = "2v2" if team_size == 2 else "3v3"
 	var seat := int(payload.get("seat", -1))
 	if seat >= 0:
 		local_seat = seat
+		if _owned_seats.is_empty():
+			_owned_seats.append(seat)
+		_gear_sent_seat = -1
 		_send_local_gear()
 	var class_id := str(payload.get("class_id", ""))
 	if class_id != "":
@@ -1449,9 +1654,12 @@ func _authoritative_submit(intent: Dictionary, seat: int) -> Dictionary:
 	if seat != HOST_SEAT and seat != GUEST_SEAT:
 		return _cache_and_broadcast(_gate_reject("not_your_seat"))
 	var stamped: Dictionary = intent.duplicate(true)
-	if stamped.has("seat") and int(stamped["seat"]) != seat:
+	var fighter := seat
+	if stamped.has("seat"):
+		fighter = int(stamped["seat"])
+	if not _connection_owns_fighter(seat, fighter):
 		return _cache_and_broadcast(_gate_reject("not_your_seat"))
-	stamped["seat"] = seat
+	stamped["seat"] = fighter
 	var gate: Dictionary = HostValidate.validate_intent(stamped)
 	if not bool(gate.get("ok", false)):
 		return _cache_and_broadcast(_gate_reject(str(gate.get("reason", "unknown_intent"))))
@@ -1486,6 +1694,7 @@ func _finish_dedicated_match(snap: Dictionary) -> void:
 	_match_finished = true
 	_match_live = false
 	_match_class_ids = []
+	_match_team_size = 1
 	_prematch_phase = "SELECT_CLASS"
 	_seat_gear.clear()
 	for seat in [HOST_SEAT, GUEST_SEAT]:
@@ -1538,11 +1747,14 @@ func accept_reset_request(_config: Dictionary, seat: int) -> Dictionary:
 		return _fail("not_authority")
 	if seat != HOST_SEAT:
 		return _cache_and_broadcast(_gate_reject("not_your_seat"))
-	if mode == Mode.DEDICATED and _match_class_ids.size() == 2:
+	if mode == Mode.DEDICATED and (_match_class_ids.size() == 2 or _match_class_ids.size() == 4 or _match_class_ids.size() == 6):
 		var again: Array[String] = []
-		again.append(_match_class_ids[0])
-		again.append(_match_class_ids[1])
-		return reset_match({"classes": again})
+		for class_id in _match_class_ids:
+			again.append(class_id)
+		var again_config := {"classes": again}
+		if _match_team_size > 1:
+			again_config["team_size"] = _match_team_size
+		return reset_match(again_config)
 	return reset_match({})
 
 
@@ -1684,7 +1896,10 @@ func _on_connected_to_server() -> void:
 			_dial_live_attempt = -1
 		connection_changed.emit("joined")
 		print("STASIUM XII client connected to %s:%d" % [join_address, listen_port])
-		if _queue_client and SpellKits.is_roster_class(selected_class_id):
+		if _queue_client and ((queue_format == "2v2" and selected_class_ids.size() == 2) or (queue_format == "3v3" and selected_class_ids.size() == 3)):
+			rpc_select_roster.rpc_id(1, selected_class_ids)
+			rpc_enqueue.rpc_id(1)
+		elif _queue_client and queue_format != "2v2" and queue_format != "3v3" and SpellKits.is_roster_class(selected_class_id):
 			rpc_select_class.rpc_id(1, selected_class_id)
 			rpc_enqueue.rpc_id(1)
 		_update_window_title()
@@ -1726,6 +1941,7 @@ static func plan_from_args(args: PackedStringArray) -> Dictionary:
 	var port := DEFAULT_PORT
 	var address := "127.0.0.1"
 	var class_id := ""
+	var class_ids: Array = []
 	var i := 0
 	while i < args.size():
 		var arg := str(args[i])
@@ -1754,10 +1970,15 @@ static func plan_from_args(args: PackedStringArray) -> Dictionary:
 			if i + 1 < args.size() and not str(args[i + 1]).begins_with("-"):
 				i += 1
 				class_id = str(args[i])
+		elif arg == "--classes":
+			if i + 1 < args.size() and not str(args[i + 1]).begins_with("-"):
+				i += 1
+				var picked: Array = str(args[i]).split(",")
+				class_ids = picked
 		elif arg == "--hotseat":
 			planned = "hotseat"
 		i += 1
-	return {"mode": planned, "port": port, "address": address, "class_id": class_id}
+	return {"mode": planned, "port": port, "address": address, "class_id": class_id, "class_ids": class_ids}
 
 
 func _parse_user_args() -> void:
@@ -1765,6 +1986,7 @@ func _parse_user_args() -> void:
 	listen_port = int(plan["port"])
 	join_address = str(plan["address"])
 	_cli_class = str(plan.get("class_id", ""))
+	_cli_classes = plan.get("class_ids", [])
 	var planned := str(plan["mode"])
 	_cli_dedicated = planned == "dedicated"
 	_cli_host = planned == "host"
@@ -1885,10 +2107,12 @@ func _class_ids_from_config(config: Dictionary) -> Array[String]:
 		incoming = [keyed.get(0, keyed.get("0", "")), keyed.get(1, keyed.get("1", ""))]
 	else:
 		return []
-	if incoming.size() < 2:
+	var team_size := clampi(int(config.get("team_size", 1)), 1, 3)
+	var want := team_size * 2
+	if incoming.size() < want:
 		return []
 	var out: Array[String] = []
-	for i in 2:
+	for i in want:
 		var id := SpellKits.normalize_class_id(str(incoming[i]))
 		if not SpellKits.is_roster_class(id):
 			return []
@@ -1917,13 +2141,20 @@ func _send_queue_result(peer_id: int, status: String, reason: String) -> void:
 
 func _boot_dedicated_match(match: Dictionary) -> void:
 	var raw: Array = match.get("class_ids", [])
-	if raw.size() < 2:
+	var team_size := clampi(int(match.get("team_size", 1)), 1, 3)
+	var need := team_size * 2
+	if raw.size() < need:
 		return
-	var ids: Array[String] = [str(raw[0]), str(raw[1])]
+	var ids: Array[String] = []
+	for i in need:
+		ids.append(str(raw[i]))
 	var match_id := str(match.get("id", ""))
 	lobby_text = "Match %s — seat 0 %s, seat 1 %s" % [match_id, SpellKits.display_name(ids[0]), SpellKits.display_name(ids[1])]
-	print("STASIUM server: match start id=%s seat0=%s seat1=%s" % [match_id, ids[0], ids[1]])
-	reset_match({"classes": ids})
+	print("STASIUM server: match start id=%s seat0=%s seat1=%s team=%d" % [match_id, ids[0], ids[1], team_size])
+	var boot := {"classes": ids}
+	if team_size > 1:
+		boot["team_size"] = team_size
+	reset_match(boot)
 	if not _rpc_ready():
 		connection_changed.emit("matched")
 		return
@@ -1938,9 +2169,63 @@ func _boot_dedicated_match(match: Dictionary) -> void:
 			"class_id": ids[seat],
 			"classes": ids,
 			"match_id": match_id,
+			"team_size": team_size,
+			"owned_seats": _owned_for_connection(seat, team_size),
+			"owned_classes": _classes_for_connection(ids, seat, team_size),
 		}
 		rpc_match_assigned.rpc_id(peer_id, payload)
 	connection_changed.emit("matched")
+
+
+func _owned_for_connection(connection_seat: int, team_size: int) -> Array:
+	var count := 1 if team_size <= 1 else team_size
+	var out: Array = []
+	for i in count:
+		out.append(connection_seat + i * 2)
+	return out
+
+
+func _classes_for_connection(ids: Array, connection_seat: int, team_size: int) -> Array:
+	var out: Array = []
+	var count := 1 if team_size <= 1 else team_size
+	for i in count:
+		var index := connection_seat + i * 2
+		if index >= 0 and index < ids.size():
+			out.append(str(ids[index]))
+	return out
+
+
+func _connection_owns_fighter(connection_seat: int, fighter: int) -> bool:
+	if _match_team_size > 1:
+		if fighter < 0 or fighter >= _match_team_size * 2:
+			return false
+		return fighter % 2 == connection_seat
+	return fighter == connection_seat
+
+
+func _queue_display_name() -> String:
+	if (queue_format == "2v2" and selected_class_ids.size() == 2) or (queue_format == "3v3" and selected_class_ids.size() == 3):
+		var names: Array[String] = []
+		for class_id in selected_class_ids:
+			names.append(SpellKits.display_name(class_id))
+		return ", ".join(names)
+	return SpellKits.display_name(selected_class_id)
+
+
+func _packed_seat_map(raw: Variant) -> Dictionary:
+	var out := {}
+	if typeof(raw) != TYPE_DICTIONARY:
+		return {0: [], 1: []}
+	for key in raw:
+		var seat_key: Variant = key
+		if typeof(key) == TYPE_STRING and str(key).is_valid_int():
+			seat_key = int(str(key))
+		if typeof(seat_key) != TYPE_INT:
+			continue
+		out[int(seat_key)] = raw[key]
+	if out.is_empty():
+		return {0: [], 1: []}
+	return out
 
 
 func _prematch_block() -> Dictionary:
@@ -1949,7 +2234,7 @@ func _prematch_block() -> Dictionary:
 	if mode == Mode.HOTSEAT or mode == Mode.HOST:
 		phase = "MATCH"
 		live = true
-	elif mode == Mode.DEDICATED and _match_class_ids.size() == 2:
+	elif mode == Mode.DEDICATED and (_match_class_ids.size() == 2 or _match_class_ids.size() == 4 or _match_class_ids.size() == 6):
 		phase = "MATCH"
 		live = true
 	elif mode == Mode.DEDICATED and not _match_live:

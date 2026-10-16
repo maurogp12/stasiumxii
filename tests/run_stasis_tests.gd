@@ -49,10 +49,16 @@ func _run() -> void:
 
 
 
-## Mauro 2 Oct 2026: same bosses and doors; only the 5-star run shows the
-## 5-star form (Crosshaven, Brinewake, Slagcrown). Serra and Coilspire unchanged.
+## Mauro 2 Oct 2026: same bosses and doors; the 5-star run shows the 5-star form.
+## Serra's Frost Wraith and Coilspire's demon are the Oct 2026 forms.
 func _test_five_star_boss_forms() -> void:
-	var want := {"crosshaven": "sheaf_sovereign", "brinewake": "brineclaw_sovereign", "slagcrown": "slagheart_caldera_crown"}
+	var want := {
+		"crosshaven": "sheaf_sovereign",
+		"brinewake": "brineclaw_sovereign",
+		"slagcrown": "slagheart_caldera_crown",
+		"windmere": "serra_frost_wraith",
+		"stormspire": "coilspire_demon",
+	}
 	for door_id in ["crosshaven", "brinewake", "slagcrown", "windmere", "stormspire"]:
 		var door: Dictionary = StasisCatalog.DOORS[door_id]
 		eq(StasisCatalog.boss_art_for(door, 4), str(door["boss_art"]), "%s keeps its boss below 5 stars" % door_id)
@@ -277,6 +283,86 @@ func _boss_fight(biome: String, player_pos: Vector2i, boss_pos: Vector2i, tiles:
 	_sim.submit({"type": "end_turn", "seat": 0})
 
 
+## ★5 Coilspire: Brood Storm puts up to 4 scorplings on the tiles 1 away.
+## 20 HP, 5 MP. They walk in and burst; a killing blow detonates on the spot.
+func _test_coil_brood() -> void:
+	_boss_fight("stormspire", Vector2i(7, 5), Vector2i(7, 7), [], 4)
+	eq(_sim._unit_by_seat(1).get("foe_kit", []).has("coil.brood"), false, "★4 Coilspire has no brood")
+	_boss_fight("stormspire", Vector2i(7, 5), Vector2i(7, 7), [], 5)
+	eq(_sim._unit_by_seat(1).get("foe_kit", []).has("coil.brood"), true, "★5 Coilspire carries Brood Storm")
+	eq(str(_sim._unit_by_seat(1).get("stasis_sprite", "")).ends_with("coilspire_demon.png"), true, "★5 Coilspire wears the demon")
+	truthy(_has_foe_cast(1, "coil.brood"), "Brood Storm is offered when a tile beside him is free")
+	eq(str(StasisAi.plan(_sim, 1).get("spell", "")), "coil.brood", "the planner opens with the brood")
+	var cast: Dictionary = _sim.submit({"type": "cast", "spell": "coil.brood", "to": Vector2i(7, 7), "seat": 1})
+	eq(bool(cast.get("ok", false)), true, "Brood Storm resolves (%s)" % str(cast.get("reason", "")))
+	var want := [Vector2i(8, 7), Vector2i(7, 8), Vector2i(6, 7), Vector2i(7, 6)]
+	var found: Array = []
+	for unit in _sim._units:
+		if not bool(unit.get("scorpling", false)):
+			continue
+		found.append(unit["pos"])
+		eq(int(unit["hp"]), 20, "a scorpling has 20 HP")
+		eq(int(unit["max_hp"]), 20, "scorpling HP is not the star scale")
+		eq(int(unit["max_mp"]), 5, "a scorpling has 5 MP")
+		eq(unit.get("foe_kit", []), ["scorpling.burst"], "a scorpling only bursts")
+		eq(bool(unit.get("alive", true)), true, "the summon does not spend the scorpling")
+	eq(found.size(), 4, "four scorplings")
+	for cell in want:
+		truthy(found.has(cell), "a scorpling stands on %s" % cell)
+	eq(bool(_sim._match_over), false, "the room stays up while the brood lives")
+	# Seats were dealt E, S, W, N so (7, 6) is last. Pass the three that are not yet in range.
+	_sim.submit({"type": "end_turn", "seat": 1})
+	var adjacent := -1
+	for unit in _sim._units:
+		if bool(unit.get("scorpling", false)) and unit["pos"] == Vector2i(7, 6):
+			adjacent = int(unit["seat"])
+	for _step in 3:
+		var passing := int(_sim._active_seat)
+		eq(passing == adjacent, false, "the scorplings behind him act before the one in his face")
+		_sim.submit({"type": "end_turn", "seat": passing})
+	eq(_sim._active_seat, adjacent, "the scorpling on the hero's tile-step gets its turn")
+	var hp_before := int(_sim._unit_by_seat(0)["hp"])
+	var burst := StasisAi.plan(_sim, adjacent)
+	eq(str(burst.get("spell", "")), "scorpling.burst", "an adjacent scorpling bursts")
+	var boom: Dictionary = _sim.submit(burst)
+	eq(bool(boom.get("ok", false)), true, "the burst resolves (%s)" % str(boom.get("reason", "")))
+	truthy(int(_sim._unit_by_seat(0)["hp"]) < hp_before, "the burst hurts the hero")
+	eq(bool(_sim._unit_by_seat(adjacent).get("alive", true)), false, "the burst spends the scorpling")
+	eq(bool(_sim._match_over), false, "the other scorplings keep the fight going")
+	# (7, 8) is 3 tiles from the hero. Dying there detonates, and the blast falls short.
+	var far := -1
+	for unit in _sim._units:
+		if bool(unit.get("alive", false)) and bool(unit.get("scorpling", false)) and unit["pos"] == Vector2i(7, 8):
+			far = int(unit["seat"])
+	eq(far > 1, true, "a scorpling is still behind the boss")
+	_sim._scripted_rolls.clear()
+	for _roll in 6:
+		_sim._scripted_rolls.append(1)
+	var hp_mid := int(_sim._unit_by_seat(0)["hp"])
+	var victim: Dictionary = _sim._unit_by_seat(far)
+	victim["hp"] = 1
+	_sim._lose_hp(victim, 1)
+	_sim._check_death(victim, "damage")
+	eq(bool(victim.get("alive", true)), false, "the killed scorpling is dead")
+	eq(bool(victim.get("detonated", false)), true, "dying early detonates it")
+	eq(int(_sim._unit_by_seat(0)["hp"]), hp_mid, "a detonation 3 tiles away does not reach")
+	var near: Dictionary = {}
+	for unit in _sim._units:
+		if bool(unit.get("alive", false)) and bool(unit.get("scorpling", false)):
+			near = unit
+			break
+	near["pos"] = Vector2i(8, 5)
+	_sim._scripted_rolls.clear()
+	for _roll2 in 4:
+		_sim._scripted_rolls.append(1)
+	var hp_near := int(_sim._unit_by_seat(0)["hp"])
+	near["hp"] = 1
+	_sim._lose_hp(near, 1)
+	_sim._check_death(near, "damage")
+	truthy(int(_sim._unit_by_seat(0)["hp"]) < hp_near, "dying beside the hero detonates into him")
+	eq(bool(_sim._match_over), false, "the boss is still up")
+
+
 func _has_foe_cast(seat: int, spell_id: String) -> bool:
 	for intent in _sim.legal_intents(seat):
 		if str(intent.get("type", "")) == "cast" and str(intent.get("spell", "")) == spell_id:
@@ -365,6 +451,7 @@ func _test_foe_kits() -> void:
 	truthy(int(_sim._unit_by_seat(0)["hp"]) < hp_p, "the floor punch hurts the hero at 2")
 	_boss_fight("slagcrown", Vector2i(7, 4), Vector2i(7, 7), [], 5)
 	eq(_has_foe_cast(1, "slag.caldera"), false, "a hero 3 tiles away is outside the punch")
+	_test_coil_brood()
 	# Room 1 caster: bolt 3–7 with sight; never walks into 0–1 when it can shoot.
 	StasisCatalog.clear_run()
 	StasisCatalog.begin("crosshaven")
