@@ -56,5 +56,6 @@ Where the target image breaks these rules, the rule wins:
 ## Player houses (Mauro, 16 Oct 2026)
 
 - Player houses come in rarity tiers: **Normal, Rare and Legendary** ("van de normales, raras a legendarias").
+- Each house has **5 rooms** with their **decorations** ("junto a sus 5 cuartos y sus decoraciones").
 - The tier art and plots come from Luca's `housing_tiers/` and the 5 plot houses in `cx_built`, requested on #252.
 - The city layout must leave room for the plot houses.
