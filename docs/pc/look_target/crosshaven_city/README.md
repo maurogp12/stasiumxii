@@ -57,7 +57,7 @@ Where the target image breaks these rules, the rule wins:
 
 - Player houses come in rarity tiers: **Normal, Rare and Legendary** ("van de normales, raras a legendarias").
 - Rooms follow **Luca's rule** (Mauro confirmed, 16 Oct): Normal = bedroom only; Rare = bedroom, living room and kitchen; Legendary = all 5 (adding the cellar, which is the crafting workshop, and the garden). Upgrades happen in place by paying the difference. Each room has its decorations. Gardens are not allowed inside Crosshaven.
-- Crafting workshops by tier (Luca, 16 Oct): Normal = none; Rare = 2 workshops; Legendary = all workshops.
+- Crafting workshops by tier (Luca, 16 Oct): Normal = 1 workshop; Rare = 2 workshops; Legendary = all workshops (corrected by Luca, 16 Oct).
 - Exterior tiers are swapped in place on the same plot anchor, with clearance 200 / 260 / 350 px.
 - The tier art and plots come from Luca's `housing_tiers/` and the 5 plot houses in `cx_built`, requested on #252.
 - The city layout must leave room for the plot houses.
