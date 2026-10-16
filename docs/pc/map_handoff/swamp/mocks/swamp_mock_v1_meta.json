@@ -1,0 +1,62 @@
+{
+  "status": "Proposed",
+  "zone": "West Southbridge (provisional)",
+  "canvas": [
+    2800,
+    1800
+  ],
+  "water": {
+    "source": [
+      380,
+      260
+    ],
+    "end": [
+      2380,
+      1520
+    ],
+    "crossings": [
+      "Boardwalk A",
+      "Boardwalk B",
+      "Bridge C"
+    ]
+  },
+  "buildings": {
+    "witch": [
+      560,
+      520
+    ],
+    "H1": [
+      320,
+      820
+    ],
+    "H2": [
+      780,
+      1180
+    ],
+    "H3": [
+      1680,
+      700
+    ]
+  },
+  "fish_spots": [
+    [
+      955,
+      663
+    ],
+    [
+      1409,
+      962
+    ],
+    [
+      1860,
+      1280
+    ]
+  ],
+  "outputs": [
+    "/workspace/share/swamp_mock_v1.jpg",
+    "/workspace/share/swamp_mock_v1_hamlet.jpg",
+    "/workspace/share/swamp_mock_v1_witch.jpg",
+    "/workspace/share/swamp_mock_v1_night.jpg"
+  ],
+  "notes": "No life video. All Proposed. Boardwalks only water crossings. Jetties on bank."
+}

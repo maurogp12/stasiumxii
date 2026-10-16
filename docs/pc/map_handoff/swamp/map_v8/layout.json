@@ -1,0 +1,74 @@
+{
+  "status": "Proposed",
+  "method": "hand_polygons_only; clean upscale plate; no paint-over",
+  "canvas": [
+    2240,
+    1260
+  ],
+  "scale": 1.75,
+  "walkable_pct": 23.8,
+  "bfs_reachable": {
+    "entry": true,
+    "NE": true,
+    "hamlet": true,
+    "SE": true,
+    "SW": true,
+    "NW": true,
+    "br_NE": true,
+    "br_SE": true,
+    "br_SW": true,
+    "br_NW": true
+  },
+  "unreachable_zones": [],
+  "bridges": {
+    "br_NE": {
+      "a": [
+        900,
+        300
+      ],
+      "b": [
+        800,
+        310
+      ]
+    },
+    "br_SE": {
+      "a": [
+        780,
+        500
+      ],
+      "b": [
+        870,
+        520
+      ]
+    },
+    "br_SW": {
+      "a": [
+        520,
+        510
+      ],
+      "b": [
+        400,
+        545
+      ]
+    },
+    "br_NW": {
+      "a": [
+        350,
+        340
+      ],
+      "b": [
+        510,
+        420
+      ]
+    }
+  },
+  "zones": [
+    "/workspace/share/swamp_v8_zone_entry.jpg",
+    "/workspace/share/swamp_v8_zone_NE.jpg",
+    "/workspace/share/swamp_v8_zone_hamlet.jpg",
+    "/workspace/share/swamp_v8_zone_SE.jpg",
+    "/workspace/share/swamp_v8_zone_SW.jpg",
+    "/workspace/share/swamp_v8_zone_NW.jpg"
+  ],
+  "mask_check": "/workspace/share/swamp_v8_mask_check.jpg"
+}

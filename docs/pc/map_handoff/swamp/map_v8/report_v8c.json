@@ -1,0 +1,92 @@
+{
+  "status": "Proposed",
+  "variant": "v8c",
+  "method": "mud-only + bridge decks; 12px water buffer; drop CC<5000 root islands; forced SE\u2192br\u2192hamlet\u2192SW",
+  "video": "/workspace/swamp_map_v8c_play.mp4",
+  "contact": "/workspace/share/swamp_v8c_contact.jpg",
+  "contact_1fps": "/workspace/share/swamp_v8c_1fps.jpg",
+  "night_contact": "/workspace/share/swamp_v8c_night_contact.jpg",
+  "mask_check": "/workspace/share/swamp_v8c_mask_check.jpg",
+  "canvas": [
+    2240,
+    1260
+  ],
+  "scale": 1.75,
+  "stilt_over_ironjaw": 2.725,
+  "path_px": 6866,
+  "duration_s": 66.42,
+  "fps": 24,
+  "per_frame_feet_violations": 0,
+  "1fps_bad_feet_secs": 0,
+  "video_mb": 3.59,
+  "ladder": "skipped",
+  "night": "uniform full-canvas grade + soft elliptical vignette (applied to plate AND occluders) + soft-edge fog; feathered night-matched occluders; no rect grade bounds",
+  "facing_hold_frames": 6,
+  "layout": {
+    "walkable_pct": 40.4,
+    "bfs_reachable": {
+      "entry": true,
+      "NE": true,
+      "hamlet": true,
+      "SE": true,
+      "SW": true,
+      "NW": true,
+      "br_NE": true,
+      "br_SE": true,
+      "br_SW": true,
+      "br_NW": true
+    },
+    "path_px": 6866,
+    "waypoints": [
+      "entry",
+      "NE",
+      "br_NE",
+      "hamlet",
+      "SE",
+      "br_SE",
+      "hamlet2",
+      "br_SW",
+      "SW",
+      "west",
+      "br_NW",
+      "NW",
+      "exit"
+    ],
+    "method": "mud-12px; drop CC<5k; decks after water; forced bridges",
+    "path_n": 2027
+  },
+  "files_touched": {
+    "scripts": [
+      "ship/west_southbridge_v1/src/build_swamp_mask_v8c.py",
+      "ship/west_southbridge_v1/src/life_swamp_map_v8c.py"
+    ],
+    "masks": [
+      "map_v8/masks/walk.png",
+      "map_v8/masks/water.png",
+      "map_v8/masks/water_buf.png",
+      "map_v8/masks/blocked.png",
+      "map_v8/masks/root_islands.png",
+      "map_v8/masks/decks.png",
+      "map_v8/masks/mud.png"
+    ],
+    "path": "map_v8/path.npy",
+    "meta": [
+      "map_v8/meta.json",
+      "map_v8/layout_v8c.json",
+      "map_v8/report_v8c.json"
+    ],
+    "outputs": [
+      "/workspace/swamp_map_v8c_play.mp4",
+      "share/swamp_map_v8c_play.mp4",
+      "share/swamp_v8c_contact.jpg",
+      "share/swamp_v8c_1fps.jpg",
+      "share/swamp_v8c_night_contact.jpg",
+      "share/swamp_v8c_mask_check.jpg",
+      "share/swamp_v8c_walkmask.png",
+      "share/swamp_v8c_root_islands.png",
+      "share/swamp_v8c_1fps_feet_qa.json",
+      "share/swamp_v8c_layout.json",
+      "share/swamp_map_v8c_report.json"
+    ]
+  }
+}

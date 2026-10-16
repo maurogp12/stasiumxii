@@ -1,0 +1,66 @@
+[
+  {
+    "name": "hut",
+    "file_day": "/workspace/stasium-pc-look/ship/west_southbridge_v1/map_v8/occluders_v8b/hut_day.png",
+    "file_night": "/workspace/stasium-pc-look/ship/west_southbridge_v1/map_v8/occluders_v8b/hut_night.png",
+    "paste": [
+      936,
+      463
+    ],
+    "foot_y": 714,
+    "size": [
+      227,
+      263
+    ],
+    "opaque_pct": 0.49597159176563205,
+    "alpha_levels": 256
+  },
+  {
+    "name": "stilt_N",
+    "file_day": "/workspace/stasium-pc-look/ship/west_southbridge_v1/map_v8/occluders_v8b/stilt_N_day.png",
+    "file_night": "/workspace/stasium-pc-look/ship/west_southbridge_v1/map_v8/occluders_v8b/stilt_N_night.png",
+    "paste": [
+      971,
+      166
+    ],
+    "foot_y": 455,
+    "size": [
+      210,
+      297
+    ],
+    "opaque_pct": 0.5489017155683822,
+    "alpha_levels": 256
+  },
+  {
+    "name": "stilt_W",
+    "file_day": "/workspace/stasium-pc-look/ship/west_southbridge_v1/map_v8/occluders_v8b/stilt_W_day.png",
+    "file_night": "/workspace/stasium-pc-look/ship/west_southbridge_v1/map_v8/occluders_v8b/stilt_W_night.png",
+    "paste": [
+      717,
+      420
+    ],
+    "foot_y": 679,
+    "size": [
+      158,
+      271
+    ],
+    "opaque_pct": 0.4108318931290579,
+    "alpha_levels": 256
+  },
+  {
+    "name": "stilt_NW",
+    "file_day": "/workspace/stasium-pc-look/ship/west_southbridge_v1/map_v8/occluders_v8b/stilt_NW_day.png",
+    "file_night": "/workspace/stasium-pc-look/ship/west_southbridge_v1/map_v8/occluders_v8b/stilt_NW_night.png",
+    "paste": [
+      796,
+      210
+    ],
+    "foot_y": 469,
+    "size": [
+      140,
+      271
+    ],
+    "opaque_pct": 0.46483921982076964,
+    "alpha_levels": 256
+  }
+]

@@ -1,0 +1,5 @@
+WP10a joins raws (GenerateImage, 2026-10-03, white bg, outlined cel style)
+stone_ford.png        Stoneford->Rowanvale corridor: 4-wide flagstone causeway, water lapping both sides (stone+water families)
+cliff_pass_steps.png  Northgate->Windmere corridor: broad stone steps between rock shoulders, snow starts halfway up (stone family)
+sign_rowanvale.png    level sign, blank plank + wheat emblem (level text drawn in-engine)
+sign_windmere.png     level sign, snowy column + blank plank + snowflake emblem (level text drawn in-engine)

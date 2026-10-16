@@ -1,0 +1,27 @@
+{
+  "walkable_pct": 38.93,
+  "path_px": 5976,
+  "waypoints": [
+    "entry",
+    "NE",
+    "br_NE",
+    "gate_NE",
+    "hamlet",
+    "hamlet_E",
+    "gate_SE",
+    "br_SE",
+    "SE",
+    "br_SE2",
+    "gate_SE2",
+    "hamlet2",
+    "hamlet_W",
+    "gate_SW",
+    "br_SW",
+    "SW",
+    "west",
+    "br_NW",
+    "NW",
+    "exit"
+  ],
+  "method": "v8d: yard@fence y385; mid-ledge blocked; corner gates"
+}

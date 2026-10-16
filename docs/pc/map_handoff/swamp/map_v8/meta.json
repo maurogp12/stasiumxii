@@ -1,0 +1,54 @@
+{
+  "status": "Proposed",
+  "scale": 1.75,
+  "source_plate": "/cursor/stores/store-ffac70a3-4b50-4a40-b765-f28cdf82cbbd/grok-bot/agents/ce4006dd-4e98-48dd-b991-fa7565b86bf2/attachments/b1cc1effeb6102e01a5f08387e95066fbf61c07a73e1e7b1e03faf22b40680c9.jpg",
+  "method": "single painted plate; clean LANCZOS upscale only; NO inpaint/composite/paint-over",
+  "canvas": [
+    2240,
+    1260
+  ],
+  "ratios": {
+    "ironjaw_h_px": 83.5,
+    "stilt_h_1280": 130,
+    "stilt_h_world": 227.5,
+    "stilt_over_ironjaw": 2.725,
+    "note": "same Ironjaw ratio target as v3 (~2.7x)"
+  },
+  "path_len": 1729,
+  "waypoints": [
+    "entry",
+    "NE",
+    "br_NE",
+    "gate_NE",
+    "hamlet",
+    "gate_SE",
+    "br_SE",
+    "SE",
+    "br_SE2",
+    "gate_SE2",
+    "hamlet2",
+    "gate_SW",
+    "br_SW",
+    "SW",
+    "west",
+    "br_NW",
+    "NW",
+    "exit"
+  ],
+  "astar_ok": true,
+  "walkable_pct": 39.63,
+  "bfs_reachable": {
+    "entry": true,
+    "NE": true,
+    "hamlet": true,
+    "SE": true,
+    "SW": true,
+    "NW": true,
+    "br_NE": true,
+    "br_SE": true,
+    "br_SW": true,
+    "br_NW": true
+  },
+  "path_px": 5976,
+  "variant": "v8d"
+}

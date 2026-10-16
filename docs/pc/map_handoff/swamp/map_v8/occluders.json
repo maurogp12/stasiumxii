@@ -1,0 +1,54 @@
+[
+  {
+    "name": "hut",
+    "file": "/workspace/stasium-pc-look/ship/west_southbridge_v1/map_v8/occluders/hut.png",
+    "paste": [
+      927,
+      455
+    ],
+    "foot_y": 717,
+    "size": [
+      245,
+      280
+    ]
+  },
+  {
+    "name": "stilt_N",
+    "file": "/workspace/stasium-pc-look/ship/west_southbridge_v1/map_v8/occluders/stilt_N.png",
+    "paste": [
+      953,
+      157
+    ],
+    "foot_y": 463,
+    "size": [
+      254,
+      315
+    ]
+  },
+  {
+    "name": "stilt_W",
+    "file": "/workspace/stasium-pc-look/ship/west_southbridge_v1/map_v8/occluders/stilt_W.png",
+    "paste": [
+      700,
+      411
+    ],
+    "foot_y": 682,
+    "size": [
+      192,
+      289
+    ]
+  },
+  {
+    "name": "stilt_NW",
+    "file": "/workspace/stasium-pc-look/ship/west_southbridge_v1/map_v8/occluders/stilt_NW.png",
+    "paste": [
+      778,
+      201
+    ],
+    "foot_y": 472,
+    "size": [
+      175,
+      289
+    ]
+  }
+]

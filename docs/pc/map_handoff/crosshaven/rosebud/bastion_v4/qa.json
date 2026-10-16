@@ -1,0 +1,2949 @@
+{
+ "frames": {
+  "bastion_attack_E_f00.png": {
+   "size": [
+    220,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    6447
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    66,
+    33,
+    144,
+    175
+   ]
+  },
+  "bastion_attack_E_f01.png": {
+   "size": [
+    220,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    6172
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    64,
+    19,
+    144,
+    175
+   ]
+  },
+  "bastion_attack_E_f02.png": {
+   "size": [
+    220,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    6927
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    66,
+    23,
+    189,
+    175
+   ]
+  },
+  "bastion_attack_E_f03.png": {
+   "size": [
+    220,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    7236
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    66,
+    38,
+    203,
+    175
+   ]
+  },
+  "bastion_attack_E_f04.png": {
+   "size": [
+    220,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    7227
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    66,
+    38,
+    204,
+    175
+   ]
+  },
+  "bastion_attack_E_f05.png": {
+   "size": [
+    220,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    6638
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    46,
+    34,
+    144,
+    175
+   ]
+  },
+  "bastion_attack_N_f00.png": {
+   "size": [
+    220,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    7300
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    75,
+    29,
+    198,
+    180
+   ]
+  },
+  "bastion_attack_N_f01.png": {
+   "size": [
+    220,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    7082
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    75,
+    28,
+    167,
+    180
+   ]
+  },
+  "bastion_attack_N_f02.png": {
+   "size": [
+    220,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    6632
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    74,
+    28,
+    167,
+    180
+   ]
+  },
+  "bastion_attack_N_f03.png": {
+   "size": [
+    220,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    6751
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    72,
+    32,
+    167,
+    180
+   ]
+  },
+  "bastion_attack_N_f04.png": {
+   "size": [
+    220,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    6763
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    73,
+    32,
+    167,
+    180
+   ]
+  },
+  "bastion_attack_N_f05.png": {
+   "size": [
+    220,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    7161
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    75,
+    19,
+    176,
+    180
+   ]
+  },
+  "bastion_attack_S_f00.png": {
+   "size": [
+    220,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    8624
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    32,
+    29,
+    158,
+    166
+   ]
+  },
+  "bastion_attack_S_f01.png": {
+   "size": [
+    220,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    8742
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    51,
+    22,
+    159,
+    166
+   ]
+  },
+  "bastion_attack_S_f02.png": {
+   "size": [
+    220,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    8542
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    46,
+    29,
+    156,
+    166
+   ]
+  },
+  "bastion_attack_S_f03.png": {
+   "size": [
+    220,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    8117
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    46,
+    34,
+    155,
+    166
+   ]
+  },
+  "bastion_attack_S_f04.png": {
+   "size": [
+    220,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    8117
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    47,
+    34,
+    155,
+    166
+   ]
+  },
+  "bastion_attack_S_f05.png": {
+   "size": [
+    220,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    8535
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    36,
+    30,
+    157,
+    166
+   ]
+  },
+  "bastion_attack_W_f00.png": {
+   "size": [
+    220,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    6988
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    82,
+    30,
+    176,
+    177
+   ]
+  },
+  "bastion_attack_W_f01.png": {
+   "size": [
+    220,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    7007
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    82,
+    20,
+    176,
+    177
+   ]
+  },
+  "bastion_attack_W_f02.png": {
+   "size": [
+    220,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    7629
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    17,
+    31,
+    176,
+    177
+   ]
+  },
+  "bastion_attack_W_f03.png": {
+   "size": [
+    220,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    7876
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    21,
+    35,
+    176,
+    177
+   ]
+  },
+  "bastion_attack_W_f04.png": {
+   "size": [
+    220,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    7856
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    18,
+    35,
+    176,
+    177
+   ]
+  },
+  "bastion_attack_W_f05.png": {
+   "size": [
+    220,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    7437
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    79,
+    31,
+    176,
+    177
+   ]
+  },
+  "bastion_death_E_f00.png": {
+   "size": [
+    330,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    7230
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    121,
+    41,
+    241,
+    175
+   ]
+  },
+  "bastion_death_E_f01.png": {
+   "size": [
+    330,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    7046
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    121,
+    61,
+    247,
+    183
+   ]
+  },
+  "bastion_death_E_f02.png": {
+   "size": [
+    330,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    5596
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    106,
+    86,
+    225,
+    183
+   ]
+  },
+  "bastion_death_E_f03.png": {
+   "size": [
+    330,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    6260
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    75,
+    64,
+    249,
+    165
+   ]
+  },
+  "bastion_death_E_f04.png": {
+   "size": [
+    330,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    5825
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    75,
+    106,
+    260,
+    183
+   ]
+  },
+  "bastion_death_E_f05.png": {
+   "size": [
+    330,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    5181
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    75,
+    112,
+    264,
+    183
+   ]
+  },
+  "bastion_death_N_f00.png": {
+   "size": [
+    330,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    7395
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    127,
+    35,
+    247,
+    180
+   ]
+  },
+  "bastion_death_N_f01.png": {
+   "size": [
+    330,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    7219
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    121,
+    53,
+    242,
+    180
+   ]
+  },
+  "bastion_death_N_f02.png": {
+   "size": [
+    330,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    6663
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    101,
+    76,
+    223,
+    180
+   ]
+  },
+  "bastion_death_N_f03.png": {
+   "size": [
+    330,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    6244,
+    495
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    81,
+    39,
+    223,
+    164
+   ]
+  },
+  "bastion_death_N_f04.png": {
+   "size": [
+    330,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    6571
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    70,
+    75,
+    223,
+    168
+   ]
+  },
+  "bastion_death_N_f05.png": {
+   "size": [
+    330,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    5825
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    65,
+    96,
+    223,
+    171
+   ]
+  },
+  "bastion_death_S_f00.png": {
+   "size": [
+    330,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    8662
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    76,
+    29,
+    203,
+    164
+   ]
+  },
+  "bastion_death_S_f01.png": {
+   "size": [
+    330,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    8617
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    53,
+    33,
+    186,
+    162
+   ]
+  },
+  "bastion_death_S_f02.png": {
+   "size": [
+    330,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    8016
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    61,
+    50,
+    207,
+    166
+   ]
+  },
+  "bastion_death_S_f03.png": {
+   "size": [
+    330,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    6732,
+    617,
+    275
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    41,
+    64,
+    277,
+    172
+   ]
+  },
+  "bastion_death_S_f04.png": {
+   "size": [
+    330,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    6759,
+    617,
+    275
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    19,
+    78,
+    277,
+    166
+   ]
+  },
+  "bastion_death_S_f05.png": {
+   "size": [
+    330,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    6561,
+    617,
+    275
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    17,
+    82,
+    277,
+    166
+   ]
+  },
+  "bastion_death_W_f00.png": {
+   "size": [
+    330,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    7952
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    95,
+    38,
+    231,
+    177
+   ]
+  },
+  "bastion_death_W_f01.png": {
+   "size": [
+    330,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    7954
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    93,
+    56,
+    231,
+    177
+   ]
+  },
+  "bastion_death_W_f02.png": {
+   "size": [
+    330,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    6312
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    109,
+    77,
+    234,
+    177
+   ]
+  },
+  "bastion_death_W_f03.png": {
+   "size": [
+    330,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    6329
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    100,
+    70,
+    250,
+    165
+   ]
+  },
+  "bastion_death_W_f04.png": {
+   "size": [
+    330,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    5857
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    87,
+    83,
+    250,
+    177
+   ]
+  },
+  "bastion_death_W_f05.png": {
+   "size": [
+    330,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    5535
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    82,
+    90,
+    250,
+    177
+   ]
+  },
+  "bastion_hit_E_f00.png": {
+   "size": [
+    160,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    6800
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    33,
+    33,
+    133,
+    175
+   ]
+  },
+  "bastion_hit_E_f01.png": {
+   "size": [
+    160,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    6798
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    31,
+    34,
+    133,
+    175
+   ]
+  },
+  "bastion_hit_E_f02.png": {
+   "size": [
+    160,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    6808
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    33,
+    33,
+    133,
+    175
+   ]
+  },
+  "bastion_hit_E_f03.png": {
+   "size": [
+    160,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    6818
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    36,
+    33,
+    133,
+    175
+   ]
+  },
+  "bastion_hit_N_f00.png": {
+   "size": [
+    160,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    7183
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    45,
+    30,
+    147,
+    180
+   ]
+  },
+  "bastion_hit_N_f01.png": {
+   "size": [
+    160,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    7176
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    45,
+    31,
+    148,
+    180
+   ]
+  },
+  "bastion_hit_N_f02.png": {
+   "size": [
+    160,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    7196
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    45,
+    30,
+    148,
+    180
+   ]
+  },
+  "bastion_hit_N_f03.png": {
+   "size": [
+    160,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    7244
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    45,
+    29,
+    147,
+    180
+   ]
+  },
+  "bastion_hit_S_f00.png": {
+   "size": [
+    160,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    8496
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    19,
+    29,
+    127,
+    166
+   ]
+  },
+  "bastion_hit_S_f01.png": {
+   "size": [
+    160,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    8474
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    19,
+    29,
+    126,
+    166
+   ]
+  },
+  "bastion_hit_S_f02.png": {
+   "size": [
+    160,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    8490
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    19,
+    29,
+    126,
+    166
+   ]
+  },
+  "bastion_hit_S_f03.png": {
+   "size": [
+    160,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    8532
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    19,
+    29,
+    128,
+    166
+   ]
+  },
+  "bastion_hit_W_f00.png": {
+   "size": [
+    160,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    7372
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    27,
+    31,
+    146,
+    177
+   ]
+  },
+  "bastion_hit_W_f01.png": {
+   "size": [
+    160,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    7323
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    26,
+    31,
+    146,
+    177
+   ]
+  },
+  "bastion_hit_W_f02.png": {
+   "size": [
+    160,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    7386
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    27,
+    31,
+    146,
+    177
+   ]
+  },
+  "bastion_hit_W_f03.png": {
+   "size": [
+    160,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    7452
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    27,
+    30,
+    146,
+    177
+   ]
+  },
+  "bastion_idle_E_f00.png": {
+   "size": [
+    160,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    6927
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    36,
+    33,
+    135,
+    175
+   ]
+  },
+  "bastion_idle_E_f01.png": {
+   "size": [
+    160,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    6990
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    36,
+    32,
+    135,
+    175
+   ]
+  },
+  "bastion_idle_E_f02.png": {
+   "size": [
+    160,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    6990
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    36,
+    32,
+    135,
+    175
+   ]
+  },
+  "bastion_idle_E_f03.png": {
+   "size": [
+    160,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    6927
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    36,
+    33,
+    135,
+    175
+   ]
+  },
+  "bastion_idle_N_f00.png": {
+   "size": [
+    160,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    7360
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    45,
+    29,
+    148,
+    180
+   ]
+  },
+  "bastion_idle_N_f01.png": {
+   "size": [
+    160,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    7423
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    45,
+    28,
+    148,
+    180
+   ]
+  },
+  "bastion_idle_N_f02.png": {
+   "size": [
+    160,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    7423
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    45,
+    28,
+    148,
+    180
+   ]
+  },
+  "bastion_idle_N_f03.png": {
+   "size": [
+    160,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    7360
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    45,
+    29,
+    148,
+    180
+   ]
+  },
+  "bastion_idle_S_f00.png": {
+   "size": [
+    160,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    8537
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    19,
+    29,
+    128,
+    166
+   ]
+  },
+  "bastion_idle_S_f01.png": {
+   "size": [
+    160,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    8558
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    19,
+    28,
+    128,
+    166
+   ]
+  },
+  "bastion_idle_S_f02.png": {
+   "size": [
+    160,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    8558
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    19,
+    28,
+    128,
+    166
+   ]
+  },
+  "bastion_idle_S_f03.png": {
+   "size": [
+    160,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    8537
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    19,
+    29,
+    128,
+    166
+   ]
+  },
+  "bastion_idle_W_f00.png": {
+   "size": [
+    160,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    7543
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    26,
+    30,
+    146,
+    177
+   ]
+  },
+  "bastion_idle_W_f01.png": {
+   "size": [
+    160,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    7616
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    26,
+    29,
+    146,
+    177
+   ]
+  },
+  "bastion_idle_W_f02.png": {
+   "size": [
+    160,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    7616
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    26,
+    29,
+    146,
+    177
+   ]
+  },
+  "bastion_idle_W_f03.png": {
+   "size": [
+    160,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    7543
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    26,
+    30,
+    146,
+    177
+   ]
+  },
+  "bastion_walk_E_f00.png": {
+   "size": [
+    160,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    6957
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    33,
+    31,
+    136,
+    174
+   ]
+  },
+  "bastion_walk_E_f01.png": {
+   "size": [
+    160,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    6909
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    26,
+    34,
+    136,
+    175
+   ]
+  },
+  "bastion_walk_E_f02.png": {
+   "size": [
+    160,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    6813
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    35,
+    28,
+    137,
+    161
+   ]
+  },
+  "bastion_walk_E_f03.png": {
+   "size": [
+    160,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    6592
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    37,
+    27,
+    136,
+    165
+   ]
+  },
+  "bastion_walk_E_f04.png": {
+   "size": [
+    160,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    6652
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    36,
+    28,
+    135,
+    169
+   ]
+  },
+  "bastion_walk_E_f05.png": {
+   "size": [
+    160,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    6598
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    33,
+    29,
+    132,
+    173
+   ]
+  },
+  "bastion_walk_E_f06.png": {
+   "size": [
+    160,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    6476
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    32,
+    31,
+    130,
+    175
+   ]
+  },
+  "bastion_walk_E_f07.png": {
+   "size": [
+    160,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    6485
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    32,
+    34,
+    130,
+    177
+   ]
+  },
+  "bastion_walk_E_f08.png": {
+   "size": [
+    160,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    6781
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    33,
+    28,
+    133,
+    163
+   ]
+  },
+  "bastion_walk_E_f09.png": {
+   "size": [
+    160,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    6520
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    35,
+    27,
+    137,
+    165
+   ]
+  },
+  "bastion_walk_E_f10.png": {
+   "size": [
+    160,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    6573
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    35,
+    28,
+    140,
+    170
+   ]
+  },
+  "bastion_walk_E_f11.png": {
+   "size": [
+    160,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    6708
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    35,
+    29,
+    137,
+    173
+   ]
+  },
+  "bastion_walk_N_f00.png": {
+   "size": [
+    160,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    7189
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    43,
+    31,
+    150,
+    169
+   ]
+  },
+  "bastion_walk_N_f01.png": {
+   "size": [
+    160,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    7158
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    43,
+    33,
+    150,
+    170
+   ]
+  },
+  "bastion_walk_N_f02.png": {
+   "size": [
+    160,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    7242
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    40,
+    28,
+    151,
+    161
+   ]
+  },
+  "bastion_walk_N_f03.png": {
+   "size": [
+    160,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    7115
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    32,
+    27,
+    149,
+    165
+   ]
+  },
+  "bastion_walk_N_f04.png": {
+   "size": [
+    160,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    7121
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    29,
+    28,
+    147,
+    169
+   ]
+  },
+  "bastion_walk_N_f05.png": {
+   "size": [
+    160,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    6841
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    41,
+    29,
+    144,
+    173
+   ]
+  },
+  "bastion_walk_N_f06.png": {
+   "size": [
+    160,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    6975
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    40,
+    30,
+    143,
+    175
+   ]
+  },
+  "bastion_walk_N_f07.png": {
+   "size": [
+    160,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    6920
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    37,
+    33,
+    144,
+    178
+   ]
+  },
+  "bastion_walk_N_f08.png": {
+   "size": [
+    160,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    7233
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    43,
+    28,
+    146,
+    159
+   ]
+  },
+  "bastion_walk_N_f09.png": {
+   "size": [
+    160,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    6957
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    44,
+    27,
+    148,
+    160
+   ]
+  },
+  "bastion_walk_N_f10.png": {
+   "size": [
+    160,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    7005
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    40,
+    28,
+    149,
+    164
+   ]
+  },
+  "bastion_walk_N_f11.png": {
+   "size": [
+    160,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    7114
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    43,
+    29,
+    150,
+    168
+   ]
+  },
+  "bastion_walk_S_f00.png": {
+   "size": [
+    160,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    7598
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    15,
+    28,
+    117,
+    167
+   ]
+  },
+  "bastion_walk_S_f01.png": {
+   "size": [
+    160,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    7245
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    13,
+    26,
+    115,
+    167
+   ]
+  },
+  "bastion_walk_S_f02.png": {
+   "size": [
+    160,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    7618
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    12,
+    25,
+    119,
+    164
+   ]
+  },
+  "bastion_walk_S_f03.png": {
+   "size": [
+    160,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    8099
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    11,
+    25,
+    123,
+    161
+   ]
+  },
+  "bastion_walk_S_f04.png": {
+   "size": [
+    160,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    8442
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    11,
+    26,
+    128,
+    165
+   ]
+  },
+  "bastion_walk_S_f05.png": {
+   "size": [
+    160,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    8718
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    13,
+    28,
+    133,
+    166
+   ]
+  },
+  "bastion_walk_S_f06.png": {
+   "size": [
+    160,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    8682
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    14,
+    27,
+    136,
+    167
+   ]
+  },
+  "bastion_walk_S_f07.png": {
+   "size": [
+    160,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    8593
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    16,
+    24,
+    136,
+    166
+   ]
+  },
+  "bastion_walk_S_f08.png": {
+   "size": [
+    160,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    8826
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    16,
+    23,
+    134,
+    163
+   ]
+  },
+  "bastion_walk_S_f09.png": {
+   "size": [
+    160,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    8810
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    15,
+    23,
+    128,
+    161
+   ]
+  },
+  "bastion_walk_S_f10.png": {
+   "size": [
+    160,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    8483
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    15,
+    25,
+    124,
+    166
+   ]
+  },
+  "bastion_walk_S_f11.png": {
+   "size": [
+    160,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    8088
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    16,
+    28,
+    123,
+    166
+   ]
+  },
+  "bastion_walk_W_f00.png": {
+   "size": [
+    160,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    7256
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    26,
+    31,
+    138,
+    174
+   ]
+  },
+  "bastion_walk_W_f01.png": {
+   "size": [
+    160,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    7153
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    25,
+    33,
+    138,
+    173
+   ]
+  },
+  "bastion_walk_W_f02.png": {
+   "size": [
+    160,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    7370
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    23,
+    28,
+    141,
+    169
+   ]
+  },
+  "bastion_walk_W_f03.png": {
+   "size": [
+    160,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    7231
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    24,
+    27,
+    146,
+    165
+   ]
+  },
+  "bastion_walk_W_f04.png": {
+   "size": [
+    160,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    7438
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    26,
+    28,
+    150,
+    161
+   ]
+  },
+  "bastion_walk_W_f05.png": {
+   "size": [
+    160,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    7511
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    28,
+    29,
+    153,
+    165
+   ]
+  },
+  "bastion_walk_W_f06.png": {
+   "size": [
+    160,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    7432
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    31,
+    31,
+    154,
+    172
+   ]
+  },
+  "bastion_walk_W_f07.png": {
+   "size": [
+    160,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    7292
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    32,
+    33,
+    154,
+    168
+   ]
+  },
+  "bastion_walk_W_f08.png": {
+   "size": [
+    160,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    7972
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    30,
+    28,
+    153,
+    164
+   ]
+  },
+  "bastion_walk_W_f09.png": {
+   "size": [
+    160,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    7772
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    29,
+    27,
+    146,
+    160
+   ]
+  },
+  "bastion_walk_W_f10.png": {
+   "size": [
+    160,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    7644
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    28,
+    28,
+    142,
+    163
+   ]
+  },
+  "bastion_walk_W_f11.png": {
+   "size": [
+    160,
+    196
+   ],
+   "semi_alpha": 0,
+   "cyan": 0,
+   "near_white": 0,
+   "components": [
+    7501
+   ],
+   "edge_touch": 0,
+   "bbox": [
+    27,
+    29,
+    138,
+    169
+   ]
+  }
+ },
+ "walk_new_facings": {
+  "W": {
+   "scale": 0.2205,
+   "travel_game_px_per_cycle": 115.0,
+   "S_travel": 125.06,
+   "travel_vs_S_pct": -8.0,
+   "leg_hip_to_ankle_over_H": 0.405,
+   "S_v18c_leg_over_H": 0.413,
+   "gait": "Ironjaw v2 backrig world-plane gait (duty 0.60, heel rock 14, toe roll 22, kst 15, kcontact 6, lift 7.2%H, hip swing), normalised to this leg length/height, projected on the facing ground direction",
+   "weight_knee_world": [
+    6.0,
+    38.7,
+    15.0,
+    15.0,
+    15.0,
+    15.0,
+    23.3,
+    15.0,
+    80.4,
+    74.1,
+    46.0,
+    21.6
+   ],
+   "weight_knee_screen_near": [
+    5.2,
+    17.7,
+    11.0,
+    12.5,
+    14.6,
+    18.4,
+    49.8,
+    52.9,
+    62.0,
+    59.9,
+    37.3,
+    15.5
+   ],
+   "stance_flags_near": [
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    0,
+    0,
+    0,
+    0
+   ],
+   "shin_swing_screen_deg": [
+    -17.8,
+    -5.8,
+    10.5,
+    16.9,
+    -13.8,
+    -1.9,
+    15.7,
+    24.4
+   ],
+   "screen_len_thigh_range": [
+    0.8,
+    1.208
+   ],
+   "screen_len_shin_range": [
+    0.8,
+    1.184
+   ],
+   "toe_height_above_sole_game_px": [
+    5.2,
+    1.7,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    9.7,
+    12.6,
+    11.6,
+    9.1
+   ],
+   "planted_flat_slide_game_px_max": 0.0,
+   "pelvis_drop_pctH": 3.2,
+   "upper_body_drop_pctH": 4.2,
+   "swing_params": {
+    "world_lift_H": 0.072,
+    "toe_flat_after": 0.08,
+    "screen_extra_lift_H": 0.03,
+    "swing_advance": "1-(1-u)^2.2",
+    "screen_knee_cap_deg": 62,
+    "lift_plateau_pow": 0.8,
+    "swing_foreshorten": null
+   },
+   "swing_knee_screen_peak": 62.0,
+   "drawn_swing_foot_clearance_game_px": {
+    "near": [
+     [
+      8,
+      15.0
+     ],
+     [
+      9,
+      18.5
+     ],
+     [
+      10,
+      16.5
+     ],
+     [
+      11,
+      12.0
+     ]
+    ],
+    "far": [
+     [
+      2,
+      17.0
+     ],
+     [
+      3,
+      20.5
+     ],
+     [
+      4,
+      17.5
+     ],
+     [
+      5,
+      12.0
+     ]
+    ]
+   },
+   "drawn_swing_foot_clearance_min_game_px": 12.0,
+   "drawn_clearance_method": "foot piece rendered alone through the same cell transform; floor line = that leg ground track (iso slope D) through its lowest drawn sole point on flat-stance frames; min over foot px",
+   "swing_thigh_screen_peak_deg": 58.1,
+   "swing_len_thigh_range": [
+    1.144,
+    1.208
+   ],
+   "swing_len_shin_range": [
+    0.8,
+    1.184
+   ]
+  },
+  "E": {
+   "scale": 0.2293,
+   "travel_game_px_per_cycle": 115.0,
+   "S_travel": 125.06,
+   "travel_vs_S_pct": -8.0,
+   "leg_hip_to_ankle_over_H": 0.413,
+   "S_v18c_leg_over_H": 0.413,
+   "gait": "Ironjaw v2 backrig world-plane gait (duty 0.60, heel rock 14, toe roll 22, kst 15, kcontact 6, lift 7.2%H, hip swing), normalised to this leg length/height, projected on the facing ground direction",
+   "weight_knee_world": [
+    6.0,
+    43.3,
+    15.0,
+    15.0,
+    15.0,
+    15.0,
+    19.1,
+    15.0,
+    78.3,
+    1.1,
+    1.1,
+    18.5
+   ],
+   "weight_knee_screen_near": [
+    16.2,
+    55.1,
+    14.5,
+    12.6,
+    11.2,
+    10.1,
+    6.1,
+    5.4,
+    70.0,
+    0.0,
+    0.0,
+    55.5
+   ],
+   "stance_flags_near": [
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    0,
+    0,
+    0,
+    0
+   ],
+   "shin_swing_screen_deg": [
+    -17.5,
+    41.0,
+    43.0,
+    -5.0,
+    -16.5,
+    57.0,
+    58.5,
+    9.5
+   ],
+   "screen_len_thigh_range": [
+    0.621,
+    1.231
+   ],
+   "screen_len_shin_range": [
+    0.75,
+    1.231
+   ],
+   "toe_height_above_sole_game_px": [
+    5.2,
+    1.7,
+    0.0,
+    0.0,
+    0.0,
+    -0.0,
+    0.0,
+    -0.0,
+    9.9,
+    11.3,
+    11.1,
+    10.5
+   ],
+   "planted_flat_slide_game_px_max": 0.0,
+   "pelvis_drop_pctH": 3.57,
+   "upper_body_drop_pctH": 4.57,
+   "swing_params": {
+    "world_lift_H": 0.062,
+    "toe_flat_after": 0.08,
+    "screen_extra_lift_H": 0.05,
+    "swing_advance": "1-(1-u)^3.8",
+    "screen_knee_cap_deg": 0,
+    "lift_plateau_pow": 0.3,
+    "swing_foreshorten": {
+     "thigh_min": 0.62,
+     "shin_min": 0.75,
+     "thigh_screen_max_deg": 65,
+     "knee_cap_deg": 70
+    }
+   },
+   "swing_knee_screen_peak": 70.0,
+   "drawn_swing_foot_clearance_game_px": {
+    "near": [
+     [
+      8,
+      11.5
+     ],
+     [
+      9,
+      18.5
+     ],
+     [
+      10,
+      18.0
+     ],
+     [
+      11,
+      12.5
+     ]
+    ],
+    "far": [
+     [
+      2,
+      10.5
+     ],
+     [
+      3,
+      17.0
+     ],
+     [
+      4,
+      15.0
+     ],
+     [
+      5,
+      10.5
+     ]
+    ]
+   },
+   "drawn_swing_foot_clearance_min_game_px": 10.5,
+   "drawn_clearance_method": "foot piece rendered alone through the same cell transform; floor line = that leg ground track (iso slope D) through its lowest drawn sole point on flat-stance frames; min over foot px",
+   "swing_thigh_screen_peak_deg": 65.0,
+   "swing_len_thigh_range": [
+    0.621,
+    0.777
+   ],
+   "swing_len_shin_range": [
+    0.75,
+    1.077
+   ]
+  },
+  "N": {
+   "scale": 0.2252,
+   "travel_game_px_per_cycle": 115.0,
+   "S_travel": 125.06,
+   "travel_vs_S_pct": -8.0,
+   "leg_hip_to_ankle_over_H": 0.418,
+   "S_v18c_leg_over_H": 0.413,
+   "gait": "Ironjaw v2 backrig world-plane gait (duty 0.60, heel rock 14, toe roll 22, kst 15, kcontact 6, lift 7.2%H, hip swing), normalised to this leg length/height, projected on the facing ground direction",
+   "weight_knee_world": [
+    6.0,
+    42.6,
+    15.0,
+    15.0,
+    15.0,
+    15.0,
+    16.5,
+    15.0,
+    77.0,
+    3.2,
+    1.1,
+    22.7
+   ],
+   "weight_knee_screen_near": [
+    28.0,
+    59.6,
+    13.9,
+    11.9,
+    10.4,
+    5.9,
+    5.3,
+    5.3,
+    70.0,
+    26.0,
+    24.0,
+    70.0
+   ],
+   "stance_flags_near": [
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    0,
+    0,
+    0,
+    0
+   ],
+   "shin_swing_screen_deg": [
+    -17.5,
+    57.0,
+    58.5,
+    17.5,
+    -18.0,
+    39.0,
+    41.0,
+    -5.0
+   ],
+   "screen_len_thigh_range": [
+    0.621,
+    1.228
+   ],
+   "screen_len_shin_range": [
+    0.75,
+    1.228
+   ],
+   "toe_height_above_sole_game_px": [
+    5.2,
+    1.7,
+    0.0,
+    0.0,
+    0.0,
+    -0.0,
+    0.0,
+    0.0,
+    9.9,
+    11.3,
+    11.1,
+    10.5
+   ],
+   "planted_flat_slide_game_px_max": 0.0,
+   "pelvis_drop_pctH": 3.47,
+   "upper_body_drop_pctH": 4.47,
+   "swing_params": {
+    "world_lift_H": 0.062,
+    "toe_flat_after": 0.08,
+    "screen_extra_lift_H": 0.05,
+    "swing_advance": "1-(1-u)^3.8",
+    "screen_knee_cap_deg": 0,
+    "lift_plateau_pow": 0.3,
+    "swing_foreshorten": {
+     "thigh_min": 0.62,
+     "shin_min": 0.75,
+     "thigh_screen_max_deg": 65,
+     "knee_cap_deg": 70
+    }
+   },
+   "swing_knee_screen_peak": 70.0,
+   "drawn_swing_foot_clearance_game_px": {
+    "near": [
+     [
+      8,
+      10.5
+     ],
+     [
+      9,
+      16.5
+     ],
+     [
+      10,
+      15.5
+     ],
+     [
+      11,
+      11.0
+     ]
+    ],
+    "far": [
+     [
+      2,
+      14.5
+     ],
+     [
+      3,
+      20.0
+     ],
+     [
+      4,
+      19.0
+     ],
+     [
+      5,
+      10.5
+     ]
+    ]
+   },
+   "drawn_swing_foot_clearance_min_game_px": 10.5,
+   "drawn_clearance_method": "foot piece rendered alone through the same cell transform; floor line = that leg ground track (iso slope D) through its lowest drawn sole point on flat-stance frames; min over foot px",
+   "swing_thigh_screen_peak_deg": 65.0,
+   "swing_len_thigh_range": [
+    0.621,
+    0.777
+   ],
+   "swing_len_shin_range": [
+    0.75,
+    1.066
+   ]
+  }
+ },
+ "totals": {
+  "n": 128,
+  "semi_alpha": 0,
+  "cyan": 0,
+  "near_white": 0,
+  "multi_piece": {
+   "bastion_death_N_f03.png": [
+    6244,
+    495
+   ],
+   "bastion_death_S_f03.png": [
+    6732,
+    617,
+    275
+   ],
+   "bastion_death_S_f04.png": [
+    6759,
+    617,
+    275
+   ],
+   "bastion_death_S_f05.png": [
+    6561,
+    617,
+    275
+   ]
+  },
+  "edge_touch": {}
+ },
+ "cells": {
+  "main": [
+   160,
+   196
+  ],
+  "pivot": [
+   80,
+   165
+  ],
+  "attack": [
+   220,
+   196
+  ],
+  "attack_pivot": [
+   110,
+   165
+  ],
+  "death": [
+   330,
+   196
+  ],
+  "death_pivot": [
+   165,
+   165
+  ],
+  "S_offset_from_v18c": [
+   8,
+   20
+  ],
+  "S_actions": "v18c part rig (render.py PARTS), cell crop identical to the locked walk"
+ }
+}

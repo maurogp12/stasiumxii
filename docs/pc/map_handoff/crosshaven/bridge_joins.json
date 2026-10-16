@@ -1,0 +1,218 @@
+[
+ {
+  "bridge": 0,
+  "end": "nw",
+  "dist_from_deck_end_px": 20,
+  "road_center_vs_deck_center_px": 0.75,
+  "road_width_px": 66.5,
+  "deck_width_px": 68.0,
+  "side_steps_px": [
+   1.49,
+   0.01
+  ]
+ },
+ {
+  "bridge": 0,
+  "end": "se",
+  "dist_from_deck_end_px": 20,
+  "road_center_vs_deck_center_px": 0.25,
+  "road_width_px": 67.5,
+  "deck_width_px": 68.0,
+  "side_steps_px": [
+   0.49,
+   0.01
+  ]
+ },
+ {
+  "bridge": 0,
+  "end": "nw",
+  "dist_from_deck_end_px": 80,
+  "road_center_vs_deck_center_px": 0.25,
+  "road_width_px": 68.5,
+  "deck_width_px": 68.0,
+  "side_steps_px": [
+   -0.01,
+   0.51
+  ]
+ },
+ {
+  "bridge": 0,
+  "end": "se",
+  "dist_from_deck_end_px": 80,
+  "road_center_vs_deck_center_px": 0.5,
+  "road_width_px": 68.0,
+  "deck_width_px": 68.0,
+  "side_steps_px": [
+   0.49,
+   0.51
+  ]
+ },
+ {
+  "bridge": 0,
+  "end": "nw",
+  "dist_from_deck_end_px": 150,
+  "road_center_vs_deck_center_px": 240.5,
+  "road_width_px": 561.0,
+  "deck_width_px": 68.0,
+  "side_steps_px": [
+   -6.01,
+   487.01
+  ]
+ },
+ {
+  "bridge": 0,
+  "end": "se",
+  "dist_from_deck_end_px": 150,
+  "road_center_vs_deck_center_px": 525.25,
+  "road_width_px": 1116.5,
+  "deck_width_px": 68.0,
+  "side_steps_px": [
+   0.99,
+   1049.51
+  ]
+ },
+ {
+  "bridge": 1,
+  "end": "nw",
+  "dist_from_deck_end_px": 20,
+  "road_center_vs_deck_center_px": -0.25,
+  "road_width_px": 66.5,
+  "deck_width_px": 68.0,
+  "side_steps_px": [
+   0.49,
+   -0.99
+  ]
+ },
+ {
+  "bridge": 1,
+  "end": "se",
+  "dist_from_deck_end_px": 20,
+  "road_center_vs_deck_center_px": 0.0,
+  "road_width_px": 69.0,
+  "deck_width_px": 68.0,
+  "side_steps_px": [
+   -0.51,
+   0.51
+  ]
+ },
+ {
+  "bridge": 1,
+  "end": "nw",
+  "dist_from_deck_end_px": 80,
+  "road_center_vs_deck_center_px": 0.0,
+  "road_width_px": 68.0,
+  "deck_width_px": 68.0,
+  "side_steps_px": [
+   -0.01,
+   0.01
+  ]
+ },
+ {
+  "bridge": 1,
+  "end": "se",
+  "dist_from_deck_end_px": 80,
+  "road_center_vs_deck_center_px": 0.0,
+  "road_width_px": 69.0,
+  "deck_width_px": 68.0,
+  "side_steps_px": [
+   -0.51,
+   0.51
+  ]
+ },
+ {
+  "bridge": 1,
+  "end": "nw",
+  "dist_from_deck_end_px": 150,
+  "road_center_vs_deck_center_px": -3.75,
+  "road_width_px": 76.5,
+  "deck_width_px": 68.0,
+  "side_steps_px": [
+   -8.01,
+   0.51
+  ]
+ },
+ {
+  "bridge": 1,
+  "end": "se",
+  "dist_from_deck_end_px": 150,
+  "road_center_vs_deck_center_px": 3.75,
+  "road_width_px": 75.5,
+  "deck_width_px": 68.0,
+  "side_steps_px": [
+   -0.01,
+   7.51
+  ]
+ },
+ {
+  "bridge": 2,
+  "end": "nw",
+  "dist_from_deck_end_px": 20,
+  "road_center_vs_deck_center_px": 0.5,
+  "road_width_px": 69.0,
+  "deck_width_px": 68.0,
+  "side_steps_px": [
+   -0.01,
+   1.01
+  ]
+ },
+ {
+  "bridge": 2,
+  "end": "se",
+  "dist_from_deck_end_px": 20,
+  "road_center_vs_deck_center_px": -0.25,
+  "road_width_px": 68.5,
+  "deck_width_px": 68.0,
+  "side_steps_px": [
+   -0.51,
+   0.01
+  ]
+ },
+ {
+  "bridge": 2,
+  "end": "nw",
+  "dist_from_deck_end_px": 80,
+  "road_center_vs_deck_center_px": 0.75,
+  "road_width_px": 68.5,
+  "deck_width_px": 68.0,
+  "side_steps_px": [
+   0.49,
+   1.01
+  ]
+ },
+ {
+  "bridge": 2,
+  "end": "se",
+  "dist_from_deck_end_px": 80,
+  "road_center_vs_deck_center_px": 0.25,
+  "road_width_px": 68.5,
+  "deck_width_px": 68.0,
+  "side_steps_px": [
+   -0.01,
+   0.51
+  ]
+ },
+ {
+  "bridge": 2,
+  "end": "nw",
+  "dist_from_deck_end_px": 150,
+  "road_center_vs_deck_center_px": -2.5,
+  "road_width_px": 74.0,
+  "deck_width_px": 68.0,
+  "side_steps_px": [
+   -5.51,
+   0.51
+  ]
+ },
+ {
+  "bridge": 2,
+  "end": "se",
+  "dist_from_deck_end_px": 150,
+  "road_center_vs_deck_center_px": 2.75,
+  "road_width_px": 73.5,
+  "deck_width_px": 68.0,
+  "side_steps_px": [
+   -0.01,
+   5.51
+  ]
+ }
+]

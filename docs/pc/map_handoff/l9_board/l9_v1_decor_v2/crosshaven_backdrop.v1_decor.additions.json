@@ -1,0 +1,73 @@
+{
+  "v1_decor": {
+    "placement": {
+      "space": "board local px; cell (x,y) centre = ((x-y)*32, (x+y)*16). Mock v1 board scale 0.71 -> the game maps it 1:1 in world space",
+      "sky": {
+        "center": [
+          0.0,
+          308.5
+        ],
+        "world_size": [
+          2847.843,
+          1440.023
+        ]
+      },
+      "clearing": {
+        "center": [
+          0.0,
+          308.5
+        ],
+        "world_size": [
+          2847.843,
+          1440.023
+        ]
+      },
+      "leaf_frame_left": {
+        "center": [
+          -702.817,
+          144.449
+        ],
+        "world_size": [
+          1045.07,
+          1363.102
+        ],
+        "z": 722
+      },
+      "leaf_frame_right": {
+        "center": [
+          702.817,
+          144.449
+        ],
+        "world_size": [
+          1045.07,
+          1363.102
+        ],
+        "z": 723
+      },
+      "leaf_frame_top": {
+        "center": [
+          0.0,
+          -199.143
+        ],
+        "world_size": [
+          2450.704,
+          675.918
+        ],
+        "z": 720
+      },
+      "leaf_frame_bottom": {
+        "center": [
+          0.0,
+          651.388
+        ],
+        "world_size": [
+          2450.704,
+          349.224
+        ],
+        "z": 721
+      }
+    },
+    "hud_clear_px": 175,
+    "props_live": true
+  }
+}

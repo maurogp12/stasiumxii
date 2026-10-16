@@ -1,0 +1,109 @@
+{
+  "status": "Proposed",
+  "pieces": {
+    "stilt_house_a": {
+      "size": [
+        390,
+        517
+      ],
+      "source": "stilt_houses.jpg",
+      "status": "Proposed"
+    },
+    "stilt_house_b": {
+      "size": [
+        394,
+        504
+      ],
+      "source": "stilt_houses.jpg",
+      "status": "Proposed"
+    },
+    "witch_hut": {
+      "size": [
+        879,
+        705
+      ],
+      "source": "witch_hut.jpg",
+      "status": "Proposed"
+    },
+    "boardwalk_long": {
+      "size": [
+        381,
+        254
+      ],
+      "source": "props_sheet.jpg",
+      "status": "Proposed"
+    },
+    "boardwalk_short": {
+      "size": [
+        156,
+        113
+      ],
+      "source": "props_sheet.jpg",
+      "status": "Proposed"
+    },
+    "boardwalk_steps": {
+      "size": [
+        155,
+        136
+      ],
+      "source": "props_sheet.jpg",
+      "status": "Proposed"
+    },
+    "rope_bridge": {
+      "size": [
+        230,
+        223
+      ],
+      "source": "props_sheet.jpg",
+      "status": "Proposed"
+    },
+    "fishing_jetty": {
+      "size": [
+        231,
+        186
+      ],
+      "source": "props_sheet.jpg",
+      "status": "Proposed"
+    },
+    "herbs_mushrooms": {
+      "size": [
+        317,
+        252
+      ],
+      "source": "props_sheet.jpg",
+      "status": "Proposed"
+    },
+    "cattails": {
+      "size": [
+        229,
+        238
+      ],
+      "source": "props_sheet.jpg",
+      "status": "Proposed"
+    },
+    "dead_mossy_tree": {
+      "size": [
+        230,
+        293
+      ],
+      "source": "props_sheet.jpg",
+      "status": "Proposed"
+    },
+    "spring_source": {
+      "size": [
+        276,
+        177
+      ],
+      "source": "props_sheet.jpg",
+      "status": "Proposed"
+    },
+    "stilt_house_c": {
+      "size": [
+        393,
+        530
+      ],
+      "source": "stilt_houses.jpg",
+      "status": "Proposed"
+    }
+  }
+}

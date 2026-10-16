@@ -1,0 +1,33 @@
+{
+  "walkable_pct": 40.4,
+  "bfs_reachable": {
+    "entry": true,
+    "NE": true,
+    "hamlet": true,
+    "SE": true,
+    "SW": true,
+    "NW": true,
+    "br_NE": true,
+    "br_SE": true,
+    "br_SW": true,
+    "br_NW": true
+  },
+  "path_px": 6866,
+  "waypoints": [
+    "entry",
+    "NE",
+    "br_NE",
+    "hamlet",
+    "SE",
+    "br_SE",
+    "hamlet2",
+    "br_SW",
+    "SW",
+    "west",
+    "br_NW",
+    "NW",
+    "exit"
+  ],
+  "method": "mud-12px; drop CC<5k; decks after water; forced bridges",
+  "path_n": 2027
+}
