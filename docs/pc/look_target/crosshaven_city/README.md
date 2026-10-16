@@ -29,3 +29,26 @@ What the target has that the current build does not:
 
 **Overall look**
 - Painted, saturated and detailed, with soft shadows: everything is hand-painted, with no visible tile grid.
+
+## Luca's rules for Crosshaven (via Scenario Art, #252, 16 Oct 2026)
+
+Where the target image breaks these rules, the rule wins:
+
+- **No yards (a):** no gardens, fences, hedged plots or dirt yards. Houses stand on grass with plants. The target's south houses with fenced plots break this rule.
+- **No bare earth or street props (b):** no bare earth, and no carts, crates or timber in the middle of the street. The target's forge quarter yards and lane props break this rule.
+- **Plazas off the streets (c):** plazas sit inside the wall in open space, never on a street junction. The target's cathedral plaza and fountain circle break this rule.
+- **Allowed:** the east garden-quarter park, and houses on grass with plants.
+- **Not allowed:** farms and farm animals.
+- **Also applies:** day and night NPC life, and see-through fade on every obstacle.
+
+## What `cx_built` is
+
+- `cx_built` is **one painted plate** (5120×2880) from the Rosebud prototype. It has no cell grid and no chunks.
+- **Files:**
+  - `ground.jpg`, `plate.jpg`;
+  - `layers.json` (400 sprite layers with x, y, sort_y and fade) and `layers/`;
+  - `walkmask.png`, `heightmap.png`, `river.png`, `bridge_h_*.png`;
+  - `zones*.json`, `route*.json`, `bridge_joins.json`, `build_info.json`;
+  - `housing_tiers/`.
+- **It is not in Godot yet.** Building Crosshaven means bringing this into the game's iso cell world: walkable cells, y-sorted sprites and fades.
+- **Open (Luca):** whether it replaces the Crossroads plaza, and where the 5 towns and the dungeon doors go.
