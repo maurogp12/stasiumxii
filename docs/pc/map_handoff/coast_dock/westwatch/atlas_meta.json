@@ -1,0 +1,1470 @@
+{
+ "format": "stasium.world_atlas",
+ "format_version": 2,
+ "region": "outskirts_westwatch",
+ "root": "art/pc/look/outskirts/westwatch/",
+ "package": "outskirts_themes/westwatch",
+ "date": "2026-10-03",
+ "scope": "PC-only painted 2D iso theme kit for the WESTWATCH open-world outskirts (PR #241 flat washes -> painted ground + props). Box-only; nothing committed.",
+ "grid": {
+  "projection": "2:1 iso",
+  "tile_1x": [
+   64,
+   32
+  ],
+  "tile_2x": [
+   128,
+   64
+  ],
+  "cell_centre_1x": "((x-y)*32, (x+y)*16)",
+  "sort": "(x+y)"
+ },
+ "files": {
+  "tiles": "tiles/<id>.png (1x) + tiles/<id>@2x.png (2x master)",
+  "props": "props/<id>.png + props/<id>@2x.png (also props/props.json)",
+  "overlays": "overlays/<id>.png + overlays/<id>@2x.png (screen-space fog/haze; listed in animated/anim_meta.json as 1-frame scroll layers and in kit.json)",
+  "sway_masks": "animated/sway_masks/<id>_swaymask.png + animated/sway_masks/_2x/"
+ },
+ "anchors": {
+  "tile": "bottom-centre on the cell south tip (= top-left at cell centre + (-32,-16) 1x)",
+  "prop": "bottom-centre on the south tip of the south-most footprint cell"
+ },
+ "autotile": {
+  "picker": "Crosshaven picker (crosshaven_art.gd pick_tile): g = sides nw,ne,se,sw (in that order) whose neighbour is in `against`; g empty -> interior by h(x,y); else <edge_prefix><g joined by _>; then <corner_prefix><c> decals for diagonal corners c whose two sides are not in g but whose diagonal neighbour is in `against`.",
+  "sides": {
+   "nw": "(x-1,y)",
+   "ne": "(x,y-1)",
+   "se": "(x+1,y)",
+   "sw": "(x,y+1)"
+  },
+  "corners": {
+   "n": "(x-1,y-1)",
+   "e": "(x+1,y-1)",
+   "s": "(x+1,y+1)",
+   "w": "(x-1,y+1)"
+  },
+  "families": {
+   "blight": {
+    "interiors": [
+     "blight_a",
+     "blight_b",
+     "blight_c",
+     "blight_d"
+    ],
+    "edge": "blight_edge_",
+    "corner": "blight_corner_",
+    "against": [
+     "golden_plains"
+    ]
+   },
+   "cracked": {
+    "interiors": [
+     "cracked_a",
+     "cracked_b",
+     "cracked_c",
+     "cracked_d"
+    ],
+    "edge": "cracked_edge_",
+    "corner": "cracked_corner_",
+    "against": [
+     "blight",
+     "golden_plains (no grass-to-clay piece: keep an ash ring between grass and cracked clay)"
+    ]
+   }
+  },
+  "note": "all 15 side combinations are shipped (Crosshaven grammar); the 4 single sides are the brief's <family>_edge_{nw,ne,se,sw}."
+ },
+ "lighting": {
+  "key": "neutral warm daylight from the top-left (as Crosshaven)",
+  "shadows": "contact only; no cast shadows",
+  "grade": "not pre-graded"
+ },
+ "tiles": [
+  {
+   "id": "blight_a",
+   "file": "tiles/blight_a.png",
+   "file_2x": "tiles/blight_a@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "tile",
+   "family": "blight",
+   "base_terrain": "blight",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "variant": "a"
+  },
+  {
+   "id": "blight_b",
+   "file": "tiles/blight_b.png",
+   "file_2x": "tiles/blight_b@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "tile",
+   "family": "blight",
+   "base_terrain": "blight",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "variant": "b"
+  },
+  {
+   "id": "blight_c",
+   "file": "tiles/blight_c.png",
+   "file_2x": "tiles/blight_c@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "tile",
+   "family": "blight",
+   "base_terrain": "blight",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "variant": "c"
+  },
+  {
+   "id": "blight_d",
+   "file": "tiles/blight_d.png",
+   "file_2x": "tiles/blight_d@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "tile",
+   "family": "blight",
+   "base_terrain": "blight",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "variant": "d"
+  },
+  {
+   "id": "cracked_a",
+   "file": "tiles/cracked_a.png",
+   "file_2x": "tiles/cracked_a@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "tile",
+   "family": "cracked",
+   "base_terrain": "cracked",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "variant": "a"
+  },
+  {
+   "id": "cracked_b",
+   "file": "tiles/cracked_b.png",
+   "file_2x": "tiles/cracked_b@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "tile",
+   "family": "cracked",
+   "base_terrain": "cracked",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "variant": "b"
+  },
+  {
+   "id": "cracked_c",
+   "file": "tiles/cracked_c.png",
+   "file_2x": "tiles/cracked_c@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "tile",
+   "family": "cracked",
+   "base_terrain": "cracked",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "variant": "c"
+  },
+  {
+   "id": "cracked_d",
+   "file": "tiles/cracked_d.png",
+   "file_2x": "tiles/cracked_d@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "tile",
+   "family": "cracked",
+   "base_terrain": "cracked",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "variant": "d"
+  },
+  {
+   "id": "blight_edge_nw",
+   "file": "tiles/blight_edge_nw.png",
+   "file_2x": "tiles/blight_edge_nw@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "blight",
+   "base_terrain": "blight",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "nw"
+   ],
+   "against": "golden_plains",
+   "note": "withering join: grass yellows to straw, then dies grey-violet into the ash; dead tufts cross into the ash, ash flecks in the grass lip"
+  },
+  {
+   "id": "blight_edge_ne",
+   "file": "tiles/blight_edge_ne.png",
+   "file_2x": "tiles/blight_edge_ne@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "blight",
+   "base_terrain": "blight",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "ne"
+   ],
+   "against": "golden_plains",
+   "note": "withering join: grass yellows to straw, then dies grey-violet into the ash; dead tufts cross into the ash, ash flecks in the grass lip"
+  },
+  {
+   "id": "blight_edge_nw_ne",
+   "file": "tiles/blight_edge_nw_ne.png",
+   "file_2x": "tiles/blight_edge_nw_ne@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "blight",
+   "base_terrain": "blight",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "nw",
+    "ne"
+   ],
+   "against": "golden_plains",
+   "note": "withering join: grass yellows to straw, then dies grey-violet into the ash; dead tufts cross into the ash, ash flecks in the grass lip"
+  },
+  {
+   "id": "blight_edge_se",
+   "file": "tiles/blight_edge_se.png",
+   "file_2x": "tiles/blight_edge_se@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "blight",
+   "base_terrain": "blight",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "se"
+   ],
+   "against": "golden_plains",
+   "note": "withering join: grass yellows to straw, then dies grey-violet into the ash; dead tufts cross into the ash, ash flecks in the grass lip"
+  },
+  {
+   "id": "blight_edge_nw_se",
+   "file": "tiles/blight_edge_nw_se.png",
+   "file_2x": "tiles/blight_edge_nw_se@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "blight",
+   "base_terrain": "blight",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "nw",
+    "se"
+   ],
+   "against": "golden_plains",
+   "note": "withering join: grass yellows to straw, then dies grey-violet into the ash; dead tufts cross into the ash, ash flecks in the grass lip"
+  },
+  {
+   "id": "blight_edge_ne_se",
+   "file": "tiles/blight_edge_ne_se.png",
+   "file_2x": "tiles/blight_edge_ne_se@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "blight",
+   "base_terrain": "blight",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "ne",
+    "se"
+   ],
+   "against": "golden_plains",
+   "note": "withering join: grass yellows to straw, then dies grey-violet into the ash; dead tufts cross into the ash, ash flecks in the grass lip"
+  },
+  {
+   "id": "blight_edge_nw_ne_se",
+   "file": "tiles/blight_edge_nw_ne_se.png",
+   "file_2x": "tiles/blight_edge_nw_ne_se@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "blight",
+   "base_terrain": "blight",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "nw",
+    "ne",
+    "se"
+   ],
+   "against": "golden_plains",
+   "note": "withering join: grass yellows to straw, then dies grey-violet into the ash; dead tufts cross into the ash, ash flecks in the grass lip"
+  },
+  {
+   "id": "blight_edge_sw",
+   "file": "tiles/blight_edge_sw.png",
+   "file_2x": "tiles/blight_edge_sw@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "blight",
+   "base_terrain": "blight",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "sw"
+   ],
+   "against": "golden_plains",
+   "note": "withering join: grass yellows to straw, then dies grey-violet into the ash; dead tufts cross into the ash, ash flecks in the grass lip"
+  },
+  {
+   "id": "blight_edge_nw_sw",
+   "file": "tiles/blight_edge_nw_sw.png",
+   "file_2x": "tiles/blight_edge_nw_sw@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "blight",
+   "base_terrain": "blight",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "nw",
+    "sw"
+   ],
+   "against": "golden_plains",
+   "note": "withering join: grass yellows to straw, then dies grey-violet into the ash; dead tufts cross into the ash, ash flecks in the grass lip"
+  },
+  {
+   "id": "blight_edge_ne_sw",
+   "file": "tiles/blight_edge_ne_sw.png",
+   "file_2x": "tiles/blight_edge_ne_sw@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "blight",
+   "base_terrain": "blight",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "ne",
+    "sw"
+   ],
+   "against": "golden_plains",
+   "note": "withering join: grass yellows to straw, then dies grey-violet into the ash; dead tufts cross into the ash, ash flecks in the grass lip"
+  },
+  {
+   "id": "blight_edge_nw_ne_sw",
+   "file": "tiles/blight_edge_nw_ne_sw.png",
+   "file_2x": "tiles/blight_edge_nw_ne_sw@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "blight",
+   "base_terrain": "blight",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "nw",
+    "ne",
+    "sw"
+   ],
+   "against": "golden_plains",
+   "note": "withering join: grass yellows to straw, then dies grey-violet into the ash; dead tufts cross into the ash, ash flecks in the grass lip"
+  },
+  {
+   "id": "blight_edge_se_sw",
+   "file": "tiles/blight_edge_se_sw.png",
+   "file_2x": "tiles/blight_edge_se_sw@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "blight",
+   "base_terrain": "blight",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "se",
+    "sw"
+   ],
+   "against": "golden_plains",
+   "note": "withering join: grass yellows to straw, then dies grey-violet into the ash; dead tufts cross into the ash, ash flecks in the grass lip"
+  },
+  {
+   "id": "blight_edge_nw_se_sw",
+   "file": "tiles/blight_edge_nw_se_sw.png",
+   "file_2x": "tiles/blight_edge_nw_se_sw@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "blight",
+   "base_terrain": "blight",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "nw",
+    "se",
+    "sw"
+   ],
+   "against": "golden_plains",
+   "note": "withering join: grass yellows to straw, then dies grey-violet into the ash; dead tufts cross into the ash, ash flecks in the grass lip"
+  },
+  {
+   "id": "blight_edge_ne_se_sw",
+   "file": "tiles/blight_edge_ne_se_sw.png",
+   "file_2x": "tiles/blight_edge_ne_se_sw@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "blight",
+   "base_terrain": "blight",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "ne",
+    "se",
+    "sw"
+   ],
+   "against": "golden_plains",
+   "note": "withering join: grass yellows to straw, then dies grey-violet into the ash; dead tufts cross into the ash, ash flecks in the grass lip"
+  },
+  {
+   "id": "blight_edge_nw_ne_se_sw",
+   "file": "tiles/blight_edge_nw_ne_se_sw.png",
+   "file_2x": "tiles/blight_edge_nw_ne_se_sw@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "blight",
+   "base_terrain": "blight",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "nw",
+    "ne",
+    "se",
+    "sw"
+   ],
+   "against": "golden_plains",
+   "note": "withering join: grass yellows to straw, then dies grey-violet into the ash; dead tufts cross into the ash, ash flecks in the grass lip"
+  },
+  {
+   "id": "blight_corner_n",
+   "file": "tiles/blight_corner_n.png",
+   "file_2x": "tiles/blight_corner_n@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "decal",
+   "kit_kind": "corner",
+   "family": "blight",
+   "base_terrain": "blight",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "corner": "n",
+   "against": "golden_plains",
+   "note": "withering join: grass yellows to straw, then dies grey-violet into the ash; dead tufts cross into the ash, ash flecks in the grass lip"
+  },
+  {
+   "id": "blight_corner_e",
+   "file": "tiles/blight_corner_e.png",
+   "file_2x": "tiles/blight_corner_e@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "decal",
+   "kit_kind": "corner",
+   "family": "blight",
+   "base_terrain": "blight",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "corner": "e",
+   "against": "golden_plains",
+   "note": "withering join: grass yellows to straw, then dies grey-violet into the ash; dead tufts cross into the ash, ash flecks in the grass lip"
+  },
+  {
+   "id": "blight_corner_s",
+   "file": "tiles/blight_corner_s.png",
+   "file_2x": "tiles/blight_corner_s@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "decal",
+   "kit_kind": "corner",
+   "family": "blight",
+   "base_terrain": "blight",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "corner": "s",
+   "against": "golden_plains",
+   "note": "withering join: grass yellows to straw, then dies grey-violet into the ash; dead tufts cross into the ash, ash flecks in the grass lip"
+  },
+  {
+   "id": "blight_corner_w",
+   "file": "tiles/blight_corner_w.png",
+   "file_2x": "tiles/blight_corner_w@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "decal",
+   "kit_kind": "corner",
+   "family": "blight",
+   "base_terrain": "blight",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "corner": "w",
+   "against": "golden_plains",
+   "note": "withering join: grass yellows to straw, then dies grey-violet into the ash; dead tufts cross into the ash, ash flecks in the grass lip"
+  },
+  {
+   "id": "cracked_edge_nw",
+   "file": "tiles/cracked_edge_nw.png",
+   "file_2x": "tiles/cracked_edge_nw@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "cracked",
+   "base_terrain": "cracked",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "nw"
+   ],
+   "against": "blight",
+   "note": "ash drifts over the clay plates: noisy ash contour, ash clumps in the cracks, clay flecks in the ash, dark crack lip"
+  },
+  {
+   "id": "cracked_edge_ne",
+   "file": "tiles/cracked_edge_ne.png",
+   "file_2x": "tiles/cracked_edge_ne@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "cracked",
+   "base_terrain": "cracked",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "ne"
+   ],
+   "against": "blight",
+   "note": "ash drifts over the clay plates: noisy ash contour, ash clumps in the cracks, clay flecks in the ash, dark crack lip"
+  },
+  {
+   "id": "cracked_edge_nw_ne",
+   "file": "tiles/cracked_edge_nw_ne.png",
+   "file_2x": "tiles/cracked_edge_nw_ne@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "cracked",
+   "base_terrain": "cracked",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "nw",
+    "ne"
+   ],
+   "against": "blight",
+   "note": "ash drifts over the clay plates: noisy ash contour, ash clumps in the cracks, clay flecks in the ash, dark crack lip"
+  },
+  {
+   "id": "cracked_edge_se",
+   "file": "tiles/cracked_edge_se.png",
+   "file_2x": "tiles/cracked_edge_se@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "cracked",
+   "base_terrain": "cracked",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "se"
+   ],
+   "against": "blight",
+   "note": "ash drifts over the clay plates: noisy ash contour, ash clumps in the cracks, clay flecks in the ash, dark crack lip"
+  },
+  {
+   "id": "cracked_edge_nw_se",
+   "file": "tiles/cracked_edge_nw_se.png",
+   "file_2x": "tiles/cracked_edge_nw_se@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "cracked",
+   "base_terrain": "cracked",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "nw",
+    "se"
+   ],
+   "against": "blight",
+   "note": "ash drifts over the clay plates: noisy ash contour, ash clumps in the cracks, clay flecks in the ash, dark crack lip"
+  },
+  {
+   "id": "cracked_edge_ne_se",
+   "file": "tiles/cracked_edge_ne_se.png",
+   "file_2x": "tiles/cracked_edge_ne_se@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "cracked",
+   "base_terrain": "cracked",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "ne",
+    "se"
+   ],
+   "against": "blight",
+   "note": "ash drifts over the clay plates: noisy ash contour, ash clumps in the cracks, clay flecks in the ash, dark crack lip"
+  },
+  {
+   "id": "cracked_edge_nw_ne_se",
+   "file": "tiles/cracked_edge_nw_ne_se.png",
+   "file_2x": "tiles/cracked_edge_nw_ne_se@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "cracked",
+   "base_terrain": "cracked",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "nw",
+    "ne",
+    "se"
+   ],
+   "against": "blight",
+   "note": "ash drifts over the clay plates: noisy ash contour, ash clumps in the cracks, clay flecks in the ash, dark crack lip"
+  },
+  {
+   "id": "cracked_edge_sw",
+   "file": "tiles/cracked_edge_sw.png",
+   "file_2x": "tiles/cracked_edge_sw@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "cracked",
+   "base_terrain": "cracked",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "sw"
+   ],
+   "against": "blight",
+   "note": "ash drifts over the clay plates: noisy ash contour, ash clumps in the cracks, clay flecks in the ash, dark crack lip"
+  },
+  {
+   "id": "cracked_edge_nw_sw",
+   "file": "tiles/cracked_edge_nw_sw.png",
+   "file_2x": "tiles/cracked_edge_nw_sw@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "cracked",
+   "base_terrain": "cracked",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "nw",
+    "sw"
+   ],
+   "against": "blight",
+   "note": "ash drifts over the clay plates: noisy ash contour, ash clumps in the cracks, clay flecks in the ash, dark crack lip"
+  },
+  {
+   "id": "cracked_edge_ne_sw",
+   "file": "tiles/cracked_edge_ne_sw.png",
+   "file_2x": "tiles/cracked_edge_ne_sw@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "cracked",
+   "base_terrain": "cracked",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "ne",
+    "sw"
+   ],
+   "against": "blight",
+   "note": "ash drifts over the clay plates: noisy ash contour, ash clumps in the cracks, clay flecks in the ash, dark crack lip"
+  },
+  {
+   "id": "cracked_edge_nw_ne_sw",
+   "file": "tiles/cracked_edge_nw_ne_sw.png",
+   "file_2x": "tiles/cracked_edge_nw_ne_sw@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "cracked",
+   "base_terrain": "cracked",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "nw",
+    "ne",
+    "sw"
+   ],
+   "against": "blight",
+   "note": "ash drifts over the clay plates: noisy ash contour, ash clumps in the cracks, clay flecks in the ash, dark crack lip"
+  },
+  {
+   "id": "cracked_edge_se_sw",
+   "file": "tiles/cracked_edge_se_sw.png",
+   "file_2x": "tiles/cracked_edge_se_sw@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "cracked",
+   "base_terrain": "cracked",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "se",
+    "sw"
+   ],
+   "against": "blight",
+   "note": "ash drifts over the clay plates: noisy ash contour, ash clumps in the cracks, clay flecks in the ash, dark crack lip"
+  },
+  {
+   "id": "cracked_edge_nw_se_sw",
+   "file": "tiles/cracked_edge_nw_se_sw.png",
+   "file_2x": "tiles/cracked_edge_nw_se_sw@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "cracked",
+   "base_terrain": "cracked",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "nw",
+    "se",
+    "sw"
+   ],
+   "against": "blight",
+   "note": "ash drifts over the clay plates: noisy ash contour, ash clumps in the cracks, clay flecks in the ash, dark crack lip"
+  },
+  {
+   "id": "cracked_edge_ne_se_sw",
+   "file": "tiles/cracked_edge_ne_se_sw.png",
+   "file_2x": "tiles/cracked_edge_ne_se_sw@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "cracked",
+   "base_terrain": "cracked",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "ne",
+    "se",
+    "sw"
+   ],
+   "against": "blight",
+   "note": "ash drifts over the clay plates: noisy ash contour, ash clumps in the cracks, clay flecks in the ash, dark crack lip"
+  },
+  {
+   "id": "cracked_edge_nw_ne_se_sw",
+   "file": "tiles/cracked_edge_nw_ne_se_sw.png",
+   "file_2x": "tiles/cracked_edge_nw_ne_se_sw@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "cracked",
+   "base_terrain": "cracked",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "nw",
+    "ne",
+    "se",
+    "sw"
+   ],
+   "against": "blight",
+   "note": "ash drifts over the clay plates: noisy ash contour, ash clumps in the cracks, clay flecks in the ash, dark crack lip"
+  },
+  {
+   "id": "cracked_corner_n",
+   "file": "tiles/cracked_corner_n.png",
+   "file_2x": "tiles/cracked_corner_n@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "decal",
+   "kit_kind": "corner",
+   "family": "cracked",
+   "base_terrain": "cracked",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "corner": "n",
+   "against": "blight",
+   "note": "ash drifts over the clay plates: noisy ash contour, ash clumps in the cracks, clay flecks in the ash, dark crack lip"
+  },
+  {
+   "id": "cracked_corner_e",
+   "file": "tiles/cracked_corner_e.png",
+   "file_2x": "tiles/cracked_corner_e@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "decal",
+   "kit_kind": "corner",
+   "family": "cracked",
+   "base_terrain": "cracked",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "corner": "e",
+   "against": "blight",
+   "note": "ash drifts over the clay plates: noisy ash contour, ash clumps in the cracks, clay flecks in the ash, dark crack lip"
+  },
+  {
+   "id": "cracked_corner_s",
+   "file": "tiles/cracked_corner_s.png",
+   "file_2x": "tiles/cracked_corner_s@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "decal",
+   "kit_kind": "corner",
+   "family": "cracked",
+   "base_terrain": "cracked",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "corner": "s",
+   "against": "blight",
+   "note": "ash drifts over the clay plates: noisy ash contour, ash clumps in the cracks, clay flecks in the ash, dark crack lip"
+  },
+  {
+   "id": "cracked_corner_w",
+   "file": "tiles/cracked_corner_w.png",
+   "file_2x": "tiles/cracked_corner_w@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "decal",
+   "kit_kind": "corner",
+   "family": "cracked",
+   "base_terrain": "cracked",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "corner": "w",
+   "against": "blight",
+   "note": "ash drifts over the clay plates: noisy ash contour, ash clumps in the cracks, clay flecks in the ash, dark crack lip"
+  }
+ ],
+ "props": [
+  {
+   "id": "dead_tree_tall",
+   "file": "props/dead_tree_tall.png",
+   "file_2x": "props/dead_tree_tall@2x.png",
+   "size": [
+    112,
+    128
+   ],
+   "size_2x": [
+    224,
+    256
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "kind": "tree",
+   "layer": "prop",
+   "anchor": "image bottom-centre = south tip of the anchor cell (the south-most footprint cell)",
+   "art_x_from_anchor_2x": [
+    -57,
+    63
+   ],
+   "art_height_px_2x": 182,
+   "lowest_opaque_gap_px_2x": 4,
+   "sort": "y-sort by the anchor (south-most footprint cell)",
+   "contact_shadow": "painted ground patch from the raw, rim faded into the tile; no cast shadows",
+   "note": "tall dead twisted tree on an ash patch (tree_broad class 112x128@1x); sway mask moves only the upper branches",
+   "sway_mask": "animated/sway_masks/dead_tree_tall_swaymask.png"
+  },
+  {
+   "id": "dead_tree_mid",
+   "file": "props/dead_tree_mid.png",
+   "file_2x": "props/dead_tree_mid@2x.png",
+   "size": [
+    64,
+    112
+   ],
+   "size_2x": [
+    128,
+    224
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "kind": "tree",
+   "layer": "prop",
+   "anchor": "image bottom-centre = south tip of the anchor cell (the south-most footprint cell)",
+   "art_x_from_anchor_2x": [
+    -47,
+    55
+   ],
+   "art_height_px_2x": 149,
+   "lowest_opaque_gap_px_2x": 2,
+   "sort": "y-sort by the anchor (south-most footprint cell)",
+   "contact_shadow": "painted ground patch from the raw, rim faded into the tile; no cast shadows",
+   "note": "mid dead twisted tree (tree class 64x112@1x); sway mask",
+   "sway_mask": "animated/sway_masks/dead_tree_mid_swaymask.png"
+  },
+  {
+   "id": "dead_tree_lean",
+   "file": "props/dead_tree_lean.png",
+   "file_2x": "props/dead_tree_lean@2x.png",
+   "size": [
+    112,
+    128
+   ],
+   "size_2x": [
+    224,
+    256
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "kind": "tree",
+   "layer": "prop",
+   "anchor": "image bottom-centre = south tip of the anchor cell (the south-most footprint cell)",
+   "art_x_from_anchor_2x": [
+    -49,
+    65
+   ],
+   "art_height_px_2x": 134,
+   "lowest_opaque_gap_px_2x": 2,
+   "sort": "y-sort by the anchor (south-most footprint cell)",
+   "contact_shadow": "painted ground patch from the raw, rim faded into the tile; no cast shadows",
+   "note": "leaning dead tree (kept inside the props-gate \u00b172 px span, so it is smaller than the raw suggests); sway mask",
+   "sway_mask": "animated/sway_masks/dead_tree_lean_swaymask.png"
+  },
+  {
+   "id": "hollow_stump",
+   "file": "props/hollow_stump.png",
+   "file_2x": "props/hollow_stump@2x.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "kind": "decor_block",
+   "layer": "prop",
+   "anchor": "image bottom-centre = south tip of the anchor cell (the south-most footprint cell)",
+   "art_x_from_anchor_2x": [
+    -51,
+    49
+   ],
+   "art_height_px_2x": 101,
+   "lowest_opaque_gap_px_2x": 2,
+   "sort": "y-sort by the anchor (south-most footprint cell)",
+   "contact_shadow": "painted ground patch from the raw, rim faded into the tile; no cast shadows",
+   "note": "hollow broken stump, ash and roots"
+  },
+  {
+   "id": "thorn_brush_a",
+   "file": "props/thorn_brush_a.png",
+   "file_2x": "props/thorn_brush_a@2x.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "kind": "plant",
+   "layer": "prop",
+   "anchor": "image bottom-centre = south tip of the anchor cell (the south-most footprint cell)",
+   "art_x_from_anchor_2x": [
+    -58,
+    58
+   ],
+   "art_height_px_2x": 119,
+   "lowest_opaque_gap_px_2x": 2,
+   "sort": "y-sort by the anchor (south-most footprint cell)",
+   "contact_shadow": "painted ground patch from the raw, rim faded into the tile; no cast shadows",
+   "note": "dense thorn bramble mound"
+  },
+  {
+   "id": "thorn_brush_b",
+   "file": "props/thorn_brush_b.png",
+   "file_2x": "props/thorn_brush_b@2x.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "kind": "plant",
+   "layer": "prop",
+   "anchor": "image bottom-centre = south tip of the anchor cell (the south-most footprint cell)",
+   "art_x_from_anchor_2x": [
+    -54,
+    62
+   ],
+   "art_height_px_2x": 125,
+   "lowest_opaque_gap_px_2x": 2,
+   "sort": "y-sort by the anchor (south-most footprint cell)",
+   "contact_shadow": "painted ground patch from the raw, rim faded into the tile; no cast shadows",
+   "note": "wide low thorn bramble"
+  },
+  {
+   "id": "thorn_brush_c",
+   "file": "props/thorn_brush_c.png",
+   "file_2x": "props/thorn_brush_c@2x.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "kind": "plant",
+   "layer": "prop",
+   "anchor": "image bottom-centre = south tip of the anchor cell (the south-most footprint cell)",
+   "art_x_from_anchor_2x": [
+    -43,
+    45
+   ],
+   "art_height_px_2x": 105,
+   "lowest_opaque_gap_px_2x": 2,
+   "sort": "y-sort by the anchor (south-most footprint cell)",
+   "contact_shadow": "painted ground patch from the raw, rim faded into the tile; no cast shadows",
+   "note": "small looping thorn bramble"
+  },
+  {
+   "id": "withered_reeds",
+   "file": "props/withered_reeds.png",
+   "file_2x": "props/withered_reeds@2x.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "kind": "plant",
+   "layer": "prop",
+   "anchor": "image bottom-centre = south tip of the anchor cell (the south-most footprint cell)",
+   "art_x_from_anchor_2x": [
+    -42,
+    41
+   ],
+   "art_height_px_2x": 113,
+   "lowest_opaque_gap_px_2x": 3,
+   "sort": "y-sort by the anchor (south-most footprint cell)",
+   "contact_shadow": "painted ground patch from the raw, rim faded into the tile; no cast shadows",
+   "note": "withered pale reeds on an ash tuft; sway mask (dry, stiff: play it slow)",
+   "sway_mask": "animated/sway_masks/withered_reeds_swaymask.png"
+  },
+  {
+   "id": "skull_stone",
+   "file": "props/skull_stone.png",
+   "file_2x": "props/skull_stone@2x.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "kind": "decor",
+   "layer": "prop",
+   "anchor": "image bottom-centre = south tip of the anchor cell (the south-most footprint cell)",
+   "art_x_from_anchor_2x": [
+    -49,
+    54
+   ],
+   "art_height_px_2x": 74,
+   "lowest_opaque_gap_px_2x": 2,
+   "sort": "y-sort by the anchor (south-most footprint cell)",
+   "contact_shadow": "painted ground patch from the raw, rim faded into the tile; no cast shadows",
+   "note": "horned beast skull against a grey stone"
+  },
+  {
+   "id": "broken_fence_cloth",
+   "file": "props/broken_fence_cloth.png",
+   "file_2x": "props/broken_fence_cloth@2x.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "kind": "decor_block",
+   "layer": "prop",
+   "anchor": "image bottom-centre = south tip of the anchor cell (the south-most footprint cell)",
+   "art_x_from_anchor_2x": [
+    -56,
+    49
+   ],
+   "art_height_px_2x": 126,
+   "lowest_opaque_gap_px_2x": 2,
+   "sort": "y-sort by the anchor (south-most footprint cell)",
+   "contact_shadow": "painted ground patch from the raw, rim faded into the tile; no cast shadows",
+   "note": "broken picket fence run with a tattered cloth frozen mid-flap (static, the broken-hour detail; no sway)"
+  }
+ ]
+}

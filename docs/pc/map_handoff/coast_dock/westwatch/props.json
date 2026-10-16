@@ -1,0 +1,157 @@
+{
+ "package": "outskirts_themes/westwatch",
+ "root": "art/pc/look/outskirts/westwatch/",
+ "note": "checker index (world package): id, size_2x, footprint_cells, anchor_px_2x",
+ "props": [
+  {
+   "id": "dead_tree_tall",
+   "size_2x": [
+    224,
+    256
+   ],
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    112,
+    256
+   ]
+  },
+  {
+   "id": "dead_tree_mid",
+   "size_2x": [
+    128,
+    224
+   ],
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64,
+    224
+   ]
+  },
+  {
+   "id": "dead_tree_lean",
+   "size_2x": [
+    224,
+    256
+   ],
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    112,
+    256
+   ]
+  },
+  {
+   "id": "hollow_stump",
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64,
+    128
+   ]
+  },
+  {
+   "id": "thorn_brush_a",
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64,
+    128
+   ]
+  },
+  {
+   "id": "thorn_brush_b",
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64,
+    128
+   ]
+  },
+  {
+   "id": "thorn_brush_c",
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64,
+    128
+   ]
+  },
+  {
+   "id": "withered_reeds",
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64,
+    128
+   ]
+  },
+  {
+   "id": "skull_stone",
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64,
+    128
+   ]
+  },
+  {
+   "id": "broken_fence_cloth",
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64,
+    128
+   ]
+  }
+ ]
+}

@@ -1,0 +1,1482 @@
+{
+ "theme": "southbridge",
+ "version": 1,
+ "date": "2026-10-03",
+ "grammar": {
+  "picker": "Crosshaven picker (crosshaven_art.gd pick_tile): g = sides nw,ne,se,sw (in that order) whose neighbour is in `against`; g empty -> interior by h(x,y); else <edge_prefix><g joined by _>; then <corner_prefix><c> decals for diagonal corners c whose two sides are not in g but whose diagonal neighbour is in `against`.",
+  "sides": {
+   "nw": "(x-1,y)",
+   "ne": "(x,y-1)",
+   "se": "(x+1,y)",
+   "sw": "(x,y+1)"
+  },
+  "corners": {
+   "n": "(x-1,y-1)",
+   "e": "(x+1,y-1)",
+   "s": "(x+1,y+1)",
+   "w": "(x-1,y+1)"
+  },
+  "families": {
+   "mud": {
+    "interiors": [
+     "mud_a",
+     "mud_b",
+     "mud_c",
+     "mud_d"
+    ],
+    "edge": "mud_edge_",
+    "corner": "mud_corner_",
+    "against": [
+     "golden_plains"
+    ]
+   },
+   "swamp_water": {
+    "interiors": [
+     "swamp_water_a",
+     "swamp_water_b",
+     "swamp_water_c",
+     "swamp_water_d"
+    ],
+    "edge": "swamp_bank_edge_",
+    "corner": "swamp_bank_corner_",
+    "against": [
+     "mud",
+     "golden_plains (no grass bank piece: keep a mud ring between grass and the pool)"
+    ],
+    "decals": [
+     "lily_pads"
+    ]
+   }
+  },
+  "note": "all 15 side combinations are shipped (Crosshaven grammar); the 4 single sides are the brief's <family>_edge_{nw,ne,se,sw}. swamp_bank_* is drawn ON the water cell so the bank hugs the land side."
+ },
+ "count": 60,
+ "items": [
+  {
+   "id": "mud_a",
+   "file": "tiles/mud_a@2x.png",
+   "file_1x": "tiles/mud_a.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "tile",
+   "family": "mud",
+   "variant": "a"
+  },
+  {
+   "id": "mud_b",
+   "file": "tiles/mud_b@2x.png",
+   "file_1x": "tiles/mud_b.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "tile",
+   "family": "mud",
+   "variant": "b"
+  },
+  {
+   "id": "mud_c",
+   "file": "tiles/mud_c@2x.png",
+   "file_1x": "tiles/mud_c.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "tile",
+   "family": "mud",
+   "variant": "c"
+  },
+  {
+   "id": "mud_d",
+   "file": "tiles/mud_d@2x.png",
+   "file_1x": "tiles/mud_d.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "tile",
+   "family": "mud",
+   "variant": "d"
+  },
+  {
+   "id": "swamp_water_a",
+   "file": "tiles/swamp_water_a@2x.png",
+   "file_1x": "tiles/swamp_water_a.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "tile",
+   "family": "swamp_water",
+   "variant": "a"
+  },
+  {
+   "id": "swamp_water_b",
+   "file": "tiles/swamp_water_b@2x.png",
+   "file_1x": "tiles/swamp_water_b.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "tile",
+   "family": "swamp_water",
+   "variant": "b"
+  },
+  {
+   "id": "swamp_water_c",
+   "file": "tiles/swamp_water_c@2x.png",
+   "file_1x": "tiles/swamp_water_c.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "tile",
+   "family": "swamp_water",
+   "variant": "c"
+  },
+  {
+   "id": "swamp_water_d",
+   "file": "tiles/swamp_water_d@2x.png",
+   "file_1x": "tiles/swamp_water_d.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "tile",
+   "family": "swamp_water",
+   "variant": "d"
+  },
+  {
+   "id": "mud_edge_nw",
+   "file": "tiles/mud_edge_nw@2x.png",
+   "file_1x": "tiles/mud_edge_nw.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "mud",
+   "side": "nw",
+   "autotile": {
+    "family": "mud",
+    "against": "golden_plains",
+    "sides": [
+     "nw"
+    ]
+   }
+  },
+  {
+   "id": "mud_edge_ne",
+   "file": "tiles/mud_edge_ne@2x.png",
+   "file_1x": "tiles/mud_edge_ne.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "mud",
+   "side": "ne",
+   "autotile": {
+    "family": "mud",
+    "against": "golden_plains",
+    "sides": [
+     "ne"
+    ]
+   }
+  },
+  {
+   "id": "mud_edge_nw_ne",
+   "file": "tiles/mud_edge_nw_ne@2x.png",
+   "file_1x": "tiles/mud_edge_nw_ne.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "mud",
+   "side": "nw_ne",
+   "autotile": {
+    "family": "mud",
+    "against": "golden_plains",
+    "sides": [
+     "nw",
+     "ne"
+    ]
+   }
+  },
+  {
+   "id": "mud_edge_se",
+   "file": "tiles/mud_edge_se@2x.png",
+   "file_1x": "tiles/mud_edge_se.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "mud",
+   "side": "se",
+   "autotile": {
+    "family": "mud",
+    "against": "golden_plains",
+    "sides": [
+     "se"
+    ]
+   }
+  },
+  {
+   "id": "mud_edge_nw_se",
+   "file": "tiles/mud_edge_nw_se@2x.png",
+   "file_1x": "tiles/mud_edge_nw_se.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "mud",
+   "side": "nw_se",
+   "autotile": {
+    "family": "mud",
+    "against": "golden_plains",
+    "sides": [
+     "nw",
+     "se"
+    ]
+   }
+  },
+  {
+   "id": "mud_edge_ne_se",
+   "file": "tiles/mud_edge_ne_se@2x.png",
+   "file_1x": "tiles/mud_edge_ne_se.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "mud",
+   "side": "ne_se",
+   "autotile": {
+    "family": "mud",
+    "against": "golden_plains",
+    "sides": [
+     "ne",
+     "se"
+    ]
+   }
+  },
+  {
+   "id": "mud_edge_nw_ne_se",
+   "file": "tiles/mud_edge_nw_ne_se@2x.png",
+   "file_1x": "tiles/mud_edge_nw_ne_se.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "mud",
+   "side": "nw_ne_se",
+   "autotile": {
+    "family": "mud",
+    "against": "golden_plains",
+    "sides": [
+     "nw",
+     "ne",
+     "se"
+    ]
+   }
+  },
+  {
+   "id": "mud_edge_sw",
+   "file": "tiles/mud_edge_sw@2x.png",
+   "file_1x": "tiles/mud_edge_sw.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "mud",
+   "side": "sw",
+   "autotile": {
+    "family": "mud",
+    "against": "golden_plains",
+    "sides": [
+     "sw"
+    ]
+   }
+  },
+  {
+   "id": "mud_edge_nw_sw",
+   "file": "tiles/mud_edge_nw_sw@2x.png",
+   "file_1x": "tiles/mud_edge_nw_sw.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "mud",
+   "side": "nw_sw",
+   "autotile": {
+    "family": "mud",
+    "against": "golden_plains",
+    "sides": [
+     "nw",
+     "sw"
+    ]
+   }
+  },
+  {
+   "id": "mud_edge_ne_sw",
+   "file": "tiles/mud_edge_ne_sw@2x.png",
+   "file_1x": "tiles/mud_edge_ne_sw.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "mud",
+   "side": "ne_sw",
+   "autotile": {
+    "family": "mud",
+    "against": "golden_plains",
+    "sides": [
+     "ne",
+     "sw"
+    ]
+   }
+  },
+  {
+   "id": "mud_edge_nw_ne_sw",
+   "file": "tiles/mud_edge_nw_ne_sw@2x.png",
+   "file_1x": "tiles/mud_edge_nw_ne_sw.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "mud",
+   "side": "nw_ne_sw",
+   "autotile": {
+    "family": "mud",
+    "against": "golden_plains",
+    "sides": [
+     "nw",
+     "ne",
+     "sw"
+    ]
+   }
+  },
+  {
+   "id": "mud_edge_se_sw",
+   "file": "tiles/mud_edge_se_sw@2x.png",
+   "file_1x": "tiles/mud_edge_se_sw.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "mud",
+   "side": "se_sw",
+   "autotile": {
+    "family": "mud",
+    "against": "golden_plains",
+    "sides": [
+     "se",
+     "sw"
+    ]
+   }
+  },
+  {
+   "id": "mud_edge_nw_se_sw",
+   "file": "tiles/mud_edge_nw_se_sw@2x.png",
+   "file_1x": "tiles/mud_edge_nw_se_sw.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "mud",
+   "side": "nw_se_sw",
+   "autotile": {
+    "family": "mud",
+    "against": "golden_plains",
+    "sides": [
+     "nw",
+     "se",
+     "sw"
+    ]
+   }
+  },
+  {
+   "id": "mud_edge_ne_se_sw",
+   "file": "tiles/mud_edge_ne_se_sw@2x.png",
+   "file_1x": "tiles/mud_edge_ne_se_sw.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "mud",
+   "side": "ne_se_sw",
+   "autotile": {
+    "family": "mud",
+    "against": "golden_plains",
+    "sides": [
+     "ne",
+     "se",
+     "sw"
+    ]
+   }
+  },
+  {
+   "id": "mud_edge_nw_ne_se_sw",
+   "file": "tiles/mud_edge_nw_ne_se_sw@2x.png",
+   "file_1x": "tiles/mud_edge_nw_ne_se_sw.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "mud",
+   "side": "nw_ne_se_sw",
+   "autotile": {
+    "family": "mud",
+    "against": "golden_plains",
+    "sides": [
+     "nw",
+     "ne",
+     "se",
+     "sw"
+    ]
+   }
+  },
+  {
+   "id": "mud_corner_n",
+   "file": "tiles/mud_corner_n@2x.png",
+   "file_1x": "tiles/mud_corner_n.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "corner",
+   "family": "mud",
+   "side": "n",
+   "autotile": {
+    "family": "mud",
+    "against": "golden_plains",
+    "corner": "n"
+   }
+  },
+  {
+   "id": "mud_corner_e",
+   "file": "tiles/mud_corner_e@2x.png",
+   "file_1x": "tiles/mud_corner_e.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "corner",
+   "family": "mud",
+   "side": "e",
+   "autotile": {
+    "family": "mud",
+    "against": "golden_plains",
+    "corner": "e"
+   }
+  },
+  {
+   "id": "mud_corner_s",
+   "file": "tiles/mud_corner_s@2x.png",
+   "file_1x": "tiles/mud_corner_s.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "corner",
+   "family": "mud",
+   "side": "s",
+   "autotile": {
+    "family": "mud",
+    "against": "golden_plains",
+    "corner": "s"
+   }
+  },
+  {
+   "id": "mud_corner_w",
+   "file": "tiles/mud_corner_w@2x.png",
+   "file_1x": "tiles/mud_corner_w.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "corner",
+   "family": "mud",
+   "side": "w",
+   "autotile": {
+    "family": "mud",
+    "against": "golden_plains",
+    "corner": "w"
+   }
+  },
+  {
+   "id": "swamp_bank_edge_nw",
+   "file": "tiles/swamp_bank_edge_nw@2x.png",
+   "file_1x": "tiles/swamp_bank_edge_nw.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "swamp_water",
+   "side": "nw",
+   "autotile": {
+    "family": "swamp_water",
+    "against": "mud",
+    "sides": [
+     "nw"
+    ]
+   }
+  },
+  {
+   "id": "swamp_bank_edge_ne",
+   "file": "tiles/swamp_bank_edge_ne@2x.png",
+   "file_1x": "tiles/swamp_bank_edge_ne.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "swamp_water",
+   "side": "ne",
+   "autotile": {
+    "family": "swamp_water",
+    "against": "mud",
+    "sides": [
+     "ne"
+    ]
+   }
+  },
+  {
+   "id": "swamp_bank_edge_nw_ne",
+   "file": "tiles/swamp_bank_edge_nw_ne@2x.png",
+   "file_1x": "tiles/swamp_bank_edge_nw_ne.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "swamp_water",
+   "side": "nw_ne",
+   "autotile": {
+    "family": "swamp_water",
+    "against": "mud",
+    "sides": [
+     "nw",
+     "ne"
+    ]
+   }
+  },
+  {
+   "id": "swamp_bank_edge_se",
+   "file": "tiles/swamp_bank_edge_se@2x.png",
+   "file_1x": "tiles/swamp_bank_edge_se.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "swamp_water",
+   "side": "se",
+   "autotile": {
+    "family": "swamp_water",
+    "against": "mud",
+    "sides": [
+     "se"
+    ]
+   }
+  },
+  {
+   "id": "swamp_bank_edge_nw_se",
+   "file": "tiles/swamp_bank_edge_nw_se@2x.png",
+   "file_1x": "tiles/swamp_bank_edge_nw_se.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "swamp_water",
+   "side": "nw_se",
+   "autotile": {
+    "family": "swamp_water",
+    "against": "mud",
+    "sides": [
+     "nw",
+     "se"
+    ]
+   }
+  },
+  {
+   "id": "swamp_bank_edge_ne_se",
+   "file": "tiles/swamp_bank_edge_ne_se@2x.png",
+   "file_1x": "tiles/swamp_bank_edge_ne_se.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "swamp_water",
+   "side": "ne_se",
+   "autotile": {
+    "family": "swamp_water",
+    "against": "mud",
+    "sides": [
+     "ne",
+     "se"
+    ]
+   }
+  },
+  {
+   "id": "swamp_bank_edge_nw_ne_se",
+   "file": "tiles/swamp_bank_edge_nw_ne_se@2x.png",
+   "file_1x": "tiles/swamp_bank_edge_nw_ne_se.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "swamp_water",
+   "side": "nw_ne_se",
+   "autotile": {
+    "family": "swamp_water",
+    "against": "mud",
+    "sides": [
+     "nw",
+     "ne",
+     "se"
+    ]
+   }
+  },
+  {
+   "id": "swamp_bank_edge_sw",
+   "file": "tiles/swamp_bank_edge_sw@2x.png",
+   "file_1x": "tiles/swamp_bank_edge_sw.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "swamp_water",
+   "side": "sw",
+   "autotile": {
+    "family": "swamp_water",
+    "against": "mud",
+    "sides": [
+     "sw"
+    ]
+   }
+  },
+  {
+   "id": "swamp_bank_edge_nw_sw",
+   "file": "tiles/swamp_bank_edge_nw_sw@2x.png",
+   "file_1x": "tiles/swamp_bank_edge_nw_sw.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "swamp_water",
+   "side": "nw_sw",
+   "autotile": {
+    "family": "swamp_water",
+    "against": "mud",
+    "sides": [
+     "nw",
+     "sw"
+    ]
+   }
+  },
+  {
+   "id": "swamp_bank_edge_ne_sw",
+   "file": "tiles/swamp_bank_edge_ne_sw@2x.png",
+   "file_1x": "tiles/swamp_bank_edge_ne_sw.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "swamp_water",
+   "side": "ne_sw",
+   "autotile": {
+    "family": "swamp_water",
+    "against": "mud",
+    "sides": [
+     "ne",
+     "sw"
+    ]
+   }
+  },
+  {
+   "id": "swamp_bank_edge_nw_ne_sw",
+   "file": "tiles/swamp_bank_edge_nw_ne_sw@2x.png",
+   "file_1x": "tiles/swamp_bank_edge_nw_ne_sw.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "swamp_water",
+   "side": "nw_ne_sw",
+   "autotile": {
+    "family": "swamp_water",
+    "against": "mud",
+    "sides": [
+     "nw",
+     "ne",
+     "sw"
+    ]
+   }
+  },
+  {
+   "id": "swamp_bank_edge_se_sw",
+   "file": "tiles/swamp_bank_edge_se_sw@2x.png",
+   "file_1x": "tiles/swamp_bank_edge_se_sw.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "swamp_water",
+   "side": "se_sw",
+   "autotile": {
+    "family": "swamp_water",
+    "against": "mud",
+    "sides": [
+     "se",
+     "sw"
+    ]
+   }
+  },
+  {
+   "id": "swamp_bank_edge_nw_se_sw",
+   "file": "tiles/swamp_bank_edge_nw_se_sw@2x.png",
+   "file_1x": "tiles/swamp_bank_edge_nw_se_sw.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "swamp_water",
+   "side": "nw_se_sw",
+   "autotile": {
+    "family": "swamp_water",
+    "against": "mud",
+    "sides": [
+     "nw",
+     "se",
+     "sw"
+    ]
+   }
+  },
+  {
+   "id": "swamp_bank_edge_ne_se_sw",
+   "file": "tiles/swamp_bank_edge_ne_se_sw@2x.png",
+   "file_1x": "tiles/swamp_bank_edge_ne_se_sw.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "swamp_water",
+   "side": "ne_se_sw",
+   "autotile": {
+    "family": "swamp_water",
+    "against": "mud",
+    "sides": [
+     "ne",
+     "se",
+     "sw"
+    ]
+   }
+  },
+  {
+   "id": "swamp_bank_edge_nw_ne_se_sw",
+   "file": "tiles/swamp_bank_edge_nw_ne_se_sw@2x.png",
+   "file_1x": "tiles/swamp_bank_edge_nw_ne_se_sw.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "swamp_water",
+   "side": "nw_ne_se_sw",
+   "autotile": {
+    "family": "swamp_water",
+    "against": "mud",
+    "sides": [
+     "nw",
+     "ne",
+     "se",
+     "sw"
+    ]
+   }
+  },
+  {
+   "id": "swamp_bank_corner_n",
+   "file": "tiles/swamp_bank_corner_n@2x.png",
+   "file_1x": "tiles/swamp_bank_corner_n.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "corner",
+   "family": "swamp_water",
+   "side": "n",
+   "autotile": {
+    "family": "swamp_water",
+    "against": "mud",
+    "corner": "n"
+   }
+  },
+  {
+   "id": "swamp_bank_corner_e",
+   "file": "tiles/swamp_bank_corner_e@2x.png",
+   "file_1x": "tiles/swamp_bank_corner_e.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "corner",
+   "family": "swamp_water",
+   "side": "e",
+   "autotile": {
+    "family": "swamp_water",
+    "against": "mud",
+    "corner": "e"
+   }
+  },
+  {
+   "id": "swamp_bank_corner_s",
+   "file": "tiles/swamp_bank_corner_s@2x.png",
+   "file_1x": "tiles/swamp_bank_corner_s.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "corner",
+   "family": "swamp_water",
+   "side": "s",
+   "autotile": {
+    "family": "swamp_water",
+    "against": "mud",
+    "corner": "s"
+   }
+  },
+  {
+   "id": "swamp_bank_corner_w",
+   "file": "tiles/swamp_bank_corner_w@2x.png",
+   "file_1x": "tiles/swamp_bank_corner_w.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "corner",
+   "family": "swamp_water",
+   "side": "w",
+   "autotile": {
+    "family": "swamp_water",
+    "against": "mud",
+    "corner": "w"
+   }
+  },
+  {
+   "id": "lily_pads",
+   "file": "tiles/lily_pads@2x.png",
+   "file_1x": "tiles/lily_pads.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "overlay",
+   "family": "swamp_water",
+   "draw_on": "swamp_water"
+  },
+  {
+   "id": "reeds_a",
+   "file": "props/reeds_a@2x.png",
+   "file_1x": "props/reeds_a.png",
+   "size": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "anchor": {
+    "px_2x": [
+     64,
+     128
+    ],
+    "rule": "image bottom-centre = south tip of the anchor cell (the south-most footprint cell)"
+   },
+   "kind": "prop",
+   "family": "southbridge",
+   "footprint": [
+    1,
+    1
+   ],
+   "prop_kind": "plant",
+   "sway_mask": "animated/sway_masks/reeds_a_swaymask.png"
+  },
+  {
+   "id": "reeds_b",
+   "file": "props/reeds_b@2x.png",
+   "file_1x": "props/reeds_b.png",
+   "size": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "anchor": {
+    "px_2x": [
+     64,
+     128
+    ],
+    "rule": "image bottom-centre = south tip of the anchor cell (the south-most footprint cell)"
+   },
+   "kind": "prop",
+   "family": "southbridge",
+   "footprint": [
+    1,
+    1
+   ],
+   "prop_kind": "plant",
+   "sway_mask": "animated/sway_masks/reeds_b_swaymask.png"
+  },
+  {
+   "id": "reeds_c",
+   "file": "props/reeds_c@2x.png",
+   "file_1x": "props/reeds_c.png",
+   "size": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "anchor": {
+    "px_2x": [
+     64,
+     128
+    ],
+    "rule": "image bottom-centre = south tip of the anchor cell (the south-most footprint cell)"
+   },
+   "kind": "prop",
+   "family": "southbridge",
+   "footprint": [
+    1,
+    1
+   ],
+   "prop_kind": "plant",
+   "sway_mask": "animated/sway_masks/reeds_c_swaymask.png"
+  },
+  {
+   "id": "dead_trunk_tall",
+   "file": "props/dead_trunk_tall@2x.png",
+   "file_1x": "props/dead_trunk_tall.png",
+   "size": [
+    128,
+    224
+   ],
+   "size_1x": [
+    64,
+    112
+   ],
+   "anchor": {
+    "px_2x": [
+     64,
+     224
+    ],
+    "rule": "image bottom-centre = south tip of the anchor cell (the south-most footprint cell)"
+   },
+   "kind": "prop",
+   "family": "southbridge",
+   "footprint": [
+    1,
+    1
+   ],
+   "prop_kind": "tree",
+   "sway_mask": "animated/sway_masks/dead_trunk_tall_swaymask.png"
+  },
+  {
+   "id": "dead_stump",
+   "file": "props/dead_stump@2x.png",
+   "file_1x": "props/dead_stump.png",
+   "size": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "anchor": {
+    "px_2x": [
+     64,
+     128
+    ],
+    "rule": "image bottom-centre = south tip of the anchor cell (the south-most footprint cell)"
+   },
+   "kind": "prop",
+   "family": "southbridge",
+   "footprint": [
+    1,
+    1
+   ],
+   "prop_kind": "decor_block"
+  },
+  {
+   "id": "rotten_log",
+   "file": "props/rotten_log@2x.png",
+   "file_1x": "props/rotten_log.png",
+   "size": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "anchor": {
+    "px_2x": [
+     64,
+     128
+    ],
+    "rule": "image bottom-centre = south tip of the anchor cell (the south-most footprint cell)"
+   },
+   "kind": "prop",
+   "family": "southbridge",
+   "footprint": [
+    1,
+    1
+   ],
+   "prop_kind": "decor_block"
+  },
+  {
+   "id": "stepping_stones",
+   "file": "props/stepping_stones@2x.png",
+   "file_1x": "props/stepping_stones.png",
+   "size": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "anchor": {
+    "px_2x": [
+     64,
+     128
+    ],
+    "rule": "image bottom-centre = south tip of the anchor cell (the south-most footprint cell)"
+   },
+   "kind": "prop",
+   "family": "southbridge",
+   "footprint": [
+    1,
+    1
+   ],
+   "prop_kind": "decor_flat"
+  },
+  {
+   "id": "marker_lantern_post",
+   "file": "props/marker_lantern_post@2x.png",
+   "file_1x": "props/marker_lantern_post.png",
+   "size": [
+    128,
+    224
+   ],
+   "size_1x": [
+    64,
+    112
+   ],
+   "anchor": {
+    "px_2x": [
+     64,
+     224
+    ],
+    "rule": "image bottom-centre = south tip of the anchor cell (the south-most footprint cell)"
+   },
+   "kind": "prop",
+   "family": "southbridge",
+   "footprint": [
+    1,
+    1
+   ],
+   "prop_kind": "tall"
+  },
+  {
+   "id": "root_tangle",
+   "file": "props/root_tangle@2x.png",
+   "file_1x": "props/root_tangle.png",
+   "size": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "anchor": {
+    "px_2x": [
+     64,
+     128
+    ],
+    "rule": "image bottom-centre = south tip of the anchor cell (the south-most footprint cell)"
+   },
+   "kind": "prop",
+   "family": "southbridge",
+   "footprint": [
+    1,
+    1
+   ],
+   "prop_kind": "decor_block"
+  },
+  {
+   "id": "fog_low_a",
+   "file": "overlays/fog_low_a@2x.png",
+   "file_1x": "overlays/fog_low_a.png",
+   "size": [
+    512,
+    192
+   ],
+   "size_1x": [
+    256,
+    96
+   ],
+   "anchor": [
+    256,
+    96
+   ],
+   "kind": "overlay",
+   "family": "southbridge",
+   "alpha_peak": 0.341,
+   "blend": "normal",
+   "tileable": false,
+   "note": "low swamp fog wisp, ~4 cells wide; draw above props, anchor = image centre on a cell centre; drift slowly along x"
+  },
+  {
+   "id": "fog_low_b",
+   "file": "overlays/fog_low_b@2x.png",
+   "file_1x": "overlays/fog_low_b.png",
+   "size": [
+    512,
+    192
+   ],
+   "size_1x": [
+    256,
+    96
+   ],
+   "anchor": [
+    256,
+    96
+   ],
+   "kind": "overlay",
+   "family": "southbridge",
+   "alpha_peak": 0.302,
+   "blend": "normal",
+   "tileable": false,
+   "note": "low swamp fog wisp, ~4 cells wide; draw above props, anchor = image centre on a cell centre; drift slowly along x"
+  },
+  {
+   "id": "fog_low_c",
+   "file": "overlays/fog_low_c@2x.png",
+   "file_1x": "overlays/fog_low_c.png",
+   "size": [
+    512,
+    192
+   ],
+   "size_1x": [
+    256,
+    96
+   ],
+   "anchor": [
+    256,
+    96
+   ],
+   "kind": "overlay",
+   "family": "southbridge",
+   "alpha_peak": 0.38,
+   "blend": "normal",
+   "tileable": false,
+   "note": "low swamp fog wisp, ~4 cells wide; draw above props, anchor = image centre on a cell centre; drift slowly along x"
+  },
+  {
+   "id": "fog_tile_swatch",
+   "file": "overlays/fog_tile_swatch@2x.png",
+   "file_1x": "overlays/fog_tile_swatch.png",
+   "size": [
+    512,
+    512
+   ],
+   "size_1x": [
+    256,
+    256
+   ],
+   "anchor": [
+    0,
+    0
+   ],
+   "kind": "overlay",
+   "family": "southbridge",
+   "alpha_peak": 0.224,
+   "blend": "normal",
+   "tileable": true,
+   "scroll": [
+    12,
+    3
+   ],
+   "note": "tileable low-alpha fog sheet (wraps on both axes) for a slow scrolling screen-space layer"
+  }
+ ]
+}

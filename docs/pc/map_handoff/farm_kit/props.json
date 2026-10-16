@@ -1,0 +1,1383 @@
+{
+ "package": "farm_kit",
+ "version": 1,
+ "note": "checker index (check_assets.py --package props); paths relative to this folder",
+ "props": [
+  {
+   "id": "cabbage_young",
+   "file_2x": "props/_2x/cabbage_young.png",
+   "file_1x": "props/cabbage_young.png",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64.0,
+    128
+   ],
+   "anchor_px_1x": [
+    32.0,
+    64.0
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "size_class": "small",
+   "emissive": "no",
+   "art_x_from_anchor_2x": [
+    -31,
+    29
+   ],
+   "height_px_2x": 67
+  },
+  {
+   "id": "cabbage_ripe",
+   "file_2x": "props/_2x/cabbage_ripe.png",
+   "file_1x": "props/cabbage_ripe.png",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64.0,
+    128
+   ],
+   "anchor_px_1x": [
+    32.0,
+    64.0
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "size_class": "small",
+   "emissive": "no",
+   "art_x_from_anchor_2x": [
+    -39,
+    38
+   ],
+   "height_px_2x": 78
+  },
+  {
+   "id": "cabbage_ripe_b",
+   "file_2x": "props/_2x/cabbage_ripe_b.png",
+   "file_1x": "props/cabbage_ripe_b.png",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64.0,
+    128
+   ],
+   "anchor_px_1x": [
+    32.0,
+    64.0
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "size_class": "small",
+   "emissive": "no",
+   "art_x_from_anchor_2x": [
+    -42,
+    42
+   ],
+   "height_px_2x": 79
+  },
+  {
+   "id": "cabbage_harvested",
+   "file_2x": "props/_2x/cabbage_harvested.png",
+   "file_1x": "props/cabbage_harvested.png",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64.0,
+    128
+   ],
+   "anchor_px_1x": [
+    32.0,
+    64.0
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "size_class": "small",
+   "emissive": "no",
+   "art_x_from_anchor_2x": [
+    -26,
+    24
+   ],
+   "height_px_2x": 58
+  },
+  {
+   "id": "wheat_young",
+   "file_2x": "props/_2x/wheat_young.png",
+   "file_1x": "props/wheat_young.png",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64.0,
+    128
+   ],
+   "anchor_px_1x": [
+    32.0,
+    64.0
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "size_class": "small",
+   "emissive": "no",
+   "art_x_from_anchor_2x": [
+    -43,
+    39
+   ],
+   "height_px_2x": 84
+  },
+  {
+   "id": "wheat_ripe",
+   "file_2x": "props/_2x/wheat_ripe.png",
+   "file_1x": "props/wheat_ripe.png",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64.0,
+    128
+   ],
+   "anchor_px_1x": [
+    32.0,
+    64.0
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "size_class": "small",
+   "emissive": "no",
+   "art_x_from_anchor_2x": [
+    -49,
+    43
+   ],
+   "height_px_2x": 96
+  },
+  {
+   "id": "wheat_ripe_b",
+   "file_2x": "props/_2x/wheat_ripe_b.png",
+   "file_1x": "props/wheat_ripe_b.png",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64.0,
+    128
+   ],
+   "anchor_px_1x": [
+    32.0,
+    64.0
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "size_class": "small",
+   "emissive": "no",
+   "art_x_from_anchor_2x": [
+    -41,
+    41
+   ],
+   "height_px_2x": 96
+  },
+  {
+   "id": "wheat_harvested",
+   "file_2x": "props/_2x/wheat_harvested.png",
+   "file_1x": "props/wheat_harvested.png",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64.0,
+    128
+   ],
+   "anchor_px_1x": [
+    32.0,
+    64.0
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "size_class": "small",
+   "emissive": "no",
+   "art_x_from_anchor_2x": [
+    -48,
+    44
+   ],
+   "height_px_2x": 63
+  },
+  {
+   "id": "pumpkin_young",
+   "file_2x": "props/_2x/pumpkin_young.png",
+   "file_1x": "props/pumpkin_young.png",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64.0,
+    128
+   ],
+   "anchor_px_1x": [
+    32.0,
+    64.0
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "size_class": "small",
+   "emissive": "no",
+   "art_x_from_anchor_2x": [
+    -25,
+    23
+   ],
+   "height_px_2x": 70
+  },
+  {
+   "id": "pumpkin_ripe",
+   "file_2x": "props/_2x/pumpkin_ripe.png",
+   "file_1x": "props/pumpkin_ripe.png",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64.0,
+    128
+   ],
+   "anchor_px_1x": [
+    32.0,
+    64.0
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "size_class": "small",
+   "emissive": "no",
+   "art_x_from_anchor_2x": [
+    -30,
+    29
+   ],
+   "height_px_2x": 80
+  },
+  {
+   "id": "pumpkin_ripe_b",
+   "file_2x": "props/_2x/pumpkin_ripe_b.png",
+   "file_1x": "props/pumpkin_ripe_b.png",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64.0,
+    128
+   ],
+   "anchor_px_1x": [
+    32.0,
+    64.0
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "size_class": "small",
+   "emissive": "no",
+   "art_x_from_anchor_2x": [
+    -31,
+    30
+   ],
+   "height_px_2x": 80
+  },
+  {
+   "id": "pumpkin_harvested",
+   "file_2x": "props/_2x/pumpkin_harvested.png",
+   "file_1x": "props/pumpkin_harvested.png",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64.0,
+    128
+   ],
+   "anchor_px_1x": [
+    32.0,
+    64.0
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "size_class": "small",
+   "emissive": "no",
+   "art_x_from_anchor_2x": [
+    -23,
+    21
+   ],
+   "height_px_2x": 61
+  },
+  {
+   "id": "carrot_young",
+   "file_2x": "props/_2x/carrot_young.png",
+   "file_1x": "props/carrot_young.png",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64.0,
+    128
+   ],
+   "anchor_px_1x": [
+    32.0,
+    64.0
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "size_class": "small",
+   "emissive": "no",
+   "art_x_from_anchor_2x": [
+    -33,
+    35
+   ],
+   "height_px_2x": 69
+  },
+  {
+   "id": "carrot_ripe",
+   "file_2x": "props/_2x/carrot_ripe.png",
+   "file_1x": "props/carrot_ripe.png",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64.0,
+    128
+   ],
+   "anchor_px_1x": [
+    32.0,
+    64.0
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "size_class": "small",
+   "emissive": "no",
+   "art_x_from_anchor_2x": [
+    -40,
+    42
+   ],
+   "height_px_2x": 83
+  },
+  {
+   "id": "carrot_ripe_b",
+   "file_2x": "props/_2x/carrot_ripe_b.png",
+   "file_1x": "props/carrot_ripe_b.png",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64.0,
+    128
+   ],
+   "anchor_px_1x": [
+    32.0,
+    64.0
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "size_class": "small",
+   "emissive": "no",
+   "art_x_from_anchor_2x": [
+    -45,
+    40
+   ],
+   "height_px_2x": 87
+  },
+  {
+   "id": "carrot_harvested",
+   "file_2x": "props/_2x/carrot_harvested.png",
+   "file_1x": "props/carrot_harvested.png",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64.0,
+    128
+   ],
+   "anchor_px_1x": [
+    32.0,
+    64.0
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "size_class": "small",
+   "emissive": "no",
+   "art_x_from_anchor_2x": [
+    -27,
+    29
+   ],
+   "height_px_2x": 53
+  },
+  {
+   "id": "crop_seedling",
+   "file_2x": "props/_2x/crop_seedling.png",
+   "file_1x": "props/crop_seedling.png",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64.0,
+    128
+   ],
+   "anchor_px_1x": [
+    32.0,
+    64.0
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "size_class": "small",
+   "emissive": "no",
+   "art_x_from_anchor_2x": [
+    -28,
+    29
+   ],
+   "height_px_2x": 58
+  },
+  {
+   "id": "farm_shed_2x2",
+   "file_2x": "props/_2x/farm_shed_2x2.png",
+   "file_1x": "props/farm_shed_2x2.png",
+   "footprint_cells": [
+    2,
+    2
+   ],
+   "anchor_px_2x": [
+    128.0,
+    384
+   ],
+   "anchor_px_1x": [
+    64.0,
+    192.0
+   ],
+   "size_2x": [
+    256,
+    384
+   ],
+   "size_1x": [
+    128,
+    192
+   ],
+   "size_class": "landmark",
+   "emissive": "no",
+   "art_x_from_anchor_2x": [
+    -120,
+    116
+   ],
+   "height_px_2x": 226
+  },
+  {
+   "id": "hay_cart_2x2",
+   "file_2x": "props/_2x/hay_cart_2x2.png",
+   "file_1x": "props/hay_cart_2x2.png",
+   "footprint_cells": [
+    2,
+    2
+   ],
+   "anchor_px_2x": [
+    128.0,
+    384
+   ],
+   "anchor_px_1x": [
+    64.0,
+    192.0
+   ],
+   "size_2x": [
+    256,
+    384
+   ],
+   "size_1x": [
+    128,
+    192
+   ],
+   "size_class": "landmark",
+   "emissive": "no",
+   "art_x_from_anchor_2x": [
+    -69,
+    112
+   ],
+   "height_px_2x": 161
+  },
+  {
+   "id": "scarecrow_farm",
+   "file_2x": "props/_2x/scarecrow_farm.png",
+   "file_1x": "props/scarecrow_farm.png",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64.0,
+    224
+   ],
+   "anchor_px_1x": [
+    32.0,
+    112.0
+   ],
+   "size_2x": [
+    128,
+    224
+   ],
+   "size_1x": [
+    64,
+    112
+   ],
+   "size_class": "tree",
+   "emissive": "no",
+   "art_x_from_anchor_2x": [
+    -56,
+    54
+   ],
+   "height_px_2x": 170
+  },
+  {
+   "id": "water_barrel",
+   "file_2x": "props/_2x/water_barrel.png",
+   "file_1x": "props/water_barrel.png",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64.0,
+    128
+   ],
+   "anchor_px_1x": [
+    32.0,
+    64.0
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "size_class": "small",
+   "emissive": "no",
+   "art_x_from_anchor_2x": [
+    -19,
+    18
+   ],
+   "height_px_2x": 74
+  },
+  {
+   "id": "clay_pots",
+   "file_2x": "props/_2x/clay_pots.png",
+   "file_1x": "props/clay_pots.png",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64.0,
+    128
+   ],
+   "anchor_px_1x": [
+    32.0,
+    64.0
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "size_class": "small",
+   "emissive": "no",
+   "art_x_from_anchor_2x": [
+    -18,
+    17
+   ],
+   "height_px_2x": 69
+  },
+  {
+   "id": "hay_bale_square",
+   "file_2x": "props/_2x/hay_bale_square.png",
+   "file_1x": "props/hay_bale_square.png",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64.0,
+    128
+   ],
+   "anchor_px_1x": [
+    32.0,
+    64.0
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "size_class": "small",
+   "emissive": "no",
+   "art_x_from_anchor_2x": [
+    -25,
+    23
+   ],
+   "height_px_2x": 71
+  },
+  {
+   "id": "bucket",
+   "file_2x": "props/_2x/bucket.png",
+   "file_1x": "props/bucket.png",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64.0,
+    128
+   ],
+   "anchor_px_1x": [
+    32.0,
+    64.0
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "size_class": "small",
+   "emissive": "no",
+   "art_x_from_anchor_2x": [
+    -9,
+    8
+   ],
+   "height_px_2x": 51
+  },
+  {
+   "id": "grain_sack",
+   "file_2x": "props/_2x/grain_sack.png",
+   "file_1x": "props/grain_sack.png",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64.0,
+    128
+   ],
+   "anchor_px_1x": [
+    32.0,
+    64.0
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "size_class": "small",
+   "emissive": "no",
+   "art_x_from_anchor_2x": [
+    -14,
+    13
+   ],
+   "height_px_2x": 61
+  },
+  {
+   "id": "wheelbarrow",
+   "file_2x": "props/_2x/wheelbarrow.png",
+   "file_1x": "props/wheelbarrow.png",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64.0,
+    128
+   ],
+   "anchor_px_1x": [
+    32.0,
+    64.0
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "size_class": "small",
+   "emissive": "no",
+   "art_x_from_anchor_2x": [
+    -31,
+    30
+   ],
+   "height_px_2x": 78
+  },
+  {
+   "id": "rail_fence_nwse",
+   "file_2x": "props/_2x/rail_fence_nwse.png",
+   "file_1x": "props/rail_fence_nwse.png",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64.0,
+    128
+   ],
+   "anchor_px_1x": [
+    32.0,
+    64.0
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "size_class": "small",
+   "emissive": "no",
+   "art_x_from_anchor_2x": [
+    -33,
+    32
+   ],
+   "height_px_2x": 95
+  },
+  {
+   "id": "rail_fence_nesw",
+   "file_2x": "props/_2x/rail_fence_nesw.png",
+   "file_1x": "props/rail_fence_nesw.png",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64.0,
+    128
+   ],
+   "anchor_px_1x": [
+    32.0,
+    64.0
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "size_class": "small",
+   "emissive": "no",
+   "art_x_from_anchor_2x": [
+    -33,
+    32
+   ],
+   "height_px_2x": 94
+  },
+  {
+   "id": "rail_fence_corner_n",
+   "file_2x": "props/_2x/rail_fence_corner_n.png",
+   "file_1x": "props/rail_fence_corner_n.png",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64.0,
+    128
+   ],
+   "anchor_px_1x": [
+    32.0,
+    64.0
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "size_class": "small",
+   "emissive": "no",
+   "art_x_from_anchor_2x": [
+    -33,
+    32
+   ],
+   "height_px_2x": 90
+  },
+  {
+   "id": "rail_fence_corner_e",
+   "file_2x": "props/_2x/rail_fence_corner_e.png",
+   "file_1x": "props/rail_fence_corner_e.png",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64.0,
+    128
+   ],
+   "anchor_px_1x": [
+    32.0,
+    64.0
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "size_class": "small",
+   "emissive": "no",
+   "art_x_from_anchor_2x": [
+    -33,
+    7
+   ],
+   "height_px_2x": 95
+  },
+  {
+   "id": "rail_fence_corner_s",
+   "file_2x": "props/_2x/rail_fence_corner_s.png",
+   "file_1x": "props/rail_fence_corner_s.png",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64.0,
+    128
+   ],
+   "anchor_px_1x": [
+    32.0,
+    64.0
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "size_class": "small",
+   "emissive": "no",
+   "art_x_from_anchor_2x": [
+    -33,
+    32
+   ],
+   "height_px_2x": 95
+  },
+  {
+   "id": "rail_fence_corner_w",
+   "file_2x": "props/_2x/rail_fence_corner_w.png",
+   "file_1x": "props/rail_fence_corner_w.png",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64.0,
+    128
+   ],
+   "anchor_px_1x": [
+    32.0,
+    64.0
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "size_class": "small",
+   "emissive": "no",
+   "art_x_from_anchor_2x": [
+    -8,
+    32
+   ],
+   "height_px_2x": 94
+  },
+  {
+   "id": "rail_fence_end_nw",
+   "file_2x": "props/_2x/rail_fence_end_nw.png",
+   "file_1x": "props/rail_fence_end_nw.png",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64.0,
+    128
+   ],
+   "anchor_px_1x": [
+    32.0,
+    64.0
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "size_class": "small",
+   "emissive": "no",
+   "art_x_from_anchor_2x": [
+    -33,
+    7
+   ],
+   "height_px_2x": 95
+  },
+  {
+   "id": "rail_fence_end_ne",
+   "file_2x": "props/_2x/rail_fence_end_ne.png",
+   "file_1x": "props/rail_fence_end_ne.png",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64.0,
+    128
+   ],
+   "anchor_px_1x": [
+    32.0,
+    64.0
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "size_class": "small",
+   "emissive": "no",
+   "art_x_from_anchor_2x": [
+    -8,
+    32
+   ],
+   "height_px_2x": 94
+  },
+  {
+   "id": "rail_fence_end_se",
+   "file_2x": "props/_2x/rail_fence_end_se.png",
+   "file_1x": "props/rail_fence_end_se.png",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64.0,
+    128
+   ],
+   "anchor_px_1x": [
+    32.0,
+    64.0
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "size_class": "small",
+   "emissive": "no",
+   "art_x_from_anchor_2x": [
+    -8,
+    32
+   ],
+   "height_px_2x": 93
+  },
+  {
+   "id": "rail_fence_end_sw",
+   "file_2x": "props/_2x/rail_fence_end_sw.png",
+   "file_1x": "props/rail_fence_end_sw.png",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64.0,
+    128
+   ],
+   "anchor_px_1x": [
+    32.0,
+    64.0
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "size_class": "small",
+   "emissive": "no",
+   "art_x_from_anchor_2x": [
+    -33,
+    7
+   ],
+   "height_px_2x": 94
+  },
+  {
+   "id": "rail_fence_post",
+   "file_2x": "props/_2x/rail_fence_post.png",
+   "file_1x": "props/rail_fence_post.png",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64.0,
+    128
+   ],
+   "anchor_px_1x": [
+    32.0,
+    64.0
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "size_class": "small",
+   "emissive": "no",
+   "art_x_from_anchor_2x": [
+    -8,
+    7
+   ],
+   "height_px_2x": 90
+  },
+  {
+   "id": "grass_tuft_meadow_a",
+   "file_2x": "props/_2x/grass_tuft_meadow_a.png",
+   "file_1x": "props/grass_tuft_meadow_a.png",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64.0,
+    128
+   ],
+   "anchor_px_1x": [
+    32.0,
+    64.0
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "size_class": "small",
+   "emissive": "no",
+   "art_x_from_anchor_2x": [
+    -32,
+    35
+   ],
+   "height_px_2x": 56
+  },
+  {
+   "id": "grass_tuft_meadow_b",
+   "file_2x": "props/_2x/grass_tuft_meadow_b.png",
+   "file_1x": "props/grass_tuft_meadow_b.png",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64.0,
+    128
+   ],
+   "anchor_px_1x": [
+    32.0,
+    64.0
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "size_class": "small",
+   "emissive": "no",
+   "art_x_from_anchor_2x": [
+    -21,
+    22
+   ],
+   "height_px_2x": 47
+  },
+  {
+   "id": "wildflowers_a",
+   "file_2x": "props/_2x/wildflowers_a.png",
+   "file_1x": "props/wildflowers_a.png",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64.0,
+    128
+   ],
+   "anchor_px_1x": [
+    32.0,
+    64.0
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "size_class": "small",
+   "emissive": "no",
+   "art_x_from_anchor_2x": [
+    -31,
+    34
+   ],
+   "height_px_2x": 52
+  },
+  {
+   "id": "wildflowers_b",
+   "file_2x": "props/_2x/wildflowers_b.png",
+   "file_1x": "props/wildflowers_b.png",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64.0,
+    128
+   ],
+   "anchor_px_1x": [
+    32.0,
+    64.0
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "size_class": "small",
+   "emissive": "no",
+   "art_x_from_anchor_2x": [
+    -31,
+    23
+   ],
+   "height_px_2x": 49
+  },
+  {
+   "id": "wildflowers_c",
+   "file_2x": "props/_2x/wildflowers_c.png",
+   "file_1x": "props/wildflowers_c.png",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64.0,
+    128
+   ],
+   "anchor_px_1x": [
+    32.0,
+    64.0
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "size_class": "small",
+   "emissive": "no",
+   "art_x_from_anchor_2x": [
+    -20,
+    28
+   ],
+   "height_px_2x": 47
+  },
+  {
+   "id": "wildflowers_d",
+   "file_2x": "props/_2x/wildflowers_d.png",
+   "file_1x": "props/wildflowers_d.png",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64.0,
+    128
+   ],
+   "anchor_px_1x": [
+    32.0,
+    64.0
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "size_class": "small",
+   "emissive": "no",
+   "art_x_from_anchor_2x": [
+    -37,
+    29
+   ],
+   "height_px_2x": 51
+  }
+ ]
+}

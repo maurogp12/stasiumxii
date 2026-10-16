@@ -1,0 +1,2384 @@
+{
+ "format": "stasium.art_atlas",
+ "format_version": 1,
+ "region": "windmere",
+ "root": "res://art/world/windmere/",
+ "zone_data_ref": {
+  "spec": "docs/pc/ZONES_BUILD_SPEC.md WP10a @ a4f667e",
+  "region_index": "data/world/windmere/index.json",
+  "note": "region chunks currently use Crosshaven stand-in ids; see zone_id_map.standin_terrain and props[].standin_crosshaven"
+ },
+ "grid": {
+  "tile_w": 64,
+  "tile_h": 32,
+  "height_step_px": 10,
+  "cell_to_local": "((x-y)*32, (x+y)*16 - elev*10)",
+  "sides": {
+   "nw": [
+    -1,
+    0
+   ],
+   "ne": [
+    0,
+    -1
+   ],
+   "se": [
+    1,
+    0
+   ],
+   "sw": [
+    0,
+    1
+   ]
+  },
+  "corners": {
+   "n": [
+    -1,
+    -1
+   ],
+   "e": [
+    1,
+    -1
+   ],
+   "s": [
+    1,
+    1
+   ],
+   "w": [
+    -1,
+    1
+   ]
+  }
+ },
+ "files": {
+  "primary": "1x PNG at <kind>/<id>.png, drawn at scale 1",
+  "masters": "2x PNG at <kind>/_2x/<id>.png, draw at scale 0.5 (identical placement)",
+  "filter": "linear",
+  "mipmaps": false,
+  "premultiplied": false
+ },
+ "anchors": {
+  "tile": "image bottom-centre on the cell diamond SOUTH tip (board/tile.gd): draw at cell_to_local(cell, elev) + (-w/2, 16 - h). Floor/decal tiles are 64x32, so the image IS the diamond.",
+  "side_strip": "32x26 strip per height step k (0 = just under the top): left face top-left = south_tip + (-32, -16 + 10k), right face top-left = south_tip + (0, -16 + 10k); south_tip of the LIFTED tile. Optional upgrade over painted placeholder faces.",
+  "prop": "image bottom-centre on the SOUTH tip of the footprint's south-most cell (max x+y; for 2x2 = origin+(1,1)), lifted by that cell's height: draw at cell_to_local(south_cell, elev) + (0,16) + (-w/2, -h). NW origin only defines the covered cells.",
+  "prop_2x2_from_nw_center_1x": [
+   0,
+   48
+  ],
+  "y_sort": "sort by the footprint south-most cell (x+y). If you use a y-sort point instead, use image bottom - 16 px (centre of the south-most cell) and break ties in favour of characters."
+ },
+ "zone_id_map": {
+  "terrain": {
+   "snow_grass": {
+    "file": "tiles/snow_grass_a.png",
+    "default_variant": "snow_grass_a",
+    "pieces": [
+     "snow_grass_a",
+     "snow_grass_b",
+     "snow_grass_c"
+    ]
+   },
+   "white_flagstone": {
+    "file": "tiles/white_flagstone_a.png",
+    "default_variant": "white_flagstone_a",
+    "pieces": [
+     "white_flagstone_a",
+     "white_flagstone_b",
+     "white_flagstone_edge_ne",
+     "white_flagstone_edge_ne_se",
+     "white_flagstone_edge_ne_se_sw",
+     "white_flagstone_edge_ne_sw",
+     "white_flagstone_edge_nw",
+     "white_flagstone_edge_nw_ne",
+     "white_flagstone_edge_nw_ne_se",
+     "white_flagstone_edge_nw_ne_se_sw",
+     "white_flagstone_edge_nw_ne_sw",
+     "white_flagstone_edge_nw_se",
+     "white_flagstone_edge_nw_se_sw",
+     "white_flagstone_edge_nw_sw",
+     "white_flagstone_edge_se",
+     "white_flagstone_edge_se_sw",
+     "white_flagstone_edge_sw",
+     "white_flagstone_corner_e",
+     "white_flagstone_corner_n",
+     "white_flagstone_corner_s",
+     "white_flagstone_corner_w"
+    ]
+   },
+   "glossy_ice": {
+    "file": "tiles/glossy_ice_a.png",
+    "default_variant": "glossy_ice_a",
+    "pieces": [
+     "glossy_ice_a",
+     "glossy_ice_b",
+     "glossy_ice_edge_ne",
+     "glossy_ice_edge_ne_se",
+     "glossy_ice_edge_ne_se_sw",
+     "glossy_ice_edge_ne_sw",
+     "glossy_ice_edge_nw",
+     "glossy_ice_edge_nw_ne",
+     "glossy_ice_edge_nw_ne_se",
+     "glossy_ice_edge_nw_ne_se_sw",
+     "glossy_ice_edge_nw_ne_sw",
+     "glossy_ice_edge_nw_se",
+     "glossy_ice_edge_nw_se_sw",
+     "glossy_ice_edge_nw_sw",
+     "glossy_ice_edge_se",
+     "glossy_ice_edge_se_sw",
+     "glossy_ice_edge_sw",
+     "glossy_ice_corner_e",
+     "glossy_ice_corner_n",
+     "glossy_ice_corner_s",
+     "glossy_ice_corner_w"
+    ]
+   }
+  },
+  "props": {
+   "tree": {
+    "file": "props/tree_pine_snowy_a.png",
+    "variants": [
+     "tree_pine_snowy_b",
+     "tree_pine_frozen_blue"
+    ]
+   }
+  },
+  "standin_terrain": {
+   "golden_plains": "snow_grass",
+   "dirt_road": "white_flagstone",
+   "water": "(glossy_ice is walkable; do not map water to it without a walkability decision)"
+  },
+  "note": "zone data keeps its ids; the placer / dressing.json picks these pieces per cell (Crosshaven hash picker)"
+ },
+ "fence_axis": {
+  "along_x": "fence_wood_nwse (=fence.png): rail runs along +x, screen up-left to down-right",
+  "along_y": "fence_wood_nesw: rail runs along +y, screen up-right to down-left"
+ },
+ "tiles": [
+  {
+   "id": "snow_grass_a",
+   "base_terrain": "snow_grass",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "file": "tiles/snow_grass_a.png",
+   "file_2x": "tiles/_2x/snow_grass_a.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "variant": 0,
+   "raw": "snow_grass_swatch.png",
+   "note": "thin snow over frosted grass, grass tips poking through",
+   "wp10a": true
+  },
+  {
+   "id": "snow_grass_b",
+   "base_terrain": "snow_grass",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "file": "tiles/snow_grass_b.png",
+   "file_2x": "tiles/_2x/snow_grass_b.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "variant": 1,
+   "raw": "snow_grass_swatch.png",
+   "note": "thin snow over frosted grass, grass tips poking through",
+   "wp10a": true
+  },
+  {
+   "id": "snow_grass_c",
+   "base_terrain": "snow_grass",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "file": "tiles/snow_grass_c.png",
+   "file_2x": "tiles/_2x/snow_grass_c.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "variant": 2,
+   "raw": "snow_grass_swatch.png",
+   "note": "thin snow over frosted grass, grass tips poking through",
+   "wp10a": true
+  },
+  {
+   "id": "white_flagstone_a",
+   "base_terrain": "white_flagstone",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "file": "tiles/white_flagstone_a.png",
+   "file_2x": "tiles/_2x/white_flagstone_a.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "variant": 0,
+   "raw": "white_flagstone_swatch.png",
+   "note": "white limestone flagstones, frost in the joints; joints must meet the swatch edges cleanly",
+   "wp10a": true
+  },
+  {
+   "id": "white_flagstone_b",
+   "base_terrain": "white_flagstone",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "file": "tiles/white_flagstone_b.png",
+   "file_2x": "tiles/_2x/white_flagstone_b.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "variant": 1,
+   "raw": "white_flagstone_swatch.png",
+   "note": "white limestone flagstones, frost in the joints; joints must meet the swatch edges cleanly",
+   "wp10a": true
+  },
+  {
+   "id": "glossy_ice_a",
+   "base_terrain": "glossy_ice",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "file": "tiles/glossy_ice_a.png",
+   "file_2x": "tiles/_2x/glossy_ice_a.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "variant": 0,
+   "raw": "glossy_ice_swatch.png",
+   "note": "glossy pale-blue ice, cracks and trapped bubbles, soft painted sheen (no mirror reflection)",
+   "wp10a": true
+  },
+  {
+   "id": "glossy_ice_b",
+   "base_terrain": "glossy_ice",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "file": "tiles/glossy_ice_b.png",
+   "file_2x": "tiles/_2x/glossy_ice_b.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "variant": 1,
+   "raw": "glossy_ice_swatch.png",
+   "note": "glossy pale-blue ice, cracks and trapped bubbles, soft painted sheen (no mirror reflection)",
+   "wp10a": true
+  },
+  {
+   "id": "white_flagstone_edge_ne",
+   "base_terrain": "white_flagstone",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "sides": [
+    "ne"
+   ],
+   "note": "autotile edge: the listed sides touch the region base ground",
+   "file": "tiles/white_flagstone_edge_ne.png",
+   "file_2x": "tiles/_2x/white_flagstone_edge_ne.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "generated_by": "wp10a_tiles.py --edges"
+  },
+  {
+   "id": "white_flagstone_edge_ne_se",
+   "base_terrain": "white_flagstone",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "sides": [
+    "ne",
+    "se"
+   ],
+   "note": "autotile edge: the listed sides touch the region base ground",
+   "file": "tiles/white_flagstone_edge_ne_se.png",
+   "file_2x": "tiles/_2x/white_flagstone_edge_ne_se.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "generated_by": "wp10a_tiles.py --edges"
+  },
+  {
+   "id": "white_flagstone_edge_ne_se_sw",
+   "base_terrain": "white_flagstone",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "sides": [
+    "ne",
+    "se",
+    "sw"
+   ],
+   "note": "autotile edge: the listed sides touch the region base ground",
+   "file": "tiles/white_flagstone_edge_ne_se_sw.png",
+   "file_2x": "tiles/_2x/white_flagstone_edge_ne_se_sw.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "generated_by": "wp10a_tiles.py --edges"
+  },
+  {
+   "id": "white_flagstone_edge_ne_sw",
+   "base_terrain": "white_flagstone",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "sides": [
+    "ne",
+    "sw"
+   ],
+   "note": "autotile edge: the listed sides touch the region base ground",
+   "file": "tiles/white_flagstone_edge_ne_sw.png",
+   "file_2x": "tiles/_2x/white_flagstone_edge_ne_sw.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "generated_by": "wp10a_tiles.py --edges"
+  },
+  {
+   "id": "white_flagstone_edge_nw",
+   "base_terrain": "white_flagstone",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "sides": [
+    "nw"
+   ],
+   "note": "autotile edge: the listed sides touch the region base ground",
+   "file": "tiles/white_flagstone_edge_nw.png",
+   "file_2x": "tiles/_2x/white_flagstone_edge_nw.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "generated_by": "wp10a_tiles.py --edges"
+  },
+  {
+   "id": "white_flagstone_edge_nw_ne",
+   "base_terrain": "white_flagstone",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "sides": [
+    "nw",
+    "ne"
+   ],
+   "note": "autotile edge: the listed sides touch the region base ground",
+   "file": "tiles/white_flagstone_edge_nw_ne.png",
+   "file_2x": "tiles/_2x/white_flagstone_edge_nw_ne.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "generated_by": "wp10a_tiles.py --edges"
+  },
+  {
+   "id": "white_flagstone_edge_nw_ne_se",
+   "base_terrain": "white_flagstone",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "sides": [
+    "nw",
+    "ne",
+    "se"
+   ],
+   "note": "autotile edge: the listed sides touch the region base ground",
+   "file": "tiles/white_flagstone_edge_nw_ne_se.png",
+   "file_2x": "tiles/_2x/white_flagstone_edge_nw_ne_se.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "generated_by": "wp10a_tiles.py --edges"
+  },
+  {
+   "id": "white_flagstone_edge_nw_ne_se_sw",
+   "base_terrain": "white_flagstone",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "sides": [
+    "nw",
+    "ne",
+    "se",
+    "sw"
+   ],
+   "note": "autotile edge: the listed sides touch the region base ground",
+   "file": "tiles/white_flagstone_edge_nw_ne_se_sw.png",
+   "file_2x": "tiles/_2x/white_flagstone_edge_nw_ne_se_sw.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "generated_by": "wp10a_tiles.py --edges"
+  },
+  {
+   "id": "white_flagstone_edge_nw_ne_sw",
+   "base_terrain": "white_flagstone",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "sides": [
+    "nw",
+    "ne",
+    "sw"
+   ],
+   "note": "autotile edge: the listed sides touch the region base ground",
+   "file": "tiles/white_flagstone_edge_nw_ne_sw.png",
+   "file_2x": "tiles/_2x/white_flagstone_edge_nw_ne_sw.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "generated_by": "wp10a_tiles.py --edges"
+  },
+  {
+   "id": "white_flagstone_edge_nw_se",
+   "base_terrain": "white_flagstone",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "sides": [
+    "nw",
+    "se"
+   ],
+   "note": "autotile edge: the listed sides touch the region base ground",
+   "file": "tiles/white_flagstone_edge_nw_se.png",
+   "file_2x": "tiles/_2x/white_flagstone_edge_nw_se.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "generated_by": "wp10a_tiles.py --edges"
+  },
+  {
+   "id": "white_flagstone_edge_nw_se_sw",
+   "base_terrain": "white_flagstone",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "sides": [
+    "nw",
+    "se",
+    "sw"
+   ],
+   "note": "autotile edge: the listed sides touch the region base ground",
+   "file": "tiles/white_flagstone_edge_nw_se_sw.png",
+   "file_2x": "tiles/_2x/white_flagstone_edge_nw_se_sw.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "generated_by": "wp10a_tiles.py --edges"
+  },
+  {
+   "id": "white_flagstone_edge_nw_sw",
+   "base_terrain": "white_flagstone",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "sides": [
+    "nw",
+    "sw"
+   ],
+   "note": "autotile edge: the listed sides touch the region base ground",
+   "file": "tiles/white_flagstone_edge_nw_sw.png",
+   "file_2x": "tiles/_2x/white_flagstone_edge_nw_sw.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "generated_by": "wp10a_tiles.py --edges"
+  },
+  {
+   "id": "white_flagstone_edge_se",
+   "base_terrain": "white_flagstone",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "sides": [
+    "se"
+   ],
+   "note": "autotile edge: the listed sides touch the region base ground",
+   "file": "tiles/white_flagstone_edge_se.png",
+   "file_2x": "tiles/_2x/white_flagstone_edge_se.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "generated_by": "wp10a_tiles.py --edges"
+  },
+  {
+   "id": "white_flagstone_edge_se_sw",
+   "base_terrain": "white_flagstone",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "sides": [
+    "se",
+    "sw"
+   ],
+   "note": "autotile edge: the listed sides touch the region base ground",
+   "file": "tiles/white_flagstone_edge_se_sw.png",
+   "file_2x": "tiles/_2x/white_flagstone_edge_se_sw.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "generated_by": "wp10a_tiles.py --edges"
+  },
+  {
+   "id": "white_flagstone_edge_sw",
+   "base_terrain": "white_flagstone",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "sides": [
+    "sw"
+   ],
+   "note": "autotile edge: the listed sides touch the region base ground",
+   "file": "tiles/white_flagstone_edge_sw.png",
+   "file_2x": "tiles/_2x/white_flagstone_edge_sw.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "generated_by": "wp10a_tiles.py --edges"
+  },
+  {
+   "id": "white_flagstone_corner_e",
+   "base_terrain": "white_flagstone",
+   "kind": "decal",
+   "walkable": true,
+   "in_zone_data": false,
+   "corner": "e",
+   "note": "draw over a white_flagstone tile whose diagonal corner e touches base ground while both side neighbours are white_flagstone",
+   "file": "tiles/white_flagstone_corner_e.png",
+   "file_2x": "tiles/_2x/white_flagstone_corner_e.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "generated_by": "wp10a_tiles.py --edges"
+  },
+  {
+   "id": "white_flagstone_corner_n",
+   "base_terrain": "white_flagstone",
+   "kind": "decal",
+   "walkable": true,
+   "in_zone_data": false,
+   "corner": "n",
+   "note": "draw over a white_flagstone tile whose diagonal corner n touches base ground while both side neighbours are white_flagstone",
+   "file": "tiles/white_flagstone_corner_n.png",
+   "file_2x": "tiles/_2x/white_flagstone_corner_n.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "generated_by": "wp10a_tiles.py --edges"
+  },
+  {
+   "id": "white_flagstone_corner_s",
+   "base_terrain": "white_flagstone",
+   "kind": "decal",
+   "walkable": true,
+   "in_zone_data": false,
+   "corner": "s",
+   "note": "draw over a white_flagstone tile whose diagonal corner s touches base ground while both side neighbours are white_flagstone",
+   "file": "tiles/white_flagstone_corner_s.png",
+   "file_2x": "tiles/_2x/white_flagstone_corner_s.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "generated_by": "wp10a_tiles.py --edges"
+  },
+  {
+   "id": "white_flagstone_corner_w",
+   "base_terrain": "white_flagstone",
+   "kind": "decal",
+   "walkable": true,
+   "in_zone_data": false,
+   "corner": "w",
+   "note": "draw over a white_flagstone tile whose diagonal corner w touches base ground while both side neighbours are white_flagstone",
+   "file": "tiles/white_flagstone_corner_w.png",
+   "file_2x": "tiles/_2x/white_flagstone_corner_w.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "generated_by": "wp10a_tiles.py --edges"
+  },
+  {
+   "id": "glossy_ice_edge_ne",
+   "base_terrain": "glossy_ice",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "sides": [
+    "ne"
+   ],
+   "note": "autotile edge: the listed sides touch the region base ground",
+   "file": "tiles/glossy_ice_edge_ne.png",
+   "file_2x": "tiles/_2x/glossy_ice_edge_ne.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "generated_by": "wp10a_tiles.py --edges"
+  },
+  {
+   "id": "glossy_ice_edge_ne_se",
+   "base_terrain": "glossy_ice",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "sides": [
+    "ne",
+    "se"
+   ],
+   "note": "autotile edge: the listed sides touch the region base ground",
+   "file": "tiles/glossy_ice_edge_ne_se.png",
+   "file_2x": "tiles/_2x/glossy_ice_edge_ne_se.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "generated_by": "wp10a_tiles.py --edges"
+  },
+  {
+   "id": "glossy_ice_edge_ne_se_sw",
+   "base_terrain": "glossy_ice",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "sides": [
+    "ne",
+    "se",
+    "sw"
+   ],
+   "note": "autotile edge: the listed sides touch the region base ground",
+   "file": "tiles/glossy_ice_edge_ne_se_sw.png",
+   "file_2x": "tiles/_2x/glossy_ice_edge_ne_se_sw.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "generated_by": "wp10a_tiles.py --edges"
+  },
+  {
+   "id": "glossy_ice_edge_ne_sw",
+   "base_terrain": "glossy_ice",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "sides": [
+    "ne",
+    "sw"
+   ],
+   "note": "autotile edge: the listed sides touch the region base ground",
+   "file": "tiles/glossy_ice_edge_ne_sw.png",
+   "file_2x": "tiles/_2x/glossy_ice_edge_ne_sw.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "generated_by": "wp10a_tiles.py --edges"
+  },
+  {
+   "id": "glossy_ice_edge_nw",
+   "base_terrain": "glossy_ice",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "sides": [
+    "nw"
+   ],
+   "note": "autotile edge: the listed sides touch the region base ground",
+   "file": "tiles/glossy_ice_edge_nw.png",
+   "file_2x": "tiles/_2x/glossy_ice_edge_nw.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "generated_by": "wp10a_tiles.py --edges"
+  },
+  {
+   "id": "glossy_ice_edge_nw_ne",
+   "base_terrain": "glossy_ice",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "sides": [
+    "nw",
+    "ne"
+   ],
+   "note": "autotile edge: the listed sides touch the region base ground",
+   "file": "tiles/glossy_ice_edge_nw_ne.png",
+   "file_2x": "tiles/_2x/glossy_ice_edge_nw_ne.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "generated_by": "wp10a_tiles.py --edges"
+  },
+  {
+   "id": "glossy_ice_edge_nw_ne_se",
+   "base_terrain": "glossy_ice",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "sides": [
+    "nw",
+    "ne",
+    "se"
+   ],
+   "note": "autotile edge: the listed sides touch the region base ground",
+   "file": "tiles/glossy_ice_edge_nw_ne_se.png",
+   "file_2x": "tiles/_2x/glossy_ice_edge_nw_ne_se.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "generated_by": "wp10a_tiles.py --edges"
+  },
+  {
+   "id": "glossy_ice_edge_nw_ne_se_sw",
+   "base_terrain": "glossy_ice",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "sides": [
+    "nw",
+    "ne",
+    "se",
+    "sw"
+   ],
+   "note": "autotile edge: the listed sides touch the region base ground",
+   "file": "tiles/glossy_ice_edge_nw_ne_se_sw.png",
+   "file_2x": "tiles/_2x/glossy_ice_edge_nw_ne_se_sw.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "generated_by": "wp10a_tiles.py --edges"
+  },
+  {
+   "id": "glossy_ice_edge_nw_ne_sw",
+   "base_terrain": "glossy_ice",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "sides": [
+    "nw",
+    "ne",
+    "sw"
+   ],
+   "note": "autotile edge: the listed sides touch the region base ground",
+   "file": "tiles/glossy_ice_edge_nw_ne_sw.png",
+   "file_2x": "tiles/_2x/glossy_ice_edge_nw_ne_sw.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "generated_by": "wp10a_tiles.py --edges"
+  },
+  {
+   "id": "glossy_ice_edge_nw_se",
+   "base_terrain": "glossy_ice",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "sides": [
+    "nw",
+    "se"
+   ],
+   "note": "autotile edge: the listed sides touch the region base ground",
+   "file": "tiles/glossy_ice_edge_nw_se.png",
+   "file_2x": "tiles/_2x/glossy_ice_edge_nw_se.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "generated_by": "wp10a_tiles.py --edges"
+  },
+  {
+   "id": "glossy_ice_edge_nw_se_sw",
+   "base_terrain": "glossy_ice",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "sides": [
+    "nw",
+    "se",
+    "sw"
+   ],
+   "note": "autotile edge: the listed sides touch the region base ground",
+   "file": "tiles/glossy_ice_edge_nw_se_sw.png",
+   "file_2x": "tiles/_2x/glossy_ice_edge_nw_se_sw.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "generated_by": "wp10a_tiles.py --edges"
+  },
+  {
+   "id": "glossy_ice_edge_nw_sw",
+   "base_terrain": "glossy_ice",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "sides": [
+    "nw",
+    "sw"
+   ],
+   "note": "autotile edge: the listed sides touch the region base ground",
+   "file": "tiles/glossy_ice_edge_nw_sw.png",
+   "file_2x": "tiles/_2x/glossy_ice_edge_nw_sw.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "generated_by": "wp10a_tiles.py --edges"
+  },
+  {
+   "id": "glossy_ice_edge_se",
+   "base_terrain": "glossy_ice",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "sides": [
+    "se"
+   ],
+   "note": "autotile edge: the listed sides touch the region base ground",
+   "file": "tiles/glossy_ice_edge_se.png",
+   "file_2x": "tiles/_2x/glossy_ice_edge_se.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "generated_by": "wp10a_tiles.py --edges"
+  },
+  {
+   "id": "glossy_ice_edge_se_sw",
+   "base_terrain": "glossy_ice",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "sides": [
+    "se",
+    "sw"
+   ],
+   "note": "autotile edge: the listed sides touch the region base ground",
+   "file": "tiles/glossy_ice_edge_se_sw.png",
+   "file_2x": "tiles/_2x/glossy_ice_edge_se_sw.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "generated_by": "wp10a_tiles.py --edges"
+  },
+  {
+   "id": "glossy_ice_edge_sw",
+   "base_terrain": "glossy_ice",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "sides": [
+    "sw"
+   ],
+   "note": "autotile edge: the listed sides touch the region base ground",
+   "file": "tiles/glossy_ice_edge_sw.png",
+   "file_2x": "tiles/_2x/glossy_ice_edge_sw.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "generated_by": "wp10a_tiles.py --edges"
+  },
+  {
+   "id": "glossy_ice_corner_e",
+   "base_terrain": "glossy_ice",
+   "kind": "decal",
+   "walkable": true,
+   "in_zone_data": false,
+   "corner": "e",
+   "note": "draw over a glossy_ice tile whose diagonal corner e touches base ground while both side neighbours are glossy_ice",
+   "file": "tiles/glossy_ice_corner_e.png",
+   "file_2x": "tiles/_2x/glossy_ice_corner_e.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "generated_by": "wp10a_tiles.py --edges"
+  },
+  {
+   "id": "glossy_ice_corner_n",
+   "base_terrain": "glossy_ice",
+   "kind": "decal",
+   "walkable": true,
+   "in_zone_data": false,
+   "corner": "n",
+   "note": "draw over a glossy_ice tile whose diagonal corner n touches base ground while both side neighbours are glossy_ice",
+   "file": "tiles/glossy_ice_corner_n.png",
+   "file_2x": "tiles/_2x/glossy_ice_corner_n.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "generated_by": "wp10a_tiles.py --edges"
+  },
+  {
+   "id": "glossy_ice_corner_s",
+   "base_terrain": "glossy_ice",
+   "kind": "decal",
+   "walkable": true,
+   "in_zone_data": false,
+   "corner": "s",
+   "note": "draw over a glossy_ice tile whose diagonal corner s touches base ground while both side neighbours are glossy_ice",
+   "file": "tiles/glossy_ice_corner_s.png",
+   "file_2x": "tiles/_2x/glossy_ice_corner_s.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "generated_by": "wp10a_tiles.py --edges"
+  },
+  {
+   "id": "glossy_ice_corner_w",
+   "base_terrain": "glossy_ice",
+   "kind": "decal",
+   "walkable": true,
+   "in_zone_data": false,
+   "corner": "w",
+   "note": "draw over a glossy_ice tile whose diagonal corner w touches base ground while both side neighbours are glossy_ice",
+   "file": "tiles/glossy_ice_corner_w.png",
+   "file_2x": "tiles/_2x/glossy_ice_corner_w.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "generated_by": "wp10a_tiles.py --edges"
+  }
+ ],
+ "props": [
+  {
+   "id": "tree_pine_snowy_a",
+   "base_id": "tree",
+   "in_zone_data": false,
+   "kind": "tree",
+   "layer": "props",
+   "walkable": false,
+   "blocks": true,
+   "file": "props/tree_pine_snowy_a.png",
+   "file_2x": "props/_2x/tree_pine_snowy_a.png",
+   "size": [
+    96,
+    128
+   ],
+   "size_2x": [
+    192,
+    256
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "footprint_from_nw": [
+    [
+     0,
+     0
+    ]
+   ],
+   "anchor_cell_from_nw": [
+    0,
+    0
+   ],
+   "anchor": "image bottom-centre = south tip of cell origin+[0, 0]",
+   "bottom_centre_from_nw_centre_1x": [
+    0,
+    16
+   ],
+   "y_sort_origin_from_bottom_1x": [
+    0,
+    -16
+   ],
+   "standin_crosshaven": "tree_pine",
+   "note": "tall snow-laden pine, layered boughs with snow caps",
+   "raw": "tree_pine_snowy_a.png",
+   "wp10a": true,
+   "design_status": "PROPOSED (WP10a)",
+   "note_zone": "blocking art: the placer must mark every footprint cell blocked",
+   "art_x_from_anchor_2x": [
+    -69,
+    75
+   ],
+   "art_height_2x": 237,
+   "animated": [
+    "animated/tree_pine_snowy_a_sway.png"
+   ],
+   "sway_mask": "animated/sway_masks/tree_pine_snowy_a_swaymask.png",
+   "processing": {
+    "palette_drift_dE": [
+     14.2,
+     11.7
+    ],
+    "scale_raw_to_2x": 0.3333
+   },
+   "size_class": "tree_conifer"
+  },
+  {
+   "id": "tree_pine_snowy_b",
+   "base_id": "tree",
+   "in_zone_data": false,
+   "kind": "tree",
+   "layer": "props",
+   "walkable": false,
+   "blocks": true,
+   "file": "props/tree_pine_snowy_b.png",
+   "file_2x": "props/_2x/tree_pine_snowy_b.png",
+   "size": [
+    96,
+    128
+   ],
+   "size_2x": [
+    192,
+    256
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "footprint_from_nw": [
+    [
+     0,
+     0
+    ]
+   ],
+   "anchor_cell_from_nw": [
+    0,
+    0
+   ],
+   "anchor": "image bottom-centre = south tip of cell origin+[0, 0]",
+   "bottom_centre_from_nw_centre_1x": [
+    0,
+    16
+   ],
+   "y_sort_origin_from_bottom_1x": [
+    0,
+    -16
+   ],
+   "standin_crosshaven": "tree_pine",
+   "note": "second snowy pine, slightly lopsided, different snow pattern",
+   "raw": "tree_pine_snowy_b.png",
+   "wp10a": true,
+   "design_status": "PROPOSED (WP10a)",
+   "note_zone": "blocking art: the placer must mark every footprint cell blocked",
+   "art_x_from_anchor_2x": [
+    -73,
+    79
+   ],
+   "art_height_2x": 223,
+   "animated": [
+    "animated/tree_pine_snowy_b_sway.png"
+   ],
+   "sway_mask": "animated/sway_masks/tree_pine_snowy_b_swaymask.png",
+   "processing": {
+    "palette_drift_dE": [
+     15.5,
+     12.7
+    ],
+    "scale_raw_to_2x": 0.3155
+   },
+   "size_class": "tree_conifer"
+  },
+  {
+   "id": "tree_pine_frozen_blue",
+   "base_id": "tree",
+   "in_zone_data": false,
+   "kind": "tree",
+   "layer": "props",
+   "walkable": false,
+   "blocks": true,
+   "file": "props/tree_pine_frozen_blue.png",
+   "file_2x": "props/_2x/tree_pine_frozen_blue.png",
+   "size": [
+    96,
+    128
+   ],
+   "size_2x": [
+    192,
+    256
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "footprint_from_nw": [
+    [
+     0,
+     0
+    ]
+   ],
+   "anchor_cell_from_nw": [
+    0,
+    0
+   ],
+   "anchor": "image bottom-centre = south tip of cell origin+[0, 0]",
+   "bottom_centre_from_nw_centre_1x": [
+    0,
+    16
+   ],
+   "y_sort_origin_from_bottom_1x": [
+    0,
+    -16
+   ],
+   "standin_crosshaven": "tree_pine",
+   "note": "frozen blue-glazed pine, icicles, rime",
+   "raw": "tree_pine_frozen_blue.png",
+   "wp10a": true,
+   "design_status": "PROPOSED (WP10a)",
+   "note_zone": "blocking art: the placer must mark every footprint cell blocked",
+   "art_x_from_anchor_2x": [
+    -75,
+    79
+   ],
+   "art_height_2x": 229,
+   "animated": [
+    "animated/tree_pine_frozen_blue_sway.png"
+   ],
+   "sway_mask": "animated/sway_masks/tree_pine_frozen_blue_swaymask.png",
+   "processing": {
+    "palette_drift_dE": [
+     7.1,
+     6.3
+    ],
+    "scale_raw_to_2x": 0.3254
+   },
+   "size_class": "tree_conifer"
+  },
+  {
+   "id": "ice_boulder",
+   "base_id": null,
+   "in_zone_data": false,
+   "kind": "rock",
+   "layer": "props",
+   "walkable": false,
+   "blocks": true,
+   "file": "props/ice_boulder.png",
+   "file_2x": "props/_2x/ice_boulder.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "footprint_from_nw": [
+    [
+     0,
+     0
+    ]
+   ],
+   "anchor_cell_from_nw": [
+    0,
+    0
+   ],
+   "anchor": "image bottom-centre = south tip of cell origin+[0, 0]",
+   "bottom_centre_from_nw_centre_1x": [
+    0,
+    16
+   ],
+   "y_sort_origin_from_bottom_1x": [
+    0,
+    -16
+   ],
+   "standin_crosshaven": "rock_large",
+   "note": "rounded boulder half-encased in clear blue ice",
+   "raw": "ice_boulder.png",
+   "wp10a": true,
+   "design_status": "PROPOSED (WP10a)",
+   "note_zone": "blocking art: the placer must mark every footprint cell blocked",
+   "art_x_from_anchor_2x": [
+    -44,
+    39
+   ],
+   "art_height_2x": 97,
+   "processing": {
+    "palette_drift_dE": [
+     10.2,
+     9.1
+    ],
+    "scale_raw_to_2x": 0.1687
+   },
+   "size_class": "small"
+  },
+  {
+   "id": "snow_drift",
+   "base_id": null,
+   "in_zone_data": false,
+   "kind": "decor",
+   "layer": "decor",
+   "walkable": true,
+   "blocks": false,
+   "file": "props/snow_drift.png",
+   "file_2x": "props/_2x/snow_drift.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "footprint_from_nw": [
+    [
+     0,
+     0
+    ]
+   ],
+   "anchor_cell_from_nw": [
+    0,
+    0
+   ],
+   "anchor": "image bottom-centre = south tip of cell origin+[0, 0]",
+   "bottom_centre_from_nw_centre_1x": [
+    0,
+    16
+   ],
+   "y_sort_origin_from_bottom_1x": [
+    0,
+    -16
+   ],
+   "standin_crosshaven": "rock_small_a",
+   "note": "low wind-sculpted snow drift (walkable decor)",
+   "raw": "snow_drift.png",
+   "wp10a": true,
+   "design_status": "PROPOSED (WP10a)",
+   "art_x_from_anchor_2x": [
+    -53,
+    28
+   ],
+   "art_height_2x": 50,
+   "processing": {
+    "palette_drift_dE": [
+     3.6,
+     3.6
+    ],
+    "scale_raw_to_2x": 0.0832
+   },
+   "size_class": "small"
+  },
+  {
+   "id": "pillar_ruin_white",
+   "base_id": null,
+   "in_zone_data": false,
+   "kind": "ruin",
+   "layer": "props",
+   "walkable": false,
+   "blocks": true,
+   "file": "props/pillar_ruin_white.png",
+   "file_2x": "props/_2x/pillar_ruin_white.png",
+   "size": [
+    64,
+    112
+   ],
+   "size_2x": [
+    128,
+    224
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "footprint_from_nw": [
+    [
+     0,
+     0
+    ]
+   ],
+   "anchor_cell_from_nw": [
+    0,
+    0
+   ],
+   "anchor": "image bottom-centre = south tip of cell origin+[0, 0]",
+   "bottom_centre_from_nw_centre_1x": [
+    0,
+    16
+   ],
+   "y_sort_origin_from_bottom_1x": [
+    0,
+    -16
+   ],
+   "standin_crosshaven": "wall_tower",
+   "note": "broken white marble column on a square plinth, snow on the break",
+   "raw": "pillar_ruin_white.png",
+   "wp10a": true,
+   "design_status": "PROPOSED (WP10a)",
+   "note_zone": "blocking art: the placer must mark every footprint cell blocked",
+   "art_x_from_anchor_2x": [
+    -62,
+    58
+   ],
+   "art_height_2x": 196,
+   "processing": {
+    "palette_drift_dE": [
+     11.8,
+     9.3
+    ],
+    "scale_raw_to_2x": 0.28690001368522644
+   },
+   "processing_warnings": [
+    "art does not fit the canvas at the target size: scaled to 99% of the manifest art height/width"
+   ],
+   "size_class": "tree"
+  },
+  {
+   "id": "ice_crystal_cluster",
+   "base_id": null,
+   "in_zone_data": false,
+   "kind": "rock",
+   "layer": "props",
+   "walkable": false,
+   "blocks": true,
+   "file": "props/ice_crystal_cluster.png",
+   "file_2x": "props/_2x/ice_crystal_cluster.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "footprint_from_nw": [
+    [
+     0,
+     0
+    ]
+   ],
+   "anchor_cell_from_nw": [
+    0,
+    0
+   ],
+   "anchor": "image bottom-centre = south tip of cell origin+[0, 0]",
+   "bottom_centre_from_nw_centre_1x": [
+    0,
+    16
+   ],
+   "y_sort_origin_from_bottom_1x": [
+    0,
+    -16
+   ],
+   "standin_crosshaven": "rock_medium",
+   "note": "cluster of pale ice crystals growing from snow",
+   "raw": "ice_crystal_cluster.png",
+   "wp10a": true,
+   "design_status": "PROPOSED (WP10a)",
+   "note_zone": "blocking art: the placer must mark every footprint cell blocked",
+   "art_x_from_anchor_2x": [
+    -51,
+    47
+   ],
+   "art_height_2x": 120,
+   "emit": {
+    "file": "props/emit/ice_crystal_cluster_emit.png",
+    "file_2x": "props/emit/_2x/ice_crystal_cluster_emit.png",
+    "strength_default": 0.25,
+    "covers": "crystal cores (faint)",
+    "note": "8-bit greyscale data texture (linear), rgb += albedo * emit * strength; glow fades in at night like lamp_glow",
+    "processing": {
+     "coverage_gt_0_2": 0.0318,
+     "rule": "crystal_cores",
+     "note": "crystal cores only: bright pale-blue interior of the crystals, eroded off the edges, snow mound excluded"
+    }
+   },
+   "processing": {
+    "palette_drift_dE": [
+     4.8,
+     4.8
+    ],
+    "scale_raw_to_2x": 0.1992
+   },
+   "processing_warnings": [
+    "emit from colour rule without roi_2x boxes: check for false glow on snow/white stone"
+   ],
+   "size_class": "small"
+  },
+  {
+   "id": "lantern_post_warm",
+   "base_id": null,
+   "in_zone_data": false,
+   "kind": "lamp",
+   "layer": "props",
+   "walkable": false,
+   "blocks": true,
+   "file": "props/lantern_post_warm.png",
+   "file_2x": "props/_2x/lantern_post_warm.png",
+   "size": [
+    64,
+    112
+   ],
+   "size_2x": [
+    128,
+    224
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "footprint_from_nw": [
+    [
+     0,
+     0
+    ]
+   ],
+   "anchor_cell_from_nw": [
+    0,
+    0
+   ],
+   "anchor": "image bottom-centre = south tip of cell origin+[0, 0]",
+   "bottom_centre_from_nw_centre_1x": [
+    0,
+    16
+   ],
+   "y_sort_origin_from_bottom_1x": [
+    0,
+    -16
+   ],
+   "standin_crosshaven": "lamp_post",
+   "note": "wrought-iron lantern post with a warm amber lantern, snow on the cap",
+   "raw": "lantern_post_warm.png",
+   "wp10a": true,
+   "design_status": "PROPOSED (WP10a)",
+   "note_zone": "blocking art: the placer must mark every footprint cell blocked",
+   "art_x_from_anchor_2x": [
+    -34,
+    51
+   ],
+   "art_height_2x": 219,
+   "emit": {
+    "file": "props/emit/lantern_post_warm_emit.png",
+    "file_2x": "props/emit/_2x/lantern_post_warm_emit.png",
+    "strength_default": 0.6,
+    "covers": "lantern glass + flame",
+    "note": "8-bit greyscale data texture (linear), rgb += albedo * emit * strength; glow fades in at night like lamp_glow",
+    "processing": {
+     "note": "manifest 'warm' colour rule (lantern glass + flame only, checked visually)"
+    }
+   },
+   "processing": {
+    "palette_drift_dE": [
+     15.1,
+     12.1
+    ],
+    "scale_raw_to_2x": 0.2992
+   },
+   "processing_warnings": [
+    "emit from colour rule without roi_2x boxes: check for false glow on snow/white stone"
+   ],
+   "size_class": "tree"
+  },
+  {
+   "id": "shrub_frozen",
+   "base_id": null,
+   "in_zone_data": false,
+   "kind": "bush",
+   "layer": "props",
+   "walkable": false,
+   "blocks": true,
+   "file": "props/shrub_frozen.png",
+   "file_2x": "props/_2x/shrub_frozen.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "footprint_from_nw": [
+    [
+     0,
+     0
+    ]
+   ],
+   "anchor_cell_from_nw": [
+    0,
+    0
+   ],
+   "anchor": "image bottom-centre = south tip of cell origin+[0, 0]",
+   "bottom_centre_from_nw_centre_1x": [
+    0,
+    16
+   ],
+   "y_sort_origin_from_bottom_1x": [
+    0,
+    -16
+   ],
+   "standin_crosshaven": "bush_small_a",
+   "note": "small frost-rimed shrub, white-tipped twigs",
+   "raw": "shrub_frozen.png",
+   "wp10a": true,
+   "design_status": "PROPOSED (WP10a)",
+   "note_zone": "blocking art: the placer must mark every footprint cell blocked",
+   "art_x_from_anchor_2x": [
+    -39,
+    38
+   ],
+   "art_height_2x": 90,
+   "processing": {
+    "palette_drift_dE": [
+     13.8,
+     11.4
+    ],
+    "scale_raw_to_2x": 0.1338
+   },
+   "size_class": "small"
+  },
+  {
+   "id": "border_snowy_pine_wall",
+   "base_id": null,
+   "in_zone_data": false,
+   "kind": "border",
+   "layer": "border",
+   "walkable": false,
+   "blocks": true,
+   "file": "props/border_snowy_pine_wall.png",
+   "file_2x": "props/_2x/border_snowy_pine_wall.png",
+   "size": [
+    96,
+    128
+   ],
+   "size_2x": [
+    192,
+    256
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "footprint_from_nw": [
+    [
+     0,
+     0
+    ]
+   ],
+   "anchor_cell_from_nw": [
+    0,
+    0
+   ],
+   "anchor": "image bottom-centre = south tip of cell origin+[0, 0]",
+   "bottom_centre_from_nw_centre_1x": [
+    0,
+    16
+   ],
+   "y_sort_origin_from_bottom_1x": [
+    0,
+    -16
+   ],
+   "standin_crosshaven": "border_forest_c",
+   "note": "dense wall of 2-3 snowy pines, orientation-free mass",
+   "raw": "border_snowy_pine_wall_a.png",
+   "wp10a": true,
+   "design_status": "PROPOSED (WP10a)",
+   "note_zone": "blocking art: the placer must mark every footprint cell blocked",
+   "art_x_from_anchor_2x": [
+    -89,
+    93
+   ],
+   "art_height_2x": 214,
+   "animated": [
+    "animated/border_snowy_pine_wall_sway.png"
+   ],
+   "sway_mask": "animated/sway_masks/border_snowy_pine_wall_swaymask.png",
+   "processing": {
+    "palette_drift_dE": [
+     10.2,
+     8.5
+    ],
+    "scale_raw_to_2x": 0.3246999979019165
+   },
+   "processing_warnings": [
+    "art does not fit the canvas at the target size: scaled to 87% of the manifest art height/width"
+   ],
+   "size_class": "border_tall"
+  },
+  {
+   "id": "border_snowy_pine_wall_b",
+   "base_id": null,
+   "in_zone_data": false,
+   "kind": "border",
+   "layer": "border",
+   "walkable": false,
+   "blocks": true,
+   "file": "props/border_snowy_pine_wall_b.png",
+   "file_2x": "props/_2x/border_snowy_pine_wall_b.png",
+   "size": [
+    96,
+    128
+   ],
+   "size_2x": [
+    192,
+    256
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "footprint_from_nw": [
+    [
+     0,
+     0
+    ]
+   ],
+   "anchor_cell_from_nw": [
+    0,
+    0
+   ],
+   "anchor": "image bottom-centre = south tip of cell origin+[0, 0]",
+   "bottom_centre_from_nw_centre_1x": [
+    0,
+    16
+   ],
+   "y_sort_origin_from_bottom_1x": [
+    0,
+    -16
+   ],
+   "standin_crosshaven": "border_forest_c",
+   "note": "dense wall of 2-3 snowy pines, orientation-free mass (painted variant b)",
+   "raw": "border_snowy_pine_wall_b.png",
+   "wp10a": true,
+   "design_status": "PROPOSED (WP10a)",
+   "note_zone": "blocking art: the placer must mark every footprint cell blocked",
+   "art_x_from_anchor_2x": [
+    -94,
+    83
+   ],
+   "art_height_2x": 214,
+   "animated": [
+    "animated/border_snowy_pine_wall_b_sway.png"
+   ],
+   "sway_mask": "animated/sway_masks/border_snowy_pine_wall_b_swaymask.png",
+   "processing": {
+    "palette_drift_dE": [
+     9.7,
+     8.3
+    ],
+    "scale_raw_to_2x": 0.3197000026702881
+   },
+   "processing_warnings": [
+    "art does not fit the canvas at the target size: scaled to 87% of the manifest art height/width"
+   ],
+   "size_class": "border_tall"
+  },
+  {
+   "id": "border_snowy_pine_wall_c",
+   "base_id": null,
+   "in_zone_data": false,
+   "kind": "border",
+   "layer": "border",
+   "walkable": false,
+   "blocks": true,
+   "file": "props/border_snowy_pine_wall_c.png",
+   "file_2x": "props/_2x/border_snowy_pine_wall_c.png",
+   "size": [
+    96,
+    128
+   ],
+   "size_2x": [
+    192,
+    256
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "footprint_from_nw": [
+    [
+     0,
+     0
+    ]
+   ],
+   "anchor_cell_from_nw": [
+    0,
+    0
+   ],
+   "anchor": "image bottom-centre = south tip of cell origin+[0, 0]",
+   "bottom_centre_from_nw_centre_1x": [
+    0,
+    16
+   ],
+   "y_sort_origin_from_bottom_1x": [
+    0,
+    -16
+   ],
+   "standin_crosshaven": "border_forest_c",
+   "note": "dense wall of 2-3 snowy pines, orientation-free mass (painted variant c)",
+   "raw": "border_snowy_pine_wall_c.png",
+   "wp10a": true,
+   "design_status": "PROPOSED (WP10a)",
+   "note_zone": "blocking art: the placer must mark every footprint cell blocked",
+   "art_x_from_anchor_2x": [
+    -79,
+    94
+   ],
+   "art_height_2x": 162,
+   "animated": [
+    "animated/border_snowy_pine_wall_c_sway.png"
+   ],
+   "sway_mask": "animated/sway_masks/border_snowy_pine_wall_c_swaymask.png",
+   "processing": {
+    "palette_drift_dE": [
+     10.0,
+     8.7
+    ],
+    "scale_raw_to_2x": 0.2581999897956848
+   },
+   "processing_warnings": [
+    "art does not fit the canvas at the target size: scaled to 65% of the manifest art height/width"
+   ],
+   "size_class": "border_tall"
+  },
+  {
+   "id": "frost_spire",
+   "base_id": null,
+   "in_zone_data": false,
+   "kind": "landmark",
+   "layer": "hero",
+   "walkable": false,
+   "blocks": true,
+   "file": "props/frost_spire.png",
+   "file_2x": "props/_2x/frost_spire.png",
+   "size": [
+    192,
+    256
+   ],
+   "size_2x": [
+    384,
+    512
+   ],
+   "footprint_size": [
+    2,
+    2
+   ],
+   "footprint_from_nw": [
+    [
+     0,
+     0
+    ],
+    [
+     1,
+     0
+    ],
+    [
+     0,
+     1
+    ],
+    [
+     1,
+     1
+    ]
+   ],
+   "anchor_cell_from_nw": [
+    1,
+    1
+   ],
+   "anchor": "image bottom-centre = south tip of cell origin+[1, 1]",
+   "bottom_centre_from_nw_centre_1x": [
+    0,
+    48
+   ],
+   "y_sort_origin_from_bottom_1x": [
+    0,
+    -16
+   ],
+   "standin_crosshaven": "tavern_3x2",
+   "note": "tall white-stone spire wrapped in ice, crystal crown, faint inner ice glow; the Frostspire Archive above ground",
+   "raw": "frost_spire.png",
+   "wp10a": true,
+   "design_status": "PROPOSED (WP10a)",
+   "note_zone": "blocking art: the placer must mark every footprint cell blocked",
+   "art_x_from_anchor_2x": [
+    -137,
+    130
+   ],
+   "art_height_2x": 506,
+   "emit": {
+    "file": "props/emit/frost_spire_emit.png",
+    "file_2x": "props/emit/_2x/frost_spire_emit.png",
+    "strength_default": 0.35,
+    "covers": "ice veins, crystal crown, window glow (faint)",
+    "note": "8-bit greyscale data texture (linear), rgb += albedo * emit * strength; glow fades in at night like lamp_glow",
+    "processing": {
+     "coverage_gt_0_2": 0.0291,
+     "rule": "spire",
+     "note": "window panes (roi_2x boxes) + crystal crown (ice colour rule, top 13-19% of the art, soft cut); tier icicles/cladding excluded",
+     "roi_2x_windows": [
+      [
+       154,
+       129,
+       176,
+       171
+      ],
+      [
+       199,
+       127,
+       224,
+       174
+      ],
+      [
+       151,
+       212,
+       173,
+       257
+      ],
+      [
+       201,
+       212,
+       227,
+       260
+      ],
+      [
+       142,
+       321,
+       165,
+       371
+      ],
+      [
+       212,
+       323,
+       237,
+       373
+      ]
+     ]
+    }
+   },
+   "processing": {
+    "palette_drift_dE": [
+     6.4,
+     6.4
+    ],
+    "scale_raw_to_2x": 0.731
+   },
+   "processing_warnings": [
+    "emit from colour rule without roi_2x boxes: check for false glow on snow/white stone"
+   ],
+   "size_class": "hero"
+  }
+ ],
+ "palette": {
+  "snow_hi": "#eaeff3",
+  "snow": "#ccd6e3",
+  "snow_shade": "#a7c0dd",
+  "ice": "#83a7cd",
+  "ice_deep": "#5c8ab6",
+  "ice_dark": "#2c445d",
+  "stone_white": "#e3e1da",
+  "stone": "#afb6bd",
+  "stone_lo": "#8c98a6",
+  "stone_dk": "#6d7e8f",
+  "slate": "#4a657f",
+  "pine": "#2f5a4a",
+  "pine_lo": "#1f4038",
+  "pine_hi": "#4f7f68",
+  "pine_frozen": "#5f8fb0",
+  "pine_frozen_hi": "#8fbcd8",
+  "lantern": "#ffc860",
+  "lantern_lo": "#f29a3a",
+  "iron": "#3a3f4a",
+  "outline": "#2a1c12"
+ },
+ "lighting": "top-left warm key #fff0c8, cool shade #5a6fa0 (SW faces lit, SE faces in shade); NO baked cast or contact shadows in the sprites (painted ground shadows removed from the raws); moving cast shadows live only in animated/shadows/*_shadow_sway (ground layer, #1a223c)",
+ "animated": {
+  "meta": "animated/anim_meta.json",
+  "status": "PROPOSED",
+  "count": 12,
+  "groups": {
+   "sway": [
+    "border_snowy_pine_wall_b_shadow_sway",
+    "border_snowy_pine_wall_b_sway",
+    "border_snowy_pine_wall_c_shadow_sway",
+    "border_snowy_pine_wall_c_sway",
+    "border_snowy_pine_wall_shadow_sway",
+    "border_snowy_pine_wall_sway",
+    "tree_pine_frozen_blue_shadow_sway",
+    "tree_pine_frozen_blue_sway",
+    "tree_pine_snowy_a_shadow_sway",
+    "tree_pine_snowy_a_sway",
+    "tree_pine_snowy_b_shadow_sway",
+    "tree_pine_snowy_b_sway"
+   ],
+   "overlays": []
+  }
+ },
+ "wp10a": {
+  "package": "WP10a pair 1",
+  "manifest": "raw/wp10a/manifest.json",
+  "generated": "2026-10-03",
+  "status": "COMPLETE",
+  "missing": [],
+  "grade": {
+   "source": "pc/world-zones data/world/windmere/stand_in.json (WP6 rework, 3 Oct)",
+   "warm_mul": [
+    0.78,
+    0.88,
+    1.22
+   ],
+   "haze_col": [
+    0.82,
+    0.9,
+    1.0
+   ],
+   "haze_max": 0.3,
+   "saturation": 0.58,
+   "tint_col": [
+    0.0,
+    0.42,
+    1.0
+   ],
+   "tint_amount": 0.55,
+   "weather": [
+    "light_cloud"
+   ],
+   "applied_in_art": false,
+   "note": "Recorded for reference only. Sprites and tiles are painted in natural colour; the stand-in grade is NOT baked in and is left to the runtime zone grade."
+  },
+  "palette_status": "PROPOSED: the spec gives no Windmere hexes; snow/ice/stone sampled from art/maps/arena_colosseum_v2/tiled/windmere_15x15_painted_preview.png (pc/world-zones), pine and lantern added",
+  "processing": {
+   "pipeline": "scratch/wp10a: wp10a_props.py (key + decontaminate on the flat bg, 8x supersampled place, area downsample to 2x and 1x), rv_fix.py (painted-shadow removal behind the dark outline, palette nudge 30% capped at 7 dE, per-asset retouch), wp10a_tiles.py (--fix-seams, --edges), wp10a_sails.py, wp10a_atlas.py; driver rv_run.py",
+   "tiles": {
+    "snow_grass": {
+     "files": [
+      "snow_grass_a",
+      "snow_grass_b",
+      "snow_grass_c"
+     ],
+     "crop": {
+      "size": 560,
+      "rot": 0,
+      "fix": true
+     },
+     "seam_score_raw_cols_rows": [
+      5.15,
+      7.23
+     ],
+     "seam_score_after_cols_rows": [
+      1.26,
+      1.32
+     ],
+     "board_seam": {
+      "max_abs_vs_continuous": 0.07845616340637207,
+      "mean_abs_vs_continuous": 0.0062371715903282166,
+      "hairline_max": 0.0,
+      "hairline_px": 0
+     }
+    },
+    "white_flagstone": {
+     "files": [
+      "white_flagstone_a",
+      "white_flagstone_b",
+      "white_flagstone_edge_nw",
+      "white_flagstone_edge_ne",
+      "white_flagstone_edge_nw_ne",
+      "white_flagstone_edge_se",
+      "white_flagstone_edge_nw_se",
+      "white_flagstone_edge_ne_se",
+      "white_flagstone_edge_nw_ne_se",
+      "white_flagstone_edge_sw",
+      "white_flagstone_edge_nw_sw",
+      "white_flagstone_edge_ne_sw",
+      "white_flagstone_edge_nw_ne_sw",
+      "white_flagstone_edge_se_sw",
+      "white_flagstone_edge_nw_se_sw",
+      "white_flagstone_edge_ne_se_sw",
+      "white_flagstone_edge_nw_ne_se_sw",
+      "white_flagstone_corner_n",
+      "white_flagstone_corner_e",
+      "white_flagstone_corner_s",
+      "white_flagstone_corner_w"
+     ],
+     "crop": {
+      "period_xy": [
+       635.5,
+       407.75
+      ],
+      "origin_f": [
+       618.0,
+       86.0
+      ],
+      "rot": 0,
+      "fix": false,
+      "directional": "tint"
+     },
+     "seam_score_raw_cols_rows": [
+      1.04,
+      1.08
+     ],
+     "seam_score_after_cols_rows": [
+      1.04,
+      1.08
+     ],
+     "board_seam": {
+      "max_abs_vs_continuous": 0.09667313098907471,
+      "mean_abs_vs_continuous": 0.009432977065443993,
+      "hairline_max": 0.0,
+      "hairline_px": 0
+     },
+     "seam_score_source_scale_cols_rows": [
+      0.75,
+      0.58
+     ],
+     "seam_note": "exact period crop (635.5x407.75 px, phase chosen for the lowest wrap seam) resampled anisotropically to 1024x1024 (stones 1.56x longer along world y); variants are value-wobble only (a shifted-copy blend would ghost the joints)"
+    },
+    "glossy_ice": {
+     "files": [
+      "glossy_ice_a",
+      "glossy_ice_b",
+      "glossy_ice_edge_nw",
+      "glossy_ice_edge_ne",
+      "glossy_ice_edge_nw_ne",
+      "glossy_ice_edge_se",
+      "glossy_ice_edge_nw_se",
+      "glossy_ice_edge_ne_se",
+      "glossy_ice_edge_nw_ne_se",
+      "glossy_ice_edge_sw",
+      "glossy_ice_edge_nw_sw",
+      "glossy_ice_edge_ne_sw",
+      "glossy_ice_edge_nw_ne_sw",
+      "glossy_ice_edge_se_sw",
+      "glossy_ice_edge_nw_se_sw",
+      "glossy_ice_edge_ne_se_sw",
+      "glossy_ice_edge_nw_ne_se_sw",
+      "glossy_ice_corner_n",
+      "glossy_ice_corner_e",
+      "glossy_ice_corner_s",
+      "glossy_ice_corner_w"
+     ],
+     "crop": {
+      "size": 560,
+      "rot": 0,
+      "fix": true
+     },
+     "seam_score_raw_cols_rows": [
+      5.81,
+      3.69
+     ],
+     "seam_score_after_cols_rows": [
+      1.13,
+      0.81
+     ],
+     "board_seam": {
+      "max_abs_vs_continuous": 0.08368366956710815,
+      "mean_abs_vs_continuous": 0.007150345016270876,
+      "hairline_max": 0.0,
+      "hairline_px": 0
+     }
+    }
+   },
+   "sails": {},
+   "notes": [
+    "3 Oct TA follow-up: world-kit gate (check_assets --package world) replaces the combat-prop width rule.",
+    "border_snowy_pine_wall(_b,_c): +-70 px (2x) width cap removed; art fills the manifest 96x128 (1x) canvas, about +-94 px at 2x = ~15 px (1x) neighbour overlap.",
+    "tree_pine_snowy_a/_b, tree_pine_frozen_blue: tree_conifer canvas 96x128 (1x) / 192x256 (2x), art fits unclipped (<= +-79 px at 2x); full manifest art height. tree_pine_frozen_blue gets the same sway as the other pines.",
+    "frost_spire: +-132 px width refit undone (full manifest height, art -137..130 px at 2x); emit window boxes re-measured.",
+    "Root-level *_emit.png copies (props-checker index) removed; emit masks live in props/emit/ and props/emit/_2x/ only.",
+    "pines +4 px, lantern_post_warm +6 px (2x) lower so the lowest opaque row is within 24 px of the anchor."
+   ]
+  }
+ }
+}

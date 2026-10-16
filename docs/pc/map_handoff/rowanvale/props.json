@@ -1,0 +1,516 @@
+{
+ "package": "wp10a_rowanvale",
+ "version": 1,
+ "note": "checker index (check_assets.py --package props); paths relative to this folder",
+ "props": [
+  {
+   "id": "tree_apple_orchard",
+   "file_2x": "props/_2x/tree_apple_orchard.png",
+   "file_1x": "props/tree_apple_orchard.png",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    112.0,
+    256
+   ],
+   "anchor_px_1x": [
+    56.0,
+    128
+   ],
+   "size_2x": [
+    224,
+    256
+   ],
+   "size_1x": [
+    112,
+    128
+   ],
+   "size_class": "tree_broad",
+   "emissive": "no",
+   "art_x_from_anchor_2x": [
+    -94,
+    103
+   ],
+   "height_px_2x": 223
+  },
+  {
+   "id": "tree_apple_orchard_fruiting",
+   "file_2x": "props/_2x/tree_apple_orchard_fruiting.png",
+   "file_1x": "props/tree_apple_orchard_fruiting.png",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    112.0,
+    256
+   ],
+   "anchor_px_1x": [
+    56.0,
+    128
+   ],
+   "size_2x": [
+    224,
+    256
+   ],
+   "size_1x": [
+    112,
+    128
+   ],
+   "size_class": "tree_broad",
+   "emissive": "no",
+   "art_x_from_anchor_2x": [
+    -100,
+    104
+   ],
+   "height_px_2x": 223
+  },
+  {
+   "id": "tree_pear",
+   "file_2x": "props/_2x/tree_pear.png",
+   "file_1x": "props/tree_pear.png",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    112.0,
+    256
+   ],
+   "anchor_px_1x": [
+    56.0,
+    128
+   ],
+   "size_2x": [
+    224,
+    256
+   ],
+   "size_1x": [
+    112,
+    128
+   ],
+   "size_class": "tree_broad",
+   "emissive": "no",
+   "art_x_from_anchor_2x": [
+    -103,
+    108
+   ],
+   "height_px_2x": 235
+  },
+  {
+   "id": "tree_stump_old",
+   "file_2x": "props/_2x/tree_stump_old.png",
+   "file_1x": "props/tree_stump_old.png",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64.0,
+    128
+   ],
+   "anchor_px_1x": [
+    32.0,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "size_class": "small",
+   "emissive": "no",
+   "art_x_from_anchor_2x": [
+    -34,
+    21
+   ],
+   "height_px_2x": 73
+  },
+  {
+   "id": "fence_orchard_nwse",
+   "file_2x": "props/_2x/fence_orchard_nwse.png",
+   "file_1x": "props/fence_orchard_nwse.png",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64.0,
+    128
+   ],
+   "anchor_px_1x": [
+    32.0,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "size_class": "small",
+   "emissive": "no",
+   "art_x_from_anchor_2x": [
+    -46,
+    46
+   ],
+   "height_px_2x": 94
+  },
+  {
+   "id": "fence_orchard_nesw",
+   "file_2x": "props/_2x/fence_orchard_nesw.png",
+   "file_1x": "props/fence_orchard_nesw.png",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64.0,
+    128
+   ],
+   "anchor_px_1x": [
+    32.0,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "size_class": "small",
+   "emissive": "no",
+   "art_x_from_anchor_2x": [
+    -46,
+    46
+   ],
+   "height_px_2x": 99
+  },
+  {
+   "id": "hay_bale_round",
+   "file_2x": "props/_2x/hay_bale_round.png",
+   "file_1x": "props/hay_bale_round.png",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64.0,
+    128
+   ],
+   "anchor_px_1x": [
+    32.0,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "size_class": "small",
+   "emissive": "no",
+   "art_x_from_anchor_2x": [
+    -27,
+    50
+   ],
+   "height_px_2x": 84
+  },
+  {
+   "id": "scarecrow_field",
+   "file_2x": "props/_2x/scarecrow_field.png",
+   "file_1x": "props/scarecrow_field.png",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64.0,
+    224
+   ],
+   "anchor_px_1x": [
+    32.0,
+    112
+   ],
+   "size_2x": [
+    128,
+    224
+   ],
+   "size_1x": [
+    64,
+    112
+   ],
+   "size_class": "tree",
+   "emissive": "no",
+   "art_x_from_anchor_2x": [
+    -62,
+    58
+   ],
+   "height_px_2x": 170
+  },
+  {
+   "id": "beehive_box",
+   "file_2x": "props/_2x/beehive_box.png",
+   "file_1x": "props/beehive_box.png",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64.0,
+    128
+   ],
+   "anchor_px_1x": [
+    32.0,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "size_class": "small",
+   "emissive": "no",
+   "art_x_from_anchor_2x": [
+    -27,
+    27
+   ],
+   "height_px_2x": 96
+  },
+  {
+   "id": "stone_wall_field_nwse",
+   "file_2x": "props/_2x/stone_wall_field_nwse.png",
+   "file_1x": "props/stone_wall_field_nwse.png",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64.0,
+    128
+   ],
+   "anchor_px_1x": [
+    32.0,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "size_class": "small",
+   "emissive": "no",
+   "art_x_from_anchor_2x": [
+    -48,
+    48
+   ],
+   "height_px_2x": 70
+  },
+  {
+   "id": "stone_wall_field_nesw",
+   "file_2x": "props/_2x/stone_wall_field_nesw.png",
+   "file_1x": "props/stone_wall_field_nesw.png",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64.0,
+    128
+   ],
+   "anchor_px_1x": [
+    32.0,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "size_class": "small",
+   "emissive": "no",
+   "art_x_from_anchor_2x": [
+    -48,
+    48
+   ],
+   "height_px_2x": 78
+  },
+  {
+   "id": "bush_flower_meadow",
+   "file_2x": "props/_2x/bush_flower_meadow.png",
+   "file_1x": "props/bush_flower_meadow.png",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64.0,
+    128
+   ],
+   "anchor_px_1x": [
+    32.0,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "size_class": "small",
+   "emissive": "no",
+   "art_x_from_anchor_2x": [
+    -46,
+    44
+   ],
+   "height_px_2x": 99
+  },
+  {
+   "id": "border_orchard_hedge_nwse",
+   "file_2x": "props/_2x/border_orchard_hedge_nwse.png",
+   "file_1x": "props/border_orchard_hedge_nwse.png",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    96.0,
+    256
+   ],
+   "anchor_px_1x": [
+    48.0,
+    128
+   ],
+   "size_2x": [
+    192,
+    256
+   ],
+   "size_1x": [
+    96,
+    128
+   ],
+   "size_class": "border_tall",
+   "emissive": "no",
+   "art_x_from_anchor_2x": [
+    -50,
+    84
+   ],
+   "height_px_2x": 78
+  },
+  {
+   "id": "border_orchard_hedge_nesw",
+   "file_2x": "props/_2x/border_orchard_hedge_nesw.png",
+   "file_1x": "props/border_orchard_hedge_nesw.png",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    96.0,
+    256
+   ],
+   "anchor_px_1x": [
+    48.0,
+    128
+   ],
+   "size_2x": [
+    192,
+    256
+   ],
+   "size_1x": [
+    96,
+    128
+   ],
+   "size_class": "border_tall",
+   "emissive": "no",
+   "art_x_from_anchor_2x": [
+    -73,
+    44
+   ],
+   "height_px_2x": 73
+  },
+  {
+   "id": "old_windmill_body",
+   "file_2x": "props/_2x/old_windmill_body.png",
+   "file_1x": "props/old_windmill_body.png",
+   "footprint_cells": [
+    2,
+    2
+   ],
+   "anchor_px_2x": [
+    288.0,
+    512
+   ],
+   "anchor_px_1x": [
+    144.0,
+    256
+   ],
+   "size_2x": [
+    576,
+    512
+   ],
+   "size_1x": [
+    288,
+    256
+   ],
+   "size_class": "landmark_wide",
+   "emissive": "no",
+   "art_x_from_anchor_2x": [
+    -117,
+    114
+   ],
+   "height_px_2x": 459
+  },
+  {
+   "id": "old_windmill",
+   "file_2x": "props/_2x/old_windmill.png",
+   "file_1x": "props/old_windmill.png",
+   "footprint_cells": [
+    2,
+    2
+   ],
+   "anchor_px_2x": [
+    288.0,
+    512
+   ],
+   "anchor_px_1x": [
+    144.0,
+    256
+   ],
+   "size_2x": [
+    576,
+    512
+   ],
+   "size_1x": [
+    288,
+    256
+   ],
+   "size_class": "landmark_wide",
+   "emissive": "no",
+   "art_x_from_anchor_2x": null,
+   "height_px_2x": null
+  }
+ ]
+}

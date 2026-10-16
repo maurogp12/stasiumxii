@@ -1,0 +1,142 @@
+{
+ "package": "outskirts_themes/southbridge",
+ "root": "art/pc/look/outskirts/southbridge/",
+ "note": "checker index (world package): id, size_2x, footprint_cells, anchor_px_2x",
+ "props": [
+  {
+   "id": "reeds_a",
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64,
+    128
+   ]
+  },
+  {
+   "id": "reeds_b",
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64,
+    128
+   ]
+  },
+  {
+   "id": "reeds_c",
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64,
+    128
+   ]
+  },
+  {
+   "id": "dead_trunk_tall",
+   "size_2x": [
+    128,
+    224
+   ],
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64,
+    224
+   ]
+  },
+  {
+   "id": "dead_stump",
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64,
+    128
+   ]
+  },
+  {
+   "id": "rotten_log",
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64,
+    128
+   ]
+  },
+  {
+   "id": "stepping_stones",
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64,
+    128
+   ]
+  },
+  {
+   "id": "marker_lantern_post",
+   "size_2x": [
+    128,
+    224
+   ],
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64,
+    224
+   ]
+  },
+  {
+   "id": "root_tangle",
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64,
+    128
+   ]
+  }
+ ]
+}

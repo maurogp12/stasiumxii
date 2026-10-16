@@ -1,0 +1,2595 @@
+{
+ "format": "stasium.art_atlas",
+ "format_version": 1,
+ "region": "rowanvale",
+ "root": "res://art/world/rowanvale/",
+ "zone_data_ref": {
+  "spec": "docs/pc/ZONES_BUILD_SPEC.md WP10a @ a4f667e",
+  "region_index": "data/world/rowanvale/index.json",
+  "note": "region chunks currently use Crosshaven stand-in ids; see zone_id_map.standin_terrain and props[].standin_crosshaven"
+ },
+ "grid": {
+  "tile_w": 64,
+  "tile_h": 32,
+  "height_step_px": 10,
+  "cell_to_local": "((x-y)*32, (x+y)*16 - elev*10)",
+  "sides": {
+   "nw": [
+    -1,
+    0
+   ],
+   "ne": [
+    0,
+    -1
+   ],
+   "se": [
+    1,
+    0
+   ],
+   "sw": [
+    0,
+    1
+   ]
+  },
+  "corners": {
+   "n": [
+    -1,
+    -1
+   ],
+   "e": [
+    1,
+    -1
+   ],
+   "s": [
+    1,
+    1
+   ],
+   "w": [
+    -1,
+    1
+   ]
+  }
+ },
+ "files": {
+  "primary": "1x PNG at <kind>/<id>.png, drawn at scale 1",
+  "masters": "2x PNG at <kind>/_2x/<id>.png, draw at scale 0.5 (identical placement)",
+  "filter": "linear",
+  "mipmaps": false,
+  "premultiplied": false
+ },
+ "anchors": {
+  "tile": "image bottom-centre on the cell diamond SOUTH tip (board/tile.gd): draw at cell_to_local(cell, elev) + (-w/2, 16 - h). Floor/decal tiles are 64x32, so the image IS the diamond.",
+  "side_strip": "32x26 strip per height step k (0 = just under the top): left face top-left = south_tip + (-32, -16 + 10k), right face top-left = south_tip + (0, -16 + 10k); south_tip of the LIFTED tile. Optional upgrade over painted placeholder faces.",
+  "prop": "image bottom-centre on the SOUTH tip of the footprint's south-most cell (max x+y; for 2x2 = origin+(1,1)), lifted by that cell's height: draw at cell_to_local(south_cell, elev) + (0,16) + (-w/2, -h). NW origin only defines the covered cells.",
+  "prop_2x2_from_nw_center_1x": [
+   0,
+   48
+  ],
+  "y_sort": "sort by the footprint south-most cell (x+y). If you use a y-sort point instead, use image bottom - 16 px (centre of the south-most cell) and break ties in favour of characters."
+ },
+ "zone_id_map": {
+  "terrain": {
+   "meadow": {
+    "file": "tiles/meadow_a.png",
+    "default_variant": "meadow_a",
+    "pieces": [
+     "meadow_a",
+     "meadow_b",
+     "meadow_c"
+    ]
+   },
+   "orchard_soil": {
+    "file": "tiles/orchard_soil_a.png",
+    "default_variant": "orchard_soil_a",
+    "pieces": [
+     "orchard_soil_a",
+     "orchard_soil_b",
+     "orchard_soil_edge_ne",
+     "orchard_soil_edge_ne_se",
+     "orchard_soil_edge_ne_se_sw",
+     "orchard_soil_edge_ne_sw",
+     "orchard_soil_edge_nw",
+     "orchard_soil_edge_nw_ne",
+     "orchard_soil_edge_nw_ne_se",
+     "orchard_soil_edge_nw_ne_se_sw",
+     "orchard_soil_edge_nw_ne_sw",
+     "orchard_soil_edge_nw_se",
+     "orchard_soil_edge_nw_se_sw",
+     "orchard_soil_edge_nw_sw",
+     "orchard_soil_edge_se",
+     "orchard_soil_edge_se_sw",
+     "orchard_soil_edge_sw",
+     "orchard_soil_corner_e",
+     "orchard_soil_corner_n",
+     "orchard_soil_corner_s",
+     "orchard_soil_corner_w"
+    ]
+   },
+   "tilled_rows": {
+    "file": "tiles/tilled_rows_a.png",
+    "default_variant": "tilled_rows_a",
+    "pieces": [
+     "tilled_rows_a",
+     "tilled_rows_b",
+     "tilled_rows_edge_ne",
+     "tilled_rows_edge_ne_se",
+     "tilled_rows_edge_ne_se_sw",
+     "tilled_rows_edge_ne_sw",
+     "tilled_rows_edge_nw",
+     "tilled_rows_edge_nw_ne",
+     "tilled_rows_edge_nw_ne_se",
+     "tilled_rows_edge_nw_ne_se_sw",
+     "tilled_rows_edge_nw_ne_sw",
+     "tilled_rows_edge_nw_se",
+     "tilled_rows_edge_nw_se_sw",
+     "tilled_rows_edge_nw_sw",
+     "tilled_rows_edge_se",
+     "tilled_rows_edge_se_sw",
+     "tilled_rows_edge_sw",
+     "tilled_rows_corner_e",
+     "tilled_rows_corner_n",
+     "tilled_rows_corner_s",
+     "tilled_rows_corner_w"
+    ]
+   }
+  },
+  "props": {
+   "tree": {
+    "file": "props/tree_apple_orchard.png",
+    "variants": [
+     "tree_apple_orchard_fruiting",
+     "tree_pear"
+    ]
+   },
+   "fence": {
+    "file": "props/fence_orchard_nwse.png",
+    "variants": [
+     "fence_orchard_nesw"
+    ]
+   }
+  },
+  "standin_terrain": {
+   "farm_soil": "meadow",
+   "golden_plains": "meadow",
+   "dirt_road": "(no Rowanvale path tile: keep Crosshaven dirt_road)"
+  },
+  "note": "zone data keeps its ids; the placer / dressing.json picks these pieces per cell (Crosshaven hash picker)"
+ },
+ "fence_axis": {
+  "along_x": "fence_wood_nwse (=fence.png): rail runs along +x, screen up-left to down-right",
+  "along_y": "fence_wood_nesw: rail runs along +y, screen up-right to down-left"
+ },
+ "tiles": [
+  {
+   "id": "meadow_a",
+   "base_terrain": "meadow",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "file": "tiles/meadow_a.png",
+   "file_2x": "tiles/_2x/meadow_a.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "variant": 0,
+   "raw": "meadow_swatch.png",
+   "note": "sunny meadow grass, short clumps, clover, tiny wildflowers",
+   "wp10a": true
+  },
+  {
+   "id": "meadow_b",
+   "base_terrain": "meadow",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "file": "tiles/meadow_b.png",
+   "file_2x": "tiles/_2x/meadow_b.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "variant": 1,
+   "raw": "meadow_swatch.png",
+   "note": "sunny meadow grass, short clumps, clover, tiny wildflowers",
+   "wp10a": true
+  },
+  {
+   "id": "meadow_c",
+   "base_terrain": "meadow",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "file": "tiles/meadow_c.png",
+   "file_2x": "tiles/_2x/meadow_c.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "variant": 2,
+   "raw": "meadow_swatch.png",
+   "note": "sunny meadow grass, short clumps, clover, tiny wildflowers",
+   "wp10a": true
+  },
+  {
+   "id": "orchard_soil_a",
+   "base_terrain": "orchard_soil",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "file": "tiles/orchard_soil_a.png",
+   "file_2x": "tiles/_2x/orchard_soil_a.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "variant": 0,
+   "raw": "orchard_soil_swatch.png",
+   "note": "packed orchard earth with leaf litter, a few fallen leaves, sparse grass",
+   "wp10a": true
+  },
+  {
+   "id": "orchard_soil_b",
+   "base_terrain": "orchard_soil",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "file": "tiles/orchard_soil_b.png",
+   "file_2x": "tiles/_2x/orchard_soil_b.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "variant": 1,
+   "raw": "orchard_soil_swatch.png",
+   "note": "packed orchard earth with leaf litter, a few fallen leaves, sparse grass",
+   "wp10a": true
+  },
+  {
+   "id": "tilled_rows_a",
+   "base_terrain": "tilled_rows",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "file": "tiles/tilled_rows_a.png",
+   "file_2x": "tiles/_2x/tilled_rows_a.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "variant": 0,
+   "raw": "tilled_rows_swatch.png",
+   "note": "ploughed furrows running exactly parallel to the swatch edge, whole number of rows per swatch",
+   "wp10a": true,
+   "row_axis": "rows along +x (nwse) after projection; a nesw set can be derived by rotating the swatch 90 deg (light shifts, see notes)"
+  },
+  {
+   "id": "tilled_rows_b",
+   "base_terrain": "tilled_rows",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "file": "tiles/tilled_rows_b.png",
+   "file_2x": "tiles/_2x/tilled_rows_b.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "variant": 1,
+   "raw": "tilled_rows_swatch.png",
+   "note": "ploughed furrows running exactly parallel to the swatch edge, whole number of rows per swatch",
+   "wp10a": true,
+   "row_axis": "rows along +x (nwse) after projection; a nesw set can be derived by rotating the swatch 90 deg (light shifts, see notes)"
+  },
+  {
+   "id": "orchard_soil_edge_ne",
+   "base_terrain": "orchard_soil",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "sides": [
+    "ne"
+   ],
+   "note": "autotile edge: the listed sides touch the region base ground",
+   "file": "tiles/orchard_soil_edge_ne.png",
+   "file_2x": "tiles/_2x/orchard_soil_edge_ne.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "generated_by": "wp10a_tiles.py --edges"
+  },
+  {
+   "id": "orchard_soil_edge_ne_se",
+   "base_terrain": "orchard_soil",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "sides": [
+    "ne",
+    "se"
+   ],
+   "note": "autotile edge: the listed sides touch the region base ground",
+   "file": "tiles/orchard_soil_edge_ne_se.png",
+   "file_2x": "tiles/_2x/orchard_soil_edge_ne_se.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "generated_by": "wp10a_tiles.py --edges"
+  },
+  {
+   "id": "orchard_soil_edge_ne_se_sw",
+   "base_terrain": "orchard_soil",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "sides": [
+    "ne",
+    "se",
+    "sw"
+   ],
+   "note": "autotile edge: the listed sides touch the region base ground",
+   "file": "tiles/orchard_soil_edge_ne_se_sw.png",
+   "file_2x": "tiles/_2x/orchard_soil_edge_ne_se_sw.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "generated_by": "wp10a_tiles.py --edges"
+  },
+  {
+   "id": "orchard_soil_edge_ne_sw",
+   "base_terrain": "orchard_soil",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "sides": [
+    "ne",
+    "sw"
+   ],
+   "note": "autotile edge: the listed sides touch the region base ground",
+   "file": "tiles/orchard_soil_edge_ne_sw.png",
+   "file_2x": "tiles/_2x/orchard_soil_edge_ne_sw.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "generated_by": "wp10a_tiles.py --edges"
+  },
+  {
+   "id": "orchard_soil_edge_nw",
+   "base_terrain": "orchard_soil",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "sides": [
+    "nw"
+   ],
+   "note": "autotile edge: the listed sides touch the region base ground",
+   "file": "tiles/orchard_soil_edge_nw.png",
+   "file_2x": "tiles/_2x/orchard_soil_edge_nw.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "generated_by": "wp10a_tiles.py --edges"
+  },
+  {
+   "id": "orchard_soil_edge_nw_ne",
+   "base_terrain": "orchard_soil",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "sides": [
+    "nw",
+    "ne"
+   ],
+   "note": "autotile edge: the listed sides touch the region base ground",
+   "file": "tiles/orchard_soil_edge_nw_ne.png",
+   "file_2x": "tiles/_2x/orchard_soil_edge_nw_ne.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "generated_by": "wp10a_tiles.py --edges"
+  },
+  {
+   "id": "orchard_soil_edge_nw_ne_se",
+   "base_terrain": "orchard_soil",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "sides": [
+    "nw",
+    "ne",
+    "se"
+   ],
+   "note": "autotile edge: the listed sides touch the region base ground",
+   "file": "tiles/orchard_soil_edge_nw_ne_se.png",
+   "file_2x": "tiles/_2x/orchard_soil_edge_nw_ne_se.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "generated_by": "wp10a_tiles.py --edges"
+  },
+  {
+   "id": "orchard_soil_edge_nw_ne_se_sw",
+   "base_terrain": "orchard_soil",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "sides": [
+    "nw",
+    "ne",
+    "se",
+    "sw"
+   ],
+   "note": "autotile edge: the listed sides touch the region base ground",
+   "file": "tiles/orchard_soil_edge_nw_ne_se_sw.png",
+   "file_2x": "tiles/_2x/orchard_soil_edge_nw_ne_se_sw.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "generated_by": "wp10a_tiles.py --edges"
+  },
+  {
+   "id": "orchard_soil_edge_nw_ne_sw",
+   "base_terrain": "orchard_soil",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "sides": [
+    "nw",
+    "ne",
+    "sw"
+   ],
+   "note": "autotile edge: the listed sides touch the region base ground",
+   "file": "tiles/orchard_soil_edge_nw_ne_sw.png",
+   "file_2x": "tiles/_2x/orchard_soil_edge_nw_ne_sw.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "generated_by": "wp10a_tiles.py --edges"
+  },
+  {
+   "id": "orchard_soil_edge_nw_se",
+   "base_terrain": "orchard_soil",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "sides": [
+    "nw",
+    "se"
+   ],
+   "note": "autotile edge: the listed sides touch the region base ground",
+   "file": "tiles/orchard_soil_edge_nw_se.png",
+   "file_2x": "tiles/_2x/orchard_soil_edge_nw_se.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "generated_by": "wp10a_tiles.py --edges"
+  },
+  {
+   "id": "orchard_soil_edge_nw_se_sw",
+   "base_terrain": "orchard_soil",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "sides": [
+    "nw",
+    "se",
+    "sw"
+   ],
+   "note": "autotile edge: the listed sides touch the region base ground",
+   "file": "tiles/orchard_soil_edge_nw_se_sw.png",
+   "file_2x": "tiles/_2x/orchard_soil_edge_nw_se_sw.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "generated_by": "wp10a_tiles.py --edges"
+  },
+  {
+   "id": "orchard_soil_edge_nw_sw",
+   "base_terrain": "orchard_soil",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "sides": [
+    "nw",
+    "sw"
+   ],
+   "note": "autotile edge: the listed sides touch the region base ground",
+   "file": "tiles/orchard_soil_edge_nw_sw.png",
+   "file_2x": "tiles/_2x/orchard_soil_edge_nw_sw.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "generated_by": "wp10a_tiles.py --edges"
+  },
+  {
+   "id": "orchard_soil_edge_se",
+   "base_terrain": "orchard_soil",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "sides": [
+    "se"
+   ],
+   "note": "autotile edge: the listed sides touch the region base ground",
+   "file": "tiles/orchard_soil_edge_se.png",
+   "file_2x": "tiles/_2x/orchard_soil_edge_se.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "generated_by": "wp10a_tiles.py --edges"
+  },
+  {
+   "id": "orchard_soil_edge_se_sw",
+   "base_terrain": "orchard_soil",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "sides": [
+    "se",
+    "sw"
+   ],
+   "note": "autotile edge: the listed sides touch the region base ground",
+   "file": "tiles/orchard_soil_edge_se_sw.png",
+   "file_2x": "tiles/_2x/orchard_soil_edge_se_sw.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "generated_by": "wp10a_tiles.py --edges"
+  },
+  {
+   "id": "orchard_soil_edge_sw",
+   "base_terrain": "orchard_soil",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "sides": [
+    "sw"
+   ],
+   "note": "autotile edge: the listed sides touch the region base ground",
+   "file": "tiles/orchard_soil_edge_sw.png",
+   "file_2x": "tiles/_2x/orchard_soil_edge_sw.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "generated_by": "wp10a_tiles.py --edges"
+  },
+  {
+   "id": "orchard_soil_corner_e",
+   "base_terrain": "orchard_soil",
+   "kind": "decal",
+   "walkable": true,
+   "in_zone_data": false,
+   "corner": "e",
+   "note": "draw over a orchard_soil tile whose diagonal corner e touches base ground while both side neighbours are orchard_soil",
+   "file": "tiles/orchard_soil_corner_e.png",
+   "file_2x": "tiles/_2x/orchard_soil_corner_e.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "generated_by": "wp10a_tiles.py --edges"
+  },
+  {
+   "id": "orchard_soil_corner_n",
+   "base_terrain": "orchard_soil",
+   "kind": "decal",
+   "walkable": true,
+   "in_zone_data": false,
+   "corner": "n",
+   "note": "draw over a orchard_soil tile whose diagonal corner n touches base ground while both side neighbours are orchard_soil",
+   "file": "tiles/orchard_soil_corner_n.png",
+   "file_2x": "tiles/_2x/orchard_soil_corner_n.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "generated_by": "wp10a_tiles.py --edges"
+  },
+  {
+   "id": "orchard_soil_corner_s",
+   "base_terrain": "orchard_soil",
+   "kind": "decal",
+   "walkable": true,
+   "in_zone_data": false,
+   "corner": "s",
+   "note": "draw over a orchard_soil tile whose diagonal corner s touches base ground while both side neighbours are orchard_soil",
+   "file": "tiles/orchard_soil_corner_s.png",
+   "file_2x": "tiles/_2x/orchard_soil_corner_s.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "generated_by": "wp10a_tiles.py --edges"
+  },
+  {
+   "id": "orchard_soil_corner_w",
+   "base_terrain": "orchard_soil",
+   "kind": "decal",
+   "walkable": true,
+   "in_zone_data": false,
+   "corner": "w",
+   "note": "draw over a orchard_soil tile whose diagonal corner w touches base ground while both side neighbours are orchard_soil",
+   "file": "tiles/orchard_soil_corner_w.png",
+   "file_2x": "tiles/_2x/orchard_soil_corner_w.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "generated_by": "wp10a_tiles.py --edges"
+  },
+  {
+   "id": "tilled_rows_edge_ne",
+   "base_terrain": "tilled_rows",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "sides": [
+    "ne"
+   ],
+   "note": "autotile edge: the listed sides touch the region base ground",
+   "file": "tiles/tilled_rows_edge_ne.png",
+   "file_2x": "tiles/_2x/tilled_rows_edge_ne.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "generated_by": "wp10a_tiles.py --edges"
+  },
+  {
+   "id": "tilled_rows_edge_ne_se",
+   "base_terrain": "tilled_rows",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "sides": [
+    "ne",
+    "se"
+   ],
+   "note": "autotile edge: the listed sides touch the region base ground",
+   "file": "tiles/tilled_rows_edge_ne_se.png",
+   "file_2x": "tiles/_2x/tilled_rows_edge_ne_se.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "generated_by": "wp10a_tiles.py --edges"
+  },
+  {
+   "id": "tilled_rows_edge_ne_se_sw",
+   "base_terrain": "tilled_rows",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "sides": [
+    "ne",
+    "se",
+    "sw"
+   ],
+   "note": "autotile edge: the listed sides touch the region base ground",
+   "file": "tiles/tilled_rows_edge_ne_se_sw.png",
+   "file_2x": "tiles/_2x/tilled_rows_edge_ne_se_sw.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "generated_by": "wp10a_tiles.py --edges"
+  },
+  {
+   "id": "tilled_rows_edge_ne_sw",
+   "base_terrain": "tilled_rows",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "sides": [
+    "ne",
+    "sw"
+   ],
+   "note": "autotile edge: the listed sides touch the region base ground",
+   "file": "tiles/tilled_rows_edge_ne_sw.png",
+   "file_2x": "tiles/_2x/tilled_rows_edge_ne_sw.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "generated_by": "wp10a_tiles.py --edges"
+  },
+  {
+   "id": "tilled_rows_edge_nw",
+   "base_terrain": "tilled_rows",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "sides": [
+    "nw"
+   ],
+   "note": "autotile edge: the listed sides touch the region base ground",
+   "file": "tiles/tilled_rows_edge_nw.png",
+   "file_2x": "tiles/_2x/tilled_rows_edge_nw.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "generated_by": "wp10a_tiles.py --edges"
+  },
+  {
+   "id": "tilled_rows_edge_nw_ne",
+   "base_terrain": "tilled_rows",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "sides": [
+    "nw",
+    "ne"
+   ],
+   "note": "autotile edge: the listed sides touch the region base ground",
+   "file": "tiles/tilled_rows_edge_nw_ne.png",
+   "file_2x": "tiles/_2x/tilled_rows_edge_nw_ne.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "generated_by": "wp10a_tiles.py --edges"
+  },
+  {
+   "id": "tilled_rows_edge_nw_ne_se",
+   "base_terrain": "tilled_rows",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "sides": [
+    "nw",
+    "ne",
+    "se"
+   ],
+   "note": "autotile edge: the listed sides touch the region base ground",
+   "file": "tiles/tilled_rows_edge_nw_ne_se.png",
+   "file_2x": "tiles/_2x/tilled_rows_edge_nw_ne_se.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "generated_by": "wp10a_tiles.py --edges"
+  },
+  {
+   "id": "tilled_rows_edge_nw_ne_se_sw",
+   "base_terrain": "tilled_rows",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "sides": [
+    "nw",
+    "ne",
+    "se",
+    "sw"
+   ],
+   "note": "autotile edge: the listed sides touch the region base ground",
+   "file": "tiles/tilled_rows_edge_nw_ne_se_sw.png",
+   "file_2x": "tiles/_2x/tilled_rows_edge_nw_ne_se_sw.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "generated_by": "wp10a_tiles.py --edges"
+  },
+  {
+   "id": "tilled_rows_edge_nw_ne_sw",
+   "base_terrain": "tilled_rows",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "sides": [
+    "nw",
+    "ne",
+    "sw"
+   ],
+   "note": "autotile edge: the listed sides touch the region base ground",
+   "file": "tiles/tilled_rows_edge_nw_ne_sw.png",
+   "file_2x": "tiles/_2x/tilled_rows_edge_nw_ne_sw.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "generated_by": "wp10a_tiles.py --edges"
+  },
+  {
+   "id": "tilled_rows_edge_nw_se",
+   "base_terrain": "tilled_rows",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "sides": [
+    "nw",
+    "se"
+   ],
+   "note": "autotile edge: the listed sides touch the region base ground",
+   "file": "tiles/tilled_rows_edge_nw_se.png",
+   "file_2x": "tiles/_2x/tilled_rows_edge_nw_se.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "generated_by": "wp10a_tiles.py --edges"
+  },
+  {
+   "id": "tilled_rows_edge_nw_se_sw",
+   "base_terrain": "tilled_rows",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "sides": [
+    "nw",
+    "se",
+    "sw"
+   ],
+   "note": "autotile edge: the listed sides touch the region base ground",
+   "file": "tiles/tilled_rows_edge_nw_se_sw.png",
+   "file_2x": "tiles/_2x/tilled_rows_edge_nw_se_sw.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "generated_by": "wp10a_tiles.py --edges"
+  },
+  {
+   "id": "tilled_rows_edge_nw_sw",
+   "base_terrain": "tilled_rows",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "sides": [
+    "nw",
+    "sw"
+   ],
+   "note": "autotile edge: the listed sides touch the region base ground",
+   "file": "tiles/tilled_rows_edge_nw_sw.png",
+   "file_2x": "tiles/_2x/tilled_rows_edge_nw_sw.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "generated_by": "wp10a_tiles.py --edges"
+  },
+  {
+   "id": "tilled_rows_edge_se",
+   "base_terrain": "tilled_rows",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "sides": [
+    "se"
+   ],
+   "note": "autotile edge: the listed sides touch the region base ground",
+   "file": "tiles/tilled_rows_edge_se.png",
+   "file_2x": "tiles/_2x/tilled_rows_edge_se.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "generated_by": "wp10a_tiles.py --edges"
+  },
+  {
+   "id": "tilled_rows_edge_se_sw",
+   "base_terrain": "tilled_rows",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "sides": [
+    "se",
+    "sw"
+   ],
+   "note": "autotile edge: the listed sides touch the region base ground",
+   "file": "tiles/tilled_rows_edge_se_sw.png",
+   "file_2x": "tiles/_2x/tilled_rows_edge_se_sw.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "generated_by": "wp10a_tiles.py --edges"
+  },
+  {
+   "id": "tilled_rows_edge_sw",
+   "base_terrain": "tilled_rows",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "sides": [
+    "sw"
+   ],
+   "note": "autotile edge: the listed sides touch the region base ground",
+   "file": "tiles/tilled_rows_edge_sw.png",
+   "file_2x": "tiles/_2x/tilled_rows_edge_sw.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "generated_by": "wp10a_tiles.py --edges"
+  },
+  {
+   "id": "tilled_rows_corner_e",
+   "base_terrain": "tilled_rows",
+   "kind": "decal",
+   "walkable": true,
+   "in_zone_data": false,
+   "corner": "e",
+   "note": "draw over a tilled_rows tile whose diagonal corner e touches base ground while both side neighbours are tilled_rows",
+   "file": "tiles/tilled_rows_corner_e.png",
+   "file_2x": "tiles/_2x/tilled_rows_corner_e.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "generated_by": "wp10a_tiles.py --edges"
+  },
+  {
+   "id": "tilled_rows_corner_n",
+   "base_terrain": "tilled_rows",
+   "kind": "decal",
+   "walkable": true,
+   "in_zone_data": false,
+   "corner": "n",
+   "note": "draw over a tilled_rows tile whose diagonal corner n touches base ground while both side neighbours are tilled_rows",
+   "file": "tiles/tilled_rows_corner_n.png",
+   "file_2x": "tiles/_2x/tilled_rows_corner_n.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "generated_by": "wp10a_tiles.py --edges"
+  },
+  {
+   "id": "tilled_rows_corner_s",
+   "base_terrain": "tilled_rows",
+   "kind": "decal",
+   "walkable": true,
+   "in_zone_data": false,
+   "corner": "s",
+   "note": "draw over a tilled_rows tile whose diagonal corner s touches base ground while both side neighbours are tilled_rows",
+   "file": "tiles/tilled_rows_corner_s.png",
+   "file_2x": "tiles/_2x/tilled_rows_corner_s.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "generated_by": "wp10a_tiles.py --edges"
+  },
+  {
+   "id": "tilled_rows_corner_w",
+   "base_terrain": "tilled_rows",
+   "kind": "decal",
+   "walkable": true,
+   "in_zone_data": false,
+   "corner": "w",
+   "note": "draw over a tilled_rows tile whose diagonal corner w touches base ground while both side neighbours are tilled_rows",
+   "file": "tiles/tilled_rows_corner_w.png",
+   "file_2x": "tiles/_2x/tilled_rows_corner_w.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "generated_by": "wp10a_tiles.py --edges"
+  }
+ ],
+ "props": [
+  {
+   "id": "tree_apple_orchard",
+   "base_id": "tree",
+   "in_zone_data": false,
+   "kind": "tree",
+   "layer": "props",
+   "walkable": false,
+   "blocks": true,
+   "file": "props/tree_apple_orchard.png",
+   "file_2x": "props/_2x/tree_apple_orchard.png",
+   "size": [
+    112,
+    128
+   ],
+   "size_2x": [
+    224,
+    256
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "footprint_from_nw": [
+    [
+     0,
+     0
+    ]
+   ],
+   "anchor_cell_from_nw": [
+    0,
+    0
+   ],
+   "anchor": "image bottom-centre = south tip of cell origin+[0, 0]",
+   "bottom_centre_from_nw_centre_1x": [
+    0,
+    16
+   ],
+   "y_sort_origin_from_bottom_1x": [
+    0,
+    -16
+   ],
+   "standin_crosshaven": "tree_apple",
+   "note": "orchard apple tree, round leafy canopy, short sturdy trunk, no fruit",
+   "raw": "apple_tree_a.png",
+   "wp10a": true,
+   "design_status": "PROPOSED (WP10a)",
+   "note_zone": "blocking art: the placer must mark every footprint cell blocked",
+   "art_x_from_anchor_2x": [
+    -94,
+    103
+   ],
+   "art_height_2x": 223,
+   "animated": [
+    "animated/tree_apple_orchard_sway.png"
+   ],
+   "sway_mask": "animated/sway_masks/tree_apple_orchard_swaymask.png",
+   "processing": {
+    "painted_shadow_removed_px": 2863,
+    "palette_drift_dE": [
+     8.6,
+     7.6
+    ],
+    "scale_raw_to_2x": 0.3221
+   },
+   "size_class": "tree_broad"
+  },
+  {
+   "id": "tree_apple_orchard_fruiting",
+   "base_id": "tree",
+   "in_zone_data": false,
+   "kind": "tree",
+   "layer": "props",
+   "walkable": false,
+   "blocks": true,
+   "file": "props/tree_apple_orchard_fruiting.png",
+   "file_2x": "props/_2x/tree_apple_orchard_fruiting.png",
+   "size": [
+    112,
+    128
+   ],
+   "size_2x": [
+    224,
+    256
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "footprint_from_nw": [
+    [
+     0,
+     0
+    ]
+   ],
+   "anchor_cell_from_nw": [
+    0,
+    0
+   ],
+   "anchor": "image bottom-centre = south tip of cell origin+[0, 0]",
+   "bottom_centre_from_nw_centre_1x": [
+    0,
+    16
+   ],
+   "y_sort_origin_from_bottom_1x": [
+    0,
+    -16
+   ],
+   "standin_crosshaven": "tree_apple",
+   "note": "same species, canopy dotted with red apples, 2-3 apples in the grass at the foot",
+   "raw": "apple_tree_fruit.png",
+   "wp10a": true,
+   "design_status": "PROPOSED (WP10a)",
+   "note_zone": "blocking art: the placer must mark every footprint cell blocked",
+   "art_x_from_anchor_2x": [
+    -100,
+    104
+   ],
+   "art_height_2x": 223,
+   "animated": [
+    "animated/tree_apple_orchard_fruiting_sway.png"
+   ],
+   "sway_mask": "animated/sway_masks/tree_apple_orchard_fruiting_swaymask.png",
+   "processing": {
+    "painted_shadow_removed_px": 293,
+    "palette_drift_dE": [
+     12.9,
+     12.4
+    ],
+    "flat_top_repaired": {
+     "cols": 1040,
+     "depth_px": 160.2,
+     "bumps": 7
+    },
+    "scale_raw_to_2x": 0.1026
+   },
+   "size_class": "tree_broad"
+  },
+  {
+   "id": "tree_pear",
+   "base_id": "tree",
+   "in_zone_data": false,
+   "kind": "tree",
+   "layer": "props",
+   "walkable": false,
+   "blocks": true,
+   "file": "props/tree_pear.png",
+   "file_2x": "props/_2x/tree_pear.png",
+   "size": [
+    112,
+    128
+   ],
+   "size_2x": [
+    224,
+    256
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "footprint_from_nw": [
+    [
+     0,
+     0
+    ]
+   ],
+   "anchor_cell_from_nw": [
+    0,
+    0
+   ],
+   "anchor": "image bottom-centre = south tip of cell origin+[0, 0]",
+   "bottom_centre_from_nw_centre_1x": [
+    0,
+    16
+   ],
+   "y_sort_origin_from_bottom_1x": [
+    0,
+    -16
+   ],
+   "standin_crosshaven": "tree_poplar",
+   "note": "pear tree, taller oval canopy, a few yellow-green pears",
+   "raw": "pear_tree.png",
+   "wp10a": true,
+   "design_status": "PROPOSED (WP10a)",
+   "note_zone": "blocking art: the placer must mark every footprint cell blocked",
+   "art_x_from_anchor_2x": [
+    -103,
+    108
+   ],
+   "art_height_2x": 235,
+   "animated": [
+    "animated/tree_pear_sway.png"
+   ],
+   "sway_mask": "animated/sway_masks/tree_pear_swaymask.png",
+   "processing": {
+    "painted_shadow_removed_px": 4176,
+    "palette_drift_dE": [
+     13.1,
+     12.0
+    ],
+    "scale_raw_to_2x": 0.1073
+   },
+   "size_class": "tree_broad"
+  },
+  {
+   "id": "tree_stump_old",
+   "base_id": null,
+   "in_zone_data": false,
+   "kind": "stump",
+   "layer": "props",
+   "walkable": false,
+   "blocks": true,
+   "file": "props/tree_stump_old.png",
+   "file_2x": "props/_2x/tree_stump_old.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "footprint_from_nw": [
+    [
+     0,
+     0
+    ]
+   ],
+   "anchor_cell_from_nw": [
+    0,
+    0
+   ],
+   "anchor": "image bottom-centre = south tip of cell origin+[0, 0]",
+   "bottom_centre_from_nw_centre_1x": [
+    0,
+    16
+   ],
+   "y_sort_origin_from_bottom_1x": [
+    0,
+    -16
+   ],
+   "standin_crosshaven": "tree_apple_stump",
+   "note": "old cut stump with rings, moss and a small root flare",
+   "raw": "stump.png",
+   "wp10a": true,
+   "design_status": "PROPOSED (WP10a)",
+   "note_zone": "blocking art: the placer must mark every footprint cell blocked",
+   "art_x_from_anchor_2x": [
+    -34,
+    21
+   ],
+   "art_height_2x": 73,
+   "processing": {
+    "painted_shadow_removed_px": 9012,
+    "palette_drift_dE": [
+     8.1,
+     7.1
+    ],
+    "scale_raw_to_2x": 0.1066
+   },
+   "size_class": "small"
+  },
+  {
+   "id": "fence_orchard_nwse",
+   "base_id": "fence",
+   "in_zone_data": false,
+   "kind": "fence",
+   "layer": "props",
+   "walkable": false,
+   "blocks": true,
+   "file": "props/fence_orchard_nwse.png",
+   "file_2x": "props/_2x/fence_orchard_nwse.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "footprint_from_nw": [
+    [
+     0,
+     0
+    ]
+   ],
+   "anchor_cell_from_nw": [
+    0,
+    0
+   ],
+   "anchor": "image bottom-centre = south tip of cell origin+[0, 0]",
+   "bottom_centre_from_nw_centre_1x": [
+    0,
+    16
+   ],
+   "y_sort_origin_from_bottom_1x": [
+    0,
+    -16
+   ],
+   "standin_crosshaven": "fence_wood_nwse",
+   "note": "rustic split-rail wooden fence segment, two posts",
+   "raw": "fence_nwse.png",
+   "wp10a": true,
+   "design_status": "PROPOSED (WP10a)",
+   "axis": "rail runs along +x: screen up-left to down-right; ends on the NW and SE side midpoints so cells chain",
+   "note_zone": "blocking art: the placer must mark every footprint cell blocked",
+   "art_x_from_anchor_2x": [
+    -46,
+    46
+   ],
+   "art_height_2x": 94,
+   "processing": {
+    "painted_shadow_removed_px": 68430,
+    "palette_drift_dE": [
+     13.0,
+     11.4
+    ],
+    "scale_raw_to_2x": 0.0835
+   },
+   "size_class": "small"
+  },
+  {
+   "id": "fence_orchard_nesw",
+   "base_id": "fence",
+   "in_zone_data": false,
+   "kind": "fence",
+   "layer": "props",
+   "walkable": false,
+   "blocks": true,
+   "file": "props/fence_orchard_nesw.png",
+   "file_2x": "props/_2x/fence_orchard_nesw.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "footprint_from_nw": [
+    [
+     0,
+     0
+    ]
+   ],
+   "anchor_cell_from_nw": [
+    0,
+    0
+   ],
+   "anchor": "image bottom-centre = south tip of cell origin+[0, 0]",
+   "bottom_centre_from_nw_centre_1x": [
+    0,
+    16
+   ],
+   "y_sort_origin_from_bottom_1x": [
+    0,
+    -16
+   ],
+   "standin_crosshaven": "fence_wood_nesw",
+   "note": "same fence, the other axis (paint it, do not mirror: the lit face changes)",
+   "raw": "fence_nesw.png",
+   "wp10a": true,
+   "design_status": "PROPOSED (WP10a)",
+   "axis": "rail runs along +y: screen up-right to down-left",
+   "note_zone": "blocking art: the placer must mark every footprint cell blocked",
+   "art_x_from_anchor_2x": [
+    -46,
+    46
+   ],
+   "art_height_2x": 99,
+   "processing": {
+    "painted_shadow_removed_px": 6622,
+    "palette_drift_dE": [
+     9.0,
+     7.4
+    ],
+    "scale_raw_to_2x": 0.1369
+   },
+   "size_class": "small"
+  },
+  {
+   "id": "hay_bale_round",
+   "base_id": null,
+   "in_zone_data": false,
+   "kind": "hay",
+   "layer": "props",
+   "walkable": false,
+   "blocks": true,
+   "file": "props/hay_bale_round.png",
+   "file_2x": "props/_2x/hay_bale_round.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "footprint_from_nw": [
+    [
+     0,
+     0
+    ]
+   ],
+   "anchor_cell_from_nw": [
+    0,
+    0
+   ],
+   "anchor": "image bottom-centre = south tip of cell origin+[0, 0]",
+   "bottom_centre_from_nw_centre_1x": [
+    0,
+    16
+   ],
+   "y_sort_origin_from_bottom_1x": [
+    0,
+    -16
+   ],
+   "standin_crosshaven": "hay_bale",
+   "note": "round golden hay bale, loose straws",
+   "raw": "hay_bale.png",
+   "wp10a": true,
+   "design_status": "PROPOSED (WP10a)",
+   "note_zone": "blocking art: the placer must mark every footprint cell blocked",
+   "art_x_from_anchor_2x": [
+    -27,
+    50
+   ],
+   "art_height_2x": 84,
+   "processing": {
+    "painted_shadow_removed_px": 878,
+    "palette_drift_dE": [
+     10.3,
+     8.5
+    ],
+    "scale_raw_to_2x": 0.127
+   },
+   "size_class": "small"
+  },
+  {
+   "id": "scarecrow_field",
+   "base_id": null,
+   "in_zone_data": false,
+   "kind": "farm",
+   "layer": "props",
+   "walkable": false,
+   "blocks": true,
+   "file": "props/scarecrow_field.png",
+   "file_2x": "props/_2x/scarecrow_field.png",
+   "size": [
+    64,
+    112
+   ],
+   "size_2x": [
+    128,
+    224
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "footprint_from_nw": [
+    [
+     0,
+     0
+    ]
+   ],
+   "anchor_cell_from_nw": [
+    0,
+    0
+   ],
+   "anchor": "image bottom-centre = south tip of cell origin+[0, 0]",
+   "bottom_centre_from_nw_centre_1x": [
+    0,
+    16
+   ],
+   "y_sort_origin_from_bottom_1x": [
+    0,
+    -16
+   ],
+   "standin_crosshaven": "scarecrow",
+   "note": "patched scarecrow on a pole, straw hat, rag sleeves (optional low-amp sway mask if wanted)",
+   "raw": "scarecrow.png",
+   "wp10a": true,
+   "design_status": "PROPOSED (WP10a)",
+   "note_zone": "blocking art: the placer must mark every footprint cell blocked",
+   "art_x_from_anchor_2x": [
+    -62,
+    58
+   ],
+   "art_height_2x": 170,
+   "processing": {
+    "painted_shadow_removed_px": 1019,
+    "palette_drift_dE": [
+     11.7,
+     10.7
+    ],
+    "scale_raw_to_2x": 0.2304999977350235
+   },
+   "processing_warnings": [
+    "art does not fit the canvas at the target size: scaled to 98% of the manifest art height/width"
+   ],
+   "size_class": "tree"
+  },
+  {
+   "id": "beehive_box",
+   "base_id": null,
+   "in_zone_data": false,
+   "kind": "farm",
+   "layer": "props",
+   "walkable": false,
+   "blocks": true,
+   "file": "props/beehive_box.png",
+   "file_2x": "props/_2x/beehive_box.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "footprint_from_nw": [
+    [
+     0,
+     0
+    ]
+   ],
+   "anchor_cell_from_nw": [
+    0,
+    0
+   ],
+   "anchor": "image bottom-centre = south tip of cell origin+[0, 0]",
+   "bottom_centre_from_nw_centre_1x": [
+    0,
+    16
+   ],
+   "y_sort_origin_from_bottom_1x": [
+    0,
+    -16
+   ],
+   "standin_crosshaven": "crate",
+   "note": "white-and-honey wooden beehive box on short legs, a couple of bees",
+   "raw": "beehive_box.png",
+   "wp10a": true,
+   "design_status": "PROPOSED (WP10a)",
+   "note_zone": "blocking art: the placer must mark every footprint cell blocked",
+   "art_x_from_anchor_2x": [
+    -27,
+    27
+   ],
+   "art_height_2x": 96,
+   "processing": {
+    "painted_shadow_removed_px": 450,
+    "palette_drift_dE": [
+     11.7,
+     10.4
+    ],
+    "base_plate_removed_px": 200997,
+    "scale_raw_to_2x": 0.0711
+   },
+   "size_class": "small"
+  },
+  {
+   "id": "stone_wall_field_nwse",
+   "base_id": null,
+   "in_zone_data": false,
+   "kind": "wall",
+   "layer": "props",
+   "walkable": false,
+   "blocks": true,
+   "file": "props/stone_wall_field_nwse.png",
+   "file_2x": "props/_2x/stone_wall_field_nwse.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "footprint_from_nw": [
+    [
+     0,
+     0
+    ]
+   ],
+   "anchor_cell_from_nw": [
+    0,
+    0
+   ],
+   "anchor": "image bottom-centre = south tip of cell origin+[0, 0]",
+   "bottom_centre_from_nw_centre_1x": [
+    0,
+    16
+   ],
+   "y_sort_origin_from_bottom_1x": [
+    0,
+    -16
+   ],
+   "standin_crosshaven": "stone_wall_low_nwse",
+   "note": "low dry-stone field wall, one cell long, along +x, rounded grey-tan stones, a little moss",
+   "raw": "stone_wall_low.png",
+   "wp10a": true,
+   "design_status": "PROPOSED (WP10a)",
+   "axis": "wall runs along +x: screen up-left to down-right; ends on the NW and SE side midpoints so cells chain",
+   "note_zone": "blocking art: the placer must mark every footprint cell blocked",
+   "art_x_from_anchor_2x": [
+    -48,
+    48
+   ],
+   "art_height_2x": 70,
+   "processing": {
+    "painted_shadow_removed_px": 6617,
+    "palette_drift_dE": [
+     11.9,
+     10.3
+    ],
+    "scale_raw_to_2x": 0.1049
+   },
+   "size_class": "small"
+  },
+  {
+   "id": "stone_wall_field_nesw",
+   "base_id": null,
+   "in_zone_data": false,
+   "kind": "wall",
+   "layer": "props",
+   "walkable": false,
+   "blocks": true,
+   "file": "props/stone_wall_field_nesw.png",
+   "file_2x": "props/_2x/stone_wall_field_nesw.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "footprint_from_nw": [
+    [
+     0,
+     0
+    ]
+   ],
+   "anchor_cell_from_nw": [
+    0,
+    0
+   ],
+   "anchor": "image bottom-centre = south tip of cell origin+[0, 0]",
+   "bottom_centre_from_nw_centre_1x": [
+    0,
+    16
+   ],
+   "y_sort_origin_from_bottom_1x": [
+    0,
+    -16
+   ],
+   "standin_crosshaven": "stone_wall_low_nesw",
+   "note": "same wall along +y (paint it, do not mirror: the lit face changes)",
+   "raw": "stone_wall_low_nesw.png",
+   "wp10a": true,
+   "design_status": "PROPOSED (WP10a)",
+   "axis": "wall runs along +y: screen up-right to down-left",
+   "note_zone": "blocking art: the placer must mark every footprint cell blocked",
+   "art_x_from_anchor_2x": [
+    -48,
+    48
+   ],
+   "art_height_2x": 78,
+   "processing": {
+    "painted_shadow_removed_px": 6888,
+    "palette_drift_dE": [
+     12.0,
+     10.7
+    ],
+    "scale_raw_to_2x": 0.1215
+   },
+   "size_class": "small"
+  },
+  {
+   "id": "bush_flower_meadow",
+   "base_id": null,
+   "in_zone_data": false,
+   "kind": "bush",
+   "layer": "props",
+   "walkable": false,
+   "blocks": true,
+   "file": "props/bush_flower_meadow.png",
+   "file_2x": "props/_2x/bush_flower_meadow.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "footprint_from_nw": [
+    [
+     0,
+     0
+    ]
+   ],
+   "anchor_cell_from_nw": [
+    0,
+    0
+   ],
+   "anchor": "image bottom-centre = south tip of cell origin+[0, 0]",
+   "bottom_centre_from_nw_centre_1x": [
+    0,
+    16
+   ],
+   "y_sort_origin_from_bottom_1x": [
+    0,
+    -16
+   ],
+   "standin_crosshaven": "bush_flower",
+   "note": "round flowering bush, pink and white blossoms",
+   "raw": "flower_bush.png",
+   "wp10a": true,
+   "design_status": "PROPOSED (WP10a)",
+   "note_zone": "blocking art: the placer must mark every footprint cell blocked",
+   "art_x_from_anchor_2x": [
+    -46,
+    44
+   ],
+   "art_height_2x": 99,
+   "animated": [
+    "animated/bush_flower_meadow_sway.png"
+   ],
+   "sway_mask": "animated/sway_masks/bush_flower_meadow_swaymask.png",
+   "processing": {
+    "painted_shadow_removed_px": 12160,
+    "palette_drift_dE": [
+     11.1,
+     9.7
+    ],
+    "scale_raw_to_2x": 0.146
+   },
+   "size_class": "small"
+  },
+  {
+   "id": "border_orchard_hedge_nwse",
+   "base_id": null,
+   "in_zone_data": false,
+   "kind": "border",
+   "layer": "border",
+   "walkable": false,
+   "blocks": true,
+   "file": "props/border_orchard_hedge_nwse.png",
+   "file_2x": "props/_2x/border_orchard_hedge_nwse.png",
+   "size": [
+    96,
+    128
+   ],
+   "size_2x": [
+    192,
+    256
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "footprint_from_nw": [
+    [
+     0,
+     0
+    ]
+   ],
+   "anchor_cell_from_nw": [
+    0,
+    0
+   ],
+   "anchor": "image bottom-centre = south tip of cell origin+[0, 0]",
+   "bottom_centre_from_nw_centre_1x": [
+    0,
+    16
+   ],
+   "y_sort_origin_from_bottom_1x": [
+    0,
+    -16
+   ],
+   "standin_crosshaven": "hedgerow_nwse",
+   "note": "dense trimmed orchard hedge segment, chest-high, one cell long along +x, a few small white flowers",
+   "raw": "orchard_hedge.png",
+   "wp10a": true,
+   "design_status": "PROPOSED (WP10a)",
+   "axis": "hedge runs along +x: screen up-left to down-right; ends on the NW and SE side midpoints so cells chain",
+   "note_zone": "blocking art: the placer must mark every footprint cell blocked",
+   "art_x_from_anchor_2x": [
+    -50,
+    84
+   ],
+   "art_height_2x": 78,
+   "animated": [
+    "animated/border_orchard_hedge_nwse_sway.png"
+   ],
+   "sway_mask": "animated/sway_masks/border_orchard_hedge_nwse_swaymask.png",
+   "processing": {
+    "painted_shadow_removed_px": 7285,
+    "palette_drift_dE": [
+     15.3,
+     12.5
+    ],
+    "scale_raw_to_2x": 0.1822
+   },
+   "size_class": "border_tall"
+  },
+  {
+   "id": "border_orchard_hedge_nesw",
+   "base_id": null,
+   "in_zone_data": false,
+   "kind": "border",
+   "layer": "border",
+   "walkable": false,
+   "blocks": true,
+   "file": "props/border_orchard_hedge_nesw.png",
+   "file_2x": "props/_2x/border_orchard_hedge_nesw.png",
+   "size": [
+    96,
+    128
+   ],
+   "size_2x": [
+    192,
+    256
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "footprint_from_nw": [
+    [
+     0,
+     0
+    ]
+   ],
+   "anchor_cell_from_nw": [
+    0,
+    0
+   ],
+   "anchor": "image bottom-centre = south tip of cell origin+[0, 0]",
+   "bottom_centre_from_nw_centre_1x": [
+    0,
+    16
+   ],
+   "y_sort_origin_from_bottom_1x": [
+    0,
+    -16
+   ],
+   "standin_crosshaven": "hedgerow_nesw",
+   "note": "same hedge along +y (paint it, do not mirror)",
+   "raw": "orchard_hedge_nesw.png",
+   "wp10a": true,
+   "design_status": "PROPOSED (WP10a)",
+   "axis": "hedge runs along +y: screen up-right to down-left",
+   "note_zone": "blocking art: the placer must mark every footprint cell blocked",
+   "art_x_from_anchor_2x": [
+    -73,
+    44
+   ],
+   "art_height_2x": 73,
+   "animated": [
+    "animated/border_orchard_hedge_nesw_sway.png"
+   ],
+   "sway_mask": "animated/sway_masks/border_orchard_hedge_nesw_swaymask.png",
+   "processing": {
+    "painted_shadow_removed_px": 5549,
+    "palette_drift_dE": [
+     14.4,
+     11.5
+    ],
+    "scale_raw_to_2x": 0.1652
+   },
+   "size_class": "border_tall"
+  },
+  {
+   "id": "old_windmill_body",
+   "base_id": null,
+   "in_zone_data": false,
+   "kind": "landmark",
+   "layer": "hero",
+   "walkable": false,
+   "blocks": true,
+   "file": "props/old_windmill_body.png",
+   "file_2x": "props/_2x/old_windmill_body.png",
+   "size": [
+    288,
+    256
+   ],
+   "size_2x": [
+    576,
+    512
+   ],
+   "footprint_size": [
+    2,
+    2
+   ],
+   "footprint_from_nw": [
+    [
+     0,
+     0
+    ],
+    [
+     1,
+     0
+    ],
+    [
+     0,
+     1
+    ],
+    [
+     1,
+     1
+    ]
+   ],
+   "anchor_cell_from_nw": [
+    1,
+    1
+   ],
+   "anchor": "image bottom-centre = south tip of cell origin+[1, 1]",
+   "bottom_centre_from_nw_centre_1x": [
+    0,
+    48
+   ],
+   "y_sort_origin_from_bottom_1x": [
+    0,
+    -16
+   ],
+   "standin_crosshaven": "tavern_3x2",
+   "note": "old stone-and-timber windmill tower, thatched cap, painted WITHOUT sails (sails are a separate paint)",
+   "raw": "old_windmill_body.png",
+   "wp10a": true,
+   "design_status": "PROPOSED (WP10a)",
+   "note_zone": "blocking art: the placer must mark every footprint cell blocked",
+   "art_x_from_anchor_2x": [
+    -117,
+    114
+   ],
+   "art_height_2x": 459,
+   "animated": [
+    "animated/old_windmill_sails.png",
+    "animated/old_windmill_sails_flat.png"
+   ],
+   "processing": {
+    "painted_shadow_removed_px": 3023,
+    "palette_drift_dE": [
+     11.9,
+     10.9
+    ],
+    "scale_raw_to_2x": 0.6962
+   },
+   "sail_hub_from_anchor_1x": [
+    -39,
+    -150
+   ],
+   "sail_hub_from_anchor_2x": [
+    -78,
+    -300
+   ],
+   "sail_hub_note": "measured on the painted body (axle tip of the hub stub on the cap's upper-left face): exact [-78.4, -300.0] px at 2x, rounded to whole 1x px; manifest proposal was [0, -170]",
+   "size_class": "landmark_wide"
+  },
+  {
+   "id": "old_windmill",
+   "base_id": null,
+   "in_zone_data": false,
+   "kind": "landmark",
+   "layer": "hero",
+   "walkable": false,
+   "blocks": true,
+   "file": "props/old_windmill.png",
+   "file_2x": "props/_2x/old_windmill.png",
+   "size": [
+    288,
+    256
+   ],
+   "size_2x": [
+    576,
+    512
+   ],
+   "footprint_size": [
+    2,
+    2
+   ],
+   "footprint_from_nw": [
+    [
+     0,
+     0
+    ],
+    [
+     1,
+     0
+    ],
+    [
+     0,
+     1
+    ],
+    [
+     1,
+     1
+    ]
+   ],
+   "anchor_cell_from_nw": [
+    1,
+    1
+   ],
+   "anchor": "image bottom-centre = south tip of cell origin+[1, 1]",
+   "bottom_centre_from_nw_centre_1x": [
+    0,
+    48
+   ],
+   "y_sort_origin_from_bottom_1x": [
+    0,
+    -16
+   ],
+   "standin_crosshaven": "tavern_3x2",
+   "note": "static fallback: old_windmill_body + old_windmill_sails frame 0 baked (same canvas/anchor; Crosshaven windmill_2x2 vs windmill_2x2_body). Use old_windmill_body + the strip when animating. Sails radius 96.0 px (1x) (~0.43 x body height, Crosshaven windmill ratio 0.45); hero canvas widened to 288x256 (1x) so every tip stays inside it.",
+   "raw": null,
+   "wp10a": true,
+   "design_status": "PROPOSED (WP10a)",
+   "note_zone": "blocking art: the placer must mark every footprint cell blocked",
+   "art_x_from_anchor_2x": [
+    -234,
+    113
+   ],
+   "art_height_2x": 459,
+   "derived_from": [
+    "old_windmill_body",
+    "old_windmill_sails"
+   ],
+   "size_class": "landmark_wide"
+  }
+ ],
+ "palette": {
+  "grass": "#a6bd36",
+  "grass_lo": "#7c9a2a",
+  "grass_dk": "#4f7a2c",
+  "grass_hi": "#dcd65a",
+  "tuft": "#6f8c26",
+  "earth": "#9a6c44",
+  "earth_lo": "#6c4a2c",
+  "root": "#4a3220",
+  "road": "#d6a96a",
+  "leaf": "#7fae2c",
+  "leaf_lo": "#55821f",
+  "leaf_hi": "#b4d24a",
+  "wood": "#a9733d",
+  "wood_lo": "#7b4f27",
+  "wood_hi": "#cf9a5c",
+  "wood_dk": "#56361a",
+  "timber": "#6f4426",
+  "wheat": "#e6bf52",
+  "wheat_lo": "#c59433",
+  "wheat_hi": "#f7de86",
+  "stone": "#a7a6a2",
+  "stone_lo": "#7f7f80",
+  "stone_hi": "#cfcdc6",
+  "plaster": "#f1e2c0",
+  "apple": "#c9432e",
+  "pear": "#d9c84a",
+  "flower_w": "#fff6e0",
+  "flower_y": "#ffd23a",
+  "flower_r": "#e4553e",
+  "flower_p": "#ec92c2",
+  "flower_b": "#7fb0ea",
+  "outline": "#2a1c12"
+ },
+ "lighting": "top-left warm key #fff0c8, cool shade #5a6fa0 (SW faces lit, SE faces in shade); NO baked cast or contact shadows in the sprites (painted ground shadows removed from the raws); moving cast shadows live only in animated/shadows/*_shadow_sway (ground layer, #1a223c)",
+ "animated": {
+  "meta": "animated/anim_meta.json",
+  "status": "PROPOSED",
+  "count": 14,
+  "groups": {
+   "sway": [
+    "border_orchard_hedge_nesw_shadow_sway",
+    "border_orchard_hedge_nesw_sway",
+    "border_orchard_hedge_nwse_shadow_sway",
+    "border_orchard_hedge_nwse_sway",
+    "bush_flower_meadow_shadow_sway",
+    "bush_flower_meadow_sway",
+    "tree_apple_orchard_fruiting_shadow_sway",
+    "tree_apple_orchard_fruiting_sway",
+    "tree_apple_orchard_shadow_sway",
+    "tree_apple_orchard_sway",
+    "tree_pear_shadow_sway",
+    "tree_pear_sway"
+   ],
+   "overlays": [
+    "old_windmill_sails",
+    "old_windmill_sails_flat"
+   ]
+  }
+ },
+ "wp10a": {
+  "package": "WP10a pair 1",
+  "manifest": "raw/wp10a/manifest.json",
+  "generated": "2026-10-03",
+  "status": "COMPLETE",
+  "missing": [],
+  "grade": {
+   "source": "pc/world-zones data/world/rowanvale/stand_in.json",
+   "warm_mul": [
+    1.06,
+    1.02,
+    0.9
+   ],
+   "haze_col": [
+    0.62,
+    0.58,
+    0.32
+   ],
+   "haze_max": 0.08,
+   "saturation": 1.08,
+   "weather": [
+    "clear"
+   ],
+   "applied_in_art": false,
+   "note": "Recorded for reference only; not baked into the art."
+  },
+  "palette_status": "PROPOSED: the spec gives no Rowanvale hexes; these are the Crosshaven kit palette (atlas_meta.json > palette) the farmland already uses",
+  "processing": {
+   "pipeline": "scratch/wp10a: wp10a_props.py (key + decontaminate on the flat bg, 8x supersampled place, area downsample to 2x and 1x), rv_fix.py (painted-shadow removal behind the dark outline, palette nudge 30% capped at 7 dE, per-asset retouch), wp10a_tiles.py (--fix-seams, --edges), wp10a_sails.py, wp10a_atlas.py; driver rv_run.py",
+   "tiles": {
+    "meadow": {
+     "files": [
+      "meadow_a",
+      "meadow_b",
+      "meadow_c"
+     ],
+     "crop": {
+      "size": 560,
+      "rot": 0,
+      "fix": true
+     },
+     "seam_score_raw_cols_rows": [
+      2.65,
+      3.1
+     ],
+     "seam_score_after_cols_rows": [
+      1.03,
+      1.35
+     ],
+     "board_seam": {
+      "max_abs_vs_continuous": 0.08140480518341064,
+      "mean_abs_vs_continuous": 0.010355654172599316,
+      "hairline_max": 0.0,
+      "hairline_px": 0
+     }
+    },
+    "orchard_soil": {
+     "files": [
+      "orchard_soil_a",
+      "orchard_soil_b",
+      "orchard_soil_edge_nw",
+      "orchard_soil_edge_ne",
+      "orchard_soil_edge_nw_ne",
+      "orchard_soil_edge_se",
+      "orchard_soil_edge_nw_se",
+      "orchard_soil_edge_ne_se",
+      "orchard_soil_edge_nw_ne_se",
+      "orchard_soil_edge_sw",
+      "orchard_soil_edge_nw_sw",
+      "orchard_soil_edge_ne_sw",
+      "orchard_soil_edge_nw_ne_sw",
+      "orchard_soil_edge_se_sw",
+      "orchard_soil_edge_nw_se_sw",
+      "orchard_soil_edge_ne_se_sw",
+      "orchard_soil_edge_nw_ne_se_sw",
+      "orchard_soil_corner_n",
+      "orchard_soil_corner_e",
+      "orchard_soil_corner_s",
+      "orchard_soil_corner_w"
+     ],
+     "crop": {
+      "size": 560,
+      "rot": 0,
+      "fix": true
+     },
+     "seam_score_raw_cols_rows": [
+      3.27,
+      3.54
+     ],
+     "seam_score_after_cols_rows": [
+      1.15,
+      0.88
+     ],
+     "board_seam": {
+      "max_abs_vs_continuous": 0.06040006875991821,
+      "mean_abs_vs_continuous": 0.010041821748018265,
+      "hairline_max": 0.0,
+      "hairline_px": 0
+     }
+    },
+    "tilled_rows": {
+     "files": [
+      "tilled_rows_a",
+      "tilled_rows_b",
+      "tilled_rows_edge_nw",
+      "tilled_rows_edge_ne",
+      "tilled_rows_edge_nw_ne",
+      "tilled_rows_edge_se",
+      "tilled_rows_edge_nw_se",
+      "tilled_rows_edge_ne_se",
+      "tilled_rows_edge_nw_ne_se",
+      "tilled_rows_edge_sw",
+      "tilled_rows_edge_nw_sw",
+      "tilled_rows_edge_ne_sw",
+      "tilled_rows_edge_nw_ne_sw",
+      "tilled_rows_edge_se_sw",
+      "tilled_rows_edge_nw_se_sw",
+      "tilled_rows_edge_ne_se_sw",
+      "tilled_rows_edge_nw_ne_se_sw",
+      "tilled_rows_corner_n",
+      "tilled_rows_corner_e",
+      "tilled_rows_corner_s",
+      "tilled_rows_corner_w"
+     ],
+     "crop": {
+      "period": 102.887,
+      "periods": 4,
+      "rot": 2,
+      "fix": true,
+      "directional": "u"
+     },
+     "seam_score_raw_cols_rows": [
+      7.2,
+      5.36
+     ],
+     "seam_score_after_cols_rows": [
+      1.15,
+      0.96
+     ],
+     "board_seam": {
+      "max_abs_vs_continuous": 0.055837810039520264,
+      "mean_abs_vs_continuous": 0.009377305395901203,
+      "hairline_max": 0.0,
+      "hairline_px": 0
+     }
+    }
+   },
+   "sails": {
+    "old_windmill_sails": {
+     "bg_border_median": "#ffffff",
+     "bg_noise_dE90": 1.26,
+     "t_bg": 2.53,
+     "t_fg": 10.0,
+     "bg_field_range_dE": 0.4,
+     "edge_band_px": 5.1,
+     "dehalo_px": 7519,
+     "hub_method": "alpha centroid (pass --hub X,Y if the cross is not symmetric)",
+     "frames": 12,
+     "frame_size": [
+      200,
+      200
+     ],
+     "frame_size_2x": [
+      400,
+      400
+     ],
+     "deg_per_frame": 7.5,
+     "direction": "ccw",
+     "hub_raw": [
+      642.9,
+      343.6
+     ],
+     "sail_radius_raw": 410.0,
+     "sail_radius_1x": 96.0,
+     "squash_y": 0.9,
+     "fps_for_4_44s_turn": 10.81,
+     "hub_raw_body": [
+      533.3,
+      252.5
+     ],
+     "hub_from_anchor_2x_exact": [
+      -78.4,
+      -300.0
+     ],
+     "hub_from_anchor_1x": [
+      -39,
+      -150
+     ],
+     "hub_from_anchor_2x": [
+      -78,
+      -300
+     ],
+     "manifest_proposed_hub_1x": [
+      0,
+      -170
+     ],
+     "sail_radius_limits_1x": [
+      105.0,
+      183.0,
+      117.8,
+      98.0
+     ],
+     "static_clipped": {
+      "clipped_2x": false,
+      "clipped": false
+     }
+    }
+   },
+   "notes": [
+    "3 Oct TA follow-up: world-kit gate (check_assets --package world) replaces the combat-prop width rule.",
+    "tree_apple_orchard, tree_apple_orchard_fruiting, tree_pear: re-cut from the raw paintings onto the tree_broad canvas 112x128 (1x) / 224x256 (2x) at the full manifest art height (200 / 200 / 212 px at 2x), canopies unclipped; trunk contact 1.5 / 2.5 / 5 px (1x) left of the cell centre so the right-leaning canopies fit (base still inside the 1x1 footprint, anchor = footprint south tip).",
+    "border_orchard_hedge_nwse/nesw: canvas 64x64 -> 96x128 (1x); scaled to the manifest art height 96 px (2x) instead of the 112 px target width, so segment ends overlap the neighbours.",
+    "old_windmill_body + old_windmill: size_class landmark_wide, canvas 288x256 (1x) / 576x512 (2x) (was hero 192x256) for the larger sails (radius 96 px 1x, frame 200 px 1x); body raised 12 px (2x) so its base lies inside the 2x2 footprint diamond.",
+    "old_windmill (static) is listed in props.json again.",
+    "old_windmill_sails: 12 frames, frame 200x200 (1x) / 400x400 (2x) centred on the hub; frame size is independent of the landmark_wide body canvas (checker: frame-exact strip, hub at frame centre, hub matches the static).",
+    "TA fix list (3 Oct, partial before parking): fruiting apple + pear canopy hue-shifted to the plain apple's green (median ~72; pears masked out, red apples untouched); hedges hue-shifted to ~70 at 0.86 saturation and their run ends trimmed to <= 8 px past the cell edge; beehive_box boxes repainted warm off-white (lid/legs honey-gold wood).",
+    "trees +4 px, scarecrow +6 px (2x) lower so the lowest opaque row is within 24 px of the anchor."
+   ]
+  }
+ }
+}

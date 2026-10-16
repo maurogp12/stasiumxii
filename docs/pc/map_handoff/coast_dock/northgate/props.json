@@ -1,0 +1,690 @@
+{
+ "package": "outskirts_themes/northgate",
+ "version": 1,
+ "date": "2026-10-03",
+ "scale": "2:1 iso, cell top face 128x64 at 2x (Crosshaven world scale); fighter ~124 px tall at 2x",
+ "anchor": "canvas px of the footprint south tip (bottom-centre); for 2x1 drifts the anchor cell is the FRONT cell and the footprint runs back to (x-1,y)",
+ "contact_shadow": "baked soft cool ellipse under rock bases (alpha<=0.30, inside the footprint); drifts carry none (they are ground overlays)",
+ "props": [
+  {
+   "id": "crag_spire_a",
+   "file_2x": "props/_2x/crag_spire_a.png",
+   "file_1x": "props/crag_spire_a.png",
+   "size_2x": [
+    256,
+    384
+   ],
+   "size_1x": [
+    128,
+    192
+   ],
+   "footprint_cells": [
+    2,
+    2
+   ],
+   "anchor_px_2x": [
+    128,
+    384
+   ],
+   "anchor_px_1x": [
+    64,
+    192
+   ],
+   "emissive": "no",
+   "art_height_px_2x": 243,
+   "art_x_from_anchor_2x": [
+    -109,
+    106
+   ],
+   "lowest_opaque_gap_px_2x": 17,
+   "kind": "rock",
+   "layer": "prop"
+  },
+  {
+   "id": "crag_outcrop_a",
+   "file_2x": "props/_2x/crag_outcrop_a.png",
+   "file_1x": "props/crag_outcrop_a.png",
+   "size_2x": [
+    256,
+    384
+   ],
+   "size_1x": [
+    128,
+    192
+   ],
+   "footprint_cells": [
+    2,
+    2
+   ],
+   "anchor_px_2x": [
+    128,
+    384
+   ],
+   "anchor_px_1x": [
+    64,
+    192
+   ],
+   "emissive": "no",
+   "art_height_px_2x": 222,
+   "art_x_from_anchor_2x": [
+    -107,
+    108
+   ],
+   "lowest_opaque_gap_px_2x": 18,
+   "kind": "rock",
+   "layer": "prop"
+  },
+  {
+   "id": "crag_outcrop_b",
+   "file_2x": "props/_2x/crag_outcrop_b.png",
+   "file_1x": "props/crag_outcrop_b.png",
+   "size_2x": [
+    256,
+    384
+   ],
+   "size_1x": [
+    128,
+    192
+   ],
+   "footprint_cells": [
+    2,
+    2
+   ],
+   "anchor_px_2x": [
+    128,
+    384
+   ],
+   "anchor_px_1x": [
+    64,
+    192
+   ],
+   "emissive": "no",
+   "art_height_px_2x": 216,
+   "art_x_from_anchor_2x": [
+    -105,
+    106
+   ],
+   "lowest_opaque_gap_px_2x": 15,
+   "kind": "rock",
+   "layer": "prop"
+  },
+  {
+   "id": "crag_spire_b",
+   "file_2x": "props/_2x/crag_spire_b.png",
+   "file_1x": "props/crag_spire_b.png",
+   "size_2x": [
+    256,
+    384
+   ],
+   "size_1x": [
+    128,
+    192
+   ],
+   "footprint_cells": [
+    2,
+    2
+   ],
+   "anchor_px_2x": [
+    128,
+    384
+   ],
+   "anchor_px_1x": [
+    64,
+    192
+   ],
+   "emissive": "no",
+   "art_height_px_2x": 239,
+   "art_x_from_anchor_2x": [
+    -109,
+    108
+   ],
+   "lowest_opaque_gap_px_2x": 17,
+   "kind": "rock",
+   "layer": "prop"
+  },
+  {
+   "id": "crag_boulders_a",
+   "file_2x": "props/_2x/crag_boulders_a.png",
+   "file_1x": "props/crag_boulders_a.png",
+   "size_2x": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64,
+    128
+   ],
+   "anchor_px_1x": [
+    32,
+    64
+   ],
+   "emissive": "no",
+   "art_height_px_2x": 87,
+   "art_x_from_anchor_2x": [
+    -56,
+    56
+   ],
+   "lowest_opaque_gap_px_2x": 8,
+   "kind": "rock",
+   "layer": "prop"
+  },
+  {
+   "id": "crag_boulders_b",
+   "file_2x": "props/_2x/crag_boulders_b.png",
+   "file_1x": "props/crag_boulders_b.png",
+   "size_2x": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64,
+    128
+   ],
+   "anchor_px_1x": [
+    32,
+    64
+   ],
+   "emissive": "no",
+   "art_height_px_2x": 93,
+   "art_x_from_anchor_2x": [
+    -58,
+    56
+   ],
+   "lowest_opaque_gap_px_2x": 8,
+   "kind": "rock",
+   "layer": "prop"
+  },
+  {
+   "id": "crag_outcrop_c",
+   "file_2x": "props/_2x/crag_outcrop_c.png",
+   "file_1x": "props/crag_outcrop_c.png",
+   "size_2x": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64,
+    128
+   ],
+   "anchor_px_1x": [
+    32,
+    64
+   ],
+   "emissive": "no",
+   "art_height_px_2x": 101,
+   "art_x_from_anchor_2x": [
+    -56,
+    55
+   ],
+   "lowest_opaque_gap_px_2x": 7,
+   "kind": "rock",
+   "layer": "prop"
+  },
+  {
+   "id": "crag_boulders_c",
+   "file_2x": "props/_2x/crag_boulders_c.png",
+   "file_1x": "props/crag_boulders_c.png",
+   "size_2x": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64,
+    128
+   ],
+   "anchor_px_1x": [
+    32,
+    64
+   ],
+   "emissive": "no",
+   "art_height_px_2x": 92,
+   "art_x_from_anchor_2x": [
+    -58,
+    56
+   ],
+   "lowest_opaque_gap_px_2x": 9,
+   "kind": "rock",
+   "layer": "prop"
+  },
+  {
+   "id": "crag_boulders_d",
+   "file_2x": "props/_2x/crag_boulders_d.png",
+   "file_1x": "props/crag_boulders_d.png",
+   "size_2x": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64,
+    128
+   ],
+   "anchor_px_1x": [
+    32,
+    64
+   ],
+   "emissive": "no",
+   "art_height_px_2x": 90,
+   "art_x_from_anchor_2x": [
+    -57,
+    55
+   ],
+   "lowest_opaque_gap_px_2x": 7,
+   "kind": "rock",
+   "layer": "prop"
+  },
+  {
+   "id": "crag_split_shrub",
+   "file_2x": "props/_2x/crag_split_shrub.png",
+   "file_1x": "props/crag_split_shrub.png",
+   "size_2x": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64,
+    128
+   ],
+   "anchor_px_1x": [
+    32,
+    64
+   ],
+   "emissive": "no",
+   "art_height_px_2x": 113,
+   "art_x_from_anchor_2x": [
+    -58,
+    56
+   ],
+   "lowest_opaque_gap_px_2x": 6,
+   "kind": "rock",
+   "layer": "prop"
+  },
+  {
+   "id": "crag_outcrop_d",
+   "file_2x": "props/_2x/crag_outcrop_d.png",
+   "file_1x": "props/crag_outcrop_d.png",
+   "size_2x": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64,
+    128
+   ],
+   "anchor_px_1x": [
+    32,
+    64
+   ],
+   "emissive": "no",
+   "art_height_px_2x": 101,
+   "art_x_from_anchor_2x": [
+    -56,
+    56
+   ],
+   "lowest_opaque_gap_px_2x": 7,
+   "kind": "rock",
+   "layer": "prop"
+  },
+  {
+   "id": "crag_cairn_flag",
+   "file_2x": "props/_2x/crag_cairn_flag.png",
+   "file_1x": "props/crag_cairn_flag.png",
+   "size_2x": [
+    128,
+    224
+   ],
+   "size_1x": [
+    64,
+    112
+   ],
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64,
+    224
+   ],
+   "anchor_px_1x": [
+    32,
+    112
+   ],
+   "emissive": "no",
+   "art_height_px_2x": 129,
+   "art_x_from_anchor_2x": [
+    -57,
+    55
+   ],
+   "lowest_opaque_gap_px_2x": 8,
+   "kind": "rock",
+   "layer": "prop"
+  },
+  {
+   "id": "drift_wall_long_a",
+   "file_2x": "props/_2x/drift_wall_long_a.png",
+   "file_1x": "props/drift_wall_long_a.png",
+   "size_2x": [
+    192,
+    160
+   ],
+   "size_1x": [
+    96,
+    80
+   ],
+   "footprint_cells": [
+    2,
+    1
+   ],
+   "anchor_px_2x": [
+    96,
+    160
+   ],
+   "anchor_px_1x": [
+    48,
+    80
+   ],
+   "emissive": "no",
+   "art_height_px_2x": 81,
+   "art_x_from_anchor_2x": [
+    -93,
+    33
+   ],
+   "lowest_opaque_gap_px_2x": 11,
+   "kind": "drift",
+   "layer": "ground_overlay"
+  },
+  {
+   "id": "drift_wall_long_b",
+   "file_2x": "props/_2x/drift_wall_long_b.png",
+   "file_1x": "props/drift_wall_long_b.png",
+   "size_2x": [
+    192,
+    160
+   ],
+   "size_1x": [
+    96,
+    80
+   ],
+   "footprint_cells": [
+    2,
+    1
+   ],
+   "anchor_px_2x": [
+    96,
+    160
+   ],
+   "anchor_px_1x": [
+    48,
+    80
+   ],
+   "emissive": "no",
+   "art_height_px_2x": 81,
+   "art_x_from_anchor_2x": [
+    -93,
+    33
+   ],
+   "lowest_opaque_gap_px_2x": 10,
+   "kind": "drift",
+   "layer": "ground_overlay"
+  },
+  {
+   "id": "drift_wall_long_c",
+   "file_2x": "props/_2x/drift_wall_long_c.png",
+   "file_1x": "props/drift_wall_long_c.png",
+   "size_2x": [
+    192,
+    160
+   ],
+   "size_1x": [
+    96,
+    80
+   ],
+   "footprint_cells": [
+    2,
+    1
+   ],
+   "anchor_px_2x": [
+    96,
+    160
+   ],
+   "anchor_px_1x": [
+    48,
+    80
+   ],
+   "emissive": "no",
+   "art_height_px_2x": 83,
+   "art_x_from_anchor_2x": [
+    -93,
+    33
+   ],
+   "lowest_opaque_gap_px_2x": 10,
+   "kind": "drift",
+   "layer": "ground_overlay"
+  },
+  {
+   "id": "drift_fence_a",
+   "file_2x": "props/_2x/drift_fence_a.png",
+   "file_1x": "props/drift_fence_a.png",
+   "size_2x": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64,
+    128
+   ],
+   "anchor_px_1x": [
+    32,
+    64
+   ],
+   "emissive": "no",
+   "art_height_px_2x": 54,
+   "art_x_from_anchor_2x": [
+    -37,
+    34
+   ],
+   "lowest_opaque_gap_px_2x": 12,
+   "kind": "drift",
+   "layer": "ground_overlay"
+  },
+  {
+   "id": "drift_tree_ring_a",
+   "file_2x": "props/_2x/drift_tree_ring_a.png",
+   "file_1x": "props/drift_tree_ring_a.png",
+   "size_2x": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64,
+    128
+   ],
+   "anchor_px_1x": [
+    32,
+    64
+   ],
+   "emissive": "no",
+   "art_height_px_2x": 48,
+   "art_x_from_anchor_2x": [
+    -44,
+    40
+   ],
+   "lowest_opaque_gap_px_2x": 12,
+   "kind": "drift",
+   "layer": "ground_overlay"
+  },
+  {
+   "id": "drift_tree_ring_b",
+   "file_2x": "props/_2x/drift_tree_ring_b.png",
+   "file_1x": "props/drift_tree_ring_b.png",
+   "size_2x": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64,
+    128
+   ],
+   "anchor_px_1x": [
+    32,
+    64
+   ],
+   "emissive": "no",
+   "art_height_px_2x": 47,
+   "art_x_from_anchor_2x": [
+    -42,
+    42
+   ],
+   "lowest_opaque_gap_px_2x": 10,
+   "kind": "drift",
+   "layer": "ground_overlay"
+  },
+  {
+   "id": "drift_patch_a",
+   "file_2x": "props/_2x/drift_patch_a.png",
+   "file_1x": "props/drift_patch_a.png",
+   "size_2x": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64,
+    128
+   ],
+   "anchor_px_1x": [
+    32,
+    64
+   ],
+   "emissive": "no",
+   "art_height_px_2x": 46,
+   "art_x_from_anchor_2x": [
+    -31,
+    38
+   ],
+   "lowest_opaque_gap_px_2x": 24,
+   "kind": "drift",
+   "layer": "ground_overlay"
+  },
+  {
+   "id": "drift_patch_b",
+   "file_2x": "props/_2x/drift_patch_b.png",
+   "file_1x": "props/drift_patch_b.png",
+   "size_2x": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64,
+    128
+   ],
+   "anchor_px_1x": [
+    32,
+    64
+   ],
+   "emissive": "no",
+   "art_height_px_2x": 48,
+   "art_x_from_anchor_2x": [
+    -35,
+    36
+   ],
+   "lowest_opaque_gap_px_2x": 22,
+   "kind": "drift",
+   "layer": "ground_overlay"
+  }
+ ]
+}

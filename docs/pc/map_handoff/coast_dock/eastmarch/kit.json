@@ -1,0 +1,2325 @@
+{
+ "theme": "eastmarch",
+ "version": 1,
+ "date": "2026-10-03",
+ "grammar": {
+  "picker": "Crosshaven picker (crosshaven_art.gd pick_tile): g = sides nw,ne,se,sw (in that order) whose neighbour is in `against`; g empty -> interior by h(x,y); else <edge_prefix><g joined by _>; then <corner_prefix><c> decals for diagonal corners c whose two sides are not in g but whose diagonal neighbour is in `against`.",
+  "sides": {
+   "nw": "(x-1,y)",
+   "ne": "(x,y-1)",
+   "se": "(x+1,y)",
+   "sw": "(x,y+1)"
+  },
+  "corners": {
+   "n": "(x-1,y-1)",
+   "e": "(x+1,y-1)",
+   "s": "(x+1,y+1)",
+   "w": "(x-1,y+1)"
+  },
+  "families": {
+   "sand": {
+    "interiors": [
+     "sand_a",
+     "sand_b",
+     "sand_c",
+     "sand_d"
+    ],
+    "edge": "sand_edge_",
+    "corner": "sand_corner_",
+    "against": [
+     "golden_plains"
+    ]
+   },
+   "wet_sand": {
+    "interiors": [
+     "wet_sand_a",
+     "wet_sand_b"
+    ],
+    "edge": "wet_sand_edge_",
+    "corner": "wet_sand_corner_",
+    "against": [
+     "sand"
+    ],
+    "joins": [
+     "wet_sand",
+     "sea_shallow",
+     "sea_deep"
+    ]
+   },
+   "sea_shallow": {
+    "interiors": [
+     "sea_shallow_a",
+     "sea_shallow_b"
+    ],
+    "edge": "sand_surf_edge_",
+    "corner": "sand_surf_corner_",
+    "against": [
+     "sand",
+     "wet_sand",
+     "golden_plains (no grass shore piece: put a sand row between grass and sea)"
+    ]
+   },
+   "sea_deep": {
+    "interiors": [
+     "sea_deep_a",
+     "sea_deep_b"
+    ],
+    "edge": "sea_deep_edge_",
+    "corner": "sea_deep_corner_",
+    "against": [
+     "sea_shallow"
+    ]
+   }
+  },
+  "note": "all 15 side combinations are shipped (Crosshaven grammar); the 4 single sides are the brief's <family>_edge_{nw,ne,se,sw}."
+ },
+ "count": 94,
+ "items": [
+  {
+   "id": "sand_a",
+   "file": "tiles/sand_a@2x.png",
+   "file_1x": "tiles/sand_a.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "tile",
+   "family": "sand",
+   "variant": "a"
+  },
+  {
+   "id": "sand_b",
+   "file": "tiles/sand_b@2x.png",
+   "file_1x": "tiles/sand_b.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "tile",
+   "family": "sand",
+   "variant": "b"
+  },
+  {
+   "id": "sand_c",
+   "file": "tiles/sand_c@2x.png",
+   "file_1x": "tiles/sand_c.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "tile",
+   "family": "sand",
+   "variant": "c"
+  },
+  {
+   "id": "sand_d",
+   "file": "tiles/sand_d@2x.png",
+   "file_1x": "tiles/sand_d.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "tile",
+   "family": "sand",
+   "variant": "d"
+  },
+  {
+   "id": "wet_sand_a",
+   "file": "tiles/wet_sand_a@2x.png",
+   "file_1x": "tiles/wet_sand_a.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "tile",
+   "family": "wet_sand",
+   "variant": "a"
+  },
+  {
+   "id": "wet_sand_b",
+   "file": "tiles/wet_sand_b@2x.png",
+   "file_1x": "tiles/wet_sand_b.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "tile",
+   "family": "wet_sand",
+   "variant": "b"
+  },
+  {
+   "id": "sea_shallow_a",
+   "file": "tiles/sea_shallow_a@2x.png",
+   "file_1x": "tiles/sea_shallow_a.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "tile",
+   "family": "sea_shallow",
+   "variant": "a"
+  },
+  {
+   "id": "sea_deep_a",
+   "file": "tiles/sea_deep_a@2x.png",
+   "file_1x": "tiles/sea_deep_a.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "tile",
+   "family": "sea_deep",
+   "variant": "a"
+  },
+  {
+   "id": "sea_shallow_b",
+   "file": "tiles/sea_shallow_b@2x.png",
+   "file_1x": "tiles/sea_shallow_b.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "tile",
+   "family": "sea_shallow",
+   "variant": "b"
+  },
+  {
+   "id": "sea_deep_b",
+   "file": "tiles/sea_deep_b@2x.png",
+   "file_1x": "tiles/sea_deep_b.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "tile",
+   "family": "sea_deep",
+   "variant": "b"
+  },
+  {
+   "id": "sand_edge_nw",
+   "file": "tiles/sand_edge_nw@2x.png",
+   "file_1x": "tiles/sand_edge_nw.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "sand",
+   "side": "nw",
+   "autotile": {
+    "family": "sand",
+    "against": "golden_plains",
+    "sides": [
+     "nw"
+    ]
+   }
+  },
+  {
+   "id": "sand_edge_ne",
+   "file": "tiles/sand_edge_ne@2x.png",
+   "file_1x": "tiles/sand_edge_ne.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "sand",
+   "side": "ne",
+   "autotile": {
+    "family": "sand",
+    "against": "golden_plains",
+    "sides": [
+     "ne"
+    ]
+   }
+  },
+  {
+   "id": "sand_edge_nw_ne",
+   "file": "tiles/sand_edge_nw_ne@2x.png",
+   "file_1x": "tiles/sand_edge_nw_ne.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "sand",
+   "side": "nw_ne",
+   "autotile": {
+    "family": "sand",
+    "against": "golden_plains",
+    "sides": [
+     "nw",
+     "ne"
+    ]
+   }
+  },
+  {
+   "id": "sand_edge_se",
+   "file": "tiles/sand_edge_se@2x.png",
+   "file_1x": "tiles/sand_edge_se.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "sand",
+   "side": "se",
+   "autotile": {
+    "family": "sand",
+    "against": "golden_plains",
+    "sides": [
+     "se"
+    ]
+   }
+  },
+  {
+   "id": "sand_edge_nw_se",
+   "file": "tiles/sand_edge_nw_se@2x.png",
+   "file_1x": "tiles/sand_edge_nw_se.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "sand",
+   "side": "nw_se",
+   "autotile": {
+    "family": "sand",
+    "against": "golden_plains",
+    "sides": [
+     "nw",
+     "se"
+    ]
+   }
+  },
+  {
+   "id": "sand_edge_ne_se",
+   "file": "tiles/sand_edge_ne_se@2x.png",
+   "file_1x": "tiles/sand_edge_ne_se.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "sand",
+   "side": "ne_se",
+   "autotile": {
+    "family": "sand",
+    "against": "golden_plains",
+    "sides": [
+     "ne",
+     "se"
+    ]
+   }
+  },
+  {
+   "id": "sand_edge_nw_ne_se",
+   "file": "tiles/sand_edge_nw_ne_se@2x.png",
+   "file_1x": "tiles/sand_edge_nw_ne_se.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "sand",
+   "side": "nw_ne_se",
+   "autotile": {
+    "family": "sand",
+    "against": "golden_plains",
+    "sides": [
+     "nw",
+     "ne",
+     "se"
+    ]
+   }
+  },
+  {
+   "id": "sand_edge_sw",
+   "file": "tiles/sand_edge_sw@2x.png",
+   "file_1x": "tiles/sand_edge_sw.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "sand",
+   "side": "sw",
+   "autotile": {
+    "family": "sand",
+    "against": "golden_plains",
+    "sides": [
+     "sw"
+    ]
+   }
+  },
+  {
+   "id": "sand_edge_nw_sw",
+   "file": "tiles/sand_edge_nw_sw@2x.png",
+   "file_1x": "tiles/sand_edge_nw_sw.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "sand",
+   "side": "nw_sw",
+   "autotile": {
+    "family": "sand",
+    "against": "golden_plains",
+    "sides": [
+     "nw",
+     "sw"
+    ]
+   }
+  },
+  {
+   "id": "sand_edge_ne_sw",
+   "file": "tiles/sand_edge_ne_sw@2x.png",
+   "file_1x": "tiles/sand_edge_ne_sw.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "sand",
+   "side": "ne_sw",
+   "autotile": {
+    "family": "sand",
+    "against": "golden_plains",
+    "sides": [
+     "ne",
+     "sw"
+    ]
+   }
+  },
+  {
+   "id": "sand_edge_nw_ne_sw",
+   "file": "tiles/sand_edge_nw_ne_sw@2x.png",
+   "file_1x": "tiles/sand_edge_nw_ne_sw.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "sand",
+   "side": "nw_ne_sw",
+   "autotile": {
+    "family": "sand",
+    "against": "golden_plains",
+    "sides": [
+     "nw",
+     "ne",
+     "sw"
+    ]
+   }
+  },
+  {
+   "id": "sand_edge_se_sw",
+   "file": "tiles/sand_edge_se_sw@2x.png",
+   "file_1x": "tiles/sand_edge_se_sw.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "sand",
+   "side": "se_sw",
+   "autotile": {
+    "family": "sand",
+    "against": "golden_plains",
+    "sides": [
+     "se",
+     "sw"
+    ]
+   }
+  },
+  {
+   "id": "sand_edge_nw_se_sw",
+   "file": "tiles/sand_edge_nw_se_sw@2x.png",
+   "file_1x": "tiles/sand_edge_nw_se_sw.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "sand",
+   "side": "nw_se_sw",
+   "autotile": {
+    "family": "sand",
+    "against": "golden_plains",
+    "sides": [
+     "nw",
+     "se",
+     "sw"
+    ]
+   }
+  },
+  {
+   "id": "sand_edge_ne_se_sw",
+   "file": "tiles/sand_edge_ne_se_sw@2x.png",
+   "file_1x": "tiles/sand_edge_ne_se_sw.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "sand",
+   "side": "ne_se_sw",
+   "autotile": {
+    "family": "sand",
+    "against": "golden_plains",
+    "sides": [
+     "ne",
+     "se",
+     "sw"
+    ]
+   }
+  },
+  {
+   "id": "sand_edge_nw_ne_se_sw",
+   "file": "tiles/sand_edge_nw_ne_se_sw@2x.png",
+   "file_1x": "tiles/sand_edge_nw_ne_se_sw.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "sand",
+   "side": "nw_ne_se_sw",
+   "autotile": {
+    "family": "sand",
+    "against": "golden_plains",
+    "sides": [
+     "nw",
+     "ne",
+     "se",
+     "sw"
+    ]
+   }
+  },
+  {
+   "id": "sand_corner_n",
+   "file": "tiles/sand_corner_n@2x.png",
+   "file_1x": "tiles/sand_corner_n.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "corner",
+   "family": "sand",
+   "side": "n",
+   "autotile": {
+    "family": "sand",
+    "against": "golden_plains",
+    "corner": "n"
+   }
+  },
+  {
+   "id": "sand_corner_e",
+   "file": "tiles/sand_corner_e@2x.png",
+   "file_1x": "tiles/sand_corner_e.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "corner",
+   "family": "sand",
+   "side": "e",
+   "autotile": {
+    "family": "sand",
+    "against": "golden_plains",
+    "corner": "e"
+   }
+  },
+  {
+   "id": "sand_corner_s",
+   "file": "tiles/sand_corner_s@2x.png",
+   "file_1x": "tiles/sand_corner_s.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "corner",
+   "family": "sand",
+   "side": "s",
+   "autotile": {
+    "family": "sand",
+    "against": "golden_plains",
+    "corner": "s"
+   }
+  },
+  {
+   "id": "sand_corner_w",
+   "file": "tiles/sand_corner_w@2x.png",
+   "file_1x": "tiles/sand_corner_w.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "corner",
+   "family": "sand",
+   "side": "w",
+   "autotile": {
+    "family": "sand",
+    "against": "golden_plains",
+    "corner": "w"
+   }
+  },
+  {
+   "id": "wet_sand_edge_nw",
+   "file": "tiles/wet_sand_edge_nw@2x.png",
+   "file_1x": "tiles/wet_sand_edge_nw.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "wet_sand",
+   "side": "nw",
+   "autotile": {
+    "family": "wet_sand",
+    "against": "sand",
+    "sides": [
+     "nw"
+    ]
+   }
+  },
+  {
+   "id": "wet_sand_edge_ne",
+   "file": "tiles/wet_sand_edge_ne@2x.png",
+   "file_1x": "tiles/wet_sand_edge_ne.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "wet_sand",
+   "side": "ne",
+   "autotile": {
+    "family": "wet_sand",
+    "against": "sand",
+    "sides": [
+     "ne"
+    ]
+   }
+  },
+  {
+   "id": "wet_sand_edge_nw_ne",
+   "file": "tiles/wet_sand_edge_nw_ne@2x.png",
+   "file_1x": "tiles/wet_sand_edge_nw_ne.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "wet_sand",
+   "side": "nw_ne",
+   "autotile": {
+    "family": "wet_sand",
+    "against": "sand",
+    "sides": [
+     "nw",
+     "ne"
+    ]
+   }
+  },
+  {
+   "id": "wet_sand_edge_se",
+   "file": "tiles/wet_sand_edge_se@2x.png",
+   "file_1x": "tiles/wet_sand_edge_se.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "wet_sand",
+   "side": "se",
+   "autotile": {
+    "family": "wet_sand",
+    "against": "sand",
+    "sides": [
+     "se"
+    ]
+   }
+  },
+  {
+   "id": "wet_sand_edge_nw_se",
+   "file": "tiles/wet_sand_edge_nw_se@2x.png",
+   "file_1x": "tiles/wet_sand_edge_nw_se.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "wet_sand",
+   "side": "nw_se",
+   "autotile": {
+    "family": "wet_sand",
+    "against": "sand",
+    "sides": [
+     "nw",
+     "se"
+    ]
+   }
+  },
+  {
+   "id": "wet_sand_edge_ne_se",
+   "file": "tiles/wet_sand_edge_ne_se@2x.png",
+   "file_1x": "tiles/wet_sand_edge_ne_se.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "wet_sand",
+   "side": "ne_se",
+   "autotile": {
+    "family": "wet_sand",
+    "against": "sand",
+    "sides": [
+     "ne",
+     "se"
+    ]
+   }
+  },
+  {
+   "id": "wet_sand_edge_nw_ne_se",
+   "file": "tiles/wet_sand_edge_nw_ne_se@2x.png",
+   "file_1x": "tiles/wet_sand_edge_nw_ne_se.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "wet_sand",
+   "side": "nw_ne_se",
+   "autotile": {
+    "family": "wet_sand",
+    "against": "sand",
+    "sides": [
+     "nw",
+     "ne",
+     "se"
+    ]
+   }
+  },
+  {
+   "id": "wet_sand_edge_sw",
+   "file": "tiles/wet_sand_edge_sw@2x.png",
+   "file_1x": "tiles/wet_sand_edge_sw.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "wet_sand",
+   "side": "sw",
+   "autotile": {
+    "family": "wet_sand",
+    "against": "sand",
+    "sides": [
+     "sw"
+    ]
+   }
+  },
+  {
+   "id": "wet_sand_edge_nw_sw",
+   "file": "tiles/wet_sand_edge_nw_sw@2x.png",
+   "file_1x": "tiles/wet_sand_edge_nw_sw.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "wet_sand",
+   "side": "nw_sw",
+   "autotile": {
+    "family": "wet_sand",
+    "against": "sand",
+    "sides": [
+     "nw",
+     "sw"
+    ]
+   }
+  },
+  {
+   "id": "wet_sand_edge_ne_sw",
+   "file": "tiles/wet_sand_edge_ne_sw@2x.png",
+   "file_1x": "tiles/wet_sand_edge_ne_sw.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "wet_sand",
+   "side": "ne_sw",
+   "autotile": {
+    "family": "wet_sand",
+    "against": "sand",
+    "sides": [
+     "ne",
+     "sw"
+    ]
+   }
+  },
+  {
+   "id": "wet_sand_edge_nw_ne_sw",
+   "file": "tiles/wet_sand_edge_nw_ne_sw@2x.png",
+   "file_1x": "tiles/wet_sand_edge_nw_ne_sw.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "wet_sand",
+   "side": "nw_ne_sw",
+   "autotile": {
+    "family": "wet_sand",
+    "against": "sand",
+    "sides": [
+     "nw",
+     "ne",
+     "sw"
+    ]
+   }
+  },
+  {
+   "id": "wet_sand_edge_se_sw",
+   "file": "tiles/wet_sand_edge_se_sw@2x.png",
+   "file_1x": "tiles/wet_sand_edge_se_sw.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "wet_sand",
+   "side": "se_sw",
+   "autotile": {
+    "family": "wet_sand",
+    "against": "sand",
+    "sides": [
+     "se",
+     "sw"
+    ]
+   }
+  },
+  {
+   "id": "wet_sand_edge_nw_se_sw",
+   "file": "tiles/wet_sand_edge_nw_se_sw@2x.png",
+   "file_1x": "tiles/wet_sand_edge_nw_se_sw.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "wet_sand",
+   "side": "nw_se_sw",
+   "autotile": {
+    "family": "wet_sand",
+    "against": "sand",
+    "sides": [
+     "nw",
+     "se",
+     "sw"
+    ]
+   }
+  },
+  {
+   "id": "wet_sand_edge_ne_se_sw",
+   "file": "tiles/wet_sand_edge_ne_se_sw@2x.png",
+   "file_1x": "tiles/wet_sand_edge_ne_se_sw.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "wet_sand",
+   "side": "ne_se_sw",
+   "autotile": {
+    "family": "wet_sand",
+    "against": "sand",
+    "sides": [
+     "ne",
+     "se",
+     "sw"
+    ]
+   }
+  },
+  {
+   "id": "wet_sand_edge_nw_ne_se_sw",
+   "file": "tiles/wet_sand_edge_nw_ne_se_sw@2x.png",
+   "file_1x": "tiles/wet_sand_edge_nw_ne_se_sw.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "wet_sand",
+   "side": "nw_ne_se_sw",
+   "autotile": {
+    "family": "wet_sand",
+    "against": "sand",
+    "sides": [
+     "nw",
+     "ne",
+     "se",
+     "sw"
+    ]
+   }
+  },
+  {
+   "id": "wet_sand_corner_n",
+   "file": "tiles/wet_sand_corner_n@2x.png",
+   "file_1x": "tiles/wet_sand_corner_n.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "corner",
+   "family": "wet_sand",
+   "side": "n",
+   "autotile": {
+    "family": "wet_sand",
+    "against": "sand",
+    "corner": "n"
+   }
+  },
+  {
+   "id": "wet_sand_corner_e",
+   "file": "tiles/wet_sand_corner_e@2x.png",
+   "file_1x": "tiles/wet_sand_corner_e.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "corner",
+   "family": "wet_sand",
+   "side": "e",
+   "autotile": {
+    "family": "wet_sand",
+    "against": "sand",
+    "corner": "e"
+   }
+  },
+  {
+   "id": "wet_sand_corner_s",
+   "file": "tiles/wet_sand_corner_s@2x.png",
+   "file_1x": "tiles/wet_sand_corner_s.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "corner",
+   "family": "wet_sand",
+   "side": "s",
+   "autotile": {
+    "family": "wet_sand",
+    "against": "sand",
+    "corner": "s"
+   }
+  },
+  {
+   "id": "wet_sand_corner_w",
+   "file": "tiles/wet_sand_corner_w@2x.png",
+   "file_1x": "tiles/wet_sand_corner_w.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "corner",
+   "family": "wet_sand",
+   "side": "w",
+   "autotile": {
+    "family": "wet_sand",
+    "against": "sand",
+    "corner": "w"
+   }
+  },
+  {
+   "id": "sand_surf_edge_nw",
+   "file": "tiles/sand_surf_edge_nw@2x.png",
+   "file_1x": "tiles/sand_surf_edge_nw.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "sea_shallow",
+   "side": "nw",
+   "autotile": {
+    "family": "sea_shallow",
+    "against": "sand",
+    "sides": [
+     "nw"
+    ]
+   }
+  },
+  {
+   "id": "sand_surf_edge_ne",
+   "file": "tiles/sand_surf_edge_ne@2x.png",
+   "file_1x": "tiles/sand_surf_edge_ne.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "sea_shallow",
+   "side": "ne",
+   "autotile": {
+    "family": "sea_shallow",
+    "against": "sand",
+    "sides": [
+     "ne"
+    ]
+   }
+  },
+  {
+   "id": "sand_surf_edge_nw_ne",
+   "file": "tiles/sand_surf_edge_nw_ne@2x.png",
+   "file_1x": "tiles/sand_surf_edge_nw_ne.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "sea_shallow",
+   "side": "nw_ne",
+   "autotile": {
+    "family": "sea_shallow",
+    "against": "sand",
+    "sides": [
+     "nw",
+     "ne"
+    ]
+   }
+  },
+  {
+   "id": "sand_surf_edge_se",
+   "file": "tiles/sand_surf_edge_se@2x.png",
+   "file_1x": "tiles/sand_surf_edge_se.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "sea_shallow",
+   "side": "se",
+   "autotile": {
+    "family": "sea_shallow",
+    "against": "sand",
+    "sides": [
+     "se"
+    ]
+   }
+  },
+  {
+   "id": "sand_surf_edge_nw_se",
+   "file": "tiles/sand_surf_edge_nw_se@2x.png",
+   "file_1x": "tiles/sand_surf_edge_nw_se.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "sea_shallow",
+   "side": "nw_se",
+   "autotile": {
+    "family": "sea_shallow",
+    "against": "sand",
+    "sides": [
+     "nw",
+     "se"
+    ]
+   }
+  },
+  {
+   "id": "sand_surf_edge_ne_se",
+   "file": "tiles/sand_surf_edge_ne_se@2x.png",
+   "file_1x": "tiles/sand_surf_edge_ne_se.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "sea_shallow",
+   "side": "ne_se",
+   "autotile": {
+    "family": "sea_shallow",
+    "against": "sand",
+    "sides": [
+     "ne",
+     "se"
+    ]
+   }
+  },
+  {
+   "id": "sand_surf_edge_nw_ne_se",
+   "file": "tiles/sand_surf_edge_nw_ne_se@2x.png",
+   "file_1x": "tiles/sand_surf_edge_nw_ne_se.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "sea_shallow",
+   "side": "nw_ne_se",
+   "autotile": {
+    "family": "sea_shallow",
+    "against": "sand",
+    "sides": [
+     "nw",
+     "ne",
+     "se"
+    ]
+   }
+  },
+  {
+   "id": "sand_surf_edge_sw",
+   "file": "tiles/sand_surf_edge_sw@2x.png",
+   "file_1x": "tiles/sand_surf_edge_sw.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "sea_shallow",
+   "side": "sw",
+   "autotile": {
+    "family": "sea_shallow",
+    "against": "sand",
+    "sides": [
+     "sw"
+    ]
+   }
+  },
+  {
+   "id": "sand_surf_edge_nw_sw",
+   "file": "tiles/sand_surf_edge_nw_sw@2x.png",
+   "file_1x": "tiles/sand_surf_edge_nw_sw.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "sea_shallow",
+   "side": "nw_sw",
+   "autotile": {
+    "family": "sea_shallow",
+    "against": "sand",
+    "sides": [
+     "nw",
+     "sw"
+    ]
+   }
+  },
+  {
+   "id": "sand_surf_edge_ne_sw",
+   "file": "tiles/sand_surf_edge_ne_sw@2x.png",
+   "file_1x": "tiles/sand_surf_edge_ne_sw.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "sea_shallow",
+   "side": "ne_sw",
+   "autotile": {
+    "family": "sea_shallow",
+    "against": "sand",
+    "sides": [
+     "ne",
+     "sw"
+    ]
+   }
+  },
+  {
+   "id": "sand_surf_edge_nw_ne_sw",
+   "file": "tiles/sand_surf_edge_nw_ne_sw@2x.png",
+   "file_1x": "tiles/sand_surf_edge_nw_ne_sw.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "sea_shallow",
+   "side": "nw_ne_sw",
+   "autotile": {
+    "family": "sea_shallow",
+    "against": "sand",
+    "sides": [
+     "nw",
+     "ne",
+     "sw"
+    ]
+   }
+  },
+  {
+   "id": "sand_surf_edge_se_sw",
+   "file": "tiles/sand_surf_edge_se_sw@2x.png",
+   "file_1x": "tiles/sand_surf_edge_se_sw.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "sea_shallow",
+   "side": "se_sw",
+   "autotile": {
+    "family": "sea_shallow",
+    "against": "sand",
+    "sides": [
+     "se",
+     "sw"
+    ]
+   }
+  },
+  {
+   "id": "sand_surf_edge_nw_se_sw",
+   "file": "tiles/sand_surf_edge_nw_se_sw@2x.png",
+   "file_1x": "tiles/sand_surf_edge_nw_se_sw.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "sea_shallow",
+   "side": "nw_se_sw",
+   "autotile": {
+    "family": "sea_shallow",
+    "against": "sand",
+    "sides": [
+     "nw",
+     "se",
+     "sw"
+    ]
+   }
+  },
+  {
+   "id": "sand_surf_edge_ne_se_sw",
+   "file": "tiles/sand_surf_edge_ne_se_sw@2x.png",
+   "file_1x": "tiles/sand_surf_edge_ne_se_sw.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "sea_shallow",
+   "side": "ne_se_sw",
+   "autotile": {
+    "family": "sea_shallow",
+    "against": "sand",
+    "sides": [
+     "ne",
+     "se",
+     "sw"
+    ]
+   }
+  },
+  {
+   "id": "sand_surf_edge_nw_ne_se_sw",
+   "file": "tiles/sand_surf_edge_nw_ne_se_sw@2x.png",
+   "file_1x": "tiles/sand_surf_edge_nw_ne_se_sw.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "sea_shallow",
+   "side": "nw_ne_se_sw",
+   "autotile": {
+    "family": "sea_shallow",
+    "against": "sand",
+    "sides": [
+     "nw",
+     "ne",
+     "se",
+     "sw"
+    ]
+   }
+  },
+  {
+   "id": "sand_surf_corner_n",
+   "file": "tiles/sand_surf_corner_n@2x.png",
+   "file_1x": "tiles/sand_surf_corner_n.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "corner",
+   "family": "sea_shallow",
+   "side": "n",
+   "autotile": {
+    "family": "sea_shallow",
+    "against": "sand",
+    "corner": "n"
+   }
+  },
+  {
+   "id": "sand_surf_corner_e",
+   "file": "tiles/sand_surf_corner_e@2x.png",
+   "file_1x": "tiles/sand_surf_corner_e.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "corner",
+   "family": "sea_shallow",
+   "side": "e",
+   "autotile": {
+    "family": "sea_shallow",
+    "against": "sand",
+    "corner": "e"
+   }
+  },
+  {
+   "id": "sand_surf_corner_s",
+   "file": "tiles/sand_surf_corner_s@2x.png",
+   "file_1x": "tiles/sand_surf_corner_s.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "corner",
+   "family": "sea_shallow",
+   "side": "s",
+   "autotile": {
+    "family": "sea_shallow",
+    "against": "sand",
+    "corner": "s"
+   }
+  },
+  {
+   "id": "sand_surf_corner_w",
+   "file": "tiles/sand_surf_corner_w@2x.png",
+   "file_1x": "tiles/sand_surf_corner_w.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "corner",
+   "family": "sea_shallow",
+   "side": "w",
+   "autotile": {
+    "family": "sea_shallow",
+    "against": "sand",
+    "corner": "w"
+   }
+  },
+  {
+   "id": "sea_deep_edge_nw",
+   "file": "tiles/sea_deep_edge_nw@2x.png",
+   "file_1x": "tiles/sea_deep_edge_nw.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "sea_deep",
+   "side": "nw",
+   "autotile": {
+    "family": "sea_deep",
+    "against": "sea_shallow",
+    "sides": [
+     "nw"
+    ]
+   }
+  },
+  {
+   "id": "sea_deep_edge_ne",
+   "file": "tiles/sea_deep_edge_ne@2x.png",
+   "file_1x": "tiles/sea_deep_edge_ne.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "sea_deep",
+   "side": "ne",
+   "autotile": {
+    "family": "sea_deep",
+    "against": "sea_shallow",
+    "sides": [
+     "ne"
+    ]
+   }
+  },
+  {
+   "id": "sea_deep_edge_nw_ne",
+   "file": "tiles/sea_deep_edge_nw_ne@2x.png",
+   "file_1x": "tiles/sea_deep_edge_nw_ne.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "sea_deep",
+   "side": "nw_ne",
+   "autotile": {
+    "family": "sea_deep",
+    "against": "sea_shallow",
+    "sides": [
+     "nw",
+     "ne"
+    ]
+   }
+  },
+  {
+   "id": "sea_deep_edge_se",
+   "file": "tiles/sea_deep_edge_se@2x.png",
+   "file_1x": "tiles/sea_deep_edge_se.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "sea_deep",
+   "side": "se",
+   "autotile": {
+    "family": "sea_deep",
+    "against": "sea_shallow",
+    "sides": [
+     "se"
+    ]
+   }
+  },
+  {
+   "id": "sea_deep_edge_nw_se",
+   "file": "tiles/sea_deep_edge_nw_se@2x.png",
+   "file_1x": "tiles/sea_deep_edge_nw_se.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "sea_deep",
+   "side": "nw_se",
+   "autotile": {
+    "family": "sea_deep",
+    "against": "sea_shallow",
+    "sides": [
+     "nw",
+     "se"
+    ]
+   }
+  },
+  {
+   "id": "sea_deep_edge_ne_se",
+   "file": "tiles/sea_deep_edge_ne_se@2x.png",
+   "file_1x": "tiles/sea_deep_edge_ne_se.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "sea_deep",
+   "side": "ne_se",
+   "autotile": {
+    "family": "sea_deep",
+    "against": "sea_shallow",
+    "sides": [
+     "ne",
+     "se"
+    ]
+   }
+  },
+  {
+   "id": "sea_deep_edge_nw_ne_se",
+   "file": "tiles/sea_deep_edge_nw_ne_se@2x.png",
+   "file_1x": "tiles/sea_deep_edge_nw_ne_se.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "sea_deep",
+   "side": "nw_ne_se",
+   "autotile": {
+    "family": "sea_deep",
+    "against": "sea_shallow",
+    "sides": [
+     "nw",
+     "ne",
+     "se"
+    ]
+   }
+  },
+  {
+   "id": "sea_deep_edge_sw",
+   "file": "tiles/sea_deep_edge_sw@2x.png",
+   "file_1x": "tiles/sea_deep_edge_sw.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "sea_deep",
+   "side": "sw",
+   "autotile": {
+    "family": "sea_deep",
+    "against": "sea_shallow",
+    "sides": [
+     "sw"
+    ]
+   }
+  },
+  {
+   "id": "sea_deep_edge_nw_sw",
+   "file": "tiles/sea_deep_edge_nw_sw@2x.png",
+   "file_1x": "tiles/sea_deep_edge_nw_sw.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "sea_deep",
+   "side": "nw_sw",
+   "autotile": {
+    "family": "sea_deep",
+    "against": "sea_shallow",
+    "sides": [
+     "nw",
+     "sw"
+    ]
+   }
+  },
+  {
+   "id": "sea_deep_edge_ne_sw",
+   "file": "tiles/sea_deep_edge_ne_sw@2x.png",
+   "file_1x": "tiles/sea_deep_edge_ne_sw.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "sea_deep",
+   "side": "ne_sw",
+   "autotile": {
+    "family": "sea_deep",
+    "against": "sea_shallow",
+    "sides": [
+     "ne",
+     "sw"
+    ]
+   }
+  },
+  {
+   "id": "sea_deep_edge_nw_ne_sw",
+   "file": "tiles/sea_deep_edge_nw_ne_sw@2x.png",
+   "file_1x": "tiles/sea_deep_edge_nw_ne_sw.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "sea_deep",
+   "side": "nw_ne_sw",
+   "autotile": {
+    "family": "sea_deep",
+    "against": "sea_shallow",
+    "sides": [
+     "nw",
+     "ne",
+     "sw"
+    ]
+   }
+  },
+  {
+   "id": "sea_deep_edge_se_sw",
+   "file": "tiles/sea_deep_edge_se_sw@2x.png",
+   "file_1x": "tiles/sea_deep_edge_se_sw.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "sea_deep",
+   "side": "se_sw",
+   "autotile": {
+    "family": "sea_deep",
+    "against": "sea_shallow",
+    "sides": [
+     "se",
+     "sw"
+    ]
+   }
+  },
+  {
+   "id": "sea_deep_edge_nw_se_sw",
+   "file": "tiles/sea_deep_edge_nw_se_sw@2x.png",
+   "file_1x": "tiles/sea_deep_edge_nw_se_sw.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "sea_deep",
+   "side": "nw_se_sw",
+   "autotile": {
+    "family": "sea_deep",
+    "against": "sea_shallow",
+    "sides": [
+     "nw",
+     "se",
+     "sw"
+    ]
+   }
+  },
+  {
+   "id": "sea_deep_edge_ne_se_sw",
+   "file": "tiles/sea_deep_edge_ne_se_sw@2x.png",
+   "file_1x": "tiles/sea_deep_edge_ne_se_sw.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "sea_deep",
+   "side": "ne_se_sw",
+   "autotile": {
+    "family": "sea_deep",
+    "against": "sea_shallow",
+    "sides": [
+     "ne",
+     "se",
+     "sw"
+    ]
+   }
+  },
+  {
+   "id": "sea_deep_edge_nw_ne_se_sw",
+   "file": "tiles/sea_deep_edge_nw_ne_se_sw@2x.png",
+   "file_1x": "tiles/sea_deep_edge_nw_ne_se_sw.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "sea_deep",
+   "side": "nw_ne_se_sw",
+   "autotile": {
+    "family": "sea_deep",
+    "against": "sea_shallow",
+    "sides": [
+     "nw",
+     "ne",
+     "se",
+     "sw"
+    ]
+   }
+  },
+  {
+   "id": "sea_deep_corner_n",
+   "file": "tiles/sea_deep_corner_n@2x.png",
+   "file_1x": "tiles/sea_deep_corner_n.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "corner",
+   "family": "sea_deep",
+   "side": "n",
+   "autotile": {
+    "family": "sea_deep",
+    "against": "sea_shallow",
+    "corner": "n"
+   }
+  },
+  {
+   "id": "sea_deep_corner_e",
+   "file": "tiles/sea_deep_corner_e@2x.png",
+   "file_1x": "tiles/sea_deep_corner_e.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "corner",
+   "family": "sea_deep",
+   "side": "e",
+   "autotile": {
+    "family": "sea_deep",
+    "against": "sea_shallow",
+    "corner": "e"
+   }
+  },
+  {
+   "id": "sea_deep_corner_s",
+   "file": "tiles/sea_deep_corner_s@2x.png",
+   "file_1x": "tiles/sea_deep_corner_s.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "corner",
+   "family": "sea_deep",
+   "side": "s",
+   "autotile": {
+    "family": "sea_deep",
+    "against": "sea_shallow",
+    "corner": "s"
+   }
+  },
+  {
+   "id": "sea_deep_corner_w",
+   "file": "tiles/sea_deep_corner_w@2x.png",
+   "file_1x": "tiles/sea_deep_corner_w.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "corner",
+   "family": "sea_deep",
+   "side": "w",
+   "autotile": {
+    "family": "sea_deep",
+    "against": "sea_shallow",
+    "corner": "w"
+   }
+  },
+  {
+   "id": "cave_mouth_sandstone",
+   "file": "props/cave_mouth_sandstone@2x.png",
+   "file_1x": "props/cave_mouth_sandstone.png",
+   "size": [
+    192,
+    160
+   ],
+   "size_1x": [
+    96,
+    80
+   ],
+   "anchor": {
+    "px_2x": [
+     96,
+     160
+    ],
+    "rule": "image bottom-centre = south tip of the anchor cell (the south-most footprint cell)"
+   },
+   "kind": "prop",
+   "family": "eastmarch",
+   "footprint": [
+    2,
+    1
+   ],
+   "prop_kind": "landmark_rock"
+  },
+  {
+   "id": "cave_mouth_grey",
+   "file": "props/cave_mouth_grey@2x.png",
+   "file_1x": "props/cave_mouth_grey.png",
+   "size": [
+    192,
+    160
+   ],
+   "size_1x": [
+    96,
+    80
+   ],
+   "anchor": {
+    "px_2x": [
+     96,
+     160
+    ],
+    "rule": "image bottom-centre = south tip of the anchor cell (the south-most footprint cell)"
+   },
+   "kind": "prop",
+   "family": "eastmarch",
+   "footprint": [
+    2,
+    1
+   ],
+   "prop_kind": "landmark_rock"
+  },
+  {
+   "id": "tidepool_rocks_a",
+   "file": "props/tidepool_rocks_a@2x.png",
+   "file_1x": "props/tidepool_rocks_a.png",
+   "size": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "anchor": {
+    "px_2x": [
+     64,
+     128
+    ],
+    "rule": "image bottom-centre = south tip of the anchor cell (the south-most footprint cell)"
+   },
+   "kind": "prop",
+   "family": "eastmarch",
+   "footprint": [
+    1,
+    1
+   ],
+   "prop_kind": "rock"
+  },
+  {
+   "id": "tidepool_rocks_b",
+   "file": "props/tidepool_rocks_b@2x.png",
+   "file_1x": "props/tidepool_rocks_b.png",
+   "size": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "anchor": {
+    "px_2x": [
+     64,
+     128
+    ],
+    "rule": "image bottom-centre = south tip of the anchor cell (the south-most footprint cell)"
+   },
+   "kind": "prop",
+   "family": "eastmarch",
+   "footprint": [
+    1,
+    1
+   ],
+   "prop_kind": "rock"
+  },
+  {
+   "id": "driftwood_long",
+   "file": "props/driftwood_long@2x.png",
+   "file_1x": "props/driftwood_long.png",
+   "size": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "anchor": {
+    "px_2x": [
+     64,
+     128
+    ],
+    "rule": "image bottom-centre = south tip of the anchor cell (the south-most footprint cell)"
+   },
+   "kind": "prop",
+   "family": "eastmarch",
+   "footprint": [
+    1,
+    1
+   ],
+   "prop_kind": "decor_block"
+  },
+  {
+   "id": "driftwood_fork",
+   "file": "props/driftwood_fork@2x.png",
+   "file_1x": "props/driftwood_fork.png",
+   "size": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "anchor": {
+    "px_2x": [
+     64,
+     128
+    ],
+    "rule": "image bottom-centre = south tip of the anchor cell (the south-most footprint cell)"
+   },
+   "kind": "prop",
+   "family": "eastmarch",
+   "footprint": [
+    1,
+    1
+   ],
+   "prop_kind": "decor_block"
+  },
+  {
+   "id": "shell_heap",
+   "file": "props/shell_heap@2x.png",
+   "file_1x": "props/shell_heap.png",
+   "size": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "anchor": {
+    "px_2x": [
+     64,
+     128
+    ],
+    "rule": "image bottom-centre = south tip of the anchor cell (the south-most footprint cell)"
+   },
+   "kind": "prop",
+   "family": "eastmarch",
+   "footprint": [
+    1,
+    1
+   ],
+   "prop_kind": "decor"
+  },
+  {
+   "id": "mooring_post",
+   "file": "props/mooring_post@2x.png",
+   "file_1x": "props/mooring_post.png",
+   "size": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "anchor": {
+    "px_2x": [
+     64,
+     128
+    ],
+    "rule": "image bottom-centre = south tip of the anchor cell (the south-most footprint cell)"
+   },
+   "kind": "prop",
+   "family": "eastmarch",
+   "footprint": [
+    1,
+    1
+   ],
+   "prop_kind": "tall"
+  }
+ ]
+}

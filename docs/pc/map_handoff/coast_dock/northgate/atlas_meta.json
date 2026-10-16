@@ -1,0 +1,3328 @@
+{
+ "format": "stasium.art_atlas",
+ "format_version": 1,
+ "region": "northgate",
+ "package": "outskirts_themes/northgate",
+ "date": "2026-10-03",
+ "root": "res://art/world/outskirts/northgate/",
+ "scope": "PC-only painted 2D iso theme kit for the Crosshaven open-world outskirts (PR #241): Northgate snow + crags. Same grid, file layout and anchors as art/world/crosshaven (crosshaven_art.gd texture(kind,id)).",
+ "grid": {
+  "tile_w": 64,
+  "tile_h": 32,
+  "height_step_px": 10,
+  "step_px_2x": 20,
+  "cell_to_local": "((x-y)*32, (x+y)*16 - elev*10)",
+  "sides": {
+   "nw": [
+    -1,
+    0
+   ],
+   "ne": [
+    0,
+    -1
+   ],
+   "se": [
+    1,
+    0
+   ],
+   "sw": [
+    0,
+    1
+   ]
+  },
+  "corners": {
+   "n": [
+    -1,
+    -1
+   ],
+   "e": [
+    1,
+    -1
+   ],
+   "s": [
+    1,
+    1
+   ],
+   "w": [
+    -1,
+    1
+   ]
+  }
+ },
+ "files": {
+  "primary": "1x PNG at <kind>/<id>.png, drawn at scale 1",
+  "masters": "2x PNG at <kind>/_2x/<id>.png, draw at scale 0.5 (identical placement)",
+  "kinds": [
+   "tiles",
+   "props",
+   "roof",
+   "overlays"
+  ],
+  "filter": "linear",
+  "mipmaps": false,
+  "premultiplied": false
+ },
+ "anchors": {
+  "tile": "image bottom-centre (64,64)@2x / (32,32)@1x = diamond south tip; diamond centre (64,32)@2x",
+  "terrace": "offset_2x from the LIFTED cell centre (2x); faces drawn before the top tile, lips/corners after",
+  "prop": "image bottom-centre on the SOUTH tip of the footprint's south-most cell; 2x1 drifts run back to (x-1,y)"
+ },
+ "autotile": {
+  "grass_side": "golden_plains (repo art/world/crosshaven/tiles) is what frost_grass meets",
+  "chain": "golden_plains -> frost_grass_edge_* -> frost_grass / snow_patch (the common ground) -> snow_edge_* -> snow (crag tops / high ground only)",
+  "interior_mix": {
+   "frost_grass": "frost_grass_a..d (+ a few snow_patch_*)",
+   "frost_snowy (same edges as frost_grass)": "snow_patch_a..d ~70% + frost_grass_a/b ~30%",
+   "snow": "snow_a/b common, snow_c/d rare - crag tops / high ground only"
+  },
+  "edges": "<family>_edge_<sides in order nw,ne,se,sw> = floor tile used INSTEAD of the interior when those side neighbours are the outer terrain",
+  "corners": "<family>_corner_<n|e|s|w> = decal over the floor when only that diagonal neighbour is the outer terrain",
+  "joins": {
+   "frost_grass": [
+    "frost_grass",
+    "snow",
+    "crag",
+    "water"
+   ],
+   "snow_patch": "same as frost_grass (it IS frost_grass for autotiling)",
+   "snow": [
+    "snow",
+    "crag",
+    "water"
+   ],
+   "crag": [
+    "crag"
+   ]
+  },
+  "water": "water cells keep the repo water_a..d floor; add water_ice_edge_<side> per land side, water_ice_corner_<c> per land-only diagonal, water_ice_a/b on ~1/3 of open cells"
+ },
+ "lighting": {
+  "key": "top-left (left/SW faces lit, right/SE faces in cool shade)",
+  "shadows": "contact AO only (alpha<=0.3), no cast shadows"
+ },
+ "tiles": [
+  {
+   "id": "crag_a",
+   "base_terrain": "crag",
+   "kind": "floor",
+   "variant": 0,
+   "note": "crag-top (cliff plateau) interior: wind-packed snow with low granite; a few rocks, mix with snow_a/b",
+   "file": "tiles/crag_a.png",
+   "file_2x": "tiles/_2x/crag_a.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (64,64)@2x / (32,32)@1x = diamond south tip; diamond centre (64,32)@2x"
+  },
+  {
+   "id": "crag_b",
+   "base_terrain": "crag",
+   "kind": "floor",
+   "variant": 1,
+   "note": "crag-top (cliff plateau) interior: wind-packed snow with low granite; a few rocks, mix with snow_a/b",
+   "file": "tiles/crag_b.png",
+   "file_2x": "tiles/_2x/crag_b.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (64,64)@2x / (32,32)@1x = diamond south tip; diamond centre (64,32)@2x"
+  },
+  {
+   "id": "crag_c",
+   "base_terrain": "crag",
+   "kind": "floor",
+   "variant": 2,
+   "note": "crag-top (cliff plateau) interior: wind-packed snow with low granite; a few rocks, mix with snow_a/b",
+   "file": "tiles/crag_c.png",
+   "file_2x": "tiles/_2x/crag_c.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (64,64)@2x / (32,32)@1x = diamond south tip; diamond centre (64,32)@2x"
+  },
+  {
+   "id": "crag_corner_e",
+   "base_terrain": "crag",
+   "kind": "decal",
+   "corner": "e",
+   "neighbour": "snow (cornice / cliff drop)",
+   "layer": "ground overlay: draw right after the floor tile of the same cell",
+   "note": "draw over a crag tile whose diagonal corner e touches snow (cornice / cliff drop) while both side neighbours are crag",
+   "file": "tiles/crag_corner_e.png",
+   "file_2x": "tiles/_2x/crag_corner_e.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (64,64)@2x / (32,32)@1x = diamond south tip; diamond centre (64,32)@2x"
+  },
+  {
+   "id": "crag_corner_n",
+   "base_terrain": "crag",
+   "kind": "decal",
+   "corner": "n",
+   "neighbour": "snow (cornice / cliff drop)",
+   "layer": "ground overlay: draw right after the floor tile of the same cell",
+   "note": "draw over a crag tile whose diagonal corner n touches snow (cornice / cliff drop) while both side neighbours are crag",
+   "file": "tiles/crag_corner_n.png",
+   "file_2x": "tiles/_2x/crag_corner_n.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (64,64)@2x / (32,32)@1x = diamond south tip; diamond centre (64,32)@2x"
+  },
+  {
+   "id": "crag_corner_s",
+   "base_terrain": "crag",
+   "kind": "decal",
+   "corner": "s",
+   "neighbour": "snow (cornice / cliff drop)",
+   "layer": "ground overlay: draw right after the floor tile of the same cell",
+   "note": "draw over a crag tile whose diagonal corner s touches snow (cornice / cliff drop) while both side neighbours are crag",
+   "file": "tiles/crag_corner_s.png",
+   "file_2x": "tiles/_2x/crag_corner_s.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (64,64)@2x / (32,32)@1x = diamond south tip; diamond centre (64,32)@2x"
+  },
+  {
+   "id": "crag_corner_w",
+   "base_terrain": "crag",
+   "kind": "decal",
+   "corner": "w",
+   "neighbour": "snow (cornice / cliff drop)",
+   "layer": "ground overlay: draw right after the floor tile of the same cell",
+   "note": "draw over a crag tile whose diagonal corner w touches snow (cornice / cliff drop) while both side neighbours are crag",
+   "file": "tiles/crag_corner_w.png",
+   "file_2x": "tiles/_2x/crag_corner_w.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (64,64)@2x / (32,32)@1x = diamond south tip; diamond centre (64,32)@2x"
+  },
+  {
+   "id": "crag_edge_ne",
+   "base_terrain": "crag",
+   "kind": "floor",
+   "sides": [
+    "ne"
+   ],
+   "neighbour": "snow (cornice / cliff drop)",
+   "note": "crag cell whose ne neighbour(s) are snow (cornice / cliff drop): painted irregular boundary on those sides; band ends are fixed so it joins its neighbours seamlessly",
+   "file": "tiles/crag_edge_ne.png",
+   "file_2x": "tiles/_2x/crag_edge_ne.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (64,64)@2x / (32,32)@1x = diamond south tip; diamond centre (64,32)@2x"
+  },
+  {
+   "id": "crag_edge_ne_se",
+   "base_terrain": "crag",
+   "kind": "floor",
+   "sides": [
+    "ne",
+    "se"
+   ],
+   "neighbour": "snow (cornice / cliff drop)",
+   "note": "crag cell whose ne/se neighbour(s) are snow (cornice / cliff drop): painted irregular boundary on those sides; band ends are fixed so it joins its neighbours seamlessly",
+   "file": "tiles/crag_edge_ne_se.png",
+   "file_2x": "tiles/_2x/crag_edge_ne_se.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (64,64)@2x / (32,32)@1x = diamond south tip; diamond centre (64,32)@2x"
+  },
+  {
+   "id": "crag_edge_ne_se_sw",
+   "base_terrain": "crag",
+   "kind": "floor",
+   "sides": [
+    "ne",
+    "se",
+    "sw"
+   ],
+   "neighbour": "snow (cornice / cliff drop)",
+   "note": "crag cell whose ne/se/sw neighbour(s) are snow (cornice / cliff drop): painted irregular boundary on those sides; band ends are fixed so it joins its neighbours seamlessly",
+   "file": "tiles/crag_edge_ne_se_sw.png",
+   "file_2x": "tiles/_2x/crag_edge_ne_se_sw.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (64,64)@2x / (32,32)@1x = diamond south tip; diamond centre (64,32)@2x"
+  },
+  {
+   "id": "crag_edge_ne_sw",
+   "base_terrain": "crag",
+   "kind": "floor",
+   "sides": [
+    "ne",
+    "sw"
+   ],
+   "neighbour": "snow (cornice / cliff drop)",
+   "note": "crag cell whose ne/sw neighbour(s) are snow (cornice / cliff drop): painted irregular boundary on those sides; band ends are fixed so it joins its neighbours seamlessly",
+   "file": "tiles/crag_edge_ne_sw.png",
+   "file_2x": "tiles/_2x/crag_edge_ne_sw.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (64,64)@2x / (32,32)@1x = diamond south tip; diamond centre (64,32)@2x"
+  },
+  {
+   "id": "crag_edge_nw",
+   "base_terrain": "crag",
+   "kind": "floor",
+   "sides": [
+    "nw"
+   ],
+   "neighbour": "snow (cornice / cliff drop)",
+   "note": "crag cell whose nw neighbour(s) are snow (cornice / cliff drop): painted irregular boundary on those sides; band ends are fixed so it joins its neighbours seamlessly",
+   "file": "tiles/crag_edge_nw.png",
+   "file_2x": "tiles/_2x/crag_edge_nw.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (64,64)@2x / (32,32)@1x = diamond south tip; diamond centre (64,32)@2x"
+  },
+  {
+   "id": "crag_edge_nw_ne",
+   "base_terrain": "crag",
+   "kind": "floor",
+   "sides": [
+    "nw",
+    "ne"
+   ],
+   "neighbour": "snow (cornice / cliff drop)",
+   "note": "crag cell whose nw/ne neighbour(s) are snow (cornice / cliff drop): painted irregular boundary on those sides; band ends are fixed so it joins its neighbours seamlessly",
+   "file": "tiles/crag_edge_nw_ne.png",
+   "file_2x": "tiles/_2x/crag_edge_nw_ne.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (64,64)@2x / (32,32)@1x = diamond south tip; diamond centre (64,32)@2x"
+  },
+  {
+   "id": "crag_edge_nw_ne_se",
+   "base_terrain": "crag",
+   "kind": "floor",
+   "sides": [
+    "nw",
+    "ne",
+    "se"
+   ],
+   "neighbour": "snow (cornice / cliff drop)",
+   "note": "crag cell whose nw/ne/se neighbour(s) are snow (cornice / cliff drop): painted irregular boundary on those sides; band ends are fixed so it joins its neighbours seamlessly",
+   "file": "tiles/crag_edge_nw_ne_se.png",
+   "file_2x": "tiles/_2x/crag_edge_nw_ne_se.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (64,64)@2x / (32,32)@1x = diamond south tip; diamond centre (64,32)@2x"
+  },
+  {
+   "id": "crag_edge_nw_ne_se_sw",
+   "base_terrain": "crag",
+   "kind": "floor",
+   "sides": [
+    "nw",
+    "ne",
+    "se",
+    "sw"
+   ],
+   "neighbour": "snow (cornice / cliff drop)",
+   "note": "crag cell whose nw/ne/se/sw neighbour(s) are snow (cornice / cliff drop): painted irregular boundary on those sides; band ends are fixed so it joins its neighbours seamlessly",
+   "file": "tiles/crag_edge_nw_ne_se_sw.png",
+   "file_2x": "tiles/_2x/crag_edge_nw_ne_se_sw.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (64,64)@2x / (32,32)@1x = diamond south tip; diamond centre (64,32)@2x"
+  },
+  {
+   "id": "crag_edge_nw_ne_sw",
+   "base_terrain": "crag",
+   "kind": "floor",
+   "sides": [
+    "nw",
+    "ne",
+    "sw"
+   ],
+   "neighbour": "snow (cornice / cliff drop)",
+   "note": "crag cell whose nw/ne/sw neighbour(s) are snow (cornice / cliff drop): painted irregular boundary on those sides; band ends are fixed so it joins its neighbours seamlessly",
+   "file": "tiles/crag_edge_nw_ne_sw.png",
+   "file_2x": "tiles/_2x/crag_edge_nw_ne_sw.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (64,64)@2x / (32,32)@1x = diamond south tip; diamond centre (64,32)@2x"
+  },
+  {
+   "id": "crag_edge_nw_se",
+   "base_terrain": "crag",
+   "kind": "floor",
+   "sides": [
+    "nw",
+    "se"
+   ],
+   "neighbour": "snow (cornice / cliff drop)",
+   "note": "crag cell whose nw/se neighbour(s) are snow (cornice / cliff drop): painted irregular boundary on those sides; band ends are fixed so it joins its neighbours seamlessly",
+   "file": "tiles/crag_edge_nw_se.png",
+   "file_2x": "tiles/_2x/crag_edge_nw_se.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (64,64)@2x / (32,32)@1x = diamond south tip; diamond centre (64,32)@2x"
+  },
+  {
+   "id": "crag_edge_nw_se_sw",
+   "base_terrain": "crag",
+   "kind": "floor",
+   "sides": [
+    "nw",
+    "se",
+    "sw"
+   ],
+   "neighbour": "snow (cornice / cliff drop)",
+   "note": "crag cell whose nw/se/sw neighbour(s) are snow (cornice / cliff drop): painted irregular boundary on those sides; band ends are fixed so it joins its neighbours seamlessly",
+   "file": "tiles/crag_edge_nw_se_sw.png",
+   "file_2x": "tiles/_2x/crag_edge_nw_se_sw.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (64,64)@2x / (32,32)@1x = diamond south tip; diamond centre (64,32)@2x"
+  },
+  {
+   "id": "crag_edge_nw_sw",
+   "base_terrain": "crag",
+   "kind": "floor",
+   "sides": [
+    "nw",
+    "sw"
+   ],
+   "neighbour": "snow (cornice / cliff drop)",
+   "note": "crag cell whose nw/sw neighbour(s) are snow (cornice / cliff drop): painted irregular boundary on those sides; band ends are fixed so it joins its neighbours seamlessly",
+   "file": "tiles/crag_edge_nw_sw.png",
+   "file_2x": "tiles/_2x/crag_edge_nw_sw.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (64,64)@2x / (32,32)@1x = diamond south tip; diamond centre (64,32)@2x"
+  },
+  {
+   "id": "crag_edge_se",
+   "base_terrain": "crag",
+   "kind": "floor",
+   "sides": [
+    "se"
+   ],
+   "neighbour": "snow (cornice / cliff drop)",
+   "note": "crag cell whose se neighbour(s) are snow (cornice / cliff drop): painted irregular boundary on those sides; band ends are fixed so it joins its neighbours seamlessly",
+   "file": "tiles/crag_edge_se.png",
+   "file_2x": "tiles/_2x/crag_edge_se.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (64,64)@2x / (32,32)@1x = diamond south tip; diamond centre (64,32)@2x"
+  },
+  {
+   "id": "crag_edge_se_sw",
+   "base_terrain": "crag",
+   "kind": "floor",
+   "sides": [
+    "se",
+    "sw"
+   ],
+   "neighbour": "snow (cornice / cliff drop)",
+   "note": "crag cell whose se/sw neighbour(s) are snow (cornice / cliff drop): painted irregular boundary on those sides; band ends are fixed so it joins its neighbours seamlessly",
+   "file": "tiles/crag_edge_se_sw.png",
+   "file_2x": "tiles/_2x/crag_edge_se_sw.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (64,64)@2x / (32,32)@1x = diamond south tip; diamond centre (64,32)@2x"
+  },
+  {
+   "id": "crag_edge_sw",
+   "base_terrain": "crag",
+   "kind": "floor",
+   "sides": [
+    "sw"
+   ],
+   "neighbour": "snow (cornice / cliff drop)",
+   "note": "crag cell whose sw neighbour(s) are snow (cornice / cliff drop): painted irregular boundary on those sides; band ends are fixed so it joins its neighbours seamlessly",
+   "file": "tiles/crag_edge_sw.png",
+   "file_2x": "tiles/_2x/crag_edge_sw.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (64,64)@2x / (32,32)@1x = diamond south tip; diamond centre (64,32)@2x"
+  },
+  {
+   "id": "frost_grass_a",
+   "base_terrain": "frost_grass",
+   "kind": "floor",
+   "variant": 0,
+   "note": "frosted grass interior - the main Northgate ground",
+   "file": "tiles/frost_grass_a.png",
+   "file_2x": "tiles/_2x/frost_grass_a.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (64,64)@2x / (32,32)@1x = diamond south tip; diamond centre (64,32)@2x"
+  },
+  {
+   "id": "frost_grass_b",
+   "base_terrain": "frost_grass",
+   "kind": "floor",
+   "variant": 1,
+   "note": "frosted grass interior - the main Northgate ground",
+   "file": "tiles/frost_grass_b.png",
+   "file_2x": "tiles/_2x/frost_grass_b.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (64,64)@2x / (32,32)@1x = diamond south tip; diamond centre (64,32)@2x"
+  },
+  {
+   "id": "frost_grass_c",
+   "base_terrain": "frost_grass",
+   "kind": "floor",
+   "variant": 2,
+   "note": "frosted grass interior - the main Northgate ground",
+   "file": "tiles/frost_grass_c.png",
+   "file_2x": "tiles/_2x/frost_grass_c.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (64,64)@2x / (32,32)@1x = diamond south tip; diamond centre (64,32)@2x"
+  },
+  {
+   "id": "frost_grass_corner_e",
+   "base_terrain": "frost_grass",
+   "kind": "decal",
+   "corner": "e",
+   "neighbour": "golden_plains",
+   "layer": "ground overlay: draw right after the floor tile of the same cell",
+   "note": "draw over a frost_grass tile whose diagonal corner e touches golden_plains while both side neighbours are frost_grass",
+   "file": "tiles/frost_grass_corner_e.png",
+   "file_2x": "tiles/_2x/frost_grass_corner_e.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (64,64)@2x / (32,32)@1x = diamond south tip; diamond centre (64,32)@2x"
+  },
+  {
+   "id": "frost_grass_corner_n",
+   "base_terrain": "frost_grass",
+   "kind": "decal",
+   "corner": "n",
+   "neighbour": "golden_plains",
+   "layer": "ground overlay: draw right after the floor tile of the same cell",
+   "note": "draw over a frost_grass tile whose diagonal corner n touches golden_plains while both side neighbours are frost_grass",
+   "file": "tiles/frost_grass_corner_n.png",
+   "file_2x": "tiles/_2x/frost_grass_corner_n.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (64,64)@2x / (32,32)@1x = diamond south tip; diamond centre (64,32)@2x"
+  },
+  {
+   "id": "frost_grass_corner_s",
+   "base_terrain": "frost_grass",
+   "kind": "decal",
+   "corner": "s",
+   "neighbour": "golden_plains",
+   "layer": "ground overlay: draw right after the floor tile of the same cell",
+   "note": "draw over a frost_grass tile whose diagonal corner s touches golden_plains while both side neighbours are frost_grass",
+   "file": "tiles/frost_grass_corner_s.png",
+   "file_2x": "tiles/_2x/frost_grass_corner_s.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (64,64)@2x / (32,32)@1x = diamond south tip; diamond centre (64,32)@2x"
+  },
+  {
+   "id": "frost_grass_corner_w",
+   "base_terrain": "frost_grass",
+   "kind": "decal",
+   "corner": "w",
+   "neighbour": "golden_plains",
+   "layer": "ground overlay: draw right after the floor tile of the same cell",
+   "note": "draw over a frost_grass tile whose diagonal corner w touches golden_plains while both side neighbours are frost_grass",
+   "file": "tiles/frost_grass_corner_w.png",
+   "file_2x": "tiles/_2x/frost_grass_corner_w.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (64,64)@2x / (32,32)@1x = diamond south tip; diamond centre (64,32)@2x"
+  },
+  {
+   "id": "frost_grass_d",
+   "base_terrain": "frost_grass",
+   "kind": "floor",
+   "variant": 3,
+   "note": "frosted grass interior - the main Northgate ground",
+   "file": "tiles/frost_grass_d.png",
+   "file_2x": "tiles/_2x/frost_grass_d.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (64,64)@2x / (32,32)@1x = diamond south tip; diamond centre (64,32)@2x"
+  },
+  {
+   "id": "frost_grass_edge_ne",
+   "base_terrain": "frost_grass",
+   "kind": "floor",
+   "sides": [
+    "ne"
+   ],
+   "neighbour": "golden_plains",
+   "note": "frost_grass cell whose ne neighbour(s) are golden_plains: painted irregular boundary on those sides; band ends are fixed so it joins its neighbours seamlessly",
+   "file": "tiles/frost_grass_edge_ne.png",
+   "file_2x": "tiles/_2x/frost_grass_edge_ne.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (64,64)@2x / (32,32)@1x = diamond south tip; diamond centre (64,32)@2x"
+  },
+  {
+   "id": "frost_grass_edge_ne_se",
+   "base_terrain": "frost_grass",
+   "kind": "floor",
+   "sides": [
+    "ne",
+    "se"
+   ],
+   "neighbour": "golden_plains",
+   "note": "frost_grass cell whose ne/se neighbour(s) are golden_plains: painted irregular boundary on those sides; band ends are fixed so it joins its neighbours seamlessly",
+   "file": "tiles/frost_grass_edge_ne_se.png",
+   "file_2x": "tiles/_2x/frost_grass_edge_ne_se.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (64,64)@2x / (32,32)@1x = diamond south tip; diamond centre (64,32)@2x"
+  },
+  {
+   "id": "frost_grass_edge_ne_se_sw",
+   "base_terrain": "frost_grass",
+   "kind": "floor",
+   "sides": [
+    "ne",
+    "se",
+    "sw"
+   ],
+   "neighbour": "golden_plains",
+   "note": "frost_grass cell whose ne/se/sw neighbour(s) are golden_plains: painted irregular boundary on those sides; band ends are fixed so it joins its neighbours seamlessly",
+   "file": "tiles/frost_grass_edge_ne_se_sw.png",
+   "file_2x": "tiles/_2x/frost_grass_edge_ne_se_sw.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (64,64)@2x / (32,32)@1x = diamond south tip; diamond centre (64,32)@2x"
+  },
+  {
+   "id": "frost_grass_edge_ne_sw",
+   "base_terrain": "frost_grass",
+   "kind": "floor",
+   "sides": [
+    "ne",
+    "sw"
+   ],
+   "neighbour": "golden_plains",
+   "note": "frost_grass cell whose ne/sw neighbour(s) are golden_plains: painted irregular boundary on those sides; band ends are fixed so it joins its neighbours seamlessly",
+   "file": "tiles/frost_grass_edge_ne_sw.png",
+   "file_2x": "tiles/_2x/frost_grass_edge_ne_sw.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (64,64)@2x / (32,32)@1x = diamond south tip; diamond centre (64,32)@2x"
+  },
+  {
+   "id": "frost_grass_edge_nw",
+   "base_terrain": "frost_grass",
+   "kind": "floor",
+   "sides": [
+    "nw"
+   ],
+   "neighbour": "golden_plains",
+   "note": "frost_grass cell whose nw neighbour(s) are golden_plains: painted irregular boundary on those sides; band ends are fixed so it joins its neighbours seamlessly",
+   "file": "tiles/frost_grass_edge_nw.png",
+   "file_2x": "tiles/_2x/frost_grass_edge_nw.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (64,64)@2x / (32,32)@1x = diamond south tip; diamond centre (64,32)@2x"
+  },
+  {
+   "id": "frost_grass_edge_nw_ne",
+   "base_terrain": "frost_grass",
+   "kind": "floor",
+   "sides": [
+    "nw",
+    "ne"
+   ],
+   "neighbour": "golden_plains",
+   "note": "frost_grass cell whose nw/ne neighbour(s) are golden_plains: painted irregular boundary on those sides; band ends are fixed so it joins its neighbours seamlessly",
+   "file": "tiles/frost_grass_edge_nw_ne.png",
+   "file_2x": "tiles/_2x/frost_grass_edge_nw_ne.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (64,64)@2x / (32,32)@1x = diamond south tip; diamond centre (64,32)@2x"
+  },
+  {
+   "id": "frost_grass_edge_nw_ne_se",
+   "base_terrain": "frost_grass",
+   "kind": "floor",
+   "sides": [
+    "nw",
+    "ne",
+    "se"
+   ],
+   "neighbour": "golden_plains",
+   "note": "frost_grass cell whose nw/ne/se neighbour(s) are golden_plains: painted irregular boundary on those sides; band ends are fixed so it joins its neighbours seamlessly",
+   "file": "tiles/frost_grass_edge_nw_ne_se.png",
+   "file_2x": "tiles/_2x/frost_grass_edge_nw_ne_se.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (64,64)@2x / (32,32)@1x = diamond south tip; diamond centre (64,32)@2x"
+  },
+  {
+   "id": "frost_grass_edge_nw_ne_se_sw",
+   "base_terrain": "frost_grass",
+   "kind": "floor",
+   "sides": [
+    "nw",
+    "ne",
+    "se",
+    "sw"
+   ],
+   "neighbour": "golden_plains",
+   "note": "frost_grass cell whose nw/ne/se/sw neighbour(s) are golden_plains: painted irregular boundary on those sides; band ends are fixed so it joins its neighbours seamlessly",
+   "file": "tiles/frost_grass_edge_nw_ne_se_sw.png",
+   "file_2x": "tiles/_2x/frost_grass_edge_nw_ne_se_sw.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (64,64)@2x / (32,32)@1x = diamond south tip; diamond centre (64,32)@2x"
+  },
+  {
+   "id": "frost_grass_edge_nw_ne_sw",
+   "base_terrain": "frost_grass",
+   "kind": "floor",
+   "sides": [
+    "nw",
+    "ne",
+    "sw"
+   ],
+   "neighbour": "golden_plains",
+   "note": "frost_grass cell whose nw/ne/sw neighbour(s) are golden_plains: painted irregular boundary on those sides; band ends are fixed so it joins its neighbours seamlessly",
+   "file": "tiles/frost_grass_edge_nw_ne_sw.png",
+   "file_2x": "tiles/_2x/frost_grass_edge_nw_ne_sw.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (64,64)@2x / (32,32)@1x = diamond south tip; diamond centre (64,32)@2x"
+  },
+  {
+   "id": "frost_grass_edge_nw_se",
+   "base_terrain": "frost_grass",
+   "kind": "floor",
+   "sides": [
+    "nw",
+    "se"
+   ],
+   "neighbour": "golden_plains",
+   "note": "frost_grass cell whose nw/se neighbour(s) are golden_plains: painted irregular boundary on those sides; band ends are fixed so it joins its neighbours seamlessly",
+   "file": "tiles/frost_grass_edge_nw_se.png",
+   "file_2x": "tiles/_2x/frost_grass_edge_nw_se.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (64,64)@2x / (32,32)@1x = diamond south tip; diamond centre (64,32)@2x"
+  },
+  {
+   "id": "frost_grass_edge_nw_se_sw",
+   "base_terrain": "frost_grass",
+   "kind": "floor",
+   "sides": [
+    "nw",
+    "se",
+    "sw"
+   ],
+   "neighbour": "golden_plains",
+   "note": "frost_grass cell whose nw/se/sw neighbour(s) are golden_plains: painted irregular boundary on those sides; band ends are fixed so it joins its neighbours seamlessly",
+   "file": "tiles/frost_grass_edge_nw_se_sw.png",
+   "file_2x": "tiles/_2x/frost_grass_edge_nw_se_sw.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (64,64)@2x / (32,32)@1x = diamond south tip; diamond centre (64,32)@2x"
+  },
+  {
+   "id": "frost_grass_edge_nw_sw",
+   "base_terrain": "frost_grass",
+   "kind": "floor",
+   "sides": [
+    "nw",
+    "sw"
+   ],
+   "neighbour": "golden_plains",
+   "note": "frost_grass cell whose nw/sw neighbour(s) are golden_plains: painted irregular boundary on those sides; band ends are fixed so it joins its neighbours seamlessly",
+   "file": "tiles/frost_grass_edge_nw_sw.png",
+   "file_2x": "tiles/_2x/frost_grass_edge_nw_sw.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (64,64)@2x / (32,32)@1x = diamond south tip; diamond centre (64,32)@2x"
+  },
+  {
+   "id": "frost_grass_edge_se",
+   "base_terrain": "frost_grass",
+   "kind": "floor",
+   "sides": [
+    "se"
+   ],
+   "neighbour": "golden_plains",
+   "note": "frost_grass cell whose se neighbour(s) are golden_plains: painted irregular boundary on those sides; band ends are fixed so it joins its neighbours seamlessly",
+   "file": "tiles/frost_grass_edge_se.png",
+   "file_2x": "tiles/_2x/frost_grass_edge_se.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (64,64)@2x / (32,32)@1x = diamond south tip; diamond centre (64,32)@2x"
+  },
+  {
+   "id": "frost_grass_edge_se_sw",
+   "base_terrain": "frost_grass",
+   "kind": "floor",
+   "sides": [
+    "se",
+    "sw"
+   ],
+   "neighbour": "golden_plains",
+   "note": "frost_grass cell whose se/sw neighbour(s) are golden_plains: painted irregular boundary on those sides; band ends are fixed so it joins its neighbours seamlessly",
+   "file": "tiles/frost_grass_edge_se_sw.png",
+   "file_2x": "tiles/_2x/frost_grass_edge_se_sw.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (64,64)@2x / (32,32)@1x = diamond south tip; diamond centre (64,32)@2x"
+  },
+  {
+   "id": "frost_grass_edge_sw",
+   "base_terrain": "frost_grass",
+   "kind": "floor",
+   "sides": [
+    "sw"
+   ],
+   "neighbour": "golden_plains",
+   "note": "frost_grass cell whose sw neighbour(s) are golden_plains: painted irregular boundary on those sides; band ends are fixed so it joins its neighbours seamlessly",
+   "file": "tiles/frost_grass_edge_sw.png",
+   "file_2x": "tiles/_2x/frost_grass_edge_sw.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (64,64)@2x / (32,32)@1x = diamond south tip; diamond centre (64,32)@2x"
+  },
+  {
+   "id": "frost_overlay_a",
+   "base_terrain": null,
+   "kind": "decal",
+   "variant": 0,
+   "layer": "ground overlay over ANY grass floor tile (e.g. golden_plains_*)",
+   "note": "frost rime diamond (alpha 0.2..0.8) that frosts an existing grass tile; shared border band so neighbours join",
+   "file": "tiles/frost_overlay_a.png",
+   "file_2x": "tiles/_2x/frost_overlay_a.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (64,64)@2x / (32,32)@1x = diamond south tip; diamond centre (64,32)@2x"
+  },
+  {
+   "id": "frost_overlay_b",
+   "base_terrain": null,
+   "kind": "decal",
+   "variant": 1,
+   "layer": "ground overlay over ANY grass floor tile (e.g. golden_plains_*)",
+   "note": "frost rime diamond (alpha 0.2..0.8) that frosts an existing grass tile; shared border band so neighbours join",
+   "file": "tiles/frost_overlay_b.png",
+   "file_2x": "tiles/_2x/frost_overlay_b.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (64,64)@2x / (32,32)@1x = diamond south tip; diamond centre (64,32)@2x"
+  },
+  {
+   "id": "snow_a",
+   "base_terrain": "snow",
+   "kind": "floor",
+   "variant": 0,
+   "note": "FULL snow interior - crag tops / high ground only (Northgate snow is light: the common ground is frost_grass + snow_patch); a/b plain (use most), c one grass tuft, d one pebble (use sparingly)",
+   "file": "tiles/snow_a.png",
+   "file_2x": "tiles/_2x/snow_a.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (64,64)@2x / (32,32)@1x = diamond south tip; diamond centre (64,32)@2x"
+  },
+  {
+   "id": "snow_b",
+   "base_terrain": "snow",
+   "kind": "floor",
+   "variant": 1,
+   "note": "FULL snow interior - crag tops / high ground only (Northgate snow is light: the common ground is frost_grass + snow_patch); a/b plain (use most), c one grass tuft, d one pebble (use sparingly)",
+   "file": "tiles/snow_b.png",
+   "file_2x": "tiles/_2x/snow_b.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (64,64)@2x / (32,32)@1x = diamond south tip; diamond centre (64,32)@2x"
+  },
+  {
+   "id": "snow_c",
+   "base_terrain": "snow",
+   "kind": "floor",
+   "variant": 2,
+   "note": "FULL snow interior - crag tops / high ground only (Northgate snow is light: the common ground is frost_grass + snow_patch); a/b plain (use most), c one grass tuft, d one pebble (use sparingly)",
+   "file": "tiles/snow_c.png",
+   "file_2x": "tiles/_2x/snow_c.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (64,64)@2x / (32,32)@1x = diamond south tip; diamond centre (64,32)@2x"
+  },
+  {
+   "id": "snow_corner_e",
+   "base_terrain": "snow",
+   "kind": "decal",
+   "corner": "e",
+   "neighbour": "frost_grass",
+   "layer": "ground overlay: draw right after the floor tile of the same cell",
+   "note": "draw over a snow tile whose diagonal corner e touches frost_grass while both side neighbours are snow",
+   "file": "tiles/snow_corner_e.png",
+   "file_2x": "tiles/_2x/snow_corner_e.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (64,64)@2x / (32,32)@1x = diamond south tip; diamond centre (64,32)@2x"
+  },
+  {
+   "id": "snow_corner_n",
+   "base_terrain": "snow",
+   "kind": "decal",
+   "corner": "n",
+   "neighbour": "frost_grass",
+   "layer": "ground overlay: draw right after the floor tile of the same cell",
+   "note": "draw over a snow tile whose diagonal corner n touches frost_grass while both side neighbours are snow",
+   "file": "tiles/snow_corner_n.png",
+   "file_2x": "tiles/_2x/snow_corner_n.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (64,64)@2x / (32,32)@1x = diamond south tip; diamond centre (64,32)@2x"
+  },
+  {
+   "id": "snow_corner_s",
+   "base_terrain": "snow",
+   "kind": "decal",
+   "corner": "s",
+   "neighbour": "frost_grass",
+   "layer": "ground overlay: draw right after the floor tile of the same cell",
+   "note": "draw over a snow tile whose diagonal corner s touches frost_grass while both side neighbours are snow",
+   "file": "tiles/snow_corner_s.png",
+   "file_2x": "tiles/_2x/snow_corner_s.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (64,64)@2x / (32,32)@1x = diamond south tip; diamond centre (64,32)@2x"
+  },
+  {
+   "id": "snow_corner_w",
+   "base_terrain": "snow",
+   "kind": "decal",
+   "corner": "w",
+   "neighbour": "frost_grass",
+   "layer": "ground overlay: draw right after the floor tile of the same cell",
+   "note": "draw over a snow tile whose diagonal corner w touches frost_grass while both side neighbours are snow",
+   "file": "tiles/snow_corner_w.png",
+   "file_2x": "tiles/_2x/snow_corner_w.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (64,64)@2x / (32,32)@1x = diamond south tip; diamond centre (64,32)@2x"
+  },
+  {
+   "id": "snow_d",
+   "base_terrain": "snow",
+   "kind": "floor",
+   "variant": 3,
+   "note": "FULL snow interior - crag tops / high ground only (Northgate snow is light: the common ground is frost_grass + snow_patch); a/b plain (use most), c one grass tuft, d one pebble (use sparingly)",
+   "file": "tiles/snow_d.png",
+   "file_2x": "tiles/_2x/snow_d.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (64,64)@2x / (32,32)@1x = diamond south tip; diamond centre (64,32)@2x"
+  },
+  {
+   "id": "snow_edge_ne",
+   "base_terrain": "snow",
+   "kind": "floor",
+   "sides": [
+    "ne"
+   ],
+   "neighbour": "frost_grass",
+   "note": "snow cell whose ne neighbour(s) are frost_grass: painted irregular boundary on those sides; band ends are fixed so it joins its neighbours seamlessly",
+   "file": "tiles/snow_edge_ne.png",
+   "file_2x": "tiles/_2x/snow_edge_ne.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (64,64)@2x / (32,32)@1x = diamond south tip; diamond centre (64,32)@2x"
+  },
+  {
+   "id": "snow_edge_ne_se",
+   "base_terrain": "snow",
+   "kind": "floor",
+   "sides": [
+    "ne",
+    "se"
+   ],
+   "neighbour": "frost_grass",
+   "note": "snow cell whose ne/se neighbour(s) are frost_grass: painted irregular boundary on those sides; band ends are fixed so it joins its neighbours seamlessly",
+   "file": "tiles/snow_edge_ne_se.png",
+   "file_2x": "tiles/_2x/snow_edge_ne_se.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (64,64)@2x / (32,32)@1x = diamond south tip; diamond centre (64,32)@2x"
+  },
+  {
+   "id": "snow_edge_ne_se_sw",
+   "base_terrain": "snow",
+   "kind": "floor",
+   "sides": [
+    "ne",
+    "se",
+    "sw"
+   ],
+   "neighbour": "frost_grass",
+   "note": "snow cell whose ne/se/sw neighbour(s) are frost_grass: painted irregular boundary on those sides; band ends are fixed so it joins its neighbours seamlessly",
+   "file": "tiles/snow_edge_ne_se_sw.png",
+   "file_2x": "tiles/_2x/snow_edge_ne_se_sw.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (64,64)@2x / (32,32)@1x = diamond south tip; diamond centre (64,32)@2x"
+  },
+  {
+   "id": "snow_edge_ne_sw",
+   "base_terrain": "snow",
+   "kind": "floor",
+   "sides": [
+    "ne",
+    "sw"
+   ],
+   "neighbour": "frost_grass",
+   "note": "snow cell whose ne/sw neighbour(s) are frost_grass: painted irregular boundary on those sides; band ends are fixed so it joins its neighbours seamlessly",
+   "file": "tiles/snow_edge_ne_sw.png",
+   "file_2x": "tiles/_2x/snow_edge_ne_sw.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (64,64)@2x / (32,32)@1x = diamond south tip; diamond centre (64,32)@2x"
+  },
+  {
+   "id": "snow_edge_nw",
+   "base_terrain": "snow",
+   "kind": "floor",
+   "sides": [
+    "nw"
+   ],
+   "neighbour": "frost_grass",
+   "note": "snow cell whose nw neighbour(s) are frost_grass: painted irregular boundary on those sides; band ends are fixed so it joins its neighbours seamlessly",
+   "file": "tiles/snow_edge_nw.png",
+   "file_2x": "tiles/_2x/snow_edge_nw.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (64,64)@2x / (32,32)@1x = diamond south tip; diamond centre (64,32)@2x"
+  },
+  {
+   "id": "snow_edge_nw_ne",
+   "base_terrain": "snow",
+   "kind": "floor",
+   "sides": [
+    "nw",
+    "ne"
+   ],
+   "neighbour": "frost_grass",
+   "note": "snow cell whose nw/ne neighbour(s) are frost_grass: painted irregular boundary on those sides; band ends are fixed so it joins its neighbours seamlessly",
+   "file": "tiles/snow_edge_nw_ne.png",
+   "file_2x": "tiles/_2x/snow_edge_nw_ne.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (64,64)@2x / (32,32)@1x = diamond south tip; diamond centre (64,32)@2x"
+  },
+  {
+   "id": "snow_edge_nw_ne_se",
+   "base_terrain": "snow",
+   "kind": "floor",
+   "sides": [
+    "nw",
+    "ne",
+    "se"
+   ],
+   "neighbour": "frost_grass",
+   "note": "snow cell whose nw/ne/se neighbour(s) are frost_grass: painted irregular boundary on those sides; band ends are fixed so it joins its neighbours seamlessly",
+   "file": "tiles/snow_edge_nw_ne_se.png",
+   "file_2x": "tiles/_2x/snow_edge_nw_ne_se.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (64,64)@2x / (32,32)@1x = diamond south tip; diamond centre (64,32)@2x"
+  },
+  {
+   "id": "snow_edge_nw_ne_se_sw",
+   "base_terrain": "snow",
+   "kind": "floor",
+   "sides": [
+    "nw",
+    "ne",
+    "se",
+    "sw"
+   ],
+   "neighbour": "frost_grass",
+   "note": "snow cell whose nw/ne/se/sw neighbour(s) are frost_grass: painted irregular boundary on those sides; band ends are fixed so it joins its neighbours seamlessly",
+   "file": "tiles/snow_edge_nw_ne_se_sw.png",
+   "file_2x": "tiles/_2x/snow_edge_nw_ne_se_sw.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (64,64)@2x / (32,32)@1x = diamond south tip; diamond centre (64,32)@2x"
+  },
+  {
+   "id": "snow_edge_nw_ne_sw",
+   "base_terrain": "snow",
+   "kind": "floor",
+   "sides": [
+    "nw",
+    "ne",
+    "sw"
+   ],
+   "neighbour": "frost_grass",
+   "note": "snow cell whose nw/ne/sw neighbour(s) are frost_grass: painted irregular boundary on those sides; band ends are fixed so it joins its neighbours seamlessly",
+   "file": "tiles/snow_edge_nw_ne_sw.png",
+   "file_2x": "tiles/_2x/snow_edge_nw_ne_sw.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (64,64)@2x / (32,32)@1x = diamond south tip; diamond centre (64,32)@2x"
+  },
+  {
+   "id": "snow_edge_nw_se",
+   "base_terrain": "snow",
+   "kind": "floor",
+   "sides": [
+    "nw",
+    "se"
+   ],
+   "neighbour": "frost_grass",
+   "note": "snow cell whose nw/se neighbour(s) are frost_grass: painted irregular boundary on those sides; band ends are fixed so it joins its neighbours seamlessly",
+   "file": "tiles/snow_edge_nw_se.png",
+   "file_2x": "tiles/_2x/snow_edge_nw_se.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (64,64)@2x / (32,32)@1x = diamond south tip; diamond centre (64,32)@2x"
+  },
+  {
+   "id": "snow_edge_nw_se_sw",
+   "base_terrain": "snow",
+   "kind": "floor",
+   "sides": [
+    "nw",
+    "se",
+    "sw"
+   ],
+   "neighbour": "frost_grass",
+   "note": "snow cell whose nw/se/sw neighbour(s) are frost_grass: painted irregular boundary on those sides; band ends are fixed so it joins its neighbours seamlessly",
+   "file": "tiles/snow_edge_nw_se_sw.png",
+   "file_2x": "tiles/_2x/snow_edge_nw_se_sw.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (64,64)@2x / (32,32)@1x = diamond south tip; diamond centre (64,32)@2x"
+  },
+  {
+   "id": "snow_edge_nw_sw",
+   "base_terrain": "snow",
+   "kind": "floor",
+   "sides": [
+    "nw",
+    "sw"
+   ],
+   "neighbour": "frost_grass",
+   "note": "snow cell whose nw/sw neighbour(s) are frost_grass: painted irregular boundary on those sides; band ends are fixed so it joins its neighbours seamlessly",
+   "file": "tiles/snow_edge_nw_sw.png",
+   "file_2x": "tiles/_2x/snow_edge_nw_sw.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (64,64)@2x / (32,32)@1x = diamond south tip; diamond centre (64,32)@2x"
+  },
+  {
+   "id": "snow_edge_se",
+   "base_terrain": "snow",
+   "kind": "floor",
+   "sides": [
+    "se"
+   ],
+   "neighbour": "frost_grass",
+   "note": "snow cell whose se neighbour(s) are frost_grass: painted irregular boundary on those sides; band ends are fixed so it joins its neighbours seamlessly",
+   "file": "tiles/snow_edge_se.png",
+   "file_2x": "tiles/_2x/snow_edge_se.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (64,64)@2x / (32,32)@1x = diamond south tip; diamond centre (64,32)@2x"
+  },
+  {
+   "id": "snow_edge_se_sw",
+   "base_terrain": "snow",
+   "kind": "floor",
+   "sides": [
+    "se",
+    "sw"
+   ],
+   "neighbour": "frost_grass",
+   "note": "snow cell whose se/sw neighbour(s) are frost_grass: painted irregular boundary on those sides; band ends are fixed so it joins its neighbours seamlessly",
+   "file": "tiles/snow_edge_se_sw.png",
+   "file_2x": "tiles/_2x/snow_edge_se_sw.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (64,64)@2x / (32,32)@1x = diamond south tip; diamond centre (64,32)@2x"
+  },
+  {
+   "id": "snow_edge_sw",
+   "base_terrain": "snow",
+   "kind": "floor",
+   "sides": [
+    "sw"
+   ],
+   "neighbour": "frost_grass",
+   "note": "snow cell whose sw neighbour(s) are frost_grass: painted irregular boundary on those sides; band ends are fixed so it joins its neighbours seamlessly",
+   "file": "tiles/snow_edge_sw.png",
+   "file_2x": "tiles/_2x/snow_edge_sw.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (64,64)@2x / (32,32)@1x = diamond south tip; diamond centre (64,32)@2x"
+  },
+  {
+   "id": "snow_patch_a",
+   "base_terrain": "frost_grass",
+   "kind": "floor",
+   "variant": 0,
+   "note": "the common snowy tile: frost_grass with 2-4 irregular snow patches (~25-40% cover); border band is plain frost grass, so it mixes freely with frost_grass_* and uses the frost_grass edges/corners",
+   "file": "tiles/snow_patch_a.png",
+   "file_2x": "tiles/_2x/snow_patch_a.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (64,64)@2x / (32,32)@1x = diamond south tip; diamond centre (64,32)@2x"
+  },
+  {
+   "id": "snow_patch_b",
+   "base_terrain": "frost_grass",
+   "kind": "floor",
+   "variant": 1,
+   "note": "the common snowy tile: frost_grass with 2-4 irregular snow patches (~25-40% cover); border band is plain frost grass, so it mixes freely with frost_grass_* and uses the frost_grass edges/corners",
+   "file": "tiles/snow_patch_b.png",
+   "file_2x": "tiles/_2x/snow_patch_b.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (64,64)@2x / (32,32)@1x = diamond south tip; diamond centre (64,32)@2x"
+  },
+  {
+   "id": "snow_patch_c",
+   "base_terrain": "frost_grass",
+   "kind": "floor",
+   "variant": 2,
+   "note": "the common snowy tile: frost_grass with 2-4 irregular snow patches (~25-40% cover); border band is plain frost grass, so it mixes freely with frost_grass_* and uses the frost_grass edges/corners",
+   "file": "tiles/snow_patch_c.png",
+   "file_2x": "tiles/_2x/snow_patch_c.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (64,64)@2x / (32,32)@1x = diamond south tip; diamond centre (64,32)@2x"
+  },
+  {
+   "id": "snow_patch_d",
+   "base_terrain": "frost_grass",
+   "kind": "floor",
+   "variant": 3,
+   "note": "the common snowy tile: frost_grass with 2-4 irregular snow patches (~25-40% cover); border band is plain frost grass, so it mixes freely with frost_grass_* and uses the frost_grass edges/corners",
+   "file": "tiles/snow_patch_d.png",
+   "file_2x": "tiles/_2x/snow_patch_d.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (64,64)@2x / (32,32)@1x = diamond south tip; diamond centre (64,32)@2x"
+  },
+  {
+   "id": "snow_rock_a",
+   "base_terrain": "snow",
+   "kind": "floor",
+   "variant": 0,
+   "note": "snow with granite slabs poking through (crag ground / snow interior variety)",
+   "file": "tiles/snow_rock_a.png",
+   "file_2x": "tiles/_2x/snow_rock_a.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (64,64)@2x / (32,32)@1x = diamond south tip; diamond centre (64,32)@2x"
+  },
+  {
+   "id": "snow_rock_b",
+   "base_terrain": "snow",
+   "kind": "floor",
+   "variant": 1,
+   "note": "snow with granite slabs poking through (crag ground / snow interior variety)",
+   "file": "tiles/snow_rock_b.png",
+   "file_2x": "tiles/_2x/snow_rock_b.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (64,64)@2x / (32,32)@1x = diamond south tip; diamond centre (64,32)@2x"
+  },
+  {
+   "id": "water_ice_a",
+   "base_terrain": "water",
+   "kind": "decal",
+   "variant": 0,
+   "layer": "water overlay",
+   "note": "a few floating floes for open (interior) water cells; use on ~1 in 3 cells",
+   "file": "tiles/water_ice_a.png",
+   "file_2x": "tiles/_2x/water_ice_a.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (64,64)@2x / (32,32)@1x = diamond south tip; diamond centre (64,32)@2x"
+  },
+  {
+   "id": "water_ice_b",
+   "base_terrain": "water",
+   "kind": "decal",
+   "variant": 1,
+   "layer": "water overlay",
+   "note": "a few floating floes for open (interior) water cells; use on ~1 in 3 cells",
+   "file": "tiles/water_ice_b.png",
+   "file_2x": "tiles/_2x/water_ice_b.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (64,64)@2x / (32,32)@1x = diamond south tip; diamond centre (64,32)@2x"
+  },
+  {
+   "id": "water_ice_corner_e",
+   "base_terrain": "water",
+   "kind": "decal",
+   "corner": "e",
+   "layer": "water overlay: draw after the water floor tile of the same cell",
+   "note": "ice quarter-shelf at corner e: diagonal neighbour e is land while both side neighbours are water",
+   "file": "tiles/water_ice_corner_e.png",
+   "file_2x": "tiles/_2x/water_ice_corner_e.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (64,64)@2x / (32,32)@1x = diamond south tip; diamond centre (64,32)@2x"
+  },
+  {
+   "id": "water_ice_corner_n",
+   "base_terrain": "water",
+   "kind": "decal",
+   "corner": "n",
+   "layer": "water overlay: draw after the water floor tile of the same cell",
+   "note": "ice quarter-shelf at corner n: diagonal neighbour n is land while both side neighbours are water",
+   "file": "tiles/water_ice_corner_n.png",
+   "file_2x": "tiles/_2x/water_ice_corner_n.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (64,64)@2x / (32,32)@1x = diamond south tip; diamond centre (64,32)@2x"
+  },
+  {
+   "id": "water_ice_corner_s",
+   "base_terrain": "water",
+   "kind": "decal",
+   "corner": "s",
+   "layer": "water overlay: draw after the water floor tile of the same cell",
+   "note": "ice quarter-shelf at corner s: diagonal neighbour s is land while both side neighbours are water",
+   "file": "tiles/water_ice_corner_s.png",
+   "file_2x": "tiles/_2x/water_ice_corner_s.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (64,64)@2x / (32,32)@1x = diamond south tip; diamond centre (64,32)@2x"
+  },
+  {
+   "id": "water_ice_corner_w",
+   "base_terrain": "water",
+   "kind": "decal",
+   "corner": "w",
+   "layer": "water overlay: draw after the water floor tile of the same cell",
+   "note": "ice quarter-shelf at corner w: diagonal neighbour w is land while both side neighbours are water",
+   "file": "tiles/water_ice_corner_w.png",
+   "file_2x": "tiles/_2x/water_ice_corner_w.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (64,64)@2x / (32,32)@1x = diamond south tip; diamond centre (64,32)@2x"
+  },
+  {
+   "id": "water_ice_edge_ne",
+   "base_terrain": "water",
+   "kind": "decal",
+   "sides": [
+    "ne"
+   ],
+   "layer": "water overlay: draw after the water floor tile of the same cell",
+   "note": "ice shelf hugging the ne bank of a water cell (land on ne); snow rim on the bank side, broken plate edge + foam toward open water; stack one per land side",
+   "file": "tiles/water_ice_edge_ne.png",
+   "file_2x": "tiles/_2x/water_ice_edge_ne.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (64,64)@2x / (32,32)@1x = diamond south tip; diamond centre (64,32)@2x"
+  },
+  {
+   "id": "water_ice_edge_nw",
+   "base_terrain": "water",
+   "kind": "decal",
+   "sides": [
+    "nw"
+   ],
+   "layer": "water overlay: draw after the water floor tile of the same cell",
+   "note": "ice shelf hugging the nw bank of a water cell (land on nw); snow rim on the bank side, broken plate edge + foam toward open water; stack one per land side",
+   "file": "tiles/water_ice_edge_nw.png",
+   "file_2x": "tiles/_2x/water_ice_edge_nw.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (64,64)@2x / (32,32)@1x = diamond south tip; diamond centre (64,32)@2x"
+  },
+  {
+   "id": "water_ice_edge_se",
+   "base_terrain": "water",
+   "kind": "decal",
+   "sides": [
+    "se"
+   ],
+   "layer": "water overlay: draw after the water floor tile of the same cell",
+   "note": "ice shelf hugging the se bank of a water cell (land on se); snow rim on the bank side, broken plate edge + foam toward open water; stack one per land side",
+   "file": "tiles/water_ice_edge_se.png",
+   "file_2x": "tiles/_2x/water_ice_edge_se.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (64,64)@2x / (32,32)@1x = diamond south tip; diamond centre (64,32)@2x"
+  },
+  {
+   "id": "water_ice_edge_sw",
+   "base_terrain": "water",
+   "kind": "decal",
+   "sides": [
+    "sw"
+   ],
+   "layer": "water overlay: draw after the water floor tile of the same cell",
+   "note": "ice shelf hugging the sw bank of a water cell (land on sw); snow rim on the bank side, broken plate edge + foam toward open water; stack one per land side",
+   "file": "tiles/water_ice_edge_sw.png",
+   "file_2x": "tiles/_2x/water_ice_edge_sw.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (64,64)@2x / (32,32)@1x = diamond south tip; diamond centre (64,32)@2x"
+  }
+ ],
+ "terrace": [
+  {
+   "id": "crag_cliff_left_h1",
+   "kind": "face",
+   "edge": "SW",
+   "height_steps": 1,
+   "step_px_2x": 20,
+   "offset_2x": [
+    -64,
+    0
+   ],
+   "tile_axis": "x",
+   "foot": "snow",
+   "draw": "before_top",
+   "note": "one-piece granite face for a 1-step drop on the cell's SW (left) edge: snow cap along the top lip, snow banked at the foot. offset from the LIFTED cell centre (2x)",
+   "file": "tiles/crag_cliff_left_h1.png",
+   "file_2x": "tiles/_2x/crag_cliff_left_h1.png",
+   "size_2x": [
+    64,
+    52
+   ],
+   "size": [
+    32,
+    26
+   ]
+  },
+  {
+   "id": "crag_cliff_left_h2",
+   "kind": "face",
+   "edge": "SW",
+   "height_steps": 2,
+   "step_px_2x": 20,
+   "offset_2x": [
+    -64,
+    0
+   ],
+   "tile_axis": "x",
+   "foot": "snow",
+   "draw": "before_top",
+   "note": "one-piece granite face for a 2-step drop on the cell's SW (left) edge: snow cap along the top lip, snow banked at the foot. offset from the LIFTED cell centre (2x)",
+   "file": "tiles/crag_cliff_left_h2.png",
+   "file_2x": "tiles/_2x/crag_cliff_left_h2.png",
+   "size_2x": [
+    64,
+    72
+   ],
+   "size": [
+    32,
+    36
+   ]
+  },
+  {
+   "id": "crag_cliff_left_h3",
+   "kind": "face",
+   "edge": "SW",
+   "height_steps": 3,
+   "step_px_2x": 20,
+   "offset_2x": [
+    -64,
+    0
+   ],
+   "tile_axis": "x",
+   "foot": "snow",
+   "draw": "before_top",
+   "note": "one-piece granite face for a 3-step drop on the cell's SW (left) edge: snow cap along the top lip, snow banked at the foot. offset from the LIFTED cell centre (2x)",
+   "file": "tiles/crag_cliff_left_h3.png",
+   "file_2x": "tiles/_2x/crag_cliff_left_h3.png",
+   "size_2x": [
+    64,
+    92
+   ],
+   "size": [
+    32,
+    46
+   ]
+  },
+  {
+   "id": "crag_cliff_right_h1",
+   "kind": "face",
+   "edge": "SE",
+   "height_steps": 1,
+   "step_px_2x": 20,
+   "offset_2x": [
+    0,
+    0
+   ],
+   "tile_axis": "y",
+   "foot": "snow",
+   "draw": "before_top",
+   "note": "one-piece granite face for a 1-step drop on the cell's SE (right) edge: snow cap along the top lip, snow banked at the foot. offset from the LIFTED cell centre (2x)",
+   "file": "tiles/crag_cliff_right_h1.png",
+   "file_2x": "tiles/_2x/crag_cliff_right_h1.png",
+   "size_2x": [
+    64,
+    52
+   ],
+   "size": [
+    32,
+    26
+   ]
+  },
+  {
+   "id": "crag_cliff_right_h2",
+   "kind": "face",
+   "edge": "SE",
+   "height_steps": 2,
+   "step_px_2x": 20,
+   "offset_2x": [
+    0,
+    0
+   ],
+   "tile_axis": "y",
+   "foot": "snow",
+   "draw": "before_top",
+   "note": "one-piece granite face for a 2-step drop on the cell's SE (right) edge: snow cap along the top lip, snow banked at the foot. offset from the LIFTED cell centre (2x)",
+   "file": "tiles/crag_cliff_right_h2.png",
+   "file_2x": "tiles/_2x/crag_cliff_right_h2.png",
+   "size_2x": [
+    64,
+    72
+   ],
+   "size": [
+    32,
+    36
+   ]
+  },
+  {
+   "id": "crag_cliff_right_h3",
+   "kind": "face",
+   "edge": "SE",
+   "height_steps": 3,
+   "step_px_2x": 20,
+   "offset_2x": [
+    0,
+    0
+   ],
+   "tile_axis": "y",
+   "foot": "snow",
+   "draw": "before_top",
+   "note": "one-piece granite face for a 3-step drop on the cell's SE (right) edge: snow cap along the top lip, snow banked at the foot. offset from the LIFTED cell centre (2x)",
+   "file": "tiles/crag_cliff_right_h3.png",
+   "file_2x": "tiles/_2x/crag_cliff_right_h3.png",
+   "size_2x": [
+    64,
+    92
+   ],
+   "size": [
+    32,
+    46
+   ]
+  },
+  {
+   "id": "crag_lip_corner_front",
+   "kind": "corner",
+   "vertex": "S",
+   "height_steps": null,
+   "offset_2x": [
+    -20,
+    20
+   ],
+   "pivot_px_2x": [
+    20,
+    12
+   ],
+   "draw": "after_top",
+   "note": "40x40 cornice cap for the S vertex of the lifted cell (pivot canvas (20,12) = that vertex); use where the left and right lips meet",
+   "file": "tiles/crag_lip_corner_front.png",
+   "file_2x": "tiles/_2x/crag_lip_corner_front.png",
+   "size_2x": [
+    40,
+    40
+   ],
+   "size": [
+    20,
+    20
+   ]
+  },
+  {
+   "id": "crag_lip_corner_left",
+   "kind": "corner",
+   "vertex": "W",
+   "height_steps": null,
+   "offset_2x": [
+    -84,
+    -12
+   ],
+   "pivot_px_2x": [
+    20,
+    12
+   ],
+   "draw": "after_top",
+   "note": "40x40 cornice cap for the W vertex of the lifted cell (pivot canvas (20,12) = that vertex); use where a left lip ends (no face beyond)",
+   "file": "tiles/crag_lip_corner_left.png",
+   "file_2x": "tiles/_2x/crag_lip_corner_left.png",
+   "size_2x": [
+    40,
+    40
+   ],
+   "size": [
+    20,
+    20
+   ]
+  },
+  {
+   "id": "crag_lip_corner_right",
+   "kind": "corner",
+   "vertex": "E",
+   "height_steps": null,
+   "offset_2x": [
+    44,
+    -12
+   ],
+   "pivot_px_2x": [
+    20,
+    12
+   ],
+   "draw": "after_top",
+   "note": "40x40 cornice cap for the E vertex of the lifted cell (pivot canvas (20,12) = that vertex); use where a right lip ends",
+   "file": "tiles/crag_lip_corner_right.png",
+   "file_2x": "tiles/_2x/crag_lip_corner_right.png",
+   "size_2x": [
+    40,
+    40
+   ],
+   "size": [
+    20,
+    20
+   ]
+  },
+  {
+   "id": "crag_lip_left",
+   "kind": "overhang",
+   "edge": "SW",
+   "height_steps": null,
+   "offset_2x": [
+    -64,
+    -8
+   ],
+   "tile_axis": "x",
+   "draw": "after_top",
+   "note": "snow cornice hanging over the cliff edge: one size for every height; the cell front edge runs through canvas y 8..40; draw after the top tile on every crag cell edge that has a face below",
+   "file": "tiles/crag_lip_left.png",
+   "file_2x": "tiles/_2x/crag_lip_left.png",
+   "size_2x": [
+    64,
+    52
+   ],
+   "size": [
+    32,
+    26
+   ]
+  },
+  {
+   "id": "crag_lip_right",
+   "kind": "overhang",
+   "edge": "SE",
+   "height_steps": null,
+   "offset_2x": [
+    0,
+    -8
+   ],
+   "tile_axis": "y",
+   "draw": "after_top",
+   "note": "snow cornice hanging over the cliff edge: one size for every height; the cell front edge runs through canvas y 8..40; draw after the top tile on every crag cell edge that has a face below",
+   "file": "tiles/crag_lip_right.png",
+   "file_2x": "tiles/_2x/crag_lip_right.png",
+   "size_2x": [
+    64,
+    52
+   ],
+   "size": [
+    32,
+    26
+   ]
+  },
+  {
+   "id": "crag_side_left_a",
+   "kind": "face",
+   "edge": "SW",
+   "height_steps": 1,
+   "step_px_2x": 20,
+   "offset_2x": [
+    -64,
+    0
+   ],
+   "step_offset_2x": [
+    0,
+    20
+   ],
+   "tile_axis": "x",
+   "foot": null,
+   "draw": "before_top",
+   "strip": "a",
+   "note": "crosshaven_art.gd side-strip slot (<terrain>_side_<face>_<top|a|b|base_ground>): strip k is drawn at offset_2x + k*step_offset_2x; k=0 top, odd k a, even k b, last k (>0) base_ground. Snow ledge on each strip top hides the stacking joint",
+   "file": "tiles/crag_side_left_a.png",
+   "file_2x": "tiles/_2x/crag_side_left_a.png",
+   "size_2x": [
+    64,
+    52
+   ],
+   "size": [
+    32,
+    26
+   ]
+  },
+  {
+   "id": "crag_side_left_b",
+   "kind": "face",
+   "edge": "SW",
+   "height_steps": 1,
+   "step_px_2x": 20,
+   "offset_2x": [
+    -64,
+    0
+   ],
+   "step_offset_2x": [
+    0,
+    20
+   ],
+   "tile_axis": "x",
+   "foot": null,
+   "draw": "before_top",
+   "strip": "b",
+   "note": "crosshaven_art.gd side-strip slot (<terrain>_side_<face>_<top|a|b|base_ground>): strip k is drawn at offset_2x + k*step_offset_2x; k=0 top, odd k a, even k b, last k (>0) base_ground. Snow ledge on each strip top hides the stacking joint",
+   "file": "tiles/crag_side_left_b.png",
+   "file_2x": "tiles/_2x/crag_side_left_b.png",
+   "size_2x": [
+    64,
+    52
+   ],
+   "size": [
+    32,
+    26
+   ]
+  },
+  {
+   "id": "crag_side_left_base_ground",
+   "kind": "face",
+   "edge": "SW",
+   "height_steps": 1,
+   "step_px_2x": 20,
+   "offset_2x": [
+    -64,
+    0
+   ],
+   "step_offset_2x": [
+    0,
+    20
+   ],
+   "tile_axis": "x",
+   "foot": "snow",
+   "draw": "before_top",
+   "strip": "base_ground",
+   "note": "crosshaven_art.gd side-strip slot (<terrain>_side_<face>_<top|a|b|base_ground>): strip k is drawn at offset_2x + k*step_offset_2x; k=0 top, odd k a, even k b, last k (>0) base_ground. Snow ledge on each strip top hides the stacking joint",
+   "file": "tiles/crag_side_left_base_ground.png",
+   "file_2x": "tiles/_2x/crag_side_left_base_ground.png",
+   "size_2x": [
+    64,
+    52
+   ],
+   "size": [
+    32,
+    26
+   ]
+  },
+  {
+   "id": "crag_side_left_top",
+   "kind": "face",
+   "edge": "SW",
+   "height_steps": 1,
+   "step_px_2x": 20,
+   "offset_2x": [
+    -64,
+    0
+   ],
+   "step_offset_2x": [
+    0,
+    20
+   ],
+   "tile_axis": "x",
+   "foot": null,
+   "draw": "before_top",
+   "strip": "top",
+   "note": "crosshaven_art.gd side-strip slot (<terrain>_side_<face>_<top|a|b|base_ground>): strip k is drawn at offset_2x + k*step_offset_2x; k=0 top, odd k a, even k b, last k (>0) base_ground. Snow ledge on each strip top hides the stacking joint",
+   "file": "tiles/crag_side_left_top.png",
+   "file_2x": "tiles/_2x/crag_side_left_top.png",
+   "size_2x": [
+    64,
+    52
+   ],
+   "size": [
+    32,
+    26
+   ]
+  },
+  {
+   "id": "crag_side_right_a",
+   "kind": "face",
+   "edge": "SE",
+   "height_steps": 1,
+   "step_px_2x": 20,
+   "offset_2x": [
+    0,
+    0
+   ],
+   "step_offset_2x": [
+    0,
+    20
+   ],
+   "tile_axis": "y",
+   "foot": null,
+   "draw": "before_top",
+   "strip": "a",
+   "note": "crosshaven_art.gd side-strip slot (<terrain>_side_<face>_<top|a|b|base_ground>): strip k is drawn at offset_2x + k*step_offset_2x; k=0 top, odd k a, even k b, last k (>0) base_ground. Snow ledge on each strip top hides the stacking joint",
+   "file": "tiles/crag_side_right_a.png",
+   "file_2x": "tiles/_2x/crag_side_right_a.png",
+   "size_2x": [
+    64,
+    52
+   ],
+   "size": [
+    32,
+    26
+   ]
+  },
+  {
+   "id": "crag_side_right_b",
+   "kind": "face",
+   "edge": "SE",
+   "height_steps": 1,
+   "step_px_2x": 20,
+   "offset_2x": [
+    0,
+    0
+   ],
+   "step_offset_2x": [
+    0,
+    20
+   ],
+   "tile_axis": "y",
+   "foot": null,
+   "draw": "before_top",
+   "strip": "b",
+   "note": "crosshaven_art.gd side-strip slot (<terrain>_side_<face>_<top|a|b|base_ground>): strip k is drawn at offset_2x + k*step_offset_2x; k=0 top, odd k a, even k b, last k (>0) base_ground. Snow ledge on each strip top hides the stacking joint",
+   "file": "tiles/crag_side_right_b.png",
+   "file_2x": "tiles/_2x/crag_side_right_b.png",
+   "size_2x": [
+    64,
+    52
+   ],
+   "size": [
+    32,
+    26
+   ]
+  },
+  {
+   "id": "crag_side_right_base_ground",
+   "kind": "face",
+   "edge": "SE",
+   "height_steps": 1,
+   "step_px_2x": 20,
+   "offset_2x": [
+    0,
+    0
+   ],
+   "step_offset_2x": [
+    0,
+    20
+   ],
+   "tile_axis": "y",
+   "foot": "snow",
+   "draw": "before_top",
+   "strip": "base_ground",
+   "note": "crosshaven_art.gd side-strip slot (<terrain>_side_<face>_<top|a|b|base_ground>): strip k is drawn at offset_2x + k*step_offset_2x; k=0 top, odd k a, even k b, last k (>0) base_ground. Snow ledge on each strip top hides the stacking joint",
+   "file": "tiles/crag_side_right_base_ground.png",
+   "file_2x": "tiles/_2x/crag_side_right_base_ground.png",
+   "size_2x": [
+    64,
+    52
+   ],
+   "size": [
+    32,
+    26
+   ]
+  },
+  {
+   "id": "crag_side_right_top",
+   "kind": "face",
+   "edge": "SE",
+   "height_steps": 1,
+   "step_px_2x": 20,
+   "offset_2x": [
+    0,
+    0
+   ],
+   "step_offset_2x": [
+    0,
+    20
+   ],
+   "tile_axis": "y",
+   "foot": null,
+   "draw": "before_top",
+   "strip": "top",
+   "note": "crosshaven_art.gd side-strip slot (<terrain>_side_<face>_<top|a|b|base_ground>): strip k is drawn at offset_2x + k*step_offset_2x; k=0 top, odd k a, even k b, last k (>0) base_ground. Snow ledge on each strip top hides the stacking joint",
+   "file": "tiles/crag_side_right_top.png",
+   "file_2x": "tiles/_2x/crag_side_right_top.png",
+   "size_2x": [
+    64,
+    52
+   ],
+   "size": [
+    32,
+    26
+   ]
+  }
+ ],
+ "props": [
+  {
+   "id": "crag_spire_a",
+   "kind": "rock",
+   "layer": "prop",
+   "file": "props/crag_spire_a.png",
+   "file_2x": "props/_2x/crag_spire_a.png",
+   "size": [
+    128,
+    192
+   ],
+   "size_2x": [
+    256,
+    384
+   ],
+   "footprint_size": [
+    2,
+    2
+   ],
+   "anchor_cell_from_nw": [
+    1,
+    1
+   ],
+   "anchor": "image bottom-centre = south tip of the footprint's south-most cell (canvas (128,384) at 2x)",
+   "art_x_from_anchor_2x": [
+    -109,
+    106
+   ],
+   "art_height_px_2x": 243,
+   "note": "crag rock, snow skirt faded inside the footprint; contact AO baked (alpha<=0.3)",
+   "height_steps_20px": 12
+  },
+  {
+   "id": "crag_outcrop_a",
+   "kind": "rock",
+   "layer": "prop",
+   "file": "props/crag_outcrop_a.png",
+   "file_2x": "props/_2x/crag_outcrop_a.png",
+   "size": [
+    128,
+    192
+   ],
+   "size_2x": [
+    256,
+    384
+   ],
+   "footprint_size": [
+    2,
+    2
+   ],
+   "anchor_cell_from_nw": [
+    1,
+    1
+   ],
+   "anchor": "image bottom-centre = south tip of the footprint's south-most cell (canvas (128,384) at 2x)",
+   "art_x_from_anchor_2x": [
+    -107,
+    108
+   ],
+   "art_height_px_2x": 222,
+   "note": "crag rock, snow skirt faded inside the footprint; contact AO baked (alpha<=0.3)",
+   "height_steps_20px": 11
+  },
+  {
+   "id": "crag_outcrop_b",
+   "kind": "rock",
+   "layer": "prop",
+   "file": "props/crag_outcrop_b.png",
+   "file_2x": "props/_2x/crag_outcrop_b.png",
+   "size": [
+    128,
+    192
+   ],
+   "size_2x": [
+    256,
+    384
+   ],
+   "footprint_size": [
+    2,
+    2
+   ],
+   "anchor_cell_from_nw": [
+    1,
+    1
+   ],
+   "anchor": "image bottom-centre = south tip of the footprint's south-most cell (canvas (128,384) at 2x)",
+   "art_x_from_anchor_2x": [
+    -105,
+    106
+   ],
+   "art_height_px_2x": 216,
+   "note": "crag rock, snow skirt faded inside the footprint; contact AO baked (alpha<=0.3)",
+   "height_steps_20px": 11
+  },
+  {
+   "id": "crag_spire_b",
+   "kind": "rock",
+   "layer": "prop",
+   "file": "props/crag_spire_b.png",
+   "file_2x": "props/_2x/crag_spire_b.png",
+   "size": [
+    128,
+    192
+   ],
+   "size_2x": [
+    256,
+    384
+   ],
+   "footprint_size": [
+    2,
+    2
+   ],
+   "anchor_cell_from_nw": [
+    1,
+    1
+   ],
+   "anchor": "image bottom-centre = south tip of the footprint's south-most cell (canvas (128,384) at 2x)",
+   "art_x_from_anchor_2x": [
+    -109,
+    108
+   ],
+   "art_height_px_2x": 239,
+   "note": "crag rock, snow skirt faded inside the footprint; contact AO baked (alpha<=0.3)",
+   "height_steps_20px": 12
+  },
+  {
+   "id": "crag_boulders_a",
+   "kind": "rock",
+   "layer": "prop",
+   "file": "props/crag_boulders_a.png",
+   "file_2x": "props/_2x/crag_boulders_a.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "anchor_cell_from_nw": [
+    0,
+    0
+   ],
+   "anchor": "image bottom-centre = south tip of the footprint's south-most cell (canvas (64,128) at 2x)",
+   "art_x_from_anchor_2x": [
+    -56,
+    56
+   ],
+   "art_height_px_2x": 87,
+   "note": "crag rock, snow skirt faded inside the footprint; contact AO baked (alpha<=0.3)",
+   "height_steps_20px": 4
+  },
+  {
+   "id": "crag_boulders_b",
+   "kind": "rock",
+   "layer": "prop",
+   "file": "props/crag_boulders_b.png",
+   "file_2x": "props/_2x/crag_boulders_b.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "anchor_cell_from_nw": [
+    0,
+    0
+   ],
+   "anchor": "image bottom-centre = south tip of the footprint's south-most cell (canvas (64,128) at 2x)",
+   "art_x_from_anchor_2x": [
+    -58,
+    56
+   ],
+   "art_height_px_2x": 93,
+   "note": "crag rock, snow skirt faded inside the footprint; contact AO baked (alpha<=0.3)",
+   "height_steps_20px": 5
+  },
+  {
+   "id": "crag_outcrop_c",
+   "kind": "rock",
+   "layer": "prop",
+   "file": "props/crag_outcrop_c.png",
+   "file_2x": "props/_2x/crag_outcrop_c.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "anchor_cell_from_nw": [
+    0,
+    0
+   ],
+   "anchor": "image bottom-centre = south tip of the footprint's south-most cell (canvas (64,128) at 2x)",
+   "art_x_from_anchor_2x": [
+    -56,
+    55
+   ],
+   "art_height_px_2x": 101,
+   "note": "crag rock, snow skirt faded inside the footprint; contact AO baked (alpha<=0.3)",
+   "height_steps_20px": 5
+  },
+  {
+   "id": "crag_boulders_c",
+   "kind": "rock",
+   "layer": "prop",
+   "file": "props/crag_boulders_c.png",
+   "file_2x": "props/_2x/crag_boulders_c.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "anchor_cell_from_nw": [
+    0,
+    0
+   ],
+   "anchor": "image bottom-centre = south tip of the footprint's south-most cell (canvas (64,128) at 2x)",
+   "art_x_from_anchor_2x": [
+    -58,
+    56
+   ],
+   "art_height_px_2x": 92,
+   "note": "crag rock, snow skirt faded inside the footprint; contact AO baked (alpha<=0.3)",
+   "height_steps_20px": 5
+  },
+  {
+   "id": "crag_boulders_d",
+   "kind": "rock",
+   "layer": "prop",
+   "file": "props/crag_boulders_d.png",
+   "file_2x": "props/_2x/crag_boulders_d.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "anchor_cell_from_nw": [
+    0,
+    0
+   ],
+   "anchor": "image bottom-centre = south tip of the footprint's south-most cell (canvas (64,128) at 2x)",
+   "art_x_from_anchor_2x": [
+    -57,
+    55
+   ],
+   "art_height_px_2x": 90,
+   "note": "crag rock, snow skirt faded inside the footprint; contact AO baked (alpha<=0.3)",
+   "height_steps_20px": 4
+  },
+  {
+   "id": "crag_split_shrub",
+   "kind": "rock",
+   "layer": "prop",
+   "file": "props/crag_split_shrub.png",
+   "file_2x": "props/_2x/crag_split_shrub.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "anchor_cell_from_nw": [
+    0,
+    0
+   ],
+   "anchor": "image bottom-centre = south tip of the footprint's south-most cell (canvas (64,128) at 2x)",
+   "art_x_from_anchor_2x": [
+    -58,
+    56
+   ],
+   "art_height_px_2x": 113,
+   "note": "crag rock, snow skirt faded inside the footprint; contact AO baked (alpha<=0.3)",
+   "height_steps_20px": 6
+  },
+  {
+   "id": "crag_outcrop_d",
+   "kind": "rock",
+   "layer": "prop",
+   "file": "props/crag_outcrop_d.png",
+   "file_2x": "props/_2x/crag_outcrop_d.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "anchor_cell_from_nw": [
+    0,
+    0
+   ],
+   "anchor": "image bottom-centre = south tip of the footprint's south-most cell (canvas (64,128) at 2x)",
+   "art_x_from_anchor_2x": [
+    -56,
+    56
+   ],
+   "art_height_px_2x": 101,
+   "note": "crag rock, snow skirt faded inside the footprint; contact AO baked (alpha<=0.3)",
+   "height_steps_20px": 5
+  },
+  {
+   "id": "crag_cairn_flag",
+   "kind": "rock",
+   "layer": "prop",
+   "file": "props/crag_cairn_flag.png",
+   "file_2x": "props/_2x/crag_cairn_flag.png",
+   "size": [
+    64,
+    112
+   ],
+   "size_2x": [
+    128,
+    224
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "anchor_cell_from_nw": [
+    0,
+    0
+   ],
+   "anchor": "image bottom-centre = south tip of the footprint's south-most cell (canvas (64,224) at 2x)",
+   "art_x_from_anchor_2x": [
+    -57,
+    55
+   ],
+   "art_height_px_2x": 129,
+   "note": "crag rock, snow skirt faded inside the footprint; contact AO baked (alpha<=0.3)",
+   "height_steps_20px": 6
+  },
+  {
+   "id": "drift_wall_long_a",
+   "kind": "drift",
+   "layer": "ground_overlay",
+   "file": "props/drift_wall_long_a.png",
+   "file_2x": "props/_2x/drift_wall_long_a.png",
+   "size": [
+    96,
+    80
+   ],
+   "size_2x": [
+    192,
+    160
+   ],
+   "footprint_size": [
+    2,
+    1
+   ],
+   "anchor_cell_from_nw": [
+    1,
+    0
+   ],
+   "anchor": "image bottom-centre = south tip of the footprint's south-most cell (canvas (96,160) at 2x)",
+   "art_x_from_anchor_2x": [
+    -93,
+    33
+   ],
+   "art_height_px_2x": 81,
+   "note": "snow banked along the base of a wall, 2 cells along +x; draw after the ground, before the wall",
+   "axis": "+x (flip_h for +y)",
+   "slope": "2:1 iso"
+  },
+  {
+   "id": "drift_wall_long_b",
+   "kind": "drift",
+   "layer": "ground_overlay",
+   "file": "props/drift_wall_long_b.png",
+   "file_2x": "props/_2x/drift_wall_long_b.png",
+   "size": [
+    96,
+    80
+   ],
+   "size_2x": [
+    192,
+    160
+   ],
+   "footprint_size": [
+    2,
+    1
+   ],
+   "anchor_cell_from_nw": [
+    1,
+    0
+   ],
+   "anchor": "image bottom-centre = south tip of the footprint's south-most cell (canvas (96,160) at 2x)",
+   "art_x_from_anchor_2x": [
+    -93,
+    33
+   ],
+   "art_height_px_2x": 81,
+   "note": "snow banked along the base of a wall, 2 cells along +x; draw after the ground, before the wall",
+   "axis": "+x (flip_h for +y)",
+   "slope": "2:1 iso"
+  },
+  {
+   "id": "drift_wall_long_c",
+   "kind": "drift",
+   "layer": "ground_overlay",
+   "file": "props/drift_wall_long_c.png",
+   "file_2x": "props/_2x/drift_wall_long_c.png",
+   "size": [
+    96,
+    80
+   ],
+   "size_2x": [
+    192,
+    160
+   ],
+   "footprint_size": [
+    2,
+    1
+   ],
+   "anchor_cell_from_nw": [
+    1,
+    0
+   ],
+   "anchor": "image bottom-centre = south tip of the footprint's south-most cell (canvas (96,160) at 2x)",
+   "art_x_from_anchor_2x": [
+    -93,
+    33
+   ],
+   "art_height_px_2x": 83,
+   "note": "snow banked along the base of a wall, 2 cells along +x; draw after the ground, before the wall",
+   "axis": "+x (flip_h for +y)",
+   "slope": "2:1 iso"
+  },
+  {
+   "id": "drift_fence_a",
+   "kind": "drift",
+   "layer": "ground_overlay",
+   "file": "props/drift_fence_a.png",
+   "file_2x": "props/_2x/drift_fence_a.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "anchor_cell_from_nw": [
+    0,
+    0
+   ],
+   "anchor": "image bottom-centre = south tip of the footprint's south-most cell (canvas (64,128) at 2x)",
+   "art_x_from_anchor_2x": [
+    -37,
+    34
+   ],
+   "art_height_px_2x": 54,
+   "note": "snow along a fence run, 1 cell along +x; draw after the ground, before the fence",
+   "axis": "+x (flip_h for +y)",
+   "slope": "2:1 iso"
+  },
+  {
+   "id": "drift_tree_ring_a",
+   "kind": "drift",
+   "layer": "ground_overlay",
+   "file": "props/drift_tree_ring_a.png",
+   "file_2x": "props/_2x/drift_tree_ring_a.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "anchor_cell_from_nw": [
+    0,
+    0
+   ],
+   "anchor": "image bottom-centre = south tip of the footprint's south-most cell (canvas (64,128) at 2x)",
+   "art_x_from_anchor_2x": [
+    -44,
+    40
+   ],
+   "art_height_px_2x": 48,
+   "note": "ring drift at a tree base; draw after the ground, before the tree",
+   "axis": "none",
+   "hole_px_2x": [
+    0,
+    -32
+   ],
+   "use": "under a tree on the same cell: tree trunk base sits in the hole (hole offset from anchor given)"
+  },
+  {
+   "id": "drift_tree_ring_b",
+   "kind": "drift",
+   "layer": "ground_overlay",
+   "file": "props/drift_tree_ring_b.png",
+   "file_2x": "props/_2x/drift_tree_ring_b.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "anchor_cell_from_nw": [
+    0,
+    0
+   ],
+   "anchor": "image bottom-centre = south tip of the footprint's south-most cell (canvas (64,128) at 2x)",
+   "art_x_from_anchor_2x": [
+    -42,
+    42
+   ],
+   "art_height_px_2x": 47,
+   "note": "ring drift at a tree base; draw after the ground, before the tree",
+   "axis": "none",
+   "hole_px_2x": [
+    0,
+    -32
+   ],
+   "use": "under a tree on the same cell: tree trunk base sits in the hole (hole offset from anchor given)"
+  },
+  {
+   "id": "drift_patch_a",
+   "kind": "drift",
+   "layer": "ground_overlay",
+   "file": "props/drift_patch_a.png",
+   "file_2x": "props/_2x/drift_patch_a.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "anchor_cell_from_nw": [
+    0,
+    0
+   ],
+   "anchor": "image bottom-centre = south tip of the footprint's south-most cell (canvas (64,128) at 2x)",
+   "art_x_from_anchor_2x": [
+    -31,
+    38
+   ],
+   "art_height_px_2x": 46,
+   "note": "loose drift patch on ground",
+   "axis": "none"
+  },
+  {
+   "id": "drift_patch_b",
+   "kind": "drift",
+   "layer": "ground_overlay",
+   "file": "props/drift_patch_b.png",
+   "file_2x": "props/_2x/drift_patch_b.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "anchor_cell_from_nw": [
+    0,
+    0
+   ],
+   "anchor": "image bottom-centre = south tip of the footprint's south-most cell (canvas (64,128) at 2x)",
+   "art_x_from_anchor_2x": [
+    -35,
+    36
+   ],
+   "art_height_px_2x": 48,
+   "note": "loose drift patch on ground",
+   "axis": "none"
+  }
+ ],
+ "roof_caps": [
+  {
+   "id": "roof_snow_full_a",
+   "file": "roof/roof_snow_full_a.png",
+   "file_2x": "roof/_2x/roof_snow_full_a.png",
+   "size": [
+    320,
+    43
+   ],
+   "size_2x": [
+    640,
+    86
+   ],
+   "kind": "roof_cap",
+   "family": "roof_snow",
+   "coverage": "full",
+   "tileable_x": true,
+   "top_px_2x": 2,
+   "eave_px_2x": 70,
+   "icicle_bottom_px_2x": 86,
+   "lip_px_2x": 16,
+   "note": "flat (unsheared) cap; horizontally periodic. Row eave_px_2x is the mean eave lip; icicles hang lip_px_2x below it.",
+   "default": false,
+   "placement": "OPTION (deep winter): full slope from ~5% below the ridge to the eave, lip/icicles hang below the eave"
+  },
+  {
+   "id": "roof_snow_full_b",
+   "file": "roof/roof_snow_full_b.png",
+   "file_2x": "roof/_2x/roof_snow_full_b.png",
+   "size": [
+    320,
+    41
+   ],
+   "size_2x": [
+    640,
+    82
+   ],
+   "kind": "roof_cap",
+   "family": "roof_snow",
+   "coverage": "full",
+   "tileable_x": true,
+   "top_px_2x": 2,
+   "eave_px_2x": 64,
+   "icicle_bottom_px_2x": 80,
+   "lip_px_2x": 16,
+   "note": "flat (unsheared) cap; horizontally periodic. Row eave_px_2x is the mean eave lip; icicles hang lip_px_2x below it.",
+   "default": false,
+   "placement": "OPTION (deep winter): full slope from ~5% below the ridge to the eave, lip/icicles hang below the eave"
+  },
+  {
+   "id": "roof_snow_patchy_a",
+   "file": "roof/roof_snow_patchy_a.png",
+   "file_2x": "roof/_2x/roof_snow_patchy_a.png",
+   "size": [
+    320,
+    34
+   ],
+   "size_2x": [
+    640,
+    68
+   ],
+   "kind": "roof_cap",
+   "family": "roof_snow",
+   "coverage": "patchy",
+   "tileable_x": true,
+   "top_px_2x": 2,
+   "eave_px_2x": 54,
+   "icicle_bottom_px_2x": 68,
+   "lip_px_2x": 14,
+   "note": "flat (unsheared) cap; horizontally periodic. Row eave_px_2x is the mean eave lip; icicles hang lip_px_2x below it.",
+   "default": true,
+   "placement": "DEFAULT light cap: broken band in the TOP THIRD of the slope (fractions 0.03..0.36 of the ridge->eave depth), no eave lip / icicles"
+  },
+  {
+   "id": "roof_snow_dust_a",
+   "file": "roof/roof_snow_dust_a.png",
+   "file_2x": "roof/_2x/roof_snow_dust_a.png",
+   "size": [
+    320,
+    29
+   ],
+   "size_2x": [
+    640,
+    58
+   ],
+   "kind": "roof_cap",
+   "family": "roof_snow",
+   "coverage": "dust",
+   "tileable_x": true,
+   "top_px_2x": 2,
+   "eave_px_2x": 48,
+   "icicle_bottom_px_2x": 57,
+   "lip_px_2x": 9,
+   "note": "flat (unsheared) cap; horizontally periodic. Row eave_px_2x is the mean eave lip; icicles hang lip_px_2x below it.",
+   "default": true,
+   "placement": "DEFAULT light cap: broken band in the TOP THIRD of the slope (fractions 0.03..0.36 of the ridge->eave depth), no eave lip / icicles"
+  },
+  {
+   "id": "roof_snow_left_a",
+   "file": "roof/roof_snow_left_a.png",
+   "file_2x": "roof/_2x/roof_snow_left_a.png",
+   "size": [
+    320,
+    196
+   ],
+   "size_2x": [
+    640,
+    392
+   ],
+   "kind": "roof_cap",
+   "family": "roof_snow",
+   "coverage": "full",
+   "derived_from": "roof_snow_full_a",
+   "slope": "left",
+   "shear_k": 0.5,
+   "pitch_deg": 26.57,
+   "eave_line_px_2x": [
+    [
+     0,
+     71.0
+    ],
+    [
+     640,
+     391.0
+    ]
+   ],
+   "top_line_px_2x": [
+    [
+     0,
+     3.0
+    ],
+    [
+     640,
+     323.0
+    ]
+   ],
+   "lip_px_2x": 16,
+   "note": "left roof slope (faces down-left / SW; ridge and eave descend to the right at 2:1); icicles stay vertical",
+   "default": false,
+   "placement": "OPTION (deep winter): full slope from ~5% below the ridge to the eave, lip/icicles hang below the eave"
+  },
+  {
+   "id": "roof_snow_right_a",
+   "file": "roof/roof_snow_right_a.png",
+   "file_2x": "roof/_2x/roof_snow_right_a.png",
+   "size": [
+    320,
+    198
+   ],
+   "size_2x": [
+    640,
+    396
+   ],
+   "kind": "roof_cap",
+   "family": "roof_snow",
+   "coverage": "full",
+   "derived_from": "roof_snow_full_a",
+   "slope": "right",
+   "shear_k": -0.5,
+   "pitch_deg": 26.57,
+   "eave_line_px_2x": [
+    [
+     0,
+     390.0
+    ],
+    [
+     640,
+     70.0
+    ]
+   ],
+   "top_line_px_2x": [
+    [
+     0,
+     322.0
+    ],
+    [
+     640,
+     2.0
+    ]
+   ],
+   "lip_px_2x": 16,
+   "note": "right roof slope (faces down-right / SE; ridge and eave rise to the right at 2:1); icicles stay vertical",
+   "default": false,
+   "placement": "OPTION (deep winter): full slope from ~5% below the ridge to the eave, lip/icicles hang below the eave"
+  },
+  {
+   "id": "roof_snow_left_b",
+   "file": "roof/roof_snow_left_b.png",
+   "file_2x": "roof/_2x/roof_snow_left_b.png",
+   "size": [
+    320,
+    195
+   ],
+   "size_2x": [
+    640,
+    390
+   ],
+   "kind": "roof_cap",
+   "family": "roof_snow",
+   "coverage": "full",
+   "derived_from": "roof_snow_full_b",
+   "slope": "left",
+   "shear_k": 0.5,
+   "pitch_deg": 26.57,
+   "eave_line_px_2x": [
+    [
+     0,
+     65.0
+    ],
+    [
+     640,
+     385.0
+    ]
+   ],
+   "top_line_px_2x": [
+    [
+     0,
+     3.0
+    ],
+    [
+     640,
+     323.0
+    ]
+   ],
+   "lip_px_2x": 16,
+   "note": "left roof slope (faces down-left / SW; ridge and eave descend to the right at 2:1); icicles stay vertical",
+   "default": false,
+   "placement": "OPTION (deep winter): full slope from ~5% below the ridge to the eave, lip/icicles hang below the eave"
+  },
+  {
+   "id": "roof_snow_right_b",
+   "file": "roof/roof_snow_right_b.png",
+   "file_2x": "roof/_2x/roof_snow_right_b.png",
+   "size": [
+    320,
+    196
+   ],
+   "size_2x": [
+    640,
+    392
+   ],
+   "kind": "roof_cap",
+   "family": "roof_snow",
+   "coverage": "full",
+   "derived_from": "roof_snow_full_b",
+   "slope": "right",
+   "shear_k": -0.5,
+   "pitch_deg": 26.57,
+   "eave_line_px_2x": [
+    [
+     0,
+     385.0
+    ],
+    [
+     640,
+     65.0
+    ]
+   ],
+   "top_line_px_2x": [
+    [
+     0,
+     323.0
+    ],
+    [
+     640,
+     3.0
+    ]
+   ],
+   "lip_px_2x": 16,
+   "note": "right roof slope (faces down-right / SE; ridge and eave rise to the right at 2:1); icicles stay vertical",
+   "default": false,
+   "placement": "OPTION (deep winter): full slope from ~5% below the ridge to the eave, lip/icicles hang below the eave"
+  }
+ ],
+ "swatches": [
+  {
+   "id": "frost_tint_swatch",
+   "kind": "overlay",
+   "file": "overlays/frost_tint_swatch.png",
+   "file_2x": "overlays/_2x/frost_tint_swatch.png",
+   "size": [
+    256,
+    256
+   ],
+   "size_2x": [
+    512,
+    512
+   ],
+   "tileable": true,
+   "note": "screen/world-space tileable frost rime (straight alpha, mean 0.37); lay over grass via a shader (sample at world_px/512 @2x) or a modulate pass"
+  }
+ ],
+ "not_checked_by_world_gate": "roof_caps[] and swatches[] are not 128x64 tiles / props, so the world checker lists their PNGs as unreferenced (WARN, intended)"
+}

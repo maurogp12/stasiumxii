@@ -1,0 +1,1465 @@
+{
+ "format": "stasium.world_atlas",
+ "format_version": 2,
+ "region": "outskirts_southbridge",
+ "root": "art/pc/look/outskirts/southbridge/",
+ "package": "outskirts_themes/southbridge",
+ "date": "2026-10-03",
+ "scope": "PC-only painted 2D iso theme kit for the SOUTHBRIDGE open-world outskirts (PR #241 flat washes -> painted ground + props). Box-only; nothing committed.",
+ "grid": {
+  "projection": "2:1 iso",
+  "tile_1x": [
+   64,
+   32
+  ],
+  "tile_2x": [
+   128,
+   64
+  ],
+  "cell_centre_1x": "((x-y)*32, (x+y)*16)",
+  "sort": "(x+y)"
+ },
+ "files": {
+  "tiles": "tiles/<id>.png (1x) + tiles/<id>@2x.png (2x master)",
+  "props": "props/<id>.png + props/<id>@2x.png (also props/props.json)",
+  "overlays": "overlays/<id>.png + overlays/<id>@2x.png (screen-space fog/haze; listed in animated/anim_meta.json as 1-frame scroll layers and in kit.json)",
+  "sway_masks": "animated/sway_masks/<id>_swaymask.png + animated/sway_masks/_2x/"
+ },
+ "anchors": {
+  "tile": "bottom-centre on the cell south tip (= top-left at cell centre + (-32,-16) 1x)",
+  "prop": "bottom-centre on the south tip of the south-most footprint cell"
+ },
+ "autotile": {
+  "picker": "Crosshaven picker (crosshaven_art.gd pick_tile): g = sides nw,ne,se,sw (in that order) whose neighbour is in `against`; g empty -> interior by h(x,y); else <edge_prefix><g joined by _>; then <corner_prefix><c> decals for diagonal corners c whose two sides are not in g but whose diagonal neighbour is in `against`.",
+  "sides": {
+   "nw": "(x-1,y)",
+   "ne": "(x,y-1)",
+   "se": "(x+1,y)",
+   "sw": "(x,y+1)"
+  },
+  "corners": {
+   "n": "(x-1,y-1)",
+   "e": "(x+1,y-1)",
+   "s": "(x+1,y+1)",
+   "w": "(x-1,y+1)"
+  },
+  "families": {
+   "mud": {
+    "interiors": [
+     "mud_a",
+     "mud_b",
+     "mud_c",
+     "mud_d"
+    ],
+    "edge": "mud_edge_",
+    "corner": "mud_corner_",
+    "against": [
+     "golden_plains"
+    ]
+   },
+   "swamp_water": {
+    "interiors": [
+     "swamp_water_a",
+     "swamp_water_b",
+     "swamp_water_c",
+     "swamp_water_d"
+    ],
+    "edge": "swamp_bank_edge_",
+    "corner": "swamp_bank_corner_",
+    "against": [
+     "mud",
+     "golden_plains (no grass bank piece: keep a mud ring between grass and the pool)"
+    ],
+    "decals": [
+     "lily_pads"
+    ]
+   }
+  },
+  "note": "all 15 side combinations are shipped (Crosshaven grammar); the 4 single sides are the brief's <family>_edge_{nw,ne,se,sw}. swamp_bank_* is drawn ON the water cell so the bank hugs the land side."
+ },
+ "lighting": {
+  "key": "neutral warm daylight from the top-left (as Crosshaven)",
+  "shadows": "contact only; no cast shadows",
+  "grade": "not pre-graded"
+ },
+ "tiles": [
+  {
+   "id": "mud_a",
+   "file": "tiles/mud_a.png",
+   "file_2x": "tiles/mud_a@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "tile",
+   "family": "mud",
+   "base_terrain": "mud",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "variant": "a"
+  },
+  {
+   "id": "mud_b",
+   "file": "tiles/mud_b.png",
+   "file_2x": "tiles/mud_b@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "tile",
+   "family": "mud",
+   "base_terrain": "mud",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "variant": "b"
+  },
+  {
+   "id": "mud_c",
+   "file": "tiles/mud_c.png",
+   "file_2x": "tiles/mud_c@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "tile",
+   "family": "mud",
+   "base_terrain": "mud",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "variant": "c"
+  },
+  {
+   "id": "mud_d",
+   "file": "tiles/mud_d.png",
+   "file_2x": "tiles/mud_d@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "tile",
+   "family": "mud",
+   "base_terrain": "mud",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "variant": "d"
+  },
+  {
+   "id": "swamp_water_a",
+   "file": "tiles/swamp_water_a.png",
+   "file_2x": "tiles/swamp_water_a@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "tile",
+   "family": "swamp_water",
+   "base_terrain": "swamp_water",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "variant": "a"
+  },
+  {
+   "id": "swamp_water_b",
+   "file": "tiles/swamp_water_b.png",
+   "file_2x": "tiles/swamp_water_b@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "tile",
+   "family": "swamp_water",
+   "base_terrain": "swamp_water",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "variant": "b"
+  },
+  {
+   "id": "swamp_water_c",
+   "file": "tiles/swamp_water_c.png",
+   "file_2x": "tiles/swamp_water_c@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "tile",
+   "family": "swamp_water",
+   "base_terrain": "swamp_water",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "variant": "c"
+  },
+  {
+   "id": "swamp_water_d",
+   "file": "tiles/swamp_water_d.png",
+   "file_2x": "tiles/swamp_water_d@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "tile",
+   "family": "swamp_water",
+   "base_terrain": "swamp_water",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "variant": "d"
+  },
+  {
+   "id": "mud_edge_nw",
+   "file": "tiles/mud_edge_nw.png",
+   "file_2x": "tiles/mud_edge_nw@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "mud",
+   "base_terrain": "mud",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "nw"
+   ],
+   "against": "golden_plains",
+   "note": "damp grass tufts reaching into the mud, mud flecks in the grass lip, dark wet lip shade"
+  },
+  {
+   "id": "mud_edge_ne",
+   "file": "tiles/mud_edge_ne.png",
+   "file_2x": "tiles/mud_edge_ne@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "mud",
+   "base_terrain": "mud",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "ne"
+   ],
+   "against": "golden_plains",
+   "note": "damp grass tufts reaching into the mud, mud flecks in the grass lip, dark wet lip shade"
+  },
+  {
+   "id": "mud_edge_nw_ne",
+   "file": "tiles/mud_edge_nw_ne.png",
+   "file_2x": "tiles/mud_edge_nw_ne@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "mud",
+   "base_terrain": "mud",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "nw",
+    "ne"
+   ],
+   "against": "golden_plains",
+   "note": "damp grass tufts reaching into the mud, mud flecks in the grass lip, dark wet lip shade"
+  },
+  {
+   "id": "mud_edge_se",
+   "file": "tiles/mud_edge_se.png",
+   "file_2x": "tiles/mud_edge_se@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "mud",
+   "base_terrain": "mud",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "se"
+   ],
+   "against": "golden_plains",
+   "note": "damp grass tufts reaching into the mud, mud flecks in the grass lip, dark wet lip shade"
+  },
+  {
+   "id": "mud_edge_nw_se",
+   "file": "tiles/mud_edge_nw_se.png",
+   "file_2x": "tiles/mud_edge_nw_se@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "mud",
+   "base_terrain": "mud",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "nw",
+    "se"
+   ],
+   "against": "golden_plains",
+   "note": "damp grass tufts reaching into the mud, mud flecks in the grass lip, dark wet lip shade"
+  },
+  {
+   "id": "mud_edge_ne_se",
+   "file": "tiles/mud_edge_ne_se.png",
+   "file_2x": "tiles/mud_edge_ne_se@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "mud",
+   "base_terrain": "mud",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "ne",
+    "se"
+   ],
+   "against": "golden_plains",
+   "note": "damp grass tufts reaching into the mud, mud flecks in the grass lip, dark wet lip shade"
+  },
+  {
+   "id": "mud_edge_nw_ne_se",
+   "file": "tiles/mud_edge_nw_ne_se.png",
+   "file_2x": "tiles/mud_edge_nw_ne_se@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "mud",
+   "base_terrain": "mud",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "nw",
+    "ne",
+    "se"
+   ],
+   "against": "golden_plains",
+   "note": "damp grass tufts reaching into the mud, mud flecks in the grass lip, dark wet lip shade"
+  },
+  {
+   "id": "mud_edge_sw",
+   "file": "tiles/mud_edge_sw.png",
+   "file_2x": "tiles/mud_edge_sw@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "mud",
+   "base_terrain": "mud",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "sw"
+   ],
+   "against": "golden_plains",
+   "note": "damp grass tufts reaching into the mud, mud flecks in the grass lip, dark wet lip shade"
+  },
+  {
+   "id": "mud_edge_nw_sw",
+   "file": "tiles/mud_edge_nw_sw.png",
+   "file_2x": "tiles/mud_edge_nw_sw@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "mud",
+   "base_terrain": "mud",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "nw",
+    "sw"
+   ],
+   "against": "golden_plains",
+   "note": "damp grass tufts reaching into the mud, mud flecks in the grass lip, dark wet lip shade"
+  },
+  {
+   "id": "mud_edge_ne_sw",
+   "file": "tiles/mud_edge_ne_sw.png",
+   "file_2x": "tiles/mud_edge_ne_sw@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "mud",
+   "base_terrain": "mud",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "ne",
+    "sw"
+   ],
+   "against": "golden_plains",
+   "note": "damp grass tufts reaching into the mud, mud flecks in the grass lip, dark wet lip shade"
+  },
+  {
+   "id": "mud_edge_nw_ne_sw",
+   "file": "tiles/mud_edge_nw_ne_sw.png",
+   "file_2x": "tiles/mud_edge_nw_ne_sw@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "mud",
+   "base_terrain": "mud",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "nw",
+    "ne",
+    "sw"
+   ],
+   "against": "golden_plains",
+   "note": "damp grass tufts reaching into the mud, mud flecks in the grass lip, dark wet lip shade"
+  },
+  {
+   "id": "mud_edge_se_sw",
+   "file": "tiles/mud_edge_se_sw.png",
+   "file_2x": "tiles/mud_edge_se_sw@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "mud",
+   "base_terrain": "mud",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "se",
+    "sw"
+   ],
+   "against": "golden_plains",
+   "note": "damp grass tufts reaching into the mud, mud flecks in the grass lip, dark wet lip shade"
+  },
+  {
+   "id": "mud_edge_nw_se_sw",
+   "file": "tiles/mud_edge_nw_se_sw.png",
+   "file_2x": "tiles/mud_edge_nw_se_sw@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "mud",
+   "base_terrain": "mud",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "nw",
+    "se",
+    "sw"
+   ],
+   "against": "golden_plains",
+   "note": "damp grass tufts reaching into the mud, mud flecks in the grass lip, dark wet lip shade"
+  },
+  {
+   "id": "mud_edge_ne_se_sw",
+   "file": "tiles/mud_edge_ne_se_sw.png",
+   "file_2x": "tiles/mud_edge_ne_se_sw@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "mud",
+   "base_terrain": "mud",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "ne",
+    "se",
+    "sw"
+   ],
+   "against": "golden_plains",
+   "note": "damp grass tufts reaching into the mud, mud flecks in the grass lip, dark wet lip shade"
+  },
+  {
+   "id": "mud_edge_nw_ne_se_sw",
+   "file": "tiles/mud_edge_nw_ne_se_sw.png",
+   "file_2x": "tiles/mud_edge_nw_ne_se_sw@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "mud",
+   "base_terrain": "mud",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "nw",
+    "ne",
+    "se",
+    "sw"
+   ],
+   "against": "golden_plains",
+   "note": "damp grass tufts reaching into the mud, mud flecks in the grass lip, dark wet lip shade"
+  },
+  {
+   "id": "mud_corner_n",
+   "file": "tiles/mud_corner_n.png",
+   "file_2x": "tiles/mud_corner_n@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "decal",
+   "kit_kind": "corner",
+   "family": "mud",
+   "base_terrain": "mud",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "corner": "n",
+   "against": "golden_plains",
+   "note": "damp grass tufts reaching into the mud, mud flecks in the grass lip, dark wet lip shade"
+  },
+  {
+   "id": "mud_corner_e",
+   "file": "tiles/mud_corner_e.png",
+   "file_2x": "tiles/mud_corner_e@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "decal",
+   "kit_kind": "corner",
+   "family": "mud",
+   "base_terrain": "mud",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "corner": "e",
+   "against": "golden_plains",
+   "note": "damp grass tufts reaching into the mud, mud flecks in the grass lip, dark wet lip shade"
+  },
+  {
+   "id": "mud_corner_s",
+   "file": "tiles/mud_corner_s.png",
+   "file_2x": "tiles/mud_corner_s@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "decal",
+   "kit_kind": "corner",
+   "family": "mud",
+   "base_terrain": "mud",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "corner": "s",
+   "against": "golden_plains",
+   "note": "damp grass tufts reaching into the mud, mud flecks in the grass lip, dark wet lip shade"
+  },
+  {
+   "id": "mud_corner_w",
+   "file": "tiles/mud_corner_w.png",
+   "file_2x": "tiles/mud_corner_w@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "decal",
+   "kit_kind": "corner",
+   "family": "mud",
+   "base_terrain": "mud",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "corner": "w",
+   "against": "golden_plains",
+   "note": "damp grass tufts reaching into the mud, mud flecks in the grass lip, dark wet lip shade"
+  },
+  {
+   "id": "swamp_bank_edge_nw",
+   "file": "tiles/swamp_bank_edge_nw.png",
+   "file_2x": "tiles/swamp_bank_edge_nw@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "swamp_water",
+   "base_terrain": "swamp_water",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "nw"
+   ],
+   "against": "mud",
+   "note": "drawn on swamp_water cells; listed sides touch mud. From the shared border: mud (matches mud_*), root-laced bank lip, hanging roots, duckweed fringe, murky water"
+  },
+  {
+   "id": "swamp_bank_edge_ne",
+   "file": "tiles/swamp_bank_edge_ne.png",
+   "file_2x": "tiles/swamp_bank_edge_ne@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "swamp_water",
+   "base_terrain": "swamp_water",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "ne"
+   ],
+   "against": "mud",
+   "note": "drawn on swamp_water cells; listed sides touch mud. From the shared border: mud (matches mud_*), root-laced bank lip, hanging roots, duckweed fringe, murky water"
+  },
+  {
+   "id": "swamp_bank_edge_nw_ne",
+   "file": "tiles/swamp_bank_edge_nw_ne.png",
+   "file_2x": "tiles/swamp_bank_edge_nw_ne@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "swamp_water",
+   "base_terrain": "swamp_water",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "nw",
+    "ne"
+   ],
+   "against": "mud",
+   "note": "drawn on swamp_water cells; listed sides touch mud. From the shared border: mud (matches mud_*), root-laced bank lip, hanging roots, duckweed fringe, murky water"
+  },
+  {
+   "id": "swamp_bank_edge_se",
+   "file": "tiles/swamp_bank_edge_se.png",
+   "file_2x": "tiles/swamp_bank_edge_se@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "swamp_water",
+   "base_terrain": "swamp_water",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "se"
+   ],
+   "against": "mud",
+   "note": "drawn on swamp_water cells; listed sides touch mud. From the shared border: mud (matches mud_*), root-laced bank lip, hanging roots, duckweed fringe, murky water"
+  },
+  {
+   "id": "swamp_bank_edge_nw_se",
+   "file": "tiles/swamp_bank_edge_nw_se.png",
+   "file_2x": "tiles/swamp_bank_edge_nw_se@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "swamp_water",
+   "base_terrain": "swamp_water",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "nw",
+    "se"
+   ],
+   "against": "mud",
+   "note": "drawn on swamp_water cells; listed sides touch mud. From the shared border: mud (matches mud_*), root-laced bank lip, hanging roots, duckweed fringe, murky water"
+  },
+  {
+   "id": "swamp_bank_edge_ne_se",
+   "file": "tiles/swamp_bank_edge_ne_se.png",
+   "file_2x": "tiles/swamp_bank_edge_ne_se@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "swamp_water",
+   "base_terrain": "swamp_water",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "ne",
+    "se"
+   ],
+   "against": "mud",
+   "note": "drawn on swamp_water cells; listed sides touch mud. From the shared border: mud (matches mud_*), root-laced bank lip, hanging roots, duckweed fringe, murky water"
+  },
+  {
+   "id": "swamp_bank_edge_nw_ne_se",
+   "file": "tiles/swamp_bank_edge_nw_ne_se.png",
+   "file_2x": "tiles/swamp_bank_edge_nw_ne_se@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "swamp_water",
+   "base_terrain": "swamp_water",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "nw",
+    "ne",
+    "se"
+   ],
+   "against": "mud",
+   "note": "drawn on swamp_water cells; listed sides touch mud. From the shared border: mud (matches mud_*), root-laced bank lip, hanging roots, duckweed fringe, murky water"
+  },
+  {
+   "id": "swamp_bank_edge_sw",
+   "file": "tiles/swamp_bank_edge_sw.png",
+   "file_2x": "tiles/swamp_bank_edge_sw@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "swamp_water",
+   "base_terrain": "swamp_water",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "sw"
+   ],
+   "against": "mud",
+   "note": "drawn on swamp_water cells; listed sides touch mud. From the shared border: mud (matches mud_*), root-laced bank lip, hanging roots, duckweed fringe, murky water"
+  },
+  {
+   "id": "swamp_bank_edge_nw_sw",
+   "file": "tiles/swamp_bank_edge_nw_sw.png",
+   "file_2x": "tiles/swamp_bank_edge_nw_sw@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "swamp_water",
+   "base_terrain": "swamp_water",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "nw",
+    "sw"
+   ],
+   "against": "mud",
+   "note": "drawn on swamp_water cells; listed sides touch mud. From the shared border: mud (matches mud_*), root-laced bank lip, hanging roots, duckweed fringe, murky water"
+  },
+  {
+   "id": "swamp_bank_edge_ne_sw",
+   "file": "tiles/swamp_bank_edge_ne_sw.png",
+   "file_2x": "tiles/swamp_bank_edge_ne_sw@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "swamp_water",
+   "base_terrain": "swamp_water",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "ne",
+    "sw"
+   ],
+   "against": "mud",
+   "note": "drawn on swamp_water cells; listed sides touch mud. From the shared border: mud (matches mud_*), root-laced bank lip, hanging roots, duckweed fringe, murky water"
+  },
+  {
+   "id": "swamp_bank_edge_nw_ne_sw",
+   "file": "tiles/swamp_bank_edge_nw_ne_sw.png",
+   "file_2x": "tiles/swamp_bank_edge_nw_ne_sw@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "swamp_water",
+   "base_terrain": "swamp_water",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "nw",
+    "ne",
+    "sw"
+   ],
+   "against": "mud",
+   "note": "drawn on swamp_water cells; listed sides touch mud. From the shared border: mud (matches mud_*), root-laced bank lip, hanging roots, duckweed fringe, murky water"
+  },
+  {
+   "id": "swamp_bank_edge_se_sw",
+   "file": "tiles/swamp_bank_edge_se_sw.png",
+   "file_2x": "tiles/swamp_bank_edge_se_sw@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "swamp_water",
+   "base_terrain": "swamp_water",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "se",
+    "sw"
+   ],
+   "against": "mud",
+   "note": "drawn on swamp_water cells; listed sides touch mud. From the shared border: mud (matches mud_*), root-laced bank lip, hanging roots, duckweed fringe, murky water"
+  },
+  {
+   "id": "swamp_bank_edge_nw_se_sw",
+   "file": "tiles/swamp_bank_edge_nw_se_sw.png",
+   "file_2x": "tiles/swamp_bank_edge_nw_se_sw@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "swamp_water",
+   "base_terrain": "swamp_water",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "nw",
+    "se",
+    "sw"
+   ],
+   "against": "mud",
+   "note": "drawn on swamp_water cells; listed sides touch mud. From the shared border: mud (matches mud_*), root-laced bank lip, hanging roots, duckweed fringe, murky water"
+  },
+  {
+   "id": "swamp_bank_edge_ne_se_sw",
+   "file": "tiles/swamp_bank_edge_ne_se_sw.png",
+   "file_2x": "tiles/swamp_bank_edge_ne_se_sw@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "swamp_water",
+   "base_terrain": "swamp_water",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "ne",
+    "se",
+    "sw"
+   ],
+   "against": "mud",
+   "note": "drawn on swamp_water cells; listed sides touch mud. From the shared border: mud (matches mud_*), root-laced bank lip, hanging roots, duckweed fringe, murky water"
+  },
+  {
+   "id": "swamp_bank_edge_nw_ne_se_sw",
+   "file": "tiles/swamp_bank_edge_nw_ne_se_sw.png",
+   "file_2x": "tiles/swamp_bank_edge_nw_ne_se_sw@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "kit_kind": "edge",
+   "family": "swamp_water",
+   "base_terrain": "swamp_water",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "sides": [
+    "nw",
+    "ne",
+    "se",
+    "sw"
+   ],
+   "against": "mud",
+   "note": "drawn on swamp_water cells; listed sides touch mud. From the shared border: mud (matches mud_*), root-laced bank lip, hanging roots, duckweed fringe, murky water"
+  },
+  {
+   "id": "swamp_bank_corner_n",
+   "file": "tiles/swamp_bank_corner_n.png",
+   "file_2x": "tiles/swamp_bank_corner_n@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "decal",
+   "kit_kind": "corner",
+   "family": "swamp_water",
+   "base_terrain": "swamp_water",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "corner": "n",
+   "against": "mud",
+   "note": "drawn on swamp_water cells; listed sides touch mud. From the shared border: mud (matches mud_*), root-laced bank lip, hanging roots, duckweed fringe, murky water"
+  },
+  {
+   "id": "swamp_bank_corner_e",
+   "file": "tiles/swamp_bank_corner_e.png",
+   "file_2x": "tiles/swamp_bank_corner_e@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "decal",
+   "kit_kind": "corner",
+   "family": "swamp_water",
+   "base_terrain": "swamp_water",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "corner": "e",
+   "against": "mud",
+   "note": "drawn on swamp_water cells; listed sides touch mud. From the shared border: mud (matches mud_*), root-laced bank lip, hanging roots, duckweed fringe, murky water"
+  },
+  {
+   "id": "swamp_bank_corner_s",
+   "file": "tiles/swamp_bank_corner_s.png",
+   "file_2x": "tiles/swamp_bank_corner_s@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "decal",
+   "kit_kind": "corner",
+   "family": "swamp_water",
+   "base_terrain": "swamp_water",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "corner": "s",
+   "against": "mud",
+   "note": "drawn on swamp_water cells; listed sides touch mud. From the shared border: mud (matches mud_*), root-laced bank lip, hanging roots, duckweed fringe, murky water"
+  },
+  {
+   "id": "swamp_bank_corner_w",
+   "file": "tiles/swamp_bank_corner_w.png",
+   "file_2x": "tiles/swamp_bank_corner_w@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "decal",
+   "kit_kind": "corner",
+   "family": "swamp_water",
+   "base_terrain": "swamp_water",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "corner": "w",
+   "against": "mud",
+   "note": "drawn on swamp_water cells; listed sides touch mud. From the shared border: mud (matches mud_*), root-laced bank lip, hanging roots, duckweed fringe, murky water"
+  },
+  {
+   "id": "lily_pads",
+   "file": "tiles/lily_pads.png",
+   "file_2x": "tiles/lily_pads@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "decal",
+   "kit_kind": "overlay",
+   "family": "swamp_water",
+   "base_terrain": "swamp_water",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; bottom-centre = south tip)",
+   "draw_on": "swamp_water",
+   "note": "flat lily-pad cluster with two water lilies, decal drawn over a swamp_water interior cell (stays inside the diamond); not a standing prop"
+  }
+ ],
+ "props": [
+  {
+   "id": "reeds_a",
+   "file": "props/reeds_a.png",
+   "file_2x": "props/reeds_a@2x.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "kind": "plant",
+   "layer": "prop",
+   "anchor": "image bottom-centre = south tip of the anchor cell (the south-most footprint cell)",
+   "art_x_from_anchor_2x": [
+    -31,
+    32
+   ],
+   "art_height_px_2x": 113,
+   "lowest_opaque_gap_px_2x": 2,
+   "sort": "y-sort by the anchor (south-most footprint cell)",
+   "contact_shadow": "painted ground patch from the raw, rim faded into the tile; no cast shadows",
+   "note": "cattail clump on a moss tuft; place on mud or bank cells; sway mask",
+   "sway_mask": "animated/sway_masks/reeds_a_swaymask.png"
+  },
+  {
+   "id": "reeds_b",
+   "file": "props/reeds_b.png",
+   "file_2x": "props/reeds_b@2x.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "kind": "plant",
+   "layer": "prop",
+   "anchor": "image bottom-centre = south tip of the anchor cell (the south-most footprint cell)",
+   "art_x_from_anchor_2x": [
+    -37,
+    40
+   ],
+   "art_height_px_2x": 116,
+   "lowest_opaque_gap_px_2x": 2,
+   "sort": "y-sort by the anchor (south-most footprint cell)",
+   "contact_shadow": "painted ground patch from the raw, rim faded into the tile; no cast shadows",
+   "note": "taller, denser cattail clump; sway mask",
+   "sway_mask": "animated/sway_masks/reeds_b_swaymask.png"
+  },
+  {
+   "id": "reeds_c",
+   "file": "props/reeds_c.png",
+   "file_2x": "props/reeds_c@2x.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "kind": "plant",
+   "layer": "prop",
+   "anchor": "image bottom-centre = south tip of the anchor cell (the south-most footprint cell)",
+   "art_x_from_anchor_2x": [
+    -30,
+    28
+   ],
+   "art_height_px_2x": 102,
+   "lowest_opaque_gap_px_2x": 2,
+   "sort": "y-sort by the anchor (south-most footprint cell)",
+   "contact_shadow": "painted ground patch from the raw, rim faded into the tile; no cast shadows",
+   "note": "small cattail clump; sway mask",
+   "sway_mask": "animated/sway_masks/reeds_c_swaymask.png"
+  },
+  {
+   "id": "dead_trunk_tall",
+   "file": "props/dead_trunk_tall.png",
+   "file_2x": "props/dead_trunk_tall@2x.png",
+   "size": [
+    64,
+    112
+   ],
+   "size_2x": [
+    128,
+    224
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "kind": "tree",
+   "layer": "prop",
+   "anchor": "image bottom-centre = south tip of the anchor cell (the south-most footprint cell)",
+   "art_x_from_anchor_2x": [
+    -64,
+    63
+   ],
+   "art_height_px_2x": 188,
+   "lowest_opaque_gap_px_2x": 4,
+   "sort": "y-sort by the anchor (south-most footprint cell)",
+   "contact_shadow": "painted ground patch from the raw, rim faded into the tile; no cast shadows",
+   "note": "tall dead swamp trunk with hanging moss (tree class 64x112@1x); sway mask moves only the moss/branch tips",
+   "sway_mask": "animated/sway_masks/dead_trunk_tall_swaymask.png"
+  },
+  {
+   "id": "dead_stump",
+   "file": "props/dead_stump.png",
+   "file_2x": "props/dead_stump@2x.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "kind": "decor_block",
+   "layer": "prop",
+   "anchor": "image bottom-centre = south tip of the anchor cell (the south-most footprint cell)",
+   "art_x_from_anchor_2x": [
+    -41,
+    44
+   ],
+   "art_height_px_2x": 126,
+   "lowest_opaque_gap_px_2x": 3,
+   "sort": "y-sort by the anchor (south-most footprint cell)",
+   "contact_shadow": "painted ground patch from the raw, rim faded into the tile; no cast shadows",
+   "note": "broken dead trunk stump with moss beards"
+  },
+  {
+   "id": "rotten_log",
+   "file": "props/rotten_log.png",
+   "file_2x": "props/rotten_log@2x.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "kind": "decor_block",
+   "layer": "prop",
+   "anchor": "image bottom-centre = south tip of the anchor cell (the south-most footprint cell)",
+   "art_x_from_anchor_2x": [
+    -63,
+    24
+   ],
+   "art_height_px_2x": 71,
+   "lowest_opaque_gap_px_2x": 2,
+   "sort": "y-sort by the anchor (south-most footprint cell)",
+   "contact_shadow": "painted ground patch from the raw, rim faded into the tile; no cast shadows",
+   "note": "rotten mossy log with bracket mushrooms (diagonal along the iso axis)"
+  },
+  {
+   "id": "stepping_stones",
+   "file": "props/stepping_stones.png",
+   "file_2x": "props/stepping_stones@2x.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "kind": "decor_flat",
+   "layer": "prop",
+   "anchor": "image bottom-centre = south tip of the anchor cell (the south-most footprint cell)",
+   "art_x_from_anchor_2x": [
+    -64,
+    26
+   ],
+   "art_height_px_2x": 65,
+   "lowest_opaque_gap_px_2x": 2,
+   "sort": "y-sort by the anchor (south-most footprint cell)",
+   "contact_shadow": "painted ground patch from the raw, rim faded into the tile; no cast shadows",
+   "note": "two flat mossy stepping stones; walkable dressing, place on mud or shallow bank"
+  },
+  {
+   "id": "marker_lantern_post",
+   "file": "props/marker_lantern_post.png",
+   "file_2x": "props/marker_lantern_post@2x.png",
+   "size": [
+    64,
+    112
+   ],
+   "size_2x": [
+    128,
+    224
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "kind": "tall",
+   "layer": "prop",
+   "anchor": "image bottom-centre = south tip of the anchor cell (the south-most footprint cell)",
+   "art_x_from_anchor_2x": [
+    -44,
+    52
+   ],
+   "art_height_px_2x": 177,
+   "lowest_opaque_gap_px_2x": 2,
+   "sort": "y-sort by the anchor (south-most footprint cell)",
+   "contact_shadow": "painted ground patch from the raw, rim faded into the tile; no cast shadows",
+   "note": "crossbar marker post with an UNLIT hanging lantern (no emit mask)"
+  },
+  {
+   "id": "root_tangle",
+   "file": "props/root_tangle.png",
+   "file_2x": "props/root_tangle@2x.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "kind": "decor_block",
+   "layer": "prop",
+   "anchor": "image bottom-centre = south tip of the anchor cell (the south-most footprint cell)",
+   "art_x_from_anchor_2x": [
+    -44,
+    43
+   ],
+   "art_height_px_2x": 82,
+   "lowest_opaque_gap_px_2x": 4,
+   "sort": "y-sort by the anchor (south-most footprint cell)",
+   "contact_shadow": "painted ground patch from the raw, rim faded into the tile; no cast shadows",
+   "note": "upturned tangle of dead roots with moss"
+  }
+ ]
+}
