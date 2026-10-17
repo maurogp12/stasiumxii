@@ -1,0 +1,35 @@
+{
+ "format": "stasium.plate_city_trees_keep",
+ "note": "Tree layer ids kept in the city (item 7). Edit freely; the build cuts every other tree.",
+ "groups": {
+  "wall_feet": [
+   187,
+   181,
+   161,
+   202,
+   147,
+   143,
+   142,
+   221,
+   150,
+   192,
+   216,
+   135
+  ],
+  "ring_road": [
+   173,
+   153,
+   204,
+   152
+  ],
+  "east_park": [
+   207,
+   159,
+   154,
+   171,
+   197,
+   183,
+   162
+  ]
+ }
+}

@@ -163,7 +163,7 @@
  },
  "plate_scale": 1.15,
  "plate_scale_note": "World px per plate px: the whole plate (ground, layers, walkmask, heightmap, cell grid) is drawn this much bigger; characters keep their size. Least-squares over Mauro's item 8 ratios against Ironjaw (62.7 px tall, about 38 px wide): house 3x (median house 168 px), gate tower 4.5x (308 px), stall 1.75x (131 px), street 3.5 hero widths (68 px across). See CROSSHAVEN_CITY_BUILD.md.",
- "trees_keep": "trees_keep_rosebud_v9.json",
+ "trees_keep": "trees_keep_ring_v2.json",
  "plants": {
   "seed": 17,
   "budgets": {
@@ -233,28 +233,242 @@
    "note": "cathedral park inside the ring road (not residential)"
   }
  ],
- "wall_ring": {
-  "hero_world_px": 62.7,
-  "hero_screen_px": 156,
-  "targets_screen_px": {
-   "wall": 550,
-   "tower": 1000,
-   "gate": 1050
-  },
-  "native_plate_px": {
-   "wall": 110,
-   "tower": 212,
-   "gate": 308
-  },
-  "openings": [
-   "S",
-   "W",
-   "E",
-   "N",
-   "SE",
-   "SW",
-   "water x2"
+ "ring_kit": {
+  "note": "Coordinator 17 Oct: wall kit v2 (docs/pc-map-handoff docs/pc/look_target/crosshaven_city/work/walls/kit2 + kit/tower). Ring on the 3 plate directions: N and S horizontal, four iso diagonals (slope +-0.5); E and W are corners. Modules are painted at hero = 156 px; all anchors in native module px. Pass --kit <dir with the module files>.",
+  "polygon": [
+   [
+    2010,
+    520
+   ],
+   [
+    3110,
+    520
+   ],
+   [
+    4940,
+    1435
+   ],
+   [
+    3110,
+    2350
+   ],
+   [
+    2010,
+    2350
+   ],
+   [
+    180,
+    1435
+   ]
   ],
-  "note": "Coordinator 17 Oct: target heights at hero = 156 px (house ~496, wall body ~550, tower ~1000, gatehouse ~1000-1100, castle ~1200). Stand-ins are the prototype pieces scaled to these heights until Grok's wall modules land (docs/pc-map-handoff work/walls/); swap their files and native heights here."
+  "hero_world_px": 62.7,
+  "hero_px_in_art": 156,
+  "wall_height_px_in_art": 550,
+  "tower_every_wall_heights": 7,
+  "passage_hero_widths": 2.2,
+  "hero_width_ratio": 0.6,
+  "passage_depth_px": 120,
+  "band_px": 40,
+  "gates": [
+   {
+    "id": "S",
+    "edge": 3,
+    "at": [
+     2400,
+     2350
+    ]
+   },
+   {
+    "id": "W",
+    "edge": 4,
+    "at": [
+     328,
+     1509
+    ]
+   },
+   {
+    "id": "E",
+    "edge": 2,
+    "at": [
+     4558,
+     1625
+    ]
+   },
+   {
+    "id": "N",
+    "edge": 0,
+    "at": [
+     2442,
+     520
+    ]
+   },
+   {
+    "id": "SE",
+    "edge": 2,
+    "at": [
+     3710,
+     2050
+    ]
+   }
+  ],
+  "modules": {
+   "tower": {
+    "file": "tower_CONCEPTO.png",
+    "base": [
+     240,
+     990
+    ]
+   },
+   "segment_neg": {
+    "file": "segment_short_CONCEPTO.png",
+    "art_slope": -0.4333,
+    "base_left": [
+     300,
+     1229
+    ],
+    "usable_x": [
+     300,
+     1700
+    ]
+   },
+   "segment_pos": {
+    "file": "segment_short_mirror_CONCEPTO.png",
+    "art_slope": 0.4296,
+    "base_left": [
+     240,
+     627
+    ],
+    "usable_x": [
+     240,
+     1630
+    ]
+   },
+   "segment_flat": {
+    "file": "segment_horizontal_CONCEPTO.png",
+    "art_slope": 0.0,
+    "base_left": [
+     100,
+     551
+    ],
+    "usable_x": [
+     100,
+     2700
+    ]
+   },
+   "gatehouse_neg": {
+    "file": "gatehouse_cut_CONCEPTO.png",
+    "art_slope": -0.3088,
+    "wall_left": [
+     0,
+     1077
+    ],
+    "wall_right": [
+     1121,
+     731
+    ],
+    "arch": [
+     640,
+     880
+    ],
+    "split": [
+     560,
+     0
+    ],
+    "back_side": "left"
+   },
+   "gatehouse_pos": {
+    "file": "gatehouse_cut_mirror_CONCEPTO.png",
+    "art_slope": 0.3088,
+    "wall_left": [
+     0,
+     731
+    ],
+    "wall_right": [
+     1121,
+     1077
+    ],
+    "arch": [
+     481,
+     880
+    ],
+    "split": [
+     561,
+     0
+    ],
+    "back_side": "right"
+   },
+   "watergate_neg": {
+    "file": "watergate_short_CONCEPTO.png",
+    "art_slope": -0.313,
+    "wall_left": [
+     0,
+     1116
+    ],
+    "wall_right": [
+     1355,
+     692
+    ],
+    "arch": [
+     700,
+     897
+    ]
+   },
+   "watergate_pos": {
+    "file": "watergate_short_mirror_CONCEPTO.png",
+    "art_slope": 0.313,
+    "wall_left": [
+     0,
+     692
+    ],
+    "wall_right": [
+     1355,
+     1116
+    ],
+    "arch": [
+     655,
+     897
+    ]
+   }
+  }
+ },
+ "greenery": {
+  "note": "Approved map-base greenery (docs/pc-map-handoff 5edc29a3 docs/pc/look_target/crosshaven_city/work/green; pass --green <dir>). Painted at hero = 156 px, bottom-centre anchored.",
+  "hero_px_in_art": 156,
+  "seed": 23,
+  "street_lamps": 14,
+  "trees": {
+   "broad": [
+    "tree_oak_a",
+    "tree_oak_b"
+   ],
+   "slim": [
+    "tree_cypress_a",
+    "tree_cypress_b"
+   ],
+   "park": [
+    "tree_blossom_pink",
+    "tree_blossom_white",
+    "tree_oak_a"
+   ]
+  },
+  "bushes": [
+   "bush_boxwood",
+   "bush_hydrangea_blue",
+   "bush_rose_red",
+   "bush_peony_pink"
+  ],
+  "flowers": [
+   "bush_lavender",
+   "bush_flower_yellow",
+   "bush_daisy_white",
+   "bush_fern"
+  ],
+  "plaza_props": {
+   "lamp_single": "plaza_lamp_single",
+   "lamp_double": "plaza_lamp_double",
+   "bench_wood": "plaza_bench_wood",
+   "bench_stone": "plaza_bench_stone",
+   "planter": "plaza_planter_stone"
+  }
  }
 }

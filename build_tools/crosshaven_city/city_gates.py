@@ -51,7 +51,7 @@ def street_pixels(ground_np, river):
     return (sat < 28) & (g.max(2) > 90) & ~ndi.binary_dilation(river, iterations=40)
 
 
-def find_contacts(ground_np, river, wall, gates_known, reach=140, touch=60):
+def find_contacts(ground_np, river, wall, gates_known, reach=140, touch=60, street=None):
     """Clusters of street pixels within `reach` px of the wall line.
 
     Each row: closest point, its distance, wall edge, and a verdict:
@@ -59,8 +59,8 @@ def find_contacts(ground_np, river, wall, gates_known, reach=140, touch=60):
     'dead_end' (street ends at the wall within `touch` px), 'runs_along'
     (street passes the wall without ending at it).
     """
-    street = street_pixels(ground_np, river)
-    line = np.ones((PLATE_H, PLATE_W), bool)
+    if street is None:
+        street = street_pixels(ground_np, river)
     img = Image.new("L", (PLATE_W, PLATE_H), 255)
     d = ImageDraw.Draw(img)
     d.line(wall + wall[:1], fill=0, width=3)

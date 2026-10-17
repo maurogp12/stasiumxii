@@ -178,8 +178,8 @@ func _test_walk() -> void:
 	check(gates.size() >= 3, "the gate arch has walk cells (%d)" % gates.size())
 	for g in gates:
 		check(reach.has(g), "gate cell %s is reached" % g)
-	# Through the gate: spawn (outside, south road) to the far side of bridge 1 (north-east).
-	var inner: Array = city.bridges()[1]["ends"][1]
+	# Through the gate: spawn (outside, south road) to the far side of bridge 0.
+	var inner: Array = city.bridges()[0]["ends"][1]
 	var path: Dictionary = WorldWalk.find_path(city.map, "crosshaven_city", spawn, "crosshaven_city", Vector2i(int(inner[0]), int(inner[1])))
 	check(bool(path.get("ok", false)), "spawn walks to the north-east bridge")
 	var through_gate := false
@@ -187,10 +187,15 @@ func _test_walk() -> void:
 		if gates.has(Vector2i(int(step["x"]), int(step["y"]))):
 			through_gate = true
 	check(through_gate, "the walk in goes through the gate arch")
-	check(city.bridges().size() == 3, "three bridges")
+	check(city.bridges().size() == 3, "three bridges in the data")
+	var inner_bridges := 0
 	for b in city.bridges():
 		var a := Vector2i(int(b["ends"][0][0]), int(b["ends"][0][1]))
 		var c := Vector2i(int(b["ends"][1][0]), int(b["ends"][1][1]))
+		# Only bridges inside the ring are walked (the re-laid ring leaves one outside).
+		if (b["deck_cells"] as Array).is_empty() or not (_in_wall(city.world_to_plate(BoardVisualSort.cell_to_local(a))) and _in_wall(city.world_to_plate(BoardVisualSort.cell_to_local(c)))):
+			continue
+		inner_bridges += 1
 		check(reach.has(a) and reach.has(c), "%s both ends reached" % b["id"])
 		check((b["deck_cells"] as Array).size() >= 3, "%s has deck cells" % b["id"])
 		var top := 0
@@ -204,6 +209,7 @@ func _test_walk() -> void:
 		for step in cross.get("path", []):
 			climb = maxi(climb, z.height_at(Vector2i(int(step["x"]), int(step["y"]))))
 		check(climb >= 5 and (cross.get("path", []) as Array).size() <= 24, "%s crossing goes over the deck (top %d, %d steps)" % [b["id"], climb, (cross.get("path", []) as Array).size()])
+	check(inner_bridges >= 2, "bridges inside the ring (%d)" % inner_bridges)
 	# The river blocks: every water cell is impassable, and water exists.
 	var water := 0
 	for y in z.height:
@@ -217,7 +223,7 @@ func _test_walk() -> void:
 	var probes := 0
 	for rec in city.layers():
 		var tag := str(rec["tag"])
-		if tag in ["tower", "castle", "cathedral", "townhall", "bank"]:
+		if tag in ["tower", "castle", "cathedral", "townhall", "bank"] and not bool(rec.get("displaced_by_plot", false)):
 			probes += 1
 			var foot: Vector2 = city.plate_to_world(Vector2(float(rec["x"]) + float(rec["w"]) * 0.5, float(rec["sort_y"]) - 14.0))
 			var cell := _cell_at(foot)
@@ -244,13 +250,20 @@ func _in_wall(p: Vector2) -> bool:
 func _test_gates() -> void:
 	var z: WorldZone = city.zone
 	var gates: Array = city.gates()
-	check(gates.size() >= 6, "south gate plus the new gates (%d)" % gates.size())
-	var whys := {}
+	check(gates.size() >= 5, "gatehouses (%d)" % gates.size())
+	var ids := {}
 	for g in gates:
-		whys[str(g["why"])] = int(whys.get(str(g["why"]), 0)) + 1
-	check(whys.has("north_gate"), "a north gate exists")
-	check(int(whys.get("crosses", 0)) >= 3, "every road crossing the wall has a gate (%d)" % int(whys.get("crosses", 0)))
-	check(int(whys.get("dead_end", 0)) >= 1, "the street ending at the south-east wall has a gate")
+		ids[str(g["id"])] = true
+	for want in ["S", "W", "E", "N", "SE"]:
+		check(ids.has(want), "gatehouse %s exists" % want)
+	# Ring on the 3 plate directions: every edge horizontal or an iso diagonal.
+	var poly: Array = city.doc["wall_polygon"]
+	for i in poly.size():
+		var a: Array = poly[i]
+		var b: Array = poly[(i + 1) % poly.size()]
+		var dx := float(b[0]) - float(a[0])
+		var slope := 999.0 if is_zero_approx(dx) else (float(b[1]) - float(a[1])) / dx
+		check(is_zero_approx(slope) or is_equal_approx(absf(slope), 0.5), "wall edge %d runs on a plate direction (%.3f)" % [i, slope])
 	# After the build no street meets the wall without a gate.
 	for c in (city.doc["wall_contacts"] as Dictionary)["after"]:
 		check(str(c["verdict"]) in ["gate", "runs_along"], "wall contact at %s is gated (%s)" % [c["at"], c["verdict"]])
@@ -273,7 +286,7 @@ func _test_gates() -> void:
 		check(inside and outside, "%s passage runs from outside to inside" % g["id"])
 	# Walls block everywhere else: with the gate cells shut, the inside does
 	# not reach any cell outside the wall ring.
-	var start := Vector2i(int(city.bridges()[1]["ends"][0][0]), int(city.bridges()[1]["ends"][0][1]))
+	var start := Vector2i(int(city.bridges()[0]["ends"][0][0]), int(city.bridges()[0]["ends"][0][1]))
 	var seen := {start: true}
 	var q: Array[Vector2i] = [start]
 	var leaks := 0
@@ -293,7 +306,7 @@ func _test_gates() -> void:
 	# Item 4: no wall stubs at the tower bases (cylinder columns only below the stub row).
 	var towers := 0
 	for rec in city.layers():
-		if not (str(rec["tag"]) in ["tower", "tower_g"]):
+		if not (str(rec["tag"]) in ["tower", "tower_g"]) or rec.has("module"):
 			continue
 		towers += 1
 		var m: Dictionary = PlateCity.unpack_mask(rec["mask"])
@@ -308,7 +321,11 @@ func _test_gates() -> void:
 				if (x0 + step <= int(44.0 * k) - step or x0 >= int(132.0 * k) + step) and (m["bits"] as PackedByteArray)[by * int(m["w"]) + bx] == 1:
 					stray += 1
 		check(stray == 0, "tower layer %d has no wall stub (%d stray blocks)" % [int(rec["id"]), stray])
-	check(towers >= 12, "towers checked (%d)" % towers)
+	var kit_towers := 0
+	for rec in city.layers():
+		if str(rec["tag"]) == "tower" and rec.has("module"):
+			kit_towers += 1
+	check(towers >= 12 or kit_towers >= 6, "towers checked (%d prototype, %d kit)" % [towers, kit_towers])
 
 
 # ---------------------------------------------------------------- plots
@@ -468,7 +485,11 @@ func _test_world_entry(w: Node2D) -> void:
 	check(hidden >= 30, "buildings are hidden in data (%d)" % hidden)
 	for row in w.city_plate.rows:
 		check(not (str(row["tag"]) in ["house", "stall", "castle", "cathedral", "fountain", "well", "mill"]), "no building drawn (%s)" % row["tag"])
-	check((city.doc["building_footprints"] as Array).size() == hidden, "every hidden building keeps a reserved footprint")
+	var displaced := 0
+	for rec in city.layers():
+		if bool(rec.get("displaced_by_plot", false)):
+			displaced += 1
+	check((city.doc["building_footprints"] as Array).size() == hidden - displaced, "every hidden building keeps a reserved footprint, unless a plot displaced it")
 	check(w.city_plate.plot_nodes.size() == (0 if city.plot_houses_hidden() else 10), "plot houses follow the map-base flag")
 	w.city_plate.set_footprints_visible(true)
 	check(w.city_plate.footprints.visible, "the footprint overlay turns on")
@@ -494,6 +515,10 @@ func _test_world_entry(w: Node2D) -> void:
 		(hs[t] as Array).sort()
 	var house_r: float = float(hs["house"][hs["house"].size() / 2]) / hero_h
 	var gate_r: float = float(hs["gate_back"][0]) / hero_h
+	for g in city.gates():
+		if g.has("art_height_px"):
+			# the kit's gatehouse height before the shear that fits it to the wall
+			gate_r = float(g["art_height_px"]) * city.scale() / hero_h
 	var stall_r: float = float(hs["stall"][hs["stall"].size() / 2]) / hero_h
 	check(house_r > 2.6 and house_r < 3.6, "a house is about 3 hero heights (%.2f)" % house_r)
 	var ring: Dictionary = city.doc.get("wall_ring", {})
@@ -540,7 +565,7 @@ func _test_sort(w: Node2D) -> void:
 		var zb := int(round((sort_world_y - 12.0) * 10.0 / 16.0)) + BoardVisualSort.UNIT_Z_BIAS
 		if zb >= int(row["z"]):
 			bad_back += 1
-	check(count > 380, "y-sorted rows (%d)" % count)
+	check(count > 300, "y-sorted rows (%d)" % count)
 	check(bad_front == 0, "no sprite sorts in front of a hero standing in front of it (%d bad)" % bad_front)
 	check(bad_back == 0, "every sprite sorts over a hero behind it (%d bad)" % bad_back)
 	# The real walker on many cells: rows north of its feet draw under it.

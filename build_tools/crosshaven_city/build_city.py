@@ -35,6 +35,7 @@ from PIL import Image, ImageDraw
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import city_gates as CG  # noqa: E402
+import city_ring as RING  # noqa: E402
 
 Image.MAX_IMAGE_PIXELS = None
 
@@ -43,6 +44,8 @@ PLATE_W, PLATE_H = 0, 0
 LAYOUT = {}
 lay_path = ""
 TEX_DIR = ""
+KIT_DIR = ""
+GREEN_DIR = ""
 MASK_STEP = 8          # alpha mask resolution for the fade test (plate px per bit)
 FADE_MIN_HEIGHT = 40   # sprites shorter than this never hide the hero
 # Tags that are part of the wall ring (plots keep clear of these).
@@ -435,7 +438,7 @@ def pick_trees(layers, images, wall_poly):
         wx, wy = marks["well"]
         cand = [t for t in trees if t[1] > wx - 450 and wy - 750 < t[2] < wy - 60]
         cand.sort(key=lambda t: math.hypot(t[1] - wx, (t[2] - (wy - 380)) * 1.5))
-        keep["east_park"] = [t[0] for t in cand[:6]]
+        keep["east_park"] = [t[0] for t in cand[:7]]
     # Ring road: trees near the ellipse through the ring road (about 1.55x
     # the cathedral's distance to the ring in the Rosebud layout).
     if "cathedral" in marks:
@@ -453,12 +456,16 @@ def pick_trees(layers, images, wall_poly):
         for _, t in ring:
             if all(math.hypot(t[1] - c[1], t[2] - c[2]) > 300 for c in chosen):
                 chosen.append(t)
-            if len(chosen) >= 4:
+            if len(chosen) >= 5:
                 break
         keep["ring_road"] = [t[0] for t in chosen]
     # Wall feet: clusters of 2-3 trees within 260 px of the wall line.
     used = set(keep["east_park"]) | set(keep["ring_road"])
-    feet = [t for t in trees if t[0] not in used and dist_to_poly(t[1], t[2], wall_poly) < 260]
+    poly_img = Image.new("L", (PLATE_W, PLATE_H), 0)
+    ImageDraw.Draw(poly_img).polygon(wall_poly, fill=255)
+    inside_ = np.asarray(poly_img) > 0
+    feet = [t for t in trees if t[0] not in used and 110 < dist_to_poly(t[1], t[2], wall_poly) < 330
+            and 0 <= int(t[2]) < PLATE_H and 0 <= int(t[1]) < PLATE_W and inside_[int(t[2]), int(t[1])]]
     feet.sort(key=lambda t: (t[2], t[1]))
     clusters = []
     for t in feet:
@@ -470,7 +477,7 @@ def pick_trees(layers, images, wall_poly):
             clusters.append([t])
     clusters.sort(key=lambda c: -len(c))
     for c in clusters:
-        if len(keep["wall_feet"]) >= 9:
+        if len(keep["wall_feet"]) >= 12:
             break
         keep["wall_feet"] += [t[0] for t in c[:3]]
     return keep
@@ -490,7 +497,7 @@ def thin_trees(layers, images, keep_ids, unblock_ellipse):
     return cut
 
 
-def scatter_plants(layers, images, walk, streets, river, solid, wall_poly, plot_ells, gone, cleared, cfg):
+def scatter_plants(layers, images, walk, streets, river, solid, wall_poly, plot_ells, gone, cleared, cfg, green=None):
     """Mauro item 6: loose bushes and flower clumps, y-sorted, seeded and data-driven.
 
     Sprites are the plate's own props (tn_bush, tn_wildflowers, ww_wild_rose,
@@ -507,13 +514,18 @@ def scatter_plants(layers, images, walk, streets, river, solid, wall_poly, plot_
     jit = cfg.get("scale_jitter", [0.9, 1.1])
     flip_p = float(cfg.get("flip_chance", 0.5))
     kinds = {}
-    for l in layers:
-        base = os.path.basename(l["file"]).split("_", 1)[-1]
-        for k in ("tn_bush", "tn_wildflowers", "ww_wild_rose", "cx_planter_a"):
-            if base == k + ".png" and k not in kinds:
-                kinds[k] = l
+    if green is not None:
+        for name in green["bushes"] + green["flowers"]:
+            kinds[name] = {"id": None, "file": green["files"][name], "green": name}
+    else:
+        for l in layers:
+            base = os.path.basename(l["file"]).split("_", 1)[-1]
+            for k in ("tn_bush", "tn_wildflowers", "ww_wild_rose", "cx_planter_a"):
+                if base == k + ".png" and k not in kinds:
+                    kinds[k] = l
     if not kinds:
         return []
+    blocking = set(green["bushes"]) if green is not None else {"tn_bush", "cx_planter_a"}
     poly_img = Image.new("L", (PLATE_W, PLATE_H), 0)
     ImageDraw.Draw(poly_img).polygon(wall_poly, fill=255)
     inside = np.asarray(poly_img) > 0
@@ -589,14 +601,18 @@ def scatter_plants(layers, images, walk, streets, river, solid, wall_poly, plot_
     for x, y, why in spots:
         if used.get(why, 0) >= int(budget.get(why, 0)):
             continue
-        if why == "planter":
+        if green is not None:
+            if why == "planter":
+                continue
+            k = rng.choice(green["bushes"] + green["flowers"] + green["flowers"])
+        elif why == "planter":
             k = "cx_planter_a"
         else:
             k = rng.choice(["tn_bush", "tn_wildflowers", "tn_wildflowers", "ww_wild_rose", "tn_bush"])
         if k not in kinds:
             continue
         src = kinds[k]
-        im = images[src["id"]]
+        im = green["img"][k] if green is not None else images[src["id"]]
         sc = round(rng.uniform(float(jit[0]), float(jit[1])), 3)
         flip = rng.random() < flip_p
         r = max(24.0, im.width * 0.45 * sc)
@@ -607,16 +623,157 @@ def scatter_plants(layers, images, walk, streets, river, solid, wall_poly, plot_
                "y": int(round(y - h_)), "sort_y": round(y, 1), "under_everything": False,
                "fade": "occluding_only", "fade_min_alpha": 0.45, "plant": k, "spot": why,
                "k": sc, "flip": flip}
+        if green is not None:
+            rec["art_file"] = green["files"][k]
         images[next_id] = im
         layers.append(rec)
         taken.append((x, y, r))
         next_id += 1
         used[why] = used.get(why, 0) + 1
         placed.append(rec)
-        if k in ("tn_bush", "cx_planter_a"):
+        if k in blocking:
             fh = max(8, h_ * 0.25)
             sl, m = ellipse_mask(walk.shape, x, y - fh / 2.0, w_ * 0.32, fh / 2.0)
             walk[sl] &= ~m
+    return placed
+
+
+def load_green(cfg, hero_plate):
+    """The approved greenery (bottom-centre anchored, painted at hero_px_in_art)."""
+    k = hero_plate / float(cfg["hero_px_in_art"])
+    out = {"img": {}, "files": {}, "bushes": list(cfg["bushes"]), "flowers": list(cfg["flowers"]),
+           "trees": dict(cfg["trees"]), "props": dict(cfg["plaza_props"]), "k": k}
+    names = set(cfg["bushes"]) | set(cfg["flowers"]) | set(sum(cfg["trees"].values(), [])) | set(cfg["plaza_props"].values())
+    for name in names:
+        im = Image.open(os.path.join(GREEN_DIR, name + "_CONCEPTO.png")).convert("RGBA")
+        im = im.resize((max(1, int(round(im.width * k))), max(1, int(round(im.height * k)))), Image.LANCZOS)
+        out["img"][name] = im
+        out["files"][name] = "green/%s.png" % name
+    return out
+
+
+def swap_trees(layers, images, groups, green, walk, wall_poly):
+    """Kept trees take the approved art: blossoms in the east park, cypresses
+    where the prototype had a cypress or poplar, oaks elsewhere; mirrored on
+    alternate trees. A tree whose foot is not on walkable grass is cut."""
+    poly_img = Image.new("L", (PLATE_W, PLATE_H), 0)
+    ImageDraw.Draw(poly_img).polygon(wall_poly, fill=255)
+    inside = np.asarray(poly_img) > 0
+    group_of = {}
+    for gname, ids in groups.items():
+        for i in ids:
+            group_of[i] = gname
+    cut = set()
+    n = 0
+    for l in layers:
+        if l["tag"] != "tree" or l["id"] not in group_of:
+            continue
+        im = images[l["id"]]
+        fx, fy = l["x"] + im.width / 2.0, float(l["sort_y"])
+        ix, iy = int(fx), int(fy)
+        if not (0 <= ix < PLATE_W and 0 <= iy < PLATE_H) or not inside[iy, ix] or not walk[iy, ix]:
+            # grass cells only (the art has a grass tuft baked in)
+            cut.add(l["id"])
+            continue
+        base = os.path.basename(l["file"])
+        if group_of[l["id"]] == "east_park":
+            pool = green["trees"]["park"]
+        elif "cypress" in base or "poplar" in base:
+            pool = green["trees"]["slim"]
+        else:
+            pool = green["trees"]["broad"]
+        name = pool[n % len(pool)]
+        art = green["img"][name]
+        images[l["id"]] = art
+        l["x"] = int(round(fx - art.width / 2.0))
+        l["y"] = int(round(fy - art.height))
+        l["art_file"] = green["files"][name]
+        l["flip"] = (n % 2) == 1
+        l["plant"] = name
+        n += 1
+    return cut
+
+
+def place_plaza_props(layers, images, walk, streets, river, solid, wall_poly, plot_ells, gone, green, cfg):
+    """Lamps, benches and stone planters round the plazas and along the ring road."""
+    import random
+    from scipy.ndimage import uniform_filter, distance_transform_edt, binary_dilation
+    rng = random.Random(int(cfg.get("seed", 23)))
+    poly_img = Image.new("L", (PLATE_W, PLATE_H), 0)
+    ImageDraw.Draw(poly_img).polygon(wall_poly, fill=255)
+    inside = np.asarray(poly_img) > 0
+    # Plazas: blobs where the street fills a 160 x 90 window.
+    small = streets[::4, ::4].astype(np.float32)
+    fill = uniform_filter(small, size=(22, 40))
+    peaks = (fill > 0.85) & inside[::4, ::4]
+    from scipy import ndimage as ndi_
+    lab, n = ndi_.label(peaks)
+    plazas = []
+    for i in range(1, n + 1):
+        ys, xs = np.nonzero(lab == i)
+        if len(xs) >= 6:
+            plazas.append((float(xs.mean()) * 4, float(ys.mean()) * 4))
+    d_st = distance_transform_edt(~streets[::2, ::2]) * 2
+    occupied = binary_dilation(solid | river, iterations=3)
+    taken = [(l["x"] + images[l["id"]].width / 2.0, float(l["sort_y"])) for l in layers if l["id"] not in gone and l["tag"] in ("tree", "prop", "lamp")]
+    nid = 5000
+    placed = 0
+
+    def ok(x, y):
+        ix, iy = int(x), int(y)
+        if not (0 <= ix < PLATE_W and 0 <= iy < PLATE_H) or not inside[iy, ix] or occupied[iy, ix] or not walk[iy, ix] or streets[iy, ix]:
+            return False
+        if dist_to_poly(x, y, wall_poly) < 90:
+            return False
+        for cx, cy, rx, ry in plot_ells:
+            if ((x - cx) / (rx + 20)) ** 2 + ((y - cy) / (ry + 12)) ** 2 <= 1.0:
+                return False
+        return all(math.hypot(x - a, (y - b) * 1.6) > 46 for a, b in taken)
+
+    def put(name, x, y, block):
+        nonlocal nid, placed
+        art = green["img"][name]
+        rec = {"id": nid, "file": green["files"][name], "art_file": green["files"][name], "tag": "prop", "plant": name,
+               "x": int(round(x - art.width / 2.0)), "y": int(round(y - art.height)), "sort_y": round(y, 1),
+               "under_everything": False, "fade": "occluding_only", "fade_min_alpha": 0.45, "spot": "plaza_prop",
+               "flip": rng.random() < 0.5}
+        images[nid] = art
+        layers.append(rec)
+        taken.append((x, y))
+        nid += 1
+        placed += 1
+        if block:
+            sl, m = ellipse_mask(walk.shape, x, y - 6, art.width * 0.3, 8)
+            walk[sl] &= ~m
+
+    props = green["props"]
+    for px, py in plazas:
+        # a ring just off the plaza's paving: find its edge along 12 rays
+        for kk in range(12):
+            a = 2 * math.pi * kk / 12 + rng.uniform(-0.08, 0.08)
+            for r in range(60, 420, 6):
+                x, y = px + r * math.cos(a), py + 0.5 * r * math.sin(a)
+                ix, iy = int(x), int(y)
+                if 0 <= ix < PLATE_W and 0 <= iy < PLATE_H and not streets[iy, ix]:
+                    x, y = px + (r + 16) * math.cos(a), py + 0.5 * (r + 16) * math.sin(a)
+                    kind = ("lamp_double", "bench", "planter", "bench", "lamp_single", "planter")[kk % 6]
+                    if ok(x, y):
+                        put(props[kind] if kind != "bench" else props[("bench_wood", "bench_stone")[kk % 2]], x, y, True)
+                    break
+    # Ring road: lamps every ~380 px beside the street round the centre plaza.
+    ys, xs = np.nonzero((d_st > 18) & (d_st < 34))
+    order = list(range(len(xs)))
+    rng.shuffle(order)
+    lamps = []
+    for i in order:
+        x, y = float(xs[i]) * 2, float(ys[i]) * 2
+        if len(lamps) >= int(cfg.get("street_lamps", 14)):
+            break
+        if any(math.hypot(x - a, y - b) < 380 for a, b in lamps):
+            continue
+        if ok(x, y):
+            put(props["lamp_single"], x, y, True)
+            lamps.append((x, y))
     return placed
 
 
@@ -657,7 +814,7 @@ def build_water(rb, river, art_dir):
     }
 
 
-def retexture_ground(ground_np, river, cfg, tex_dir):
+def retexture_ground(ground_np, river, cfg, tex_dir, drop=None):
     """Item 5/17: the new grass and cobble (top-down tiles) projected onto the
     plate's 2:1 ground. Ground coords per plate px: u = x/2 + y, v = y - x/2
     (a 64x32 cell is 32 x 32 units); a texture px covers 1/k units. Streets
@@ -674,6 +831,8 @@ def retexture_ground(ground_np, river, cfg, tex_dir):
     bank = binary_dilation(river, iterations=int(cfg.get("bank_px", 22)))
     street = (sat < 28) & (g.max(2) > 90) & ~bank
     street = binary_opening(binary_closing(street, iterations=3), iterations=2)
+    if drop is not None:
+        street &= ~drop
     H_, W_ = street.shape
     out = np.empty((H_, W_, 3), np.float32)
     # soft street border with a worn, darker rim
@@ -695,6 +854,100 @@ def retexture_ground(ground_np, river, cfg, tex_dir):
     res = out * (1 - keep) + ground_np.astype(np.float32) * keep
     ground_np[...] = np.clip(res, 0, 255).astype(np.uint8)
     return int(street.sum())
+
+
+def apply_ring_kit(layers, images, ground_np, walk, river, old_poly):
+    """Coordinator 17 Oct (wall kit v2): re-lay the ring on the 3 plate
+    directions with the painted kit modules (city_ring.assemble). Streets cut
+    by the new wall line that are not at a gate are pulled back; each gate is
+    joined to the streets inside and to a road outside. Returns the gate log,
+    the street pixels to drop (grass from now on) and the new wall polygon."""
+    cfg = LAYOUT["ring_kit"]
+    poly = [tuple(map(float, p)) for p in cfg["polygon"]]
+    log = {"modified": set(), "towers_cleaned": [], "gates": [], "contacts_before": [], "contacts_after": []}
+    log["contacts_before"] = CG.find_contacts(ground_np, river, poly, [])
+    hero_plate = float(cfg["hero_world_px"]) / float(LAYOUT.get("plate_scale", 1.0))
+    log["ring"] = {"kit": True, "hero_plate_px": round(hero_plate, 2),
+                   "module_scale": round(hero_plate / float(cfg["hero_px_in_art"]), 4)}
+    inside_old = CG.poly_mask(old_poly)
+    inside_new = CG.poly_mask(poly)
+    street = CG.street_pixels(ground_np, river) | street_mask(ground_np, walk)
+    from scipy.ndimage import binary_dilation
+    near_gate = np.zeros_like(walk)
+    for g in cfg["gates"]:
+        x, y = g["at"]
+        yy, xx = np.ogrid[0:walk.shape[0], 0:walk.shape[1]]
+        near_gate |= ((xx - x) / 330.0) ** 2 + ((yy - y) / 220.0) ** 2 <= 1.0
+    drop = street & (((inside_old & ~inside_new) | CG.line_mask(poly, 160)) & ~near_gate)
+    # Roads for the gates: inside to the nearest street, outside to the
+    # nearest outside road (or the plate edge).
+    sample = CG.cobble_sampler(ground_np, CG.street_pixels(ground_np, river))
+    keep_st = street & ~drop
+    roads = np.zeros_like(walk)
+    cx = sum(p[0] for p in poly) / len(poly)
+    cy = sum(p[1] for p in poly) / len(poly)
+    painted = []
+    for g in cfg["gates"]:
+        i = int(g["edge"])
+        a, b = poly[i], poly[(i + 1) % len(poly)]
+        q = CG.project_on_edge(poly, i, g["at"][0], g["at"][1])
+        u = RING.iso_normal(a, b, (cx - q[0], cy - q[1]))
+        for sign, region in ((1.0, inside_new), (-1.0, ~inside_new)):
+            end = (q[0] + u[0] * 150.0 * sign, q[1] + u[1] * 150.0 * sign)
+            ys, xs = np.nonzero(keep_st & region)
+            if len(xs):
+                dd = (xs - end[0]) ** 2 + (ys - end[1]) ** 2
+                j = int(np.argmin(dd))
+                tgt = (float(xs[j]), float(ys[j]))
+                if sign < 0 and dd[j] > 700 ** 2:
+                    tgt = None
+            else:
+                tgt = None
+            if tgt is None:
+                t = 4000.0
+                for lim, comp in ((0.0, 0), (PLATE_W - 1.0, 0), (0.0, 1), (PLATE_H - 1.0, 1)):
+                    d_ = u[comp] * sign
+                    if abs(d_) > 1e-6:
+                        tt = (lim - end[comp]) / d_
+                        if tt > 0:
+                            t = min(t, tt)
+                tgt = (end[0] + u[0] * sign * t, end[1] + u[1] * sign * t)
+            # Overshoot a little into the street so the joint has no seam.
+            dx_, dy_ = tgt[0] - end[0], tgt[1] - end[1]
+            n_ = math.hypot(dx_, dy_)
+            if 1.0 < n_ < 3000:
+                tgt = (tgt[0] + dx_ / n_ * 45.0, tgt[1] + dy_ / n_ * 45.0)
+            pts = [q, end, tgt]
+            roads |= CG.paint_road(ground_np, walk, sample, pts)
+            painted.append([[round(p_[0], 1), round(p_[1], 1)] for p_ in pts])
+    drop &= ~roads
+    left = inside_old & ~inside_new
+    walk[left & ~(keep_st | roads)] = False
+    walk[(street & drop) & ~inside_new] = False
+    walk |= roads & ~river
+    recs, gates_geo, _, _ = RING.assemble(layers, images, walk, river, old_poly, poly, cfg, KIT_DIR, hero_plate, log)
+    for r in recs:
+        layers.append(r)
+    # Gate 0 is the south gate (gate cells and tests key on it).
+    gates_geo.sort(key=lambda g: 0 if g["id"] == "S" else 1)
+    log["gates"] = gates_geo
+    log["roads_painted"] = painted
+    log["streets_pulled_back_px"] = int(drop.sum())
+    log["contacts_after"] = CG.find_contacts(ground_np, river, poly, [tuple(g["arch"]) for g in gates_geo],
+                                             street=(CG.street_pixels(ground_np, river) & ~drop) | roads)
+    # Water gates from the kit replace the prototype ones; trees and plants
+    # that now stand on the wall line are lifted off.
+    band = CG.line_mask(poly, 90)
+    lifted = []
+    for l in layers:
+        if l["tag"] in LOOSE_TAGS:
+            fx = int(l["x"] + images[l["id"]].width / 2.0)
+            fy = int(l["sort_y"])
+            if 0 <= fx < PLATE_W and 0 <= fy < PLATE_H and band[fy, fx]:
+                lifted.append(l["id"])
+    layers[:] = [l for l in layers if l["id"] not in lifted]
+    log["lifted_off_wall"] = lifted
+    return log, drop, poly
 
 
 def ring_factors():
@@ -785,9 +1038,13 @@ def main():
     if "--layout" in sys.argv:
         lay_path = sys.argv[sys.argv.index("--layout") + 1]
     LAYOUT.update(json.load(open(lay_path)))
-    global TEX_DIR
+    global TEX_DIR, KIT_DIR, GREEN_DIR
+    if "--green" in sys.argv:
+        GREEN_DIR = sys.argv[sys.argv.index("--green") + 1]
     if "--textures" in sys.argv:
         TEX_DIR = sys.argv[sys.argv.index("--textures") + 1]
+    if "--kit" in sys.argv:
+        KIT_DIR = sys.argv[sys.argv.index("--kit") + 1]
     debug = None
     if "--debug" in sys.argv:
         debug = sys.argv[sys.argv.index("--debug") + 1]
@@ -828,14 +1085,20 @@ def main():
         images[l["id"]] = Image.open(os.path.join(rb, l["file"])).convert("RGBA")
 
     # ---- Mauro's change list: tower stubs (4), gates at every road-wall contact (1-3)
-    gate_log = apply_change_list(layers, images, ground_np, walk, river, wall_poly, zones)
+    street_drop = None
+    if LAYOUT.get("ring_kit") and KIT_DIR:
+        gate_log, street_drop, wall_poly = apply_ring_kit(layers, images, ground_np, walk, river, wall_poly)
+    else:
+        gate_log = apply_change_list(layers, images, ground_np, walk, river, wall_poly, zones)
     ground = Image.fromarray(ground_np)
     # Streets from the painted plate (before any retexture): plots, plants and
     # the cells read this mask; it also ships as data/streets.png (1/4 size).
     streets_pre = street_mask(ground_np, walk | CG.street_pixels(ground_np, river))
+    if street_drop is not None:
+        streets_pre &= ~street_drop
     tex_cfg = LAYOUT.get("ground_textures", {})
     if tex_cfg and TEX_DIR and os.path.isdir(TEX_DIR):
-        n_st = retexture_ground(ground_np, river, tex_cfg, TEX_DIR)
+        n_st = retexture_ground(ground_np, river, tex_cfg, TEX_DIR, street_drop)
         ground = Image.fromarray(ground_np)
         print("ground retextured: %d street px" % n_st)
 
@@ -853,7 +1116,10 @@ def main():
         part = a[ys.start - y:ys.stop - y, xs.start - x:xs.stop - x]
         if l["tag"] in WALL_TAGS:
             wall_sprites[ys, xs] |= part
-        elif l["tag"] not in LOOSE_TAGS and l["id"] not in OLD_PLOT_LAYERS.values():
+        elif l["tag"] not in LOOSE_TAGS and l["id"] not in OLD_PLOT_LAYERS.values() \
+                and l["tag"] not in set(LAYOUT.get("map_base_only", {}).get("hide_tags", [])):
+            # Hidden buildings (map base first) do not hold the plots back;
+            # a plot that lands on one displaces its reserved footprint.
             hard[ys, xs] |= part
 
     # ---- free the old plot ground: old house footprints and their plants
@@ -905,6 +1171,18 @@ def main():
         json.dump(tree_keep, open(keep_path, "w"), indent=1)
     keep_ids = set(i for g in tree_keep["groups"].values() for i in g)
     thinned = thin_trees(layers, images, keep_ids, unblock_ellipse)
+    green = None
+    if LAYOUT.get("greenery") and GREEN_DIR:
+        green = load_green(LAYOUT["greenery"], float(LAYOUT["ring_kit"]["hero_world_px"]) / float(LAYOUT.get("plate_scale", 1.0)))
+        thinned |= swap_trees(layers, images, tree_keep["groups"], green, ~streets & ~river, wall_poly)
+        gone_props = [l for l in layers if l["tag"] in ("prop", "lamp") and l["id"] not in thinned]
+        for l in gone_props:
+            im = images[l["id"]]
+            fx, fy = l["x"] + im.width / 2.0, float(l["sort_y"])
+            fh = max(8, im.height * 0.32)
+            unblock_ellipse(fx, fy - fh / 2.0, im.width * 0.43 + 2, fh / 2.0 + 2)
+            thinned.add(l["id"])
+        print("greenery: prototype plants and lamps replaced (%d)" % len(gone_props))
     # Planters stay few and only beside a house (item 6): drop the rest.
     house_feet = [(l["x"] + images[l["id"]].width / 2.0, float(l["sort_y"])) for l in layers if l["tag"] == "house"]
     far_planters = set()
@@ -1054,6 +1332,23 @@ def main():
         fw = im.width * (0.3 if l["tag"] == "tree" else 0.86)
         unblock_ellipse(ax, ay - fh / 2.0, fw / 2.0 + 3, fh / 2.0 + 3)
 
+    # Hidden buildings under a plot's Legendary footprint give way (item 17).
+    displaced = set()
+    hide_tags_ = set(LAYOUT.get("map_base_only", {}).get("hide_tags", []))
+    for l in layers:
+        if l["tag"] not in hide_tags_:
+            continue
+        im = images[l["id"]]
+        bx_, by_ = l["x"] + im.width / 2.0, float(l["sort_y"])
+        fw_, fh_ = im.width * 0.43, max(8.0, im.height * 0.32) / 2.0
+        for _, ax, ay in chosen:
+            cx_, cy_, rx_, ry_ = legendary_ellipse(ax, ay)
+            if math.hypot(bx_ - cx_, (by_ - fh_ - cy_) * 2.0) < rx_ + fw_:
+                displaced.add(l["id"])
+                unblock_ellipse(bx_, by_ - fh_, fw_ + 3, fh_ + 3)
+                break
+    print("hidden buildings displaced by plots", len(displaced))
+
     # Block the new houses' footprints (same ellipse rule as the handoff's place_plot).
     house_img = {t: Image.open(os.path.join(src, "housing_tiers", "house_%s.png" % t)).convert("RGBA") for t in CLEARANCE}
     for p, ax, ay in chosen:
@@ -1069,9 +1364,17 @@ def main():
         if l["id"] in thinned:
             cleared.append((l["x"] + images[l["id"]].width / 2.0, float(l["sort_y"])))
     planted = scatter_plants(layers, images, walk, streets, river, wall_sprites | hard, wall_poly, plot_ells,
-                             thinned | removed, cleared, LAYOUT.get("plants", {}))
+                             thinned | removed, cleared, LAYOUT.get("plants", {}), green)
+    if green is not None:
+        props_n = place_plaza_props(layers, images, walk, streets, river, wall_sprites | hard, wall_poly, plot_ells, thinned | removed, green, LAYOUT["greenery"])
+        print("plaza props placed", props_n)
     print("bushes and flowers placed", len(planted))
 
+    for g in gate_log["gates"]:
+        pm_ = CG.poly_mask(g["passage"])
+        print("gate", g["id"], "passage walk fraction %.2f" % float(walk[pm_].mean()) if pm_.any() else "empty")
+    if debug:
+        Image.fromarray((walk * 255).astype(np.uint8)).save(os.path.join(debug, "walk_final.png"))
     # ---- cells
     W, H = grid.w, grid.h
     inner_off = []
@@ -1285,7 +1588,13 @@ def main():
                      y=int(round(l["sort_y"] - images[bush_src["id"]].height)))
             im = images[bush_src["id"]]
         name = os.path.basename(l["file"])
-        if lid in gate_log["modified"]:
+        if l.get("art_file"):
+            # shared approved art (greenery): one file, many layers
+            dst = os.path.join(art_dir, l["art_file"])
+            if not os.path.exists(dst):
+                os.makedirs(os.path.dirname(dst), exist_ok=True)
+                images[lid].save(dst, optimize=True)
+        elif lid in gate_log["modified"]:
             images[lid].save(os.path.join(art_dir, "layers", name), optimize=True)
         else:
             shutil.copyfile(os.path.join(rb, l["file"]), os.path.join(art_dir, "layers", name))
@@ -1295,7 +1604,7 @@ def main():
         # sprite tall enough to hide the hero fades, bridges stay under.
         fade = (not under) and im.height >= FADE_MIN_HEIGHT
         rec = {
-            "id": lid, "file": "layers/" + name, "tag": l["tag"],
+            "id": lid, "file": l["art_file"] if l.get("art_file") else "layers/" + name, "tag": l["tag"],
             "x": int(round(l["x"] + dx)), "y": int(round(l["y"] + dy)),
             "w": im.width, "h": im.height,
             "k": float(l.get("k", 1.0)), "flip": bool(l.get("flip", False)),
@@ -1307,7 +1616,13 @@ def main():
             rec["plot_plant"] = True
         if "plant" in l:
             rec["plant"] = l["plant"]
-        if l["tag"] in hide_tags:
+        for key_ in ("module", "gate"):
+            if key_ in l:
+                rec[key_] = l[key_]
+        if l["tag"] in hide_tags and lid in displaced:
+            rec["hidden"] = True
+            rec["displaced_by_plot"] = True
+        elif l["tag"] in hide_tags:
             # Item 17: map base first. Kept in data, not drawn; the footprint stays reserved.
             rec["hidden"] = True
             fw_ = im.width * 0.86
@@ -1327,6 +1642,11 @@ def main():
     for pet in ("pet_dog", "pet_cat"):
         shutil.copyfile(os.path.join(rb, "layers", pet + ".png"), os.path.join(art_dir, "pets", pet + ".png"))
     water = build_water(rb, river, art_dir)
+    if KIT_DIR and LAYOUT.get("ring_kit"):
+        # The approved module sources ship beside their assembled pieces (2D only).
+        os.makedirs(os.path.join(art_dir, "kit"), exist_ok=True)
+        for spec in LAYOUT["ring_kit"]["modules"].values():
+            shutil.copyfile(os.path.join(KIT_DIR, spec["file"]), os.path.join(art_dir, "kit", spec["file"]))
     ground.save(os.path.join(art_dir, "ground.jpg"), quality=90)
     ground.resize((PLATE_W // 2, PLATE_H // 2), Image.LANCZOS).save(os.path.join(art_dir, "ground_lite.jpg"), quality=88)
 
@@ -1396,7 +1716,8 @@ def main():
         "wall_polygon": [[round(a, 1), round(b, 1)] for a, b in wall_poly],
         "trees_keep": tree_keep["groups"],
         "map_base_only": base_cfg,
-        "wall_ring": dict(LAYOUT.get("wall_ring", {}), factors=gate_log.get("ring", {})),
+        "wall_ring": dict(LAYOUT.get("wall_ring", {}) or {"hero_screen_px": 156, "targets_screen_px": {"wall": 550, "tower": 1000, "gate": 1050},
+                          "note": "kit v2 modules are painted at these heights"}, factors=gate_log.get("ring", {})),
         "building_footprints": footprints,
         "thatch_swapped": swapped,
         "plants": {k: v for k, v in LAYOUT.get("plants", {}).items()},
