@@ -39,3 +39,4 @@ Crosshaven kit4: one-piece unified wall section v1 (diagonal wall + 2 towers + w
 2026-10-17 – walls/kit6/: HD ring v1 (5120x2880 full + RGBA walls layer, open land-gate passages, 4 portcullis sprites + portcullis_positions.json, comparison sheet), from Mauro TARGET @3c7a4790. CONCEPT.
 Crosshaven ring HD v2.1 concept (lit gates/tunnels, brighter, new portcullis positions) — 🖼️ CONCEPTO
 Crosshaven ring HD v2.3 concept (hand-repaint pass: mortar, W/E rims, passage perspective) — 🖼️ CONCEPTO
+Crosshaven ring HD v2.4 concept (round vaults, softer mortar, lighter roof lines) — 🖼️ CONCEPTO
