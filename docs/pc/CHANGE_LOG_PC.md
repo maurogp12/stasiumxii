@@ -42,3 +42,4 @@ Crosshaven ring HD v2.3 concept (hand-repaint pass: mortar, W/E rims, passage pe
 Crosshaven ring HD v2.4 concept (round vaults, softer mortar, lighter roof lines) — 🖼️ CONCEPTO
 Crosshaven gates: wooden double doors replace portcullis (Luca), see-through passages, no dust — 🖼️ CONCEPTO
 Crosshaven gate doors v2 painted (plank thickness, iron highlights, leaf darkening) — 🖼️ CONCEPTO
+Crosshaven style A concept (clean cartoon, Wakfu/Dofus-updated look) for Claude review; CONCEPTO, not built
