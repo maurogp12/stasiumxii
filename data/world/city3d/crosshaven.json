@@ -570,7 +570,7 @@
     "fit": "model",
     "min": 0.8,
     "max": 1.6,
-    "note": "re-concept coming (drop-in)"
+    "note": "re-concept v2"
    },
    "townhall": {
     "glb": "res://art/3d/crosshaven/bld_townhall_a_LOD1.glb",
@@ -603,7 +603,8 @@
     "res://art/3d/crosshaven/bld_house_npc_f_a_LOD1.glb",
     "res://art/3d/crosshaven/bld_house_npc_g_a_LOD1.glb",
     "res://art/3d/crosshaven/bld_house_npc_h_a_LOD1.glb",
-    "res://art/3d/crosshaven/bld_house_npc_b_a_LOD1.glb"
+    "res://art/3d/crosshaven/bld_house_npc_b_a_LOD1.glb",
+    "res://art/3d/crosshaven/bld_house_npc_i_a_LOD1.glb"
    ],
    "scale": 1.0,
    "player": {
@@ -611,6 +612,16 @@
     "rare": "res://art/3d/crosshaven/bld_house_player_rare_a_LOD1.glb",
     "legendary": "res://art/3d/crosshaven/bld_house_player_legendary_a_LOD1.glb"
    }
+  },
+  "workshops": {
+   "note": "W crafts quarter and the mill on the river bank (front +Z to the door). Our turning wheel stays until the art team's wheel and mill-race land.",
+   "workshop_smithy": "res://art/3d/crosshaven/bld_ws_smithy_a_LOD1.glb",
+   "workshop_forge": "res://art/3d/crosshaven/bld_ws_forge_a_LOD1.glb",
+   "workshop_potter": "res://art/3d/crosshaven/bld_ws_potter_a_LOD1.glb",
+   "workshop_weaver": "res://art/3d/crosshaven/bld_ws_weaver_a_LOD1.glb",
+   "workshop_carpenter": "res://art/3d/crosshaven/bld_ws_carpenter_a_LOD1.glb",
+   "workshop_tailor": "res://art/3d/crosshaven/bld_ws_tailor_a_LOD1.glb",
+   "mill": "res://art/3d/crosshaven/bld_ws_mill_a_LOD1.glb"
   }
  },
  "outskirts": {

@@ -611,6 +611,15 @@ func _build_piece(pc: Dictionary) -> void:
 	if not lk.is_empty() and ModelLoader.exists(str(lk.get("glb", ""))):
 		_landmark_model(pc, lk)
 		return
+	var wk: Dictionary = plan.city.get("kit", {}).get("workshops", {})
+	if wk.has(str(pc["kind"])) and ModelLoader.exists(str(wk[pc["kind"]])):
+		var wpath := str(wk[pc["kind"]])
+		kit.add_model(str(pc["kind"]), wpath, Transform3D(Basis(Vector3.UP, _yaw_to(_front_of(pc))), v3(pc["center"])))
+		if str(pc["kind"]) == "mill":
+			_mill_wheel(pc, spec)
+		elif bool(spec.get("chimney", false)):
+			_smoke(v3(pc["center"], float(spec.get("h", 5.0)) + 2.5), bool(spec.get("forge", false)))
+		return
 	var hk: Dictionary = plan.city.get("kit", {}).get("houses", {})
 	if not hk.is_empty() and (str(pc["kind"]).begins_with("house_npc") or str(pc["kind"]).begins_with("plot_")):
 		if _house_model(pc, hk):

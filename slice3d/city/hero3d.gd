@@ -31,6 +31,7 @@ var class_id := "bastion"
 var character: Dictionary = {}
 var _weapons := {}        ## weapon id -> BoneAttachment3D
 var _holster := {}        ## rig_json weapons.holster
+var _clip_info := {}      ## rig_json clips by name (axe_mode, holster_offset)
 var _skel_path := ""
 var _oneshot := false
 
@@ -208,6 +209,8 @@ func _attach_weapons() -> void:
 	var doc: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(rj))
 	var w: Dictionary = doc.get("weapons", {})
 	_holster = w.get("holster", {})
+	for c in doc.get("clips", []):
+		_clip_info[str(c.get("name", ""))] = c
 	var sk := Retarget.find_skeleton(model)
 	if sk == null:
 		return
@@ -237,15 +240,30 @@ func _mount(wid: String, spec: Dictionary) -> void:
 	(e["mesh"] as Node3D).transform = Transform3D(Basis(Quaternion(q[0], q[1], q[2], q[3])).scaled(inv), Vector3(pos[0], pos[1], pos[2]) * inv)
 
 
-## Holster or draw for a clip, as the rig JSON says.
+## Holster or draw for a clip, as the rig JSON says: per clip axe_mode
+## (in_hand, main_hand_only, holstered_back) and holster_offset (axe local:
+## translate, then Z, then X), else weapons.holster.use_for_clips.
 func _weapons_for_clip(key: String) -> void:
 	if _weapons.is_empty():
 		return
-	var holster := key in (_holster.get("use_for_clips", []) as Array)
+	var clip: Dictionary = _clip_info.get(key, {})
+	var mode := str(clip.get("axe_mode", "holstered_back" if key in (_holster.get("use_for_clips", []) as Array) else "in_hand"))
 	for wid in _weapons.keys():
-		var spec: Dictionary = (_holster.get("attach", {}) as Dictionary).get(wid, {}) if holster else _weapons[wid]["hand"]
-		if not spec.is_empty():
-			_mount(wid, spec)
+		var back := mode == "holstered_back" or (mode == "main_hand_only" and str(wid).ends_with("_L"))
+		var spec: Dictionary = (_holster.get("attach", {}) as Dictionary).get(wid, {}) if back else _weapons[wid]["hand"]
+		if spec.is_empty():
+			continue
+		_mount(wid, spec)
+		if back and clip.has("holster_offset"):
+			var off: Dictionary = clip["holster_offset"]
+			var rot: Variant = off.get("rotation_euler_deg_xyz", [0, 0, 0])
+			if rot is Dictionary:
+				rot = (rot as Dictionary).get(wid, [0, 0, 0])
+			var p: Array = off.get("position_m", [0, 0, 0])
+			var r: Array = rot
+			var extra := Transform3D(Basis(Vector3.FORWARD * -1.0, deg_to_rad(float(r[2]))) * Basis(Vector3.RIGHT, deg_to_rad(float(r[0]))), Vector3(p[0], p[1], p[2]))
+			var mesh: Node3D = _weapons[wid]["mesh"]
+			mesh.transform = mesh.transform * extra
 
 
 func _play(key: String) -> void:

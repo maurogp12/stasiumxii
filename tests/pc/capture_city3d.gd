@@ -229,8 +229,11 @@ func _classcheck() -> void:
 func _ironjaw() -> void:
 	m.env.set_hour(10.5)
 	m.set_class("ironjaw")
-	m.rig.distance = 6.0
-	m.rig.pitch = 18.0
+	var f := _piece("fountain")
+	m.hero.place(Vector2(f.x + 6.0, f.z + 6.0), Vector2(1, 1).normalized())
+	m.rig.distance = 5.5
+	m.rig.pitch = 14.0
+	m.rig.yaw = rad_to_deg(m.hero.rotation.y) + 25.0
 	m.rig.snap()
 	for i in 10:
 		await process_frame
@@ -244,9 +247,9 @@ func _ironjaw() -> void:
 		await process_frame
 	await _grab("ij_sit_holster.png")
 	m.hero._oneshot = false
-	var goal: Vector3 = _piece("fountain")
-	m.walk_to(Vector2(goal.x, goal.z))
+	m.walk_to(Vector2(f.x + 16.0, f.z + 16.0))
 	for i in 30:
 		await process_frame
+	m.rig.yaw = rad_to_deg(m.hero.rotation.y) + 25.0
 	m.rig.snap()
 	await _grab("ij_walk.png")

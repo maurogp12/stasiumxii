@@ -1,0 +1,29 @@
+{
+ "label": "🖼️ IMAGEN / CONCEPTO, TODAVÍA HAY QUE CONSTRUIRLO",
+ "name": "bld_ws_smithy_a",
+ "concept": "bld_ws_smithy_CONCEPTO_.png",
+ "height_m": 6.0,
+ "footprint_m": [
+  5.078,
+  5.426
+ ],
+ "pivot": "footprint centre on ground (y=0)",
+ "front": "+Z",
+ "units": "metres, Y-up",
+ "tris": {
+  "LOD0": 10385,
+  "LOD1": 5192,
+  "LOD2": 2076
+ },
+ "collider": "bld_ws_smithy_a-col.glb (convex hull)",
+ "textures": "embedded JPEG q82: LOD0 1024, LOD1 1024, LOD2 512",
+ "source_glb": "../raw/bld_ws_smithy_nYpcS2.glb.tmp.glb",
+ "uniform_scale": 1.0,
+ "status": "preview mesh, not tested in game",
+ "group": "workshops",
+ "xz_fit_scale": [
+  1.0,
+  1.0
+ ],
+ "facing_note": "Main entrance faces +Z. Build agent rotates on import."
+}
