@@ -79,6 +79,9 @@ func _load(path: String) -> void:
 			errors.append("kit has no terrain %s" % ids[ch])
 	for c in doc.get("walk_over", []):
 		_walk_over[Vector2i(int(c[0]), int(c[1]))] = true
+	# round 26: the ring blocks by its wall band (the ring pieces are art only)
+	for c in doc.get("wall_cells", []):
+		_blocked[Vector2i(int(c[0]), int(c[1]))] = -1
 	var i := 0
 	for p in doc["pieces"]:
 		var kind := str(p["kind"])
@@ -179,11 +182,23 @@ func pieces() -> Array:
 	return doc["pieces"]
 
 
+## "gate_h" -> "gate", "wall_diag_se" -> "wall", "tunnel_h" -> "tunnel".
+static func kind_group(kind: String) -> String:
+	if kind.begins_with("house_npc"):
+		return "house"
+	for g in ["gate", "wall", "tunnel", "workshop", "stall", "lamp", "bench", "fence", "crate", "barrel"]:
+		if kind == g or kind.begins_with(g + "_"):
+			return g
+	return kind
+
+
 func piece_spec(p: Dictionary) -> Dictionary:
 	return kit["pieces"][str(p["kind"])]
 
 
 func piece_blocks(p: Dictionary) -> bool:
+	if p.has("solid"):
+		return bool(p["solid"])
 	if bool(p.get("tunnel", false)):
 		return true
 	return bool(piece_spec(p)["blocks"])
@@ -191,16 +206,25 @@ func piece_blocks(p: Dictionary) -> bool:
 
 func footprint(p: Dictionary) -> Array[Vector2i]:
 	var fp: Array = piece_spec(p)["footprint"]
+	var fw := int(fp[0])
+	var fh := int(fp[1])
+	if bool(p.get("flip", false)):
+		# mirrored art: the footprint mirrors too
+		var t := fw
+		fw = fh
+		fh = t
 	var a := Vector2i(int(p["cell"][0]), int(p["cell"][1]))
 	var out: Array[Vector2i] = []
-	for i in int(fp[0]):
-		for j in int(fp[1]):
+	for i in fw:
+		for j in fh:
 			out.append(a - Vector2i(i, j))
 	return out
 
 
 ## World px of the piece's foot: the south corner of its anchor cell.
 func piece_foot(p: Dictionary) -> Vector2:
+	if p.has("world_foot"):
+		return Vector2(float(p["world_foot"][0]), float(p["world_foot"][1]))
 	var a := Vector2(float(p["cell"][0]), float(p["cell"][1]))
 	return cell_to_world(a) + Vector2(0, tile.y * 0.5)
 
@@ -211,6 +235,10 @@ func piece_index_at(c: Vector2i) -> int:
 
 ## ---- walking
 
+func is_wall(c: Vector2i) -> bool:
+	return int(_blocked.get(c, 0)) == -1 and _blocked.has(c)
+
+
 func passable(c: Vector2i) -> bool:
 	if not in_bounds(c):
 		return false
@@ -219,6 +247,8 @@ func passable(c: Vector2i) -> bool:
 		return false
 	if _blocked.has(c):
 		return false
+	if _walk_over.has(c):
+		return true
 	if ch == "w" and not _walk_over.has(c):
 		return false
 	return true

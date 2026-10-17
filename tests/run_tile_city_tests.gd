@@ -25,6 +25,7 @@ func _initialize() -> void:
 func _run() -> void:
 	tc = TileCity.load_path()
 	check(tc.ok(), "tilemap and kit load (%s)" % [tc.errors])
+	print("kit: ", tc.kit.get("name", ""))
 	if not tc.ok():
 		_finish()
 		return
@@ -85,7 +86,7 @@ func _test_autotile() -> void:
 func _count(kind: String) -> int:
 	var n := 0
 	for p in tc.pieces():
-		if str(p["kind"]) == kind:
+		if str(p["kind"]) == kind or TileCity.kind_group(str(p["kind"])) == kind:
 			n += 1
 	return n
 
@@ -117,17 +118,40 @@ func _test_pieces() -> void:
 				if owner.has(c):
 					overlaps += 1
 				owner[c] = i
-				if not (str(p["kind"]) in ["wall", "tower", "fountain", "stall", "well"]) and tc.terrain_char(c) in ["c", "p", "w", "d"]:
+				if not (TileCity.kind_group(str(p["kind"])) in ["wall", "tower", "fountain", "stall", "well", "bench", "crate", "barrel", "lamp", "fence", "cart_hay", "signpost", "notice_board"]) and tc.terrain_char(c) in ["c", "p", "w", "d"]:
 					on_road += 1
 		i += 1
 	check(overlaps == 0, "blocking footprints do not overlap (%d)" % overlaps)
 	check(on_road == 0, "buildings keep off roads, the plaza and water (%d tiles)" % on_road)
+	# round 26: the ring is made of kit runs; every house door opens on a street
+	check(_count("wall") > 40 and _count("tunnel") == 2, "the ring: wall runs and 2 water tunnels (%d, %d)" % [_count("wall"), _count("tunnel")])
+	var doors_ok := 0
+	var houses := 0
+	for p in tc.pieces():
+		if TileCity.kind_group(str(p["kind"])) == "house":
+			houses += 1
+			var d: Array = p.get("door_cell", [])
+			if not d.is_empty() and tc.terrain_char(Vector2i(int(d[0]), int(d[1]))) in ["c", "d", "p"]:
+				doors_ok += 1
+	check(houses >= 45 and doors_ok == houses, "every house door opens on a street (%d of %d)" % [doors_ok, houses])
+	var variants := {}
+	var flipped := 0
+	for p in tc.pieces():
+		if TileCity.kind_group(str(p["kind"])) == "house":
+			variants[str(p["kind"])] = true
+			if bool(p.get("flip", false)):
+				flipped += 1
+	check(variants.size() == 9 and flipped > 5, "all 9 house designs, some mirrored (%d, %d)" % [variants.size(), flipped])
 	# the big walls dwarf the hero
 	var hero := float(tc.doc["hero_world_px"])
 	var k := tc.kit_scale()
 	var tower_h := float(tc.kit["pieces"]["tower"]["height_px"]) * k
-	var house_h := float(tc.kit["pieces"]["house"]["height_px"]) * k
-	var wall_h := float(tc.kit["pieces"]["wall"]["height_px"]) * k
+	var hk := "house"
+	for kk in tc.kit["pieces"].keys():
+		if str(kk).begins_with("house_npc"):
+			hk = kk
+	var house_h := float(tc.kit["pieces"][hk]["height_px"]) * k
+	var wall_h := float(tc.kit["pieces"]["wall_h" if tc.kit["pieces"].has("wall_h") else "wall"]["height_px"]) * k
 	check(tower_h / hero > 5.0, "a tower is over 5 hero heights (%.1f)" % (tower_h / hero))
 	check(house_h / hero > 2.6 and house_h / hero < 3.6 and house_h < wall_h, "a house is about 3 hero heights and below the wall")
 
@@ -176,9 +200,11 @@ func _test_view() -> void:
 			bad += 1
 	check(bad == 0, "every piece sprite has its texture (%d missing)" % bad)
 	# y-sort: of two pieces, the one further south draws on top
-	var a: Dictionary = v.piece_nodes[0]
-	var b: Dictionary = v.piece_nodes[0]
+	var a: Dictionary = v.piece_nodes[v.piece_nodes.size() - 1]
+	var b: Dictionary = v.piece_nodes[v.piece_nodes.size() - 1]
 	for pn in v.piece_nodes:
+		if bool((pn["piece"] as Dictionary).get("under", false)):
+			continue
 		if (pn["foot"] as Vector2).y < (a["foot"] as Vector2).y:
 			a = pn
 		if (pn["foot"] as Vector2).y > (b["foot"] as Vector2).y:

@@ -74,9 +74,11 @@ func _find_places() -> void:
 		places[key] = []
 	if city.tile_mode():
 		for p in city.tile.pieces():
-			var kind := str(p["kind"])
+			var kind := TileCity.kind_group(str(p["kind"]))
 			var d := Vector2i(-1, -1)
-			if kind in ["house", "workshop", "stall", "fountain", "bank", "townhall", "mill", "gate"]:
+			if kind == "house" and p.has("door_cell"):
+				d = _walkable_near(_old_cell(city.tile.cell_to_world(Vector2(float(p["door_cell"][0]), float(p["door_cell"][1])))))
+			elif kind in ["house", "workshop", "stall", "fountain", "bank", "townhall", "mill", "gate"]:
 				d = _door_of(p)
 			if d.x < 0:
 				continue

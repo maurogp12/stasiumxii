@@ -171,7 +171,7 @@ func _test_view(w: Node2D) -> void:
 	check(w.in_city() and w.city_plate != null, "the world is in the city")
 	var cp = w.city_plate
 	check(cp.tile_view != null, "the tile view draws the town")
-	check(cp.rows.size() > 1000, "every piece is a sorted row (%d)" % cp.rows.size())
+	check(cp.rows.size() == city.tile.pieces().size() and cp.rows.size() > 250, "every piece is a sorted row (%d)" % cp.rows.size())
 	var tags := {}
 	for row in cp.rows:
 		tags[str(row["tag"])] = true

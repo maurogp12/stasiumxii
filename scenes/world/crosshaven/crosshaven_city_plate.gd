@@ -140,6 +140,8 @@ static func _light_texture() -> Texture2D:
 
 func tick_lights(delta: float) -> void:
 	_sync_lights(delta)
+	if tile_view != null and not lite:
+		tile_view.tick(delta)
 
 
 func _add_lamp_light(s: Sprite2D, rec: Dictionary, k: float) -> void:
@@ -646,24 +648,26 @@ func _build_tile() -> void:
 		var s: Sprite2D = pn["node"]
 		var p: Dictionary = pn["piece"]
 		var kind := str(p["kind"])
-		var tag := str(TILE_TAGS.get(kind, kind))
+		var tag := str(TILE_TAGS.get(TileCity.kind_group(kind), TILE_TAGS.get(kind, kind)))
+		if TileCity.kind_group(kind) == "tunnel":
+			tag = "watergate"
 		if s.texture == null:
 			continue
 		var size: Vector2 = s.texture.get_size() * k / city.scale()
 		var foot: Vector2 = pn["foot"]
-		var fade: bool = s.texture.get_size().y * k >= 40.0 and kind != "bridge"
+		var fade: bool = s.texture.get_size().y * k >= 40.0 and not bool(p.get("under", false))
 		var mask := _tex_mask(s.texture) if fade else {}
 		var row := {
 			"node": s, "tag": tag, "id": id, "kind": kind,
 			"rect": Rect2(s.position, s.texture.get_size() * k),
 			"sort_y": city.world_to_plate(foot).y, "z": s.z_index, "fade": fade,
-			"min_alpha": 0.45, "mask": mask, "alpha": 1.0, "k": k / city.scale(), "flip": false,
+			"min_alpha": 0.45, "mask": mask, "alpha": 1.0, "k": k / city.scale(), "flip": s.flip_h,
 			"piece": p,
 		}
 		rows.append(row)
 		id += 1
-		if kind == "lamp":
-			_add_tile_lamp(s, foot, k)
+		if TileCity.kind_group(kind) == "lamp":
+			_add_tile_lamp(s, foot, k, pn.get("glow"))
 		if p.has("plot"):
 			plot_nodes[str(p["plot"])] = s
 	_build_tile_gates()
@@ -694,12 +698,35 @@ func _tex_mask(t: Texture2D) -> Dictionary:
 
 ## A lamp's head glow, ground pool and (outside Performance mode) point light,
 ## lit from dusk to dawn like the plate lamps.
-func _add_tile_lamp(s: Sprite2D, foot: Vector2, k: float) -> void:
+func _add_tile_lamp(s: Sprite2D, foot: Vector2, k: float, kit_glow: Variant = null) -> void:
 	var cfg: Dictionary = city.doc.get("lights", {})
 	var add := CanvasItemMaterial.new()
 	add.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
 	var tint := Color(1.0, 0.8, 0.5)
 	var head := Vector2(foot.x, s.position.y + 14.0 * k)
+	if kit_glow != null:
+		# the kit's own additive glow is the lamp head
+		var pool0 := Sprite2D.new()
+		pool0.texture = _light_texture()
+		pool0.material = add
+		pool0.position = foot
+		pool0.scale = Vector2(0.9, 0.45)
+		pool0.self_modulate = tint
+		pool0.modulate.a = 0.5
+		pool0.z_as_relative = false
+		pool0.z_index = UNDER_Z + 80
+		pool0.visible = false
+		add_child(pool0)
+		var pl0 := PointLight2D.new()
+		pl0.texture = _light_texture()
+		pl0.texture_scale = float(cfg.get("light_radius_px", 170.0)) * city.scale() / 128.0
+		pl0.color = tint
+		pl0.energy = float(cfg.get("light_energy", 1.1))
+		pl0.position = foot - Vector2(0, 30)
+		pl0.enabled = false
+		add_child(pl0)
+		lights.append({"halo": kit_glow, "pool": pool0, "light": pl0, "base_a": 1.0, "plant": "kit_lamp"})
+		return
 	var halo := Sprite2D.new()
 	halo.texture = _light_texture()
 	halo.material = add
@@ -742,7 +769,7 @@ func _add_tile_lamp(s: Sprite2D, foot: Vector2, k: float) -> void:
 func _build_tile_gates() -> void:
 	gates_fx.clear()
 	for row in rows:
-		if str(row.get("kind", "")) != "gate":
+		if TileCity.kind_group(str(row.get("kind", ""))) != "gate":
 			continue
 		var p: Dictionary = row["piece"]
 		var gid := str(p.get("gate", ""))
@@ -754,13 +781,12 @@ func _build_tile_gates() -> void:
 			for c in rec.get("block_cells", []):
 				block[Vector2i(int(c[0]), int(c[1]))] = true
 		var spec: Dictionary = city.tile.piece_spec(p)
-		var frames: Array = []
-		for f in spec.get("frames", []):
-			frames.append(tile_view.tex(str(f)))
+		var door: Dictionary = spec.get("door", {})
 		var foot: Vector2 = city.tile.piece_foot(p)
 		gates_fx.append({
 			"id": gid, "node": row["node"], "lift": 0.0, "target": 0.0, "idle": 0.0, "glow": null, "light": null,
-			"kind": "door" if frames.size() >= 2 else "fade", "frames": frames, "frame": 0.0, "fps": float(spec.get("fps", 12.0)),
+			"kind": "strip" if not door.is_empty() else "fade", "frames": [], "frame": 0.0,
+			"n_frames": int(door.get("frames", 8)), "fps": float(door.get("fps", 12.0)),
 			"at": foot, "open_s": 0.6, "close_after_s": 1.5, "trigger": 3.0, "block": block,
 		})
 
@@ -861,6 +887,14 @@ func tick_gates(delta: float, bodies: Array, hero_h: float) -> void:
 			if float(gf["target"]) > 0.0 and float(gf["idle"]) >= float(gf["close_after_s"]):
 				gf["target"] = 0.0
 				_gate_sound(str(gf["id"]), "close")
+		if str(gf["kind"]) == "strip":
+			# the kit's door strip: f00 shut .. last open, at its fps both ways
+			var last_f := float(int(gf["n_frames"]) - 1)
+			gf["frame"] = move_toward(float(gf["frame"]), float(gf["target"]) * last_f, delta * float(gf["fps"]))
+			gf["lift"] = float(gf["frame"]) / maxf(1.0, last_f)
+			if tile_view != null:
+				tile_view.set_door_frame(str(gf["id"]), int(floor(float(gf["frame"]) + 0.001)))
+			continue
 		if str(gf["kind"]) == "fade":
 			gf["lift"] = move_toward(float(gf["lift"]), float(gf["target"]), delta / maxf(0.01, float(gf["open_s"])))
 			(gf["node"] as CanvasItem).self_modulate.a = 1.0 - 0.75 * float(gf["lift"])
@@ -885,7 +919,7 @@ func tick_gates(delta: float, bodies: Array, hero_h: float) -> void:
 func gate_closed_at(cell: Vector2i) -> bool:
 	for gf in gates_fx:
 		# a door blocks until it is fully open; a portcullis once it is 3/4 up
-		var need := 1.0 if str(gf["kind"]) in ["door", "fade"] else 0.75
+		var need := 1.0 if str(gf["kind"]) in ["door", "fade", "strip"] else 0.75
 		if (gf["block"] as Dictionary).has(cell) and float(gf["lift"]) < need - 0.0001:
 			return true
 	return false

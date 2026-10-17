@@ -53,8 +53,61 @@ PIECES = {
     "plot_normal": ((4, 4), 460, (230, 150, 120), True),
     "plot_rare": ((4, 4), 545, (130, 200, 230), True),
     "plot_legendary": ((4, 4), 620, (230, 200, 90), True),
-    "bridge": ((1, 1), 40, (140, 110, 80), False),
+    "bridge": ((2, 5), 40, (140, 110, 80), False),
 }
+
+# Round 26: ring pieces are runs along the wall line (screen slope 0 or
+# +/-0.5), drawn as slabs: [width px, slope, height, colour, extra]
+SLABS = {
+    "wall_h": (409, 0.0, 550, (170, 160, 140), None),
+    "wall_diag_se": (409, 0.5, 550, (170, 160, 140), None),
+    "wall_diag_ne": (409, -0.5, 550, (170, 160, 140), None),
+    "gate_h": (1323, 0.0, 550, (165, 155, 135), "arch"),
+    "gate_diag_se": (1323, 0.5, 550, (165, 155, 135), "arch"),
+    "gate_diag_ne": (1323, -0.5, 550, (165, 155, 135), "arch"),
+    "tunnel_h": (1027, 0.0, 550, (150, 150, 160), "grate"),
+    "tunnel_diag_se": (1027, 0.5, 550, (150, 150, 160), "grate"),
+    "tunnel_diag_ne": (1027, -0.5, 550, (150, 150, 160), "grate"),
+}
+
+
+def slab(width, slope, h, col, extra):
+    dy = abs(slope) * width
+    W, H = width, int(h + dy + 8)
+    im = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    d = ImageDraw.Draw(im)
+    # foot line from left to right; the foot (bottom centre) at (W/2, foot_y)
+    y_left = H - 4 - (dy if slope < 0 else 0)
+    y_right = y_left + slope * width
+    d.polygon([(0, y_left), (W, y_right), (W, y_right - h), (0, y_left - h)], fill=col + (255,), outline=(60, 55, 50, 255))
+    foot = (W // 2, int(round((y_left + y_right) / 2)))
+    door = None
+    if extra:
+        aw, ah = 244, 352
+        ax0 = W // 2 - aw // 2
+        ay1 = foot[1]
+        if extra == "arch":
+            d.polygon([(ax0, ay1 - slope * aw / 2), (ax0 + aw, ay1 + slope * aw / 2),
+                       (ax0 + aw, ay1 + slope * aw / 2 - ah), (ax0, ay1 - slope * aw / 2 - ah)], fill=(0, 0, 0, 0))
+            door = {"frames": 8, "fps": 12, "frame_w": aw, "frame_h": ah + int(abs(slope) * aw),
+                    "offset": [ax0, int(ay1 - ah - abs(slope) * aw / 2)], "open_inward": True}
+        else:
+            for k in range(8):
+                x = ax0 + k * aw // 7
+                d.line([(x, ay1 - ah), (x, ay1)], fill=(40, 40, 50, 255), width=6)
+    return im, foot, door
+
+
+def door_strip(fw, fh):
+    im = Image.new("RGBA", (fw * 8, fh), (0, 0, 0, 0))
+    d = ImageDraw.Draw(im)
+    for f in range(8):
+        leaf = int((fw // 2) * (1.0 - f / 7.0))
+        x0 = f * fw
+        if leaf > 0:
+            d.rectangle([x0, 0, x0 + leaf, fh - 1], fill=(120, 80, 45, 255), outline=(60, 40, 20, 255))
+            d.rectangle([x0 + fw - leaf, 0, x0 + fw - 1, fh - 1], fill=(120, 80, 45, 255), outline=(60, 40, 20, 255))
+    return im
 
 
 def corner_tile(mask, col):
@@ -107,6 +160,20 @@ def main():
         name = "piece_%s.png" % kind
         im.save(os.path.join(out, name), optimize=True)
         kit["pieces"][kind] = {"file": name, "foot": list(foot), "footprint": [fw, fh], "blocks": blocks, "height_px": h}
+    for kind, (width, slope, h, col, extra) in SLABS.items():
+        im, foot, door = slab(width, slope, h, col, extra)
+        name = "piece_%s.png" % kind
+        im.save(os.path.join(out, name), optimize=True)
+        rec = {"file": name, "foot": list(foot), "footprint": [3, 1], "blocks": True, "height_px": h,
+               "size": [im.width, im.height], "slope": slope}
+        if door:
+            dn = "piece_%s_door.png" % kind
+            door_strip(door["frame_w"], door["frame_h"]).save(os.path.join(out, dn), optimize=True)
+            door["file"] = dn
+            rec["door"] = door
+        kit["pieces"][kind] = rec
+    for t in kit["terrains"]:
+        t["atlas_cols"] = 16
     json.dump(kit, open(os.path.join(out, "kit.json"), "w"), indent=1)
     print("kit", out, len(kit["terrains"]), "terrains", len(kit["pieces"]), "pieces")
 

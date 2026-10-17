@@ -96,8 +96,38 @@ func file_path_dir(_d: Dictionary) -> String:
 ## stay open (the doors and the deck heights still come from city.json).
 func _rows_from_tile(d: Dictionary, w: int, h: int, old_rows: Array) -> Array:
 	var keep_open := {}
-	for c in d.get("gate_cells", []):
-		keep_open[Vector2i(int(c[0]), int(c[1]))] = true
+	# the gates are where the tile map put them (the ring is snapped to the
+	# kit's wall directions): passage cells, arch and the cells the doors hold
+	var tgates := {}
+	for tg in tile.doc.get("gates", []):
+		tgates[str(tg["id"])] = tg
+	for g in d.get("gates", []):
+		var tg: Dictionary = tgates.get(str(g["id"]), {})
+		if tg.is_empty():
+			continue
+		var cells: Array = []
+		var seen := {}
+		for c in tg["cells"]:
+			var wc := tile.cell_to_world(Vector2(float(c[0]), float(c[1])))
+			var oc := Vector2i(roundi((wc.x / 32.0 + wc.y / 16.0) * 0.5), roundi((wc.y / 16.0 - wc.x / 32.0) * 0.5))
+			if not seen.has(oc):
+				seen[oc] = true
+				cells.append([oc.x, oc.y])
+		g["cells"] = cells
+		if tg.has("arch_plate"):
+			g["arch"] = tg["arch_plate"]
+		var aw := plate_to_world(Vector2(float(g["arch"][0]), float(g["arch"][1])))
+		var block: Array = []
+		for c in cells:
+			if Vector2(32.0 * (c[0] - c[1]), 16.0 * (c[0] + c[1])).distance_to(aw) <= 48.0:
+				block.append(c)
+		for key in ["door", "portcullis"]:
+			if g.has(key):
+				g[key]["block_cells"] = block
+		if not g.has("door") and not g.has("portcullis"):
+			g["door"] = {"block_cells": block}
+		if str(g["id"]) == "S":
+			d["gate_cells"] = cells
 	for g in d.get("gates", []):
 		for c in g.get("cells", []):
 			keep_open[Vector2i(int(c[0]), int(c[1]))] = true
@@ -118,10 +148,15 @@ func _rows_from_tile(d: Dictionary, w: int, h: int, old_rows: Array) -> Array:
 				sym = "r"
 			else:
 				var bad := 0
+				var wall := tile.is_wall(c)
 				for o in [Vector2(14, 0), Vector2(-14, 0), Vector2(0, 7), Vector2(0, -7)]:
-					if not tile.passable(tile.world_to_cell(wp + o)):
+					var oc := tile.world_to_cell(wp + o)
+					if not tile.passable(oc):
 						bad += 1
-				if not tile.passable(c) or bad >= 3:
+					if tile.is_wall(oc):
+						wall = true
+				# the ring seals: a cell touching the wall band is wall
+				if not tile.passable(c) or bad >= 3 or wall:
 					sym = "~" if ch == "w" else "#"
 				else:
 					sym = "r" if ch in ["c", "d", "p"] or ch == "w" else "g"
@@ -356,10 +391,12 @@ func _read(d: Dictionary) -> Array:
 		if not tile.ok():
 			errors.append_array(tile.errors)
 			return errors
-		rows = _rows_from_tile(d, w, h, rows)
 		d = d.duplicate(true)
+		rows = _rows_from_tile(d, w, h, rows)
 		d["grid"] = (d["grid"] as Dictionary).duplicate(true)
 		d["grid"]["rows"] = rows
+		if tile.doc.has("wall_polygon_plate"):
+			d["wall_polygon"] = tile.doc["wall_polygon_plate"]
 		doc = d
 		_move_onto_walk(d, w, h, rows)
 	zone = _build_zone(d, w, h, rows)

@@ -23,7 +23,8 @@
     96,
     150,
     70
-   ]
+   ],
+   "atlas_cols": 16
   },
   {
    "id": "dirt",
@@ -33,7 +34,8 @@
     160,
     122,
     80
-   ]
+   ],
+   "atlas_cols": 16
   },
   {
    "id": "cobble",
@@ -43,7 +45,8 @@
     150,
     146,
     136
-   ]
+   ],
+   "atlas_cols": 16
   },
   {
    "id": "plaza",
@@ -53,7 +56,8 @@
     196,
     180,
     150
-   ]
+   ],
+   "atlas_cols": 16
   },
   {
    "id": "water",
@@ -63,7 +67,8 @@
     60,
     130,
     190
-   ]
+   ],
+   "atlas_cols": 16
   }
  ],
  "pieces": {
@@ -304,15 +309,213 @@
   "bridge": {
    "file": "piece_bridge.png",
    "foot": [
-    64,
-    104
+    320,
+    264
    ],
    "footprint": [
-    1,
-    1
+    2,
+    5
    ],
    "blocks": false,
    "height_px": 40
+  },
+  "wall_h": {
+   "file": "piece_wall_h.png",
+   "foot": [
+    204,
+    554
+   ],
+   "footprint": [
+    3,
+    1
+   ],
+   "blocks": true,
+   "height_px": 550,
+   "size": [
+    409,
+    558
+   ],
+   "slope": 0.0
+  },
+  "wall_diag_se": {
+   "file": "piece_wall_diag_se.png",
+   "foot": [
+    204,
+    860
+   ],
+   "footprint": [
+    3,
+    1
+   ],
+   "blocks": true,
+   "height_px": 550,
+   "size": [
+    409,
+    762
+   ],
+   "slope": 0.5
+  },
+  "wall_diag_ne": {
+   "file": "piece_wall_diag_ne.png",
+   "foot": [
+    204,
+    451
+   ],
+   "footprint": [
+    3,
+    1
+   ],
+   "blocks": true,
+   "height_px": 550,
+   "size": [
+    409,
+    762
+   ],
+   "slope": -0.5
+  },
+  "gate_h": {
+   "file": "piece_gate_h.png",
+   "foot": [
+    661,
+    554
+   ],
+   "footprint": [
+    3,
+    1
+   ],
+   "blocks": true,
+   "height_px": 550,
+   "size": [
+    1323,
+    558
+   ],
+   "slope": 0.0,
+   "door": {
+    "frames": 8,
+    "fps": 12,
+    "frame_w": 244,
+    "frame_h": 352,
+    "offset": [
+     539,
+     202
+    ],
+    "open_inward": true,
+    "file": "piece_gate_h_door.png"
+   }
+  },
+  "gate_diag_se": {
+   "file": "piece_gate_diag_se.png",
+   "foot": [
+    661,
+    1546
+   ],
+   "footprint": [
+    3,
+    1
+   ],
+   "blocks": true,
+   "height_px": 550,
+   "size": [
+    1323,
+    1219
+   ],
+   "slope": 0.5,
+   "door": {
+    "frames": 8,
+    "fps": 12,
+    "frame_w": 244,
+    "frame_h": 474,
+    "offset": [
+     539,
+     1133
+    ],
+    "open_inward": true,
+    "file": "piece_gate_diag_se_door.png"
+   }
+  },
+  "gate_diag_ne": {
+   "file": "piece_gate_diag_ne.png",
+   "foot": [
+    661,
+    223
+   ],
+   "footprint": [
+    3,
+    1
+   ],
+   "blocks": true,
+   "height_px": 550,
+   "size": [
+    1323,
+    1219
+   ],
+   "slope": -0.5,
+   "door": {
+    "frames": 8,
+    "fps": 12,
+    "frame_w": 244,
+    "frame_h": 474,
+    "offset": [
+     539,
+     -190
+    ],
+    "open_inward": true,
+    "file": "piece_gate_diag_ne_door.png"
+   }
+  },
+  "tunnel_h": {
+   "file": "piece_tunnel_h.png",
+   "foot": [
+    513,
+    554
+   ],
+   "footprint": [
+    3,
+    1
+   ],
+   "blocks": true,
+   "height_px": 550,
+   "size": [
+    1027,
+    558
+   ],
+   "slope": 0.0
+  },
+  "tunnel_diag_se": {
+   "file": "piece_tunnel_diag_se.png",
+   "foot": [
+    513,
+    1324
+   ],
+   "footprint": [
+    3,
+    1
+   ],
+   "blocks": true,
+   "height_px": 550,
+   "size": [
+    1027,
+    1071
+   ],
+   "slope": 0.5
+  },
+  "tunnel_diag_ne": {
+   "file": "piece_tunnel_diag_ne.png",
+   "foot": [
+    513,
+    297
+   ],
+   "footprint": [
+    3,
+    1
+   ],
+   "blocks": true,
+   "height_px": 550,
+   "size": [
+    1027,
+    1071
+   ],
+   "slope": -0.5
   }
  }
 }

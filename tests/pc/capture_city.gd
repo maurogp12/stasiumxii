@@ -76,6 +76,8 @@ func _go() -> void:
 		await _v4_shots()
 	elif _set == "behind":
 		await _behind_shots()
+	elif _set == "kit":
+		await _kit_shots()
 	elif _set == "life":
 		await _life_shots()
 	elif _set == "r23" and not _clip:
@@ -233,6 +235,76 @@ func _r23_clip() -> void:
 			await process_frame
 	_grabbing = false
 	print("CLIP frames=%d" % _frame_i)
+
+
+## Round 26: kit groups 1-2 in play: wide, the S gate doors opening, plaza,
+## river and bridge, a street, a player plot.
+func _kit_shots() -> void:
+	_w.camera_hold = true
+	_w.npc_plates.visible = false
+	var cp = _w.city_plate
+	var rect: Rect2 = city.world_rect()
+	var vp: Vector2 = _w.get_viewport().get_visible_rect().size
+	_w.walker.visible = false
+	await _hold(rect.get_center(), minf(vp.x / rect.size.x, vp.y / rect.size.y), 30, "70_kit_wide")
+	_w.walker.visible = true
+	for p in city.tile.pieces():
+		if str(p.get("gate", "")) == "S":
+			var foot: Vector2 = city.tile.piece_foot(p)
+			var gf: Dictionary = cp.gate_fx("S")
+			for f in [0, 3, 7]:
+				# shut and half-open with the hero well back; open with him at the arch
+				_place(_near_free(_cell_at_world(foot + Vector2(0, 420 if f < 7 else 120))), "n")
+				gf["frame"] = float(f)
+				gf["target"] = float(f) / 7.0
+				gf["idle"] = 0.0
+				gf["lift"] = float(f) / 7.0
+				cp.tile_view.set_door_frame("S", f)
+				_w.camera_hold = true
+				for i in 4:
+					await process_frame
+				await _hold(foot + Vector2(0, -110), 1.3, 6, "71_kit_gate_S_door_f%02d" % f)
+	var plaza := Vector2.ZERO
+	var bridge := Vector2.ZERO
+	var house := Vector2.ZERO
+	var plot := Vector2.ZERO
+	for p in city.tile.pieces():
+		var k := str(p["kind"])
+		if k == "fountain":
+			plaza = city.tile.piece_foot(p)
+		elif k == "bridge" and bridge == Vector2.ZERO:
+			bridge = city.tile.piece_foot(p)
+		elif k.begins_with("house_npc") and house == Vector2.ZERO and p.has("door_cell"):
+			house = city.tile.piece_foot(p)
+		elif k == "plot_legendary" and plot == Vector2.ZERO:
+			plot = city.tile.piece_foot(p)
+	_place(_near_free(_cell_at_world(plaza + Vector2(80, 60))), "n")
+	await _hold(plaza + Vector2(0, -60), 0.8, 30, "72_kit_plaza")
+	_place(_near_free(_cell_at_world(bridge + Vector2(0, 30))), "n")
+	await _hold(bridge + Vector2(0, -40), 1.0, 30, "73_kit_river_bridge")
+	_place(_near_free(_cell_at_world(house + Vector2(-60, 40))), "n")
+	await _hold(house + Vector2(60, -80), 1.0, 30, "74_kit_street")
+	_place(_near_free(_cell_at_world(plot + Vector2(-60, 50))), "n")
+	await _hold(plot + Vector2(0, -150), 0.9, 30, "75_kit_player_plot")
+	var spots := {}
+	for p in city.tile.pieces():
+		var k := str(p["kind"])
+		if k in ["castle", "cathedral", "workshop_potter"] and not spots.has(k):
+			spots[k] = city.tile.piece_foot(p)
+	var names := {"castle": ["76_kit_castle", 0.6, -260.0], "cathedral": ["77_kit_cathedral_plaza", 0.65, -200.0], "workshop_potter": ["78_kit_crafts_quarter", 0.75, -100.0]}
+	for k in names.keys():
+		if spots.has(k):
+			var at: Vector2 = spots[k]
+			_place(_near_free(_cell_at_world(at + Vector2(-50, 60))), "n")
+			await _hold(at + Vector2(0, float(names[k][2])), float(names[k][1]), 30, str(names[k][0]))
+	_w.weather.time_of_day = 22.0
+	_w._sync_city_life()
+	_place(_near_free(_cell_at_world(plaza + Vector2(80, 60))), "n")
+	await _hold(plaza + Vector2(0, -60), 0.8, 40, "79_kit_plaza_night")
+	_w.weather.time_of_day = 12.0
+	_w._sync_city_life()
+	_w.camera_hold = false
+	_w.npc_plates.visible = true
 
 
 ## Round 25: the modular city in play: the whole town, the plaza at noon

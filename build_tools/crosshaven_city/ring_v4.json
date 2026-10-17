@@ -1119,5 +1119,6 @@
   "enabled": true,
   "tilemap": "tilemap.json",
   "note": "Round 25: the modular city (tile map + kit). enabled false falls back to the painted plate."
- }
+ },
+ "tile_wall_band_px": 48
 }

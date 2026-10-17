@@ -1,0 +1,1245 @@
+{
+ "format": "stasium.tile_kit",
+ "format_version": 1,
+ "name": "Crosshaven kit A (style A)",
+ "source": "docs/pc-map-handoff work/tilekit",
+ "tile_px": [
+  128,
+  64
+ ],
+ "hero_px": 156,
+ "autotile": "corner_wang_16",
+ "corner_bits": {
+  "N": 1,
+  "E": 2,
+  "S": 4,
+  "W": 8
+ },
+ "terrains": [
+  {
+   "id": "grass",
+   "priority": 0,
+   "atlas": "grass_atlas.png",
+   "atlas_cols": 4,
+   "full_variants": "grass_full_variants.png",
+   "variants": 3
+  },
+  {
+   "id": "dirt",
+   "priority": 1,
+   "atlas": "dirt_atlas.png",
+   "atlas_cols": 4,
+   "full_variants": "dirt_full_variants.png",
+   "variants": 3
+  },
+  {
+   "id": "cobble",
+   "priority": 2,
+   "atlas": "cobble_atlas.png",
+   "atlas_cols": 4,
+   "full_variants": "cobble_full_variants.png",
+   "variants": 3
+  },
+  {
+   "id": "plaza",
+   "priority": 3,
+   "atlas": "plaza_atlas.png",
+   "atlas_cols": 4,
+   "full_variants": "plaza_full_variants.png",
+   "variants": 3
+  },
+  {
+   "id": "water",
+   "priority": 4,
+   "atlas": "water_atlas.png",
+   "atlas_cols": 4,
+   "anim": "water_atlas_anim.png",
+   "anim_frames": 6,
+   "anim_fps": 8.0
+  }
+ ],
+ "pieces": {
+  "wall_h": {
+   "foot": [
+    153,
+    550
+   ],
+   "footprint": [
+    2,
+    1
+   ],
+   "blocks": true,
+   "height_px": 550,
+   "file": "wall_h.png",
+   "size": [
+    306,
+    600
+   ],
+   "orient": "screen-horizontal (runs along grid diagonal)",
+   "tile_step_px": [
+    206,
+    0
+   ]
+  },
+  "wall_diag_se": {
+   "foot": [
+    153,
+    619
+   ],
+   "footprint": [
+    2,
+    1
+   ],
+   "blocks": true,
+   "height_px": 550,
+   "file": "wall_diag_se.png",
+   "size": [
+    306,
+    720
+   ],
+   "orient": "se iso axis, 2:1 slope; painted iso pass; mirror pair",
+   "tile_step_px": [
+    206,
+    103
+   ]
+  },
+  "wall_diag_ne": {
+   "foot": [
+    152,
+    619
+   ],
+   "footprint": [
+    2,
+    1
+   ],
+   "blocks": true,
+   "height_px": 550,
+   "file": "wall_diag_ne.png",
+   "size": [
+    306,
+    720
+   ],
+   "orient": "ne iso axis, 2:1 slope; painted iso pass (mirrored, 10% darker: faces away from sun)",
+   "tile_step_px": [
+    206,
+    -103
+   ]
+  },
+  "tower": {
+   "foot": [
+    304,
+    989
+   ],
+   "footprint": [
+    3,
+    3
+   ],
+   "blocks": true,
+   "height_px": 990,
+   "file": "tower_round.png",
+   "size": [
+    608,
+    1050
+   ]
+  },
+  "gate_h": {
+   "foot": [
+    661,
+    550
+   ],
+   "footprint": [
+    8,
+    1
+   ],
+   "blocks": true,
+   "height_px": 550,
+   "file": "gate_h.png",
+   "size": [
+    1323,
+    600
+   ],
+   "orient": "screen-horizontal",
+   "passage": {
+    "rect": [
+     544,
+     288,
+     236,
+     262
+    ],
+    "walkable": true,
+    "see_through": true,
+    "rim": "voussoir rim + shaded soffit band (~18px) kept, arch interior alpha 0"
+   },
+   "door": {
+    "file": "gate_door_h.png",
+    "frames": 8,
+    "fps": 12,
+    "frame_w": 236,
+    "frame_h": 262,
+    "offset": [
+     544,
+     288
+    ],
+    "open_inward": true,
+    "hinge_left": {
+     "top": [
+      544,
+      288
+     ],
+     "bottom": [
+      544,
+      550
+     ]
+    },
+    "hinge_right": {
+     "top": [
+      780,
+      288
+     ],
+     "bottom": [
+      780,
+      550
+     ]
+    }
+   }
+  },
+  "gate_diag_se": {
+   "foot": [
+    661,
+    873
+   ],
+   "footprint": [
+    16,
+    1
+   ],
+   "blocks": true,
+   "height_px": 550,
+   "file": "gate_diag_se.png",
+   "size": [
+    1323,
+    1229
+   ],
+   "orient": "se iso axis, 2:1 slope; painted iso pass; mirror pair",
+   "passage": {
+    "walkable": true,
+    "see_through": true
+   },
+   "door": {
+    "file": "gate_door_diag_se.png",
+    "frames": 8,
+    "fps": 12,
+    "frame_w": 236,
+    "frame_h": 380,
+    "offset": [
+     544,
+     552
+    ],
+    "open_inward": true
+   }
+  },
+  "gate_diag_ne": {
+   "foot": [
+    661,
+    873
+   ],
+   "footprint": [
+    16,
+    1
+   ],
+   "blocks": true,
+   "height_px": 550,
+   "file": "gate_diag_ne.png",
+   "size": [
+    1323,
+    1229
+   ],
+   "orient": "ne iso axis, 2:1 slope; painted iso pass (mirrored, 10% darker: faces away from sun)",
+   "passage": {
+    "walkable": true,
+    "see_through": true
+   },
+   "door": {
+    "file": "gate_door_diag_ne.png",
+    "frames": 8,
+    "fps": 12,
+    "frame_w": 236,
+    "frame_h": 380,
+    "offset": [
+     543,
+     552
+    ],
+    "open_inward": true
+   }
+  },
+  "tunnel_h": {
+   "foot": [
+    359,
+    550
+   ],
+   "footprint": [
+    6,
+    1
+   ],
+   "blocks": true,
+   "height_px": 550,
+   "file": "water_tunnel_h.png",
+   "size": [
+    718,
+    600
+   ],
+   "orient": "screen-horizontal",
+   "grate": true
+  },
+  "tunnel_diag_se": {
+   "foot": [
+    359,
+    721
+   ],
+   "footprint": [
+    8,
+    1
+   ],
+   "blocks": true,
+   "height_px": 550,
+   "file": "water_tunnel_diag_se.png",
+   "size": [
+    718,
+    926
+   ],
+   "orient": "se iso axis, 2:1 slope; painted iso pass; mirror pair",
+   "grate": true
+  },
+  "tunnel_diag_ne": {
+   "foot": [
+    358,
+    721
+   ],
+   "footprint": [
+    8,
+    1
+   ],
+   "blocks": true,
+   "height_px": 550,
+   "file": "water_tunnel_diag_ne.png",
+   "size": [
+    718,
+    926
+   ],
+   "orient": "ne iso axis, 2:1 slope; painted iso pass (mirrored, 10% darker: faces away from sun)",
+   "grate": true
+  },
+  "bridge": {
+   "foot": [
+    370,
+    343
+   ],
+   "footprint": [
+    2,
+    5
+   ],
+   "blocks": false,
+   "height_px": 343,
+   "file": "bridge_stone.png",
+   "size": [
+    740,
+    393
+   ],
+   "orient": "ne axis; flip_h for se",
+   "walkable": true,
+   "layer": "over water, under props/actors"
+  },
+  "bridge_wood": {
+   "foot": [
+    370,
+    399
+   ],
+   "footprint": [
+    2,
+    5
+   ],
+   "blocks": false,
+   "height_px": 399,
+   "file": "bridge_wood.png",
+   "size": [
+    740,
+    449
+   ],
+   "orient": "ne axis; flip_h for se",
+   "walkable": true,
+   "layer": "over water, under props/actors"
+  },
+  "house_npc_halftimber_blue_2storey": {
+   "foot": [
+    306,
+    480
+   ],
+   "footprint": [
+    3,
+    3
+   ],
+   "blocks": true,
+   "height_px": 480,
+   "tier": "npc",
+   "door_side": "front-left (SW face)",
+   "file": "house_npc_halftimber_blue_2storey.png",
+   "size": [
+    613,
+    540
+   ]
+  },
+  "house_npc_halftimber_blue_a": {
+   "foot": [
+    298,
+    460
+   ],
+   "footprint": [
+    3,
+    3
+   ],
+   "blocks": true,
+   "height_px": 460,
+   "tier": "npc",
+   "door_side": "front-left (SW face)",
+   "file": "house_npc_halftimber_blue_a.png",
+   "size": [
+    596,
+    520
+   ]
+  },
+  "house_npc_halftimber_red_L": {
+   "foot": [
+    347,
+    440
+   ],
+   "footprint": [
+    4,
+    3
+   ],
+   "blocks": true,
+   "height_px": 440,
+   "tier": "npc",
+   "door_side": "front-left (SW face)",
+   "file": "house_npc_halftimber_red_L.png",
+   "size": [
+    695,
+    500
+   ]
+  },
+  "house_npc_plaster_blue_2storey": {
+   "foot": [
+    288,
+    470
+   ],
+   "footprint": [
+    3,
+    3
+   ],
+   "blocks": true,
+   "height_px": 470,
+   "tier": "npc",
+   "door_side": "front-left (SW face)",
+   "file": "house_npc_plaster_blue_2storey.png",
+   "size": [
+    576,
+    530
+   ]
+  },
+  "house_npc_plaster_red_a": {
+   "foot": [
+    273,
+    440
+   ],
+   "footprint": [
+    3,
+    3
+   ],
+   "blocks": true,
+   "height_px": 440,
+   "tier": "npc",
+   "door_side": "front-left (SW face)",
+   "file": "house_npc_plaster_red_a.png",
+   "size": [
+    546,
+    500
+   ]
+  },
+  "house_npc_plaster_red_pink": {
+   "foot": [
+    290,
+    450
+   ],
+   "footprint": [
+    3,
+    3
+   ],
+   "blocks": true,
+   "height_px": 450,
+   "tier": "npc",
+   "door_side": "front-left (SW face)",
+   "file": "house_npc_plaster_red_pink.png",
+   "size": [
+    580,
+    510
+   ]
+  },
+  "house_npc_stone_blue_round": {
+   "foot": [
+    276,
+    430
+   ],
+   "footprint": [
+    3,
+    3
+   ],
+   "blocks": true,
+   "height_px": 430,
+   "tier": "npc",
+   "door_side": "front-left (SW face)",
+   "file": "house_npc_stone_blue_round.png",
+   "size": [
+    553,
+    490
+   ]
+  },
+  "house_npc_stone_red_a": {
+   "foot": [
+    299,
+    450
+   ],
+   "footprint": [
+    3,
+    3
+   ],
+   "blocks": true,
+   "height_px": 450,
+   "tier": "npc",
+   "door_side": "front-left (SW face)",
+   "file": "house_npc_stone_red_a.png",
+   "size": [
+    598,
+    510
+   ]
+  },
+  "house_npc_workshop_red": {
+   "foot": [
+    326,
+    460
+   ],
+   "footprint": [
+    4,
+    3
+   ],
+   "blocks": true,
+   "height_px": 460,
+   "tier": "npc",
+   "door_side": "front-left (SW face)",
+   "file": "house_npc_workshop_red.png",
+   "size": [
+    652,
+    520
+   ]
+  },
+  "plot_legendary": {
+   "foot": [
+    492,
+    760
+   ],
+   "footprint": [
+    7,
+    6
+   ],
+   "blocks": true,
+   "height_px": 760,
+   "tier": "legendary",
+   "door_side": "front-left (SW face)",
+   "file": "house_player_legendary.png",
+   "size": [
+    984,
+    820
+   ]
+  },
+  "plot_normal": {
+   "foot": [
+    387,
+    460
+   ],
+   "footprint": [
+    4,
+    3
+   ],
+   "blocks": true,
+   "height_px": 460,
+   "tier": "normal",
+   "door_side": "front-left (SW face)",
+   "file": "house_player_normal.png",
+   "size": [
+    775,
+    530
+   ]
+  },
+  "plot_rare": {
+   "foot": [
+    376,
+    580
+   ],
+   "footprint": [
+    4,
+    4
+   ],
+   "blocks": true,
+   "height_px": 580,
+   "tier": "rare",
+   "door_side": "front-left (SW face)",
+   "file": "house_player_rare.png",
+   "size": [
+    753,
+    640
+   ]
+  },
+  "bank": {
+   "foot": [
+    503,
+    800
+   ],
+   "footprint": [
+    5,
+    5
+   ],
+   "blocks": true,
+   "height_px": 800,
+   "tier": "landmark",
+   "door_side": "front-left (SW face)",
+   "file": "landmark_bank.png",
+   "size": [
+    1006,
+    870
+   ]
+  },
+  "castle": {
+   "foot": [
+    694,
+    1150
+   ],
+   "footprint": [
+    10,
+    10
+   ],
+   "blocks": true,
+   "height_px": 1150,
+   "tier": "landmark",
+   "door_side": "front-left (SW face)",
+   "file": "landmark_castle.png",
+   "size": [
+    1389,
+    1220
+   ]
+  },
+  "cathedral": {
+   "foot": [
+    547,
+    1000
+   ],
+   "footprint": [
+    9,
+    5
+   ],
+   "blocks": true,
+   "height_px": 1000,
+   "tier": "landmark",
+   "door_side": "front-left (SW face)",
+   "file": "landmark_cathedral.png",
+   "size": [
+    1095,
+    1070
+   ]
+  },
+  "townhall": {
+   "foot": [
+    495,
+    850
+   ],
+   "footprint": [
+    7,
+    7
+   ],
+   "blocks": true,
+   "height_px": 850,
+   "tier": "landmark",
+   "door_side": "front-left (SW face)",
+   "file": "landmark_townhall.png",
+   "size": [
+    990,
+    920
+   ]
+  },
+  "workshop_carpenter": {
+   "foot": [
+    385,
+    450
+   ],
+   "footprint": [
+    5,
+    3
+   ],
+   "blocks": true,
+   "height_px": 450,
+   "tier": "workshop",
+   "file": "workshop_carpenter.png",
+   "size": [
+    771,
+    510
+   ]
+  },
+  "workshop_forge": {
+   "foot": [
+    339,
+    540
+   ],
+   "footprint": [
+    4,
+    4
+   ],
+   "blocks": true,
+   "height_px": 540,
+   "tier": "workshop",
+   "file": "workshop_forge.png",
+   "size": [
+    679,
+    600
+   ]
+  },
+  "mill": {
+   "foot": [
+    394,
+    500
+   ],
+   "footprint": [
+    5,
+    4
+   ],
+   "blocks": true,
+   "height_px": 500,
+   "tier": "workshop",
+   "note": "the wheel is on the SE side; place on a river bank with the wheel over water; wheel is static (animate rotation in engine if needed)",
+   "file": "workshop_mill.png",
+   "size": [
+    789,
+    560
+   ]
+  },
+  "workshop_potter": {
+   "foot": [
+    405,
+    460
+   ],
+   "footprint": [
+    5,
+    3
+   ],
+   "blocks": true,
+   "height_px": 460,
+   "tier": "workshop",
+   "file": "workshop_potter.png",
+   "size": [
+    810,
+    520
+   ]
+  },
+  "workshop_smithy": {
+   "foot": [
+    347,
+    470
+   ],
+   "footprint": [
+    4,
+    3
+   ],
+   "blocks": true,
+   "height_px": 470,
+   "tier": "workshop",
+   "file": "workshop_smithy.png",
+   "size": [
+    695,
+    530
+   ]
+  },
+  "workshop_tailor": {
+   "foot": [
+    295,
+    480
+   ],
+   "footprint": [
+    3,
+    3
+   ],
+   "blocks": true,
+   "height_px": 480,
+   "tier": "workshop",
+   "file": "workshop_tailor.png",
+   "size": [
+    591,
+    540
+   ]
+  },
+  "workshop_weaver": {
+   "foot": [
+    309,
+    480
+   ],
+   "footprint": [
+    4,
+    3
+   ],
+   "blocks": true,
+   "height_px": 480,
+   "tier": "workshop",
+   "file": "workshop_weaver.png",
+   "size": [
+    618,
+    540
+   ]
+  },
+  "barrel": {
+   "foot": [
+    64,
+    95
+   ],
+   "footprint": [
+    1,
+    1
+   ],
+   "blocks": true,
+   "height_px": 95,
+   "file": "barrel.png",
+   "size": [
+    128,
+    125
+   ]
+  },
+  "barrel_b": {
+   "foot": [
+    63,
+    95
+   ],
+   "footprint": [
+    1,
+    1
+   ],
+   "blocks": true,
+   "height_px": 95,
+   "file": "barrel_b.png",
+   "size": [
+    126,
+    125
+   ]
+  },
+  "bench_iron": {
+   "foot": [
+    82,
+    110
+   ],
+   "footprint": [
+    2,
+    1
+   ],
+   "blocks": true,
+   "height_px": 110,
+   "file": "bench_iron.png",
+   "size": [
+    165,
+    140
+   ]
+  },
+  "bench_stone": {
+   "foot": [
+    86,
+    115
+   ],
+   "footprint": [
+    2,
+    1
+   ],
+   "blocks": true,
+   "height_px": 115,
+   "file": "bench_stone.png",
+   "size": [
+    172,
+    145
+   ]
+  },
+  "cart_hay": {
+   "foot": [
+    131,
+    170
+   ],
+   "footprint": [
+    2,
+    2
+   ],
+   "blocks": true,
+   "height_px": 170,
+   "file": "cart_hay.png",
+   "size": [
+    263,
+    200
+   ]
+  },
+  "crate": {
+   "foot": [
+    65,
+    80
+   ],
+   "footprint": [
+    1,
+    1
+   ],
+   "blocks": true,
+   "height_px": 80,
+   "file": "crate.png",
+   "size": [
+    131,
+    110
+   ]
+  },
+  "crate_stack": {
+   "foot": [
+    91,
+    125
+   ],
+   "footprint": [
+    1,
+    1
+   ],
+   "blocks": true,
+   "height_px": 125,
+   "file": "crate_stack.png",
+   "size": [
+    183,
+    155
+   ]
+  },
+  "fence_picket": {
+   "foot": [
+    97,
+    115
+   ],
+   "footprint": [
+    2,
+    1
+   ],
+   "blocks": true,
+   "height_px": 115,
+   "orient": "ne iso axis; flip_h for se",
+   "file": "fence_picket.png",
+   "size": [
+    194,
+    145
+   ]
+  },
+  "fence_rail": {
+   "foot": [
+    103,
+    125
+   ],
+   "footprint": [
+    2,
+    1
+   ],
+   "blocks": true,
+   "height_px": 125,
+   "orient": "ne iso axis; flip_h for se",
+   "file": "fence_rail.png",
+   "size": [
+    207,
+    155
+   ]
+  },
+  "fence_stone": {
+   "foot": [
+    89,
+    95
+   ],
+   "footprint": [
+    2,
+    1
+   ],
+   "blocks": true,
+   "height_px": 95,
+   "orient": "ne iso axis; flip_h for se",
+   "file": "fence_stone.png",
+   "size": [
+    178,
+    125
+   ]
+  },
+  "fountain": {
+   "foot": [
+    142,
+    260
+   ],
+   "footprint": [
+    3,
+    3
+   ],
+   "blocks": true,
+   "height_px": 260,
+   "file": "fountain.png",
+   "size": [
+    285,
+    290
+   ]
+  },
+  "lamp_hanging": {
+   "foot": [
+    80,
+    250
+   ],
+   "footprint": [
+    1,
+    1
+   ],
+   "blocks": true,
+   "height_px": 250,
+   "file": "lamp_hanging.png",
+   "size": [
+    160,
+    280
+   ],
+   "glow": {
+    "file": "lamp_hanging_glow.png",
+    "offset": [
+     -66,
+     5
+    ],
+    "blend": "add",
+    "night_only": true
+   }
+  },
+  "lamp_post": {
+   "foot": [
+    58,
+    250
+   ],
+   "footprint": [
+    1,
+    1
+   ],
+   "blocks": true,
+   "height_px": 250,
+   "file": "lamp_post.png",
+   "size": [
+    117,
+    280
+   ],
+   "glow": {
+    "file": "lamp_post_glow.png",
+    "offset": [
+     -65,
+     -63
+    ],
+    "blend": "add",
+    "night_only": true
+   }
+  },
+  "notice_board": {
+   "foot": [
+    94,
+    200
+   ],
+   "footprint": [
+    2,
+    1
+   ],
+   "blocks": true,
+   "height_px": 200,
+   "file": "notice_board.png",
+   "size": [
+    188,
+    230
+   ]
+  },
+  "signpost": {
+   "foot": [
+    97,
+    230
+   ],
+   "footprint": [
+    1,
+    1
+   ],
+   "blocks": true,
+   "height_px": 230,
+   "file": "signpost.png",
+   "size": [
+    194,
+    260
+   ]
+  },
+  "stall_bakery": {
+   "foot": [
+    126,
+    220
+   ],
+   "footprint": [
+    2,
+    1
+   ],
+   "blocks": true,
+   "height_px": 220,
+   "file": "stall_bakery.png",
+   "size": [
+    252,
+    250
+   ]
+  },
+  "stall_cloth": {
+   "foot": [
+    126,
+    220
+   ],
+   "footprint": [
+    2,
+    1
+   ],
+   "blocks": true,
+   "height_px": 220,
+   "file": "stall_cloth.png",
+   "size": [
+    252,
+    250
+   ]
+  },
+  "stall_fruit": {
+   "foot": [
+    128,
+    220
+   ],
+   "footprint": [
+    2,
+    1
+   ],
+   "blocks": true,
+   "height_px": 220,
+   "file": "stall_fruit.png",
+   "size": [
+    256,
+    250
+   ]
+  },
+  "well": {
+   "foot": [
+    147,
+    290
+   ],
+   "footprint": [
+    2,
+    2
+   ],
+   "blocks": true,
+   "height_px": 290,
+   "file": "well.png",
+   "size": [
+    294,
+    320
+   ]
+  },
+  "wall": {
+   "file": "../placeholder/piece_wall.png",
+   "foot": [
+    64,
+    614
+   ],
+   "footprint": [
+    1,
+    1
+   ],
+   "blocks": true,
+   "height_px": 550,
+   "placeholder": true
+  },
+  "gate": {
+   "file": "../placeholder/piece_gate.png",
+   "foot": [
+    128,
+    728
+   ],
+   "footprint": [
+    2,
+    2
+   ],
+   "blocks": false,
+   "height_px": 600,
+   "placeholder": true
+  },
+  "house": {
+   "file": "../placeholder/piece_house.png",
+   "foot": [
+    192,
+    652
+   ],
+   "footprint": [
+    3,
+    3
+   ],
+   "blocks": true,
+   "height_px": 460,
+   "placeholder": true
+  },
+  "workshop": {
+   "file": "../placeholder/piece_workshop.png",
+   "foot": [
+    192,
+    672
+   ],
+   "footprint": [
+    3,
+    3
+   ],
+   "blocks": true,
+   "height_px": 480,
+   "placeholder": true
+  },
+  "stall": {
+   "file": "../placeholder/piece_stall.png",
+   "foot": [
+    64,
+    324
+   ],
+   "footprint": [
+    1,
+    1
+   ],
+   "blocks": true,
+   "height_px": 260,
+   "placeholder": true
+  },
+  "lamp": {
+   "file": "../placeholder/piece_lamp.png",
+   "foot": [
+    64,
+    334
+   ],
+   "footprint": [
+    1,
+    1
+   ],
+   "blocks": false,
+   "height_px": 270,
+   "placeholder": true
+  },
+  "bush": {
+   "file": "../placeholder/piece_bush.png",
+   "foot": [
+    64,
+    184
+   ],
+   "footprint": [
+    1,
+    1
+   ],
+   "blocks": false,
+   "height_px": 120,
+   "placeholder": true
+  }
+ }
+}
