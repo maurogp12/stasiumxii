@@ -267,28 +267,28 @@
   "note": "Coordinator 17 Oct: wall kit v2 (docs/pc-map-handoff docs/pc/look_target/crosshaven_city/work/walls/kit2 + kit/tower). Ring on the 3 plate directions: N and S horizontal, four iso diagonals (slope +-0.5); E and W are corners. Modules are painted at hero = 156 px; all anchors in native module px. Pass --kit <dir with the module files>.",
   "polygon": [
    [
-    2010,
-    520
+    2180.7,
+    470
    ],
    [
-    3110,
-    520
+    2939.3,
+    470
    ],
    [
-    4940,
-    1435
+    4919.3,
+    1460.0
    ],
    [
-    3110,
-    2350
+    2939.3,
+    2450
    ],
    [
-    2010,
-    2350
+    2180.7,
+    2450
    ],
    [
-    180,
-    1435
+    200.69999999999982,
+    1460.0
    ]
   ],
   "hero_world_px": 62.7,
@@ -304,8 +304,8 @@
     "id": "S",
     "edge": 3,
     "at": [
-     2400,
-     2350
+     2560,
+     2450
     ],
     "road_out": "street",
     "exit": {
@@ -319,8 +319,8 @@
     "id": "W",
     "edge": 4,
     "at": [
-     328,
-     1509
+     350.6999999999998,
+     1535.0
     ],
     "road_out": "edge",
     "exit": {
@@ -337,8 +337,8 @@
     "id": "E",
     "edge": 2,
     "at": [
-     4558,
-     1625
+     4769.3,
+     1535.0
     ],
     "road_out": "edge",
     "exit": {
@@ -355,8 +355,8 @@
     "id": "N",
     "edge": 0,
     "at": [
-     2442,
-     520
+     2560,
+     470
     ],
     "road_out": "edge",
     "exit": {
@@ -674,7 +674,15 @@
      "band_px": 120,
      "dark": 0.35
     },
-    "note": "Round 15: Grok's horizontal gatehouse v7 (2448x1050), iso, towers are tower_v6 copies (990 px, same scale as the ring towers). The wall line runs through the plinth centres (y 852; both plinth bottoms at 987, so the towers already stand level). curtain_level lifts the curtain columns (between the plinths) so its foot (13 px low at the left, 46 px at the right) sits on the plinth-bottom line: the towers no longer float above the curtain and road."
+    "note": "Round 15: Grok's horizontal gatehouse v7 (2448x1050), iso, towers are tower_v6 copies (990 px, same scale as the ring towers). The wall line runs through the plinth centres (y 852; both plinth bottoms at 987, so the towers already stand level). curtain_level lifts the curtain columns (between the plinths) so its foot (13 px low at the left, 46 px at the right) sits on the plinth-bottom line: the towers no longer float above the curtain and road. Round 16: erase_boxes trims a stepped base block that stuck out below the right plinth.",
+    "erase_boxes": [
+     [
+      1800,
+      995,
+      2200,
+      1050
+     ]
+    ]
    }
   },
   "face_note": "face_px (segments): front merlon top to foot, native px. Gatehouses with face_px and curtain_foot are fitted to the run's face; the kit3 gatehouses instead carry a parapet-matched art_slope and drop_px from the coordinator's metrics (gatehouse_v3_metrics.json).",
@@ -745,8 +753,8 @@
   "gate_flank_towers": false,
   "tower_rule": {
    "mode": "midpoint",
-   "min_stretch_wall_heights": 8.5,
-   "note": "Round 15 (Mauro: fewer towers): fixed towers are the gatehouse towers, the water-gate flanks and the corners no gatehouse or water-gate tower closes. A mid-wall tower only on a stretch between fixed towers longer than 8.5 wall heights, at its midpoint (6 wall heights gives 16 towers; 8.5 gives 14, the 12-14 target)."
+   "min_stretch_wall_heights": 9.5,
+   "note": "Rounds 15-16: fixed towers are the gatehouse towers, the water-gate flanks and the corners no gatehouse or water-gate tower closes; a mid-wall tower only on a stretch longer than 9.5 wall heights, at its midpoint: 12 towers."
   },
   "foot_decals": {
    "seed": 17,
@@ -781,7 +789,9 @@
     1.1
    ],
    "note": "Round 15: grass tufts, pebbles and dirt patches (existing world ground art) scattered over the visible foot line of every wall run and round the front of every plinth, drawn over the wall bottom so grass grows over the base; dirt patches lie on the ground. Not on passages, roads or the river."
-  }
+  },
+  "polygon_note": "Round 16: the flat N and S edges are exactly one v7 horizontal gatehouse long (758.6 plate px between its tower plinth centres), so both gatehouse towers are the corners there: no doubled corner tower. To keep the room inside (10 plots), the ring is 150 px taller (N 470, S 2450) and so a little wider on the diagonals; same iso slopes.",
+  "kit5_note": "Round 16: ready for kit5 curtain-only pieces. A module may set anchors_json (JSON beside the PNG; foot_left/foot_right/arch/split/arch_open_x/...; layout keys override) and flank_towers: true (the gatehouse or water gate gets a tower module placed at each foot anchor, like ring towers)."
  },
  "greenery": {
   "note": "Approved map-base greenery (docs/pc-map-handoff 5edc29a3 docs/pc/look_target/crosshaven_city/work/green; pass --green <dir>). Painted at hero = 156 px, bottom-centre anchored.",
@@ -964,6 +974,50 @@
     ]
    ],
    "note": "Round 15: the S plaza's tongue ran to the old bridge landing at the river; it goes back to grass (the plaza now leads to the moved bridge)."
+  },
+  {
+   "id": "s_outer_left",
+   "polygon": [
+    [
+     1940,
+     2390
+    ],
+    [
+     2380,
+     2390
+    ],
+    [
+     2380,
+     2590
+    ],
+    [
+     1940,
+     2590
+    ]
+   ],
+   "note": "Round 16: the outer SW road ran along the foot of the S gate's left tower and crossed the wall line; it now joins the gate funnel lower down."
+  },
+  {
+   "id": "s_inner_left",
+   "polygon": [
+    [
+     2180,
+     2280
+    ],
+    [
+     2330,
+     2280
+    ],
+    [
+     2330,
+     2400
+    ],
+    [
+     2180,
+     2400
+    ]
+   ],
+   "note": "Round 16: a street stub inside, against the S gate's left tower."
   }
  ],
  "move_bridges": {
@@ -979,6 +1033,27 @@
    "width": 68,
    "plazas": [],
    "note": "Round 15: the S gate opens onto a small plaza (its road mouth) and a short street to the moved bridge's south stair."
+  }
+ ],
+ "extra_roads": [
+  {
+   "id": "sw_road_to_s_funnel",
+   "pts": [
+    [
+     1900,
+     2610
+    ],
+    [
+     2150,
+     2640
+    ],
+    [
+     2420,
+     2640
+    ]
+   ],
+   "width": 60,
+   "note": "Round 16: the outer SW road joins the S gate funnel with a smooth curve, clear of the wall."
   }
  ]
 }

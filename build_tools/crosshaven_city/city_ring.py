@@ -277,10 +277,17 @@ def snap_gates(cfg, poly, kit_dir, hero_plate):
         lim_g = lim * float((cfg["modules"].get(key_) or {}).get("scale_mul", 1.0))
         new_s = s
         corner = None
+        # round 16: the arch need not be midway between the tower plinths
+        spec_ = cfg["modules"].get(key_) or {}
+        aoff = 0.0
+        if spec_:
+            mid_x = (float(spec_["wall_left"][0]) + float(spec_["wall_right"][0])) / 2.0
+            aoff = (float(spec_["arch"][0]) - mid_x) * k * float(spec_.get("scale_mul", 1.0)) / max(0.2, abs(b[0] - a[0]) / L)
+            aoff *= 1.0 if b[0] >= a[0] else -1.0
         if lim > 0 and s - half < lim_g:
-            new_s, corner = half, list(a)
+            new_s, corner = half + aoff, list(a)
         elif lim > 0 and (L - s) - half < lim_g:
-            new_s, corner = L - half, list(b)
+            new_s, corner = L - half + aoff, list(b)
         if corner is not None:
             q = (a[0] + (b[0] - a[0]) * new_s / L, a[1] + (b[1] - a[1]) * new_s / L)
             g2["at"] = [round(q[0], 1), round(q[1], 1)]
@@ -328,6 +335,27 @@ def _measure_end(strips, end, a, b, span=320):
     return {"foot": round(float(np.polyval(pf, end[0])), 1), "tip": round(float(np.polyval(pt, end[0])), 1)}
 
 
+def load_anchors(kit_dir, spec):
+    """Kit5 (curtain-only pieces): anchors come from a JSON beside the PNG.
+    spec["anchors_json"] = file name; spec["anchors_key"] (optional) picks one
+    entry. Keys read: foot_left/foot_right (-> wall_left/wall_right), arch,
+    split, arch_open_x, art_slope, base, plinth_front, body_radius,
+    base_radius. Keys already in the layout spec win (manual overrides)."""
+    import json as _json
+    d = _json.load(open(os.path.join(kit_dir, spec["anchors_json"])))
+    if spec.get("anchors_key"):
+        d = d[spec["anchors_key"]]
+    rename = {"foot_left": "wall_left", "foot_right": "wall_right"}
+    out = {}
+    for k, v in d.items():
+        out[rename.get(k, k)] = v
+    if "wall_left" in out and "wall_right" in out and "art_slope" not in out:
+        (x0, y0), (x1, y1) = out["wall_left"], out["wall_right"]
+        out["art_slope"] = (y1 - y0) / float(x1 - x0) if x1 != x0 else 0.0
+    out.update(spec)
+    return out
+
+
 def pick(mods, kind, slope):
     """Module of `kind` for an edge slope: '_neg' (-0.5), '_pos' (+0.5), '_flat' (0); falls back to neg."""
     key = kind + ("_flat" if abs(slope) < 0.05 else ("_pos" if slope > 0 else "_neg"))
@@ -338,7 +366,10 @@ def assemble(layers, images, walk, river, old_poly, poly, cfg, kit_dir, hero_pla
     mods = {}
     scale = hero_plate / float(cfg["hero_px_in_art"])
     rc = cfg.get("stone_recolor")
-    for name, spec in cfg["modules"].items():
+    for name, spec in list(cfg["modules"].items()):
+        if spec.get("anchors_json"):
+            spec = load_anchors(kit_dir, spec)
+            cfg["modules"][name] = spec
         if rc and name in rc.get("targets", []):
             spec = dict(spec, recolor=dict(rc, _name=name))
         mods[name] = Module(kit_dir, spec, scale)
@@ -434,7 +465,8 @@ def assemble(layers, images, walk, river, old_poly, poly, cfg, kit_dir, hero_pla
         # columns; default the painted towers' feet), on the wall line
         fx_art = m.spec.get("flank_x", [m.spec["wall_left"][0], m.spec["wall_right"][0]])
         flank_s = [along(i, (x0 + float(fx) * m.k, line_y(a, b, x0 + float(fx) * m.k))) for fx in fx_art]
-        feats[i].append({"kind": "gate", "s": s, "half": half, "flank_s": flank_s})
+        feats[i].append({"kind": "gate", "s": s, "half": half, "flank_s": flank_s,
+                         "flank_towers": bool(m.spec.get("flank_towers", False))})
         if g.get("snapped_to_corner"):
             # the gatehouse's outer tower is the corner: the neighbour edge's
             # run ends under it like under a corner tower
@@ -531,7 +563,8 @@ def assemble(layers, images, walk, river, old_poly, poly, cfg, kit_dir, hero_pla
         ar[yy_[off], xx_[off], 3] = 0
         im = Image.fromarray(ar, "RGBA")
         wrec = add(im, x0, y0, q[1] + 6.0, "watergate", {"module": m.file})
-        feats[i].append({"kind": "water", "s": s, "half": half, "rec": wrec})
+        feats[i].append({"kind": "water", "s": s, "half": half, "rec": wrec,
+                         "curtain_half": abs(wr[0] - wl[0]) / 2.0 / max(0.2, abs(b[0] - a[0]) / math.dist(a, b))})
         # the channel's centreline either side of the wall vs the arch centre
         u_n = iso_normal(a, b, (cx - q[0], cy - q[1]))
         vv = ((b[0] - a[0]) / math.dist(a, b), (b[1] - a[1]) / math.dist(a, b))
@@ -572,7 +605,7 @@ def assemble(layers, images, walk, river, old_poly, poly, cfg, kit_dir, hero_pla
     for i in range(ne):
         for f in feats[i]:
             if f["kind"] == "gate":
-                anchors[i] += [f["s"] - f["half"], f["s"] + f["half"]]
+                anchors[i] += list(f.get("flank_s", [f["s"] - f["half"], f["s"] + f["half"]]))
                 no_tower[i].append((f["s"] - f["half"] - 1.0, f["s"] + f["half"] + 1.0))
             elif f["kind"] == "gtower":
                 anchors[i].append(f["s"])
@@ -588,7 +621,9 @@ def assemble(layers, images, walk, river, old_poly, poly, cfg, kit_dir, hero_pla
                 for sign in (-1.0, 1.0):
                     # round 13: from the block centre outward to the first spot
                     # where the tower's whole base outline is on dry ground
-                    st = f["s"]
+                    # round 16: no closer than the water gate's own curtain ends
+                    # (plus a body radius, so the whole curtain shows between them)
+                    st = f["s"] + sign * (f.get("curtain_half", 0.0) + (r_body / max(0.2, abs(edges[i][1][0] - edges[i][0][0]) / math.dist(*edges[i])) if f.get("curtain_half") else 0.0))
                     for _ in range(400):
                         qx, qy = at(i, st)
                         y0b, y1b = int(qy - r_base * 0.5) - 1, int(qy + r_base * 0.5) + 2
@@ -602,9 +637,12 @@ def assemble(layers, images, walk, river, old_poly, poly, cfg, kit_dir, hero_pla
                     st = min(max(st, 0.0), L)
                     pair.append(st)
                     # a gatehouse tower (or a corner) already standing there flanks it
-                    taken_by = [x for x in anchors[i] if abs(x - st) < 2.0 * r_body]
-                    if st < 2.0 * r_body or st > L - 2.0 * r_body or taken_by:
-                        pair[-1] = taken_by[0] if taken_by else (0.0 if st < 2.0 * r_body else L)
+                    # round 16: a gatehouse tower or corner within 3 body radii
+                    # is this flank (no doubled tower beside it)
+                    merge = 3.0 * r_body
+                    taken_by = [x for x in anchors[i] if abs(x - st) < merge]
+                    if st < merge or st > L - merge or taken_by:
+                        pair[-1] = taken_by[0] if taken_by else (0.0 if st < merge else L)
                         continue
                     water_towers.append((i, st))
                     anchors[i].append(st)
@@ -614,7 +652,7 @@ def assemble(layers, images, walk, river, old_poly, poly, cfg, kit_dir, hero_pla
     for i in range(ne):
         j = (i - 1) % ne
         Lj = math.dist(*edges[j])
-        covered = any(abs(x) < 2.0 for x in anchors[i]) or any(abs(x - Lj) < 2.0 for x in anchors[j])
+        covered = any(abs(x) < 8.0 for x in anchors[i]) or any(abs(x - Lj) < 8.0 for x in anchors[j])
         if not covered:
             corner_tower.append(i)
             anchors[i].append(0.0)
@@ -726,11 +764,11 @@ def assemble(layers, images, walk, river, old_poly, poly, cfg, kit_dir, hero_pla
         towers.append((i, st))
         corner_flags.append(False)
         kinds.append("water_gate")
-    if cfg.get("gate_flank_towers"):
+    if cfg.get("gate_flank_towers") or any(f.get("flank_towers") for i in range(ne) for f in feats[i] if f["kind"] == "gate"):
         # round 15: every gatehouse is its curtain plus two identical ring towers
         for i in range(ne):
             for f in feats[i]:
-                if f["kind"] == "gate":
+                if f["kind"] == "gate" and (cfg.get("gate_flank_towers") or f.get("flank_towers")):
                     for st in f.get("flank_s", (f["s"] - f["half"], f["s"] + f["half"])):
                         towers.append((i, st))
                         corner_flags.append(False)

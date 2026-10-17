@@ -1644,6 +1644,14 @@ def main():
                 if d2[j] < 450 ** 2:
                     auto.append({"bridge": b["id"], "side": e["side"], "via": [[float(xs_[j]), float(ys_[j])]], "width": 60})
         LAYOUT.setdefault("bridge_links_auto", auto)
+    for er in LAYOUT.get("extra_roads", []):
+        # round 16: data roads (e.g. an outer road re-joined to a gate funnel)
+        sampler_ = CG.cobble_sampler(ground_np, CG.street_pixels(ground_np, river))
+        hard_ = CG.paint_road(ground_np, walk, sample=sampler_, pts=[tuple(p_) for p_ in er["pts"]],
+                              width=int(er.get("width", 60)), wobble=1.0, seed=37)
+        walk |= hard_ & ~river
+        if street_drop is not None:
+            street_drop &= ~hard_
     for link in LAYOUT.get("bridge_links", []) + LAYOUT.get("bridge_links_auto", []):
         # round 15: short streets from a gate road to a moved bridge's stair foot
         b = next((b for b in zones["bridges"] if b["id"] == link["bridge"]), None)
@@ -1839,8 +1847,8 @@ def main():
     # Candidate anchors on an 8 px raster, per search box (layout default or the plot's own).
     box_cands = {}
 
-    def cands_for(bx):
-        key = tuple(bx)
+    def cands_for(bx, step=8):
+        key = tuple(bx) + (step,)
         if key not in box_cands:
             x0, y0, x1, y1 = int(bx[0] * PLATE_W), int(bx[1] * PLATE_H), int(bx[2] * PLATE_W), int(bx[3] * PLATE_H)
             ex = LAYOUT.get("plot_exclude", [])
@@ -1851,7 +1859,7 @@ def main():
                     if ((ax - cx_) / (e["r"][0] * PLATE_W)) ** 2 + ((ay - cy_) / (e["r"][1] * PLATE_H)) ** 2 <= 1.0:
                         return True
                 return False
-            box_cands[key] = [(ax, ay) for ay in range(y0, y1, 8) for ax in range(x0, x1, 8) if clear_of(ax, ay) and not excluded(ax, ay)]
+            box_cands[key] = [(ax, ay) for ay in range(y0, y1, step) for ax in range(x0, x1, step) if clear_of(ax, ay) and not excluded(ax, ay)]
         return box_cands[key]
     cands = cands_for(LAYOUT["plot_search_box"])
     print("plot candidates", len(cands))
@@ -1909,6 +1917,14 @@ def main():
                     best = (cost, c)
             print("plot %s: box full, nearest free spot used" % PLOTS[i]["id"])
         if best is None:
+            # round 16: a finer raster over the whole ring before giving up
+            for c in cands_for([0.0, 0.0, 1.0, 1.0], 4):
+                if not all(disjoint(c, o) for o in picked.values()):
+                    continue
+                cost = math.hypot(c[0] - tx, (c[1] - ty) * 2.0) + 140.0 * len(loose_hits(*c))
+                if best is None or cost < best[0]:
+                    best = (cost, c)
+        if best is None:
             raise SystemExit("no room for plot %s" % PLOTS[i]["id"])
         picked[i] = best[1]
     removed = set()
@@ -1955,7 +1971,7 @@ def main():
     # ---- item 6: bushes and flowers on the grass (street edges, plazas, wall feet).
     plot_ells = [legendary_ellipse(ax, ay) for _, ax, ay in chosen]
     # the entrance in front of each anchor stays clear of plants and props too
-    plot_ells += [(ax, ay + 34.0, 80.0, 34.0) for _, ax, ay in chosen]
+    plot_ells += [(ax, ay + 34.0, 170.0, 60.0) for _, ax, ay in chosen]
     cleared = []
     for l in layers:
         if l["id"] in thinned:
@@ -2037,6 +2053,10 @@ def main():
         walk[sl] &= ~m
     for g in gate_log.get("gates", []):
         walk |= CG.poly_mask(g["passage"]) & ~river
+    # round 16: each plot's entrance (in front of the anchor) stays open
+    for _, ax_, ay_ in chosen:
+        sl, m = ellipse_mask(walk.shape, ax_, ay_ + 24.0, 60.0, 22.0)
+        walk[sl] |= m & ~river[sl]
     # ---- cells
     W, H = grid.w, grid.h
     inner_off = []

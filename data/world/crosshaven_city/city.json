@@ -17,8 +17,8 @@
   "scale": 1.15,
   "scale_note": "World px per plate px: the whole plate (ground, layers, walkmask, heightmap, cell grid) is drawn this much bigger; characters keep their size. Least-squares over Mauro's item 8 ratios against Ironjaw (62.7 px tall, about 38 px wide): house 3x (median house 168 px), gate tower 4.5x (308 px), stall 1.75x (131 px), street 3.5 hero widths (68 px across). See CROSSHAVEN_CITY_BUILD.md.",
   "cell00_px": [
-   2398.48,
-   -50.76
+   2537.61,
+   -64.67
   ],
   "anchor": "plate pixel cell00_px lands on cell_to_local(0, 0); node position = -cell00_px",
   "fit": {
@@ -54,8 +54,8 @@
   }
  },
  "grid": {
-  "width": 117,
-  "height": 125,
+  "width": 116,
+  "height": 128,
   "legend": {
    ".": "void (off the plate)",
    "#": "blocked",
@@ -64,304 +64,275 @@
    "r": "street"
   },
   "rows": [
-   "....#################################################~~~~#########################################...................",
-   "...##################################################~~~~##########################################..................",
-   "..r##################################################~~~~###########################################.................",
-   ".#rrg################################################~~~~############################################................",
-   "###rrr###############################################~~~~#############################################...............",
-   "####rgr##############################################~~~~##############################################..............",
-   "####rrgrr############################################~~~~###############################################.............",
-   "#####rrrgr###########################################~~~~################################################............",
-   "######rrrrrr#########################################~~~~#################################################...........",
-   "######grrrrrrr#######################gggggggggg#######~~~######gg##g#ggggggggggggggggggg#ggggggg###########..........",
-   "#######rrrrrrrgr####################gggggggggggg####gg~~~~#####g###ggggggggggggggggggggggggggggg############.........",
-   "########rggrrrrrrr##############g#gggrrggggggggggggggr~~~~gg#ggg##ggggggggggggggggggrrggggggggggg############........",
-   "########rrrrrrrrrgrr###########gggg#grrgggggggggggggg#~~~~rggggggggggggggggggggggggggrgrgggggggrr#####rr######.......",
-   "#########rrrrrgrrrrrr##########gggggggrrggg#gggggggggg~~~~rgggggggggggggggggggggggggggrrrggggrrrr#####rrrr#####......",
-   "#########rrrrrrrrrrrrrg########gggggggrrrgggggggggggggr~~~~ggggggggggggggggggggggggggggrrrrrrrrrr####rrrrrrrrrrr.....",
-   "##########rrrrrrrrrrrr#########ggggggggrrgggggggggggggr~~~~ggggggggggggggggggggg###ggggggrrrrrrrrrrrgrrrrrrrrrrrr....",
-   "##########rrrrrrrrrrr#########ggggggggggrrggggggggg###g~~~~rgggggggggggggggggggg####gggggrrrrrggrrrgrrrrrrrrrrrrrr...",
-   "###########rrrrrrrrr###########gggggggggrrggggggrg####g~~~~rgggggggggggggggggggg####gggggggrrrrrr#####rrrrrr#######..",
-   "###########grrrrrrr###########gggggggggggrrgggrgr####ggr~~~~gggggggggggggggggggggggg#gggggggrgrrr#####rgrr##########.",
-   "############rrrrrrrr#########ggggggggggggrrrgrrr#####g#r~~~~ggggggggggggggggggggggggggggggggggrrr#####rr#############",
-   "#############grrr##rr#######ggggggggggggggrrrrrr####gggg~~~~rgggg#gggggggggggg#ggggggggggggggggrr####################",
-   "#############grr####rr#####rrggggggggggggggrrrgrrrrrrrggg~~~~rgggggggggg##gggggggg#gggggggggggggr####################",
-   "##############r######rr###rrrrggggggg####gggrrrgrrrrrrgggg~~~~ggggggggg####gggggggggggggggggggggg####################",
-   "######################rr#rrrgrggggggg####ggrrrrrrrrgrrggggg~~~~gggggggg####ggggrr#rrrggggggggggg#####################",
-   "#######################rrrrrrrrgggggg####gggrrrrrrrrrggggggg~~~~ggggggg###ggggrrrrrrrrrggggggggg#####################",
-   "#######################rrrrrrrrgggggggggggggrrrrrrrrrgggggggg~~~~gggggggggggggrrrrrrrrgrggggggggg####################",
-   "######################rrrrrrrrrrggggggggggggrrrrrrrrgggggggggg~~~~g##ggggggggrrrrrrrrrrrg#gggggggg###################",
-   "#####################rrrrrrrrrrrggggggggggggrrggrgggggggggggggg~~~~ggggggggggrggr###rrrrggggggggggg##################",
-   "####################rrrrrrrrgrrrrgggggggggggrrrggggggggggggggggg~~~~ggggggggggrrrr#rrrrrggggggggggg##################",
-   "###################ggrrrrrrrrgrrrrggggrgrrrrrrrrrgggg#ggggggggggg~~~~gggggggggrrrrrrrgrrggggggggggg##################",
-   "##################ggggggrrrrrrrgrrrgrrrrrrrrrrgrrrrrggg#gggggggggg~~~~ggg#ggggrrrrrrrrrrggggggggggg##################",
-   "###############ggggggggggrrrrrrrrrrrrgrrgrrrrgrrrrrrrrgggggggggg#gr~~~rggggggggrrrrgrrggggggggggggg##################",
-   "###############ggggggggggggrrgrrrrrrrrrrgggggggggggrgrrgggggggggggg~~~~#ggggggggrrrrrrrgggggggggggg##################",
-   "################ggggggggggggggrrrrrrrggg#gggggggggggggrrrgggggggggg~~~~rggggggggg#ggrrrgggggggggggg##################",
-   "################ggggggggggggggrrggrrrggggggggggggggggggggrggggrrrrrr~~~#ggggggggggggrrrgggggggggggg##################",
-   "################gggggggggggggggrrrrrrgg#ggggggggggggggggrrrggrrgrrrr~~~~ggggggggg#ggrrggggggggggggg##################",
-   "###############ggggggggggggggggrrrrrrgggggggggg#gggggggggrrrgrrggggrr~~~rgggggggggggrrrgggggggggggg##################",
-   "###############gggggggggggggggrrrrrrrrggggggggg#ggggggggggrrrrggg#ggr~~~~gggggggggggrrggggggggggggg##################",
-   "###############gggggggggggggggrgrrgggrrgggggg##ggggggggggggrrrgg###gg~~~~rggggggg##grrggggggggggggg##################",
-   "###############ggggg##gggggggggrrgggggrgggg#####ggggggggggggrrgg###ggr~~~rggggg#####rrggg#ggggggggg##################",
-   "###############gggg####gggggggrrrggggggggg#######gggggggggggrrgg##g#gr~~~~gggg######rrggggggggggggg##################",
-   "###############gggg####gggggggrrrgggggggg########ggggggggggggrrggggggrr~~~rggg######rrggggggggggggg##################",
-   "###############ggggg##ggggggggrrrggggggg#########ggg#gggggggggrrggggrrr~~~~ggg#####grrrgggggggggggg##################",
-   "###############ggrggggggggggggrrgggggggg########ggggggggggggggrrrrrrrrr~~~~rgg####ggrrrgggggggggggg##################",
-   "###############ggrrg#gg##gggggrrgggggggg########ggggggggggggggrrrrrrrggr~~~#ggggggggrrrgggggggggggg##################",
-   "###############gggrgggggggggggrrg#gggggg#######ggrrrrrrrgggggggrrggggggr~~~~ggggggggrrrgggggggggggg##################",
-   "###############g#ggrrrggggggggrrrggggggg######ggrrrgrrrrrgggg#grrgggg###~~~~rgggggggrrgggggggggggg###################",
-   "###############ggggggrrrggggggrrrggggggggg##gggrrrrrrrrrrrgggggrrrgg###g~~~~###ggrrgrrrggggggggggg###################",
-   "###############gggggggrrrggggggrrggggggggggggggrrrrrrrrrrrrgggggrrrrrrrrrrrrrrrrrrrrrrgggggggggggg###################",
-   "#################gg#ggggrrrggggrrggggggggggggggrrrrrrrrrrrr#gggrrrrrrggg~~~~~ggggrrrrrrggggggggggg###################",
-   "##################gggggggrrrrggrggggggggggggggrrrrrrrrrggrrggggrrrggggggr~~~~gggggggrrrggggggggggg###################",
-   "##################gggggggggrgrggrrgggggggggg#grrrrrgrrrrrrrggggrrrggggggr~~~~gggggggrrrggggggggggg###################",
-   "#################gg#ggggggggggrrrrrggggggggggggrrrrrgrrrrrrggggrrrggggggr~~~~rggggggggrgggggggggggg##################",
-   "###############gggggggggggggggrgrrrggggggggggggrrrrrrrgrrrggggrrrrggggggr~~~~rgggggggrrgggggggggggg##################",
-   "###############ggg#gggggggggggggrrrrgggg##ggggggrrrrrrrrrrggggrggggggg###~~~~rgggggggrggggggggggggg##################",
-   "###############ggg#ggggggggggg#ggrrrrgg###rrggggrrrrgrrrrggggrrrgggg#####~~~~#gggggggrrgggggggggggg##################",
-   "###############ggggggggggggggggggggr##rr#rrr##ggggrrgrrggggggrrgggg##gggr~~~~####gggggrgggggggggggg##################",
-   "###############ggggggggggggggggggggg##rrrrrg##rgggggggggggggrrrgggggggg#~~~~~rg##gggggrgggggggggggg##################",
-   "################gggggggggggggggggggg##rrgrrrrrrgggggg#gggggrrrrggggggg##~~~~~#ggggggggggggggggggggg##################",
-   "#################gggggggg##gggggggggrgrrrrrrrrrrggggggggggrrgrrggggg####~~~~~####ggggggrggggggggggg##################",
-   "#################ggggggg####ggggggggrrrrrrrrr##rggggggggrrrrrrrgggggg###~~~~~gggggggggggggggggggggg##################",
-   "#################gggggg#####ggggggggrrrrrrrrr###gggggggrrrrrrrrggggg####~~~~~gggggggggggggggggggggg##################",
-   "#################gggggg####ggggggggggrrrrrrrr##rggrrrgrrrrrrggrrrrr##ggg~~~~~###rrrrggggggggggggggg##################",
-   "################ggggggg###ggggggg###grrrrrr#grrrrrrrrrrrrrrgggrrrrrrrrrrrrrrrrrrrrrrr#ggggggggggggg##################",
-   "###############ggrrggggggggggggg####grrrrr###rrgrrrrrrrrgggggggggggggggr~~~~~ggggrrrrgggggggggggggg##################",
-   "###############ggrrrrggggggggggg####rrrrrr###rrggrrrgggggggggggggggggggr~~~~~gggggrrrgggggggggggggg##################",
-   "###############gggg#rrgggggggggg###ggrrrrrrrrgggggrrgggggggggggggggggggg~~~~rggggrgrggggggggggggggg##################",
-   "###############ggggggrrggggggggggggrgrrgg#gggg#gggggrrrggggggggggggggggg~~~~rggggrgrggggggggggggggg##################",
-   "###############gggggggrrgrggggggggrrrrggggg#gggggggggrrrgggggggggggggggg~~~~rgg#grrrggggggggggggggg##################",
-   "################ggggggggrrrggggggrrrrgggggggggggg#gggggrrrgggggggggg###~~~~~rggggrrrggggggggggggggg##################",
-   "################ggggggggggrrrggggrrrrgggggggggggggg#ggggrrrggggggg###gg~~~~~##ggrrrgggggggggggggggg##################",
-   "###############gg#gggggggggrrrrgrrrrggggggggggggggggggggrrrrrg#ggg#gggg~~~~~####rrrgggggggggggggg####################",
-   "###############ggggggggggggggrrrrrrggggggggggg#gggggggggrrrrrrggggggg##~~~~~####rrrgggggggggggggg####################",
-   "################ggggggggggggggrrgggggggggggggggggggggggggrrggrgggggg###~~~~~###grrrggrgggggggggg#####################",
-   "###############gggggggggggggggrrrrggggggggggggggggggggggrrrgggggggg####~~~~~###grrrggggggggggggg#####################",
-   "###############gggggggggg###grrrrrrggggg#gggggggggggg#ggrrggggggggggggg~~~~~gggrrrgggggggggggggg#####################",
-   "###############ggggggggg####grrgggrrgg####gggggggggggggrrrggggggggggggg~~~~~gggrrrgggggggggggggg#####################",
-   "###############ggggggggg####rrrrgggrrg###ggggggg###ggggrrrggggggggggggg~~~~ggggrrrggggggrg###########################",
-   "###############ggggggggg###grgrgggggrr##gggggg#####ggggrrrggggggg#ggggg~~~~ggggrrrggggggr############################",
-   "###############ggg###ggggggrrgrgggggggrggggggg#####ggggrrrggggg####ggg~~~~~ggggrrggggggr#############################",
-   "###############ggg###ggggggrrgggggggggrrggggg######gggrgggggggg####ggg~~~~~gggggrgggggg##############################",
-   "###############gg####gggggrrgg#gggggg#rrg#ggg#####ggggrrrggggg#####ggg~~~~~gggggrrgggg###############################",
-   "###############ggg##gggggrrrrggggggggggrrrggg####gggggrrrgggggg###gggg~~~~~ggggggrrgr################################",
-   "###############ggggggrrggrrrggggggggggggrrrgggggggggggrrrggggggggggggr~~~~~gggggggrr#################################",
-   "###############gggggrrrrrrrrgggggggggggggrr#gggggggggggrgggggggggggggr~~~~~gggggggrrr################################",
-   "###############gggggrrrrrgggg###ggggggggggrrggggggggggrrgggggggg#ggggr~~~~~ggggggg##rr######rr#######################",
-   "###############gggggrgrrrrrg####gggggggggggrgggggggggrrrgggggggggggggr~~~~rgggggg####rr####rrr#######################",
-   ".##############ggggrrrrrgrgg###gggggggggggggrrggggggggrrggggggggggggg#~~~~rggggg######rr##rrrgr######################",
-   "..#############ggggrrrrrrggg##ggggggg###gggggrrgggggggggggggggggggggg~~~~~rgggg########rrrrrrrr######################",
-   "...############gggrrrrrrrgggggggggggg###ggggggrrggggggggggggggggggggg~~~~~rggg##########rrrrrrrr#####################",
-   "....#############grrrrrgrrggg#ggggggg##ggggggggrrgggggggggggggggg#ggg~~~~~ggg##########rrrrrgrrrr####################",
-   ".....###############grr#########ggggggggggggggggggggggggggggggg#####g~~~~~ggg#########rrggrrrgrrr####################",
-   "......##############rrr##########ggg#gggg#gggggggggggggggggggg#######~~~~~ggg########rrrrrrrrrrrrg###################",
-   ".......#############rrr##############################################~~~~############rrrrrrrrrrrrr###################",
-   "........#############rr##############################################~~~~############rgrrrrrrrrrrrr##################",
-   ".........###########rrr##############################################~~~~############rrrrrrrrrrrrrr#################.",
-   "..........#######rrrrrrrrr##########################################~~~~~###########rrrrrrrrrrrrrrrr###############..",
-   "...........#######rrrrrrr############################################~~~~###########rrrrrrrrrrrrrgrr##############...",
-   "............######rrrrrrr############################################~~~~###########rgrrrrrrrrrrrrgrr############....",
-   ".............######rrrrg#############################################~~~~############rrrrrrr###rrrrrgr##########.....",
-   "..............#####rrrgr#############################################~~~~############rgrrrr######rrrrr#########......",
-   "...............####rgrrg#############################################~~~~###############rgr########rrrr#######.......",
-   "................###rrgr##############################################~~~~###############rrg#########rrrr#####........",
-   ".................##rgrg###############################################~~~~##############rgr###########gr####.........",
-   "..................##rrr###############################################~~~~##############rrr############rr##..........",
-   "...................#rrr###############################################~~~~##############rrr###############...........",
-   "....................rrr###############################################~~~~##############grr##############............",
-   ".....................rr###############################################~~~~##############grr#############.............",
-   "......................r################################################~~~~#############grr############..............",
-   ".......................################################################~~~~##############rg###########...............",
-   "........................###############################################~~~~##############rr##########................",
-   ".........................##############################################~~~~##############rr#########.................",
-   "..........................##############################################~~~##############rr########..................",
-   "...........................#############################################~~~~#############rr#######...................",
-   "............................############################################~~~~#############gr######....................",
-   ".............................###########################################~~~~#############rr#####.....................",
-   "..............................##########################################~~~~#############rr####......................",
-   "...............................#########################################~~~~#############rr###.......................",
-   "................................########################################~~~~~############rr##........................",
-   ".................................#######################################~~~~~############rr#.........................",
-   "..................................######################################~~~~~############rr..........................",
-   "...................................#####################################~~~~~############r...........................",
-   "....................................#####################################~~~~############............................",
-   ".....................................####################################~~~~###########.............................",
-   "......................................###################################~~~~##########.............................."
+   ".....##############################################~~########################################.......................",
+   "....###############################################~~~~#######################################......................",
+   "...r###############################################~~~~########################################.....................",
+   "..rgrr#############################################~~~~#########################################....................",
+   ".##rrrr############################################~~~~##########################################...................",
+   "####rrrrr##########################################~~~~###########################################..................",
+   "#####rrrrr#########################################~~~~############################################.................",
+   "#####rrggrrr#######################################~~~~#############################################................",
+   "######rrrrrrrr#####################################~~~~##############################################...............",
+   "######rrrrrrrrgr###################################~~~~###############################################..............",
+   "#######rrrrrrrrrrr#################################~~~~################################################.............",
+   "#######rrrrrgrrgrrrr###############################~~~~#################################################............",
+   "########rrrrrrrrrrgrr###############################~~~##################################################...........",
+   "########grrrgrrrrrrgrr########ggggggggg#######gggggg~~~~ggggg#######gggggggggggggggggggggggggg############..........",
+   "#########rrrrrrrrrgrg########ggggggggggg#####ggggggg~~~~gggggg#####gggggggggggggggggggggggggggg############.........",
+   "##########rrrrrgrrrr#########ggggg#gggggg###gggggggg~~~~ggggggg###g#ggggggggggggggggggggggggggg#####r#######........",
+   "##########rrgrrrrrr##########gggggggrrgggggggggggggg~~~~rgggggggggggggggggggggggggggrrrggggggrr#####rrr######.......",
+   "###########rrrrrrrr#########ggggggggrrrgggggggggggggr~~~~ggggggggggggggggggggggggggggrrrgggrrrr#####rrrrr#####......",
+   "###########rrrrrrrrr####r###gggggggggrr#ggggggggggggr~~~~gggggggggggggggggggggg###gggggrrrrrrrrr####rrrrrrrrrrr.....",
+   "############rrrr##rrr##gg#rrggggggggg######gggggg###g~~~~rggggggggggggggggggggg####ggggrrrrrggrrrgrrrrrrrrrrrrrr....",
+   "#############rr####grrrrrrrrgggggggg######ggggrg####g~~~~rggggggggggggggggggggg###gggggggrrrrrrrrrrrrrrrrrrrrrrgr...",
+   "####################rrgrrrrrrgggggg#######ggrgr####ggr~~~~gggggggggggggggggggggg##ggggggggrgrrr#####rgrrrr########..",
+   "####################rrrrrrrgrgggggg#######grrr#####ggr~~~~gggggggggggggggggggggggggggggggggrrrr#####rrrr###########.",
+   "###################rrrrrrrrgrrggggg######rrrrr####gggg~~~~rgggg#gggggggggggggggggggggggggggggrr#####gr##############",
+   "##################rrrgrrrrrrrrggggg#####grrrgrrrrrrrggg~~~~rgggggggggg###ggggggggggggg#gggggggr#####################",
+   "#################ggrrrgrrrrrrrrgggggg##gggrrrgrrrrrrgggg~~~~ggggggggg####gggggggggggggggggggggg#####################",
+   "#################grrrrrrrrgrrrrrgggggggggrrrrrrrrgrrggggg~~~~gggggggg####ggggrr#rrrg#gggggggggg#####################",
+   "##################ggrrrrrrrrrrrrggggggggggrrrrrrrrrggggggg~~~~ggggggg###ggggrrrrrrrrrgggggggggg#####################",
+   "#################ggggrrrrrrrrrrrrgggggggggrrrrrrrrrgggggggg~~~~ggggggg#gggggrrrrrrrrgrggggggggg#####################",
+   "##############gggggggggrrrrrrrrrrggggggg#grrrrrrrrgggggggggg~~~~g##ggggggggrrrrrrrrrrrggggggggg#####################",
+   "##############gggggggggggrrrrrggrrggggggggrrggrgggggggggggggg~~~~ggggggggggrggr###rrrrgggggggggg####################",
+   "##############gggggggggggggrrrrrrrrgggggggrrrgggggg#gggggggggg~~~~ggggggggggrrrr#rrrrrggggggggggg###################",
+   "##############gggggg###gggggrrrrrrrrrgrrrrrrrrrgggg#ggggggggggg~~~~g#gg#gg#grrrrrrrgrrggggggggggg###################",
+   "##############ggggg####gggggggrrrrrrrrrrrrrrgrrrrrggg#gggggggggg~~~~ggggggggrrrrrrrrrrggggggggggg###################",
+   "##############gggg#####gggggggrrrrrgrrgrrrrgrrrrrrrrggggggggggggr~~~rggggggggrrrrgrrggggggggggggg###################",
+   "##############gggg####ggggggggrrrrrrrrgggggggggggrgrrggggggg#gggg~~~~gggggggggrrrrrrrgggggggggggg###################",
+   "##############ggggg#ggggggggggrrrrrgrrggggggggggg#ggrrrggggg#ggg#~~~~rggggggggggggrrr#ggggggggggg###################",
+   "###############gggggggggggggggggrrrgrrgggggggggggggggggrggggrrrrrr~~~#ggggggggggggrrr#ggggggggggg###################",
+   "###############ggggggggggggggrrrrrggggggggggggggggggggrrrggrrgrrrr~~~~ggggggggg#ggrrggggggggggggg###################",
+   "##############gggggggggggggggrrrrggggggggggggggggggggggrrrgrrggggrr~~~rgggggggggggrrrgggggggggggg###################",
+   "##############ggggggggggggggrrrrggggggggggggggggggggggggrrrrggg#ggr~~~~gggggggggggrrggggggggggggg###################",
+   "###############ggggg#gggggggrgrrggggggggggg###gggggggggggrrrgg###gg~~~~rggggggg##grrggggggggggggg###################",
+   "##############ggggg###gggg#ggrrg#gggggggg#####ggggggggggggrrgg###ggr~~~rggggg#####rrggg#ggggggggg###################",
+   "##############gggg####ggggggrrrggggggggg#######gggggg#ggggrrgg##gggr~~~~gggg######rrggggggggggggg###################",
+   "##############ggggg###ggggggrrrgggggggg########gggg#gggggggrrggggggrr~~~rggg######rrggggggggggggg###################",
+   "##############ggggggggggggggrrr#gggggg#########gggggggggggggrrggggrrr~~~~ggg#####grrrgggggggggggg###################",
+   "##############ggggggggggggggrrgggggggg########gggggg#gggggggrrrrrrrrr~~~~rgg####ggrrrgggggggggggg###################",
+   "##############ggggggg##gggggrrgggggggg########ggggggggggggggrrrrrrrggr~~~#ggggggggrrrgggggggggggg###################",
+   "##############ggggggggggggggrrgggggggg#######ggrrrrrrrgggggggrrggggggr~~~~ggggggggrrrg#gggggggggg###################",
+   "##############gggrrrggggggggrrrggggggg######ggrrrgrrrrrggggggrrgggg###~~~~rgggggggrrgggggggggggg####################",
+   "##############gggggrrrggggggrrrggggggggg##gggrrrrrrrrrrrgggggrrrgg###g~~~~###ggrrgrrrggggggggggg####################",
+   "##############ggggggrrrggggggrrgggg#gggggggggrrrrrrrrrrrrgggggrrrrrrrrrrrrrrrrrrrrrrgggggggggggg####################",
+   "###############gg#ggggrrrggggrrggggggggggggggrrrrrrrrrrrrggggrrrrrrggg~~~~~ggggrrrrrrggggggggggg####################",
+   "################gggggggrrrrggrggggggggggggggrrrrrrrrrggrrggggrrrggggggr~~~~gggggggrrrggggggggggg####################",
+   "################gggggggggrgrggrrggggggggggggrrrrrgrrrrrrrggggrrrggggggr~~~~gggggggrrrggggggggggg####################",
+   "###############gggggggggggggrrrrrggggggggggggrrrrrgrrrrrrggggrrr#gggggr~~~~rggggggggrgggggggggggg###################",
+   "##############ggggggggggggggrgrrrggg#ggggggggrrrrrrrgrrrgg#grrrrggggggr~~~~rgggggggrrgggggggggggg###################",
+   "##############ggggggggggggggggrrrrgggg##ggggggrrrrrrrrrrggggrggggggg###~~~~rgggggggrggggggggggggg###################",
+   "##############gggggggggggggg#ggrrrrgg###rrggggrrrrgrrrrggggrrrgggg#####~~~~#gggg#ggrrgggggggggggg###################",
+   "################gggggggggggggggggr##rr#rrr##ggggrrgrrggggggrrgggg##gggr~~~~###ggggggrgggggggggggg###################",
+   "################gggggggggggggggggg##rrrrrg##rgggggg#ggggggrrrgggggggg#~~~~~rg##gggggrgggggggggggg###################",
+   "#################ggggggggggggggggg##rrgrrrrrrggggggggggggrrrrggggggg##~~~~~#ggggggggggggggggggggg###################",
+   "################ggggggg##gggggggggrgrrrrrrrrrrgg#gggggggrrgrrggggg####~~~~~####ggggggrggggggggggg###################",
+   "################gggggg####ggggggggrrrrrrrrr##rggggggggrrrrrrrgggggg###~~~~~gggggggggggggggggggggg###################",
+   "###############gggggg#####ggggggggrrrrrrrrr###gggggggrrrrrrrrggggg####~~~~~ggggggggggg#gg#ggggggg###################",
+   "##############ggggggg####ggggggggggrrrrrrrr##rggrrrgrrrrrrggrrrrr##ggg~~~~~###rrrrggggggggggggggg###################",
+   "##############ggggggg###ggggggg##ggrrrrrr#grrrrrrrrrrrrrrgggrrrrrrrrrrrrrrrrrrrrrrrgggggggggggggg###################",
+   "##############gggggggggggggggg####grrrrr###rrgrrrrrrr#gggggggggggggggr~~~~~gggggrrrg#gggggggggggg###################",
+   "##############gggrrggggggggggg####rrrrrr###rrggrrrgggggggggggggggggggr~~~~~ggggggrrgggggggggggggg###################",
+   "##############gggrrrggggggggggg##ggrrrrrrrrgg#ggrrgggggggggggggggggggg~~~~rggggggrrgggggggggggggg###################",
+   "##############gggggrrggggggggggggrgrrgggggggggggggrrrggggggggggggggggg~~~~rggggggrrgggggggggggggg###################",
+   "##############ggggggrrgrggggggggrrrrgggggggggggggggrrrgggggggggggggggg~~~~rggggggrrrggggggggggggg###################",
+   "##############ggggggggrrrggggggrrrrgggggggggggg##ggggrrrgggggggggg###~~~~~rggggggrrrggggggggggggg###################",
+   "##############ggggggggggrrrggggrrrrgggggggggggggg#ggggrrrggggggg###gg~~~~~##ggggggrrggggggggggggg###################",
+   "##############gggggggggggrrrrgrrrrggggggggggggggggggggrrrrrggggg#gggg~~~~~####ggggrrggggggggggggg###################",
+   "##############gggggggggggggrrrrrrgggggggggggggggggggggrrrrrrggggggg##~~~~~####ggggrrggggggggggggg###################",
+   "##############ggggggggggggggrrgggggggggggggggggggggggggrrggrgggggg###~~~~~###gggggrrggggggggggggg###################",
+   "##############ggggggggggggggrrrrggggggggggggggggggggggrrrggg#gggg####~~~~~####ggggrrggggggggggggg###################",
+   "##############gggggggg###ggrrrrrrgggggggggggggggggggggrrggggggggggggg~~~~~ggggggggrgrgggggggggggg###################",
+   "##############ggggggg####ggrrgggrrgggggggggggggggggggrrrggggggggggggg~~~~~ggggggggrrrgggggggggggg###################",
+   "##############ggggggg####grrrrgggrrgggggggggg##ggggggrrrgggggggg###gg~~~~gggggggggrrggrgggggggggg###################",
+   "##############ggggggggg#ggrgrgggggrrggggggg####ggggggrrrgggggggg###gg~~~~ggggggggggrrgrggggggg######################",
+   "##############gg###ggggggrrgrgggggggrgggggg####ggggggrrrggggggggg#gg~~~~~ggggggggggrrrrrggggg#######################",
+   "##############gg###ggggggrrgggggggggrr#gggg####gggggrgggggggg####ggg~~~~~ggggggggggrrrrggggg########################",
+   "##############g####gggggrrggggggggggrrggggg###ggggggrrrggggg#####ggg~~~~~ggggggggggggrrrggg#########################",
+   "##############gg##gggggrrrrggggggggggrrrggggggggggggrrrgggg######ggg~~~~~gggggggggggrrrrrg##########################",
+   "##############gggggggggrrrggggggggggggrrrgggggggggggrrrgggg#####gggr~~~~~ggggggggggrrrrrr###########################",
+   "##############gggggrrrrrrrgggggggggggggrrggggggggggggrggggg####ggggr~~~~~ggggggggggrrrrrr###########################",
+   "##############gggggrrrrgggg###gggggggg#grrggggggggggrrggggg###gggggr~~~~~gggggggggrrrrrrrr##########################",
+   "##############ggggggrrrrrg####gggggggggggrgggggggggrrrgggggggggggggr~~~~rgggggggggrrrg##grr######r##################",
+   "##############ggggrrrrgrgg###gggggggggggggrrggggggggrrggggggggggggg#~~~~rggggggggggrr####rrg####rrr#################",
+   "##############ggggrrrrrrgg##ggggggg###gggggrrgggggggggggggggggggggg~~~~~rggggggggggg######rrr##rgrr#################",
+   ".#############gggrrrrrrrggggggggggg###ggggggrrggggggggggggggggggggg~~~~~rgggggggggg########rrrrrgrrr################",
+   "..#############ggrrrrgrrggggggggggg##ggggggggrrgggggggggggggggggggg~~~~~gggggggggg##########rrrrrrrrg###############",
+   "...################rrr########gggggggggggggggggggggggggg####ggggggg~~~~~ggggggggg###########rrrrrrrrr###############",
+   "....###############rrr#########ggg#gggg#ggggggggggggggg######gggggg~~~~~gggggggggg#########rrrrgrrrrrr##############",
+   ".....##############rrr#############################################~~~~###################rrrrrrrrrrrr##############",
+   "......#############rrr#############################################~~~~##################ggrrrrrrrrrrrr############.",
+   ".......############rrr#############################################~~~~####################rrrrrrrrrrrr###########..",
+   "........########rrrrrrrrr#########################################~~~~~####################rrrrrrrrggrrr#########...",
+   ".........########rrrrrrr###########################################~~~~######################rrgrrrrrrrr########....",
+   "..........#######rrrrrrr###########################################~~~~#####################rrrrgrrrrrrrr######.....",
+   "...........#######rrrgr############################################~~~~####################rrrr###grrrrrr#####......",
+   "............######rrgrr############################################~~~~#################r#rrrr######rrrrgr###.......",
+   ".............####rgrrr#############################################~~~~################grrrrr#########rrrrr#........",
+   "..............####rgrr#############################################~~~~###############rrgrrr###########rgrr.........",
+   "...............####rgr##############################################~~~~#############rrgrgr##############r..........",
+   "................###rrr##############################################~~~~############grrrr################...........",
+   ".................##rrr##############################################~~~~#############rrrr###############............",
+   "..................#rrr##############################################~~~~##############grr##############.............",
+   "...................rrr##############################################~~~~##############grr#############..............",
+   "....................rr###############################################~~~~#############grr############...............",
+   ".....................r###############################################~~~~##############rg###########................",
+   "......................###############################################~~~~##############rr##########.................",
+   ".......................##############################################~~~~##############rr#########..................",
+   "........................##############################################~~~##############rr########...................",
+   ".........................#############################################~~~~#############rr#######....................",
+   "..........................############################################~~~~#############gr######.....................",
+   "...........................###########################################~~~~#############rr#####......................",
+   "............................##########################################~~~~#############rr####.......................",
+   ".............................#########################################~~~~#############rr###........................",
+   "..............................########################################~~~~~############rr##.........................",
+   "...............................#######################################~~~~~############rr#..........................",
+   "................................######################################~~~~~############rr...........................",
+   ".................................#####################################~~~~~############r............................",
+   "..................................#####################################~~~~############.............................",
+   "...................................####################################~~~~###########..............................",
+   "....................................###################################~~~~##########..............................."
   ],
   "heights": [
    [
-    68,
-    48,
+    66,
+    51,
     1
    ],
    [
-    69,
-    48,
+    67,
+    51,
     2
    ],
    [
-    70,
-    48,
+    68,
+    51,
     4
    ],
    [
-    71,
-    48,
+    69,
+    51,
     5
    ],
    [
-    72,
-    48,
+    70,
+    51,
     6
    ],
    [
+    71,
+    51,
+    7
+   ],
+   [
+    72,
+    51,
+    7
+   ],
+   [
     73,
-    48,
+    51,
     7
    ],
    [
     74,
-    48,
-    7
-   ],
-   [
-    75,
-    48,
-    7
-   ],
-   [
-    76,
-    48,
+    51,
     6
    ],
    [
-    77,
-    48,
+    75,
+    51,
     5
    ],
    [
-    78,
-    48,
+    76,
+    51,
     4
    ],
    [
-    79,
-    48,
+    77,
+    51,
     2
    ],
    [
-    80,
-    48,
+    78,
+    51,
     1
    ],
    [
-    68,
-    63,
+    66,
+    66,
     2
    ],
    [
-    69,
-    63,
+    67,
+    66,
     3
    ],
    [
-    70,
-    63,
+    68,
+    66,
     5
    ],
    [
-    71,
-    63,
+    69,
+    66,
     6
    ],
    [
+    70,
+    66,
+    7
+   ],
+   [
+    71,
+    66,
+    7
+   ],
+   [
     72,
-    63,
+    66,
     7
    ],
    [
     73,
-    63,
-    7
-   ],
-   [
-    74,
-    63,
-    7
-   ],
-   [
-    75,
-    63,
+    66,
     6
    ],
    [
-    76,
-    63,
+    74,
+    66,
     5
    ],
    [
-    77,
-    63,
+    75,
+    66,
     4
    ],
    [
-    78,
-    63,
+    76,
+    66,
     2
    ],
    [
-    79,
-    63,
+    77,
+    66,
     1
    ]
   ],
   "height_px_per_step": 10
  },
  "spawn": [
-  90,
-  111
+  88,
+  114
  ],
  "exit_cell": [
-  90,
-  117
+  88,
+  120
  ],
  "gate_cells": [
   [
-   82,
-   82
-  ],
-  [
-   82,
-   83
-  ],
-  [
-   83,
-   83
-  ],
-  [
-   83,
-   84
-  ],
-  [
-   84,
-   84
-  ],
-  [
-   84,
-   85
-  ],
-  [
-   85,
-   85
-  ],
-  [
-   85,
-   86
-  ],
-  [
-   86,
+   87,
    86
   ],
   [
@@ -370,6 +341,10 @@
   ],
   [
    87,
+   87
+  ],
+  [
+   88,
    87
   ],
   [
@@ -378,6 +353,10 @@
   ],
   [
    88,
+   88
+  ],
+  [
+   89,
    88
   ],
   [
@@ -386,6 +365,10 @@
   ],
   [
    89,
+   89
+  ],
+  [
+   90,
    89
   ],
   [
@@ -394,37 +377,89 @@
   ],
   [
    90,
+   90
+  ],
+  [
+   91,
    90
   ],
   [
    90,
    91
+  ],
+  [
+   91,
+   91
+  ],
+  [
+   92,
+   91
+  ],
+  [
+   91,
+   92
+  ],
+  [
+   92,
+   92
+  ],
+  [
+   93,
+   92
+  ],
+  [
+   92,
+   93
+  ],
+  [
+   93,
+   93
+  ],
+  [
+   94,
+   93
+  ],
+  [
+   93,
+   94
+  ],
+  [
+   94,
+   94
+  ],
+  [
+   95,
+   94
+  ],
+  [
+   94,
+   95
   ]
  ],
  "wall_polygon": [
   [
-   2010.0,
-   520.0
+   2180.7,
+   470.0
   ],
   [
-   3110.0,
-   520.0
+   2939.3,
+   470.0
   ],
   [
-   4940.0,
-   1435.0
+   4919.3,
+   1460.0
   ],
   [
-   3110.0,
-   2350.0
+   2939.3,
+   2450.0
   ],
   [
-   2010.0,
-   2350.0
+   2180.7,
+   2450.0
   ],
   [
-   180.0,
-   1435.0
+   200.7,
+   1460.0
   ]
  ],
  "trees_keep": {
@@ -497,18 +532,6 @@
  },
  "building_footprints": [
   {
-   "id": 0,
-   "tag": "castle",
-   "c": [
-    2475.0,
-    510.5
-   ],
-   "r": [
-    240.8,
-    79.5
-   ]
-  },
-  {
    "id": 1,
    "tag": "cathedral",
    "c": [
@@ -518,6 +541,18 @@
    "r": [
     212.8,
     75.4
+   ]
+  },
+  {
+   "id": 2,
+   "tag": "townhall",
+   "c": [
+    3000.0,
+    761.5
+   ],
+   "r": [
+    155.7,
+    63.5
    ]
   },
   {
@@ -542,18 +577,6 @@
    "r": [
     96.3,
     29.9
-   ]
-  },
-  {
-   "id": 6,
-   "tag": "weaver",
-   "c": [
-    1350.0,
-    1559.6
-   ],
-   "r": [
-    96.3,
-    30.4
    ]
   },
   {
@@ -725,6 +748,18 @@
    ]
   },
   {
+   "id": 100,
+   "tag": "house",
+   "c": [
+    2096.0,
+    1963.2
+   ],
+   "r": [
+    57.6,
+    26.9
+   ]
+  },
+  {
    "id": 102,
    "tag": "house",
    "c": [
@@ -843,34 +878,34 @@
    "why": "layout",
    "edge": 3,
    "arch": [
-    2389.3,
-    2350.0
+    2544.1,
+    2450.0
    ],
    "wall_join_left": [
-    2025.9,
-    2350.0
+    2180.7,
+    2450.0
    ],
    "wall_join_right": [
-    2784.5,
-    2350.0
+    2939.3,
+    2450.0
    ],
-   "half_span": 379.2998754180602,
+   "half_span": 379.2998754180603,
    "passage": [
     [
-     2425.3,
-     2470.0
+     2580.1,
+     2570.0
     ],
     [
-     2425.3,
-     2230.0
+     2580.1,
+     2330.0
     ],
     [
-     2353.3,
-     2230.0
+     2508.1,
+     2330.0
     ],
     [
-     2353.3,
-     2470.0
+     2508.1,
+     2570.0
     ]
    ],
    "passage_half_width_px": 36.0,
@@ -885,12 +920,12 @@
    "art_drop_px": 0.0,
    "arch_open_px": 147.5,
    "road_out_end": [
-    2351.8,
-    2433.8
+    2385.3,
+    2419.2
    ],
    "snapped_to_corner": [
-    2010.0,
-    2350.0
+    2939.3,
+    2450.0
    ],
    "exit": {
     "link": "crosshaven_crossroads",
@@ -899,39 +934,7 @@
    },
    "cells": [
     [
-     82,
-     82
-    ],
-    [
-     82,
-     83
-    ],
-    [
-     83,
-     83
-    ],
-    [
-     83,
-     84
-    ],
-    [
-     84,
-     84
-    ],
-    [
-     84,
-     85
-    ],
-    [
-     85,
-     85
-    ],
-    [
-     85,
-     86
-    ],
-    [
-     86,
+     87,
      86
     ],
     [
@@ -940,6 +943,10 @@
     ],
     [
      87,
+     87
+    ],
+    [
+     88,
      87
     ],
     [
@@ -948,6 +955,10 @@
     ],
     [
      88,
+     88
+    ],
+    [
+     89,
      88
     ],
     [
@@ -956,6 +967,10 @@
     ],
     [
      89,
+     89
+    ],
+    [
+     90,
      89
     ],
     [
@@ -964,11 +979,63 @@
     ],
     [
      90,
+     90
+    ],
+    [
+     91,
      90
     ],
     [
      90,
      91
+    ],
+    [
+     91,
+     91
+    ],
+    [
+     92,
+     91
+    ],
+    [
+     91,
+     92
+    ],
+    [
+     92,
+     92
+    ],
+    [
+     93,
+     92
+    ],
+    [
+     92,
+     93
+    ],
+    [
+     93,
+     93
+    ],
+    [
+     94,
+     93
+    ],
+    [
+     93,
+     94
+    ],
+    [
+     94,
+     94
+    ],
+    [
+     95,
+     94
+    ],
+    [
+     94,
+     95
     ]
    ]
   },
@@ -977,34 +1044,34 @@
    "why": "layout",
    "edge": 4,
    "arch": [
-    391.2,
-    1540.6
+    399.3,
+    1559.3
    ],
    "wall_join_left": [
-    192.6,
-    1441.4
+    200.7,
+    1460.1
    ],
    "wall_join_right": [
-    614.9,
-    1652.6
+    623.0,
+    1671.3
    ],
    "half_span": 236.1087165922939,
    "passage": [
     [
-     316.1,
-     1610.4
+     324.2,
+     1629.1
     ],
     [
-     530.7,
-     1503.0
+     538.8,
+     1521.7
     ],
     [
-     466.3,
-     1470.8
+     474.4,
+     1489.5
     ],
     [
-     251.7,
-     1578.2
+     259.8,
+     1596.9
     ]
    ],
    "passage_half_width_px": 36.0,
@@ -1020,11 +1087,11 @@
    "arch_open_px": 90.7,
    "road_out_end": [
     -40.2,
-    1756.3
+    1779.1
    ],
    "snapped_to_corner": [
-    180.0,
-    1435.0
+    200.69999999999982,
+    1460.0
    ],
    "exit": {
     "link": "crosshaven_road_west",
@@ -1037,40 +1104,8 @@
    },
    "cells": [
     [
-     20,
-     90
-    ],
-    [
-     21,
-     90
-    ],
-    [
-     22,
-     90
-    ],
-    [
-     20,
-     91
-    ],
-    [
-     21,
-     91
-    ],
-    [
-     22,
-     91
-    ],
-    [
-     20,
-     92
-    ],
-    [
-     21,
-     92
-    ],
-    [
-     22,
-     92
+     19,
+     93
     ],
     [
      20,
@@ -1081,16 +1116,20 @@
      93
     ],
     [
-     22,
-     93
+     19,
+     94
+    ],
+    [
+     20,
+     94
     ],
     [
      21,
      94
     ],
     [
-     22,
-     94
+     19,
+     95
     ],
     [
      20,
@@ -1101,8 +1140,8 @@
      95
     ],
     [
-     22,
-     95
+     19,
+     96
     ],
     [
      20,
@@ -1113,8 +1152,8 @@
      96
     ],
     [
-     22,
-     96
+     19,
+     97
     ],
     [
      20,
@@ -1125,13 +1164,45 @@
      97
     ],
     [
-     22,
-     97
+     19,
+     98
+    ],
+    [
+     20,
+     98
+    ],
+    [
+     21,
+     98
+    ],
+    [
+     19,
+     99
+    ],
+    [
+     20,
+     99
+    ],
+    [
+     21,
+     99
+    ],
+    [
+     19,
+     100
+    ],
+    [
+     20,
+     100
+    ],
+    [
+     21,
+     100
     ]
    ],
    "exit_cell": [
-    22,
-    108
+    21,
+    112
    ]
   },
   {
@@ -1139,34 +1210,34 @@
    "why": "layout",
    "edge": 2,
    "arch": [
-    4728.8,
-    1540.6
+    4720.7,
+    1559.3
    ],
    "wall_join_left": [
-    4505.1,
-    1652.6
+    4497.0,
+    1671.3
    ],
    "wall_join_right": [
-    4927.4,
-    1441.4
+    4919.3,
+    1460.1
    ],
    "half_span": 236.1087165922937,
    "passage": [
     [
-     4868.3,
-     1578.2
+     4860.2,
+     1596.9
     ],
     [
-     4653.7,
-     1470.8
+     4645.6,
+     1489.5
     ],
     [
-     4589.3,
-     1503.0
+     4581.2,
+     1521.7
     ],
     [
-     4803.9,
-     1610.4
+     4795.8,
+     1629.1
     ]
    ],
    "passage_half_width_px": 36.0,
@@ -1182,11 +1253,11 @@
    "arch_open_px": 90.7,
    "road_out_end": [
     5159.2,
-    1755.8
+    1778.6
    ],
    "snapped_to_corner": [
-    4940.0,
-    1435.0
+    4919.3,
+    1460.0
    ],
    "exit": {
     "link": "crosshaven_road_east",
@@ -1199,65 +1270,89 @@
    },
    "cells": [
     [
-     96,
-     15
+     94,
+     18
     ],
     [
-     97,
-     15
-    ],
-    [
-     98,
-     15
-    ],
-    [
-     99,
-     15
+     95,
+     18
     ],
     [
      100,
-     15
+     18
     ],
     [
      101,
-     15
+     18
     ],
     [
-     102,
-     15
+     94,
+     19
+    ],
+    [
+     95,
+     19
     ],
     [
      96,
-     16
+     19
     ],
     [
      97,
-     16
+     19
     ],
     [
      98,
-     16
+     19
     ],
     [
      99,
-     16
+     19
     ],
     [
      100,
-     16
+     19
     ],
     [
      101,
-     16
+     19
     ],
     [
-     102,
-     16
+     94,
+     20
+    ],
+    [
+     95,
+     20
+    ],
+    [
+     96,
+     20
+    ],
+    [
+     97,
+     20
+    ],
+    [
+     98,
+     20
+    ],
+    [
+     99,
+     20
+    ],
+    [
+     100,
+     20
+    ],
+    [
+     101,
+     20
     ]
    ],
    "exit_cell": [
-    113,
-    16
+    112,
+    20
    ]
   },
   {
@@ -1265,34 +1360,34 @@
    "why": "layout",
    "edge": 0,
    "arch": [
-    2389.3,
-    520.0
+    2544.1,
+    470.0
    ],
    "wall_join_left": [
-    2025.9,
-    520.0
+    2180.7,
+    470.0
    ],
    "wall_join_right": [
-    2784.5,
-    520.0
+    2939.3,
+    470.0
    ],
-   "half_span": 379.2998754180602,
+   "half_span": 379.2998754180603,
    "passage": [
     [
-     2353.3,
-     400.0
+     2508.1,
+     350.0
     ],
     [
-     2353.3,
-     640.0
+     2508.1,
+     590.0
     ],
     [
-     2425.3,
-     640.0
+     2580.1,
+     590.0
     ],
     [
-     2425.3,
-     400.0
+     2580.1,
+     350.0
     ]
    ],
    "passage_half_width_px": 36.0,
@@ -1307,12 +1402,12 @@
    "art_drop_px": 0.0,
    "arch_open_px": 147.5,
    "road_out_end": [
-    2389.3,
+    2544.1,
     -45.0
    ],
    "snapped_to_corner": [
-    2010.0,
-    520.0
+    2180.7,
+    470.0
    ],
    "exit": {
     "link": "crosshaven_road_north",
@@ -1325,6 +1420,26 @@
    },
    "cells": [
     [
+     15,
+     15
+    ],
+    [
+     16,
+     15
+    ],
+    [
+     15,
+     16
+    ],
+    [
+     16,
+     16
+    ],
+    [
+     17,
+     16
+    ],
+    [
      16,
      17
     ],
@@ -1333,6 +1448,10 @@
      17
     ],
     [
+     18,
+     17
+    ],
+    [
      17,
      18
     ],
@@ -1341,6 +1460,10 @@
      18
     ],
     [
+     19,
+     18
+    ],
+    [
      18,
      19
     ],
@@ -1349,6 +1472,10 @@
      19
     ],
     [
+     20,
+     19
+    ],
+    [
      19,
      20
     ],
@@ -1357,6 +1484,10 @@
      20
     ],
     [
+     21,
+     20
+    ],
+    [
      20,
      21
     ],
@@ -1365,6 +1496,10 @@
      21
     ],
     [
+     22,
+     21
+    ],
+    [
      21,
      22
     ],
@@ -1373,6 +1508,10 @@
      22
     ],
     [
+     23,
+     22
+    ],
+    [
      22,
      23
     ],
@@ -1381,20 +1520,16 @@
      23
     ],
     [
+     24,
+     23
+    ],
+    [
      23,
      24
-    ],
-    [
-     24,
-     24
-    ],
-    [
-     24,
-     25
     ]
    ],
    "exit_cell": [
-    2,
+    3,
     2
    ]
   }
@@ -1403,202 +1538,202 @@
   "before": [
    {
     "at": [
-     3136,
-     532
+     2442,
+     558
+    ],
+    "dist_px": 87.0,
+    "edge": 0,
+    "span_px": 66,
+    "pixels": 2683,
+    "verdict": "runs_along"
+   },
+   {
+    "at": [
+     3121,
+     560
     ],
     "dist_px": 0.0,
     "edge": 1,
     "span_px": 66,
-    "pixels": 17424,
+    "pixels": 16802,
     "verdict": "crosses"
    },
    {
     "at": [
-     2442,
-     558
-    ],
-    "dist_px": 37.0,
-    "edge": 0,
-    "span_px": 66,
-    "pixels": 5577,
-    "verdict": "dead_end"
-   },
-   {
-    "at": [
-     1640,
-     704
-    ],
-    "dist_px": 0.0,
-    "edge": 5,
-    "span_px": 66,
-    "pixels": 16035,
-    "verdict": "crosses"
-   },
-   {
-    "at": [
-     1076,
-     986
+     1652,
+     733
     ],
     "dist_px": 0.0,
     "edge": 5,
     "span_px": 65,
-    "pixels": 16169,
+    "pixels": 16026,
     "verdict": "crosses"
    },
    {
     "at": [
-     4388,
-     1158
+     1090,
+     1014
+    ],
+    "dist_px": 0.0,
+    "edge": 5,
+    "span_px": 66,
+    "pixels": 16454,
+    "verdict": "crosses"
+   },
+   {
+    "at": [
+     4396,
+     1198
     ],
     "dist_px": 0.0,
     "edge": 1,
-    "span_px": 143,
-    "pixels": 20529,
+    "span_px": 144,
+    "pixels": 20538,
     "verdict": "crosses"
    },
    {
     "at": [
-     328,
-     1509
+     308,
+     1513
     ],
     "dist_px": 0.0,
     "edge": 4,
-    "span_px": 210,
-    "pixels": 26484,
+    "span_px": 207,
+    "pixels": 26106,
     "verdict": "crosses"
    },
    {
     "at": [
-     4558,
-     1625
+     4581,
+     1628
     ],
     "dist_px": 0.0,
     "edge": 2,
-    "span_px": 132,
-    "pixels": 21556,
+    "span_px": 148,
+    "pixels": 22078,
     "verdict": "crosses"
    },
    {
     "at": [
      1174,
-     1932
+     1946
     ],
     "dist_px": 0.0,
     "edge": 4,
-    "span_px": 100,
-    "pixels": 13231,
+    "span_px": 95,
+    "pixels": 12392,
     "verdict": "crosses"
    },
    {
     "at": [
-     3710,
-     2050
+     3758,
+     2041
     ],
     "dist_px": 0.0,
     "edge": 2,
-    "span_px": 1616,
-    "pixels": 124086,
+    "span_px": 500,
+    "pixels": 55552,
+    "verdict": "crosses"
+   },
+   {
+    "at": [
+     2162,
+     2442
+    ],
+    "dist_px": 0.0,
+    "edge": 4,
+    "span_px": 321,
+    "pixels": 63694,
     "verdict": "crosses"
    }
   ],
   "after": [
    {
     "at": [
-     2150,
-     519
+     2301,
+     469
     ],
     "dist_px": 0.0,
     "edge": 0,
-    "span_px": 493,
-    "pixels": 130959,
+    "span_px": 491,
+    "pixels": 130797,
     "verdict": "gate"
    },
    {
     "at": [
-     3100,
-     605
+     3087,
+     634
     ],
     "dist_px": 79.6,
     "edge": 1,
-    "span_px": 65,
-    "pixels": 3472,
+    "span_px": 64,
+    "pixels": 3470,
     "verdict": "runs_along"
    },
    {
     "at": [
-     1672,
-     779
+     1686,
+     807
     ],
     "dist_px": 79.6,
     "edge": 5,
     "span_px": 64,
-    "pixels": 3448,
+    "pixels": 3432,
     "verdict": "runs_along"
    },
    {
     "at": [
-     1114,
-     1058
+     1126,
+     1087
     ],
     "dist_px": 79.6,
     "edge": 5,
     "span_px": 66,
-    "pixels": 3566,
+    "pixels": 3571,
     "verdict": "runs_along"
    },
    {
     "at": [
-     4410,
-     1260
+     4849,
+     1494
     ],
-    "dist_px": 79.6,
-    "edge": 1,
-    "span_px": 110,
-    "pixels": 4432,
-    "verdict": "runs_along"
+    "dist_px": 0.0,
+    "edge": 2,
+    "span_px": 419,
+    "pixels": 95979,
+    "verdict": "gate"
    },
    {
     "at": [
-     260,
-     1476
+     272,
+     1496
     ],
     "dist_px": 0.0,
     "edge": 4,
     "span_px": 344,
-    "pixels": 73846,
+    "pixels": 75894,
     "verdict": "gate"
    },
    {
     "at": [
-     4854,
-     1477
-    ],
-    "dist_px": 0.0,
-    "edge": 2,
-    "span_px": 435,
-    "pixels": 95861,
-    "verdict": "gate"
-   },
-   {
-    "at": [
-     1182,
-     1846
+     1180,
+     1860
     ],
     "dist_px": 79.6,
     "edge": 4,
-    "span_px": 84,
-    "pixels": 3780,
+    "span_px": 85,
+    "pixels": 3793,
     "verdict": "runs_along"
    },
    {
     "at": [
-     2151,
-     2349
+     2271,
+     2449
     ],
     "dist_px": 0.0,
     "edge": 3,
-    "span_px": 501,
-    "pixels": 116840,
+    "span_px": 526,
+    "pixels": 117795,
     "verdict": "gate"
    }
   ]
@@ -1609,50 +1744,50 @@
    "id": "bridge_0",
    "ends": [
     [
-     84,
-     48
+     82,
+     51
     ],
     [
-     64,
-     48
+     62,
+     51
     ]
    ],
    "deck_cells": [
     [
+     68,
+     51
+    ],
+    [
+     69,
+     51
+    ],
+    [
      70,
-     48
+     51
     ],
     [
      71,
-     48
+     51
     ],
     [
      72,
-     48
+     51
     ],
     [
      73,
-     48
+     51
     ],
     [
      74,
-     48
+     51
     ],
     [
      75,
-     48
+     51
     ],
     [
      76,
-     48
-    ],
-    [
-     77,
-     48
-    ],
-    [
-     78,
-     48
+     51
     ]
    ],
    "crown_px": 59.8,
@@ -1667,46 +1802,46 @@
    "id": "bridge_2",
    "ends": [
     [
-     83,
-     63
+     81,
+     66
     ],
     [
-     63,
-     63
+     61,
+     66
     ]
    ],
    "deck_cells": [
     [
+     68,
+     66
+    ],
+    [
+     69,
+     66
+    ],
+    [
      70,
-     63
+     66
     ],
     [
      71,
-     63
+     66
     ],
     [
      72,
-     63
+     66
     ],
     [
      73,
-     63
+     66
     ],
     [
      74,
-     63
+     66
     ],
     [
      75,
-     63
-    ],
-    [
-     76,
-     63
-    ],
-    [
-     77,
-     63
+     66
     ]
    ],
    "crown_px": 59.8,
@@ -1724,8 +1859,8 @@
    "tier": "rare",
    "label_tier": "rare",
    "anchor_px": [
-    1952,
-    1992
+    3784,
+    1304
    ],
    "old_anchor_px": [
     3340.0,
@@ -1733,12 +1868,12 @@
    ],
    "front_cells": [
     [
-     66,
-     82
+     72,
+     28
     ],
     [
-     67,
-     82
+     73,
+     28
     ]
    ]
   },
@@ -1756,12 +1891,12 @@
    ],
    "front_cells": [
     [
-     83,
-     43
+     81,
+     46
     ],
     [
-     84,
-     43
+     82,
+     46
     ]
    ]
   },
@@ -1770,8 +1905,8 @@
    "tier": "rare",
    "label_tier": "normal",
    "anchor_px": [
-    1536,
-    1344
+    1496,
+    1728
    ],
    "old_anchor_px": [
     2650.0,
@@ -1779,12 +1914,12 @@
    ],
    "front_cells": [
     [
-     35,
-     66
+     46,
+     84
     ],
     [
-     36,
-     66
+     47,
+     84
     ]
    ]
   },
@@ -1793,8 +1928,8 @@
    "tier": "normal",
    "label_tier": "rare",
    "anchor_px": [
-    3784,
-    1304
+    1536,
+    1344
    ],
    "old_anchor_px": [
     3060.0,
@@ -1802,12 +1937,12 @@
    ],
    "front_cells": [
     [
-     74,
-     25
+     33,
+     69
     ],
     [
-     75,
-     25
+     34,
+     69
     ]
    ]
   },
@@ -1816,8 +1951,8 @@
    "tier": "normal",
    "label_tier": "normal",
    "anchor_px": [
-    4216,
-    1336
+    4240,
+    1352
    ],
    "old_anchor_px": [
     3500.0,
@@ -1825,12 +1960,12 @@
    ],
    "front_cells": [
     [
-     83,
-     18
+     82,
+     21
     ],
     [
      83,
-     19
+     21
     ]
    ]
   },
@@ -1839,18 +1974,18 @@
    "tier": "normal",
    "label_tier": "normal",
    "anchor_px": [
-    1846,
-    832
+    1894,
+    840
    ],
    "old_anchor_px": null,
    "front_cells": [
     [
-     23,
-     42
+     22,
+     45
     ],
     [
-     24,
-     42
+     23,
+     45
     ]
    ]
   },
@@ -1865,12 +2000,12 @@
    "old_anchor_px": null,
    "front_cells": [
     [
-     27,
-     63
+     25,
+     66
     ],
     [
-     28,
-     63
+     26,
+     66
     ]
    ]
   },
@@ -1879,18 +2014,18 @@
    "tier": "normal",
    "label_tier": "normal",
    "anchor_px": [
-    2832,
-    840
+    968,
+    1384
    ],
    "old_anchor_px": null,
    "front_cells": [
     [
-     41,
-     25
+     25,
+     81
     ],
     [
-     42,
-     25
+     26,
+     81
     ]
    ]
   },
@@ -1899,18 +2034,18 @@
    "tier": "rare",
    "label_tier": "rare",
    "anchor_px": [
-    976,
-    1400
+    2156,
+    712
    ],
    "old_anchor_px": null,
    "front_cells": [
     [
-     27,
-     78
+     22,
+     36
     ],
     [
-     28,
-     78
+     23,
+     36
     ]
    ]
   },
@@ -1919,18 +2054,18 @@
    "tier": "legendary",
    "label_tier": "legendary",
    "anchor_px": [
-    1513,
-    1758
+    1873,
+    2014
    ],
    "old_anchor_px": null,
    "front_cells": [
     [
-     50,
-     82
+     64,
+     87
     ],
     [
-     51,
-     82
+     65,
+     87
     ]
    ]
   }
@@ -2038,8 +2173,8 @@
    "role": "smith",
    "name": "Smith",
    "cell": {
-    "x": 29,
-    "y": 75
+    "x": 27,
+    "y": 78
    },
    "facing": "W",
    "night": "indoors"
@@ -2049,8 +2184,8 @@
    "role": "forge_master",
    "name": "Forge Master",
    "cell": {
-    "x": 24,
-    "y": 64
+    "x": 22,
+    "y": 67
    },
    "facing": "S",
    "night": "indoors"
@@ -2060,8 +2195,8 @@
    "role": "trader",
    "name": "Trader",
    "cell": {
-    "x": 37,
-    "y": 64
+    "x": 35,
+    "y": 67
    },
    "facing": "S",
    "night": "indoors"
@@ -2071,8 +2206,8 @@
    "role": "herald",
    "name": "Herald",
    "cell": {
-    "x": 39,
-    "y": 59
+    "x": 37,
+    "y": 62
    },
    "facing": "S",
    "night": "indoors"
@@ -2082,8 +2217,8 @@
    "role": "archivist",
    "name": "Archivist",
    "cell": {
-    "x": 45,
-    "y": 59
+    "x": 43,
+    "y": 62
    },
    "facing": "S",
    "night": "indoors"
@@ -2093,8 +2228,8 @@
    "role": "door_keeper",
    "name": "Door Keeper",
    "cell": {
-    "x": 46,
-    "y": 59
+    "x": 44,
+    "y": 62
    },
    "facing": "N",
    "night": "indoors"
@@ -2104,8 +2239,8 @@
    "role": "banker",
    "name": "Banker",
    "cell": {
-    "x": 53,
-    "y": 22
+    "x": 51,
+    "y": 25
    },
    "facing": "W",
    "night": "indoors"
@@ -2115,8 +2250,8 @@
    "role": "warden",
    "name": "Warden",
    "cell": {
-    "x": 85,
-    "y": 94
+    "x": 79,
+    "y": 95
    },
    "facing": "S",
    "night": "out"
@@ -2126,8 +2261,8 @@
    "role": "farmer",
    "name": "Farmer",
    "cell": {
-    "x": 74,
-    "y": 40
+    "x": 72,
+    "y": 43
    },
    "facing": "W",
    "night": "indoors"
@@ -2137,8 +2272,8 @@
    "role": "elder",
    "name": "Elder",
    "cell": {
-    "x": 36,
-    "y": 68
+    "x": 34,
+    "y": 71
    },
    "facing": "S",
    "night": "indoors"
@@ -2148,8 +2283,8 @@
    "role": "guide",
    "name": "Guide",
    "cell": {
-    "x": 86,
-    "y": 36
+    "x": 84,
+    "y": 39
    },
    "facing": "S",
    "night": "indoors"
@@ -2159,8 +2294,8 @@
    "role": "fisher",
    "name": "Fisher",
    "cell": {
-    "x": 67,
-    "y": 27
+    "x": 65,
+    "y": 30
    },
    "facing": "S",
    "night": "indoors"
@@ -2170,8 +2305,8 @@
    "role": "woodcutter",
    "name": "Woodcutter",
    "cell": {
-    "x": 37,
-    "y": 44
+    "x": 35,
+    "y": 47
    },
    "facing": "S",
    "night": "indoors"
@@ -2191,8 +2326,8 @@
    },
    "to": {
     "zone_id": "crosshaven_city",
-    "x": 90,
-    "y": 111
+    "x": 88,
+    "y": 114
    },
    "label": "Crosshaven walled city (prototype)",
    "enabled": true
@@ -2201,8 +2336,8 @@
    "id": "city_to_crossroads",
    "from": {
     "zone_id": "crosshaven_city",
-    "x": 90,
-    "y": 117
+    "x": 88,
+    "y": 120
    },
    "to": {
     "zone_id": "crosshaven_crossroads",
@@ -2216,8 +2351,8 @@
    "id": "city_w_to_crosshaven_road_west",
    "from": {
     "zone_id": "crosshaven_city",
-    "x": 22,
-    "y": 108
+    "x": 21,
+    "y": 112
    },
    "to": {
     "zone_id": "crosshaven_road_west",
@@ -2233,8 +2368,8 @@
    "id": "city_e_to_crosshaven_road_east",
    "from": {
     "zone_id": "crosshaven_city",
-    "x": 113,
-    "y": 16
+    "x": 112,
+    "y": 20
    },
    "to": {
     "zone_id": "crosshaven_road_east",
@@ -2250,7 +2385,7 @@
    "id": "city_n_to_crosshaven_road_north",
    "from": {
     "zone_id": "crosshaven_city",
-    "x": 2,
+    "x": 3,
     "y": 2
    },
    "to": {
@@ -2338,40 +2473,40 @@
   {
    "edge": 1,
    "at": [
-    3704.2,
-    817.1
+    3677.3,
+    839.0
    ],
    "art": "watergate_diagonal_v6_mirror_CONCEPTO.png",
    "art_width_px": 493,
-   "channel_offset_px": 4.2,
+   "channel_offset_px": 2.2,
    "channel_centres": [
     [
-     3760.1,
-     782.4
+     3729.1,
+     802.3
     ],
     [
-     3656.8,
-     856.0
+     3629.9,
+     877.9
     ]
    ]
   },
   {
    "edge": 4,
    "at": [
-    1768.2,
-    2229.1
+    1751.3,
+    2235.3
    ],
    "art": "watergate_diagonal_v6_mirror_CONCEPTO.png",
    "art_width_px": 493,
-   "channel_offset_px": 0.4,
+   "channel_offset_px": 1.3,
    "channel_centres": [
     [
-     1697.5,
-     2256.4
+     1682.5,
+     2263.5
     ],
     [
-     1839.8,
-     2202.3
+     1823.3,
+     2208.7
     ]
    ]
   }
@@ -2380,183 +2515,237 @@
   {
    "edge": 0,
    "a": [
-    2010.0,
-    520.0
+    2180.7,
+    470.0
    ],
    "b": [
-    2063.1,
-    520.0
+    2217.9,
+    470.0
    ],
    "start_at": null,
    "end_at": {
     "kind": "gate",
     "at": [
-     2389.3,
-     520.0
+     2544.1,
+     470.0
     ]
    },
    "a_px": {
     "foot": 0.0,
-    "tip": -221.7
+    "tip": -218.6
    },
    "b_px": {
     "foot": 0.0,
-    "tip": -218.2
+    "tip": -223.7
    }
   },
   {
    "edge": 0,
    "a": [
-    2715.5,
-    520.0
+    2870.3,
+    470.0
    ],
    "b": [
-    3065.9,
-    520.0
+    2939.3,
+    470.0
    ],
    "start_at": {
     "kind": "gate",
     "at": [
-     2389.3,
-     520.0
+     2544.1,
+     470.0
     ]
    },
-   "end_at": {
-    "kind": "tower",
-    "at": [
-     3110.0,
-     520.0
-    ]
-   },
+   "end_at": null,
    "a_px": {
-    "foot": -0.1,
-    "tip": -221.2
+    "foot": 0.0,
+    "tip": -216.2
    },
    "b_px": {
-    "foot": 0.7,
-    "tip": -222.0
+    "foot": 0.0,
+    "tip": -223.2
    }
   },
   {
    "edge": 1,
    "a": [
-    3149.4,
-    539.7
+    2939.3,
+    470.0
    ],
    "b": [
-    3519.9,
-    724.9
+    3334.8,
+    667.8
    ],
-   "start_at": {
-    "kind": "tower",
-    "at": [
-     3110.0,
-     520.0
-    ]
-   },
+   "start_at": null,
    "end_at": {
     "kind": "tower",
     "at": [
-     3559.3,
-     744.7
+     3374.3,
+     687.5
     ]
    },
    "a_px": {
-    "foot": 0.7,
-    "tip": -222.2
-   },
-   "b_px": {
-    "foot": -0.6,
+    "foot": 0.9,
     "tip": -222.3
+   },
+   "b_px": {
+    "foot": -0.8,
+    "tip": -222.4
    }
   },
   {
    "edge": 1,
    "a": [
-    3888.5,
-    909.3
+    3413.7,
+    707.2
    ],
    "b": [
-    4900.6,
-    1415.3
+    3492.5,
+    746.6
    ],
    "start_at": {
     "kind": "tower",
     "at": [
-     3849.1,
-     889.5
+     3374.3,
+     687.5
+    ]
+   },
+   "end_at": {
+    "kind": "water",
+    "at": [
+     3677.3,
+     839.0
+    ]
+   },
+   "a_px": {
+    "foot": 0.5,
+    "tip": -223.2
+   },
+   "b_px": {
+    "foot": 0.5,
+    "tip": -221.7
+   }
+  },
+  {
+   "edge": 1,
+   "a": [
+    3862.0,
+    931.4
+   ],
+   "b": [
+    3940.8,
+    970.8
+   ],
+   "start_at": {
+    "kind": "water",
+    "at": [
+     3677.3,
+     839.0
+    ]
+   },
+   "end_at": {
+    "kind": "tower",
+    "at": [
+     3980.2,
+     990.5
+    ]
+   },
+   "a_px": {
+    "foot": 0.9,
+    "tip": -222.7
+   },
+   "b_px": {
+    "foot": 0.3,
+    "tip": -223.1
+   }
+  },
+  {
+   "edge": 1,
+   "a": [
+    4019.7,
+    1010.2
+   ],
+   "b": [
+    4879.9,
+    1440.3
+   ],
+   "start_at": {
+    "kind": "tower",
+    "at": [
+     3980.2,
+     990.5
     ]
    },
    "end_at": {
     "kind": "gtower",
     "at": [
-     4940.0,
-     1435.0
+     4919.3,
+     1460.0
     ]
    },
    "a_px": {
     "foot": -0.2,
-    "tip": -222.5
+    "tip": -222.4
    },
    "b_px": {
-    "foot": -1.1,
-    "tip": -222.3
+    "foot": 1.1,
+    "tip": -222.6
    }
   },
   {
    "edge": 2,
    "a": [
-    4940.0,
-    1435.0
+    4919.3,
+    1460.0
    ],
    "b": [
-    4910.4,
-    1449.8
+    4902.3,
+    1468.5
    ],
    "start_at": null,
    "end_at": {
     "kind": "gate",
     "at": [
-     4728.8,
-     1540.6
+     4720.7,
+     1559.3
     ]
    },
    "a_px": {
-    "foot": 0.1,
-    "tip": -222.4
+    "foot": 3.1,
+    "tip": -222.9
    },
    "b_px": {
-    "foot": 0.1,
-    "tip": -222.4
+    "foot": 3.1,
+    "tip": -222.9
    }
   },
   {
    "edge": 2,
    "a": [
-    4547.2,
-    1631.4
+    4539.1,
+    1650.1
    ],
    "b": [
-    3149.4,
-    2330.3
+    2978.7,
+    2430.3
    ],
    "start_at": {
     "kind": "gate",
     "at": [
-     4728.8,
-     1540.6
+     4720.7,
+     1559.3
     ]
    },
    "end_at": {
-    "kind": "tower",
+    "kind": "gtower",
     "at": [
-     3110.0,
-     2350.0
+     2939.3,
+     2450.0
     ]
    },
    "a_px": {
-    "foot": 0.3,
-    "tip": -222.0
+    "foot": 0.8,
+    "tip": -222.1
    },
    "b_px": {
     "foot": 0.2,
@@ -2566,150 +2755,171 @@
   {
    "edge": 3,
    "a": [
-    3065.9,
-    2350.0
+    2939.3,
+    2450.0
    ],
    "b": [
-    2715.5,
-    2350.0
+    2870.3,
+    2450.0
    ],
-   "start_at": {
-    "kind": "tower",
-    "at": [
-     3110.0,
-     2350.0
-    ]
-   },
+   "start_at": null,
    "end_at": {
     "kind": "gate",
     "at": [
-     2389.3,
-     2350.0
+     2544.1,
+     2450.0
     ]
    },
    "a_px": {
-    "foot": 0.7,
-    "tip": -222.0
+    "foot": 0.0,
+    "tip": -223.2
    },
    "b_px": {
-    "foot": -0.1,
-    "tip": -221.2
+    "foot": 0.0,
+    "tip": -216.2
    }
   },
   {
    "edge": 3,
    "a": [
-    2063.1,
-    2350.0
+    2217.9,
+    2450.0
    ],
    "b": [
-    2010.0,
-    2350.0
+    2180.7,
+    2450.0
    ],
    "start_at": {
     "kind": "gate",
     "at": [
-     2389.3,
-     2350.0
+     2544.1,
+     2450.0
     ]
    },
    "end_at": null,
    "a_px": {
     "foot": 0.0,
-    "tip": -218.2
+    "tip": -223.7
    },
    "b_px": {
     "foot": 0.0,
-    "tip": -221.7
+    "tip": -218.6
    }
   },
   {
    "edge": 4,
    "a": [
-    1970.6,
-    2330.3
+    2180.7,
+    2450.0
    ],
    "b": [
-    1953.0,
-    2321.5
+    1936.1,
+    2327.7
    ],
-   "start_at": {
-    "kind": "gtower",
-    "at": [
-     2010.0,
-     2350.0
-    ]
-   },
+   "start_at": null,
    "end_at": {
     "kind": "water",
     "at": [
-     1768.2,
-     2229.1
+     1751.3,
+     2235.3
     ]
    },
    "a_px": {
-    "foot": 0.0,
-    "tip": -220.6
+    "foot": 0.9,
+    "tip": -222.4
    },
    "b_px": {
-    "foot": 0.0,
-    "tip": -218.7
+    "foot": -0.5,
+    "tip": -222.4
    }
   },
   {
    "edge": 4,
    "a": [
-    1574.9,
-    2132.5
+    1566.6,
+    2142.9
    ],
    "b": [
-    572.8,
-    1631.4
+    1487.8,
+    2103.5
+   ],
+   "start_at": {
+    "kind": "water",
+    "at": [
+     1751.3,
+     2235.3
+    ]
+   },
+   "end_at": {
+    "kind": "tower",
+    "at": [
+     1448.4,
+     2083.8
+    ]
+   },
+   "a_px": {
+    "foot": 0.2,
+    "tip": -222.9
+   },
+   "b_px": {
+    "foot": -0.1,
+    "tip": -221.0
+   }
+  },
+  {
+   "edge": 4,
+   "a": [
+    1408.9,
+    2064.1
+   ],
+   "b": [
+    580.9,
+    1650.1
    ],
    "start_at": {
     "kind": "tower",
     "at": [
-     1614.4,
-     2152.2
+     1448.4,
+     2083.8
     ]
    },
    "end_at": {
     "kind": "gate",
     "at": [
-     391.2,
-     1540.6
+     399.3,
+     1559.3
     ]
    },
    "a_px": {
-    "foot": -0.4,
-    "tip": -222.5
+    "foot": -0.2,
+    "tip": -222.3
    },
    "b_px": {
-    "foot": 0.4,
-    "tip": -222.5
+    "foot": 0.8,
+    "tip": -222.6
    }
   },
   {
    "edge": 4,
    "a": [
-    209.6,
-    1449.8
+    217.7,
+    1468.5
    ],
    "b": [
-    180.0,
-    1435.0
+    200.7,
+    1460.0
    ],
    "start_at": {
     "kind": "gate",
     "at": [
-     391.2,
-     1540.6
+     399.3,
+     1559.3
     ]
    },
    "end_at": null,
    "a_px": {
     "foot": 0.5,
-    "tip": -222.9
+    "tip": -223.0
    },
    "b_px": {
     "foot": 0.5,
@@ -2719,25 +2929,25 @@
   {
    "edge": 5,
    "a": [
-    219.4,
-    1415.3
+    240.1,
+    1440.3
    ],
    "b": [
-    1055.6,
-    997.2
+    1151.3,
+    984.7
    ],
    "start_at": {
     "kind": "gtower",
     "at": [
-     180.0,
-     1435.0
+     200.7,
+     1460.0
     ]
    },
    "end_at": {
     "kind": "tower",
     "at": [
-     1095.0,
-     977.5
+     1190.7,
+     965.0
     ]
    },
    "a_px": {
@@ -2745,41 +2955,41 @@
     "tip": -222.4
    },
    "b_px": {
-    "foot": -0.4,
-    "tip": -222.3
+    "foot": 0.4,
+    "tip": -222.0
    }
   },
   {
    "edge": 5,
    "a": [
-    1134.4,
-    957.8
+    1230.1,
+    945.3
    ],
    "b": [
-    1970.6,
-    539.7
+    2141.3,
+    489.7
    ],
    "start_at": {
     "kind": "tower",
     "at": [
-     1095.0,
-     977.5
+     1190.7,
+     965.0
     ]
    },
    "end_at": {
     "kind": "gtower",
     "at": [
-     2010.0,
-     520.0
+     2180.7,
+     470.0
     ]
    },
    "a_px": {
-    "foot": 0.9,
-    "tip": -222.8
+    "foot": -0.1,
+    "tip": -222.4
    },
    "b_px": {
-    "foot": -1.2,
-    "tip": -222.3
+    "foot": 0.5,
+    "tip": -222.2
    }
   }
  ],
@@ -2788,163 +2998,147 @@
   {
    "id": "S",
    "from": [
-    2400,
-    2350
+    2560,
+    2450
    ],
    "to": [
-    2389.3,
-    2350.0
+    2544.1,
+    2450.0
    ],
    "corner": [
-    2010.0,
-    2350.0
+    2939.3,
+    2450.0
    ],
-   "moved_px": 10.7
+   "moved_px": 15.9
   },
   {
    "id": "W",
    "from": [
-    328,
-    1509
+    350.6999999999998,
+    1535.0
    ],
    "to": [
-    391.2,
-    1540.6
+    399.3,
+    1559.3
    ],
    "corner": [
-    180.0,
-    1435.0
+    200.69999999999982,
+    1460.0
    ],
-   "moved_px": 70.6
+   "moved_px": 54.4
   },
   {
    "id": "E",
    "from": [
-    4558,
-    1625
+    4769.3,
+    1535.0
    ],
    "to": [
-    4728.8,
-    1540.6
+    4720.7,
+    1559.3
    ],
    "corner": [
-    4940.0,
-    1435.0
+    4919.3,
+    1460.0
    ],
-   "moved_px": 190.5
+   "moved_px": 54.4
   },
   {
    "id": "N",
    "from": [
-    2442,
-    520
+    2560,
+    470
    ],
    "to": [
-    2389.3,
-    520.0
+    2544.1,
+    470.0
    ],
    "corner": [
-    2010.0,
-    520.0
+    2180.7,
+    470.0
    ],
-   "moved_px": 52.7
+   "moved_px": 15.9
   }
  ],
  "tower_spacing": [
   {
    "edge": 0,
    "rule": "midpoint",
-   "min_len": 1633.9,
-   "intervals": [
-    [
-     758.6,
-     1100.0,
-     1
-    ]
-   ],
-   "gaps": [
-    341.4
-   ]
+   "min_len": 1826.1,
+   "intervals": [],
+   "gaps": []
   },
   {
    "edge": 1,
    "rule": "midpoint",
-   "min_len": 1633.9,
+   "min_len": 1826.1,
    "intervals": [
     [
      0.0,
-     502.3,
+     486.3,
      1
     ],
     [
-     826.3,
-     2046.0,
+     1163.8,
+     2213.7,
      1
     ]
    ],
    "gaps": [
-    502.3,
-    1219.7
+    486.3,
+    1049.9
    ]
   },
   {
    "edge": 2,
    "rule": "midpoint",
-   "min_len": 1633.9,
+   "min_len": 1826.1,
    "intervals": [
     [
      472.2,
-     2046.0,
+     2213.7,
      1
     ]
    ],
    "gaps": [
-    1573.8
+    1741.5
    ]
   },
   {
    "edge": 3,
    "rule": "midpoint",
-   "min_len": 1633.9,
-   "intervals": [
-    [
-     0.0,
-     341.4,
-     1
-    ]
-   ],
-   "gaps": [
-    341.4
-   ]
+   "min_len": 1826.1,
+   "intervals": [],
+   "gaps": []
   },
   {
    "edge": 4,
    "rule": "midpoint",
-   "min_len": 1633.9,
+   "min_len": 1826.1,
    "intervals": [
     [
-     442.3,
-     1573.8,
+     818.8,
+     1741.5,
      1
     ]
    ],
    "gaps": [
-    1131.5
+    922.7
    ]
   },
   {
    "edge": 5,
    "rule": "midpoint",
-   "min_len": 1633.9,
+   "min_len": 1826.1,
    "intervals": [
     [
      0.0,
-     2046.0,
+     2213.7,
      2
     ]
    ],
    "gaps": [
-    1023.0
+    1106.8
    ]
   }
  ],
@@ -2952,30 +3146,30 @@
  "join_audit": [
   {
    "id": 7008,
-   "kind": "corner",
+   "kind": "wall",
    "at": [
-    3110.0,
-    520.0
+    1190.7,
+    965.0
    ],
    "gap_px": 0,
    "rows": 406
   },
   {
    "id": 7009,
-   "kind": "corner",
+   "kind": "water_gate",
    "at": [
-    3110.0,
-    2350.0
+    3374.3,
+    687.5
    ],
    "gap_px": 0,
    "rows": 406
   },
   {
    "id": 7010,
-   "kind": "wall",
+   "kind": "water_gate",
    "at": [
-    1095.0,
-    977.5
+    3980.2,
+    990.5
    ],
    "gap_px": 0,
    "rows": 406
@@ -2984,28 +3178,8 @@
    "id": 7011,
    "kind": "water_gate",
    "at": [
-    3559.3,
-    744.7
-   ],
-   "gap_px": 0,
-   "rows": 406
-  },
-  {
-   "id": 7012,
-   "kind": "water_gate",
-   "at": [
-    3849.1,
-    889.5
-   ],
-   "gap_px": 0,
-   "rows": 406
-  },
-  {
-   "id": 7013,
-   "kind": "water_gate",
-   "at": [
-    1614.4,
-    2152.2
+    1448.4,
+    2083.8
    ],
    "gap_px": 0,
    "rows": 406
@@ -3014,28 +3188,28 @@
    "id": "S_left",
    "kind": "gatehouse",
    "at": [
-    2025.9,
-    2350.0
+    2180.7,
+    2450.0
    ],
    "gap_px": 0,
-   "rows": 432
+   "rows": 413
   },
   {
    "id": "S_right",
    "kind": "gatehouse",
    "at": [
-    2784.5,
-    2350.0
+    2939.3,
+    2450.0
    ],
    "gap_px": 0,
-   "rows": 432
+   "rows": 413
   },
   {
    "id": "W_left",
    "kind": "gatehouse",
    "at": [
-    192.6,
-    1441.4
+    200.7,
+    1460.1
    ],
    "gap_px": 0,
    "rows": 624
@@ -3044,8 +3218,8 @@
    "id": "W_right",
    "kind": "gatehouse",
    "at": [
-    614.9,
-    1652.6
+    623.0,
+    1671.3
    ],
    "gap_px": 0,
    "rows": 624
@@ -3054,8 +3228,8 @@
    "id": "E_left",
    "kind": "gatehouse",
    "at": [
-    4505.1,
-    1652.6
+    4497.0,
+    1671.3
    ],
    "gap_px": 0,
    "rows": 624
@@ -3064,8 +3238,8 @@
    "id": "E_right",
    "kind": "gatehouse",
    "at": [
-    4927.4,
-    1441.4
+    4919.3,
+    1460.1
    ],
    "gap_px": 0,
    "rows": 624
@@ -3074,83 +3248,75 @@
    "id": "N_left",
    "kind": "gatehouse",
    "at": [
-    2025.9,
-    520.0
+    2180.7,
+    470.0
    ],
    "gap_px": 0,
-   "rows": 432
+   "rows": 413
   },
   {
    "id": "N_right",
    "kind": "gatehouse",
    "at": [
-    2784.5,
-    520.0
+    2939.3,
+    470.0
    ],
    "gap_px": 0,
-   "rows": 432
+   "rows": 413
   }
  ],
  "tower_plinths": [
   [
-   3110.0,
-   520.0
+   1190.7,
+   965.0
   ],
   [
-   3110.0,
-   2350.0
+   3374.3,
+   687.5
   ],
   [
-   1095.0,
-   977.5
+   3980.2,
+   990.5
   ],
   [
-   3559.3,
-   744.7
+   1448.4,
+   2083.8
   ],
   [
-   3849.1,
-   889.5
+   2180.7,
+   2450.0
   ],
   [
-   1614.4,
-   2152.2
+   2939.3,
+   2450.0
   ],
   [
-   2025.9,
-   2350.0
+   200.7,
+   1460.1
   ],
   [
-   2784.5,
-   2350.0
+   623.0,
+   1671.3
   ],
   [
-   192.6,
-   1441.4
+   4497.0,
+   1671.3
   ],
   [
-   614.9,
-   1652.6
+   4919.3,
+   1460.1
   ],
   [
-   4505.1,
-   1652.6
+   2180.7,
+   470.0
   ],
   [
-   4927.4,
-   1441.4
-  ],
-  [
-   2025.9,
-   520.0
-  ],
-  [
-   2784.5,
-   520.0
+   2939.3,
+   470.0
   ]
  ],
  "tower_base_radius_px": 123.6,
- "block_below_tower_px": 350,
+ "block_below_tower_px": 60,
  "gate_clear": {
   "width_mul": 0.9,
   "note": "Round 5: no tree or cypress in a clear plaza at every gate and water gate, inside or out: an iso ellipse 1.8 gatehouse widths across (rx = 0.9 x width, ry = rx/2); flowers and low bushes stay; benches, lamps and planters stay out too. The outer woods are placed around these plazas."

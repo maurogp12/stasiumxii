@@ -85,8 +85,12 @@ def find_contacts(ground_np, river, wall, gates_known, reach=140, touch=60, stre
         along = (xs[close] - a[0]) * ux / ln + (ys[close] - a[1]) * uy / ln
         span = float(along.max() - along.min()) if len(along) else 0.0
         known = None
+        on_line = dist[ys, xs] <= 3
         for g in gates_known:
             if math.hypot(px - g[0], py - g[1]) < 260:
+                known = g
+            elif on_line.any() and np.min(np.hypot(xs[on_line] - g[0], ys[on_line] - g[1])) < 60:
+                # round 16: a wide gate funnel; it meets the wall at the arch
                 known = g
         if known is not None:
             verdict = "gate"
