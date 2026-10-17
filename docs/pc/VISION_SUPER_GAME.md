@@ -171,3 +171,5 @@ Grok paints one key-art concept per city plus a shared building kit with per-cit
 **Correction (Mauro, same day): finish Crosshaven first**, completely and walkable in 3D, with the whole approved layout and Grok's 3D kit. The other cities come after it, reusing the same builder.
 
 **GATE (Mauro): nothing moves past Crosshaven until Mauro approves it himself.**
+
+**Classes APPROVED by Mauro** (17 Oct, "definitivamente me encanta"): the 5 class concepts at docs/pc-map-handoff 131a6525, `work/3d_classes/`, with two small fixes pending (Bastion female open-face helm, more of Gloam's face).
