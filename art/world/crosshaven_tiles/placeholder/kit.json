@@ -1,0 +1,318 @@
+{
+ "format": "stasium.tile_kit",
+ "format_version": 1,
+ "name": "placeholder (flat colours)",
+ "tile_px": [
+  128,
+  64
+ ],
+ "hero_px": 156,
+ "autotile": "corner_wang_16",
+ "corner_bits": {
+  "N": 1,
+  "E": 2,
+  "S": 4,
+  "W": 8
+ },
+ "terrains": [
+  {
+   "id": "grass",
+   "priority": 0,
+   "atlas": "ground_grass.png",
+   "colour": [
+    96,
+    150,
+    70
+   ]
+  },
+  {
+   "id": "dirt",
+   "priority": 1,
+   "atlas": "ground_dirt.png",
+   "colour": [
+    160,
+    122,
+    80
+   ]
+  },
+  {
+   "id": "cobble",
+   "priority": 2,
+   "atlas": "ground_cobble.png",
+   "colour": [
+    150,
+    146,
+    136
+   ]
+  },
+  {
+   "id": "plaza",
+   "priority": 3,
+   "atlas": "ground_plaza.png",
+   "colour": [
+    196,
+    180,
+    150
+   ]
+  },
+  {
+   "id": "water",
+   "priority": 4,
+   "atlas": "ground_water.png",
+   "colour": [
+    60,
+    130,
+    190
+   ]
+  }
+ ],
+ "pieces": {
+  "wall": {
+   "file": "piece_wall.png",
+   "foot": [
+    64,
+    614
+   ],
+   "footprint": [
+    1,
+    1
+   ],
+   "blocks": true,
+   "height_px": 550
+  },
+  "tower": {
+   "file": "piece_tower.png",
+   "foot": [
+    192,
+    1182
+   ],
+   "footprint": [
+    3,
+    3
+   ],
+   "blocks": true,
+   "height_px": 990
+  },
+  "gate": {
+   "file": "piece_gate.png",
+   "foot": [
+    128,
+    728
+   ],
+   "footprint": [
+    2,
+    2
+   ],
+   "blocks": false,
+   "height_px": 600
+  },
+  "castle": {
+   "file": "piece_castle.png",
+   "foot": [
+    512,
+    1726
+   ],
+   "footprint": [
+    10,
+    8
+   ],
+   "blocks": true,
+   "height_px": 1150
+  },
+  "cathedral": {
+   "file": "piece_cathedral.png",
+   "foot": [
+    512,
+    1512
+   ],
+   "footprint": [
+    8,
+    8
+   ],
+   "blocks": true,
+   "height_px": 1000
+  },
+  "townhall": {
+   "file": "piece_townhall.png",
+   "foot": [
+    320,
+    1072
+   ],
+   "footprint": [
+    6,
+    5
+   ],
+   "blocks": true,
+   "height_px": 720
+  },
+  "bank": {
+   "file": "piece_bank.png",
+   "foot": [
+    320,
+    970
+   ],
+   "footprint": [
+    5,
+    5
+   ],
+   "blocks": true,
+   "height_px": 650
+  },
+  "house": {
+   "file": "piece_house.png",
+   "foot": [
+    192,
+    652
+   ],
+   "footprint": [
+    3,
+    3
+   ],
+   "blocks": true,
+   "height_px": 460
+  },
+  "workshop": {
+   "file": "piece_workshop.png",
+   "foot": [
+    192,
+    672
+   ],
+   "footprint": [
+    3,
+    3
+   ],
+   "blocks": true,
+   "height_px": 480
+  },
+  "mill": {
+   "file": "piece_mill.png",
+   "foot": [
+    192,
+    844
+   ],
+   "footprint": [
+    4,
+    3
+   ],
+   "blocks": true,
+   "height_px": 620
+  },
+  "stall": {
+   "file": "piece_stall.png",
+   "foot": [
+    64,
+    324
+   ],
+   "footprint": [
+    1,
+    1
+   ],
+   "blocks": true,
+   "height_px": 260
+  },
+  "fountain": {
+   "file": "piece_fountain.png",
+   "foot": [
+    128,
+    408
+   ],
+   "footprint": [
+    2,
+    2
+   ],
+   "blocks": true,
+   "height_px": 280
+  },
+  "well": {
+   "file": "piece_well.png",
+   "foot": [
+    64,
+    314
+   ],
+   "footprint": [
+    1,
+    1
+   ],
+   "blocks": true,
+   "height_px": 250
+  },
+  "lamp": {
+   "file": "piece_lamp.png",
+   "foot": [
+    64,
+    334
+   ],
+   "footprint": [
+    1,
+    1
+   ],
+   "blocks": false,
+   "height_px": 270
+  },
+  "bush": {
+   "file": "piece_bush.png",
+   "foot": [
+    64,
+    184
+   ],
+   "footprint": [
+    1,
+    1
+   ],
+   "blocks": false,
+   "height_px": 120
+  },
+  "plot_normal": {
+   "file": "piece_plot_normal.png",
+   "foot": [
+    256,
+    716
+   ],
+   "footprint": [
+    4,
+    4
+   ],
+   "blocks": true,
+   "height_px": 460
+  },
+  "plot_rare": {
+   "file": "piece_plot_rare.png",
+   "foot": [
+    256,
+    801
+   ],
+   "footprint": [
+    4,
+    4
+   ],
+   "blocks": true,
+   "height_px": 545
+  },
+  "plot_legendary": {
+   "file": "piece_plot_legendary.png",
+   "foot": [
+    256,
+    876
+   ],
+   "footprint": [
+    4,
+    4
+   ],
+   "blocks": true,
+   "height_px": 620
+  },
+  "bridge": {
+   "file": "piece_bridge.png",
+   "foot": [
+    64,
+    104
+   ],
+   "footprint": [
+    1,
+    1
+   ],
+   "blocks": false,
+   "height_px": 40
+  }
+ }
+}
