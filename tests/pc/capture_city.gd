@@ -16,6 +16,8 @@ var _clip := false
 var _lite := false
 ## --only=S,N: the clip walks only these gates.
 var _only := ""
+## --set=towers: only the tower close-ups.
+var _set := ""
 var _w: Node2D
 var city
 var _frame_i := 0
@@ -33,6 +35,8 @@ func _initialize() -> void:
 			_lite = true
 		elif arg.begins_with("--only="):
 			_only = arg.trim_prefix("--only=")
+		elif arg.begins_with("--set="):
+			_set = arg.trim_prefix("--set=")
 	DirAccess.make_dir_recursive_absolute(_out)
 	call_deferred("_go")
 
@@ -61,9 +65,44 @@ func _go() -> void:
 	_report_crossing()
 	if _clip:
 		await _walk_clip()
+	elif _set == "towers":
+		await _tower_shots()
 	else:
 		await _stills()
+		await _tower_shots()
 	quit(0)
+
+
+## Round 8: every tower on the NW and SW diagonals (mid-edge and corners),
+## framed from the city side and from the outside.
+func _tower_shots() -> void:
+	_w.camera_hold = true
+	_w.walker.visible = false
+	var poly: Array = city.doc["wall_polygon"]
+	var n := poly.size()
+	var centre := Vector2.ZERO
+	for q in poly:
+		centre += Vector2(float(q[0]), float(q[1]))
+	centre /= float(n)
+	for e in [5, 4]:
+		var a := Vector2(float(poly[e][0]), float(poly[e][1]))
+		var b := Vector2(float(poly[(e + 1) % n][0]), float(poly[(e + 1) % n][1]))
+		var k := 0
+		for rec in city.layers():
+			if str(rec["tag"]) != "tower" or bool(rec.get("hidden", false)):
+				continue
+			var foot := _tower_foot(rec)
+			var t: float = clampf((foot - a).dot(b - a) / (b - a).length_squared(), 0.0, 1.0)
+			if foot.distance_to(a.lerp(b, t)) > 20.0:
+				continue
+			var mid: Vector2 = (a + b) * 0.5
+			var inward: Vector2 = (centre - mid).normalized()
+			var name := "15_tower_%s_%d" % ["NW" if e == 5 else "SW", k]
+			await _hold(city.plate_to_world(foot + inward * 140.0) + Vector2(0, -110), 1.6, 25, name + "_inside")
+			await _hold(city.plate_to_world(foot - inward * 140.0) + Vector2(0, -110), 1.6, 25, name + "_outside")
+			k += 1
+	_w.walker.visible = true
+	_w.camera_hold = false
 
 
 func _hud_off() -> void:
@@ -512,3 +551,10 @@ func _grab() -> void:
 		return
 	image.save_jpg("%s/f%05d.jpg" % [_out, _frame_i], 0.88)
 	_frame_i += 1
+
+
+## A ring tower's point on the wall line (round 8 towers stand in front of it).
+func _tower_foot(rec: Dictionary) -> Vector2:
+	if rec.has("wall_point"):
+		return Vector2(float(rec["wall_point"][0]), float(rec["wall_point"][1]))
+	return Vector2(float(rec["x"]) + float(rec["w"]) * 0.5, float(rec["sort_y"]) - 10.0)

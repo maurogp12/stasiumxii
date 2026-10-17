@@ -57,6 +57,8 @@ class Module:
         self.spec = spec
         self.file = spec["file"]
         im = Image.open(os.path.join(kit_dir, spec["file"])).convert("RGBA")
+        if "taper" in spec:
+            im = taper(im, spec["taper"])
         self.k = scale * float(spec.get("scale_mul", 1.0))
         self.im = im.resize((max(1, int(round(im.width * self.k))), max(1, int(round(im.height * self.k)))), Image.LANCZOS)
         self.slope = float(spec.get("art_slope", 0.0))
@@ -70,6 +72,115 @@ class Module:
         kk = slope - self.slope
         im, off = CG.shear_sprite(self.im, kk, False)
         return im, (lambda pt: (pt[0], pt[1] + kk * pt[0] + off))
+
+
+def taper(im, t):
+    """Round 8: the kit's wall face is painted with a little perspective (the
+    merlon line is not parallel to the foot), so a run cut at a tower showed
+    a step. Scale each column about the foot line so the merlon line runs
+    parallel to the foot at a face height of `t["face"]` (native px).
+    t: {"foot": [x0, y0, slope], "tip": [x0, y0, slope], "face": px}."""
+    from scipy.ndimage import map_coordinates
+    a = np.asarray(im).astype(np.float32)
+    H, W = a.shape[:2]
+    fx0, fy0, fs = [float(v) for v in t["foot"]]
+    tx0, ty0, ts = [float(v) for v in t["tip"]]
+    cols = np.arange(W, dtype=np.float32)
+    foot = fy0 + fs * (cols - fx0)
+    tip = ty0 + ts * (cols - tx0)
+    face = np.maximum(1.0, foot - tip)
+    ratio = face / float(t["face"])
+    yy = np.arange(H, dtype=np.float32)[:, None]
+    ysrc = foot[None, :] - (foot[None, :] - yy) * ratio[None, :]
+    xsrc = np.broadcast_to(cols[None, :], (H, W))
+    alpha = a[..., 3] / 255.0
+    out = np.zeros_like(a)
+    na = map_coordinates(alpha, [ysrc, xsrc], order=1, mode="constant", cval=0.0)
+    for c in range(3):
+        pm = map_coordinates(a[..., c] * alpha, [ysrc, xsrc], order=1, mode="constant", cval=0.0)
+        out[..., c] = np.where(na > 1e-4, pm / np.maximum(na, 1e-4), 0.0)
+    out[..., 3] = na * 255.0
+    return Image.fromarray(np.clip(out, 0, 255).astype(np.uint8), "RGBA")
+
+
+def gate_half(kit_dir, cfg, mods_scale, a, b):
+    """Half the distance between a gatehouse's flanking tower feet on edge a-b (plate px)."""
+    sl = edge_slope(a, b)
+    key = "gatehouse" + ("_flat" if abs(sl) < 0.05 else ("_pos" if sl > 0 else "_neg"))
+    spec = cfg["modules"].get(key) or cfg["modules"]["gatehouse_neg"]
+    kk = sl - float(spec.get("art_slope", 0.0))
+    k = mods_scale
+    wl = (spec["wall_left"][0] * k, spec["wall_left"][1] * k + kk * spec["wall_left"][0] * k)
+    wr = (spec["wall_right"][0] * k, spec["wall_right"][1] * k + kk * spec["wall_right"][0] * k)
+    return math.dist(wl, wr) / 2.0
+
+
+def snap_gates(cfg, poly, kit_dir, hero_plate):
+    """Round 8: a gatehouse whose outer flanking tower stands within
+    `snap_corner_tower_widths` tower widths of a ring corner slides along its
+    edge so that tower sits on the corner (the gatehouse tower becomes the
+    corner tower: no doubled tower, no gap). Returns (gates, log)."""
+    k = hero_plate / float(cfg["hero_px_in_art"])
+    lim = float(cfg.get("snap_corner_tower_widths", 0.0)) * float(cfg.get("gate_tower_width_art", 433.0)) * k
+    out, log = [], []
+    n = len(poly)
+    for g in cfg["gates"]:
+        g2 = dict(g)
+        i = int(g["edge"])
+        a, b = poly[i], poly[(i + 1) % n]
+        L = math.dist(a, b)
+        s = ((g["at"][0] - a[0]) * (b[0] - a[0]) + (g["at"][1] - a[1]) * (b[1] - a[1])) / L
+        half = gate_half(kit_dir, cfg, k, a, b)
+        new_s = s
+        corner = None
+        if lim > 0 and s - half < lim:
+            new_s, corner = half, list(a)
+        elif lim > 0 and (L - s) - half < lim:
+            new_s, corner = L - half, list(b)
+        if corner is not None:
+            q = (a[0] + (b[0] - a[0]) * new_s / L, a[1] + (b[1] - a[1]) * new_s / L)
+            g2["at"] = [round(q[0], 1), round(q[1], 1)]
+            g2["snapped_to_corner"] = corner
+            log.append({"id": g["id"], "from": list(g["at"]), "to": g2["at"], "corner": corner,
+                        "moved_px": round(math.dist(g["at"], q), 1)})
+        out.append(g2)
+    return out, log
+
+
+def _feat_ref(f, at, i):
+    if f is None:
+        return None
+    p = at(i, f["s"])
+    return {"kind": f["kind"], "at": [round(p[0], 1), round(p[1], 1)]}
+
+
+def _measure_end(strips, end, a, b, span=160):
+    """Foot and merlon-tip lines at a run end (plate px, relative to the edge
+    line): the drawn strips' foot (topmost bottom, between buttresses) and
+    merlon tips over the last `span` px of the run, each fitted with a line
+    and read at the end, so one stone or buttress does not decide it."""
+    from scipy.ndimage import minimum_filter1d
+    xs, feet, tips = [], [], []
+    for im, x0, y0 in strips:
+        al = np.asarray(im)[..., 3] > 128
+        for cc in range(al.shape[1]):
+            gx = x0 + cc
+            if abs(gx - end[0]) > span:
+                continue
+            rows = np.nonzero(al[:, cc])[0]
+            if len(rows):
+                xs.append(gx)
+                feet.append(rows.max() + y0 - line_y(a, b, gx))
+                tips.append(rows.min() + y0 - line_y(a, b, gx))
+    if len(xs) < 8:
+        return None
+    o = np.argsort(xs)
+    xs = np.array(xs, float)[o]
+    feet = minimum_filter1d(np.array(feet, float)[o], 40)
+    tips = minimum_filter1d(np.array(tips, float)[o], 30)
+    pf = np.polyfit(xs, feet, 1)
+    pt = np.polyfit(xs, tips, 1)
+    return {"foot": round(float(np.polyval(pf, end[0])), 1), "tip": round(float(np.polyval(pt, end[0])), 1)}
 
 
 def pick(mods, kind, slope):
@@ -172,6 +283,16 @@ def assemble(layers, images, walk, river, old_poly, poly, cfg, kit_dir, hero_pla
         u = iso_normal(a, b, inward)
         half = math.dist(WL, WR) / 2.0
         feats[i].append({"kind": "gate", "s": s, "half": half})
+        if g.get("snapped_to_corner"):
+            # the gatehouse's outer tower is the corner: the neighbour edge's
+            # run ends under it like under a corner tower
+            c_ = g["snapped_to_corner"]
+            if math.dist(c_, a) < 1.0:
+                j_ = (i - 1) % len(edges)
+                feats[j_].append({"kind": "gtower", "s": math.dist(*edges[j_]), "half": 0.0, "tower_y": a[1]})
+            else:
+                k_ = (i + 1) % len(edges)
+                feats[k_].append({"kind": "gtower", "s": 0.0, "half": 0.0, "tower_y": b[1]})
         hw = float(cfg["passage_hero_widths"]) * float(cfg["hero_width_ratio"]) * hero_plate / 2.0
         depth = float(cfg.get("passage_depth_px", 120.0))
         v = ((b[0] - a[0]) / math.dist(a, b), (b[1] - a[1]) / math.dist(a, b))
@@ -258,6 +379,8 @@ def assemble(layers, images, walk, river, old_poly, poly, cfg, kit_dir, hero_pla
             spots.append((i, L * kk / (n_mid + 1)))
     towers = []
     corner_flags = []
+    tower_drops = []
+    r_base = float(tm.spec.get("base_radius", tm.im.width / tm.k * 0.47)) * tm.k
     # Coordinator review 3: no ring tower within about one wall height of a
     # gatehouse (its own flanking towers are smaller); corners included.
     gate_gap = float(cfg.get("no_tower_near_gate_wall_heights", 1.0)) * wall_h
@@ -269,7 +392,7 @@ def assemble(layers, images, walk, river, old_poly, poly, cfg, kit_dir, hero_pla
         for f in feats[i]:
             if abs(s - f["s"]) < f["half"] + t_half:
                 clash = True
-            if f["kind"] == "gate" and abs(s - f["s"]) < f["half"] + t_half + gate_gap:
+            if f["kind"] in ("gate", "gtower") and abs(s - f["s"]) < f["half"] + t_half + gate_gap:
                 near_gate = True
         # corner towers also count on the previous edge
         if s == 0.0:
@@ -278,19 +401,19 @@ def assemble(layers, images, walk, river, old_poly, poly, cfg, kit_dir, hero_pla
             for f in feats[j]:
                 if abs(Lj - f["s"]) < f["half"] + t_half:
                     clash = True
-                if f["kind"] == "gate" and abs(Lj - f["s"]) < f["half"] + t_half + gate_gap:
+                if f["kind"] in ("gate", "gtower") and abs(Lj - f["s"]) < f["half"] + t_half + gate_gap:
                     near_gate = True
         if s == 0.0 and cfg.get("corner_towers") == "always":
             # round 5: corners keep their tower (no bare cut where two runs
             # meet) unless a gatehouse span covers the corner itself
             covered = False
             for f in feats[i]:
-                if f["kind"] == "gate" and abs(s - f["s"]) < f["half"] + 10.0:
+                if f["kind"] in ("gate", "gtower") and abs(s - f["s"]) < f["half"] + 10.0:
                     covered = True
             j = (i - 1) % len(edges)
             Lj = math.dist(*edges[j])
             for f in feats[j]:
-                if f["kind"] == "gate" and abs(Lj - f["s"]) < f["half"] + 10.0:
+                if f["kind"] in ("gate", "gtower") and abs(Lj - f["s"]) < f["half"] + 10.0:
                     covered = True
             near_gate = covered
         if near_gate:
@@ -300,14 +423,28 @@ def assemble(layers, images, walk, river, old_poly, poly, cfg, kit_dir, hero_pla
             continue
         towers.append(p)
         corner_flags.append(s == 0.0)
-        feats[i].append({"kind": "tower", "s": s, "half": t_half * 0.7})
+        # Round 8: the v5 tower is painted face-on, so its painted bottom is the
+        # front of its base ellipse: on a diagonal it stands |slope| x base
+        # radius in front of the wall line (the wall foot where the near run
+        # comes out from behind it).
+        sls = [abs(edge_slope(*edges[i]))]
+        if s == 0.0:
+            sls.append(abs(edge_slope(*edges[(i - 1) % len(edges)])))
+        tower_drops.append(max(sls) * r_base)
+        feats[i].append({"kind": "tower", "s": s, "half": t_half * 0.7, "tower_y": p[1]})
         if s == 0.0:
             j = (i - 1) % len(edges)
-            feats[j].append({"kind": "tower", "s": math.dist(*edges[j]), "half": t_half * 0.7})
-    for p, is_corner in zip(towers, corner_flags):
-        add(tm.im, p[0] - t_anchor[0], p[1] - t_anchor[1], p[1] + 10.0, "tower", {"module": tm.file, "corner": is_corner})
+            feats[j].append({"kind": "tower", "s": math.dist(*edges[j]), "half": t_half * 0.7, "tower_y": p[1]})
+    tower_sorts = []
+    for p, is_corner, drop in zip(towers, corner_flags, tower_drops):
+        tower_sorts.append((p[0], p[1], p[1] + drop + 2.0))
+        add(tm.im, p[0] - t_anchor[0], p[1] + drop - t_anchor[1], p[1] + drop + 2.0, "tower",
+            {"module": tm.file, "corner": is_corner, "base_drop_px": round(drop, 1), "wall_point": [round(p[0], 1), round(p[1], 1)]})
     # ---- wall runs
     strips = 0
+    runs = []
+    tuck = cfg.get("tower_tuck", {})
+    r_body = float(tm.spec.get("body_radius", tm.im.width / tm.k * 0.37)) * tm.k
     for i, (a, b) in enumerate(edges):
         L = math.dist(a, b)
         sl = edge_slope(a, b)
@@ -316,13 +453,28 @@ def assemble(layers, images, walk, river, old_poly, poly, cfg, kit_dir, hero_pla
         u0, u1 = float(m.spec["usable_x"][0]) * m.k, float(m.spec["usable_x"][1]) * m.k
         base0 = mp(m.p("base_left"))
         fs = sorted(feats[i], key=lambda f: f["s"])
-        stops = [(0.0, 0.0)] + [(f["s"], f["half"]) for f in fs] + [(L, 0.0)]
-        for (s0, h0), (s1, h1) in zip(stops, stops[1:]):
-            # runs tuck a little under the gatehouses and towers: no seam
-            ra, rb = s0 + h0 * 0.86, s1 - h1 * 0.86
+        # Round 8: at a tower the run on the near side (lower on screen, drawn
+        # in front of the tower) ends at the tower's surface; the far side
+        # tucks well under it (the tower draws in front). Gatehouses as before.
+        dyds = (b[1] - a[1]) / L
+        r_front = r_body * float(tuck.get("front_mul", 1.0))
+        r_back = r_body * float(tuck.get("back_mul", 0.5))
+
+        def tucks(f):
+            if f["kind"] in ("tower", "gtower"):
+                before = r_front if dyds < -1e-6 else r_back
+                after = r_front if dyds > 1e-6 else r_back
+                return before, after
+            return f["half"] * 0.86, f["half"] * 0.86
+        stops = [(0.0, 0.0, 0.0, None)] + [(f["s"],) + tucks(f) + (f,) for f in fs] + [(L, 0.0, 0.0, None)]
+        for (s0, _b0, a0, f0), (s1, b1, _a1, f1) in zip(stops, stops[1:]):
+            ra, rb = s0 + a0, s1 - b1
             if rb - ra < 8:
                 continue
             pa, pb = at(i, ra), at(i, rb)
+            run_rec = {"edge": i, "a": [round(pa[0], 1), round(pa[1], 1)], "b": [round(pb[0], 1), round(pb[1], 1)],
+                       "start_at": _feat_ref(f0, at, i), "end_at": _feat_ref(f1, at, i), "strips": []}
+            runs.append(run_rec)
             xa, xb = min(pa[0], pb[0]), max(pa[0], pb[0])
             x = xa
             while x < xb - 1:
@@ -333,15 +485,49 @@ def assemble(layers, images, walk, river, old_poly, poly, cfg, kit_dir, hero_pla
                 c1 = int(round(u0 + w))
                 ox = x - c0
                 oy = line_y(a, b, x) - (base0[1] + sl * (c0 - base0[0]))
+                cuts = []
+                for f_ in (f0, f1):
+                    if f_ is not None and f_["kind"] == "tower":
+                        tp = at(i, f_["s"])
+                        ts = next((t[2] for t in tower_sorts if abs(t[0] - tp[0]) < 1 and abs(t[1] - tp[1]) < 1), None)
+                        if ts is not None:
+                            cuts.append((tp[0] - r_base, tp[0] + r_base, ts))
                 for k0 in range(c0, c1, STRIP):
                     k1 = min(c1, k0 + STRIP)
-                    part = im.crop((k0, 0, k1, im.height))
-                    if part.getbbox() is None:
-                        continue
-                    sy = max(line_y(a, b, ox + k0), line_y(a, b, ox + k1)) + 2.0
-                    add(part, ox + k0, oy, sy, "wall", {"module": m.file})
-                    strips += 1
+                    # Round 8: a strip crossing a tower's silhouette is split so
+                    # the part inside it sorts behind the tower
+                    pieces = [(k0, k1)]
+                    for lo_x, hi_x, _ts in cuts:
+                        nxt = []
+                        for p0, p1 in pieces:
+                            for edge_x in (lo_x - ox, hi_x - ox):
+                                if p0 < edge_x < p1:
+                                    nxt.append((p0, int(round(edge_x))))
+                                    p0 = int(round(edge_x))
+                            nxt.append((p0, p1))
+                        pieces = [pc for pc in nxt if pc[1] > pc[0]]
+                    for p0, p1 in pieces:
+                        part = im.crop((p0, 0, p1, im.height))
+                        if part.getbbox() is None:
+                            continue
+                        sy = max(line_y(a, b, ox + p0), line_y(a, b, ox + p1)) + 2.0
+                        mid_x = ox + (p0 + p1) / 2.0
+                        for lo_x, hi_x, ts in cuts:
+                            if lo_x <= mid_x <= hi_x:
+                                sy = min(sy, ts - 1.0)
+                        add(part, ox + p0, oy, sy, "wall", {"module": m.file})
+                        run_rec["strips"].append((part, ox + p0, oy))
+                        strips += 1
                 x += w
+    # Run ends: measured from the drawn strips (foot = wall face foot between
+    # buttresses, tip = merlon tips) so the tests can check the lines run on.
+    for rr in runs:
+        a_, b_ = edges[rr["edge"]]
+        for end, key in ((rr["a"], "a_px"), (rr["b"], "b_px")):
+            rr[key] = _measure_end(rr["strips"], end, a_, b_)
+        rr.pop("strips")
+    log["wall_runs"] = runs
+    log["tower_body_radius_px"] = round(r_body, 1)
     # ---- walk: new band, towers, gate footprints, then the passages
     band = CG.line_mask(poly, int(cfg.get("band_px", 40)))
     walk &= ~band
@@ -356,6 +542,15 @@ def assemble(layers, images, walk, river, old_poly, poly, cfg, kit_dir, hero_pla
         q = gg["arch"]
         foot = CG.poly_mask(CG.quad(q, gg["u"], gg["v"], -60.0, 90.0, gg["half_span"]))
         walk &= ~foot
+    for gg in gates_geo:
+        # the flanking towers block like ring towers (a snapped one stands past the corner)
+        for key in ("wall_join_left", "wall_join_right"):
+            p = gg[key]
+            rx = r_body
+            y0_, y1_ = max(0, int(p[1] - rx)), min(H_, int(p[1] + rx))
+            x0_, x1_ = max(0, int(p[0] - rx)), min(W_, int(p[0] + rx))
+            sub_y, sub_x = np.ogrid[y0_:y1_, x0_:x1_]
+            walk[y0_:y1_, x0_:x1_] &= ~(((sub_x - p[0]) / rx) ** 2 + ((sub_y - p[1]) / (rx * 0.5)) ** 2 <= 1.0)
     for gg in gates_geo:
         walk |= CG.poly_mask(gg["passage"]) & ~river
     log["ring_pieces"] = {"wall_strips": strips, "towers": len(towers), "gates": len(gates_geo), "water_gates": len(waters)}

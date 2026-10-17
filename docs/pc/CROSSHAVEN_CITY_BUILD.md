@@ -37,6 +37,12 @@ Change list: `docs/pc/look_target/crosshaven_city/README.md` on `claude/pc-zones
 - **Road-wall contacts** (found from the street pixels). N, W, E and SE are gates. The S gate carries
   the spawn road. Five streets are pulled back inside the ring. None crosses the wall without a gate
   (tested).
+- **Towers and joins (round 8).**
+  - **One tower style.** Every ring and corner tower is the v5 gatehouse's left flanking tower, cropped as its own sprite by `build_tools/crosshaven_city/crop_tower.py` (curtain cut away by mirroring the tower's clean left silhouette; no new art). The old tilted tower is gone.
+  - **Placement.** It is painted face-on, so on a diagonal its painted bottom (the front of its base) stands |slope| x base radius in front of the wall line. It sorts at that front point.
+  - **Joins.** The kit's diagonal wall face shrinks across the tile (merlon line -0.39 against foot -0.43), so each column is now scaled about the foot to a constant face (`taper`). Both runs tuck half a body radius under the tower, and a strip crossing the tower's silhouette sorts behind it. Merlon and foot lines run on through every tower along a wall (measured from the drawn strips: within 1.2 px).
+  - **Known step.** Where a flat N/S run meets a diagonal at a corner tower, the merlon line steps about 35 px, because the approved flat segment's face is 545 art px against 627 for the diagonals.
+  - **Snapped gates.** A gatehouse whose outer tower stood within 1.5 tower widths of a corner slides along its edge so that tower is the corner: S 172 px, N 214 px, E 218 px, W 44 px. No doubled tower, no gap.
 - **Exits (review 7).** Every gate road runs on to the plate edge and ends in a gate stub (data,
   `gate_stubs`). The links follow the Crossroads road directions:
   - N goes to `crosshaven_road_north` (12,2), toward Northgate (proposed);

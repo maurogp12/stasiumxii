@@ -1043,11 +1043,14 @@ def apply_ring_kit(layers, images, ground_np, walk, river, old_poly):
     by the new wall line that are not at a gate are pulled back; each gate is
     joined to the streets inside and to a road outside. Returns the gate log,
     the street pixels to drop (grass from now on) and the new wall polygon."""
-    cfg = LAYOUT["ring_kit"]
+    cfg = dict(LAYOUT["ring_kit"])
     poly = [tuple(map(float, p)) for p in cfg["polygon"]]
     log = {"modified": set(), "towers_cleaned": [], "gates": [], "contacts_before": [], "contacts_after": []}
     log["contacts_before"] = CG.find_contacts(ground_np, river, poly, [])
     hero_plate = float(cfg["hero_world_px"]) / float(LAYOUT.get("plate_scale", 1.0))
+    # Round 8: gatehouses near a corner slide so their outer tower is the corner.
+    cfg["gates"], log["gates_snapped"] = RING.snap_gates(cfg, poly, KIT_DIR, hero_plate)
+    print("gates snapped to corners", [(g["id"], g["moved_px"]) for g in log["gates_snapped"]])
     log["ring"] = {"kit": True, "hero_plate_px": round(hero_plate, 2),
                    "module_scale": round(hero_plate / float(cfg["hero_px_in_art"]), 4)}
     inside_old = CG.poly_mask(old_poly)
@@ -1144,6 +1147,8 @@ def apply_ring_kit(layers, images, ground_np, walk, river, old_poly):
     for gg in gates_geo:
         src = next((g for g in cfg["gates"] if g["id"] == gg["id"]), {})
         gg["road_out_end"] = road_ends.get(gg["id"])
+        if src.get("snapped_to_corner"):
+            gg["snapped_to_corner"] = src["snapped_to_corner"]
         if "exit" in src:
             gg["exit"] = dict(src["exit"])
     log["gates"] = gates_geo
@@ -1906,7 +1911,7 @@ def main():
             rec["plot_plant"] = True
         if "plant" in l:
             rec["plant"] = l["plant"]
-        for key_ in ("module", "gate", "spot", "corner"):
+        for key_ in ("module", "gate", "spot", "corner", "base_drop_px", "wall_point"):
             if key_ in l:
                 rec[key_] = l[key_]
         if l["tag"] in hide_tags and lid in displaced:
@@ -2041,6 +2046,9 @@ def main():
         "water": water,
         "lights": dict(LAYOUT.get("greenery", {}).get("lights", {})),
         "water_gates": gate_log.get("water_gates", []),
+        "wall_runs": gate_log.get("wall_runs", []),
+        "tower_body_radius_px": gate_log.get("tower_body_radius_px"),
+        "gates_snapped": gate_log.get("gates_snapped", []),
         "gate_clear": dict(LAYOUT.get("greenery", {}).get("gate_clear", {})),
     }
     json.dump(city, open(os.path.join(data_dir, "city.json"), "w"), indent=1)

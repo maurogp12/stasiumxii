@@ -389,50 +389,92 @@
   ],
   "modules": {
    "tower": {
-    "file": "tower_CONCEPTO.png",
+    "file": "tower_v5_CONCEPTO.png",
     "base": [
-     240,
-     990
-    ]
+     251.5,
+     1020
+    ],
+    "body_radius": 188,
+    "note": "Round 8: the v5 gatehouse's left flanking tower, cropped by build_tools/crosshaven_city/crop_tower.py (no new art): same face-on angle and scale as the gatehouse towers. base = tower axis, 13 px above the lowest pixel (as the gatehouse's curtain foot); body_radius = half the body width (native px). base_radius = half the splayed base width (native px): on a diagonal the tower's painted bottom stands |slope| x base_radius in front of the wall line, and the tower sorts at that front point.",
+    "base_radius": 239
    },
    "segment_neg": {
     "file": "segment_short_CONCEPTO.png",
-    "art_slope": -0.4333,
+    "art_slope": -0.4268,
     "base_left": [
      300,
-     1229
+     1222.1
     ],
     "usable_x": [
      300,
      1700
     ],
-    "face_px": 515
+    "face_px": 515,
+    "taper": {
+     "foot": [
+      300,
+      1198.0,
+      -0.4268
+     ],
+     "tip": [
+      300,
+      545.0,
+      -0.3899
+     ],
+     "face": 627
+    }
    },
    "segment_pos": {
     "file": "segment_short_mirror_CONCEPTO.png",
-    "art_slope": 0.4296,
+    "art_slope": 0.4265,
     "base_left": [
      240,
-     627
+     624.1
     ],
     "usable_x": [
      240,
      1630
     ],
-    "face_px": 515
+    "face_px": 515,
+    "taper": {
+     "foot": [
+      240,
+      604.6,
+      0.4265
+     ],
+     "tip": [
+      240,
+      3.0,
+      0.3896
+     ],
+     "face": 627
+    }
    },
    "segment_flat": {
     "file": "segment_horizontal_CONCEPTO.png",
-    "art_slope": 0.0,
+    "art_slope": -0.002,
     "base_left": [
      100,
-     551
+     552.1
     ],
     "usable_x": [
      100,
      2700
     ],
-    "face_px": 464
+    "face_px": 464,
+    "taper": {
+     "foot": [
+      100,
+      553.5,
+      -0.002
+     ],
+     "tip": [
+      100,
+      5.6,
+      0.0006
+     ],
+     "face": 545
+    }
    },
    "watergate_neg": {
     "file": "watergate_short_CONCEPTO.png",
@@ -557,7 +599,17 @@
    "fillet_px": 40
   },
   "corner_towers": "always",
-  "corner_note": "Round 5: every ring corner keeps its tower so the two runs never meet in a bare cut, unless a gatehouse span covers the corner itself (the W gate). The near-gate rule applies to mid-edge towers."
+  "corner_note": "Round 5: every ring corner keeps its tower so the two runs never meet in a bare cut, unless a gatehouse span covers the corner itself (the W gate). The near-gate rule applies to mid-edge towers.",
+  "taper_note": "Round 8: measured on the kit PNGs (merlon-tip and foot envelopes, fitted lines). The diagonal segments' merlon line is not parallel to their foot (face 653 -> 601 px across the tile), so each column is scaled about the foot to a constant face (627 on both diagonals, 545 flat): the merlon and foot lines then run on through any cut. art_slope is the fitted foot slope.",
+  "tower_tuck": {
+   "front_mul": 0.5,
+   "back_mul": 0.5,
+   "note": "Round 8: the ring tower draws in front of both runs (it sorts at the front of its base); both runs tuck half a body radius under it, so the near wall comes out from behind its side with the foot level with the tower base."
+  },
+  "snap_corner_tower_widths": 1.5,
+  "gate_tower_width_art": 433,
+  "snap_note": "Round 8: a gatehouse whose outer flanking tower stands within 1.5 tower widths of a ring corner slides along its edge so that tower stands on the corner (no doubled tower, no gap); the neighbour run ends under it.",
+  "foot_calibration_note": "Round 8: base_left set so each module's drawn foot (fitted foot envelope over the last 160 px of a run) lies on the wall line: diagonal feet sat 1.0-2.4 plate px above it, the flat foot 0.4 below."
  },
  "greenery": {
   "note": "Approved map-base greenery (docs/pc-map-handoff 5edc29a3 docs/pc/look_target/crosshaven_city/work/green; pass --green <dir>). Painted at hero = 156 px, bottom-centre anchored.",
