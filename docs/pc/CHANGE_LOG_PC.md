@@ -20,3 +20,4 @@ Crosshaven gatehouse v4 CONCEPTO (Scenario Art, per Claude review of 94d6b6a7): 
 Crosshaven horizontal gatehouse colour match CONCEPTO (Scenario Art, per Claude review of 8572a1e4): stone pixels' LAB mean and std matched to tower_CONCEPTO.png; same 1323x1000 framing. Concept only, not in game.
 Crosshaven horizontal gatehouse roof colour match CONCEPTO: roof tiles LAB mean/std matched to the tower roof; gate set complete for the map base. Concept only, not in game.
 Crosshaven civic buildings CONCEPTO (Scenario Art): cathedral 1198x1150 (gothic, blue slate), townhall 1004x850 (clock tower, red-brown tile), bank 827x800 (gilded dome); native + LANCZOS/unsharp, LAB-matched to the kit; size sheet. Concept only, not in game.
+Crosshaven NPC houses (b) concepts + horizontal gatehouse v5 (wider proud towers 433/430 px, 1752x1041, parapet 577 px) - 🖼️ CONCEPTO
