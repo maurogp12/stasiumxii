@@ -1,0 +1,36 @@
+{
+ "label": "🖼️ IMAGEN / CONCEPTO, TODAVÍA HAY QUE CONSTRUIRLO",
+ "file": "chr_bandit_chief_CONCEPTO_.png",
+ "px": [
+  3640,
+  2048
+ ],
+ "height_m": 1.95,
+ "footprint_m": [
+  0.8,
+  0.5
+ ],
+ "pivot": "foot_centre_ground_y0",
+ "front": "+Z",
+ "tris_budget": "enemy 10-20k",
+ "lod": [
+  "LOD0",
+  "LOD1 ~50%",
+  "LOD2 ~20%"
+ ],
+ "textures": "PBR albedo/normal/ORM 1024",
+ "collider": "capsule",
+ "slot": "boss",
+ "glb_name": "chr_bandit_chief_LOD0.glb",
+ "model_built": false,
+ "tool": "Scenario model_xai-grok-imagine-image-2-0 (see ../raw/generation_log.jsonl)",
+ "gear_slots": [
+  "head",
+  "chest",
+  "hands",
+  "legs",
+  "feet",
+  "cloak",
+  "main_hand"
+ ]
+}

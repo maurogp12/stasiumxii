@@ -1,0 +1,27 @@
+{
+ "label": "🖼️ IMAGEN / CONCEPTO, TODAVÍA HAY QUE CONSTRUIRLO",
+ "file": "itm_weapons_CONCEPTO_.png",
+ "px": [
+  2816,
+  1584
+ ],
+ "height_m": 1.0,
+ "footprint_m": [
+  0.3,
+  0.1
+ ],
+ "pivot": "foot_centre_ground_y0",
+ "front": "+Z",
+ "tris_budget": "0.5-3k",
+ "lod": [
+  "LOD0",
+  "LOD1 ~50%",
+  "LOD2 ~20%"
+ ],
+ "textures": "PBR albedo/normal/ORM 512",
+ "collider": "box/convex -col",
+ "slot": "main_hand",
+ "glb_name": "itm_<weapon>_LOD0.glb",
+ "model_built": false,
+ "tool": "Scenario model_xai-grok-imagine-image-2-0 (see ../raw/generation_log.jsonl)"
+}

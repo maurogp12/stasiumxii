@@ -1,0 +1,32 @@
+{
+ "label": "🖼️ IMAGEN / CONCEPTO, TODAVÍA HAY QUE CONSTRUIRLO",
+ "file": "bld_gate_arch_stone_CONCEPTO_.png",
+ "px": [
+  2048,
+  2048
+ ],
+ "height_m": 8.0,
+ "footprint_m": [
+  8,
+  6
+ ],
+ "pivot": "footprint_centre_ground_y0",
+ "front": "+Z",
+ "tris_budget": "kit piece 5-20k (landmark band 20-60k for full gatehouse)",
+ "lod": [
+  "LOD0",
+  "LOD1 ~50%",
+  "LOD2 ~20%",
+  "impostor"
+ ],
+ "textures": "PBR albedo/normal/ORM 512 px/m trim + tiling",
+ "collider": "box/convex -col",
+ "slot": null,
+ "glb_name": "bld_gate_arch_stone_a_LOD0.glb",
+ "model_built": false,
+ "tool": "Scenario model_xai-grok-imagine-image-2-0 (see ../raw/generation_log.jsonl)",
+ "arch_min_m": 4,
+ "doors": "timber double doors, open, no portcullis",
+ "passage_see_through": true,
+ "grid_m": 1
+}

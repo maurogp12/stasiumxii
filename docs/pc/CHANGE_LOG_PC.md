@@ -50,3 +50,4 @@ Crosshaven kit Group 1 v2: organic ground edges, wall depth, square merlons, pai
 Crosshaven kit nature + extras + Groups 3-5 fixes (signs, anims, fence ends); CONCEPTO, not built
 Crosshaven kit Group 1 v3 walls: 700px gatehouse, 455px arch, recessed parapet, wall variants; CONCEPTO, not built
 Crosshaven kit small v2: hedge end/corner, clean signs, round mill wheel; CONCEPTO, not built
+3D slice concepts (CONCEPTO): hero M/F, 2 bandits, weapons, 4 props, gate arch, wall section, south gate day/dusk key art, JSON per piece
