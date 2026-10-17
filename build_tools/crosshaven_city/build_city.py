@@ -1121,7 +1121,7 @@ def apply_ring_kit(layers, images, ground_np, walk, river, old_poly):
                 sl_ = 0.0 if abs(b[0] - a[0]) < 1e-6 else (b[1] - a[1]) / (b[0] - a[0])
                 key_ = "_flat" if abs(sl_) < 0.05 else ("_pos" if sl_ > 0 else "_neg")
                 spec_ = cfg["modules"].get("gatehouse" + key_) or cfg["modules"]["gatehouse_neg"]
-                kmod_ = hero_plate / float(cfg["hero_px_in_art"])
+                kmod_ = hero_plate / float(cfg["hero_px_in_art"]) * float(spec_.get("scale_mul", 1.0))
                 span_ = math.dist(spec_["wall_left"], spec_["wall_right"]) * kmod_
                 art_w_ = Image.open(os.path.join(KIT_DIR, spec_["file"])).size[0] * kmod_
                 lv = math.dist(a, b)

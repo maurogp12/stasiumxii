@@ -101,6 +101,13 @@ func _tower_shots() -> void:
 			await _hold(city.plate_to_world(foot + inward * 140.0) + Vector2(0, -110), 1.6, 25, name + "_inside")
 			await _hold(city.plate_to_world(foot - inward * 140.0) + Vector2(0, -110), 1.6, 25, name + "_outside")
 			k += 1
+	# Round 9: the ring corner towers (where a flat run meets a diagonal).
+	for rec in city.layers():
+		if str(rec["tag"]) != "tower" or not bool(rec.get("corner", false)):
+			continue
+		var cf := _tower_foot(rec)
+		var tag := ("N" if cf.y < centre.y else "S") + ("E" if cf.x > centre.x else "W")
+		await _hold(city.plate_to_world(cf) + Vector2(0, -130), 1.4, 25, "17_corner_%s" % tag)
 	_w.walker.visible = true
 	_w.camera_hold = false
 

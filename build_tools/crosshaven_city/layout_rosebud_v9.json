@@ -474,7 +474,8 @@
       0.0006
      ],
      "face": 545
-    }
+    },
+    "scale_mul": 1.179
    },
    "watergate_neg": {
     "file": "watergate_short_CONCEPTO.png",
@@ -582,7 +583,8 @@
      735,
      1019
     ],
-    "note": "kit3 horizontal gatehouse v5 (docs/pc-map-handoff 9e35405b, 1752x1041): flanking towers 433 px wide and 990 px tall, arch 284 px. For N and S, no shear; one piece sorted on the wall line. drop_px = curtain parapet 577 - 550 (+4.9%), the same mechanism as the diagonal, so it lines up with the wall walkway."
+    "note": "kit3 horizontal gatehouse v5 (docs/pc-map-handoff 9e35405b, 1752x1041): flanking towers 433 px wide and 990 px tall, arch 284 px. For N and S, no shear; one piece sorted on the wall line. drop_px = curtain parapet 577 - 550 (+4.9%), the same mechanism as the diagonal, so it lines up with the wall walkway.",
+    "scale_mul": 1.179
    }
   },
   "face_note": "face_px (segments): front merlon top to foot, native px. Gatehouses with face_px and curtain_foot are fitted to the run's face; the kit3 gatehouses instead carry a parapet-matched art_slope and drop_px from the coordinator's metrics (gatehouse_v3_metrics.json).",
@@ -609,7 +611,8 @@
   "snap_corner_tower_widths": 1.5,
   "gate_tower_width_art": 433,
   "snap_note": "Round 8: a gatehouse whose outer flanking tower stands within 1.5 tower widths of a ring corner slides along its edge so that tower stands on the corner (no doubled tower, no gap); the neighbour run ends under it.",
-  "foot_calibration_note": "Round 8: base_left set so each module's drawn foot (fitted foot envelope over the last 160 px of a run) lies on the wall line: diagonal feet sat 1.0-2.4 plate px above it, the flat foot 0.4 below."
+  "foot_calibration_note": "Round 8: base_left set so each module's drawn foot (fitted foot envelope over the last 160 px of a run) lies on the wall line: diagonal feet sat 1.0-2.4 plate px above it, the flat foot 0.4 below.",
+  "flat_scale_note": "Round 9: the flat N/S segment and the horizontal gatehouse are scaled uniformly by 1.179 (blocks keep their proportions) so the flat merlon line meets the diagonals' at the NE/SE corner towers. Measured in game: flat merlon tips 190.0 plate px above the foot, diagonals 222.9 (NE) and 225.2 (SE); 224/190 = 1.179 puts both corners within 2 px (627/545 = 1.15 from the art faces left 4-6 px)."
  },
  "greenery": {
   "note": "Approved map-base greenery (docs/pc-map-handoff 5edc29a3 docs/pc/look_target/crosshaven_city/work/green; pass --green <dir>). Painted at hero = 156 px, bottom-centre anchored.",
@@ -732,5 +735,16 @@
    "width_mul": 0.9,
    "note": "Round 5: no tree or cypress in a clear plaza at every gate and water gate, inside or out: an iso ellipse 1.8 gatehouse widths across (rx = 0.9 x width, ry = rx/2); flowers and low bushes stay; benches, lamps and planters stay out too. The outer woods are placed around these plazas."
   }
+ },
+ "wall_ring": {
+  "hero_screen_px": 156,
+  "targets_screen_px": {
+   "wall": 550,
+   "tower": 1000,
+   "gate": 1227,
+   "gate_tower": 1167,
+   "castle": 1200
+  },
+  "note": "kit modules are painted at these heights (hero 156). Round 9: the horizontal gatehouse is scaled 1.179, so the whole sprite is 1227 and its flanking towers 1167, still below the castle (1200)."
  }
 }

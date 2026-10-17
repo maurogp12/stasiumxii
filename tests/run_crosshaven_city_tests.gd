@@ -824,8 +824,14 @@ func _test_review_data() -> void:
 	for g in city.gates():
 		if not (str(g["id"]) in ["N", "S"]):
 			continue
-		check(absf(float(g["art_height_px"]) - 1041.0 * k_mod) < 2.0, "%s uses the v5 horizontal gatehouse (%.1f px tall)" % [g["id"], float(g["art_height_px"])])
-		check(absf(float(g["art_drop_px"]) - 27.0 * k_mod) < 0.5, "%s parapet drop 27 art px (577 vs 550) in data (%.1f)" % [g["id"], float(g["art_drop_px"])])
+		var sm: float = float(g.get("scale_mul", 1.0))
+		check(absf(float(g["art_height_px"]) - 1041.0 * k_mod * sm) < 2.0, "%s uses the v5 horizontal gatehouse (%.1f px tall)" % [g["id"], float(g["art_height_px"])])
+		check(absf(float(g["art_drop_px"]) - 27.0 * k_mod * sm) < 0.5, "%s parapet drop 27 art px (577 vs 550) in data (%.1f)" % [g["id"], float(g["art_drop_px"])])
+		# round 9: uniform scale to the diagonals' wall height; towers stay below the castle
+		check(sm > 1.1 and sm < 1.25, "%s is scaled uniformly with the flat runs (%.3f)" % [g["id"], sm])
+		var tw_h: float = 990.0 * sm
+		var castle: float = float(((ring.get("targets_screen_px", {}) as Dictionary).get("castle", 1200.0)))
+		check(tw_h < castle, "%s flanking towers (%.0f) stay below the castle (%.0f)" % [g["id"], tw_h, castle])
 		# the flanking towers' bases stay off the road through the arch
 		var tower_r: float = 433.0 * 0.5 * k_mod * 0.92
 		var hits := 0
@@ -886,6 +892,7 @@ func _test_review_data() -> void:
 				ends_at[key] = []
 			(ends_at[key] as Array).append([rr[pair[1]], rr.get(pair[2]), ref["at"], int(rr["edge"])])
 	var pairs := 0
+	var corner_tip_pairs := 0
 	for key in ends_at.keys():
 		var lst: Array = ends_at[key]
 		for e in lst:
@@ -897,12 +904,19 @@ func _test_review_data() -> void:
 			var fa: float = float(lst[0][1]["foot"])
 			var fb: float = float(lst[1][1]["foot"])
 			check(absf(fa - fb) <= 2.0, "tower %s: the runs either side share the foot line (%.1f vs %.1f)" % [key, fa, fb])
+			var ta0: float = float(lst[0][1]["tip"])
+			var tb0: float = float(lst[1][1]["tip"])
+			if int(lst[0][3]) != int(lst[1][3]):
+				# round 9: at a corner tower (flat N/S run meets a diagonal) too
+				corner_tip_pairs += 1
+				check(absf(ta0 - tb0) <= 2.0, "corner tower %s: the flat and diagonal merlon lines meet (%.1f vs %.1f)" % [key, ta0, tb0])
 			if int(lst[0][3]) == int(lst[1][3]):
 				# along a wall (same module both sides) the merlon line runs on too
 				var ta: float = float(lst[0][1]["tip"])
 				var tb: float = float(lst[1][1]["tip"])
 				check(absf(ta - tb) <= 2.0, "tower %s: the runs either side share the merlon line (%.1f vs %.1f)" % [key, ta, tb])
 	check(pairs >= 2, "towers with runs on both sides checked (%d)" % pairs)
+	check(corner_tip_pairs >= 2, "NE and SE corner merlon lines checked (%d)" % corner_tip_pairs)
 	for rec in city.layers():
 		if str(rec["tag"]) == "tower":
 			check(str(rec.get("module", "")) == "tower_v5_CONCEPTO.png", "tower %d is the v5 tower (%s)" % [int(rec["id"]), rec.get("module", "")])

@@ -109,7 +109,7 @@ def gate_half(kit_dir, cfg, mods_scale, a, b):
     key = "gatehouse" + ("_flat" if abs(sl) < 0.05 else ("_pos" if sl > 0 else "_neg"))
     spec = cfg["modules"].get(key) or cfg["modules"]["gatehouse_neg"]
     kk = sl - float(spec.get("art_slope", 0.0))
-    k = mods_scale
+    k = mods_scale * float(spec.get("scale_mul", 1.0))
     wl = (spec["wall_left"][0] * k, spec["wall_left"][1] * k + kk * spec["wall_left"][0] * k)
     wr = (spec["wall_right"][0] * k, spec["wall_right"][1] * k + kk * spec["wall_right"][0] * k)
     return math.dist(wl, wr) / 2.0
@@ -131,11 +131,14 @@ def snap_gates(cfg, poly, kit_dir, hero_plate):
         L = math.dist(a, b)
         s = ((g["at"][0] - a[0]) * (b[0] - a[0]) + (g["at"][1] - a[1]) * (b[1] - a[1])) / L
         half = gate_half(kit_dir, cfg, k, a, b)
+        sl_ = edge_slope(a, b)
+        key_ = "gatehouse" + ("_flat" if abs(sl_) < 0.05 else ("_pos" if sl_ > 0 else "_neg"))
+        lim_g = lim * float((cfg["modules"].get(key_) or {}).get("scale_mul", 1.0))
         new_s = s
         corner = None
-        if lim > 0 and s - half < lim:
+        if lim > 0 and s - half < lim_g:
             new_s, corner = half, list(a)
-        elif lim > 0 and (L - s) - half < lim:
+        elif lim > 0 and (L - s) - half < lim_g:
             new_s, corner = L - half, list(b)
         if corner is not None:
             q = (a[0] + (b[0] - a[0]) * new_s / L, a[1] + (b[1] - a[1]) * new_s / L)
@@ -306,7 +309,7 @@ def assemble(layers, images, walk, river, old_poly, poly, cfg, kit_dir, hero_pla
                               "wall_join_left": [round(WL[0], 1), round(WL[1], 1)], "wall_join_right": [round(WR[0], 1), round(WR[1], 1)],
                               "u": u, "v": v, "half_span": half, "passage": [[round(p_[0], 1), round(p_[1], 1)] for p_ in passage],
                               "passage_half_width_px": round(hw, 1), "art": m.file, "wall_slope": round(sl, 3),
-                              "art_height_px": round(m.im.height, 1), "art_width_px": round(m.im.width, 1), "shear": round(sl - m.slope, 3),
+                              "art_height_px": round(m.im.height, 1), "art_width_px": round(m.im.width, 1), "scale_mul": float(m.spec.get("scale_mul", 1.0)), "shear": round(sl - m.slope, 3),
                               "face_fit": round(fit, 3), "art_drop_px": round(drop, 1), "arch_open_px": round(arch_open, 1)})
             continue
         # split: the back side (behind a hero in the arch) and the front
@@ -337,7 +340,7 @@ def assemble(layers, images, walk, river, old_poly, poly, cfg, kit_dir, hero_pla
                           "wall_join_left": [round(WL[0], 1), round(WL[1], 1)], "wall_join_right": [round(WR[0], 1), round(WR[1], 1)],
                           "u": u, "v": v, "half_span": half, "passage": [[round(p_[0], 1), round(p_[1], 1)] for p_ in passage],
                           "passage_half_width_px": round(hw, 1), "art": m.file, "wall_slope": round(sl, 3),
-                          "art_height_px": round(m.im.height, 1), "art_width_px": round(m.im.width, 1), "shear": round(sl - m.slope, 3),
+                          "art_height_px": round(m.im.height, 1), "art_width_px": round(m.im.width, 1), "scale_mul": float(m.spec.get("scale_mul", 1.0)), "shear": round(sl - m.slope, 3),
                           "face_fit": round(fit, 3),
                           "art_drop_px": round(drop, 1), "arch_open_px": round(arch_open, 1)})
     # ---- water gates where the river crosses
