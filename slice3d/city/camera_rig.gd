@@ -63,11 +63,13 @@ func _place() -> void:
 	var b := Basis(Vector3.UP, deg_to_rad(yaw)) * Basis(Vector3.RIGHT, deg_to_rad(-pitch))
 	var d := distance
 	if solid_at.is_valid() and follow:
+		# Only when the camera itself would sit inside a building: slide it
+		# in toward the hero until it is out.
 		var steps := int(distance / 0.75)
-		for i in range(steps, 0, -1):
-			var p := focus + b * Vector3(0, 0, distance * i / steps)
-			if solid_at.call(p):
-				d = maxf(min_distance * 0.5, distance * (i - 1) / steps)
+		var i := steps
+		while i > 0 and solid_at.call(focus + b * Vector3(0, 0, distance * i / steps)):
+			i -= 1
+		d = maxf(min_distance * 0.5, distance * i / steps)
 	cam.global_transform = Transform3D(b, focus + b * Vector3(0, 0, d))
 
 
