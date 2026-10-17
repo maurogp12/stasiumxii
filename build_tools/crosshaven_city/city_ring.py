@@ -179,7 +179,8 @@ def assemble(layers, images, walk, river, old_poly, poly, cfg, kit_dir, hero_pla
         py_min = min(p_[1] for p_ in passage)
         if "split" not in m.spec:
             # flat facade (kit3 horizontal): one piece on the wall line
-            add(im, x0, y0, q[1] + 2.0, "gate_back", {"gate": g["id"], "module": m.file})
+            # just in front of the run strips that tuck under its towers (they sort at line + 2)
+            add(im, x0, y0, q[1] + 6.0, "gate_back", {"gate": g["id"], "module": m.file})
             gates_geo.append({"id": g["id"], "why": g.get("why", "layout"), "edge": i, "arch": [round(q[0], 1), round(q[1], 1)],
                               "wall_join_left": [round(WL[0], 1), round(WL[1], 1)], "wall_join_right": [round(WR[0], 1), round(WR[1], 1)],
                               "u": u, "v": v, "half_span": half, "passage": [[round(p_[0], 1), round(p_[1], 1)] for p_ in passage],
