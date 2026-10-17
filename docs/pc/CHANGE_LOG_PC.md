@@ -31,3 +31,4 @@ Crosshaven kit wall segments regraded to v7 stone (diag, horizontal, short + mir
 Crosshaven kit4: one-piece unified wall section v1 (diagonal wall + 2 towers + water-gate arch, painted ground, no alpha) - 🖼️ CONCEPTO
 2026-10-17 – walls/kit4/crosshaven_ring_newwalls_v4_APPROVED_CONCEPTO.jpg: Crosshaven wall ring concept target v4 (Luca approved 9:51 AM ET, relayed by Scenario Art); supersedes wall_section_unified_v1 as ring target. CONCEPT, not a game asset.
 2026-10-17 – walls/kit5/: Crosshaven wall kit v8 placeholders (tower, segment diag/horizontal/short + mirrors, gatehouse horizontal/diagonal + mirror, watergate diagonal + mirror, JSON foot anchors, mini ring check). CONCEPT; v8b repaint of diagonals to follow.
+2026-10-17 – walls/kit5/: tower, segment_horizontal, gatehouse_horizontal v8 repainted in ring v4 grey-beige (per Mauro); beige kept in old_v8b_beige/. Diagonals/short/watergate still beige placeholders. CONCEPT.

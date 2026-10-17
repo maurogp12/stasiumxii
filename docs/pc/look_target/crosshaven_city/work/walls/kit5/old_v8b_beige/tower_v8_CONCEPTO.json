@@ -1,0 +1,35 @@
+{
+ "plinth_centre": [
+  229.0,
+  888
+ ],
+ "plinth_radius": 227.0,
+ "height": 990,
+ "shaft_width": 314,
+ "plinth_width": 454,
+ "scale": 1.495,
+ "uniform": true,
+ "note": "walls attach with foot at plinth_centre",
+ "left_foot": [
+  229.0,
+  888
+ ],
+ "right_foot": [
+  229.0,
+  888
+ ],
+ "stone_lab_before": [
+  62.900001525878906,
+  8.699999809265137,
+  27.799999237060547
+ ],
+ "stone_lab_after": [
+  50.2,
+  3.4,
+  31.9
+ ],
+ "size": [
+  459,
+  990
+ ]
+}
