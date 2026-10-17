@@ -71,6 +71,32 @@ Image-to-3D (Meshy) works only if the input is clean. Every concept for conversi
 - **After generation:** fix the scale and pivot, decimate to the budget, check the normals, rebake textures if they're muddy, and add a collider.
 - **Log every job** (id, input, cost, result) in the delivery note.
 
+## 6b. Using Scenario (the Grok bots have it)
+
+Scenario is the main tool for **concepts and consistency**, and it can also generate 3D.
+
+1. **Train a style model first.**
+   - Once Claude approves the first slice concepts, train a **custom Scenario style model** on 15–30 approved, original images in the BG3/Wartales look.
+   - Generate every later concept with that model, so the whole game has one consistent style.
+   - Train separate models for **characters** and for **environment/props**.
+2. **Keep it consistent:**
+   - reuse the same style model, prompt template, negative prompt and aspect ratio;
+   - save good seeds;
+   - use **reference images** (image-to-image or style reference) from approved pieces.
+3. **Prompt template for conversion concepts:**
+
+   > "<object>, gritty grounded medieval fantasy, realistic proportions, worn materials, earthy palette, single object centred, 3/4 view, plain flat light-grey background, even neutral lighting, no shadows on floor, no text"
+
+   Negative prompt: "cartoon, chibi, neon, text, watermark, frame, busy background, dramatic rim light, floating parts".
+4. **Character turnarounds:** generate front, side and back on one sheet ("character sheet, A-pose, front side back views, same scale"), then check that the 3 views match.
+5. **Variants:** create house and prop variants with image-to-image from one approved base, so they stay in the same family.
+6. **3D in Scenario:**
+   - Scenario offers image-to-3D generators. Check its model list for the 3D models available and use the best one.
+   - Use them for **props and buildings**. For **characters that need a rig and animation**, use Meshy, or whichever tool gives a rigged result.
+   - In both cases, apply sections 3–5 (scale, pivot, budget, LOD, collider).
+7. **Upscale:** upscale final concepts to at least 2048 px before conversion. Don't upscale small images 4×+ and call them HD.
+8. **Credits:** don't batch dozens "to see". Make 1–4 targeted generations, pick the best and refine it. Log what you used.
+
 ## 7. Delivery
 
 - **Folder:** `docs/pc/look_target/crosshaven_city/work/3d/<category>/`. Concepts go in `work/3d_slice/concepts/`.
