@@ -27,3 +27,4 @@ Crosshaven tower v6 iso (607x990, plinth 605) + 3 gatehouses re-composited; alt 
 Crosshaven (d) props: 3 market stalls, fountain, well; short_v6b removed (v6 990 locked) - 🖼️ CONCEPTO
 Crosshaven (e) GOAL extras: gazebo, rowboat, quay, garden pieces, hedge tile, 4 boulders - 🖼️ CONCEPTO
 Crosshaven iso gatehouses v7 (walkway top, arch depth) + water gate v6 - 🖼️ CONCEPTO
+Crosshaven kit wall segments regraded to v7 stone (diag, horizontal, short + mirrors) - 🖼️ CONCEPTO
