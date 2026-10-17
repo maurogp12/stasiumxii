@@ -1,0 +1,165 @@
+{
+  "coords": "5120x2880",
+  "gates": {
+    "N": {
+      "shadow": {
+        "x": 2330,
+        "y": 378,
+        "w": 145,
+        "h": 189,
+        "file": "doors/gate_shadow_N_CONCEPTO.png",
+        "rim_px": 12
+      },
+      "layer_order": "ground(full) < door < walls(rim/jambs) < shadow < dust",
+      "door": {
+        "frame_w": 145,
+        "frame_h": 189,
+        "x": 2330,
+        "y": 378,
+        "frames": 8,
+        "fps": 12,
+        "hinge_left": {
+          "top": [
+            2330,
+            415
+          ],
+          "bottom": [
+            2330,
+            566
+          ]
+        },
+        "hinge_right": {
+          "top": [
+            2474,
+            415
+          ],
+          "bottom": [
+            2474,
+            566
+          ]
+        },
+        "files": "doors/gate_door_N_fNN_CONCEPTO.png"
+      }
+    },
+    "S": {
+      "shadow": {
+        "x": 2290,
+        "y": 2234,
+        "w": 157,
+        "h": 197,
+        "file": "doors/gate_shadow_S_CONCEPTO.png",
+        "rim_px": 13
+      },
+      "layer_order": "ground(full) < door < walls(rim/jambs) < shadow < dust",
+      "door": {
+        "frame_w": 157,
+        "frame_h": 197,
+        "x": 2290,
+        "y": 2234,
+        "frames": 8,
+        "fps": 12,
+        "hinge_left": {
+          "top": [
+            2290,
+            2271
+          ],
+          "bottom": [
+            2290,
+            2430
+          ]
+        },
+        "hinge_right": {
+          "top": [
+            2446,
+            2272
+          ],
+          "bottom": [
+            2446,
+            2430
+          ]
+        },
+        "files": "doors/gate_door_S_fNN_CONCEPTO.png"
+      }
+    },
+    "W": {
+      "shadow": {
+        "x": 370,
+        "y": 1386,
+        "w": 117,
+        "h": 189,
+        "file": "doors/gate_shadow_W_CONCEPTO.png",
+        "rim_px": 9
+      },
+      "layer_order": "ground(full) < door < walls(rim/jambs) < shadow < dust",
+      "door": {
+        "frame_w": 117,
+        "frame_h": 189,
+        "x": 370,
+        "y": 1386,
+        "frames": 8,
+        "fps": 12,
+        "hinge_left": {
+          "top": [
+            370,
+            1420
+          ],
+          "bottom": [
+            370,
+            1547
+          ]
+        },
+        "hinge_right": {
+          "top": [
+            486,
+            1453
+          ],
+          "bottom": [
+            486,
+            1560
+          ]
+        },
+        "files": "doors/gate_door_W_fNN_CONCEPTO.png"
+      }
+    },
+    "E": {
+      "shadow": {
+        "x": 4838,
+        "y": 1426,
+        "w": 97,
+        "h": 161,
+        "file": "doors/gate_shadow_E_CONCEPTO.png",
+        "rim_px": 8
+      },
+      "layer_order": "ground(full) < door < walls(rim/jambs) < shadow < dust",
+      "door": {
+        "frame_w": 97,
+        "frame_h": 161,
+        "x": 4838,
+        "y": 1426,
+        "frames": 8,
+        "fps": 12,
+        "hinge_left": {
+          "top": [
+            4838,
+            1469
+          ],
+          "bottom": [
+            4838,
+            1586
+          ]
+        },
+        "hinge_right": {
+          "top": [
+            4934,
+            1464
+          ],
+          "bottom": [
+            4934,
+            1567
+          ]
+        },
+        "files": "doors/gate_door_E_fNN_CONCEPTO.png"
+      }
+    }
+  }
+}

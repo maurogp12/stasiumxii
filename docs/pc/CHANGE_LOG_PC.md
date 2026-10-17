@@ -40,3 +40,4 @@ Crosshaven kit4: one-piece unified wall section v1 (diagonal wall + 2 towers + w
 Crosshaven ring HD v2.1 concept (lit gates/tunnels, brighter, new portcullis positions) — 🖼️ CONCEPTO
 Crosshaven ring HD v2.3 concept (hand-repaint pass: mortar, W/E rims, passage perspective) — 🖼️ CONCEPTO
 Crosshaven ring HD v2.4 concept (round vaults, softer mortar, lighter roof lines) — 🖼️ CONCEPTO
+Crosshaven gates: wooden double doors replace portcullis (Luca), see-through passages, no dust — 🖼️ CONCEPTO
