@@ -72,10 +72,46 @@ func _go() -> void:
 	elif _set == "round10":
 		await _round10_shots()
 		await _tower_shots()
+	elif _set == "v4":
+		await _v4_shots()
 	else:
 		await _stills()
 		await _tower_shots()
 	quit(0)
+
+
+## Round 18: Mauro's ring v4 image as the plate. The wide shot frames the
+## whole plate (the image's own framing); then the hero at every gate.
+func _v4_shots() -> void:
+	_w.camera_hold = true
+	_w.npc_plates.visible = false
+	_w.walker.visible = false
+	var rect: Rect2 = city.world_rect()
+	var vp: Vector2 = _w.get_viewport().get_visible_rect().size
+	await _hold(rect.get_center(), minf(vp.x / rect.size.x, vp.y / rect.size.y), 40, "20_wide_ring_goal")
+	_w.walker.visible = true
+	for g in city.gates():
+		if _only != "" and not (str(g["id"]) in _only.split(",")):
+			continue
+		var cells: Array = g.get("cells", [])
+		if cells.is_empty():
+			continue
+		var out_c := Vector2i(int(cells[0][0]), int(cells[0][1]))
+		var arch_w: Vector2 = city.plate_to_world(Vector2(float(g["arch"][0]), float(g["arch"][1])))
+		_place(_near_free(out_c), "n")
+		await _hold(arch_w + Vector2(0, -40), 1.1, 30, "07_gate_%s" % g["id"])
+		var under := out_c
+		for c in cells:
+			var cc := Vector2i(int(c[0]), int(c[1]))
+			if BoardVisualSort.cell_to_local(cc).distance_to(arch_w) < BoardVisualSort.cell_to_local(under).distance_to(arch_w):
+				under = cc
+		_place(under, "n")
+		await _hold(_w.walker.position + Vector2(0, -60), 1.8, 30, "14_arch_close_%s" % g["id"])
+		var in_c := Vector2i(int(cells[cells.size() - 1][0]), int(cells[cells.size() - 1][1]))
+		_place(_near_free(in_c), "s")
+		await _hold(_w.walker.position + Vector2(0, -60), 1.8, 30, "14_inside_%s" % g["id"])
+	_w.npc_plates.visible = true
+	_w.camera_hold = false
 
 
 ## Round 8: every tower on the NW and SW diagonals (mid-edge and corners),

@@ -1,0 +1,56 @@
+{
+ "note": "Round 18: Mauro's ring v4 concept image is the city plate. Geometry in image px (1280x720); the plate is x4. Towers: keep = the 2 flanking each land gate, the towers beside the 2 water tunnels, 1 mid-wall tower on each of the two longest stretches. The rest are painted out by cloning the neighbouring wall along its slope.",
+ "source": "source/ring_v4_concept.jpg",
+ "wall_height": 62,
+ "strip_px": 6,
+ "block_depth": 14,
+ "block_below": 3,
+ "towers": [
+  {"name": "W_outer", "keep": true, "kind": "gate", "box": [48, 236, 107, 383], "base": [77, 377]},
+  {"name": "W_inner", "keep": true, "kind": "gate", "box": [129, 298, 190, 433], "base": [160, 429]},
+  {"name": "NW_mid", "keep": true, "kind": "mid", "box": [283, 123, 337, 257], "base": [310, 252]},
+  {"name": "N_left", "keep": true, "kind": "gate", "box": [504, 18, 565, 151], "base": [535, 146]},
+  {"name": "N_right", "keep": true, "kind": "gate", "box": [636, 18, 698, 151], "base": [667, 146]},
+  {"name": "NE_tunnel", "keep": true, "kind": "water_gate", "box": [885, 66, 947, 199], "base": [916, 195]},
+  {"name": "E_tunnel", "keep": true, "kind": "water_gate", "box": [1079, 168, 1135, 286], "base": [1107, 281]},
+  {"name": "E_gate", "keep": true, "kind": "gate", "box": [1165, 210, 1223, 340], "base": [1194, 336]},
+  {"name": "SE_mid", "keep": true, "kind": "mid", "box": [917, 426, 978, 560], "base": [947, 556]},
+  {"name": "S_right", "keep": true, "kind": "gate", "box": [619, 474, 681, 616], "base": [650, 612]},
+  {"name": "S_left", "keep": true, "kind": "gate", "box": [499, 474, 561, 616], "base": [530, 612]},
+  {"name": "SW_tunnel", "keep": true, "kind": "water_gate", "box": [382, 423, 444, 556], "base": [413, 552]},
+  {"name": "NW_corner", "box": [148, 196, 211, 325], "base": [179, 320], "slope_left": -0.44, "slope_right": -0.5},
+  {"name": "NW_upper", "box": [387, 71, 447, 186], "base": [416, 181], "slope_left": -0.55, "slope_right": -0.47},
+  {"name": "N_corner", "box": [778, 18, 840, 153], "base": [809, 148], "slope_left": 0.0, "slope_right": 0.46},
+  {"name": "SW_upper", "box": [262, 369, 325, 497], "base": [293, 493], "slope_left": 0.62, "slope_right": 0.55},
+  {"name": "SE_corner", "box": [792, 485, 850, 607], "base": [821, 603], "slope_left": 0.0, "slope_right": -0.5},
+  {"name": "SE_upper", "box": [1028, 366, 1088, 496], "base": [1058, 492], "slope_left": -0.5, "slope_right": -0.5}
+ ],
+ "walls": [
+  {"id": "NW", "a": [70, 330], "b": [537, 136]},
+  {"id": "N", "a": [520, 134], "b": [826, 134], "gate": true, "height": 72},
+  {"id": "NE", "a": [820, 136], "b": [1196, 326]},
+  {"id": "SE", "a": [835, 600], "b": [1272, 383], "gate": true, "height": 82},
+  {"id": "S", "a": [498, 607], "b": [836, 607], "gate": true, "height": 76},
+  {"id": "SW", "a": [158, 412], "b": [502, 598]},
+  {"id": "W", "a": [70, 375], "b": [162, 408], "gate": true, "height": 80}
+ ],
+ "polygon": [[77, 372], [535, 140], [810, 134], [1194, 330], [1268, 388], [835, 602], [500, 608], [160, 425]],
+ "gates": [
+  {"id": "N", "arch": [600, 128], "outside": [600, 96], "inside": [600, 168], "join_left": [565, 134], "join_right": [636, 134], "road_end": [600, 14], "half_width": 9},
+  {"id": "S", "arch": [590, 598], "outside": [590, 645], "inside": [590, 560], "join_left": [561, 607], "join_right": [619, 607], "road_end": [576, 712], "half_width": 9},
+  {"id": "W", "arch": [108, 378], "outside": [72, 404], "inside": [165, 352], "join_left": [77, 377], "join_right": [129, 400], "road_end": [6, 408], "half_width": 9},
+  {"id": "E", "arch": [1218, 382], "outside": [1258, 412], "inside": [1176, 358], "join_left": [1194, 336], "join_right": [1262, 388], "road_end": [1275, 428], "half_width": 9}
+ ],
+ "water_gates": [
+  {"id": "NE", "at": [966, 205], "flanks": ["NE_tunnel", "E_tunnel"]},
+  {"id": "SW", "at": [466, 565], "flanks": ["SW_tunnel", "S_left"]}
+ ],
+ "bridges": [
+  {"id": "bridge_0", "deck": [690, 418, 796, 478], "ends": [[694, 432], [792, 470]]},
+  {"id": "bridge_1", "deck": [577, 464, 686, 520], "ends": [[582, 480], [682, 512]]}
+ ],
+ "spawn": [590, 652],
+ "exit": [578, 700],
+ "npc_spots": [[640, 300], [500, 330], [780, 330], [600, 200], [1000, 370], [400, 350], [300, 300], [700, 250], [860, 400], [1080, 330], [560, 420], [720, 420], [450, 250]],
+ "plot_spots": [[420, 300], [520, 430], [760, 410], [1040, 330], [860, 240], [700, 220], [330, 380], [960, 300], [1100, 360], [480, 220]]
+}
