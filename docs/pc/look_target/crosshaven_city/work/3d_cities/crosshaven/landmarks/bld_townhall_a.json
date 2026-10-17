@@ -1,24 +1,30 @@
 {
  "label": "🖼️ IMAGEN / CONCEPTO, TODAVÍA HAY QUE CONSTRUIRLO",
  "name": "bld_townhall_a",
- "concept": "bld_townhall_CONCEPTO_.png",
- "height_m": 9.0,
+ "concept": "bld_townhall_v2_CONCEPTO_.png",
+ "height_m": 12.0,
  "footprint_m": [
-  10.053,
-  5.482
+  9.906,
+  6.792
  ],
  "pivot": "footprint centre on ground (y=0)",
  "front": "+Z",
  "units": "metres, Y-up",
  "tris": {
-  "LOD0": 24371,
-  "LOD1": 12185,
-  "LOD2": 4873
+  "LOD0": 24639,
+  "LOD1": 12318,
+  "LOD2": 4927
  },
  "collider": "bld_townhall_a-col.glb (convex hull)",
  "textures": "embedded JPEG q82: LOD0 2048, LOD1 1024, LOD2 512",
- "source_glb": "../raw/bld_townhall_82TKLJ.glb",
- "uniform_scale": 10.0532,
+ "source_glb": "../raw/_tmp_townhall.glb",
+ "uniform_scale": 1.0,
  "status": "preview mesh, not tested in game",
- "facing_note": "Front (doors) faces +Z; for wall pieces +Z = outside. Build agent rotates on import."
+ "version": "v2",
+ "xz_fit_scale": [
+  1,
+  1
+ ],
+ "facing_note": "Main entrance faces +Z. Build agent rotates on import.",
+ "design": "main block ~9 m, clock tower tip 12 m"
 }
