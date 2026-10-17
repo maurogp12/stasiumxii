@@ -124,3 +124,10 @@ Reviewed on the base without buildings (`cxbase/base_walls.jpg`).
     - A test walks the hero through every gate both ways.
     - **The straight wall is approved** (Mauro: "esta me gusta, cómo tiene el espacio en medio"). This is the Meshy straight curtain wall with a walkway between the crenellations (`wallstraight`, from `work/painted/../wall concept`). Keep that walkway visible in every facing.
 14. **Building size and roofs** (Mauro, on the house scale check d9760306): buildings are repainted natively at **3× hero height** (about 2.4× the `cx_built` width), with one factor for all buildings. **Roofs are a mix** of blue slate and red tile, as in the prototype.
+15. **House styles** (Mauro, 17 Oct):
+    - **No thatched roofs in the city** ("no quiero casas de paja en la ciudad"). Every `cx_cottage_thatch_*` sprite is replaced, re-roofed in slate or tile.
+    - **NPC houses** are their own designs, different from the player houses.
+    - **Player houses by tier:**
+      - **Normal** looks like an ordinary NPC town house, at the same level;
+      - **Rare** looks clearly better;
+      - **Legendary** looks luxurious.
