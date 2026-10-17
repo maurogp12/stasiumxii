@@ -51,3 +51,4 @@ Crosshaven kit nature + extras + Groups 3-5 fixes (signs, anims, fence ends); CO
 Crosshaven kit Group 1 v3 walls: 700px gatehouse, 455px arch, recessed parapet, wall variants; CONCEPTO, not built
 Crosshaven kit small v2: hedge end/corner, clean signs, round mill wheel; CONCEPTO, not built
 3D slice concepts (CONCEPTO): hero M/F, 2 bandits, weapons, 4 props, gate arch, wall section, south gate day/dusk key art, JSON per piece
+2026-10-17 Crosshaven 3D slice props (barrel, barricade, cart, stall, gate arch, wall; LOD0/1/2 + collider + JSON) and wall walkway redo concept by Scenario Art — CONCEPTO, not wired
