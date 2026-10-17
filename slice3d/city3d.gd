@@ -24,6 +24,7 @@ var rig
 var life
 var hud
 var start_hour := 10.0
+var start_class := "bastion"
 var build_ms := 0
 var _marker: MeshInstance3D
 
@@ -32,6 +33,8 @@ func _ready() -> void:
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--city="):
 			city_path = a.trim_prefix("--city=")
+		elif a.begins_with("--class="):
+			start_class = a.trim_prefix("--class=")
 		elif a.begins_with("--hour="):
 			start_hour = float(a.trim_prefix("--hour="))
 	var t0 := Time.get_ticks_msec()
@@ -73,10 +76,30 @@ func _ready() -> void:
 	hud.name = "Hud"
 	add_child(hud)
 	hud.setup(self)
+	set_class(start_class)
 	env.hour_changed.connect(_on_hour)
 	env.set_hour(start_hour)
 	build_ms = Time.get_ticks_msec() - t0
 	print("city3d: %s built in %d ms (%s)" % [plan.city.get("name", ""), build_ms, builder.stats])
+
+
+## Switch the hero's class: model (when the class has one) and spell bar.
+func set_class(cls: String) -> void:
+	hero.set_class(cls)
+	hud.set_class(cls)
+
+
+## Hotbar click outside combat: show the spell's motion (no rules run).
+func preview_spell(sid: String) -> void:
+	var d: Dictionary = SpellKits.spell(sid)
+	var clip := "cast"
+	if str(d.get("target", "")) == "enemy":
+		clip = "attack_melee_1" if int(d.get("max_range", 1)) <= 1 else "attack_ranged"
+	if str(d.get("engine_on_connect", "")).contains("push") or sid in ["shoulder", "bash"]:
+		clip = "push"
+	if str(d.get("move_mode", "")) == "teleport":
+		clip = "dodge"
+	hero.play_once(clip)
 
 
 func _on_hour(h: float) -> void:

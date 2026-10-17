@@ -1,0 +1,27 @@
+{
+ "format": "stasium.clip_map",
+ "format_version": 1,
+ "status": "proposed",
+ "note": "The 18-clip character standard (lowercase snake_case, 30 fps, in place) and the Meshy animation-library action used for each. walk and run come free with the rig. Swap any action id here; the fetch script follows this file.",
+ "fps": 30,
+ "clips": {
+  "idle": 0,
+  "walk": "rig",
+  "run": "rig",
+  "turn_l": 576,
+  "turn_r": 586,
+  "attack_melee_1": 219,
+  "attack_melee_2": 92,
+  "attack_ranged": 236,
+  "cast": 125,
+  "hit": 178,
+  "block": 138,
+  "push": 259,
+  "dodge": 156,
+  "downed": 187,
+  "death": 189,
+  "interact": 276,
+  "sit": 33,
+  "victory": 59
+ }
+}

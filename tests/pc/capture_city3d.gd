@@ -37,6 +37,11 @@ func _go() -> void:
 			await _gatecheck()
 		"hero":
 			await _herocheck()
+		"keyart":
+			await _keyart()
+			await _keyart(18.6, "00_keyart_wide_dusk.png")
+		"classes":
+			await _classcheck()
 		"clip":
 			await _clip()
 		_:
@@ -183,3 +188,37 @@ func _herocheck() -> void:
 		await process_frame
 	m.rig.snap()
 	await _grab("h_walk.png")
+
+
+## Framed like work/3d_cities/crosshaven/keyart/crosshaven_wide_day_CONCEPTO_.jpg:
+## high 3/4 view from beyond the south gate, the castle at the top.
+func _keyart(hour := 10.0, name := "00_keyart_wide_day.png") -> void:
+	m.env.set_hour(hour)
+	var castle := _piece("castle")
+	var sg := Vector3.ZERO
+	for g in m.builder.gate_doors:
+		if g["id"] == "S":
+			sg = g["center"]
+	var d := Vector2(sg.x - castle.x, sg.z - castle.z).normalized()
+	var mid := Vector3(m.plan.ring_center.x, 0, m.plan.ring_center.y) - Vector3(d.x, 0, d.y) * 8.0
+	m.hud.visible = false
+	m.rig.cam.fov = 38.0
+	_view(mid, rad_to_deg(atan2(d.x, d.y)), 40, 360)
+	await _grab(name)
+	m.hud.visible = true
+
+
+func _classcheck() -> void:
+	m.env.set_hour(10.5)
+	m.rig.distance = 8.0
+	m.rig.pitch = 25.0
+	m.rig.snap()
+	await _grab("c_bastion_idle.png")
+	m.preview_spell("bash")
+	for i in 20:
+		await process_frame
+	await _grab("c_bastion_bash.png")
+	m.set_class("kestrel")
+	for i in 10:
+		await process_frame
+	await _grab("c_kestrel_hero_male.png")

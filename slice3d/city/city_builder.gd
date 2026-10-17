@@ -51,6 +51,7 @@ func build(p) -> void:
 	_build_bridges()
 	for piece in plan.pieces:
 		_build_piece(piece)
+	_build_outskirts()
 	stats["batched"] = kit.flush(self)
 
 
@@ -522,6 +523,70 @@ func _build_bridges() -> void:
 		# piers
 		if (c.x + c.y) % 3 == 0:
 			kit.add_box("pier", rail, v3(p, -0.9), Vector3(cm * 0.6, 1.8, cm * 0.6))
+
+
+# ---------------------------------------------------------------- outskirts
+
+## Woods and rocks round the walls (data: city "outskirts"), in clumps from a
+## seeded noise, off the roads, the river and the ring's apron.
+func _build_outskirts() -> void:
+	var o: Dictionary = plan.city.get("outskirts", {})
+	if o.is_empty():
+		return
+	var rng := RandomNumberGenerator.new()
+	rng.seed = int(o.get("seed", 7))
+	var noise := FastNoiseLite.new()
+	noise.seed = int(o.get("seed", 7))
+	noise.frequency = float(o.get("clump", 0.025))
+	var apron := float(o.get("apron_m", 26.0))
+	var keep := float(o.get("density", 0.45))
+	var ring_r := 0.0
+	for p in plan.ring:
+		ring_r = maxf(ring_r, (p as Vector2).distance_to(plan.ring_center))
+	var size: Vector2 = plan.size_m()
+	var extra := float(o.get("beyond_m", 220.0))
+	var leaf_cols := [kit.color("leaf_oak"), kit.color("leaf_elm"), kit.color("leaf_cypress")]
+	var n := 0
+	var step := float(o.get("step_m", 5.0))
+	var x := -extra
+	while x < size.x + extra:
+		var z := -extra
+		while z < size.y + extra:
+			var p := Vector2(x + rng.randf_range(-2.0, 2.0), z + rng.randf_range(-2.0, 2.0))
+			z += step
+			if p.distance_to(plan.ring_center) < ring_r + apron:
+				continue
+			var v := noise.get_noise_2d(p.x, p.y)
+			if v < 1.0 - keep * 2.0:
+				continue
+			var c := plan.world_to_cell(p)
+			var clear := true
+			for dy in range(-2, 3):
+				for dx in range(-2, 3):
+					var ch: String = plan.terrain_char(c + Vector2i(dx, dy))
+					if ch == "d" or ch == "w" or ch == "c":
+						clear = false
+			if not clear:
+				continue
+			var h := rng.randf_range(7.0, 13.0)
+			var kind := rng.randi() % 3
+			var tint := (leaf_cols[kind] as Color).darkened(rng.randf() * 0.25)
+			kit.add_cyl("wood_trunk", kit.mat("bark", 0.95), v3(p), 0.3, h * 0.5, 6)
+			if kind == 2:
+				kit.add_cone("wood_conifer", kit.mat_vc(0.95), v3(p, h * 0.15), rng.randf_range(1.8, 2.6), h, 8, tint)
+			else:
+				var r := rng.randf_range(2.6, 4.2)
+				kit.add_sphere("wood_crown", kit.mat_vc(0.95), v3(p, h * 0.62), Vector3(r * 2.0, r * 1.7, r * 2.0), tint)
+			n += 1
+		x += step
+	# a few boulders
+	for i in int(o.get("rocks", 120)):
+		var p := Vector2(rng.randf_range(-extra, size.x + extra), rng.randf_range(-extra, size.y + extra))
+		if p.distance_to(plan.ring_center) < ring_r + apron:
+			continue
+		var s := rng.randf_range(1.0, 3.2)
+		kit.add_sphere("boulder", kit.mat("stone", 1.0), v3(p, s * 0.2), Vector3(s * 1.4, s * 0.8, s), Color.WHITE.darkened(rng.randf() * 0.3))
+	stats["outskirt_trees"] = n
 
 
 # ---------------------------------------------------------------- pieces
@@ -1023,7 +1088,7 @@ func _bush(pc: Dictionary) -> void:
 func _hedge(pc: Dictionary, spec: Dictionary) -> void:
 	# Clipped hedges: one rounded block per footprint cell, so an L-shaped
 	# corner piece reads as an L and a section as a row.
-	var h := float(spec.get("h", 1.5)) * 0.8
+	var h := float(spec.get("h", 1.5)) * 0.6
 	var m := kit.mat("leaf_oak", 0.95)
 	var cells: Array = pc["cells"]
 	var keep: Array = cells

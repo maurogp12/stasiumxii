@@ -7,12 +7,10 @@ extends Node3D
 
 const ModelLoader := preload("res://slice3d/city/model_loader.gd")
 const Retarget := preload("res://slice3d/city/humanoid_retarget.gd")
-const MODEL := "res://art/3d/characters/hero_male/hero_male_rigged.glb"
-const ANIMS := {
-	"walk": "res://art/3d/characters/hero_male/hero_male_walk.glb",
-	"run": "res://art/3d/characters/hero_male/hero_male_run.glb",
-	"idle": "res://art/3d/characters/hero_male/hero_male_idle.glb",
-}
+const CHAR_DIR := "res://art/3d/characters/"
+const CLIP_MAP := "res://data/world/city3d/clip_map.json"
+const CLASSES := "res://data/world/city3d/classes3d.json"
+const LOOPING := ["idle", "walk", "run", "sit"]
 
 signal arrived
 
@@ -29,8 +27,10 @@ var anim: AnimationPlayer
 var _bob_t := 0.0
 var _body: Node3D
 var _anim_names := {}
-var class_id := "ironjaw"
+var class_id := "bastion"
+var character := ""
 var _skel_path := ""
+var _oneshot := false
 
 
 func setup(p, n) -> void:
@@ -39,8 +39,38 @@ func setup(p, n) -> void:
 	_build_body()
 
 
+## The 3D character a class uses (data: classes3d.json).
+static func character_for(cls: String) -> String:
+	var doc: Variant = JSON.parse_string(FileAccess.get_file_as_string(CLASSES)) if FileAccess.file_exists(CLASSES) else {}
+	var models: Array = ((doc as Dictionary).get("classes", {}) as Dictionary).get(cls, {}).get("models", ["hero_male"])
+	for m in models:
+		if FileAccess.file_exists(CHAR_DIR + "%s/%s_rigged.glb" % [m, m]):
+			return str(m)
+	return ""
+
+
+## Switch class: swaps the model when that class has its own.
+func set_class(cls: String) -> void:
+	class_id = cls
+	var ch := character_for(cls)
+	if ch == character and model != null:
+		return
+	character = ch
+	if model != null:
+		model.queue_free()
+		model = null
+		anim = null
+	if _body != null:
+		_body.queue_free()
+		_body = null
+	_anim_names.clear()
+	_build_body()
+
+
 func _build_body() -> void:
-	model = ModelLoader.instance(MODEL)
+	if character == "":
+		character = character_for(class_id)
+	model = ModelLoader.instance(CHAR_DIR + "%s/%s_rigged.glb" % [character, character]) if character != "" else null
 	if model != null:
 		add_child(model)
 		anim = ModelLoader.find_player(model)
@@ -116,12 +146,16 @@ func _attach_anims() -> void:
 	else:
 		lib = AnimationLibrary.new()
 		anim.add_animation_library("", lib)
-	for key in ANIMS.keys():
-		var clips: Dictionary = ModelLoader.animations(ANIMS[key])
+	var cmap: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(CLIP_MAP)).get("clips", {})
+	for key in cmap.keys():
+		var path := CHAR_DIR + "%s/%s_%s.glb" % [character, character, key]
+		if not FileAccess.file_exists(path):
+			continue
+		var clips: Dictionary = ModelLoader.animations(path)
 		for clip_name in clips.keys():
 			var a: Animation = (clips[clip_name] as Animation).duplicate(true)
 			Retarget.retarget_animation(a, true, _skel_path)
-			a.loop_mode = Animation.LOOP_LINEAR
+			a.loop_mode = Animation.LOOP_LINEAR if key in LOOPING else Animation.LOOP_NONE
 			if not lib.has_animation(key):
 				lib.add_animation(key, a)
 			_anim_names[key] = key
@@ -133,7 +167,23 @@ func _attach_anims() -> void:
 				_anim_names[key] = str(a)
 
 
+## Play a one-shot clip (attack, cast, victory...) then return to idle/walk.
+func play_once(key: String) -> bool:
+	if anim == null or not _anim_names.has(key):
+		return false
+	anim.play(str(_anim_names[key]), 0.15)
+	_oneshot = true
+	return true
+
+
+func clip_names() -> Array:
+	return _anim_names.keys()
+
+
 func _play(key: String) -> void:
+	if _oneshot and anim != null and anim.is_playing():
+		return
+	_oneshot = false
 	if anim == null:
 		return
 	var n := str(_anim_names.get(key, _anim_names.get("walk", "")))

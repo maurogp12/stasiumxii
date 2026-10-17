@@ -51,8 +51,9 @@ func setup(city: Dictionary) -> void:
 	env.fog_mode = Environment.FOG_MODE_EXPONENTIAL
 	env.fog_sky_affect = 0.35
 	env.adjustment_enabled = true
-	env.adjustment_saturation = 0.9
-	env.adjustment_contrast = 1.06
+	var grade: Dictionary = city.get("grade", {})
+	env.adjustment_saturation = float(grade.get("saturation", 0.95))
+	env.adjustment_contrast = float(grade.get("contrast", 1.06))
 	world_env = WorldEnvironment.new()
 	world_env.environment = env
 	add_child(world_env)
