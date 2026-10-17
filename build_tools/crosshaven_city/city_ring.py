@@ -602,8 +602,10 @@ def assemble(layers, images, walk, river, old_poly, poly, cfg, kit_dir, hero_pla
         # centred: the base as in the v5 gatehouse (13 art px under the foot line)
         sort_y = p[1] + 3.0
         tower_sorts.append((p[0], p[1], sort_y))
-        add(tm.im, p[0] - t_anchor[0], p[1] - t_anchor[1], sort_y, "tower",
-            {"module": tm.file, "corner": is_corner, "tower_kind": kind, "edge": i, "s": round(st, 1),
+        tk = mods.get("tower_" + kind) or tm
+        tka = tk.p("base")
+        add(tk.im, p[0] - tka[0], p[1] - tka[1], sort_y, "tower",
+            {"module": tk.file, "corner": is_corner, "tower_kind": kind, "edge": i, "s": round(st, 1),
              "wall_point": [round(p[0], 1), round(p[1], 1)], "axis_x": round(p[0], 1)})
     log["tower_spacing"] = spacing_log
     log["stone_chroma"] = dict(CHROMA_LOG)
@@ -624,24 +626,8 @@ def assemble(layers, images, walk, river, old_poly, poly, cfg, kit_dir, hero_pla
                 axes = sorted(at(i, st_)[0] for st_ in f["towers_s"])
                 cols = rec_["x"] + np.arange(ww_)
                 arr[:, (cols < axes[0]) | (cols > axes[1]), 3] = 0
-                ta = np.asarray(tm.im)[..., 3] > 40
-                tw_ = ta.shape[1]
-                t_bottom = np.array([np.nonzero(ta[:, c])[0].max() if ta[:, c].any() else -1 for c in range(tw_)])
-                for st_ in f["towers_s"]:
-                    tp = at(i, st_)
-                    tx0 = tp[0] - t_anchor[0]
-                    ty0 = tp[1] - t_anchor[1]
-                    # below the tower's base line, across the tower and 6 px beside it
-                    by = int(round(ty0 + t_bottom.max() - rec_["y"]))
-                    for c in range(-6, tw_ + 6):
-                        bx = int(round(tx0 + c - rec_["x"]))
-                        px_ = int(round(tx0 + c))
-                        if 0 <= bx < ww_ and 0 <= px_ < W_:
-                            for rr_ in range(max(0, by + 1), hh_):
-                                py_ = int(rec_["y"]) + rr_
-                                # over dry ground only: the block's piers in the water stay
-                                if 0 <= py_ < H_ and not river_d[py_, px_]:
-                                    arr[rr_, bx, 3] = 0
+                # round 14: the block keeps its piers and stonework down to the
+                # ground and the water; the tower draws in front of it
                 images[rec_["id"]] = Image.fromarray(arr, "RGBA")
                 f["axes"] = axes
     for i in range(ne):

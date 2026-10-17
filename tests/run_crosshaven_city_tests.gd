@@ -933,7 +933,7 @@ func _test_review_data() -> void:
 	check(corner_tip_pairs >= 2, "NE and SE corner merlon lines checked (%d)" % corner_tip_pairs)
 	for rec in city.layers():
 		if str(rec["tag"]) == "tower":
-			check(str(rec.get("module", "")) == "tower_v5_CONCEPTO.png", "tower %d is the v5 tower (%s)" % [int(rec["id"]), rec.get("module", "")])
+			check(str(rec.get("module", "")).begins_with("tower_"), "tower %d uses a tower sprite from data (%s)" % [int(rec["id"]), rec.get("module", "")])
 	# Round 10: every tower has the same size, stands centred on the wall
 	# line, the runs enter it symmetrically, and the rhythm is even.
 	var k_mod2: float = float((ring.get("factors", {}) as Dictionary).get("module_scale", 0.3495))
@@ -1050,7 +1050,14 @@ func _test_review_data() -> void:
 	check(audit.size() >= 15, "joins audited (%d)" % audit.size())
 	for j in audit:
 		check(int(j["gap_px"]) == 0, "join %s (%s) at %s has no gap (%d px)" % [j["id"], j["kind"], j["at"], int(j["gap_px"])])
-	check(int(city.doc.get("block_below_tower_px", -1)) == 0, "no water-gate block shows below a tower base (%d px)" % int(city.doc.get("block_below_tower_px", -1)))
+	# round 14: the block keeps its stonework down to the ground (no grass under the deck)
+	for wg in city.doc.get("water_gates", []):
+		var found := false
+		for rec in city.layers():
+			if str(rec["tag"]) == "watergate" and absf(float(rec["x"]) + float(rec["w"]) * 0.5 - float(wg["at"][0])) < 260.0 and absf(float(rec["sort_y"]) - float(wg["at"][1])) < 260.0:
+				found = true
+				check(float(rec["y"]) + float(rec["h"]) >= float(wg["at"][1]) + 20.0, "water gate %s keeps its stonework down to the ground" % [wg["at"]])
+		check(found, "water gate block at %s" % [wg["at"]])
 	# Round 11: the recoloured stone has the tower body's mean chroma (5%).
 	var chroma: Dictionary = city.doc.get("stone_chroma", {})
 	for want in ["segment_neg", "segment_pos", "segment_flat", "watergate_neg", "watergate_pos"]:

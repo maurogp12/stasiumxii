@@ -611,7 +611,7 @@
   },
   "water_gate_towers": {
    "enabled": true,
-   "note": "Rounds 10 and 13: every water gate is flanked by two v5 towers placed from the block centre outward at the first spot where the whole tower base outline is on dry ground (a gatehouse tower or corner already there counts as the flank). The block is trimmed to between the tower axes and below the tower bases, so it ends inside the towers."
+   "note": "Rounds 10, 13, 14: every water gate is flanked by two towers placed from the block centre outward at the first spot where the whole tower base outline is on dry ground (sliding further out only to keep the rhythm even, the block end staying inside the footprint). The block is trimmed to between the tower axes and otherwise keeps its piers down to the ground and water; the tower draws in front of it."
   },
   "stone_recolor": {
    "ref": "tower_v5_CONCEPTO.png",
@@ -644,7 +644,8 @@
    "feather_px": 5.0,
    "note": "Round 13: soft contact shadows baked into the ground: an iso ellipse (1.2 x the base radius, centred 0.3 radius in front of the base) under every tower and gatehouse tower, and a 20 px strip along every wall foot, feathered 5 px, about 30% opacity; not across gate passages or the river.",
    "tower_forward": 0.3
-  }
+  },
+  "tower_kinds_note": "Round 14 (ready for tower v6): ring towers take modules.tower; a kind can name its own sprite with modules.tower_wall, modules.tower_corner or modules.tower_water_gate (file, base anchor, scale_mul), falling back to modules.tower. Gatehouses are modules.gatehouse_flat / gatehouse_neg / gatehouse_pos (file, anchors: wall_left, wall_right, arch, split, arch_open_x, drop_px, art_slope, scale_mul). Swapping in v6 is a data change plus re-measured anchors."
  },
  "greenery": {
   "note": "Approved map-base greenery (docs/pc-map-handoff 5edc29a3 docs/pc/look_target/crosshaven_city/work/green; pass --green <dir>). Painted at hero = 156 px, bottom-centre anchored.",
