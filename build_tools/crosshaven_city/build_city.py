@@ -1330,6 +1330,8 @@ def apply_ring_kit(layers, images, ground_np, walk, river, old_poly):
     joined to the streets inside and to a road outside. Returns the gate log,
     the street pixels to drop (grass from now on) and the new wall polygon."""
     cfg = dict(LAYOUT["ring_kit"])
+    # kit5: anchors from each piece's JSON, resolved once for every step
+    cfg["modules"] = {k: (RING.load_anchors(KIT_DIR, v) if v.get("anchors_json") else v) for k, v in cfg["modules"].items()}
     poly = [tuple(map(float, p)) for p in cfg["polygon"]]
     log = {"modified": set(), "towers_cleaned": [], "gates": [], "contacts_before": [], "contacts_after": []}
     log["contacts_before"] = CG.find_contacts(ground_np, river, poly, [])

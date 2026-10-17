@@ -345,10 +345,25 @@ def load_anchors(kit_dir, spec):
     d = _json.load(open(os.path.join(kit_dir, spec["anchors_json"])))
     if spec.get("anchors_key"):
         d = d[spec["anchors_key"]]
-    rename = {"foot_left": "wall_left", "foot_right": "wall_right"}
+    rename = {"foot_left": "wall_left", "foot_right": "wall_right", "left_foot": "wall_left", "right_foot": "wall_right",
+              "slope": "art_slope", "arch_opening_x": "arch_open_x", "plinth_centre": "base", "plinth_radius": "base_radius"}
     out = {}
     for k, v in d.items():
         out[rename.get(k, k)] = v
+    # kit5: derived anchors
+    if "shaft_width" in d:
+        out["body_radius"] = float(d["shaft_width"]) / 2.0
+    if "base_radius" in out and "plinth_front" not in out:
+        out["plinth_front"] = float(out["base_radius"]) * 0.5
+    if "wall_left" in out and "wall_right" in out and "base" not in out:
+        (x0, y0), (x1, y1) = out["wall_left"], out["wall_right"]
+        out.setdefault("base_left", [x0, y0])
+        out.setdefault("usable_x", [x0, x1])
+        if "arch_open_x" in out:
+            ax_ = (float(out["arch_open_x"][0]) + float(out["arch_open_x"][1])) / 2.0
+            ay_ = y0 + (y1 - y0) * (ax_ - x0) / float(x1 - x0)
+            out.setdefault("arch", [ax_, ay_])
+            out.setdefault("split", [ax_, 0])
     if "wall_left" in out and "wall_right" in out and "art_slope" not in out:
         (x0, y0), (x1, y1) = out["wall_left"], out["wall_right"]
         out["art_slope"] = (y1 - y0) / float(x1 - x0) if x1 != x0 else 0.0
@@ -367,7 +382,7 @@ def assemble(layers, images, walk, river, old_poly, poly, cfg, kit_dir, hero_pla
     scale = hero_plate / float(cfg["hero_px_in_art"])
     rc = cfg.get("stone_recolor")
     for name, spec in list(cfg["modules"].items()):
-        if spec.get("anchors_json"):
+        if spec.get("anchors_json") and "wall_left" not in spec and "base" not in spec:
             spec = load_anchors(kit_dir, spec)
             cfg["modules"][name] = spec
         if rc and name in rc.get("targets", []):
@@ -639,7 +654,7 @@ def assemble(layers, images, walk, river, old_poly, poly, cfg, kit_dir, hero_pla
                     # a gatehouse tower (or a corner) already standing there flanks it
                     # round 16: a gatehouse tower or corner within 3 body radii
                     # is this flank (no doubled tower beside it)
-                    merge = 3.0 * r_body
+                    merge = float((cfg.get("water_gate_towers") or {}).get("merge_px", 3.0 * r_body))
                     taken_by = [x for x in anchors[i] if abs(x - st) < merge]
                     if st < merge or st > L - merge or taken_by:
                         pair[-1] = taken_by[0] if taken_by else (0.0 if st < merge else L)
@@ -847,6 +862,9 @@ def assemble(layers, images, walk, river, old_poly, poly, cfg, kit_dir, hero_pla
                 before = r_front if dyds < -1e-6 else r_back
                 after = r_front if dyds > 1e-6 else r_back
                 return before, after
+            if f.get("flank_towers"):
+                # the curtain runs to its towers' axes: no run between them
+                return f["half"] + r_body, f["half"] + r_body
             return f["half"] * 0.86, f["half"] * 0.86
         stops = [(0.0, 0.0, 0.0, None)] + [(f["s"],) + tucks(f) + (f,) for f in fs] + [(L, 0.0, 0.0, None)]
         for (s0, _b0, a0, f0), (s1, b1, _a1, f1) in zip(stops, stops[1:]):
