@@ -1,0 +1,830 @@
+[
+ {
+  "i": 0,
+  "state": "hand",
+  "Left": {
+   "head": [
+    0.309,
+    -0.36,
+    0.554
+   ],
+   "head_spine_dist": 0.708,
+   "head_skel_dist": 0.232,
+   "scale": 0.52,
+   "grip": [
+    0.29,
+    -0.126,
+    0.864
+   ],
+   "speed": 0.0
+  },
+  "Right": {
+   "head": [
+    -0.288,
+    -0.228,
+    0.566
+   ],
+   "head_spine_dist": 0.638,
+   "head_skel_dist": 0.45,
+   "scale": 0.52,
+   "grip": [
+    -0.249,
+    0.004,
+    0.875
+   ],
+   "speed": 0.0
+  },
+  "knee": [
+   159.2,
+   168.8
+  ],
+  "hips": [
+   0.017,
+   0.053,
+   1.05
+  ],
+  "sync_grip_mirror_err": 0.136
+ },
+ {
+  "i": 1,
+  "state": "hand",
+  "Left": {
+   "head": [
+    0.309,
+    -0.36,
+    0.554
+   ],
+   "head_spine_dist": 0.708,
+   "head_skel_dist": 0.232,
+   "scale": 0.52,
+   "grip": [
+    0.29,
+    -0.126,
+    0.864
+   ],
+   "speed": 0.7
+  },
+  "Right": {
+   "head": [
+    -0.288,
+    -0.228,
+    0.566
+   ],
+   "head_spine_dist": 0.638,
+   "head_skel_dist": 0.45,
+   "scale": 0.52,
+   "grip": [
+    -0.249,
+    0.004,
+    0.875
+   ],
+   "speed": 0.7
+  },
+  "knee": [
+   159.2,
+   168.8
+  ],
+  "hips": [
+   0.017,
+   0.053,
+   1.05
+  ],
+  "sync_grip_mirror_err": 0.136
+ },
+ {
+  "i": 2,
+  "state": "hand",
+  "Left": {
+   "head": [
+    0.312,
+    -0.34,
+    0.67
+   ],
+   "head_spine_dist": 0.621,
+   "head_skel_dist": 0.245,
+   "scale": 0.52,
+   "grip": [
+    0.294,
+    -0.107,
+    0.98
+   ],
+   "speed": 2.32
+  },
+  "Right": {
+   "head": [
+    -0.282,
+    -0.209,
+    0.681
+   ],
+   "head_spine_dist": 0.542,
+   "head_skel_dist": 0.413,
+   "scale": 0.52,
+   "grip": [
+    -0.244,
+    0.023,
+    0.99
+   ],
+   "speed": 2.31
+  },
+  "knee": [
+   159.2,
+   168.8
+  ],
+  "hips": [
+   0.017,
+   0.053,
+   1.05
+  ],
+  "sync_grip_mirror_err": 0.139
+ },
+ {
+  "i": 3,
+  "state": "hand",
+  "Left": {
+   "head": [
+    0.319,
+    -0.293,
+    0.935
+   ],
+   "head_spine_dist": 0.474,
+   "head_skel_dist": 0.315,
+   "scale": 0.52,
+   "grip": [
+    0.302,
+    -0.062,
+    1.245
+   ],
+   "speed": 3.41
+  },
+  "Right": {
+   "head": [
+    -0.269,
+    -0.159,
+    0.944
+   ],
+   "head_spine_dist": 0.372,
+   "head_skel_dist": 0.336,
+   "scale": 0.52,
+   "grip": [
+    -0.232,
+    0.067,
+    1.254
+   ],
+   "speed": 3.35
+  },
+  "knee": [
+   159.2,
+   168.8
+  ],
+  "hips": [
+   0.017,
+   0.053,
+   1.05
+  ],
+  "sync_grip_mirror_err": 0.148
+ },
+ {
+  "i": 4,
+  "state": "hand",
+  "Left": {
+   "head": [
+    0.325,
+    -0.219,
+    1.225
+   ],
+   "head_spine_dist": 0.403,
+   "head_skel_dist": 0.33,
+   "scale": 0.52,
+   "grip": [
+    0.31,
+    -0.014,
+    1.534
+   ],
+   "speed": 3.05
+  },
+  "Right": {
+   "head": [
+    -0.253,
+    -0.064,
+    1.22
+   ],
+   "head_spine_dist": 0.304,
+   "head_skel_dist": 0.304,
+   "scale": 0.52,
+   "grip": [
+    -0.218,
+    0.117,
+    1.543
+   ],
+   "speed": 3.03
+  },
+  "knee": [
+   159.2,
+   168.8
+  ],
+  "hips": [
+   0.017,
+   0.053,
+   1.05
+  ],
+  "sync_grip_mirror_err": 0.16
+ },
+ {
+  "i": 5,
+  "state": "hand",
+  "Left": {
+   "head": [
+    0.338,
+    -0.146,
+    1.421
+   ],
+   "head_spine_dist": 0.359,
+   "head_skel_dist": 0.18,
+   "scale": 0.52,
+   "grip": [
+    0.315,
+    0.018,
+    1.724
+   ],
+   "speed": 1.5
+  },
+  "Right": {
+   "head": [
+    -0.251,
+    0.046,
+    1.405
+   ],
+   "head_spine_dist": 0.289,
+   "head_skel_dist": 0.143,
+   "scale": 0.52,
+   "grip": [
+    -0.209,
+    0.149,
+    1.732
+   ],
+   "speed": 1.7
+  },
+  "knee": [
+   159.2,
+   168.8
+  ],
+  "hips": [
+   0.017,
+   0.053,
+   1.05
+  ],
+  "sync_grip_mirror_err": 0.169
+ },
+ {
+  "i": 6,
+  "state": "hand",
+  "Left": {
+   "head": [
+    0.346,
+    -0.087,
+    1.436
+   ],
+   "head_spine_dist": 0.336,
+   "head_skel_dist": 0.13,
+   "scale": 0.52,
+   "grip": [
+    0.302,
+    0.037,
+    1.721
+   ],
+   "speed": 1.03
+  },
+  "Right": {
+   "head": [
+    -0.243,
+    0.135,
+    1.421
+   ],
+   "head_spine_dist": 0.294,
+   "head_skel_dist": 0.084,
+   "scale": 0.52,
+   "grip": [
+    -0.18,
+    0.155,
+    1.729
+   ],
+   "speed": 1.22
+  },
+  "knee": [
+   159.2,
+   168.8
+  ],
+  "hips": [
+   0.017,
+   0.053,
+   1.05
+  ],
+  "sync_grip_mirror_err": 0.17
+ },
+ {
+  "i": 7,
+  "state": "hand",
+  "Left": {
+   "head": [
+    0.308,
+    0.009,
+    1.354
+   ],
+   "head_spine_dist": 0.276,
+   "head_skel_dist": 0.097,
+   "scale": 0.52,
+   "grip": [
+    0.242,
+    0.11,
+    1.612
+   ],
+   "speed": 1.66
+  },
+  "Right": {
+   "head": [
+    -0.14,
+    0.208,
+    1.349
+   ],
+   "head_spine_dist": 0.233,
+   "head_skel_dist": 0.12,
+   "scale": 0.52,
+   "grip": [
+    -0.049,
+    0.167,
+    1.616
+   ],
+   "speed": 1.83
+  },
+  "knee": [
+   159.2,
+   168.8
+  ],
+  "hips": [
+   0.017,
+   0.053,
+   1.05
+  ],
+  "sync_grip_mirror_err": 0.201
+ },
+ {
+  "i": 8,
+  "state": "hand",
+  "Left": {
+   "head": [
+    0.253,
+    0.101,
+    1.255
+   ],
+   "head_spine_dist": 0.228,
+   "head_skel_dist": 0.207,
+   "scale": 0.52,
+   "grip": [
+    0.171,
+    0.193,
+    1.487
+   ],
+   "speed": 1.3
+  },
+  "Right": {
+   "head": [
+    -0.011,
+    0.252,
+    1.26
+   ],
+   "head_spine_dist": 0.202,
+   "head_skel_dist": 0.202,
+   "scale": 0.52,
+   "grip": [
+    0.102,
+    0.181,
+    1.487
+   ],
+   "speed": 1.45
+  },
+  "knee": [
+   159.2,
+   168.8
+  ],
+  "hips": [
+   0.017,
+   0.053,
+   1.05
+  ],
+  "sync_grip_mirror_err": 0.274
+ },
+ {
+  "i": 9,
+  "state": "back",
+  "Left": {
+   "head": [
+    0.224,
+    0.142,
+    1.206
+   ],
+   "head_spine_dist": 0.216,
+   "head_skel_dist": 0.216,
+   "scale": 0.52,
+   "grip": [
+    0.138,
+    0.233,
+    1.427
+   ],
+   "speed": 0.42
+  },
+  "Right": {
+   "head": [
+    0.053,
+    0.267,
+    1.216
+   ],
+   "head_spine_dist": 0.215,
+   "head_skel_dist": 0.215,
+   "scale": 0.52,
+   "grip": [
+    0.174,
+    0.188,
+    1.425
+   ],
+   "speed": 0.48
+  },
+  "knee": [
+   159.2,
+   168.8
+  ],
+  "hips": [
+   0.017,
+   0.053,
+   1.05
+  ],
+  "sync_grip_mirror_err": 0.315
+ },
+ {
+  "i": 10,
+  "state": "back",
+  "Left": {
+   "head": [
+    0.224,
+    0.142,
+    1.206
+   ],
+   "head_spine_dist": 0.216,
+   "head_skel_dist": 0.216,
+   "scale": 0.52,
+   "grip": [
+    0.132,
+    0.257,
+    1.39
+   ],
+   "speed": 0.0
+  },
+  "Right": {
+   "head": [
+    0.053,
+    0.267,
+    1.216
+   ],
+   "head_spine_dist": 0.215,
+   "head_skel_dist": 0.215,
+   "scale": 0.52,
+   "grip": [
+    0.194,
+    0.192,
+    1.382
+   ],
+   "speed": 0.0
+  },
+  "knee": [
+   159.2,
+   168.8
+  ],
+  "hips": [
+   0.017,
+   0.053,
+   1.05
+  ],
+  "sync_grip_mirror_err": 0.333
+ },
+ {
+  "i": 11,
+  "state": "back",
+  "Left": {
+   "head": [
+    0.224,
+    0.142,
+    1.206
+   ],
+   "head_spine_dist": 0.216,
+   "head_skel_dist": 0.216,
+   "scale": 0.52,
+   "grip": [
+    0.129,
+    0.297,
+    1.28
+   ],
+   "speed": 0.0
+  },
+  "Right": {
+   "head": [
+    0.053,
+    0.267,
+    1.216
+   ],
+   "head_spine_dist": 0.215,
+   "head_skel_dist": 0.215,
+   "scale": 0.52,
+   "grip": [
+    0.214,
+    0.21,
+    1.265
+   ],
+   "speed": 0.0
+  },
+  "knee": [
+   159.2,
+   168.8
+  ],
+  "hips": [
+   0.017,
+   0.053,
+   1.05
+  ],
+  "sync_grip_mirror_err": 0.355
+ },
+ {
+  "i": 12,
+  "state": "back",
+  "Left": {
+   "head": [
+    0.224,
+    0.142,
+    1.206
+   ],
+   "head_spine_dist": 0.216,
+   "head_skel_dist": 0.216,
+   "scale": 0.52,
+   "grip": [
+    0.149,
+    0.28,
+    1.11
+   ],
+   "speed": 0.0
+  },
+  "Right": {
+   "head": [
+    0.053,
+    0.267,
+    1.216
+   ],
+   "head_spine_dist": 0.215,
+   "head_skel_dist": 0.215,
+   "scale": 0.52,
+   "grip": [
+    0.173,
+    0.224,
+    1.112
+   ],
+   "speed": 0.0
+  },
+  "knee": [
+   159.2,
+   168.8
+  ],
+  "hips": [
+   0.017,
+   0.053,
+   1.05
+  ],
+  "sync_grip_mirror_err": 0.327
+ },
+ {
+  "i": 13,
+  "state": "back",
+  "Left": {
+   "head": [
+    0.224,
+    0.142,
+    1.206
+   ],
+   "head_spine_dist": 0.216,
+   "head_skel_dist": 0.216,
+   "scale": 0.52,
+   "grip": [
+    0.196,
+    0.157,
+    0.956
+   ],
+   "speed": 0.0
+  },
+  "Right": {
+   "head": [
+    0.053,
+    0.267,
+    1.216
+   ],
+   "head_spine_dist": 0.215,
+   "head_skel_dist": 0.215,
+   "scale": 0.52,
+   "grip": [
+    0.037,
+    0.246,
+    0.961
+   ],
+   "speed": 0.0
+  },
+  "knee": [
+   159.2,
+   168.8
+  ],
+  "hips": [
+   0.017,
+   0.053,
+   1.05
+  ],
+  "sync_grip_mirror_err": 0.25
+ },
+ {
+  "i": 14,
+  "state": "back",
+  "Left": {
+   "head": [
+    0.224,
+    0.142,
+    1.206
+   ],
+   "head_spine_dist": 0.216,
+   "head_skel_dist": 0.216,
+   "scale": 0.52,
+   "grip": [
+    0.258,
+    -0.017,
+    0.897
+   ],
+   "speed": 0.0
+  },
+  "Right": {
+   "head": [
+    0.053,
+    0.267,
+    1.216
+   ],
+   "head_spine_dist": 0.215,
+   "head_skel_dist": 0.215,
+   "scale": 0.52,
+   "grip": [
+    -0.147,
+    0.269,
+    0.897
+   ],
+   "speed": 0.0
+  },
+  "knee": [
+   159.2,
+   168.8
+  ],
+  "hips": [
+   0.017,
+   0.053,
+   1.05
+  ],
+  "sync_grip_mirror_err": 0.307
+ },
+ {
+  "i": 15,
+  "state": "back",
+  "Left": {
+   "head": [
+    0.224,
+    0.142,
+    1.206
+   ],
+   "head_spine_dist": 0.216,
+   "head_skel_dist": 0.216,
+   "scale": 0.52,
+   "grip": [
+    0.312,
+    -0.148,
+    0.917
+   ],
+   "speed": 0.0
+  },
+  "Right": {
+   "head": [
+    0.053,
+    0.267,
+    1.216
+   ],
+   "head_spine_dist": 0.215,
+   "head_skel_dist": 0.215,
+   "scale": 0.52,
+   "grip": [
+    -0.293,
+    0.282,
+    0.908
+   ],
+   "speed": 0.0
+  },
+  "knee": [
+   159.2,
+   168.8
+  ],
+  "hips": [
+   0.017,
+   0.053,
+   1.05
+  ],
+  "sync_grip_mirror_err": 0.43
+ },
+ {
+  "i": 16,
+  "state": "back",
+  "Left": {
+   "head": [
+    0.224,
+    0.142,
+    1.206
+   ],
+   "head_spine_dist": 0.216,
+   "head_skel_dist": 0.216,
+   "scale": 0.52,
+   "grip": [
+    0.334,
+    -0.194,
+    0.939
+   ],
+   "speed": 0.0
+  },
+  "Right": {
+   "head": [
+    0.053,
+    0.267,
+    1.216
+   ],
+   "head_spine_dist": 0.215,
+   "head_skel_dist": 0.215,
+   "scale": 0.52,
+   "grip": [
+    -0.347,
+    0.285,
+    0.926
+   ],
+   "speed": 0.0
+  },
+  "knee": [
+   159.2,
+   168.8
+  ],
+  "hips": [
+   0.017,
+   0.053,
+   1.05
+  ],
+  "sync_grip_mirror_err": 0.479
+ },
+ {
+  "i": 17,
+  "state": "back",
+  "Left": {
+   "head": [
+    0.224,
+    0.142,
+    1.206
+   ],
+   "head_spine_dist": 0.216,
+   "head_skel_dist": 0.216,
+   "scale": 0.52,
+   "grip": [
+    0.334,
+    -0.194,
+    0.939
+   ],
+   "speed": 0.0
+  },
+  "Right": {
+   "head": [
+    0.053,
+    0.267,
+    1.216
+   ],
+   "head_spine_dist": 0.215,
+   "head_skel_dist": 0.215,
+   "scale": 0.52,
+   "grip": [
+    -0.347,
+    0.285,
+    0.926
+   ],
+   "speed": 0.0
+  },
+  "knee": [
+   159.2,
+   168.8
+  ],
+  "hips": [
+   0.017,
+   0.053,
+   1.05
+  ],
+  "sync_grip_mirror_err": 0.479
+ }
+]
