@@ -1,21 +1,22 @@
 {
  "left_foot": [
   0,
-  880.0
+  878.6
  ],
  "right_foot": [
-  900,
-  553
+  899,
+  552
  ],
  "slope": -0.3633,
- "raw_slope": 0.3684,
- "scale": 1.9164,
- "body_px": 551,
- "tile_seam_err": 12.3,
+ "scale": 1.6272,
+ "body_px": 550,
+ "course_px": 43.9,
+ "inserted_courses": 2,
+ "tile_seam_err": 13.5,
  "source": "segment_diag_v4match_raw.jpg",
  "stone_lab_after": [
-  38.8,
-  1.2,
+  38.9,
+  1.3,
   19.0
  ],
  "colour_target": "v4 approved ring stone LAB [38.8, 1.1, 19.0]"

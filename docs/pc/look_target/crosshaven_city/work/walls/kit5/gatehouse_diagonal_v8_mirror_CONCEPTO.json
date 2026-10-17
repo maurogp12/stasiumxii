@@ -4,20 +4,20 @@
   555
  ],
  "right_foot": [
-  2053,
-  1300.9
+  2186,
+  1349.2
  ],
  "slope": 0.3633,
  "raw_slope": 0.3379,
- "scale": 1.8771,
- "body_px": 552,
+ "scale": 2.1073,
+ "body_px": 551,
+ "course_px": 33.7,
+ "removed_courses": 2,
  "arch_opening_x": [
-  773,
-  1141
+  868,
+  1163
  ],
- "arch_width_px": 368,
- "inserted_raw_px": 56,
- "merlon_period_raw": 56,
+ "arch_width_px": 295,
  "source": "gatehouse_diag_v4match_raw.jpg",
  "stone_lab_after": [
   38.9,

@@ -33,3 +33,4 @@ Crosshaven kit4: one-piece unified wall section v1 (diagonal wall + 2 towers + w
 2026-10-17 – walls/kit5/: Crosshaven wall kit v8 placeholders (tower, segment diag/horizontal/short + mirrors, gatehouse horizontal/diagonal + mirror, watergate diagonal + mirror, JSON foot anchors, mini ring check). CONCEPT; v8b repaint of diagonals to follow.
 2026-10-17 – walls/kit5/: tower, segment_horizontal, gatehouse_horizontal v8 repainted in ring v4 grey-beige (per Mauro); beige kept in old_v8b_beige/. Diagonals/short/watergate still beige placeholders. CONCEPT.
 2026-10-17 – walls/kit5/: diagonal batch v8 (segment_diag, segment_short, gatehouse_diagonal, watergate_diagonal + mirrors) repainted in ring v4 grey-beige; anchors changed; beige in old_v8c/. CONCEPT.
+2026-10-17 – walls/kit5/: v8.1 pass (diagonal block/merlon size matched to horizontal, short merlon at 550, stone contrast closer to v4; diagonal JSON anchors rewritten); v8.0 in old_v8_0/. CONCEPT.

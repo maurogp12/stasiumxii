@@ -1,28 +1,28 @@
 {
  "left_foot": [
   0,
-  1265.4
+  1365.0
  ],
  "right_foot": [
-  1961,
+  2235,
   553
  ],
  "slope": -0.3633,
  "raw_slope": 0.2606,
- "scale": 1.7742,
+ "scale": 2.0221,
  "body_px": 550,
+ "course_px": 36.4,
+ "removed_courses": 2,
  "arch_opening_x": [
-  881,
-  1154
+  1004,
+  1315
  ],
- "arch_width_px": 273,
- "inserted_raw_px": 0,
- "merlon_period_raw": 76,
+ "arch_width_px": 311,
  "source": "watergate_diag_v4match_raw.jpg",
  "stone_lab_after": [
-  38.9,
+  39.0,
   1.2,
-  19.2
+  19.0
  ],
  "colour_target": "v4 approved ring stone LAB [38.8, 1.1, 19.0]"
 }
