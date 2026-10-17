@@ -4,40 +4,71 @@ Status: **map base, prototype; buildings hidden**, in the game on branch `claude
 Source: the Rosebud plate package on `docs/pc-map-handoff` 98d2cc5c (`docs/pc/map_handoff/crosshaven/rosebud/`, v9).
 Change list: `docs/pc/look_target/crosshaven_city/README.md` on `claude/pc-zones-spec` ("Mauro's change list", items 1-9).
 
-## Current state: map base (supersedes the older sections below where they disagree)
+## Current state: map base after the review round (supersedes the older sections below where they disagree)
 
 - **Map base only (item 17).** Houses, stalls, landmarks (castle, cathedral, town hall, bank, workshops,
-  mill), the fountain and the well are hidden: 40 of 407 layers carry `hidden: true` in `layers.json`,
-  keep their walk footprints reserved and can be shown again by clearing `map_base_only` in the layout.
-  F9 in the game draws the reserved footprints (`building_footprints`). Plot houses are hidden too.
-- **Walls: kit v2 ring.** The old octagon walls are replaced by the approved kit v2
-  (`work/walls/kit2/` + `kit/tower_CONCEPTO.png` on `docs/pc-map-handoff`, PNGs copied to
-  `art/world/crosshaven_city/kit/`). The ring polygon uses only the two iso diagonals and horizontal N/S
-  runs (`ring_kit.polygon`). Heights at hero 156 px: wall 550, tower 1000, gatehouse 1050
-  (`wall_ring.factors.module_scale` 0.3495). Towers at the corners and every 7 wall heights. The castle
-  is not placed; its N-wall footprint stays reserved.
-- **Gates.** Gatehouses S, W, E, N, SE (layout), each split into a back and a front sprite so the hero
-  walks through the arch; passages are 2.2 hero widths. Water gates at the 2 river crossings.
-  **Stand-in:** the kit has no flat-run gatehouse, so S and N use the diagonal gatehouse sheared by 0.309
-  (W, E, SE by 0.191). It reads slightly skewed on the flat edges.
-- **Road-wall contacts after the build** (found from the street pixels): N gate, W gate, E gate, SE gate;
-  four streets pulled back inside the ring (runs_along at (3100,605), (1672,779), (1114,1058),
-  (4410,1260), (1182,1846)). The S gate is the spawn road. None cross the wall without a gate (tested).
-- **Bridges.** 3 Rosebud bridges are kept. bridge_1 is now outside the ring (NE corner), still walkable.
-- **Ground.** Grass and cobble retextured from the coordinator tiles (`work/grass.png`, `work/cobble.png`),
-  projected on the iso lattice. Water uses the shader port (still painting in Performance mode).
-- **Greenery (approved `work/green/`).** 20 trees (oak, cypress, blossom) on grass cells only, from
-  `trees_keep_ring_v2.json` (12 wall feet, 4 ring road, 7 east park, picked then thinned); bushes block,
-  flowers walk through; seeded, flip and 0.9-1.1 scale jitter. Plaza props: lamps, benches, planters
-  at the plazas and along the ring road.
-- **Scale.** `plate.scale` 1.15 (one factor for the whole plate). Ratios to the hero: house 3.08,
-  gatehouse 6.73 (kit art at 1050/156), stall 2.51. West gate to east gate: 148 cells, 5259 px,
-  95.4 s walking, 48.0 s running.
-- **Plots.** 10: P1 rare, P2 legendary, P3 rare, P4-P6 normal, P7 rare, P8 normal, P9 rare,
-  P10 legendary. P6-P10 are proposed in residential areas; all plot rules apply and are tested.
+  mill), the fountain and the well are hidden: they keep `hidden: true` in `layers.json` and their walk
+  footprints stay reserved. Clearing `map_base_only` in the layout shows them again. F9 draws the
+  reserved footprints (`building_footprints`). Plot houses are hidden too.
+- **Ground (review 1).** Grass and cobble come from the coordinator tiles, projected on the iso lattice.
+  The cobble tile is drawn at 0.35x, so a stone reads a hero foot to shin across. The grass is at 0.7x.
+  A second grass layer (rotated 90 degrees, offset, 1.13x) is blended in by low-frequency noise to
+  break the clover repeat (`ground_textures` in the layout). Tiles are resized seamlessly (3x3,
+  resize, keep the middle).
+- **Walls: kit v2 ring.** The approved segments and tower from `work/walls/kit2` + `kit/tower`. The
+  ring uses only the two iso diagonals plus horizontal N/S runs. Towers sit at the corners and every
+  7 wall heights. **No ring tower stands within 1.3 wall heights of a gatehouse**, corners included
+  (review 3, `no_tower_near_gate_wall_heights`), so 5 ring towers remain. The castle is not placed;
+  its N-wall footprint stays reserved.
+- **Gatehouses: kit3** (`docs/pc-map-handoff` 4bd032f3, `work/walls/kit3`, copied to
+  `art/world/crosshaven_city/kit/`).
+  - **W, E, SE** use `gatehouse_diag_v3` (and its mirror), with full 1000 px flanking towers.
+    Its base slope (-0.433) matches `segment_short`. Its parapet (-0.317) is sheared 0.07 more than the
+    segment's (-0.387), so the two parapet lines meet; in data that is `art_slope` -0.3633. It is also
+    dropped 30 native px (580 vs 550, about 5%; `drop_px`). The near tower draws in front of the run;
+    the far tower draws over the run's tucked-in strips and stays behind a hero in the arch.
+  - **N and S** use `gatehouse_horizontal` (the final colour- and roof-matched version), with no shear.
+    It is one piece sorted on the wall line, dropped 6 px (556 vs 550).
+  - Arch openings: 68 plate px (diagonal) and 103 plate px (horizontal). The art team's hero width is
+    48 px at a 156 px hero, so 2.2 hero widths is 37 plate px; the walk passage is 72 plate px.
+  - Two water gates sit at the river crossings.
+- **Road-wall contacts** (found from the street pixels). N, W, E and SE are gates. The S gate carries
+  the spawn road. Five streets are pulled back inside the ring. None crosses the wall without a gate
+  (tested).
+- **Exits (review 7).** Every gate road runs on to the plate edge and ends in a gate stub (data,
+  `gate_stubs`). The links follow the Crossroads road directions:
+  - N goes to `crosshaven_road_north` (12,2), toward Northgate (proposed);
+  - W goes to `crosshaven_road_west` (2,12), toward Stoneford (proposed);
+  - E goes to `crosshaven_road_east` (33,12), toward Eastmarch (proposed);
+  - SE goes to `crosshaven_road_south` (12,33) as a **placeholder** until the link is decided;
+  - S keeps the Crossroads stub.
+
+  The city is outside the plane, so these links are stubs, not seams. There is no way back from the
+  road zones except through the Crossroads.
+- **Bridges.** The 3 Rosebud bridges are kept. bridge_1 is outside the ring (NE corner) and still
+  walkable.
+- **Greenery.** Inside: 20 trees (oak, cypress, blossom) from `trees_keep_ring_v2.json`, on grass
+  only; bushes block and flowers are walk-through; lamps, benches and planters sit at the plazas and
+  along the ring road. Outside (review 6): 50 oak and cypress trees in wall-foot clusters and woods
+  toward the plate edges (`greenery.outer_forest`, seeded). They keep clear of roads, the river, the
+  gate approaches and the bridges. The prototype has no river rock sprites, so no rocks are added.
+  Plants and props keep clear of each plot's entrance.
+- **Night (review 5).** Every `plaza_lamp_single` and `plaza_lamp_double` gets an additive halo on
+  each lamp head and a light circle on the ground (the world lamp glow art). Outside Performance mode
+  there is also a 2D point light that lifts the night tint. Lamps are lit from 16:00 to 07:00
+  (`lights` in data). In Performance mode there is no point light and no flicker. Lit windows come
+  later, with the buildings.
+- **Name plates (review 4).** An NPC's name plate hides while a wall, tower, gate, house or stall
+  covers the NPC (the fade's own rect and mask test, `occluded()`).
+- **Scale.** `plate.scale` is 1.15, one factor for the whole plate. Ratios to the hero: house 3.08,
+  horizontal gatehouse 6.40, stall 2.51. West gate to east gate is 144 cells, about 93 s walking or
+  47 s running.
+- **Plots.** There are 10: P1 rare, P2 legendary, P3 rare, P4-P6 normal, P7 rare, P8 normal, P9 rare,
+  P10 legendary. All plot rules apply and are tested.
 - **No thatch.** The 2 thatched cottages are swapped to slate (`thatch_swapped`).
-- **Art ownership.** All art paths are data (`art`, `art_file`, kit and green folders); final art comes
-  from the art team and drops in without code changes.
+- **Art ownership.** All art paths are data (`art`, `art_file`, kit and green folders, `lights`), so
+  final art drops in without code changes. After a rebuild, run `godot --headless --import`: layer
+  files keep their names when their pixels change.
 
 ## What the world does today
 
@@ -248,10 +279,12 @@ this is tested.
 
 ```
 git archive origin/docs/pc-map-handoff docs/pc/map_handoff/crosshaven/rosebud docs/pc/map_handoff/crosshaven/housing_tiers | tar -x -C /tmp/cx
-git archive origin/docs/pc-map-handoff docs/pc/map_handoff/crosshaven/work | tar -x -C /tmp/cx
-W=/tmp/cx/docs/pc/map_handoff/crosshaven/work   # grass.png, cobble.png, green/
+git archive origin/docs/pc-map-handoff docs/pc/look_target/crosshaven_city/work | tar -x -C /tmp/cx
+git archive origin/claude/pc-zones-spec docs/pc/look_target/crosshaven_city/work/grass.png docs/pc/look_target/crosshaven_city/work/cobble.png | tar -x -C /tmp/cx
+W=/tmp/cx/docs/pc/look_target/crosshaven_city/work
 python3 build_tools/crosshaven_city/build_city.py /tmp/cx/docs/pc/map_handoff/crosshaven . \
   --textures $W --kit art/world/crosshaven_city/kit --green $W/green
+godot --headless --path . --import
 ```
 
 Tests: `tests/run_crosshaven_city_tests.gd`. Media: `tests/pc/capture_city.gd` (stills; `--clip` for the walk).
