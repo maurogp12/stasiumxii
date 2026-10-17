@@ -139,3 +139,7 @@ Reviewed on the base without buildings (`cxbase/base_walls.jpg`).
 
     **General lesson:** Grok Bot's painted art beats Meshy for this city every time. Meshy stays off the city art unless Mauro asks.
 19. **Player house tiers APPROVED by Mauro** (17 Oct, "sí"), already approved by Luca: Normal, Rare and Legendary at 2.5× (#425 fdcc2149, `work/houses/`).
+20. **Roles for the city** (Mauro, 17 Oct, "sí"):
+    - **Grok Bot / Scenario Art owns ALL Crosshaven art:** ground textures (grass and cobble may be repainted), walls, gates, buildings, trees, props and decoration, with the GOAL as the guide.
+    - **Claude paints nothing for the city.** Claude and the build agent wire it into the game: scale, walkability, y-sort and fade, water, gates, plots and tests. Claude reviews every delivery before Mauro sees it and labels everything 🎮 or 🖼️.
+    - **Mauro approves step by step:** map base, then buildings, then city life.
