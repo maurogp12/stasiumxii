@@ -1,8 +1,43 @@
 # Crosshaven walled city in the PC world (CX1)
 
-Status: **prototype, stand-in art**, in the game on branch `claude/pc-crosshaven-city` (from `pc/world-seamless` 7b8d80c6).
+Status: **map base, prototype; buildings hidden**, in the game on branch `claude/pc-crosshaven-city` (from `pc/world-seamless` 7b8d80c6).
 Source: the Rosebud plate package on `docs/pc-map-handoff` 98d2cc5c (`docs/pc/map_handoff/crosshaven/rosebud/`, v9).
 Change list: `docs/pc/look_target/crosshaven_city/README.md` on `claude/pc-zones-spec` ("Mauro's change list", items 1-9).
+
+## Current state: map base (supersedes the older sections below where they disagree)
+
+- **Map base only (item 17).** Houses, stalls, landmarks (castle, cathedral, town hall, bank, workshops,
+  mill), the fountain and the well are hidden: 40 of 407 layers carry `hidden: true` in `layers.json`,
+  keep their walk footprints reserved and can be shown again by clearing `map_base_only` in the layout.
+  F9 in the game draws the reserved footprints (`building_footprints`). Plot houses are hidden too.
+- **Walls: kit v2 ring.** The old octagon walls are replaced by the approved kit v2
+  (`work/walls/kit2/` + `kit/tower_CONCEPTO.png` on `docs/pc-map-handoff`, PNGs copied to
+  `art/world/crosshaven_city/kit/`). The ring polygon uses only the two iso diagonals and horizontal N/S
+  runs (`ring_kit.polygon`). Heights at hero 156 px: wall 550, tower 1000, gatehouse 1050
+  (`wall_ring.factors.module_scale` 0.3495). Towers at the corners and every 7 wall heights. The castle
+  is not placed; its N-wall footprint stays reserved.
+- **Gates.** Gatehouses S, W, E, N, SE (layout), each split into a back and a front sprite so the hero
+  walks through the arch; passages are 2.2 hero widths. Water gates at the 2 river crossings.
+  **Stand-in:** the kit has no flat-run gatehouse, so S and N use the diagonal gatehouse sheared by 0.309
+  (W, E, SE by 0.191). It reads slightly skewed on the flat edges.
+- **Road-wall contacts after the build** (found from the street pixels): N gate, W gate, E gate, SE gate;
+  four streets pulled back inside the ring (runs_along at (3100,605), (1672,779), (1114,1058),
+  (4410,1260), (1182,1846)). The S gate is the spawn road. None cross the wall without a gate (tested).
+- **Bridges.** 3 Rosebud bridges are kept. bridge_1 is now outside the ring (NE corner), still walkable.
+- **Ground.** Grass and cobble retextured from the coordinator tiles (`work/grass.png`, `work/cobble.png`),
+  projected on the iso lattice. Water uses the shader port (still painting in Performance mode).
+- **Greenery (approved `work/green/`).** 20 trees (oak, cypress, blossom) on grass cells only, from
+  `trees_keep_ring_v2.json` (12 wall feet, 4 ring road, 7 east park, picked then thinned); bushes block,
+  flowers walk through; seeded, flip and 0.9-1.1 scale jitter. Plaza props: lamps, benches, planters
+  at the plazas and along the ring road.
+- **Scale.** `plate.scale` 1.15 (one factor for the whole plate). Ratios to the hero: house 3.08,
+  gatehouse 6.73 (kit art at 1050/156), stall 2.51. West gate to east gate: 148 cells, 5259 px,
+  95.4 s walking, 48.0 s running.
+- **Plots.** 10: P1 rare, P2 legendary, P3 rare, P4-P6 normal, P7 rare, P8 normal, P9 rare,
+  P10 legendary. P6-P10 are proposed in residential areas; all plot rules apply and are tested.
+- **No thatch.** The 2 thatched cottages are swapped to slate (`thatch_swapped`).
+- **Art ownership.** All art paths are data (`art`, `art_file`, kit and green folders); final art comes
+  from the art team and drops in without code changes.
 
 ## What the world does today
 
@@ -213,7 +248,10 @@ this is tested.
 
 ```
 git archive origin/docs/pc-map-handoff docs/pc/map_handoff/crosshaven/rosebud docs/pc/map_handoff/crosshaven/housing_tiers | tar -x -C /tmp/cx
-python3 build_tools/crosshaven_city/build_city.py /tmp/cx/docs/pc/map_handoff/crosshaven .
+git archive origin/docs/pc-map-handoff docs/pc/map_handoff/crosshaven/work | tar -x -C /tmp/cx
+W=/tmp/cx/docs/pc/map_handoff/crosshaven/work   # grass.png, cobble.png, green/
+python3 build_tools/crosshaven_city/build_city.py /tmp/cx/docs/pc/map_handoff/crosshaven . \
+  --textures $W --kit art/world/crosshaven_city/kit --green $W/green
 ```
 
 Tests: `tests/run_crosshaven_city_tests.gd`. Media: `tests/pc/capture_city.gd` (stills; `--clip` for the walk).

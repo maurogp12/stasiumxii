@@ -187,6 +187,7 @@ func _stills() -> void:
 	var rect: Rect2 = city.world_rect()
 	_place(city.spawn())
 	var vp: Vector2 = _w.get_viewport().get_visible_rect().size
+	_w.npc_plates.visible = false
 	print("VIEWPORT logical %s" % vp)
 	await _hold(rect.get_center(), vp.x / rect.size.x, 40, "01_wide_city")
 	# Street by the market.
@@ -195,6 +196,9 @@ func _stills() -> void:
 		if str(row["tag"]) == "stall":
 			market = (row["rect"] as Rect2).get_center()
 			break
+	_w.npc_plates.visible = true
+	if market == Vector2.ZERO:
+		market = city.plate_to_world(Vector2(2420, 1340))
 	var street := _near_free(_cell_of_plate(city.world_to_plate(market + Vector2(0, 140))))
 	_place(street)
 	await _hold(_w.walker.position, 1.6, 40, "02_hero_street")
@@ -233,11 +237,20 @@ func _stills() -> void:
 		var p: Dictionary = pair[0]
 		_label("%s %s" % [p["id"], p["tier"]], pair[1] + Vector2(0, 20))
 	for i in 40:
-		_cam(centre + Vector2(0, -80), 0.72)
+		_cam(centre + Vector2(0, -80), 0.6)
 		await process_frame
 		_place_labels()
-	await _hold(centre + Vector2(0, -80), 0.72, 2, "06_plots_p1_p5")
+	await _hold(centre + Vector2(0, -80), 0.6, 2, "06_plots_p1_p10")
 	_clear_labels()
+	# Map base: plots and building footprints reserved, empty (F9 overlay).
+	plate.set_footprints_visible(true)
+	_w.npc_plates.visible = false
+	var rect2: Rect2 = city.world_rect()
+	var vp2: Vector2 = _w.get_viewport().get_visible_rect().size
+	await _hold(rect2.get_center(), vp2.x / rect2.size.x, 20, "11_footprints_overlay_wide")
+	await _hold(centre + Vector2(0, -80), 0.6, 20, "12_plots_overlay")
+	plate.set_footprints_visible(false)
+	_w.npc_plates.visible = true
 	# Scale line-up at the default zoom: hero by a house, a gate tower, a stall.
 	await _scale_shots()
 	# Every gate (contact sheet source).
@@ -258,9 +271,11 @@ func _stills() -> void:
 		_place(_near_free(a - (b - a) / maxi(1, (b - a).length() as int) * 3))
 		await _hold(city.plate_to_world(Vector2(float(g["arch"][0]), float(g["arch"][1]))) + Vector2(0, -60), 1.1, 30, "07_gate_%s" % g["id"])
 	# Towers after the stub cut.
+	var t_n := 0
 	for row in plate.rows:
-		if str(row["tag"]) in ["tower", "tower_g"] and int(row["id"]) in [382, 383, 392]:
-			await _hold((row["rect"] as Rect2).get_center() + Vector2(0, 40), 1.6, 25, "08_tower_%d" % int(row["id"]))
+		if str(row["tag"]) in ["tower", "tower_g"] and t_n < 3:
+			await _hold((row["rect"] as Rect2).get_center() + Vector2(0, 40), 1.1, 25, "08_tower_%d" % int(row["id"]))
+			t_n += 1
 	# Night.
 	_w.weather.time_of_day = 22.5
 	_w.weather.settle()
@@ -276,7 +291,7 @@ func _behind_house() -> Vector2i:
 	var z: WorldZone = _w.zone
 	var plate = _w.city_plate
 	for row in plate.rows:
-		if str(row["tag"]) != "house":
+		if not (str(row["tag"]) in ["house", "wall", "tree"]) or not bool(row["fade"]):
 			continue
 		var r: Rect2 = row["rect"]
 		var sy: float = city.plate_to_world(Vector2(0, float(row["sort_y"]))).y
@@ -344,8 +359,8 @@ func _walk_clip() -> void:
 				if (c - d).length_squared() > (o - n).length_squared():
 					o = c
 					n = d
-		var dir := n - o
-		legs.append([_near_free(o - dir * 2), _near_free(n + dir * 3), "walk", 8.0, "gate %s" % g["id"]])
+		var step := Vector2i(signi(n.x - o.x), signi(n.y - o.y))
+		legs.append([_beyond(o, -step, 4), _beyond(n, step, 6), "walk", 9.0, "gate %s" % g["id"]])
 	for b in city.bridges():
 		var a := _end(b, 0)
 		var c := _end(b, 1)
@@ -374,6 +389,14 @@ func _walk_clip() -> void:
 				break
 		_grabbing = false
 	print("CLIP frames=%d" % _frame_i)
+
+
+func _beyond(from: Vector2i, step: Vector2i, n: int) -> Vector2i:
+	var best := from
+	for k in range(1, n + 1):
+		if _w.zone.passable_at(from + step * k):
+			best = from + step * k
+	return best
 
 
 func _end(b: Dictionary, i: int) -> Vector2i:
