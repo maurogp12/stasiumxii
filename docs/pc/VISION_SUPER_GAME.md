@@ -118,3 +118,14 @@ The BG3 and Wartales look needs **3D**: real models, lighting and camera. Our cu
   5. Props, nature, river and life.
   6. The MMO server.
 - Announced to every team on #252.
+
+## 11. Correction (Mauro, 17 Oct): ONE character per player
+
+The player controls **one character**, not a company of mercenaries; groups are made with other players, as in Dofus. Earlier mentions of the "company" now apply as follows:
+
+- **Wages, food and desertion:** dropped.
+- **Valor points:** become the hero's own pool.
+- **Camp, professions, injuries and prisoners:** stay, for the single hero.
+- **Companions:** optional BG3-style story companions may come later, as NPC allies on specific quests.
+
+The slice shows 1 hero against bandits. The combat rules stay multi-unit, for groups and PvP.
