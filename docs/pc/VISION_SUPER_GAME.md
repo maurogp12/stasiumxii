@@ -167,3 +167,5 @@ Monsters are on hold. The focus is building every city in 3D with a generic city
 | Westwatch | Blight watchtower |
 
 Grok paints one key-art concept per city plus a shared building kit with per-city variants. Next come the 5 classes.
+
+**Correction (Mauro, same day): finish Crosshaven first**, completely and walkable in 3D, with the whole approved layout and Grok's 3D kit. The other cities come after it, reusing the same builder.
