@@ -96,6 +96,8 @@ func _make_materials() -> void:
 func set_night(t: float) -> void:
 	window_mat.emission_energy_multiplier = 2.2 * t
 	lantern_mat.emission_energy_multiplier = 0.2 + 5.0 * t
+	for lm in lantern_mats:
+		(lm as BaseMaterial3D).emission_energy_multiplier = 0.15 + 5.0 * t
 	for l in lamps:
 		l.visible = t > 0.05
 		l.light_energy = 2.4 * t
@@ -596,6 +598,14 @@ func _build_outskirts() -> void:
 						clear = false
 			if not clear:
 				continue
+			var imps: Array = o.get("impostors", [])
+			if not imps.is_empty():
+				var ip := str(imps[rng.randi() % imps.size()])
+				if ModelLoader.exists(ip):
+					var sc := rng.randf_range(0.85, 1.25)
+					kit.add_model("imp_" + ip.get_file().get_basename(), ip, Transform3D(Basis(Vector3.UP, rng.randf() * TAU) * Basis.from_scale(Vector3.ONE * sc), v3(p)))
+					n += 1
+					continue
 			var h := rng.randf_range(7.0, 13.0)
 			var kind := rng.randi() % 3
 			var tint := (leaf_cols[kind] as Color).darkened(rng.randf() * 0.25)
@@ -666,6 +676,10 @@ func _build_piece(pc: Dictionary) -> void:
 				pk = props[key]
 		if pk.is_empty():
 			pk = props.get(str(pc["group"]), {})
+	if not pk.is_empty() and pk.get("glb") is Array:
+		var opts: Array = pk["glb"]
+		pk = pk.duplicate()
+		pk["glb"] = opts[int(_hash(pc["anchor"] + Vector2i(11, 2)) * 7919.0) % opts.size()]
 	if not pk.is_empty() and ModelLoader.exists(str(pk.get("glb", ""))):
 		_prop_model(pc, pk, spec)
 		return
@@ -741,6 +755,8 @@ func _prop_model(pc: Dictionary, pk: Dictionary, spec: Dictionary) -> void:
 	var yaw := 0.0 if size.x >= size.y else PI * 0.5
 	if str(pk.get("face", "footprint")) == "random":
 		yaw = j * TAU
+	elif str(pk.get("face", "")) == "door":
+		yaw = _yaw_to(_front_of(pc))
 	else:
 		yaw += PI * float(j > 0.5)
 	var s := 1.0
@@ -750,6 +766,10 @@ func _prop_model(pc: Dictionary, pk: Dictionary, spec: Dictionary) -> void:
 	else:
 		s = float(sr)
 	var key := path.get_file().get_basename()
+	if pk.has("water_surface"):
+		_water_up(path, str(pk["water_surface"]))
+	if path.contains("lamppost"):
+		_lantern_up(path)
 	var rep := float(pk.get("repeat", 0.0))
 	if rep > 0.0:
 		var L := maxf(size.x, size.y)
@@ -778,6 +798,30 @@ func _prop_model(pc: Dictionary, pk: Dictionary, spec: Dictionary) -> void:
 
 
 var _wind_done := {}
+var lantern_mats: Array = []
+
+
+## A model's water surface (by material name) gets our water shader.
+func _water_up(path: String, mat_name: String) -> void:
+	for part in kit.model_parts(path):
+		var mesh: Mesh = part["mesh"]
+		for i in mesh.get_surface_count():
+			var m := mesh.surface_get_material(i)
+			if m != null and m.resource_name.begins_with(mat_name):
+				mesh.surface_set_material(i, water_mat)
+
+
+## The lamp's emissive glass lights up at night (set_night).
+func _lantern_up(path: String) -> void:
+	var want := str(plan.city.get("kit", {}).get("lantern_material", "lantern_glass_emissive"))
+	for part in kit.model_parts(path):
+		var mesh: Mesh = part["mesh"]
+		for i in mesh.get_surface_count():
+			var m := mesh.surface_get_material(i)
+			if m is BaseMaterial3D and m.resource_name.begins_with(want) and not lantern_mats.has(m):
+				(m as BaseMaterial3D).emission_enabled = true
+				(m as BaseMaterial3D).emission = Color(1.0, 0.62, 0.25)
+				lantern_mats.append(m)
 
 ## Foliage wind: meshes that carry wind vertex colours (R sway, G phase,
 ## B flutter) get the wind shader, keeping their textures. Meshes without
@@ -982,11 +1026,15 @@ func _plot_marker(pc: Dictionary, spec: Dictionary, tier: String) -> void:
 	var c: Vector2 = pc["center"]
 	var col := kit.color("plot_" + tier, Color(0.8, 0.8, 0.8))
 	var size: Vector2 = pc["size"]
-	# A low tier-coloured hedge ring marks the player plot.
-	var m := kit.mat("plot_" + tier, 0.8)
-	for s in [-1.0, 1.0]:
-		kit.add_box("plot_edge", m, v3(c + Vector2(0, s * (size.y * 0.5 + 0.4)), 0.25), Vector3(size.x + 1.2, 0.5, 0.35))
-		kit.add_box("plot_edge", m, v3(c + Vector2(s * (size.x * 0.5 + 0.4), 0), 0.25), Vector3(0.35, 0.5, size.y + 1.2))
+	var pf: Dictionary = plan.city.get("kit", {}).get("plot_fence", {})
+	if not pf.is_empty() and ModelLoader.exists(str(pf.get("module", ""))):
+		_plot_fence(pc, pf)
+	else:
+		# A low tier-coloured hedge ring marks the player plot.
+		var m := kit.mat("plot_" + tier, 0.8)
+		for s in [-1.0, 1.0]:
+			kit.add_box("plot_edge", m, v3(c + Vector2(0, s * (size.y * 0.5 + 0.4)), 0.25), Vector3(size.x + 1.2, 0.5, 0.35))
+			kit.add_box("plot_edge", m, v3(c + Vector2(s * (size.x * 0.5 + 0.4), 0), 0.25), Vector3(0.35, 0.5, size.y + 1.2))
 	var lab := Label3D.new()
 	var tier_name: String = {"normal": "Normal", "rare": "Rare", "legendary": "Legendary"}.get(tier, tier)
 	lab.text = "%s · %s plot" % [str(pc.get("plot", "")) if str(pc.get("plot", "")) != "" else "Plot", tier_name]
@@ -1000,6 +1048,26 @@ func _plot_marker(pc: Dictionary, spec: Dictionary, tier: String) -> void:
 	lab.visibility_range_end = 90.0
 	add_child(lab)
 	labels.append(lab)
+
+
+## Fence modules round a player plot; the gate sits mid-way on the door
+## side. Each piece's +Z faces out of the plot.
+func _plot_fence(pc: Dictionary, pf: Dictionary) -> void:
+	var c: Vector2 = pc["center"]
+	var half: Vector2 = (pc["size"] as Vector2) * 0.5 + Vector2.ONE * float(pf.get("margin_m", 0.8))
+	var mod := float(pf.get("module_m", 2.0))
+	var front := _front_of(pc)
+	for side in [Vector2(1, 0), Vector2(-1, 0), Vector2(0, 1), Vector2(0, -1)]:
+		var along: Vector2 = (side as Vector2).orthogonal()
+		var L: float = 2.0 * (half.y if side.x != 0 else half.x)
+		var n := maxi(1, roundi(L / mod))
+		var sx := L / (n * mod)
+		var basis := Basis(Vector3.UP, _yaw_to(side)) * Basis.from_scale(Vector3(sx, 1, 1))
+		for i in n:
+			var p: Vector2 = c + side * (half.x if side.x != 0 else half.y) + along * (-L * 0.5 + (i + 0.5) * L / n)
+			var is_gate: bool = side == front and i == n / 2
+			var path := str(pf["gate"] if is_gate and ModelLoader.exists(str(pf.get("gate", ""))) else pf["module"])
+			kit.add_model(path.get_file().get_basename(), path, Transform3D(basis, v3(p)))
 
 
 func _side_tower(pc: Dictionary, spec: Dictionary) -> void:

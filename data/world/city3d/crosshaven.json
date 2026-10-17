@@ -564,11 +564,11 @@
    },
    "lamp_post": {
     "glb": "res://art/3d/crosshaven/prp_lamppost_a_LOD1.glb",
-    "light_h": 2.8
+    "light_h": 2.9
    },
    "lamp_hanging": {
     "glb": "res://art/3d/crosshaven/prp_lamppost_a_LOD1.glb",
-    "light_h": 2.8
+    "light_h": 2.9
    },
    "bench": {
     "glb": "res://art/3d/crosshaven/prp_bench_a_LOD1.glb"
@@ -581,38 +581,54 @@
     "glb": "res://art/3d/crosshaven/prp_signpost_a_LOD1.glb"
    },
    "fence": {
-    "glb": "res://art/3d/crosshaven/prp_fence_a_LOD1.glb",
-    "repeat": 1.7
+    "glb": "res://art/3d/crosshaven/prp_fence_module_a_LOD1.glb",
+    "repeat": 2.0
    },
    "tree_oak": {
-    "glb": "res://art/3d/crosshaven/nat_oak_a_LOD1.glb",
+    "glb": [
+     "res://art/3d/crosshaven/nat_oak_a_LOD1.glb",
+     "res://art/3d/crosshaven/nat_oak_b_LOD1.glb",
+     "res://art/3d/crosshaven/nat_oak_c_LOD1.glb"
+    ],
     "face": "random",
     "scale": [
-     0.85,
+     0.9,
      1.15
     ],
     "wind": true
    },
    "tree_elm": {
-    "glb": "res://art/3d/crosshaven/nat_oak_a_LOD1.glb",
+    "glb": [
+     "res://art/3d/crosshaven/nat_oak_a_LOD1.glb",
+     "res://art/3d/crosshaven/nat_oak_b_LOD1.glb",
+     "res://art/3d/crosshaven/nat_oak_c_LOD1.glb"
+    ],
     "face": "random",
     "scale": [
-     0.95,
+     1.0,
      1.25
     ],
     "wind": true
    },
    "tree_maple": {
-    "glb": "res://art/3d/crosshaven/nat_birch_a_LOD1.glb",
+    "glb": [
+     "res://art/3d/crosshaven/nat_birch_a_LOD1.glb",
+     "res://art/3d/crosshaven/nat_birch_b_LOD1.glb",
+     "res://art/3d/crosshaven/nat_birch_c_LOD1.glb"
+    ],
     "face": "random",
     "scale": [
      0.9,
-     1.2
+     1.15
     ],
     "wind": true
    },
    "tree_cherry": {
-    "glb": "res://art/3d/crosshaven/nat_birch_a_LOD1.glb",
+    "glb": [
+     "res://art/3d/crosshaven/nat_birch_a_LOD1.glb",
+     "res://art/3d/crosshaven/nat_birch_b_LOD1.glb",
+     "res://art/3d/crosshaven/nat_birch_c_LOD1.glb"
+    ],
     "face": "random",
     "scale": [
      0.8,
@@ -621,11 +637,15 @@
     "wind": true
    },
    "tree_cypress": {
-    "glb": "res://art/3d/crosshaven/nat_pine_a_LOD1.glb",
+    "glb": [
+     "res://art/3d/crosshaven/nat_cypress_a_LOD1.glb",
+     "res://art/3d/crosshaven/nat_cypress_b_LOD1.glb",
+     "res://art/3d/crosshaven/nat_cypress_c_LOD1.glb"
+    ],
     "face": "random",
     "scale": [
-     0.8,
-     1.0
+     0.85,
+     1.05
     ],
     "wind": true
    },
@@ -671,6 +691,45 @@
      2.2
     ],
     "wind": true
+   },
+   "bush_green": {
+    "glb": "res://art/3d/crosshaven/nat_bush_green_a_LOD1.glb",
+    "face": "random",
+    "scale": [
+     0.9,
+     1.2
+    ],
+    "wind": true
+   },
+   "bush_pink": {
+    "glb": "res://art/3d/crosshaven/nat_bush_flowering_a_LOD1.glb",
+    "face": "random",
+    "scale": [
+     0.9,
+     1.2
+    ],
+    "wind": true
+   },
+   "bush_yellow": {
+    "glb": "res://art/3d/crosshaven/nat_bush_green_a_LOD1.glb",
+    "face": "random",
+    "scale": [
+     0.8,
+     1.1
+    ],
+    "wind": true
+   },
+   "fence_picket_corner": {
+    "glb": "res://art/3d/crosshaven/prp_fence_corner_a_LOD1.glb"
+   },
+   "fountain": {
+    "glb": "res://art/3d/crosshaven/bld_fountain_a_LOD1.glb",
+    "scale": 1.3,
+    "water_surface": "water"
+   },
+   "gazebo": {
+    "glb": "res://art/3d/crosshaven/bld_gazebo_a_LOD1.glb",
+    "face": "door"
    }
   },
   "landmarks": {
@@ -752,7 +811,7 @@
    "race": "res://art/3d/crosshaven/prp_millrace_a_LOD1.glb",
    "note": "Mill +X wall faces the water; wheel axle 2.2 m up on that wall, spins on local X; race in the bank under it.",
    "half_width_x": 3.9,
-   "wheel_width": 2.085,
+   "wheel_width": 0.6,
    "axle_h": 2.2,
    "spin": 0.7
   },
@@ -761,7 +820,15 @@
    "banners": 4,
    "banner_r": 7.0,
    "sacks": "res://art/3d/crosshaven/prp_sacks_a_LOD1.glb"
-  }
+  },
+  "plot_fence": {
+   "module": "res://art/3d/crosshaven/prp_plotfence_module_a_LOD1.glb",
+   "gate": "res://art/3d/crosshaven/prp_plotfence_gate_a_LOD1.glb",
+   "module_m": 2.0,
+   "margin_m": 0.8,
+   "note": "Fence round each player plot, gate on the door side (+Z of each piece faces out of the plot)."
+  },
+  "lantern_material": "lantern_glass_emissive"
  },
  "outskirts": {
   "seed": 7,
@@ -771,7 +838,21 @@
   "beyond_m": 240.0,
   "step_m": 6.0,
   "rocks": 140,
-  "note": "Woods round the walls, as in the key art. Placeholder trees until the art kit has them."
+  "note": "Woods round the walls, as in the key art. Placeholder trees until the art kit has them.",
+  "impostors": [
+   "res://art/3d/crosshaven/nat_oak_a_impostor.glb",
+   "res://art/3d/crosshaven/nat_oak_b_impostor.glb",
+   "res://art/3d/crosshaven/nat_oak_c_impostor.glb",
+   "res://art/3d/crosshaven/nat_pine_a_impostor.glb",
+   "res://art/3d/crosshaven/nat_pine_b_impostor.glb",
+   "res://art/3d/crosshaven/nat_pine_c_impostor.glb",
+   "res://art/3d/crosshaven/nat_birch_a_impostor.glb",
+   "res://art/3d/crosshaven/nat_birch_b_impostor.glb",
+   "res://art/3d/crosshaven/nat_birch_c_impostor.glb",
+   "res://art/3d/crosshaven/nat_cypress_a_impostor.glb",
+   "res://art/3d/crosshaven/nat_cypress_b_impostor.glb",
+   "res://art/3d/crosshaven/nat_cypress_c_impostor.glb"
+  ]
  },
  "grade": {
   "saturation": 1.08,

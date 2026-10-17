@@ -39,6 +39,7 @@ City layout data goes in, a 3D scene comes out. Only Crosshaven is built for now
 | `mesh_kit.gd` | Placeholder primitives, palette materials, the roof prism, and batching of models. |
 | `model_loader.gd` | Loads `.glb` files at run time (GLTFDocument), so new models need no editor import. `art/3d/` has a `.gdignore`. Kit materials are drawn double-sided and dielectric (see §6). |
 | `nav_grid.gd` | The walk grid from the layout (the same `passable` rule as 2D), A*, then line-of-sight smoothing, so walks glide in straight legs. |
+| `foliage_wind.gdshader` | Wind for kit plants. It reads the vertex colours (R sway, G phase, B flutter) and uses alpha scissor for the leaf cards. It is used only on meshes that carry the colours, which are never used as tint. |
 | `city_env.gd` | Sun, sky, fog, tone and colour grade, and the day/night clock from the city file's keyframes. Lamps and windows light at night. SSAO and SSIL are on for Forward+. |
 | `city_life3d.gd` | The city's NPCs at their role posts, keeping the 2D city's day (home, work, plaza at noon, evening, home), with "!" over mission givers. Townsfolk stroll the streets by day. |
 | `hero3d.gd` | Click-to-walk hero; class switch; model, clips and weapons from data. |
@@ -67,7 +68,9 @@ City layout data goes in, a 3D scene comes out. Only Crosshaven is built for now
 | W crafts quarter and the mill | Done (art kit workshops). Our wheel turns until the art team's wheel and mill-race arrive. |
 | About 60 NPC houses | Done (art kit a–i, facing their doors) |
 | 10 player plots in 3 tiers | Done (art kit houses with tier-coloured edges and labels) |
-| Gardens, gazebo, fountain, well, stalls, lamps, trees | Placeholders; stalls and barrels use the slice props |
+| Gardens, gazebo, fountain, well, stalls, lamps, trees, bushes | Art kit. Trees (oak, birch, pine, cypress, a–c) use the foliage wind shader. The fountain water uses our water shader. Lamppost glass glows at night, plus a light. Hedges, flowerbeds and small flowers are still placeholders. |
+| Player plot fences | Art kit fence modules round each plot, with the gate on the door side |
+| Woods round the walls | Art kit tree impostors (2 crossed quads) |
 | Day/night, lamps, city life | Done |
 | Walkable in 3D | Done: the hero reaches every gate, NPC, plot door and bridge (tests) |
 
@@ -133,6 +136,7 @@ City layout data goes in, a 3D scene comes out. Only Crosshaven is built for now
   - attack: both axes swing;
   - sit: crossed on the back with the `holster_offset`.
   - No offset corrections from us yet.
+- **WebP textures:** kept as WebP when we resize them (EXT_texture_webp), because Godot reads them natively.
 - **Bridges:** we arch the walk height in data (`kit.bridge.deck_peak`) until the ramp collider is used.
 
 ## 7. Proposed for later (needs Mauro's approval; not in the rules)

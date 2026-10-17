@@ -1,0 +1,33 @@
+{
+ "footprint_m": [
+  4.4,
+  4.4
+ ],
+ "facing_note": "Entrance steps and the open railing bay face +Z.",
+ "textures": "procedural wood 1024/512/256, iron 512/256/128 (0 CU)",
+ "name": "bld_gazebo_a",
+ "label": "🖼️ IMAGEN / CONCEPTO, TODAVÍA HAY QUE CONSTRUIRLO — procedural build",
+ "tris": {
+  "LOD0": 308,
+  "LOD1": 308,
+  "LOD2": 308
+ },
+ "bounds_m": [
+  [
+   -2.541,
+   -0.0,
+   -2.541
+  ],
+  [
+   2.541,
+   5.5,
+   2.541
+  ]
+ ],
+ "height_m": 5.5,
+ "units": "metres, Y-up",
+ "pivot": "ground (y=0)",
+ "front": "+Z",
+ "collider": "bld_gazebo_a-col.glb (boxes)",
+ "status": "procedural, not tested in game"
+}

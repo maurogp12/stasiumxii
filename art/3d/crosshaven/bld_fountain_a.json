@@ -1,0 +1,34 @@
+{
+ "footprint_m": [
+  3.2,
+  3.2
+ ],
+ "water_material": "'water' (separate, BLEND; replace with the Godot water shader)",
+ "facing_note": "Radially symmetric; +Z marked by the front octagon face (spout side for any later decal).",
+ "name": "bld_fountain_a",
+ "label": "🖼️ IMAGEN / CONCEPTO, TODAVÍA HAY QUE CONSTRUIRLO — procedural build",
+ "tris": {
+  "LOD0": 384,
+  "LOD1": 384,
+  "LOD2": 384
+ },
+ "bounds_m": [
+  [
+   -1.733,
+   -0.0,
+   -1.733
+  ],
+  [
+   1.733,
+   2.02,
+   1.733
+  ]
+ ],
+ "height_m": 2.02,
+ "units": "metres, Y-up",
+ "pivot": "ground (y=0)",
+ "front": "+Z",
+ "textures": "procedural wood 1024/512/256, iron 512/256/128 (0 CU)",
+ "collider": "bld_fountain_a-col.glb (boxes)",
+ "status": "procedural, not tested in game"
+}

@@ -26,7 +26,10 @@ static func instance(path: String) -> Node3D:
 		if err == OK:
 			node = doc.generate_scene(state)
 			if not "/characters/" in path:
+				add_missing_normals(node)
 				double_sided(node)
+				if "impostor" in path:
+					unshaded(node, 0.8)
 	_cache[path] = node
 	return node.duplicate() if node != null else null
 
@@ -62,9 +65,47 @@ static func double_sided(n: Node) -> void:
 				# timber read better as dielectric under our lighting.
 				d.metallic = 0.0
 				d.metallic_specular = 0.35
+				# COLOR_0 on kit meshes is data (e.g. tree wind weights), never tint.
+				d.vertex_color_use_as_albedo = false
 				mesh.surface_set_material(i, d)
 	for c in n.get_children():
 		double_sided(c)
+
+
+## Procedural kit pieces may ship without normals; light needs them.
+static func add_missing_normals(n: Node) -> void:
+	if n is MeshInstance3D and (n as MeshInstance3D).mesh is ArrayMesh:
+		var mi := n as MeshInstance3D
+		var src: ArrayMesh = mi.mesh
+		var need := false
+		for i in src.get_surface_count():
+			if (src.surface_get_format(i) & Mesh.ARRAY_FORMAT_NORMAL) == 0:
+				need = true
+		if need:
+			var out := ArrayMesh.new()
+			for i in src.get_surface_count():
+				var st := SurfaceTool.new()
+				st.create_from(src, i)
+				if (src.surface_get_format(i) & Mesh.ARRAY_FORMAT_NORMAL) == 0:
+					st.generate_normals()
+				st.commit(out)
+				out.surface_set_material(i, src.surface_get_material(i))
+			mi.mesh = out
+	for c in n.get_children():
+		add_missing_normals(c)
+
+
+## Billboards (tree impostors) read best unlit, slightly darkened.
+static func unshaded(n: Node, tint: float) -> void:
+	if n is MeshInstance3D and (n as MeshInstance3D).mesh != null:
+		var mesh: Mesh = (n as MeshInstance3D).mesh
+		for i in mesh.get_surface_count():
+			var m := mesh.surface_get_material(i)
+			if m is BaseMaterial3D:
+				(m as BaseMaterial3D).shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+				(m as BaseMaterial3D).albedo_color = Color(tint, tint, tint)
+	for c in n.get_children():
+		unshaded(c, tint)
 
 
 static func find_player(n: Node) -> AnimationPlayer:

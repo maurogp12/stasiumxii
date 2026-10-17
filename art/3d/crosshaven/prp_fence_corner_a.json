@@ -1,0 +1,30 @@
+{
+ "snap": "corner post at origin; one module ends here along X, the next module starts here rotated 90° about Y",
+ "facing_note": "+Z = outside of the plot; module rails meet the post at its +X and -Z faces",
+ "name": "prp_fence_corner_a",
+ "label": "🖼️ IMAGEN / CONCEPTO, TODAVÍA HAY QUE CONSTRUIRLO — procedural build",
+ "tris": {
+  "LOD0": 48,
+  "LOD1": 48,
+  "LOD2": 48
+ },
+ "bounds_m": [
+  [
+   -0.11,
+   0.0,
+   -0.11
+  ],
+  [
+   0.11,
+   1.245,
+   0.11
+  ]
+ ],
+ "height_m": 1.245,
+ "units": "metres, Y-up",
+ "pivot": "ground (y=0)",
+ "front": "+Z",
+ "textures": "procedural wood 1024/512/256, iron 512/256/128 (0 CU)",
+ "collider": "prp_fence_corner_a-col.glb (boxes)",
+ "status": "procedural, not tested in game"
+}

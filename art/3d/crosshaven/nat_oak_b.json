@@ -1,0 +1,55 @@
+{
+ "id": "nat_oak_b",
+ "label": "🖼️ IMAGEN / CONCEPTO, TODAVÍA HAY QUE CONSTRUIRLO — procedural Blender build",
+ "species": "oak",
+ "variant": "b",
+ "height_m": 6.24,
+ "crown_diameter_m": 7.94,
+ "tris": {
+  "0": 8000,
+  "1": 3000,
+  "2": 798
+ },
+ "impostor": {
+  "file": "nat_oak_b_impostor.glb",
+  "type": "2 crossed quads (front +Z / side +X), alpha MASK",
+  "textures": [
+   "textures/nat_oak_b_imp_front.png",
+   "textures/nat_oak_b_imp_side.png"
+  ]
+ },
+ "vertex_color_COLOR_0": {
+  "R": "sway 0 at trunk base -> 1 at leaf tips",
+  "G": "per-branch phase random 0-1",
+  "B": "leaf flutter: 1 on leaf cards, 0 on wood",
+  "A": "1"
+ },
+ "note_godot": "COLOR_0 is wind data, NOT tint: disable vertex_color_use_as_albedo on import / in the wind shader",
+ "materials": {
+  "bark": "textures/bark_oak_albedo/normal (embedded webp)",
+  "leaf": "textures/leaf_oak_albedo_alpha/normal 2048 atlas (embedded webp), alphaMode MASK 0.5, double-sided"
+ },
+ "collider": {
+  "file": "nat_oak_b-col.glb",
+  "shape": "capsule over trunk only (no canopy)",
+  "radius_m": 0.26,
+  "height_m": 2.27
+ },
+ "pivot": "trunk base at ground (0,0,0)",
+ "front": "+Z",
+ "up": "+Y",
+ "export_check": {
+  "alpha": [
+   null,
+   "MASK"
+  ],
+  "img": [
+   "image/webp",
+   "image/webp",
+   "image/webp",
+   "image/webp"
+  ],
+  "color0": true
+ },
+ "size_bytes": 1849348
+}

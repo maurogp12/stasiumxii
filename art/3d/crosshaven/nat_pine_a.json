@@ -1,29 +1,55 @@
 {
- "label": "🖼️ IMAGEN / CONCEPTO, TODAVÍA HAY QUE CONSTRUIRLO",
- "name": "nat_pine_a",
- "concept": "nat_pine_CONCEPTO_.png",
- "height_m": 11.0,
- "footprint_m": [
-  6.316,
-  5.99
- ],
- "pivot": "footprint centre on ground (y=0)",
- "front": "+Z",
- "units": "metres, Y-up",
+ "id": "nat_pine_a",
+ "label": "🖼️ IMAGEN / CONCEPTO, TODAVÍA HAY QUE CONSTRUIRLO — procedural Blender build",
+ "species": "pine",
+ "variant": "a",
+ "height_m": 12.16,
+ "crown_diameter_m": 6.22,
  "tris": {
-  "LOD0": 5554,
-  "LOD1": 2777,
-  "LOD2": 1109
+  "0": 7500,
+  "1": 3000,
+  "2": 800
  },
- "collider": "nat_pine_a-col.glb (convex hull)",
- "textures": "embedded JPEG q82: LOD0 1024, LOD1 1024, LOD2 512",
- "source_glb": "../raw/nat_pine_UzquAH.glb.tmp.glb",
- "uniform_scale": 1.0,
- "status": "preview mesh, not tested in game",
- "note": "foliage is solid image-to-3D mesh, no alpha cutout, no wind vertex colour yet",
- "xz_fit_scale": [
-  1.0,
-  1.0
- ],
- "facing_note": "Main entrance faces +Z. Build agent rotates on import."
+ "impostor": {
+  "file": "nat_pine_a_impostor.glb",
+  "type": "2 crossed quads (front +Z / side +X), alpha MASK",
+  "textures": [
+   "textures/nat_pine_a_imp_front.png",
+   "textures/nat_pine_a_imp_side.png"
+  ]
+ },
+ "vertex_color_COLOR_0": {
+  "R": "sway 0 at trunk base -> 1 at leaf tips",
+  "G": "per-branch phase random 0-1",
+  "B": "leaf flutter: 1 on leaf cards, 0 on wood",
+  "A": "1"
+ },
+ "note_godot": "COLOR_0 is wind data, NOT tint: disable vertex_color_use_as_albedo on import / in the wind shader",
+ "materials": {
+  "bark": "textures/bark_pine_albedo/normal (embedded webp)",
+  "leaf": "textures/leaf_pine_albedo_alpha/normal 2048 atlas (embedded webp), alphaMode MASK 0.5, double-sided"
+ },
+ "collider": {
+  "file": "nat_pine_a-col.glb",
+  "shape": "capsule over trunk only (no canopy)",
+  "radius_m": 0.266,
+  "height_m": 4.4
+ },
+ "pivot": "trunk base at ground (0,0,0)",
+ "front": "+Z",
+ "up": "+Y",
+ "export_check": {
+  "alpha": [
+   null,
+   "MASK"
+  ],
+  "img": [
+   "image/webp",
+   "image/webp",
+   "image/webp",
+   "image/webp"
+  ],
+  "color0": true
+ },
+ "size_bytes": 2498652
 }
