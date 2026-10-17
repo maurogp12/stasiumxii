@@ -85,3 +85,9 @@ The plots sit in the south-east of `cx_built`, along the south wall, between the
   - there are no garden beds;
   - P3 is moved off the tower.
   - A test checks all of this.
+
+## Mauro's change list for the city base (16–17 Oct 2026)
+
+Reviewed on the base without buildings (`cxbase/base_walls.jpg`).
+
+1. **Gates where roads cross the wall** ("nos falta puerta ahí"). The west road and the east road pass straight through the wall with no gate; only the south gate exists. Every road that leaves the city gets a proper gatehouse matching the south gate, with its walkable passage.
