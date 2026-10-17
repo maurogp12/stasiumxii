@@ -52,3 +52,4 @@ Crosshaven kit Group 1 v3 walls: 700px gatehouse, 455px arch, recessed parapet, 
 Crosshaven kit small v2: hedge end/corner, clean signs, round mill wheel; CONCEPTO, not built
 3D slice concepts (CONCEPTO): hero M/F, 2 bandits, weapons, 4 props, gate arch, wall section, south gate day/dusk key art, JSON per piece
 2026-10-17 Crosshaven 3D slice props (barrel, barricade, cart, stall, gate arch, wall; LOD0/1/2 + collider + JSON) and wall walkway redo concept by Scenario Art — CONCEPTO, not wired
+2026-10-17 5 class 3D concepts (kestrel, ironjaw, mender, gloam, bastion; M/F A-pose turnarounds, weapons sheet, scale sheet) by Scenario Art in work/3d_classes/ — CONCEPTO, not built

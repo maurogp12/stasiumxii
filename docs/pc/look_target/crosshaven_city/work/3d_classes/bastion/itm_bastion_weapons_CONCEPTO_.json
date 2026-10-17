@@ -1,0 +1,13 @@
+{
+ "label": "🖼️ IMAGEN / CONCEPTO, TODAVÍA HAY QUE CONSTRUIRLO",
+ "file": "itm_bastion_weapons_CONCEPTO_.png",
+ "items": "tower shield + flanged mace",
+ "slot": "main_hand mace + off_hand shield",
+ "pivot": "grip_centre",
+ "front": "+Z",
+ "tris_budget": "prop 0.5-3k each",
+ "textures": "PBR 512-1024",
+ "collider": "box/convex -col",
+ "separate_from_body": true,
+ "model_built": false
+}
