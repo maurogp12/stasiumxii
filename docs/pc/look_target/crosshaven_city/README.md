@@ -170,3 +170,9 @@ Reviewed on the base without buildings (`cxbase/base_walls.jpg`).
     - water gates and corner towers.
 
     The build agent assembles them in game. The final check is in game.
+26. **Tower and gate rules from Mauro's review in game** (17 Oct):
+    - every tower is the same sprite, at the same angle and size, as the v5 gatehouse towers;
+    - the stone colour is the same throughout;
+    - towers are centred on the wall line and on the corners, and the walls close perfectly, with no steps or gaps;
+    - water gates belong to the same family as the gatehouses, flanked by towers.
+27. **SE gate REMOVED** (Mauro, 17 Oct: "esta entrada hay que quitarla"). Land gates are now N, S, W and E, plus 2 water gates. The SE wall is continuous, and the SE road and exit link are deleted.
