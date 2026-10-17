@@ -138,3 +138,4 @@ Reviewed on the base without buildings (`cxbase/base_walls.jpg`).
     - add gates at the road–wall contacts (west, east, north, south-east), painted by Grok Bot in the style of the south gate.
 
     **General lesson:** Grok Bot's painted art beats Meshy for this city every time. Meshy stays off the city art unless Mauro asks.
+19. **Player house tiers APPROVED by Mauro** (17 Oct, "sí"), already approved by Luca: Normal, Rare and Legendary at 2.5× (#425 fdcc2149, `work/houses/`).
