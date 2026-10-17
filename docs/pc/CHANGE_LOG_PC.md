@@ -28,3 +28,4 @@ Crosshaven (d) props: 3 market stalls, fountain, well; short_v6b removed (v6 990
 Crosshaven (e) GOAL extras: gazebo, rowboat, quay, garden pieces, hedge tile, 4 boulders - 🖼️ CONCEPTO
 Crosshaven iso gatehouses v7 (walkway top, arch depth) + water gate v6 - 🖼️ CONCEPTO
 Crosshaven kit wall segments regraded to v7 stone (diag, horizontal, short + mirrors) - 🖼️ CONCEPTO
+Crosshaven kit4: one-piece unified wall section v1 (diagonal wall + 2 towers + water-gate arch, painted ground, no alpha) - 🖼️ CONCEPTO
