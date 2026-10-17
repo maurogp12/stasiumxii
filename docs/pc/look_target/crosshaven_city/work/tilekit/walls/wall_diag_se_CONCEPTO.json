@@ -1,7 +1,7 @@
 {
  "foot": [
   153,
-  619
+  602
  ],
  "footprint": [
   2,
@@ -14,5 +14,5 @@
   103
  ],
  "merlon_period_px": 206,
- "orient": "se iso axis, 2:1 slope; painted iso pass; mirror pair"
+ "orient": "se iso axis, 2:1 slope; painted iso wall, tower-matched stone; mirror pair"
 }

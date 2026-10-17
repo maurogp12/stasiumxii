@@ -1,15 +1,26 @@
 {
  "foot": [
   661,
-  873
+  1006
  ],
  "footprint": [
   16,
   1
  ],
  "blocks": true,
- "height_px": 550,
+ "height_px": 700,
+ "gatehouse": {
+  "height_px": 700,
+  "width_px": 635,
+  "wall_height_px": 550
+ },
  "passage": {
+  "rect": [
+   533,
+   485,
+   261,
+   585
+  ],
   "walkable": true,
   "see_through": true
  },
@@ -17,16 +28,16 @@
   "file": "gate_door_diag_ne_CONCEPTO.png",
   "frames": 8,
   "fps": 12,
-  "frame_w": 236,
-  "frame_h": 380,
+  "frame_w": 261,
+  "frame_h": 585,
   "offset": [
-   543,
-   552
+   533,
+   485
   ],
   "open_inward": true
  },
  "layer_order": "ground < door < gate curtain < actors",
  "no_portcullis": true,
  "no_dust": true,
- "orient": "ne iso axis, 2:1 slope; painted iso pass (mirrored, 10% darker: faces away from sun)"
+ "orient": "ne iso axis, 2:1 slope (mirror of se, 10% darker)"
 }

@@ -15,5 +15,10 @@
   0
  ],
  "merlon_period_px": 206,
- "v2": "walkway + back parapet, square merlons with top faces"
+ "variants": [
+  "wall_h_CONCEPTO",
+  "wall_h_b_CONCEPTO",
+  "wall_h_c_CONCEPTO"
+ ],
+ "note": "variants share edges; mix freely"
 }

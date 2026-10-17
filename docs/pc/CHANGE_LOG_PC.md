@@ -48,3 +48,4 @@ Crosshaven kit group 2 houses (9 NPC + 3 player tiers) + wall_h 206px repeat fix
 Crosshaven kit groups 3-5: landmarks, workshops, props; CONCEPTO, not built
 Crosshaven kit Group 1 v2: organic ground edges, wall depth, square merlons, painted diagonals; CONCEPTO, not built
 Crosshaven kit nature + extras + Groups 3-5 fixes (signs, anims, fence ends); CONCEPTO, not built
+Crosshaven kit Group 1 v3 walls: 700px gatehouse, 455px arch, recessed parapet, wall variants; CONCEPTO, not built
