@@ -1,36 +1,35 @@
 {
  "plinth_centre": [
-  229.0,
-  888
+  215.5,
+  929
  ],
- "plinth_radius": 227.0,
+ "plinth_radius": 213.5,
  "height": 990,
- "shaft_width": 314,
- "plinth_width": 454,
- "scale": 1.495,
+ "shaft_width": 319,
+ "plinth_width": 427,
+ "scale": 1.5542,
  "uniform": true,
+ "course_px": 41,
+ "source": "tower_v81_raw.jpg",
  "note": "walls attach with foot at plinth_centre",
  "left_foot": [
-  229.0,
-  888
+  215.5,
+  929
  ],
  "right_foot": [
-  229.0,
-  888
- ],
- "stone_lab_before": [
-  62.900001525878906,
-  8.699999809265137,
-  27.799999237060547
+  215.5,
+  929
  ],
  "stone_lab_after": [
-  39.0,
-  0.9,
-  19.3
+  39.3,
+  1.4,
+  19.1
  ],
+ "colour_target": "v4 approved ring stone LAB [38.8, 1.1, 19.0]",
  "size": [
-  459,
+  432,
   990
  ],
- "colour_target": "v4 approved ring stone LAB [38.8, 1.1, 19.0]"
+ "course_note": "measured ~40-43 px on shaft",
+ "shaft_rows_removed_raw": 61
 }

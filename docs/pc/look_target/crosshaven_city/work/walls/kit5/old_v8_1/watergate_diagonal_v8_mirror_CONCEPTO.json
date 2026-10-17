@@ -1,0 +1,28 @@
+{
+ "left_foot": [
+  0,
+  553
+ ],
+ "right_foot": [
+  2235,
+  1365.0
+ ],
+ "slope": 0.3633,
+ "raw_slope": 0.2606,
+ "scale": 2.0221,
+ "body_px": 550,
+ "course_px": 36.4,
+ "removed_courses": 2,
+ "arch_opening_x": [
+  920,
+  1231
+ ],
+ "arch_width_px": 311,
+ "source": "watergate_diag_v4match_raw.jpg",
+ "stone_lab_after": [
+  39.0,
+  1.2,
+  19.0
+ ],
+ "colour_target": "v4 approved ring stone LAB [38.8, 1.1, 19.0]"
+}
