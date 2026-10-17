@@ -1,0 +1,11 @@
+time,job,task_id,credits,note
+2026-10-17 17:43 ET,multi-image-to-3d preview mesh-only (front/side/back),01a14bd1-8402-7333-b419-cebb5620157c,20,
+2026-10-17 17:43 ET,text-to-3d preview axe (weapons PNG is a wall, no axe concept),01a14bd1-b897-700c-ae9f-970b8ba16d9f,20,
+2026-10-17 17:44 ET,retexture character PBR from front view,01a14bd3-093b-735a-8b23-3f89da9116a2,10,
+2026-10-17 17:44 ET,text-to-3d refine axe PBR,01a14bd3-0d69-72bd-b48a-29bd19852419,10,
+2026-10-17 17:47 ET,rigging humanoid 1.8m,01a14bd5-3c0d-779f-9620-e8b83f914014,5,
+2026-10-17 17:47 ET,animation batch 1 ids [335, 669, 673, 575, 586, 237, 92, 239, 101, 178],01a14bd5-cdf4-7271-8c91-63cdb4c8536f,30,
+2026-10-17 17:47 ET,animation batch 2 ids [149, 220, 156, 187, 189, 285, 33, 403, 85, 238],01a14bd5-d003-76d3-9f1a-3514a9539785,30,
+2026-10-17 17:47 ET,animation batch 3 ids [91, 127, 88, 466, 438],01a14bd5-d241-70b1-8927-16ca01b46c02,15,
+,TOTAL,,140,balance 2150 -> 2010 (verified via /balance)
+2026-10-17 18:09 ET,grip fix v2 (Blender only),-,0,no Meshy jobs
