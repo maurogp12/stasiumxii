@@ -10,7 +10,7 @@
         "file": "doors/gate_shadow_N_CONCEPTO.png",
         "rim_px": 12
       },
-      "layer_order": "ground(full) < door < walls(rim/jambs) < shadow < dust",
+      "layer_order": "ground(full) < door < walls(rim/jambs) < shadow",
       "door": {
         "frame_w": 145,
         "frame_h": 189,
@@ -50,7 +50,7 @@
         "file": "doors/gate_shadow_S_CONCEPTO.png",
         "rim_px": 13
       },
-      "layer_order": "ground(full) < door < walls(rim/jambs) < shadow < dust",
+      "layer_order": "ground(full) < door < walls(rim/jambs) < shadow",
       "door": {
         "frame_w": 157,
         "frame_h": 197,
@@ -90,7 +90,7 @@
         "file": "doors/gate_shadow_W_CONCEPTO.png",
         "rim_px": 9
       },
-      "layer_order": "ground(full) < door < walls(rim/jambs) < shadow < dust",
+      "layer_order": "ground(full) < door < walls(rim/jambs) < shadow",
       "door": {
         "frame_w": 117,
         "frame_h": 189,
@@ -130,7 +130,7 @@
         "file": "doors/gate_shadow_E_CONCEPTO.png",
         "rim_px": 8
       },
-      "layer_order": "ground(full) < door < walls(rim/jambs) < shadow < dust",
+      "layer_order": "ground(full) < door < walls(rim/jambs) < shadow",
       "door": {
         "frame_w": 97,
         "frame_h": 161,
