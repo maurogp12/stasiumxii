@@ -569,6 +569,9 @@ func _draw_stub_marker() -> void:
 
 
 func _drop_city_plate() -> void:
+	if city_life != null:
+		city_life.free()
+		city_life = null
 	if city_plate == null:
 		return
 	if ground == city_plate:
@@ -649,6 +652,8 @@ func _sync_city_life() -> void:
 		if body == null:
 			continue
 		var show: bool = day or bool(night_out.get(str(body.name), false))
+		if city_life != null:
+			show = city_life.npc_visible(body)
 		if body.visible != show:
 			body.visible = show
 			var plate: Variant = body.get("_plate")
@@ -803,6 +808,7 @@ func _spawn_npcs() -> void:
 		node.idle_rate = LITE_IDLE_RATE if settings.performance else 1.0
 		node.attach_host(self, _roam_forbidden(zone, record, false), _roam_forbidden(zone, record, true))
 	_refresh_marks()
+	_mount_city_life()
 
 
 ## The NPC record whose body is on `cell` in the current chunk. A walking NPC
@@ -1579,6 +1585,8 @@ func _process(delta: float) -> void:
 		city_plate.tick_pets(delta)
 		city_plate.tick_lights(delta)
 		tick_city_gates(delta)
+		if city_life != null and weather != null:
+			city_life.tick(delta, weather.time_of_day)
 		if Engine.get_process_frames() % 30 == 0:
 			_sync_city_life()
 		if Engine.get_process_frames() % 4 == 0:
@@ -2507,6 +2515,22 @@ func _cover_children(root: Node, feet: Vector2, wz: int, npc_feet: Array = []) -
 
 ## Feet and z of each NPC body of the current chunk only (neighbour chunks'
 ## NPCs are not checked), so the per-frame cost stays at one chunk's NPCs.
+const CityLife := preload("res://scenes/world/crosshaven/city_life.gd")
+## Round 25: townsfolk schedules and animals on the modular city.
+var city_life: Node2D = null
+
+
+func _mount_city_life() -> void:
+	if city_life != null:
+		city_life.queue_free()
+		city_life = null
+	if not in_city() or not city.tile_mode() or (settings != null and settings.performance):
+		return
+	city_life = CityLife.new()
+	add_child(city_life)
+	city_life.setup(self, city)
+
+
 ## Round 18: the portcullises rise for the hero or an NPC near a gate.
 func tick_city_gates(delta: float) -> void:
 	if not in_city() or city_plate == null:

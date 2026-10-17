@@ -76,6 +76,8 @@ func _go() -> void:
 		await _v4_shots()
 	elif _set == "behind":
 		await _behind_shots()
+	elif _set == "life":
+		await _life_shots()
 	elif _set == "r23" and not _clip:
 		await _r23_shots()
 	elif _set == "r23" and _clip:
@@ -231,6 +233,48 @@ func _r23_clip() -> void:
 			await process_frame
 	_grabbing = false
 	print("CLIP frames=%d" % _frame_i)
+
+
+## Round 25: the modular city in play: the whole town, the plaza at noon
+## with the townsfolk, a street at night with the lamps, the animals.
+func _life_shots() -> void:
+	_w.camera_hold = true
+	_w.npc_plates.visible = false
+	var life = _w.city_life
+	if life != null:
+		# let the morning schedule play out (townsfolk to work, plaza at noon)
+		for i in 1200:
+			life.tick(0.05, 12.5)
+			for node in life.plan.keys():
+				node.tick(0.05)
+	_w.weather.time_of_day = 12.5
+	_w._sync_city_life()
+	var rect: Rect2 = city.world_rect()
+	var vp: Vector2 = _w.get_viewport().get_visible_rect().size
+	_w.walker.visible = false
+	await _hold(rect.get_center(), minf(vp.x / rect.size.x, vp.y / rect.size.y), 30, "60_modular_wide_day")
+	_w.walker.visible = true
+	var plaza := Vector2.ZERO
+	for p in city.tile.pieces():
+		if str(p["kind"]) == "fountain":
+			plaza = city.tile.piece_foot(p)
+	_place(_near_free(_cell_at_world(plaza + Vector2(80, 60))), "n")
+	await _hold(plaza + Vector2(0, -60), 0.8, 30, "61_modular_plaza_noon")
+	if life != null and not life.animals.is_empty():
+		for a in life.animals:
+			if str(a["kind"]) == "chicken":
+				await _hold((a["node"] as Node2D).position + Vector2(0, -30), 1.6, 30, "62_modular_chickens")
+				break
+		for a in life.animals:
+			if str(a["kind"]) == "duck":
+				await _hold((a["node"] as Node2D).position + Vector2(0, -20), 1.6, 30, "63_modular_ducks")
+				break
+	_w.weather.time_of_day = 22.0
+	_w._sync_city_life()
+	await _hold(plaza + Vector2(0, -60), 0.8, 40, "64_modular_night_lamps")
+	_w.weather.time_of_day = 12.0
+	_w.camera_hold = false
+	_w.npc_plates.visible = true
 
 
 ## Round 22: the hero just inside the S and W gatehouses (behind the wall),

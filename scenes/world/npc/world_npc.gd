@@ -111,6 +111,11 @@ var _retries := 0
 var _held := false
 var _arrive_face := ""
 var _notice_t := 0.0
+## Round 25 (city life): a route across town given by the city's schedule.
+## On arrival the NPC settles there (home moves) and roams round it.
+var _errand := false
+var _errand_forbidden: Dictionary = {}
+var arrived_errand := true
 
 
 func set_mark(next: String) -> void:
@@ -325,6 +330,9 @@ func tick(delta: float) -> void:
 		return
 	if _held:
 		return
+	if _errand and not _path.is_empty():
+		_try_step(delta)
+		return
 	if behaviour == Roam.POST or _host == null or not roam_enabled:
 		_notice_hero(delta)
 		return
@@ -455,6 +463,16 @@ func _try_step(delta: float) -> void:
 	var free := true
 	if _host != null and _host.has_method("npc_cell_free"):
 		free = bool(_host.npc_cell_free(self, next))
+	if not free and _errand:
+		# someone in the way: wait a moment, keep the route; after a few
+		# tries squeeze past (two errands head-on would wait for ever)
+		_retries += 1
+		if _retries < RETRY_LIMIT * 3:
+			_wait = RETRY_SEC
+			if anim != "idle":
+				_set_anim("idle")
+			return
+		free = true
 	if not free:
 		_retries += 1
 		_wait = RETRY_SEC
@@ -509,7 +527,32 @@ func _finish_step() -> void:
 	_arrive()
 
 
+## Walk `route` (cells after the current one) and settle at its end.
+func send(route: Array[Vector2i], forbidden: Dictionary = {}) -> void:
+	if route.is_empty():
+		return
+	_path = route.duplicate()
+	_errand = true
+	arrived_errand = false
+	_errand_forbidden = forbidden
+	_wait = 0.0
+	_retries = 0
+
+
+func on_errand() -> bool:
+	return _errand
+
+
 func _arrive() -> void:
+	if _errand:
+		_errand = false
+		arrived_errand = true
+		home = cell
+		if _host != null:
+			attach_host(_host, _errand_forbidden)
+		_set_anim("idle")
+		_wait = _rng.randf_range(1.0, 3.0)
+		return
 	var work := str(art.get("work", ""))
 	if behaviour == Roam.WANDER:
 		if _arrive_face != "" and work != "":

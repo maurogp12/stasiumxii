@@ -44,6 +44,7 @@ func _run() -> void:
 	_test_fade_labels(w)
 	_test_lamps(w)
 	_test_npcs(w)
+	await _test_life(w)
 	w.queue_free()
 	await process_frame
 	_finish()
@@ -274,6 +275,63 @@ func _test_lamps(w: Node2D) -> void:
 		if (l["halo"] as CanvasItem).visible:
 			lit += 1
 	check(lit == 0, "no lamp lit at noon")
+
+
+## City life: schedules move the townsfolk across town, they go indoors at
+## night (the warden stays out), animals wander and sort.
+func _test_life(w: Node2D) -> void:
+	var life = w.city_life
+	check(life != null, "city life runs in the tile city")
+	if life == null:
+		return
+	check(life.homes.size() >= 40, "house doors are homes (%d)" % life.homes.size())
+	check(life.animal_count("cat") >= 2 and life.animal_count("dog") >= 2, "cats and dogs by the houses")
+	check(life.animal_count("chicken") >= 6, "chickens behind the houses (%d)" % life.animal_count("chicken"))
+	check(life.animal_count("duck") >= 3, "ducks on the river (%d)" % life.animal_count("duck"))
+	check(life.phase_at(3.0) == "home" and life.phase_at(9.0) == "work" and life.phase_at(12.5) == "plaza" and life.phase_at(19.0) == "tavern", "the day's phases")
+	# morning: everyone heads to work; drive the clock and the walkers
+	var z: WorldZone = w.zone
+	var start := {}
+	for node in life.plan.keys():
+		start[node] = node.cell
+	var moved := 0
+	var hour := 9.5
+	for i in 1600:
+		life.tick(0.05, hour)
+		for node in life.plan.keys():
+			node.tick(0.05)
+	for node in life.plan.keys():
+		if node.cell != start[node]:
+			moved += 1
+		check(z.passable_at(node.cell), "%s walks only on walkable cells" % node.name)
+	check(moved >= life.plan.size() / 2, "the townsfolk cross town to work (%d moved)" % moved)
+	# night: home and indoors; the warden stays out
+	for i in 6000:
+		life.tick(0.05, 23.0)
+		for node in life.plan.keys():
+			node.tick(0.05)
+	var hidden := 0
+	var warden_out := false
+	for node in life.plan.keys():
+		if not life.npc_visible(node):
+			hidden += 1
+		if str(node.get("role")) == "warden" and life.npc_visible(node):
+			warden_out = true
+	check(hidden >= life.plan.size() / 2, "at night most go indoors (%d)" % hidden)
+	check(warden_out, "the warden stays out at night")
+	# animals move and y-sort
+	var a0: Dictionary = life.animals[0]
+	var p0: Vector2 = (a0["node"] as Node2D).position
+	for i in 200:
+		life.tick(0.05, 10.0)
+	var any_moved := false
+	for a in life.animals:
+		if (a["node"] as Node2D).position.distance_to(BoardVisualSort.cell_to_local(a["home"])) > 2.0:
+			any_moved = true
+	check(any_moved, "the animals wander")
+	var s: Sprite2D = a0["node"]
+	check(s.z_index == clampi(PlateCity.z_for_world_y(s.position.y) + BoardVisualSort.UNIT_Z_BIAS - 1, -4096, 4096), "animals y-sort by their feet")
+	await process_frame
 
 
 func _test_npcs(w: Node2D) -> void:
