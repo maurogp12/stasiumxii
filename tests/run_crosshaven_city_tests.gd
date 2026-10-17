@@ -39,6 +39,9 @@ func _initialize() -> void:
 
 
 func _run() -> void:
+	# the painted-plate checks (the modular city has its own suite)
+	PlateCity.mode_override = "plate"
+	PlateCity.clear_cache()
 	var loaded: Dictionary = PlateCity.load_default()
 	check(bool(loaded.get("ok", false)), "city.json loads (%s)" % [loaded.get("errors", [])])
 	if not bool(loaded.get("ok", false)):

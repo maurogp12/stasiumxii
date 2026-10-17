@@ -77,8 +77,8 @@ func _build_pieces() -> void:
 		s.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 		s.scale = Vector2.ONE * k
 		var foot := city.piece_foot(p)
-		s.offset = -Vector2(float(spec["foot"][0]), float(spec["foot"][1]))
-		s.position = foot
+		# top-left placement (the plate view's fade and masks expect it)
+		s.position = foot - Vector2(float(spec["foot"][0]), float(spec["foot"][1])) * k
 		s.z_as_relative = false
 		s.z_index = clampi(PlateCity.z_for_world_y(foot.y), -4096, 4096)
 		s.name = "%s_%d" % [str(p["kind"]), i]

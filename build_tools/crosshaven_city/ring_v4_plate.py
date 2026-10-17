@@ -1020,6 +1020,8 @@ def main():
     city["water_gates"] = [{"id": w_["id"], "at": [w_["at"][0] * UP, w_["at"][1] * UP],
                             "flank_towers": [[t["base"][0] * UP, t["base"][1] * UP] for t in kept if t["name"] in w_["flanks"]]}
                            for w_ in cfg["water_gates"]]
+    # round 25: the modular (tile kit) city, behind this flag; the plate stays the fallback
+    city["modular"] = dict(cfg.get("modular", {"enabled": True, "tilemap": "tilemap.json"}))
     json.dump(city, open(os.path.join(data_dir, "city.json"), "w"), indent=1)
     json.dump({"format": "stasium.plate_layers", "format_version": 1, "layers": out_layers},
               open(os.path.join(data_dir, "layers.json"), "w"), separators=(",", ":"))

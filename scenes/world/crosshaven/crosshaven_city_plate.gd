@@ -49,12 +49,15 @@ func setup(target, lite_mode: bool) -> void:
 	lite = lite_mode
 	name = "CityPlate"
 	position = Vector2.ZERO
-	_build_ground()
-	_build_water()
-	_build_layers()
-	_build_plots()
+	if city.tile_mode():
+		_build_tile()
+	else:
+		_build_ground()
+		_build_water()
+		_build_layers()
+		_build_plots()
+		_build_portcullis()
 	_build_pets()
-	_build_portcullis()
 	footprints = Node2D.new()
 	footprints.name = "Footprints"
 	footprints.z_as_relative = false
@@ -67,7 +70,7 @@ func setup(target, lite_mode: bool) -> void:
 ## Ground image swap only (the layers keep their 1x art either way).
 func set_lite(on: bool) -> void:
 	lite = on
-	if _ground_lite != on:
+	if _ground_lite != on and not city.tile_mode():
 		_build_ground()
 	if water != null:
 		water.visible = not on
@@ -615,6 +618,153 @@ func _draw_footprints() -> void:
 		footprints.draw_string(font, a + Vector2(-30, 26), "%s %s" % [p["id"], p["tier"]], HORIZONTAL_ALIGNMENT_LEFT, -1, 22, Color(1, 1, 1))
 
 
+const TileView := preload("res://scenes/world/crosshaven/tile_city_view.gd")
+## kit piece kind -> the layer tag the fade, labels and tests know
+const TILE_TAGS := {
+	"wall": "wall", "tower": "tower", "gate": "gate_back", "castle": "castle", "cathedral": "cathedral",
+	"townhall": "townhall", "bank": "bank", "house": "house", "workshop": "workshop", "mill": "mill",
+	"stall": "stall", "fountain": "fountain", "well": "well", "lamp": "lamp", "bush": "plant",
+	"plot_normal": "plot_house", "plot_rare": "plot_house", "plot_legendary": "plot_house", "bridge": "bridge",
+}
+var tile_view: Node2D
+static var _mask_cache := {}
+
+
+## Round 25: the modular city. The tile view draws the autotiled ground and
+## the kit pieces; each piece becomes a row here, so the y-sort, local fade,
+## label occlusion, lamps, doors and plots work as on the plate.
+func _build_tile() -> void:
+	rows.clear()
+	lights.clear()
+	tile_view = TileView.new()
+	add_child(tile_view)
+	tile_view.setup(city.tile)
+	tile_view.ground.z_index = GROUND_Z
+	var k: float = city.tile.kit_scale()
+	var id := 50000
+	for pn in tile_view.piece_nodes:
+		var s: Sprite2D = pn["node"]
+		var p: Dictionary = pn["piece"]
+		var kind := str(p["kind"])
+		var tag := str(TILE_TAGS.get(kind, kind))
+		if s.texture == null:
+			continue
+		var size: Vector2 = s.texture.get_size() * k / city.scale()
+		var foot: Vector2 = pn["foot"]
+		var fade: bool = s.texture.get_size().y * k >= 40.0 and kind != "bridge"
+		var mask := _tex_mask(s.texture) if fade else {}
+		var row := {
+			"node": s, "tag": tag, "id": id, "kind": kind,
+			"rect": Rect2(s.position, s.texture.get_size() * k),
+			"sort_y": city.world_to_plate(foot).y, "z": s.z_index, "fade": fade,
+			"min_alpha": 0.45, "mask": mask, "alpha": 1.0, "k": k / city.scale(), "flip": false,
+			"piece": p,
+		}
+		rows.append(row)
+		id += 1
+		if kind == "lamp":
+			_add_tile_lamp(s, foot, k)
+		if p.has("plot"):
+			plot_nodes[str(p["plot"])] = s
+	_build_tile_gates()
+
+
+## Fade mask of a kit texture: 8 texture px per bit (cached per texture).
+func _tex_mask(t: Texture2D) -> Dictionary:
+	if _mask_cache.has(t):
+		return _mask_cache[t]
+	var img := t.get_image()
+	if img == null:
+		return {}
+	if img.is_compressed():
+		img.decompress()
+	var w := int(ceil(img.get_width() / 8.0))
+	var h := int(ceil(img.get_height() / 8.0))
+	var small := img.duplicate() as Image
+	small.resize(w, h, Image.INTERPOLATE_BILINEAR)
+	var bits := PackedByteArray()
+	bits.resize(w * h)
+	for y in h:
+		for x in w:
+			bits[y * w + x] = 1 if small.get_pixel(x, y).a > 0.12 else 0
+	var m := {"step": 8, "w": w, "h": h, "bits": bits}
+	_mask_cache[t] = m
+	return m
+
+
+## A lamp's head glow, ground pool and (outside Performance mode) point light,
+## lit from dusk to dawn like the plate lamps.
+func _add_tile_lamp(s: Sprite2D, foot: Vector2, k: float) -> void:
+	var cfg: Dictionary = city.doc.get("lights", {})
+	var add := CanvasItemMaterial.new()
+	add.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
+	var tint := Color(1.0, 0.8, 0.5)
+	var head := Vector2(foot.x, s.position.y + 14.0 * k)
+	var halo := Sprite2D.new()
+	halo.texture = _light_texture()
+	halo.material = add
+	halo.position = head
+	halo.scale = Vector2.ONE * 0.32
+	halo.self_modulate = tint
+	halo.modulate.a = 0.9
+	halo.z_as_relative = false
+	halo.z_index = clampi(s.z_index + 1, -4096, 4096)
+	halo.visible = false
+	halo.name = "%s_halo" % s.name
+	add_child(halo)
+	var pool := Sprite2D.new()
+	pool.texture = _light_texture()
+	pool.material = add
+	pool.position = foot
+	pool.scale = Vector2(0.9, 0.45)
+	pool.self_modulate = tint
+	pool.modulate.a = 0.55
+	pool.z_as_relative = false
+	pool.z_index = UNDER_Z + 80
+	pool.visible = false
+	pool.name = "%s_pool" % s.name
+	add_child(pool)
+	var pl := PointLight2D.new()
+	pl.texture = _light_texture()
+	pl.texture_scale = float(cfg.get("light_radius_px", 170.0)) * city.scale() / 128.0
+	pl.color = tint
+	pl.energy = float(cfg.get("light_energy", 1.1))
+	pl.position = foot - Vector2(0, 20)
+	pl.enabled = false
+	pl.name = "%s_light" % s.name
+	add_child(pl)
+	lights.append({"halo": halo, "pool": pool, "light": pl, "base_a": 0.9, "plant": "tile_lamp"})
+
+
+## Gates on the tile map: the kit's gate piece (its "frames" when the kit has
+## door frames; until then it turns see-through as it opens), blocking the
+## city.json passage cells under the arch until it is open.
+func _build_tile_gates() -> void:
+	gates_fx.clear()
+	for row in rows:
+		if str(row.get("kind", "")) != "gate":
+			continue
+		var p: Dictionary = row["piece"]
+		var gid := str(p.get("gate", ""))
+		var block := {}
+		for g in city.gates():
+			if str(g["id"]) != gid:
+				continue
+			var rec: Dictionary = g.get("door", g.get("portcullis", {}))
+			for c in rec.get("block_cells", []):
+				block[Vector2i(int(c[0]), int(c[1]))] = true
+		var spec: Dictionary = city.tile.piece_spec(p)
+		var frames: Array = []
+		for f in spec.get("frames", []):
+			frames.append(tile_view.tex(str(f)))
+		var foot: Vector2 = city.tile.piece_foot(p)
+		gates_fx.append({
+			"id": gid, "node": row["node"], "lift": 0.0, "target": 0.0, "idle": 0.0, "glow": null, "light": null,
+			"kind": "door" if frames.size() >= 2 else "fade", "frames": frames, "frame": 0.0, "fps": float(spec.get("fps", 12.0)),
+			"at": foot, "open_s": 0.6, "close_after_s": 1.5, "trigger": 3.0, "block": block,
+		})
+
+
 const PORTCULLIS_SHADER := preload("res://scenes/world/crosshaven/crosshaven_portcullis.gdshader")
 
 
@@ -711,6 +861,10 @@ func tick_gates(delta: float, bodies: Array, hero_h: float) -> void:
 			if float(gf["target"]) > 0.0 and float(gf["idle"]) >= float(gf["close_after_s"]):
 				gf["target"] = 0.0
 				_gate_sound(str(gf["id"]), "close")
+		if str(gf["kind"]) == "fade":
+			gf["lift"] = move_toward(float(gf["lift"]), float(gf["target"]), delta / maxf(0.01, float(gf["open_s"])))
+			(gf["node"] as CanvasItem).self_modulate.a = 1.0 - 0.75 * float(gf["lift"])
+			continue
 		if str(gf["kind"]) == "door":
 			# f00 closed .. last frame open, at the kit's fps both ways
 			var frames: Array = gf["frames"]
@@ -731,7 +885,7 @@ func tick_gates(delta: float, bodies: Array, hero_h: float) -> void:
 func gate_closed_at(cell: Vector2i) -> bool:
 	for gf in gates_fx:
 		# a door blocks until it is fully open; a portcullis once it is 3/4 up
-		var need := 1.0 if str(gf["kind"]) == "door" else 0.75
+		var need := 1.0 if str(gf["kind"]) in ["door", "fade"] else 0.75
 		if (gf["block"] as Dictionary).has(cell) and float(gf["lift"]) < need - 0.0001:
 			return true
 	return false

@@ -15,7 +15,7 @@ const CITY_ID := "crosshaven_city"
 const KEYS: Array[String] = [
 	"format", "format_version", "zone_id", "region", "name", "status", "source", "plate",
 	"grid", "spawn", "exit_cell", "gate_cells", "bridges", "plots", "plot_rules", "pets",
-	"npcs", "day_hours", "gate_stubs", "layers", "gates", "wall_contacts", "towers_cleaned", "wall_polygon", "water", "trees_keep", "plants", "map_base_only", "building_footprints", "thatch_swapped", "wall_ring", "lights", "water_gates", "gate_clear", "wall_runs", "tower_body_radius_px", "gates_snapped", "tower_spacing", "stone_chroma", "join_audit", "tower_plinths", "tower_base_radius_px", "block_below_tower_px",
+	"npcs", "day_hours", "gate_stubs", "layers", "gates", "wall_contacts", "towers_cleaned", "wall_polygon", "water", "trees_keep", "plants", "map_base_only", "building_footprints", "thatch_swapped", "wall_ring", "lights", "water_gates", "gate_clear", "wall_runs", "tower_body_radius_px", "gates_snapped", "tower_spacing", "stone_chroma", "join_audit", "tower_plinths", "tower_base_radius_px", "block_below_tower_px", "modular",
 ]
 const TIERS: Array[String] = ["normal", "rare", "legendary"]
 ## Grid row symbol -> [terrain, walkable].
@@ -28,6 +28,12 @@ const SYMBOLS := {
 }
 
 var doc: Dictionary = {}
+## Round 25: the modular (tile kit) city behind a flag. city.json "modular":
+## {"enabled", "tilemap"}; mode_override ("plate" / "tile") wins over the data
+## (tests, debug). In tile mode the walk grid comes from the tile map and the
+## view draws the kit; the painted plate stays as the fallback.
+static var mode_override := ""
+var tile: TileCity = null
 var zone: WorldZone
 var map: WorldMap
 var path := ""
@@ -67,6 +73,91 @@ static func _load(file_path: String) -> Dictionary:
 	if not errors.is_empty():
 		return _fail("invalid", errors)
 	return {"ok": true, "reason": "", "errors": [], "city": city}
+
+
+func tile_mode() -> bool:
+	return tile != null
+
+
+func _wants_tile(d: Dictionary) -> bool:
+	if mode_override == "plate":
+		return false
+	if mode_override == "tile":
+		return true
+	return bool((d.get("modular", {}) as Dictionary).get("enabled", false))
+
+
+func file_path_dir(_d: Dictionary) -> String:
+	return path.get_base_dir()
+
+
+## Old 64x32 walk cells from the tile map: blocked when the tile under the
+## centre is, or most of the cell's tiles are; gate passages and bridge decks
+## stay open (the doors and the deck heights still come from city.json).
+func _rows_from_tile(d: Dictionary, w: int, h: int, old_rows: Array) -> Array:
+	var keep_open := {}
+	for c in d.get("gate_cells", []):
+		keep_open[Vector2i(int(c[0]), int(c[1]))] = true
+	for g in d.get("gates", []):
+		for c in g.get("cells", []):
+			keep_open[Vector2i(int(c[0]), int(c[1]))] = true
+	for b in d.get("bridges", []):
+		for c in (b.get("deck_cells", []) as Array) + (b.get("ends", []) as Array):
+			keep_open[Vector2i(int(c[0]), int(c[1]))] = true
+	var out: Array = []
+	for y in h:
+		var row := ""
+		for x in w:
+			var wp := Vector2(32.0 * (x - y), 16.0 * (x + y))
+			var c := tile.world_to_cell(wp)
+			var ch := tile.terrain_char(c)
+			var sym := "."
+			if ch == ".":
+				sym = "."
+			elif keep_open.has(Vector2i(x, y)):
+				sym = "r"
+			else:
+				var bad := 0
+				for o in [Vector2(14, 0), Vector2(-14, 0), Vector2(0, 7), Vector2(0, -7)]:
+					if not tile.passable(tile.world_to_cell(wp + o)):
+						bad += 1
+				if not tile.passable(c) or bad >= 3:
+					sym = "~" if ch == "w" else "#"
+				else:
+					sym = "r" if ch in ["c", "d", "p"] or ch == "w" else "g"
+			row += sym
+		out.append(row)
+	return out
+
+
+## Spawn, exit, NPC posts and stub cells onto the nearest walkable cell.
+func _move_onto_walk(d: Dictionary, w: int, h: int, rows: Array) -> void:
+	var ok := func(c: Vector2i) -> bool:
+		return c.x >= 0 and c.y >= 0 and c.x < w and c.y < h and str(rows[c.y])[c.x] in ["g", "r"]
+	var near := func(c: Vector2i) -> Vector2i:
+		if ok.call(c):
+			return c
+		for r in range(1, 12):
+			for dy in range(-r, r + 1):
+				for dx in range(-r, r + 1):
+					if maxi(absi(dx), absi(dy)) == r and ok.call(c + Vector2i(dx, dy)):
+						return c + Vector2i(dx, dy)
+		return c
+	for key in ["spawn", "exit_cell"]:
+		var c: Vector2i = near.call(_cell(d[key]))
+		d[key] = [c.x, c.y]
+	for n in d.get("npcs", []):
+		var c2: Vector2i = near.call(_cell(n["cell"]))
+		n["cell"] = {"x": c2.x, "y": c2.y}
+	for st in d.get("gate_stubs", []):
+		if str((st["from"] as Dictionary).get("zone_id", "")) == CITY_ID:
+			var c3: Vector2i = near.call(_cell(st["from"]))
+			st["from"]["x"] = c3.x
+			st["from"]["y"] = c3.y
+		if str((st["to"] as Dictionary).get("zone_id", "")) == CITY_ID:
+			var c4: Vector2i = near.call(_cell(st["to"]))
+			st["to"]["x"] = c4.x
+			st["to"]["y"] = c4.y
 
 
 func zone_id() -> String:
@@ -259,6 +350,18 @@ func _read(d: Dictionary) -> Array:
 	if not errors.is_empty():
 		return errors
 	doc = d
+	if _wants_tile(d):
+		var tpath := file_path_dir(d).path_join(str((d.get("modular", {}) as Dictionary).get("tilemap", "tilemap.json")))
+		tile = TileCity.load_path(tpath)
+		if not tile.ok():
+			errors.append_array(tile.errors)
+			return errors
+		rows = _rows_from_tile(d, w, h, rows)
+		d = d.duplicate(true)
+		d["grid"] = (d["grid"] as Dictionary).duplicate(true)
+		d["grid"]["rows"] = rows
+		doc = d
+		_move_onto_walk(d, w, h, rows)
 	zone = _build_zone(d, w, h, rows)
 	if not zone.passable_at(spawn()):
 		errors.append("spawn is not walkable")
