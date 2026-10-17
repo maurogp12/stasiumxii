@@ -94,3 +94,9 @@ Reviewed on the base without buildings (`cxbase/base_walls.jpg`).
 2. **A north gate** in the north wall (Mauro: "otra puerta"), where the northern streets end short of the wall. Extend the street to it, with a road out toward Northgate and the snowy north. It matches the other gates.
 3. **Another gate on a diagonal wall** (Mauro: "otra puerta"). The road meets a diagonal wall section with no gate. This is most likely the long road from the south gate running east, which ends at the south-east wall. **General rule:** every place where a street or road touches the wall gets a gate, or the street is pulled back. Find all of them programmatically and list them.
 4. **Remove the wall stubs sticking out at the towers** (Mauro: "hay que eliminar este muro saliendo"). That is the short wall piece that juts out from the base of a tower, outside the wall line. Remove it at every tower where it appears, and close the wall cleanly into the tower.
+5. **Beautification pass, after the structural fixes** (Mauro: "después de ahí, puro embellecimiento de cómo se ve el zacate y el camino, los muros, los árboles"). Match the GOAL:
+   - **Grass:** painted, varied lawn with tufts, colour patches, small flowers and soft shading; no flat repeating fill.
+   - **Streets:** sand-coloured cobblestone with worn edges and a soft border into the grass.
+   - **Walls:** thick stone with a walkway on top, real crenellations, a stone footing with a contact shadow, tonal variation, moss and buttresses. Towers and gates match.
+   - **Trees:** a varied painted set (oaks, cypresses, blossom trees), clustered naturally.
+   - **Tools:** Meshy for the wall segment, tower and gate (3D, then iso render, then a Scenario paint-over), and Scenario for the tiling grass and cobble textures and the trees.
