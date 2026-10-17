@@ -80,7 +80,13 @@ The BG3 and Wartales look needs **3D**: real models, lighting and camera. Our cu
 
   If Mauro likes the slice, we expand. If not, we've lost little.
 
-## 9. Open questions for Mauro
+## 9. Decisions (Mauro, 17 Oct)
+
+- **3D: YES.** The game moves to 3D for the BG3/Wartales look.
+- **Scale: MMO**, with many players online like Dofus.
+- **Next step:** the vertical slice in section 8.
+
+## 9b. Original open questions (answered above)
 
 1. **3D:** confirm we go 3D for the BG3/Wartales look.
 2. **Scale:** MMO (many players online at once, like Dofus/Wakfu), or co-op of up to 4–6 players (like BG3/Wartales)? This decides the server work.
