@@ -64,6 +64,7 @@ func set_lite(on: bool) -> void:
 		_build_ground()
 	if water != null:
 		water.visible = not on
+	_sync_lights(0.0)
 
 
 func set_hour(h: float) -> void:
@@ -94,11 +95,36 @@ func _sync_lights(delta: float) -> void:
 			halo.visible = on
 		if pool != null and pool.visible != on:
 			pool.visible = on
+		var pl: PointLight2D = l.get("light")
+		if pl != null and pl.enabled != (on and not lite):
+			pl.enabled = on and not lite
 		if on and not lite and delta > 0.0:
 			var f := 0.92 + 0.08 * sin(_light_t * 5.3 + float(i) * 1.7) * sin(_light_t * 2.1 + float(i))
 			halo.modulate.a = float(l["base_a"]) * f
 		elif on:
 			halo.modulate.a = float(l["base_a"])
+
+
+static var _light_tex: Texture2D
+
+
+## Soft radial falloff, 256 px (a light's texture_scale sets its radius).
+static func _light_texture() -> Texture2D:
+	if _light_tex != null:
+		return _light_tex
+	var g := Gradient.new()
+	g.set_color(0, Color(1, 1, 1, 1))
+	g.set_color(1, Color(1, 1, 1, 0))
+	g.add_point(0.45, Color(1, 1, 1, 0.55))
+	var t := GradientTexture2D.new()
+	t.gradient = g
+	t.fill = GradientTexture2D.FILL_RADIAL
+	t.fill_from = Vector2(0.5, 0.5)
+	t.fill_to = Vector2(1.0, 0.5)
+	t.width = 256
+	t.height = 256
+	_light_tex = t
+	return t
 
 
 func tick_lights(delta: float) -> void:
@@ -121,6 +147,7 @@ func _add_lamp_light(s: Sprite2D, rec: Dictionary, k: float) -> void:
 	var tint := Color(float(col[0]), float(col[1]), float(col[2]))
 	var size: Vector2 = Vector2(float(rec["w"]), float(rec["h"])) * k * city.scale()
 	var first := true
+	var first_light := true
 	for head in (lamps[plant] as Dictionary).get("heads", []):
 		var fx := float(head[0])
 		if s.flip_h:
@@ -153,7 +180,21 @@ func _add_lamp_light(s: Sprite2D, rec: Dictionary, k: float) -> void:
 			pool.name = "%s_pool" % s.name
 			add_child(pool)
 		first = false
-		lights.append({"halo": halo, "pool": pool, "base_a": float(cfg.get("halo_alpha", 0.95)), "plant": plant})
+		var lamp_light: PointLight2D = null
+		if first_light and bool(cfg.get("point_light", false)):
+			# lifts the night tint round the lamp (CanvasModulate dims the halo)
+			lamp_light = PointLight2D.new()
+			lamp_light.texture = _light_texture()
+			var radius: float = float(cfg.get("light_radius_px", 190.0)) * city.scale()
+			lamp_light.texture_scale = radius / 128.0
+			lamp_light.color = tint
+			lamp_light.energy = float(cfg.get("light_energy", 1.15))
+			lamp_light.position = s.position + Vector2(size.x * 0.5, size.y * (1.0 - float(cfg.get("light_lift", 0.35))))
+			lamp_light.enabled = false
+			lamp_light.name = "%s_light" % s.name
+			add_child(lamp_light)
+		first_light = false
+		lights.append({"halo": halo, "pool": pool, "light": lamp_light, "base_a": float(cfg.get("halo_alpha", 0.95)), "plant": plant})
 
 
 func is_day() -> bool:

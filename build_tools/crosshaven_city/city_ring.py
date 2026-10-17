@@ -205,7 +205,11 @@ def assemble(layers, images, walk, river, old_poly, poly, cfg, kit_dir, hero_pla
         lb, ff = Image.fromarray(la, "RGBA"), Image.fromarray(fa, "RGBA")
         fb = np.nonzero((fa[..., 3] > 40).any(1))[0]
         front_bottom = y0 + (fb.max() if len(fb) else im.height)
-        add(lb, x0, y0, py_min - 10.0, "gate_back", {"gate": g["id"], "module": m.file})
+        # The back half's far tower stands over the run's tucked-in strips:
+        # sort it just in front of the far join, still behind a hero in the arch.
+        far_y = WR[1] if not back_left else WL[1]
+        back_sort = min(max(py_min - 10.0, far_y + 20.0), q[1] - 8.0)
+        add(lb, x0, y0, back_sort, "gate_back", {"gate": g["id"], "module": m.file})
         add(ff, x0, y0, front_bottom + 2.0, "lintel", {"gate": g["id"], "module": m.file})
         gates_geo.append({"id": g["id"], "why": g.get("why", "layout"), "edge": i, "arch": [round(q[0], 1), round(q[1], 1)],
                           "wall_join_left": [round(WL[0], 1), round(WL[1], 1)], "wall_join_right": [round(WR[0], 1), round(WR[1], 1)],

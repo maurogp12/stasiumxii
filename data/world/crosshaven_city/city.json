@@ -2528,14 +2528,14 @@
   "source": "rosebud/water (water.json)"
  },
  "lights": {
-  "note": "Coordinator review 5: warm lamp light at dusk and night. Head points are fractions of the lamp art (x from the left, y from the top). Halo and ground pool reuse the world lamp glow art, additive. Performance mode keeps them still (no flicker).",
+  "note": "Coordinator review 5: warm lamp light at dusk and night. Head points are fractions of the lamp art (x from the left, y from the top). Halo and ground pool reuse the world lamp glow art, additive. Performance mode keeps them still (no flicker). Outside Performance mode each lamp also carries a 2D point light that lifts the night tint around it.",
   "on_from_hour": 16.0,
   "off_at_hour": 7.0,
   "halo": "res://art/world/crosshaven/props/lamp_glow.png",
   "pool": "res://art/world/crosshaven/props/decal_v7_lamp_glow.png",
-  "halo_scale": 1.25,
-  "pool_scale": 1.4,
-  "pool_alpha": 0.85,
+  "halo_scale": 1.6,
+  "pool_scale": 1.8,
+  "pool_alpha": 1.0,
   "halo_alpha": 0.95,
   "color": [
    1.0,
@@ -2564,6 +2564,10 @@
     ]
    }
   },
-  "windows": "later, with the buildings"
+  "windows": "later, with the buildings",
+  "point_light": true,
+  "light_energy": 1.15,
+  "light_radius_px": 190,
+  "light_lift": 0.35
  }
 }

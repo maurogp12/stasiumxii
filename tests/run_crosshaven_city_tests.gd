@@ -327,7 +327,7 @@ func _test_gates() -> void:
 	for rec in city.layers():
 		if str(rec["tag"]) == "tower" and rec.has("module"):
 			kit_towers += 1
-	check(towers >= 12 or kit_towers >= 6, "towers checked (%d prototype, %d kit)" % [towers, kit_towers])
+	check(towers >= 12 or kit_towers >= 4, "towers checked (%d prototype, %d kit)" % [towers, kit_towers])
 
 
 # ---------------------------------------------------------------- plots
@@ -818,7 +818,7 @@ func _test_review_data() -> void:
 		for g in city.gates():
 			var arch := Vector2(float(g["arch"][0]), float(g["arch"][1]))
 			var gap: float = foot.distance_to(arch) - float(g["half_span"]) - float(rec["w"]) * 0.42
-			check(gap >= wall_h * 0.95, "tower %d keeps a wall height from gate %s (%.0f px)" % [int(rec["id"]), g["id"], gap])
+			check(gap >= wall_h * 1.25, "tower %d keeps a wall height from gate %s (%.0f px)" % [int(rec["id"]), g["id"], gap])
 	# 6: an outer ring of trees, outside the walls, off the roads and the river.
 	var outer := 0
 	var streets: Image = Image.load_from_file(ProjectSettings.globalize_path(city.path.get_base_dir().path_join("streets.png")))
@@ -931,6 +931,19 @@ func _test_review_world(w: Node2D) -> void:
 	cp.tick_lights(0.37)
 	cp.tick_lights(0.41)
 	check(is_equal_approx((cp.lights[0]["halo"] as CanvasItem).modulate.a, a0), "Performance mode: the lamp light stays still")
+	cp.set_hour(22.0)
+	var lit_points := 0
+	for l in cp.lights:
+		if l["light"] != null and (l["light"] as PointLight2D).enabled:
+			lit_points += 1
+	check(lit_points == 0, "Performance mode: no point lights (%d)" % lit_points)
+	cp.lite = false
+	cp.set_hour(22.0)
+	lit_points = 0
+	for l in cp.lights:
+		if l["light"] != null and (l["light"] as PointLight2D).enabled:
+			lit_points += 1
+	check(lit_points >= 10, "a point light per lamp at night (%d)" % lit_points)
 	cp.lite = was_lite
 	cp.set_hour(12.0)
 	# 7: an exit stub takes the hero to its region road.

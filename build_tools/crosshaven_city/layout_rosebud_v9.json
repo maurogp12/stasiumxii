@@ -473,12 +473,12 @@
      835,
      0
     ],
-    "back_side": "left",
+    "back_side": "right",
     "arch_open_x": [
      737,
      932
     ],
-    "note": "kit3 diagonal gatehouse (docs/pc-map-handoff 8572a1e4). Base slope -0.433 like segment_short; art_slope is the parapet-matched slope: its parapet (-0.317) is sheared 0.07 more than segment_short's (-0.387) so the parapet lines meet; drop_px = curtain parapet 580 - 550 (about 5%)."
+    "note": "kit3 diagonal gatehouse (docs/pc-map-handoff 8572a1e4). Base slope -0.433 like segment_short; art_slope is the parapet-matched slope: its parapet (-0.317) is sheared 0.07 more than segment_short's (-0.387) so the parapet lines meet; drop_px = curtain parapet 580 - 550 (about 5%). The near tower is on the left, so the right (far) half sorts behind a hero in the arch."
    },
    "gatehouse_pos": {
     "file": "gatehouse_diag_v3_mirror_CONCEPTO.png",
@@ -500,7 +500,7 @@
      665,
      0
     ],
-    "back_side": "right",
+    "back_side": "left",
     "arch_open_x": [
      568,
      763
@@ -531,7 +531,7 @@
    }
   },
   "face_note": "face_px (segments): front merlon top to foot, native px. Gatehouses with face_px and curtain_foot are fitted to the run's face; the kit3 gatehouses instead carry a parapet-matched art_slope and drop_px from the coordinator's metrics (gatehouse_v3_metrics.json).",
-  "no_tower_near_gate_wall_heights": 1.0,
+  "no_tower_near_gate_wall_heights": 1.3,
   "exits_note": "Coordinator review 7: every gate road runs on to the plate edge and ends in a gate stub to a region road (data). The city is outside the plane, so these are stubs, not seams; 'proposed' links follow the Crossroads road directions, 'placeholder' means undecided."
  },
  "greenery": {
@@ -599,14 +599,14 @@
    ]
   },
   "lights": {
-   "note": "Coordinator review 5: warm lamp light at dusk and night. Head points are fractions of the lamp art (x from the left, y from the top). Halo and ground pool reuse the world lamp glow art, additive. Performance mode keeps them still (no flicker).",
+   "note": "Coordinator review 5: warm lamp light at dusk and night. Head points are fractions of the lamp art (x from the left, y from the top). Halo and ground pool reuse the world lamp glow art, additive. Performance mode keeps them still (no flicker). Outside Performance mode each lamp also carries a 2D point light that lifts the night tint around it.",
    "on_from_hour": 16.0,
    "off_at_hour": 7.0,
    "halo": "res://art/world/crosshaven/props/lamp_glow.png",
    "pool": "res://art/world/crosshaven/props/decal_v7_lamp_glow.png",
-   "halo_scale": 1.25,
-   "pool_scale": 1.4,
-   "pool_alpha": 0.85,
+   "halo_scale": 1.6,
+   "pool_scale": 1.8,
+   "pool_alpha": 1.0,
    "halo_alpha": 0.95,
    "color": [
     1.0,
@@ -635,7 +635,11 @@
      ]
     }
    },
-   "windows": "later, with the buildings"
+   "windows": "later, with the buildings",
+   "point_light": true,
+   "light_energy": 1.15,
+   "light_radius_px": 190,
+   "light_lift": 0.35
   }
  }
 }
