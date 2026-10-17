@@ -11,7 +11,8 @@ uniform vec2 radius_px = vec2(64.0, 80.0);
 uniform float soft : hint_range(0.01, 1.0) = 0.35;
 
 void fragment() {
-	vec4 c = texture(TEXTURE, UV) * COLOR;
+	// COLOR already holds the texture sample times the modulate
+	vec4 c = COLOR;
 	vec2 px = UV / TEXTURE_PIXEL_SIZE;
 	float r = length((px - centre_px) / radius_px);
 	float m = 1.0 - smoothstep(1.0 - soft, 1.0, r);
