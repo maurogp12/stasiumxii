@@ -98,33 +98,36 @@ def point_in_poly(px, py, poly):
 
 
 class Grid:
-    """Cell lattice over the plate: cell (x, y) centre = cell00 + (32(x-y), 16(x+y))."""
+    """Cell lattice over the plate. The plate is drawn at `scale` world px per
+    plate px, so cell (x, y) centre in plate px = cell00 + (32(x-y), 16(x+y)) / scale."""
 
-    def __init__(self, cell00, width, height):
+    def __init__(self, cell00, width, height, scale=1.0):
         self.c0 = cell00
         self.w = width
         self.h = height
+        self.s = scale
 
     def centre(self, x, y):
-        return (self.c0[0] + 32.0 * (x - y), self.c0[1] + 16.0 * (x + y))
+        return (self.c0[0] + 32.0 * (x - y) / self.s, self.c0[1] + 16.0 * (x + y) / self.s)
 
     def cell_of(self, px, py):
-        u = (px - self.c0[0]) / 32.0
-        v = (py - self.c0[1]) / 16.0
+        u = (px - self.c0[0]) * self.s / 32.0
+        v = (py - self.c0[1]) * self.s / 16.0
         return (int(round((u + v) / 2.0)), int(round((v - u) / 2.0)))
 
 
-def fit_lattice(zones, walk):
-    """Choose cell00 so bridge decks (iso x rows) and the gate passage (iso y row) sit on cell centres."""
+def fit_lattice(zones, walk, sc=1.0):
+    """Choose cell00 so bridge decks (iso x rows) and the gate passage (iso y row) sit on cell centres.
+    Works in world px (plate px x sc) and returns cell00 in plate px."""
     cs = []
     for b in zones["bridges"]:
         a = b["entries"][0]["at"]
         c = b["entries"][1]["at"]
-        cs.append(a[1] - 0.5 * a[0])
+        cs.append((a[1] - 0.5 * a[0]) * sc)
         slope = (c[1] - a[1]) / (c[0] - a[0])
         assert abs(slope - 0.5) < 0.01, "bridge %s is not on an iso axis (%.3f)" % (b["id"], slope)
     gate = zones["gates"][0]["arch"]
-    d_gate = gate[1] + 0.5 * gate[0]
+    d_gate = (gate[1] + 0.5 * gate[0]) * sc
     # c residue: best common value for the bridges (minimise the worst offset).
     best = None
     for k in range(64):
@@ -139,14 +142,14 @@ def fit_lattice(zones, walk):
     oy = (c_res + d_res) / 2.0
     # Grid bounds: walkable pixels must map inside the grid.
     ys, xs = np.nonzero(walk)
-    u = (xs - ox) / 32.0
-    v = (ys - oy) / 16.0
+    u = (xs * sc - ox) / 32.0
+    v = (ys * sc - oy) / 16.0
     gx = (u + v) / 2.0
     gy = (v - u) / 2.0
     min_x, min_y = math.floor(gx.min()) - 1, math.floor(gy.min()) - 1
     max_x, max_y = math.ceil(gx.max()) + 1, math.ceil(gy.max()) + 1
-    cell00 = (ox + 32.0 * (min_x - min_y), oy + 16.0 * (min_x + min_y))
-    grid = Grid(cell00, max_x - min_x + 1, max_y - min_y + 1)
+    cell00 = ((ox + 32.0 * (min_x - min_y)) / sc, (oy + 16.0 * (min_x + min_y)) / sc)
+    grid = Grid(cell00, max_x - min_x + 1, max_y - min_y + 1, sc)
     residuals = []
     for b, c in zip(zones["bridges"], cs):
         off = ((c - c_res + 16) % 32) - 16
@@ -355,6 +358,198 @@ def apply_change_list(layers, images, ground_np, walk, river, wall, zones):
     return log
 
 
+def thin_trees(layers, images, streets, wall_poly, unblock_ellipse):
+    """Mauro item 7: cut the prototype's trees to a few clusters.
+
+    Kept: trees within PARK_R of a fountain or well (the parks); trees within
+    WALL_FEET px inside the wall line, every other one; up to STREET_TREES
+    trees beside a street, at least STREET_GAP apart. Size-agnostic: it
+    keys on the landmarks and the wall polygon, not on coordinates.
+    """
+    PARK_R, WALL_FEET, STREET_TREES, STREET_GAP = 420.0, 230.0, 10, 520.0
+    from scipy.ndimage import distance_transform_edt
+    parks = []
+    for l in layers:
+        if l["tag"] in ("fountain", "well"):
+            im = images[l["id"]]
+            parks.append((l["x"] + im.width / 2.0, l["sort_y"]))
+    dist_st = distance_transform_edt(~streets)
+    trees = [l for l in layers if l["tag"] == "tree"]
+    keep = set()
+    feet_i = 0
+    for l in sorted(trees, key=lambda q: (q["sort_y"], q["x"])):
+        im = images[l["id"]]
+        fx, fy = l["x"] + im.width / 2.0, l["sort_y"]
+        if any(math.hypot(fx - px, (fy - py) * 2.0) < PARK_R for px, py in parks):
+            keep.add(l["id"])
+        elif dist_to_poly(fx, fy, wall_poly) < WALL_FEET:
+            if feet_i % 2 == 0:
+                keep.add(l["id"])
+            feet_i += 1
+    street_kept = []
+    for l in sorted(trees, key=lambda q: q["id"]):
+        if l["id"] in keep or len(street_kept) >= STREET_TREES:
+            continue
+        im = images[l["id"]]
+        fx, fy = l["x"] + im.width / 2.0, l["sort_y"]
+        iy, ix = int(min(PLATE_H - 1, fy)), int(min(PLATE_W - 1, fx))
+        if dist_st[iy, ix] < 70 and all(math.hypot(fx - a, fy - b) > STREET_GAP for a, b in street_kept):
+            keep.add(l["id"])
+            street_kept.append((fx, fy))
+    cut = set()
+    for l in trees:
+        if l["id"] in keep:
+            continue
+        cut.add(l["id"])
+        im = images[l["id"]]
+        fx, fy = l["x"] + im.width / 2.0, l["sort_y"]
+        fh = max(8, im.height * 0.12)
+        unblock_ellipse(fx, fy - fh / 2.0, im.width * 0.15 + 3, fh / 2.0 + 3)
+    return cut
+
+
+def scatter_plants(layers, images, walk, streets, river, solid, wall_poly, plot_ells, gone):
+    """Mauro item 6: loose bushes and flower clumps on the grass, y-sorted.
+
+    Sprites reuse the plate's own plants (tn_bush, tn_wildflowers,
+    ww_wild_rose); no planters or beds. Spots: grass 22-60 px from a street,
+    a ring round each plaza (fountain, well), and the inner foot of the wall.
+    Flowers are walked through; bushes block a small foot ellipse.
+    """
+    import random
+    from scipy.ndimage import distance_transform_edt, binary_dilation
+    rng = random.Random(17)
+    kinds = {}
+    for l in layers:
+        base = os.path.basename(l["file"]).split("_", 1)[-1]
+        for k in ("tn_bush", "tn_wildflowers", "ww_wild_rose"):
+            if base == k + ".png" and k not in kinds:
+                kinds[k] = l
+    if not kinds:
+        return []
+    poly_img = Image.new("L", (PLATE_W, PLATE_H), 0)
+    ImageDraw.Draw(poly_img).polygon(wall_poly, fill=255)
+    inside = np.asarray(poly_img) > 0
+    d_st = distance_transform_edt(~streets)
+    occupied = binary_dilation(solid | river | streets, iterations=4) | ~inside
+    taken = []
+    for l in layers:
+        if l["id"] in gone:
+            continue
+        if l["tag"] in ("tree", "prop", "house", "lamp", "stall"):
+            im = images[l["id"]]
+            taken.append((l["x"] + im.width / 2.0, l["sort_y"], max(30.0, im.width * 0.4)))
+    plazas = []
+    for l in layers:
+        if l["tag"] in ("fountain", "well"):
+            im = images[l["id"]]
+            plazas.append((l["x"] + im.width / 2.0, l["sort_y"] - im.height * 0.1))
+
+    def free(x, y, r):
+        ix, iy = int(x), int(y)
+        if not (8 <= ix < PLATE_W - 8 and 8 <= iy < PLATE_H - 8) or occupied[iy, ix] or not walk[iy, ix]:
+            return False
+        if dist_to_poly(x, y, wall_poly) < 70:
+            return False
+        for cx, cy, rx, ry in plot_ells:
+            if ((x - cx) / (rx + 30)) ** 2 + ((y - cy) / (ry + 20)) ** 2 <= 1.0:
+                return False
+        return all(math.hypot(x - a, (y - b) * 1.6) > max(r, rr) + 14 for a, b, rr in taken)
+
+    spots = []
+    # street edges
+    ys, xs = np.nonzero((d_st > 22) & (d_st < 60) & inside & ~occupied)
+    order = list(range(len(xs)))
+    rng.shuffle(order)
+    for i in order[:6000]:
+        spots.append((float(xs[i]), float(ys[i]), "edge"))
+    # plaza rings
+    for px, py in plazas:
+        for k in range(18):
+            a = 2 * math.pi * k / 18 + rng.uniform(-0.1, 0.1)
+            r = rng.uniform(190, 260)
+            spots.append((px + r * math.cos(a), py + 0.5 * r * math.sin(a), "plaza"))
+    # wall feet (inside, along every edge)
+    for a, b in zip(wall_poly, wall_poly[1:] + wall_poly[:1]):
+        L = math.dist(a, b)
+        cx, cy = sum(p[0] for p in wall_poly) / len(wall_poly), sum(p[1] for p in wall_poly) / len(wall_poly)
+        nx, ny = -(b[1] - a[1]) / L, (b[0] - a[0]) / L
+        mx, my = (a[0] + b[0]) / 2, (a[1] + b[1]) / 2
+        if (cx - mx) * nx + (cy - my) * ny < 0:
+            nx, ny = -nx, -ny
+        t = 0.0
+        while t < L:
+            off = rng.uniform(85, 140)
+            spots.append((a[0] + (b[0] - a[0]) * t / L + nx * off, a[1] + (b[1] - a[1]) * t / L + ny * off, "wall"))
+            t += rng.uniform(120, 220)
+    budget = {"edge": 90, "plaza": 30, "wall": 60}
+    used = {"edge": 0, "plaza": 0, "wall": 0}
+    placed = []
+    next_id = 3000
+    for x, y, why in spots:
+        if used[why] >= budget[why]:
+            continue
+        k = rng.choice(["tn_bush", "tn_wildflowers", "tn_wildflowers", "ww_wild_rose", "tn_bush"])
+        if k not in kinds:
+            k = next(iter(kinds))
+        src = kinds[k]
+        im = images[src["id"]]
+        r = max(24.0, im.width * 0.45)
+        if not free(x, y, r):
+            continue
+        rec = {"id": next_id, "file": src["file"], "tag": "prop", "x": int(round(x - im.width / 2.0)),
+               "y": int(round(y - im.height)), "sort_y": round(y, 1), "under_everything": False,
+               "fade": "occluding_only", "fade_min_alpha": 0.45, "plant": k, "spot": why}
+        images[next_id] = im
+        layers.append(rec)
+        taken.append((x, y, r))
+        next_id += 1
+        used[why] += 1
+        placed.append(rec)
+        if k == "tn_bush":
+            fh = max(8, im.height * 0.25)
+            sl, m = ellipse_mask(walk.shape, x, y - fh / 2.0, im.width * 0.32, fh / 2.0)
+            walk[sl] &= ~m
+    return placed
+
+
+def build_water(rb, river, art_dir):
+    """Animated river (Mauro item 9): the Rosebud water package as shader inputs.
+
+    water_base.png (painted base, alpha = river), the 256 px ripple tile, and a
+    half-size data texture: R = depth (0 at the bank, 1 mid-stream),
+    G = foam zone, A = river mask. Parameters come from water.json.
+    """
+    from scipy.ndimage import distance_transform_edt
+    wdir = os.path.join(rb, "water")
+    if not os.path.isdir(wdir):
+        return {}
+    meta = json.load(open(os.path.join(wdir, "water.json")))
+    out = os.path.join(art_dir, "water")
+    os.makedirs(out, exist_ok=True)
+    shutil.copyfile(os.path.join(wdir, "water_base.png"), os.path.join(out, "water_base.png"))
+    shutil.copyfile(os.path.join(wdir, "water_ripple_tile.png"), os.path.join(out, "ripple.png"))
+    base_a = np.asarray(Image.open(os.path.join(wdir, "water_base.png")))[..., 3] > 0
+    dist = distance_transform_edt(base_a)
+    half = max(1.0, float(np.percentile(dist[base_a], 98)))
+    depth = np.clip(dist / half, 0, 1)
+    foam = np.asarray(Image.open(os.path.join(wdir, "foam_zone.png")).convert("L")).astype(np.float32) / 255.0
+    fx = np.dstack([depth * 255, foam * 255, np.zeros_like(depth), base_a * 255.0]).astype(np.uint8)
+    im = Image.fromarray(fx, "RGBA").resize((PLATE_W // 2, PLATE_H // 2), Image.BILINEAR)
+    im.save(os.path.join(out, "water_fx.png"), optimize=True)
+    sec = meta.get("second_layer", {})
+    return {
+        "base": "water/water_base.png", "ripple": "water/ripple.png", "fx": "water/water_fx.png",
+        "tile_px": meta.get("tile_px", 256), "flow_dir": meta.get("flow_dir", [-0.86, 0.51]),
+        "speed_px_s": meta.get("speed_px_s", 24.0),
+        "second_layer": {"flip": bool(sec.get("flip", True)), "speed_mult": float(sec.get("speed_mult", 0.7)),
+                         "offset": sec.get("offset", [97, 41]), "alpha": float(sec.get("alpha", 0.55))},
+        "depth_alpha": [0.45, 0.55],
+        "lite": "hidden (the ground keeps the painted still water)",
+        "source": "rosebud/water (water.json)",
+    }
+
+
 def ndi_dilate(m, n):
     from scipy.ndimage import binary_dilation
     return binary_dilation(m, iterations=n)
@@ -469,8 +664,14 @@ def main():
             fh = max(8, im.height * 0.32)
             unblock_ellipse(ax, ay - fh / 2.0, im.width * 0.43 + 2, fh / 2.0 + 2)
 
+    # ---- item 7: fewer trees. Keep clusters: the parks (round the fountain
+    # and the well), the wall feet, and a few street trees; free the rest.
+    thinned = thin_trees(layers, images, streets, wall_poly, unblock_ellipse)
+    print("trees kept", sum(1 for l in layers if l["tag"] == "tree" and l["id"] not in thinned), "cut", len(thinned))
+
     # ---- plot search
-    grid, residuals = fit_lattice(zones, walk)
+    sc = float(LAYOUT.get("plate_scale", 1.0))
+    grid, residuals = fit_lattice(zones, walk, sc)
     hard_d = hard.copy()
     # Grow the "keep clear" masks a little: touching is not allowed.
     from scipy.ndimage import binary_dilation
@@ -578,13 +779,18 @@ def main():
         sl, m = ellipse_mask(walk.shape, (x0e + x1e) / 2, (y0e + y1e) / 2, (x1e - x0e) / 2, (y1e - y0e) / 2)
         walk[sl] &= ~m
 
+    # ---- item 6: bushes and flowers on the grass (street edges, plazas, wall feet).
+    plot_ells = [legendary_ellipse(ax, ay) for _, ax, ay in chosen]
+    planted = scatter_plants(layers, images, walk, streets, river, wall_sprites | hard, wall_poly, plot_ells, thinned | removed)
+    print("bushes and flowers placed", len(planted))
+
     # ---- cells
     W, H = grid.w, grid.h
     inner_off = []
     for dy in range(-8, 9, 2):
         for dx in range(-16, 17, 2):
             if abs(dx) / 16.0 + abs(dy) / 8.0 <= 1.0:
-                inner_off.append((dx, dy))
+                inner_off.append((int(round(dx / sc)), int(round(dy / sc))))
     kind = np.zeros((H, W), np.uint8)  # 0 void, 1 grass, 2 street, 3 water, 4 blocked
     hgt = np.zeros((H, W), np.int32)
     for y in range(H):
@@ -629,9 +835,9 @@ def main():
                 cx, cy = grid.centre(x, y)
                 t = ((cx - a_[0]) * lx + (cy - a_[1]) * ly) / (ln * ln)
                 perp = abs((cx - a_[0]) * ly - (cy - a_[1]) * lx) / ln
-                if -0.02 <= t <= 1.02 and perp <= 16.0:
+                if -0.02 <= t <= 1.02 and perp <= 16.0 / sc:
                     kind[y, x] = 2
-                    hgt[y, x] = int(round(float(np.interp(cx, xs_, zs_)) / 10.0))
+                    hgt[y, x] = int(round(float(np.interp(cx, xs_, zs_)) * sc / 10.0))
 
     # Spawn and exit: the south road end at the plate edge (rosebud spawn.hero).
     sx, sy = zones["spawn"]["hero"]
@@ -751,7 +957,7 @@ def main():
     for d in ("layers", "housing", "pets"):
         os.makedirs(os.path.join(art_dir, d), exist_ok=True)
     os.makedirs(data_dir, exist_ok=True)
-    dropped = set(OLD_PLOT_LAYERS.values()) | removed
+    dropped = set(OLD_PLOT_LAYERS.values()) | removed | thinned
     moved = {}
     for (p, ax, ay) in chosen:
         ox, oy = old_anchor[p["id"]]
@@ -796,6 +1002,7 @@ def main():
         house_masks[t] = {"w": im.width, "h": im.height, "mask": {"step": MASK_STEP, "w": bw, "h": bh, "bits": bits}}
     for pet in ("pet_dog", "pet_cat"):
         shutil.copyfile(os.path.join(rb, "layers", pet + ".png"), os.path.join(art_dir, "pets", pet + ".png"))
+    water = build_water(rb, river, art_dir)
     ground.save(os.path.join(art_dir, "ground.jpg"), quality=90)
     ground.resize((PLATE_W // 2, PLATE_H // 2), Image.LANCZOS).save(os.path.join(art_dir, "ground_lite.jpg"), quality=88)
 
@@ -840,7 +1047,8 @@ def main():
             "ground": "ground.jpg",
             "ground_lite": "ground_lite.jpg",
             "art_root": "res://art/world/crosshaven_city/",
-            "scale": 1.0,
+            "scale": sc,
+            "scale_note": LAYOUT.get("plate_scale_note", ""),
             "cell00_px": [round(grid.c0[0], 2), round(grid.c0[1], 2)],
             "anchor": "plate pixel cell00_px lands on cell_to_local(0, 0); node position = -cell00_px",
             "fit": {
@@ -887,6 +1095,7 @@ def main():
              "label": "To the Crossroads", "enabled": True},
         ],
         "layers": "layers.json",
+        "water": water,
     }
     json.dump(city, open(os.path.join(data_dir, "city.json"), "w"), indent=1)
     json.dump({"format": "stasium.plate_layers", "format_version": 1, "layers": out_layers},

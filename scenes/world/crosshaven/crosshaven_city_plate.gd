@@ -28,6 +28,7 @@ var rows: Array = []
 var plot_nodes: Dictionary = {}
 var pet_nodes: Array = []
 var _ground: Sprite2D
+var water: Sprite2D
 var _ground_lite := false
 var _covering: Array = []
 static var _tex_cache: Dictionary = {}
@@ -39,6 +40,7 @@ func setup(target, lite_mode: bool) -> void:
 	name = "CityPlate"
 	position = Vector2.ZERO
 	_build_ground()
+	_build_water()
 	_build_layers()
 	_build_plots()
 	_build_pets()
@@ -49,6 +51,8 @@ func set_lite(on: bool) -> void:
 	lite = on
 	if _ground_lite != on:
 		_build_ground()
+	if water != null:
+		water.visible = not on
 
 
 func set_hour(h: float) -> void:
@@ -114,13 +118,50 @@ func _build_ground() -> void:
 	_ground.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	_ground.texture = load_tex(city.art_path(file))
 	_ground_lite = lite
-	if lite and _ground.texture != null:
-		_ground.scale = city.plate_size() / _ground.texture.get_size()
+	if _ground.texture != null:
+		_ground.scale = city.plate_size() * city.scale() / _ground.texture.get_size()
 	_ground.position = city.plate_to_world(Vector2.ZERO)
 	_ground.z_as_relative = false
 	_ground.z_index = GROUND_Z
 	add_child(_ground)
 	move_child(_ground, 0)
+
+
+## Animated river (shader over the painted base). Performance mode hides it:
+## the ground already holds the still painted water.
+func _build_water() -> void:
+	var spec: Dictionary = city.doc.get("water", {})
+	if spec.is_empty():
+		return
+	var base := load_tex(city.art_path(str(spec["base"])))
+	if base == null:
+		return
+	water = Sprite2D.new()
+	water.name = "Water"
+	water.centered = false
+	water.texture = base
+	water.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	water.position = city.plate_to_world(Vector2.ZERO)
+	water.scale = city.plate_size() * city.scale() / base.get_size()
+	water.z_as_relative = false
+	water.z_index = GROUND_Z + 5
+	var mat := ShaderMaterial.new()
+	mat.shader = load("res://scenes/world/crosshaven/crosshaven_city_water.gdshader")
+	mat.set_shader_parameter("ripple", load_tex(city.art_path(str(spec["ripple"]))))
+	mat.set_shader_parameter("fx_tex", load_tex(city.art_path(str(spec["fx"]))))
+	mat.set_shader_parameter("plate_size", city.plate_size())
+	var flow: Array = spec["flow_dir"]
+	mat.set_shader_parameter("flow_dir", Vector2(float(flow[0]), float(flow[1])))
+	mat.set_shader_parameter("speed", float(spec["speed_px_s"]))
+	mat.set_shader_parameter("tile_px", float(spec["tile_px"]))
+	var sec: Dictionary = spec["second_layer"]
+	mat.set_shader_parameter("offset2", Vector2(float(sec["offset"][0]), float(sec["offset"][1])))
+	mat.set_shader_parameter("speed2", float(sec["speed_mult"]))
+	mat.set_shader_parameter("alpha2", float(sec["alpha"]))
+	mat.set_shader_parameter("flip2", bool(sec["flip"]))
+	water.material = mat
+	water.visible = not lite
+	add_child(water)
 
 
 func _sprite(tex: Texture2D, plate_pos: Vector2, z: int) -> Sprite2D:
@@ -129,6 +170,7 @@ func _sprite(tex: Texture2D, plate_pos: Vector2, z: int) -> Sprite2D:
 	s.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	s.texture = tex
 	s.position = city.plate_to_world(plate_pos)
+	s.scale = Vector2.ONE * city.scale()
 	s.z_as_relative = false
 	s.z_index = clampi(z, -4096, 4096)
 	add_child(s)
@@ -159,7 +201,7 @@ func _build_layers() -> void:
 func _add_row(s: Sprite2D, tag: String, size: Vector2, sort_y: float, fade: bool, min_alpha: float, mask: Dictionary, id: int) -> Dictionary:
 	var row := {
 		"node": s, "tag": tag, "id": id,
-		"rect": Rect2(s.position, size),
+		"rect": Rect2(s.position, size * city.scale()),
 		"sort_y": sort_y,
 		"z": s.z_index,
 		"fade": fade,
@@ -200,6 +242,7 @@ func _build_pets() -> void:
 		if tex != null:
 			pet.offset = Vector2(-tex.get_width() * 0.5, -tex.get_height())
 		pet.z_as_relative = false
+		pet.scale = Vector2.ONE * city.scale()
 		add_child(pet)
 		var a: Vector2 = city.plate_to_world(Vector2(float(rec["a"][0]), float(rec["a"][1])))
 		var b: Vector2 = city.plate_to_world(Vector2(float(rec["b"][0]), float(rec["b"][1])))
@@ -239,7 +282,7 @@ func _place_pet(p: Dictionary, delta: float) -> void:
 	var hop := 0.0
 	if delta > 0.0 and not lite:
 		hop = absf(sin(float(Time.get_ticks_msec()) * 0.012)) * float(p["hop"])
-	node.position = at - Vector2(0, hop)
+	node.position = at - Vector2(0, hop * city.scale())
 	node.flip_h = (p["b"] as Vector2).x < (p["a"] as Vector2).x if float(p["dir"]) > 0.0 else (p["a"] as Vector2).x < (p["b"] as Vector2).x
 	node.z_index = PlateCity.z_for_world_y(at.y) + 2
 
@@ -277,7 +320,7 @@ func _mask_hits(row: Dictionary, body: Rect2) -> bool:
 	if m.is_empty():
 		return true
 	var rect: Rect2 = row["rect"]
-	var step := float(m["step"])
+	var step: float = float(m["step"]) * city.scale()
 	var w := int(m["w"])
 	var h := int(m["h"])
 	var bits: PackedByteArray = m["bits"]

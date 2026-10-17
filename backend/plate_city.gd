@@ -15,7 +15,7 @@ const CITY_ID := "crosshaven_city"
 const KEYS: Array[String] = [
 	"format", "format_version", "zone_id", "region", "name", "status", "source", "plate",
 	"grid", "spawn", "exit_cell", "gate_cells", "bridges", "plots", "plot_rules", "pets",
-	"npcs", "day_hours", "gate_stubs", "layers", "gates", "wall_contacts", "towers_cleaned", "wall_polygon",
+	"npcs", "day_hours", "gate_stubs", "layers", "gates", "wall_contacts", "towers_cleaned", "wall_polygon", "water",
 ]
 const TIERS: Array[String] = ["normal", "rare", "legendary"]
 ## Grid row symbol -> [terrain, walkable].
@@ -89,17 +89,22 @@ func plate_size() -> Vector2:
 	return Vector2(float(s[0]), float(s[1]))
 
 
+## World px per plate px (data: plate.scale). The cell grid was derived at it.
+func scale() -> float:
+	return float((doc["plate"] as Dictionary).get("scale", 1.0))
+
+
 ## World-pixel rect of the whole plate (zone-local, plane origin 0).
 func world_rect() -> Rect2:
-	return Rect2(-cell00(), plate_size())
+	return Rect2(-cell00() * scale(), plate_size() * scale())
 
 
 func plate_to_world(p: Vector2) -> Vector2:
-	return p - cell00()
+	return (p - cell00()) * scale()
 
 
 func world_to_plate(p: Vector2) -> Vector2:
-	return p + cell00()
+	return p / scale() + cell00()
 
 
 func spawn() -> Vector2i:

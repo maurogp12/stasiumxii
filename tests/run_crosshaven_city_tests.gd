@@ -95,7 +95,8 @@ func _test_data() -> void:
 	check(walkable > 0, "walkable cell count above 0 (%d)" % walkable)
 	check(walkable > 5000, "the streets and greens are walkable (%d cells)" % walkable)
 	var plate: Dictionary = city.doc["plate"]
-	check(is_equal_approx(float(plate["scale"]), 1.0), "plate is placed 1:1")
+	check(float(plate["scale"]) > 0.0, "plate scale is in data (%.2f)" % float(plate["scale"]))
+	check(is_equal_approx(city.world_rect().size.x, city.plate_size().x * float(plate["scale"])), "world rect follows the plate scale")
 	var fit: Dictionary = plate["fit"]
 	for r in fit["residuals"]:
 		check(absf(float(r["offset_px"])) <= 8.0, "%s sits within 8 px of a cell row (%.2f)" % [r["id"], float(r["offset_px"])])
@@ -409,6 +410,10 @@ func _test_world_entry(w: Node2D) -> void:
 	check(w.city_plate.ground_texture() != null, "ground texture loaded")
 	check(w.city_plate.rows.size() >= 390, "layers and plot houses built (%d)" % w.city_plate.rows.size())
 	check(w.city_plate.plot_nodes.size() == 5, "five plot houses drawn")
+	var water: Sprite2D = w.city_plate.water
+	check(water != null and water.visible, "the animated river is drawn")
+	check(water != null and water.material is ShaderMaterial and (water.material as ShaderMaterial).get_shader_parameter("ripple") != null, "river shader has its ripple tile")
+	check(water != null and water.z_index < w.city_plate.UNDER_Z, "river draws under the bridges")
 	for id in w.city_plate.plot_nodes.keys():
 		var node: Sprite2D = w.city_plate.plot_nodes[id]
 		check(node.texture != null, "plot %s house texture" % id)
@@ -584,6 +589,7 @@ func _test_performance(w: Node2D) -> void:
 	w.settings.set_performance(true)
 	check(w.in_city(), "still in the city after the Performance switch")
 	check(w.city_plate.ground_is_lite(), "Performance mode draws the half-size ground")
+	check(w.city_plate.water == null or not w.city_plate.water.visible, "Performance mode keeps the painted still water")
 	var tex: Texture2D = w.city_plate.ground_texture()
 	check(tex != null and tex.get_width() == 2560, "lite ground is 2560 wide")
 	check(w.city_plate._ground.scale.is_equal_approx(Vector2(2, 2)), "lite ground still covers the plate")
