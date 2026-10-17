@@ -131,3 +131,4 @@ Reviewed on the base without buildings (`cxbase/base_walls.jpg`).
       - **Normal** looks like an ordinary NPC town house, at the same level;
       - **Rare** looks clearly better;
       - **Legendary** looks luxurious.
+16. **10 player plots, not 5** (Mauro: "quiero que haya 10 casas para jugadores"). Add P6–P10 in the bigger city. Every plot follows the plot rules: entrance cells reachable from a street, room for a Legendary footprint, clear of the wall and towers, and no gardens. The tier mix is set per plot in data, and each plot can be upgraded in place.
