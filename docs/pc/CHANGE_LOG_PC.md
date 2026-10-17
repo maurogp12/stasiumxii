@@ -26,3 +26,4 @@ Crosshaven diagonal gatehouse v5 fixes: v5 portcullis + arch surround, dark vaul
 Crosshaven tower v6 iso (607x990, plinth 605) + 3 gatehouses re-composited; alt short_v6b (792 tall) - 🖼️ CONCEPTO
 Crosshaven (d) props: 3 market stalls, fountain, well; short_v6b removed (v6 990 locked) - 🖼️ CONCEPTO
 Crosshaven (e) GOAL extras: gazebo, rowboat, quay, garden pieces, hedge tile, 4 boulders - 🖼️ CONCEPTO
+Crosshaven iso gatehouses v7 (walkway top, arch depth) + water gate v6 - 🖼️ CONCEPTO
