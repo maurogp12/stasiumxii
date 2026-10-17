@@ -1,0 +1,30 @@
+{
+ "left_foot": [
+  0,
+  520
+ ],
+ "right_foot": [
+  340,
+  643.5
+ ],
+ "slope": 0.3633,
+ "raw_slope": 0.4847,
+ "scale": 1.682,
+ "merlon_period_px": 117.7,
+ "tile_repeats": 3,
+ "stone_lab_after": [
+  50.3,
+  3.5,
+  32.0
+ ],
+ "size": [
+  341,
+  647
+ ],
+ "cornice": "band from segment_horizontal_v8 rows 148-206, 262 px below piece top (unsheared)",
+ "stone_lab_before": [
+  54.400001525878906,
+  3.200000047683716,
+  32.099998474121094
+ ]
+}

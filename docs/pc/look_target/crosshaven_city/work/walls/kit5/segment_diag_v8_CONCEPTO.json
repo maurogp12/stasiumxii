@@ -1,30 +1,22 @@
 {
  "left_foot": [
   0,
-  838.1
+  880.0
  ],
  "right_foot": [
-  815,
-  542
+  900,
+  553
  ],
  "slope": -0.3633,
- "raw_slope": 0.4847,
- "scale": 1.682,
- "merlon_period_px": 117.7,
- "tile_repeats": 7,
+ "raw_slope": 0.3684,
+ "scale": 1.9164,
+ "body_px": 551,
+ "tile_seam_err": 12.3,
+ "source": "segment_diag_v4match_raw.jpg",
  "stone_lab_after": [
-  50.3,
-  3.4,
-  31.9
+  38.8,
+  1.2,
+  19.0
  ],
- "size": [
-  816,
-  842
- ],
- "cornice": "band from segment_horizontal_v8 rows 148-206, 262 px below piece top (unsheared)",
- "stone_lab_before": [
-  54.29999923706055,
-  3.200000047683716,
-  32.099998474121094
- ]
+ "colour_target": "v4 approved ring stone LAB [38.8, 1.1, 19.0]"
 }

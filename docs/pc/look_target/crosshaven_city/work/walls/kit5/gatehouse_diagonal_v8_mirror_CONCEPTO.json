@@ -1,34 +1,28 @@
 {
  "left_foot": [
   0,
-  553
+  555
  ],
  "right_foot": [
-  1542,
-  1113.2
+  2053,
+  1300.9
  ],
  "slope": 0.3633,
- "raw_slope": 0.3746,
- "scale": 1.491,
+ "raw_slope": 0.3379,
+ "scale": 1.8771,
+ "body_px": 552,
  "arch_opening_x": [
-  440,
-  648
+  773,
+  1141
  ],
- "arch_width_px": 209,
+ "arch_width_px": 368,
+ "inserted_raw_px": 56,
+ "merlon_period_raw": 56,
+ "source": "gatehouse_diag_v4match_raw.jpg",
  "stone_lab_after": [
-  50.2,
-  3.3,
-  31.9
+  38.9,
+  1.2,
+  19.0
  ],
- "size": [
-  1543,
-  1117
- ],
- "cornice": "band from segment_horizontal_v8 rows 148-206, 200 px below piece top (unsheared)",
- "walkway": "red wood regraded to stone colour",
- "stone_lab_before": [
-  53.400001525878906,
-  2.799999952316284,
-  32.0
- ]
+ "colour_target": "v4 approved ring stone LAB [38.8, 1.1, 19.0]"
 }
