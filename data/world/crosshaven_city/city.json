@@ -3232,34 +3232,34 @@
  ],
  "stone_chroma": {
   "segment_neg": {
-   "chroma": 32.83,
-   "ref_chroma": 33.0,
-   "L": 48.56,
-   "ref_L": 48.68
+   "chroma": 34.59,
+   "ref_chroma": 34.68,
+   "L": 54.6,
+   "ref_L": 54.66
   },
   "segment_pos": {
-   "chroma": 32.83,
-   "ref_chroma": 33.0,
-   "L": 48.56,
-   "ref_L": 48.68
+   "chroma": 34.59,
+   "ref_chroma": 34.68,
+   "L": 54.6,
+   "ref_L": 54.66
   },
   "segment_flat": {
-   "chroma": 32.84,
-   "ref_chroma": 33.0,
-   "L": 48.57,
-   "ref_L": 48.68
+   "chroma": 34.43,
+   "ref_chroma": 34.68,
+   "L": 54.43,
+   "ref_L": 54.66
   },
   "watergate_neg": {
-   "chroma": 32.88,
-   "ref_chroma": 33.0,
-   "L": 48.61,
-   "ref_L": 48.68
+   "chroma": 34.68,
+   "ref_chroma": 34.68,
+   "L": 54.66,
+   "ref_L": 54.66
   },
   "watergate_pos": {
-   "chroma": 32.88,
-   "ref_chroma": 33.0,
-   "L": 48.61,
-   "ref_L": 48.68
+   "chroma": 34.68,
+   "ref_chroma": 34.68,
+   "L": 54.66,
+   "ref_L": 54.66
   }
  },
  "gate_clear": {

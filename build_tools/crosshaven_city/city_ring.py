@@ -81,6 +81,11 @@ _REF_STATS = {}
 CHROMA_LOG = {}
 
 
+def _stone(lab):
+    """Stone pixels: lit enough and warm (not water, arch shadow or banners)."""
+    return (lab[..., 0] > 30.0) & (lab[..., 2] > 8.0)
+
+
 def lab_transfer(im, rc, kit_dir):
     """Round 10: LAB mean/std colour transfer to the reference stone (opaque
     pixels in rc["ref_box"] of rc["ref"]). Recolour only."""
@@ -92,13 +97,16 @@ def lab_transfer(im, rc, kit_dir):
         sub = ref[y0:y1, x0:x1]
         m = sub[..., 3] > 0.9
         lab = color.rgb2lab(sub[..., :3][m].reshape(-1, 1, 3)).reshape(-1, 3)
+        lab = lab[_stone(lab)]
         _REF_STATS[key] = (lab.mean(0), lab.std(0), float(np.hypot(lab[:, 1], lab[:, 2]).mean()))
     rm, rs, rc_chroma = _REF_STATS[key]
     a = np.asarray(im).astype(np.float32) / 255.0
     m = a[..., 3] > 0.5
-    lab = color.rgb2lab(a[..., :3][m].reshape(-1, 1, 3)).reshape(-1, 3)
-    sm, ss = lab.mean(0), lab.std(0)
     allpx = color.rgb2lab(a[..., :3])
+    # stats over stone only (not the dark arch, water or ivy shadows)
+    sel = m & _stone(allpx)
+    lab = allpx[sel]
+    sm, ss = lab.mean(0), lab.std(0)
     # lightness: mean and spread (clamped); colour (a*, b*): mean only, so
     # the art's own shading keeps its hue range
     kl = float(np.clip(rs[0] / max(ss[0], 1e-3), float(rc.get("l_std_min", 0.85)), float(rc.get("l_std_max", 1.15))))
@@ -108,15 +116,19 @@ def lab_transfer(im, rc, kit_dir):
     out[..., 2] = allpx[..., 2] - sm[2] + rm[2]
     # round 11: clamp the chroma to the reference's mean chroma (hue kept)
     ch = np.hypot(out[..., 1], out[..., 2])
-    c_now = float(ch[m].mean())
+    c_now = float(ch[sel].mean())
     if c_now > 1e-3:
         k = rc_chroma / c_now
         out[..., 1] *= k
         out[..., 2] *= k
     rgb = np.clip(color.lab2rgb(out), 0, 1)
+    # only warm pixels take the stone colour: water and other cool parts of the
+    # art keep their own (soft ramp on b*)
+    w = np.clip((allpx[..., 2] - 2.0) / 10.0, 0.0, 1.0)[..., None]
+    rgb = rgb * w + a[..., :3] * (1.0 - w)
     res = a.copy()
     res[..., :3] = rgb
-    chk = color.rgb2lab(rgb[m].reshape(-1, 1, 3)).reshape(-1, 3)
+    chk = color.rgb2lab(rgb[sel].reshape(-1, 1, 3)).reshape(-1, 3)
     CHROMA_LOG[rc.get("_name", "?")] = {"chroma": round(float(np.hypot(chk[:, 1], chk[:, 2]).mean()), 2),
                                        "ref_chroma": round(rc_chroma, 2),
                                        "L": round(float(chk[:, 0].mean()), 2), "ref_L": round(float(rm[0]), 2)}
