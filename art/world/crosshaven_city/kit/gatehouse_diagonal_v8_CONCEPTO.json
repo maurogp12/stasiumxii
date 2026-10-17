@@ -1,28 +1,33 @@
 {
  "left_foot": [
   0,
-  1349.2
+  1061.8
  ],
  "right_foot": [
-  2186,
-  555
+  1406,
+  551
  ],
  "slope": -0.3633,
- "raw_slope": 0.3379,
- "scale": 2.1073,
- "body_px": 551,
- "course_px": 33.7,
- "removed_courses": 2,
+ "raw_slope": 0.3494,
+ "scale": 1.1628,
+ "body_px": 549,
+ "course_px": 39.5,
+ "courses_edited": 4,
  "arch_opening_x": [
-  1023,
-  1318
+  557,
+  847
  ],
- "arch_width_px": 295,
- "source": "gatehouse_diag_v4match_raw.jpg",
+ "arch_width_px": 290,
+ "arch_strip_inserted_raw": 140,
+ "source": "gd_v81_raw.jpg",
  "stone_lab_after": [
-  38.9,
+  39.0,
   1.2,
   19.0
  ],
- "colour_target": "v4 approved ring stone LAB [38.8, 1.1, 19.0]"
+ "colour_target": "v4 approved ring stone LAB [38.8, 1.1, 19.0]",
+ "size": [
+  1407,
+  1067
+ ]
 }

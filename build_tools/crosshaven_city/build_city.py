@@ -1332,6 +1332,29 @@ def apply_ring_kit(layers, images, ground_np, walk, river, old_poly):
     cfg = dict(LAYOUT["ring_kit"])
     # kit5: anchors from each piece's JSON, resolved once for every step
     cfg["modules"] = {k: (RING.load_anchors(KIT_DIR, v) if v.get("anchors_json") else v) for k, v in cfg["modules"].items()}
+    if cfg.get("flat_edges_from_gatehouse"):
+        # rounds 16-17: the flat N/S edges are exactly one horizontal gatehouse
+        # long (feet from its JSON), so its towers are the corners; the ring
+        # keeps its N/S lines, west corners and iso diagonals
+        gf = cfg["modules"]["gatehouse_flat"]
+        k_ = float(cfg["hero_world_px"]) / float(LAYOUT.get("plate_scale", 1.0)) / float(cfg["hero_px_in_art"]) * float(gf.get("scale_mul", 1.0))
+        flat = (float(gf["wall_right"][0]) - float(gf["wall_left"][0])) * k_
+        (x1, yn), _, _, _, _, (xw, ym) = cfg["polygon"]
+        ys_ = cfg["polygon"][3][1]
+        h2 = x1 - xw
+        x2 = x1 + flat
+        cfg["polygon"] = [[x1, yn], [x2, yn], [x2 + h2, ym], [x2, ys_], [x1, ys_], [xw, ym]]
+        LAYOUT["wall_polygon_ring"] = cfg["polygon"]
+        gates_ = []
+        for g in cfg["gates"]:
+            g = dict(g)
+            if g["id"] in ("N", "S"):
+                g["at"] = [(x1 + x2) / 2.0, yn if g["id"] == "N" else ys_]
+            elif g["id"] == "E":
+                g["at"] = [x2 + h2 - 150.0, ym + 75.0]
+            gates_.append(g)
+        cfg["gates"] = gates_
+        print("flat edges from the gatehouse: %.1f px" % flat)
     poly = [tuple(map(float, p)) for p in cfg["polygon"]]
     log = {"modified": set(), "towers_cleaned": [], "gates": [], "contacts_before": [], "contacts_after": []}
     log["contacts_before"] = CG.find_contacts(ground_np, river, poly, [])

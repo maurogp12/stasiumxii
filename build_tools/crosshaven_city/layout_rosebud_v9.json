@@ -583,9 +583,10 @@
    ],
    "note": "Round 15: grass tufts, pebbles and dirt patches (existing world ground art) scattered over the visible foot line of every wall run and round the front of every plinth, drawn over the wall bottom so grass grows over the base; dirt patches lie on the ground. Not on passages, roads or the river."
   },
-  "polygon_note": "Rounds 16-17: the flat N and S edges are exactly one horizontal gatehouse v8 long (its feet 1875 art px apart = 655.3 plate px), so both gatehouse towers are the corners; ring 1980 px tall, iso slopes.",
+  "polygon_note": "Rounds 16-17: flat_edges_from_gatehouse: the build sets the flat N/S edges to the horizontal gatehouse's foot span from its JSON (so its towers are the corners) and moves the east corners; this polygon gives the N/S lines, the west corners and the iso diagonals.",
   "kit5_note": "Round 16: ready for kit5 curtain-only pieces. A module may set anchors_json (JSON beside the PNG; foot_left/foot_right/arch/split/arch_open_x/...; layout keys override) and flank_towers: true (the gatehouse or water gate gets a tower module placed at each foot anchor, like ring towers).",
-  "modules_note": "Round 17: Grok's kit5 (docs/pc-map-handoff 1fc0820f): every anchor is read from the piece's JSON (left/right foot, slope, arch opening, plinth centre and radius, shaft width); the layout only names the file. Gatehouses are curtain-only (flank_towers: tower v8 at each foot). Placeholders (diagonals, gatehouse/water gate diagonals) swap by file only."
+  "modules_note": "Round 17: Grok's kit5 (docs/pc-map-handoff 1fc0820f): every anchor is read from the piece's JSON (left/right foot, slope, arch opening, plinth centre and radius, shaft width); the layout only names the file. Gatehouses are curtain-only (flank_towers: tower v8 at each foot). Placeholders (diagonals, gatehouse/water gate diagonals) swap by file only.",
+  "flat_edges_from_gatehouse": true
  },
  "greenery": {
   "note": "Approved map-base greenery (docs/pc-map-handoff 5edc29a3 docs/pc/look_target/crosshaven_city/work/green; pass --green <dir>). Painted at hero = 156 px, bottom-centre anchored.",
