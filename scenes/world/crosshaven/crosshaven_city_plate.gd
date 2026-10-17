@@ -34,6 +34,12 @@ var _covering: Array = []
 var footprints: Node2D
 ## Lamp light (coordinator review 5): {halo, pool, base_a} per lamp head.
 var lights: Array = []
+## Round 18: one record per gate with a portcullis: node, lift (0 down, 1 up),
+## target, idle time, trigger point (world), block cells.
+var gates_fx: Array = []
+## Sound hook: there is no SFX system yet, so the creak/chain is a signal
+## (kind "open" or "close") that an audio player can connect to later.
+signal gate_sound(gate_id: String, kind: String)
 var _light_t := 0.0
 static var _tex_cache: Dictionary = {}
 
@@ -48,6 +54,7 @@ func setup(target, lite_mode: bool) -> void:
 	_build_layers()
 	_build_plots()
 	_build_pets()
+	_build_portcullis()
 	footprints = Node2D.new()
 	footprints.name = "Footprints"
 	footprints.z_as_relative = false
@@ -584,6 +591,79 @@ func _draw_footprints() -> void:
 		footprints.draw_polyline(_ellipse(c, r), Color(0.4, 0.75, 1.0, 0.95), 3.0)
 		footprints.draw_circle(a, 6.0, Color(1, 0.2, 0.9))
 		footprints.draw_string(font, a + Vector2(-30, 26), "%s %s" % [p["id"], p["tier"]], HORIZONTAL_ALIGNMENT_LEFT, -1, 22, Color(1, 1, 1))
+
+
+const PORTCULLIS_SHADER := preload("res://scenes/world/crosshaven/crosshaven_portcullis.gdshader")
+
+
+func _build_portcullis() -> void:
+	gates_fx.clear()
+	for g in city.gates():
+		var pc: Dictionary = g.get("portcullis", {})
+		if pc.is_empty():
+			continue
+		var tex := load_tex(city.art_path(str(pc["file"])))
+		var s := _sprite(tex, Vector2(float(pc["x"]), float(pc["y"])), _sort_z(float(pc["sort_y"])))
+		s.name = "Portcullis_%s" % str(g["id"])
+		var mat := ShaderMaterial.new()
+		mat.shader = PORTCULLIS_SHADER
+		mat.set_shader_parameter("opening", load_tex(city.art_path(str(pc["opening"]))))
+		mat.set_shader_parameter("lift", 0.0)
+		s.material = mat
+		var block := {}
+		for c in pc.get("block_cells", []):
+			block[Vector2i(int(c[0]), int(c[1]))] = true
+		gates_fx.append({
+			"id": str(g["id"]), "node": s, "lift": 0.0, "target": 0.0, "idle": 0.0,
+			"at": city.plate_to_world(Vector2(float(pc["foot"][0]), float(pc["foot"][1]))),
+			"open_s": float(pc.get("open_s", 0.6)), "close_after_s": float(pc.get("close_after_s", 1.5)),
+			"trigger": float(pc.get("trigger_hero_heights", 3.0)), "block": block,
+		})
+
+
+## Raise a gate's portcullis while a body (hero or NPC, world feet) is within
+## `trigger` hero heights of its arch; lower it once nobody has been near for
+## `close_after_s`. Lift runs over `open_s` either way.
+func tick_gates(delta: float, bodies: Array, hero_h: float) -> void:
+	for gf in gates_fx:
+		var near := false
+		for b in bodies:
+			if (b as Vector2).distance_to(gf["at"]) <= float(gf["trigger"]) * hero_h:
+				near = true
+				break
+		if near:
+			gf["idle"] = 0.0
+			if float(gf["target"]) < 1.0:
+				gf["target"] = 1.0
+				_gate_sound(str(gf["id"]), "open")
+		else:
+			gf["idle"] = float(gf["idle"]) + delta
+			if float(gf["target"]) > 0.0 and float(gf["idle"]) >= float(gf["close_after_s"]):
+				gf["target"] = 0.0
+				_gate_sound(str(gf["id"]), "close")
+		var step := delta / maxf(0.01, float(gf["open_s"]))
+		gf["lift"] = move_toward(float(gf["lift"]), float(gf["target"]), step)
+		var mat := (gf["node"] as CanvasItem).material as ShaderMaterial
+		mat.set_shader_parameter("lift", float(gf["lift"]))
+
+
+## True while the cell sits under a gate arch whose grate is not up yet.
+func gate_closed_at(cell: Vector2i) -> bool:
+	for gf in gates_fx:
+		if (gf["block"] as Dictionary).has(cell) and float(gf["lift"]) < 0.75:
+			return true
+	return false
+
+
+func gate_fx(id: String) -> Dictionary:
+	for gf in gates_fx:
+		if str(gf["id"]) == id:
+			return gf
+	return {}
+
+
+func _gate_sound(id: String, kind: String) -> void:
+	gate_sound.emit(id, kind)
 
 
 ## Row by layer id (tests).

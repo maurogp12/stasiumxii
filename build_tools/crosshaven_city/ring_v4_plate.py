@@ -80,10 +80,15 @@ def remove_towers(img, cfg):
         half = (x1 - x0) / 2.0
         d = half + float(t.get("margin", 4))
         sl, sr = float(t["slope_left"]), float(t["slope_right"])
-        left = shifted(a, -d, -sl * d)
+        dl = half + float(t.get("margin_left", t.get("margin", 4)))
+        left = shifted(a, -dl, -sl * dl)
         right = shifted(a, d, sr * d)
         yy, xx = np.mgrid[0:h, 0:w].astype(np.float32)
-        wr = np.clip((xx - (xc - 6.0)) / 12.0, 0.0, 1.0)[..., None]
+        wr = np.clip((xx - (xc - 6.0)) / 12.0, 0.0, 1.0)[..., None].copy()
+        # optional row bands that take one side only (e.g. ground that would
+        # otherwise copy a tree or a path end from the other side)
+        for y0b, y1b, side in t.get("bands", []):
+            wr[y0b:y1b] = 0.0 if side == "left" else 1.0
         fill = left * (1.0 - wr) + right * wr
         m = np.zeros((h, w), bool)
         m[y0:y1, x0:x1] = True
@@ -123,17 +128,93 @@ def main():
     data_dir = os.path.join(root, "data", "world", "crosshaven_city")
     src = np.asarray(Image.open(os.path.join(art_dir, cfg["source"])).convert("RGB"))
     ih, iw = src.shape[:2]
-    clean = remove_towers(src, cfg)
-    if sheet:
-        Image.fromarray(clean).save(sheet, quality=92)
     PW, PH = iw * UP, ih * UP
+
+    def arg_or_cfg(flag, key):
+        if flag in sys.argv:
+            return sys.argv[sys.argv.index(flag) + 1]
+        v = cfg.get(key)
+        return os.path.join(art_dir, v) if v else None
+
+    # HD source (Grok's 5120x2880 repaint, 1:1 with the plate): used as is, no
+    # upscaling. The geometry stays in image px; the masks read it at 1/4.
+    hd_full_path = arg_or_cfg("--hd", "hd_full")
+    hd_walls_path = arg_or_cfg("--hd-walls", "hd_walls")
+    hd_full = hd_walls = None
+    if hd_full_path:
+        hd_full = np.asarray(Image.open(hd_full_path).convert("RGB"))
+        assert hd_full.shape[:2] == (PH, PW), "HD source must be %dx%d" % (PW, PH)
+    if hd_walls_path:
+        hd_walls = np.asarray(Image.open(hd_walls_path).convert("RGBA"))
+        assert hd_walls.shape[:2] == (PH, PW), "HD walls layer must be %dx%d" % (PW, PH)
 
     def upscale(a):
         im_ = Image.fromarray(a).resize((PW, PH), Image.LANCZOS)
         return im_.filter(ImageFilter.UnsharpMask(radius=2, percent=60, threshold=2))
 
+    if hd_full is not None:
+        clean = np.asarray(Image.fromarray(hd_full).resize((iw, ih), Image.LANCZOS))
+        if not cfg.get("hd_towers_removed", True):
+            clean = remove_towers(clean, cfg)
+        full = hd_full.copy() if cfg.get("hd_towers_removed", True) else np.asarray(upscale(clean)).copy()
+    else:
+        clean = remove_towers(src, cfg)
+        full = np.asarray(upscale(clean)).copy()
+    if sheet:
+        Image.fromarray(clean).save(sheet, quality=92)
+
+    # ---- portcullis: the grate is cut out of the plate into its own sprite;
+    # behind it the passage is the arch's own dark pixels with the bars taken
+    # out (a min filter over the opening), in the image and in the plate
+    full_orig = full.copy()
+    clean = clean.copy()
+    portcullis = {}
+    for g in cfg["gates"]:
+        if not g.get("portcullis_box"):
+            continue
+        x0, y0, x1, y1 = g["portcullis_box"]
+        crop = clean[y0:y1, x0:x1].astype(np.float32)
+        lum = crop.mean(axis=2)
+        dark = lum < np.percentile(lum, 55)
+        op = ndi.binary_closing(dark, iterations=2)
+        op = ndi.binary_fill_holes(op)
+        lab_, n_ = ndi.label(op)
+        if n_ > 1:
+            sizes = ndi.sum(op, lab_, range(1, n_ + 1))
+            op = lab_ == (1 + int(np.argmax(sizes)))
+        op = ndi.binary_fill_holes(ndi.binary_closing(op, iterations=1))
+        # an arch opening is convex: the hull takes in bars the threshold missed
+        from skimage.morphology import convex_hull_image
+        op = convex_hull_image(op)
+        # plate res opening, bars (brighter than the passage) as the grate alpha
+        P0, P1 = (x0 * UP, y0 * UP), (x1 * UP, y1 * UP)
+        op_up = np.asarray(Image.fromarray((op * 255).astype(np.uint8)).resize((P1[0] - P0[0], P1[1] - P0[1]), Image.BILINEAR)) / 255.0
+        fc = full_orig[P0[1]:P1[1], P0[0]:P1[0]].astype(np.float32)
+        fl = fc.mean(axis=2)
+        lo, hi = np.percentile(fl[op_up > 0.5], 25), np.percentile(fl[op_up > 0.5], 80)
+        bars = np.clip((fl - lo) / max(1.0, hi - lo), 0.0, 1.0)
+        bars = ndi.gaussian_filter(bars, 0.8)
+        inner = ndi.gaussian_filter(ndi.binary_erosion(op_up > 0.5, iterations=UP).astype(np.float32), 1.0)
+        alpha = np.clip((bars - 0.3) * 2.5, 0.0, 1.0) * inner
+        passage = np.stack([ndi.minimum_filter(fc[..., c], size=5 * UP) for c in range(3)], -1)
+        passage = np.stack([ndi.gaussian_filter(passage[..., c], UP) for c in range(3)], -1)
+        m3 = op_up[..., None]
+        full[P0[1]:P1[1], P0[0]:P1[0]] = (fc * (1 - m3) + passage * m3).astype(np.uint8)
+        cpass = np.stack([ndi.minimum_filter(crop[..., c], size=5) for c in range(3)], -1)
+        clean[y0:y1, x0:x1] = np.where(op[..., None], cpass, crop).astype(np.uint8)
+        name = "gates/portcullis_%s.png" % g["id"]
+        os.makedirs(os.path.join(art_dir, "gates"), exist_ok=True)
+        Image.fromarray(np.dstack([fc.astype(np.uint8), (alpha * 255).astype(np.uint8)]), "RGBA").save(os.path.join(art_dir, name), optimize=True)
+        mask_name = "gates/portcullis_%s_opening.png" % g["id"]
+        Image.fromarray((np.clip(op_up, 0, 1) * 255).astype(np.uint8), "L").save(os.path.join(art_dir, mask_name), optimize=True)
+        oy, ox = np.nonzero(op)
+        portcullis[g["id"]] = {"file": name, "opening": mask_name, "x": P0[0], "y": P0[1], "w": P1[0] - P0[0], "h": P1[1] - P0[1],
+                               "opening_top_px": round(float((y0 + oy.min()) * UP), 1),
+                               "sort_y": round(float((y0 + oy.max()) * UP + UP * 2), 1),
+                               "foot": [round(float((x0 + ox.mean()) * UP), 1), round(float((y0 + oy.max()) * UP), 1)]}
+
     # the layers take their pixels from the full image
-    g_np = np.asarray(upscale(clean))
+    g_np = full
     occl = np.zeros((ih, iw), bool)
 
     # ---- masks (image px)
@@ -142,6 +223,18 @@ def main():
     path = path_mask(clean)
     yy, xx = np.mgrid[0:ih, 0:iw]
     segs = [(tuple(s["a"]), tuple(s["b"]), s) for s in cfg["walls"]]
+    # the ring polygon: where each wall's foot line meets the next one (walls
+    # are listed in ring order), so inside/outside follows the blocking band
+    ring_poly = []
+    for (a1, b1, _), (a2, b2, _) in zip(segs, segs[1:] + segs[:1]):
+        (x1_, y1_), (x2_, y2_) = a1, b1
+        (x3_, y3_), (x4_, y4_) = a2, b2
+        den = (x1_ - x2_) * (y3_ - y4_) - (y1_ - y2_) * (x3_ - x4_)
+        if abs(den) < 1e-9:
+            ring_poly.append(((x2_ + x3_) / 2.0, (y2_ + y3_) / 2.0))
+            continue
+        t_ = ((x1_ - x3_) * (y3_ - y4_) - (y1_ - y3_) * (x3_ - x4_)) / den
+        ring_poly.append((x1_ + t_ * (x2_ - x1_), y1_ + t_ * (y2_ - y1_)))
 
     # ---- layers
     old = json.load(open(os.path.join(data_dir, "layers.json")))
@@ -160,7 +253,11 @@ def main():
         px0, py0, px1, py1 = x0 * UP, y0 * UP, x1 * UP, y1 * UP
         al = Image.fromarray((alpha_img[y0:y1, x0:x1] * 255).astype(np.uint8)).resize((px1 - px0, py1 - py0), Image.BILINEAR)
         al = al.filter(ImageFilter.GaussianBlur(1.2))
-        rgba = np.dstack([g_np[py0:py1, px0:px1], np.asarray(al)])
+        if hd_walls is not None:
+            hw = hd_walls[py0:py1, px0:px1]
+            rgba = np.dstack([hw[..., :3], np.minimum(np.asarray(al), hw[..., 3])])
+        else:
+            rgba = np.dstack([g_np[py0:py1, px0:px1], np.asarray(al)])
         if (rgba[..., 3] > 60).sum() < 40:
             return None
         im = Image.fromarray(rgba, "RGBA")
@@ -204,7 +301,9 @@ def main():
             m &= stone & ~tower_any
             if s.get("gate"):
                 m &= ~path | (yy < foot_y((a, b), xx + 0.0) - 2)
-            add_layer(m.astype(np.float32), (x0, max(0, top), x1, min(ih, bot)), "ring_wall",
+            # the box reaches a little below the foot (transparent): the sprite
+            # rect then covers the cells right in front of the wall
+            add_layer(m.astype(np.float32), (x0, max(0, top), x1, min(ih, bot + int(cfg.get("pad_below", 8)))), "wall",
                       foot_y((a, b), (x0 + x1) / 2.0), {"edge": s["id"]})
     for t in kept:
         x0, y0, x1, y1 = t["box"]
@@ -235,6 +334,7 @@ def main():
     for eb in cfg.get("block_boxes", []):
         blocked[eb[1]:eb[3], eb[0]:eb[2]] = True
     gate_open = np.zeros((ih, iw), bool)
+    gate_masks = {}
     for g in cfg["gates"]:
         p, q = np.array(g["outside"], float), np.array(g["inside"], float)
         v = q - p
@@ -243,7 +343,9 @@ def main():
         rel_x, rel_y = xx - p[0], yy - p[1]
         t_ = rel_x * u[0] + rel_y * u[1]
         n_ = np.abs(rel_x * -u[1] + rel_y * u[0])
-        gate_open |= (t_ >= 0) & (t_ <= L) & (n_ <= float(g.get("half_width", 8)))
+        gm = (t_ >= 0) & (t_ <= L) & (n_ <= float(g.get("half_width", 8)))
+        gate_masks[g["id"]] = (gm, p, u)
+        gate_open |= gm
     bridge_ok = np.zeros((ih, iw), bool)
     for br in cfg["bridges"]:
         x0, y0, x1, y1 = br["deck"]
@@ -274,6 +376,66 @@ def main():
                 row.append("g")
             cell_of[(x, y)] = (ix, iy)
         rows.append("".join(row))
+    grid_w = np.array([[c in "gr" for c in r] for r in rows])
+
+    # ---- plots (houses hidden for now: the footprints are reserved and block).
+    # Each Legendary ellipse (350 x 175 plate px, bottom point = anchor) sits on
+    # grass only: no street, wall, tower or water under it.
+    leg_rx = float(lay["plot_rules"]["clearance_px"]["legendary"]) / UP / 2.0
+    leg_ry = leg_rx / 2.0
+    # margins: a street px, a cell (water reads per cell), the wall band
+    bad = ndi.binary_dilation(path, iterations=2) | ndi.binary_dilation(water, iterations=9) | ndi.binary_dilation(occl | blocked, iterations=3)
+    ey, ex = np.mgrid[-int(leg_ry) - 1:int(leg_ry) + 2, -int(leg_rx) - 1:int(leg_rx) + 2]
+    ell = (ex / leg_rx) ** 2 + (ey / leg_ry) ** 2 <= 1.0
+    ey, ex = ey[ell], ex[ell]
+
+    def plot_ok(ax, ay):
+        cx, cy = ax, ay - leg_ry
+        ys_, xs_ = (cy + ey).astype(int), (cx + ex).astype(int)
+        if xs_.min() < 4 or ys_.min() < 4 or xs_.max() >= iw - 4 or ys_.max() >= ih - 4:
+            return False
+        return not bad[ys_, xs_].any()
+
+    cell_list = list(cell_of.items())
+
+    def front_for(ax, ay):
+        """Two touching walkable cells right in front of the anchor."""
+        best = None
+        for (x, y), (cx, cy) in cell_list:
+            if not grid_w[y, x]:
+                continue
+            dy_, dx_ = (cy - ay) * UP, abs(cx - ax) * UP
+            if 4.0 < dy_ < 44.0 and dx_ < 36.0:
+                d = dx_ + abs(dy_ - 24.0)
+                if best is None or d < best[0]:
+                    best = (d, (x, y))
+        if best is None:
+            return None
+        x, y = best[1]
+        for n2 in [(x + 1, y), (x, y + 1), (x - 1, y), (x, y - 1)]:
+            if 0 <= n2[0] < W and 0 <= n2[1] < H and grid_w[n2[1], n2[0]]:
+                return [list(best[1]), list(n2)]
+        return None
+
+    chosen = []
+    cands = [(x_, y_) for y_ in range(10, ih - 10, 4) for x_ in range(10, iw - 10, 4)]
+    for spot in cfg["plot_spots"]:
+        order = sorted(cands, key=lambda c: (c[0] - spot[0]) ** 2 + (c[1] - spot[1]) ** 2)
+        for ax, ay in order:
+            if any(((ax - bx) ** 2 + ((ay - by) * 2.0) ** 2) ** 0.5 <= leg_rx * 2.0 + 4.0 for bx, by, _ in chosen):
+                continue
+            if not plot_ok(ax, ay):
+                continue
+            fr = front_for(ax, ay)
+            if fr is None:
+                continue
+            chosen.append((ax, ay, fr))
+            break
+    foot = np.zeros((ih, iw), bool)
+    for ax, ay, _ in chosen:
+        foot |= ((xx - ax) / (leg_rx * 0.8)) ** 2 + ((yy - (ay - leg_ry)) / (leg_ry * 0.8)) ** 2 <= 1.0
+    rows = ["".join(("#" if (ch in "gr" and foot[cell_of[(x, y)][1], cell_of[(x, y)][0]]) else ch)
+                    for x, ch in enumerate(r)) for y, r in enumerate(rows)]
     # keep only the walkable component the spawn is in (no islands)
     grid_w = np.array([[c in "gr" for c in r] for r in rows])
 
@@ -307,12 +469,24 @@ def main():
 
     gates_out, gate_cells = [], []
     for g in cfg["gates"]:
-        cells = cells_on(g["outside"], g["inside"], 3.0)
+        # every walkable cell in the passage corridor, outside to inside
+        gm, p0, u0 = gate_masks[g["id"]]
+        cells = [c for c, (ix, iy) in cell_of.items() if gm[iy, ix] and grid_w[c[1], c[0]]]
+        cells.sort(key=lambda c: (cell_of[c][0] - p0[0]) * u0[0] + (cell_of[c][1] - p0[1]) * u0[1])
         rec = {"id": g["id"], "why": "ring v4 image", "arch": [g["arch"][0] * UP, g["arch"][1] * UP],
                "wall_join_left": [g["join_left"][0] * UP, g["join_left"][1] * UP],
                "wall_join_right": [g["join_right"][0] * UP, g["join_right"][1] * UP],
                "passage": [[g["outside"][0] * UP, g["outside"][1] * UP], [g["inside"][0] * UP, g["inside"][1] * UP]],
                "cells": [list(c) for c in cells]}
+        if g["id"] in portcullis:
+            pc = dict(portcullis[g["id"]])
+            fx, fy = pc["foot"][0] / UP, pc["foot"][1] / UP
+            # the cells under the arch: these block while the grate is down
+            pc["block_cells"] = [list(c) for c in cells if (cell_of[c][0] - fx) ** 2 + (cell_of[c][1] - fy) ** 2 <= 9.0 ** 2]
+            pc["open_s"] = 0.6
+            pc["close_after_s"] = 1.5
+            pc["trigger_hero_heights"] = 3.0
+            rec["portcullis"] = pc
         if g["id"] == "S":
             gate_cells = [list(c) for c in cells]
         gates_out.append(rec)
@@ -326,7 +500,7 @@ def main():
                         "sprite_bbox": [x0 * UP, y0 * UP, x1 * UP, y1 * UP]})
     npcs = []
     used = set()
-    inside_poly = [(p[0], p[1]) for p in cfg["polygon"]]
+    inside_poly = ring_poly
 
     def in_poly(pt):
         x_, y_ = pt
@@ -355,19 +529,37 @@ def main():
             st["from"]["x"], st["from"]["y"] = c
         stubs.append(st)
     plots = []
-    for p, spot in zip(lay["plots"], cfg["plot_spots"]):
+    for p, (ax, ay, fr) in zip(lay["plots"], chosen):
         p2 = dict(p)
-        p2["anchor_px"] = [spot[0] * UP, spot[1] * UP]
-        fc = nearest_cell(spot[0], spot[1] + 6)
-        p2["front_cells"] = [list(fc)]
+        p2["anchor_px"] = [ax * UP, ay * UP]
+        p2["front_cells"] = fr
         plots.append(p2)
+    if len(plots) < len(lay["plots"]):
+        print("WARNING: only", len(plots), "plots fit")
 
     # the ground behind every wall and tower is filled in from around it, so the
     # local fade (hero behind a wall) shows ground, not the wall again
     import cv2
     hole = ndi.binary_dilation(occl, iterations=2).astype(np.uint8) * 255
     behind = cv2.inpaint(np.ascontiguousarray(clean[..., ::-1]), hole, 7, cv2.INPAINT_TELEA)[..., ::-1]
-    ground = upscale(np.ascontiguousarray(behind))
+    occ_up = np.asarray(Image.fromarray(hole).resize((PW, PH), Image.BILINEAR)).astype(np.float32)[..., None] / 255.0
+    ground = Image.fromarray((full * (1.0 - occ_up) + np.asarray(upscale(np.ascontiguousarray(behind))) * occ_up).astype(np.uint8))
+    # leak audit (as the tests): from inside, gates shut, nothing outside is reached
+    gate_set = {tuple(c) for g in gates_out for c in g["cells"]}
+    start = tuple(bridges[0]["ends"][0])
+    seen_, stack_, leaks_ = {start}, [start], []
+    while stack_:
+        cx_, cy_ = stack_.pop()
+        for dx_, dy_ in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            n_ = (cx_ + dx_, cy_ + dy_)
+            if n_ in seen_ or n_ in gate_set or not (0 <= n_[0] < W and 0 <= n_[1] < H) or not grid_w[n_[1], n_[0]]:
+                continue
+            seen_.add(n_)
+            if not in_poly(cell_of[n_]):
+                leaks_.append(cell_of[n_])
+                continue
+            stack_.append(n_)
+    print("inside cells", len(seen_), "leaks", len(leaks_), leaks_[:12])
     ground.save(os.path.join(art_dir, "ground.jpg"), quality=90)
     ground.resize((PW // 2, PH // 2), Image.LANCZOS).save(os.path.join(art_dir, "ground_lite.jpg"), quality=88)
     city = {}
@@ -375,7 +567,7 @@ def main():
         city[k] = lay[k]
     city["source"] = "Mauro's ring v4 concept (" + cfg["source"] + "), towers painted out to the keep list"
     plate = dict(plate)
-    plate.pop("fit", None)
+    plate["fit"] = {"residuals": [], "note": "image plate: the cells keep the zone's lattice (cell00_px)"}
     plate["size"] = [PW, PH]
     plate["source_image_px"] = [iw, ih]
     plate["image_to_plate"] = UP
@@ -384,12 +576,14 @@ def main():
     city["spawn"] = list(spawn)
     city["exit_cell"] = list(exit_c)
     city["gate_cells"] = gate_cells
-    city["wall_polygon"] = [[p[0] * UP, p[1] * UP] for p in cfg["polygon"]]
+    city["wall_polygon"] = [[round(p[0] * UP, 1), round(p[1] * UP, 1)] for p in ring_poly]
+    city["trees_keep"] = {}
     city["map_base_only"] = lay["map_base_only"]
     city["wall_ring"] = {"source": "image", "towers_kept": len(kept),
                          "towers_removed": [t["name"] for t in cfg["towers"] if not t.get("keep")],
                          "note": "Round 18: Mauro's ring v4 image is the plate; walls and kept towers are cut from it as y-sorted layers."}
     city["building_footprints"] = []
+    city["wall_contacts"] = {"before": [], "after": []}
     city["gates"] = gates_out
     city["bridges"] = bridges
     city["plots"] = plots

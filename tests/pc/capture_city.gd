@@ -107,6 +107,7 @@ func _v4_shots() -> void:
 				under = cc
 		_place(under, "n")
 		await _hold(_w.walker.position + Vector2(0, -60), 1.8, 30, "14_arch_close_%s" % g["id"])
+		await _hold(arch_w + Vector2(0, -40), 1.1, 10, "31_gate_%s_open" % g["id"])
 		var in_c := Vector2i(int(cells[cells.size() - 1][0]), int(cells[cells.size() - 1][1]))
 		_place(_near_free(in_c), "s")
 		await _hold(_w.walker.position + Vector2(0, -60), 1.8, 30, "14_inside_%s" % g["id"])
@@ -575,6 +576,15 @@ func _walk_clip() -> void:
 			still = still + 1 if (i > 6 and not _w.walker.is_moving()) else 0
 			if still > 18:
 				break
+		if str(leg[4]).begins_with("gate") and _set == "v4":
+			# Round 18: hold on the gate while the portcullis drops behind the hero
+			_w.camera_hold = true
+			for g in city.gates():
+				if "gate %s" % g["id"] == str(leg[4]):
+					_cam(city.plate_to_world(Vector2(float(g["arch"][0]), float(g["arch"][1]))) + Vector2(0, -40), 1.6)
+			for i in 90:
+				await process_frame
+			_w.camera_hold = false
 		_grabbing = false
 	print("CLIP frames=%d" % _frame_i)
 

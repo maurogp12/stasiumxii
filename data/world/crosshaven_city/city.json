@@ -25,7 +25,11 @@
    1280,
    720
   ],
-  "image_to_plate": 4
+  "image_to_plate": 4,
+  "fit": {
+   "residuals": [],
+   "note": "image plate: the cells keep the zone's lattice (cell00_px)"
+  }
  },
  "grid": {
   "width": 118,
@@ -39,48 +43,48 @@
   },
   "rows": [
    "......ggggggggggggggggggggrgrggrgrgrgrrrgrgggrrrrrrgrrrrrggrrgrrgrrrrgggrgrrgrggrrggggrrggggg.........................",
-   ".....ggggggggggggggggggggggrggggrgrggrrgrrggggrrrrrrrrrrrrrrrrrrrrrrggrgrrrrrrrrrrgrgggggrrggg........................",
-   "....gggggggggggggggggggggggrrrrrrrrrrrrgrrgrggrrrrrrrrrrrrrrrrrrrrrrrrgggrrrrrrgggrrgrrrrrgrggg.......................",
+   ".....gggggggggggggggggggggrrggggrgrggrrgrrggggrrrrrrrrrrrrrrrrrrrrrrggrgrrrrrrrrrrgrgggggrrggg........................",
+   "....ggggggggggggggggggggrggrrrrrrrrrrrrgrrgrggrrrrrrrrrrrrrrrrrrrrrrrrgggrrrrrrgggrrgrrrrrgrggg.......................",
    "...gggggggggggggggggggggrggrrgrrrrrrgrrrgrrrgggrrrrrrrrgrrgrrrrrrrrrrrrrggrgrgrrgrrrrgggrgrrgggg......................",
-   "..gggggggggggggggggggggrrgrggrrrrrrrrrrggggrggggrrrrrrgrrrrrrrrrrrrr~rrrrgggrrrrrggrrrgggrgrggggg.....................",
-   ".rgggggggggggggggggggggrgrggrgrrrrrrrrrrrgggrgrggggrgggrrrrrrrrrrrrrrgrrr####rrrrrggrgrggrrrgrgggg....................",
-   "grrgggggggrgggrgggggrggggrggrggrrrrrrrrrrrrrrrr####rggg~grrrrrrrrrrrrrrrr#####grrrrrrrrg###rgrggggg...................",
-   "ggrrgggggggrgggrgggrgggrgggrgrggg#######################~###################################rggggggg..................",
-   "ggrrrggggggrrrggggrggrrggggggggg#########################~###################################rggggggg.................",
-   "gggrrrgggggggrrggggggrrgrgrrggr###########g#g###############################################grrggggggg................",
-   "ggggrrrggggrrrgrrgggrrgrgrgggg#####ggggggrggggg#####gggg~ggggggrrrrrrgggrgrgggggggggggg#####grggggggggg...............",
+   "..gggggggggggggggggggggrrrrrgrrrrrrrrrrggggrggggrrrrrrgrrrrrrrrrrrrr~rrrrgggrrrrrggrrrgggrgrggggg.....................",
+   ".rgggggggggggggggggggggrgrrgrrrrrrrrrrrrrgggrgrggggrgggrrrrrrrrrrrrrrgrrr####rrrrrggrgrggrrrgrgggg....................",
+   "grrgggggggrgggrgggggrggggrgrgrrrrrrrrrrrrrrrrrr####rggg~grrrrrrrrrrrrrrrr#####grrrrrrrrg###rgrggggg...................",
+   "ggrrgggggggrgggrgggrgggrgggrrrggg#######################~###################################rggggg##..................",
+   "ggrrrggggggrrrggggrggrrgggggggrg#########################~###########################################.................",
+   "gggrrrgggggggrrggggggrrgrgrrggg###########g#g#########################################################................",
+   "ggggrrrggggrrrgrrgggrrgrgrgggg#####ggggggrggggg#####gggg~ggggggrrrrrrgggrgrgggggggggggg######rggggggggg...............",
    "gggggrrrggggrgrrrgggggrgrrggg#####gggggggggggggg##gggg~~~~~gggggrrrgrgggggrggggggggggggg###rgrgggggggg##..............",
    "ggggggrrrgggggrgrrrgggrrrggg#####ggggrgggggggggggggrrg~~~ggggggggrrgggggggggggggggggggrrggggrggggggggg##g.............",
    "gggggggrrrrggrgrrrrgggggggr#####ggggggrrggggggggggggrgg~~gggggggggrgggggggggggggggggggrrrrggrggggggggg##gg............",
    "ggggggggrrrrrrggrrrrgggggg#####gggggrggrrgggggggggggggg~~gggggggggggggggggggggggggggggggrrrrgrrrrggggg##rrg...........",
-   "ggggggggrrrrrrrrgrrrrgggg#####gggggggrgrrggggggggggggggg~~gggggggggggggggggggggggggggggggrrrrrrrrrrrrrrrrrrr..........",
-   "grgggrgggrrrrrrgrgrrrrr######gggggggggggrrgggggggggggggg~~ggggggggggggggggggggggggggggggggrrrgrrrrrrrrrrrrrrr.........",
-   "ggrrggrggrrgrrgrrrgrrr######ggggggggggggrrgggggggggggggg~~gggggggggggggggggggggggggggggggggrrgrggggrrrrrrrrrrr........",
-   "ggrgrgrgrrgrrgrrgrrgr######ggggggggggggggrrggggrrrrggggg~~~gggggggggggggggggggggggggggggggggrgrggggggg##rrrrrrr.......",
-   "gggrrgrgggrggrrrgrggg######gggggggggggggggrrgrrrrrrrrgggg~~ggggggggggggggggggggggggggggggggggrrggggggg##rrrrrrrr......",
-   "ggrgrggggggggrrrrgrg#######gggggggggggggggrrrrrrrrrrrggggg~~ggggggggggggggggggggggggggggggggggrggggggg##rrrrrrrgr.....",
-   "gggrrrrggggggrgrrrg########ggggggggggggggggrrrrrrrrrrrggg~~~gggggggggggggggggggggggggggggggggrgggggggg##rrrggggggg....",
-   "gggggrgrrrgggrggrrr######ggggggggggggggggggrrrrggrrrrggggg~~~gggggggggggggggggggggggggggggggggrggggggg##ggggggggggg...",
-   "ggggggrrrggggggrgrrr##grggggggggggggggggggggrrrgggggrgggggg~~ggggggggggggggggggggrrrrrrggggggggggggggg##gggggggggggg..",
-   "gggggggrrrrggggg##rrrrrrrrrgggggggggggggggggrrrggggggrgggggg~~gggggggggggggggggrrrrrrrgggggggggggggggg##ggggggggggggg.",
-   "gggggggggrrgrgg####rrrrrrrrrggggggggggggggggrrrgggggggggggggg~~~gggggggggggggggrrrrrrrrggggggggggggggg##gggggggggggggg",
-   "ggggggggggrrg######grrrrrrrrrgggggggggggggggrrrggggggggggggggg~~~~ggggggggggggrrrrrrrrrggggggrgggggggg##gggggggggggggg",
-   "gggggggrgggr######grrrrrrrrrrrggggggggggggggrrrrggggggggggggggg~~~~gggggggggggrrrrrrrrrrgggggrgggggggg##gggggggggggggg",
-   "ggggggrggggg######grrrrrrrrrrrrgggggggggggggrrrggggggggggggggggg~~~~ggggggggggrrrrrrrrrrgggggggggggggg##gggggggggggggg",
+   "ggggggggrrrrrrrrgrrrrgggg#####gggggggrgrrggggggggggggggg~~ggggggg#gggggggg#####ggggggggggrrrrrrrrrrrrrrrrrrr..........",
+   "grgggrgggrrrrrrgrgrrrrr######gggggggggggrrgggggggggggggg~~gggg#####gggggg######gggggggggggrrrgrrrrrrrrrrrrrrr.........",
+   "ggrrggrggrrgrrgrrrgrrr######ggggggggggggrrgggggggggggggg~~gggg######ggggg#######gggggggggggrrgrggggrrrrrrrrrrr........",
+   "ggrgrgrgrrgrrgrrgrrgr######ggggggggggggggrrggggrrrrggggg~~~ggg#######gggg#######ggggggggggggrgrggggggg##rrrrrrr.......",
+   "gggrrgrgggrggrrrgrggg######gggggggggggggggrrgrrrrrrrrgggg~~gg########gggg#######gggggggggggggrrggggggg##rrrrrrrr......",
+   "ggrgrggggggggrrrrgrg#######gggggggggggggggrrrrrrrrrrrggggg~~gg######gggggg#####gggggggggggggggrggggggg##rrrrrrrgr.....",
+   "gggrrrrggggggrgrrrg########ggggggggggggggggrrrrrrrrrrrggg~~~ggg#####ggggggg##ggggggggggggggggrgggggggg##rrrggggggg....",
+   "gggggrgrrrgggrggrrr######ggggggggg##gggggggrrrrggrrrrggggg~~~ggg##ggggggggggggggggggggggggggggrggggggg##ggggggggggg...",
+   "ggggggrrrggggggrgrrr##grgggggggg######ggggggrrrgggggrgggggg~~ggggggggggggggggggggrrrrrrggggggggggggggg##gggggggggggg..",
+   "gggggggrrrrggggg##rrrrrrrrrggggg######ggggggrrrggggggrgggggg~~gggggggggggggggggrrrrrrrgggggggggggggggg##ggggggggggggg.",
+   "gggggggggrrgrgg####rrrrrrrrrgggg#######gggggrrrgggggggggggggg~~~gggggggggggggggrrrrrrrrggggggggggggggg##gggggggggggggg",
+   "ggggggggggrrg######grrrrrrrrrggg#######gggggrrrggggggggggggggg~~~~ggggggggggggrrrrrrrrrggggggrgggggggg##gggggggggggggg",
+   "gggggggrgggr######grrrrrrrrrrrgg######ggggggrrrrggggggggggggggg~~~~gggggggggggrrrrrrrrrrgggggrgggggggg##gggggggggggggg",
+   "ggggggrggggg######grrrrrrrrrrrrgg#####ggggggrrrggggggggggggggggg~~~~ggggggggggrrrrrrrrrrgggggggggggggg##gggggggggggggg",
    "gggggrgrgggg######ggrrrrrrrrggrrgggggggrrrrrrrrgggggggggggggggggg~~~~gggggggggrrrrrrrrrggggggrgggggggg##gggggggggggggg",
    "ggggggrggggg#####gggggrrrrrrgggrrggggrrrrrrrrrrrrrrgggrggggggggggg~~~ggggggggggrrrrrrrrggggggrgggggggg##gggggggggggggg",
    "gggggrgrgggrg####gggggrrrrrrrgggrrgrrrrrrrrrrrrrrrrrrgggggggggggggg~~~gggggggggrrrrrrrrggggggrgggggggg##ggggggrggggggg",
    "gggggrgrggrgg###ggggggggrrrrrrgggrgrrrrrrrgggggggrrrrrrgggggggggggg~~~~gggggrgggrrrrrrrr~ggggrgrgggggg##gggggggggggggg",
    "ggggggrgggggg###ggggggggggrrrrrggrrgrrrgggggggggggggrrrrgggggggggggg~~~ggggggggggrrrrrrrggggggrrgggggg##gggggggggggggg",
-   "gggggrgrggggg##ggggggggggggrrrrrrrrrgrggggggggggggggggrrrrgggggggggg~~~~gggggggggggggrrggggggrgrgggggg##gggggggggggggg",
-   "ggggggrrggggg##ggggggggggggggrrrrrrrrgggggggggggggggggggrrrgggrrrrrrg~~~gggggggggggggrrgggggggrrgggggg##gggggggggggggg",
-   "gggggrgrggggg##ggggggggggggggrrrrrrggggggggggggggggggggggrrrgrrrrrrrg~~~gggggggggggggrrrgggggrgrgggggg##gggggggggggggg",
-   "gggggggrgggg###gggggggggggggggrrrrrgggggggggggggggggggggggrrrrrrggggrg~~~ggggggggggggrrrgggggrrrgggggg##gggggggggggggg",
-   "gggggrgrgggg###ggggggggggggggggrrrgggggggggggggggggggggggggrrrrggggggg~~~ggggggggggggrrrggggggrrgggggg##gggggggggggggg",
-   "gggggggrgrgg###gggggggggggggggrrrrggggggggggggggggggggggggrgrrrggggggg~~~~gggggggggggrrggggggrgrgggggg##gggggggggggggg",
-   "gggggrrrgggg###gggggggggggggggrrrggggggggggggggggggggggggggggrrgggggggg~~~gggggggggggrrrggggggrrgggggg##gggggggggggggg",
-   "gggggggrgggg###gggggggggggggggrrrggggggggggggggggggggggggggggrrgggggggg~~~~ggggggggggrrrgggggrgrgggggg##gggggggggggggg",
-   "ggggggrrgggg###gggggggggggggggrrrgggggggggggggggggggggggggggggrrggggggrg~~~ggggggggggrrrggggggrrgggggg##gggggggggggggg",
+   "gggggrgrggggg##ggggggggggggrrrrrrrrrgrggggggggggggggggrrrrgggggggggg~~~~gggggggggggggrrggggggrgrgggggg##ggg####ggggggg",
+   "ggggggrrggggg##ggggggggggggggrrrrrrrrgggggggggggggggggggrrrgggrrrrrrg~~~ggggg####ggggrrgggggggrrgggggg##gg######gggggg",
+   "gggggrgrggggg##ggg####gggggggrrrrrrggggggggggggggggggggggrrrgrrrrrrrg~~~gggg######gggrrrgggggrgrgggggg##g#######gggggg",
+   "gggggggrgggg###gg######gggggggrrrrrgggggggggggggggggggggggrrrrrrggggrg~~~ggg#######ggrrrgggggrrrgggggg##g#######gggggg",
+   "gggggrgrgggg###gg#######gggggggrrrgggggggggggggggggggggggggrrrrggggggg~~~ggg#######ggrrrggggggrrgggggg##gg######gggggg",
+   "gggggggrgrgg###gg#######ggggggrrrrggggggggggggggggggggggggrgrrrggggggg~~~~gg######gggrrggggggrgrgggggg##gg######gggggg",
+   "gggggrrrgggg###gg#######ggggggrrrggggggggggggggggggggggggggggrrgggggggg~~~gg######gggrrrggggggrrgggggg##gggg##gggggggg",
+   "gggggggrgggg###ggg#####gggggggrrrggggggggggggggggggggggggggggrrgggggggg~~~~ggg###ggggrrrgggggrgrgggggg##gggggggggggggg",
+   "ggggggrrgggg###gggg###ggggggggrrrgggggggggggggggggggggggggggggrrggggggrg~~~ggggggggggrrrggggggrrgggggg##gggggggggggggg",
    "gggggggggggg###gggggggggggggggrrrgggggggggggggggggggggggggggggrrrggggrrg~~~ggggggggggrrrrggggggrgggggg##gggggggggggggg",
    "gggggggrgggg###ggggggggggggggggrgggggggggggggggggggggggggggggggrrrrgrrrr~~~~gggggggggrrrggggggrrgggggg##gggggggggggggg",
    "gggggrrrgggg##gggggrggggggggggrgrgggggggggggggggggggrrgggggggggrrrrgggggg~~~gggggggggrrrgrggggrrgggggg##gggggggggggggg",
@@ -92,48 +96,48 @@
    "ggrrggggggg###gggggggggggggrrgggrrgggggggggggggrrrrrrrrrrrrrggggrrrggggggg~~~~ggggggggrrgggggrgggrgggg##gggggggggggggg",
    "ggrggrrgggg###ggggggggggggggrrrgrrrggggggggggggrrrrgrrrrrrrrggggrrgggggggr~~~~ggggggggrrggggggrrrrrggg##gggggggggggggg",
    "ggrrgrggggg###gggggggggggggggrrrrrrggggggggggggrrrrggrrrrrrggggrrrggggggrr~~~~ggggggggrrgggggrggrrrrgg##gggggggggggggg",
-   "gggrrggrrgg###gggggggggggggggggrrrrrggggggggggggrrrrrrrrrrrggggrrrgggggrrr~~~~ggggggggrrggggggrrgrrrrg##gggggggggggggg",
-   "ggggrrrgggg###gggggggggggggggggggrrrggggggggggggrrrrrrrrrrgggggrrrggggrrrr~~~~rgggggggrrgggggrgrggrrrr##gggggggggggggg",
-   "gggggrrrgrg##gggggggggggggggggggggrrrgggrrrrrggggrrrrrrrrrggggrrrrgggrrrrrrrrrrrggggggrrggggggrrggggr#####gggggggggggg",
-   "gggggggrrrr##gggggggggggggggggggggggrrrrrrrrrrgggggrrrrrggggggrrrrggrrrrrrrrrrrrrgggggrrgggggggrgggg######gggggggggggg",
-   "gggggrgrgrr#####ggggggggggggggggggggrrrrrrrrrrrggggggggggggggrrrrrgrrrrrrrrrrrrrrrggggrrggggggrrgggg######gggggggggggg",
-   "gggggggrggg######ggggggggggggggggggggrrrrrrrrggrggggggggggggrrrrrrrrrrrrrrrrrrrrrrrrrrrrggggggggggggg#####gggggggggggg",
-   "gggggrgrgg#######gggggggggggggggggggrgrrrrrrrrrrgggggggggggrrrrrrrrrrrrrrr~~rrrrrrrrrggrggggggrgggggg#####gggggggggggg",
+   "gggrrggrrgg###ggggggggg#####gggrrrrrggggggggggggrrrrrrrrrrrggggrrrgggggrrr~~~~ggggggggrrggggggrrgrrrrg##gggggggggggggg",
+   "ggggrrrgggg###ggggggggg######ggggrrrggggggggggggrrrrrrrrrrgggggrrrggggrrrr~~~~rgggggggrrgggggrgrggrrrr##gggggggggggggg",
+   "gggggrrrgrg##ggggggggg#######gggggrrrgggrrrrrggggrrrrrrrrrggggrrrrgggrrrrrrrrrrrggggggrrggggggrrggggr#####gggggggggggg",
+   "gggggggrrrr##ggggggggg#######gggggggrrrrrrrrrrgggggrrrrrggggggrrrrggrrrrrrrrrrrrrgggggrrgggggggrgggg######gggggggggggg",
+   "gggggrgrgrr#####gggggg#######gggggggrrrrrrrrrrrggggggggggggggrrrrrgrrrrrrrrrrrrrrrggggrrggggggrrgggg######gggggggggggg",
+   "gggggggrggg######gggggg#####gggggggggrrrrrrrrggrggggggggggggrrrrrrrrrrrrrrrrrrrrrrrrrrrrggggggggggggg#####gggggggggggg",
+   "gggggrgrgg#######ggggggg###gggggggggrgrrrrrrrrrrgggggggggggrrrrrrrrrrrrrrr~~rrrrrrrrrggrggggggrgggggg#####gggggggggggg",
    "ggggggrrgg#######gggggggggggggggggggggrrgrrrrrrrrgggggggggrrrrrggggggrrrrr~~~~rrrrggggggggggggggggrggg##gggggggggggggg",
-   "gggggrgrgg######gggggggggggggggggggggrrrrrrrrrrrrggggggrrrrrrrggggggggrrrr~~~~rrrgggggggggggggrggggggg##gggggggggggggg",
-   "ggggggrrgg###ggggggggggggggggggggggrgrrgrrrrrrrrrrrrrrrrrrrrrggggggggggrrr~~~~rrggggggggggggggggrggggg##gggggggggggggg",
-   "gggggrgrgg###gggrggggggggggggggggggggrrrgrrrrrrrrrrrrrrrrrrrggggggggggggrr~#~~rggggggggggggggggggggggg##gggggggggggggg",
-   "ggggggrrgg###ggggrrrgggrgggggggggggggrrrrrrrrrrrrrrrrrrrrggggggggggggggggr~~#~ggggggggggggggggrggggggg##gggggggggggggg",
-   "gggggggrgg##ggggggrrrggggggggggggggggrrrrrrrrrrrgrrrggggggggrgggggggggggg~~~~ggggggggggggggggggrgggggg##gggggggggggggg",
-   "gggggrgrgg##gggggggrrrrgggggggggggggrrrrgrrrrrrggggrrrggggggggggggggggggr~~~~~gggggggggggggggrrggggggg##gggggggggggggg",
-   "ggggggrrgg##gggggggggrrrgggggggggggrgrrgggggggggggggrrrggggggggggggggggrr~~~~gggggggggggggggrrgrgggggg##gggggggggggggg",
-   "gggggrgrg###gggggggggggrrrgggggggggrrrggggggggggggggggrrrgggggggggggggrrr~~~~ggggggggggggggrrgrrgggggg##gggggggggggggg",
-   "gggggggrg###ggggggggggggrrrrggggggrrrrgggggggggggggggggrrrrggggggggggrrrrr~~~rggggggggggggrrgrrggggggg##gggggggggggggg",
-   "gggggrgrg###ggggggggggggggrrrgggggrrrggggggggggggggggggggrrrggggggggrrrrrrrrrrrggggg~ggggrggrrggrggggg##gggggggggggggg",
-   "ggggggrrg###ggggggggggggggggrrrggrrrgggggggggggggggggggggrrrrggggggrrrrrrrrrrrrrggggggggrrgrrggrrggggg##gggggggggggggg",
-   "gggggrgrg###gggggggggggggggggrrrrrrrgggggggggggggggggggggrrrrrrgggrrrrrrrrrrrrrrrggggggrrgrrggrrgrrggg##gggggggggggggg",
-   "ggggggrrg###gggggggggggggggggggrrrrggggggggggggggggggggggrrrgrrrrrrrrrrrrrrrrrrrrrrrrrrrgrrggrrgrgrggg##gggggggggrgggg",
-   "gggggggrg###gggggggggggggggggggrrrrggggggggggggggggggggggrrrgggrgrrrrrrrr~~rrrrrggrrrrrgrrggrrgrrgrrg####ggggggggggggg",
-   "gggggrgrg###ggggggggggggggggggrrrrrrgggggggggggggggggrrggrrggggrg~ggrrrrr~~~rrrggrgggggrrggrgrgrgggg#####ggggggggggggg",
-   "gggggggrg###gggggggggggggrgggrrrggrrggggggggggggggggggggrrrggggggggggrrrr~~~rrrrggggggrrrgrrggrgggg#####gggggggggggggg",
+   "gggggrgrgg######gggggggggggggggggggggrrrrrrrrrrrrggggggrrrrrrrggggggggrrrr~~~~rrrgggg##gggggggrggggggg##gggggggggggggg",
+   "ggggggrrgg###gggggggggggggg#####gggrgrrgrrrrrrrrrrrrrrrrrrrrrggggggggggrrr~~~~rrggg######gggggggrggggg##gggggggggggggg",
+   "gggggrgrgg###gggrggggggggg#######ggggrrrgrrrrrrrrrrrrrrrrrrrggggggggggggrr~#~~rgggg######ggggggggggggg##gggggggggggggg",
+   "ggggggrrgg###ggggrrrgggrgg#######ggggrrrrrrrrrrrrrrrrrrrrggggggggggggggggr~~#~gggg########ggggrggggggg##gggggggggggggg",
+   "gggggrgrgg##ggggggrrrggggg#######ggggrrrrrrrrrrrgrrrggggggggrgggggggggggg~~~~gggggg#######gggggrgggggg##gggggggggggggg",
+   "gggggrgrgg##gggggggrrrrggg#######gggrrrrgrrrrrrggggrrrggggggggggggggggggr~~~~~ggggg######ggggrrggggggg##gggggggggggggg",
+   "gggggrgrgg##gggggggggrrrggg#####gggrgrrgggggggggggggrrrggggggggggggggggrr~~~~ggggggg####ggggrrgrgggggg##gggggggggggggg",
+   "gggggrgrg###gggggggggggrrrgg##gggggrrrggggggggg####gggrrrgggggggggggggrrr~~~~ggggggggggggggrrgrrgggggg##gggggggggggggg",
+   "gggggrgrg###ggggggggggggrrrrggggggrrrrgggggggg######gggrrrrggggggggggrrrrr~~~rggggggggggggrrgrrggggggg##gggggggggggggg",
+   "ggggggrrg###ggggggggggggggrrrgggggrrrggggggggg#######ggggrrrggggggggrrrrrrrrrrrggggg~ggggrggrrggrggggg##gggggggggggggg",
+   "gggggrgrg###ggggggggggggggggrrrggrrrgggggggggg#######ggggrrrrggggggrrrrrrrrrrrrrggggggggrrgrrggrrggggg##gggggggggggggg",
+   "gggggrgrg###gggggggggggggggggrrrrrrrgggggggggg#######ggggrrrrrrgggrrrrrrrrrrrrrrrggggggrrgrrggrrgrrggg##gggggggggggggg",
+   "ggggggrrg###gggggggggggggggggggrrrrgggggggggggg#####gggggrrrgrrrrrrrrrrrrrrrrrrrrrrrrrrrgrrggrrgrgrggg##gggggggggrgggg",
+   "gggggggrg###gggggggggggggggggggrrrrggggggggggggg###ggggggrrrgggrgrrrrrrrr~~rrrrrggrrrrrgrrggrrgrrgrrg####ggggggggggggg",
+   "gggggrggg###ggggggggggggggggggrrrrrrgggggggggggggggggrrggrrggggrg~ggrrrrr~~~rrrggrgggggrrggrgrgrgggg#####ggggggggggggg",
+   "ggggggrgg###gggggggggggggrgggrrrggrrggggggggggggggggggggrrrggggggggggrrrr~~~rrrrggggggrrrgrrggrgggg#####gggggggggggggg",
    "gggggrgrg##ggggggggggggggggggrrrgggrrgggggggggggggggggggrrrgggggggggggrrr~~~~ggggrggggggggrgrrgrrr#####ggggggggggggggg",
    "gggggggrg##gggggggggggggggggrrrrggggrrggggggggggggggggggrrrgggggrggggggr~~~~~grrrrgggggggggrrrgrr#####gggggggggggggggg",
-   "rggggrggg##ggggggggggggggggggrrggggggrrgggggggggggggggggrrgggggggggggggg~~~~~ggggrggggggggggrggg#####ggggggggggggggggg",
-   "rrgggggr###grggggggggggggggrrgggggggggrrggggggggggggggggrrgggggggggggggg~~~~~rrgrrrrggggggggggg#####gggggggggggggggggg",
-   "grrggggr###ggrgrgggggggggggrrggggrrggggrrgggggggggrggggrrrgggggggggrgggg~~~~grrgrrgrggrggggggg#####ggggggggggggggggggg",
-   "grrrggrg###gggrggrggggggggrrrggggrrrrgggrrgggggggggrgggrrrgggggggggrrgggr~~~grrrggrgrrggggggg#####gggggggggggggggggggg",
-   "grrrggrg###ggggrggggggggggrrggggggrgrrgggrrggggggggrrgggrrggggggggggrrgrg~~~ggrggrrrrrrrgggg#####ggggggggggggggggggggg",
-   "gggrggrg###rggggrggggggggrrrgggggggggrgggrrgggggggggrgggrggggggggggrrrgrgggggrgggggrrrrg########gggggggggggggggggggggg",
-   "ggggrrrg###ggrgrrrrggrggrrrrggggggggggrgggrrgggggggggrgrrggggggggggggrrgrgggrggrrrgggrg########ggggggggggggggggggggggg",
-   "gggggggr###rrrrrgrrrgrggrgrgrgggggggggggrgrrrrgrgggggrrgrgggrrrrgrgrrrggrrggggrrrrrgrgr#######gggggggggggggggggggggggg",
-   "gggggrrg###rrrggrgrrrgggggrgrggrrrrgrgrggrgrggrggrgrgrgrrggggggrrrrggrrrrggggggggrrrggg######ggggggggggggggggggggggggg",
-   "gggggggr##grrrrrrrrrrggggrrrrrrrrrrrrggrrrrrrrrrrrrggggrgrrggrgrrrrrrrgggrgrggggggrrrgr######ggggggggggggggggggggggggg",
-   "gggggggrr#rggrrrrrrrrgrgggrrrrrrrrrrrrrrrrrrrrrrrrggrrrrrrrgggggggrgrgggrrrggggggrgrrr#####ggggggggggggggggggggggggggg",
-   ".gggggggrrrrgrgggrrrrrrgrggrggggrrggggrrrrrrrrrrrrrrggggrrrggggrrrgrrrrrrrrrrgggggrgrrr###rggggggggggggggggggggggggggg",
-   "..gggggggrrrgg##gggrrrrrrgggrgrrrrggggrrgrrrrrrrrrrrrrrgrrrrrrggrrrgggrrrrrrrrgggggr#rrr#rrrgggggggggggrgggggggggggggg",
-   "...gggggggrrg#####grrrrrr#gggrrrrrgggggrggggrrrrrrrrrrrrrrrrrrr###rggggrgrgrrrrg######rrrrrrrggggggggggggggggggggggggg",
-   "....gggggggr######grrr#########grrggggggggggggrrrrrrrrrgrggrrr#####gggggggggrrr########rrrrrrggggggggggggggggggggggggg",
-   ".....ggggggr#######rrr#################################r#rrgr######ggggggggggr########rrrrrrrrggggggggggggggggggggggg.",
+   "rggggrggg##grrgggggggggggggggrrggggggrrgggggggggggggggggrrgggggggggggggg~~~~~ggggrggggggggggrggg#####ggggggggggggggggg",
+   "rrgggggr###rrggggggggggggggrrgggggggggrrggggggggggggggggrrgggggggggggggg~~~~~rrgrrrrggggggggggg#####gggggggggggggggggg",
+   "grrggggr###rrrgrgggggggggggrrggggrrggggrrgggggggggrggggrrrgggggggggrgggg~~~~grrgrrgrggrggggggg#####ggggggggggggggggggg",
+   "grrrggrg###grrrggrggggggggrrrggggrrgggggrrgggggggggrgggrrrgggggggggrrgggr~~~grrrggrgrrggggggg#####gggggggggggggggggggg",
+   "grrrggrg###ggggrggggggggggrrggggggrggggggrrggggggggrrgggrrggggggggggrrgrg~~~ggrggrrrrrrrgggg#####ggggggggggggggggggggg",
+   "gggrggrg###rggggrggggggggrrrggggggggggggrrrgggggggggrgggrggggggggggrrrgrgggggrgggggrrrrg########gggggggggggggggggggggg",
+   "ggggrrrg###ggrgrrrrggrggrrrrgggggggggggggrrrgggggggggrgrrggggggggggggrrgrgggrggrrrgggrg########ggggggggggggggggggggggg",
+   "gggggggr###rrrrrgrrrgrggrgrgrggggggggggggrrrrrgrgggggrrgrgggrrrrgrgrrrggrrggggrrrrrgrgr#######gggggggggggggggggggggggg",
+   "gggggrrg####rrggrgrrrgggggrgrggrrrrgrgrgrrgrggrggrgrgrgrrggggggrrrrggrrrrggggggggrrrggg######ggggggggggggggggggggggggg",
+   "gggggggr#####rrrrrrrrggggrrrrrrrrrrrrggrrrrrrrrrrrrggggrgrrggrgrrrrrrrgggrgrggggggrrrgr######ggggggggggggggggggggggggg",
+   "ggggggg#######rrrrrrrgrgggrrrrrrrrrrrrrrrrrrrrrrrrggrrrrrrrgggggggrgrgggrrrggggggrgrrr#####ggggggggggggggggggggggggggg",
+   ".gggggg########ggrrrrrrgrggrggggrrggggrrrrrrrrrrrrrrggggrrrggggrrrgrrrrrrrrrrgggggrgrrr###rggggggggggggggggggggggggggg",
+   "..gggggg########gggrrrrrrgggrgrrrrggggrrgrrrrrrrrrrrrrrgrrrrrrggrrrgggrrrrrrrrgggggr#rrr#rrrgggggggggggrgggggggggggggg",
+   "...gggggg#########grrrrrr#gggrrrrrgggggrggggrrrrrrrrrrrrrrrrrrr###rggggrgrgrrrrg######rrrrrrrggggggggggggggggggggggggg",
+   "....gggggg########grrr#########grrggggggggggggrrrrrrrrrgrggrrr#####gggggggggrrr########rrrrrrggggggggggggggggggggggggg",
+   ".....gggggg########rrr#################################r#rrgr######ggggggggggr########rrrrrrrrggggggggggggggggggggggg.",
    "......gggggg#######rrr##g############################################################grrrrrrrrgggggggggggggggggggggg..",
    ".......gggggg######rrrrrrr#####gggggggggggggggg#g###################################ggrrrrrrrrrgggggggggggggggggggg...",
    "........ggggggggggrrrrrrgg#####ggggggggggggggggggggggggggggggg####gggg~~~~##########ggrrrrrrrrrrgggggggggggggggggg....",
@@ -184,7 +188,23 @@
    98
   ],
   [
+   92,
+   97
+  ],
+  [
    91,
+   98
+  ],
+  [
+   91,
+   97
+  ],
+  [
+   91,
+   96
+  ],
+  [
+   90,
    97
   ],
   [
@@ -192,7 +212,23 @@
    96
   ],
   [
+   90,
+   95
+  ],
+  [
    89,
+   96
+  ],
+  [
+   89,
+   95
+  ],
+  [
+   89,
+   94
+  ],
+  [
+   88,
    95
   ],
   [
@@ -200,7 +236,23 @@
    94
   ],
   [
+   88,
+   93
+  ],
+  [
    87,
+   94
+  ],
+  [
+   87,
+   93
+  ],
+  [
+   87,
+   92
+  ],
+  [
+   86,
    93
   ],
   [
@@ -208,7 +260,23 @@
    92
   ],
   [
+   86,
+   91
+  ],
+  [
    85,
+   92
+  ],
+  [
+   85,
+   91
+  ],
+  [
+   85,
+   90
+  ],
+  [
+   84,
    91
   ],
   [
@@ -216,7 +284,23 @@
    90
   ],
   [
+   84,
+   89
+  ],
+  [
    83,
+   90
+  ],
+  [
+   83,
+   89
+  ],
+  [
+   83,
+   88
+  ],
+  [
+   82,
    89
   ],
   [
@@ -224,7 +308,23 @@
    88
   ],
   [
+   82,
+   87
+  ],
+  [
    81,
+   88
+  ],
+  [
+   81,
+   87
+  ],
+  [
+   81,
+   86
+  ],
+  [
+   80,
    87
   ],
   [
@@ -234,38 +334,39 @@
  ],
  "wall_polygon": [
   [
-   308,
-   1488
+   3264.2,
+   536.0
   ],
   [
-   2140,
-   560
+   5098.5,
+   1462.9
   ],
   [
-   3240,
-   536
+   5168.0,
+   1492.3
   ],
   [
-   4776,
-   1320
+   3283.6,
+   2428.0
   ],
   [
-   5072,
-   1552
+   2074.6,
+   2428.0
   ],
   [
-   3340,
-   2408
+   512.6,
+   1583.4
   ],
   [
-   2000,
-   2432
+   47.5,
+   1416.6
   ],
   [
-   640,
-   1700
+   2167.3,
+   536.0
   ]
  ],
+ "trees_keep": {},
  "map_base_only": {
   "hide_tags": [
    "house",
@@ -301,6 +402,10 @@
   "note": "Round 18: Mauro's ring v4 image is the plate; walls and kept towers are cut from it as y-sorted layers."
  },
  "building_footprints": [],
+ "wall_contacts": {
+  "before": [],
+  "after": []
+ },
  "gates": [
   {
    "id": "N",
@@ -334,7 +439,23 @@
     ],
     [
      15,
+     19
+    ],
+    [
+     14,
      20
+    ],
+    [
+     15,
+     20
+    ],
+    [
+     16,
+     20
+    ],
+    [
+     15,
+     21
     ],
     [
      16,
@@ -342,7 +463,23 @@
     ],
     [
      17,
+     21
+    ],
+    [
+     16,
      22
+    ],
+    [
+     17,
+     22
+    ],
+    [
+     18,
+     22
+    ],
+    [
+     17,
+     23
     ],
     [
      18,
@@ -350,7 +487,23 @@
     ],
     [
      19,
+     23
+    ],
+    [
+     18,
      24
+    ],
+    [
+     19,
+     24
+    ],
+    [
+     20,
+     24
+    ],
+    [
+     19,
+     25
     ],
     [
      20,
@@ -358,7 +511,23 @@
     ],
     [
      21,
+     25
+    ],
+    [
+     20,
      26
+    ],
+    [
+     21,
+     26
+    ],
+    [
+     22,
+     26
+    ],
+    [
+     21,
+     27
     ],
     [
      22,
@@ -366,13 +535,76 @@
     ],
     [
      23,
+     27
+    ],
+    [
+     22,
      28
+    ],
+    [
+     23,
+     28
+    ],
+    [
+     24,
+     28
+    ],
+    [
+     23,
+     29
     ],
     [
      24,
      29
     ]
-   ]
+   ],
+   "portcullis": {
+    "file": "gates/portcullis_N.png",
+    "opening": "gates/portcullis_N_opening.png",
+    "x": 2324,
+    "y": 380,
+    "w": 160,
+    "h": 188,
+    "opening_top_px": 392.0,
+    "sort_y": 564.0,
+    "foot": [
+     2398.7,
+     556.0
+    ],
+    "block_cells": [
+     [
+      19,
+      24
+     ],
+     [
+      20,
+      24
+     ],
+     [
+      19,
+      25
+     ],
+     [
+      20,
+      25
+     ],
+     [
+      21,
+      25
+     ],
+     [
+      20,
+      26
+     ],
+     [
+      21,
+      26
+     ]
+    ],
+    "open_s": 0.6,
+    "close_after_s": 1.5,
+    "trigger_hero_heights": 3.0
+   }
   },
   {
    "id": "S",
@@ -405,7 +637,23 @@
      98
     ],
     [
+     92,
+     97
+    ],
+    [
      91,
+     98
+    ],
+    [
+     91,
+     97
+    ],
+    [
+     91,
+     96
+    ],
+    [
+     90,
      97
     ],
     [
@@ -413,7 +661,23 @@
      96
     ],
     [
+     90,
+     95
+    ],
+    [
      89,
+     96
+    ],
+    [
+     89,
+     95
+    ],
+    [
+     89,
+     94
+    ],
+    [
+     88,
      95
     ],
     [
@@ -421,7 +685,23 @@
      94
     ],
     [
+     88,
+     93
+    ],
+    [
      87,
+     94
+    ],
+    [
+     87,
+     93
+    ],
+    [
+     87,
+     92
+    ],
+    [
+     86,
      93
     ],
     [
@@ -429,7 +709,23 @@
      92
     ],
     [
+     86,
+     91
+    ],
+    [
      85,
+     92
+    ],
+    [
+     85,
+     91
+    ],
+    [
+     85,
+     90
+    ],
+    [
+     84,
      91
     ],
     [
@@ -437,7 +733,23 @@
      90
     ],
     [
+     84,
+     89
+    ],
+    [
      83,
+     90
+    ],
+    [
+     83,
+     89
+    ],
+    [
+     83,
+     88
+    ],
+    [
+     82,
      89
     ],
     [
@@ -445,14 +757,73 @@
      88
     ],
     [
+     82,
+     87
+    ],
+    [
      81,
+     88
+    ],
+    [
+     81,
+     87
+    ],
+    [
+     81,
+     86
+    ],
+    [
+     80,
      87
     ],
     [
      80,
      86
     ]
-   ]
+   ],
+   "portcullis": {
+    "file": "gates/portcullis_S.png",
+    "opening": "gates/portcullis_S_opening.png",
+    "x": 2280,
+    "y": 2240,
+    "w": 176,
+    "h": 176,
+    "opening_top_px": 2248.0,
+    "sort_y": 2412.0,
+    "foot": [
+     2362.2,
+     2404.0
+    ],
+    "block_cells": [
+     [
+      87,
+      93
+     ],
+     [
+      86,
+      93
+     ],
+     [
+      86,
+      92
+     ],
+     [
+      86,
+      91
+     ],
+     [
+      85,
+      92
+     ],
+     [
+      85,
+      91
+     ]
+    ],
+    "open_s": 0.6,
+    "close_after_s": 1.5,
+    "trigger_hero_heights": 3.0
+   }
   },
   {
    "id": "W",
@@ -481,7 +852,11 @@
    ],
    "cells": [
     [
-     20,
+     19,
+     100
+    ],
+    [
+     21,
      101
     ],
     [
@@ -489,7 +864,23 @@
      100
     ],
     [
+     19,
+     99
+    ],
+    [
+     21,
+     100
+    ],
+    [
      20,
+     99
+    ],
+    [
+     19,
+     98
+    ],
+    [
+     21,
      99
     ],
     [
@@ -497,7 +888,23 @@
      98
     ],
     [
+     19,
+     97
+    ],
+    [
+     21,
+     98
+    ],
+    [
      20,
+     97
+    ],
+    [
+     19,
+     96
+    ],
+    [
+     21,
      97
     ],
     [
@@ -505,7 +912,23 @@
      96
     ],
     [
+     19,
+     95
+    ],
+    [
+     21,
+     96
+    ],
+    [
      20,
+     95
+    ],
+    [
+     19,
+     94
+    ],
+    [
+     21,
      95
     ],
     [
@@ -513,7 +936,23 @@
      94
     ],
     [
+     19,
+     93
+    ],
+    [
+     21,
+     94
+    ],
+    [
      20,
+     93
+    ],
+    [
+     19,
+     92
+    ],
+    [
+     21,
      93
     ],
     [
@@ -525,6 +964,10 @@
      91
     ],
     [
+     21,
+     92
+    ],
+    [
      20,
      91
     ],
@@ -533,12 +976,20 @@
      90
     ],
     [
+     18,
+     89
+    ],
+    [
      20,
      90
     ],
     [
      19,
      89
+    ],
+    [
+     18,
+     88
     ],
     [
      20,
@@ -549,10 +1000,65 @@
      88
     ],
     [
+     18,
+     87
+    ],
+    [
+     20,
+     88
+    ],
+    [
      19,
      87
+    ],
+    [
+     18,
+     86
     ]
-   ]
+   ],
+   "portcullis": {
+    "file": "gates/portcullis_W.png",
+    "opening": "gates/portcullis_W_opening.png",
+    "x": 368,
+    "y": 1372,
+    "w": 128,
+    "h": 188,
+    "opening_top_px": 1380.0,
+    "sort_y": 1556.0,
+    "foot": [
+     425.1,
+     1548.0
+    ],
+    "block_cells": [
+     [
+      20,
+      97
+     ],
+     [
+      21,
+      97
+     ],
+     [
+      20,
+      96
+     ],
+     [
+      19,
+      95
+     ],
+     [
+      21,
+      96
+     ],
+     [
+      20,
+      95
+     ]
+    ],
+    "open_s": 0.6,
+    "close_after_s": 1.5,
+    "trigger_hero_heights": 3.0
+   }
   },
   {
    "id": "E",
@@ -581,8 +1087,12 @@
    ],
    "cells": [
     [
+     106,
+     16
+    ],
+    [
      107,
-     17
+     18
     ],
     [
      106,
@@ -601,6 +1111,10 @@
      16
     ],
     [
+     103,
+     15
+    ],
+    [
      104,
      17
     ],
@@ -609,12 +1123,36 @@
      16
     ],
     [
+     103,
+     17
+    ],
+    [
+     102,
+     15
+    ],
+    [
      102,
      16
     ],
     [
      101,
+     15
+    ],
+    [
+     102,
+     17
+    ],
+    [
+     101,
      16
+    ],
+    [
+     101,
+     17
+    ],
+    [
+     100,
+     15
     ],
     [
      100,
@@ -622,7 +1160,19 @@
     ],
     [
      99,
+     15
+    ],
+    [
+     100,
+     17
+    ],
+    [
+     99,
      16
+    ],
+    [
+     99,
+     17
     ],
     [
      98,
@@ -635,6 +1185,10 @@
     [
      97,
      15
+    ],
+    [
+     96,
+     14
     ],
     [
      97,
@@ -645,18 +1199,77 @@
      15
     ],
     [
+     96,
+     16
+    ],
+    [
+     95,
+     14
+    ],
+    [
      95,
      15
+    ],
+    [
+     94,
+     14
+    ],
+    [
+     95,
+     16
     ],
     [
      94,
      15
     ],
     [
+     94,
+     16
+    ],
+    [
+     93,
+     14
+    ],
+    [
      93,
      15
     ]
-   ]
+   ],
+   "portcullis": {
+    "file": "gates/portcullis_E.png",
+    "opening": "gates/portcullis_E_opening.png",
+    "x": 4808,
+    "y": 1432,
+    "w": 136,
+    "h": 152,
+    "opening_top_px": 1440.0,
+    "sort_y": 1580.0,
+    "foot": [
+     4882.0,
+     1572.0
+    ],
+    "block_cells": [
+     [
+      102,
+      17
+     ],
+     [
+      101,
+      16
+     ],
+     [
+      101,
+      17
+     ],
+     [
+      100,
+      16
+     ]
+    ],
+    "open_s": 0.6,
+    "close_after_s": 1.5,
+    "trigger_hero_heights": 3.0
+   }
   }
  ],
  "bridges": [
@@ -891,7 +1504,7 @@
    ]
   },
   {
-   "id": "bridge_1",
+   "id": "bridge_2",
    "ends": [
     [
      68,
@@ -1111,8 +1724,8 @@
    "tier": "rare",
    "label_tier": "rare",
    "anchor_px": [
-    1680,
-    1200
+    1656,
+    1160
    ],
    "old_anchor_px": [
     3340.0,
@@ -1120,8 +1733,12 @@
    ],
    "front_cells": [
     [
-     31,
-     62
+     29,
+     61
+    ],
+    [
+     30,
+     61
     ]
    ]
   },
@@ -1130,8 +1747,8 @@
    "tier": "legendary",
    "label_tier": "legendary",
    "anchor_px": [
-    2080,
-    1720
+    1896,
+    1704
    ],
    "old_anchor_px": [
     3760.0,
@@ -1139,8 +1756,12 @@
    ],
    "front_cells": [
     [
-     57,
-     73
+     53,
+     76
+    ],
+    [
+     54,
+     76
     ]
    ]
   },
@@ -1149,8 +1770,8 @@
    "tier": "rare",
    "label_tier": "normal",
    "anchor_px": [
-    3040,
-    1640
+    3096,
+    2120
    ],
    "old_anchor_px": [
     2650.0,
@@ -1158,8 +1779,12 @@
    ],
    "front_cells": [
     [
-     71,
-     53
+     89,
+     69
+    ],
+    [
+     90,
+     69
     ]
    ]
   },
@@ -1168,7 +1793,7 @@
    "tier": "normal",
    "label_tier": "rare",
    "anchor_px": [
-    4160,
+    4152,
     1320
    ],
    "old_anchor_px": [
@@ -1179,6 +1804,10 @@
     [
      80,
      22
+    ],
+    [
+     81,
+     22
     ]
    ]
   },
@@ -1187,8 +1816,8 @@
    "tier": "normal",
    "label_tier": "normal",
    "anchor_px": [
-    3440,
-    960
+    3816,
+    1176
    ],
    "old_anchor_px": [
     3500.0,
@@ -1196,8 +1825,12 @@
    ],
    "front_cells": [
     [
-     54,
-     21
+     69,
+     23
+    ],
+    [
+     70,
+     23
     ]
    ]
   },
@@ -1206,11 +1839,15 @@
    "tier": "normal",
    "label_tier": "normal",
    "anchor_px": [
-    2800,
-    880
+    2792,
+    856
    ],
    "old_anchor_px": null,
    "front_cells": [
+    [
+     39,
+     30
+    ],
     [
      40,
      30
@@ -1222,14 +1859,18 @@
    "tier": "rare",
    "label_tier": "rare",
    "anchor_px": [
-    1320,
-    1520
+    1512,
+    1336
    ],
    "old_anchor_px": null,
    "front_cells": [
     [
-     36,
-     80
+     33,
+     70
+    ],
+    [
+     34,
+     70
     ]
    ]
   },
@@ -1238,14 +1879,18 @@
    "tier": "normal",
    "label_tier": "normal",
    "anchor_px": [
-    3840,
-    1200
+    3672,
+    1640
    ],
    "old_anchor_px": null,
    "front_cells": [
     [
-     70,
-     23
+     83,
+     42
+    ],
+    [
+     84,
+     42
     ]
    ]
   },
@@ -1254,14 +1899,18 @@
    "tier": "rare",
    "label_tier": "rare",
    "anchor_px": [
-    4400,
-    1440
+    4536,
+    2040
    ],
    "old_anchor_px": null,
    "front_cells": [
     [
-     89,
-     22
+     113,
+     41
+    ],
+    [
+     114,
+     41
     ]
    ]
   },
@@ -1270,14 +1919,18 @@
    "tier": "legendary",
    "label_tier": "legendary",
    "anchor_px": [
-    1920,
-    880
+    2008,
+    840
    ],
    "old_anchor_px": null,
    "front_cells": [
     [
      24,
-     46
+     43
+    ],
+    [
+     25,
+     43
     ]
    ]
   }

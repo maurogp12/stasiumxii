@@ -5,6 +5,7 @@
  "strip_px": 6,
  "block_depth": 14,
  "block_below": 3,
+ "block_boxes": [[50, 320, 105, 372]],
  "towers": [
   {"name": "W_outer", "keep": true, "kind": "gate", "box": [48, 236, 107, 383], "base": [77, 377]},
   {"name": "W_inner", "keep": true, "kind": "gate", "box": [129, 298, 190, 433], "base": [160, 429]},
@@ -18,28 +19,29 @@
   {"name": "S_right", "keep": true, "kind": "gate", "box": [619, 474, 681, 616], "base": [650, 612]},
   {"name": "S_left", "keep": true, "kind": "gate", "box": [499, 474, 561, 616], "base": [530, 612]},
   {"name": "SW_tunnel", "keep": true, "kind": "water_gate", "box": [382, 423, 444, 556], "base": [413, 552]},
-  {"name": "NW_corner", "box": [148, 196, 211, 325], "base": [179, 320], "slope_left": -0.44, "slope_right": -0.5},
+  {"name": "NW_corner", "box": [140, 196, 211, 325], "base": [179, 320], "slope_left": -0.44, "slope_right": -0.5},
   {"name": "NW_upper", "box": [387, 71, 447, 186], "base": [416, 181], "slope_left": -0.55, "slope_right": -0.47},
-  {"name": "N_corner", "box": [778, 18, 840, 153], "base": [809, 148], "slope_left": 0.0, "slope_right": 0.46},
-  {"name": "SW_upper", "box": [262, 369, 325, 497], "base": [293, 493], "slope_left": 0.62, "slope_right": 0.55},
+  {"name": "N_corner", "box": [778, 18, 840, 153], "base": [809, 148], "slope_left": 0.0, "slope_right": 0.46, "margin_left": 26},
+  {"name": "SW_upper", "box": [262, 369, 325, 497], "base": [293, 493], "slope_left": 0.62, "slope_right": 0.55, "bands": [[360, 432, "left"]]},
   {"name": "SE_corner", "box": [792, 485, 850, 607], "base": [821, 603], "slope_left": 0.0, "slope_right": -0.5},
   {"name": "SE_upper", "box": [1028, 366, 1088, 496], "base": [1058, 492], "slope_left": -0.5, "slope_right": -0.5}
  ],
  "walls": [
-  {"id": "NW", "a": [70, 330], "b": [537, 136]},
   {"id": "N", "a": [520, 134], "b": [826, 134], "gate": true, "height": 72},
   {"id": "NE", "a": [820, 136], "b": [1196, 326]},
+  {"id": "E", "a": [1190, 330], "b": [1280, 368], "height": 80},
   {"id": "SE", "a": [835, 600], "b": [1272, 383], "gate": true, "height": 82},
   {"id": "S", "a": [498, 607], "b": [836, 607], "gate": true, "height": 76},
   {"id": "SW", "a": [158, 412], "b": [502, 598]},
-  {"id": "W", "a": [70, 375], "b": [162, 408], "gate": true, "height": 80}
+  {"id": "W", "a": [70, 375], "b": [162, 408], "gate": true, "height": 80},
+  {"id": "NW", "a": [70, 330], "b": [537, 136]}
  ],
  "polygon": [[77, 372], [535, 140], [810, 134], [1194, 330], [1268, 388], [835, 602], [500, 608], [160, 425]],
  "gates": [
-  {"id": "N", "arch": [600, 128], "outside": [600, 96], "inside": [600, 168], "join_left": [565, 134], "join_right": [636, 134], "road_end": [600, 14], "half_width": 9},
-  {"id": "S", "arch": [590, 598], "outside": [590, 645], "inside": [590, 560], "join_left": [561, 607], "join_right": [619, 607], "road_end": [576, 712], "half_width": 9},
-  {"id": "W", "arch": [108, 378], "outside": [72, 404], "inside": [165, 352], "join_left": [77, 377], "join_right": [129, 400], "road_end": [6, 408], "half_width": 9},
-  {"id": "E", "arch": [1218, 382], "outside": [1258, 412], "inside": [1176, 358], "join_left": [1194, 336], "join_right": [1262, 388], "road_end": [1275, 428], "half_width": 9}
+  {"id": "N", "portcullis_box": [581, 95, 621, 142], "arch": [600, 128], "outside": [600, 96], "inside": [600, 168], "join_left": [565, 134], "join_right": [636, 134], "road_end": [600, 14], "half_width": 9},
+  {"id": "S", "portcullis_box": [570, 560, 614, 604], "arch": [590, 598], "outside": [590, 645], "inside": [590, 560], "join_left": [561, 607], "join_right": [619, 607], "road_end": [576, 712], "half_width": 9},
+  {"id": "W", "portcullis_box": [92, 343, 124, 390], "arch": [108, 378], "outside": [72, 404], "inside": [165, 352], "join_left": [77, 377], "join_right": [129, 400], "road_end": [6, 408], "half_width": 9},
+  {"id": "E", "portcullis_box": [1202, 358, 1236, 396], "arch": [1218, 382], "outside": [1258, 412], "inside": [1176, 358], "join_left": [1194, 336], "join_right": [1262, 388], "road_end": [1275, 428], "half_width": 9}
  ],
  "water_gates": [
   {"id": "NE", "at": [966, 205], "flanks": ["NE_tunnel", "E_tunnel"]},
@@ -47,7 +49,7 @@
  ],
  "bridges": [
   {"id": "bridge_0", "deck": [690, 418, 796, 478], "ends": [[694, 432], [792, 470]]},
-  {"id": "bridge_1", "deck": [577, 464, 686, 520], "ends": [[582, 480], [682, 512]]}
+  {"id": "bridge_2", "deck": [577, 464, 686, 520], "ends": [[582, 480], [682, 512]]}
  ],
  "spawn": [590, 652],
  "exit": [578, 700],

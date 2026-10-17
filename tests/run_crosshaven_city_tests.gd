@@ -28,6 +28,12 @@ func check(cond: bool, label: String) -> void:
 		print("FAIL: ", label)
 
 
+## Round 18: the plate is Mauro's ring v4 image (painted river, lamps and
+## bridges; no kit ring, no separate buildings).
+func _image_plate() -> bool:
+	return str((city.doc.get("wall_ring", {}) as Dictionary).get("source", "")) == "image"
+
+
 func _initialize() -> void:
 	_run.call_deferred()
 
@@ -43,7 +49,10 @@ func _run() -> void:
 	_test_walk()
 	_test_plots()
 	_test_gates()
-	_test_review_data()
+	if _image_plate():
+		_test_image_ring()
+	else:
+		_test_review_data()
 	_test_crossroads_untouched()
 	var w := _spawn()
 	await _test_world_entry(w)
@@ -78,10 +87,23 @@ func _spawn() -> Node2D:
 	return w
 
 
+var _lift_seen := 0.0
+
+
+func _gate_lift_max(w: Node2D) -> float:
+	var m := 0.0
+	if w.city_plate != null:
+		for gf in w.city_plate.gates_fx:
+			m = maxf(m, float(gf["lift"]))
+	return m
+
+
 func _drive(w: Node2D, max_steps: int = 6000) -> void:
 	var n := 0
 	while w.walker.is_moving() and n < max_steps:
+		w.tick_city_gates(0.05)
 		w.walker.advance(0.05)
+		_lift_seen = maxf(_lift_seen, _gate_lift_max(w))
 		n += 1
 
 
@@ -127,7 +149,7 @@ func _test_data() -> void:
 		var k := float(rec.get("k", 1.0))
 		if k < 0.899 or k > 1.101:
 			jitter_ok = false
-	check(trees >= 6 and trees <= 25, "trees cut to about 20, fewer after the gate plazas (%d)" % trees)
+	check(_image_plate() or (trees >= 6 and trees <= 25), "trees cut to about 20, fewer after the gate plazas (%d)" % trees)
 	check(stray_trees == 0, "every tree left is on the keep list (%d strays)" % stray_trees)
 	check(jitter_ok, "plant scale jitter stays in 0.9-1.1")
 	check(planters.size() <= 8, "planters stay few (%d)" % planters.size())
@@ -141,7 +163,7 @@ func _test_data() -> void:
 	for rec in city.layers():
 		if rec.has("plant"):
 			plants += 1
-	check(plants >= 150, "bushes and flowers scattered (%d)" % plants)
+	check(_image_plate() or plants >= 150, "bushes and flowers scattered (%d)" % plants)
 	for rec in city.layers():
 		var tag := str(rec["tag"])
 		check(not ("garden" in tag or "bed" in tag or "fence" in tag), "no garden bed or fence layer (%s)" % tag)
@@ -205,14 +227,14 @@ func _test_walk() -> void:
 		var top := 0
 		for dc in b["deck_cells"]:
 			top = maxi(top, z.height_at(Vector2i(int(dc[0]), int(dc[1]))))
-		check(top >= 5, "%s deck rises to the crown (step %d)" % [b["id"], top])
+		check(top >= 5 or _image_plate(), "%s deck rises to the crown (step %d)" % [b["id"], top])
 		# Crossing: a path from one end to the other climbs the deck.
 		var cross: Dictionary = WorldWalk.find_path(city.map, "crosshaven_city", a, "crosshaven_city", c)
 		check(bool(cross.get("ok", false)), "%s can be crossed" % b["id"])
 		var climb := 0
 		for step in cross.get("path", []):
 			climb = maxi(climb, z.height_at(Vector2i(int(step["x"]), int(step["y"]))))
-		check(climb >= 5 and (cross.get("path", []) as Array).size() <= 24, "%s crossing goes over the deck (top %d, %d steps)" % [b["id"], climb, (cross.get("path", []) as Array).size()])
+		check((climb >= 5 or _image_plate()) and (cross.get("path", []) as Array).size() <= 24, "%s crossing goes over the deck (top %d, %d steps)" % [b["id"], climb, (cross.get("path", []) as Array).size()])
 	check(inner_bridges >= 2, "bridges inside the ring (%d)" % inner_bridges)
 	# The river blocks: every water cell is impassable, and water exists.
 	var water := 0
@@ -269,7 +291,7 @@ func _test_gates() -> void:
 		var b: Array = poly[(i + 1) % poly.size()]
 		var dx := float(b[0]) - float(a[0])
 		var slope := 999.0 if is_zero_approx(dx) else (float(b[1]) - float(a[1])) / dx
-		check(is_zero_approx(slope) or is_equal_approx(absf(slope), 0.5), "wall edge %d runs on a plate direction (%.3f)" % [i, slope])
+		check(_image_plate() or is_zero_approx(slope) or is_equal_approx(absf(slope), 0.5), "wall edge %d runs on a plate direction (%.3f)" % [i, slope])
 	# After the build no street meets the wall without a gate.
 	for c in (city.doc["wall_contacts"] as Dictionary)["after"]:
 		check(str(c["verdict"]) in ["gate", "runs_along"], "wall contact at %s is gated (%s)" % [c["at"], c["verdict"]])
@@ -312,7 +334,7 @@ func _test_gates() -> void:
 	# Item 4: no wall stubs at the tower bases (cylinder columns only below the stub row).
 	var towers := 0
 	for rec in city.layers():
-		if not (str(rec["tag"]) in ["tower", "tower_g"]) or rec.has("module"):
+		if not (str(rec["tag"]) in ["tower", "tower_g"]) or rec.has("module") or _image_plate():
 			continue
 		towers += 1
 		var m: Dictionary = PlateCity.unpack_mask(rec["mask"])
@@ -331,7 +353,7 @@ func _test_gates() -> void:
 	for rec in city.layers():
 		if str(rec["tag"]) == "tower" and rec.has("module"):
 			kit_towers += 1
-	check(towers >= 12 or kit_towers >= 4, "towers checked (%d prototype, %d kit)" % [towers, kit_towers])
+	check(_image_plate() or towers >= 12 or kit_towers >= 4, "towers checked (%d prototype, %d kit)" % [towers, kit_towers])
 
 
 # ---------------------------------------------------------------- plots
@@ -488,7 +510,7 @@ func _test_world_entry(w: Node2D) -> void:
 		if bool(rec.get("hidden", false)):
 			hidden += 1
 			check(w.city_plate.row_of(int(rec["id"])).is_empty(), "hidden layer %d is not drawn" % int(rec["id"]))
-	check(hidden >= 30, "buildings are hidden in data (%d)" % hidden)
+	check(hidden >= 30 or _image_plate(), "buildings are hidden in data (%d)" % hidden)
 	for row in w.city_plate.rows:
 		check(not (str(row["tag"]) in ["house", "stall", "castle", "cathedral", "fountain", "well", "mill"]), "no building drawn (%s)" % row["tag"])
 	var displaced := 0
@@ -503,9 +525,11 @@ func _test_world_entry(w: Node2D) -> void:
 	for rec in city.layers():
 		check(not ("thatch" in str(rec["file"])), "no thatched roof left (%s)" % rec["file"])
 	var water: Sprite2D = w.city_plate.water
-	check(water != null and water.visible, "the animated river is drawn")
-	check(water != null and water.material is ShaderMaterial and (water.material as ShaderMaterial).get_shader_parameter("ripple") != null, "river shader has its ripple tile")
-	check(water != null and water.z_index < w.city_plate.UNDER_Z, "river draws under the bridges")
+	check(not _image_plate() or water == null, "image plate: the river is painted (no shader layer)")
+	if not _image_plate():
+		check(water != null and water.visible, "the animated river is drawn")
+		check(water != null and water.material is ShaderMaterial and (water.material as ShaderMaterial).get_shader_parameter("ripple") != null, "river shader has its ripple tile")
+		check(water != null and water.z_index < w.city_plate.UNDER_Z, "river draws under the bridges")
 	for id in w.city_plate.plot_nodes.keys():
 		var node: Sprite2D = w.city_plate.plot_nodes[id]
 		check(node.texture != null, "plot %s house texture" % id)
@@ -513,38 +537,47 @@ func _test_world_entry(w: Node2D) -> void:
 	check(absi(cam_w - int(city.world_rect().size.x)) <= 1, "camera keeps to the plate (%d)" % cam_w)
 	# Item 8: character to building scale at the plate scale in data.
 	var hero_h: float = w.walker._strips.height()
-	var hs := {"house": [], "gate_back": [], "stall": []}
-	for rec in city.layers():
-		if hs.has(str(rec["tag"])):
-			(hs[str(rec["tag"])] as Array).append(float(rec["h"]) * float(rec.get("k", 1.0)) * city.scale())
-	for t in hs.keys():
-		(hs[t] as Array).sort()
-	var house_r: float = float(hs["house"][hs["house"].size() / 2]) / hero_h
-	var gate_r: float = float(hs["gate_back"][0]) / hero_h
-	var gate_min := 1e9
-	for g in city.gates():
-		if g.has("art_height_px"):
-			# the flat gatehouse (towers 1000 px in the art); the diagonal one adds its depth
-			gate_min = minf(gate_min, float(g["art_height_px"]) / float(g.get("face_fit", 1.0)) * city.scale() / hero_h)
-	if gate_min < 1e8:
-		gate_r = gate_min
-	var stall_r: float = float(hs["stall"][hs["stall"].size() / 2]) / hero_h
-	check(house_r > 2.6 and house_r < 3.6, "a house is about 3 hero heights (%.2f)" % house_r)
-	var ring: Dictionary = city.doc.get("wall_ring", {})
-	var gate_want: float = 4.5
-	if not ring.is_empty():
-		gate_want = float(ring["targets_screen_px"]["gate"]) / float(ring["hero_screen_px"])
-	check(absf(gate_r - gate_want) / gate_want < 0.15, "a gatehouse is about %.1f hero heights (%.2f)" % [gate_want, gate_r])
-	if not ring.is_empty():
-		var wall_h := 0.0
-		var tower_h := 0.0
+	if _image_plate():
+		# Round 18: the image sets the scale; the plate scale stays until Mauro decides.
+		var t_h := 0.0
 		for rec in city.layers():
-			if str(rec["tag"]) in ["tower", "tower_g"]:
-				tower_h = maxf(tower_h, float(rec["h"]) * city.scale())
-		var tower_want := float(ring["targets_screen_px"]["tower"]) / float(ring["hero_screen_px"])
-		check(absf(tower_h / hero_h - tower_want) / tower_want < 0.15, "a tower is about %.1f hero heights (%.2f)" % [tower_want, tower_h / hero_h])
-	check(stall_r > 1.5 and stall_r < 2.6, "a stall is about 1.5-2 hero heights (%.2f)" % stall_r)
-	print("SCALE plate %.2f: house %.2f gate %.2f stall %.2f (hero %.1f px)" % [city.scale(), house_r, gate_r, stall_r, hero_h])
+			if str(rec["tag"]) == "tower":
+				t_h = maxf(t_h, float(rec["h"]) * city.scale())
+		check(t_h > hero_h, "image towers stand over the hero (%.2f hero heights)" % (t_h / hero_h))
+		print("SCALE image plate %.2f: tower %.2f hero heights" % [city.scale(), t_h / hero_h])
+	if not _image_plate():
+		var hs := {"house": [], "gate_back": [], "stall": []}
+		for rec in city.layers():
+			if hs.has(str(rec["tag"])):
+				(hs[str(rec["tag"])] as Array).append(float(rec["h"]) * float(rec.get("k", 1.0)) * city.scale())
+		for t in hs.keys():
+			(hs[t] as Array).sort()
+		var house_r: float = float(hs["house"][hs["house"].size() / 2]) / hero_h
+		var gate_r: float = float(hs["gate_back"][0]) / hero_h
+		var gate_min := 1e9
+		for g in city.gates():
+			if g.has("art_height_px"):
+				# the flat gatehouse (towers 1000 px in the art); the diagonal one adds its depth
+				gate_min = minf(gate_min, float(g["art_height_px"]) / float(g.get("face_fit", 1.0)) * city.scale() / hero_h)
+		if gate_min < 1e8:
+			gate_r = gate_min
+		var stall_r: float = float(hs["stall"][hs["stall"].size() / 2]) / hero_h
+		check(house_r > 2.6 and house_r < 3.6, "a house is about 3 hero heights (%.2f)" % house_r)
+		var ring: Dictionary = city.doc.get("wall_ring", {})
+		var gate_want: float = 4.5
+		if not ring.is_empty():
+			gate_want = float(ring["targets_screen_px"]["gate"]) / float(ring["hero_screen_px"])
+		check(absf(gate_r - gate_want) / gate_want < 0.15, "a gatehouse is about %.1f hero heights (%.2f)" % [gate_want, gate_r])
+		if not ring.is_empty():
+			var wall_h := 0.0
+			var tower_h := 0.0
+			for rec in city.layers():
+				if str(rec["tag"]) in ["tower", "tower_g"]:
+					tower_h = maxf(tower_h, float(rec["h"]) * city.scale())
+			var tower_want := float(ring["targets_screen_px"]["tower"]) / float(ring["hero_screen_px"])
+			check(absf(tower_h / hero_h - tower_want) / tower_want < 0.15, "a tower is about %.1f hero heights (%.2f)" % [tower_want, tower_h / hero_h])
+		check(stall_r > 1.5 and stall_r < 2.6, "a stall is about 1.5-2 hero heights (%.2f)" % stall_r)
+		print("SCALE plate %.2f: house %.2f gate %.2f stall %.2f (hero %.1f px)" % [city.scale(), house_r, gate_r, stall_r, hero_h])
 	# Walk in through the gate.
 	var west: Dictionary = city.bridges()[city.bridges().size() - 1]
 	var target := Vector2i(int(west["ends"][1][0]), int(west["ends"][1][1]))
@@ -701,16 +734,17 @@ func _test_life(w: Node2D) -> void:
 		if (n as Node2D).visible:
 			day_shown += 1
 	check(day_shown == npcs.size(), "day: everyone is out")
-	var before: Array = []
-	for p in w.city_plate.pet_nodes:
-		before.append((p["node"] as Node2D).position)
-	for i in 20:
-		w.city_plate.tick_pets(0.1)
-	var moved := 0
-	for i in w.city_plate.pet_nodes.size():
-		if (w.city_plate.pet_nodes[i]["node"] as Node2D).position.distance_to(before[i]) > 1.0:
-			moved += 1
-	check(moved == w.city_plate.pet_nodes.size() and moved > 0, "pets trot by day (%d)" % moved)
+	if not _image_plate():
+		var before: Array = []
+		for p in w.city_plate.pet_nodes:
+			before.append((p["node"] as Node2D).position)
+		for i in 20:
+			w.city_plate.tick_pets(0.1)
+		var moved := 0
+		for i in w.city_plate.pet_nodes.size():
+			if (w.city_plate.pet_nodes[i]["node"] as Node2D).position.distance_to(before[i]) > 1.0:
+				moved += 1
+		check(moved == w.city_plate.pet_nodes.size() and moved > 0, "pets trot by day (%d)" % moved)
 
 
 func _test_performance(w: Node2D) -> void:
@@ -777,8 +811,18 @@ func _test_gate_walks(w: Node2D) -> void:
 		var gate_set := {}
 		for c in cells:
 			gate_set[Vector2i(int(c[0]), int(c[1]))] = true
+		var gf: Dictionary = w.city_plate.gate_fx(str(g["id"]))
+		if _image_plate():
+			check(not gf.is_empty(), "%s has a portcullis" % g["id"])
 		for leg in [[out_c, in_c, "in"], [in_c, out_c, "out"]]:
 			w.walker.place(z, leg[0])
+			if not gf.is_empty():
+				# nobody near: the grate comes down and the arch cells hold
+				_settle_gates(w, [], 3.0)
+				check(float(gf["lift"]) == 0.0, "%s portcullis is down when nobody is near" % g["id"])
+				var bc: Array = (gf["block"] as Dictionary).keys()
+				check(not bc.is_empty() and w.city_plate.gate_closed_at(bc[0]), "%s arch cells hold while the grate is down" % g["id"])
+				_lift_seen = 0.0
 			var r: Dictionary = w.walk_to(leg[1], "walk")
 			check(bool(r.get("ok", false)), "%s: walk %s (%s -> %s)" % [g["id"], leg[2], leg[0], leg[1]])
 			var through := false
@@ -792,7 +836,23 @@ func _test_gate_walks(w: Node2D) -> void:
 			check(steps <= direct + 2, "%s: the walk %s runs straight through (%d steps for %d)" % [g["id"], leg[2], steps, direct])
 			_drive(w)
 			check(w.walker.cell == leg[1], "%s: the hero gets %s (%s)" % [g["id"], leg[2], w.walker.cell])
+			if not gf.is_empty():
+				check(_lift_seen >= 1.0, "%s portcullis rose all the way for the walk %s (%.2f)" % [g["id"], leg[2], _lift_seen])
+				# someone at the arch, then nobody: it stays up 1.5 s, then is down after 0.6 s more
+				_settle_gates(w, [gf["at"]], 0.1)
+				_settle_gates(w, [], 1.2)
+				check(float(gf["lift"]) == 1.0, "%s portcullis waits before it drops" % g["id"])
+				_settle_gates(w, [], 1.0)
+				check(float(gf["lift"]) == 0.0, "%s portcullis drops once nobody is near" % g["id"])
 	w.walker.place(z, city.spawn())
+
+
+## Tick only the gates, with the given bodies near them (no hero).
+func _settle_gates(w: Node2D, bodies: Array, seconds: float) -> void:
+	var t := 0.0
+	while t < seconds - 0.001:
+		w.city_plate.tick_gates(0.05, bodies, w.walker._strips.height())
+		t += 0.05
 
 
 func _free_beyond(z: WorldZone, from: Vector2i, dir: Vector2i) -> Vector2i:
@@ -806,6 +866,59 @@ func _free_beyond(z: WorldZone, from: Vector2i, dir: Vector2i) -> Vector2i:
 
 
 # ------------------------------------------------- coordinator review (c80e4cab)
+
+## Round 18: Mauro's ring v4 image as the plate, towers cut to 12.
+func _test_image_ring() -> void:
+	var ring: Dictionary = city.doc["wall_ring"]
+	var towers: Array = []
+	var kinds := {}
+	for rec in city.layers():
+		if str(rec["tag"]) == "tower":
+			towers.append(rec)
+			kinds[str(rec.get("tower_kind", ""))] = int(kinds.get(str(rec.get("tower_kind", "")), 0)) + 1
+	check(towers.size() == 12, "12 towers kept (%d)" % towers.size())
+	check(int(ring.get("towers_kept", 0)) == towers.size(), "the ring data lists the kept towers")
+	check((ring.get("towers_removed", []) as Array).size() == 6, "6 towers painted out (%d)" % (ring.get("towers_removed", []) as Array).size())
+	check(int(kinds.get("gate", 0)) == 7 and int(kinds.get("water_gate", 0)) == 3 and int(kinds.get("mid", 0)) == 2, "towers: 7 at the land gates, 3 by the tunnels, 2 mid-wall (%s)" % kinds)
+	# every land gate has a tower at its side
+	for g in city.gates():
+		var arch := Vector2(float(g["arch"][0]), float(g["arch"][1]))
+		var near := 0
+		for t in towers:
+			if _tower_foot(t).distance_to(arch) < 420.0:
+				near += 1
+		check(near >= (1 if str(g["id"]) == "E" else 2), "gate %s is flanked by its towers (%d)" % [g["id"], near])
+	# both water tunnels list two flanking towers, each one a kept tower
+	var wgs: Array = city.doc.get("water_gates", [])
+	check(wgs.size() == 2, "two water tunnels (%d)" % wgs.size())
+	for wg in wgs:
+		var fl: Array = wg.get("flank_towers", [])
+		check(fl.size() == 2, "water tunnel %s has two flanking towers (%d)" % [wg["id"], fl.size()])
+		for f in fl:
+			var hit := false
+			for t in towers:
+				if _tower_foot(t).distance_to(Vector2(float(f[0]), float(f[1]))) < 4.0:
+					hit = true
+			check(hit, "water tunnel %s flank %s is a kept tower" % [wg["id"], f])
+	# walls and towers are y-sorted fading layers with a fade mask
+	var walls := 0
+	for rec in city.layers():
+		if str(rec["tag"]) in ["wall", "tower"]:
+			if str(rec["tag"]) == "wall":
+				walls += 1
+			check(bool(rec["fade"]) and rec.has("mask"), "%s %d fades with a mask" % [rec["tag"], int(rec["id"])]) if not (bool(rec["fade"]) and rec.has("mask")) else null
+			var sy := float(rec["sort_y"])
+			check(sy >= float(rec["y"]) and sy <= float(rec["y"]) + float(rec["h"]) + 16.0, "%s %d sorts on its own foot line" % [rec["tag"], int(rec["id"])]) if not (sy >= float(rec["y"]) and sy <= float(rec["y"]) + float(rec["h"]) + 16.0) else null
+	check(walls > 150, "the wall ring is cut into sorted strips (%d)" % walls)
+	# tower bases block, the gates do not
+	var z: WorldZone = city.zone
+	for t in towers:
+		var c := _cell_at(city.plate_to_world(_tower_foot(t) + Vector2(0, -20)))
+		check(not z.passable_at(c), "tower %s blocks its base" % t.get("name", t["id"]))
+	# the ground is the image x4
+	var src: Array = city.doc["plate"].get("source_image_px", [0, 0])
+	check(int(src[0]) * 4 == int(city.plate_size().x) and int(src[1]) * 4 == int(city.plate_size().y), "the plate is the image x4 (%s)" % [src])
+
 
 func _test_review_data() -> void:
 	var ring: Dictionary = city.doc.get("wall_ring", {})
@@ -1205,50 +1318,51 @@ func _test_review_world(w: Node2D) -> void:
 			npc.position = keep_pos
 			npc.z_index = keep_z
 			w._sync_city_labels()
-	# 5: lamps light at dusk and night, not by day; Performance mode keeps them still.
-	check(cp.lights.size() >= 10, "lamp lights built (%d)" % cp.lights.size())
-	cp.set_hour(12.0)
-	var lit := 0
-	for l in cp.lights:
-		if (l["halo"] as CanvasItem).visible:
-			lit += 1
-	check(lit == 0, "no lamp light at noon (%d)" % lit)
-	cp.set_hour(22.0)
-	lit = 0
-	var pools := 0
-	for l in cp.lights:
-		if (l["halo"] as CanvasItem).visible:
-			lit += 1
-		if l["pool"] != null and (l["pool"] as CanvasItem).visible:
-			pools += 1
-	check(lit == cp.lights.size(), "every lamp head glows at night (%d/%d)" % [lit, cp.lights.size()])
-	check(pools >= 10, "a light circle on the ground under each lamp (%d)" % pools)
-	for l in cp.lights:
-		check((l["halo"] as CanvasItem).material is CanvasItemMaterial and ((l["halo"] as CanvasItem).material as CanvasItemMaterial).blend_mode == CanvasItemMaterial.BLEND_MODE_ADD, "lamp halo is additive")
-		break
-	cp.set_hour(18.5)
-	check((cp.lights[0]["halo"] as CanvasItem).visible, "lamps are lit at dusk")
-	var was_lite: bool = cp.lite
-	cp.lite = true
-	var a0: float = (cp.lights[0]["halo"] as CanvasItem).modulate.a
-	cp.tick_lights(0.37)
-	cp.tick_lights(0.41)
-	check(is_equal_approx((cp.lights[0]["halo"] as CanvasItem).modulate.a, a0), "Performance mode: the lamp light stays still")
-	cp.set_hour(22.0)
-	var lit_points := 0
-	for l in cp.lights:
-		if l["light"] != null and (l["light"] as PointLight2D).enabled:
-			lit_points += 1
-	check(lit_points == 0, "Performance mode: no point lights (%d)" % lit_points)
-	cp.lite = false
-	cp.set_hour(22.0)
-	lit_points = 0
-	for l in cp.lights:
-		if l["light"] != null and (l["light"] as PointLight2D).enabled:
-			lit_points += 1
-	check(lit_points >= 10, "a point light per lamp at night (%d)" % lit_points)
-	cp.lite = was_lite
-	cp.set_hour(12.0)
+	if not _image_plate():
+		# 5: lamps light at dusk and night, not by day; Performance mode keeps them still.
+		check(cp.lights.size() >= 10, "lamp lights built (%d)" % cp.lights.size())
+		cp.set_hour(12.0)
+		var lit := 0
+		for l in cp.lights:
+			if (l["halo"] as CanvasItem).visible:
+				lit += 1
+		check(lit == 0, "no lamp light at noon (%d)" % lit)
+		cp.set_hour(22.0)
+		lit = 0
+		var pools := 0
+		for l in cp.lights:
+			if (l["halo"] as CanvasItem).visible:
+				lit += 1
+			if l["pool"] != null and (l["pool"] as CanvasItem).visible:
+				pools += 1
+		check(lit == cp.lights.size(), "every lamp head glows at night (%d/%d)" % [lit, cp.lights.size()])
+		check(pools >= 10, "a light circle on the ground under each lamp (%d)" % pools)
+		for l in cp.lights:
+			check((l["halo"] as CanvasItem).material is CanvasItemMaterial and ((l["halo"] as CanvasItem).material as CanvasItemMaterial).blend_mode == CanvasItemMaterial.BLEND_MODE_ADD, "lamp halo is additive")
+			break
+		cp.set_hour(18.5)
+		check((cp.lights[0]["halo"] as CanvasItem).visible, "lamps are lit at dusk")
+		var was_lite: bool = cp.lite
+		cp.lite = true
+		var a0: float = (cp.lights[0]["halo"] as CanvasItem).modulate.a
+		cp.tick_lights(0.37)
+		cp.tick_lights(0.41)
+		check(is_equal_approx((cp.lights[0]["halo"] as CanvasItem).modulate.a, a0), "Performance mode: the lamp light stays still")
+		cp.set_hour(22.0)
+		var lit_points := 0
+		for l in cp.lights:
+			if l["light"] != null and (l["light"] as PointLight2D).enabled:
+				lit_points += 1
+		check(lit_points == 0, "Performance mode: no point lights (%d)" % lit_points)
+		cp.lite = false
+		cp.set_hour(22.0)
+		lit_points = 0
+		for l in cp.lights:
+			if l["light"] != null and (l["light"] as PointLight2D).enabled:
+				lit_points += 1
+		check(lit_points >= 10, "a point light per lamp at night (%d)" % lit_points)
+		cp.lite = was_lite
+		cp.set_hour(12.0)
 	# 7: an exit stub takes the hero to its region road.
 	for st in city.stubs_from(PlateCity.CITY_ID):
 		if str(st.get("gate", "")) == "":

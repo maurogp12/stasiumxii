@@ -249,6 +249,7 @@ func _ready() -> void:
 		if session != null:
 			progress.set_hero_class(str(session.get("selected_class_id")))
 	walker = Walker.new()
+	walker.hold_check = _city_gate_hold
 	walker.name = "Player"
 	# The hero's class, set before _ready so only that class's art loads.
 	walker.class_id = SpellKits.normalize_class_id(_launch_class) if _launch_class != "" else world_hero_class()
@@ -1575,6 +1576,7 @@ func _process(delta: float) -> void:
 		covered = city_plate.update_cover(walker.position + Vector2(0, lift), lift, wz, delta) or covered
 		city_plate.tick_pets(delta)
 		city_plate.tick_lights(delta)
+		tick_city_gates(delta)
 		if Engine.get_process_frames() % 30 == 0:
 			_sync_city_life()
 		if Engine.get_process_frames() % 4 == 0:
@@ -2503,6 +2505,20 @@ func _cover_children(root: Node, feet: Vector2, wz: int, npc_feet: Array = []) -
 
 ## Feet and z of each NPC body of the current chunk only (neighbour chunks'
 ## NPCs are not checked), so the per-frame cost stays at one chunk's NPCs.
+## Round 18: the portcullises rise for the hero or an NPC near a gate.
+func tick_city_gates(delta: float) -> void:
+	if not in_city() or city_plate == null:
+		return
+	var bodies: Array = [walker.position]
+	for rec in _npc_cover_feet():
+		bodies.append(rec[0])
+	city_plate.tick_gates(delta, bodies, walker._strips.height())
+
+
+func _city_gate_hold(c: Vector2i) -> bool:
+	return in_city() and city_plate != null and city_plate.gate_closed_at(c)
+
+
 func _npc_cover_feet() -> Array:
 	var out: Array = []
 	if npcs_root == null:

@@ -42,6 +42,9 @@ var plane_origin := Vector2i.ZERO
 var facing := "s"
 var pace := "walk"
 var auto_advance := true
+## Optional gate: called with the next cell; true holds the walker in place
+## (a portcullis still down). The world sets it in the walled city.
+var hold_check: Callable
 ## Slow-motion capture. Tests leave this at 1.
 var playback := 1.0
 
@@ -278,6 +281,8 @@ func advance(delta: float) -> void:
 	if not _moving:
 		_idle_t += delta
 		_show_idle()
+		return
+	if hold_check.is_valid() and bool(hold_check.call(_pending_cell())):
 		return
 	var speed := _speed_at(_traveled, _total, _cruise)
 	_traveled = minf(_total, _traveled + speed * delta)
