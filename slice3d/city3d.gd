@@ -66,6 +66,11 @@ func _ready() -> void:
 	rig.name = "CameraRig"
 	add_child(rig)
 	rig.target = hero
+	rig.solid_at = func(p: Vector3) -> bool:
+		if p.y > 9.0:
+			return false
+		var c: Vector2i = plan.world_to_cell(Vector2(p.x, p.z))
+		return not plan.passable(c) and plan.terrain_char(c) != "w" and plan.terrain_char(c) != "." and not plan.wall_cells.has(c)
 	var sz: Vector2 = plan.size_m()
 	rig.bounds = Rect2(Vector2.ZERO, sz)
 	# Start looking into town from just inside the gate.

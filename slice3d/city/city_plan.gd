@@ -116,7 +116,7 @@ func _from_tile_city(src: Dictionary) -> void:
 		if g["id"] == gate_id:
 			# Just inside the gate, facing into town.
 			spawn_facing = g["dir"]
-			var deep: Vector2 = g["inside"] + g["dir"] * cell_m * 5.0
+			var deep: Vector2 = g["inside"] + g["dir"] * 9.0
 			spawn = nearest_passable(world_to_cell(deep), 6)
 	_load_npcs(str(src.get("city", "")))
 	_trace_ring()

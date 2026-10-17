@@ -54,9 +54,21 @@ func _process(delta: float) -> void:
 	_place()
 
 
+## Optional: returns true where a point is inside something solid (a
+## building); the camera then pulls in so it never sits inside a house.
+var solid_at: Callable = Callable()
+
+
 func _place() -> void:
 	var b := Basis(Vector3.UP, deg_to_rad(yaw)) * Basis(Vector3.RIGHT, deg_to_rad(-pitch))
-	cam.global_transform = Transform3D(b, focus + b * Vector3(0, 0, distance))
+	var d := distance
+	if solid_at.is_valid() and follow:
+		var steps := int(distance / 0.75)
+		for i in range(steps, 0, -1):
+			var p := focus + b * Vector3(0, 0, distance * i / steps)
+			if solid_at.call(p):
+				d = maxf(min_distance * 0.5, distance * (i - 1) / steps)
+	cam.global_transform = Transform3D(b, focus + b * Vector3(0, 0, d))
 
 
 func _unhandled_input(event: InputEvent) -> void:

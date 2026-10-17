@@ -44,6 +44,8 @@ func _go() -> void:
 			await _classcheck()
 		"ironjaw":
 			await _ironjaw()
+		"lineup":
+			await _lineup()
 		"clip":
 			await _clip()
 		_:
@@ -137,16 +139,14 @@ func _stills() -> void:
 	_view(_piece("fountain"), 45, 40, 70)
 	await _grab("15_plaza_night.png")
 	m.env.set_hour(19.2)
-	m.rig.follow = true
-	m.rig.distance = 22.0
-	m.rig.snap()
+	_view(sg, 20, 32, 38)
 	await _grab("16_south_gate_dusk.png")
 
 
 func _clip() -> void:
-	m.env.set_hour(17.6)
-	m.rig.distance = 20.0
-	m.rig.pitch = 46.0
+	m.env.set_hour(11.0)
+	m.rig.distance = 17.0
+	m.rig.pitch = 50.0
 	m.rig.snap()
 	var goal: Vector3 = _piece("fountain")
 	m.walk_to(Vector2(goal.x + 4.0, goal.z + 4.0))
@@ -253,3 +253,27 @@ func _ironjaw() -> void:
 	m.rig.yaw = rad_to_deg(m.hero.rotation.y) + 25.0
 	m.rig.snap()
 	await _grab("ij_walk.png")
+
+
+## The five class heroes side by side on the plaza (idle).
+func _lineup() -> void:
+	m.env.set_hour(10.5)
+	var f := _piece("fountain")
+	var base := Vector2(f.x + 7.0, f.z + 7.0)
+	var side := Vector2(1, -1).normalized()
+	var face := Vector2(1, 1).normalized()
+	var HeroScript = load("res://slice3d/city/hero3d.gd")
+	m.hero.visible = false
+	var i := 0
+	for cls in ["kestrel", "ironjaw", "mender", "gloam", "bastion"]:
+		var h = HeroScript.new()
+		m.add_child(h)
+		h.setup(m.plan, m.nav)
+		h.set_class(cls)
+		h.place(base + side * (i - 2) * 1.6, face)
+		i += 1
+	m.hud.visible = false
+	_view(Vector3(base.x, 1.0, base.y), rad_to_deg(atan2(face.x, face.y)), 12, 9.5)
+	for k in 20:
+		await process_frame
+	await _grab("17_class_lineup.png")
