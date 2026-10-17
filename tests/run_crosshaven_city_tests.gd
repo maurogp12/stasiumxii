@@ -511,13 +511,14 @@ func _test_world_entry(w: Node2D) -> void:
 			hidden += 1
 			check(w.city_plate.row_of(int(rec["id"])).is_empty(), "hidden layer %d is not drawn" % int(rec["id"]))
 	check(hidden >= 30 or _image_plate(), "buildings are hidden in data (%d)" % hidden)
+	var base_only: bool = not ((city.doc.get("map_base_only", {}) as Dictionary).get("hide_tags", []) as Array).is_empty()
 	for row in w.city_plate.rows:
-		check(not (str(row["tag"]) in ["house", "stall", "castle", "cathedral", "fountain", "well", "mill"]), "no building drawn (%s)" % row["tag"])
+		check(not base_only or not (str(row["tag"]) in ["house", "stall", "castle", "cathedral", "fountain", "well", "mill"]), "no building drawn (%s)" % row["tag"])
 	var displaced := 0
 	for rec in city.layers():
 		if bool(rec.get("displaced_by_plot", false)):
 			displaced += 1
-	check((city.doc["building_footprints"] as Array).size() == hidden - displaced, "every hidden building keeps a reserved footprint, unless a plot displaced it")
+	check(not base_only or (city.doc["building_footprints"] as Array).size() == hidden - displaced, "every hidden building keeps a reserved footprint, unless a plot displaced it")
 	check(w.city_plate.plot_nodes.size() == (0 if city.plot_houses_hidden() else 10), "plot houses follow the map-base flag")
 	w.city_plate.set_footprints_visible(true)
 	check(w.city_plate.footprints.visible, "the footprint overlay turns on")
@@ -924,9 +925,73 @@ func _test_image_ring() -> void:
 	for t in towers:
 		var c := _cell_at(city.plate_to_world(_tower_foot(t) + Vector2(0, -20)))
 		check(not z.passable_at(c), "tower %s blocks its base" % t.get("name", t["id"]))
+	# Round 23: the buildings are in (map_base_only off)
+	_test_buildings()
 	# the ground is the image x4
 	var src: Array = city.doc["plate"].get("source_image_px", [0, 0])
 	check(int(src[0]) * 4 == int(city.plate_size().x) and int(src[1]) * 4 == int(city.plate_size().y), "the plate is the image x4 (%s)" % [src])
+
+
+## Round 23: buildings at the hero scale, clear of roads, gates, bridges and
+## the river, each blocking its footprint.
+func _test_buildings() -> void:
+	var z: WorldZone = city.zone
+	var hero: float = 54.5 * city.scale()
+	var tallest := {}
+	var house_max := 0.0
+	var wall_h := 0.0
+	var tags := {}
+	for rec in city.layers():
+		var t := str(rec["tag"])
+		if rec.has("building"):
+			tags[t] = int(tags.get(t, 0)) + 1
+			var h: float = float(rec["h"]) * city.scale()
+			tallest[t] = maxf(float(tallest.get(t, 0.0)), h)
+			if t == "house":
+				house_max = maxf(house_max, h)
+		elif t == "wall":
+			wall_h = maxf(wall_h, float(rec["h"]) * float(city.scale()))
+	for want in ["castle", "cathedral", "townhall", "bank", "fountain", "well", "mill", "smithy2", "forge", "potter", "weaver", "carpenter", "tailor"]:
+		check(tags.has(want), "%s is placed" % want)
+	check(int(tags.get("stall", 0)) == 3, "three market stalls (%d)" % int(tags.get("stall", 0)))
+	check(int(tags.get("house", 0)) >= 20, "NPC houses fill the streets (%d)" % int(tags.get("house", 0)))
+	check(house_max / hero > 2.6 and house_max / hero < 3.6, "a house is about 3 hero heights (%.2f)" % (house_max / hero))
+	check(house_max < wall_h, "houses are shorter than the wall (%.0f < %.0f)" % [house_max, wall_h])
+	var castle := float(tallest.get("castle", 0.0))
+	var cath := float(tallest.get("cathedral", 0.0))
+	for t in tallest.keys():
+		if t != "castle":
+			check(castle > float(tallest[t]), "the castle is taller than the %s" % t)
+	check(cath > house_max and cath > float(tallest.get("townhall", 0.0)), "the cathedral is taller than any house and the town hall")
+	check((city.doc["building_footprints"] as Array).size() == tags.values().reduce(func(a, b): return a + b, 0), "every building has a footprint")
+	# footprints block, and keep off roads, gates, bridges and water
+	var gate_cells := {}
+	for g in city.gates():
+		for c in g["cells"]:
+			gate_cells[Vector2i(int(c[0]), int(c[1]))] = true
+	var deck := {}
+	for b in city.bridges():
+		for c in b["deck_cells"]:
+			deck[Vector2i(int(c[0]), int(c[1]))] = true
+		for c in b["ends"]:
+			deck[Vector2i(int(c[0]), int(c[1]))] = true
+	for f in city.doc["building_footprints"]:
+		var c := Vector2(float(f["c"][0]), float(f["c"][1]))
+		var cell := _cell_at(city.plate_to_world(c))
+		check(not z.passable_at(cell), "%s blocks its footprint" % f["building"])
+		var r := Vector2(float(f["r"][0]), float(f["r"][1]))
+		var hits := 0
+		for k in 16:
+			var a := TAU * float(k) / 16.0
+			var q := _cell_at(city.plate_to_world(c + Vector2(cos(a) * r.x, sin(a) * r.y) * 0.8))
+			if gate_cells.has(q) or deck.has(q) or z.terrain_at(q) == "water":
+				hits += 1
+		check(hits == 0, "%s keeps off gates, bridges and the river (%d)" % [f["building"], hits])
+	# the whole town stays one walk area joined to every gate
+	var reach := _reach(city.spawn())
+	for g in city.gates():
+		var last: Array = g["cells"][(g["cells"] as Array).size() - 1]
+		check(reach.has(Vector2i(int(last[0]), int(last[1]))), "gate %s is still reached with the buildings in" % g["id"])
 
 
 func _test_review_data() -> void:
@@ -1303,6 +1368,11 @@ func _test_review_world(w: Node2D) -> void:
 	var wall_row: Dictionary = {}
 	for row in cp.rows:
 		if str(row["tag"]) == "wall" and (row["rect"] as Rect2).size.y > 120.0:
+			# a strip with open ground in front of it (no building there)
+			var r0: Rect2 = row["rect"]
+			var front0 := Vector2(r0.position.x + r0.size.x * 0.5, r0.position.y + r0.size.y * 1.55)
+			if cp.occluded(front0, int(row["z"]) + 50):
+				continue
 			wall_row = row
 			break
 	check(not wall_row.is_empty(), "a wall strip to stand behind")

@@ -20,6 +20,7 @@ Usage: python3 ring_v4_plate.py <repo root> [--debug <dir>] [--sheet <jpg>]
 import json
 import math
 import os
+import random
 import sys
 
 import numpy as np
@@ -534,6 +535,15 @@ def main():
     ell = (ex / leg_rx) ** 2 + (ey / leg_ry) ** 2 <= 1.0
     ey, ex = ey[ell], ex[ell]
 
+    # round 23: plots sit inside the ring (the ring polygon, eroded)
+    from PIL import ImageDraw as _ID
+    _ring_im = Image.new("L", (iw, ih), 0)
+    _ID.Draw(_ring_im).polygon([tuple(p_) for p_ in ring_poly], fill=255)
+    bad = bad | ~ndi.binary_erosion(np.asarray(_ring_im) > 0, iterations=6)
+    # round 23: plots keep off the landmark areas (centre circle, castle)
+    for e_ in cfg.get("plot_avoid", []):
+        bad = bad | ((((xx - e_[0]) / e_[2]) ** 2 + ((yy - e_[1]) / e_[3]) ** 2) <= 1.0)
+
     def plot_ok(ax, ay):
         cx, cy = ax, ay - leg_ry
         ys_, xs_ = (cy + ey).astype(int), (cx + ex).astype(int)
@@ -567,7 +577,7 @@ def main():
     for spot in cfg["plot_spots"]:
         order = sorted(cands, key=lambda c: (c[0] - spot[0]) ** 2 + (c[1] - spot[1]) ** 2)
         for ax, ay in order:
-            if any(((ax - bx) ** 2 + ((ay - by) * 2.0) ** 2) ** 0.5 <= leg_rx * 2.0 + 4.0 for bx, by, _ in chosen):
+            if any(((ax - bx) ** 2 + ((ay - by) * 2.0) ** 2) ** 0.5 <= leg_rx * 2.0 + 18.0 for bx, by, _ in chosen):
                 continue
             if not plot_ok(ax, ay):
                 continue
@@ -579,6 +589,109 @@ def main():
     foot = np.zeros((ih, iw), bool)
     for ax, ay, _ in chosen:
         foot |= ((xx - ax) / (leg_rx * 0.8)) ** 2 + ((yy - (ay - leg_ry)) / (leg_ry * 0.8)) ** 2 <= 1.0
+
+    # ---- round 23: the buildings inside the ring (city_buildings.py)
+    placed = []
+    bspec = cfg.get("buildings")
+    b_dir = arg_or_cfg("--buildings", "buildings_dir")
+    if bspec and b_dir:
+        import city_buildings as CB
+        from PIL import ImageDraw
+        inside_im = Image.new("L", (iw, ih), 0)
+        ImageDraw.Draw(inside_im).polygon([tuple(p_) for p_ in ring_poly], fill=255)
+        inside_m = ndi.binary_erosion(np.asarray(inside_im) > 0, iterations=6)
+        plots_m = np.zeros((ih, iw), bool)
+        for ax, ay, _ in chosen:
+            plots_m |= ((xx - ax) / (leg_rx + 3)) ** 2 + ((yy - (ay - leg_ry)) / (leg_ry + 2)) ** 2 <= 1.0
+            # and the plot's entrance in front of it
+            plots_m |= ((xx - ax) / 16.0) ** 2 + ((yy - (ay + 8)) / 12.0) ** 2 <= 1.0
+        base_bad = (ndi.binary_dilation(path, iterations=2) | ndi.binary_dilation(blocked | occl, iterations=4)
+                    | ndi.binary_dilation(gate_open, iterations=10) | ndi.binary_dilation(bridge_ok, iterations=12) | plots_m)
+        wet_bad = ndi.binary_dilation(water, iterations=4)
+        placer = CB.Placer((ih, iw), base_bad | wet_bad, path, water, inside_m)
+        mill_placer_bad = base_bad | ndi.binary_dilation(water, iterations=1)
+        plaza = np.zeros((ih, iw), bool)
+        for pz in bspec.get("plazas", []):
+            plaza |= ((xx - pz[0]) / pz[2]) ** 2 + ((yy - pz[1]) / pz[3]) ** 2 <= 1.0
+        hero = float(bspec["hero_plate_px"])
+        refs = CB.plate_refs(hd_full if hd_full is not None else full, hd_walls if hd_walls is not None else np.dstack([full, np.full(full.shape[:2], 255, np.uint8)]),
+                             [[t["box"][0] * UP, t["box"][1] * UP, t["box"][2] * UP, t["box"][3] * UP] for t in kept])
+        rng = random.Random(23)
+
+        def allow_for(spec):
+            # a landmark may cover minor paths inside its own box, never the main roads
+            if not spec.get("allow_paths"):
+                return None
+            x0_, y0_, x1_, y1_ = spec["allow_paths"]
+            a_ = np.zeros((ih, iw), bool)
+            a_[y0_:y1_, x0_:x1_] = True
+            return a_ & ~ndi.binary_dilation(gate_open, iterations=14)
+
+        def put(spec, near, radius, idx=0, flip=False, **kw):
+            if spec.get("allow_paths"):
+                kw["allow"] = allow_for(spec)
+            im_ = CB.load(b_dir, spec["file"], float(spec["h_hero"]) * hero, flip=flip)
+            w_img = im_.width / UP
+            if spec.get("fp"):
+                CB.FP[spec["id"]] = tuple(spec["fp"])
+            kw["key"] = spec["id"]
+            if spec.get("water"):
+                placer.bad, keep_bad = mill_placer_bad, placer.bad
+                at = placer.search(near, radius, w_img, near_water=True, door=False, key=spec["id"])
+                placer.bad = keep_bad
+            else:
+                at = placer.search(near, radius, w_img, **kw)
+            if at is None:
+                print("  no room for", spec["id"])
+                return None
+            placer.take(at[0], at[1], w_img, spec["id"])
+            im_ = CB.match(im_, refs, float(bspec.get("match_strength", 0.75)))
+            rec_ = {"id": spec["id"] + ("_%d" % idx if idx else ""), "tag": spec["tag"], "im": im_, "ax": at[0], "ay": at[1], "w_img": w_img, "fp": spec["id"],
+                    "kind": spec.get("kind", spec["tag"]), "file": spec["file"]}
+            placed.append(rec_)
+            return rec_
+
+        for sp in bspec["landmarks"]:
+            put(sp, sp["near"], sp.get("radius", 70), door=sp.get("door", True))
+        for sp in bspec["props"]:
+            allow = plaza if sp.get("plaza") else None
+            for k_, nr in enumerate(sp["near"]):
+                put(sp, [nr], sp.get("radius", 30), idx=k_ if len(sp["near"]) > 1 else 0, door=False, allow=allow, gap=1)
+        for k_, sp in enumerate(bspec["workshops"]):
+            put(sp, sp["near"], sp.get("radius", 70), door=not sp.get("water"))
+        # NPC houses fill the streets: every free spot with a street at its door
+        hs = bspec["npc_houses"]
+        cand = [(x_, y_) for y_ in range(150, 620, 5) for x_ in range(120, 1260, 5)]
+        rng.shuffle(cand)
+        n_h = 0
+        for ax, ay in cand:
+            if n_h >= int(hs["count"]):
+                break
+            f_ = hs["files"][n_h % len(hs["files"])]
+            hh_ = float(hs["h_hero"]) * (0.94 + 0.12 * rng.random())
+            im_ = CB.load(b_dir, f_, hh_ * hero, flip=bool(n_h % 2))
+            w_img = im_.width / UP
+            if not placer.fits(ax, ay, w_img, door=True, gap=4):
+                continue
+            placer.take(ax, ay, w_img)
+            placed.append({"id": "npc_house_%d" % n_h, "tag": "house", "kind": "npc_house", "file": f_,
+                           "im": CB.match(im_, refs, float(bspec.get("match_strength", 0.75))), "ax": ax, "ay": ay, "w_img": w_img})
+            n_h += 1
+        print("buildings placed", len(placed), "npc houses", n_h)
+        if debug:
+            from PIL import ImageDraw
+            ov = Image.fromarray(clean).convert("RGB")
+            dr_ = ImageDraw.Draw(ov)
+            for b_ in placed:
+                cx_, cy_, rx_, ry_ = CB.footprint(b_["ax"], b_["ay"], b_["w_img"], b_.get("fp"))
+                dr_.ellipse([cx_ - rx_, cy_ - ry_, cx_ + rx_, cy_ + ry_], outline=(255, 0, 255))
+                dr_.text((b_["ax"] - 10, b_["ay"]), b_["id"][:8], fill=(255, 255, 0))
+            for ax_, ay_, _ in chosen:
+                dr_.ellipse([ax_ - leg_rx, ay_ - 2 * leg_ry, ax_ + leg_rx, ay_], outline=(0, 255, 255))
+            ov.resize((iw * 2, ih * 2)).save(os.path.join(debug, "buildings.png"))
+        for b_ in placed:
+            cx_, cy_, rx_, ry_ = CB.footprint(b_["ax"], b_["ay"], b_["w_img"], b_.get("fp"))
+            foot |= ((xx - cx_) / rx_) ** 2 + ((yy - cy_) / ry_) ** 2 <= 1.0
     rows = ["".join(("#" if (ch in "gr" and foot[cell_of[(x, y)][1], cell_of[(x, y)][0]]) else ch)
                     for x, ch in enumerate(r)) for y, r in enumerate(rows)]
     # keep only the walkable component the spawn is in (no islands)
@@ -690,6 +803,57 @@ def main():
     if len(plots) < len(lay["plots"]):
         print("WARNING: only", len(plots), "plots fit")
 
+    # ---- round 23: building layers, plate trees out, contact shadows, plot houses
+    building_footprints = []
+    house_art = None
+    if placed:
+        import city_buildings as CB
+        trees = CB.tree_mask(clean)
+        region = np.zeros((ih, iw), bool)
+        shadows = []
+        for b_ in placed:
+            im_ = b_["im"]
+            w_, h_ = im_.size
+            ax_p, ay_p = b_["ax"] * UP, b_["ay"] * UP
+            x0_ = int(round(ax_p - w_ / 2.0))
+            y0_ = int(round(ay_p - h_))
+            name_ = "layers/%d_b_%s.png" % (lid, b_["id"])
+            im_.save(os.path.join(art_dir, name_), optimize=True)
+            rec_ = {"id": lid, "file": name_, "tag": b_["tag"], "x": x0_, "y": y0_, "w": w_, "h": h_,
+                    "k": 1.0, "flip": False, "sort_y": round(ay_p, 1), "under": False,
+                    "fade": h_ >= BC.FADE_MIN_HEIGHT, "fade_min_alpha": 0.45,
+                    "building": b_["id"], "kind": b_["kind"], "art": os.path.basename(b_["file"])}
+            if rec_["fade"]:
+                bw_, bh_, bits_ = BC.alpha_bits(im_)
+                rec_["mask"] = {"step": BC.MASK_STEP, "w": bw_, "h": bh_, "bits": bits_}
+            out_layers.append(rec_)
+            lid += 1
+            cx_, cy_, rx_, ry_ = CB.footprint(b_["ax"], b_["ay"], b_["w_img"], b_.get("fp"))
+            building_footprints.append({"id": rec_["id"], "tag": b_["tag"], "building": b_["id"],
+                                        "c": [round(cx_ * UP, 1), round(cy_ * UP, 1)], "r": [round(rx_ * UP, 1), round(ry_ * UP, 1)]})
+            # the plate's trees under the building go: footprint and the sprite's lower body
+            sl_, m_ = CB.ellipse_mask((ih, iw), cx_, cy_, rx_ * 1.5, ry_ * 1.8)
+            region[sl_] |= m_
+            bx0, bx1 = int(x0_ / UP), int((x0_ + w_) / UP)
+            region[max(0, int(b_["ay"] - h_ / UP * 0.75)):int(b_["ay"]), max(0, bx0):bx1] = True
+            shadows.append((ax_p + 0.06 * w_, ay_p - ry_ * UP * 0.7, w_ * 0.58, ry_ * UP * 1.25, 0.38))
+        lab_t, n_t = ndi.label(trees)
+        touch = np.unique(lab_t[region & trees])
+        touch = touch[touch > 0]
+        gone = np.isin(lab_t, touch) & ndi.binary_dilation(region, iterations=25) & ~path & ~water
+        patch = CB.grass_patch(clean, trees | path | water | occl | blocked)
+        CB.bake(full, clean, gone, shadows, patch)
+        print("plate trees removed px", int(gone.sum()), "grass patch", patch)
+        # player plot houses: the approved tier art, colour-matched, at the hero scale
+        house_art = {}
+        for tier, hs_ in bspec["plot_houses"].items():
+            im_ = CB.match(CB.load(b_dir, hs_["file"], float(hs_["h_hero"]) * float(bspec["hero_plate_px"])), refs,
+                           float(bspec.get("match_strength", 0.75)))
+            os.makedirs(os.path.join(art_dir, "housing"), exist_ok=True)
+            im_.save(os.path.join(art_dir, "housing", "house_%s.png" % tier), optimize=True)
+            bw_, bh_, bits_ = BC.alpha_bits(im_)
+            house_art[tier] = {"w": im_.width, "h": im_.height, "mask": {"step": BC.MASK_STEP, "w": bw_, "h": bh_, "bits": bits_}}
+
     # the ground behind every wall and tower is filled in from around it, so the
     # local fade (hero behind a wall) shows ground, not the wall again
     import cv2
@@ -747,15 +911,22 @@ def main():
     city["wall_polygon"] = [[round(p[0] * UP, 1), round(p[1] * UP, 1)] for p in ring_poly]
     city["trees_keep"] = {}
     city["map_base_only"] = lay["map_base_only"]
+    if placed:
+        # round 23 (Mauro): the buildings are in; nothing hidden
+        city["map_base_only"] = {"hide_tags": [], "hide_plot_houses": False,
+                                 "note": "Round 23: map_base_only off; buildings, workshops, props and the player plot houses are drawn."}
     city["wall_ring"] = {"source": "image", "towers_kept": len(kept),
                          "towers_removed": [t["name"] for t in cfg["towers"] if not t.get("keep")],
                          "note": "Round 18: Mauro's ring v4 image is the plate; walls and kept towers are cut from it as y-sorted layers."}
-    city["building_footprints"] = []
+    city["building_footprints"] = building_footprints
     city["wall_contacts"] = {"before": [], "after": []}
     city["gates"] = gates_out
     city["bridges"] = bridges
     city["plots"] = plots
-    city["plot_rules"] = lay["plot_rules"]
+    city["plot_rules"] = json.loads(json.dumps(lay["plot_rules"]))
+    if house_art:
+        city["plot_rules"]["house_art"] = house_art
+        city["plot_rules"]["note"] = city["plot_rules"].get("note", "") + " Round 23: approved tier art (houses/, scale/), colour-matched to the HD plate."
     city["pets"] = []
     city["npcs"] = npcs
     city["day_hours"] = lay["day_hours"]

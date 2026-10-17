@@ -63,7 +63,7 @@ func _go() -> void:
 	root.add_child(_labels)
 	print("HERO class=%s height_world=%.1f walk_px_s=%.1f" % [_w.walker.class_id, _w.walker._strips.height(), _w.walker.speed_of("walk")])
 	_report_crossing()
-	if _clip:
+	if _clip and _set != "r23":
 		await _walk_clip()
 	elif _set == "towers":
 		await _tower_shots()
@@ -76,6 +76,10 @@ func _go() -> void:
 		await _v4_shots()
 	elif _set == "behind":
 		await _behind_shots()
+	elif _set == "r23" and not _clip:
+		await _r23_shots()
+	elif _set == "r23" and _clip:
+		await _r23_clip()
 	else:
 		await _stills()
 		await _tower_shots()
@@ -144,6 +148,89 @@ func _v4_shots() -> void:
 	_w.weather.time_of_day = 12.0
 	_w.npc_plates.visible = true
 	_w.camera_hold = false
+
+
+func _building_at(id: String) -> Dictionary:
+	for rec in city.layers():
+		if str(rec.get("building", "")) == id:
+			return rec
+	return {}
+
+
+func _rec_centre(rec: Dictionary) -> Vector2:
+	return city.plate_to_world(Vector2(float(rec["x"]) + float(rec["w"]) * 0.5, float(rec["y"]) + float(rec["h"]) * 0.55))
+
+
+## Round 23: the town. Wide, then the castle, cathedral, plaza, crafts
+## quarter and a player plot, each with the hero beside it for scale.
+func _r23_shots() -> void:
+	_w.camera_hold = true
+	_w.npc_plates.visible = false
+	_w.walker.visible = false
+	var rect: Rect2 = city.world_rect()
+	var vp: Vector2 = _w.get_viewport().get_visible_rect().size
+	await _hold(rect.get_center(), minf(vp.x / rect.size.x, vp.y / rect.size.y), 40, "20_wide_ring_goal")
+	_w.walker.visible = true
+	var shots := [["castle", 0.75, "37_castle"], ["cathedral", 0.85, "38_cathedral"], ["fountain", 1.0, "39_plaza"], ["potter", 0.9, "40_crafts_quarter"]]
+	for sh in shots:
+		var rec := _building_at(str(sh[0]))
+		if rec.is_empty():
+			continue
+		var foot: Vector2 = city.plate_to_world(Vector2(float(rec["x"]) + float(rec["w"]) * 0.5, float(rec["sort_y"])))
+		_place(_near_free(_cell_at_world(foot + Vector2(40, 40))), "n")
+		await _hold(_rec_centre(rec), float(sh[1]), 40, str(sh[2]))
+	var p: Dictionary = city.plots()[0]
+	var a: Vector2 = city.plate_to_world(Vector2(float(p["anchor_px"][0]), float(p["anchor_px"][1])))
+	_place(Vector2i(int(p["front_cells"][0][0]), int(p["front_cells"][0][1])), "n")
+	await _hold(a + Vector2(0, -120), 1.0, 40, "41_player_plot_%s_%s" % [p["id"], p["tier"]])
+	_w.npc_plates.visible = true
+	_w.camera_hold = false
+
+
+func _cell_at_world(world: Vector2) -> Vector2i:
+	var best := Vector2i.ZERO
+	var bd := 1e18
+	for y in _w.zone.height:
+		for x in _w.zone.width:
+			var c := Vector2i(x, y)
+			var d: float = BoardVisualSort.cell_to_local(c).distance_squared_to(world)
+			if d < bd:
+				bd = d
+				best = c
+	return best
+
+
+## Round 23: a walk through the town: in by the S gate, over the bridge, round
+## the plaza, to the crafts quarter.
+func _r23_clip() -> void:
+	RenderingServer.frame_post_draw.connect(_grab)
+	_w.camera_hold = false
+	_w._zoom = 1.3
+	_w.camera.zoom = Vector2.ONE * 1.3
+	var stops: Array = []
+	for id in ["fountain", "cathedral", "townhall", "potter"]:
+		var rec := _building_at(id)
+		if not rec.is_empty():
+			stops.append(_near_free(_cell_at_world(city.plate_to_world(Vector2(float(rec["x"]) + float(rec["w"]) * 0.5, float(rec["sort_y"]) + 40.0)))))
+	_place(city.spawn(), "n")
+	_w.camera.position = _w.walker.position
+	_w.camera.reset_smoothing()
+	for i in 15:
+		await process_frame
+	_grabbing = true
+	for st in stops:
+		var r: Dictionary = _w.walk_to(st, "walk")
+		print("LEG r23 -> %s: %s" % [st, r.get("ok", false)])
+		var n := 0
+		while n < 1200:
+			await process_frame
+			n += 1
+			if n > 10 and not _w.walker.is_moving():
+				break
+		for i in 15:
+			await process_frame
+	_grabbing = false
+	print("CLIP frames=%d" % _frame_i)
 
 
 ## Round 22: the hero just inside the S and W gatehouses (behind the wall),

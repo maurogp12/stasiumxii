@@ -54,81 +54,81 @@
    "gggrrrgggggrggrggggggrrgrgrrggr###########g#g#########################################################................",
    "ggggrrrggggrrrgrrgggrrgrgrrggg#####ggggggrggggg#####gggg~ggggggrrrrrrggrggggggggggggggg######rggggggggg...............",
    "gggggrrrggggrgrrrgrgggrgrrrgg#####gggggggggggggg##gggg~~~~~gggggr~rgrgggggrggggggggggggg###rgrggrrgggg##..............",
-   "ggggggrrrgggggrgrrrgggrrrggg#####ggggggggggggggggggrrg~~~ggggggggrrggggggggggggggggggrrrggggrggggggggg##g.............",
-   "gggggggrrrrggrgrrrrgggggggr#####ggggggrrggggggggggggrgg~~gggggggggrgggggggggggggggggggrrrrrgrgggrrrrgg##gg............",
-   "ggggggggrrrrrrrgrrrrrggggg#####gggggrggrrgggggggggggggg~~gggggggggggggggggggggggggggggggrrrrgrrrrgrrrg##rrg...........",
-   "ggggggggrrrrrrrrgrrrrgggg#####gggggggggrrggggggggggggggg~~ggggggg#gggggggg#####ggggggggggrrrrrrrrrrrrrrrrrrr..........",
-   "grgggrgggrrrrrrgrgrrrrr######gggggggggggrrgggggggggggggg~~gggg#####gggggg######gggggggggggrrrgrrrrrrrrrrrrrrr.........",
-   "ggrrggrggrrgrrgrrrgrrr######ggggggggggggrrgggggggggggggg~~~ggg######ggggg#######gggggggggggrrgrggrrrrrrrrrrrrr........",
-   "ggrgrgrrrgggrgrrgrrgr######ggggggggggggggrrggggrrrrggggg~~~ggg#######gggg#######ggggggggggggrgrgggggrg##rrrrrrr.......",
-   "gggrrgrgggrgggrrgrggg######gggggggggggggggrrgrrrrrrrrgggg~~gg########gggg#######gggggggggggggrrggggggg##rrrrrrrr......",
-   "ggrg~ggggggggrrrrrrg#######gggggggggggggggrrrrrrrrrrrggggg~~gg######gggggg#####gggggggggggggggrgrggggg##rrrrrrrrr.....",
-   "gggrrrrgrggrgrgrrrr########ggggggggggggggggrrrrrrrrrrrggg~~~ggg#####ggggggg##ggggggggggggggggrgggrgggg##rrrggggggg....",
-   "gggggrgrrrgggrgrrrr######ggggggggg##gggggggrrrrggrrrrggggg~~~ggg##ggggggggggggggggggggggggggggrggggggg##ggggggggggg...",
-   "ggggggrrrggggggrrrrr##grgggggggg######ggggggrrrgggggrgggggg~~gggggggggggggggggggggrrrrrggggggggggggggg##gggggggggggg..",
-   "gggggggrrrrggggg##rrrrrrrrrggggg######ggggggrrrggggggrgggggg~~gggggggggggggggggrrrrrrrgggggggggggggggg##ggggggggggggg.",
-   "gggggggggrrgrrg####rrrrrrrrrgggg#######gggggrrrgggggggggggggg~~~gggggggggggggggrrrrrrrrggggggggggggggg##gggggggggggggg",
-   "ggggggggggrrg######rrrrrrrrrrggg#######gggggrrrggggggggggggggg~~~~ggggggggggggrrrrrrrrrggggggrgggggggg##gggggggggggggg",
-   "gggggrgrgggr######grrrrrrrrrrrgg######ggggggrrrrggggggggggggggg~~~~gggggggggggrrrrrrrrrrgggggrggggrggg##gggggggggggggg",
-   "ggggggrggggg######grrrrrrrrrrrrgg#####ggggggrrrggggggggggggggggg~~~~ggggggggggrrrrrrrrrrgggggggggggggg##gggggggggggggg",
-   "gggggrgrgrgr######ggrrrrrrrrggrrgggggggrrrrrrrrgggggggggggggggggg~~~ggggggggggrrrrrrrrrggggggrgggggggg##gggggggggggggg",
-   "ggggggrggrgg#####gggggrrrrrrgggrrggggrrrrrrrrrrrrrrggggggggggggggg~~~~gggggggggrrrrrrrrggggggrgggggggg##gggggggggggggg",
-   "gggggrgrggggg####gggggrrrrrrrgggrrgrrrrrrrrrrrrrrrrrrgggggggggggggg~~~gggggggggrrrrrrrrggggggrgggggggg##ggggggrggggggg",
-   "gggggggrggrgg###ggggggggrrrrrrgggrgrrrrrrrgggggggrrrrrrgggggggggggg~~~~gggggrgggrrrrrrrr~ggggrgrgggggg##ggggg#gggggggg",
-   "ggggggggggggg###ggggggggggrrrrrggrrgrrrgggggggggggggrrrrggggg~gggggg~~~ggggggggggrrrrrrrggggggrrgggggg##gg#####ggggggg",
-   "gggggrgrggggg##ggggggggggggrrrrrrrrrgrggggggggggggggggrrrrgggggggggg~~~~ggggggggggggrrrggggggrgrggrggg##gg######gggggg",
-   "ggggggrrggggg##ggggggggggggggrrrrrrrrgggggggggggggggggggrrrgggrrrrrrg~~~ggggg####ggggrrgggggggrrgggggg##gg######gggggg",
-   "gggggrgrgrggg##ggggggggggggggrrrrrrggggggggggggrgggggggggrrrgrrrrrrrg~~~gggg######gggrrrgggggrgrgggggg##g########ggggg",
-   "gggggrgrgggg###gggg###ggggggggrrrrrgggggggggggggggggggggggrrrrrrggggrg~~~ggg#######ggrrrgggggrrggggggg##gg######gggggg",
-   "gggggrgrgrgg###gg######ggggggggrrrgggggggggggggggggggggggggrrrrggggggg~~~ggg#######ggrrrggggggrrgrgggg##ggg####ggggggg",
-   "ggggggrrgrgg###gg#######ggggggrrrrggggggggggggggggggggggggggrrrggggggg~~~~gg######gggrrggggggrgrgggggg##ggggg#gggggggg",
-   "gggggrrggggg###gg#######ggggggrrrggggggggggggggggggggggggggggrrgggggggg~~~gg######gggrrgggggggrrgggggg##gggggggggggggg",
-   "gggggggrgggg###gg#######ggggggrrrggggggggggggggggggggggggggggrrgggggggg~~~~ggg###ggggrrrgggggrgrgggggg##gggggggggggggg",
-   "ggggggrrgggg###gg#######ggggggrrrgggggggggggggggggggggggggggggrrggggggrg~~~ggggggggggrrrggggggrrgggggg##gggggggggggggg",
-   "gggggggggggg###ggg#####gggggggrrrgggggggggggggggggggggggggggggrrrggggrrg~~~ggggggggggrrgrggggggrrggggg##gggggggggggggg",
-   "gggggggrgggg###ggggggggggggggggrgggggggggggggggggggggggggggggggrrrrgrrrr~~~~gggggggggrrrggggggrrgggggg##gggggggggggggg",
-   "ggggggrrgggg##gggggrggggggggggrgrgggggggggggggggggggrggggggggggrrrrgggrgg~~~gggggggggrrrgrgggggrgggggg##gggggggggggggg",
-   "gggggggrrggg##ggggggrrggggggggrrggggggggggggggggggrrrrrrrggggggrrrggggggg~~~~ggggggggrrrggrrgggrgggggg##gggggggggggggg",
-   "ggggg~grgggg##ggggggrgrgggggggrrrgggggggggggggggrrrrrrrrrrggggggrrggggggg~~~~gggggggggrrggrrggrrgggggg##gggggggggggggg",
-   "rgggggrrggg###gggggggggrrggggggrrgggggggggggggggrrrrrgrrrrrgggggrrggggggg~~~~ggggggggrgrggrrrrgggggggg##gggggggggggggg",
-   "grgrgrgrggr###gggggggggggrgggggrrggggggggggggggrrrrrrrrrrrrgggggrrggggggg~~~~gggggggggrgggrgrggrgggggg##gggggggggggggg",
-   "grrggrgrggg###ggggggggggggrrgggrrrgggggggggg~ggrrrrrrrrrrrrgggggrrgggggggg~~~gggggggggrrgggrrrrrgggggg##gggggggggggggg",
-   "ggrrgggrggg###gggggggggggggrrgggrrgggggggggggggrrrrrrrrrrrrrggggrrrggggggg~~~~ggggggggrrgggggrgggrgggg##gggggggggggggg",
-   "ggrrgrrrgrg###ggggggggggggggrrrgrrrggggggggggggrrrrgrrrrrrrrggggrrgggggggr~~~~ggggggggrrggggggrgrrrggg##gggggggggggggg",
-   "gg~rrrggrgg###gggggggggggggggrrrrrrggggggggggggrrrrggrrrrrrggggrrrggggggrr~~~~ggggggggrrgggggrgrrrrggg##gggggggggggggg",
-   "gggrrggrrrg###gggggggggggggggggrrrrrggggggggggggrrrrrrrrrrrggggrrrgggggrrr~~~~ggggggggrrggggggrrgrrrrg##gggggggggggggg",
-   "ggggrrrgggg###ggggggggggg####ggggrrrggggggggggggrrrrrrrrrrgggggrrrggggrrrrr~~~rgggrgggrrgggggrgrggrrrr##gggggggggggggg",
-   "gggggrrrgrg##ggggggggggg######ggggrrrgggrrrrrggggrrrrrrrrrggggrrrrgggrrrrrrrrrrrggggggrrggggggrrgggrr#####gggggggggggg",
-   "ggggggggrrr##ggggggggggg#######ggggrrrrrrrrrrrgggggrrrrrggggggrrrrggrrrrrrrrrrrrrgggggrrgggggggrgrrg######gggggggggggg",
-   "gggggrgrgrr#####gggggggg#######ggggggrrrrrrrrrrggggggggggggggrrrrrgrrrrrrrrrrrrrrrggggrrggggggrrggrg######gggggggggggg",
-   "ggggggrrggg######ggggggg######gggggggrrrrrrrrggrggggggggggggrrrrrrrrrrrrrrrrrrrrrrrrrrrrggggggggggggg#####gggggggggggg",
-   "gggggrgrrg#######gggggggg#####ggggggrgrrrrrrrrrrgggggggggggrrrrrrrrrrrrrrr~~rrrrrrrrrggrggggggrgggrgg#####gggggggggggg",
-   "ggggggrrgg#######ggggggggg##ggggggggggrrgrrrrrrrrgggggggggrrrrrggggggrrrrr~~~~rrrrggggggggggggggggrggg##gggggggggggggg",
-   "gggggrgrrg######gggggggggggggggggggggrrrrrrrrrrrrggggggrrrrrrrggggggggrrrr~~~~rrrgggg##gggggggrggggggg##gggggggggggggg",
-   "ggggggrrgg###ggggggggggggggggggggggggrrgrrrrrrrrrrrrrrrrrrrrrggggggggggrrr~~~~rrggg######gggggggrggggg##gggggggggggggg",
-   "gggggrgrgg###gggrggggggggggggggggggggrrrgrrrrrrrrrrrrrrrrrrrggggggggggggrr~#~~rgggg######ggggggggggggg##gggggggggggggg",
-   "ggggggrrgg###ggggrrrgggrgggggggggggggrrrrrrrrrrrrrrrrrrrrggggggggggggggggr~~#~gggg########ggggrggggggg##gggggggggggggg",
-   "gggggggrgg##ggggggrrrggggggggggggggggrrrrrrrrrrrgrrrggggggggrgggggggggggg~~~~gggggg#######gggggrgggggg##gggggggggggggg",
-   "gggggrrrgg##ggggggggrrrgggggggggggggrrrrgrrrrrrggggrrrggggggggggggggggggr~~~~~ggggg######ggggrrggggggg##gggggggggggggg",
-   "ggggggrrgg##gggggggggrrrgggggggggggrgrrgggggggggggggrrrggggggggggggggggrr~~~~ggggggg####gggggrgrgggggg##gggggggggggggg",
-   "gggggrgrg###gggggggggggrrrgggggggggrrrggggggggg####gggrrrgggggggggggggrrr~~~~ggggggggggggggrrgrrgggggg##gggggggggggggg",
-   "gggggggrg###ggggggggggggrrrrggggggrrrrgggggggg######gggrrrrggggggggggrrrrr~~~rggggggggggggrrgrrggggggg##gggggggggggggg",
+   "ggggggrrrgggggrgrrrgggrrrggg#####gggggggggg###gggggrrg~~~ggggggggrrgggggg#gggggggggggrrrggggrggggggggg##g.............",
+   "gggggggrrrrggrgrrrrgggggggr#####ggggggrrggg###ggggggrgg~~gggggggggrgggggg#ggggggggggggrrrrrgrgggrrrrgg##gg............",
+   "ggggggggrrrrrrrgrrrrrggggg#####gggggrggrrgg###ggg##gggg~~ggggggggggggggggggggggggg#gggggrrrrgrrrrgrrrg##rrg...........",
+   "ggggggggrrrrrrrrgrrrrgggg#####gggggggggrrggggggg###ggggg~~gggggg###ggggggg#####ggggggggggrrrrrrrrrrrrrrrrrrr..........",
+   "grgggrgggrrrrrrgrgrrrrr######gggggggggggrrgg#ggg###ggggg~~gggg######ggggg######gggggggggggrrrgrrrrrrrrrrrrrrr.........",
+   "ggrrggrggrrgrrgrrrgrrr######ggggggggggggrrgg##gggggggggg~~~ggg#######gggg#######gggggggggggrrgrggrrrrrrrrrrrrr........",
+   "ggrgrgrrrgggrgrrgrrgr######ggggggggggggggrrggggrrrrggggg~~~ggg#######gggg#######gg###gggggggrgrgggggrg##rrrrrrr.......",
+   "gggrrgrgggrgggrrgrggg######ggggggggggg#gggrrgrrrrrrrrgggg~~ggg#######gggg#######gg###g###ggggrrggggggg##rrrrrrrr......",
+   "ggrg~ggggggggrrrrrrg#######gggggggg#####ggrrrrrrrrrrrggggg~~gg######gggggg#####ggg##gg####ggggrgrggggg##rrrrrrrrr.....",
+   "gggrrrrgrggrgrgrrrr########gggggggg######ggrrrrrrrrrrrggg~~~ggg#####ggggggg##gggggggggg##ggggrgggrgggg##rrrggggggg....",
+   "gggggrgrrrgggrgrrrr######gggggggggg#######grrrrggrrrrggggg~~~ggggggggggggggggggggggggggggg#gggrggggggg##ggggggggggg...",
+   "ggggggrrrggggggrrrrr##grgggggggggg########ggrrrgggggrgggggg~~gggggggggggggggggggggrrrrrgg##ggggggggggg##gggggggggggg..",
+   "gggggggrrrrggggg##rrrrrrrrrgggggggg######gggrrrggggggrgggggg~~gggggggggggggggggrrrrrrrgggggggggggggggg##ggggggggggggg.",
+   "gggggggggrrgrrg####rrrrrrrrrgggggggg#####gggrrrgggggggggggggg~~~gggggggggggggggrrrrrrrrggggggggggggggg##gggggggggggggg",
+   "ggggggggggrrg######rrrrrrrrrrgggg#ggg##gggggrrrgg##ggggggg####~~~~ggggggggggggrrrrrrrrrggggggrgggggggg##gggggggggggggg",
+   "gggggrgrgggr######grrrrrrrrrrrgg###gggggggggrrrrg##gggggg######~~~~ggg##gg##ggrrrrrrrrrrgggggrggggrggg##gggggggggggggg",
+   "ggggggrggggg######grrrrrrrrrrrrgg##gggggggggrrrggggggggg#######g~~~~g####g##ggrrrrrrrrrrgggggggggggggg##gggggggggggggg",
+   "gggggrgrgrgr######ggrrrrrrrrggrrgggggggrrrrrrrrgggggggggg######gg~~~gg##ggggggrrrrrrrrrggggggrgggggggg##gggggggggggggg",
+   "ggggggrggrgg#####gggggrrrrrrgggrrggggrrrrrrrrrrrrrrgggggg#####gggg~~~~gggggggggrrrrrrrrggggggrgggggggg##gggggggggggggg",
+   "gggggrgrggggg####gggggrrrrrrrgggrrgrrrrrrrrrrrrrrrrrrggggg###ggg#gg~~~gggggggggrrrrrrrrggg##grgggggggg##ggggggrggggggg",
+   "gggggggrggrgg###ggggggggrrrrrrgggrgrrrrrrrgggggggrrrrrrgggggggg###g~~~~gggggrgggrrrrrrrr~###grgrgggggg##gggggggggggggg",
+   "ggggggggggggg###ggggggggggrrrrrggrrgrrrggggg##ggggggrrrrggggg~g###gg~~~ggggggggggrrrrrrrgg#gggrrgggggg##gggggggggggggg",
+   "gggggrgrggggg##ggggggggggggrrrrrrrrrgrggggg####gggggggrrrrgggggggggg~~~~ggggggggggggrrrggggggrgrggrggg##gggggggggggggg",
+   "ggggggrrggggg##ggggggggggggggrrrrrrrrgggggg###ggggggggggrrrgggrrrrrrg~~~gggggg####gggrrgg###ggrrgggggg##gggggggggggggg",
+   "gggggrgrgrggg##ggggg#####ggggrrrrrrggggggggggggrg###gggggrrrgrrrrrrrg~~~ggggg######ggrrrg###grgrgggggg##gggggggggggggg",
+   "gggggrgrgggg###gggg######gggggrrrrrggggggggggggg#####gggggrrrrrrggggrg~~~gggg######ggrrrg###grrggggggg##gggggggggggggg",
+   "gggggrgrgrgg###ggg########gggggrrrgggggggggggggg#####ggggggrrrrggggggg~~~ggg########grrrggggggrrgrgggg##gggggggggggggg",
+   "ggggggrrgrgg###gg#########ggggrrrrgggggggggggggg#####gggggggrrrggggggg~~~~ggg######ggrrgg#gggrgrgggggg##gggggggggggggg",
+   "gggggrrggggg###gg########gggggrrrggggggggggg###gg###gggggggggrrggg##ggg~~~ggg######ggrrgg#ggggrrgggggg##gggggggggggggg",
+   "gggggggrgggg###gg########gggggrrrgggggggggg######ggggggggggggrrgggg#ggg~~~~ggg####gggrrrgggggrgrgggggg##gggggggggggggg",
+   "ggggggrrgggg###gg#######g##gggrrrggggggggg#######gggggggg###ggrrggggggrg~~~ggggggggggrrrggggggrrgggggg##gggggggggggggg",
+   "gggggggggggg###gg######gg###ggrrrggggggggg#######gggggggg###ggrrrggggrrg~~~ggggggggggrrgrggggggrrggggg##gggggggggggggg",
+   "gggggggrgggg###ggg####ggg##ggggrgggggggggg#######ggggggggg#ggggrrrrgrrrr~~~~gggggggggrrrggggggrrgggggg##gggggggggggggg",
+   "ggggggrrgggg##gggggrggggggggggrgrggggggggg#######gggrgggggg###grrrrgggrgg~~~gggggggggrrrgrgggggrgggggg##gggggggggggggg",
+   "gggggggrrggg##gg###grrgggg###grrggggggggggg#####ggrrrrrrrgg###grrrggggggg~~~~ggggg##grrrggrrgggrgggggg##gggggggggggggg",
+   "ggggg~grgggg##gg###grgrggg###grrrggggggggggg###grrrrrr##rrgg##ggrrggggggg~~~~ggggg#gggrrggrrggrrgggggg##gggggggggggggg",
+   "rgggggrrggg###gg###ggggrrg###ggrrggg####ggggggggrrrrrg##rrrgggggrrggggggg~~~~ggggggggrgrggrrrrgggggggg##gggggggggggggg",
+   "grgrgrgrggr###gggggggggggrgggggrrgg######ggggggrrrrrrrrrrrrgggggrrgg##ggg~~~~gggg##gggrgggrgrggrgggggg##gggggggggggggg",
+   "grrggrgrggg###ggggggggggggrrgggrrrg######ggg~ggrrrrrr#rrrrrgggggrrgg##gggg~~~gggg##gggrrgggrrrrrgggggg##gggggggggggggg",
+   "ggrrgggrggg###gggggggggggggrrgggrrg######ggggggrrrrr##rrrrrrggggrrrggggggg~~~~ggggggggrrgggggrgggrgggg##gggggggggggggg",
+   "ggrrgrrrgrg###gggggg###gggggrrrgrrr######ggggggrrrrg##rrrrrrggggrrgggggggr~~~~gggg##ggrrggggggrgrrrggg##gggggggggggggg",
+   "gg~rrrggrgg###ggggg#####gggggrrrrrrg####gggggggrr#rggrrrrrrg##grrrggggggrr~~~~gggg##ggrrgggggrgrrrrggg##gggggggggggggg",
+   "gggrrggrrrg###gggg#######ggggggrrrrrggggggggggggrrrrrrr##rrgg#grrrgggggrrr~~~~gggg#gggrrgg#gggrrgrrrrg##gggggggggggggg",
+   "ggggrrrgggg###gggg#######ggggggggrrrggggggggggggrrrrrrrr#rgggggrrrggggrrrrr~~~rgggrgggrrg###grgrggrrrr##gggggggggggggg",
+   "gggggrrrgrg##ggggg#######gggggggggrrrgggrrrrrggggrrrrrrrrrggggrrrrgggrrrrrrrrrrrggggggrrg##gggrrgggrr#####gggggggggggg",
+   "ggggggggrrr##ggggg######gggggg###ggrrrrrrrrrrrgggggrrrrrggggggrrrrggrrrrrrrrrrrrrgggggrrgggggggrgrrg######gggggggggggg",
+   "gggggrgrgrr#####ggg#####ggggg#####gggrrrrrrrrrrggggggggggggggrrrrrgrrrrrrrrrrrrrrrggggrrggggggrrggrg######gggggggggggg",
+   "ggggggrrggg######ggggggggggg#######ggrrrrrrrrggrggg###ggggggrrrrrrrrrrrrrrrrrrrrrrrrrrrrggggggggggggg#####gggggggggggg",
+   "gggggrgrrg#######ggggggggggg#######grgrrrrrrrrrrggg###gggggrrrrrrrrrrrrrrr~~rrrrrrrrrggrggggggrgggrgg#####gggggggggggg",
+   "ggggggrrgg#######ggggggggggg#######gggrrgrrrrrrrrggg#gggggrrrrrggggggrrrrr~~~~rrrrggggggggggggggggrggg##gggggggggggggg",
+   "gggggrgrrg######ggg###gggggg#######ggrrrrrrrrrrrrggggggrrrrrrrgggg###grrrr~~~~rrrgggg##gggggggrggggggg##gggggggggggggg",
+   "ggggggrrgg###gggggg###ggggggg#####gggrrgrrrrrrrrrrrrrrrrrrrrrgggg#####grrr~~~~rrggg######gggggggrggggg##gggggggggggggg",
+   "gggggrgrgg###gggrgg###gggggggggggggggrrrgrrrrrrrrrrrrrrrrrrrgggg#######grr~#~~rgggg######ggggggggggggg##gggggggggggggg",
+   "ggggggrrgg###ggggrrrgggrgggggggggggggrrrrrrrrrrrrrrrrrrrrggggggg#######ggr~~#~gggg########ggggrggggggg##gggggggggggggg",
+   "gggggggrgg##ggggggrrrggggggggggggggggrrrrrrrrrrrgrrrggggggggrggg#######gg~~~~gggggg#######gggggrgggggg##gggggggggggggg",
+   "gggggrrrgg##ggggggggrrrggggg###gggggrrrrgrrrrrrggggrrrgggggggggg#######gr~~~~~ggggg######ggggrrggggggg##gggggggggggggg",
+   "ggggggrrgg##gggggggggrrrgggg###ggggrgrrgggggggggggggrrrgggg##gggg#####grr~~~~ggggggg####gggggrgrgggggg##gggggggggggggg",
+   "gggggrgrg###gggggggggggrrrgg###g#ggrrrggggggggg####gggrrrgg##gggggggggrrr~~~~ggggggggggggggrrgrrgggggg##gggggggggggggg",
+   "gggggggrg###ggggggggggggrrrrgggg#grrrrgggggggg######gggrrrrggggggggggrrrrr~~~rggggggggggggrrgrrggggggg##gggggggggggggg",
    "gggggrgrg###ggggggg#####ggrrrgggggrrrggggggggg#######ggggrrrggggggggrrrrrrrrrrrggggg~ggggrrgrrggrggggg##gggggggggggggg",
    "ggggggrrg###gggggg######ggggrrrggrrrgggggggggg#######ggggrrrrggggggrrrrrrrrrrrrrggggggggrrgrrggrrggggg##gggggggggggggg",
    "gggggrgrg###gggggg#######ggggrrrrrrrgggggggggg#######ggggrrrrrrgggrrrrrrrrrrrrrrrggggggrrgrrggrrgrrggg##gggggggggggggg",
-   "ggggggrrg###gggggg#######ggggggrrrrgggggggggggg#####gggggrrrgrrrrrrrrrrrrrrrrrrrrrrrrrrrgr~ggrrgrgrggg##gggggggggrgggg",
-   "gggggggrg###gggggg#######ggggggrrrrggggggggggggg###ggggggrrrggrrgrrrrrrrr~~rrrrrgrrrrrrgr~gggrrrggrrg####ggggggggggggg",
-   "gggggrgrg###ggggggg#####ggggggrrrrrrgggggggggggggggggrrggrrggggrg~ggrrrrr~~~rrrggrggrggrrggrgrgrgggg#####ggggggggggggg",
-   "gggggggrg###gggggggg##gggrgggrrrggrrggggggggggggggggggggrrrggggggggggrrrr~~~rrrrggggggrrrgrrggrrrgg#####gggggggggggggg",
+   "ggggggrrg###gggggg#######ggggggrrrrgggggggg#ggg#####gggggrrrgrrrrrrrrrrrrrrrrrrrrrrrrrrrgr~ggrrgrgrggg##gggggggggrgggg",
+   "gggggggrg###gggggg#######ggggggrrrrggggggg###ggg###ggggggrrrggrrgrrrrrrrr~~rrrrrgrrrrrrgr~gggrrrggrrg####ggggggggggggg",
+   "gggggrgrg###ggggggg#####ggggggrrrrrrgggggg###ggggggggrrggrrggggrg~ggrrrrr~~~rrrggrggrggrrggrgrgrgggg#####ggggggggggggg",
+   "gggggggrg###gggggggg##gggrgggrrrggrrggggggg#ggggggggggggrrrggggggggggrrrr~~~rrrrggggggrrrgrrggrrrgg#####gggggggggggggg",
    "gggggrgrr##ggggggggggggggggggrrrgggrrgggggggggggggggggggrrrgggggggggggrrr~~~~ggggrrgggrgggrgrrrgrg#####ggggggggggggggg",
-   "gggggggrr##gggggggggggggggggrrrrggggrrggggggggggggggggggrrrggggggggggggr~~~~~grrgrggrggggrgrgrgrr#####gggggggggggggggg",
-   "rggggrggg##ggggggggggggggggggrrggggggrrgggggggggggggggggrrggggggggggggggr~~~~ggggrgrrgggrgrgrggg#####ggggggggggggggggg",
-   "rrgggggr###grggggggggggggggrrrggggggggrrggggggggggggggggrrgggggggggggggg~~~~grrgrrrrrgggggggggg#####gggggggggggggggggg",
-   "grrggggr###grrgrgggggggggggrrggggrrggggrrgggggggggrggggrrrgggggggggrgggg~~~~grrgrrgrggrrgggggg#####ggggggggggggggggggg",
-   "grrrggrg###gggrggrggggggggrrrggggrrrrgggrrgggggggggrgggrrrgggggggggrrgggg~~ggrgrggrgrrggggggg#####gggggggggggggggggggg",
-   "grrrggrg###ggggrrgggggggggrrggggggrgrrgggrrggggggggrrgggrrggggggggggrrgrg~~~ggrggrrrrrrrgggg#####ggggggggggggggggggggg",
-   "gggrggrg###rggggrggggggggrrrgggggggggrgggrrrggggggggrgggrggggggggggrrrgrgggggrgggrgrrrrg########gggggggggggggggggggggg",
-   "ggggrrrg###ggrgrrgrggrggrrrrggggggggggrgggrrgggggggggrgrrggggggggggggrrgrgggrggrrrggrrg########ggggggggggggggggggggggg",
+   "gggggggrr##ggggggggggg##ggggrrrrggggrrggggggggggggggggggrrrggggggggggggr~~~~~grrgrggrggggrgrgrgrr#####gggggggggggggggg",
+   "rggggrggg##gggggggggg####ggggrrggggggrrggggg##ggggggggggrrggggggggggggggr~~~~ggggrgrrgggrgrgrggg#####ggggggggggggggggg",
+   "rrgggggr###grgggggggg####ggrrrggggggggrrggg####gggggggggrrgggggggggggggg~~~~grrgrrrrrgggggggggg#####gggggggggggggggggg",
+   "grrggggr###grrgrgggggg##gggrrggggrrggggrrgg####gggrggggrrrgggg##gggrgggg~~~~grrgrrgrggrrgggggg#####ggggggggggggggggggg",
+   "grrrggrg###gggrggrggggggggrrrgg#grrrrgggrrg#####gggrgggrrrg##g###ggrrgggg~~ggrgrggrgrrggggggg#####gggggggggggggggggggg",
+   "grrrggrg###ggggrrgggggggggrrgg###grgrrgggrrggg###ggrrgggrrgg#g###gggrrgrg~~~ggrggrrrrrrrgggg#####ggggggggggggggggggggg",
+   "gggrggrg###rggggrggggggggrrrgg###ggggrgggrrrgg###gggrgggrgggggg#gggrrrgrgggggrgggrgrrrrg########gggggggggggggggggggggg",
+   "ggggrrrg###ggrgrrgrggrggrrrrgg###gggggrgggrrggg##ggggrgrrggggggggggggrrgrgggrggrrrggrrg########ggggggggggggggggggggggg",
    "gggggggr###rrrrrrrrrgrggrgrgrgggggggggggrgrrgrgggggg~rrgrgggrggrgrgrrrggrrggggrgrrrrrgr#######gggggggggggggggggggggggg",
    "gggggrrg####rrggrgrrrggrggrgrggggrrgrgrggrgrggrggrgrgrgrrggggggrrrrggrrrrgrrggrggrrrrrg######ggggggggggggggggggggggggg",
    "gggggggr#####rrrrrrrrggrgrrrrrrrrrgrrgrrrrrrrrrrrrggrggrgrrgrrgrrrrrrrrggrgrgggrgrrrrrr######ggggggggggggggggggggggggg",
@@ -368,25 +368,9 @@
  ],
  "trees_keep": {},
  "map_base_only": {
-  "hide_tags": [
-   "house",
-   "stall",
-   "castle",
-   "cathedral",
-   "townhall",
-   "bank",
-   "forge",
-   "potter",
-   "weaver",
-   "smithy2",
-   "carpenter",
-   "tailor",
-   "mill",
-   "fountain",
-   "well"
-  ],
-  "hide_plot_houses": true,
-  "note": "Mauro item 17: the map base first. These layers stay in layers.json with hidden=true and keep their walk footprints reserved; set map_base_only to {} to show them again."
+  "hide_tags": [],
+  "hide_plot_houses": false,
+  "note": "Round 23: map_base_only off; buildings, workshops, props and the player plot houses are drawn."
  },
  "wall_ring": {
   "source": "image",
@@ -401,7 +385,658 @@
   ],
   "note": "Round 18: Mauro's ring v4 image is the plate; walls and kept towers are cut from it as y-sorted layers."
  },
- "building_footprints": [],
+ "building_footprints": [
+  {
+   "id": 9308,
+   "tag": "castle",
+   "building": "castle",
+   "c": [
+    2000.0,
+    775.3
+   ],
+   "r": [
+    201.2,
+    72.7
+   ]
+  },
+  {
+   "id": 9309,
+   "tag": "cathedral",
+   "building": "cathedral",
+   "c": [
+    2580.0,
+    1165.6
+   ],
+   "r": [
+    152.9,
+    72.8
+   ]
+  },
+  {
+   "id": 9310,
+   "tag": "townhall",
+   "building": "townhall",
+   "c": [
+    2173.8,
+    1160.2
+   ],
+   "r": [
+    124.3,
+    59.2
+   ]
+  },
+  {
+   "id": 9311,
+   "tag": "bank",
+   "building": "bank",
+   "c": [
+    2877.4,
+    1159.0
+   ],
+   "r": [
+    99.5,
+    47.4
+   ]
+  },
+  {
+   "id": 9312,
+   "tag": "fountain",
+   "building": "fountain",
+   "c": [
+    2580.0,
+    1375.6
+   ],
+   "r": [
+    47.7,
+    24.4
+   ]
+  },
+  {
+   "id": 9313,
+   "tag": "stall",
+   "building": "stall",
+   "c": [
+    2428.0,
+    1354.1
+   ],
+   "r": [
+    35.1,
+    17.9
+   ]
+  },
+  {
+   "id": 9314,
+   "tag": "stall",
+   "building": "stall_spice",
+   "c": [
+    2736.0,
+    1354.3
+   ],
+   "r": [
+    34.6,
+    17.7
+   ]
+  },
+  {
+   "id": 9315,
+   "tag": "stall",
+   "building": "stall_cloth",
+   "c": [
+    2580.0,
+    1462.3
+   ],
+   "r": [
+    34.6,
+    17.7
+   ]
+  },
+  {
+   "id": 9316,
+   "tag": "well",
+   "building": "well",
+   "c": [
+    4420.0,
+    1266.0
+   ],
+   "r": [
+    27.4,
+    14.0
+   ]
+  },
+  {
+   "id": 9317,
+   "tag": "well",
+   "building": "well_1",
+   "c": [
+    4221.9,
+    1124.5
+   ],
+   "r": [
+    27.4,
+    14.0
+   ]
+  },
+  {
+   "id": 9318,
+   "tag": "smithy2",
+   "building": "smithy",
+   "c": [
+    920.7,
+    1366.9
+   ],
+   "r": [
+    65.2,
+    33.4
+   ]
+  },
+  {
+   "id": 9319,
+   "tag": "forge",
+   "building": "forge",
+   "c": [
+    1346.7,
+    1089.2
+   ],
+   "r": [
+    67.0,
+    34.3
+   ]
+  },
+  {
+   "id": 9320,
+   "tag": "potter",
+   "building": "potter",
+   "c": [
+    1440.0,
+    1284.8
+   ],
+   "r": [
+    68.9,
+    35.2
+   ]
+  },
+  {
+   "id": 9321,
+   "tag": "weaver",
+   "building": "weaver",
+   "c": [
+    1041.2,
+    1540.4
+   ],
+   "r": [
+    71.5,
+    36.6
+   ]
+  },
+  {
+   "id": 9322,
+   "tag": "carpenter",
+   "building": "carpenter",
+   "c": [
+    1495.0,
+    1684.8
+   ],
+   "r": [
+    75.2,
+    38.4
+   ]
+  },
+  {
+   "id": 9323,
+   "tag": "tailor",
+   "building": "tailor",
+   "c": [
+    1633.5,
+    1583.4
+   ],
+   "r": [
+    65.7,
+    33.6
+   ]
+  },
+  {
+   "id": 9324,
+   "tag": "mill",
+   "building": "mill",
+   "c": [
+    3395.4,
+    1149.4
+   ],
+   "r": [
+    119.7,
+    61.2
+   ]
+  },
+  {
+   "id": 9325,
+   "tag": "house",
+   "building": "npc_house_0",
+   "c": [
+    1880,
+    1920.7
+   ],
+   "r": [
+    37.8,
+    19.3
+   ]
+  },
+  {
+   "id": 9326,
+   "tag": "house",
+   "building": "npc_house_1",
+   "c": [
+    2960,
+    1334.2
+   ],
+   "r": [
+    50.4,
+    25.8
+   ]
+  },
+  {
+   "id": 9327,
+   "tag": "house",
+   "building": "npc_house_2",
+   "c": [
+    3420,
+    1754.0
+   ],
+   "r": [
+    50.9,
+    26.0
+   ]
+  },
+  {
+   "id": 9328,
+   "tag": "house",
+   "building": "npc_house_3",
+   "c": [
+    4420,
+    1426.0
+   ],
+   "r": [
+    66.6,
+    34.0
+   ]
+  },
+  {
+   "id": 9329,
+   "tag": "house",
+   "building": "npc_house_4",
+   "c": [
+    3180,
+    993.3
+   ],
+   "r": [
+    52.2,
+    26.7
+   ]
+  },
+  {
+   "id": 9330,
+   "tag": "house",
+   "building": "npc_house_5",
+   "c": [
+    1500,
+    1341.6
+   ],
+   "r": [
+    36.0,
+    18.4
+   ]
+  },
+  {
+   "id": 9331,
+   "tag": "house",
+   "building": "npc_house_6",
+   "c": [
+    3400,
+    725.0
+   ],
+   "r": [
+    68.4,
+    35.0
+   ]
+  },
+  {
+   "id": 9332,
+   "tag": "house",
+   "building": "npc_house_7",
+   "c": [
+    1700,
+    827.6
+   ],
+   "r": [
+    63.5,
+    32.4
+   ]
+  },
+  {
+   "id": 9333,
+   "tag": "house",
+   "building": "npc_house_8",
+   "c": [
+    4040,
+    1689.2
+   ],
+   "r": [
+    60.3,
+    30.8
+   ]
+  },
+  {
+   "id": 9334,
+   "tag": "house",
+   "building": "npc_house_9",
+   "c": [
+    3540,
+    1720.7
+   ],
+   "r": [
+    37.8,
+    19.3
+   ]
+  },
+  {
+   "id": 9335,
+   "tag": "house",
+   "building": "npc_house_10",
+   "c": [
+    3500,
+    1954.0
+   ],
+   "r": [
+    50.9,
+    26.0
+   ]
+  },
+  {
+   "id": 9336,
+   "tag": "house",
+   "building": "npc_house_11",
+   "c": [
+    3420,
+    1271.9
+   ],
+   "r": [
+    54.9,
+    28.1
+   ]
+  },
+  {
+   "id": 9337,
+   "tag": "house",
+   "building": "npc_house_12",
+   "c": [
+    1960,
+    1966.9
+   ],
+   "r": [
+    64.8,
+    33.1
+   ]
+  },
+  {
+   "id": 9338,
+   "tag": "house",
+   "building": "npc_house_13",
+   "c": [
+    3840,
+    1353.5
+   ],
+   "r": [
+    51.8,
+    26.5
+   ]
+  },
+  {
+   "id": 9339,
+   "tag": "house",
+   "building": "npc_house_14",
+   "c": [
+    3300,
+    780.0
+   ],
+   "r": [
+    39.1,
+    20.0
+   ]
+  },
+  {
+   "id": 9340,
+   "tag": "house",
+   "building": "npc_house_15",
+   "c": [
+    1980,
+    967.1
+   ],
+   "r": [
+    64.4,
+    32.9
+   ]
+  },
+  {
+   "id": 9341,
+   "tag": "house",
+   "building": "npc_house_16",
+   "c": [
+    3720,
+    1305.7
+   ],
+   "r": [
+    67.0,
+    34.3
+   ]
+  },
+  {
+   "id": 9342,
+   "tag": "house",
+   "building": "npc_house_17",
+   "c": [
+    1500,
+    1768.0
+   ],
+   "r": [
+    62.6,
+    32.0
+   ]
+  },
+  {
+   "id": 9343,
+   "tag": "house",
+   "building": "npc_house_18",
+   "c": [
+    4400,
+    1500.9
+   ],
+   "r": [
+    37.4,
+    19.1
+   ]
+  },
+  {
+   "id": 9344,
+   "tag": "house",
+   "building": "npc_house_19",
+   "c": [
+    3060,
+    1574.9
+   ],
+   "r": [
+    49.1,
+    25.1
+   ]
+  },
+  {
+   "id": 9345,
+   "tag": "house",
+   "building": "npc_house_20",
+   "c": [
+    2060,
+    891.7
+   ],
+   "r": [
+    55.4,
+    28.3
+   ]
+  },
+  {
+   "id": 9346,
+   "tag": "house",
+   "building": "npc_house_21",
+   "c": [
+    4320,
+    1346.4
+   ],
+   "r": [
+    65.7,
+    33.6
+   ]
+  },
+  {
+   "id": 9347,
+   "tag": "house",
+   "building": "npc_house_22",
+   "c": [
+    2280,
+    1715.6
+   ],
+   "r": [
+    47.7,
+    24.4
+   ]
+  },
+  {
+   "id": 9348,
+   "tag": "house",
+   "building": "npc_house_23",
+   "c": [
+    3280,
+    1420.2
+   ],
+   "r": [
+    38.7,
+    19.8
+   ]
+  },
+  {
+   "id": 9349,
+   "tag": "house",
+   "building": "npc_house_24",
+   "c": [
+    2320,
+    1487.3
+   ],
+   "r": [
+    63.9,
+    32.7
+   ]
+  },
+  {
+   "id": 9350,
+   "tag": "house",
+   "building": "npc_house_25",
+   "c": [
+    2940,
+    1408.5
+   ],
+   "r": [
+    61.6,
+    31.5
+   ]
+  },
+  {
+   "id": 9351,
+   "tag": "house",
+   "building": "npc_house_26",
+   "c": [
+    3480,
+    829.6
+   ],
+   "r": [
+    59.4,
+    30.4
+   ]
+  },
+  {
+   "id": 9352,
+   "tag": "house",
+   "building": "npc_house_27",
+   "c": [
+    3920,
+    1720.7
+   ],
+   "r": [
+    37.8,
+    19.3
+   ]
+  },
+  {
+   "id": 9353,
+   "tag": "house",
+   "building": "npc_house_28",
+   "c": [
+    2700,
+    773.5
+   ],
+   "r": [
+    51.8,
+    26.5
+   ]
+  },
+  {
+   "id": 9354,
+   "tag": "house",
+   "building": "npc_house_29",
+   "c": [
+    3360,
+    1812.4
+   ],
+   "r": [
+    54.0,
+    27.6
+   ]
+  },
+  {
+   "id": 9355,
+   "tag": "house",
+   "building": "npc_house_30",
+   "c": [
+    2820,
+    1027.8
+   ],
+   "r": [
+    63.0,
+    32.2
+   ]
+  },
+  {
+   "id": 9356,
+   "tag": "house",
+   "building": "npc_house_31",
+   "c": [
+    4160,
+    1633.1
+   ],
+   "r": [
+    52.6,
+    26.9
+   ]
+  },
+  {
+   "id": 9357,
+   "tag": "house",
+   "building": "npc_house_32",
+   "c": [
+    2740,
+    1521.6
+   ],
+   "r": [
+    36.0,
+    18.4
+   ]
+  }
+ ],
  "wall_contacts": {
   "before": [],
   "after": []
@@ -1876,8 +2511,8 @@
    "tier": "rare",
    "label_tier": "rare",
    "anchor_px": [
-    1672,
-    1192
+    3096,
+    2120
    ],
    "old_anchor_px": [
     3340.0,
@@ -1885,12 +2520,12 @@
    ],
    "front_cells": [
     [
-     31,
-     62
+     89,
+     69
     ],
     [
-     32,
-     62
+     90,
+     69
     ]
    ]
   },
@@ -1922,35 +2557,12 @@
    "tier": "rare",
    "label_tier": "normal",
    "anchor_px": [
-    3096,
-    2120
-   ],
-   "old_anchor_px": [
-    2650.0,
-    2526.4
-   ],
-   "front_cells": [
-    [
-     89,
-     69
-    ],
-    [
-     90,
-     69
-    ]
-   ]
-  },
-  {
-   "id": "P4",
-   "tier": "normal",
-   "label_tier": "rare",
-   "anchor_px": [
     4152,
     1320
    ],
    "old_anchor_px": [
-    3060.0,
-    2451.0
+    2650.0,
+    2526.4
    ],
    "front_cells": [
     [
@@ -1964,12 +2576,35 @@
    ]
   },
   {
+   "id": "P4",
+   "tier": "normal",
+   "label_tier": "rare",
+   "anchor_px": [
+    3832,
+    1176
+   ],
+   "old_anchor_px": [
+    3060.0,
+    2451.0
+   ],
+   "front_cells": [
+    [
+     69,
+     22
+    ],
+    [
+     70,
+     22
+    ]
+   ]
+  },
+  {
    "id": "P5",
    "tier": "normal",
    "label_tier": "normal",
    "anchor_px": [
-    3816,
-    1176
+    3688,
+    1656
    ],
    "old_anchor_px": [
     3500.0,
@@ -1977,12 +2612,12 @@
    ],
    "front_cells": [
     [
-     69,
-     23
+     83,
+     42
     ],
     [
-     70,
-     23
+     84,
+     42
     ]
    ]
   },
@@ -1991,18 +2626,18 @@
    "tier": "normal",
    "label_tier": "normal",
    "anchor_px": [
-    2792,
-    856
+    2584,
+    1864
    ],
    "old_anchor_px": null,
    "front_cells": [
     [
-     39,
-     30
+     71,
+     69
     ],
     [
-     40,
-     30
+     72,
+     69
     ]
    ]
   },
@@ -2010,6 +2645,66 @@
    "id": "P7",
    "tier": "rare",
    "label_tier": "rare",
+   "anchor_px": [
+    2952,
+    856
+   ],
+   "old_anchor_px": null,
+   "front_cells": [
+    [
+     42,
+     27
+    ],
+    [
+     43,
+     27
+    ]
+   ]
+  },
+  {
+   "id": "P8",
+   "tier": "normal",
+   "label_tier": "normal",
+   "anchor_px": [
+    1720,
+    1288
+   ],
+   "old_anchor_px": null,
+   "front_cells": [
+    [
+     35,
+     64
+    ],
+    [
+     36,
+     64
+    ]
+   ]
+  },
+  {
+   "id": "P9",
+   "tier": "rare",
+   "label_tier": "rare",
+   "anchor_px": [
+    1576,
+    1080
+   ],
+   "old_anchor_px": null,
+   "front_cells": [
+    [
+     25,
+     59
+    ],
+    [
+     26,
+     59
+    ]
+   ]
+  },
+  {
+   "id": "P10",
+   "tier": "legendary",
+   "label_tier": "legendary",
    "anchor_px": [
     1064,
     1336
@@ -2023,66 +2718,6 @@
     [
      26,
      78
-    ]
-   ]
-  },
-  {
-   "id": "P8",
-   "tier": "normal",
-   "label_tier": "normal",
-   "anchor_px": [
-    3672,
-    1640
-   ],
-   "old_anchor_px": null,
-   "front_cells": [
-    [
-     83,
-     42
-    ],
-    [
-     84,
-     42
-    ]
-   ]
-  },
-  {
-   "id": "P9",
-   "tier": "rare",
-   "label_tier": "rare",
-   "anchor_px": [
-    4568,
-    2024
-   ],
-   "old_anchor_px": null,
-   "front_cells": [
-    [
-     112,
-     39
-    ],
-    [
-     113,
-     39
-    ]
-   ]
-  },
-  {
-   "id": "P10",
-   "tier": "legendary",
-   "label_tier": "legendary",
-   "anchor_px": [
-    1976,
-    856
-   ],
-   "old_anchor_px": null,
-   "front_cells": [
-    [
-     24,
-     44
-    ],
-    [
-     25,
-     44
     ]
    ]
   }
@@ -2101,38 +2736,38 @@
   },
   "house_art": {
    "normal": {
-    "w": 170,
-    "h": 194,
+    "w": 175,
+    "h": 164,
     "mask": {
      "step": 8,
      "w": 22,
-     "h": 25,
-     "bits": "AAPAAP8AH/wD//AP/8B//4H//g///H//+///7///////f//5///n//+f//5///v//+///////3//+H//wH/4AH+AAHAA"
+     "h": 21,
+     "bits": "AAeAHB4A//gD//Af/8D//4P//x///v//////9///3//+f//5///v//////8///g//4B/8AA/gAA4AA=="
     }
    },
    "rare": {
-    "w": 238,
+    "w": 222,
     "h": 185,
     "mask": {
      "step": 8,
-     "w": 30,
+     "w": 28,
      "h": 24,
-     "bits": "AYPGAA//PAA//vAB//+AB//+AD///AH///AP///AP///wP///8H///+H////P////P///+P///+////+////+////+////+////4f/+PwP/4DAC+wAAAIAAA"
+     "bits": "AQDwABwfAAH/8AA//wAD//gAf//AB//8AP//+B///4H///w////3////////7////m///+f///5////n///8f///5////n///+f///gfw54AGAAA"
     }
    },
    "legendary": {
-    "w": 330,
-    "h": 233,
+    "w": 264,
+    "h": 229,
     "mask": {
      "step": 8,
-     "w": 42,
-     "h": 30,
-     "bits": "AAMAAAAAAMQAAAAAcQAAAAAfwAAAAM/+AAAAP//IAAAP//4AAAf//8AAA///+AAB////AAA////gAA////8AA////+AA/////AD/////g//////g//////+//////+//////+///////f//////H/////8B/////wAf////gAD///+AAA///8AAAP//wAAAD//gAAAA/+AAAAAMAAAA="
+     "w": 33,
+     "h": 29,
+     "bits": "AAEAAAAAgAAAAOAAADJ4gAAbfuAAzf9wAGf//RA3//6IH///7B////8P////x////+P////x////+P////h////8P////h////8f////j////+///////////f////x////8D///+AH//+AAP//gAAe/wAAAB4AA"
     }
    }
   },
   "footprint": "blocking ellipse 0.9w x 0.36h above the anchor (handoff place_plot)",
-  "note": "Tier is data: change plots[].tier to swap the exterior in place. No garden beds, fences or yards (Luca)."
+  "note": "Tier is data: change plots[].tier to swap the exterior in place. No garden beds, fences or yards (Luca). Round 23: approved tier art (houses/, scale/), colour-matched to the HD plate. Round 23: approved tier art (houses/, scale/), colour-matched to the HD plate. Round 23: approved tier art (houses/, scale/), colour-matched to the HD plate. Round 23: approved tier art (houses/, scale/), colour-matched to the HD plate. Round 23: approved tier art (houses/, scale/), colour-matched to the HD plate. Round 23: approved tier art (houses/, scale/), colour-matched to the HD plate. Round 23: approved tier art (houses/, scale/), colour-matched to the HD plate. Round 23: approved tier art (houses/, scale/), colour-matched to the HD plate. Round 23: approved tier art (houses/, scale/), colour-matched to the HD plate. Round 23: approved tier art (houses/, scale/), colour-matched to the HD plate."
  },
  "pets": [],
  "npcs": [
@@ -2141,8 +2776,8 @@
    "role": "smith",
    "name": "Smith",
    "cell": {
-    "x": 46,
-    "y": 45
+    "x": 47,
+    "y": 47
    },
    "facing": "W",
    "night": "indoors"
@@ -2219,7 +2854,7 @@
    "name": "Warden",
    "cell": {
     "x": 43,
-    "y": 34
+    "y": 33
    },
    "facing": "S",
    "night": "out"
@@ -2240,8 +2875,8 @@
    "role": "elder",
    "name": "Elder",
    "cell": {
-    "x": 82,
-    "y": 18
+    "x": 81,
+    "y": 17
    },
    "facing": "S",
    "night": "indoors"

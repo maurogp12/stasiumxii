@@ -5,54 +5,1092 @@
  "strip_px": 6,
  "block_depth": 14,
  "block_below": 3,
- "block_boxes": [[50, 320, 105, 372]],
+ "block_boxes": [
+  [
+   50,
+   320,
+   105,
+   372
+  ]
+ ],
  "towers": [
-  {"name": "W_outer", "keep": true, "kind": "gate", "box": [48, 236, 107, 383], "base": [77, 377]},
-  {"name": "W_inner", "keep": true, "kind": "gate", "box": [129, 298, 190, 433], "base": [160, 429]},
-  {"name": "NW_mid", "keep": true, "kind": "mid", "box": [283, 123, 337, 257], "base": [310, 252]},
-  {"name": "N_left", "keep": true, "kind": "gate", "box": [504, 18, 565, 151], "base": [535, 146]},
-  {"name": "N_right", "keep": true, "kind": "gate", "box": [636, 18, 698, 151], "base": [667, 146]},
-  {"name": "NE_tunnel", "keep": true, "kind": "water_gate", "box": [885, 66, 947, 199], "base": [916, 195]},
-  {"name": "E_tunnel", "keep": true, "kind": "water_gate", "box": [1079, 168, 1135, 286], "base": [1107, 281]},
-  {"name": "E_gate", "keep": true, "kind": "gate", "box": [1165, 210, 1223, 340], "base": [1194, 336]},
-  {"name": "SE_mid", "keep": true, "kind": "mid", "box": [917, 426, 978, 560], "base": [947, 556]},
-  {"name": "S_right", "keep": true, "kind": "gate", "box": [619, 474, 681, 616], "base": [650, 612]},
-  {"name": "S_left", "keep": true, "kind": "gate", "box": [499, 474, 561, 616], "base": [530, 612]},
-  {"name": "SW_tunnel", "keep": true, "kind": "water_gate", "box": [382, 423, 444, 556], "base": [413, 552]},
-  {"name": "NW_corner", "box": [140, 196, 211, 325], "base": [179, 320], "slope_left": -0.44, "slope_right": -0.5},
-  {"name": "NW_upper", "box": [387, 71, 447, 186], "base": [416, 181], "slope_left": -0.55, "slope_right": -0.47},
-  {"name": "N_corner", "box": [778, 18, 840, 153], "base": [809, 148], "slope_left": 0.0, "slope_right": 0.46, "margin_left": 26},
-  {"name": "SW_upper", "box": [262, 369, 325, 497], "base": [293, 493], "slope_left": 0.62, "slope_right": 0.55, "bands": [[360, 432, "left"]]},
-  {"name": "SE_corner", "box": [792, 485, 850, 607], "base": [821, 603], "slope_left": 0.0, "slope_right": -0.5},
-  {"name": "SE_upper", "box": [1028, 366, 1088, 496], "base": [1058, 492], "slope_left": -0.5, "slope_right": -0.5}
+  {
+   "name": "W_outer",
+   "keep": true,
+   "kind": "gate",
+   "box": [
+    48,
+    236,
+    107,
+    383
+   ],
+   "base": [
+    77,
+    377
+   ]
+  },
+  {
+   "name": "W_inner",
+   "keep": true,
+   "kind": "gate",
+   "box": [
+    129,
+    298,
+    190,
+    433
+   ],
+   "base": [
+    160,
+    429
+   ]
+  },
+  {
+   "name": "NW_mid",
+   "keep": true,
+   "kind": "mid",
+   "box": [
+    283,
+    123,
+    337,
+    257
+   ],
+   "base": [
+    310,
+    252
+   ]
+  },
+  {
+   "name": "N_left",
+   "keep": true,
+   "kind": "gate",
+   "box": [
+    504,
+    18,
+    565,
+    151
+   ],
+   "base": [
+    535,
+    146
+   ]
+  },
+  {
+   "name": "N_right",
+   "keep": true,
+   "kind": "gate",
+   "box": [
+    636,
+    18,
+    698,
+    151
+   ],
+   "base": [
+    667,
+    146
+   ]
+  },
+  {
+   "name": "NE_tunnel",
+   "keep": true,
+   "kind": "water_gate",
+   "box": [
+    885,
+    66,
+    947,
+    199
+   ],
+   "base": [
+    916,
+    195
+   ]
+  },
+  {
+   "name": "E_tunnel",
+   "keep": true,
+   "kind": "water_gate",
+   "box": [
+    1079,
+    168,
+    1135,
+    286
+   ],
+   "base": [
+    1107,
+    281
+   ]
+  },
+  {
+   "name": "E_gate",
+   "keep": true,
+   "kind": "gate",
+   "box": [
+    1165,
+    210,
+    1223,
+    340
+   ],
+   "base": [
+    1194,
+    336
+   ]
+  },
+  {
+   "name": "SE_mid",
+   "keep": true,
+   "kind": "mid",
+   "box": [
+    917,
+    426,
+    978,
+    560
+   ],
+   "base": [
+    947,
+    556
+   ]
+  },
+  {
+   "name": "S_right",
+   "keep": true,
+   "kind": "gate",
+   "box": [
+    619,
+    474,
+    681,
+    616
+   ],
+   "base": [
+    650,
+    612
+   ]
+  },
+  {
+   "name": "S_left",
+   "keep": true,
+   "kind": "gate",
+   "box": [
+    499,
+    474,
+    561,
+    616
+   ],
+   "base": [
+    530,
+    612
+   ]
+  },
+  {
+   "name": "SW_tunnel",
+   "keep": true,
+   "kind": "water_gate",
+   "box": [
+    382,
+    423,
+    444,
+    556
+   ],
+   "base": [
+    413,
+    552
+   ]
+  },
+  {
+   "name": "NW_corner",
+   "box": [
+    140,
+    196,
+    211,
+    325
+   ],
+   "base": [
+    179,
+    320
+   ],
+   "slope_left": -0.44,
+   "slope_right": -0.5
+  },
+  {
+   "name": "NW_upper",
+   "box": [
+    387,
+    71,
+    447,
+    186
+   ],
+   "base": [
+    416,
+    181
+   ],
+   "slope_left": -0.55,
+   "slope_right": -0.47
+  },
+  {
+   "name": "N_corner",
+   "box": [
+    778,
+    18,
+    840,
+    153
+   ],
+   "base": [
+    809,
+    148
+   ],
+   "slope_left": 0.0,
+   "slope_right": 0.46,
+   "margin_left": 26
+  },
+  {
+   "name": "SW_upper",
+   "box": [
+    262,
+    369,
+    325,
+    497
+   ],
+   "base": [
+    293,
+    493
+   ],
+   "slope_left": 0.62,
+   "slope_right": 0.55,
+   "bands": [
+    [
+     360,
+     432,
+     "left"
+    ]
+   ]
+  },
+  {
+   "name": "SE_corner",
+   "box": [
+    792,
+    485,
+    850,
+    607
+   ],
+   "base": [
+    821,
+    603
+   ],
+   "slope_left": 0.0,
+   "slope_right": -0.5
+  },
+  {
+   "name": "SE_upper",
+   "box": [
+    1028,
+    366,
+    1088,
+    496
+   ],
+   "base": [
+    1058,
+    492
+   ],
+   "slope_left": -0.5,
+   "slope_right": -0.5
+  }
  ],
  "walls": [
-  {"id": "N", "a": [520, 134], "b": [826, 134], "gate": true, "height": 72},
-  {"id": "NE", "a": [820, 136], "b": [1196, 326]},
-  {"id": "E", "a": [1190, 330], "b": [1280, 368], "height": 80},
-  {"id": "SE", "a": [835, 600], "b": [1272, 383], "gate": true, "height": 82},
-  {"id": "S", "a": [498, 607], "b": [836, 607], "gate": true, "height": 76},
-  {"id": "SW", "a": [158, 412], "b": [502, 598]},
-  {"id": "W", "a": [70, 375], "b": [162, 408], "gate": true, "height": 80},
-  {"id": "NW", "a": [70, 330], "b": [537, 136]}
+  {
+   "id": "N",
+   "a": [
+    520,
+    134
+   ],
+   "b": [
+    826,
+    134
+   ],
+   "gate": true,
+   "height": 72
+  },
+  {
+   "id": "NE",
+   "a": [
+    820,
+    136
+   ],
+   "b": [
+    1196,
+    326
+   ]
+  },
+  {
+   "id": "E",
+   "a": [
+    1190,
+    330
+   ],
+   "b": [
+    1280,
+    368
+   ],
+   "height": 80
+  },
+  {
+   "id": "SE",
+   "a": [
+    835,
+    600
+   ],
+   "b": [
+    1272,
+    383
+   ],
+   "gate": true,
+   "height": 82
+  },
+  {
+   "id": "S",
+   "a": [
+    498,
+    607
+   ],
+   "b": [
+    836,
+    607
+   ],
+   "gate": true,
+   "height": 76
+  },
+  {
+   "id": "SW",
+   "a": [
+    158,
+    412
+   ],
+   "b": [
+    502,
+    598
+   ]
+  },
+  {
+   "id": "W",
+   "a": [
+    70,
+    375
+   ],
+   "b": [
+    162,
+    408
+   ],
+   "gate": true,
+   "height": 80
+  },
+  {
+   "id": "NW",
+   "a": [
+    70,
+    330
+   ],
+   "b": [
+    537,
+    136
+   ]
+  }
  ],
- "polygon": [[77, 372], [535, 140], [810, 134], [1194, 330], [1268, 388], [835, 602], [500, 608], [160, 425]],
+ "polygon": [
+  [
+   77,
+   372
+  ],
+  [
+   535,
+   140
+  ],
+  [
+   810,
+   134
+  ],
+  [
+   1194,
+   330
+  ],
+  [
+   1268,
+   388
+  ],
+  [
+   835,
+   602
+  ],
+  [
+   500,
+   608
+  ],
+  [
+   160,
+   425
+  ]
+ ],
  "gates": [
-  {"id": "N", "portcullis_box": [581, 95, 621, 142], "arch": [600, 128], "outside": [600, 96], "inside": [600, 168], "join_left": [565, 134], "join_right": [636, 134], "road_end": [600, 14], "half_width": 9},
-  {"id": "S", "portcullis_box": [570, 560, 614, 604], "arch": [590, 598], "outside": [590, 645], "inside": [590, 560], "join_left": [561, 607], "join_right": [619, 607], "road_end": [576, 712], "half_width": 9},
-  {"id": "W", "portcullis_box": [92, 343, 124, 390], "arch": [108, 378], "outside": [72, 404], "inside": [165, 352], "join_left": [77, 377], "join_right": [129, 400], "road_end": [6, 408], "half_width": 9},
-  {"id": "E", "portcullis_box": [1202, 358, 1236, 396], "arch": [1218, 382], "outside": [1258, 412], "inside": [1176, 358], "join_left": [1194, 336], "join_right": [1262, 388], "road_end": [1275, 428], "half_width": 9}
+  {
+   "id": "N",
+   "portcullis_box": [
+    581,
+    95,
+    621,
+    142
+   ],
+   "arch": [
+    600,
+    128
+   ],
+   "outside": [
+    600,
+    96
+   ],
+   "inside": [
+    600,
+    168
+   ],
+   "join_left": [
+    565,
+    134
+   ],
+   "join_right": [
+    636,
+    134
+   ],
+   "road_end": [
+    600,
+    14
+   ],
+   "half_width": 9
+  },
+  {
+   "id": "S",
+   "portcullis_box": [
+    570,
+    560,
+    614,
+    604
+   ],
+   "arch": [
+    590,
+    598
+   ],
+   "outside": [
+    590,
+    645
+   ],
+   "inside": [
+    590,
+    560
+   ],
+   "join_left": [
+    561,
+    607
+   ],
+   "join_right": [
+    619,
+    607
+   ],
+   "road_end": [
+    576,
+    712
+   ],
+   "half_width": 9
+  },
+  {
+   "id": "W",
+   "portcullis_box": [
+    92,
+    343,
+    124,
+    390
+   ],
+   "arch": [
+    108,
+    378
+   ],
+   "outside": [
+    72,
+    404
+   ],
+   "inside": [
+    165,
+    352
+   ],
+   "join_left": [
+    77,
+    377
+   ],
+   "join_right": [
+    129,
+    400
+   ],
+   "road_end": [
+    6,
+    408
+   ],
+   "half_width": 9
+  },
+  {
+   "id": "E",
+   "portcullis_box": [
+    1202,
+    358,
+    1236,
+    396
+   ],
+   "arch": [
+    1218,
+    382
+   ],
+   "outside": [
+    1258,
+    412
+   ],
+   "inside": [
+    1176,
+    358
+   ],
+   "join_left": [
+    1194,
+    336
+   ],
+   "join_right": [
+    1262,
+    388
+   ],
+   "road_end": [
+    1275,
+    428
+   ],
+   "half_width": 9
+  }
  ],
  "water_gates": [
-  {"id": "NE", "at": [966, 205], "flanks": ["NE_tunnel", "E_tunnel"]},
-  {"id": "SW", "at": [466, 565], "flanks": ["SW_tunnel", "S_left"]}
+  {
+   "id": "NE",
+   "at": [
+    966,
+    205
+   ],
+   "flanks": [
+    "NE_tunnel",
+    "E_tunnel"
+   ]
+  },
+  {
+   "id": "SW",
+   "at": [
+    466,
+    565
+   ],
+   "flanks": [
+    "SW_tunnel",
+    "S_left"
+   ]
+  }
  ],
  "bridges": [
-  {"id": "bridge_0", "deck": [690, 418, 796, 478], "ends": [[694, 432], [792, 470]]},
-  {"id": "bridge_2", "deck": [577, 464, 686, 520], "ends": [[582, 480], [682, 512]]}
+  {
+   "id": "bridge_0",
+   "deck": [
+    690,
+    418,
+    796,
+    478
+   ],
+   "ends": [
+    [
+     694,
+     432
+    ],
+    [
+     792,
+     470
+    ]
+   ]
+  },
+  {
+   "id": "bridge_2",
+   "deck": [
+    577,
+    464,
+    686,
+    520
+   ],
+   "ends": [
+    [
+     582,
+     480
+    ],
+    [
+     682,
+     512
+    ]
+   ]
+  }
  ],
- "spawn": [590, 652],
- "exit": [578, 700],
- "npc_spots": [[640, 300], [500, 330], [780, 330], [600, 200], [1000, 370], [400, 350], [300, 300], [700, 250], [860, 400], [1080, 330], [560, 420], [720, 420], [450, 250]],
- "plot_spots": [[420, 300], [520, 430], [760, 410], [1040, 330], [860, 240], [700, 220], [330, 380], [960, 300], [1100, 360], [480, 220]]
+ "spawn": [
+  590,
+  652
+ ],
+ "exit": [
+  578,
+  700
+ ],
+ "npc_spots": [
+  [
+   640,
+   300
+  ],
+  [
+   500,
+   330
+  ],
+  [
+   780,
+   330
+  ],
+  [
+   600,
+   200
+  ],
+  [
+   1000,
+   370
+  ],
+  [
+   400,
+   350
+  ],
+  [
+   300,
+   300
+  ],
+  [
+   700,
+   250
+  ],
+  [
+   860,
+   400
+  ],
+  [
+   1080,
+   330
+  ],
+  [
+   560,
+   420
+  ],
+  [
+   720,
+   420
+  ],
+  [
+   450,
+   250
+  ]
+ ],
+ "plot_spots": [
+  [
+   760,
+   410
+  ],
+  [
+   520,
+   440
+  ],
+  [
+   1040,
+   330
+  ],
+  [
+   960,
+   300
+  ],
+  [
+   1100,
+   360
+  ],
+  [
+   900,
+   440
+  ],
+  [
+   780,
+   470
+  ],
+  [
+   1150,
+   450
+  ],
+  [
+   640,
+   480
+  ],
+  [
+   470,
+   470
+  ]
+ ],
+ "buildings": {
+  "note": "Round 23: buildings inside the ring. Heights in hero heights (hero_plate_px plate px); anchors bottom-centre; 'near' spots in image px follow the GOAL; the placer nudges each to the nearest clear spot (grass, street at the door, clear of roads/river/walls/gates/bridges/plots).",
+  "hero_plate_px": 54.5,
+  "match_strength": 0.75,
+  "plazas": [
+   [
+    645,
+    345,
+    64,
+    31
+   ]
+  ],
+  "landmarks": [
+   {
+    "id": "castle",
+    "tag": "castle",
+    "file": "big2/castle_1200_CONCEPTO.png",
+    "h_hero": 7.4,
+    "near": [
+     [
+      500,
+      212
+     ],
+     [
+      485,
+      220
+     ],
+     [
+      515,
+      205
+     ]
+    ],
+    "radius": 30,
+    "door": false,
+    "fp": [
+     0.36,
+     0.13
+    ],
+    "allow_paths": [
+     400,
+     150,
+     575,
+     260
+    ]
+   },
+   {
+    "id": "cathedral",
+    "tag": "cathedral",
+    "file": "buildings/cathedral_native_CONCEPTO.png",
+    "h_hero": 6.4,
+    "near": [
+     [
+      645,
+      312
+     ]
+    ],
+    "radius": 60,
+    "door": true,
+    "fp": [
+     0.42,
+     0.2
+    ]
+   },
+   {
+    "id": "townhall",
+    "tag": "townhall",
+    "file": "buildings/townhall_native_CONCEPTO.png",
+    "h_hero": 4.6,
+    "near": [
+     [
+      500,
+      322
+     ],
+     [
+      560,
+      410
+     ]
+    ],
+    "radius": 70,
+    "door": true,
+    "fp": [
+     0.42,
+     0.2
+    ]
+   },
+   {
+    "id": "bank",
+    "tag": "bank",
+    "file": "buildings/bank_native_CONCEPTO.png",
+    "h_hero": 4.2,
+    "near": [
+     [
+      560,
+      330
+     ],
+     [
+      455,
+      330
+     ],
+     [
+      720,
+      410
+     ],
+     [
+      430,
+      260
+     ],
+     [
+      700,
+      260
+     ]
+    ],
+    "radius": 90,
+    "door": true,
+    "fp": [
+     0.42,
+     0.2
+    ]
+   }
+  ],
+  "props": [
+   {
+    "id": "fountain",
+    "tag": "fountain",
+    "file": "props/fountain_CONCEPTO.png",
+    "h_hero": 1.8,
+    "near": [
+     [
+      645,
+      350
+     ]
+    ],
+    "radius": 10,
+    "plaza": true
+   },
+   {
+    "id": "stall",
+    "tag": "stall",
+    "file": "props/stall_veg_CONCEPTO.png",
+    "h_hero": 1.7,
+    "near": [
+     [
+      607,
+      343
+     ]
+    ],
+    "radius": 14,
+    "plaza": true
+   },
+   {
+    "id": "stall_spice",
+    "tag": "stall",
+    "file": "props/stall_spice_CONCEPTO.png",
+    "h_hero": 1.7,
+    "near": [
+     [
+      684,
+      343
+     ]
+    ],
+    "radius": 14,
+    "plaza": true
+   },
+   {
+    "id": "stall_cloth",
+    "tag": "stall",
+    "file": "props/stall_cloth_CONCEPTO.png",
+    "h_hero": 1.7,
+    "near": [
+     [
+      645,
+      370
+     ]
+    ],
+    "radius": 14,
+    "plaza": true
+   },
+   {
+    "id": "well",
+    "tag": "well",
+    "file": "props/well_CONCEPTO.png",
+    "h_hero": 1.6,
+    "near": [
+     [
+      1105,
+      320
+     ],
+     [
+      1060,
+      300
+     ]
+    ],
+    "radius": 40
+   }
+  ],
+  "workshops": [
+   {
+    "id": "smithy",
+    "tag": "smithy2",
+    "file": "buildings/workshops/workshop_smithy_CONCEPTO.png",
+    "h_hero": 3.2,
+    "near": [
+     [
+      270,
+      330
+     ]
+    ],
+    "radius": 70
+   },
+   {
+    "id": "forge",
+    "tag": "forge",
+    "file": "buildings/workshops/workshop_forge_CONCEPTO.png",
+    "h_hero": 3.2,
+    "near": [
+     [
+      320,
+      300
+     ]
+    ],
+    "radius": 70
+   },
+   {
+    "id": "potter",
+    "tag": "potter",
+    "file": "buildings/workshops/workshop_potter_CONCEPTO.png",
+    "h_hero": 3.2,
+    "near": [
+     [
+      360,
+      330
+     ]
+    ],
+    "radius": 70
+   },
+   {
+    "id": "weaver",
+    "tag": "weaver",
+    "file": "buildings/workshops/workshop_weaver_CONCEPTO.png",
+    "h_hero": 3.2,
+    "near": [
+     [
+      270,
+      390
+     ]
+    ],
+    "radius": 70
+   },
+   {
+    "id": "carpenter",
+    "tag": "carpenter",
+    "file": "buildings/workshops/workshop_carpenter_CONCEPTO.png",
+    "h_hero": 3.2,
+    "near": [
+     [
+      330,
+      395
+     ],
+     [
+      220,
+      330
+     ],
+     [
+      200,
+      360
+     ],
+     [
+      300,
+      450
+     ],
+     [
+      400,
+      330
+     ],
+     [
+      250,
+      300
+     ]
+    ],
+    "radius": 90
+   },
+   {
+    "id": "tailor",
+    "tag": "tailor",
+    "file": "buildings/workshops/workshop_tailor_CONCEPTO.png",
+    "h_hero": 3.2,
+    "near": [
+     [
+      390,
+      390
+     ]
+    ],
+    "radius": 70
+   },
+   {
+    "id": "mill",
+    "tag": "mill",
+    "file": "buildings/workshops/workshop_mill_CONCEPTO.png",
+    "h_hero": 4.0,
+    "near": [
+     [
+      860,
+      300
+     ],
+     [
+      900,
+      255
+     ],
+     [
+      560,
+      450
+     ]
+    ],
+    "radius": 60,
+    "water": true
+   }
+  ],
+  "npc_houses": {
+   "count": 40,
+   "h_hero": 3.0,
+   "files": [
+    "buildings/npc/cottage_restyle_a_CONCEPTO.png",
+    "buildings/npc/cottage_restyle_b_CONCEPTO.png",
+    "buildings/npc/cottage_restyle_c_CONCEPTO.png",
+    "buildings/npc/cottage_restyle_d_CONCEPTO.png",
+    "buildings/npc/cottage_slate_a_CONCEPTO.png",
+    "buildings/npc/cx_house_a_CONCEPTO.png",
+    "buildings/npc/cx_house_b_CONCEPTO.png",
+    "buildings/npc/cx_house_c_CONCEPTO.png",
+    "buildings/npc/ex_cottage_c_CONCEPTO.png"
+   ]
+  },
+  "plot_houses": {
+   "normal": {
+    "file": "houses/house_normal_2_5x_CONCEPTO.png",
+    "h_hero": 3.0
+   },
+   "rare": {
+    "file": "houses/house_rare_2_5x_CONCEPTO.png",
+    "h_hero": 3.4
+   },
+   "legendary": {
+    "file": "houses/house_legendary_v2_CONCEPTO.png",
+    "h_hero": 4.2
+   }
+  }
+ },
+ "plot_avoid": [
+  [
+   645,
+   295,
+   150,
+   72
+  ],
+  [
+   500,
+   205,
+   90,
+   45
+  ]
+ ]
 }
