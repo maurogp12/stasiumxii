@@ -1,0 +1,33 @@
+{
+ "left_foot": [
+  0,
+  553
+ ],
+ "right_foot": [
+  1875,
+  553
+ ],
+ "slope": 0,
+ "raw_slope": -0.0607,
+ "scale": 1.486,
+ "arch_opening_x": [
+  785,
+  1100
+ ],
+ "arch_width_px": 315,
+ "note": "uniform scale; arch widened by inserting 64 raw px (4x16 px centre strip: crown voussoirs + portcullis cells) - no x-stretch; column-wise top-tilt correction for raw perspective",
+ "stone_lab_before": [
+  69.0,
+  4.400000095367432,
+  30.200000762939453
+ ],
+ "stone_lab_after": [
+  50.2,
+  3.5,
+  31.7
+ ],
+ "size": [
+  1876,
+  556
+ ]
+}
