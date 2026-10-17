@@ -16,7 +16,7 @@
   "LOD2": 2149
  },
  "collider": "bld_gatehouse_stone_a-col.glb (3 boxes: 2 pillars + lintel, passage open)",
- "textures": "embedded JPEG q82: LOD0 2048, LOD1 1024, LOD2 512 (albedo, metal/rough, normal)",
+ "textures": "embedded JPEG q82: LOD0 2048, LOD1 1024, LOD2 512",
  "source_glb": "../../../3d_slice/models/raw/bld_gate_arch_stone_HZ7gBY.glb",
  "uniform_scale": 8.0,
  "status": "preview mesh, not tested in game",
@@ -26,5 +26,5 @@
   "width": 2.82,
   "clear_height": 5.39
  },
- "facing_note": "Front of the concept faces +Z. Walls/gates/tunnel: +Z = outside of the city."
+ "facing_note": "Front (doors) faces +Z; for wall pieces +Z = outside. Build agent rotates on import."
 }

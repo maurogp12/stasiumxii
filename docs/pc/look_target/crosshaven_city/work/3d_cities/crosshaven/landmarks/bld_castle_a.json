@@ -1,0 +1,24 @@
+{
+ "label": "🖼️ IMAGEN / CONCEPTO, TODAVÍA HAY QUE CONSTRUIRLO",
+ "name": "bld_castle_a",
+ "concept": "bld_castle_CONCEPTO_.png",
+ "height_m": 13.0,
+ "footprint_m": [
+  15.273,
+  11.842
+ ],
+ "pivot": "footprint centre on ground (y=0)",
+ "front": "+Z",
+ "units": "metres, Y-up",
+ "tris": {
+  "LOD0": 26224,
+  "LOD1": 13112,
+  "LOD2": 5243
+ },
+ "collider": "bld_castle_a-col.glb (convex hull)",
+ "textures": "embedded JPEG q82: LOD0 2048, LOD1 1024, LOD2 512",
+ "source_glb": "../raw/bld_castle_rQnQxZ.glb",
+ "uniform_scale": 15.2732,
+ "status": "preview mesh, not tested in game",
+ "facing_note": "Front (doors) faces +Z; for wall pieces +Z = outside. Build agent rotates on import."
+}

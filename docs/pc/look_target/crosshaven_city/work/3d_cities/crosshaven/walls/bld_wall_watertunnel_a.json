@@ -11,18 +11,19 @@
  "front": "+Z",
  "units": "metres, Y-up",
  "tris": {
-  "LOD0": 5670,
-  "LOD1": 2834,
-  "LOD2": 1133
+  "LOD0": 6183,
+  "LOD1": 3342,
+  "LOD2": 1641
  },
  "collider": "bld_wall_watertunnel_a-col.glb (16 boxes ray grid 0.5 m, tunnel arch open)",
- "textures": "embedded JPEG q82: LOD0 2048, LOD1 1024, LOD2 512 (albedo, metal/rough, normal)",
+ "textures": "embedded JPEG q82: LOD0 2048, LOD1 1024, LOD2 512",
  "source_glb": "../raw/bld_water_tunnel_WF2zDM.glb",
  "uniform_scale": 15.3636,
  "status": "preview mesh, not tested in game",
- "note": "uniform scale to 6 m tall (no vertical stretch), cut to 8 m along X (ends open-cut, not capped), depth scaled to 2.5 m so wall and tunnel join flush",
+ "note": "uniform scale to 6 m tall (no vertical stretch), cut to 8 m along X (ends capped), depth scaled to 2.5 m so wall and tunnel join flush",
  "thickness_m": 2.5,
  "length_m": 8.0,
- "facing_note": "Front of the concept faces +Z. Walls/gates/tunnel: +Z = outside of the city.",
- "thickness_note": "2.5 m is the intended spec (brief). Claude's 2.24 m came from the old 2x-stretched slice wall; undistorted Tripo depth was 4.5 m, rescaled to 2.5 m."
+ "facing_note": "Front (doors) faces +Z; for wall pieces +Z = outside. Build agent rotates on import.",
+ "thickness_note": "2.5 m is the intended spec (brief). Claude's 2.24 m came from the old 2x-stretched slice wall; undistorted Tripo depth was 4.5 m, rescaled to 2.5 m.",
+ "ends": "capped with cross-section polygons (solid, 0 credits)"
 }

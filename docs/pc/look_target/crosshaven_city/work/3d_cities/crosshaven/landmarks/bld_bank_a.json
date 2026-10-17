@@ -1,0 +1,24 @@
+{
+ "label": "🖼️ IMAGEN / CONCEPTO, TODAVÍA HAY QUE CONSTRUIRLO",
+ "name": "bld_bank_a",
+ "concept": "bld_bank_CONCEPTO_.png",
+ "height_m": 8.5,
+ "footprint_m": [
+  10.739,
+  9.689
+ ],
+ "pivot": "footprint centre on ground (y=0)",
+ "front": "+Z",
+ "units": "metres, Y-up",
+ "tris": {
+  "LOD0": 26145,
+  "LOD1": 13072,
+  "LOD2": 5228
+ },
+ "collider": "bld_bank_a-col.glb (convex hull)",
+ "textures": "embedded JPEG q82: LOD0 2048, LOD1 1024, LOD2 512",
+ "source_glb": "../raw/bld_bank_9jQbDX.glb",
+ "uniform_scale": 10.7394,
+ "status": "preview mesh, not tested in game",
+ "facing_note": "Front (doors) faces +Z; for wall pieces +Z = outside. Build agent rotates on import."
+}

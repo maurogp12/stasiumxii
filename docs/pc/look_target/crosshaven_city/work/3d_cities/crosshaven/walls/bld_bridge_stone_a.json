@@ -15,11 +15,11 @@
   "LOD1": 5728,
   "LOD2": 2290
  },
- "collider": "bld_bridge_stone_a-col.glb (16 boxes from ray grid 0.5 m, passage open)",
- "textures": "embedded JPEG q82: LOD0 2048, LOD1 1024, LOD2 512 (albedo, metal/rough, normal)",
+ "collider": "bld_bridge_stone_a-col.glb (smooth ramp deck strip, 41 samples smoothed, + 2 parapet strips 0.9 m; arch open below)",
+ "textures": "embedded JPEG q82: LOD0 2048, LOD1 1024, LOD2 512",
  "source_glb": "../raw/bld_bridge_stone_NpvzHQ.glb",
  "uniform_scale": 8.0,
  "status": "preview mesh, not tested in game",
  "note": "collider ray-cast along Z keeps the arch open for the river",
- "facing_note": "Front of the concept faces +Z. Walls/gates/tunnel: +Z = outside of the city."
+ "facing_note": "Front (doors) faces +Z; for wall pieces +Z = outside. Build agent rotates on import."
 }
