@@ -23,3 +23,4 @@ Crosshaven civic buildings CONCEPTO (Scenario Art): cathedral 1198x1150 (gothic,
 Crosshaven NPC houses (b) concepts + horizontal gatehouse v5 (wider proud towers 433/430 px, 1752x1041, parapet 577 px) - 🖼️ CONCEPTO
 Crosshaven NPC houses v2 (4 slate/5 red, max 527 px) + workshops (c) + diagonal gatehouse v5 towers (1460x1146, slope -0.3642) - 🖼️ CONCEPTO
 Crosshaven diagonal gatehouse v5 fixes: v5 portcullis + arch surround, dark vaulted passage, old shaft strip covered - 🖼️ CONCEPTO
+Crosshaven tower v6 iso (607x990, plinth 605) + 3 gatehouses re-composited; alt short_v6b (792 tall) - 🖼️ CONCEPTO
