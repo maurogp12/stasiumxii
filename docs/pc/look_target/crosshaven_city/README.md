@@ -112,3 +112,7 @@ Reviewed on the base without buildings (`cxbase/base_walls.jpg`).
    - a street is about **3–4 hero-heights** wide.
 
    The city plate, sprites and buildings must be scaled so the game's hero (about 156 px at 1080p at the default zoom) keeps these ratios. This works together with item 7 (enlarge the city): the city is bigger in world space, so it takes longer to walk across.
+9. **Water motion approved as a target** (Mauro: "me gusta cómo se mueve el agua"). The reference is `mauro_water_reference.mp4` (🖼️ a Rosebud prototype). It shows the river flowing along its course, with soft moving ripples, and white foam churning where the river passes under the wall arch (the water gate). Rebuild it in Godot from the package's `rosebud/water/` (`water_base.png`, `water_ripple_tile.png`, `foam_zone.png`, `water.json`) as a canvas shader:
+   - the ripples scroll along the flow direction;
+   - the foam animates in the foam zones;
+   - Performance mode uses a slower or static fallback.
