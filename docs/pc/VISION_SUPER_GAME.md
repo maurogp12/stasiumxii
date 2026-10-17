@@ -131,3 +131,23 @@ The player controls **one character**, not a company of mercenaries; groups are 
 The slice shows 1 hero against bandits. The combat rules stay multi-unit, for groups and PvP.
 
 **Groups (Mauro, 17 Oct):** BG3 gives you 4 characters because it isn't online. Here, as in Wakfu and Dofus, **each player is one character, and other players join as a team**. Recommended group size: up to **6 players** (Wakfu-style) for dungeons and group fights. PvP arenas run 1v1 and 3v3.
+
+## 12. EVERYTHING FROM STASIUM CARRIES OVER (Mauro, 17 Oct): only the design changes
+
+"Todas las armaduras y poderes que teníamos, junto con las dungeons y todo lo del juego de Stasium, pásalo a este nuevo juego, junto con el Koliseo y las casas de los jugadores. Todo queda igual, solo cambiamos el diseño."
+
+**These stay exactly as they are** (the rules, data, numbers and names); they are just rendered in 3D:
+
+| Content | Source |
+|---|---|
+| **Classes and spells** (kestrel, ironjaw, mender, gloam, bastion: AP/MP, ranges, resources Pulse/Umbral/Aegis, elements, passives) | `data/select_class_lock_kits_v0.6.json` and `.md`, `data/kits.gd` |
+| **Combat engine** (AP/MP, tile grid, push, miss/crit, FLEX/LOCK) | existing backend and tests |
+| **Gear and armour** (visible gear, mobile gear) | `claude/pc-visible-gear`, `claude/pc-mobile-gear` |
+| **Dungeons** (Old Granary Cellar, Drowned Abbey, Frostspire Archive, Heart of the Blight, Saltmaw Grotto) with their monsters and 5-star variants | `art/pc/dungeons/*`, `docs/pc/look_target/dungeons/` |
+| **Koliseo PvP** and its maps (Brinewake, Crosshaven, Slagcrown, Stormspire, Windmere) | `art/maps/arena_colosseum_v2/` |
+| **Player housing** (Normal/Rare/Legendary, rooms, workshops, 10 plots) | `docs/pc/housing/` |
+| **World** (regions, zones, zone PvP with item loss and protections, Crosshaven's layout) | `data/world`, the docs above |
+
+**What changes:** the look (3D, BG3/Wartales style), the camera and the models.
+
+**Superseded:** the BG3/Wartales *system* ideas in sections 3, 6 and 7 (d20 dice, Action/Bonus action, high ground, shove, oil/fire surfaces, camp professions) are **not** adopted. They stay listed only as proposals for later, if Mauro wants them. For now we take only the *look* from BG3 and Wartales.
