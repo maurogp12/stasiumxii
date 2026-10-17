@@ -33,6 +33,10 @@ func _go() -> void:
 	match _set:
 		"quick":
 			await _quick()
+		"gate":
+			await _gatecheck()
+		"hero":
+			await _herocheck()
 		"clip":
 			await _clip()
 		_:
@@ -147,3 +151,35 @@ func _clip() -> void:
 		f += 1
 		await process_frame
 	print("frames ", f)
+
+
+func _gatecheck() -> void:
+	m.env.set_hour(10.5)
+	var sg: Vector3 = Vector3.ZERO
+	for g in m.builder.gate_doors:
+		if g["id"] == "S":
+			sg = g["center"]
+	_view(sg, 200, 35, 40)
+	await _grab("g_south_gate.png")
+	m.builder.update_gates(sg)
+	for i in 120:
+		await process_frame
+	_view(sg, 20, 35, 40)
+	await _grab("g_south_gate_open_inside.png")
+	var c: Vector2 = m.plan.size_m() * 0.5
+	_view(Vector3(c.x, 0, c.y), 45, 42, 300)
+	await _grab("g_wide.png")
+
+
+func _herocheck() -> void:
+	m.env.set_hour(10.5)
+	m.rig.distance = 9.0
+	m.rig.pitch = 30.0
+	m.rig.snap()
+	await _grab("h_idle.png")
+	var goal: Vector3 = _piece("fountain")
+	m.walk_to(Vector2(goal.x, goal.z))
+	for i in 40:
+		await process_frame
+	m.rig.snap()
+	await _grab("h_walk.png")

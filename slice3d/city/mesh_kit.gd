@@ -175,6 +175,43 @@ static func _xf(center: Vector3, size: Vector3, yaw: float) -> Transform3D:
 	return Transform3D(Basis(Vector3.UP, yaw) * Basis.from_scale(size), center)
 
 
+## Mesh parts of a .glb model: [{mesh, xf}] with each part's transform
+## relative to the model root (cached per file).
+var _parts := {}
+
+func model_parts(path: String) -> Array:
+	if _parts.has(path):
+		return _parts[path]
+	var out: Array = []
+	var ModelLoader = load("res://slice3d/city/model_loader.gd")
+	var root: Node3D = ModelLoader.instance(path) if ModelLoader.exists(path) else null
+	if root != null:
+		_collect(root, Transform3D.IDENTITY, out, true)
+		root.free()
+	_parts[path] = out
+	return out
+
+
+func _collect(n: Node, xf: Transform3D, out: Array, is_root := false) -> void:
+	var here := xf
+	if n is Node3D and not is_root:
+		here = xf * (n as Node3D).transform
+	if n is MeshInstance3D and (n as MeshInstance3D).mesh != null:
+		out.append({"mesh": (n as MeshInstance3D).mesh, "xf": here})
+	for c in n.get_children():
+		_collect(c, here, out)
+
+
+## Queue a whole model at `xf` (batched per part). False if the file is missing.
+func add_model(key: String, path: String, xf: Transform3D) -> bool:
+	var parts := model_parts(path)
+	if parts.is_empty():
+		return false
+	for i in parts.size():
+		add("%s_%d" % [key, i], parts[i]["mesh"], null, xf * (parts[i]["xf"] as Transform3D))
+	return true
+
+
 ## Turn every queued batch into MultiMeshInstance3D children of `parent`.
 func flush(parent: Node3D, shadows := true) -> int:
 	var n := 0
@@ -192,7 +229,8 @@ func flush(parent: Node3D, shadows := true) -> int:
 		var mi := MultiMeshInstance3D.new()
 		mi.name = "MM_%s" % str(key).validate_node_name()
 		mi.multimesh = mm
-		mi.material_override = b["mat"]
+		if b["mat"] != null:
+			mi.material_override = b["mat"]
 		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if shadows else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		parent.add_child(mi)
 		n += xs.size()

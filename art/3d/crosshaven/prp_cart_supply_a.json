@@ -1,0 +1,25 @@
+{
+ "label": "🖼️ IMAGEN / CONCEPTO, TODAVÍA HAY QUE CONSTRUIRLO",
+ "name": "prp_cart_supply_a",
+ "concept": "prp_cart_supply_CONCEPTO_.png",
+ "height_m": 2.399,
+ "footprint_m": [
+  2.091,
+  3.5
+ ],
+ "pivot": "foot centre on ground (y=0)",
+ "front": "+Z",
+ "units": "metres, Y-up",
+ "tris": {
+  "LOD0": 2752,
+  "LOD1": 1376,
+  "LOD2": 548
+ },
+ "budget": "0.5-3k",
+ "collider": "prp_cart_supply_a-col.glb (box)",
+ "textures": "embedded JPEG q82: LOD0 1024, LOD1 1024, LOD2 512 (albedo, metal/rough, normal)",
+ "source_glb": "raw/prp_cart_supply_vMR4R1.glb",
+ "uniform_scale": 3.5,
+ "model_built": "preview only, not tested in game",
+ "facing_note": "Front of the concept faces +Z."
+}

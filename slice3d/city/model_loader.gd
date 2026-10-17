@@ -25,6 +25,8 @@ static func instance(path: String) -> Node3D:
 		var err := doc.append_from_file(path, state)
 		if err == OK:
 			node = doc.generate_scene(state)
+			if not "/characters/" in path:
+				double_sided(node)
 	_cache[path] = node
 	return node.duplicate() if node != null else null
 
@@ -44,6 +46,21 @@ static func animations(path: String) -> Dictionary:
 				out[str(a)] = lib.get_animation(a)
 	n.free()
 	return out
+
+
+## Kit meshes from image-to-3D tools often have some faces wound the wrong
+## way; drawing both sides hides the holes until the art is cleaned.
+static func double_sided(n: Node) -> void:
+	if n is MeshInstance3D and (n as MeshInstance3D).mesh != null:
+		var mesh: Mesh = (n as MeshInstance3D).mesh
+		for i in mesh.get_surface_count():
+			var m := mesh.surface_get_material(i)
+			if m is BaseMaterial3D:
+				var d: BaseMaterial3D = m.duplicate()
+				d.cull_mode = BaseMaterial3D.CULL_DISABLED
+				mesh.surface_set_material(i, d)
+	for c in n.get_children():
+		double_sided(c)
 
 
 static func find_player(n: Node) -> AnimationPlayer:

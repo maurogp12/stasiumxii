@@ -6,10 +6,12 @@ extends Node3D
 ## simple procedural bob on the placeholder body until the model is there.
 
 const ModelLoader := preload("res://slice3d/city/model_loader.gd")
+const Retarget := preload("res://slice3d/city/humanoid_retarget.gd")
 const MODEL := "res://art/3d/characters/hero_male/hero_male_rigged.glb"
 const ANIMS := {
 	"walk": "res://art/3d/characters/hero_male/hero_male_walk.glb",
 	"run": "res://art/3d/characters/hero_male/hero_male_run.glb",
+	"idle": "res://art/3d/characters/hero_male/hero_male_idle.glb",
 }
 
 signal arrived
@@ -28,6 +30,7 @@ var _bob_t := 0.0
 var _body: Node3D
 var _anim_names := {}
 var class_id := "ironjaw"
+var _skel_path := ""
 
 
 func setup(p, n) -> void:
@@ -41,6 +44,11 @@ func _build_body() -> void:
 	if model != null:
 		add_child(model)
 		anim = ModelLoader.find_player(model)
+		var sk := Retarget.find_skeleton(model)
+		if sk != null:
+			Retarget.retarget_skeleton(sk)
+			if anim != null:
+				_skel_path = str(anim.get_node(anim.root_node).get_path_to(sk))
 		_attach_anims()
 		_play("idle")
 		return
@@ -111,7 +119,8 @@ func _attach_anims() -> void:
 	for key in ANIMS.keys():
 		var clips: Dictionary = ModelLoader.animations(ANIMS[key])
 		for clip_name in clips.keys():
-			var a: Animation = clips[clip_name]
+			var a: Animation = (clips[clip_name] as Animation).duplicate(true)
+			Retarget.retarget_animation(a, true, _skel_path)
 			a.loop_mode = Animation.LOOP_LINEAR
 			if not lib.has_animation(key):
 				lib.add_animation(key, a)

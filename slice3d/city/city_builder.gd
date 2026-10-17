@@ -13,12 +13,13 @@ extends Node3D
 ## model is placed instead of the placeholder (pivot at foot centre, +Z front).
 
 const MeshKit := preload("res://slice3d/city/mesh_kit.gd")
+const CityPlan := preload("res://slice3d/city/city_plan.gd")
 const ModelLoader := preload("res://slice3d/city/model_loader.gd")
 const TERRAIN_SHADER := preload("res://slice3d/city/terrain.gdshader")
 const WATER_SHADER := preload("res://slice3d/city/water.gdshader")
 const MODEL_DIR := "res://art/3d/"
 
-var plan
+var plan: CityPlan
 var kit: MeshKit
 var cm := 2.0
 var terrain_mat: ShaderMaterial
@@ -214,7 +215,23 @@ func _build_water() -> void:
 
 # ---------------------------------------------------------------- ring wall
 
+func _kitd(name: String) -> Dictionary:
+	var d: Dictionary = plan.city.get("kit", {}).get(name, {})
+	if d.is_empty() or not ModelLoader.exists(str(d.get("glb", ""))):
+		return {}
+	return d
+
+
+## Yaw that turns a model's +Z (its outside face) toward `out`.
+static func _yaw_to(out: Vector2) -> float:
+	return atan2(out.x, out.y)
+
+
 func _build_ring() -> void:
+	var wk := _kitd("wall")
+	if not wk.is_empty() and plan.ring.size() >= 3:
+		_build_ring_models(wk)
+		return
 	var spec: Dictionary = plan.scale_for("wall")
 	var h := float(spec.get("h", 8.0))
 	var stone := kit.mat("stone", 0.95)
@@ -239,7 +256,57 @@ func _build_ring() -> void:
 	stats["wall_cells"] = n
 
 
+func _build_ring_models(wk: Dictionary) -> void:
+	var L0 := float(wk.get("length", 8.0))
+	var keep_out: Array = []
+	var gk: Dictionary = plan.city.get("kit", {}).get("gatehouse", {})
+	var gw := float(gk.get("width", 7.75)) * float(gk.get("scale", 1.0))
+	for g in plan.gates:
+		keep_out.append([g["mid"], gw * 0.5 + 1.0])
+	for t in plan.tunnels:
+		keep_out.append([t["center"], float(_kitd("tunnel").get("length", 8.0)) * 0.5 + 0.5])
+	var ring: Array = plan.ring
+	var n := 0
+	for i in ring.size():
+		var a: Vector2 = ring[i]
+		var b: Vector2 = ring[(i + 1) % ring.size()]
+		var L := a.distance_to(b)
+		if L < 0.5:
+			continue
+		var nrm := (b - a).orthogonal().normalized()
+		if nrm.dot((a + b) * 0.5 - plan.ring_center) < 0.0:
+			nrm = -nrm
+		var k := maxi(1, roundi(L / L0))
+		var sx := L / (k * L0)
+		var basis := Basis(Vector3.UP, _yaw_to(nrm)) * Basis.from_scale(Vector3(sx, 1, 1))
+		for j in k:
+			var c := a.lerp(b, (j + 0.5) / k)
+			var blocked := false
+			for ko in keep_out:
+				if c.distance_to(ko[0]) < float(ko[1]) + L0 * sx * 0.5 - 0.5:
+					blocked = true
+			if blocked:
+				continue
+			kit.add_model("wall", str(wk["glb"]), Transform3D(basis, v3(c)))
+			n += 1
+		# Capped joint at each corner (until the kit has its own end caps).
+		var cap: Dictionary = wk.get("cap", {})
+		if not cap.is_empty():
+			var near_gate := false
+			for ko in keep_out:
+				if a.distance_to(ko[0]) < float(ko[1]):
+					near_gate = true
+			if not near_gate:
+				kit.add_cyl("wall_cap", kit.mat(str(cap.get("material", "stone")), 0.95), v3(a), float(cap.get("radius", 1.6)), float(cap.get("h", 6.6)), 10)
+	stats["wall_sections"] = n
+
+
 func _build_gates() -> void:
+	var gk := _kitd("gatehouse")
+	if not gk.is_empty():
+		_build_gate_models(gk)
+		return
+
 	var spec: Dictionary = plan.scale_for("gate")
 	var h := float(spec.get("h", 11.0))
 	var arch_h := float(spec.get("arch", 5.6))
@@ -323,6 +390,55 @@ func _build_gates() -> void:
 		labels.append(lab)
 
 
+func _build_gate_models(gk: Dictionary) -> void:
+	var s := float(gk.get("scale", 1.0))
+	var passage := float(gk.get("passage", 2.82)) * s
+	var clear := float(gk.get("clear", 5.39)) * s
+	var h := float(gk.get("height", 8.0)) * s
+	for g in plan.gates:
+		var mid: Vector2 = g["mid"]
+		var outward: Vector2 = -(g["dir"] as Vector2)
+		var root := Node3D.new()
+		root.name = "Gate_%s" % g["id"]
+		root.position = v3(mid)
+		root.rotation.y = _yaw_to(outward)
+		add_child(root)
+		var model: Node3D = ModelLoader.instance(str(gk["glb"]))
+		if model != null:
+			model.scale = Vector3.ONE * s
+			root.add_child(model)
+		# Our timber doors in the passage, hinged at its sides, swinging into
+		# town (local -Z is inside).
+		var wood := kit.mat("wood", 0.85)
+		var iron := kit.mat("iron", 0.6)
+		var hinges: Array = []
+		var leaf_w := passage * 0.5
+		var door_h := clear * 0.92
+		for side in [-1.0, 1.0]:
+			var hinge := Node3D.new()
+			hinge.position = Vector3(side * passage * 0.5, 0, -0.4)
+			root.add_child(hinge)
+			_part(hinge, kit.box(), wood, Vector3(-side * leaf_w * 0.5, door_h * 0.5, 0), Vector3(leaf_w - 0.04, door_h, 0.18))
+			for yb in [0.8, door_h * 0.5, door_h - 0.8]:
+				_part(hinge, kit.box(), iron, Vector3(-side * leaf_w * 0.5, yb, -0.11), Vector3(leaf_w - 0.15, 0.12, 0.05))
+			hinges.append(hinge)
+		gate_doors.append({"id": g["id"], "center": v3(mid), "hinges": hinges, "open": 0.0, "target": 0.0, "sign": -1.0})
+		for side in [-1.0, 1.0]:
+			_brazier(root.to_global(Vector3(side * float(gk.get("width", 7.75)) * s * 0.36, h + 0.2, 0)))
+		var lab := Label3D.new()
+		lab.text = "%s Gate" % {"N": "North", "S": "South", "E": "East", "W": "West"}.get(g["id"], g["id"])
+		lab.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+		lab.position = v3(mid, h + 4.0)
+		lab.font_size = 64
+		lab.pixel_size = 0.02
+		lab.outline_size = 14
+		lab.modulate = Color(1, 0.92, 0.75)
+		lab.visibility_range_begin = 45.0
+		lab.visibility_range_end = 160.0
+		add_child(lab)
+		labels.append(lab)
+
+
 func _part(parent: Node3D, mesh: Mesh, material: Material, pos: Vector3, size: Vector3) -> MeshInstance3D:
 	var mi := MeshInstance3D.new()
 	mi.mesh = mesh
@@ -347,6 +463,18 @@ func _brazier(at: Vector3) -> void:
 
 
 func _build_tunnels() -> void:
+	var tk := _kitd("tunnel")
+	if not tk.is_empty():
+		for t in plan.tunnels:
+			var size: Vector2 = t["size"]
+			var c: Vector2 = t["center"]
+			var along := Vector2(1, 0) if size.x >= size.y else Vector2(0, 1)
+			var nrm := along.orthogonal()
+			if nrm.dot(c - plan.ring_center) < 0.0:
+				nrm = -nrm
+			var sx := maxf(size.x, size.y) / float(tk.get("length", 8.0))
+			kit.add_model("tunnel", str(tk["glb"]), Transform3D(Basis(Vector3.UP, _yaw_to(nrm)) * Basis.from_scale(Vector3(sx, 1, 1)), v3(c, -0.6)))
+		return
 	var stone := kit.mat("stone", 0.95)
 	var iron := kit.mat("iron", 0.5)
 	for t in plan.tunnels:
@@ -367,6 +495,18 @@ func _build_tunnels() -> void:
 
 
 func _build_bridges() -> void:
+	var bk := _kitd("bridge")
+	if not bk.is_empty() and not plan.bridges.is_empty():
+		for b in plan.bridges:
+			var axis: Vector2 = b["axis"]
+			var sx := (float(b["length"]) + 2.0) / float(bk.get("length", 8.0))
+			var sz := clampf(float(b["width"]) / float(bk.get("width", 3.3)), 0.9, 1.6)
+			# model X runs along the span: yaw so +X maps onto the axis
+			var yaw := _yaw_to(axis.orthogonal())
+			if Basis(Vector3.UP, yaw).x.dot(Vector3(axis.x, 0, axis.y)) < 0.0:
+				yaw += PI
+			kit.add_model("bridge", str(bk["glb"]), Transform3D(Basis(Vector3.UP, yaw) * Basis.from_scale(Vector3(sx, 1, sz)), v3(b["center"], -0.15)))
+		return
 	var deck := kit.mat("stone_pale", 0.9)
 	var rail := kit.mat("stone", 0.95)
 	var y: float = plan.bridge_deck_y()
@@ -400,6 +540,19 @@ func _build_piece(pc: Dictionary) -> void:
 	if model != null:
 		model.position = v3(pc["center"])
 		add_child(model)
+		return
+	var lms: Dictionary = plan.city.get("kit", {}).get("landmarks", {})
+	var lk: Dictionary = lms.get(str(pc["kind"]), {})
+	if not lk.is_empty() and ModelLoader.exists(str(lk.get("glb", ""))):
+		_landmark_model(pc, lk)
+		return
+	var props: Dictionary = plan.city.get("kit", {}).get("props", {})
+	var pk: Dictionary = props.get(str(pc["group"]), {})
+	if not pk.is_empty() and ModelLoader.exists(str(pk.get("glb", ""))):
+		var size: Vector2 = pc["size"]
+		var yaw := 0.0 if size.x >= size.y else PI * 0.5
+		yaw += PI * float(_hash(pc["anchor"]) > 0.5)
+		kit.add_model(str(pc["group"]), str(pk["glb"]), Transform3D(Basis(Vector3.UP, yaw), v3(pc["center"])))
 		return
 	match shape:
 		"house":
@@ -460,6 +613,37 @@ func _build_piece(pc: Dictionary) -> void:
 			kit.add_box("quay", kit.mat("wood_dark", 0.9), v3(pc["center"], 0.1), Vector3(pc["size"].x, 0.3, pc["size"].y))
 		_:
 			pass
+
+
+## A landmark model: front (+Z) toward its door, else toward the plaza;
+## uniform scale to fill the layout footprint when fit = footprint.
+func _landmark_model(pc: Dictionary, lk: Dictionary) -> void:
+	var c: Vector2 = pc["center"]
+	var front := Vector2.ZERO
+	if pc.has("door"):
+		front = plan.cell_center(pc["door"]) - c
+	if front.length() < 0.1:
+		var plaza := plan.ring_center
+		for q in plan.pieces:
+			if str(q["kind"]) == "fountain":
+				plaza = q["center"]
+		front = plaza - c
+	# snap to the footprint's axes so the building sits square on its plot
+	if absf(front.x) > absf(front.y):
+		front = Vector2(signf(front.x), 0)
+	else:
+		front = Vector2(0, signf(front.y))
+	var ms: Array = lk.get("size", [10, 10])
+	var foot: Vector2 = pc["size"]
+	# model X runs across the front, Z along the depth
+	var across := foot.y if absf(front.x) > 0.5 else foot.x
+	var deep := foot.x if absf(front.x) > 0.5 else foot.y
+	var s := 1.0
+	if str(lk.get("fit", "model")) == "footprint":
+		s = clampf(minf(across / float(ms[0]), deep / float(ms[1])), float(lk.get("min", 0.5)), float(lk.get("max", 2.0)))
+	kit.add_model(str(pc["kind"]), str(lk["glb"]), Transform3D(Basis(Vector3.UP, _yaw_to(front)) * Basis.from_scale(Vector3.ONE * s), v3(c)))
+	var names := {"castle": "Castle", "cathedral": "Cathedral", "townhall": "Town Hall", "bank": "Bank"}
+	_label(c, 26.0 * s if str(pc["kind"]) != "castle" else 30.0, str(names.get(str(pc["kind"]), pc["kind"])))
 
 
 func _footprint_box(pc: Dictionary, spec: Dictionary) -> Dictionary:
@@ -737,6 +921,19 @@ func _mill_wheel(pc: Dictionary, spec: Dictionary) -> void:
 
 
 func _tower(pc: Dictionary, spec: Dictionary) -> void:
+	var tk := _kitd("tower")
+	if not tk.is_empty():
+		var tc: Vector2 = pc["center"]
+		var ts := float(tk.get("scale", 1.0))
+		var out: Vector2 = tc - plan.ring_center
+		kit.add_model("tower", str(tk["glb"]), Transform3D(Basis(Vector3.UP, _yaw_to(out)) * Basis.from_scale(Vector3.ONE * ts), v3(tc)))
+		var cone: Dictionary = tk.get("roof_cone", {})
+		var th := float(tk.get("height", 11.0)) * ts
+		if not cone.is_empty():
+			kit.add_cone("tower_roof", kit.mat(str(cone.get("material", "slate")), 0.75), v3(tc, th - 0.4), float(cone.get("r", 4.4)) * ts, float(cone.get("h", 6.0)) * ts, 16)
+		else:
+			_brazier(v3(tc, th))
+		return
 	var c: Vector2 = pc["center"]
 	var size: Vector2 = pc["size"]
 	var r := minf(size.x, size.y) * 0.5 + 0.6

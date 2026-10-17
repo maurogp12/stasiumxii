@@ -1,0 +1,24 @@
+{
+ "label": "🖼️ IMAGEN / CONCEPTO, TODAVÍA HAY QUE CONSTRUIRLO",
+ "name": "bld_cathedral_a",
+ "concept": "bld_cathedral_CONCEPTO_.png",
+ "height_m": 11.0,
+ "footprint_m": [
+  15.611,
+  11.064
+ ],
+ "pivot": "footprint centre on ground (y=0)",
+ "front": "+Z",
+ "units": "metres, Y-up",
+ "tris": {
+  "LOD0": 25578,
+  "LOD1": 12788,
+  "LOD2": 5115
+ },
+ "collider": "bld_cathedral_a-col.glb (convex hull)",
+ "textures": "embedded JPEG q82: LOD0 2048, LOD1 1024, LOD2 512",
+ "source_glb": "../raw/bld_cathedral_scb5Ew.glb",
+ "uniform_scale": 15.611,
+ "status": "preview mesh, not tested in game",
+ "facing_note": "Front (doors) faces +Z; for wall pieces +Z = outside. Build agent rotates on import."
+}
