@@ -781,6 +781,10 @@ func _test_gate_walks(w: Node2D) -> void:
 				if gate_set.has(Vector2i(int(step["x"]), int(step["y"]))):
 					through = true
 			check(through, "%s: the walk %s goes through the arch" % [g["id"], leg[2]])
+			# no snagging: the route through the arch is close to straight
+			var direct: int = absi((leg[1] as Vector2i).x - (leg[0] as Vector2i).x) + absi((leg[1] as Vector2i).y - (leg[0] as Vector2i).y)
+			var steps: int = (r.get("path", []) as Array).size() - 1
+			check(steps <= direct + 2, "%s: the walk %s runs straight through (%d steps for %d)" % [g["id"], leg[2], steps, direct])
 			_drive(w)
 			check(w.walker.cell == leg[1], "%s: the hero gets %s (%s)" % [g["id"], leg[2], w.walker.cell])
 	w.walker.place(z, city.spawn())
@@ -815,6 +819,23 @@ func _test_review_data() -> void:
 		var arch_min: float = 2.2 * (48.0 / 156.0) * hero_plate
 		check(float(g.get("arch_open_px", 0.0)) >= arch_min, "%s arch opening %.1f px >= 2.2 hero widths (%.1f)" % [g["id"], float(g.get("arch_open_px", 0.0)), arch_min])
 		check(float(g.get("passage_half_width_px", 0.0)) * 2.0 >= passage_px - 0.5, "%s passage is 2.2 hero widths" % g["id"])
+	# Round 4: horizontal gatehouse v5 at N and S (1752x1041, towers 433 px wide).
+	var k_mod: float = float((ring.get("factors", {}) as Dictionary).get("module_scale", 0.3495))
+	for g in city.gates():
+		if not (str(g["id"]) in ["N", "S"]):
+			continue
+		check(absf(float(g["art_height_px"]) - 1041.0 * k_mod) < 2.0, "%s uses the v5 horizontal gatehouse (%.1f px tall)" % [g["id"], float(g["art_height_px"])])
+		check(absf(float(g["art_drop_px"]) - 27.0 * k_mod) < 0.5, "%s parapet drop 27 art px (577 vs 550) in data (%.1f)" % [g["id"], float(g["art_drop_px"])])
+		# the flanking towers' bases stay off the road through the arch
+		var tower_r: float = 433.0 * 0.5 * k_mod * 0.92
+		var hits := 0
+		for c in g["cells"]:
+			var p: Vector2 = city.world_to_plate(BoardVisualSort.cell_to_local(Vector2i(int(c[0]), int(c[1]))))
+			for key in ["wall_join_left", "wall_join_right"]:
+				var t := Vector2(float(g[key][0]), float(g[key][1]))
+				if ((p.x - t.x) / tower_r) ** 2 + ((p.y - t.y) / (tower_r * 0.5)) ** 2 <= 1.0:
+					hits += 1
+		check(hits == 0, "%s flanking towers stay off the passage (%d cells under a tower)" % [g["id"], hits])
 	# 3: no ring tower within about one wall height of a gatehouse.
 	for rec in city.layers():
 		if str(rec["tag"]) != "tower":

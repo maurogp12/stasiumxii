@@ -523,24 +523,24 @@
    "gatehouse_flat": {
     "file": "gatehouse_horizontal_CONCEPTO.png",
     "art_slope": 0.0,
-    "drop_px": 6,
+    "drop_px": 27,
     "arch": [
-     649,
-     988
+     877,
+     1018
     ],
     "wall_left": [
-     185,
-     990
+     250,
+     1030
     ],
     "wall_right": [
-     1112,
-     993
+     1495,
+     1030
     ],
     "arch_open_x": [
-     501,
-     797
+     735,
+     1019
     ],
-    "note": "kit3 horizontal gatehouse for N and S, no shear; one piece sorted on the wall line (flat facade). drop_px = curtain parapet 556 - 550."
+    "note": "kit3 horizontal gatehouse v5 (docs/pc-map-handoff 9e35405b, 1752x1041): flanking towers 433 px wide and 990 px tall, arch 284 px. For N and S, no shear; one piece sorted on the wall line. drop_px = curtain parapet 577 - 550 (+4.9%), the same mechanism as the diagonal, so it lines up with the wall walkway."
    }
   },
   "face_note": "face_px (segments): front merlon top to foot, native px. Gatehouses with face_px and curtain_foot are fitted to the run's face; the kit3 gatehouses instead carry a parapet-matched art_slope and drop_px from the coordinator's metrics (gatehouse_v3_metrics.json).",

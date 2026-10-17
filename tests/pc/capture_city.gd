@@ -14,6 +14,8 @@ const PlateCity := preload("res://backend/plate_city.gd")
 var _out := "/tmp/city"
 var _clip := false
 var _lite := false
+## --only=S,N: the clip walks only these gates.
+var _only := ""
 var _w: Node2D
 var city
 var _frame_i := 0
@@ -29,6 +31,8 @@ func _initialize() -> void:
 			_clip = true
 		elif arg == "--lite":
 			_lite = true
+		elif arg.begins_with("--only="):
+			_only = arg.trim_prefix("--only=")
 	DirAccess.make_dir_recursive_absolute(_out)
 	call_deferred("_go")
 
@@ -270,6 +274,16 @@ func _stills() -> void:
 			b = t
 		_place(_near_free(a - (b - a) / maxi(1, (b - a).length() as int) * 3))
 		await _hold(city.plate_to_world(Vector2(float(g["arch"][0]), float(g["arch"][1]))) + Vector2(0, -60), 1.1, 30, "07_gate_%s" % g["id"])
+		if str(g["id"]) in ["N", "S"]:
+			# Close-up: the hero under the arch (the cell nearest the arch point).
+			var arch_w: Vector2 = city.plate_to_world(Vector2(float(g["arch"][0]), float(g["arch"][1])))
+			var under := Vector2i(int(cells[0][0]), int(cells[0][1]))
+			for c in cells:
+				var cc := Vector2i(int(c[0]), int(c[1]))
+				if BoardVisualSort.cell_to_local(cc).distance_to(arch_w) < BoardVisualSort.cell_to_local(under).distance_to(arch_w):
+					under = cc
+			_place(under)
+			await _hold(_w.walker.position + Vector2(0, -50), 2.0, 30, "14_arch_close_%s" % g["id"])
 	# Towers after the stub cut.
 	var t_n := 0
 	for row in plate.rows:
@@ -432,6 +446,13 @@ func _walk_clip() -> void:
 	_w.camera_hold = false
 	_w._zoom = 1.6
 	_w.camera.zoom = Vector2.ONE * 1.6
+	if _only != "":
+		var keep: Array = []
+		for leg in legs:
+			for want in _only.split(","):
+				if str(leg[4]) == "gate %s" % want:
+					keep.append(leg)
+		legs = keep
 	for leg in legs:
 		_w.weather.time_of_day = float(leg[5]) if leg.size() > 5 else 12.0
 		if str(leg[2]) == "pan":
