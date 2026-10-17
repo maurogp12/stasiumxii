@@ -70,6 +70,14 @@
    "tile_size_m": 2.0,
    "seam_edge_diff": 6.74,
    "interior_neighbour_diff": 6.52
+  },
+  "cobblestone_b": {
+   "use": "variant b of cobblestone (different seed/joint pattern); noise-mix with variant a to break the repeat",
+   "blend": "domed cobbles ~12-18 cm (13 per 2 m tile), deep dark joints with mud in places; dirt/mud height-blend into the joints first",
+   "tile_size_m": 2.0,
+   "seam_edge_diff": 5.19,
+   "interior_neighbour_diff": 5.55
   }
- }
+ },
+ "cobble_mix": "Mix ter_cobblestone (a) and ter_cobblestone_b with low-frequency world-space noise n (period ~6-10 m) through a sharp height-blend so whole cobbles switch (no ghosting): d=(h_a+1.6*(1-n))-(h_b+1.6*n); w_a=clamp(d/0.08+0.5). Same 2 m tile and scale. Preview: ter_cobblestone_ab_mix_preview_CONCEPTO_.jpg (8x8 m)."
 }

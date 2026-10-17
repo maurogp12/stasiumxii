@@ -17,3 +17,6 @@ weight_i = max(0, height_i + splat_i - max_j(height_j + splat_j) + 0.15); contra
 | plaza_flagstones | 4.0 | central plaza, around fountain/gazebo, castle forecourt | irregular worn slabs of mixed size (recursive split + noise warp, no grid), chipped edges, moss in some joints; dirt blends into joints |
 | riverbank_pebbles | 2.0 | river edges, under the bridge, millrace banks | rounded pebbles high; sand low; wet darkening zones lower roughness - bias wet zone toward water side |
 | wall_base_gravel | 2.0 | 1-2 m strip at the foot of the city wall, towers, gatehouse | loose angular gravel in 3 overlapping layers on dirt (not a mosaic); dirt shows between; weeds at wall line |
+| cobblestone_b | 2.0 | variant b of cobblestone (different seed/joint pattern); noise-mix with variant a to break the repeat | domed cobbles ~12-18 cm (13 per 2 m tile), deep dark joints with mud in places; dirt/mud height-blend into the joints first |
+
+**Cobble a/b mix:** Mix ter_cobblestone (a) and ter_cobblestone_b with low-frequency world-space noise n (period ~6-10 m) through a sharp height-blend so whole cobbles switch (no ghosting): d=(h_a+1.6*(1-n))-(h_b+1.6*n); w_a=clamp(d/0.08+0.5). Same 2 m tile and scale. Preview: ter_cobblestone_ab_mix_preview_CONCEPTO_.jpg (8x8 m).
