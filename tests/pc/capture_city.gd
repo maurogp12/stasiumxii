@@ -245,8 +245,17 @@ func _stills() -> void:
 		var cells: Array = g.get("cells", [])
 		if cells.is_empty():
 			continue
-		var c: Array = cells[cells.size() / 2]
-		_place(Vector2i(int(c[0]), int(c[1])))
+		# Hero just outside the arch, so the gatehouse is not faded over him.
+		var poly := PackedVector2Array()
+		for q in city.doc["wall_polygon"]:
+			poly.append(Vector2(float(q[0]), float(q[1])))
+		var a := Vector2i(int(cells[0][0]), int(cells[0][1]))
+		var b := Vector2i(int(cells[cells.size() - 1][0]), int(cells[cells.size() - 1][1]))
+		if Geometry2D.is_point_in_polygon(city.world_to_plate(BoardVisualSort.cell_to_local(a)), poly):
+			var t := a
+			a = b
+			b = t
+		_place(_near_free(a - (b - a) / maxi(1, (b - a).length() as int) * 3))
 		await _hold(city.plate_to_world(Vector2(float(g["arch"][0]), float(g["arch"][1]))) + Vector2(0, -60), 1.1, 30, "07_gate_%s" % g["id"])
 	# Towers after the stub cut.
 	for row in plate.rows:
