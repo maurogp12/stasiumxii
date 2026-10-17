@@ -105,3 +105,10 @@ Reviewed on the base without buildings (`cxbase/base_walls.jpg`).
    - Cut the prototype's 95 trees down to a few clusters: the park, the wall feet and a few street trees.
    - Enlarge the walled city about 1.5× (plate about 7680×4320): the wall ring moves outward, the streets and river lengthen, and there is room for all the buildings, the districts and the 5 player plots.
    - Placeholder pieces are re-laid on the bigger plate before the beautification goes on.
+8. **Character to building scale** (Mauro, 17 Oct: "me gustaría que al menos la dimensión de los personajes se vea algo así"). The reference is `mauro_scale_reference.mp4` (🖼️ a Rosebud prototype tour, not the game). The characters are small next to the city:
+   - a normal house is about **3×** the hero's height;
+   - a gate tower is about **4–5×**;
+   - a market stall is about **1.5–2×**;
+   - a street is about **3–4 hero-heights** wide.
+
+   The city plate, sprites and buildings must be scaled so the game's hero (about 156 px at 1080p at the default zoom) keeps these ratios. This works together with item 7 (enlarge the city): the city is bigger in world space, so it takes longer to walk across.
