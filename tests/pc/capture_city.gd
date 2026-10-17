@@ -74,6 +74,8 @@ func _go() -> void:
 		await _tower_shots()
 	elif _set == "v4":
 		await _v4_shots()
+	elif _set == "behind":
+		await _behind_shots()
 	else:
 		await _stills()
 		await _tower_shots()
@@ -140,6 +142,29 @@ func _v4_shots() -> void:
 			_place(_near_free(Vector2i(int(cells2[0][0]), int(cells2[0][1]))), "n")
 			await _hold(aw + Vector2(0, -40), 1.1, 30, "33_gate_%s_night" % g["id"])
 	_w.weather.time_of_day = 12.0
+	_w.npc_plates.visible = true
+	_w.camera_hold = false
+
+
+## Round 22: the hero just inside the S and W gatehouses (behind the wall),
+## a few cells deep, to judge the local fade and the door sort from inside.
+func _behind_shots() -> void:
+	_w.camera_hold = true
+	_w.npc_plates.visible = false
+	for g in city.gates():
+		if not (str(g["id"]) in ["S", "W"]):
+			continue
+		var cells: Array = g.get("cells", [])
+		var a := Vector2i(int(cells[0][0]), int(cells[0][1]))
+		var b := Vector2i(int(cells[cells.size() - 1][0]), int(cells[cells.size() - 1][1]))
+		var step := Vector2i(signi(b.x - a.x), signi(b.y - a.y))
+		var arch_w: Vector2 = city.plate_to_world(Vector2(float(g["arch"][0]), float(g["arch"][1])))
+		var mid := Vector2i(int(cells[cells.size() / 2][0]), int(cells[cells.size() / 2][1]))
+		var k := 0
+		for c in [mid + step, mid + step * 2, mid + step * 3, b - step * 2 + Vector2i(step.y, -step.x) * 2]:
+			_place(_near_free(c), "n")
+			await _hold(arch_w + Vector2(0, -60), 1.6, 45, "36_behind_%s_%d" % [g["id"], k])
+			k += 1
 	_w.npc_plates.visible = true
 	_w.camera_hold = false
 

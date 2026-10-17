@@ -1573,6 +1573,8 @@ func _process(delta: float) -> void:
 	var npc_feet := _npc_cover_feet()
 	if in_city():
 		var lift := float(zone.height_at(walker.cell)) * BoardVisualSort.ELEVATION_PIXELS
+		var hh: float = walker._strips.height()
+		city_plate.fade_body = Vector2(hh * 0.85, hh * 1.05)
 		covered = city_plate.update_cover(walker.position + Vector2(0, lift), lift, wz, delta) or covered
 		city_plate.tick_pets(delta)
 		city_plate.tick_lights(delta)

@@ -464,6 +464,7 @@ func update_cover(feet: Vector2, lift: float, hero_z: int, delta: float) -> bool
 			_covering.append(row)
 			if local:
 				row["fade_at"] = body.get_center()
+				row["fade_feet"] = Vector2(feet.x, feet.y - lift)
 		var a := float(row["alpha"])
 		if a != want:
 			a = move_toward(a, want, step * (1.0 - low) if not lite else 1.0)
@@ -479,6 +480,10 @@ func update_cover(feet: Vector2, lift: float, hero_z: int, delta: float) -> bool
 ## (a soft ellipse at about 0.5 alpha, no tint), not the whole sprite.
 const LOCAL_FADE_TAGS := ["wall", "tower", "gate_back", "lintel", "watergate", "house", "stall"]
 const LOCAL_MIN_ALPHA := 0.5
+## Round 22: these fade in a box clamped to the hero's sprite, not an ellipse.
+const BOX_FADE_TAGS := ["wall", "tower", "gate_back", "lintel", "watergate"]
+## Hero sprite size in world px (the world sets it from the walker's strips).
+var fade_body := Vector2(44.0, 80.0)
 ## Hole size round the hero's body centre, world px.
 const LOCAL_FADE_RADIUS := Vector2(58.0, 74.0)
 static var _fade_shader: Shader
@@ -503,6 +508,22 @@ func _local_fade(row: Dictionary, a: float, low: float) -> void:
 		local.x = float(s.texture.get_width()) - local.x
 	mat.set_shader_parameter("centre_px", local)
 	mat.set_shader_parameter("radius_px", LOCAL_FADE_RADIUS / sc)
+	# walls and towers: a box exactly round the hero's sprite (feet to head)
+	var boxed: bool = str(row["tag"]) in BOX_FADE_TAGS and row.has("fade_feet")
+	mat.set_shader_parameter("use_box", boxed)
+	if boxed:
+		var f: Vector2 = (row["fade_feet"] as Vector2) - s.position
+		var half_w := fade_body.x * 0.5
+		var bmin := Vector2(f.x - half_w, f.y - fade_body.y) / sc
+		var bmax := Vector2(f.x + half_w, f.y + 2.0) / sc
+		if s.flip_h and s.texture != null:
+			var tw := float(s.texture.get_width())
+			var x0 := tw - bmax.x
+			bmax.x = tw - bmin.x
+			bmin.x = x0
+		mat.set_shader_parameter("box_min_px", bmin)
+		mat.set_shader_parameter("box_max_px", bmax)
+		mat.set_shader_parameter("box_soft_px", 5.0 / sc)
 	mat.set_shader_parameter("min_alpha", low)
 	mat.set_shader_parameter("fade", clampf((1.0 - a) / maxf(0.001, 1.0 - low), 0.0, 1.0))
 
