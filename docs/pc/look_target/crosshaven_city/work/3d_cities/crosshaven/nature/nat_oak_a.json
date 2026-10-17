@@ -1,0 +1,29 @@
+{
+ "label": "🖼️ IMAGEN / CONCEPTO, TODAVÍA HAY QUE CONSTRUIRLO",
+ "name": "nat_oak_a",
+ "concept": "nat_oak_CONCEPTO_.png",
+ "height_m": 9.0,
+ "footprint_m": [
+  9.567,
+  9.049
+ ],
+ "pivot": "footprint centre on ground (y=0)",
+ "front": "+Z",
+ "units": "metres, Y-up",
+ "tris": {
+  "LOD0": 5475,
+  "LOD1": 2736,
+  "LOD2": 1094
+ },
+ "collider": "nat_oak_a-col.glb (convex hull)",
+ "textures": "embedded JPEG q82: LOD0 1024, LOD1 1024, LOD2 512",
+ "source_glb": "../raw/nat_oak_ipwYRS.glb.tmp.glb",
+ "uniform_scale": 1.0,
+ "status": "preview mesh, not tested in game",
+ "note": "foliage is solid image-to-3D mesh, no alpha cutout, no wind vertex colour yet",
+ "xz_fit_scale": [
+  1.0,
+  1.0
+ ],
+ "facing_note": "Main entrance faces +Z. Build agent rotates on import."
+}

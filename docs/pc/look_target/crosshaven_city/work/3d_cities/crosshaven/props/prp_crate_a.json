@@ -1,0 +1,28 @@
+{
+ "label": "🖼️ IMAGEN / CONCEPTO, TODAVÍA HAY QUE CONSTRUIRLO",
+ "name": "prp_crate_a",
+ "concept": "prp_crate_CONCEPTO_.png",
+ "height_m": 0.9,
+ "footprint_m": [
+  0.973,
+  0.966
+ ],
+ "pivot": "footprint centre on ground (y=0)",
+ "front": "+Z",
+ "units": "metres, Y-up",
+ "tris": {
+  "LOD0": 2163,
+  "LOD1": 1080,
+  "LOD2": 432
+ },
+ "collider": "prp_crate_a-col.glb (convex hull)",
+ "textures": "embedded JPEG q82: LOD0 1024, LOD1 1024, LOD2 512",
+ "source_glb": "../raw/prp_crate_wEmayq.glb.tmp.glb",
+ "uniform_scale": 1.0,
+ "status": "preview mesh, not tested in game",
+ "xz_fit_scale": [
+  1.0,
+  1.0
+ ],
+ "facing_note": "Main entrance faces +Z. Build agent rotates on import."
+}

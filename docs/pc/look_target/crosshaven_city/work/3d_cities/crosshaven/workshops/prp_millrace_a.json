@@ -1,0 +1,29 @@
+{
+ "label": "🖼️ IMAGEN / CONCEPTO, TODAVÍA HAY QUE CONSTRUIRLO",
+ "name": "prp_millrace_a",
+ "concept": "prp_millrace_CONCEPTO_.png",
+ "height_m": 1.438,
+ "footprint_m": [
+  1.963,
+  4.0
+ ],
+ "pivot": "footprint centre on ground (y=0)",
+ "front": "+Z",
+ "units": "metres, Y-up",
+ "tris": {
+  "LOD0": 1895,
+  "LOD1": 947,
+  "LOD2": 377
+ },
+ "collider": "prp_millrace_a-col.glb (convex hull)",
+ "textures": "embedded JPEG q82: LOD0 1024, LOD1 1024, LOD2 512",
+ "source_glb": "../raw/prp_millrace_qRV9Ly.glb.tmp.glb",
+ "uniform_scale": 1.0,
+ "status": "preview mesh, not tested in game",
+ "note": "stone mill-race channel, long axis scaled to 4 m; set into the river bank next to the wheel; open U trough, collider is convex (fills the trough)",
+ "xz_fit_scale": [
+  1.0,
+  1.0
+ ],
+ "facing_note": "Main entrance faces +Z. Build agent rotates on import."
+}

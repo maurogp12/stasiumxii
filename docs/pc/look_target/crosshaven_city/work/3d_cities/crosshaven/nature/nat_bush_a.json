@@ -1,0 +1,29 @@
+{
+ "label": "🖼️ IMAGEN / CONCEPTO, TODAVÍA HAY QUE CONSTRUIRLO",
+ "name": "nat_bush_a",
+ "concept": "nat_bush_CONCEPTO_.png",
+ "height_m": 1.2,
+ "footprint_m": [
+  1.436,
+  1.345
+ ],
+ "pivot": "footprint centre on ground (y=0)",
+ "front": "+Z",
+ "units": "metres, Y-up",
+ "tris": {
+  "LOD0": 279,
+  "LOD1": 139,
+  "LOD2": 55
+ },
+ "collider": "nat_bush_a-col.glb (convex hull)",
+ "textures": "embedded JPEG q82: LOD0 1024, LOD1 1024, LOD2 512",
+ "source_glb": "../raw/nat_bush_r2_rHpPAp.glb.tmp.glb",
+ "uniform_scale": 1.0,
+ "status": "preview mesh, not tested in game",
+ "note": "re-run once (first preview was a 116-tri blob)",
+ "xz_fit_scale": [
+  1.0,
+  1.0
+ ],
+ "facing_note": "Main entrance faces +Z. Build agent rotates on import."
+}
