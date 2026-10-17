@@ -367,24 +367,6 @@
      "status": "proposed",
      "label": "North road (to Northgate)"
     }
-   },
-   {
-    "id": "SE",
-    "edge": 2,
-    "at": [
-     3710,
-     2050
-    ],
-    "road_out": "edge",
-    "exit": {
-     "link": "crosshaven_road_south",
-     "to": [
-      12,
-      33
-     ],
-     "status": "placeholder",
-     "label": "South-east road (placeholder: Southbridge road until the link is decided)"
-    }
    }
   ],
   "modules": {
@@ -395,8 +377,9 @@
      1020
     ],
     "body_radius": 188,
-    "note": "Round 8: the v5 gatehouse's left flanking tower, cropped by build_tools/crosshaven_city/crop_tower.py (no new art): same face-on angle and scale as the gatehouse towers. base = tower axis, 13 px above the lowest pixel (as the gatehouse's curtain foot); body_radius = half the body width (native px). base_radius = half the splayed base width (native px): on a diagonal the tower's painted bottom stands |slope| x base_radius in front of the wall line, and the tower sorts at that front point.",
-    "base_radius": 239
+    "note": "Round 8: the v5 gatehouse's left flanking tower, cropped by build_tools/crosshaven_city/crop_tower.py (no new art): same face-on angle and scale as the gatehouse towers. base = tower axis, 13 px above the lowest pixel (as the gatehouse's curtain foot); body_radius = half the body width (native px). base_radius = half the splayed base width (native px): on a diagonal the tower's painted bottom stands |slope| x base_radius in front of the wall line, and the tower sorts at that front point. Round 10: scaled 1.179 like the horizontal gatehouse, so every v5 tower in the city has the same size.",
+    "base_radius": 239,
+    "scale_mul": 1.179
    },
    "segment_neg": {
     "file": "segment_short_CONCEPTO.png",
@@ -512,7 +495,7 @@
    "gatehouse_neg": {
     "file": "gatehouse_diag_v3_CONCEPTO.png",
     "art_slope": -0.3633,
-    "drop_px": 30,
+    "drop_px": 37,
     "arch": [
      835,
      1009
@@ -534,12 +517,13 @@
      737,
      932
     ],
-    "note": "kit3 diagonal gatehouse (docs/pc-map-handoff 8572a1e4). Base slope -0.433 like segment_short; art_slope is the parapet-matched slope: its parapet (-0.317) is sheared 0.07 more than segment_short's (-0.387) so the parapet lines meet; drop_px = curtain parapet 580 - 550 (about 5%). The near tower is on the left, so the right (far) half sorts behind a hero in the arch."
+    "note": "kit3 diagonal gatehouse (docs/pc-map-handoff 8572a1e4). Base slope -0.433 like segment_short; art_slope is the parapet-matched slope: its parapet (-0.317) is sheared 0.07 more than segment_short's (-0.387) so the parapet lines meet; drop_px = curtain parapet 580 - 550 (about 5%). The near tower is on the left, so the right (far) half sorts behind a hero in the arch. Round 10: scaled 1.152 so its near tower (1057 art px finial to base) matches the v5 towers (1033 x 1.179); drop 37 puts its curtain merlons (593) on the diagonal runs' merlon line (224 plate px = 556 art px at this scale).",
+    "scale_mul": 1.152
    },
    "gatehouse_pos": {
     "file": "gatehouse_diag_v3_mirror_CONCEPTO.png",
     "art_slope": 0.3633,
-    "drop_px": 30,
+    "drop_px": 37,
     "arch": [
      665,
      1009
@@ -561,7 +545,8 @@
      568,
      763
     ],
-    "note": "mirror of gatehouse_neg"
+    "note": "mirror of gatehouse_neg",
+    "scale_mul": 1.152
    },
    "gatehouse_flat": {
     "file": "gatehouse_horizontal_CONCEPTO.png",
@@ -604,15 +589,48 @@
   "corner_note": "Round 5: every ring corner keeps its tower so the two runs never meet in a bare cut, unless a gatehouse span covers the corner itself (the W gate). The near-gate rule applies to mid-edge towers.",
   "taper_note": "Round 8: measured on the kit PNGs (merlon-tip and foot envelopes, fitted lines). The diagonal segments' merlon line is not parallel to their foot (face 653 -> 601 px across the tile), so each column is scaled about the foot to a constant face (627 on both diagonals, 545 flat): the merlon and foot lines then run on through any cut. art_slope is the fitted foot slope.",
   "tower_tuck": {
-   "front_mul": 0.5,
+   "front_mul": 1.0,
    "back_mul": 0.5,
-   "note": "Round 8: the ring tower draws in front of both runs (it sorts at the front of its base); both runs tuck half a body radius under it, so the near wall comes out from behind its side with the foot level with the tower base."
+   "front_mode": "silhouette",
+   "note": "Round 10: the near-side run ends where its end meets the tower body's silhouette (horizontal offset = body radius) and draws in front of the tower; the far side tucks half a body radius under it and draws behind."
   },
   "snap_corner_tower_widths": 1.5,
   "gate_tower_width_art": 433,
   "snap_note": "Round 8: a gatehouse whose outer flanking tower stands within 1.5 tower widths of a ring corner slides along its edge so that tower stands on the corner (no doubled tower, no gap); the neighbour run ends under it.",
   "foot_calibration_note": "Round 8: base_left set so each module's drawn foot (fitted foot envelope over the last 160 px of a run) lies on the wall line: diagonal feet sat 1.0-2.4 plate px above it, the flat foot 0.4 below.",
-  "flat_scale_note": "Round 9: the flat N/S segment and the horizontal gatehouse are scaled uniformly by 1.179 (blocks keep their proportions) so the flat merlon line meets the diagonals' at the NE/SE corner towers. Measured in game: flat merlon tips 190.0 plate px above the foot, diagonals 222.9 (NE) and 225.2 (SE); 224/190 = 1.179 puts both corners within 2 px (627/545 = 1.15 from the art faces left 4-6 px)."
+  "flat_scale_note": "Round 9: the flat N/S segment and the horizontal gatehouse are scaled uniformly by 1.179 (blocks keep their proportions) so the flat merlon line meets the diagonals' at the NE/SE corner towers. Measured in game: flat merlon tips 190.0 plate px above the foot, diagonals 222.9 (NE) and 225.2 (SE); 224/190 = 1.179 puts both corners within 2 px (627/545 = 1.15 from the art faces left 4-6 px).",
+  "gates_note": "Round 10 (Mauro): the SE gate is removed; the SE wall runs closed. Land gates N, S, W, E plus the 2 water gates.",
+  "tower_place": {
+   "mode": "centred",
+   "note": "Round 10 (Mauro): the tower straddles the wall: its axis on the wall centreline (or on the corner point), its base as in the v5 gatehouse (13 px under the foot line); the near run ends at the tower body's silhouette, drawn in front; the far run tucks behind the tower."
+  },
+  "water_gate_towers": {
+   "enabled": true,
+   "note": "Round 10: every water gate is flanked by two v5 towers at its wall joins, on the banks (slid outward along the wall until the base is off the water); the runs end under them."
+  },
+  "stone_recolor": {
+   "ref": "tower_v5_CONCEPTO.png",
+   "ref_box": [
+    60,
+    330,
+    440,
+    980
+   ],
+   "targets": [
+    "segment_neg",
+    "segment_pos",
+    "segment_flat",
+    "watergate_neg",
+    "watergate_pos"
+   ],
+   "note": "Round 10: LAB colour transfer of the wall segments and water gates to the v5 stone (the cropped v5 tower body, which is the gatehouse's own stone, banners and arch excluded): lightness mean and spread (spread clamped 0.85-1.15), a*/b* mean only, so the art's shading keeps its own hue range. Recolour only."
+  },
+  "tower_spacing_wall_heights": [
+   1.8,
+   3.0
+  ],
+  "spacing_note": "Round 10 (GOAL): an even rhythm per side; one spacing per side, the most even split of every stretch between fixed towers (corners, gatehouse towers, water-gate towers), between 1.8 and 3 wall heights (preferring 2.5). A water-gate tower that lands on a gatehouse tower or corner is that tower.",
+  "tower_spacing_preferred": 2.5
  },
  "greenery": {
   "note": "Approved map-base greenery (docs/pc-map-handoff 5edc29a3 docs/pc/look_target/crosshaven_city/work/green; pass --green <dir>). Painted at hero = 156 px, bottom-centre anchored.",
@@ -740,11 +758,39 @@
   "hero_screen_px": 156,
   "targets_screen_px": {
    "wall": 550,
-   "tower": 1000,
+   "tower": 1218,
    "gate": 1227,
    "gate_tower": 1167,
    "castle": 1200
   },
-  "note": "kit modules are painted at these heights (hero 156). Round 9: the horizontal gatehouse is scaled 1.179, so the whole sprite is 1227 and its flanking towers 1167, still below the castle (1200)."
- }
+  "note": "kit modules are painted at these heights (hero 156). Round 9: the horizontal gatehouse is scaled 1.179, so the whole sprite is 1227 and its flanking towers 1167, still below the castle (1200). Round 10: ring towers are the v5 tower at 1.179 (1218 finial to base)."
+ },
+ "remove_bridges": [
+  "bridge_1"
+ ],
+ "remove_bridges_note": "Round 10 (Mauro): the bridge just outside the NE water gate is removed (sprite, deck cells and the road stubs that only led to it). Its ends stay in the lattice fit so the grid does not move.",
+ "drop_streets": [
+  {
+   "id": "se_gate_spur",
+   "polygon": [
+    [
+     2720,
+     2215
+    ],
+    [
+     3470,
+     2060
+    ],
+    [
+     3490,
+     2150
+    ],
+    [
+     2720,
+     2345
+    ]
+   ],
+   "note": "Round 10 (Mauro): the spur from the S plaza toward the removed SE gate dead-ended at the wall; it goes back to grass."
+  }
+ ]
 }

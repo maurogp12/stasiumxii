@@ -1135,6 +1135,9 @@ def apply_ring_kit(layers, images, ground_np, walk, river, old_poly):
                                    fillet=float(rc.get("fillet_px", 0.0)))
             painted.append([[round(p_[0], 1), round(p_[1], 1)] for p_ in pts])
     drop &= ~roads
+    # Round 10: streets that only led to a removed gate go back to grass (data)
+    for pg in LAYOUT.get("drop_streets", []):
+        drop |= street & CG.poly_mask([tuple(p_) for p_ in pg["polygon"]])
     left = inside_old & ~inside_new
     walk[left & ~(keep_st | roads)] = False
     walk[(street & drop) & ~inside_new] = False
@@ -1686,6 +1689,21 @@ def main():
                 kind[y, x] = 3
             else:
                 kind[y, x] = 4
+    # Round 10: bridges removed by the layout (sprite, deck and approach
+    # cells); the lattice fit above still used them, so the grid holds still.
+    gone_bridges = set(LAYOUT.get("remove_bridges", []))
+    if gone_bridges:
+        for b in [b for b in zones["bridges"] if b["id"] in gone_bridges]:
+            x0b, y0b, x1b, y1b = b["sprite_bbox"]
+            layers[:] = [l for l in layers if not (l["tag"] == "bridge" and abs(l["x"] - x0b) < 30 and abs(l["y"] - y0b) < 30)]
+            # cells on its stairs and deck are not walkable any more
+            for y in range(H):
+                for x in range(W):
+                    cx, cy = grid.centre(x, y)
+                    if any(point_in_poly(cx, cy, st["polygon"]) for st in b["stairs"]):
+                        kind[y, x] = 4
+        zones["bridges"] = [b for b in zones["bridges"] if b["id"] not in gone_bridges]
+        print("bridges removed", sorted(gone_bridges))
     # Bridges on the ground: the stair bottoms (z = 0) fix the ground line;
     # z along it is the Rosebud centreline z by screen x (a lift is vertical).
     for b in zones["bridges"]:
@@ -1911,7 +1929,7 @@ def main():
             rec["plot_plant"] = True
         if "plant" in l:
             rec["plant"] = l["plant"]
-        for key_ in ("module", "gate", "spot", "corner", "base_drop_px", "wall_point"):
+        for key_ in ("module", "gate", "spot", "corner", "base_drop_px", "wall_point", "tower_kind", "edge", "s", "axis_x"):
             if key_ in l:
                 rec[key_] = l[key_]
         if l["tag"] in hide_tags and lid in displaced:
@@ -2049,6 +2067,7 @@ def main():
         "wall_runs": gate_log.get("wall_runs", []),
         "tower_body_radius_px": gate_log.get("tower_body_radius_px"),
         "gates_snapped": gate_log.get("gates_snapped", []),
+        "tower_spacing": gate_log.get("tower_spacing", []),
         "gate_clear": dict(LAYOUT.get("greenery", {}).get("gate_clear", {})),
     }
     json.dump(city, open(os.path.join(data_dir, "city.json"), "w"), indent=1)

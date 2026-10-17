@@ -189,7 +189,9 @@ func _test_walk() -> void:
 		if gates.has(Vector2i(int(step["x"]), int(step["y"]))):
 			through_gate = true
 	check(through_gate, "the walk in goes through the gate arch")
-	check(city.bridges().size() == 3, "three bridges in the data")
+	check(city.bridges().size() == 2, "two bridges in the data (the NE one outside the wall is removed)")
+	for b in city.bridges():
+		check(str(b["id"]) != "bridge_1", "the NE bridge outside the water gate is gone")
 	var inner_bridges := 0
 	for b in city.bridges():
 		var a := Vector2i(int(b["ends"][0][0]), int(b["ends"][0][1]))
@@ -252,11 +254,13 @@ func _in_wall(p: Vector2) -> bool:
 func _test_gates() -> void:
 	var z: WorldZone = city.zone
 	var gates: Array = city.gates()
-	check(gates.size() >= 5, "gatehouses (%d)" % gates.size())
+	check(gates.size() == 4, "4 land gatehouses (%d)" % gates.size())
 	var ids := {}
 	for g in gates:
 		ids[str(g["id"])] = true
-	for want in ["S", "W", "E", "N", "SE"]:
+	for g in gates:
+		check(str(g["id"]) != "SE", "the SE gate is removed")
+	for want in ["S", "W", "E", "N"]:
 		check(ids.has(want), "gatehouse %s exists" % want)
 	# Ring on the 3 plate directions: every edge horizontal or an iso diagonal.
 	var poly: Array = city.doc["wall_polygon"]
@@ -542,7 +546,8 @@ func _test_world_entry(w: Node2D) -> void:
 	check(stall_r > 1.5 and stall_r < 2.6, "a stall is about 1.5-2 hero heights (%.2f)" % stall_r)
 	print("SCALE plate %.2f: house %.2f gate %.2f stall %.2f (hero %.1f px)" % [city.scale(), house_r, gate_r, stall_r, hero_h])
 	# Walk in through the gate.
-	var target := Vector2i(int(city.bridges()[2]["ends"][1][0]), int(city.bridges()[2]["ends"][1][1]))
+	var west: Dictionary = city.bridges()[city.bridges().size() - 1]
+	var target := Vector2i(int(west["ends"][1][0]), int(west["ends"][1][1]))
 	var r: Dictionary = w.walk_to(target, "walk")
 	check(bool(r.get("ok", false)), "click-walk to the west bridge end (%s)" % [r])
 	_drive(w)
@@ -842,15 +847,20 @@ func _test_review_data() -> void:
 				if ((p.x - t.x) / tower_r) ** 2 + ((p.y - t.y) / (tower_r * 0.5)) ** 2 <= 1.0:
 					hits += 1
 		check(hits == 0, "%s flanking towers stay off the passage (%d cells under a tower)" % [g["id"], hits])
-	# 3: no ring tower within about one wall height of a gatehouse.
+	# 3 (round 10, GOAL rhythm): no wall tower stands inside a gatehouse span or
+	# crowds its towers (closer than a tower body diameter).
+	var r_t: float = float(city.doc.get("tower_body_radius_px", 60.0))
 	for rec in city.layers():
-		if str(rec["tag"]) != "tower" or bool(rec.get("corner", false)):
+		if str(rec["tag"]) != "tower" or str(rec.get("tower_kind", "wall")) != "wall":
 			continue
 		var foot := _tower_foot(rec)
 		for g in city.gates():
-			var arch := Vector2(float(g["arch"][0]), float(g["arch"][1]))
-			var gap: float = foot.distance_to(arch) - float(g["half_span"]) - float(rec["w"]) * 0.42
-			check(gap >= wall_h * 1.25, "tower %d keeps a wall height from gate %s (%.0f px)" % [int(rec["id"]), g["id"], gap])
+			var jl := Vector2(float(g["wall_join_left"][0]), float(g["wall_join_left"][1]))
+			var jr := Vector2(float(g["wall_join_right"][0]), float(g["wall_join_right"][1]))
+			var tt: float = (foot - jl).dot(jr - jl) / (jr - jl).length_squared()
+			var inside: bool = tt > 0.0 and tt < 1.0 and foot.distance_to(jl.lerp(jr, tt)) < 10.0
+			check(not inside, "tower %d is not inside gate %s" % [int(rec["id"]), g["id"]])
+			check(minf(foot.distance_to(jl), foot.distance_to(jr)) >= 2.0 * r_t, "tower %d keeps clear of gate %s's towers (%.0f px)" % [int(rec["id"]), g["id"], minf(foot.distance_to(jl), foot.distance_to(jr))])
 	# Round 5: every ring corner has a tower unless a gatehouse covers it.
 	var poly_c: Array = city.doc["wall_polygon"]
 	for q in poly_c:
@@ -877,7 +887,7 @@ func _test_review_data() -> void:
 			for key in ["a", "b"]:
 				var e := Vector2(float(rr[key][0]), float(rr[key][1]))
 				if e.distance_to(cpt) < 3.0 * r_body:
-					check(e.distance_to(cpt) <= r_body + 0.5, "corner %s: run end %s is under the corner tower (%.1f px)" % [cpt, e, e.distance_to(cpt)])
+					check(absf(e.x - cpt.x) <= r_body + 0.5, "corner %s: run end %s is within the corner tower's outline (%.1f px)" % [cpt, e, absf(e.x - cpt.x)])
 	# Round 8: the runs either side of every tower share one foot line and
 	# end under the tower; every ring tower is the v5 tower.
 	var r_b: float = float(city.doc.get("tower_body_radius_px", 60.0))
@@ -898,7 +908,7 @@ func _test_review_data() -> void:
 		for e in lst:
 			var ep := Vector2(float(e[0][0]), float(e[0][1]))
 			var tp := Vector2(float(e[2][0]), float(e[2][1]))
-			check(ep.distance_to(tp) <= r_b + 0.5, "tower %s: run end %s is under the tower (%.1f <= %.1f)" % [key, ep, ep.distance_to(tp), r_b])
+			check(absf(ep.x - tp.x) <= r_b + 0.5, "tower %s: run end %s is within the tower's outline (%.1f <= %.1f)" % [key, ep, absf(ep.x - tp.x), r_b])
 		if lst.size() == 2 and lst[0][1] != null and lst[1][1] != null:
 			pairs += 1
 			var fa: float = float(lst[0][1]["foot"])
@@ -920,6 +930,96 @@ func _test_review_data() -> void:
 	for rec in city.layers():
 		if str(rec["tag"]) == "tower":
 			check(str(rec.get("module", "")) == "tower_v5_CONCEPTO.png", "tower %d is the v5 tower (%s)" % [int(rec["id"]), rec.get("module", "")])
+	# Round 10: every tower has the same size, stands centred on the wall
+	# line, the runs enter it symmetrically, and the rhythm is even.
+	var k_mod2: float = float((ring.get("factors", {}) as Dictionary).get("module_scale", 0.3495))
+	var sizes: Array = []
+	var ring_ws: Array = []
+	var ring_hs: Array = []
+	for rec in city.layers():
+		if str(rec["tag"]) == "tower":
+			ring_ws.append(float(rec["w"]))
+			ring_hs.append(float(rec["h"]))
+	var tw0: float = ring_ws[0] if not ring_ws.is_empty() else 0.0
+	var th0: float = ring_hs[0] if not ring_hs.is_empty() else 0.0
+	for k in ring_ws.size():
+		check(absf(ring_ws[k] - tw0) / tw0 <= 0.02 and absf(ring_hs[k] - th0) / th0 <= 0.02, "ring tower %d has the common size (%.0fx%.0f)" % [k, ring_ws[k], ring_hs[k]])
+	for g in city.gates():
+		var sm2: float = float(g.get("scale_mul", 1.0))
+		if str(g["id"]) in ["N", "S"]:
+			# the v5 gatehouse's own towers are the ring tower art (crop 505x1033)
+			var gw: float = 505.0 * k_mod2 * sm2
+			var gh: float = 1033.0 * k_mod2 * sm2
+			check(absf(gw - tw0) / tw0 <= 0.02 and absf(gh - th0) / th0 <= 0.02, "%s gatehouse towers match the ring towers (%.0fx%.0f vs %.0fx%.0f)" % [g["id"], gw, gh, tw0, th0])
+		else:
+			# diagonal gatehouse: its near tower is 1057 art px finial to base
+			var dh: float = 1057.0 * k_mod2 * sm2
+			check(absf(dh - th0) / th0 <= 0.02, "%s gatehouse near tower height matches the ring towers (%.0f vs %.0f)" % [g["id"], dh, th0])
+	var r_c: float = float(city.doc.get("tower_body_radius_px", 60.0))
+	var poly_t: Array = city.doc["wall_polygon"]
+	for rec in city.layers():
+		if str(rec["tag"]) != "tower":
+			continue
+		var wp := _tower_foot(rec)
+		var axis_x: float = float(rec["x"]) + float(rec["w"]) * 251.5 / 505.0
+		check(absf(axis_x - wp.x) <= 4.0, "tower %d axis on its wall point (%.1f vs %.1f)" % [int(rec["id"]), axis_x, wp.x])
+		var on_line := 1e9
+		for i in poly_t.size():
+			var a2 := Vector2(float(poly_t[i][0]), float(poly_t[i][1]))
+			var b2 := Vector2(float(poly_t[(i + 1) % poly_t.size()][0]), float(poly_t[(i + 1) % poly_t.size()][1]))
+			var t2: float = clampf((wp - a2).dot(b2 - a2) / (b2 - a2).length_squared(), 0.0, 1.0)
+			on_line = minf(on_line, wp.distance_to(a2.lerp(b2, t2)))
+		check(on_line <= 4.0, "tower %d stands on the wall centreline (%.1f px)" % [int(rec["id"]), on_line])
+		if bool(rec.get("corner", false)):
+			var near_c := 1e9
+			for q2 in poly_t:
+				near_c = minf(near_c, wp.distance_to(Vector2(float(q2[0]), float(q2[1]))))
+			check(near_c <= 4.0, "corner tower %d axis on the corner point (%.1f px)" % [int(rec["id"]), near_c])
+	# symmetric entry: the visible run ends either side of a tower (near run ends
+	# at the body silhouette; a far run comes out from behind at the silhouette)
+	for key2 in ends_at.keys():
+		var lst2: Array = ends_at[key2]
+		if lst2.size() != 2:
+			continue
+		var tp2 := Vector2(float(lst2[0][2][0]), float(lst2[0][2][1]))
+		var offs: Array = []
+		for e2 in lst2:
+			var ep2 := Vector2(float(e2[0][0]), float(e2[0][1]))
+			var off: float = absf(ep2.x - tp2.x)
+			# a run tucked behind the tower shows from the silhouette outward
+			offs.append(r_c if off < r_c * 0.95 else off)
+		check(absf(float(offs[0]) - float(offs[1])) <= 0.1 * r_c, "tower %s: the runs enter at the same offset from its axis (%.1f vs %.1f)" % [key2, float(offs[0]), float(offs[1])])
+	# even rhythm: the spacing on each side varies by no more than 10%
+	for sp in city.doc.get("tower_spacing", []):
+		var gaps: Array = sp.get("gaps", [])
+		if gaps.size() < 2:
+			continue
+		var gmin := 1e9
+		var gmax := 0.0
+		for gg in gaps:
+			gmin = minf(gmin, float(gg))
+			gmax = maxf(gmax, float(gg))
+		check(gmax / gmin <= 1.10, "edge %d: tower spacing varies %.1f%% (%s)" % [int(sp["edge"]), (gmax / gmin - 1.0) * 100.0, gaps])
+	# water gates are flanked by two towers, on dry ground
+	for wg in city.doc.get("water_gates", []):
+		var w_at := Vector2(float(wg["at"][0]), float(wg["at"][1]))
+		var flank := 0
+		for rec in city.layers():
+			if str(rec["tag"]) == "tower" and str(rec.get("tower_kind", "")) == "water_gate":
+				var tf2 := _tower_foot(rec)
+				if tf2.distance_to(w_at) < 400.0:
+					flank += 1
+					var tc := _cell_at(city.plate_to_world(tf2))
+					check(city.zone.terrain_at(tc) != "water", "water gate tower %d stands on a bank" % int(rec["id"]))
+		# a gatehouse tower or corner tower next to it counts as one flank
+		for g in city.gates():
+			for key in ["wall_join_left", "wall_join_right"]:
+				if Vector2(float(g[key][0]), float(g[key][1])).distance_to(w_at) < 400.0:
+					flank += 1
+		for rec in city.layers():
+			if str(rec["tag"]) == "tower" and bool(rec.get("corner", false)) and _tower_foot(rec).distance_to(w_at) < 400.0:
+				flank += 1
+		check(flank == 2, "water gate %s has two flanking towers (%d)" % [w_at, flank])
 	# Round 5: a clear plaza at every gate and water gate (no trees).
 	var clear_cfg: Dictionary = city.doc.get("gate_clear", {})
 	check(not clear_cfg.is_empty(), "gate clearance in data")
@@ -928,7 +1028,7 @@ func _test_review_data() -> void:
 		zones.append([Vector2(float(g["arch"][0]), float(g["arch"][1])), float(g.get("art_width_px", 400.0))])
 	for wg in city.doc.get("water_gates", []):
 		zones.append([Vector2(float(wg["at"][0]), float(wg["at"][1])), float(wg.get("art_width_px", 400.0))])
-	check(zones.size() == 7, "5 gates and 2 water gates get a clear plaza (%d)" % zones.size())
+	check(zones.size() == 6, "4 gates and 2 water gates get a clear plaza (%d)" % zones.size())
 	var mul: float = float(clear_cfg.get("width_mul", 1.0))
 	var in_plaza := 0
 	for rec in city.layers():

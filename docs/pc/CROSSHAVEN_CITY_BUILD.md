@@ -43,6 +43,13 @@ Change list: `docs/pc/look_target/crosshaven_city/README.md` on `claude/pc-zones
   - **Joins.** The kit's diagonal wall face shrinks across the tile (merlon line -0.39 against foot -0.43), so each column is now scaled about the foot to a constant face (`taper`). Both runs tuck half a body radius under the tower, and a strip crossing the tower's silhouette sorts behind it. Merlon and foot lines run on through every tower along a wall (measured from the drawn strips: within 1.2 px).
   - **Known step.** Where a flat N/S run meets a diagonal at a corner tower, the merlon line steps about 35 px, because the approved flat segment's face is 545 art px against 627 for the diagonals.
   - **Snapped gates.** A gatehouse whose outer tower stood within 1.5 tower widths of a corner slides along its edge so that tower is the corner: S 172 px, N 214 px, E 218 px, W 44 px. No doubled tower, no gap.
+- **Round 10 (Mauro, the GOAL: "the towers all stand the same").**
+  - **One tower, one size.** Ring, corner and water-gate towers are the v5 tower scaled 1.179, like the horizontal gatehouse. The diagonal gatehouse is scaled 1.152, so its near tower is the same height. Tested within 2%.
+  - **Centred.** Each tower's axis is on the wall centreline, or on the corner point. Its base sits as in the v5 gatehouse (13 art px under the foot line). The near run ends at the tower body's silhouette and draws in front of it; the far run tucks behind. Both enter one body radius from the axis (tested).
+  - **Even rhythm.** Fixed towers are the corners, gatehouse towers and water-gate towers. Every stretch between them is divided evenly with one spacing per side, between 1.8 and 3 wall heights. Spacing varies at most 7.3% on a side (tested, under 10%). The flat N/S sides keep a single 3-wall-height bay between gatehouse tower and corner.
+  - **Water gates.** Each is flanked by v5 towers at its wall joins, slid along the wall onto the banks. A gatehouse tower or corner already standing there counts as one flank.
+  - **One stone.** The wall segments and water gates get a LAB colour transfer to the v5 stone (the tower body): lightness mean and spread, a*/b* mean only. Recolour only.
+  - **Removed (Mauro).** The SE gate is gone, with its road, exit stub and the spur that led to it (`drop_streets`); the wall runs closed. The NE bridge outside the water gate is gone. That leaves 4 land gates, 2 water gates and 2 bridges.
 - **Exits (review 7).** Every gate road runs on to the plate edge and ends in a gate stub (data,
   `gate_stubs`). The links follow the Crossroads road directions:
   - N goes to `crosshaven_road_north` (12,2), toward Northgate (proposed);

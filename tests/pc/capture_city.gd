@@ -67,6 +67,9 @@ func _go() -> void:
 		await _walk_clip()
 	elif _set == "towers":
 		await _tower_shots()
+	elif _set == "round10":
+		await _round10_shots()
+		await _tower_shots()
 	else:
 		await _stills()
 		await _tower_shots()
@@ -565,3 +568,46 @@ func _tower_foot(rec: Dictionary) -> Vector2:
 	if rec.has("wall_point"):
 		return Vector2(float(rec["wall_point"][0]), float(rec["wall_point"][1]))
 	return Vector2(float(rec["x"]) + float(rec["w"]) * 0.5, float(rec["sort_y"]) - 10.0)
+
+
+## Round 10: Mauro's framings (water gates, the SE wall, a GOAL-like wide).
+func _round10_shots() -> void:
+	_w.camera_hold = true
+	_w.npc_plates.visible = false
+	_w.walker.visible = false
+	var poly: Array = city.doc["wall_polygon"]
+	var centre := Vector2.ZERO
+	var lo := Vector2(1e9, 1e9)
+	var hi := Vector2(-1e9, -1e9)
+	for q in poly:
+		var v := Vector2(float(q[0]), float(q[1]))
+		centre += v
+		lo = lo.min(v)
+		hi = hi.max(v)
+	centre /= float(poly.size())
+	for wg in city.doc.get("water_gates", []):
+		var at := Vector2(float(wg["at"][0]), float(wg["at"][1]))
+		var tag := ("N" if at.y < centre.y else "S") + ("E" if at.x > centre.x else "W")
+		if tag == "SW":
+			# with the S gate beside it, as in Mauro's screenshot
+			var s_arch := at
+			for g in city.gates():
+				if str(g["id"]) == "S":
+					s_arch = Vector2(float(g["arch"][0]), float(g["arch"][1]))
+			await _hold(city.plate_to_world((at + s_arch) * 0.5) + Vector2(0, -140), 0.85, 30, "18_watergate_SW_and_gate_S")
+		else:
+			await _hold(city.plate_to_world(at) + Vector2(0, -140), 0.85, 30, "18_watergate_%s" % tag)
+	# the SE wall, the river on the left
+	var a := Vector2(float(poly[2][0]), float(poly[2][1]))
+	var b := Vector2(float(poly[3][0]), float(poly[3][1]))
+	await _hold(city.plate_to_world(a.lerp(b, 0.55)) + Vector2(-260, -120), 0.7, 30, "19_se_wall")
+	# GOAL-like: the whole ring with a margin
+	var vp: Vector2 = _w.get_viewport().get_visible_rect().size
+	var wlo: Vector2 = city.plate_to_world(lo)
+	var whi: Vector2 = city.plate_to_world(hi)
+	var span: Vector2 = (whi - wlo) * 1.12
+	var zoom: float = minf(vp.x / span.x, vp.y / span.y)
+	await _hold((wlo + whi) * 0.5 + Vector2(0, -40), zoom, 40, "20_wide_ring_goal")
+	_w.walker.visible = true
+	_w.camera_hold = false
+	_w.npc_plates.visible = true
