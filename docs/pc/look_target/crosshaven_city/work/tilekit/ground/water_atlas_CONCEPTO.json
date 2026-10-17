@@ -1,0 +1,20 @@
+{
+ "tile": [
+  128,
+  64
+ ],
+ "layout": "4x4, index=mask, N=1 E=2 S=4 W=8, set corner = this terrain, unset = transparent",
+ "draw_priority": [
+  "grass",
+  "dirt",
+  "cobble",
+  "plaza",
+  "water"
+ ],
+ "terrain": "water",
+ "bank": "stone bank band built into the edge tiles (outer ~15% of the water area)",
+ "anim_file": "water_atlas_anim_CONCEPTO.png",
+ "frames": 6,
+ "fps": 8,
+ "anim_layout": "6 full atlases side by side, 512x256 each"
+}

@@ -1,0 +1,32 @@
+{
+ "foot": [
+  661,
+  856
+ ],
+ "footprint": [
+  16,
+  1
+ ],
+ "blocks": true,
+ "height_px": 550,
+ "orient": "se iso axis",
+ "passage": {
+  "walkable": true,
+  "see_through": true
+ },
+ "door": {
+  "file": "gate_door_diag_se_CONCEPTO.png",
+  "frames": 8,
+  "fps": 12,
+  "frame_w": 244,
+  "frame_h": 474,
+  "offset": [
+   534,
+   440
+  ],
+  "open_inward": true
+ },
+ "layer_order": "ground < door < gate curtain < actors",
+ "no_portcullis": true,
+ "no_dust": true
+}

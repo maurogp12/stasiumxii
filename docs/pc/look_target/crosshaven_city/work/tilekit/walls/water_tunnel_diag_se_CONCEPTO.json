@@ -1,0 +1,14 @@
+{
+ "foot": [
+  513,
+  782
+ ],
+ "footprint": [
+  8,
+  1
+ ],
+ "blocks": true,
+ "height_px": 550,
+ "orient": "se",
+ "grate": true
+}
