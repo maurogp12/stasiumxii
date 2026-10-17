@@ -116,3 +116,4 @@ Reviewed on the base without buildings (`cxbase/base_walls.jpg`).
    - the ripples scroll along the flow direction;
    - the foam animates in the foam zones;
    - Performance mode uses a slower or static fallback.
+10. **Castle = Grok Bot's palace** (Mauro: "me gusta más el castillo de Grok"). Keep the `cx_built` palace sprite (`000_cx_palace.png`) as the city's castle, in the prototype's north position. The Meshy castle is dropped, along with its paint-over.
