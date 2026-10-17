@@ -37,3 +37,4 @@ Crosshaven kit4: one-piece unified wall section v1 (diagonal wall + 2 towers + w
 2026-10-17 – walls/kit5/: v8.2 final ring pass (all courses ~43 px, merlon 550, stone v4 depth; gatehouses, watergate, tower canvases/anchors changed, JSON rewritten); v8.1 in old_v8_1/. CONCEPT.
 2026-10-17 – walls/kit5/: v8.3 (lighter cooler grey-beige matched to v4, round gate arches, seam/band/grate fixes; tower kept slim pending Luca/Mauro; gate JSON anchors changed); v8.2 in old_v8_2/. CONCEPT.
 2026-10-17 – walls/kit6/: HD ring v1 (5120x2880 full + RGBA walls layer, open land-gate passages, 4 portcullis sprites + portcullis_positions.json, comparison sheet), from Mauro TARGET @3c7a4790. CONCEPT.
+Crosshaven ring HD v2.1 concept (lit gates/tunnels, brighter, new portcullis positions) — 🖼️ CONCEPTO
