@@ -17,6 +17,7 @@ const CityPlan := preload("res://slice3d/city/city_plan.gd")
 const ModelLoader := preload("res://slice3d/city/model_loader.gd")
 const TERRAIN_SHADER := preload("res://slice3d/city/terrain.gdshader")
 const WATER_SHADER := preload("res://slice3d/city/water.gdshader")
+const WIND_SHADER := preload("res://slice3d/city/foliage_wind.gdshader")
 const MODEL_DIR := "res://art/3d/"
 
 var plan: CityPlan
@@ -35,6 +36,7 @@ var labels: Array = []
 var stats := {}
 var _rng := RandomNumberGenerator.new()
 var _models := {}
+var _spin_speed := 0.6
 
 
 func build(p) -> void:
@@ -51,6 +53,7 @@ func build(p) -> void:
 	_build_bridges()
 	for piece in plan.pieces:
 		_build_piece(piece)
+	_build_plaza_dressing()
 	_build_outskirts()
 	stats["batched"] = kit.flush(self)
 
@@ -102,7 +105,7 @@ func set_night(t: float) -> void:
 
 func _process(delta: float) -> void:
 	for s in spinners:
-		s.rotate_object_local(Vector3.RIGHT, delta * 0.6)
+		s.rotate_object_local(Vector3.RIGHT, delta * _spin_speed)
 	for g in gate_doors:
 		var target: float = g["target"]
 		g["open"] = move_toward(g["open"], target, delta * 0.9)
@@ -525,6 +528,31 @@ func _build_bridges() -> void:
 			kit.add_box("pier", rail, v3(p, -0.9), Vector3(cm * 0.6, 1.8, cm * 0.6))
 
 
+## Banner poles round the fountain and sacks by the workshop doors (data:
+## kit.plaza).
+func _build_plaza_dressing() -> void:
+	var pz: Dictionary = plan.city.get("kit", {}).get("plaza", {})
+	if pz.is_empty():
+		return
+	var fountain := Vector2.ZERO
+	for q in plan.pieces:
+		if str(q["kind"]) == "fountain":
+			fountain = q["center"]
+	if fountain != Vector2.ZERO and ModelLoader.exists(str(pz.get("banner", ""))):
+		var n := int(pz.get("banners", 4))
+		for i in n:
+			var a := TAU * (i + 0.5) / n
+			var p := fountain + Vector2(cos(a), sin(a)) * float(pz.get("banner_r", 7.0))
+			if plan.passable(plan.world_to_cell(p)):
+				kit.add_model("banner", str(pz["banner"]), Transform3D(Basis(Vector3.UP, -a), v3(p)))
+	if ModelLoader.exists(str(pz.get("sacks", ""))):
+		for q in plan.pieces:
+			if str(q["kind"]).begins_with("workshop") and q.has("door"):
+				var dp: Vector2 = plan.cell_center(q["door"])
+				var side := (dp - (q["center"] as Vector2)).orthogonal().normalized() * 1.3
+				kit.add_model("sacks", str(pz["sacks"]), Transform3D(Basis(Vector3.UP, _hash(q["anchor"]) * TAU), v3(dp + side)))
+
+
 # ---------------------------------------------------------------- outskirts
 
 ## Woods and rocks round the walls (data: city "outskirts"), in clumps from a
@@ -614,8 +642,14 @@ func _build_piece(pc: Dictionary) -> void:
 	var wk: Dictionary = plan.city.get("kit", {}).get("workshops", {})
 	if wk.has(str(pc["kind"])) and ModelLoader.exists(str(wk[pc["kind"]])):
 		var wpath := str(wk[pc["kind"]])
-		kit.add_model(str(pc["kind"]), wpath, Transform3D(Basis(Vector3.UP, _yaw_to(_front_of(pc))), v3(pc["center"])))
+		var mk0: Dictionary = plan.city.get("kit", {}).get("mill", {})
+		if str(pc["kind"]) != "mill" or not ModelLoader.exists(str(mk0.get("wheel", ""))):
+			kit.add_model(str(pc["kind"]), wpath, Transform3D(Basis(Vector3.UP, _yaw_to(_front_of(pc))), v3(pc["center"])))
 		if str(pc["kind"]) == "mill":
+			var mk: Dictionary = plan.city.get("kit", {}).get("mill", {})
+			if ModelLoader.exists(str(mk.get("wheel", ""))):
+				_mill_model(pc, wpath, mk)
+				return
 			_mill_wheel(pc, spec)
 		elif bool(spec.get("chimney", false)):
 			_smoke(v3(pc["center"], float(spec.get("h", 5.0)) + 2.5), bool(spec.get("forge", false)))
@@ -625,12 +659,15 @@ func _build_piece(pc: Dictionary) -> void:
 		if _house_model(pc, hk):
 			return
 	var props: Dictionary = plan.city.get("kit", {}).get("props", {})
-	var pk: Dictionary = props.get(str(pc["group"]), {})
+	var pk: Dictionary = props.get(str(pc["kind"]), {})
+	if pk.is_empty():
+		for key in props.keys():
+			if str(pc["kind"]).begins_with(str(key)) and key != "note":
+				pk = props[key]
+		if pk.is_empty():
+			pk = props.get(str(pc["group"]), {})
 	if not pk.is_empty() and ModelLoader.exists(str(pk.get("glb", ""))):
-		var size: Vector2 = pc["size"]
-		var yaw := 0.0 if size.x >= size.y else PI * 0.5
-		yaw += PI * float(_hash(pc["anchor"]) > 0.5)
-		kit.add_model(str(pc["group"]), str(pk["glb"]), Transform3D(Basis(Vector3.UP, yaw), v3(pc["center"])))
+		_prop_model(pc, pk, spec)
 		return
 	match shape:
 		"house":
@@ -691,6 +728,105 @@ func _build_piece(pc: Dictionary) -> void:
 			kit.add_box("quay", kit.mat("wood_dark", 0.9), v3(pc["center"], 0.1), Vector3(pc["size"].x, 0.3, pc["size"].y))
 		_:
 			pass
+
+
+## A prop or plant from the kit, with the data's placement options.
+func _prop_model(pc: Dictionary, pk: Dictionary, spec: Dictionary) -> void:
+	var path := str(pk["glb"])
+	if bool(pk.get("wind", false)):
+		_wind_up(path)
+	var size: Vector2 = pc["size"]
+	var c: Vector2 = pc["center"]
+	var j := _hash(pc["anchor"])
+	var yaw := 0.0 if size.x >= size.y else PI * 0.5
+	if str(pk.get("face", "footprint")) == "random":
+		yaw = j * TAU
+	else:
+		yaw += PI * float(j > 0.5)
+	var s := 1.0
+	var sr: Variant = pk.get("scale", 1.0)
+	if sr is Array:
+		s = lerpf(float(sr[0]), float(sr[1]), _hash(pc["anchor"] + Vector2i(5, 3)))
+	else:
+		s = float(sr)
+	var key := path.get_file().get_basename()
+	var rep := float(pk.get("repeat", 0.0))
+	if rep > 0.0:
+		var L := maxf(size.x, size.y)
+		var along := Vector2(1, 0) if size.x >= size.y else Vector2(0, 1)
+		var n := maxi(1, roundi(L / rep))
+		for i in n:
+			var p := c + along * (-L * 0.5 + (i + 0.5) * L / n)
+			kit.add_model(key, path, Transform3D(Basis(Vector3.UP, yaw) * Basis.from_scale(Vector3(L / (n * rep), 1, 1)), v3(p)))
+	else:
+		kit.add_model(key, path, Transform3D(Basis(Vector3.UP, yaw) * Basis.from_scale(Vector3.ONE * s), v3(c)))
+	for k in range(1, int(pk.get("stack", 1))):
+		kit.add_model(key, path, Transform3D(Basis(Vector3.UP, yaw + 0.4 * k) * Basis.from_scale(Vector3.ONE * 0.85), v3(c, 0.9 * k)))
+	if pk.has("goods") and ModelLoader.exists(str(pk["goods"])):
+		var front := Vector2(0, 1).rotated(-yaw) * 1.4
+		kit.add_model("goods", str(pk["goods"]), Transform3D(Basis(Vector3.UP, yaw), v3(c + front)))
+	if pk.has("light_h"):
+		var l := OmniLight3D.new()
+		l.position = v3(c, float(pk["light_h"]))
+		l.light_color = Color(1.0, 0.68, 0.36)
+		l.omni_range = 10.0
+		l.omni_attenuation = 1.4
+		l.light_energy = 0.0
+		l.visible = false
+		add_child(l)
+		lamps.append(l)
+
+
+var _wind_done := {}
+
+## Foliage wind: meshes that carry wind vertex colours (R sway, G phase,
+## B flutter) get the wind shader, keeping their textures. Meshes without
+## vertex colours stay as they are (the current solid trees).
+func _wind_up(path: String) -> void:
+	if _wind_done.has(path):
+		return
+	_wind_done[path] = true
+	for part in kit.model_parts(path):
+		var mesh: Mesh = part["mesh"]
+		for i in mesh.get_surface_count():
+			if mesh is ArrayMesh and ((mesh as ArrayMesh).surface_get_format(i) & Mesh.ARRAY_FORMAT_COLOR) == 0:
+				continue
+			var src := mesh.surface_get_material(i)
+			var sm := ShaderMaterial.new()
+			sm.shader = WIND_SHADER
+			if src is BaseMaterial3D:
+				sm.set_shader_parameter("albedo_tex", (src as BaseMaterial3D).albedo_texture)
+				sm.set_shader_parameter("normal_tex", (src as BaseMaterial3D).normal_texture)
+				sm.set_shader_parameter("use_normal", (src as BaseMaterial3D).normal_texture != null)
+			mesh.surface_set_material(i, sm)
+			stats["wind_surfaces"] = int(stats.get("wind_surfaces", 0)) + 1
+
+
+## The mill from the kit: its +X wall faces the water, the wheel turns on
+## that wall and the race sits in the bank below it.
+func _mill_model(pc: Dictionary, path: String, mk: Dictionary) -> void:
+	var c: Vector2 = pc["center"]
+	var size: Vector2 = pc["size"]
+	var d := Vector2(1, 0)
+	for dd in [Vector2(1, 0), Vector2(-1, 0), Vector2(0, 1), Vector2(0, -1)]:
+		if plan.is_water(plan.world_to_cell(c + dd * (maxf(size.x, size.y) * 0.5 + 2.0))):
+			d = dd
+			break
+	var yaw := atan2(-d.y, d.x)
+	var b := Basis(Vector3.UP, yaw)
+	kit.add_model("mill", path, Transform3D(b, v3(c)))
+	var off := float(mk.get("half_width_x", 3.9)) + float(mk.get("wheel_width", 2.0)) * 0.5
+	var hub := Node3D.new()
+	hub.position = v3(c) + b * Vector3(off, float(mk.get("axle_h", 2.2)), 0)
+	hub.rotation.y = yaw
+	add_child(hub)
+	var wheel: Node3D = ModelLoader.instance(str(mk.get("wheel", "")))
+	if wheel != null:
+		hub.add_child(wheel)
+		spinners.append(hub)
+		_spin_speed = float(mk.get("spin", 0.7))
+	if ModelLoader.exists(str(mk.get("race", ""))):
+		kit.add_model("millrace", str(mk["race"]), Transform3D(b, v3(c) + b * Vector3(off, -0.5, 0)))
 
 
 ## The direction a building's front (+Z) should face: its door, snapped to

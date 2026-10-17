@@ -2,18 +2,18 @@
  "label": "🖼️ IMAGEN / CONCEPTO, TODAVÍA HAY QUE CONSTRUIRLO",
  "name": "bld_ws_mill_a",
  "concept": "bld_ws_mill_CONCEPTO_.png",
- "height_m": 8.0,
+ "height_m": 7.95,
  "footprint_m": [
-  8.863,
+  7.783,
   8.853
  ],
  "pivot": "footprint centre on ground (y=0)",
  "front": "+Z",
  "units": "metres, Y-up",
  "tris": {
-  "LOD0": 10210,
-  "LOD1": 5105,
-  "LOD2": 2041
+  "LOD0": 8189,
+  "LOD1": 4069,
+  "LOD2": 1567
  },
  "collider": "bld_ws_mill_a-col.glb (convex hull)",
  "textures": "embedded JPEG q82: LOD0 1024, LOD1 1024, LOD2 512",
@@ -25,5 +25,8 @@
   1.0,
   1.0
  ],
- "facing_note": "Main entrance faces +Z. Build agent rotates on import."
+ "facing_note": "Main entrance faces +Z. Build agent rotates on import.",
+ "version": "v2",
+ "note": "fused water wheel + frame removed (faces x>2.65 m, y<5.2 m in source frame); attach prp_waterwheel_a on the +X wall",
+ "wheel_socket": "+X wall face, axle centre ~2.2 m above ground, wheel plane parallel to the wall (axle along X)"
 }

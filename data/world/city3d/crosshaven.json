@@ -542,11 +542,135 @@
    "deck_peak": 1.25
   },
   "props": {
+   "note": "Props and nature from the art kit, by layout kind (exact) or kind group. face: footprint (long axis), random. repeat: copies along the footprint's long axis every N m. light_h: lamp height for the night light. goods / sacks: extra pieces placed beside. wind: swap in the foliage wind shader when the mesh has wind vertex colours (R sway, G phase, B flutter). Bushes stay placeholders until the leaf-card rebuild.",
    "stall": {
-    "glb": "res://art/3d/crosshaven/prp_stall_market_a_LOD1.glb"
+    "glb": "res://art/3d/crosshaven/prp_stall_market_a_LOD1.glb",
+    "goods": "res://art/3d/crosshaven/prp_marketgoods_a_LOD1.glb"
    },
    "barrel": {
     "glb": "res://art/3d/crosshaven/prp_barrel_oil_a_LOD1.glb"
+   },
+   "crate": {
+    "glb": "res://art/3d/crosshaven/prp_crate_a_LOD1.glb",
+    "face": "random"
+   },
+   "crate_stack": {
+    "glb": "res://art/3d/crosshaven/prp_crate_a_LOD1.glb",
+    "face": "random",
+    "stack": 2
+   },
+   "well": {
+    "glb": "res://art/3d/crosshaven/prp_well_a_LOD1.glb"
+   },
+   "lamp_post": {
+    "glb": "res://art/3d/crosshaven/prp_lamppost_a_LOD1.glb",
+    "light_h": 2.8
+   },
+   "lamp_hanging": {
+    "glb": "res://art/3d/crosshaven/prp_lamppost_a_LOD1.glb",
+    "light_h": 2.8
+   },
+   "bench": {
+    "glb": "res://art/3d/crosshaven/prp_bench_a_LOD1.glb"
+   },
+   "signpost": {
+    "glb": "res://art/3d/crosshaven/prp_signpost_a_LOD1.glb",
+    "face": "random"
+   },
+   "notice_board": {
+    "glb": "res://art/3d/crosshaven/prp_signpost_a_LOD1.glb"
+   },
+   "fence": {
+    "glb": "res://art/3d/crosshaven/prp_fence_a_LOD1.glb",
+    "repeat": 1.7
+   },
+   "tree_oak": {
+    "glb": "res://art/3d/crosshaven/nat_oak_a_LOD1.glb",
+    "face": "random",
+    "scale": [
+     0.85,
+     1.15
+    ],
+    "wind": true
+   },
+   "tree_elm": {
+    "glb": "res://art/3d/crosshaven/nat_oak_a_LOD1.glb",
+    "face": "random",
+    "scale": [
+     0.95,
+     1.25
+    ],
+    "wind": true
+   },
+   "tree_maple": {
+    "glb": "res://art/3d/crosshaven/nat_birch_a_LOD1.glb",
+    "face": "random",
+    "scale": [
+     0.9,
+     1.2
+    ],
+    "wind": true
+   },
+   "tree_cherry": {
+    "glb": "res://art/3d/crosshaven/nat_birch_a_LOD1.glb",
+    "face": "random",
+    "scale": [
+     0.8,
+     1.0
+    ],
+    "wind": true
+   },
+   "tree_cypress": {
+    "glb": "res://art/3d/crosshaven/nat_pine_a_LOD1.glb",
+    "face": "random",
+    "scale": [
+     0.8,
+     1.0
+    ],
+    "wind": true
+   },
+   "rock_large": {
+    "glb": "res://art/3d/crosshaven/nat_rock_a_LOD1.glb",
+    "face": "random",
+    "scale": [
+     0.9,
+     1.3
+    ]
+   },
+   "rocks_small": {
+    "glb": "res://art/3d/crosshaven/nat_rock_a_LOD1.glb",
+    "face": "random",
+    "scale": [
+     0.3,
+     0.45
+    ]
+   },
+   "flowers_blue_purple": {
+    "glb": "res://art/3d/crosshaven/nat_flowers_a_LOD1.glb",
+    "face": "random",
+    "scale": [
+     1.2,
+     1.6
+    ],
+    "wind": true
+   },
+   "flowers_red_white": {
+    "glb": "res://art/3d/crosshaven/nat_flowers_a_LOD1.glb",
+    "face": "random",
+    "scale": [
+     1.2,
+     1.6
+    ],
+    "wind": true
+   },
+   "flowerbed": {
+    "glb": "res://art/3d/crosshaven/nat_flowers_a_LOD1.glb",
+    "face": "random",
+    "scale": [
+     1.8,
+     2.2
+    ],
+    "wind": true
    }
   },
   "landmarks": {
@@ -622,6 +746,21 @@
    "workshop_carpenter": "res://art/3d/crosshaven/bld_ws_carpenter_a_LOD1.glb",
    "workshop_tailor": "res://art/3d/crosshaven/bld_ws_tailor_a_LOD1.glb",
    "mill": "res://art/3d/crosshaven/bld_ws_mill_a_LOD1.glb"
+  },
+  "mill": {
+   "wheel": "res://art/3d/crosshaven/prp_waterwheel_a_LOD1.glb",
+   "race": "res://art/3d/crosshaven/prp_millrace_a_LOD1.glb",
+   "note": "Mill +X wall faces the water; wheel axle 2.2 m up on that wall, spins on local X; race in the bank under it.",
+   "half_width_x": 3.9,
+   "wheel_width": 2.085,
+   "axle_h": 2.2,
+   "spin": 0.7
+  },
+  "plaza": {
+   "banner": "res://art/3d/crosshaven/prp_bannerpole_a_LOD1.glb",
+   "banners": 4,
+   "banner_r": 7.0,
+   "sacks": "res://art/3d/crosshaven/prp_sacks_a_LOD1.glb"
   }
  },
  "outskirts": {
