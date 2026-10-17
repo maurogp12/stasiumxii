@@ -1128,7 +1128,8 @@ def apply_ring_kit(layers, images, ground_np, walk, river, old_poly):
                 L_ = art_w_ * float(fcfg.get("length_mul", 1.0))
                 funnels.append(CG.funnel_poly(q, (u[0] * sign, u[1] * sign), v_, hw0, hw1, L_))
             roads |= CG.paint_road(ground_np, walk, sample, pts, mouths=mouths, wobble=float(rc.get("wobble", 0.0)),
-                                   seed=7 + len(painted), funnels=funnels)
+                                   seed=7 + len(painted), funnels=funnels, join=keep_st | roads,
+                                   fillet=float(rc.get("fillet_px", 0.0)))
             painted.append([[round(p_[0], 1), round(p_[1], 1)] for p_ in pts])
     drop &= ~roads
     left = inside_old & ~inside_new

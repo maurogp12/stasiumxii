@@ -213,7 +213,8 @@ def funnel_poly(q, u, v, hw0, hw1, length, steps=24):
     return left + right[::-1]
 
 
-def paint_road(ground_np, walk, sample, pts, width=ROAD_W, feather=3, mouths=(), wobble=0.0, seed=7, funnels=()):
+def paint_road(ground_np, walk, sample, pts, width=ROAD_W, feather=3, mouths=(), wobble=0.0, seed=7, funnels=(),
+               join=None, fillet=0.0):
     """Paint a cobble strip along a polyline into the ground and open it in the walkmask.
 
     `mouths`: extra (cx, cy, rx, ry) ellipses that widen the road (a gate
@@ -242,6 +243,20 @@ def paint_road(ground_np, walk, sample, pts, width=ROAD_W, feather=3, mouths=(),
             sub = np.clip((sub - 0.5 + nz * 0.06 * wobble) * 4.0 + 0.5, 0.0, 1.0)
             m = m.copy()
             m[y0_:y1_, x0_:x1_] = np.maximum(sub, m[y0_:y1_, x0_:x1_] * (sub > 0.5))
+    if fillet > 0 and join is not None:
+        # round 7: one curve where the road meets the streets already there:
+        # blur the union and fill the concave corners it closes
+        ys_, xs_ = np.nonzero(m > 0.5)
+        if len(xs_):
+            pad = int(fillet * 3)
+            y0_, y1_ = max(0, ys_.min() - pad), min(PLATE_H, ys_.max() + pad)
+            x0_, x1_ = max(0, xs_.min() - pad), min(PLATE_W, xs_.max() + pad)
+            sub_m = m[y0_:y1_, x0_:x1_] > 0.5
+            uni = sub_m | join[y0_:y1_, x0_:x1_]
+            closed = ndi.gaussian_filter(uni.astype(np.float32), fillet) > 0.5
+            add = closed & ~uni & ndi.binary_dilation(sub_m, iterations=int(fillet * 2))
+            m = m.copy()
+            m[y0_:y1_, x0_:x1_] = np.maximum(m[y0_:y1_, x0_:x1_], add.astype(np.float32))
     if feather:
         m = ndi.gaussian_filter(m, feather)
     ys, xs = np.nonzero(m > 0.01)

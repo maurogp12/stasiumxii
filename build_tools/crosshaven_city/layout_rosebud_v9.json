@@ -550,10 +550,11 @@
    "mouth_rx": 0,
    "wobble": 1.0,
    "funnel": {
-    "mouth_width_mul": 1.15,
-    "length_mul": 1.0
+    "mouth_width_mul": 0.65,
+    "length_mul": 0.5
    },
-   "note": "Round 6: every gate road opens into a funnel on both sides of the arch: as wide as the arch and its towers at the gate (1.15 x the tower-centre span), easing (smoothstep) to the road width over about one gatehouse width, with an uneven, feathered edge."
+   "note": "Rounds 6-7: every gate road opens into a funnel on both sides of the arch: 0.65 x the tower-centre span at the gate (to the towers' inner faces), easing (smoothstep) to the road width over 0.5 gatehouse width; uneven, feathered edge; where it meets the streets already there, a 40 px fillet blends the join into one curve.",
+   "fillet_px": 40
   },
   "corner_towers": "always",
   "corner_note": "Round 5: every ring corner keeps its tower so the two runs never meet in a bare cut, unless a gatehouse span covers the corner itself (the W gate). The near-gate rule applies to mid-edge towers."
