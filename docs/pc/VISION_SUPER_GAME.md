@@ -151,3 +151,19 @@ The slice shows 1 hero against bandits. The combat rules stay multi-unit, for gr
 **What changes:** the look (3D, BG3/Wartales style), the camera and the models.
 
 **Superseded:** the BG3/Wartales *system* ideas in sections 3, 6 and 7 (d20 dice, Action/Bonus action, high ground, shove, oil/fire surfaces, camp professions) are **not** adopted. They stay listed only as proposals for later, if Mauro wants them. For now we take only the *look* from BG3 and Wartales.
+
+## 13. Current focus: ALL the cities (Mauro, 17 Oct)
+
+Monsters are on hold. The focus is building every city in 3D with a generic city builder (layout data → 3D scene):
+
+| City | Feel |
+|---|---|
+| Crosshaven (capital) | The approved layout |
+| The Crossroads | Start hub |
+| Stoneford | Farms, mill, ford |
+| Northgate | Snow |
+| Eastmarch | Docks |
+| Southbridge | Bridge over the swamp |
+| Westwatch | Blight watchtower |
+
+Grok paints one key-art concept per city plus a shared building kit with per-city variants. Next come the 5 classes.
