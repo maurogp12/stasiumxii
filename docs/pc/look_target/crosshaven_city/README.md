@@ -151,3 +151,4 @@ Reviewed on the base without buildings (`cxbase/base_walls.jpg`).
     - towers in proportion, not toy-sized against the bigger buildings.
 
     Scale: a tower is about 4–5× hero height, and the wall is clearly taller than a house's eaves.
+    - **Towers** (Mauro, on a crop: "ahí no está bien hecha, y ese muro que sale hay que removerlo"): no tower may be sunk into the wall with only its cone showing. Each one is a full round tower from footing to roof, with the wall joining into its sides. The stubs are removed everywhere.
