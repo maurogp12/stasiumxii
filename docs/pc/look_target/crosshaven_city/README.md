@@ -155,3 +155,10 @@ Reviewed on the base without buildings (`cxbase/base_walls.jpg`).
 23. **Luca, 17 Oct:**
     - `castle_native_v2` is for the **castle only**. The Legendary house stays as approved (fdcc2149).
     - **Wall height** is open for Mauro. Luca wants walls 1.5× the big buildings (towers about 1030 px); Claude proposed 4–5× hero height (towers about 700 px). The north-side mock is coming in both versions.
+24. **Wall construction follows the GOAL** (Mauro, 17 Oct: "recuerda este prototipo, fíjate cómo los muros son más grandes que las casas, cómo está construida la muralla"; and "si queda así en el juego, apruébalo", so Claude may approve a wall that matches this in game). The reference is `goal_wall_detail.jpg`. Measured from the GOAL:
+    - **Wall body:** a thick, continuous curtain wall of grey-beige weathered stone blocks, as tall as or taller than a house's whole height, roof included. Square merlons with real gaps and a **walkway visible behind them**. A straight top line, no buttress clutter.
+    - **Towers:** round, about **2× a house's height**, wider than the wall's thickness, and standing proud of the wall, half outside its line. A crenellated parapet ring with a **red-brown conical tile roof** and a small finial. A slit window or two. Towers are evenly spaced, at roughly 6–8 wall-heights apart, with one at every corner.
+    - **Gates:** a gatehouse is a tall arched opening in a thickened wall block, flanked by towers. The water gate is an arch where the river passes, with foam.
+    - **The castle sits on the north wall**, integrated into it, and is taller than the towers. The cathedral is the tallest building.
+    - **Outside:** trees and grass hug the wall foot, and the river runs along with rocks.
+    - **Height order:** house (3× hero) < wall (about 3–3.5× hero) < tower (about 6× hero) < castle and cathedral.
