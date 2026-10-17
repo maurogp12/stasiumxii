@@ -28,7 +28,9 @@ var _bob_t := 0.0
 var _body: Node3D
 var _anim_names := {}
 var class_id := "bastion"
-var character := ""
+var character: Dictionary = {}
+var _weapons := {}        ## weapon id -> BoneAttachment3D
+var _holster := {}        ## rig_json weapons.holster
 var _skel_path := ""
 var _oneshot := false
 
@@ -39,21 +41,26 @@ func setup(p, n) -> void:
 	_build_body()
 
 
-## The 3D character a class uses (data: classes3d.json).
-static func character_for(cls: String) -> String:
+## The 3D character a class uses (data: classes3d.json): the first entry
+## whose model file exists. An entry is a name (our Meshy folder layout) or a
+## dict {name, glb, rig_json, weapons} for a model with its clips inside.
+static func character_for(cls: String) -> Dictionary:
 	var doc: Variant = JSON.parse_string(FileAccess.get_file_as_string(CLASSES)) if FileAccess.file_exists(CLASSES) else {}
 	var models: Array = ((doc as Dictionary).get("classes", {}) as Dictionary).get(cls, {}).get("models", ["hero_male"])
 	for m in models:
-		if FileAccess.file_exists(CHAR_DIR + "%s/%s_rigged.glb" % [m, m]):
-			return str(m)
-	return ""
+		var e: Dictionary = m if m is Dictionary else {"name": str(m)}
+		if not e.has("glb"):
+			e["glb"] = CHAR_DIR + "%s/%s_rigged.glb" % [e["name"], e["name"]]
+		if FileAccess.file_exists(str(e["glb"])):
+			return e
+	return {}
 
 
 ## Switch class: swaps the model when that class has its own.
 func set_class(cls: String) -> void:
 	class_id = cls
 	var ch := character_for(cls)
-	if ch == character and model != null:
+	if str(ch.get("name", "")) == str(character.get("name", "")) and model != null:
 		return
 	character = ch
 	if model != null:
@@ -64,13 +71,14 @@ func set_class(cls: String) -> void:
 		_body.queue_free()
 		_body = null
 	_anim_names.clear()
+	_weapons.clear()
 	_build_body()
 
 
 func _build_body() -> void:
-	if character == "":
+	if character.is_empty():
 		character = character_for(class_id)
-	model = ModelLoader.instance(CHAR_DIR + "%s/%s_rigged.glb" % [character, character]) if character != "" else null
+	model = ModelLoader.instance(str(character["glb"])) if not character.is_empty() else null
 	if model != null:
 		add_child(model)
 		anim = ModelLoader.find_player(model)
@@ -80,6 +88,7 @@ func _build_body() -> void:
 			if anim != null:
 				_skel_path = str(anim.get_node(anim.root_node).get_path_to(sk))
 		_attach_anims()
+		_attach_weapons()
 		_play("idle")
 		return
 	# Placeholder: a cloaked figure from primitives (1.8 m).
@@ -148,7 +157,8 @@ func _attach_anims() -> void:
 		anim.add_animation_library("", lib)
 	var cmap: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(CLIP_MAP)).get("clips", {})
 	for key in cmap.keys():
-		var path := CHAR_DIR + "%s/%s_%s.glb" % [character, character, key]
+		var cname := str(character.get("name", ""))
+		var path := CHAR_DIR + "%s/%s_%s.glb" % [cname, cname, key]
 		if not FileAccess.file_exists(path):
 			continue
 		var clips: Dictionary = ModelLoader.animations(path)
@@ -160,6 +170,12 @@ func _attach_anims() -> void:
 				lib.add_animation(key, a)
 			_anim_names[key] = key
 			break
+	# Clips already inside the model under the standard names.
+	for a in lib.get_animation_list():
+		if str(a) in cmap.keys() and not _anim_names.has(str(a)):
+			_anim_names[str(a)] = str(a)
+			var clip := lib.get_animation(a)
+			clip.loop_mode = Animation.LOOP_LINEAR if str(a) in LOOPING else Animation.LOOP_NONE
 	for a in lib.get_animation_list():
 		var low := str(a).to_lower()
 		for key in ["walk", "run", "idle"]:
@@ -172,12 +188,64 @@ func play_once(key: String) -> bool:
 	if anim == null or not _anim_names.has(key):
 		return false
 	anim.play(str(_anim_names[key]), 0.15)
+	_weapons_for_clip(key)
 	_oneshot = true
 	return true
 
 
 func clip_names() -> Array:
 	return _anim_names.keys()
+
+
+## Weapons from the rig JSON (weapons.attach: bone, position_m,
+## rotation_quat_xyzw), on BoneAttachment3D nodes; weapons.holster moves them
+## (e.g. onto UpperChest) for the clips it lists.
+func _attach_weapons() -> void:
+	var files: Dictionary = character.get("weapons", {})
+	var rj := str(character.get("rig_json", ""))
+	if files.is_empty() or rj == "" or not FileAccess.file_exists(rj):
+		return
+	var doc: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(rj))
+	var w: Dictionary = doc.get("weapons", {})
+	_holster = w.get("holster", {})
+	var sk := Retarget.find_skeleton(model)
+	if sk == null:
+		return
+	for wid in (w.get("attach", {}) as Dictionary).keys():
+		if not files.has(wid):
+			continue
+		var mesh := ModelLoader.instance(str(files[wid]))
+		if mesh == null:
+			continue
+		var ba := BoneAttachment3D.new()
+		sk.add_child(ba)
+		ba.add_child(mesh)
+		_weapons[wid] = {"node": ba, "mesh": mesh, "hand": w["attach"][wid]}
+		_mount(wid, w["attach"][wid])
+
+
+func _mount(wid: String, spec: Dictionary) -> void:
+	var e: Dictionary = _weapons[wid]
+	var ba: BoneAttachment3D = e["node"]
+	ba.bone_name = str(spec.get("bone", "RightHand"))
+	var q: Array = spec.get("rotation_quat_xyzw", [0, 0, 0, 1])
+	var pos: Array = spec.get("position_m", [0, 0, 0])
+	# Offsets are in the joint's space with the joint scale removed.
+	var sk: Skeleton3D = ba.get_parent()
+	var bone_scale := sk.get_bone_global_pose(sk.find_bone(ba.bone_name)).basis.get_scale() * sk.global_basis.get_scale() if sk.find_bone(ba.bone_name) >= 0 else Vector3.ONE
+	var inv := Vector3(1.0 / maxf(bone_scale.x, 1e-6), 1.0 / maxf(bone_scale.y, 1e-6), 1.0 / maxf(bone_scale.z, 1e-6))
+	(e["mesh"] as Node3D).transform = Transform3D(Basis(Quaternion(q[0], q[1], q[2], q[3])).scaled(inv), Vector3(pos[0], pos[1], pos[2]) * inv)
+
+
+## Holster or draw for a clip, as the rig JSON says.
+func _weapons_for_clip(key: String) -> void:
+	if _weapons.is_empty():
+		return
+	var holster := key in (_holster.get("use_for_clips", []) as Array)
+	for wid in _weapons.keys():
+		var spec: Dictionary = (_holster.get("attach", {}) as Dictionary).get(wid, {}) if holster else _weapons[wid]["hand"]
+		if not spec.is_empty():
+			_mount(wid, spec)
 
 
 func _play(key: String) -> void:
@@ -189,6 +257,7 @@ func _play(key: String) -> void:
 	var n := str(_anim_names.get(key, _anim_names.get("walk", "")))
 	if n != "" and anim.current_animation != n:
 		anim.play(n, 0.25)
+		_weapons_for_clip(key)
 
 
 func ground_pos() -> Vector2:

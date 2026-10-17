@@ -9,7 +9,7 @@ extends RefCounted
 ## sit, victory.
 
 const MESHY_TO_HUMANOID := {
-	"Hips": "Hips", "Spine": "Spine", "Spine01": "Chest", "Spine02": "UpperChest",
+	"Hips": "Hips", "Spine02": "Spine", "Spine01": "Chest", "Spine": "UpperChest",
 	"neck": "Neck", "Neck": "Neck", "Head": "Head",
 	"LeftShoulder": "LeftShoulder", "LeftArm": "LeftUpperArm", "LeftForeArm": "LeftLowerArm", "LeftHand": "LeftHand",
 	"RightShoulder": "RightShoulder", "RightArm": "RightUpperArm", "RightForeArm": "RightLowerArm", "RightHand": "RightHand",
@@ -33,12 +33,22 @@ static func find_skeleton(n: Node) -> Skeleton3D:
 
 ## Rename the skeleton's bones in place. Returns how many were renamed.
 static func retarget_skeleton(sk: Skeleton3D) -> int:
+	# Already on humanoid names (e.g. the art team's rigs): leave it.
+	if sk.find_bone("UpperChest") >= 0 or sk.find_bone("LeftUpperArm") >= 0:
+		return 0
+	# Meshy's spine runs Hips > Spine02 > Spine01 > Spine (> neck): rename
+	# in two passes so "Spine" never collides mid-way.
 	var n := 0
 	for i in sk.get_bone_count():
-		var b := sk.get_bone_name(i)
-		if MESHY_TO_HUMANOID.has(b) and MESHY_TO_HUMANOID[b] != b:
+		sk.set_bone_name(i, "__" + sk.get_bone_name(i))
+	for i in sk.get_bone_count():
+		var b := sk.get_bone_name(i).trim_prefix("__")
+		if MESHY_TO_HUMANOID.has(b):
 			sk.set_bone_name(i, MESHY_TO_HUMANOID[b])
-			n += 1
+			if MESHY_TO_HUMANOID[b] != b:
+				n += 1
+		else:
+			sk.set_bone_name(i, b)
 	return n
 
 

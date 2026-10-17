@@ -4,11 +4,45 @@
  "status": "proposed",
  "note": "Which 3D character each class uses. The first model in the list whose folder exists under res://art/3d/characters/ is used; hero_male is the stand-in until a class model lands. ironjaw's model belongs to the art team (Grok/Scenario). Spells, AP/MP and every rule come from data/kits.gd unchanged.",
  "classes": {
-  "kestrel": {"models": ["kestrel_male", "hero_male"]},
-  "ironjaw": {"models": ["ironjaw_male", "hero_male"]},
-  "mender": {"models": ["mender_male", "hero_male"]},
-  "gloam": {"models": ["gloam_male", "hero_male"]},
-  "bastion": {"models": ["bastion_male", "hero_male"]}
+  "kestrel": {
+   "models": [
+    "kestrel_male",
+    "hero_male"
+   ]
+  },
+  "ironjaw": {
+   "models": [
+    {
+     "name": "ironjaw_male",
+     "glb": "res://art/3d/characters/ironjaw_male/chr_ironjaw_male_LOD0.glb",
+     "rig_json": "res://art/3d/characters/ironjaw_male/chr_ironjaw_male_CONCEPTO_.json",
+     "weapons": {
+      "axe_R": "res://art/3d/characters/ironjaw_male/itm_ironjaw_axe_R_CONCEPTO_.glb",
+      "axe_L": "res://art/3d/characters/ironjaw_male/itm_ironjaw_axe_L_CONCEPTO_.glb"
+     },
+     "note": "Art team's model (Grok/Scenario): humanoid bone names and the clips are inside the file; axes attach from rig_json weapons.attach, holster per clip from weapons.holster. Grip offsets are being redone; the code reads whatever the JSON says."
+    },
+    "hero_male"
+   ]
+  },
+  "mender": {
+   "models": [
+    "mender_male",
+    "hero_male"
+   ]
+  },
+  "gloam": {
+   "models": [
+    "gloam_male",
+    "hero_male"
+   ]
+  },
+  "bastion": {
+   "models": [
+    "bastion_male",
+    "hero_male"
+   ]
+  }
  },
  "default_class": "bastion"
 }

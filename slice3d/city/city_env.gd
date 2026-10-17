@@ -128,11 +128,13 @@ func apply() -> void:
 	var elev: float = s["elev"]
 	# The sun swings east to west over the day.
 	var yaw := sun_yaw + (hour - 12.0) * 15.0
-	sun.rotation_degrees = Vector3(-maxf(elev, 2.0), yaw, 0)
+	# Keep the shadow-casting angle above 12 degrees: grazing light gives long
+	# shadow acne on roofs; the colour still says dusk.
+	sun.rotation_degrees = Vector3(-maxf(elev, 12.0), yaw, 0)
 	sun.light_color = s["sun"]
 	sun.light_energy = s["sun_energy"] if elev > -2.0 else 0.0
 	sun.visible = elev > -3.0
-	moon.light_energy = clampf(-elev / 20.0, 0.0, 1.0) * 0.35
+	moon.light_energy = clampf(-elev / 20.0, 0.0, 1.0) * 0.6
 	moon.visible = moon.light_energy > 0.01
 	sky_mat.sky_top_color = s["sky_top"]
 	sky_mat.sky_horizon_color = s["sky_horizon"]

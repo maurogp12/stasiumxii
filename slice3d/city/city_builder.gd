@@ -611,6 +611,10 @@ func _build_piece(pc: Dictionary) -> void:
 	if not lk.is_empty() and ModelLoader.exists(str(lk.get("glb", ""))):
 		_landmark_model(pc, lk)
 		return
+	var hk: Dictionary = plan.city.get("kit", {}).get("houses", {})
+	if not hk.is_empty() and (str(pc["kind"]).begins_with("house_npc") or str(pc["kind"]).begins_with("plot_")):
+		if _house_model(pc, hk):
+			return
 	var props: Dictionary = plan.city.get("kit", {}).get("props", {})
 	var pk: Dictionary = props.get(str(pc["group"]), {})
 	if not pk.is_empty() and ModelLoader.exists(str(pk.get("glb", ""))):
@@ -678,6 +682,46 @@ func _build_piece(pc: Dictionary) -> void:
 			kit.add_box("quay", kit.mat("wood_dark", 0.9), v3(pc["center"], 0.1), Vector3(pc["size"].x, 0.3, pc["size"].y))
 		_:
 			pass
+
+
+## The direction a building's front (+Z) should face: its door, snapped to
+## the footprint's axes; else toward the plaza.
+func _front_of(pc: Dictionary) -> Vector2:
+	var c: Vector2 = pc["center"]
+	var front := Vector2.ZERO
+	if pc.has("door"):
+		front = plan.cell_center(pc["door"]) - c
+	if front.length() < 0.1:
+		var plaza := plan.ring_center
+		for q in plan.pieces:
+			if str(q["kind"]) == "fountain":
+				plaza = q["center"]
+		front = plaza - c
+	if absf(front.x) > absf(front.y):
+		return Vector2(signf(front.x), 0)
+	return Vector2(0, signf(front.y))
+
+
+func _house_model(pc: Dictionary, hk: Dictionary) -> bool:
+	var kind := str(pc["kind"])
+	var path := ""
+	var tier := ""
+	if kind.begins_with("plot_"):
+		tier = kind.trim_prefix("plot_")
+		path = str((hk.get("player", {}) as Dictionary).get(tier, ""))
+	else:
+		var vars: Array = hk.get("npc", [])
+		if vars.is_empty():
+			return false
+		path = str(vars[int(_hash(pc["anchor"]) * 9973.0) % vars.size()])
+	if not ModelLoader.exists(path):
+		return false
+	var s := float(hk.get("scale", 1.0))
+	var yaw := _yaw_to(_front_of(pc))
+	kit.add_model(path.get_file().get_basename(), path, Transform3D(Basis(Vector3.UP, yaw) * Basis.from_scale(Vector3.ONE * s), v3(pc["center"])))
+	if tier != "":
+		_plot_marker(pc, pc["spec"], tier)
+	return true
 
 
 ## A landmark model: front (+Z) toward its door, else toward the plaza;
@@ -803,10 +847,11 @@ func _plot_marker(pc: Dictionary, spec: Dictionary, tier: String) -> void:
 	lab.text = "%s · %s plot" % [str(pc.get("plot", "")) if str(pc.get("plot", "")) != "" else "Plot", tier_name]
 	lab.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	lab.position = v3(c, float(spec.get("h", 5.0)) + float(spec.get("roof", 3.0)) + 1.6)
-	lab.font_size = 72
+	lab.font_size = 48
 	lab.pixel_size = 0.02
-	lab.outline_size = 14
+	lab.outline_size = 12
 	lab.modulate = col.lightened(0.3)
+	lab.visibility_range_begin = 18.0
 	lab.visibility_range_end = 90.0
 	add_child(lab)
 	labels.append(lab)

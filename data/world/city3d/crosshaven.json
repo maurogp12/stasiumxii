@@ -9,7 +9,7 @@
   "tilemap": "res://data/world/crosshaven_city/tilemap.json",
   "city": "res://data/world/crosshaven_city/city.json"
  },
- "cell_m": 2.0,
+ "cell_m": 1.5,
  "spawn_gate": "S",
  "water": {
   "level": -0.45,
@@ -252,11 +252,11 @@
     "sun_energy": 0.18,
     "elev": -30,
     "ambient": [
-     0.16,
      0.2,
-     0.32
+     0.25,
+     0.4
     ],
-    "ambient_energy": 0.55,
+    "ambient_energy": 0.8,
     "sky_top": [
      0.03,
      0.05,
@@ -450,11 +450,11 @@
     "sun_energy": 0.3,
     "elev": -6,
     "ambient": [
-     0.22,
-     0.24,
-     0.38
+     0.2,
+     0.25,
+     0.4
     ],
-    "ambient_energy": 0.58,
+    "ambient_energy": 0.8,
     "sky_top": [
      0.05,
      0.08,
@@ -483,11 +483,11 @@
     "sun_energy": 0.18,
     "elev": -30,
     "ambient": [
-     0.16,
      0.2,
-     0.32
+     0.25,
+     0.4
     ],
-    "ambient_energy": 0.55,
+    "ambient_energy": 0.8,
     "sky_top": [
      0.03,
      0.05,
@@ -554,30 +554,31 @@
    "castle": {
     "glb": "res://art/3d/crosshaven/bld_castle_a_LOD1.glb",
     "size": [
-     15.273,
-     11.842
+     28.0,
+     22.0
     ],
-    "fit": "footprint",
+    "fit": "model",
     "min": 0.8,
     "max": 1.9
    },
    "cathedral": {
     "glb": "res://art/3d/crosshaven/bld_cathedral_a_LOD1.glb",
     "size": [
-     15.611,
-     11.064
+     14.0,
+     26.0
     ],
-    "fit": "footprint",
+    "fit": "model",
     "min": 0.8,
-    "max": 1.6
+    "max": 1.6,
+    "note": "re-concept coming (drop-in)"
    },
    "townhall": {
     "glb": "res://art/3d/crosshaven/bld_townhall_a_LOD1.glb",
     "size": [
-     10.053,
-     5.482
+     9.906,
+     6.792
     ],
-    "fit": "footprint",
+    "fit": "model",
     "min": 0.8,
     "max": 1.6
    },
@@ -587,9 +588,28 @@
      10.739,
      9.689
     ],
-    "fit": "footprint",
+    "fit": "model",
     "min": 0.8,
     "max": 1.4
+   }
+  },
+  "houses": {
+   "note": "NPC house variants (a-h; i waits for its roof repaint) chosen per house by a stable hash; player houses by plot tier. Front +Z faces the house's door cell (the street). Modelled heights per docs/pc/skills/3D_ART_SKILL.md section 3.",
+   "npc": [
+    "res://art/3d/crosshaven/bld_house_npc_a_a_LOD1.glb",
+    "res://art/3d/crosshaven/bld_house_npc_c_a_LOD1.glb",
+    "res://art/3d/crosshaven/bld_house_npc_d_a_LOD1.glb",
+    "res://art/3d/crosshaven/bld_house_npc_e_a_LOD1.glb",
+    "res://art/3d/crosshaven/bld_house_npc_f_a_LOD1.glb",
+    "res://art/3d/crosshaven/bld_house_npc_g_a_LOD1.glb",
+    "res://art/3d/crosshaven/bld_house_npc_h_a_LOD1.glb",
+    "res://art/3d/crosshaven/bld_house_npc_b_a_LOD1.glb"
+   ],
+   "scale": 1.0,
+   "player": {
+    "normal": "res://art/3d/crosshaven/bld_house_player_normal_a_LOD1.glb",
+    "rare": "res://art/3d/crosshaven/bld_house_player_rare_a_LOD1.glb",
+    "legendary": "res://art/3d/crosshaven/bld_house_player_legendary_a_LOD1.glb"
    }
   }
  },
@@ -606,5 +626,6 @@
  "grade": {
   "saturation": 1.08,
   "contrast": 1.1
- }
+ },
+ "cell_note": "1.5 m per layout cell: the approved street plan's houses (3x3 cells) then fit the 3D house kit (3-5 m footprints, 5-6 m tall) and streets are 3-6 m wide."
 }

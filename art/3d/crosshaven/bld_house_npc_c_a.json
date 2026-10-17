@@ -1,0 +1,24 @@
+{
+ "label": "🖼️ IMAGEN / CONCEPTO, TODAVÍA HAY QUE CONSTRUIRLO",
+ "name": "bld_house_npc_c_a",
+ "concept": "bld_house_npc_c_CONCEPTO_.png",
+ "height_m": 6.0,
+ "footprint_m": [
+  3.509,
+  4.43
+ ],
+ "pivot": "footprint centre on ground (y=0)",
+ "front": "+Z",
+ "units": "metres, Y-up",
+ "tris": {
+  "LOD0": 10421,
+  "LOD1": 5209,
+  "LOD2": 2083
+ },
+ "collider": "bld_house_npc_c_a-col.glb (convex hull)",
+ "textures": "embedded JPEG q82: LOD0 1024, LOD1 1024, LOD2 512",
+ "source_glb": "../raw/bld_house_npc_c_tmkiMZ.glb",
+ "uniform_scale": 6.0,
+ "status": "preview mesh, not tested in game",
+ "facing_note": "Front door faces +Z. Build agent rotates on import."
+}

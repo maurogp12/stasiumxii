@@ -58,6 +58,10 @@ static func double_sided(n: Node) -> void:
 			if m is BaseMaterial3D:
 				var d: BaseMaterial3D = m.duplicate()
 				d.cull_mode = BaseMaterial3D.CULL_DISABLED
+				# Generated kits ship metallic = 1 with a metal map; stone and
+				# timber read better as dielectric under our lighting.
+				d.metallic = 0.0
+				d.metallic_specular = 0.35
 				mesh.surface_set_material(i, d)
 	for c in n.get_children():
 		double_sided(c)

@@ -60,7 +60,7 @@ func _done() -> void:
 
 func _test_layout() -> void:
 	_check(plan.width == 245 and plan.height == 245, "the approved 245 x 245 layout")
-	_check(plan.cell_m == 2.0, "cell is 2 m")
+	_check(plan.cell_m == 1.5, "cell is 1.5 m")
 	var kinds := {}
 	for p in plan.pieces:
 		kinds[str(p["kind"])] = kinds.get(str(p["kind"]), 0) + 1
