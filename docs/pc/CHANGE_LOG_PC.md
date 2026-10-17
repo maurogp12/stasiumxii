@@ -35,3 +35,4 @@ Crosshaven kit4: one-piece unified wall section v1 (diagonal wall + 2 towers + w
 2026-10-17 – walls/kit5/: diagonal batch v8 (segment_diag, segment_short, gatehouse_diagonal, watergate_diagonal + mirrors) repainted in ring v4 grey-beige; anchors changed; beige in old_v8c/. CONCEPT.
 2026-10-17 – walls/kit5/: v8.1 pass (diagonal block/merlon size matched to horizontal, short merlon at 550, stone contrast closer to v4; diagonal JSON anchors rewritten); v8.0 in old_v8_0/. CONCEPT.
 2026-10-17 – walls/kit5/: v8.2 final ring pass (all courses ~43 px, merlon 550, stone v4 depth; gatehouses, watergate, tower canvases/anchors changed, JSON rewritten); v8.1 in old_v8_1/. CONCEPT.
+2026-10-17 – walls/kit5/: v8.3 (lighter cooler grey-beige matched to v4, round gate arches, seam/band/grate fixes; tower kept slim pending Luca/Mauro; gate JSON anchors changed); v8.2 in old_v8_2/. CONCEPT.

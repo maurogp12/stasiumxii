@@ -1,0 +1,30 @@
+{
+ "left_foot": [
+  0,
+  552
+ ],
+ "right_foot": [
+  1565,
+  552
+ ],
+ "slope": 0,
+ "raw_slope": -0.0001,
+ "scale": 1.451,
+ "merlon_period_px": 130.6,
+ "tile_repeats": 12,
+ "stone_lab_before": [
+  67.69999694824219,
+  5.099999904632568,
+  33.29999923706055
+ ],
+ "stone_lab_after": [
+  38.9,
+  1.1,
+  19.2
+ ],
+ "size": [
+  1566,
+  555
+ ],
+ "colour_target": "v4 approved ring stone LAB [38.8, 1.1, 19.0]"
+}

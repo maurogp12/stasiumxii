@@ -1,0 +1,33 @@
+{
+ "left_foot": [
+  0,
+  552
+ ],
+ "right_foot": [
+  1598,
+  1132.6
+ ],
+ "slope": 0.3633,
+ "raw_slope": 0.4109,
+ "scale": 1.532,
+ "body_px": 550,
+ "course_px": 45.2,
+ "courses_edited": 2,
+ "arch_opening_x": [
+  594,
+  953
+ ],
+ "arch_width_px": 358,
+ "arch_strip_inserted_raw": 120,
+ "source": "wg_v81_raw.jpg",
+ "stone_lab_after": [
+  39.0,
+  1.3,
+  19.2
+ ],
+ "colour_target": "v4 approved ring stone LAB [38.8, 1.1, 19.0]",
+ "size": [
+  1599,
+  1136
+ ]
+}
