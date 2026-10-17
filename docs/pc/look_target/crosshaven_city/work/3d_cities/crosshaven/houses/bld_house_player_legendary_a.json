@@ -1,26 +1,30 @@
 {
  "label": "🖼️ IMAGEN / CONCEPTO, TODAVÍA HAY QUE CONSTRUIRLO",
  "name": "bld_house_player_legendary_a",
- "concept": "bld_house_player_legendary_CONCEPTO_.png",
- "height_m": 7.999,
+ "concept": "bld_house_player_legendary_v2_CONCEPTO_.png",
+ "height_m": 8.0,
  "footprint_m": [
-  10.333,
-  8.373
+  10.3,
+  8.4
  ],
  "pivot": "footprint centre on ground (y=0)",
  "front": "+Z",
  "units": "metres, Y-up",
  "tris": {
-  "LOD0": 10530,
-  "LOD1": 5302,
-  "LOD2": 2130
+  "LOD0": 13536,
+  "LOD1": 6768,
+  "LOD2": 2707
  },
  "collider": "bld_house_player_legendary_a-col.glb (convex hull)",
  "textures": "embedded JPEG q82: LOD0 1024, LOD1 1024, LOD2 512",
- "source_glb": "../raw/bld_house_player_legendary_k4Q9Sb.glb",
- "uniform_scale": 11.6987,
+ "source_glb": "../raw/bld_house_player_legendary_v2_N2PaUs.glb.tmp.glb",
+ "uniform_scale": 1.0,
  "status": "preview mesh, not tested in game",
- "facing_note": "Front door faces +Z. Build agent rotates on import.",
- "notes_design": "mansion, plants/ivy only; no gate, fence or garden walls",
- "note": "baked ground patch trimmed (0 CU)"
+ "version": "v2",
+ "design": "luxurious noble mansion: dressed stone, intact slate roof, glass windows, balcony, banners, small walled front garden with fountain",
+ "xz_fit_scale": [
+  0.915,
+  0.769
+ ],
+ "facing_note": "Main entrance faces +Z. Build agent rotates on import."
 }
