@@ -176,3 +176,4 @@ Reviewed on the base without buildings (`cxbase/base_walls.jpg`).
     - towers are centred on the wall line and on the corners, and the walls close perfectly, with no steps or gaps;
     - water gates belong to the same family as the gatehouses, flanked by towers.
 27. **SE gate REMOVED** (Mauro, 17 Oct: "esta entrada hay que quitarla"). Land gates are now N, S, W and E, plus 2 water gates. The SE wall is continuous, and the SE road and exit link are deleted.
+28. **NE outer bridge REMOVED** (Mauro, 17 Oct: "ese puente hay que quitarlo"): the stone bridge just outside the NE water gate. The 2 bridges inside the city stay.
