@@ -100,3 +100,4 @@ Reviewed on the base without buildings (`cxbase/base_walls.jpg`).
    - **Walls:** thick stone with a walkway on top, real crenellations, a stone footing with a contact shadow, tonal variation, moss and buttresses. Towers and gates match.
    - **Trees:** a varied painted set (oaks, cypresses, blossom trees), clustered naturally.
    - **Tools:** Meshy for the wall segment, tower and gate (3D, then iso render, then a Scenario paint-over), and Scenario for the tiling grass and cobble textures and the trees.
+6. **Bushes and flowers** (Mauro: "agrega arbustos, flores"). Scatter painted bushes and flower clumps over the grass, along street edges, around plazas and at the foot of the walls, as in the GOAL. They are loose plants on grass, which Luca's rules allow; no fenced beds. They are y-sorted props, small ones walkable-through, bigger bushes blocking.
