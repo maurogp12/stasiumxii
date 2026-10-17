@@ -8,7 +8,7 @@
   5.027
  ],
  "pivot": "footprint centre on ground (y=0)",
- "front": "+Z (assumed from concept 3/4, verify)",
+ "front": "+Z",
  "units": "metres, Y-up",
  "tris": {
   "LOD0": 10748,
@@ -16,9 +16,14 @@
   "LOD2": 2149
  },
  "budget": "kit piece 5-20k (landmark band 20-60k for full gatehouse)",
- "collider": "bld_gate_arch_stone_a-col.glb (box)",
- "textures": "Tripo PBR embedded (albedo+metal/rough+normal as delivered)",
+ "collider": "bld_gate_arch_stone_a-col.glb (3 boxes: 2 pillars + lintel, passage open)",
+ "textures": "embedded JPEG q82: LOD0 2048, LOD1 1024, LOD2 512 (albedo, metal/rough, normal)",
  "source_glb": "raw/bld_gate_arch_stone_HZ7gBY.glb",
  "uniform_scale": 8.0,
- "model_built": "preview only, not tested in game"
+ "model_built": "preview only, not tested in game",
+ "passage_m": {
+  "width": 2.82,
+  "clear_height": 5.39
+ },
+ "facing_note": "Front of the concept faces +Z. Walls/gates/tunnel: +Z = outside of the city."
 }

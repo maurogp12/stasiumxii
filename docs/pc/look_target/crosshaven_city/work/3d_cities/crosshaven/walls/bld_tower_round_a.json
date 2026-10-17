@@ -1,0 +1,24 @@
+{
+ "label": "🖼️ IMAGEN / CONCEPTO, TODAVÍA HAY QUE CONSTRUIRLO",
+ "name": "bld_tower_round_a",
+ "concept": "bld_tower_round_CONCEPTO_.png",
+ "height_m": 11.0,
+ "footprint_m": [
+  7.658,
+  7.306
+ ],
+ "pivot": "footprint centre on ground (y=0)",
+ "front": "+Z",
+ "units": "metres, Y-up",
+ "tris": {
+  "LOD0": 11096,
+  "LOD1": 5548,
+  "LOD2": 2219
+ },
+ "collider": "bld_tower_round_a-col.glb (convex hull)",
+ "textures": "embedded JPEG q82: LOD0 2048, LOD1 1024, LOD2 512 (albedo, metal/rough, normal)",
+ "source_glb": "../raw/bld_tower_round_gjC1dg.glb",
+ "uniform_scale": 11.0,
+ "status": "preview mesh, not tested in game",
+ "facing_note": "Front of the concept faces +Z. Walls/gates/tunnel: +Z = outside of the city."
+}

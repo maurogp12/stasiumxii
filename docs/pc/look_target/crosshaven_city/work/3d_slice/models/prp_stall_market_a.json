@@ -8,7 +8,7 @@
   1.738
  ],
  "pivot": "foot centre on ground (y=0)",
- "front": "+Z (assumed from concept 3/4, verify)",
+ "front": "+Z",
  "units": "metres, Y-up",
  "tris": {
   "LOD0": 2610,
@@ -17,8 +17,9 @@
  },
  "budget": "0.5-3k",
  "collider": "prp_stall_market_a-col.glb (box)",
- "textures": "Tripo PBR embedded (albedo+metal/rough+normal as delivered)",
+ "textures": "embedded JPEG q82: LOD0 1024, LOD1 1024, LOD2 512 (albedo, metal/rough, normal)",
  "source_glb": "raw/prp_stall_market_TeMe5b.glb",
  "uniform_scale": 2.6,
- "model_built": "preview only, not tested in game"
+ "model_built": "preview only, not tested in game",
+ "facing_note": "Front of the concept faces +Z."
 }
