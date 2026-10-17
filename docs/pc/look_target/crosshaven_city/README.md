@@ -91,3 +91,4 @@ The plots sit in the south-east of `cx_built`, along the south wall, between the
 Reviewed on the base without buildings (`cxbase/base_walls.jpg`).
 
 1. **Gates where roads cross the wall** ("nos falta puerta ahí"). The west road and the east road pass straight through the wall with no gate; only the south gate exists. Every road that leaves the city gets a proper gatehouse matching the south gate, with its walkable passage.
+2. **A north gate** in the north wall (Mauro: "otra puerta"), where the northern streets end short of the wall. Extend the street to it, with a road out toward Northgate and the snowy north. It matches the other gates.
