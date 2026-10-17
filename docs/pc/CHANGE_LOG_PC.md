@@ -29,3 +29,4 @@ Crosshaven (e) GOAL extras: gazebo, rowboat, quay, garden pieces, hedge tile, 4 
 Crosshaven iso gatehouses v7 (walkway top, arch depth) + water gate v6 - 🖼️ CONCEPTO
 Crosshaven kit wall segments regraded to v7 stone (diag, horizontal, short + mirrors) - 🖼️ CONCEPTO
 Crosshaven kit4: one-piece unified wall section v1 (diagonal wall + 2 towers + water-gate arch, painted ground, no alpha) - 🖼️ CONCEPTO
+2026-10-17 – walls/kit4/crosshaven_ring_newwalls_v4_APPROVED_CONCEPTO.jpg: Crosshaven wall ring concept target v4 (Luca approved 9:51 AM ET, relayed by Scenario Art); supersedes wall_section_unified_v1 as ring target. CONCEPT, not a game asset.
