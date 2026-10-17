@@ -661,7 +661,7 @@ def main():
             put(sp, sp["near"], sp.get("radius", 70), door=not sp.get("water"))
         # NPC houses fill the streets: every free spot with a street at its door
         hs = bspec["npc_houses"]
-        cand = [(x_, y_) for y_ in range(150, 620, 5) for x_ in range(120, 1260, 5)]
+        cand = [(x_, y_) for y_ in range(150, 620, 3) for x_ in range(120, 1260, 3)]
         rng.shuffle(cand)
         n_h = 0
         for ax, ay in cand:
@@ -671,12 +671,56 @@ def main():
             hh_ = float(hs["h_hero"]) * (0.94 + 0.12 * rng.random())
             im_ = CB.load(b_dir, f_, hh_ * hero, flip=bool(n_h % 2))
             w_img = im_.width / UP
-            if not placer.fits(ax, ay, w_img, door=True, gap=4):
+            if not placer.fits(ax, ay, w_img, door=True, gap=float(hs.get("gap", 4))):
                 continue
             placer.take(ax, ay, w_img)
             placed.append({"id": "npc_house_%d" % n_h, "tag": "house", "kind": "npc_house", "file": f_,
                            "im": CB.match(im_, refs, float(bspec.get("match_strength", 0.75))), "ax": ax, "ay": ay, "w_img": w_img})
             n_h += 1
+        # round 24: lamps along the streets and bushes on the grass, as sprites
+        # (the plate's own were painted out with the interior rebuild); they
+        # sort and fade but do not block
+        deco = []
+        dsp = bspec.get("deco", {})
+        if dsp:
+            edge = path & ~ndi.binary_erosion(path, iterations=1)
+            ring_in = np.asarray(_ring_im) > 0
+            ys_, xs_ = np.nonzero(edge & ring_in & ~ndi.binary_dilation(gate_open | bridge_ok, iterations=10))
+            order = list(range(len(xs_)))
+            rng.shuffle(order)
+            lamps_at = []
+            for k_ in order:
+                ax, ay = float(xs_[k_]), float(ys_[k_])
+                if any((ax - a2) ** 2 + ((ay - b2) * 2) ** 2 < float(dsp.get("lamp_spacing", 70)) ** 2 for a2, b2 in lamps_at):
+                    continue
+                # stand on the grass just off the street edge
+                for dx_, dy_ in ((0, 3), (3, 0), (-3, 0), (0, -3)):
+                    qx, qy = ax + dx_, ay + dy_
+                    if 0 <= int(qy) < ih and 0 <= int(qx) < iw and not path[int(qy), int(qx)] and placer.fits(qx, qy, 3.0, door=False, gap=1):
+                        lamps_at.append((qx, qy))
+                        break
+                if len(lamps_at) >= int(dsp.get("lamps", 24)):
+                    break
+            for k_, (ax, ay) in enumerate(lamps_at):
+                f_ = dsp["lamp_files"][k_ % len(dsp["lamp_files"])]
+                im_ = CB.load(b_dir, f_, float(dsp.get("lamp_h_hero", 1.6)) * hero)
+                placer.take(ax, ay, 3.0)
+                deco.append({"id": "lamp_%d" % k_, "tag": "lamp", "im": im_, "ax": ax, "ay": ay, "w_img": im_.width / UP})
+            n_b = 0
+            cand_b = [(x_, y_) for y_ in range(150, 620, 4) for x_ in range(120, 1260, 4)]
+            rng.shuffle(cand_b)
+            for ax, ay in cand_b:
+                if n_b >= int(dsp.get("bushes", 70)):
+                    break
+                f_ = dsp["bush_files"][n_b % len(dsp["bush_files"])]
+                im_ = CB.load(b_dir, f_, float(dsp.get("bush_h_hero", 0.8)) * hero * (0.85 + 0.3 * rng.random()), flip=bool(n_b % 2))
+                w_img = im_.width / UP
+                if not placer.fits(ax, ay, w_img, door=False, gap=2):
+                    continue
+                placer.take(ax, ay, w_img)
+                deco.append({"id": "bush_%d" % n_b, "tag": "bush", "im": im_, "ax": ax, "ay": ay, "w_img": w_img})
+                n_b += 1
+            print("deco lamps", len(lamps_at), "bushes", n_b)
         print("buildings placed", len(placed), "npc houses", n_h)
         if debug:
             from PIL import ImageDraw
@@ -694,6 +738,17 @@ def main():
             foot |= ((xx - cx_) / rx_) ** 2 + ((yy - cy_) / ry_) ** 2 <= 1.0
     rows = ["".join(("#" if (ch in "gr" and foot[cell_of[(x, y)][1], cell_of[(x, y)][0]]) else ch)
                     for x, ch in enumerate(r)) for y, r in enumerate(rows)]
+    # round 24: a small prop (stall, fountain, well) blocks at least the cell under it
+    if placed:
+        import city_buildings as CB
+        rows = [list(r_) for r_ in rows]
+        for b_ in placed:
+            cx_, cy_, rx_, ry_ = CB.footprint(b_["ax"], b_["ay"], b_["w_img"], b_.get("fp"))
+            best_ = min(cell_of.items(), key=lambda kv: (kv[1][0] - cx_) ** 2 + (kv[1][1] - cy_) ** 2)
+            (x_, y_) = best_[0]
+            if rows[y_][x_] in "gr":
+                rows[y_][x_] = "#"
+        rows = ["".join(r_) for r_ in rows]
     # keep only the walkable component the spawn is in (no islands)
     grid_w = np.array([[c in "gr" for c in r] for r in rows])
 
@@ -837,6 +892,32 @@ def main():
             bx0, bx1 = int(x0_ / UP), int((x0_ + w_) / UP)
             region[max(0, int(b_["ay"] - h_ / UP * 0.75)):int(b_["ay"]), max(0, bx0):bx1] = True
             shadows.append((ax_p + 0.06 * w_, ay_p - ry_ * UP * 0.7, w_ * 0.58, ry_ * UP * 1.25, 0.38))
+        # round 24: the whole interior ground is rebuilt (clean grass and cobble
+        # from the plate itself); water, bridges, walls and towers keep theirs
+        inside_r = np.asarray(_ring_im) > 0
+        path_r = ndi.binary_fill_holes(ndi.binary_closing(path, iterations=3)) & ~water
+        path_r = ndi.binary_opening(path_r, iterations=1)
+        lab_p, n_p = ndi.label(path_r)
+        if n_p:
+            sz_p = ndi.sum(path_r, lab_p, range(1, n_p + 1))
+            path_r = np.isin(lab_p, 1 + np.nonzero(sz_p > 150)[0])
+        keep_r = (ndi.binary_dilation(water, iterations=2) | ndi.binary_dilation(bridge_ok, iterations=4)
+                  | ndi.binary_dilation(occl | blocked, iterations=1))
+        full[:] = CB.rebuild_interior(full, inside_r, path_r, keep_r)
+        for d_ in deco:
+            im_ = d_["im"]
+            w_, h_ = im_.size
+            x0_ = int(round(d_["ax"] * UP - w_ / 2.0))
+            y0_ = int(round(d_["ay"] * UP - h_))
+            name_ = "layers/%d_d_%s.png" % (lid, d_["id"])
+            im_.save(os.path.join(art_dir, name_), optimize=True)
+            rec_ = {"id": lid, "file": name_, "tag": d_["tag"], "x": x0_, "y": y0_, "w": w_, "h": h_, "k": 1.0, "flip": False,
+                    "sort_y": round(d_["ay"] * UP, 1), "under": False, "fade": h_ >= BC.FADE_MIN_HEIGHT, "fade_min_alpha": 0.45, "deco": True}
+            if rec_["fade"]:
+                bw_, bh_, bits_ = BC.alpha_bits(im_)
+                rec_["mask"] = {"step": BC.MASK_STEP, "w": bw_, "h": bh_, "bits": bits_}
+            out_layers.append(rec_)
+            lid += 1
         lab_t, n_t = ndi.label(trees)
         touch = np.unique(lab_t[region & trees])
         touch = touch[touch > 0]

@@ -136,7 +136,7 @@ class Placer:
         if not self.inside[sl2][m2].all():
             return False
         if door:
-            y0, y1 = int(ay + 1), int(ay + 26)
+            y0, y1 = int(ay + 1), int(ay + 32)
             x0, x1 = int(ax - 7), int(ax + 8)
             if not self.path[y0:y1, x0:x1].any():
                 return False
@@ -226,3 +226,69 @@ def bake(full, clean, remove_img, shadows, patch):
         d = ((xx - cx) / rx) ** 2 + ((yy - cy) / ry) ** 2
         sh = np.clip(1.0 - d, 0.0, 1.0) ** 0.8 * k
         full[y0:y1, x0:x1] = (full[y0:y1, x0:x1] * (1.0 - sh[..., None])).astype(np.uint8)
+
+
+# ---------------------------------------------------------------- round 24
+
+def clean_window(mask, size, prefer=None):
+    """Top-left (image px) of a size x size window fully inside `mask`, nearest `prefer`."""
+    ok = ndi.uniform_filter(mask.astype(np.float32), size) > 0.999
+    ys, xs = np.nonzero(ok)
+    if not len(xs):
+        return None
+    if prefer is None:
+        prefer = (ys.mean(), xs.mean())
+    k = int(np.argmin((ys - prefer[0]) ** 2 + (xs - prefer[1]) ** 2))
+    return int(xs[k] - size // 2), int(ys[k] - size // 2)
+
+
+def texture_fill(full, box_img, shape_plate, seed):
+    """A plate-size texture from one clean plate window, laid as random
+    offset tiles with soft seams (no mirror symmetry, no visible grid)."""
+    PH, PW = shape_plate
+    x0, y0, s = box_img
+    src = full[y0 * UP:(y0 + s) * UP, x0 * UP:(x0 + s) * UP].astype(np.float32)
+    t = src.shape[0]
+    step = t // 2
+    out = np.zeros((PH, PW, 3), np.float32)
+    wsum = np.zeros((PH, PW, 1), np.float32)
+    ramp = np.minimum(np.arange(t), np.arange(t)[::-1]).astype(np.float32)
+    ramp = np.clip(ramp / (t * 0.25), 0.02, 1.0)
+    win = (ramp[:, None] * ramp[None, :])[..., None]
+    rng = np.random.RandomState(seed)
+    for y in range(-step, PH, step):
+        for x in range(-step, PW, step):
+            k = rng.randint(4)
+            tile = np.rot90(src, 2) if k == 1 else (src[:, ::-1] if k == 2 else (src[::-1] if k == 3 else src))
+            ys, xs = slice(max(0, y), min(PH, y + t)), slice(max(0, x), min(PW, x + t))
+            ty, tx = slice(ys.start - y, ys.stop - y), slice(xs.start - x, xs.stop - x)
+            out[ys, xs] += tile[ty, tx] * win[ty, tx]
+            wsum[ys, xs] += win[ty, tx]
+    return out / np.maximum(wsum, 1e-3)
+
+
+def rebuild_interior(full, interior_img, path_img, keep_img, seed=24):
+    """Round 24: the interior ground is rebuilt from the plate's own clean grass
+    and cobble, so nothing half-erased stays (old bushes, lamps, rocks)."""
+    PH, PW = full.shape[:2]
+    grass_src = interior_img & ~path_img & ~keep_img
+    a = np.asarray(Image.fromarray(full).resize((full.shape[1] // UP, full.shape[0] // UP), Image.BILINEAR)).astype(np.float32)
+    r, g, b = a[..., 0], a[..., 1], a[..., 2]
+    L = a.mean(axis=2)
+    m = ndi.uniform_filter(L, 9)
+    sd = np.sqrt(np.maximum(ndi.uniform_filter(L * L, 9) - m * m, 0))
+    smooth = sd < np.percentile(sd[grass_src], 45)
+    gwin = clean_window(grass_src & (g > r + 4) & smooth, 40)
+    cwin = clean_window(path_img & interior_img & (sd < np.percentile(sd[path_img], 55)), 24)
+    if gwin is None or cwin is None:
+        return full
+    grass = texture_fill(full, (gwin[0], gwin[1], 40), (PH, PW), seed)
+    cob = texture_fill(full, (cwin[0], cwin[1], 24), (PH, PW), seed + 1)
+
+    def up(mk, blur):
+        u = np.asarray(Image.fromarray((mk * 255).astype(np.uint8)).resize((PW, PH), Image.BILINEAR)).astype(np.float32) / 255.0
+        return ndi.gaussian_filter(u, blur)[..., None]
+    pa = up(path_img, 2.5)
+    new = grass * (1.0 - pa) + cob * pa
+    ia = up(interior_img & ~keep_img, 3.0)
+    return np.clip(full * (1.0 - ia) + new * ia, 0, 255).astype(np.uint8)

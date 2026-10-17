@@ -1050,7 +1050,7 @@
    }
   ],
   "npc_houses": {
-   "count": 40,
+   "count": 52,
    "h_hero": 3.0,
    "files": [
     "buildings/npc/cottage_restyle_a_CONCEPTO.png",
@@ -1062,7 +1062,8 @@
     "buildings/npc/cx_house_b_CONCEPTO.png",
     "buildings/npc/cx_house_c_CONCEPTO.png",
     "buildings/npc/ex_cottage_c_CONCEPTO.png"
-   ]
+   ],
+   "gap": 2
   },
   "plot_houses": {
    "normal": {
@@ -1071,12 +1072,33 @@
    },
    "rare": {
     "file": "houses/house_rare_2_5x_CONCEPTO.png",
-    "h_hero": 3.4
+    "h_hero": 3.5
    },
    "legendary": {
     "file": "houses/house_legendary_v2_CONCEPTO.png",
-    "h_hero": 4.2
+    "h_hero": 4.0
    }
+  },
+  "deco": {
+   "lamps": 26,
+   "lamp_spacing": 70,
+   "lamp_h_hero": 1.7,
+   "lamp_files": [
+    "green/plaza_lamp_single_CONCEPTO.png",
+    "green/plaza_lamp_double_CONCEPTO.png"
+   ],
+   "bushes": 80,
+   "bush_h_hero": 0.75,
+   "bush_files": [
+    "green/bush_boxwood_CONCEPTO.png",
+    "green/bush_rose_red_CONCEPTO.png",
+    "green/bush_lavender_CONCEPTO.png",
+    "green/bush_hydrangea_blue_CONCEPTO.png",
+    "green/bush_peony_pink_CONCEPTO.png",
+    "green/bush_flower_yellow_CONCEPTO.png",
+    "green/bush_daisy_white_CONCEPTO.png",
+    "green/bush_fern_CONCEPTO.png"
+   ]
   }
  },
  "plot_avoid": [
