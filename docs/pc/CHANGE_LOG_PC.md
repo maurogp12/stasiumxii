@@ -45,3 +45,4 @@ Crosshaven gate doors v2 painted (plank thickness, iron highlights, leaf darkeni
 Crosshaven style A concept (clean cartoon, Wakfu/Dofus-updated look) for Claude review; CONCEPTO, not built
 Crosshaven modular kit group 1 (ground atlases + walls/gates/tunnels), style A, Claude format; CONCEPTO, not built
 Crosshaven kit group 2 houses (9 NPC + 3 player tiers) + wall_h 206px repeat fix; CONCEPTO, not built
+Crosshaven kit groups 3-5: landmarks, workshops, props; CONCEPTO, not built

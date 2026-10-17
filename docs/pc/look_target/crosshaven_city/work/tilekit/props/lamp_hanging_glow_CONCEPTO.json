@@ -1,0 +1,19 @@
+{
+ "parent": "lamp_hanging_CONCEPTO",
+ "offset_in_parent": [
+  -66,
+  5
+ ],
+ "foot": [
+  146,
+  245
+ ],
+ "footprint": [
+  0,
+  0
+ ],
+ "blocks": false,
+ "height_px": 240,
+ "blend": "add",
+ "night_only": true
+}

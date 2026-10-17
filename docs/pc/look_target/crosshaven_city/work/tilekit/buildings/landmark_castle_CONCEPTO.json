@@ -1,0 +1,15 @@
+{
+ "foot": [
+  694,
+  1150
+ ],
+ "footprint": [
+  10,
+  10
+ ],
+ "blocks": true,
+ "height_px": 1150,
+ "width_px": 1249,
+ "tier": "landmark",
+ "door_side": "front-left (SW face)"
+}

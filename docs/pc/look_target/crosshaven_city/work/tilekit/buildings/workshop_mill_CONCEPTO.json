@@ -1,0 +1,15 @@
+{
+ "foot": [
+  394,
+  500
+ ],
+ "footprint": [
+  5,
+  4
+ ],
+ "blocks": true,
+ "height_px": 500,
+ "width_px": 669,
+ "tier": "workshop",
+ "note": "the wheel is on the SE side; place on a river bank with the wheel over water; wheel is static (animate rotation in engine if needed)"
+}

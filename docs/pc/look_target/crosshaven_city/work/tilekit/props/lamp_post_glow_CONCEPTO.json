@@ -1,0 +1,19 @@
+{
+ "parent": "lamp_post_CONCEPTO",
+ "offset_in_parent": [
+  -65,
+  -63
+ ],
+ "foot": [
+  123,
+  313
+ ],
+ "footprint": [
+  0,
+  0
+ ],
+ "blocks": false,
+ "height_px": 240,
+ "blend": "add",
+ "night_only": true
+}
