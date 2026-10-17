@@ -101,3 +101,7 @@ Reviewed on the base without buildings (`cxbase/base_walls.jpg`).
    - **Trees:** a varied painted set (oaks, cypresses, blossom trees), clustered naturally.
    - **Tools:** Meshy for the wall segment, tower and gate (3D, then iso render, then a Scenario paint-over), and Scenario for the tiling grass and cobble textures and the trees.
 6. **Bushes and flowers** (Mauro: "agrega arbustos, flores"). Scatter painted bushes and flower clumps over the grass, along street edges, around plazas and at the foot of the walls, as in the GOAL. They are loose plants on grass, which Luca's rules allow; no fenced beds. They are y-sorted props, small ones walkable-through, bigger bushes blocking.
+7. **Fewer trees, bigger city** (Mauro: "siento que hay muchos árboles y no tendremos suficiente espacio para los edificios; quizá debemos agrandar el mapa más"):
+   - Cut the prototype's 95 trees down to a few clusters: the park, the wall feet and a few street trees.
+   - Enlarge the walled city about 1.5× (plate about 7680×4320): the wall ring moves outward, the streets and river lengthen, and there is room for all the buildings, the districts and the 5 player plots.
+   - Placeholder pieces are re-laid on the bigger plate before the beautification goes on.
