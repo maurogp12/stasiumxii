@@ -91,3 +91,30 @@ The BG3 and Wartales look needs **3D**: real models, lighting and camera. Our cu
 1. **3D:** confirm we go 3D for the BG3/Wartales look.
 2. **Scale:** MMO (many players online at once, like Dofus/Wakfu), or co-op of up to 4–6 players (like BG3/Wartales)? This decides the server work.
 3. **Vertical slice:** approve the slice above as the next step.
+
+## 10. How Crosshaven is built in 3D
+
+- **The layout stays.** The approved plan (`data/world/crosshaven_city/streetplan.json` on `claude/pc-crosshaven-city`) is the blueprint: a ring with 12 towers, 4 gates with wooden doors that open, 2 water tunnels, the river with 4 bridges, castle N, cathedral centre, townhall and bank on the plaza, the W crafts quarter and the mill, ~60 NPC houses, 10 player plots, gardens and the gazebo.
+- **Scale in metres** (hero 1.8 m):
+
+  | Piece | Height |
+  |---|---|
+  | NPC house | 5–6 m |
+  | Wall | 6 m |
+  | Gatehouse | 8 m, arch ≥ 4 m |
+  | Tower | 11 m |
+  | Legendary house | ~8 m |
+  | Bank | 8.5 m |
+  | Townhall | 9 m |
+  | Cathedral | 11 m |
+  | Castle | 13 m |
+
+- **Pipeline:** Grok's concept turnaround → Meshy image-to-3D → cleanup (metre scale, foot pivot, collision, LOD) → Godot places it from data. The ground is a 3D terrain with texture blending, and the river uses a water shader. The day/night cycle, lamps and city life are reused.
+- **Phases:**
+  1. The slice: the S gate and plaza, the company, 1 fight, 1 dungeon room.
+  2. The wall ring.
+  3. Landmarks.
+  4. Houses and workshops.
+  5. Props, nature, river and life.
+  6. The MMO server.
+- Announced to every team on #252.
