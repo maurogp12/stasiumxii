@@ -1,0 +1,14 @@
+{
+ "foot": [
+  98,
+  120
+ ],
+ "footprint": [
+  2,
+  1
+ ],
+ "blocks": true,
+ "height_px": 120,
+ "width_px": 136,
+ "orient": "ne axis; flip_h for se"
+}

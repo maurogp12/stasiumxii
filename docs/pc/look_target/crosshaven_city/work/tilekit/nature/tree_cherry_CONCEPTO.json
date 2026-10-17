@@ -1,0 +1,14 @@
+{
+ "foot": [
+  212,
+  400
+ ],
+ "footprint": [
+  2,
+  2
+ ],
+ "blocks": true,
+ "height_px": 400,
+ "width_px": 365,
+ "see_through_when_behind": true
+}

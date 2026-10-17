@@ -1,0 +1,13 @@
+{
+ "foot": [
+  160,
+  380
+ ],
+ "footprint": [
+  3,
+  3
+ ],
+ "blocks": true,
+ "height_px": 380,
+ "width_px": 261
+}

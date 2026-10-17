@@ -1,0 +1,14 @@
+{
+ "foot": [
+  77,
+  135
+ ],
+ "footprint": [
+  1,
+  1
+ ],
+ "blocks": true,
+ "height_px": 135,
+ "width_px": 94,
+ "note": "corner/through post: rail stubs on both sides"
+}

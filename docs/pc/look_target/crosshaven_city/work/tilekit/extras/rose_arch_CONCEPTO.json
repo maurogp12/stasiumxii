@@ -1,0 +1,14 @@
+{
+ "foot": [
+  143,
+  300
+ ],
+ "footprint": [
+  2,
+  1
+ ],
+ "blocks": false,
+ "height_px": 300,
+ "width_px": 227,
+ "walkable_under": true
+}
