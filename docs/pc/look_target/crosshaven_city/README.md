@@ -118,3 +118,4 @@ Reviewed on the base without buildings (`cxbase/base_walls.jpg`).
    - Performance mode uses a slower or static fallback.
 10. **Castle = Grok Bot's palace** (Mauro: "me gusta más el castillo de Grok"). Keep the `cx_built` palace sprite (`000_cx_palace.png`) as the city's castle, in the prototype's north position. The Meshy castle is dropped, along with its paint-over.
 11. **House = Grok Bot's house** (Mauro: "la casa me gusta más de Grok"). Keep the `cx_built` house sprites; the Meshy house is dropped. Rule from items 10 and 11: **Grok Bot's painted sprites are preferred.** Meshy is used only where nothing painted exists, or as an angle and proportion guide for Grok Bot.
+12. **Cathedral = Grok Bot's cathedral** (Mauro: "la catedral también está un poco dividido, pero igual me voy con la de Grok"). Keep the `cx_built` cathedral sprite, repainted bigger per item 8. The Meshy cathedral paint-over is dropped.
