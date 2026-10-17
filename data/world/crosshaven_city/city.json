@@ -76,93 +76,93 @@
    "#########rr##########################################~~~~#################################################...............................................",
    "##########rr######################gggggggggggggggg#gg#~~~gg#ggggg##g#ggggggggggggggggggg#ggggggg###########..............................................",
    "###########rr####################ggggggggggggggggggggg~~~~gggggg###ggggggggggggggggggggggggggggg############.............................................",
-   "############rr##################gggggrrggggggggggggggr~~~~gggggg##ggggg#ggggggggggggrrg#ggggggggg############............................................",
-   "#############rr################ggggggrrggggggggggggggg~~~~rggggggggggggggggggggggggggrgrggggggggg#############...........................................",
-   "##############gr##############ggggggggrrggggggg##ggggg~~~~rgggggggggggggggggggg###ggggrrrggggggggg#############..........................................",
-   "###############rr############gggggggggrrrggggg###gggggr~~~~ggggggggggggggggggg####gggggrrrgggggggg##############.........................................",
-   "################rr##########gggggggggggrrggggg####ggggr~~~~gggggggggggggggggg#####gggggggrrgggggg################........................................",
-   "#################rr########ggggggggggg#grrgggg###gggggg~~~~r#gggggggggggggggg####ggggg#gggrrrgggg#################.......................................",
-   "##################rr#######gggggggggggggrrggggggrgggggg~~~~rgggggggggggggggggg##gggggggggggrrrggg##################......................................",
-   "###################rr#######gggggggggggggrrgggrgrrrrgggr~~~~gggggggggggggggggggggggg#gggggggrgrgg###################.....................................",
-   "####################rr#######ggggggggggggrrrgrrrrrrrgggr~~~~ggggggggggggggggggggggggggggggg#ggrrg####################....................................",
-   "#####################rr#####ggg#ggggggggg#rrrrrrrrrrgggg~~~~rgggg#ggggggggggggggggggggggggg#ggrrr#####################...................................",
-   "######################rg###ggggggggggggggggrrrgrrrrrrrggg~~~~rgggggggggg##ggggggggggggggggggggrrrrrrrrgrrgrrrrrrrrrgrrr..................................",
-   "#######################rg#gg##ggggggggggggggrrrgrrrrrrgggg~~~~ggggggggg####ggggggggggg#gggggggrrrrrrrrrrrrrrrrrggrrrgrrr.................................",
-   "########################rr#ggggggggggggggggrrrrrrrrgrrggggg~~~~gggggggg####ggggrrrrrrgggggggggggg########################................................",
-   "########################grrgggggggggggggggggrrrrrrrrr#gggggg~~~~ggggggg###ggggrrrrrrrrrgggggggggg#########################...............................",
+   "############rr##################gggggrrggggggggggggggr~~~~gggggg##ggggggggggggggggggrrggggggggggg############............................................",
+   "#############rr################ggggggrrggggggggggggg#g~~~~rggggggggggggggggggggggggggrgrggggggggg#############...........................................",
+   "##############gr##############ggggggggrrggggggg##ggggg~~~~rgggggggg#ggggggggggg###ggggrrrggggggggg#############..........................................",
+   "###############rr############gggggggg#rrrggggg###gggggr~~~~ggggggggggggggggggg####gggggrrrgggggggg##############.........................................",
+   "################rrrrg#######gggggggggggrrggggg####ggggr~~~~gggggg#ggggggggggg#####gggggggrrgggggg################........................................",
+   "#################rrrr######gggggggggggggrrgggg###gggggg~~~~rggggggggggggggggg####ggggg#gggrrrgggg#################.......................................",
+   "#################rrr#######gggggg#ggggggrrggggggrgggggg~~~~rgggggggggggggggggg##gggggggggggrrrggg##################......................................",
+   "#################rrrr#######gggggggggggggrrgggrgrrrrgggr~~~~gggggggggggggggggggggggg#gggggggrgrgg###################.....................................",
+   "#################r##rr#######ggggggggggggrrrgrrrrrrrgggr~~~~ggggggggggggggggggggggggggggggggggrrr#####r##############....................................",
+   "#####################rr#####ggggggggggggggrrrrrrrrrrgggg~~~~rgggg#ggggggggggggggggg#ggggggggggrrr#####gr###########g##...................................",
+   "######################rg###gggggggggggggg#grrrgrrrrrrrggg~~~~rgggggggggg##ggggggggggggggggggggrrrrrrrrgrrgrrrrrrrrrgrrr..................................",
+   "#######################rg#rgggggggggggggggggrrrgrrrrrrgggg~~~~ggggggggg####g#gggggggggggggggggrrrrrrrrrrrrrrrrrggrrrgrrr.................................",
+   "########################rrrggggggggggggggggrrrrrrrrgrrg#ggg~~~~gggggggg####ggggrrrrrrggggggggggrr#####rr#################................................",
+   "########################rrrgggggggggggggggggrrrrrrrrrggggggg~~~~ggggggg###ggggrrrrrrrrrgggggggggg#########################...............................",
    "##################g####gggrrggggggggggggggggrrrrrrrrrgggggggg~~~~gggggggggggggrrrrrrrrgrggggggggg##########################..............................",
-   "#################ggg##gggggrrggg#ggggggggg#grrrrrrrrgggggggggg~~~~g##ggggggggrrrrrrrrrrrg#ggggggg###########################.............................",
-   "################ggggggggggggrrgg#ggggggg#gggrrggrgggggggggggggg~~~~ggggggggggrggr###rrrrggggggggg############################............................",
+   "#################ggg##gggggrrggggggggggggg#grrrrrrrrgggggggggg~~~~g##ggggggggrrrrrrrrrrrggggggggg###########################.............................",
+   "################ggggggggggggrrggggggggggggggrrggrggggggggggg#gg~~~~ggggggggggrggr###rrrrggggggggg############################............................",
    "###############ggggggggggggggrrgggggggggggggrrrggggggggggggggggg~~~~ggggggggggrrrr#rrrrrggggggggg#############################...........................",
-   "###############gggggggggggggggrrggggggrgrrrrrrrrrgggg#ggggggggggg~~~~gggggggggrrrrrrrgrrggggggggggg############################..........................",
-   "###############gggggg#ggggggggggrgggrrrrrrrrrrgrrrrrggg#gggggggggg~~~~gg#gggggrrrrrrrrrrggggggggggg#############################.........................",
-   "###############gggggggggggggggggrrrrrgrrgrrrrgrrrrrrrrgggggggggg#gr~~~rggggggggrrrrgrrggg#ggggggggg##############################........................",
-   "###############gggg#ggggggg#gggggrrrrrrrgggggggggggrgrrgggggggg#ggg~~~~gggggggggrrrrrrrgggggggggggg###############################.......................",
-   "################ggggggggggggggggrrrrrgggggggggggggggggrrrgggggggggg~~~~rggggggggggggrrrgggggggggggg################################......................",
-   "################ggggggggggggggggggrrrggggggggggggggggggggr#gggrrrrrr~~~#ggggggggggggrrrgggggggggggg#################################.....................",
-   "################gggggggggggggggrrrrrggg#ggggggggggggggggrrrggrrgrrrr~~~~ggggggggg#ggrrgg#gggggggggg##################################....................",
-   "###############ggggggggggggggggrrrrggggggggggggggggggggggrrrgrrggggrr~~~r#ggggggggggrrrgggggggggggg###################################...................",
-   "###############gggggggggggggggrrrrgg#gggggggggggggggggggggrrrrggg#ggr~~~~gggggggggggrrggggggggggggg####################################..................",
-   "###############gggggggggggggggrgrrggggggggggg##ggggggggggggrrrgg###gg~~~~rggggggggggrrggggggggggggg#####################################.................",
-   "###############ggggg##gggggg#ggrrgggggggggg#####ggggggggggggrrgg###ggr~~~rgggggg###grrggg#ggggggggg######################################................",
+   "###############gggggggggggggggrrggggggrgrrrrrrrrrgg#g#ggggggggggg~~~~gggggg#ggrrrrrr#grrggggggggggg############################..........................",
+   "###############gggggggggggggggggrgggrrrrrrrrrrgrrrrrggg#gggggggggg~~~~ggggggggrrrrrrrrrrggggggggggg#############################.........................",
+   "###############gggggggggggggggggrrrrrgrrgrrrrgrrrrrrrrggggggggggggr~~~rggggggggrrrrgrrggggggggggggg##############################........................",
+   "###############ggggggggggggggggggrrrrrrrgggggggggggrgrrgggggggggggg~~~~gggggggggrrrrrrrgggggggggggg###############################.......................",
+   "################ggggggggggggggggrrrrrggggggg#gggggggggrrrgggggggggg~~~~rgggggggggg#grrrgggggggggggg################################......................",
+   "################gggggggggggg##ggggrrrggggg#ggggggggggggggrggggrrrrrr~~~#ggggggggggggrrrgggggggggggg#################################.....................",
+   "################gggggggggggggggrrrrrgggg#gg#ggggggggggggrrrggrrgrrrr~~~~ggggggggg#ggrrggg#ggggggggg##################################....................",
+   "###############ggggggggggggggggrrrrggggggggggggggggggggggrrrgrrggggrr~~~rgggggggggggrrrgggggggggggg###################################...................",
+   "###############gggggggggggggggrrrrggggggggggggggggggggg#ggrrrrggg#ggr~~~~gggggggggggrrggggggggggggg####################################..................",
+   "###############gggggggggggggggrgrrggggggggggg##gggggggg#gggrrrgg###gg~~~~rggggggggggrrggggggggggggg#####################################.................",
+   "###############ggggg##gggggggggrrgggggggggg######gggggggggggrrgg###ggr~~~rgggggg###grrggg#ggggggggg######################################................",
    "###############gggg####gggggggrrrggggggggg#######gggggggggggrrgg##gggr~~~~gggggg###grrggggggggggggg#######################################...............",
    "###############gggg####gggggggrrrgggggggg########ggggggggggggrrggggggrr~~~rgggg####grrggggggggggggg########################################..............",
    "###############ggggg##ggggggggrrrggggggg#########gggggggggggggrrggggrrr~~~~gggg####grrrgggggggggggg#########################################.............",
-   "###############ggrggggggggggggrrgg#ggggg########ggggggggggggggrrrrrrrrr~~~~rggg###ggrrrgggggggggggg##########################################............",
+   "###############ggrggggggggggggrrgggggggg########ggg#ggggggggggrrrrrrrrr~~~~rggg###ggrrrgggggggggggg##########################################............",
    "###############ggrrgggg##gggggrrgggggggg########ggggggggggggggrrrrrrrggr~~~#ggggggggrrrgggggggggggg###########################################...........",
-   "###############gggrgggggggggggrrgggggggg#######ggrrrrrrrgggggggrrggggggr~~~~ggggggggrrrgggggggggggg####r#######################################..........",
+   "###############gggrgggggggggggrrgggggggg#######ggrrrrrrrgggggggrrggggggr~~~~ggggggggrrr#ggggggggggg####r#######################################..........",
    "###############ggggrrrggggggggrrrggggggg######ggrrrgrrrrrggggggrrggggggg~~~~rgggggggrrggggggggggg#####rrr#######################################.........",
    "###############ggggggrrrggggggrrrggggggggg##gggrrrrrrrrrrrgggggrrrgggggg~~~~rgggggggrrrggggggggggg####rrr########################################........",
-   "###############gggggggrrrggggggrrggggggggggggggrrrrrrrrrrrrgggggrrgggggg~~~~gg#gggggrrgggggggggggg####rrr#########################################.......",
-   "##################g#ggggrrrggggrrggggggggggggggrrrrrrrrrrrrggggrrrgggggg~~~~~gggggggrrrggggggggggg####rr###########################################......",
-   "##################gggggggrrrrggrggggggggggggggrrrrrrrrrggrrg#ggrrrggggggr~~~~gggggggrrrggggggggggg#####r############################################.....",
+   "###############gggggggrrrggggggrrggggggggggggggrrrrrrrrrrrrgggggrrgggggg~~~~ggggggggrrgggggggggggg####rrr#########################################.......",
+   "#################gg#ggggrrrgg#grrggggggggggggggrrrrrrrrrrrrggggrrrgggggg~~~~~ggggg#grrrggggggggggg####rr###########################################......",
+   "##################gggggggrrrrggrggggggggggg#ggrrrrrrrrrggrrggggrrrggggggr~~~~gggggggrrrgggggggggrr####gr############################################.....",
    "##################gggggggggrgrggrrggggggggggggrrrrrgrrrrrrrggggrrrggggggr~~~~gggggggrrrggggggrrrrgrrrrrrrrrrrrrrrrrrrrrrgrrrrrrrrrrrrrrrrrrrrrrgrrrrr....",
    "#################gggggggggggggrrrrrggggggggggggrrrrrgrrrrrrggggrrrggggggr~~~~rggggggggrgggggggrrrrgrrrrrrrrrgrrrrrrrrrrrrgrrrrrrrrrgrrrrrrrrrrrrgrrrrr...",
-   "###############gggggggggggggggrgrrrggg#ggggg#ggrrrrrrrgrrrggggrrrrggggggr~~~~r#ggggggrrggggggggrrrrrgrrrrrrrrrrrrrrgrrrrrrrgrrrrrrrrrrrrrrgrrrrrrrgrrrr..",
-   "###############gggggggggggggggggrrrrgggg##ggggggrrrrrrrrrrggggrgrrgggg###~~~~rggg#gggrggggggggggr#######################################################.",
+   "###############gggggggggggggggrgrrrggggggggggggrrrrrrrgrrrggggrrrrggggggr~~~~rgggggggrrggggggggrrrrrgrrrrrrrrrrrrrrgrrrrrrrgrrrrrrrrrrrrrrgrrrrrrrgrrrr..",
+   "###############gggggggggggggggg#rrrrgggg##ggggggrrrrrrrrrrggggrgrrgggg###~~~~rgggggggrggggggggggr#####r#################################################.",
    "###############ggggggggggggggg#ggrrrrgg###rrggggrrrrgrrrrggggrrrrggg#####~~~~#gggggggrrgggggggggg########################################################",
-   "###############ggg#ggggggggggggggggr##rr#rrr##gg#grrgrrggggggrrrrgg#########~###gggggrrgggggggggg########################################################",
-   "###############gg###gggggggggggggggg##rrrrrg##rgggggggggggggrrrrrggg####~~~######ggggrrgggggggggg########################################################",
-   "###############gg###gggggggggggggggg##rrgrrrrrrggggggggg#ggrrrrgrrrrrrrrrrrrrrrrrrrrrrgg#gggggggg########################################################",
-   "###############ggg#gggggggggggggggggrgrrrrrrrrrrggggggggggrrgrrrrrrr####~~~~~####rrgrrrrggggggggrrr#####################################################.",
-   "################ggggggggggggggggggggrrrrrrrrr##rggggggggrrrrrrrggggggggg~~~~~gggggggggggggggggggrrr####################################################..",
+   "###############ggg#ggggggggggggggggr##rr#rrr##ggggrrgrrggggggrrrrgg#########~###gg#ggrrgggggggggg########################################################",
+   "###############gg###ggggggggggggggg###rrrrrg##rgggggggggggggrrrrrggg####~~~######ggggrrgggggggggg########################################################",
+   "###############gg###gggggggggggggggg##rrgrrrrrrggggggggggggrrrrgrrrrrrrrrrrrrrrrrrrrrrggggggggggg########################################################",
+   "###############ggg#gg#ggggggggggggggrgrrrrrrrrrrg#ggggggggrrgrrrrrrr####~~~~~####rrgrrrr#gggggggrrr#####################################################.",
+   "################gggggg#gggggggggggggrrrrrrrrr##rggggggggrrrrrrrggggggggg~~~~~gggggggggggggggggggrrr####################################################..",
    "###############gggg###ggggggggggggggrrrrrrrrr###gggggggrrrrrrrgggggggggg~~~~~ggggggggggggggggggrggr###################################################...",
-   "###############ggg####ggggggggggggggg#rrrrrrr##rggrrrgrrrrrrgggggggggggg~~~~~gggggggggggggggggggggg##################################################....",
+   "###############ggg####gggggggggggggggrrrrrrrr##rggrrrgrrrrrrgggggggggggg~~~~~gggggggggggggggggggggg##################################################....",
    "###############ggg####ggggggggggg###grrrrrr#grrrrrrrrrrrrrrggggggggggggr~~~~~gggggggg##gggggggrrggg#################################################.....",
    "###############ggr###ggggggggggg####grrrrr###rrgrrrrrrrrggggggggggggg#gr~~~~~ggggggg####ggggggrrggg################################################......",
    "###############ggrrrrggggggggggg####rrrrrr###rrggrrrggggggggggggggg####r~~~~~gggggg#####gggggrrrggg###############################################.......",
-   "###############ggggrrrgggggggggg###ggrrrrrrrrggg#grrgggggggggggggg#####r~~~~rggggg######gggggrrrggg##############################################........",
-   "###############ggggggrrggggggggggggrgrrgggggggggggggrrrggggggggggg####gr~~~~rggggg#####ggggggrrgggg#############################################.........",
+   "###############ggggrrrgggggggggg###ggrrrrrrrrgg#ggrrgggggggggggggg#####r~~~~rggggg######gggggrrrggg##############################################........",
+   "###############ggggggrrggggggggggggrgrrgggggggggggggrrrg#gggg#gggg####gr~~~~rggggg#####ggggggrrgggg#############################################.........",
    "###############gggggggrrgrggggggggrrrrgggggggggggggggrrrggggggggggg##ggr~~~~rggggg####ggggggrgrgggg############################################..........",
    "################ggggggggrrrggggggrrrrggggggggggggggggggrrrgggggggggg###~~~~~rgggggg#ggggggggrrrgggg###########################################...........",
-   "################ggggggggggrrrggggrrrrgg#ggggggggggggggggrrrggggggg#######~~~##gggggggggggggrrrggggg##########################################............",
-   "###############ggggggggggggrrrrgrrrrggggggggggggggggggggrrrrrggggg##############gggggggggggrrrggggg#########################################.............",
+   "################ggggggggggrrrggggrrrrgg#ggggggggggggggggrrrggggg#g#######~~~##gggggggggggggrrrggggg##########################################............",
+   "###############ggggggggggggrrrrgrrrrggggggggggggggggggggrrrrrggggg##############ggggg#gggggrrrggggg#########################################.............",
    "###############gggggggggg##ggrrrrrrgggggggggggggggggggggrrrrrrrrrrr####~~~~#####rrrrrgggggrrrrgggg#########################################..............",
-   "################gg#ggggg###gggrrgggggggggggggggggggggggggrrggrrrrrrrrrrrrrrrrrrrrrrrrrggggrrrgggg#########################################...............",
+   "################gggggggg###gggrrgggggggggggggggg#ggggggggrrggrrrrrrrrrrrrrrrrrrrrrrrrrggggrrrgggg#########################################...............",
    "###############gggggggg####gggrrrrggggggggggggggggggggggrrrgggrgggg####~~~~~####gggggggggrrrrgggg########################################................",
    "###############gggggggg###gggrrrrrrggggg#gggggggggggggggrrggggggggggggr~~~~~gggggggggggggrrrggggg#######################################.................",
    "###############ggggggggg#ggggrrgggrrgg####gggggggggggggrrrggggggggggggr~~~~~ggggggggggggrrrggggg#######################################..................",
-   "###############gggggggggg#ggrrrrgggrrg###ggggggg###ggggrrrggggggggggggr~~~~rggggggggggggrrggggg#######################################...................",
+   "###############gggggggggggggrrrrgggrrg###ggggggg###ggggrrrggggggggggggr~~~~rggggggggggggrrggggg#######################################...................",
    "###############gggggggggggggrgrgggggrr##gggggg#####ggggrrrggggggggggggr~~~~rggggggggggggrggggg#######################################....................",
-   "###############ggg###gggg#grrgrgggggggr#gggggg#####ggggrrrggggggg##ggg~~~~~r#ggggggggggrrrggg#######################################.....................",
-   "###############ggg###ggggggrrgggggggggrrggggg######gggrggggggggg####gg~~~~~rggggrrggggg#rggg#######################################......................",
-   "###############gg####gggggrrggggggggggrrggggg#####ggggrrrggggggg####gg~~~~~gggggrrrggg###gg#######################################.......................",
-   "###############ggg##gggggrrrrggggggggggrrrggg####gggggrrrgggggggg##ggg~~~~~ggggggrrgg############################################........................",
+   "###############ggg###ggggggrrgrgggggggrggggggg#####ggggrrrgggggg##gggg~~~~~rgggggggggggrrrggg#######################################.....................",
+   "###############ggg###ggggggrrgggggggggrrggggg######gggrgggggggg####ggg~~~~~rggggrrggggg#rggg#######################################......................",
+   "###############gg####gggggrrggggggggggrrggggg#####ggggrrrgggggg####ggg~~~~~ggggggrrggg###gg#######################################.......................",
+   "###############ggg##gggggrrrrggggggggggrrrggg####gggggrrrgggggg###gggg~~~~~ggggggrrgr############################################........................",
    "###############ggggggggggrrrggggggggggggrrrgggggggggggrrrggggggggggggr~~~~~gggggggrrr###########################################.........................",
-   "###############gggggggggrrrrgggggggggggggrrggggggggggggrgggggggggggggr~~~~~ggggggggrrr#########################################..........................",
+   "###############gggggggggrrrrgggggggggggg#rrggggg#ggggggrgggggggggggggr~~~~~gggggggrrrr#########################################..........................",
    "###############ggggggggrrgggg###ggggggggggrrggggggggggrrgggggggggggggr~~~~~ggggggg##rrr#######################################...........................",
-   "###############ggggggggrrrrg####gggggggggggrgggggggggrrr#ggggggggggggr~~~~rgggggg####rrg#####################################............................",
-   ".##############gggggggrrgrgg###gggggggggggggrrggggggggrrggggggggggggg#~~~~rggggg######rrr###################################.............................",
-   "..#############gggrrggrrrggg##ggggggg###gggggrrgggggggggggggggggggggg~~~~~rgggggg######rrr#################################..............................",
-   "...############gggrrrrrrrgggggggggggg###ggggggrrggggggggggggggggggggg~~~~~rggggggg######rrr###############################...............................",
-   "....#############grrrrrgggggggggggggg##ggggggggrrgggggggggggggggggggg~~~~~gggggggg######rrrr#############################................................",
-   ".....#############rg######gggggggggggggggggggg#gggggggggggggggggggggg~~~~~ggggggg########grrr###########################.................................",
-   "......############rr######gggggggggg#gggg#ggg###ggggggggggggggggggggg~~~~~gggggg#########r#rr##########################..................................",
+   "###############ggggggggrrrrg####gggggggggggrgggggggggrrrgggggggggggggr~~~~rgggggg####rrg#####################################............................",
+   ".##############gggggggrrgrgg###gggggggggggggrrggggggggrrggggggggggggg#~~~~rggggg######rrr#r#################################.............................",
+   "..#############gggrrggrrrggg##ggggggg###gggggrrgggggggggggggggggggggg~~~~~rgggggg######rrrrr###############################..............................",
+   "...############gggrrrrrrrgggggggggggg###ggggggrrggggggggggggggggggggg~~~~~rggggggg######rrrr##############################...............................",
+   "....#############rrrrrrgggggggggggggg##ggggggggrrgggggggggggggggggggg~~~~~gggggggg#####rrrrr#############################................................",
+   ".....#############rg######gggggggggggggggggggg#gggggggggggggggggggggg~~~~~ggggg#########ggrrr###########################.................................",
+   "......############rr######gggggggggg#gggg#ggg###ggggggggggggggggggggg~~~~~gggg###########r#rr##########################..................................",
    ".......###########rr#################################################~~~~################r############################...................................",
    "........##########rr#################################################~~~~################r###########################....................................",
    ".........#########rr#################################################~~~~############rrrrrrrr#######################.....................................",
-   "..........########rrr###############################################~~~~~###########rrrrrrrrr######################......................................",
-   "...........#######rrr################################################~~~~###########rrrrrrrrr#####################.......................................",
+   "..........#######rrrrr##############################################~~~~~###########rrrrrrrrr######################......................................",
+   "...........######rrrr################################################~~~~###########rrrrrrrrr#####################.......................................",
    "............######rrr################################################~~~~###########rgrrrrrrg####################........................................",
    ".............#####rrr################################################~~~~############rrrrrrr####################.........................................",
    "..............####rrr################################################~~~~############rgrrrr####################..........................................",
@@ -171,7 +171,7 @@
    ".................#rrg#################################################~~~~##############rgr#################.............................................",
    "..................rrr#################################################~~~~##############rrr################..............................................",
    "...................rr#################################################~~~~##############rrr###############...............................................",
-   "....................r#################################################~~~~##############grr##############................................................",
+   "....................##################################################~~~~##############grr##############................................................",
    ".....................#################################################~~~~##############grr#############.................................................",
    "......................#################################################~~~~#############grr############..................................................",
    ".......................################################################~~~~##############rg###########...................................................",
@@ -936,6 +936,7 @@
    "art": "gatehouse_horizontal_CONCEPTO.png",
    "wall_slope": -0.0,
    "art_height_px": 364,
+   "art_width_px": 612,
    "shear": -0.0,
    "face_fit": 1.0,
    "art_drop_px": 9.4,
@@ -1099,6 +1100,7 @@
    "art": "gatehouse_diag_v3_mirror_CONCEPTO.png",
    "wall_slope": 0.5,
    "art_height_px": 463,
+   "art_width_px": 524,
    "shear": 0.137,
    "face_fit": 1.0,
    "art_drop_px": 10.5,
@@ -1195,8 +1197,8 @@
     ]
    ],
    "exit_cell": [
-    20,
-    107
+    19,
+    106
    ]
   },
   {
@@ -1238,6 +1240,7 @@
    "art": "gatehouse_diag_v3_CONCEPTO.png",
    "wall_slope": -0.5,
    "art_height_px": 463,
+   "art_width_px": 524,
    "shear": -0.137,
    "face_fit": 1.0,
    "art_drop_px": 10.5,
@@ -1357,6 +1360,7 @@
    "art": "gatehouse_horizontal_CONCEPTO.png",
    "wall_slope": 0.0,
    "art_height_px": 364,
+   "art_width_px": 612,
    "shear": 0.0,
    "face_fit": 1.0,
    "art_drop_px": 9.4,
@@ -1488,6 +1492,7 @@
    "art": "gatehouse_diag_v3_CONCEPTO.png",
    "wall_slope": -0.5,
    "art_height_px": 463,
+   "art_width_px": 524,
    "shear": -0.137,
    "face_fit": 1.0,
    "art_drop_px": 10.5,
@@ -1702,13 +1707,13 @@
   "after": [
    {
     "at": [
-     2408,
+     2407,
      519
     ],
     "dist_px": 0.0,
     "edge": 0,
-    "span_px": 69,
-    "pixels": 19449,
+    "span_px": 204,
+    "pixels": 43001,
     "verdict": "gate"
    },
    {
@@ -1757,24 +1762,24 @@
    },
    {
     "at": [
-     291,
-     1490
+     272,
+     1480
     ],
     "dist_px": 0.0,
     "edge": 4,
-    "span_px": 232,
-    "pixels": 40921,
+    "span_px": 278,
+    "pixels": 50229,
     "verdict": "gate"
    },
    {
     "at": [
-     4594,
-     1607
+     4614,
+     1597
     ],
     "dist_px": 0.0,
     "edge": 2,
-    "span_px": 145,
-    "pixels": 32396,
+    "span_px": 236,
+    "pixels": 43770,
     "verdict": "gate"
    },
    {
@@ -1790,13 +1795,13 @@
    },
    {
     "at": [
-     3746,
-     2031
+     3766,
+     2021
     ],
     "dist_px": 0.0,
     "edge": 2,
     "span_px": 1616,
-    "pixels": 146439,
+    "pixels": 167746,
     "verdict": "gate"
    }
   ]
@@ -2012,8 +2017,8 @@
    "tier": "normal",
    "label_tier": "rare",
    "anchor_px": [
-    1984,
-    2016
+    1944,
+    2000
    ],
    "old_anchor_px": [
     3060.0,
@@ -2021,11 +2026,11 @@
    ],
    "front_cells": [
     [
-     68,
+     66,
      84
     ],
     [
-     69,
+     67,
      84
     ]
    ]
@@ -2335,7 +2340,7 @@
    "name": "Warden",
    "cell": {
     "x": 80,
-    "y": 92
+    "y": 91
    },
    "facing": "S",
    "night": "out"
@@ -2435,8 +2440,8 @@
    "id": "city_w_to_crosshaven_road_west",
    "from": {
     "zone_id": "crosshaven_city",
-    "x": 20,
-    "y": 107
+    "x": 19,
+    "y": 106
    },
    "to": {
     "zone_id": "crosshaven_road_west",
@@ -2569,5 +2574,29 @@
   "light_energy": 1.15,
   "light_radius_px": 190,
   "light_lift": 0.35
+ },
+ "water_gates": [
+  {
+   "edge": 1,
+   "at": [
+    3704.2,
+    817.1
+   ],
+   "art": "watergate_short_mirror_CONCEPTO.png",
+   "art_width_px": 474
+  },
+  {
+   "edge": 4,
+   "at": [
+    1768.2,
+    2229.1
+   ],
+   "art": "watergate_short_mirror_CONCEPTO.png",
+   "art_width_px": 474
+  }
+ ],
+ "gate_clear": {
+  "width_mul": 0.9,
+  "note": "Round 5: no tree or cypress in a clear plaza at every gate and water gate, inside or out: an iso ellipse 1.8 gatehouse widths across (rx = 0.9 x width, ry = rx/2); flowers and low bushes stay; benches, lamps and planters stay out too. The outer woods are placed around these plazas."
  }
 }

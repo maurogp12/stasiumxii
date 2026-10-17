@@ -52,6 +52,8 @@ FADE_MIN_HEIGHT = 40   # sprites shorter than this never hide the hero
 WALL_TAGS = {"wall", "wall_g", "tower", "tower_g", "gate_back", "lintel", "watergate"}
 # Tags that can be cleared off a plot's Legendary clearance.
 LOOSE_TAGS = {"tree", "prop", "lamp"}
+## Round 5: (x, y, rx) clear plazas at the gates; plaza props keep out.
+GATE_PLAZAS = []
 # Player plots and the layers of the old plot houses: from the layout file.
 PLOTS = []
 OLD_PLOT_LAYERS = {}
@@ -728,6 +730,9 @@ def place_plaza_props(layers, images, walk, streets, river, solid, wall_poly, pl
         for cx, cy, rx, ry in plot_ells:
             if ((x - cx) / (rx + 20)) ** 2 + ((y - cy) / (ry + 12)) ** 2 <= 1.0:
                 return False
+        for cx, cy, rx in GATE_PLAZAS:
+            if ((x - cx) / rx) ** 2 + ((y - cy) / (rx * 0.5)) ** 2 <= 1.0:
+                return False
         return all(math.hypot(x - a, (y - b) * 1.6) > 46 for a, b in taken)
 
     def put(name, x, y, block):
@@ -777,7 +782,7 @@ def place_plaza_props(layers, images, walk, streets, river, solid, wall_poly, pl
     return placed
 
 
-def outer_forest(layers, images, walk, streets, river, wall_poly, green, cfg, gates, bridges):
+def outer_forest(layers, images, walk, streets, river, wall_poly, green, cfg, gates, bridges, water_gates=(), clear_mul=0.0):
     """Coordinator review 6: tree clusters outside the walls, hugging the wall
     foot and thickening into woods toward the plate edges. Approved oak and
     cypress art only; roads, the river, the gate approaches and the bridges
@@ -800,6 +805,15 @@ def outer_forest(layers, images, walk, streets, river, wall_poly, green, cfg, ga
     for g in gates:
         ax, ay = g["arch"]
         ok &= ((xx * q - ax) / 330.0) ** 2 + ((yy * q - ay) / 200.0) ** 2 > 1.0
+        # round 5: and the gate plaza (with a margin for the crown)
+        if clear_mul:
+            rxp = float(g.get("art_width_px", 400.0)) * clear_mul + 40.0
+            ok &= ((xx * q - ax) / rxp) ** 2 + ((yy * q - ay) / (rxp * 0.5)) ** 2 > 1.0
+    for wg in water_gates:
+        if clear_mul:
+            ax, ay = wg["at"]
+            rxp = float(wg.get("art_width_px", 400.0)) * clear_mul + 40.0
+            ok &= ((xx * q - ax) / rxp) ** 2 + ((yy * q - ay) / (rxp * 0.5)) ** 2 > 1.0
     for b in bridges:
         x0b, y0b, x1b, y1b = b["sprite_bbox"]
         ok &= ~((xx * q > x0b - 80) & (xx * q < x1b + 80) & (yy * q > y0b - 60) & (yy * q < y1b + 80))
@@ -1089,7 +1103,15 @@ def apply_ring_kit(layers, images, ground_np, walk, river, old_poly):
             pts = [q, end, tgt]
             if sign < 0:
                 road_ends[g["id"]] = [round(tgt[0], 1), round(tgt[1], 1)]
-            roads |= CG.paint_road(ground_np, walk, sample, pts)
+            # round 5: a wider mouth at the gate and a hand-laid edge, like the S gate's road
+            rc = cfg.get("gate_road", {})
+            mouth_r = float(rc.get("mouth_rx", 0.0))
+            mouths = []
+            if mouth_r > 0:
+                mc = (q[0] + u[0] * sign * mouth_r * 0.55, q[1] + u[1] * sign * mouth_r * 0.55)
+                mouths.append((mc[0], mc[1], mouth_r, mouth_r * 0.5))
+            roads |= CG.paint_road(ground_np, walk, sample, pts, mouths=mouths, wobble=float(rc.get("wobble", 0.0)),
+                                   seed=7 + len(painted))
             painted.append([[round(p_[0], 1), round(p_[1], 1)] for p_ in pts])
     drop &= ~roads
     left = inside_old & ~inside_new
@@ -1545,12 +1567,18 @@ def main():
             cleared.append((l["x"] + images[l["id"]].width / 2.0, float(l["sort_y"])))
     planted = scatter_plants(layers, images, walk, streets, river, wall_sprites | hard, wall_poly, plot_ells,
                              thinned | removed, cleared, LAYOUT.get("plants", {}), green)
+    gcz = LAYOUT.get("greenery", {}).get("gate_clear")
+    if gcz:
+        mulz = float(gcz.get("width_mul", 1.0))
+        GATE_PLAZAS[:] = [(g["arch"][0], g["arch"][1], float(g.get("art_width_px", 400.0)) * mulz) for g in gate_log.get("gates", [])]
+        GATE_PLAZAS.extend((wg["at"][0], wg["at"][1], float(wg.get("art_width_px", 400.0)) * mulz) for wg in gate_log.get("water_gates", []))
     if green is not None:
         props_n = place_plaza_props(layers, images, walk, streets, river, wall_sprites | hard, wall_poly, plot_ells, thinned | removed, green, LAYOUT["greenery"])
         print("plaza props placed", props_n)
         if LAYOUT["greenery"].get("outer_forest"):
             forest = outer_forest(layers, images, walk, streets, river, wall_poly, green, LAYOUT["greenery"]["outer_forest"],
-                                  gate_log.get("gates", []), zones["bridges"])
+                                  gate_log.get("gates", []), zones["bridges"], gate_log.get("water_gates", []),
+                                  float((LAYOUT["greenery"].get("gate_clear") or {}).get("width_mul", 0.0)))
             print("outer forest trees", len(forest))
             # review 3: a soft dark blob under the clumps so the woods read as a mass
             shade_cfg = LAYOUT["greenery"]["outer_forest"].get("shade", {})
@@ -1573,6 +1601,29 @@ def main():
                 ground = Image.fromarray(ground_np)
     print("bushes and flowers placed", len(planted))
 
+    # Round 5: a clear plaza at every gate and water gate: no tree or cypress
+    # within about one gatehouse width (iso ellipse), inside or out.
+    gc = LAYOUT.get("greenery", {}).get("gate_clear")
+    cleared_at_gates = []
+    if gc:
+        zones_ = [(g["arch"], float(g.get("art_width_px", 400.0))) for g in gate_log.get("gates", [])]
+        zones_ += [(wg["at"], float(wg.get("art_width_px", 400.0))) for wg in gate_log.get("water_gates", [])]
+        mul = float(gc.get("width_mul", 1.0))
+        keep_layers = []
+        for l in layers:
+            if l["tag"] == "tree":
+                im_ = images[l["id"]]
+                k_ = float(l.get("k", 1.0))
+                fx, fy = l["x"] + im_.width * k_ / 2.0, float(l["sort_y"])
+                hit = any(((fx - a_[0]) / (w_ * mul)) ** 2 + ((fy - a_[1]) / (w_ * mul * 0.5)) ** 2 <= 1.0 for a_, w_ in zones_)
+                if hit:
+                    cleared_at_gates.append(l["id"])
+                    fh = max(8, im_.height * k_ * 0.12)
+                    unblock_ellipse(fx, fy - fh / 2.0, im_.width * k_ * 0.15 + 3, fh / 2.0 + 3)
+                    continue
+            keep_layers.append(l)
+        layers[:] = keep_layers
+        print("trees cleared at gates", len(cleared_at_gates))
     for g in gate_log["gates"]:
         pm_ = CG.poly_mask(g["passage"])
         print("gate", g["id"], "passage walk fraction %.2f" % float(walk[pm_].mean()) if pm_.any() else "empty")
@@ -1837,7 +1888,7 @@ def main():
             rec["plot_plant"] = True
         if "plant" in l:
             rec["plant"] = l["plant"]
-        for key_ in ("module", "gate", "spot"):
+        for key_ in ("module", "gate", "spot", "corner"):
             if key_ in l:
                 rec[key_] = l[key_]
         if l["tag"] in hide_tags and lid in displaced:
@@ -1971,6 +2022,8 @@ def main():
         "layers": "layers.json",
         "water": water,
         "lights": dict(LAYOUT.get("greenery", {}).get("lights", {})),
+        "water_gates": gate_log.get("water_gates", []),
+        "gate_clear": dict(LAYOUT.get("greenery", {}).get("gate_clear", {})),
     }
     json.dump(city, open(os.path.join(data_dir, "city.json"), "w"), indent=1)
     Image.fromarray((streets * 255).astype(np.uint8)).resize((PLATE_W // 4, PLATE_H // 4), Image.BILINEAR).save(

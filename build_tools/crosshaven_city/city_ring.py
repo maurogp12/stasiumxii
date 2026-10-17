@@ -185,7 +185,7 @@ def assemble(layers, images, walk, river, old_poly, poly, cfg, kit_dir, hero_pla
                               "wall_join_left": [round(WL[0], 1), round(WL[1], 1)], "wall_join_right": [round(WR[0], 1), round(WR[1], 1)],
                               "u": u, "v": v, "half_span": half, "passage": [[round(p_[0], 1), round(p_[1], 1)] for p_ in passage],
                               "passage_half_width_px": round(hw, 1), "art": m.file, "wall_slope": round(sl, 3),
-                              "art_height_px": round(m.im.height, 1), "shear": round(sl - m.slope, 3),
+                              "art_height_px": round(m.im.height, 1), "art_width_px": round(m.im.width, 1), "shear": round(sl - m.slope, 3),
                               "face_fit": round(fit, 3), "art_drop_px": round(drop, 1), "arch_open_px": round(arch_open, 1)})
             continue
         # split: the back side (behind a hero in the arch) and the front
@@ -216,7 +216,7 @@ def assemble(layers, images, walk, river, old_poly, poly, cfg, kit_dir, hero_pla
                           "wall_join_left": [round(WL[0], 1), round(WL[1], 1)], "wall_join_right": [round(WR[0], 1), round(WR[1], 1)],
                           "u": u, "v": v, "half_span": half, "passage": [[round(p_[0], 1), round(p_[1], 1)] for p_ in passage],
                           "passage_half_width_px": round(hw, 1), "art": m.file, "wall_slope": round(sl, 3),
-                          "art_height_px": round(m.im.height, 1), "shear": round(sl - m.slope, 3),
+                          "art_height_px": round(m.im.height, 1), "art_width_px": round(m.im.width, 1), "shear": round(sl - m.slope, 3),
                           "face_fit": round(fit, 3),
                           "art_drop_px": round(drop, 1), "arch_open_px": round(arch_open, 1)})
     # ---- water gates where the river crosses
@@ -242,7 +242,7 @@ def assemble(layers, images, walk, river, old_poly, poly, cfg, kit_dir, hero_pla
         feats[i].append({"kind": "water", "s": s, "half": half})
         ab = np.nonzero((np.array(im)[..., 3] > 40).any(1))[0]
         add(im, x0, y0, q[1] + 6.0, "watergate", {"module": m.file})
-        waters.append({"edge": i, "at": [round(q[0], 1), round(q[1], 1)], "art": m.file})
+        waters.append({"edge": i, "at": [round(q[0], 1), round(q[1], 1)], "art": m.file, "art_width_px": round(m.im.width, 1)})
     # ---- towers: corners and every N wall heights
     tm = mods["tower"]
     t_anchor = tm.p("base")
@@ -257,6 +257,7 @@ def assemble(layers, images, walk, river, old_poly, poly, cfg, kit_dir, hero_pla
         for kk in range(1, n_mid + 1):
             spots.append((i, L * kk / (n_mid + 1)))
     towers = []
+    corner_flags = []
     # Coordinator review 3: no ring tower within about one wall height of a
     # gatehouse (its own flanking towers are smaller); corners included.
     gate_gap = float(cfg.get("no_tower_near_gate_wall_heights", 1.0)) * wall_h
@@ -279,18 +280,32 @@ def assemble(layers, images, walk, river, old_poly, poly, cfg, kit_dir, hero_pla
                     clash = True
                 if f["kind"] == "gate" and abs(Lj - f["s"]) < f["half"] + t_half + gate_gap:
                     near_gate = True
+        if s == 0.0 and cfg.get("corner_towers") == "always":
+            # round 5: corners keep their tower (no bare cut where two runs
+            # meet) unless a gatehouse span covers the corner itself
+            covered = False
+            for f in feats[i]:
+                if f["kind"] == "gate" and abs(s - f["s"]) < f["half"] + 10.0:
+                    covered = True
+            j = (i - 1) % len(edges)
+            Lj = math.dist(*edges[j])
+            for f in feats[j]:
+                if f["kind"] == "gate" and abs(Lj - f["s"]) < f["half"] + 10.0:
+                    covered = True
+            near_gate = covered
         if near_gate:
             dropped.append([round(p[0], 1), round(p[1], 1)])
             continue
         if clash and s != 0.0:
             continue
         towers.append(p)
+        corner_flags.append(s == 0.0)
         feats[i].append({"kind": "tower", "s": s, "half": t_half * 0.7})
         if s == 0.0:
             j = (i - 1) % len(edges)
             feats[j].append({"kind": "tower", "s": math.dist(*edges[j]), "half": t_half * 0.7})
-    for p in towers:
-        add(tm.im, p[0] - t_anchor[0], p[1] - t_anchor[1], p[1] + 10.0, "tower", {"module": tm.file})
+    for p, is_corner in zip(towers, corner_flags):
+        add(tm.im, p[0] - t_anchor[0], p[1] - t_anchor[1], p[1] + 10.0, "tower", {"module": tm.file, "corner": is_corner})
     # ---- wall runs
     strips = 0
     for i, (a, b) in enumerate(edges):

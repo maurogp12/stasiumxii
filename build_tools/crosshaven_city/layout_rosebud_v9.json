@@ -545,7 +545,14 @@
   },
   "face_note": "face_px (segments): front merlon top to foot, native px. Gatehouses with face_px and curtain_foot are fitted to the run's face; the kit3 gatehouses instead carry a parapet-matched art_slope and drop_px from the coordinator's metrics (gatehouse_v3_metrics.json).",
   "no_tower_near_gate_wall_heights": 1.3,
-  "exits_note": "Coordinator review 7: every gate road runs on to the plate edge and ends in a gate stub to a region road (data). The city is outside the plane, so these are stubs, not seams; 'proposed' links follow the Crossroads road directions, 'placeholder' means undecided."
+  "exits_note": "Coordinator review 7: every gate road runs on to the plate edge and ends in a gate stub to a region road (data). The city is outside the plane, so these are stubs, not seams; 'proposed' links follow the Crossroads road directions, 'placeholder' means undecided.",
+  "gate_road": {
+   "mouth_rx": 110,
+   "wobble": 1.0,
+   "note": "Round 5: every gate road gets a wider mouth (an iso ellipse, rx in plate px) just inside and outside the arch, and an uneven, feathered edge."
+  },
+  "corner_towers": "always",
+  "corner_note": "Round 5: every ring corner keeps its tower so the two runs never meet in a bare cut, unless a gatehouse span covers the corner itself (the W gate). The near-gate rule applies to mid-edge towers."
  },
  "greenery": {
   "note": "Approved map-base greenery (docs/pc-map-handoff 5edc29a3 docs/pc/look_target/crosshaven_city/work/green; pass --green <dir>). Painted at hero = 156 px, bottom-centre anchored.",
@@ -663,6 +670,10 @@
    "light_energy": 1.15,
    "light_radius_px": 190,
    "light_lift": 0.35
+  },
+  "gate_clear": {
+   "width_mul": 0.9,
+   "note": "Round 5: no tree or cypress in a clear plaza at every gate and water gate, inside or out: an iso ellipse 1.8 gatehouse widths across (rx = 0.9 x width, ry = rx/2); flowers and low bushes stay; benches, lamps and planters stay out too. The outer woods are placed around these plazas."
   }
  }
 }

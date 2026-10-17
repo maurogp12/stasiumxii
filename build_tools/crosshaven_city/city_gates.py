@@ -199,14 +199,33 @@ def cobble_sampler(ground_np, street):
     return sample
 
 
-def paint_road(ground_np, walk, sample, pts, width=ROAD_W, feather=3):
-    """Paint a cobble strip along a polyline into the ground and open it in the walkmask."""
+def paint_road(ground_np, walk, sample, pts, width=ROAD_W, feather=3, mouths=(), wobble=0.0, seed=7):
+    """Paint a cobble strip along a polyline into the ground and open it in the walkmask.
+
+    `mouths`: extra (cx, cy, rx, ry) ellipses that widen the road (a gate
+    mouth). `wobble`: low-frequency noise on the edge so it is not ruler
+    straight (0 keeps the old hard strip)."""
     img = Image.new("L", (PLATE_W, PLATE_H), 0)
     ImageDraw.Draw(img).line([tuple(p) for p in pts], fill=255, width=width, joint="curve")
     for p in (pts[0], pts[-1]):
         r = width / 2.0
         ImageDraw.Draw(img).ellipse([p[0] - r, p[1] - r * 0.5, p[0] + r, p[1] + r * 0.5], fill=255)
+    for cx, cy, rx, ry in mouths:
+        ImageDraw.Draw(img).ellipse([cx - rx, cy - ry, cx + rx, cy + ry], fill=255)
     m = np.asarray(img).astype(np.float32) / 255.0
+    if wobble > 0:
+        # soften, add a coarse noise field, then re-harden: an uneven edge
+        ys_, xs_ = np.nonzero(m > 0)
+        if len(xs_):
+            y0_, y1_ = max(0, ys_.min() - 40), min(PLATE_H, ys_.max() + 40)
+            x0_, x1_ = max(0, xs_.min() - 40), min(PLATE_W, xs_.max() + 40)
+            sub = ndi.gaussian_filter(m[y0_:y1_, x0_:x1_], 9.0)
+            rs = np.random.RandomState(seed)
+            nz = ndi.gaussian_filter(rs.rand(*sub.shape).astype(np.float32), 10.0)
+            nz = (nz - nz.mean()) / max(1e-6, nz.std())
+            sub = np.clip((sub - 0.5 + nz * 0.06 * wobble) * 4.0 + 0.5, 0.0, 1.0)
+            m = m.copy()
+            m[y0_:y1_, x0_:x1_] = np.maximum(sub, m[y0_:y1_, x0_:x1_] * (sub > 0.5))
     if feather:
         m = ndi.gaussian_filter(m, feather)
     ys, xs = np.nonzero(m > 0.01)

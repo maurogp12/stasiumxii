@@ -127,7 +127,7 @@ func _test_data() -> void:
 		var k := float(rec.get("k", 1.0))
 		if k < 0.899 or k > 1.101:
 			jitter_ok = false
-	check(trees >= 15 and trees <= 25, "trees cut to about 20 (%d)" % trees)
+	check(trees >= 10 and trees <= 25, "trees cut to about 20, fewer after the gate plazas (%d)" % trees)
 	check(stray_trees == 0, "every tree left is on the keep list (%d strays)" % stray_trees)
 	check(jitter_ok, "plant scale jitter stays in 0.9-1.1")
 	check(planters.size() <= 8, "planters stay few (%d)" % planters.size())
@@ -838,13 +838,49 @@ func _test_review_data() -> void:
 		check(hits == 0, "%s flanking towers stay off the passage (%d cells under a tower)" % [g["id"], hits])
 	# 3: no ring tower within about one wall height of a gatehouse.
 	for rec in city.layers():
-		if str(rec["tag"]) != "tower":
+		if str(rec["tag"]) != "tower" or bool(rec.get("corner", false)):
 			continue
 		var foot := Vector2(float(rec["x"]) + float(rec["w"]) * 0.5, float(rec["sort_y"]) - 10.0)
 		for g in city.gates():
 			var arch := Vector2(float(g["arch"][0]), float(g["arch"][1]))
 			var gap: float = foot.distance_to(arch) - float(g["half_span"]) - float(rec["w"]) * 0.42
 			check(gap >= wall_h * 1.25, "tower %d keeps a wall height from gate %s (%.0f px)" % [int(rec["id"]), g["id"], gap])
+	# Round 5: every ring corner has a tower unless a gatehouse covers it.
+	var poly_c: Array = city.doc["wall_polygon"]
+	for q in poly_c:
+		var cpt := Vector2(float(q[0]), float(q[1]))
+		var has_tower := false
+		for rec in city.layers():
+			if str(rec["tag"]) == "tower" and bool(rec.get("corner", false)):
+				var f := Vector2(float(rec["x"]) + float(rec["w"]) * 0.5, float(rec["sort_y"]) - 10.0)
+				if f.distance_to(cpt) < 30.0:
+					has_tower = true
+		var gated := false
+		for g in city.gates():
+			if Vector2(float(g["arch"][0]), float(g["arch"][1])).distance_to(cpt) < float(g["half_span"]) + 10.0:
+				gated = true
+		check(has_tower or gated, "corner %s is closed by a tower or a gatehouse" % cpt)
+	# Round 5: a clear plaza at every gate and water gate (no trees).
+	var clear_cfg: Dictionary = city.doc.get("gate_clear", {})
+	check(not clear_cfg.is_empty(), "gate clearance in data")
+	var zones: Array = []
+	for g in city.gates():
+		zones.append([Vector2(float(g["arch"][0]), float(g["arch"][1])), float(g.get("art_width_px", 400.0))])
+	for wg in city.doc.get("water_gates", []):
+		zones.append([Vector2(float(wg["at"][0]), float(wg["at"][1])), float(wg.get("art_width_px", 400.0))])
+	check(zones.size() == 7, "5 gates and 2 water gates get a clear plaza (%d)" % zones.size())
+	var mul: float = float(clear_cfg.get("width_mul", 1.0))
+	var in_plaza := 0
+	for rec in city.layers():
+		if str(rec["tag"]) != "tree":
+			continue
+		var tf := Vector2(float(rec["x"]) + float(rec["w"]) * float(rec.get("k", 1.0)) * 0.5, float(rec["sort_y"]))
+		for zn in zones:
+			var a: Vector2 = zn[0]
+			var wd: float = float(zn[1]) * mul
+			if ((tf.x - a.x) / wd) ** 2 + ((tf.y - a.y) / (wd * 0.5)) ** 2 <= 1.0:
+				in_plaza += 1
+	check(in_plaza == 0, "no tree stands in a gate plaza (%d)" % in_plaza)
 	# 6: an outer ring of trees, outside the walls, off the roads and the river.
 	var outer := 0
 	var streets: Image = Image.load_from_file(ProjectSettings.globalize_path(city.path.get_base_dir().path_join("streets.png")))
