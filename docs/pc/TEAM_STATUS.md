@@ -43,6 +43,8 @@ When those land, Claude reads them, copies the key facts into this file, and con
 > - Every concept, painting, mockup, render or scripted pan must be labelled **🖼️ IMAGEN / CONCEPTO, TODAVÍA HAY QUE CONSTRUIRLO**.
 > - A concept is never reported as done.
 
+## STANDING ART RULE (Mauro, 17 Oct 2026): from now on EVERYTHING must look like Wakfu or an updated Dofus: original 2D iso art, clean outlines, flat colour with soft shading, warm and whimsical, built from modular pieces. Never copy Ankama assets.
+
 ## 0. MUST BUILD: the map backlog (Mauro, 16 Oct 2026: "hay que construirlo, asegúrate de que recordemos que tenemos que construirlo")
 
 These exist only as paintings or box-only work on Luca's computer. **None of it is in the game yet.** Every item has to be built in the game (zone data, walkable cells, painted art, joins, tests), and each goes to Mauro for approval, one at a time.
