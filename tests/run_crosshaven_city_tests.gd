@@ -13,6 +13,7 @@ const Maps := preload("res://backend/world_map.gd")
 const WALL_TAGS := ["wall", "wall_g", "tower", "tower_g", "gate_back", "lintel", "watergate"]
 const TOWER_TAGS := ["tower", "tower_g"]
 const LEGENDARY_W := 350.0
+const OCCLUDERS := ["house", "wall", "tree", "tower"]
 
 var passed := 0
 var failed := 0
@@ -49,6 +50,7 @@ func _run() -> void:
 	_test_fade(w)
 	_test_life(w)
 	_test_performance(w)
+	_test_gate_walks(w)
 	await _test_gate_stub(w)
 	w.queue_free()
 	await process_frame
@@ -101,6 +103,43 @@ func _test_data() -> void:
 	for r in fit["residuals"]:
 		check(absf(float(r["offset_px"])) <= 8.0, "%s sits within 8 px of a cell row (%.2f)" % [r["id"], float(r["offset_px"])])
 	check(city.layers().size() > 300, "sprite layers load (%d)" % city.layers().size())
+	# Item 7: trees cut to the data keep list (about 20).
+	var keep := {}
+	for g in (city.doc["trees_keep"] as Dictionary).values():
+		for id in g:
+			keep[int(id)] = true
+	var trees := 0
+	var stray_trees := 0
+	var planters: Array = []
+	var houses: Array = []
+	var jitter_ok := true
+	for rec in city.layers():
+		if str(rec["tag"]) == "tree":
+			trees += 1
+			if not keep.has(int(rec["id"])):
+				stray_trees += 1
+		if str(rec["tag"]) == "house":
+			houses.append(Vector2(float(rec["x"]) + float(rec["w"]) * 0.5, float(rec["sort_y"])))
+		if str(rec["file"]).ends_with("cx_planter_a.png"):
+			planters.append(Vector2(float(rec["x"]) + float(rec["w"]) * float(rec.get("k", 1.0)) * 0.5, float(rec["sort_y"])))
+		var k := float(rec.get("k", 1.0))
+		if k < 0.899 or k > 1.101:
+			jitter_ok = false
+	check(trees >= 15 and trees <= 25, "trees cut to about 20 (%d)" % trees)
+	check(stray_trees == 0, "every tree left is on the keep list (%d strays)" % stray_trees)
+	check(jitter_ok, "plant scale jitter stays in 0.9-1.1")
+	check(planters.size() <= 8, "planters stay few (%d)" % planters.size())
+	for pl in planters:
+		var near := false
+		for h in houses:
+			if (pl as Vector2).distance_to(h) < 170.0:
+				near = true
+		check(near, "planter at %s stands beside a house" % pl)
+	var plants := 0
+	for rec in city.layers():
+		if rec.has("plant"):
+			plants += 1
+	check(plants >= 150, "bushes and flowers scattered (%d)" % plants)
 	for rec in city.layers():
 		var tag := str(rec["tag"])
 		check(not ("garden" in tag or "bed" in tag or "fence" in tag), "no garden bed or fence layer (%s)" % tag)
@@ -260,10 +299,13 @@ func _test_gates() -> void:
 		var m: Dictionary = PlateCity.unpack_mask(rec["mask"])
 		var stray := 0
 		var step := int(m["step"])
-		for by in range(136 / step, int(m["h"])):
+		# The sprite may be scaled (ring heights): cylinder columns 44-132 and
+		# stub row 136 of the 180 px source scale with it.
+		var k := float(rec["w"]) / 180.0
+		for by in range(int(136.0 * k) / step + 1, int(m["h"])):
 			for bx in int(m["w"]):
 				var x0 := bx * step
-				if (x0 + step <= 44 or x0 >= 132) and (m["bits"] as PackedByteArray)[by * int(m["w"]) + bx] == 1:
+				if (x0 + step <= int(44.0 * k) - step or x0 >= int(132.0 * k) + step) and (m["bits"] as PackedByteArray)[by * int(m["w"]) + bx] == 1:
 					stray += 1
 		check(stray == 0, "tower layer %d has no wall stub (%d stray blocks)" % [int(rec["id"]), stray])
 	check(towers >= 12, "towers checked (%d)" % towers)
@@ -300,17 +342,24 @@ func _layer_opaque(rec: Dictionary, mask: Dictionary, p: Vector2) -> bool:
 
 func _test_plots() -> void:
 	var plots: Array = city.plots()
-	check(plots.size() == 5, "five player plots")
+	check(plots.size() == 10, "ten player plots (%d)" % plots.size())
 	var want := {"P1": "rare", "P2": "legendary", "P3": "rare", "P4": "normal", "P5": "normal"}
+	var tiers := {}
+	for p in plots:
+		if not want.has(str(p["id"])):
+			want[str(p["id"])] = str(p["tier"])
+		tiers[str(p["tier"])] = true
+	check(tiers.size() == 3, "the plots mix all three tiers")
+	# Street mask from the painted plate, 1/4 size (the shipped ground is retextured).
 	var ground: Image = null
-	var gpath: String = city.art_path("ground.jpg")
+	var gpath: String = city.path.get_base_dir().path_join("streets.png")
 	if ResourceLoader.exists(gpath):
 		var tex := load(gpath) as Texture2D
 		if tex != null:
 			ground = tex.get_image()
 	if ground == null:
 		ground = Image.load_from_file(ProjectSettings.globalize_path(gpath))
-	check(ground != null and ground.get_width() == 5120, "ground image readable for the street check")
+	check(ground != null and ground.get_width() * 4 == int(city.plate_size().x), "street mask readable")
 	var walls: Array = []
 	for rec in city.layers():
 		if WALL_TAGS.has(str(rec["tag"])) and rec.has("mask"):
@@ -335,9 +384,8 @@ func _test_plots() -> void:
 					if TOWER_TAGS.has(str(pair[0]["tag"])):
 						on_tower += 1
 			if ground != null:
-				var col := ground.get_pixel(int(q.x), int(q.y))
-				var sat := maxf(col.r, maxf(col.g, col.b)) - minf(col.r, minf(col.g, col.b))
-				if sat < 28.0 / 255.0 and maxf(col.r, maxf(col.g, col.b)) > 90.0 / 255.0:
+				var col := ground.get_pixel(clampi(int(q.x / 4.0), 0, ground.get_width() - 1), clampi(int(q.y / 4.0), 0, ground.get_height() - 1))
+				if col.r > 0.5:
 					on_street += 1
 			var c := _cell_at(city.plate_to_world(q))
 			if not z.in_bounds(c) or z.terrain_at(c) == "water":
@@ -410,8 +458,23 @@ func _test_world_entry(w: Node2D) -> void:
 	check(w.in_city() and w.city_plate != null, "city plate is drawn")
 	check(w.walker.cell == city.spawn(), "hero stands on the city spawn")
 	check(w.city_plate.ground_texture() != null, "ground texture loaded")
-	check(w.city_plate.rows.size() >= 390, "layers and plot houses built (%d)" % w.city_plate.rows.size())
-	check(w.city_plate.plot_nodes.size() == 5, "five plot houses drawn")
+	check(w.city_plate.rows.size() >= 300, "map-base layers built (%d)" % w.city_plate.rows.size())
+	# Item 17: map base first; buildings stay in data, hidden, footprints reserved.
+	var hidden := 0
+	for rec in city.layers():
+		if bool(rec.get("hidden", false)):
+			hidden += 1
+			check(w.city_plate.row_of(int(rec["id"])).is_empty(), "hidden layer %d is not drawn" % int(rec["id"]))
+	check(hidden >= 30, "buildings are hidden in data (%d)" % hidden)
+	for row in w.city_plate.rows:
+		check(not (str(row["tag"]) in ["house", "stall", "castle", "cathedral", "fountain", "well", "mill"]), "no building drawn (%s)" % row["tag"])
+	check((city.doc["building_footprints"] as Array).size() == hidden, "every hidden building keeps a reserved footprint")
+	check(w.city_plate.plot_nodes.size() == (0 if city.plot_houses_hidden() else 10), "plot houses follow the map-base flag")
+	w.city_plate.set_footprints_visible(true)
+	check(w.city_plate.footprints.visible, "the footprint overlay turns on")
+	w.city_plate.set_footprints_visible(false)
+	for rec in city.layers():
+		check(not ("thatch" in str(rec["file"])), "no thatched roof left (%s)" % rec["file"])
 	var water: Sprite2D = w.city_plate.water
 	check(water != null and water.visible, "the animated river is drawn")
 	check(water != null and water.material is ShaderMaterial and (water.material as ShaderMaterial).get_shader_parameter("ripple") != null, "river shader has its ripple tile")
@@ -421,6 +484,33 @@ func _test_world_entry(w: Node2D) -> void:
 		check(node.texture != null, "plot %s house texture" % id)
 	var cam_w: int = w.camera.limit_right - w.camera.limit_left
 	check(absi(cam_w - int(city.world_rect().size.x)) <= 1, "camera keeps to the plate (%d)" % cam_w)
+	# Item 8: character to building scale at the plate scale in data.
+	var hero_h: float = w.walker._strips.height()
+	var hs := {"house": [], "gate_back": [], "stall": []}
+	for rec in city.layers():
+		if hs.has(str(rec["tag"])):
+			(hs[str(rec["tag"])] as Array).append(float(rec["h"]) * float(rec.get("k", 1.0)) * city.scale())
+	for t in hs.keys():
+		(hs[t] as Array).sort()
+	var house_r: float = float(hs["house"][hs["house"].size() / 2]) / hero_h
+	var gate_r: float = float(hs["gate_back"][0]) / hero_h
+	var stall_r: float = float(hs["stall"][hs["stall"].size() / 2]) / hero_h
+	check(house_r > 2.6 and house_r < 3.6, "a house is about 3 hero heights (%.2f)" % house_r)
+	var ring: Dictionary = city.doc.get("wall_ring", {})
+	var gate_want: float = 4.5
+	if not ring.is_empty():
+		gate_want = float(ring["targets_screen_px"]["gate"]) / float(ring["hero_screen_px"])
+	check(absf(gate_r - gate_want) / gate_want < 0.15, "a gatehouse is about %.1f hero heights (%.2f)" % [gate_want, gate_r])
+	if not ring.is_empty():
+		var wall_h := 0.0
+		var tower_h := 0.0
+		for rec in city.layers():
+			if str(rec["tag"]) in ["tower", "tower_g"]:
+				tower_h = maxf(tower_h, float(rec["h"]) * city.scale())
+		var tower_want := float(ring["targets_screen_px"]["tower"]) / float(ring["hero_screen_px"])
+		check(absf(tower_h / hero_h - tower_want) / tower_want < 0.15, "a tower is about %.1f hero heights (%.2f)" % [tower_want, tower_h / hero_h])
+	check(stall_r > 1.5 and stall_r < 2.6, "a stall is about 1.5-2 hero heights (%.2f)" % stall_r)
+	print("SCALE plate %.2f: house %.2f gate %.2f stall %.2f (hero %.1f px)" % [city.scale(), house_r, gate_r, stall_r, hero_h])
 	# Walk in through the gate.
 	var target := Vector2i(int(city.bridges()[2]["ends"][1][0]), int(city.bridges()[2]["ends"][1][1]))
 	var r: Dictionary = w.walk_to(target, "walk")
@@ -505,20 +595,20 @@ func _test_fade(w: Node2D) -> void:
 	var plate = w.city_plate
 	var target: Dictionary = {}
 	for row in plate.rows:
-		if str(row["tag"]) == "house" and bool(row["fade"]):
+		if str(row["tag"]) in OCCLUDERS and bool(row["fade"]):
 			var c := _cell_behind(w, row)
 			if c.x >= 0:
 				target = row
 				break
-	check(not target.is_empty(), "found a house the hero can stand behind")
+	check(not target.is_empty(), "found an occluder the hero can stand behind")
 	if target.is_empty():
 		return
 	var cell := _cell_behind(w, target)
 	w.walker.place(w.zone, cell)
 	var feet: Vector2 = w.walker.position
 	var covered: bool = plate.update_cover(feet, 0.0, w.walker.z_index, 1.0)
-	check(covered, "hero behind a house is covered")
-	check(float(target["alpha"]) < 0.5 and (target["node"] as CanvasItem).modulate.a < 0.5, "the house fades to see-through (%.2f)" % float(target["alpha"]))
+	check(covered, "hero behind an occluder is covered")
+	check(float(target["alpha"]) < 0.5 and (target["node"] as CanvasItem).modulate.a < 0.5, "the occluder fades to see-through (%.2f)" % float(target["alpha"]))
 	check(target in plate.covering(), "the house is listed as covering")
 	# Ramp: from opaque, one 0.1 s tick goes part way.
 	w.walker.place(w.zone, city.spawn())
@@ -594,12 +684,12 @@ func _test_performance(w: Node2D) -> void:
 	check(w.city_plate.water == null or not w.city_plate.water.visible, "Performance mode keeps the painted still water")
 	var tex: Texture2D = w.city_plate.ground_texture()
 	check(tex != null and tex.get_width() == 2560, "lite ground is 2560 wide")
-	check(w.city_plate._ground.scale.is_equal_approx(Vector2(2, 2)), "lite ground still covers the plate")
+	check((tex.get_size() * w.city_plate._ground.scale).is_equal_approx(city.plate_size() * city.scale()), "lite ground still covers the plate")
 	# Instant fades: one tiny tick reaches the min alpha.
 	var target: Dictionary = {}
 	var cell := Vector2i(-1, -1)
 	for row in w.city_plate.rows:
-		if str(row["tag"]) == "house" and bool(row["fade"]):
+		if str(row["tag"]) in OCCLUDERS and bool(row["fade"]):
 			cell = _cell_behind(w, row)
 			if cell.x >= 0:
 				target = row
@@ -613,6 +703,62 @@ func _test_performance(w: Node2D) -> void:
 	w.settings.set_performance(false)
 	check(not w.city_plate.ground_is_lite(), "full ground back after Performance mode")
 	w.walker.place(w.zone, city.spawn())
+
+
+## Mauro: "asegúrate que el mono pase por ellas sin problemas". The hero walks
+## through every gate from outside to inside and back, on the real walker.
+func _test_gate_walks(w: Node2D) -> void:
+	var z: WorldZone = w.zone
+	for g in city.gates():
+		var cells: Array = g.get("cells", [])
+		if cells.size() < 2:
+			check(false, "%s has passage cells" % g["id"])
+			continue
+		var outs: Array[Vector2i] = []
+		var ins: Array[Vector2i] = []
+		for c in cells:
+			var cc := Vector2i(int(c[0]), int(c[1]))
+			if _in_wall(city.world_to_plate(BoardVisualSort.cell_to_local(cc))):
+				ins.append(cc)
+			else:
+				outs.append(cc)
+		if outs.is_empty() or ins.is_empty():
+			check(false, "%s passage has cells on both sides" % g["id"])
+			continue
+		var a: Vector2i = outs[0]
+		var b: Vector2i = ins[0]
+		for c in outs:
+			for d in ins:
+				if (c - d).length_squared() > (a - b).length_squared():
+					a = c
+					b = d
+		var out_c := _free_beyond(z, a, a - b)
+		var in_c := _free_beyond(z, b, b - a)
+		var gate_set := {}
+		for c in cells:
+			gate_set[Vector2i(int(c[0]), int(c[1]))] = true
+		for leg in [[out_c, in_c, "in"], [in_c, out_c, "out"]]:
+			w.walker.place(z, leg[0])
+			var r: Dictionary = w.walk_to(leg[1], "walk")
+			check(bool(r.get("ok", false)), "%s: walk %s (%s -> %s)" % [g["id"], leg[2], leg[0], leg[1]])
+			var through := false
+			for step in r.get("path", []):
+				if gate_set.has(Vector2i(int(step["x"]), int(step["y"]))):
+					through = true
+			check(through, "%s: the walk %s goes through the arch" % [g["id"], leg[2]])
+			_drive(w)
+			check(w.walker.cell == leg[1], "%s: the hero gets %s (%s)" % [g["id"], leg[2], w.walker.cell])
+	w.walker.place(z, city.spawn())
+
+
+func _free_beyond(z: WorldZone, from: Vector2i, dir: Vector2i) -> Vector2i:
+	var step := Vector2i(signi(dir.x), signi(dir.y))
+	var best := from
+	for k in range(1, 5):
+		var c := from + step * k
+		if z.passable_at(c):
+			best = c
+	return best
 
 
 func _test_gate_stub(w: Node2D) -> void:

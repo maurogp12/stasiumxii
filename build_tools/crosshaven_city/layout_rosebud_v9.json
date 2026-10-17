@@ -89,6 +89,66 @@
     3500,
     2360
    ]
+  },
+  {
+   "id": "P6",
+   "tier": "normal",
+   "label_tier": "normal",
+   "search_box": [
+    0.17,
+    0.2,
+    0.4,
+    0.4
+   ],
+   "note": "NW residential (Proposed tier)"
+  },
+  {
+   "id": "P7",
+   "tier": "rare",
+   "label_tier": "rare",
+   "search_box": [
+    0.2,
+    0.38,
+    0.42,
+    0.56
+   ],
+   "note": "W residential (Proposed tier)"
+  },
+  {
+   "id": "P8",
+   "tier": "normal",
+   "label_tier": "normal",
+   "search_box": [
+    0.62,
+    0.12,
+    0.8,
+    0.36
+   ],
+   "note": "NE residential (Proposed tier)"
+  },
+  {
+   "id": "P9",
+   "tier": "rare",
+   "label_tier": "rare",
+   "search_box": [
+    0.75,
+    0.3,
+    0.93,
+    0.5
+   ],
+   "note": "E residential (Proposed tier)"
+  },
+  {
+   "id": "P10",
+   "tier": "legendary",
+   "label_tier": "legendary",
+   "search_box": [
+    0.18,
+    0.58,
+    0.42,
+    0.8
+   ],
+   "note": "SW residential (Proposed tier)"
   }
  ],
  "crossroads_stub": {
@@ -101,6 +161,100 @@
    27
   ]
  },
- "plate_scale": 1.0,
- "plate_scale_note": "World px per plate px. Chosen from Mauro's item 8 ratios against the game hero (54.5-62.7 px, ironjaw 62.7): least-squares over house 3x, gate tower 4.5x, stall 1.75x gives 0.94-1.0; 1.0 kept (see CROSSHAVEN_CITY_BUILD.md). Street width is a layout matter (re-lay), not scale."
+ "plate_scale": 1.15,
+ "plate_scale_note": "World px per plate px: the whole plate (ground, layers, walkmask, heightmap, cell grid) is drawn this much bigger; characters keep their size. Least-squares over Mauro's item 8 ratios against Ironjaw (62.7 px tall, about 38 px wide): house 3x (median house 168 px), gate tower 4.5x (308 px), stall 1.75x (131 px), street 3.5 hero widths (68 px across). See CROSSHAVEN_CITY_BUILD.md.",
+ "trees_keep": "trees_keep_rosebud_v9.json",
+ "plants": {
+  "seed": 17,
+  "budgets": {
+   "edge": 90,
+   "plaza": 30,
+   "wall": 60,
+   "cleared": 80,
+   "planter": 0
+  },
+  "scale_jitter": [
+   0.9,
+   1.1
+  ],
+  "flip_chance": 0.5,
+  "max_house_planters": 8
+ },
+ "ground_textures": {
+  "grass": "grass.png",
+  "cobble": "cobble.png",
+  "grass_px_per_unit": 1.6,
+  "cobble_px_per_unit": 2.2,
+  "bank_px": 22,
+  "edge_soft_px": 2.5,
+  "source": "claude/pc-zones-spec docs/pc/look_target/crosshaven_city/work/{grass,cobble}.png (pass --textures <dir>)"
+ },
+ "map_base_only": {
+  "hide_tags": [
+   "house",
+   "stall",
+   "castle",
+   "cathedral",
+   "townhall",
+   "bank",
+   "forge",
+   "potter",
+   "weaver",
+   "smithy2",
+   "carpenter",
+   "tailor",
+   "mill",
+   "fountain",
+   "well"
+  ],
+  "hide_plot_houses": true,
+  "note": "Mauro item 17: the map base first. These layers stay in layers.json with hidden=true and keep their walk footprints reserved; set map_base_only to {} to show them again."
+ },
+ "thatch_swap": {
+  "match": "thatch",
+  "to": [
+   "cx_cottage_slate_a",
+   "cx_house_a",
+   "cx_house_b",
+   "cx_house_c"
+  ],
+  "note": "Mauro item 15: no thatched roofs in the city until Scenario Art repaints them."
+ },
+ "plot_exclude": [
+  {
+   "c": [
+    0.474,
+    0.44
+   ],
+   "r": [
+    0.13,
+    0.15
+   ],
+   "note": "cathedral park inside the ring road (not residential)"
+  }
+ ],
+ "wall_ring": {
+  "hero_world_px": 62.7,
+  "hero_screen_px": 156,
+  "targets_screen_px": {
+   "wall": 550,
+   "tower": 1000,
+   "gate": 1050
+  },
+  "native_plate_px": {
+   "wall": 110,
+   "tower": 212,
+   "gate": 308
+  },
+  "openings": [
+   "S",
+   "W",
+   "E",
+   "N",
+   "SE",
+   "SW",
+   "water x2"
+  ],
+  "note": "Coordinator 17 Oct: target heights at hero = 156 px (house ~496, wall body ~550, tower ~1000, gatehouse ~1000-1100, castle ~1200). Stand-ins are the prototype pieces scaled to these heights until Grok's wall modules land (docs/pc-map-handoff work/walls/); swap their files and native heights here."
+ }
 }

@@ -31,6 +31,7 @@ var _ground: Sprite2D
 var water: Sprite2D
 var _ground_lite := false
 var _covering: Array = []
+var footprints: Node2D
 static var _tex_cache: Dictionary = {}
 
 
@@ -44,6 +45,13 @@ func setup(target, lite_mode: bool) -> void:
 	_build_layers()
 	_build_plots()
 	_build_pets()
+	footprints = Node2D.new()
+	footprints.name = "Footprints"
+	footprints.z_as_relative = false
+	footprints.z_index = UNDER_Z - 50
+	footprints.visible = false
+	footprints.draw.connect(_draw_footprints)
+	add_child(footprints)
 
 
 ## Ground image swap only (the layers keep their 1x art either way).
@@ -185,6 +193,8 @@ func _build_layers() -> void:
 	rows.clear()
 	var under_i := 0
 	for rec in city.layers():
+		if bool(rec.get("hidden", false)):
+			continue
 		var tex := load_tex(city.art_path(str(rec["file"])))
 		var z := 0
 		if bool(rec.get("under", false)):
@@ -194,8 +204,14 @@ func _build_layers() -> void:
 			z = _sort_z(float(rec["sort_y"]))
 		var s := _sprite(tex, Vector2(float(rec["x"]), float(rec["y"])), z)
 		s.name = "L%03d_%s" % [int(rec["id"]), str(rec["tag"])]
-		_add_row(s, str(rec["tag"]), Vector2(float(rec["w"]), float(rec["h"])), float(rec["sort_y"]),
+		# Plants carry a scale jitter and a mirror (seeded in the build).
+		var k := float(rec.get("k", 1.0))
+		s.scale *= k
+		s.flip_h = bool(rec.get("flip", false))
+		var row := _add_row(s, str(rec["tag"]), Vector2(float(rec["w"]), float(rec["h"])) * k, float(rec["sort_y"]),
 			bool(rec.get("fade", false)), float(rec.get("fade_min_alpha", 0.45)), rec.get("mask", {}), int(rec["id"]))
+		row["k"] = k
+		row["flip"] = s.flip_h
 
 
 func _add_row(s: Sprite2D, tag: String, size: Vector2, sort_y: float, fade: bool, min_alpha: float, mask: Dictionary, id: int) -> Dictionary:
@@ -215,6 +231,8 @@ func _add_row(s: Sprite2D, tag: String, size: Vector2, sort_y: float, fade: bool
 
 func _build_plots() -> void:
 	plot_nodes.clear()
+	if city.plot_houses_hidden():
+		return
 	for p in city.plots():
 		var tier := str(p["tier"])
 		var tex := load_tex(city.house_art(tier))
@@ -247,7 +265,7 @@ func _build_pets() -> void:
 		var a: Vector2 = city.plate_to_world(Vector2(float(rec["a"][0]), float(rec["a"][1])))
 		var b: Vector2 = city.plate_to_world(Vector2(float(rec["b"][0]), float(rec["b"][1])))
 		pet_nodes.append({"node": pet, "a": a, "b": b, "t": 0.0, "dir": 1.0, "wait": 0.0,
-			"speed": float(rec["speed"]), "pause": float(rec["pause"]), "hop": float(rec["hop_px"]),
+			"speed": float(rec["speed"]) * city.scale(), "pause": float(rec["pause"]), "hop": float(rec["hop_px"]),
 			"night": str(rec.get("night", "indoors"))})
 		_place_pet(pet_nodes[pet_nodes.size() - 1], 0.0)
 
@@ -320,11 +338,13 @@ func _mask_hits(row: Dictionary, body: Rect2) -> bool:
 	if m.is_empty():
 		return true
 	var rect: Rect2 = row["rect"]
-	var step: float = float(m["step"]) * city.scale()
+	var step: float = float(m["step"]) * city.scale() * float(row.get("k", 1.0))
 	var w := int(m["w"])
 	var h := int(m["h"])
 	var bits: PackedByteArray = m["bits"]
 	var local := Rect2(body.position - rect.position, body.size)
+	if bool(row.get("flip", false)):
+		local.position.x = rect.size.x - local.end.x
 	var x0 := clampi(int(floor(local.position.x / step)), 0, w - 1)
 	var x1 := clampi(int(floor(local.end.x / step)), 0, w - 1)
 	var y0 := clampi(int(floor(local.position.y / step)), 0, h - 1)
@@ -334,6 +354,40 @@ func _mask_hits(row: Dictionary, body: Rect2) -> bool:
 			if bits[y * w + x] == 1:
 				return true
 	return false
+
+
+## Debug overlay: the reserved plot (Legendary) and building footprints.
+func set_footprints_visible(on: bool) -> void:
+	if footprints != null:
+		footprints.visible = on
+		footprints.queue_redraw()
+
+
+func _ellipse(c: Vector2, r: Vector2) -> PackedVector2Array:
+	var pts := PackedVector2Array()
+	for i in 49:
+		var a := TAU * float(i) / 48.0
+		pts.append(c + Vector2(cos(a) * r.x, sin(a) * r.y))
+	return pts
+
+
+func _draw_footprints() -> void:
+	var s: float = city.scale()
+	var font := ThemeDB.fallback_font
+	for f in city.doc.get("building_footprints", []):
+		var c: Vector2 = city.plate_to_world(Vector2(float(f["c"][0]), float(f["c"][1])))
+		var r := Vector2(float(f["r"][0]), float(f["r"][1])) * s
+		footprints.draw_colored_polygon(_ellipse(c, r), Color(0.95, 0.55, 0.2, 0.18))
+		footprints.draw_polyline(_ellipse(c, r), Color(1.0, 0.6, 0.2, 0.9), 2.0)
+	var lw: float = city.clearance_px("legendary")
+	for p in city.plots():
+		var a: Vector2 = city.plate_to_world(Vector2(float(p["anchor_px"][0]), float(p["anchor_px"][1])))
+		var r := Vector2(lw * 0.5, lw * 0.25) * s
+		var c := a - Vector2(0, r.y)
+		footprints.draw_colored_polygon(_ellipse(c, r), Color(0.3, 0.6, 1.0, 0.16))
+		footprints.draw_polyline(_ellipse(c, r), Color(0.4, 0.75, 1.0, 0.95), 3.0)
+		footprints.draw_circle(a, 6.0, Color(1, 0.2, 0.9))
+		footprints.draw_string(font, a + Vector2(-30, 26), "%s %s" % [p["id"], p["tier"]], HORIZONTAL_ALIGNMENT_LEFT, -1, 22, Color(1, 1, 1))
 
 
 ## Row by layer id (tests).

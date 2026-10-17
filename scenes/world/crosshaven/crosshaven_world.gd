@@ -1321,6 +1321,9 @@ func _unhandled_input(event: InputEvent) -> void:
 				set_run_mode(not run_mode)
 			CITY_WARP_KEY:
 				warp_city()
+			KEY_F9:
+				if in_city():
+					city_plate.set_footprints_visible(not city_plate.footprints.visible)
 			KEY_1:
 				weather.cycle_weather()
 			KEY_2:

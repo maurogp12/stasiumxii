@@ -15,7 +15,7 @@ const CITY_ID := "crosshaven_city"
 const KEYS: Array[String] = [
 	"format", "format_version", "zone_id", "region", "name", "status", "source", "plate",
 	"grid", "spawn", "exit_cell", "gate_cells", "bridges", "plots", "plot_rules", "pets",
-	"npcs", "day_hours", "gate_stubs", "layers", "gates", "wall_contacts", "towers_cleaned", "wall_polygon", "water",
+	"npcs", "day_hours", "gate_stubs", "layers", "gates", "wall_contacts", "towers_cleaned", "wall_polygon", "water", "trees_keep", "plants", "map_base_only", "building_footprints", "thatch_swapped", "wall_ring",
 ]
 const TIERS: Array[String] = ["normal", "rare", "legendary"]
 ## Grid row symbol -> [terrain, walkable].
@@ -170,6 +170,11 @@ func house_mask(tier: String) -> Dictionary:
 func clearance_px(tier: String) -> float:
 	var rules: Dictionary = doc.get("plot_rules", {})
 	return float((rules.get("clearance_px", {}) as Dictionary).get(tier, 0))
+
+
+## Item 17: the map base is shown without buildings (data: map_base_only).
+func plot_houses_hidden() -> bool:
+	return bool((doc.get("map_base_only", {}) as Dictionary).get("hide_plot_houses", false))
 
 
 ## Enabled gate stubs leaving `from_zone`.
