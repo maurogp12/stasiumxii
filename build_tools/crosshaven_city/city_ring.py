@@ -57,6 +57,19 @@ class Module:
         self.spec = spec
         self.file = spec["file"]
         im = Image.open(os.path.join(kit_dir, spec["file"])).convert("RGBA")
+        if "keep_x" in spec:
+            # round 15: keep only these columns (a gatehouse's curtain, without
+            # its painted towers), with a soft 4 px alpha edge
+            x0k, x1k = [int(v) for v in spec["keep_x"]]
+            ar = np.array(im)
+            cols = np.arange(ar.shape[1])
+            ramp = np.clip(np.minimum(cols - x0k, x1k - cols) / 4.0, 0.0, 1.0)
+            ar[..., 3] = (ar[..., 3].astype(np.float32) * ramp[None, :]).astype(np.uint8)
+            im = Image.fromarray(ar, "RGBA")
+        for bx0, by0, bx1, by1 in spec.get("erase_boxes", []):
+            ar = np.array(im)
+            ar[int(by0):int(by1), int(bx0):int(bx1), 3] = 0
+            im = Image.fromarray(ar, "RGBA")
         if "taper" in spec:
             im = taper(im, spec["taper"])
         if "recolor" in spec:
@@ -218,7 +231,7 @@ def _feat_ref(f, at, i):
     return {"kind": f["kind"], "at": [round(p[0], 1), round(p[1], 1)]}
 
 
-def _measure_end(strips, end, a, b, span=160):
+def _measure_end(strips, end, a, b, span=220):
     """Foot and merlon-tip lines at a run end (plate px, relative to the edge
     line): the drawn strips' foot (topmost bottom, between buttresses) and
     merlon tips over the last `span` px of the run, each fitted with a line
@@ -350,7 +363,11 @@ def assemble(layers, images, walk, river, old_poly, poly, cfg, kit_dir, hero_pla
         inward = (cx - q[0], cy - q[1])
         u = iso_normal(a, b, inward)
         half = math.dist(WL, WR) / 2.0
-        feats[i].append({"kind": "gate", "s": s, "half": half})
+        # round 15: where the ring towers flank this gatehouse (data flank_x, art
+        # columns; default the painted towers' feet), on the wall line
+        fx_art = m.spec.get("flank_x", [m.spec["wall_left"][0], m.spec["wall_right"][0]])
+        flank_s = [along(i, (x0 + float(fx) * m.k, line_y(a, b, x0 + float(fx) * m.k))) for fx in fx_art]
+        feats[i].append({"kind": "gate", "s": s, "half": half, "flank_s": flank_s})
         if g.get("snapped_to_corner"):
             # the gatehouse's outer tower is the corner: the neighbour edge's
             # run ends under it like under a corner tower
@@ -403,6 +420,9 @@ def assemble(layers, images, walk, river, old_poly, poly, cfg, kit_dir, hero_pla
         back_sort = min(max(py_min - 10.0, far_y + 20.0), q[1] - 8.0)
         add(lb, x0, y0, back_sort, "gate_back", {"gate": g["id"], "module": m.file})
         add(ff, x0, y0, front_bottom + 2.0, "lintel", {"gate": g["id"], "module": m.file})
+        # round 15: wall strips under a gatehouse tower's plinth sort behind that tower
+        feats[i][-1]["flank_sorts"] = [(WL[0], back_sort if back_left else front_bottom + 2.0),
+                                       (WR[0], front_bottom + 2.0 if back_left else back_sort)]
         gates_geo.append({"id": g["id"], "why": g.get("why", "layout"), "edge": i, "arch": [round(q[0], 1), round(q[1], 1)],
                           "wall_join_left": [round(WL[0], 1), round(WL[1], 1)], "wall_join_right": [round(WR[0], 1), round(WR[1], 1)],
                           "u": u, "v": v, "half_span": half, "passage": [[round(p_[0], 1), round(p_[1], 1)] for p_ in passage],
@@ -589,6 +609,15 @@ def assemble(layers, images, walk, river, old_poly, poly, cfg, kit_dir, hero_pla
         towers.append((i, st))
         corner_flags.append(False)
         kinds.append("water_gate")
+    if cfg.get("gate_flank_towers"):
+        # round 15: every gatehouse is its curtain plus two identical ring towers
+        for i in range(ne):
+            for f in feats[i]:
+                if f["kind"] == "gate":
+                    for st in f.get("flank_s", (f["s"] - f["half"], f["s"] + f["half"])):
+                        towers.append((i, st))
+                        corner_flags.append(False)
+                        kinds.append("gatehouse")
     dropped = []
     tower_sorts = []
     tower_pts = []
@@ -599,14 +628,16 @@ def assemble(layers, images, walk, river, old_poly, poly, cfg, kit_dir, hero_pla
         if is_corner:
             j = (i - 1) % ne
             feats[j].append({"kind": "tower", "s": math.dist(*edges[j]), "half": t_half * 0.7, "tower_y": p[1]})
-        # centred: the base as in the v5 gatehouse (13 art px under the foot line)
-        sort_y = p[1] + 3.0
+        # round 15: the iso tower's ground centre is on the wall point; it sorts
+        # at the front of its plinth, so both run ends hide behind its body
+        sort_y = p[1] + float(tm.spec.get("plinth_front", 3.0 / tm.k)) * tm.k + 2.0
         tower_sorts.append((p[0], p[1], sort_y))
         tk = mods.get("tower_" + kind) or tm
         tka = tk.p("base")
         add(tk.im, p[0] - tka[0], p[1] - tka[1], sort_y, "tower",
             {"module": tk.file, "corner": is_corner, "tower_kind": kind, "edge": i, "s": round(st, 1),
-             "wall_point": [round(p[0], 1), round(p[1], 1)], "axis_x": round(p[0], 1)})
+             "wall_point": [round(p[0], 1), round(p[1], 1)], "axis_x": round(p[0], 1),
+             "anchor_frac": round(float(tk.spec["base"][0]) / (tk.im.width / tk.k), 4)})
     log["tower_spacing"] = spacing_log
     log["stone_chroma"] = dict(CHROMA_LOG)
     towers = tower_pts
@@ -683,6 +714,9 @@ def assemble(layers, images, walk, river, old_poly, poly, cfg, kit_dir, hero_pla
                 oy = line_y(a, b, x) - (base0[1] + sl * (c0 - base0[0]))
                 cuts = []
                 for f_ in ((f0, f1) if not tuck.get("front_mode") else ()):
+                    if f_ is not None and f_["kind"] == "gate":
+                        for fx_, fs_ in f_.get("flank_sorts", []):
+                            cuts.append((fx_ - r_base, fx_ + r_base, fs_))
                     if f_ is not None and f_["kind"] == "tower":
                         tp = at(i, f_["s"])
                         ts = next((t[2] for t in tower_sorts if abs(t[0] - tp[0]) < 1 and abs(t[1] - tp[1]) < 1), None)
@@ -729,13 +763,16 @@ def assemble(layers, images, walk, river, old_poly, poly, cfg, kit_dir, hero_pla
     # ---- walk: new band, towers, gate footprints, then the passages
     band = CG.line_mask(poly, int(cfg.get("band_px", 40)))
     walk &= ~band
-    for p in towers:
-        rx = tm.im.width * 0.45
-        yy, xx = np.ogrid[0:H_, 0:W_]
+    # round 15: the whole plinth ellipse of every tower blocks (ring towers and
+    # the gatehouses' own towers), not just the shaft
+    plinths = [tuple(p) for p in towers] + [tuple(gg[k]) for gg in gates_geo for k in ("wall_join_left", "wall_join_right")]
+    for p in plinths:
+        rx = r_base + 4.0
         y0_, y1_ = max(0, int(p[1] - rx)), min(H_, int(p[1] + rx))
         x0_, x1_ = max(0, int(p[0] - rx)), min(W_, int(p[0] + rx))
         sub_y, sub_x = np.ogrid[y0_:y1_, x0_:x1_]
-        walk[y0_:y1_, x0_:x1_] &= ~(((sub_x - p[0]) / rx) ** 2 + ((sub_y - p[1] + rx * 0.15) / (rx * 0.5)) ** 2 <= 1.0)
+        walk[y0_:y1_, x0_:x1_] &= ~(((sub_x - p[0]) / rx) ** 2 + ((sub_y - p[1]) / (rx * 0.5)) ** 2 <= 1.0)
+    log["plinths"] = [[round(p[0], 1), round(p[1], 1)] for p in plinths]
     for gg in gates_geo:
         q = gg["arch"]
         foot = CG.poly_mask(CG.quad(q, gg["u"], gg["v"], -60.0, 90.0, gg["half_span"]))

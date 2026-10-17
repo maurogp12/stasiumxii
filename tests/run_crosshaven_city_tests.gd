@@ -815,13 +815,11 @@ func _test_review_data() -> void:
 	# 2: the gatehouse curtain face matches the run's face; the arch stays wide.
 	for g in city.gates():
 		if str(g["id"]) in ["N", "S"]:
-			check(str(g["art"]) == "gatehouse_horizontal_CONCEPTO.png" and is_zero_approx(float(g["shear"])), "%s uses the horizontal gatehouse with no shear (%s %.3f)" % [g["id"], g["art"], float(g["shear"])])
+			check(str(g["art"]) == "gatehouse_horizontal_v6_CONCEPTO.png" and is_zero_approx(float(g["shear"])), "%s uses the horizontal gatehouse with no shear (%s %.3f)" % [g["id"], g["art"], float(g["shear"])])
 		else:
-			check(str(g["art"]).begins_with("gatehouse_diagonal_v5"), "%s uses the diagonal gatehouse v5 (%s)" % [g["id"], g["art"]])
-			check(absf(absf(float(g["shear"])) - 0.237) < 0.01, "%s shear puts both tower bases on the wall line (%.3f)" % [g["id"], float(g["shear"])])
-		if str(g["id"]) in ["N", "S"]:
-			check(float(g.get("art_drop_px", -1.0)) > 0.0, "%s parapet drop in data (%.1f)" % [g["id"], float(g.get("art_drop_px", -1.0))])
-		else:
+			check(str(g["art"]).begins_with("gatehouse_diagonal_v6"), "%s uses the diagonal gatehouse v6 (%s)" % [g["id"], g["art"]])
+			check(absf(absf(float(g["shear"])) - 0.1937) < 0.01, "%s shear puts both tower bases on the wall line (%.3f)" % [g["id"], float(g["shear"])])
+		if true:
 			# v5 diagonal: the tower bases sit on the wall line (no drop)
 			check(absf(float(g.get("art_drop_px", -1.0))) < 0.5, "%s tower bases on the wall line, no drop (%.1f)" % [g["id"], float(g.get("art_drop_px", -1.0))])
 		# hero width as the art team measures it: 48 px at a 156 px hero
@@ -834,8 +832,7 @@ func _test_review_data() -> void:
 		if not (str(g["id"]) in ["N", "S"]):
 			continue
 		var sm: float = float(g.get("scale_mul", 1.0))
-		check(absf(float(g["art_height_px"]) - 1041.0 * k_mod * sm) < 2.0, "%s uses the v5 horizontal gatehouse (%.1f px tall)" % [g["id"], float(g["art_height_px"])])
-		check(absf(float(g["art_drop_px"]) - 27.0 * k_mod * sm) < 0.5, "%s parapet drop 27 art px (577 vs 550) in data (%.1f)" % [g["id"], float(g["art_drop_px"])])
+		check(absf(float(g["art_height_px"]) - 1035.0 * k_mod * sm) < 2.0, "%s uses the v6 horizontal gatehouse (%.1f px tall)" % [g["id"], float(g["art_height_px"])])
 		# round 9: uniform scale to the diagonals' wall height; towers stay below the castle
 		check(sm > 1.1 and sm < 1.25, "%s is scaled uniformly with the flat runs (%.3f)" % [g["id"], sm])
 		var tw_h: float = 990.0 * sm
@@ -948,24 +945,18 @@ func _test_review_data() -> void:
 	var th0: float = ring_hs[0] if not ring_hs.is_empty() else 0.0
 	for k in ring_ws.size():
 		check(absf(ring_ws[k] - tw0) / tw0 <= 0.02 and absf(ring_hs[k] - th0) / th0 <= 0.02, "ring tower %d has the common size (%.0fx%.0f)" % [k, ring_ws[k], ring_hs[k]])
+	# round 15: the gatehouses are the v6 composites (their towers are v6 copies at the ring towers' scale)
+	var ring_mul: float = 1.179
 	for g in city.gates():
-		var sm2: float = float(g.get("scale_mul", 1.0))
-		if str(g["id"]) in ["N", "S"]:
-			# the v5 gatehouse's own towers are the ring tower art (crop 505x1033)
-			var gw: float = 505.0 * k_mod2 * sm2
-			var gh: float = 1033.0 * k_mod2 * sm2
-			check(absf(gw - tw0) / tw0 <= 0.02 and absf(gh - th0) / th0 <= 0.02, "%s gatehouse towers match the ring towers (%.0fx%.0f vs %.0fx%.0f)" % [g["id"], gw, gh, tw0, th0])
-		else:
-			# diagonal gatehouse v5: its near tower is 1030 art px (a v5 tower copy)
-			var dh: float = 1030.0 * k_mod2 * sm2
-			check(absf(dh - th0) / th0 <= 0.02, "%s gatehouse near tower height matches the ring towers (%.0f vs %.0f)" % [g["id"], dh, th0])
+		check(str(g["art"]).contains("_v6_"), "%s gatehouse is v6 art (%s)" % [g["id"], g["art"]])
+		check(is_equal_approx(float(g.get("scale_mul", 0.0)), ring_mul), "%s gatehouse towers at the ring towers' scale (%.3f)" % [g["id"], float(g.get("scale_mul", 0.0))])
 	var r_c: float = float(city.doc.get("tower_body_radius_px", 60.0))
 	var poly_t: Array = city.doc["wall_polygon"]
 	for rec in city.layers():
 		if str(rec["tag"]) != "tower":
 			continue
 		var wp := _tower_foot(rec)
-		var axis_x: float = float(rec["x"]) + float(rec["w"]) * 251.5 / 505.0
+		var axis_x: float = float(rec["x"]) + float(rec["w"]) * float(rec.get("anchor_frac", 251.5 / 505.0))
 		check(absf(axis_x - wp.x) <= 4.0, "tower %d axis on its wall point (%.1f vs %.1f)" % [int(rec["id"]), axis_x, wp.x])
 		var on_line := 1e9
 		for i in poly_t.size():
@@ -1027,14 +1018,14 @@ func _test_review_data() -> void:
 	# Round 12: one tower style: every tower is the v5 tower (ring towers use
 	# its crop; the gatehouses are the v5 horizontal and diagonal art).
 	for g in city.gates():
-		check(str(g["art"]) in ["gatehouse_horizontal_CONCEPTO.png", "gatehouse_diagonal_v5_CONCEPTO.png", "gatehouse_diagonal_v5_mirror_CONCEPTO.png"], "%s gatehouse is v5 art (%s)" % [g["id"], g["art"]])
+		check(str(g["art"]) in ["gatehouse_horizontal_v6_CONCEPTO.png", "gatehouse_diagonal_v6_CONCEPTO.png", "gatehouse_diagonal_v6_mirror_CONCEPTO.png"], "%s gatehouse is v6 art (%s)" % [g["id"], g["art"]])
 	for rec in city.layers():
 		var md := str(rec.get("module", ""))
-		check(not ("diag_v3" in md) and md != "tower_CONCEPTO.png", "layer %d uses no old-style tower art (%s)" % [int(rec["id"]), md])
+		check(not ("diag_v3" in md) and not ("_v5" in md) and md != "tower_CONCEPTO.png" and md != "gatehouse_horizontal_CONCEPTO.png", "layer %d uses no old-style tower art (%s)" % [int(rec["id"]), md])
 	# Round 13: joins. Every tower's base outline stands on ground, not water;
 	# no gap between a tower and an adjoining module (sampled on the composite
 	# of all ring sprites in the build); no water-gate block below a tower base.
-	var r_base: float = float(city.doc.get("tower_body_radius_px", 77.5)) * 239.0 / 188.0
+	var r_base: float = float(city.doc.get("tower_body_radius_px", 77.5)) * 300.0 / 214.0
 	for rec in city.layers():
 		if str(rec["tag"]) != "tower":
 			continue
@@ -1046,6 +1037,26 @@ func _test_review_data() -> void:
 			if city.zone.terrain_at(_cell_at(city.plate_to_world(bp))) == "water":
 				wet += 1
 		check(wet == 0, "tower %d base outline stands on ground (%d points on water)" % [int(rec["id"]), wet])
+	# round 15: no walkable cell inside any tower plinth ellipse (gate passages excepted)
+	var r_pl: float = float(city.doc.get("tower_base_radius_px", 120.0))
+	var pass_cells := {}
+	for g in city.gates():
+		for c in g.get("cells", []):
+			pass_cells[Vector2i(int(c[0]), int(c[1]))] = true
+	var on_plinth := 0
+	for pl in city.doc.get("tower_plinths", []):
+		var pc := Vector2(float(pl[0]), float(pl[1]))
+		var cc: Vector2i = _cell_at(city.plate_to_world(pc))
+		for dy in range(-8, 9):
+			for dx in range(-8, 9):
+				var cell := cc + Vector2i(dx, dy)
+				if pass_cells.has(cell) or not city.zone.passable_at(cell):
+					continue
+				var pp: Vector2 = city.world_to_plate(BoardVisualSort.cell_to_local(cell))
+				if ((pp.x - pc.x) / r_pl) ** 2 + ((pp.y - pc.y) / (r_pl * 0.5)) ** 2 <= 1.0:
+					on_plinth += 1
+	check(city.doc.get("tower_plinths", []).size() >= 20, "tower plinths in data (%d)" % city.doc.get("tower_plinths", []).size())
+	check(on_plinth == 0, "no walkable cell inside a tower plinth (%d)" % on_plinth)
 	var audit: Array = city.doc.get("join_audit", [])
 	check(audit.size() >= 15, "joins audited (%d)" % audit.size())
 	for j in audit:

@@ -2057,7 +2057,7 @@ def main():
             rec["plot_plant"] = True
         if "plant" in l:
             rec["plant"] = l["plant"]
-        for key_ in ("module", "gate", "spot", "corner", "base_drop_px", "wall_point", "tower_kind", "edge", "s", "axis_x"):
+        for key_ in ("module", "gate", "spot", "corner", "base_drop_px", "wall_point", "tower_kind", "edge", "s", "axis_x", "anchor_frac"):
             if key_ in l:
                 rec[key_] = l[key_]
         if l["tag"] in hide_tags and lid in displaced:
@@ -2203,6 +2203,7 @@ def main():
         "tower_spacing": gate_log.get("tower_spacing", []),
         "stone_chroma": gate_log.get("stone_chroma", {}),
         "join_audit": join_audit_out,
+        "tower_plinths": gate_log.get("plinths", []),
         "block_below_tower_px": block_below,
         "gate_clear": dict(LAYOUT.get("greenery", {}).get("gate_clear", {})),
     }
