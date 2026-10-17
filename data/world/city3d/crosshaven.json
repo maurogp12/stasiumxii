@@ -1,0 +1,44 @@
+{
+  "format": "stasium.city3d",
+  "format_version": 1,
+  "status": "proposed",
+  "city_id": "crosshaven_city",
+  "name": "Crosshaven",
+  "source": {"kind": "tile_city", "tilemap": "res://data/world/crosshaven_city/tilemap.json", "city": "res://data/world/crosshaven_city/city.json"},
+  "cell_m": 2.0,
+  "spawn_gate": "S",
+  "water": {"level": -0.45, "bed": -1.6, "bank": -0.7, "shallow": [0.16, 0.24, 0.22], "deep": [0.05, 0.10, 0.11]},
+  "terrain": {
+    "g": {"name": "grass", "color": [0.30, 0.34, 0.17], "alt": [0.40, 0.38, 0.20], "stone": 0.0},
+    "d": {"name": "dirt", "color": [0.36, 0.29, 0.20], "alt": [0.30, 0.24, 0.17], "stone": 0.15},
+    "c": {"name": "cobble", "color": [0.42, 0.39, 0.35], "alt": [0.33, 0.30, 0.27], "stone": 1.0},
+    "p": {"name": "plaza", "color": [0.52, 0.48, 0.42], "alt": [0.42, 0.38, 0.33], "stone": 0.8},
+    "w": {"name": "water", "color": [0.20, 0.18, 0.14], "alt": [0.16, 0.14, 0.11], "stone": 0.2},
+    ".": {"name": "void", "color": [0.29, 0.32, 0.17], "alt": [0.35, 0.34, 0.19], "stone": 0.0}
+  },
+  "materials": {
+    "timber": [0.78, 0.72, 0.60], "plaster": [0.80, 0.76, 0.66], "plaster_warm": [0.78, 0.66, 0.56],
+    "stone": [0.50, 0.48, 0.44], "stone_dark": [0.40, 0.39, 0.37], "stone_pale": [0.62, 0.59, 0.53],
+    "beam": [0.23, 0.17, 0.12], "slate": [0.25, 0.27, 0.30], "tile": [0.48, 0.25, 0.17],
+    "wood": [0.36, 0.26, 0.17], "wood_dark": [0.22, 0.16, 0.11], "iron": [0.18, 0.18, 0.19],
+    "canvas_a": [0.62, 0.22, 0.16], "canvas_b": [0.80, 0.74, 0.58], "canvas_c": [0.30, 0.38, 0.24],
+    "leaf_oak": [0.22, 0.30, 0.12], "leaf_elm": [0.25, 0.34, 0.14], "leaf_maple": [0.50, 0.30, 0.12],
+    "leaf_cherry": [0.78, 0.55, 0.60], "leaf_cypress": [0.14, 0.22, 0.12], "bark": [0.27, 0.21, 0.16],
+    "plot_normal": [0.55, 0.62, 0.40], "plot_rare": [0.35, 0.55, 0.85], "plot_legendary": [0.95, 0.70, 0.25]
+  },
+  "time": {
+    "day_hours": [6.0, 20.0],
+    "lamps_on": 18.5,
+    "lamps_off": 6.5,
+    "keys": [
+      {"hour": 0.0, "sun": [0.30, 0.38, 0.62], "sun_energy": 0.18, "elev": -30, "ambient": [0.16, 0.20, 0.32], "ambient_energy": 0.55, "sky_top": [0.03, 0.05, 0.11], "sky_horizon": [0.10, 0.13, 0.22], "fog": [0.07, 0.09, 0.15], "fog_density": 0.00099, "exposure": 1.25},
+      {"hour": 5.5, "sun": [0.55, 0.45, 0.55], "sun_energy": 0.25, "elev": -4, "ambient": [0.28, 0.27, 0.36], "ambient_energy": 0.6, "sky_top": [0.12, 0.15, 0.28], "sky_horizon": [0.55, 0.40, 0.38], "fog": [0.35, 0.30, 0.32], "fog_density": 0.00132, "exposure": 1.15},
+      {"hour": 7.5, "sun": [1.00, 0.72, 0.45], "sun_energy": 1.6, "elev": 14, "ambient": [0.55, 0.50, 0.45], "ambient_energy": 0.7, "sky_top": [0.30, 0.42, 0.62], "sky_horizon": [0.86, 0.68, 0.50], "fog": [0.70, 0.60, 0.50], "fog_density": 0.00088, "exposure": 1.0},
+      {"hour": 12.0, "sun": [1.00, 0.90, 0.74], "sun_energy": 2.4, "elev": 52, "ambient": [0.62, 0.62, 0.60], "ambient_energy": 0.75, "sky_top": [0.28, 0.44, 0.68], "sky_horizon": [0.72, 0.70, 0.62], "fog": [0.68, 0.66, 0.60], "fog_density": 0.00055, "exposure": 1.0},
+      {"hour": 16.5, "sun": [1.00, 0.78, 0.52], "sun_energy": 2.0, "elev": 26, "ambient": [0.60, 0.54, 0.46], "ambient_energy": 0.72, "sky_top": [0.30, 0.42, 0.62], "sky_horizon": [0.88, 0.70, 0.50], "fog": [0.74, 0.62, 0.48], "fog_density": 0.00066, "exposure": 1.0},
+      {"hour": 19.0, "sun": [1.00, 0.52, 0.28], "sun_energy": 1.1, "elev": 6, "ambient": [0.42, 0.34, 0.38], "ambient_energy": 0.62, "sky_top": [0.14, 0.18, 0.34], "sky_horizon": [0.95, 0.48, 0.26], "fog": [0.50, 0.36, 0.32], "fog_density": 0.00099, "exposure": 1.1},
+      {"hour": 20.5, "sun": [0.45, 0.42, 0.62], "sun_energy": 0.3, "elev": -6, "ambient": [0.22, 0.24, 0.38], "ambient_energy": 0.58, "sky_top": [0.05, 0.08, 0.18], "sky_horizon": [0.30, 0.22, 0.30], "fog": [0.12, 0.13, 0.20], "fog_density": 0.00110, "exposure": 1.25},
+      {"hour": 24.0, "sun": [0.30, 0.38, 0.62], "sun_energy": 0.18, "elev": -30, "ambient": [0.16, 0.20, 0.32], "ambient_energy": 0.55, "sky_top": [0.03, 0.05, 0.11], "sky_horizon": [0.10, 0.13, 0.22], "fog": [0.07, 0.09, 0.15], "fog_density": 0.00099, "exposure": 1.25}
+    ]
+  }
+}
