@@ -1318,6 +1318,17 @@ func _test_review_world(w: Node2D) -> void:
 			npc.position = keep_pos
 			npc.z_index = keep_z
 			w._sync_city_labels()
+	if _image_plate():
+		# Round 19: a warm glow at every gate mouth by night, none by day
+		cp.set_hour(22.0)
+		var glows := 0
+		for gf in cp.gates_fx:
+			if gf["glow"] != null and (gf["glow"] as CanvasItem).visible:
+				glows += 1
+		check(glows == 4, "night: a glow at each gate mouth (%d)" % glows)
+		cp.set_hour(12.0)
+		for gf in cp.gates_fx:
+			check(gf["glow"] != null and not (gf["glow"] as CanvasItem).visible, "day: gate %s glow is off" % gf["id"])
 	if not _image_plate():
 		# 5: lamps light at dusk and night, not by day; Performance mode keeps them still.
 		check(cp.lights.size() >= 10, "lamp lights built (%d)" % cp.lights.size())

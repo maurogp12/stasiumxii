@@ -90,6 +90,7 @@ func lamps_lit() -> bool:
 ## Shows or hides the lamp light; outside Performance mode the halo breathes a
 ## little. Performance mode keeps it still (no per-frame change).
 func _sync_lights(delta: float) -> void:
+	_sync_gate_glow()
 	if lights.is_empty():
 		return
 	var on := lamps_lit()
@@ -613,8 +614,39 @@ func _build_portcullis() -> void:
 		var block := {}
 		for c in pc.get("block_cells", []):
 			block[Vector2i(int(c[0]), int(c[1]))] = true
+		# Round 19: a warm lamp glow at the gate mouth by night
+		var gcfg: Dictionary = (city.doc.get("lights", {}) as Dictionary).get("gate_glow", {})
+		var glow: Sprite2D = null
+		var gl: PointLight2D = null
+		if not gcfg.is_empty():
+			var tint_a: Array = gcfg.get("tint", [1.0, 0.72, 0.42])
+			var tint := Color(float(tint_a[0]), float(tint_a[1]), float(tint_a[2]))
+			var mouth: Vector2 = city.plate_to_world(Vector2(float(pc["foot"][0]), float(pc["foot"][1]) - float(gcfg.get("lift_px", 30.0))))
+			var add := CanvasItemMaterial.new()
+			add.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
+			glow = Sprite2D.new()
+			glow.name = "GateGlow_%s" % str(g["id"])
+			glow.texture = _light_texture()
+			glow.material = add
+			glow.position = mouth
+			glow.scale = Vector2(1.0, 0.75) * float(gcfg.get("radius_px", 150.0)) * city.scale() / 128.0
+			glow.self_modulate = tint
+			glow.modulate.a = float(gcfg.get("alpha", 0.75))
+			glow.z_as_relative = false
+			glow.z_index = clampi(s.z_index + 1, -4096, 4096)
+			glow.visible = false
+			add_child(glow)
+			gl = PointLight2D.new()
+			gl.name = "GateLight_%s" % str(g["id"])
+			gl.texture = _light_texture()
+			gl.texture_scale = float(gcfg.get("radius_px", 150.0)) * 2.0 * city.scale() / 256.0
+			gl.color = tint
+			gl.energy = float(gcfg.get("energy", 1.0))
+			gl.position = mouth
+			gl.enabled = false
+			add_child(gl)
 		gates_fx.append({
-			"id": str(g["id"]), "node": s, "lift": 0.0, "target": 0.0, "idle": 0.0,
+			"id": str(g["id"]), "node": s, "lift": 0.0, "target": 0.0, "idle": 0.0, "glow": glow, "light": gl,
 			"at": city.plate_to_world(Vector2(float(pc["foot"][0]), float(pc["foot"][1]))),
 			"open_s": float(pc.get("open_s", 0.6)), "close_after_s": float(pc.get("close_after_s", 1.5)),
 			"trigger": float(pc.get("trigger_hero_heights", 3.0)), "block": block,
@@ -653,6 +685,17 @@ func gate_closed_at(cell: Vector2i) -> bool:
 		if (gf["block"] as Dictionary).has(cell) and float(gf["lift"]) < 0.75:
 			return true
 	return false
+
+
+func _sync_gate_glow() -> void:
+	var on := lamps_lit()
+	for gf in gates_fx:
+		var glow: Sprite2D = gf.get("glow")
+		if glow != null and glow.visible != on:
+			glow.visible = on
+		var gl: PointLight2D = gf.get("light")
+		if gl != null and gl.enabled != (on and not lite):
+			gl.enabled = on and not lite
 
 
 func gate_fx(id: String) -> Dictionary:

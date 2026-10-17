@@ -111,6 +111,22 @@ func _v4_shots() -> void:
 		var in_c := Vector2i(int(cells[cells.size() - 1][0]), int(cells[cells.size() - 1][1]))
 		_place(_near_free(in_c), "s")
 		await _hold(_w.walker.position + Vector2(0, -60), 1.8, 30, "14_inside_%s" % g["id"])
+	# Round 20: a tower at 100% (one plate px per screen px)
+	_w.walker.visible = false
+	for rec in city.layers():
+		if str(rec["tag"]) == "tower" and str(rec.get("name", "")) == "S_left":
+			var tc := Vector2(float(rec["x"]) + float(rec["w"]) * 0.5, float(rec["y"]) + float(rec["h"]) * 0.5)
+			await _hold(city.plate_to_world(tc), 1.0 / city.scale(), 20, "34_tower_100pct")
+	_w.walker.visible = true
+	# Round 19: the gates by night (warm glow at each mouth)
+	_w.weather.time_of_day = 22.5
+	for g in city.gates():
+		if str(g["id"]) in ["S", "W"]:
+			var aw: Vector2 = city.plate_to_world(Vector2(float(g["arch"][0]), float(g["arch"][1])))
+			var cells2: Array = g.get("cells", [])
+			_place(_near_free(Vector2i(int(cells2[0][0]), int(cells2[0][1]))), "n")
+			await _hold(aw + Vector2(0, -40), 1.1, 30, "33_gate_%s_night" % g["id"])
+	_w.weather.time_of_day = 12.0
 	_w.npc_plates.visible = true
 	_w.camera_hold = false
 
