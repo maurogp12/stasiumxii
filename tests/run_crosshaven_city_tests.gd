@@ -1020,6 +1020,14 @@ func _test_review_data() -> void:
 			if str(rec["tag"]) == "tower" and bool(rec.get("corner", false)) and _tower_foot(rec).distance_to(w_at) < 400.0:
 				flank += 1
 		check(flank == 2, "water gate %s has two flanking towers (%d)" % [w_at, flank])
+	# Round 11: the recoloured stone has the tower body's mean chroma (5%).
+	var chroma: Dictionary = city.doc.get("stone_chroma", {})
+	for want in ["segment_neg", "segment_pos", "segment_flat", "watergate_neg", "watergate_pos"]:
+		check(chroma.has(want), "stone chroma measured for %s" % want)
+		if chroma.has(want):
+			var cc: float = float(chroma[want]["chroma"])
+			var cr: float = float(chroma[want]["ref_chroma"])
+			check(absf(cc - cr) / cr <= 0.05, "%s stone chroma %.2f matches the tower body %.2f" % [want, cc, cr])
 	# Round 5: a clear plaza at every gate and water gate (no trees).
 	var clear_cfg: Dictionary = city.doc.get("gate_clear", {})
 	check(not clear_cfg.is_empty(), "gate clearance in data")

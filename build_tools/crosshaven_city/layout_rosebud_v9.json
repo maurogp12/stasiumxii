@@ -623,7 +623,7 @@
     "watergate_neg",
     "watergate_pos"
    ],
-   "note": "Round 10: LAB colour transfer of the wall segments and water gates to the v5 stone (the cropped v5 tower body, which is the gatehouse's own stone, banners and arch excluded): lightness mean and spread (spread clamped 0.85-1.15), a*/b* mean only, so the art's shading keeps its own hue range. Recolour only."
+   "note": "Round 10: LAB colour transfer of the wall segments and water gates to the v5 stone (the cropped v5 tower body, which is the gatehouse's own stone, banners and arch excluded): lightness mean and spread (spread clamped 0.85-1.15), a*/b* mean only, so the art's shading keeps its own hue range. Recolour only. Round 11: after the a*/b* mean shift the chroma is scaled (hue kept) to the reference's mean chroma; the measured chroma per module is in city.json stone_chroma."
   },
   "tower_spacing_wall_heights": [
    1.8,

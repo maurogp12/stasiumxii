@@ -77,6 +77,8 @@ class Module:
 
 
 _REF_STATS = {}
+## Round 11: measured mean chroma of each recoloured module vs the reference.
+CHROMA_LOG = {}
 
 
 def lab_transfer(im, rc, kit_dir):
@@ -90,8 +92,8 @@ def lab_transfer(im, rc, kit_dir):
         sub = ref[y0:y1, x0:x1]
         m = sub[..., 3] > 0.9
         lab = color.rgb2lab(sub[..., :3][m].reshape(-1, 1, 3)).reshape(-1, 3)
-        _REF_STATS[key] = (lab.mean(0), lab.std(0))
-    rm, rs = _REF_STATS[key]
+        _REF_STATS[key] = (lab.mean(0), lab.std(0), float(np.hypot(lab[:, 1], lab[:, 2]).mean()))
+    rm, rs, rc_chroma = _REF_STATS[key]
     a = np.asarray(im).astype(np.float32) / 255.0
     m = a[..., 3] > 0.5
     lab = color.rgb2lab(a[..., :3][m].reshape(-1, 1, 3)).reshape(-1, 3)
@@ -104,9 +106,20 @@ def lab_transfer(im, rc, kit_dir):
     out[..., 0] = (allpx[..., 0] - sm[0]) * kl + rm[0]
     out[..., 1] = allpx[..., 1] - sm[1] + rm[1]
     out[..., 2] = allpx[..., 2] - sm[2] + rm[2]
+    # round 11: clamp the chroma to the reference's mean chroma (hue kept)
+    ch = np.hypot(out[..., 1], out[..., 2])
+    c_now = float(ch[m].mean())
+    if c_now > 1e-3:
+        k = rc_chroma / c_now
+        out[..., 1] *= k
+        out[..., 2] *= k
     rgb = np.clip(color.lab2rgb(out), 0, 1)
     res = a.copy()
     res[..., :3] = rgb
+    chk = color.rgb2lab(rgb[m].reshape(-1, 1, 3)).reshape(-1, 3)
+    CHROMA_LOG[rc.get("_name", "?")] = {"chroma": round(float(np.hypot(chk[:, 1], chk[:, 2]).mean()), 2),
+                                       "ref_chroma": round(rc_chroma, 2),
+                                       "L": round(float(chk[:, 0].mean()), 2), "ref_L": round(float(rm[0]), 2)}
     return Image.fromarray((res * 255.0 + 0.5).astype(np.uint8), "RGBA")
 
 
@@ -235,7 +248,7 @@ def assemble(layers, images, walk, river, old_poly, poly, cfg, kit_dir, hero_pla
     rc = cfg.get("stone_recolor")
     for name, spec in cfg["modules"].items():
         if rc and name in rc.get("targets", []):
-            spec = dict(spec, recolor=rc)
+            spec = dict(spec, recolor=dict(rc, _name=name))
         mods[name] = Module(kit_dir, spec, scale)
     H_, W_ = walk.shape
     inside_old = CG.poly_mask(old_poly)
@@ -535,6 +548,7 @@ def assemble(layers, images, walk, river, old_poly, poly, cfg, kit_dir, hero_pla
             {"module": tm.file, "corner": is_corner, "tower_kind": kind, "edge": i, "s": round(st, 1),
              "wall_point": [round(p[0], 1), round(p[1], 1)], "axis_x": round(p[0], 1)})
     log["tower_spacing"] = spacing_log
+    log["stone_chroma"] = dict(CHROMA_LOG)
     towers = tower_pts
     # a water gate draws behind its own flanking towers (its wall ends tuck under them)
     for i in range(ne):

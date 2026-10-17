@@ -3230,6 +3230,38 @@
    ]
   }
  ],
+ "stone_chroma": {
+  "segment_neg": {
+   "chroma": 32.83,
+   "ref_chroma": 33.0,
+   "L": 48.56,
+   "ref_L": 48.68
+  },
+  "segment_pos": {
+   "chroma": 32.83,
+   "ref_chroma": 33.0,
+   "L": 48.56,
+   "ref_L": 48.68
+  },
+  "segment_flat": {
+   "chroma": 32.84,
+   "ref_chroma": 33.0,
+   "L": 48.57,
+   "ref_L": 48.68
+  },
+  "watergate_neg": {
+   "chroma": 32.88,
+   "ref_chroma": 33.0,
+   "L": 48.61,
+   "ref_L": 48.68
+  },
+  "watergate_pos": {
+   "chroma": 32.88,
+   "ref_chroma": 33.0,
+   "L": 48.61,
+   "ref_L": 48.68
+  }
+ },
  "gate_clear": {
   "width_mul": 0.9,
   "note": "Round 5: no tree or cypress in a clear plaza at every gate and water gate, inside or out: an iso ellipse 1.8 gatehouse widths across (rx = 0.9 x width, ry = rx/2); flowers and low bushes stay; benches, lamps and planters stay out too. The outer woods are placed around these plazas."

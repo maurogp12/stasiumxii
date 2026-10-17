@@ -2068,6 +2068,7 @@ def main():
         "tower_body_radius_px": gate_log.get("tower_body_radius_px"),
         "gates_snapped": gate_log.get("gates_snapped", []),
         "tower_spacing": gate_log.get("tower_spacing", []),
+        "stone_chroma": gate_log.get("stone_chroma", {}),
         "gate_clear": dict(LAYOUT.get("greenery", {}).get("gate_clear", {})),
     }
     json.dump(city, open(os.path.join(data_dir, "city.json"), "w"), indent=1)
