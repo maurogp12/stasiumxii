@@ -813,15 +813,15 @@ func _test_gate_walks(w: Node2D) -> void:
 			gate_set[Vector2i(int(c[0]), int(c[1]))] = true
 		var gf: Dictionary = w.city_plate.gate_fx(str(g["id"]))
 		if _image_plate():
-			check(not gf.is_empty(), "%s has a portcullis" % g["id"])
+			check(not gf.is_empty() and str(gf["kind"]) == "door", "%s has its wooden doors" % g["id"])
 		for leg in [[out_c, in_c, "in"], [in_c, out_c, "out"]]:
 			w.walker.place(z, leg[0])
 			if not gf.is_empty():
 				# nobody near: the grate comes down and the arch cells hold
 				_settle_gates(w, [], 3.0)
-				check(float(gf["lift"]) == 0.0, "%s portcullis is down when nobody is near" % g["id"])
+				check(float(gf["lift"]) == 0.0, "%s gate is shut when nobody is near" % g["id"])
 				var bc: Array = (gf["block"] as Dictionary).keys()
-				check(not bc.is_empty() and w.city_plate.gate_closed_at(bc[0]), "%s arch cells hold while the grate is down" % g["id"])
+				check(not bc.is_empty() and w.city_plate.gate_closed_at(bc[0]), "%s arch cells hold while the gate is not fully open" % g["id"])
 				_lift_seen = 0.0
 			var r: Dictionary = w.walk_to(leg[1], "walk")
 			check(bool(r.get("ok", false)), "%s: walk %s (%s -> %s)" % [g["id"], leg[2], leg[0], leg[1]])
@@ -837,13 +837,22 @@ func _test_gate_walks(w: Node2D) -> void:
 			_drive(w)
 			check(w.walker.cell == leg[1], "%s: the hero gets %s (%s)" % [g["id"], leg[2], w.walker.cell])
 			if not gf.is_empty():
-				check(_lift_seen >= 1.0, "%s portcullis rose all the way for the walk %s (%.2f)" % [g["id"], leg[2], _lift_seen])
+				check(_lift_seen >= 1.0, "%s gate opened all the way for the walk %s (%.2f)" % [g["id"], leg[2], _lift_seen])
 				# someone at the arch, then nobody: it stays up 1.5 s, then is down after 0.6 s more
 				_settle_gates(w, [gf["at"]], 0.1)
 				_settle_gates(w, [], 1.2)
-				check(float(gf["lift"]) == 1.0, "%s portcullis waits before it drops" % g["id"])
+				check(float(gf["lift"]) == 1.0, "%s gate waits before it closes" % g["id"])
 				_settle_gates(w, [], 1.0)
-				check(float(gf["lift"]) == 0.0, "%s portcullis drops once nobody is near" % g["id"])
+				check(float(gf["lift"]) == 0.0, "%s gate closes once nobody is near" % g["id"])
+				if str(gf["kind"]) == "door":
+					var frames: Array = gf["frames"]
+					var bc2: Array = (gf["block"] as Dictionary).keys()
+					check(frames.size() == 8 and (gf["node"] as Sprite2D).texture == frames[0], "%s doors show f00 (closed)" % g["id"])
+					_settle_gates(w, [gf["at"]], 0.3)
+					check(w.city_plate.gate_closed_at(bc2[0]), "%s arch still holds while the doors swing" % g["id"])
+					_settle_gates(w, [gf["at"]], 0.6)
+					check((gf["node"] as Sprite2D).texture == frames[7] and not w.city_plate.gate_closed_at(bc2[0]), "%s doors open to f07 and the arch passes" % g["id"])
+					_settle_gates(w, [], 2.5)
 	w.walker.place(z, city.spawn())
 
 

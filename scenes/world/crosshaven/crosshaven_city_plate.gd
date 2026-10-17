@@ -600,17 +600,33 @@ const PORTCULLIS_SHADER := preload("res://scenes/world/crosshaven/crosshaven_por
 func _build_portcullis() -> void:
 	gates_fx.clear()
 	for g in city.gates():
-		var pc: Dictionary = g.get("portcullis", {})
+		# Round 21: wooden double doors (8 frames) when the gate has them;
+		# otherwise the round 18 portcullis (data decides, nothing removed)
+		var dr: Dictionary = g.get("door", {})
+		var pc: Dictionary = dr if not dr.is_empty() else g.get("portcullis", {})
 		if pc.is_empty():
 			continue
-		var tex := load_tex(city.art_path(str(pc["file"])))
-		var s := _sprite(tex, Vector2(float(pc["x"]), float(pc["y"])), _sort_z(float(pc["sort_y"])))
-		s.name = "Portcullis_%s" % str(g["id"])
-		var mat := ShaderMaterial.new()
-		mat.shader = PORTCULLIS_SHADER
-		mat.set_shader_parameter("opening", load_tex(city.art_path(str(pc["opening"]))))
-		mat.set_shader_parameter("lift", 0.0)
-		s.material = mat
+		var kind := "door" if not dr.is_empty() else "portcullis"
+		var frames: Array = []
+		var s: Sprite2D
+		if kind == "door":
+			for f in dr["frames"]:
+				frames.append(load_tex(city.art_path(str(f))))
+			s = _sprite(frames[0], Vector2(float(dr["x"]), float(dr["y"])), _sort_z(float(dr["sort_y"])))
+			s.name = "GateDoor_%s" % str(g["id"])
+			var sh: Dictionary = dr.get("shadow", {})
+			if not sh.is_empty():
+				var ss := _sprite(load_tex(city.art_path(str(sh["file"]))), Vector2(float(sh["x"]), float(sh["y"])), _sort_z(float(sh["sort_y"])))
+				ss.name = "GateShadow_%s" % str(g["id"])
+		else:
+			var tex := load_tex(city.art_path(str(pc["file"])))
+			s = _sprite(tex, Vector2(float(pc["x"]), float(pc["y"])), _sort_z(float(pc["sort_y"])))
+			s.name = "Portcullis_%s" % str(g["id"])
+			var mat := ShaderMaterial.new()
+			mat.shader = PORTCULLIS_SHADER
+			mat.set_shader_parameter("opening", load_tex(city.art_path(str(pc["opening"]))))
+			mat.set_shader_parameter("lift", 0.0)
+			s.material = mat
 		var block := {}
 		for c in pc.get("block_cells", []):
 			block[Vector2i(int(c[0]), int(c[1]))] = true
@@ -647,15 +663,16 @@ func _build_portcullis() -> void:
 			add_child(gl)
 		gates_fx.append({
 			"id": str(g["id"]), "node": s, "lift": 0.0, "target": 0.0, "idle": 0.0, "glow": glow, "light": gl,
+			"kind": kind, "frames": frames, "frame": 0.0, "fps": float(pc.get("fps", 12.0)),
 			"at": city.plate_to_world(Vector2(float(pc["foot"][0]), float(pc["foot"][1]))),
 			"open_s": float(pc.get("open_s", 0.6)), "close_after_s": float(pc.get("close_after_s", 1.5)),
 			"trigger": float(pc.get("trigger_hero_heights", 3.0)), "block": block,
 		})
 
 
-## Raise a gate's portcullis while a body (hero or NPC, world feet) is within
-## `trigger` hero heights of its arch; lower it once nobody has been near for
-## `close_after_s`. Lift runs over `open_s` either way.
+## Open a gate (doors play f00 -> last at their fps; a portcullis rises over
+## `open_s`) while a body (hero or NPC, world feet) is within `trigger` hero
+## heights of its arch; close it once nobody has been near for `close_after_s`.
 func tick_gates(delta: float, bodies: Array, hero_h: float) -> void:
 	for gf in gates_fx:
 		var near := false
@@ -673,6 +690,16 @@ func tick_gates(delta: float, bodies: Array, hero_h: float) -> void:
 			if float(gf["target"]) > 0.0 and float(gf["idle"]) >= float(gf["close_after_s"]):
 				gf["target"] = 0.0
 				_gate_sound(str(gf["id"]), "close")
+		if str(gf["kind"]) == "door":
+			# f00 closed .. last frame open, at the kit's fps both ways
+			var frames: Array = gf["frames"]
+			var last := float(frames.size() - 1)
+			gf["frame"] = move_toward(float(gf["frame"]), float(gf["target"]) * last, delta * float(gf["fps"]))
+			gf["lift"] = float(gf["frame"]) / maxf(1.0, last)
+			var tex: Texture2D = frames[int(floor(float(gf["frame"]) + 0.001))]
+			if (gf["node"] as Sprite2D).texture != tex:
+				(gf["node"] as Sprite2D).texture = tex
+			continue
 		var step := delta / maxf(0.01, float(gf["open_s"]))
 		gf["lift"] = move_toward(float(gf["lift"]), float(gf["target"]), step)
 		var mat := (gf["node"] as CanvasItem).material as ShaderMaterial
@@ -682,7 +709,9 @@ func tick_gates(delta: float, bodies: Array, hero_h: float) -> void:
 ## True while the cell sits under a gate arch whose grate is not up yet.
 func gate_closed_at(cell: Vector2i) -> bool:
 	for gf in gates_fx:
-		if (gf["block"] as Dictionary).has(cell) and float(gf["lift"]) < 0.75:
+		# a door blocks until it is fully open; a portcullis once it is 3/4 up
+		var need := 1.0 if str(gf["kind"]) == "door" else 0.75
+		if (gf["block"] as Dictionary).has(cell) and float(gf["lift"]) < need - 0.0001:
 			return true
 	return false
 

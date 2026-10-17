@@ -5,7 +5,7 @@
  "region": "crosshaven_city",
  "name": "Crosshaven (walled city prototype)",
  "status": "prototype",
- "source": "Grok HD ring v4 (docs/pc-map-handoff work/walls/kit6: ring_v4_hd_full_CONCEPTO.jpg, ring_v4_hd_walls_CONCEPTO.png, portcullis sprites), 1:1 with the plate @ docs/pc-map-handoff bd43def7 (HD v2.4)",
+ "source": "Grok HD ring v4 (docs/pc-map-handoff work/walls/kit6: ring_v4_hd_full_CONCEPTO.jpg, ring_v4_hd_walls_CONCEPTO.png, gate doors), 1:1 with the plate @ docs/pc-map-handoff 9d03d8ea (HD v2.4 + painted gate doors v2)",
  "plate": {
   "size": [
    5120,
@@ -43,7 +43,7 @@
   },
   "rows": [
    "......ggggggggggggggggggggrgrggrgrgrgrgrgrgggrgrgrrggrrgrggrrgrrgrrrrgrgrgrrgrggrrggrgrgggggg.........................",
-   ".....ggggggggggggggggggggggrggrgrgrggrrgrrggggrrr~rrrrrrrrrrrrrrrrrrggrgrrrrrrrrrrgrgggggrrggg........................",
+   ".....ggggggggggggggggggggggrggrgrgrggrrgrrggggrrr~rrrrrrrrrrrrrrrrrrggrgrrrrrrrrrrrrgggggrrggg........................",
    "....gggggggggggggggggggggggrrrrrrrrrr~rrrrgrrgrggrrrrggrrrrrrrrrrrrrrrgggrrrrrrgggrrgrrrrrgrggg.......................",
    "...gggggggggggggggggggggrggrrgrrrrrrgrrrgrrrrggrrrrrrrrgrrgrrrrrrrrrrrrrggrgrgrrgrrrrgggrrrrgggg......................",
    "..gggggggggggggggggggggrrgrggrrrrrrrrrrgrrgrggrgrrrrrrgrrrrrrrrrrrrr~rrrrgggrrrrrggrrrrggrgrrgggg.....................",
@@ -52,20 +52,20 @@
    "ggrrgggggggrrggrgggrgggrgggrrrggg###########################################################rrgggg##..................",
    "ggrrrggggggrrrggggrggrrrggrgrggg###############################~#####################################.................",
    "gggrrrgggggrggrggggggrrgrgrrggr###########g#g#########################################################................",
-   "ggggrrrggggrrrgrrgggrrgrgrgggg#####ggggggrggggg#####gggg~ggggggrrrrrrggrggggggggggggggg######rggggggggg...............",
+   "ggggrrrggggrrrgrrgggrrgrgrrggg#####ggggggrggggg#####gggg~ggggggrrrrrrggrggggggggggggggg######rggggggggg...............",
    "gggggrrrggggrgrrrgrgggrgrrrgg#####gggggggggggggg##gggg~~~~~gggggr~rgrgggggrggggggggggggg###rgrggrrgggg##..............",
    "ggggggrrrgggggrgrrrgggrrrggg#####ggggggggggggggggggrrg~~~ggggggggrrggggggggggggggggggrrrggggrggggggggg##g.............",
-   "gggggggrrrrggrgrrrrgggggggr#####ggggggrrggggggggggggrgg~~gggggggggrgggggggggggggggggggrrrrrgrgggrggggg##gg............",
-   "ggggggggrrrrrrrgrrrrrggggg#####gggggrggrrgggggggggggggg~~gggggggggggggggggggggggggggggggrrrrgrrrrggggg##rrg...........",
+   "gggggggrrrrggrgrrrrgggggggr#####ggggggrrggggggggggggrgg~~gggggggggrgggggggggggggggggggrrrrrgrgggrrrrgg##gg............",
+   "ggggggggrrrrrrrgrrrrrggggg#####gggggrggrrgggggggggggggg~~gggggggggggggggggggggggggggggggrrrrgrrrrgrrrg##rrg...........",
    "ggggggggrrrrrrrrgrrrrgggg#####gggggggggrrggggggggggggggg~~ggggggg#gggggggg#####ggggggggggrrrrrrrrrrrrrrrrrrr..........",
    "grgggrgggrrrrrrgrgrrrrr######gggggggggggrrgggggggggggggg~~gggg#####gggggg######gggggggggggrrrgrrrrrrrrrrrrrrr.........",
    "ggrrggrggrrgrrgrrrgrrr######ggggggggggggrrgggggggggggggg~~~ggg######ggggg#######gggggggggggrrgrggrrrrrrrrrrrrr........",
    "ggrgrgrrrgggrgrrgrrgr######ggggggggggggggrrggggrrrrggggg~~~ggg#######gggg#######ggggggggggggrgrgggggrg##rrrrrrr.......",
    "gggrrgrgggrgggrrgrggg######gggggggggggggggrrgrrrrrrrrgggg~~gg########gggg#######gggggggggggggrrggggggg##rrrrrrrr......",
-   "ggrg~ggggggggrrrrgrg#######gggggggggggggggrrrrrrrrrrrggggg~~gg######gggggg#####gggggggggggggggrgrggggg##rrrrrrrrr.....",
-   "gggrrrrgrggrgrgrrrg########ggggggggggggggggrrrrrrrrrrrggg~~~ggg#####ggggggg##ggggggggggggggggrgggrgggg##rrrggggggg....",
-   "gggggrgrrrgggrggrrr######ggggggggg##gggggggrrrrggrrrrggggg~~~ggg##ggggggggggggggggggggggggggggrggggggg##ggggggggggg...",
-   "ggggggrrrggggggrgrrr##grgggggggg######ggggggrrrgggggrgggggg~~gggggggggggggggggggggrrrrrggggggggggggggg##gggggggggggg..",
+   "ggrg~ggggggggrrrrrrg#######gggggggggggggggrrrrrrrrrrrggggg~~gg######gggggg#####gggggggggggggggrgrggggg##rrrrrrrrr.....",
+   "gggrrrrgrggrgrgrrrr########ggggggggggggggggrrrrrrrrrrrggg~~~ggg#####ggggggg##ggggggggggggggggrgggrgggg##rrrggggggg....",
+   "gggggrgrrrgggrgrrrr######ggggggggg##gggggggrrrrggrrrrggggg~~~ggg##ggggggggggggggggggggggggggggrggggggg##ggggggggggg...",
+   "ggggggrrrggggggrrrrr##grgggggggg######ggggggrrrgggggrgggggg~~gggggggggggggggggggggrrrrrggggggggggggggg##gggggggggggg..",
    "gggggggrrrrggggg##rrrrrrrrrggggg######ggggggrrrggggggrgggggg~~gggggggggggggggggrrrrrrrgggggggggggggggg##ggggggggggggg.",
    "gggggggggrrgrrg####rrrrrrrrrgggg#######gggggrrrgggggggggggggg~~~gggggggggggggggrrrrrrrrggggggggggggggg##gggggggggggggg",
    "ggggggggggrrg######rrrrrrrrrrggg#######gggggrrrggggggggggggggg~~~~ggggggggggggrrrrrrrrrggggggrgggggggg##gggggggggggggg",
@@ -98,7 +98,7 @@
    "gg~rrrggrgg###gggggggggggggggrrrrrrggggggggggggrrrrggrrrrrrggggrrrggggggrr~~~~ggggggggrrgggggrgrrrrggg##gggggggggggggg",
    "gggrrggrrrg###gggggggggggggggggrrrrrggggggggggggrrrrrrrrrrrggggrrrgggggrrr~~~~ggggggggrrggggggrrgrrrrg##gggggggggggggg",
    "ggggrrrgggg###ggggggggggg####ggggrrrggggggggggggrrrrrrrrrrgggggrrrggggrrrrr~~~rgggrgggrrgggggrgrggrrrr##gggggggggggggg",
-   "gggggrrggrg##ggggggggggg######ggggrrrgggrrrrrggggrrrrrrrrrggggrrrrgggrrrrrrrrrrrggggggrrggggggrrgggrr#####gggggggggggg",
+   "gggggrrrgrg##ggggggggggg######ggggrrrgggrrrrrggggrrrrrrrrrggggrrrrgggrrrrrrrrrrrggggggrrggggggrrgggrr#####gggggggggggg",
    "ggggggggrrr##ggggggggggg#######ggggrrrrrrrrrrrgggggrrrrrggggggrrrrggrrrrrrrrrrrrrgggggrrgggggggrgrrg######gggggggggggg",
    "gggggrgrgrr#####gggggggg#######ggggggrrrrrrrrrrggggggggggggggrrrrrgrrrrrrrrrrrrrrrggggrrggggggrrggrg######gggggggggggg",
    "ggggggrrggg######ggggggg######gggggggrrrrrrrrggrggggggggggggrrrrrrrrrrrrrrrrrrrrrrrrrrrrggggggggggggg#####gggggggggggg",
@@ -121,21 +121,21 @@
    "gggggrgrg###ggggggg#####ggggggrrrrrrgggggggggggggggggrrggrrggggrg~ggrrrrr~~~rrrggrggrggrrggrgrgrgggg#####ggggggggggggg",
    "gggggggrg###gggggggg##gggrgggrrrggrrggggggggggggggggggggrrrggggggggggrrrr~~~rrrrggggggrrrgrrggrrrgg#####gggggggggggggg",
    "gggggrgrr##ggggggggggggggggggrrrgggrrgggggggggggggggggggrrrgggggggggggrrr~~~~ggggrrgggrgggrgrrrgrg#####ggggggggggggggg",
-   "gggggggrr##gggggggggggggggggrrrrggggrrggggggggggggggggggrrrggggggggggggr~~~~~grrgrggrggggrgrgrgrg#####gggggggggggggggg",
-   "rggggrggg##ggggggggggggggggggrrggggggrrgggggggggggggggggrrgggggggggggggg~~~~~ggggrgrrgggrgrgrggg#####ggggggggggggggggg",
-   "rrgggggr###grggggggggggggggrrrggggggggrrggggggggggggggggrrgggggggggggggg~~~~grrgrrrrrgggggrgggg#####gggggggggggggggggg",
+   "gggggggrr##gggggggggggggggggrrrrggggrrggggggggggggggggggrrrggggggggggggr~~~~~grrgrggrggggrgrgrgrr#####gggggggggggggggg",
+   "rggggrggg##ggggggggggggggggggrrggggggrrgggggggggggggggggrrggggggggggggggr~~~~ggggrgrrgggrgrgrggg#####ggggggggggggggggg",
+   "rrgggggr###grggggggggggggggrrrggggggggrrggggggggggggggggrrgggggggggggggg~~~~grrgrrrrrgggggggggg#####gggggggggggggggggg",
    "grrggggr###grrgrgggggggggggrrggggrrggggrrgggggggggrggggrrrgggggggggrgggg~~~~grrgrrgrggrrgggggg#####ggggggggggggggggggg",
    "grrrggrg###gggrggrggggggggrrrggggrrrrgggrrgggggggggrgggrrrgggggggggrrgggg~~ggrgrggrgrrggggggg#####gggggggggggggggggggg",
    "grrrggrg###ggggrrgggggggggrrggggggrgrrgggrrggggggggrrgggrrggggggggggrrgrg~~~ggrggrrrrrrrgggg#####ggggggggggggggggggggg",
    "gggrggrg###rggggrggggggggrrrgggggggggrgggrrrggggggggrgggrggggggggggrrrgrgggggrgggrgrrrrg########gggggggggggggggggggggg",
    "ggggrrrg###ggrgrrgrggrggrrrrggggggggggrgggrrgggggggggrgrrggggggggggggrrgrgggrggrrrggrrg########ggggggggggggggggggggggg",
-   "gggggggr###rrrrrrrrrgrggrgrgrgggggggggggrgrrgrgggggg~rrgrgggrggrgrgrrrggrrggggrgrrrgrgr#######gggggggggggggggggggggggg",
-   "gggggrrg####rrggrgrrrggrggrgrggggrrgrgrggrgrggrggrgrgrgrrggggggrrrrggrrrrgrrggrggrrrgrg######ggggggggggggggggggggggggg",
-   "gggggggr#####rrrrrrrrggrgrrrrrrrrrgrrgrrrrrrrrrrrrggrggrgrrgrrgrrrrrrrrggrgrgggrggrrrgr######ggggggggggggggggggggggggg",
-   "ggggggg#######rrrrrrrgrgggrrrrrrrrrrr~rrrrrrrrrrrrggrrrrrrrrgggrggrgrgggrrrgrrgggrgrrr#####ggggggggggggggggggggggggggg",
-   ".gggggg########ggrrrrrrgrggrgggrrrgrggrrrrrrrrrrrrrrggggrrrggggrrrgrrrrrrrrrrggrggrgrrr###gggggggggggggggggggggggggggg",
-   "..gggggg########gggrrrrrrgggggrrrrgggrrrgrrrrrrrrrrrrrrrgrrrrrggrrrgggrrrrrrrrggrggr#rrr#rrrgggggggggggggggggggggggggg",
-   "...gggggg#########grrrrrr#grgrrrrrgggggrggggrrrrrrgrrrrrrrrrrrr###rggggggrgrrrrg######rrrrrrrggggggggggggggggggggggggg",
+   "gggggggr###rrrrrrrrrgrggrgrgrgggggggggggrgrrgrgggggg~rrgrgggrggrgrgrrrggrrggggrgrrrrrgr#######gggggggggggggggggggggggg",
+   "gggggrrg####rrggrgrrrggrggrgrggggrrgrgrggrgrggrggrgrgrgrrggggggrrrrggrrrrgrrggrggrrrrrg######ggggggggggggggggggggggggg",
+   "gggggggr#####rrrrrrrrggrgrrrrrrrrrgrrgrrrrrrrrrrrrggrggrgrrgrrgrrrrrrrrggrgrgggrgrrrrrr######ggggggggggggggggggggggggg",
+   "ggggggg#######rrrrrrrgrgggrrrrrrrrrrr~rrrrrrrrrrrrggrrrrrrrggggrggrgrgggrrrgrrgggrrrrr#####ggggggggggggggggggggggggggg",
+   ".gggggg########rrrrrrrrgrggrgggrrrgrggrrrrrrrrrrrrrrggggrrrggggrrrgrrrrrrrrrrggrggrrrrr###gggggggggggggggggggggggggggg",
+   "..gggggg########rrrrrrrrrgggggrrrrgggrrrgrrrrrrrrrrrrrrrgrrrrrggrrrgggrrrrrrrrgggggr#rrr#rrrgggggggggggggggggggggggggg",
+   "...gggggg#########rrrrrrr#grgrrrrrgggggrggggrrrrrrgrrrrrrrrrrrr###rggggggrgrrrrg######rrrrrrrggggggggggggggggggggggggg",
    "....gggggg########rrrr#########grrggggggggggggrrrrgrrrrgrrrrrr#####gggggggrrrrr########rrrrrrggggggggggggggggggggggggg",
    ".....gggggg########rrr#################################r#rrgr######ggggggggggr########rrrrrrrrggggggggggggggggggggggg.",
    "......gggggg#######rrr##g############################################################grrrrrrrrgggggggggggggggggggggg..",
@@ -150,7 +150,7 @@
    "...............grrrrrrggggggggggggggggggggggggggggggggggggggggggggggggg~~~~gggggggggggggggrrrgggggggggggggg...........",
    "................rrrrrrgggggggggggggggggggggggggggggggggggggggggggggggggg~~~gggggggggggggggrrrggggggggggggg............",
    ".................rrrrrgggggggggggggggggggggggggggggggggggggggggggggggggg~~~gggggggggggggggrrrgggggggggggg.............",
-   "..................rrrggggggggggggggggggggggggggggggggggggggggggggggggggg~~~~gggggggggggggggrrggggggggggg..............",
+   "..................rrrrgggggggggggggggggggggggggggggggggggggggggggggggggg~~~~gggggggggggggggrrggggggggggg..............",
    "...................rrrgggggggggggggggggggggggggggggggggggggggggggggggggg~~~~gggggggggggggggrrgggggggggg...............",
    "....................rgggggggggggggggggggggggggggggggggggggggggggggggggggg~~~gggggggggggggggrrggggggggg................",
    ".....................gggggggggggggggggggggggggggggggggggggggggggggggggggg~~~gggggggggggggggrrgggggggg.................",
@@ -558,16 +558,52 @@
      29
     ]
    ],
-   "portcullis": {
-    "file": "gates/portcullis_N.png",
-    "opening": "gates/portcullis_N_opening.png",
+   "door": {
+    "frames": [
+     "gates/door_N_f00.png",
+     "gates/door_N_f01.png",
+     "gates/door_N_f02.png",
+     "gates/door_N_f03.png",
+     "gates/door_N_f04.png",
+     "gates/door_N_f05.png",
+     "gates/door_N_f06.png",
+     "gates/door_N_f07.png"
+    ],
     "x": 2330,
     "y": 378,
     "w": 145,
     "h": 189,
-    "source": "Grok HD kit6",
-    "opening_top_px": 378.0,
-    "sort_y": 574.0,
+    "fps": 12.0,
+    "source": "Grok HD kit6 doors",
+    "hinge_left": {
+     "top": [
+      2330,
+      415
+     ],
+     "bottom": [
+      2330,
+      566
+     ]
+    },
+    "hinge_right": {
+     "top": [
+      2474,
+      415
+     ],
+     "bottom": [
+      2474,
+      566
+     ]
+    },
+    "sort_y": 534.0,
+    "shadow": {
+     "file": "gates/door_N_shadow.png",
+     "x": 2330,
+     "y": 378,
+     "w": 145,
+     "h": 189,
+     "sort_y": 538.0
+    },
     "foot": [
      2402.0,
      566.0
@@ -598,7 +634,6 @@
       26
      ]
     ],
-    "open_s": 0.6,
     "close_after_s": 1.5,
     "trigger_hero_heights": 3.0
    }
@@ -778,18 +813,54 @@
      86
     ]
    ],
-   "portcullis": {
-    "file": "gates/portcullis_S.png",
-    "opening": "gates/portcullis_S_opening.png",
+   "door": {
+    "frames": [
+     "gates/door_S_f00.png",
+     "gates/door_S_f01.png",
+     "gates/door_S_f02.png",
+     "gates/door_S_f03.png",
+     "gates/door_S_f04.png",
+     "gates/door_S_f05.png",
+     "gates/door_S_f06.png",
+     "gates/door_S_f07.png"
+    ],
     "x": 2290,
     "y": 2234,
     "w": 157,
     "h": 197,
-    "source": "Grok HD kit6",
-    "opening_top_px": 2234.0,
-    "sort_y": 2438.0,
+    "fps": 12.0,
+    "source": "Grok HD kit6 doors",
+    "hinge_left": {
+     "top": [
+      2290,
+      2271
+     ],
+     "bottom": [
+      2290,
+      2430
+     ]
+    },
+    "hinge_right": {
+     "top": [
+      2446,
+      2272
+     ],
+     "bottom": [
+      2446,
+      2430
+     ]
+    },
+    "sort_y": 2426.0,
+    "shadow": {
+     "file": "gates/door_S_shadow.png",
+     "x": 2290,
+     "y": 2234,
+     "w": 157,
+     "h": 197,
+     "sort_y": 2430.0
+    },
     "foot": [
-     2367.8,
+     2368.0,
      2430.0
     ],
     "block_cells": [
@@ -822,7 +893,6 @@
       92
      ]
     ],
-    "open_s": 0.6,
     "close_after_s": 1.5,
     "trigger_hero_heights": 3.0
    }
@@ -1018,19 +1088,55 @@
      86
     ]
    ],
-   "portcullis": {
-    "file": "gates/portcullis_W.png",
-    "opening": "gates/portcullis_W_opening.png",
+   "door": {
+    "frames": [
+     "gates/door_W_f00.png",
+     "gates/door_W_f01.png",
+     "gates/door_W_f02.png",
+     "gates/door_W_f03.png",
+     "gates/door_W_f04.png",
+     "gates/door_W_f05.png",
+     "gates/door_W_f06.png",
+     "gates/door_W_f07.png"
+    ],
     "x": 370,
     "y": 1386,
     "w": 117,
     "h": 189,
-    "source": "Grok HD kit6",
-    "opening_top_px": 1386.0,
-    "sort_y": 1582.0,
+    "fps": 12.0,
+    "source": "Grok HD kit6 doors",
+    "hinge_left": {
+     "top": [
+      370,
+      1420
+     ],
+     "bottom": [
+      370,
+      1547
+     ]
+    },
+    "hinge_right": {
+     "top": [
+      486,
+      1453
+     ],
+     "bottom": [
+      486,
+      1560
+     ]
+    },
+    "sort_y": 1530.3,
+    "shadow": {
+     "file": "gates/door_W_shadow.png",
+     "x": 370,
+     "y": 1386,
+     "w": 117,
+     "h": 189,
+     "sort_y": 1576.2
+    },
     "foot": [
-     427.1,
-     1574.0
+     428.0,
+     1553.5
     ],
     "block_cells": [
      [
@@ -1042,11 +1148,18 @@
       96
      ],
      [
+      19,
+      95
+     ],
+     [
       21,
       96
+     ],
+     [
+      20,
+      95
      ]
     ],
-    "open_s": 0.6,
     "close_after_s": 1.5,
     "trigger_hero_heights": 3.0
    }
@@ -1226,19 +1339,55 @@
      15
     ]
    ],
-   "portcullis": {
-    "file": "gates/portcullis_E.png",
-    "opening": "gates/portcullis_E_opening.png",
+   "door": {
+    "frames": [
+     "gates/door_E_f00.png",
+     "gates/door_E_f01.png",
+     "gates/door_E_f02.png",
+     "gates/door_E_f03.png",
+     "gates/door_E_f04.png",
+     "gates/door_E_f05.png",
+     "gates/door_E_f06.png",
+     "gates/door_E_f07.png"
+    ],
     "x": 4838,
     "y": 1426,
     "w": 97,
     "h": 161,
-    "source": "Grok HD kit6",
-    "opening_top_px": 1426.0,
-    "sort_y": 1647.3,
+    "fps": 12.0,
+    "source": "Grok HD kit6 doors",
+    "hinge_left": {
+     "top": [
+      4838,
+      1469
+     ],
+     "bottom": [
+      4838,
+      1586
+     ]
+    },
+    "hinge_right": {
+     "top": [
+      4934,
+      1464
+     ],
+     "bottom": [
+      4934,
+      1567
+     ]
+    },
+    "sort_y": 1606.0,
+    "shadow": {
+     "file": "gates/door_E_shadow.png",
+     "x": 4838,
+     "y": 1426,
+     "w": 97,
+     "h": 161,
+     "sort_y": 1658.1
+    },
     "foot": [
-     4885.5,
-     1586.0
+     4886.0,
+     1576.5
     ],
     "block_cells": [
      [
@@ -1252,9 +1401,12 @@
      [
       101,
       17
+     ],
+     [
+      100,
+      16
      ]
     ],
-    "open_s": 0.6,
     "close_after_s": 1.5,
     "trigger_hero_heights": 3.0
    }
@@ -1599,6 +1751,10 @@
     [
      72,
      78
+    ],
+    [
+     72,
+     80
     ],
     [
      73,

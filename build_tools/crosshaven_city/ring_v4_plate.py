@@ -188,7 +188,70 @@ def main():
         return ay_ if best is None else best
     hd_pc_dir = arg_or_cfg("--hd-portcullis", "hd_portcullis")
     hd_pc = json.load(open(os.path.join(hd_pc_dir, "portcullis_positions.json"))) if hd_pc_dir else {}
+    # Round 21 (Mauro): wooden double doors instead of the portcullis. With a
+    # doors kit every land gate gets its 8 frames and shadow; the portcullis
+    # path stays for a build without one.
+    hd_doors_dir = arg_or_cfg("--hd-doors", "hd_doors")
+    hd_doors = json.load(open(os.path.join(hd_doors_dir, "gate_doors.json")))["gates"] if hd_doors_dir else {}
+    doors = {}
+
+    def kit_file(rel):
+        for base_ in (hd_doors_dir, os.path.dirname(hd_doors_dir)):
+            if os.path.exists(os.path.join(base_, rel)):
+                return os.path.join(base_, rel)
+        raise FileNotFoundError(rel)
+
+    if hd_doors:
+        # the portcullis art is retired with the doors (its code stays for a kit without doors)
+        gdir = os.path.join(art_dir, "gates")
+        for f_ in (os.listdir(gdir) if os.path.isdir(gdir) else []):
+            if f_.startswith("portcullis_"):
+                os.remove(os.path.join(gdir, f_))
+
+    def wall_foot_range(g, x0p, x1p):
+        """min / max of the gate's wall foot line over plate x0p..x1p (image px out)."""
+        ax_ = g["arch"][0]
+        best = None
+        for w_ in cfg["walls"]:
+            xa_, xb_ = sorted([w_["a"][0], w_["b"][0]])
+            if xa_ - 2 <= ax_ <= xb_ + 2:
+                fy_ = foot_y((tuple(w_["a"]), tuple(w_["b"])), ax_)
+                if best is None or abs(fy_ - g["arch"][1]) < abs(best[0] - g["arch"][1]):
+                    best = (fy_, w_)
+        if best is None:
+            return g["arch"][1], g["arch"][1]
+        seg_ = (tuple(best[1]["a"]), tuple(best[1]["b"]))
+        ys_ = [foot_y(seg_, x_ / UP) for x_ in np.linspace(x0p, x1p, 9)]
+        return min(ys_), max(ys_)
+
     for g in cfg["gates"]:
+        if g["id"] in hd_doors:
+            dd = hd_doors[g["id"]]
+            d_, sh_ = dd["door"], dd["shadow"]
+            os.makedirs(os.path.join(art_dir, "gates"), exist_ok=True)
+            frames = []
+            for k in range(int(d_["frames"])):
+                src_f = kit_file(d_["files"].replace("NN", "%02d" % k))
+                im_ = Image.open(src_f).convert("RGBA")
+                assert im_.size == (d_["frame_w"], d_["frame_h"]), "door %s frame %d size" % (g["id"], k)
+                name = "gates/door_%s_f%02d.png" % (g["id"], k)
+                im_.save(os.path.join(art_dir, name), optimize=True)
+                frames.append(name)
+            sh_name = "gates/door_%s_shadow.png" % g["id"]
+            Image.open(kit_file(sh_["file"])).convert("RGBA").save(os.path.join(art_dir, sh_name), optimize=True)
+            lo_, hi_ = wall_foot_range(g, d_["x"], d_["x"] + d_["frame_w"])
+            hb = d_["hinge_left"]["bottom"], d_["hinge_right"]["bottom"]
+            doors[g["id"]] = {"frames": frames, "x": d_["x"], "y": d_["y"], "w": d_["frame_w"], "h": d_["frame_h"],
+                              "fps": float(d_["fps"]), "source": "Grok HD kit6 doors",
+                              "hinge_left": d_["hinge_left"], "hinge_right": d_["hinge_right"],
+                              # layer order (Grok): ground < door < walls < shadow
+                              "sort_y": round(lo_ * UP - 2.0, 1),
+                              "shadow": {"file": sh_name, "x": sh_["x"], "y": sh_["y"], "w": sh_["w"], "h": sh_["h"],
+                                         "sort_y": round(hi_ * UP + 2.0, 1)},
+                              "foot": [round((hb[0][0] + hb[1][0]) / 2.0, 1), round((hb[0][1] + hb[1][1]) / 2.0, 1)]}
+            continue
+        if hd_doors:
+            continue
         if g["id"] in hd_pc:
             q = hd_pc[g["id"]]
             spr = Image.open(os.path.join(hd_pc_dir, "portcullis_%s_CONCEPTO.png" % g["id"])).convert("RGBA")
@@ -560,7 +623,15 @@ def main():
                "wall_join_right": [g["join_right"][0] * UP, g["join_right"][1] * UP],
                "passage": [[g["outside"][0] * UP, g["outside"][1] * UP], [g["inside"][0] * UP, g["inside"][1] * UP]],
                "cells": [list(c) for c in cells]}
-        if g["id"] in portcullis:
+        if g["id"] in doors:
+            dr = dict(doors[g["id"]])
+            fx, fy = dr["foot"][0] / UP, dr["foot"][1] / UP
+            # the cells under the arch: these block until the doors are fully open
+            dr["block_cells"] = [list(c) for c in cells if (cell_of[c][0] - fx) ** 2 + (cell_of[c][1] - fy) ** 2 <= 9.0 ** 2]
+            dr["close_after_s"] = 1.5
+            dr["trigger_hero_heights"] = 3.0
+            rec["door"] = dr
+        elif g["id"] in portcullis:
             pc = dict(portcullis[g["id"]])
             fx, fy = pc["foot"][0] / UP, pc["foot"][1] / UP
             # the cells under the arch: these block while the grate is down
@@ -660,7 +731,7 @@ def main():
     if hd_full is not None:
         city["source"] = "Grok HD ring v4 (docs/pc-map-handoff work/walls/kit6: %s%s%s), 1:1 with the plate" % (
             os.path.basename(hd_full_path), ", " + os.path.basename(hd_walls_path) if hd_walls_path else "",
-            ", portcullis sprites" if hd_pc else "")
+            ", gate doors" if hd_doors else (", portcullis sprites" if hd_pc else ""))
         if "--hd-ref" in sys.argv:
             city["source"] += " @ " + sys.argv[sys.argv.index("--hd-ref") + 1]
     plate = dict(plate)

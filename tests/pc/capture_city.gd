@@ -89,6 +89,19 @@ func _v4_shots() -> void:
 	var rect: Rect2 = city.world_rect()
 	var vp: Vector2 = _w.get_viewport().get_visible_rect().size
 	await _hold(rect.get_center(), minf(vp.x / rect.size.x, vp.y / rect.size.y), 40, "20_wide_ring_goal")
+	# Round 21: the S gate shut (nobody near), then open with the hero in the arch
+	for g in city.gates():
+		if str(g["id"]) != "S":
+			continue
+		var aw0: Vector2 = city.plate_to_world(Vector2(float(g["arch"][0]), float(g["arch"][1])))
+		_place(_near_free(Vector2i(int(city.doc["spawn"][0]), int(city.doc["spawn"][1]))), "n")
+		await _hold(aw0 + Vector2(0, -40), 1.1, 90, "07_gate_S_closed")
+		var cs: Array = g.get("cells", [])
+		var mid := Vector2i(int(cs[cs.size() / 2][0]), int(cs[cs.size() / 2][1]))
+		_w.walker.visible = true
+		_place(mid, "n")
+		await _hold(aw0 + Vector2(0, -40), 1.1, 40, "07_gate_S_open")
+		_w.walker.visible = false
 	_w.walker.visible = true
 	for g in city.gates():
 		if _only != "" and not (str(g["id"]) in _only.split(",")):
