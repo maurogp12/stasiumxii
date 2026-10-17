@@ -146,7 +146,8 @@ func _build_pieces() -> void:
 		s.texture = tex(str(spec["file"]))
 		s.centered = false
 		s.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
-		s.scale = Vector2.ONE * k
+		var pk_ := k * float(p.get("scale", 1.0))
+		s.scale = Vector2.ONE * pk_
 		var foot_px := Vector2(float(spec["foot"][0]), float(spec["foot"][1]))
 		var width := float(s.texture.get_width()) if s.texture != null else 0.0
 		var anim: Dictionary = spec.get("anim", {})
@@ -162,7 +163,7 @@ func _build_pieces() -> void:
 			s.flip_h = true
 			foot_px.x = width - foot_px.x
 		# top-left placement (the plate view's fade and masks expect it)
-		s.position = foot - foot_px * k
+		s.position = foot - foot_px * pk_
 		s.z_as_relative = false
 		if bool(p.get("under", false)):
 			s.z_index = UNDER_Z + i % 50

@@ -249,7 +249,11 @@ func _test_fade_labels(w: Node2D) -> void:
 				if rect.has_point(p - Vector2(0, 30)) and p.y < sort_world_y - 30.0 and cp._mask_hits(row, Rect2(p.x - 13, p.y - 58, 26, 54)):
 					w.walker.place(z, c)
 					var covered: bool = cp.update_cover(w.walker.position, 0.0, w.walker.z_index, 1.0)
-					check(covered and float(row["alpha"]) <= 0.5, "a %s fades over the hero behind it" % row["tag"])
+					check(covered and float(row["alpha"]) == 1.0, "a %s covering the hero stays whole (the hero shows as a ghost)" % row["tag"])
+					w.walker.set_covered(true)
+					var fill: Color = (w.walker._rim.material as ShaderMaterial).get_shader_parameter("fill_color")
+					check(w.walker._rim.visible and fill.a > 0.2 and absf(fill.r - fill.b) < 0.15, "the covered hero's ghost is neutral (%s)" % fill)
+					w.walker.set_covered(false)
 					check(cp.occluded(w.walker.position, w.walker.z_index), "a body behind the %s is occluded (labels hide)" % row["tag"])
 					check(not cp.occluded(w.walker.position + Vector2(0, rect.size.y + 80.0), int(row["z"]) + 400), "a body in the open is not")
 					done_fade = true

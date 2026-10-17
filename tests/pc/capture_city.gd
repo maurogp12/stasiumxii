@@ -78,6 +78,8 @@ func _go() -> void:
 		await _behind_shots()
 	elif _set == "kit":
 		await _kit_shots()
+	elif _set == "m4":
+		await _m4_shots()
 	elif _set == "life":
 		await _life_shots()
 	elif _set == "r23" and not _clip:
@@ -235,6 +237,42 @@ func _r23_clip() -> void:
 			await process_frame
 	_grabbing = false
 	print("CLIP frames=%d" % _frame_i)
+
+
+## Round M4: wide, a street, the gazebo garden, a bridge, and the join
+## audit (every tower and gate join, close).
+func _m4_shots() -> void:
+	_w.camera_hold = true
+	_w.npc_plates.visible = false
+	var rect: Rect2 = city.world_rect()
+	var vp: Vector2 = _w.get_viewport().get_visible_rect().size
+	_w.walker.visible = false
+	await _hold(rect.get_center(), minf(vp.x / rect.size.x, vp.y / rect.size.y), 30, "90_m4_wide")
+	_w.walker.visible = true
+	var spots := {}
+	for p in city.tile.pieces():
+		var k := str(p["kind"])
+		if k == "gazebo" and not spots.has("garden"):
+			spots["garden"] = city.tile.piece_foot(p)
+		elif k == "bridge" and not spots.has("bridge"):
+			spots["bridge"] = city.tile.piece_foot(p)
+		elif k.begins_with("house_npc") and not spots.has("street") and p.has("door_cell"):
+			spots["street"] = city.tile.piece_foot(p)
+	for key in ["street", "garden", "bridge"]:
+		if spots.has(key):
+			var at: Vector2 = spots[key]
+			_place(_near_free(_cell_at_world(at + Vector2(-40, 60))), "n")
+			await _hold(at + Vector2(0, -100), 0.85, 30, "9%d_m4_%s" % [["street", "garden", "bridge"].find(key) + 1, key])
+	_w.walker.visible = false
+	var n := 0
+	for p in city.tile.pieces():
+		var k := str(p["kind"])
+		if k == "tower" or k.begins_with("gate_") or k.begins_with("tunnel_"):
+			await _hold(city.tile.piece_foot(p) + Vector2(0, -110), 1.15, 8, "99_join_%02d_%s" % [n, k])
+			n += 1
+	_w.walker.visible = true
+	_w.camera_hold = false
+	_w.npc_plates.visible = true
 
 
 ## Round 26: kit groups 1-2 in play: wide, the S gate doors opening, plaza,

@@ -508,8 +508,8 @@
     540
    ],
    "chimney": [
-    192,
-    6
+    189,
+    4
    ]
   },
   "house_npc_halftimber_blue_a": {
@@ -529,10 +529,6 @@
    "size": [
     596,
     520
-   ],
-   "chimney": [
-    388,
-    6
    ]
   },
   "house_npc_halftimber_red_L": {
@@ -555,7 +551,7 @@
    ],
    "chimney": [
     334,
-    6
+    4
    ]
   },
   "house_npc_plaster_blue_2storey": {
@@ -575,10 +571,6 @@
    "size": [
     576,
     530
-   ],
-   "chimney": [
-    190,
-    6
    ]
   },
   "house_npc_plaster_red_a": {
@@ -600,8 +592,8 @@
     500
    ],
    "chimney": [
-    271,
-    6
+    273,
+    4
    ]
   },
   "house_npc_plaster_red_pink": {
@@ -623,8 +615,8 @@
     510
    ],
    "chimney": [
-    403,
-    6
+    408,
+    4
    ]
   },
   "house_npc_stone_blue_round": {
@@ -646,8 +638,8 @@
     490
    ],
    "chimney": [
-    273,
-    6
+    276,
+    4
    ]
   },
   "house_npc_stone_red_a": {
@@ -669,8 +661,8 @@
     510
    ],
    "chimney": [
-    419,
-    6
+    427,
+    4
    ]
   },
   "house_npc_workshop_red": {
@@ -692,8 +684,8 @@
     520
    ],
    "chimney": [
-    219,
-    7
+    221,
+    5
    ]
   },
   "plot_legendary": {

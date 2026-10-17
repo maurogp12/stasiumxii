@@ -650,6 +650,12 @@ func idle_frame() -> int:
 
 
 ## A building in front of the hero fades to 45%. This rim sits above that fade.
+## Round M4: a neutral ghost fill for the covered hero (0 alpha: rim only).
+func set_ghost_fill(c: Color) -> void:
+	if _rim != null and _rim.material is ShaderMaterial:
+		(_rim.material as ShaderMaterial).set_shader_parameter("fill_color", c)
+
+
 func set_covered(on: bool) -> void:
 	_covered = on
 	_sync_rim()

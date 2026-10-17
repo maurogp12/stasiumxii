@@ -464,7 +464,9 @@ func update_cover(feet: Vector2, lift: float, hero_z: int, delta: float) -> bool
 		var low: float = maxf(float(row["min_alpha"]), LOCAL_MIN_ALPHA) if local else float(row["min_alpha"])
 		var want := 1.0
 		if int(row["z"]) > hero_z and (row["rect"] as Rect2).intersects(body) and _mask_hits(row, body):
-			want = low
+			# round M4: the modular city keeps its art whole; the hero's neutral
+			# ghost (walker rim + fill) shows him instead of a see-through hole
+			want = low if tile_view == null else 1.0
 			covered = true
 			_covering.append(row)
 			if local:

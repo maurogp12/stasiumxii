@@ -2528,6 +2528,10 @@ func _mount_city_life() -> void:
 		city_life = null
 	if fx != null and fx.has_method("set_modular_city"):
 		fx.set_modular_city(in_city() and city.tile_mode())
+	# the modular city shows the covered hero as a neutral ghost (no holes in
+	# the art over him, no colour bleeding through)
+	if walker != null and walker.has_method("set_ghost_fill"):
+		walker.set_ghost_fill(Color(0.92, 0.94, 1.0, 0.42) if (in_city() and city.tile_mode()) else Color(0.92, 0.94, 1.0, 0.0))
 	if not in_city() or not city.tile_mode() or (settings != null and settings.performance):
 		return
 	city_life = CityLife.new()

@@ -216,6 +216,17 @@ def main():
         stamp(road_in, line_cells([tuple(p) for p in av["pts"]]), av["width"])
     rr = plan["ring_road"]
     road_in |= inside & (dist_ring >= rr["from"]) & (dist_ring < rr["to"])
+    rv = plan["river"]
+    pts = [tuple(p) for p in rv["pts"]]
+    rw = float(rv["width"]) / 2.0
+    river_d = np.full((H, W), 99.0)
+    for y in range(H):
+        for x in range(W):
+            if in_rect[y, x]:
+                d = min(seg_dist((x, y), a, b) for a, b in zip(pts, pts[1:]))
+                river_d[y, x] = d
+                if d <= rw:
+                    water[y, x] = True
     keep_free = np.zeros((H, W), bool)
     for rs in plan.get("reserved", []):
         x0, y0, x1, y1 = rs["rect"]
@@ -223,19 +234,19 @@ def main():
     for st in plan["streets"]:
         m = np.zeros((H, W), bool)
         stamp(m, line_cells([tuple(p) for p in st["pts"]]), st["width"])
-        road_in |= m & inside & (dist_ring >= rr["from"]) & ~keep_free
+        # side streets stop short of the river (only the avenues and the
+        # ring road cross it, on bridges)
+        road_in |= m & inside & (dist_ring >= rr["from"]) & ~keep_free & (river_d > rw + 1.5)
     for rd in plan["outside_roads"]:
         stamp(road_out, line_cells([tuple(p) for p in rd["pts"]]), rd["width"])
     road_out &= ~inside
-    rv = plan["river"]
-    pts = [tuple(p) for p in rv["pts"]]
-    rw = float(rv["width"]) / 2.0
-    for y in range(H):
-        for x in range(W):
-            if in_rect[y, x]:
-                d = min(seg_dist((x, y), a, b) for a, b in zip(pts, pts[1:]))
-                if d <= rw:
-                    water[y, x] = True
+    # round M4: smooth the river and road masks (a 3x3 majority) so no
+    # one-tile bumps or notches are left along their edges
+    def majority(m):
+        return ndi.uniform_filter(m.astype(np.float32), 3) >= 5.0 / 9.0 - 1e-6
+    water = majority(water) & in_rect
+    road_in = majority(road_in) | (road_in & ndi.binary_erosion(road_in))
+    road_out = majority(road_out)
     road_in &= inside & ~wall_band
     paved &= inside & ~wall_band
     terr[road_out & in_rect] = "d"
@@ -583,7 +594,7 @@ def main():
     wt = tile_of(wg["q"])
     w_targets = [(wt[0] + wg["in"][0] * 10 + dx, wt[1] + wg["in"][1] * 10 + dy) for dx, dy in ((-6, -4), (6, -4), (-6, 6), (6, 6), (-12, 0), (12, 0))]
     for i, wk in enumerate([w_ for w_ in WORKSHOPS if w_ in pk]):
-        got = search(wk, w_targets[i % len(w_targets)], 22)
+        got = search(wk, w_targets[i % len(w_targets)], 34)
         if got:
             r_ = take(wk, got[0], got[1], got[2], 1, {"door_cell": list(got[3])})
             # crates and barrels by the workshop
@@ -614,15 +625,75 @@ def main():
         if "fence_picket" in pk:
             for j in range(0, fh, 2):
                 c = (fx, ay - j)
-                if 0 <= c[0] < W and 0 <= c[1] < H and terr[c[1], c[0]] == "g" and not occ[c[1], c[0]] and inside[c[1], c[0]]:
+                if can_place("fence_picket", c[0], c[1], False, gap=False):
                     take("fence_picket", c[0], c[1], False, 0, {"plot_fence": pid})
             for i in range(0, fw, 2):
                 c = (ax - i, fy)
-                if 0 <= c[0] < W and 0 <= c[1] < H and terr[c[1], c[0]] == "g" and not occ[c[1], c[0]] and inside[c[1], c[0]]:
+                if can_place("fence_picket", c[0], c[1], True, gap=False):
                     take("fence_picket", c[0], c[1], True, 0, {"plot_fence": pid})
             ck = "fence_picket_corner" if "fence_picket_corner" in pk else None
             if ck and 0 <= fx < W and 0 <= fy < H and terr[fy, fx] == "g" and not occ[fy, fx] and inside[fy, fx]:
                 take(ck, fx, fy, False, 0, {"plot_fence": pid})
+
+    # ---- round M4 gardens: the larger leftover grass inside a block gets a
+    # hedged garden (sections, corner pieces, ends either side of an opening
+    # toward the nearest street), a flowerbed, flower patches and a tree
+    # the block interiors (3+ tiles from any street): the houses take the
+    # street fronts after
+    road_d0 = ndi.distance_transform_cdt(~(road_in | paved | water), metric="taxicab")
+    free_g = inside & (terr == "g") & ~occ & ~halo & (road_d0 >= 2) & (dist_ring > rr["to"] + 1)
+    n_gard = 0
+    hs, hc, he = "hedge_section", "hedge_corner", "hedge_end"
+    if hs in pk:
+        for gy in range(0, H - 8):
+            for gx in range(0, W - 8):
+                if n_gard >= int(cfg.get("tile_gardens", 14)):
+                    break
+                win = free_g[gy:gy + 8, gx:gx + 8]
+                if win.shape != (8, 8) or not win.all():
+                    continue
+                x0, y0, x1, y1 = gx + 1, gy + 1, gx + 6, gy + 6
+                # the opening: the middle of the side nearest a road
+                sides = {"S": [(x, y1 + 2) for x in range(x0, x1 + 1)], "E": [(x1 + 2, y) for y in range(y0, y1 + 1)],
+                         "N": [(x, y0 - 2) for x in range(x0, x1 + 1)], "W": [(x0 - 2, y) for y in range(y0, y1 + 1)]}
+                opening = max(sides, key=lambda k_: sum(1 for c in sides[k_] if is_road(*c)))
+                for (cx_, cy_) in ((x0 + 1, y0 + 1), (x1, y0 + 1), (x0 + 1, y1), (x1, y1)):
+                    if hc in pk and can_place(hc, cx_, cy_, False, gap=False):
+                        take(hc, cx_, cy_, False, 0, {"garden": True})
+                mid_x, mid_y = (x0 + x1) // 2, (y0 + y1) // 2
+                for x in range(x0 + 2, x1 - 1, 2):
+                    for y, side in ((y0, "N"), (y1, "S")):
+                        if side == opening and x in (mid_x - 1, mid_x):
+                            continue
+                        if can_place(hs, x + 1, y, True, gap=False):
+                            take(hs, x + 1, y, True, 0, {"garden": True})
+                for y in range(y0 + 2, y1 - 1, 2):
+                    for x, side in ((x0, "W"), (x1, "E")):
+                        if side == opening and y in (mid_y - 1, mid_y):
+                            continue
+                        if can_place(hs, x, y + 1, False, gap=False):
+                            take(hs, x, y + 1, False, 0, {"garden": True})
+                if he in pk:
+                    ends = {"N": [((mid_x - 2, y0), True), ((mid_x + 1, y0), False)], "S": [((mid_x - 2, y1), True), ((mid_x + 1, y1), False)],
+                            "W": [((x0, mid_y - 2), True), ((x0, mid_y + 1), False)], "E": [((x1, mid_y - 2), True), ((x1, mid_y + 1), False)]}[opening]
+                    for (ex, ey), fl in ends:
+                        if can_place(he, ex, ey, fl, gap=False):
+                            take(he, ex, ey, fl, 0, {"garden": True})
+                bed = beds[n_gard % len(beds)] if beds else None
+                if bed and can_place(bed, mid_x + 1, mid_y + 1, False, gap=False):
+                    take(bed, mid_x + 1, mid_y + 1, False, 0, {"garden": True})
+                tk = TREES[n_gard % len(TREES)]
+                if can_place(tk, x0 + 3, y0 + 3, False, gap=False):
+                    take(tk, x0 + 3, y0 + 3, n_gard % 2 == 1, 0, {"garden": True})
+                for i, (fx, fy) in enumerate(((x1 - 1, y1 - 1), (x0 + 2, y1 - 1), (x1 - 1, y0 + 2))):
+                    fk2 = FLOWERS[i % 2]
+                    if fk2 in pk and can_place(fk2, fx, fy, False, gap=False):
+                        take(fk2, fx, fy, False, 0, {"garden": True})
+                for yy2 in range(gy, gy + 8):
+                    for xx2 in range(gx, gx + 8):
+                        halo[yy2, xx2] = True
+                free_g[gy:gy + 8, gx:gx + 8] = False
+                n_gard += 1
 
     # ---- NPC houses: fill the blocks (door on a street, a tile of grass round)
     variants = sorted(k_ for k_ in pk if k_.startswith("house_npc_"))
@@ -797,6 +868,27 @@ def main():
                 take("quay_section", x, y, False, 0, solid=False)
                 break
 
+    # ---- round M4 edge decals: pebbles and flower tufts in the inner corners
+    # of the cobble/grass, dirt/grass and bank lines (they break the stairs)
+    grass = (terr == "g") & in_rect
+    roadish = np.isin(terr, ["c", "d", "p"]) | water
+    nb = {}
+    for name, (dx, dy) in (("e", (1, 0)), ("w", (-1, 0)), ("s", (0, 1)), ("n", (0, -1))):
+        nb[name] = np.roll(np.roll(roadish, -dy, axis=0), -dx, axis=1)
+    corner = grass & ~occ & ((nb["e"] & nb["s"]) | (nb["e"] & nb["n"]) | (nb["w"] & nb["s"]) | (nb["w"] & nb["n"]))
+    ys_, xs_ = np.nonzero(corner)
+    order = list(range(len(xs_)))
+    rng.shuffle(order)
+    n_dec = 0
+    dec_kinds = [k_ for k_ in ("rocks_small", "flowers_red_white", "flowers_blue_purple") if k_ in pk]
+    for i in order:
+        if n_dec >= int(cfg.get("tile_edge_decals", 260)) or not dec_kinds:
+            break
+        x, y = int(xs_[i]), int(ys_[i])
+        kind = dec_kinds[0] if rng.random() < 0.6 else dec_kinds[1 + n_dec % (len(dec_kinds) - 1)]
+        pieces.append({"kind": kind, "cell": [x, y], "solid": False, "decal": True, "scale": 0.5, "flip": rng.random() < 0.5})
+        n_dec += 1
+
     # ---- chimney smoke on ~40% of the houses
     if "smoke_chimney" in pk:
         for i, p in enumerate(pieces):
@@ -844,7 +936,10 @@ def main():
         kk = p["kind"]
         kk = "house_npc" if kk.startswith("house_npc") else kk
         kinds[kk] = kinds.get(kk, 0) + 1
-    print("tilemap", W, "x", H, "pieces", kinds, "bridges", len(bridge_info), "dropped", dropped)
+    ins_ = inside & ~wall_band
+    green_ = ins_ & (terr == "g")
+    print("tilemap", W, "x", H, "pieces", kinds, "bridges", len(bridge_info), "dropped", dropped,
+          "grass inside %.0f%%" % (100.0 * green_.sum() / max(1, ins_.sum())))
 
 
 def make_plan(cfg, city, T, tile_f, tile_of, gates, tpoly, inside, in_rect, wall_band, dist_ring, band, W, H, L):
@@ -872,8 +967,9 @@ def make_plan(cfg, city, T, tile_f, tile_of, gates, tpoly, inside, in_rect, wall
     avenues = [{"gate": g["id"], "width": 4, "pts": toward_plaza(g)} for g in gates]
     # side streets: a grid on the iso axes through the plaza corners
     streets = []
-    xs = [x for x in range(plaza[0] - 2, -1, -10)] + [x for x in range(plaza[2] + 2, W, 10)]
-    ys = [y for y in range(plaza[1] - 2, -1, -8)] + [y for y in range(plaza[3] + 2, H, 8)]
+    sp_ = int(cfg.get("tile_street_every", 14))
+    xs = [x for x in range(plaza[0] - 2, -1, -sp_)] + [x for x in range(plaza[2] + 2, W, sp_)]
+    ys = [y for y in range(plaza[1] - 2, -1, -sp_)] + [y for y in range(plaza[3] + 2, H, sp_)]
     ins = np.nonzero(inside)
     xmin, xmax, ymin, ymax = int(ins[1].min()), int(ins[1].max()), int(ins[0].min()), int(ins[0].max())
     for x in xs:
@@ -917,7 +1013,16 @@ def make_plan(cfg, city, T, tile_f, tile_of, gates, tpoly, inside, in_rect, wall
     for g in gates:
         a = (g["at"][0], g["at"][1])
         e = (a[0] - g["in"][0] * 200, a[1] - g["in"][1] * 200)
-        outside.append({"gate": g["id"], "width": 3, "pts": [[round(a[0]), round(a[1])], [round(e[0]), round(e[1])]]})
+        # an organic country road: gentle bends, smoothed
+        rng_ = random.Random(hash(g["id"]) % 1000)
+        dl = math.hypot(*g["in"])
+        nx, ny = -g["in"][1] / dl, g["in"][0] / dl
+        ctrl = [a]
+        for t in range(1, 9):
+            f_ = t / 8.0
+            off = 0.0 if t < 2 else rng_.uniform(-2.2, 2.2)
+            ctrl.append((a[0] + (e[0] - a[0]) * f_ + nx * off, a[1] + (e[1] - a[1]) * f_ + ny * off))
+        outside.append({"gate": g["id"], "width": 3, "pts": [[round(x, 2), round(y, 2)] for x, y in chaikin(ctrl, 3)]})
     # the castle's ground, kept free of side streets: inside the N gate,
     # beside its avenue
     ng = next(g for g in gates if g["id"] == "N")

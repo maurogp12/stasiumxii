@@ -174,13 +174,30 @@ def main():
             ys, xs = np.nonzero(dark)
             rec["arch_x"] = round(float(np.median(xs)), 1) if len(xs) else float(rec["foot"][0])
     # chimney tops on the NPC houses (the highest narrow peak of the roof)
+    # round M4: a chimney is a narrow stack standing above the roof line
+    # next to it: a run of columns (8-60 px wide) whose top is at least 14 px
+    # higher than the roof 30-70 px either side. Its anchor is the stack's top
+    # centre (a "chimney" key a kit JSON may also give by hand).
     for kind, rec in kit["pieces"].items():
-        if kind.startswith("house_npc_"):
-            a = np.asarray(Image.open(os.path.join(out, rec["file"])).convert("RGBA"))[..., 3] > 100
-            cols = np.where(a.any(axis=0))[0]
-            tops = np.array([np.argmax(a[:, c]) for c in cols])
-            i = int(np.argmin(tops))
-            rec["chimney"] = [int(cols[i]), int(tops[i]) + 6]
+        if not kind.startswith("house_npc_") or "chimney" in rec:
+            continue
+        a = np.asarray(Image.open(os.path.join(out, rec["file"])).convert("RGBA"))[..., 3] > 100
+        h_, w_ = a.shape
+        top = np.where(a.any(axis=0), a.argmax(axis=0), h_)
+        best = None
+        for x0 in range(0, w_ - 8):
+            for wd in range(8, 61, 2):
+                x1 = x0 + wd
+                if x1 + 70 >= w_ or x0 - 70 < 0:
+                    continue
+                t_in = top[x0:x1].max()
+                left = top[x0 - 70:x0 - 30].min()
+                right = top[x1 + 30:x1 + 70].min()
+                lift = min(left, right) - t_in
+                if lift >= 14 and (best is None or lift > best[0]):
+                    best = (lift, (x0 + x1) // 2, int(top[x0:x1].min()))
+        if best:
+            rec["chimney"] = [int(best[1]), int(best[2]) + 4]
     for stem, meta, sub in glows:
         parent = kind_of(meta["parent"].replace("_CONCEPTO", ""))
         if parent in kit["pieces"]:
