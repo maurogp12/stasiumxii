@@ -37,7 +37,7 @@ Image-to-3D (Meshy) works only if the input is clean. Every concept for conversi
 | Item | Rule |
 |---|---|
 | **Units** | 1 unit = 1 metre. Hero 1.8 m. |
-| **Heights** | NPC house 5–6 m (below the wall) · wall 6 m · gatehouse 8 m (arch ≥ 4 m) · tower 11 m · Legendary house 8 m · bank 8.5 m · townhall 9 m · cathedral 11 m · castle 13 m (tallest) |
+| **Heights** (to the highest tip) | NPC house 5–6 m (below the wall) · wall 6 m (8 m module, 2.5 m thick) · gatehouse 8 m (arch ≥ 4 m) · tower 11 m to the crenellation (14.7 m to the roof tip) · Normal player house 5.5 m · Rare 6.5 m · Legendary 8 m · bank 8.5 m · townhall 9 m (clock tower 12 m) · cathedral nave 12 m (spire 18 m, ~14×26 m) · castle keep 20 m (tallest, ~28×22 m) |
 | **Pivot** | At the **foot centre on the ground** (y = 0). Buildings: centre of the footprint. |
 | **Facing** | The front faces **+Z**. Doors are on the front. |
 | **Triangle budget (MMO)** | Hero 15–25k · enemy 10–20k · NPC 8–12k · house 5–15k · landmark 20–60k · prop 0.5–3k · tree 3–8k |
