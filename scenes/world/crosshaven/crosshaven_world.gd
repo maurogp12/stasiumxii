@@ -45,6 +45,8 @@ const DungeonDoor := preload("res://scenes/world/dungeon/dungeon_door.gd")
 const DungeonArt := preload("res://scenes/world/dungeon/dungeon_art.gd")
 const DoorPanel := preload("res://scenes/world/ui/door_panel.gd")
 const Launcher := preload("res://scenes/world/dungeon/dungeon_launcher.gd")
+const PlateCity := preload("res://backend/plate_city.gd")
+const CityPlate := preload("res://scenes/world/crosshaven/crosshaven_city_plate.gd")
 
 ## Kit deep sea, so the margin past Eastmarch matches the painted tiles.
 const SEA := Color("246e9e")
@@ -176,6 +178,14 @@ var _bench: Array[float] = []
 var _bench_until := 0.0
 var _window_before := Vector2i.ZERO
 var _zoom_tween: Tween
+## Plate-backed walled city (data/world/crosshaven_city). Loaded on first use;
+## `city_plate` draws it while the hero is inside.
+var city = null
+var city_plate: Node2D
+var _stub_marker: Node2D
+var _start_zone := ""
+## Dev entry: this key warps to the walled city and back.
+const CITY_WARP_KEY := KEY_F8
 
 
 func _ready() -> void:
@@ -344,12 +354,14 @@ func _ready() -> void:
 		_hide_debug_readout()
 		if _banner != null:
 			_banner.modulate.a = 0.0
+	elif _start_zone == PlateCity.CITY_ID and city_data() != null:
+		enter_zone(PlateCity.CITY_ID, city_data().spawn(), false)
 	else:
 		enter_zone(map.start_zone, map.start_cell, false)
 	_booting = false
 	transition_count = 0
 	seam_count = 0
-	if _movie == "" and DisplayServer.get_name() != "headless":
+	if _movie == "" and _start_zone == "" and DisplayServer.get_name() != "headless":
 		restore_place()
 		offer_performance()
 	_take_dungeon_outcome()
@@ -364,7 +376,13 @@ func enter_zone(zone_id: String, cell: Vector2i, fade: bool = true) -> void:
 		return
 	transition_count += 1
 	var next: WorldMap = map
-	if atlas != null:
+	if is_city_zone(zone_id):
+		if city_data() == null:
+			_show_banner("Crosshaven city: data did not load")
+			walk_rejected.emit("region_not_built")
+			return
+		next = city.map
+	elif atlas != null:
 		var found: Variant = atlas.map_for_chunk(zone_id)
 		if found != null:
 			next = found as WorldMap
@@ -391,6 +409,10 @@ func enter_zone(zone_id: String, cell: Vector2i, fade: bool = true) -> void:
 
 
 func _load_zone(zone_id: String, cell: Vector2i, snap: bool = true) -> void:
+	if is_city_zone(zone_id):
+		_load_city_zone(cell, snap)
+		return
+	_drop_city_plate()
 	_max_h_cache.clear()
 	zone = map.zone(zone_id)
 	_refresh_plane()
@@ -442,6 +464,7 @@ func _load_zone(zone_id: String, cell: Vector2i, snap: bool = true) -> void:
 	_raise_sort(npcs_root, origin)
 	_mount_neighbours(zone_id)
 	_sync_doors()
+	_mark_city_stubs()
 	if snap:
 		walker.place(zone, cell)
 		_apply_region_look()
@@ -464,6 +487,170 @@ func _load_zone(zone_id: String, cell: Vector2i, snap: bool = true) -> void:
 	if not _booting and progress != null and progress.has_method("note_place"):
 		progress.note_place(zone.zone_id, cell)
 	zone_entered.emit(zone.zone_id, cell)
+
+
+## The walled city's data (cached), or null when it does not load.
+func city_data():
+	if city != null:
+		return city
+	var loaded: Dictionary = PlateCity.load_default()
+	if not bool(loaded.get("ok", false)):
+		push_error("Crosshaven city failed to load: %s" % [loaded.get("errors", [])])
+		return null
+	city = loaded["city"]
+	return city
+
+
+func is_city_zone(zone_id: String) -> bool:
+	return zone_id == PlateCity.CITY_ID
+
+
+func in_city() -> bool:
+	return zone != null and is_city_zone(zone.zone_id) and city_plate != null
+
+
+## Dev warp: into the walled city, or back to the Crossroads stub.
+func warp_city() -> void:
+	if city_data() == null:
+		return
+	if in_city():
+		var back: Array = city.stubs_from(PlateCity.CITY_ID)
+		if not back.is_empty():
+			var dest: Dictionary = back[0]["to"]
+			enter_zone(str(dest["zone_id"]), Vector2i(int(dest["x"]), int(dest["y"])), true)
+		return
+	enter_zone(PlateCity.CITY_ID, city.spawn(), true)
+
+
+## Gate stub into the walled city: a marked cell on the Crossroads (data:
+## city.json gate_stubs). Drawn on the plane, so it stays put across seams.
+func _mark_city_stubs() -> void:
+	if _stub_marker == null:
+		_stub_marker = Node2D.new()
+		_stub_marker.name = "CityGateStub"
+		_stub_marker.z_as_relative = false
+		_stub_marker.draw.connect(_draw_stub_marker)
+		add_child(_stub_marker)
+	_stub_marker.visible = false
+	if city_data() == null or map == null:
+		return
+	for stub in city.stubs_from("crosshaven_crossroads"):
+		var frm: Dictionary = stub["from"]
+		var zid := str(frm["zone_id"])
+		if map.zone(zid) == null:
+			continue
+		var at := Vector2i(int(frm["x"]), int(frm["y"]))
+		var world_cell := _origin_of(zid) + at
+		_stub_marker.position = BoardVisualSort.cell_to_local(world_cell, float(map.zone(zid).height_at(at)))
+		_stub_marker.z_index = BoardVisualSort.tile_z_index(world_cell) + 2
+		_stub_marker.set_meta("label", str(stub.get("label", "")))
+		_stub_marker.visible = true
+		_stub_marker.queue_redraw()
+		return
+
+
+func _draw_stub_marker() -> void:
+	var gold := Color(1.0, 0.84, 0.35, 0.95)
+	var pts := PackedVector2Array([Vector2(0, -16), Vector2(32, 0), Vector2(0, 16), Vector2(-32, 0), Vector2(0, -16)])
+	_stub_marker.draw_colored_polygon(pts.slice(0, 4), Color(1.0, 0.84, 0.35, 0.22))
+	_stub_marker.draw_polyline(pts, gold, 2.5, true)
+	# A small arch: two posts and a lintel, the gate stub's stand-in.
+	_stub_marker.draw_line(Vector2(-14, -2), Vector2(-14, -40), Color(0.55, 0.5, 0.44), 5.0)
+	_stub_marker.draw_line(Vector2(14, -2), Vector2(14, -40), Color(0.55, 0.5, 0.44), 5.0)
+	_stub_marker.draw_line(Vector2(-18, -40), Vector2(18, -40), Color(0.62, 0.56, 0.48), 6.0)
+	var font := ThemeDB.fallback_font
+	var label := str(_stub_marker.get_meta("label", ""))
+	var size := font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, 13)
+	_stub_marker.draw_rect(Rect2(-size.x * 0.5 - 5, -66, size.x + 10, 19), Color(0.09, 0.07, 0.05, 0.85))
+	_stub_marker.draw_string(font, Vector2(-size.x * 0.5, -52), label, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color(1, 0.96, 0.86))
+
+
+func _drop_city_plate() -> void:
+	if city_plate == null:
+		return
+	if ground == city_plate:
+		ground = null
+	city_plate.free()
+	city_plate = null
+
+
+## Plate zone load: the painted city replaces the tile ground, props and decor.
+## Same steps as _load_zone otherwise (walker, NPCs, camera, look, HUD).
+func _load_city_zone(cell: Vector2i, snap: bool) -> void:
+	_max_h_cache.clear()
+	zone = map.zone(PlateCity.CITY_ID)
+	_refresh_plane()
+	walker.plane_origin = Vector2i.ZERO
+	_max_h = Pick.max_height(zone)
+	if ground != null and is_instance_valid(ground) and ground != city_plate:
+		ground.set_process(false)
+		_show_ground(ground, false)
+	var lite: bool = settings != null and settings.performance
+	if city_plate == null:
+		city_plate = CityPlate.new()
+		add_child(city_plate)
+		move_child(city_plate, 1)
+		city_plate.setup(city, lite)
+	else:
+		city_plate.set_lite(lite)
+	ground = city_plate
+	for child in props_root.get_children():
+		child.free()
+	for child in decor_root.get_children():
+		child.free()
+	props_root.position = Vector2.ZERO
+	decor_root.position = Vector2.ZERO
+	if fx != null:
+		fx.restock(zone)
+		fx._contacts.position = Vector2.ZERO
+		fx._critters.position = Vector2.ZERO
+	hover_cell = Vector2i(-1, -1)
+	_hover_zone = null
+	_hover.queue_redraw()
+	_spawn_npcs()
+	npcs_root.position = Vector2.ZERO
+	_mount_neighbours(PlateCity.CITY_ID)
+	_sync_doors()
+	if _stub_marker != null:
+		_stub_marker.visible = false
+	if snap:
+		walker.place(zone, cell)
+		_apply_region_look()
+	else:
+		walker.relocate(zone, cell)
+		_blend_region_look()
+	_apply_camera_limits(snap)
+	if snap:
+		_sync_snowfall(true)
+	_refresh_presence()
+	_refresh_hud()
+	_sync_city_life()
+	if _rebuilding:
+		return
+	_show_banner(Pick.zone_name(zone))
+	zone_entered.emit(zone.zone_id, cell)
+
+
+## Day and night in the city: townsfolk go indoors at night (the warden stays
+## out on patrol), the dog goes in, the cat stays out.
+func _sync_city_life() -> void:
+	if not in_city() or weather == null:
+		return
+	city_plate.set_hour(weather.time_of_day)
+	var day: bool = city.is_day(weather.time_of_day)
+	var night_out := {}
+	for rec in city.npcs():
+		night_out["Npc_%s" % str(rec["id"])] = str(rec.get("night", "indoors")) == "out"
+	for node in npcs_root.get_children():
+		var body := node as Node2D
+		if body == null:
+			continue
+		var show: bool = day or bool(night_out.get(str(body.name), false))
+		if body.visible != show:
+			body.visible = show
+			var plate: Variant = body.get("_plate")
+			if plate != null and is_instance_valid(plate):
+				(plate as CanvasItem).visible = show
 
 
 ## Click-to-walk to a cell in the current chunk. Returns the WorldWalk result.
@@ -580,9 +767,14 @@ func _spawn_npcs() -> void:
 		# Performance mode keeps only the sheets of NPCs alive now; a role
 		# met three chunks ago is loaded again when it is next seen.
 		NpcSprites.clear_cache()
-	if npc_book == null or zone == null:
+	if zone == null:
 		return
-	for record in npc_book.for_zone(zone.zone_id):
+	var records: Array = []
+	if is_city_zone(zone.zone_id) and city != null:
+		records = city.npcs()
+	elif npc_book != null:
+		records = npc_book.for_zone(zone.zone_id)
+	for record in records:
 		var node := WorldNpc.new()
 		npcs_root.add_child(node)
 		node.setup(zone, record, npc_plates)
@@ -731,7 +923,7 @@ func _extra_blocked() -> Dictionary:
 		return blocked
 	if npcs_root != null:
 		for node in npcs_root.get_children():
-			if node.is_queued_for_deletion():
+			if node.is_queued_for_deletion() or not node.visible:
 				continue
 			for at in node.occupied_cells():
 				blocked[WorldWalk.cell_key(zone.zone_id, at)] = true
@@ -916,7 +1108,10 @@ func _ortho_name(step: Vector2i) -> String:
 
 func _arm_arrival(target: Vector2i) -> void:
 	_pending_gate = {}
-	if atlas != null:
+	var stub: Dictionary = city_data().stub_at(zone.zone_id, target) if city_data() != null else {}
+	if not stub.is_empty():
+		_pending_gate = stub
+	elif atlas != null:
 		var found: Dictionary = atlas.gate_at(zone.zone_id, target)
 		if _open_gate(found):
 			_pending_gate = found
@@ -1122,6 +1317,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		match event.keycode:
 			KEY_R:
 				set_run_mode(not run_mode)
+			CITY_WARP_KEY:
+				warp_city()
 			KEY_1:
 				weather.cycle_weather()
 			KEY_2:
@@ -1349,6 +1546,12 @@ func _process(delta: float) -> void:
 	var wz: int = walker.z_index
 	var covered := false
 	var npc_feet := _npc_cover_feet()
+	if in_city():
+		var lift := float(zone.height_at(walker.cell)) * BoardVisualSort.ELEVATION_PIXELS
+		covered = city_plate.update_cover(walker.position + Vector2(0, lift), lift, wz, delta) or covered
+		city_plate.tick_pets(delta)
+		if Engine.get_process_frames() % 30 == 0:
+			_sync_city_life()
 	covered = _cover_children(props_root, walker.position, wz, npc_feet) or covered
 	covered = _cover_children(decor_root, walker.position, wz, npc_feet) or covered
 	if neighbours != null:
@@ -1899,7 +2102,15 @@ func _edge_dir_of(z: WorldZone, cell: Vector2i) -> Vector2i:
 func _apply_camera_limits(snap: bool) -> void:
 	if camera == null or zone == null:
 		return
-	if _seamless():
+	if in_city():
+		var plate_rect: Rect2 = city.world_rect()
+		camera.limit_left = int(plate_rect.position.x)
+		camera.limit_top = int(plate_rect.position.y)
+		camera.limit_right = int(plate_rect.end.x)
+		camera.limit_bottom = int(plate_rect.end.y)
+		if _backdrop != null:
+			_backdrop.visible = false
+	elif _seamless():
 		var bounds := _world_pixel_bounds()
 		var rect := bounds.grow(SEA_MARGIN)
 		camera.limit_left = int(floor(rect.position.x))
@@ -2525,6 +2736,10 @@ func _read_launch_args() -> void:
 			_movie = "bench:" + str(args[i + 1])
 		elif args[i] == "--class" and i + 1 < args.size():
 			_launch_class = str(args[i + 1])
+		elif args[i].begins_with("--start-zone="):
+			_start_zone = args[i].trim_prefix("--start-zone=")
+		elif args[i] == "--start-zone" and i + 1 < args.size():
+			_start_zone = str(args[i + 1])
 
 
 func _start_movie() -> void:

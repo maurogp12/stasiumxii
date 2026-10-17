@@ -1,0 +1,17 @@
+{
+ "format": "stasium.plate_city_layout",
+ "format_version": 1,
+ "note": "Layout inputs the Rosebud export does not carry, in plate px. A re-laid plate (any size) ships its own copy of this file; nothing in build_city.py assumes 5120x2880.",
+ "source": "docs/pc-map-handoff 98d2cc5c crosshaven/build.py WALL (ref x5), plot table from the look-target README",
+ "wall_polygon": [[200, 1200], [1450, 190], [3500, 190], [4950, 1175], [4000, 2310], [2650, 2700], [1500, 2125], [660, 1760]],
+ "north_gate_edge": 1,
+ "plot_search_box": [0.46, 0.52, 0.88, 0.94],
+ "plots": [
+  {"id": "P1", "tier": "rare", "label_tier": "rare", "old_anchor": [3340, 2099]},
+  {"id": "P2", "tier": "legendary", "label_tier": "legendary", "old_anchor": [3760, 2022]},
+  {"id": "P3", "tier": "rare", "label_tier": "normal", "old_anchor": [2650, 2526]},
+  {"id": "P4", "tier": "normal", "label_tier": "rare", "old_anchor": [3060, 2451]},
+  {"id": "P5", "tier": "normal", "label_tier": "normal", "old_anchor": [3500, 2360]}
+ ],
+ "crossroads_stub": {"from": [16, 27], "to": [17, 27]}
+}

@@ -1,0 +1,1998 @@
+{
+ "format": "stasium.plate_city",
+ "format_version": 1,
+ "zone_id": "crosshaven_city",
+ "region": "crosshaven_city",
+ "name": "Crosshaven (walled city prototype)",
+ "status": "prototype",
+ "source": "docs/pc-map-handoff 98d2cc5c docs/pc/map_handoff/crosshaven/rosebud (v9)",
+ "plate": {
+  "size": [
+   5120,
+   2880
+  ],
+  "ground": "ground.jpg",
+  "ground_lite": "ground_lite.jpg",
+  "art_root": "res://art/world/crosshaven_city/",
+  "scale": 1.0,
+  "cell00_px": [
+   2652.5,
+   -437.25
+  ],
+  "anchor": "plate pixel cell00_px lands on cell_to_local(0, 0); node position = -cell00_px",
+  "fit": {
+   "iso_slope_bridges": 0.5,
+   "iso_slope_gate_passage": 0.5,
+   "ground_texture_lattice_px": [
+    128,
+    64
+   ],
+   "rosebud_hero_px": 56,
+   "residuals": [
+    {
+     "id": "bridge_0",
+     "axis": "iso_x",
+     "offset_px": 4.87
+    },
+    {
+     "id": "bridge_1",
+     "axis": "iso_x",
+     "offset_px": -0.45
+    },
+    {
+     "id": "bridge_2",
+     "axis": "iso_x",
+     "offset_px": -4.92
+    },
+    {
+     "id": "gate_0",
+     "axis": "iso_y",
+     "offset_px": 0.0
+    }
+   ]
+  }
+ },
+ "grid": {
+  "width": 114,
+  "height": 142,
+  "legend": {
+   ".": "void (off the plate)",
+   "#": "blocked",
+   "~": "water",
+   "g": "grass",
+   "r": "street"
+  },
+  "rows": [
+   "............................##########################~~~#####################....................................",
+   "...........................###########################~~~######################...................................",
+   "..........................############################~~~#######################..................................",
+   ".........................rr###########################~~~########################.................................",
+   "........................#rr###########################~~~#########################................................",
+   ".......................##rr###########################~~~~#########################...............................",
+   "......................####rr##########################~~~~##########################..............................",
+   ".....................#####rr######g###################~~~~###########################.............................",
+   "....................######rr#####gggggggg#############~~~~############################............................",
+   "...................########rr###gggggggggggggggg######~~~~#############################...........................",
+   "..................#########rr##ggggggggggggggggggggggr~~~~##############################..........................",
+   ".................###########r#ggggg#ggggggggggggggg###~~~~ggg############################.........................",
+   "................############r##ggggggrgggggggggggg#####~~~#gggggggg#######################........................",
+   "...............#############rrggg#gggrrrrrgggggggg###########ggggggggggggg#################.......................",
+   "..............###############rgggggggrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrgggggggggggg###########......................",
+   ".............#############gggrrggggggrrgggrrrrrrrrrrrrrrrrrrrrrrrrrrrrgggggggggggggggg#######.....................",
+   "............#############ggggrrrgggggrrggggggggggggggg~~~~gggggggggggrrgggggggggggggggg#######....................",
+   "...........#############ggggggrrrrgggrrggggggggggggggg~~~~ggggg#ggggggrrrgggggggggggggg########...................",
+   "..........#############gggggggggrrrrgrrggggggggg###ggg~~~~gggg###gggggggrrgggggggggggggg########..................",
+   ".........#############ggggggggggggrrrrrggggggggg###ggg~~~~ggggg#gg#gg##ggrrggggggggggggg#########.................",
+   "........#############gggg#ggggggg#ggrrrggggggggg#ggggg~~~~gggggggggg###gggrrggggggg##gggg#########................",
+   ".......#############gggggggggggggggggrrg#ggggggggggg#g~~~~gggggg#g#gg##gg#grrrggggg##gggg##########...............",
+   "......#############gggggggggggg#ggggggrrgggggggggg#ggg~~~~ggggggggg##ggg#ggggrrgggggggggg#########rr..............",
+   ".....#############gggg#ggggggg#ggggggggrggggg#gggggggg#~~~g#ggggggg##g#g#gg#ggrrgggggg#ggg#######rrr#.............",
+   "....#############ggggggggggggggggggggggrrggggggggggg#gr~~~rggggg##gggggggggggggrrggg#ggggg#######rrr##............",
+   "...#############ggggggggggggggggggggggggrgg#ggggggggggg~~~rggggg##ggggggg#ggggggrrggggggggg#####rrr####...........",
+   "..#############ggggggggggggggggggg##ggggrrggggggggggggg~~~~ggggg#ggggg#ggggggggggrrrggggggg#####rrr#####..........",
+   ".#############gggggggggggggggggggggggggggrrgggggggggggg~~~~ggggggggggggggggggggggggrrgggggg#####rr#######.........",
+   "#############gggggggggggggggggggg#gggggggrrggggggggggggr~~~gggggg#gggggggg#gg#ggggggrrgggggg###rrr########........",
+   "############gggggggggggggg#####gggggggggggrrgggggggggggg~~~rggggggggggggg###gggggggggrrggggg###rrr#########.......",
+   "###########gggggggggggggg#######gggggggggg####gggggg###g~~~~#ggggggggggggg##ggggggg#ggrrrggg##rrr###########......",
+   "##########gggggggggggg#g########ggggggggg######ggrr####g~~~~ggggggggggggggggggggg#ggggggrrgg##rrr############.....",
+   "#########ggggggggggggggg########gggggggg#######rrrr###ggr~~~ggggggggggggggggg#gggggggggggrrgg#rr##############....",
+   "########ggggggggggggggg########ggggggggg######grrr####ggg~~~rgggggggggggggg#ggggggggggg##grrgrrr###############...",
+   "#######gggggggggggggggg########gggggggggg####rrrrr##rrrggr~~~ggggggggggggg#ggggggggggggggggrrrr###############rr..",
+   "######gggg##ggggggggggg#######ggg#gggggggg##ggrrrrrrrrrgggr~~~gggggggggggggggggggggg#gggggggrr###############rrr#.",
+   "#####gggggggggggggggggg######rrgggggggggggggggrrrrrrrrrggggr~~~ggggggggggggggrrrrrggggggggggrr###############rrr##",
+   "####ggggggggggggggggggggg#ggggrrggggggggggggggrrrrrrrrggggggr~~~gggggggg#gggrrrrrrrrgggggggggrr#############rrr###",
+   "###gggg#ggggg###gggggggggggggggrrgggggggggggggrrrrrrrrgggggggr~~~gg#ggggggggrrrrrrrrrgggggggggg#############rrr###",
+   "##gggg#gggggg###ggggggggggggggggrrgg#gggggggggrrrrrrggggggggggr~~~g#gggggggrrrr##rrrrggggggggggg############rrg###",
+   "##ggggggggggg##gg#gggggggggggggggrrgggggggg#ggrrrgggggggggggggg#~~~ggggggggrrrr##rrrrggggggggggg###########rrr####",
+   "##ggggggggggggggggggggggggggggggggrrggggggrrrrrrrrgggggggggggggg~~~~ggggggggrrrrrrrrrgg#ggggggggg##########rrr####",
+   "###ggggggggggg##gggggggggg#ggggggggrrgggrrrrrrrrrrrrrg#g#gggggg#g~~~~gggggggrrrrrrrrrgg#gggggggggg########rrr#####",
+   "###gggggggggggggggggggggggggggggggggrrrrrrrrrrrgrrrrrrrgggggggg#gg~~~rgggggggrrrrrrrgggggggg#ggggg########rrr#####",
+   "###ggggggggggggggggggggg#ggggggg#ggggrrrrrrggggggggggrrrrggggg#ggg#~~~ggggg#ggrrrrrrgggggggggggggg#######rrr######",
+   "###gggggggggggggggggg##gggggggggggggrrrrrggggg#ggggggggrrrg##gggggg~~~gggggggggggrrrg#ggggggggggggg######rrr######",
+   "####ggggggrrgggggggg###gggggggggggggrrrrgggg#gggggggggggrrrgggrrrrr~~~#ggggggggggrrrggggggggggggggg#####grr#######",
+   "####ggggggrrrgggggggg#ggg#gggggggggrrrrgggggggggggggggggggrrgrrrggrr~~~ggggggg#gg##rgggg#ggggggggggg####rrr#######",
+   "####ggggggggrrrgggg#gggggggggggggggrrrggggggggggg#gggggggggrrrrggggr~~~rggggggg####ggggggggggggggggg####rrr#######",
+   "####ggggggggggrrgggggg#g###gggggggrrrrggggggggg##gggggggggggrrgg##gg#~~~ggggggg###rgggggggggggggggggg##rrr########",
+   "####ggggg#gggggrrrgggggg###gggggggrrrgggggggg#####ggggg#ggggrrg###ggr~~~gggggg###rrggggggggggggggggg###rrr########",
+   "#####ggg###ggggggrrrgggg##gg#gggggrrrggggggg#######ggggggggggrrg##ggr~~~#ggggggggrrggggggggggggggggg##rrr#########",
+   "#####ggg##ggg###ggrrrgggggggggggggrrrgggggg########ggggggggggrrgggggrr~~~ggggggggrrggggggggg##gggggrg#rrr#########",
+   "#####gggggggg###ggggrrrggg#gggggggrrggggggg#######ggggggggggggrrrggrrr~~~rgggggggrrgggggggg####ggggrr#rr##########",
+   "#####ggggggggg#gggggggrrgggg#gggggrrggggggg#######ggggggggggggrrrrrrrg#~~~gggggggrrggggggg#####gggrrrrrr##########",
+   "######ggggggggggg#gggggrrrggggggggrrggggggg######ggrrrrrrggggggrrgggggr~~~gggggggrrgggggg#####ggggrrrrr###########",
+   "######ggggggggg#ggg#gggggrrrggggggrrrgggggg#####ggrrrrrrrrgggggrrgggggr~~~rggggggrrrggggg####ggggrrrrr############",
+   "######ggggggggggggggggggggrrrgggggrrrgggg#gggggggrrrrrrrrrrggggrrgggggg~~~#ggggggrrrgggggg##gggggrrrgrr###########",
+   "######ggggggggggggggggggggggrrrggggrrggggggggggggrrrrrrrrrrggggrrgggggg~~~~gg#gggrrrggggggggggggrrrgggg###########",
+   "#######gggggggggggggg##gggggggrrgggrrggggggggggggrrrrrrrrrrggggrrgggggg~~~~gggggggrrggggggggggggrrrgggggg#########",
+   "#######ggggggg#gggggg###gggggggrrrggrrgggggggggggrrrrrrrrrrggggrrrggggg~~~~gggggggrrgggggggggggrrrggggggg#########",
+   "#######gggggg###ggggg##gg#gggggggrrgrrgggggggggggrrrrrrrrrrggggrrgggggg#~~~rggggggrrgggggggggggrrrggggggg#########",
+   "#######gggggg##gg#g##gggggggggggggrrrrrggggggggggrrrrrrrrrrgggrrrgggggg~~~~rggggggrrggggggggggrrrggggggggg########",
+   "########ggggggggggg##ggg#ggg#gggggggrrrgggg##gggggrrrrrrrrggggrrrgggg##~~~~rgggg#grrggggggggggrrrggggggggg########",
+   "########ggggggg#g#g##ggggggggggggg#ggrrrgg###rr#ggrrrrrrrgggggrrrgg####~~~~#ggggggrrgggggggggrrrgggggggggg########",
+   "########gggggggggggggggg#g#gggggggggggg##rrrrr###gggrrrrgggggrrrrgg###########ggggrrgggggg#ggrrrgggggggggg########",
+   "########ggggggggggggggg###ggggggggggggg##rrrrr##rgggggggggggrrrrrrr####~~~~####rrrrrggggg###grrggggggggggg########",
+   "########gggggggrrgggggg##gg#ggggggggggggrrrrrrrrrrgggggggggrrrrrrrrrrrrrrrrrrrrrrrrrgggg####rrrggggggggggg########",
+   "#########gggggggrrrgggggggggggggggggggggrrrrrrrr#rggggggggrrrrrgggggggg~~~~ggggggggggggg###grrgggggggggggg########",
+   "#########ggggg#ggrrrggggg##gggggggggggg##rrrrrr###gggggrrrrrrrggggggggr~~~~gggggggggggggg#grrrgggggggggggg########",
+   "#########ggggggggggrrrgg###ggggggggg#gg##rrrrrr##rrrrrrrrrrrrgggggggggr~~~~ggggggggggggggggrrrggggggggggg#########",
+   "#########ggggggggggggrrr###gggggggg###gggrrrr#rrrrrrrrrrrrrgggggggggggr~~~~gggggggggggggggrrrgggggggggggg#########",
+   "##########ggggggggggggrr##gggggggg####ggrrrr###rrgrrrrrgggggggggggggggr~~~~gggggggggggggggrrrgggggggggggg#########",
+   "##########ggggggg#ggggggrrrgggggggg##ggrrrrrr##rgggrrrggggggggggggggggr~~~~ggggggggggggggrrrggggggggggggg#########",
+   "##########ggggggggggggggggrrrggggggggggrrrgggrgggggggrrrgggggggggggggg#~~~~ggggggggggggggrrrgggggggggggg##########",
+   "##########gggggggggg#ggggggrrrggggggggrrrgggggggggggggrrrgggg#gggggggg~~~~#ggggggggg###grrrggggggggggggg##########",
+   "###########gggggggg###gggggggrrrgggggrrrrgggggggggggggggrrrgggggggg###~~~~rggggggggg####rrrggggggggggggg##########",
+   "###########gggggggg###gggggggggrrggggrrrggggggggggg#gggggrrrgggggg######~~##gggggggg###rrrgggggggggggggg##########",
+   "###########gggggggggggggggggggggrrrgrrrggggggggggggggggggrrrrggggg###########ggggggggggrrrggggggggggggg###########",
+   "###########ggggggggggggggggggg##ggrrrrggggggggggg#gggggggrrgrrrrrrrrrrrrrrrrrrrrrrrggggrrgggggggggggggg###########",
+   "############gggggg#gg#ggggggg###gggrrrgggggggggggggggggggrrgggrrrr####~~~~####rrrrrgggrrrgggggggggggggg###########",
+   "############gggggggggggggggg###gggrrrrggggggggggggggggg#grrggggggggggr~~~~ggggggggggggrrgggggggggggggg############",
+   "############ggggggggggggggggg#gggrrrggrggg##ggggggggg#ggrrrggggggggggr~~~~gggggggggggrrrgggggggggggggg############",
+   ".###########ggg#gggggggggggggggggrrrggrrg###ggggggggggggrrrg#ggggg##gr~~~~gggggggggggrrggggggggggggggg############",
+   "..##########ggggggggggggg#ggggggrrrggggrr##gggggg###ggggrrgggggggg##g#~~~~ggggggggggrrrggggggggggggggg############",
+   "...##########ggggggggggg###gggggrrrgggggrrggggggg###ggggrrggggggggggg~~~~#gggggg##ggrrrgggggggggggggg#############",
+   "....#########gggggggggg####ggggrrrgggggggrrggg###ggggggrrrgggg#gggggg~~~~rggggg####rrrggggggggggggggg#############",
+   ".....########ggggggggggg##ggggrrrgggggggggrrggg##gg#g#grrrggg###ggg#g~~~~rggggg####rrrggggg###ggggggg#############",
+   "......#######gggggggggggggggggrrrggggggggggrrgggggg#gggrrgggg##gggggg~~~~rggggggggrrrggggg####ggggggg#############",
+   ".......#######gggggggggggggggrrrggggggggggggrrg##g#ggggrrgggggggggggr~~~~rggggggggrrrrgggg####gggggg##############",
+   "........########gggggggggggggrrrgg##gggggggggrrg#ggggggrrgggggggg#ggr~~~~ggggggggrrrrrggggg#gggggggg##############",
+   ".........#########ggggggggggrrrgg###ggggggggggrrgggg#ggrrgggggggggg#r~~~~ggggggggrrrrrgggggggggggggg##############",
+   "..........##########gggggggrrrrg###gggggg#gggggrrgggggggrgggggggggggr~~~~ggggggggrrggrrgggggggggggg###############",
+   "...........##############ggrrrrgg#gggggg###gggggrrgggggggggggggggggg~~~~~gggggggrrrggrrgggggggggggg###############",
+   "............###############rrrrggggggggg##gg#ggggrggrrgggggggggggggg~~~~#ggggggggrgggrrgggggggggggg###############",
+   ".............###########r#rrrrrrgggggggggggggggggrrrrrrggggggggggggg~~~~rgggggggggg##rr#ggggggggggg##############.",
+   "..............########rrrrrr####ggggggggggg##gggggrrrrrggggggggggggg~~~~rgggggggggg##rr#gggggggggg##############..",
+   "...............####rrrrrrr#######gggggggggggggggggg##r##gggggg#gggg#~~~~#ggggggg#gg##rr#gggggggggg#############...",
+   "................#rrrrrrr###########gggggggggggggggg##r##############~~~~#############rr#######################....",
+   ".................rrrr##################ggg###########rr#############~~~~##########rrrrrrr####################.....",
+   "..................r##################################rr#############~~~~#########rrrrrrrr###################......",
+   "...................##################################rr#############~~~~#########rrrrrrrr##################.......",
+   "....................#################################rr#############~~~~##########rrrrrr##################........",
+   ".....................################################rr#############~~~~##########rrrrr##################.........",
+   "......................###############################rr#############~~~~#############rr#################..........",
+   ".......................##############################rr##############~~~#############rr################...........",
+   "........................#############################rr##############~~~#############rr###############............",
+   ".........................############################rr##############~~~#############rr##############.............",
+   "..........................###########################rr##############~~~~############rr#############..............",
+   "...........................##########################rr##############~~~~############rr############...............",
+   "............................#########################rrr##############~~~############rr###########................",
+   ".............................########################rrr##############~~~############rr##########.................",
+   "..............................#######################rrr##############~~~############rr#########..................",
+   "...............................#######################rr##############~~~~###########rr########...................",
+   "................................######################rr###############~~~###########rr#######....................",
+   ".................................#####################rr###############~~~###########rr######.....................",
+   "..................................####################rr###############~~~###########rr#####......................",
+   "...................................###################rr###############~~~~##########rr####.......................",
+   "....................................##################rr###############~~~~##########rr###........................",
+   ".....................................#################rr###############~~~~##########rr##.........................",
+   "......................................################rr###############~~~~##########rr#..........................",
+   ".......................................###############rr###############~~~~##########rr...........................",
+   "........................................##############rr###############~~~~##########r............................",
+   ".........................................#############rr###############~~~~##########.............................",
+   "..........................................############rr###############~~~~#########..............................",
+   "...........................................###########rr###############~~~~########...............................",
+   "............................................##########rrr##############~~~~#######................................",
+   ".............................................#########rrr###############~~~######.................................",
+   "..............................................########rrr###############~~~#####..................................",
+   "...............................................########rr##############~~~~####...................................",
+   "................................................#######rr##############~~~~###....................................",
+   ".................................................######rr##############~~~~##.....................................",
+   "..................................................#####rr##############~~~~#......................................",
+   "...................................................####rr##############~~~~.......................................",
+   "....................................................###rr##############~~~........................................",
+   ".....................................................##rr##############~~.........................................",
+   "......................................................#rr##############~..........................................",
+   ".......................................................rr##############...........................................",
+   "........................................................r#############............................................",
+   ".........................................................############.............................................",
+   "..........................................................##########..............................................",
+   "...........................................................########..............................................."
+  ],
+  "heights": [
+   [
+    50,
+    14,
+    1
+   ],
+   [
+    51,
+    14,
+    3
+   ],
+   [
+    52,
+    14,
+    4
+   ],
+   [
+    53,
+    14,
+    5
+   ],
+   [
+    54,
+    14,
+    6
+   ],
+   [
+    55,
+    14,
+    6
+   ],
+   [
+    56,
+    14,
+    6
+   ],
+   [
+    57,
+    14,
+    5
+   ],
+   [
+    58,
+    14,
+    4
+   ],
+   [
+    59,
+    14,
+    2
+   ],
+   [
+    60,
+    14,
+    1
+   ],
+   [
+    51,
+    15,
+    1
+   ],
+   [
+    52,
+    15,
+    3
+   ],
+   [
+    53,
+    15,
+    4
+   ],
+   [
+    54,
+    15,
+    5
+   ],
+   [
+    55,
+    15,
+    6
+   ],
+   [
+    56,
+    15,
+    6
+   ],
+   [
+    57,
+    15,
+    6
+   ],
+   [
+    58,
+    15,
+    5
+   ],
+   [
+    59,
+    15,
+    4
+   ],
+   [
+    60,
+    15,
+    2
+   ],
+   [
+    61,
+    15,
+    1
+   ],
+   [
+    68,
+    67,
+    1
+   ],
+   [
+    69,
+    67,
+    2
+   ],
+   [
+    70,
+    67,
+    4
+   ],
+   [
+    71,
+    67,
+    5
+   ],
+   [
+    72,
+    67,
+    6
+   ],
+   [
+    73,
+    67,
+    6
+   ],
+   [
+    74,
+    67,
+    6
+   ],
+   [
+    75,
+    67,
+    5
+   ],
+   [
+    76,
+    67,
+    4
+   ],
+   [
+    77,
+    67,
+    2
+   ],
+   [
+    78,
+    67,
+    1
+   ],
+   [
+    67,
+    79,
+    2
+   ],
+   [
+    68,
+    79,
+    4
+   ],
+   [
+    69,
+    79,
+    5
+   ],
+   [
+    70,
+    79,
+    6
+   ],
+   [
+    71,
+    79,
+    6
+   ],
+   [
+    72,
+    79,
+    6
+   ],
+   [
+    73,
+    79,
+    5
+   ],
+   [
+    74,
+    79,
+    4
+   ],
+   [
+    75,
+    79,
+    3
+   ],
+   [
+    76,
+    79,
+    1
+   ]
+  ],
+  "height_px_per_step": 10
+ },
+ "spawn": [
+  85,
+  111
+ ],
+ "exit_cell": [
+  86,
+  117
+ ],
+ "gate_cells": [
+  [
+   85,
+   94
+  ],
+  [
+   86,
+   94
+  ],
+  [
+   85,
+   95
+  ],
+  [
+   86,
+   95
+  ],
+  [
+   85,
+   96
+  ],
+  [
+   86,
+   96
+  ],
+  [
+   85,
+   97
+  ],
+  [
+   86,
+   97
+  ],
+  [
+   85,
+   98
+  ],
+  [
+   86,
+   98
+  ],
+  [
+   85,
+   99
+  ],
+  [
+   86,
+   99
+  ],
+  [
+   85,
+   100
+  ],
+  [
+   86,
+   100
+  ]
+ ],
+ "wall_polygon": [
+  [
+   200.0,
+   1200.0
+  ],
+  [
+   1450.0,
+   190.0
+  ],
+  [
+   3500.0,
+   190.0
+  ],
+  [
+   4950.0,
+   1175.0
+  ],
+  [
+   4000.0,
+   2310.0
+  ],
+  [
+   2650.0,
+   2700.0
+  ],
+  [
+   1500.0,
+   2125.0
+  ],
+  [
+   660.0,
+   1760.0
+  ]
+ ],
+ "gates": [
+  {
+   "id": "gate_0",
+   "why": "existing",
+   "edge": 5,
+   "arch": [
+    2250.0,
+    2500.0
+   ],
+   "passage": [
+    [
+     2165.9,
+     2520.6
+    ],
+    [
+     2371.6,
+     2417.7
+    ],
+    [
+     2414.6,
+     2439.2
+    ],
+    [
+     2208.9,
+     2542.0
+    ]
+   ],
+   "art": "handoff south gate (unchanged)",
+   "cells": [
+    [
+     85,
+     94
+    ],
+    [
+     86,
+     94
+    ],
+    [
+     85,
+     95
+    ],
+    [
+     86,
+     95
+    ],
+    [
+     85,
+     96
+    ],
+    [
+     86,
+     96
+    ],
+    [
+     85,
+     97
+    ],
+    [
+     86,
+     97
+    ],
+    [
+     85,
+     98
+    ],
+    [
+     86,
+     98
+    ],
+    [
+     85,
+     99
+    ],
+    [
+     86,
+     99
+    ],
+    [
+     85,
+     100
+    ],
+    [
+     86,
+     100
+    ]
+   ]
+  },
+  {
+   "id": "gate_1",
+   "why": "crosses",
+   "edge": 7,
+   "wall_slope": 1.217,
+   "shear": 0.717,
+   "mirrored": false,
+   "arch": [
+    459.7,
+    1516.1
+   ],
+   "wall_join_left": [
+    376.3,
+    1414.6
+   ],
+   "wall_join_right": [
+    534.5,
+    1607.2
+   ],
+   "passage": [
+    [
+     323.3,
+     1467.4
+    ],
+    [
+     587.2,
+     1524.8
+    ],
+    [
+     625.3,
+     1571.1
+    ],
+    [
+     361.4,
+     1513.8
+    ]
+   ],
+   "art": "south gate cw4_gate_open (its gate_back + gate_front_lintel layers), mirrored if the wall falls, vertical shear to the wall slope",
+   "walls_cut": [
+    373,
+    374,
+    375,
+    376,
+    377
+   ],
+   "towers_dropped": [],
+   "roads_painted": [
+    [
+     [
+      459.7,
+      1516.1
+     ],
+     [
+      606.2,
+      1548.0
+     ],
+     [
+      608,
+      1525
+     ]
+    ],
+    [
+     [
+      459.7,
+      1516.1
+     ],
+     [
+      342.4,
+      1490.6
+     ],
+     [
+      0.0,
+      1416.2
+     ]
+    ]
+   ],
+   "cells": [
+    [
+     28,
+     94
+    ],
+    [
+     29,
+     94
+    ],
+    [
+     30,
+     94
+    ],
+    [
+     26,
+     95
+    ],
+    [
+     27,
+     95
+    ],
+    [
+     28,
+     95
+    ],
+    [
+     29,
+     95
+    ],
+    [
+     24,
+     96
+    ],
+    [
+     25,
+     96
+    ],
+    [
+     26,
+     96
+    ],
+    [
+     27,
+     96
+    ]
+   ]
+  },
+  {
+   "id": "gate_2",
+   "why": "crosses",
+   "edge": 3,
+   "wall_slope": -1.195,
+   "shear": -0.695,
+   "mirrored": true,
+   "arch": [
+    4600.8,
+    1592.2
+   ],
+   "wall_join_left": [
+    4684.2,
+    1492.6
+   ],
+   "wall_join_right": [
+    4526.0,
+    1681.6
+   ],
+   "passage": [
+    [
+     4737.8,
+     1546.3
+    ],
+    [
+     4472.8,
+     1597.9
+    ],
+    [
+     4434.3,
+     1643.9
+    ],
+    [
+     4699.3,
+     1592.3
+    ]
+   ],
+   "art": "south gate cw4_gate_open (its gate_back + gate_front_lintel layers), mirrored if the wall falls, vertical shear to the wall slope",
+   "walls_cut": [
+    310,
+    311,
+    312,
+    313,
+    314
+   ],
+   "towers_dropped": [],
+   "roads_painted": [
+    [
+     [
+      4600.8,
+      1592.2
+     ],
+     [
+      4453.6,
+      1620.9
+     ],
+     [
+      4490,
+      1633
+     ]
+    ],
+    [
+     [
+      4600.8,
+      1592.2
+     ],
+     [
+      4718.6,
+      1569.3
+     ],
+     [
+      5119.0,
+      1491.3
+     ]
+    ]
+   ],
+   "cells": [
+    [
+     94,
+     31
+    ],
+    [
+     95,
+     31
+    ],
+    [
+     94,
+     32
+    ],
+    [
+     95,
+     32
+    ],
+    [
+     93,
+     33
+    ],
+    [
+     94,
+     33
+    ],
+    [
+     93,
+     34
+    ],
+    [
+     94,
+     34
+    ],
+    [
+     93,
+     35
+    ],
+    [
+     93,
+     36
+    ]
+   ]
+  },
+  {
+   "id": "gate_3",
+   "why": "crosses",
+   "edge": 6,
+   "wall_slope": 0.435,
+   "shear": -0.065,
+   "mirrored": false,
+   "arch": [
+    1199.9,
+    1994.6
+   ],
+   "wall_join_left": [
+    1116.5,
+    1958.3
+   ],
+   "wall_join_right": [
+    1274.7,
+    2027.1
+   ],
+   "passage": [
+    [
+     1067.9,
+     2041.7
+    ],
+    [
+     1302.9,
+     1908.8
+    ],
+    [
+     1357.9,
+     1932.7
+    ],
+    [
+     1122.9,
+     2065.6
+    ]
+   ],
+   "art": "south gate cw4_gate_open (its gate_back + gate_front_lintel layers), mirrored if the wall falls, vertical shear to the wall slope",
+   "walls_cut": [
+    361,
+    362,
+    363,
+    364
+   ],
+   "towers_dropped": [],
+   "roads_painted": [
+    [
+     [
+      1199.9,
+      1994.6
+     ],
+     [
+      1330.4,
+      1920.7
+     ],
+     [
+      1239,
+      1921
+     ]
+    ],
+    [
+     [
+      1199.9,
+      1994.6
+     ],
+     [
+      1095.4,
+      2053.6
+     ],
+     [
+      0.0,
+      2673.1
+     ]
+    ]
+   ],
+   "cells": [
+    [
+     53,
+     95
+    ],
+    [
+     53,
+     96
+    ],
+    [
+     53,
+     97
+    ],
+    [
+     53,
+     98
+    ],
+    [
+     53,
+     99
+    ],
+    [
+     54,
+     99
+    ],
+    [
+     53,
+     100
+    ],
+    [
+     54,
+     100
+    ],
+    [
+     53,
+     101
+    ],
+    [
+     54,
+     101
+    ],
+    [
+     53,
+     102
+    ],
+    [
+     54,
+     102
+    ]
+   ]
+  },
+  {
+   "id": "gate_4",
+   "why": "dead_end",
+   "edge": 3,
+   "wall_slope": -1.195,
+   "shear": -0.695,
+   "mirrored": true,
+   "arch": [
+    4215.3,
+    2052.7
+   ],
+   "wall_join_left": [
+    4298.7,
+    1953.1
+   ],
+   "wall_join_right": [
+    4140.5,
+    2142.1
+   ],
+   "passage": [
+    [
+     4352.4,
+     2006.8
+    ],
+    [
+     4087.3,
+     2058.4
+    ],
+    [
+     4048.8,
+     2104.4
+    ],
+    [
+     4313.9,
+     2052.8
+    ]
+   ],
+   "art": "south gate cw4_gate_open (its gate_back + gate_front_lintel layers), mirrored if the wall falls, vertical shear to the wall slope",
+   "walls_cut": [
+    318,
+    319,
+    320,
+    321,
+    322,
+    323
+   ],
+   "towers_dropped": [],
+   "roads_painted": [
+    [
+     [
+      4215.3,
+      2052.7
+     ],
+     [
+      4068.1,
+      2081.4
+     ],
+     [
+      4058,
+      2049
+     ]
+    ],
+    [
+     [
+      4215.3,
+      2052.7
+     ],
+     [
+      4333.1,
+      2029.8
+     ],
+     [
+      5119.0,
+      1876.8
+     ]
+    ]
+   ],
+   "cells": [
+    [
+     103,
+     50
+    ],
+    [
+     103,
+     51
+    ],
+    [
+     102,
+     52
+    ],
+    [
+     103,
+     52
+    ],
+    [
+     102,
+     53
+    ],
+    [
+     103,
+     53
+    ],
+    [
+     102,
+     54
+    ],
+    [
+     101,
+     55
+    ],
+    [
+     102,
+     55
+    ],
+    [
+     101,
+     56
+    ],
+    [
+     101,
+     57
+    ]
+   ]
+  },
+  {
+   "id": "gate_5",
+   "why": "north_gate",
+   "edge": 1,
+   "wall_slope": 0.0,
+   "shear": -0.5,
+   "mirrored": false,
+   "arch": [
+    3189.0,
+    190.0
+   ],
+   "wall_join_left": [
+    3105.6,
+    190.0
+   ],
+   "wall_join_right": [
+    3263.8,
+    190.0
+   ],
+   "passage": [
+    [
+     3243.9,
+     105.1
+    ],
+    [
+     3052.9,
+     296.1
+    ],
+    [
+     3112.9,
+     296.1
+    ],
+    [
+     3303.9,
+     105.1
+    ]
+   ],
+   "art": "south gate cw4_gate_open (its gate_back + gate_front_lintel layers), mirrored if the wall falls, vertical shear to the wall slope",
+   "walls_cut": [
+    278,
+    279,
+    280,
+    281
+   ],
+   "towers_dropped": [],
+   "roads_painted": [
+    [
+     [
+      3189.0,
+      190.0
+     ],
+     [
+      3082.9,
+      296.1
+     ],
+     [
+      3189,
+      445
+     ]
+    ],
+    [
+     [
+      3189.0,
+      190.0
+     ],
+     [
+      3273.9,
+      105.1
+     ],
+     [
+      3379.0,
+      0.0
+     ]
+    ]
+   ],
+   "cells": [
+    [
+     27,
+     7
+    ],
+    [
+     27,
+     8
+    ],
+    [
+     27,
+     9
+    ],
+    [
+     27,
+     10
+    ],
+    [
+     28,
+     10
+    ],
+    [
+     28,
+     11
+    ],
+    [
+     28,
+     12
+    ],
+    [
+     28,
+     13
+    ],
+    [
+     29,
+     13
+    ],
+    [
+     29,
+     14
+    ],
+    [
+     29,
+     15
+    ],
+    [
+     29,
+     16
+    ]
+   ]
+  }
+ ],
+ "wall_contacts": {
+  "before": [
+   {
+    "at": [
+     4374,
+     851
+    ],
+    "dist_px": 54.1,
+    "edge": 2,
+    "span_px": 288,
+    "pixels": 16913,
+    "verdict": "runs_along"
+   },
+   {
+    "at": [
+     438,
+     1489
+    ],
+    "dist_px": 0.0,
+    "edge": 7,
+    "span_px": 116,
+    "pixels": 18383,
+    "verdict": "crosses"
+   },
+   {
+    "at": [
+     4570,
+     1627
+    ],
+    "dist_px": 0.0,
+    "edge": 3,
+    "span_px": 103,
+    "pixels": 19348,
+    "verdict": "crosses"
+   },
+   {
+    "at": [
+     1171,
+     1981
+    ],
+    "dist_px": 0.0,
+    "edge": 6,
+    "span_px": 80,
+    "pixels": 10297,
+    "verdict": "crosses"
+   },
+   {
+    "at": [
+     4175,
+     2019
+    ],
+    "dist_px": 50.9,
+    "edge": 3,
+    "span_px": 90,
+    "pixels": 6515,
+    "verdict": "dead_end"
+   },
+   {
+    "at": [
+     2233,
+     2377
+    ],
+    "dist_px": 101.5,
+    "edge": 5,
+    "span_px": 91,
+    "pixels": 2122,
+    "verdict": "gate"
+   },
+   {
+    "at": [
+     2134,
+     2443
+    ],
+    "dist_px": 0.0,
+    "edge": 5,
+    "span_px": 287,
+    "pixels": 45404,
+    "verdict": "gate"
+   }
+  ],
+  "after": [
+   {
+    "at": [
+     3146,
+     189
+    ],
+    "dist_px": 0.0,
+    "edge": 1,
+    "span_px": 168,
+    "pixels": 22372,
+    "verdict": "gate"
+   },
+   {
+    "at": [
+     4374,
+     851
+    ],
+    "dist_px": 54.1,
+    "edge": 2,
+    "span_px": 288,
+    "pixels": 16913,
+    "verdict": "runs_along"
+   },
+   {
+    "at": [
+     423,
+     1474
+    ],
+    "dist_px": 0.0,
+    "edge": 7,
+    "span_px": 206,
+    "pixels": 32516,
+    "verdict": "gate"
+   },
+   {
+    "at": [
+     4632,
+     1554
+    ],
+    "dist_px": 0.0,
+    "edge": 3,
+    "span_px": 223,
+    "pixels": 38695,
+    "verdict": "gate"
+   },
+   {
+    "at": [
+     1162,
+     1978
+    ],
+    "dist_px": 0.0,
+    "edge": 6,
+    "span_px": 141,
+    "pixels": 28273,
+    "verdict": "gate"
+   },
+   {
+    "at": [
+     4249,
+     2014
+    ],
+    "dist_px": 0.0,
+    "edge": 3,
+    "span_px": 200,
+    "pixels": 29760,
+    "verdict": "gate"
+   },
+   {
+    "at": [
+     2233,
+     2377
+    ],
+    "dist_px": 101.5,
+    "edge": 5,
+    "span_px": 91,
+    "pixels": 2122,
+    "verdict": "gate"
+   },
+   {
+    "at": [
+     2134,
+     2443
+    ],
+    "dist_px": 0.0,
+    "edge": 5,
+    "span_px": 287,
+    "pixels": 45404,
+    "verdict": "gate"
+   }
+  ]
+ },
+ "towers_cleaned": [
+  381,
+  382,
+  383,
+  384,
+  385,
+  386,
+  387,
+  388,
+  389,
+  390,
+  391,
+  392,
+  393,
+  394,
+  395
+ ],
+ "bridges": [
+  {
+   "id": "bridge_0",
+   "ends": [
+    [
+     82,
+     67
+    ],
+    [
+     64,
+     67
+    ]
+   ],
+   "deck_cells": [
+    [
+     70,
+     67
+    ],
+    [
+     71,
+     67
+    ],
+    [
+     72,
+     67
+    ],
+    [
+     73,
+     67
+    ],
+    [
+     74,
+     67
+    ],
+    [
+     75,
+     67
+    ],
+    [
+     76,
+     67
+    ]
+   ],
+   "crown_px": 59.8,
+   "sprite_bbox": [
+    2625,
+    1654,
+    3062,
+    1901
+   ]
+  },
+  {
+   "id": "bridge_1",
+   "ends": [
+    [
+     64,
+     14
+    ],
+    [
+     46,
+     14
+    ]
+   ],
+   "deck_cells": [
+    [
+     52,
+     14
+    ],
+    [
+     53,
+     14
+    ],
+    [
+     54,
+     14
+    ],
+    [
+     55,
+     14
+    ],
+    [
+     56,
+     14
+    ],
+    [
+     57,
+     14
+    ],
+    [
+     58,
+     14
+    ],
+    [
+     53,
+     15
+    ],
+    [
+     54,
+     15
+    ],
+    [
+     55,
+     15
+    ],
+    [
+     56,
+     15
+    ],
+    [
+     57,
+     15
+    ],
+    [
+     58,
+     15
+    ],
+    [
+     59,
+     15
+    ]
+   ],
+   "crown_px": 59.8,
+   "sprite_bbox": [
+    3742,
+    543,
+    4179,
+    790
+   ]
+  },
+  {
+   "id": "bridge_2",
+   "ends": [
+    [
+     80,
+     79
+    ],
+    [
+     63,
+     79
+    ]
+   ],
+   "deck_cells": [
+    [
+     68,
+     79
+    ],
+    [
+     69,
+     79
+    ],
+    [
+     70,
+     79
+    ],
+    [
+     71,
+     79
+    ],
+    [
+     72,
+     79
+    ],
+    [
+     73,
+     79
+    ],
+    [
+     74,
+     79
+    ]
+   ],
+   "crown_px": 59.8,
+   "sprite_bbox": [
+    2185,
+    1840,
+    2622,
+    2087
+   ]
+  }
+ ],
+ "plots": [
+  {
+   "id": "P1",
+   "tier": "rare",
+   "label_tier": "rare",
+   "anchor_px": [
+    3371,
+    2097
+   ],
+   "old_anchor_px": [
+    3340.0,
+    2099.4
+   ],
+   "front_cells": [
+    [
+     91,
+     69
+    ],
+    [
+     92,
+     69
+    ]
+   ]
+  },
+  {
+   "id": "P2",
+   "tier": "legendary",
+   "label_tier": "legendary",
+   "anchor_px": [
+    3835,
+    1937
+   ],
+   "old_anchor_px": [
+    3760.0,
+    2022.2
+   ],
+   "front_cells": [
+    [
+     93,
+     56
+    ],
+    [
+     94,
+     56
+    ]
+   ]
+  },
+  {
+   "id": "P3",
+   "tier": "rare",
+   "label_tier": "normal",
+   "anchor_px": [
+    2771,
+    2473
+   ],
+   "old_anchor_px": [
+    2650.0,
+    2526.4
+   ],
+   "front_cells": [
+    [
+     93,
+     90
+    ],
+    [
+     94,
+     90
+    ]
+   ]
+  },
+  {
+   "id": "P4",
+   "tier": "normal",
+   "label_tier": "rare",
+   "anchor_px": [
+    2947,
+    2177
+   ],
+   "old_anchor_px": [
+    3060.0,
+    2451.0
+   ],
+   "front_cells": [
+    [
+     87,
+     78
+    ],
+    [
+     88,
+     78
+    ]
+   ]
+  },
+  {
+   "id": "P5",
+   "tier": "normal",
+   "label_tier": "normal",
+   "anchor_px": [
+    2467,
+    2265
+   ],
+   "old_anchor_px": [
+    3500.0,
+    2360.0
+   ],
+   "front_cells": [
+    [
+     82,
+     88
+    ],
+    [
+     83,
+     88
+    ]
+   ]
+  }
+ ],
+ "plot_rules": {
+  "clearance_px": {
+   "normal": 200,
+   "rare": 260,
+   "legendary": 350
+  },
+  "legendary_ellipse": "iso ellipse 350x175 px whose bottom point is the anchor",
+  "tier_art": {
+   "normal": "housing/house_normal.png",
+   "rare": "housing/house_rare.png",
+   "legendary": "housing/house_legendary.png"
+  },
+  "house_art": {
+   "normal": {
+    "w": 170,
+    "h": 194,
+    "mask": {
+     "step": 8,
+     "w": 22,
+     "h": 25,
+     "bits": "AAPAAP8AH/wD//AP/8B//4H//g///H//+///7///////f//5///n//+f//5///v//+///////3//+H//wH/4AH+AAHAA"
+    }
+   },
+   "rare": {
+    "w": 238,
+    "h": 185,
+    "mask": {
+     "step": 8,
+     "w": 30,
+     "h": 24,
+     "bits": "AYPGAA//PAA//vAB//+AB//+AD///AH///AP///AP///wP///8H///+H////P////P///+P///+////+////+////+////+////4f/+PwP/4DAC+wAAAIAAA"
+    }
+   },
+   "legendary": {
+    "w": 330,
+    "h": 233,
+    "mask": {
+     "step": 8,
+     "w": 42,
+     "h": 30,
+     "bits": "AAMAAAAAAMQAAAAAcQAAAAAfwAAAAM/+AAAAP//IAAAP//4AAAf//8AAA///+AAB////AAA////gAA////8AA////+AA/////AD/////g//////g//////+//////+//////+///////f//////H/////8B/////wAf////gAD///+AAA///8AAAP//wAAAD//gAAAA/+AAAAAMAAAA="
+    }
+   }
+  },
+  "footprint": "blocking ellipse 0.9w x 0.36h above the anchor (handoff place_plot)",
+  "note": "Tier is data: change plots[].tier to swap the exterior in place. No garden beds, fences or yards (Luca)."
+ },
+ "pets": [
+  {
+   "name": "pet_dog",
+   "sprite": "pets/pet_dog.png",
+   "a": [
+    3200.0,
+    2150.0
+   ],
+   "b": [
+    3000.0,
+    2164.0
+   ],
+   "speed": 40,
+   "pause": 1.5,
+   "hop_px": 3,
+   "night": "indoors"
+  },
+  {
+   "name": "pet_cat",
+   "sprite": "pets/pet_cat.png",
+   "a": [
+    3306.0,
+    1236.0
+   ],
+   "b": [
+    3510.0,
+    1160.0
+   ],
+   "speed": 40,
+   "pause": 1.5,
+   "hop_px": 3,
+   "night": "out"
+  },
+  {
+   "name": "pet_dog",
+   "sprite": "pets/pet_dog.png",
+   "a": [
+    4108.0,
+    972.0
+   ],
+   "b": [
+    4300.0,
+    1076.0
+   ],
+   "speed": 40,
+   "pause": 1.5,
+   "hop_px": 3,
+   "night": "indoors"
+  }
+ ],
+ "npcs": [
+  {
+   "id": "city_smith",
+   "role": "smith",
+   "name": "Smith",
+   "cell": {
+    "x": 33,
+    "y": 81
+   },
+   "facing": "W",
+   "night": "indoors"
+  },
+  {
+   "id": "city_forge_master",
+   "role": "forge_master",
+   "name": "Forge Master",
+   "cell": {
+    "x": 29,
+    "y": 72
+   },
+   "facing": "S",
+   "night": "indoors"
+  },
+  {
+   "id": "city_trader",
+   "role": "trader",
+   "name": "Trader",
+   "cell": {
+    "x": 40,
+    "y": 71
+   },
+   "facing": "S",
+   "night": "indoors"
+  },
+  {
+   "id": "city_herald",
+   "role": "herald",
+   "name": "Herald",
+   "cell": {
+    "x": 42,
+    "y": 68
+   },
+   "facing": "S",
+   "night": "indoors"
+  },
+  {
+   "id": "city_archivist",
+   "role": "archivist",
+   "name": "Archivist",
+   "cell": {
+    "x": 47,
+    "y": 67
+   },
+   "facing": "S",
+   "night": "indoors"
+  },
+  {
+   "id": "city_door_keeper",
+   "role": "door_keeper",
+   "name": "Door Keeper",
+   "cell": {
+    "x": 48,
+    "y": 67
+   },
+   "facing": "N",
+   "night": "indoors"
+  },
+  {
+   "id": "city_banker",
+   "role": "banker",
+   "name": "Banker",
+   "cell": {
+    "x": 54,
+    "y": 35
+   },
+   "facing": "W",
+   "night": "indoors"
+  },
+  {
+   "id": "city_warden",
+   "role": "warden",
+   "name": "Warden",
+   "cell": {
+    "x": 79,
+    "y": 96
+   },
+   "facing": "S",
+   "night": "out"
+  },
+  {
+   "id": "city_farmer",
+   "role": "farmer",
+   "name": "Farmer",
+   "cell": {
+    "x": 72,
+    "y": 50
+   },
+   "facing": "W",
+   "night": "indoors"
+  },
+  {
+   "id": "city_elder",
+   "role": "elder",
+   "name": "Elder",
+   "cell": {
+    "x": 40,
+    "y": 76
+   },
+   "facing": "S",
+   "night": "indoors"
+  },
+  {
+   "id": "city_guide",
+   "role": "guide",
+   "name": "Guide",
+   "cell": {
+    "x": 83,
+    "y": 47
+   },
+   "facing": "S",
+   "night": "indoors"
+  },
+  {
+   "id": "city_fisher",
+   "role": "fisher",
+   "name": "Fisher",
+   "cell": {
+    "x": 66,
+    "y": 39
+   },
+   "facing": "S",
+   "night": "indoors"
+  },
+  {
+   "id": "city_woodcutter",
+   "role": "woodcutter",
+   "name": "Woodcutter",
+   "cell": {
+    "x": 40,
+    "y": 54
+   },
+   "facing": "S",
+   "night": "indoors"
+  }
+ ],
+ "day_hours": [
+  6.0,
+  20.0
+ ],
+ "gate_stubs": [
+  {
+   "id": "crossroads_to_city",
+   "from": {
+    "zone_id": "crosshaven_crossroads",
+    "x": 16,
+    "y": 27
+   },
+   "to": {
+    "zone_id": "crosshaven_city",
+    "x": 85,
+    "y": 111
+   },
+   "label": "Crosshaven walled city (prototype)",
+   "enabled": true
+  },
+  {
+   "id": "city_to_crossroads",
+   "from": {
+    "zone_id": "crosshaven_city",
+    "x": 86,
+    "y": 117
+   },
+   "to": {
+    "zone_id": "crosshaven_crossroads",
+    "x": 17,
+    "y": 27
+   },
+   "label": "To the Crossroads",
+   "enabled": true
+  }
+ ],
+ "layers": "layers.json"
+}
