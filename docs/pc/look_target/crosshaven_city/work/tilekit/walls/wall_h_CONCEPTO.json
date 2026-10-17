@@ -1,17 +1,17 @@
 {
  "foot": [
-  204,
+  153,
   550
  ],
  "footprint": [
-  3,
+  2,
   1
  ],
  "blocks": true,
  "height_px": 550,
  "orient": "screen-horizontal (runs along grid diagonal)",
  "tile_step_px": [
-  309,
+  206,
   0
  ],
  "merlon_period_px": 103

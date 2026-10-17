@@ -1,17 +1,17 @@
 {
  "foot": [
-  204,
-  627
+  153,
+  601
  ],
  "footprint": [
-  4,
+  3,
   1
  ],
  "blocks": true,
  "height_px": 550,
  "orient": "se iso axis, 2:1 slope; mirror pair",
  "tile_step_px": [
-  309,
-  154
+  206,
+  103
  ]
 }

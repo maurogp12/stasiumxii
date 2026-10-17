@@ -1,0 +1,15 @@
+{
+ "foot": [
+  361,
+  460
+ ],
+ "footprint": [
+  4,
+  3
+ ],
+ "blocks": true,
+ "height_px": 460,
+ "width_px": 602,
+ "tier": "normal",
+ "door_side": "front-right (SE face, mirrored)"
+}
