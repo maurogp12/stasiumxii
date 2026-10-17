@@ -493,60 +493,64 @@
     ]
    },
    "gatehouse_neg": {
-    "file": "gatehouse_diag_v3_CONCEPTO.png",
-    "art_slope": -0.3633,
-    "drop_px": 37,
-    "arch": [
-     835,
-     1009
-    ],
+    "file": "gatehouse_diagonal_v5_CONCEPTO.png",
+    "art_slope": -0.263,
+    "scale_mul": 1.1824,
+    "drop_px": 0,
     "wall_left": [
-     250,
-     1262
+     255.5,
+     1131
     ],
     "wall_right": [
-     1290,
-     812
+     1240.5,
+     872
+    ],
+    "arch": [
+     796,
+     989
     ],
     "split": [
-     835,
+     796,
      0
     ],
     "back_side": "right",
     "arch_open_x": [
-     737,
-     932
+     660,
+     940
     ],
-    "note": "kit3 diagonal gatehouse (docs/pc-map-handoff 8572a1e4). Base slope -0.433 like segment_short; art_slope is the parapet-matched slope: its parapet (-0.317) is sheared 0.07 more than segment_short's (-0.387) so the parapet lines meet; drop_px = curtain parapet 580 - 550 (about 5%). The near tower is on the left, so the right (far) half sorts behind a hero in the arch. Round 10: scaled 1.152 so its near tower (1057 art px finial to base) matches the v5 towers (1033 x 1.179); drop 37 puts its curtain merlons (593) on the diagonal runs' merlon line (224 plate px = 556 art px at this scale).",
-    "scale_mul": 1.152
+    "near_tower_px": 1030,
+    "far_tower_px": 885,
+    "note": "Round 12: Grok's diagonal gatehouse v5 (docs/pc-map-handoff 73331b97, 1460x1146): its towers are pixel copies of the v5 tower (near 1030 px with finial, far 885 px for depth). Anchored on the two tower bases (12 px above each tower's lowest pixel, as the ring tower crop), so both stand on the wall line: art_slope is that tower-to-tower line (-0.263; the curtain itself slopes -0.364). scale_mul 1.1824 = 1.179 x 1033/1030 makes the near tower the ring towers' size. No drop: the runs meet the towers, as at every ring tower; the curtain between them stands about 60 art px taller than the run (measured)."
    },
    "gatehouse_pos": {
-    "file": "gatehouse_diag_v3_mirror_CONCEPTO.png",
-    "art_slope": 0.3633,
-    "drop_px": 37,
-    "arch": [
-     665,
-     1009
-    ],
+    "file": "gatehouse_diagonal_v5_mirror_CONCEPTO.png",
+    "art_slope": 0.263,
+    "scale_mul": 1.1824,
+    "drop_px": 0,
     "wall_left": [
-     210,
-     812
+     219.5,
+     872
     ],
     "wall_right": [
-     1250,
-     1262
+     1204.5,
+     1131
+    ],
+    "arch": [
+     664,
+     989
     ],
     "split": [
-     665,
+     664,
      0
     ],
     "back_side": "left",
     "arch_open_x": [
-     568,
-     763
+     520,
+     800
     ],
-    "note": "mirror of gatehouse_neg",
-    "scale_mul": 1.152
+    "near_tower_px": 1030,
+    "far_tower_px": 885,
+    "note": "mirror of gatehouse_neg"
    },
    "gatehouse_flat": {
     "file": "gatehouse_horizontal_CONCEPTO.png",

@@ -323,7 +323,7 @@ func _stills() -> void:
 			b = t
 		_place(_near_free(a - (b - a) / maxi(1, (b - a).length() as int) * 3))
 		await _hold(city.plate_to_world(Vector2(float(g["arch"][0]), float(g["arch"][1]))) + Vector2(0, -60), 1.1, 30, "07_gate_%s" % g["id"])
-		if str(g["id"]) in ["N", "S"]:
+		if true:
 			# Close-up: the hero under the arch (the cell nearest the arch point).
 			var arch_w: Vector2 = city.plate_to_world(Vector2(float(g["arch"][0]), float(g["arch"][1])))
 			var under := Vector2i(int(cells[0][0]), int(cells[0][1]))

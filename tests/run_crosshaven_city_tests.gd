@@ -817,9 +817,13 @@ func _test_review_data() -> void:
 		if str(g["id"]) in ["N", "S"]:
 			check(str(g["art"]) == "gatehouse_horizontal_CONCEPTO.png" and is_zero_approx(float(g["shear"])), "%s uses the horizontal gatehouse with no shear (%s %.3f)" % [g["id"], g["art"], float(g["shear"])])
 		else:
-			check(str(g["art"]).begins_with("gatehouse_diag_v3"), "%s uses the diagonal gatehouse (%s)" % [g["id"], g["art"]])
-			check(absf(absf(float(g["shear"])) - 0.1367) < 0.01, "%s parapet-matched shear (%.3f)" % [g["id"], float(g["shear"])])
-		check(float(g.get("art_drop_px", -1.0)) > 0.0, "%s parapet drop in data (%.1f)" % [g["id"], float(g.get("art_drop_px", -1.0))])
+			check(str(g["art"]).begins_with("gatehouse_diagonal_v5"), "%s uses the diagonal gatehouse v5 (%s)" % [g["id"], g["art"]])
+			check(absf(absf(float(g["shear"])) - 0.237) < 0.01, "%s shear puts both tower bases on the wall line (%.3f)" % [g["id"], float(g["shear"])])
+		if str(g["id"]) in ["N", "S"]:
+			check(float(g.get("art_drop_px", -1.0)) > 0.0, "%s parapet drop in data (%.1f)" % [g["id"], float(g.get("art_drop_px", -1.0))])
+		else:
+			# v5 diagonal: the tower bases sit on the wall line (no drop)
+			check(absf(float(g.get("art_drop_px", -1.0))) < 0.5, "%s tower bases on the wall line, no drop (%.1f)" % [g["id"], float(g.get("art_drop_px", -1.0))])
 		# hero width as the art team measures it: 48 px at a 156 px hero
 		var arch_min: float = 2.2 * (48.0 / 156.0) * hero_plate
 		check(float(g.get("arch_open_px", 0.0)) >= arch_min, "%s arch opening %.1f px >= 2.2 hero widths (%.1f)" % [g["id"], float(g.get("arch_open_px", 0.0)), arch_min])
@@ -952,8 +956,8 @@ func _test_review_data() -> void:
 			var gh: float = 1033.0 * k_mod2 * sm2
 			check(absf(gw - tw0) / tw0 <= 0.02 and absf(gh - th0) / th0 <= 0.02, "%s gatehouse towers match the ring towers (%.0fx%.0f vs %.0fx%.0f)" % [g["id"], gw, gh, tw0, th0])
 		else:
-			# diagonal gatehouse: its near tower is 1057 art px finial to base
-			var dh: float = 1057.0 * k_mod2 * sm2
+			# diagonal gatehouse v5: its near tower is 1030 art px (a v5 tower copy)
+			var dh: float = 1030.0 * k_mod2 * sm2
 			check(absf(dh - th0) / th0 <= 0.02, "%s gatehouse near tower height matches the ring towers (%.0f vs %.0f)" % [g["id"], dh, th0])
 	var r_c: float = float(city.doc.get("tower_body_radius_px", 60.0))
 	var poly_t: Array = city.doc["wall_polygon"]
@@ -1020,6 +1024,13 @@ func _test_review_data() -> void:
 			if str(rec["tag"]) == "tower" and bool(rec.get("corner", false)) and _tower_foot(rec).distance_to(w_at) < 400.0:
 				flank += 1
 		check(flank == 2, "water gate %s has two flanking towers (%d)" % [w_at, flank])
+	# Round 12: one tower style: every tower is the v5 tower (ring towers use
+	# its crop; the gatehouses are the v5 horizontal and diagonal art).
+	for g in city.gates():
+		check(str(g["art"]) in ["gatehouse_horizontal_CONCEPTO.png", "gatehouse_diagonal_v5_CONCEPTO.png", "gatehouse_diagonal_v5_mirror_CONCEPTO.png"], "%s gatehouse is v5 art (%s)" % [g["id"], g["art"]])
+	for rec in city.layers():
+		var md := str(rec.get("module", ""))
+		check(not ("diag_v3" in md) and md != "tower_CONCEPTO.png", "layer %d uses no old-style tower art (%s)" % [int(rec["id"]), md])
 	# Round 11: the recoloured stone has the tower body's mean chroma (5%).
 	var chroma: Dictionary = city.doc.get("stone_chroma", {})
 	for want in ["segment_neg", "segment_pos", "segment_flat", "watergate_neg", "watergate_pos"]:

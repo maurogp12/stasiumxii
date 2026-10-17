@@ -50,6 +50,7 @@ Change list: `docs/pc/look_target/crosshaven_city/README.md` on `claude/pc-zones
   - **Water gates.** Each is flanked by v5 towers at its wall joins, slid along the wall onto the banks. A gatehouse tower or corner already standing there counts as one flank.
   - **One stone.** The wall segments and water gates get a LAB colour transfer to the v5 stone (the tower body): lightness mean and spread, a*/b* mean only. Recolour only.
   - **Removed (Mauro).** The SE gate is gone, with its road, exit stub and the spur that led to it (`drop_streets`); the wall runs closed. The NE bridge outside the water gate is gone. That leaves 4 land gates, 2 water gates and 2 bridges.
+- **Round 11-12.** Stone colour statistics come from stone pixels only, with chroma clamped to the v5 tower body (within 5%, tested). The W and E gates use Grok's diagonal gatehouse v5 (73331b97). Its near tower is a v5 tower copy, scaled 1.1824 to the ring towers' size. It is anchored on both tower bases on the wall line (art_slope -0.263; the curtain itself slopes -0.364), so it needs no drop. No old-style tower art is left (tested).
 - **Exits (review 7).** Every gate road runs on to the plate edge and ends in a gate stub (data,
   `gate_stubs`). The links follow the Crossroads road directions:
   - N goes to `crosshaven_road_north` (12,2), toward Northgate (proposed);

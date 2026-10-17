@@ -386,11 +386,13 @@ def assemble(layers, images, walk, river, old_poly, poly, cfg, kit_dir, hero_pla
         la = np.array(lb)
         fa = np.array(ff)
         cut = int(round(split))
+        # round 12: the back half runs 2 px under the front half, so the two
+        # filtered edges do not leave a seam down the passage
         if back_left:
-            la[:, cut:, 3] = 0
+            la[:, cut + 2:, 3] = 0
             fa[:, :cut, 3] = 0
         else:
-            la[:, :cut, 3] = 0
+            la[:, :max(0, cut - 2), 3] = 0
             fa[:, cut:, 3] = 0
         lb, ff = Image.fromarray(la, "RGBA"), Image.fromarray(fa, "RGBA")
         fb = np.nonzero((fa[..., 3] > 40).any(1))[0]
