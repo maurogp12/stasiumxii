@@ -49,3 +49,4 @@ Crosshaven kit groups 3-5: landmarks, workshops, props; CONCEPTO, not built
 Crosshaven kit Group 1 v2: organic ground edges, wall depth, square merlons, painted diagonals; CONCEPTO, not built
 Crosshaven kit nature + extras + Groups 3-5 fixes (signs, anims, fence ends); CONCEPTO, not built
 Crosshaven kit Group 1 v3 walls: 700px gatehouse, 455px arch, recessed parapet, wall variants; CONCEPTO, not built
+Crosshaven kit small v2: hedge end/corner, clean signs, round mill wheel; CONCEPTO, not built

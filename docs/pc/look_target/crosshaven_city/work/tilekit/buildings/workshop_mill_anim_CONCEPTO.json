@@ -11,14 +11,14 @@
  "height_px": 500,
  "width_px": 669,
  "tier": "workshop",
- "note": "full-building frames; the wheel turns 45 deg per cycle (8 spokes, so it loops)",
+ "note": "v2: full-building frames; procedural round wheel in perspective (ellipse projection, 8 spokes, 16 paddles), turns 45 deg per 8-frame loop, no edge clipping",
  "frames": 8,
  "fps": 8,
  "frame_w": 789,
  "frame_h": 560,
  "wheel_center": [
-  645,
-  346
+  652,
+  350
  ],
- "wheel_radius": 108
+ "wheel_radius": 118
 }
