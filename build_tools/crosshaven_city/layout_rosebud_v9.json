@@ -312,7 +312,8 @@
      "link": "crosshaven_crossroads",
      "status": "link",
      "note": "the south road and the existing city_to_crossroads stub"
-    }
+    },
+    "road_in": "stub"
    },
    {
     "id": "W",
@@ -380,14 +381,18 @@
     "body_radius": 214,
     "base_radius": 300,
     "scale_mul": 1.179,
-    "note": "Round 15: Grok's tower v6 (docs/pc-map-handoff d761b9c9, 607x990): iso angle like Mauro's reference, v5 details, flared plinth. For every ring, corner and water-gate tower. base = the plinth ellipse centre (on the wall line or corner point); plinth_front = the ellipse front below it (the tower sorts there, so both run ends hide behind its body); body_radius = shaft half width (428/2), base_radius = plinth half width (605/2). scale_mul 1.179 = the gatehouses' scale (their towers are pixel copies), so every tower is the same size."
+    "note": "Round 15: Grok's tower v6 (docs/pc-map-handoff d761b9c9, 607x990): iso angle like Mauro's reference, v5 details, flared plinth. For every ring, corner and water-gate tower. base = the plinth ellipse centre (on the wall line or corner point); plinth_front = the ellipse front below it (the tower sorts there, so both run ends hide behind its body); body_radius = shaft half width (428/2), base_radius = plinth half width (605/2). scale_mul 1.179 = the gatehouses' scale (their towers are pixel copies), so every tower is the same size.",
+    "foot_ao": {
+     "band_px": 119,
+     "dark": 0.35
+    }
    },
    "segment_neg": {
-    "file": "segment_short_CONCEPTO.png",
+    "file": "segment_short_v7_CONCEPTO.png",
     "art_slope": -0.4268,
     "base_left": [
      300,
-     1222.1
+     1215.4
     ],
     "usable_x": [
      300,
@@ -406,14 +411,19 @@
       -0.3899
      ],
      "face": 627
-    }
+    },
+    "foot_ao": {
+     "band_px": 75,
+     "dark": 0.35
+    },
+    "note": " Round 15: Grok's colour-regraded v7 segment (same coursing and alpha), foot AO."
    },
    "segment_pos": {
-    "file": "segment_short_mirror_CONCEPTO.png",
+    "file": "segment_short_mirror_v7_CONCEPTO.png",
     "art_slope": 0.4265,
     "base_left": [
      240,
-     624.1
+     623.1
     ],
     "usable_x": [
      240,
@@ -432,14 +442,19 @@
       0.3896
      ],
      "face": 627
-    }
+    },
+    "foot_ao": {
+     "band_px": 75,
+     "dark": 0.35
+    },
+    "note": " Round 15: Grok's colour-regraded v7 segment (same coursing and alpha), foot AO."
    },
    "segment_flat": {
-    "file": "segment_horizontal_CONCEPTO.png",
+    "file": "segment_horizontal_v7_CONCEPTO.png",
     "art_slope": -0.002,
     "base_left": [
      100,
-     552.1
+     550.9
     ],
     "usable_x": [
      100,
@@ -459,134 +474,207 @@
      ],
      "face": 545
     },
-    "scale_mul": 1.179
+    "scale_mul": 1.168,
+    "foot_ao": {
+     "band_px": 65,
+     "dark": 0.35
+    },
+    "note": " Round 15: Grok's colour-regraded v7 segment (same coursing and alpha), foot AO."
    },
    "watergate_neg": {
-    "file": "watergate_short_CONCEPTO.png",
-    "art_slope": -0.313,
+    "file": "watergate_diagonal_v6_CONCEPTO.png",
+    "art_slope": -0.442,
+    "scale_mul": 1.0417,
     "wall_left": [
-     0,
-     1116
+     120,
+     905
     ],
     "wall_right": [
-     1355,
-     692
+     1300,
+     383
     ],
     "arch": [
-     700,
-     897
-    ]
+     672,
+     661
+    ],
+    "foot_ao": {
+     "band_px": 70,
+     "dark": 0.35
+    },
+    "note": "Round 15: Grok's water gate v6 (1355x917), iso, a curtain over the river in the gatehouse style. scale_mul 1.0417 (550/528) puts its merlons on the diagonal runs' line. arch = the opening's centre on the foot line; the gate is placed so the arch sits on the channel. Its painted water is trimmed to the river channel (no pool)."
    },
    "watergate_pos": {
-    "file": "watergate_short_mirror_CONCEPTO.png",
-    "art_slope": 0.313,
+    "file": "watergate_diagonal_v6_mirror_CONCEPTO.png",
+    "art_slope": 0.442,
+    "scale_mul": 1.0417,
     "wall_left": [
-     0,
-     692
+     54,
+     383
     ],
     "wall_right": [
-     1355,
-     1116
+     1234,
+     905
     ],
     "arch": [
-     655,
-     897
-    ]
+     682,
+     661
+    ],
+    "foot_ao": {
+     "band_px": 70,
+     "dark": 0.35
+    },
+    "note": "mirror of watergate_neg"
    },
    "gatehouse_neg": {
-    "file": "gatehouse_diagonal_v6_CONCEPTO.png",
-    "art_slope": -0.3063,
+    "file": "gatehouse_diagonal_v7_CONCEPTO.png",
+    "art_slope": -0.399,
     "scale_mul": 1.179,
     "drop_px": 0,
     "wall_left": [
-     300,
-     1008
+     297,
+     1253
     ],
     "wall_right": [
-     1214,
-     728
+     1322,
+     844
     ],
     "arch": [
-     818,
-     849
+     840,
+     1036
     ],
     "split": [
-     818,
+     840,
      0
     ],
     "back_side": "right",
     "arch_open_x": [
-     675,
-     962
+     730,
+     950
     ],
-    "erase_boxes": [
-     [
-      0,
-      0,
-      80,
-      780
+    "curtain_level": {
+     "x": [
+      650,
+      1050
+     ],
+     "exclude": [
+      700,
+      980
+     ],
+     "feet": [
+      [
+       297,
+       1402
+      ],
+      [
+       1322,
+       987
+      ]
      ]
-    ],
-    "note": "Round 15: Grok's diagonal gatehouse v6 (1491x1146): near tower a v6 pixel copy, far tower scaled 0.894 for depth. Anchored on the two towers' plinth centres (art_slope = their line); erase_boxes trims the old side-wall stub behind the near tower."
+    },
+    "foot_ao": {
+     "band_px": 120,
+     "dark": 0.35
+    },
+    "note": "Round 15: Grok's diagonal gatehouse v7 (1632x1420), iso, towers are tower_v6 copies (far one 0.9 for depth). Anchored on the two plinth centres (art_slope = their line, -0.399; the curtain itself -0.3615). curtain_level puts the curtain foot on the line through the plinth bottoms."
    },
    "gatehouse_pos": {
-    "file": "gatehouse_diagonal_v6_mirror_CONCEPTO.png",
-    "art_slope": 0.3063,
+    "file": "gatehouse_diagonal_v7_mirror_CONCEPTO.png",
+    "art_slope": 0.399,
     "scale_mul": 1.179,
     "drop_px": 0,
     "wall_left": [
-     277,
-     728
+     309,
+     844
     ],
     "wall_right": [
-     1191,
-     1008
+     1334,
+     1253
     ],
     "arch": [
-     673,
-     849
+     791,
+     1036
     ],
     "split": [
-     673,
+     791,
      0
     ],
     "back_side": "left",
     "arch_open_x": [
-     529,
-     816
+     681,
+     901
     ],
-    "erase_boxes": [
-     [
-      1411,
-      0,
-      1491,
-      780
+    "curtain_level": {
+     "x": [
+      581,
+      981
+     ],
+     "exclude": [
+      651,
+      931
+     ],
+     "feet": [
+      [
+       309,
+       987
+      ],
+      [
+       1334,
+       1402
+      ]
      ]
-    ],
+    },
+    "foot_ao": {
+     "band_px": 120,
+     "dark": 0.35
+    },
     "note": "mirror of gatehouse_neg"
    },
    "gatehouse_flat": {
-    "file": "gatehouse_horizontal_v6_CONCEPTO.png",
+    "file": "gatehouse_horizontal_v7_CONCEPTO.png",
     "art_slope": 0.0,
     "scale_mul": 1.179,
     "drop_px": 0,
     "arch": [
-     909,
-     900
+     1179,
+     852
     ],
     "wall_left": [
      297,
-     900
+     852
     ],
     "wall_right": [
-     1521,
-     900
+     2138,
+     852
     ],
     "arch_open_x": [
-     771,
-     1100
+     1000,
+     1358
     ],
-    "note": "Round 15: Grok's horizontal gatehouse v6 (1831x1035), curtain plus two v6 towers. The wall line runs through the towers' plinth centres (y 900), like the ring towers; no shear, no drop."
+    "curtain_level": {
+     "x": [
+      620,
+      1830
+     ],
+     "exclude": [
+      990,
+      1370
+     ],
+     "feet": [
+      [
+       297,
+       987
+      ],
+      [
+       2138,
+       987
+      ]
+     ]
+    },
+    "foot_ao": {
+     "band_px": 120,
+     "dark": 0.35
+    },
+    "note": "Round 15: Grok's horizontal gatehouse v7 (2448x1050), iso, towers are tower_v6 copies (990 px, same scale as the ring towers). The wall line runs through the plinth centres (y 852; both plinth bottoms at 987, so the towers already stand level). curtain_level lifts the curtain columns (between the plinths) so its foot (13 px low at the left, 46 px at the right) sits on the plinth-bottom line: the towers no longer float above the curtain and road."
    }
   },
   "face_note": "face_px (segments): front merlon top to foot, native px. Gatehouses with face_px and curtain_foot are fitted to the run's face; the kit3 gatehouses instead carry a parapet-matched art_slope and drop_px from the coordinator's metrics (gatehouse_v3_metrics.json).",
@@ -613,7 +701,7 @@
   "snap_corner_tower_widths": 1.5,
   "gate_tower_width_art": 433,
   "snap_note": "Round 8: a gatehouse whose outer flanking tower stands within 1.5 tower widths of a ring corner slides along its edge so that tower stands on the corner (no doubled tower, no gap); the neighbour run ends under it.",
-  "foot_calibration_note": "Round 8: base_left set so each module's drawn foot (fitted foot envelope over the last 160 px of a run) lies on the wall line: diagonal feet sat 1.0-2.4 plate px above it, the flat foot 0.4 below.",
+  "foot_calibration_note": "Rounds 8 and 15: base_left set so each module's drawn foot (fitted over the last 320 px of each run, the tile phase continuous along the edge) lies on the wall line; re-measured for the v7 segments.",
   "flat_scale_note": "Round 9: the flat N/S segment and the horizontal gatehouse are scaled uniformly by 1.179 (blocks keep their proportions) so the flat merlon line meets the diagonals' at the NE/SE corner towers. Measured in game: flat merlon tips 190.0 plate px above the foot, diagonals 222.9 (NE) and 225.2 (SE); 224/190 = 1.179 puts both corners within 2 px (627/545 = 1.15 from the art faces left 4-6 px).",
   "gates_note": "Round 10 (Mauro): the SE gate is removed; the SE wall runs closed. Land gates N, S, W, E plus the 2 water gates.",
   "tower_place": {
@@ -632,14 +720,8 @@
     510,
     700
    ],
-   "targets": [
-    "segment_neg",
-    "segment_pos",
-    "segment_flat",
-    "watergate_neg",
-    "watergate_pos"
-   ],
-   "note": "LAB colour transfer of the wall segments and water gates to the tower v6 stone (its shaft): lightness mean and spread (clamped 0.85-1.15), a*/b* mean, chroma clamped to the reference's (hue kept), statistics from stone pixels only, warm pixels only. Recolour only."
+   "targets": [],
+   "note": "LAB colour transfer of the wall segments and water gates to the tower v6 stone (its shaft): lightness mean and spread (clamped 0.85-1.15), a*/b* mean, chroma clamped to the reference's (hue kept), statistics from stone pixels only, warm pixels only. Recolour only. Round 15: off; Grok's v7 segments and v6 water gates are regraded at source."
   },
   "tower_spacing_wall_heights": [
    1.8,
@@ -649,15 +731,57 @@
   "tower_spacing_preferred": 2.5,
   "contact_shadows": {
    "wall_strip_px": 20,
-   "wall_opacity": 0.32,
-   "tower_scale": 1.2,
-   "tower_opacity": 0.34,
-   "feather_px": 5.0,
-   "note": "Round 13: soft contact shadows baked into the ground: an iso ellipse (1.2 x the base radius, centred 0.3 radius in front of the base) under every tower and gatehouse tower, and a 20 px strip along every wall foot, feathered 5 px, about 30% opacity; not across gate passages or the river.",
-   "tower_forward": 0.3
+   "wall_opacity": 0.45,
+   "tower_scale": 0.97,
+   "tower_opacity": 0.45,
+   "feather_px": 4.0,
+   "note": "Round 15: grounding. Wall feet: a feathered shadow on both sides, 45% at the foot, 40 px on the shadow side (away from the upper-left light of the painted art) and 15 px on the lit side. Towers and gatehouse towers: a tight shadow centred on the plinth (0.97 x the plinth radius), shifted only 6% toward the shadow side. Not across passages or the river.",
+   "tower_forward": 0.3,
+   "wall_shadow_px": 40,
+   "wall_lit_px": 15,
+   "tower_shadow_shift": 0.06
   },
   "tower_kinds_note": "Round 14 (ready for tower v6): ring towers take modules.tower; a kind can name its own sprite with modules.tower_wall, modules.tower_corner or modules.tower_water_gate (file, base anchor, scale_mul), falling back to modules.tower. Gatehouses are modules.gatehouse_flat / gatehouse_neg / gatehouse_pos (file, anchors: wall_left, wall_right, arch, split, arch_open_x, drop_px, art_slope, scale_mul). Swapping in v6 is a data change plus re-measured anchors.",
-  "gate_flank_towers": false
+  "gate_flank_towers": false,
+  "tower_rule": {
+   "mode": "midpoint",
+   "min_stretch_wall_heights": 8.5,
+   "note": "Round 15 (Mauro: fewer towers): fixed towers are the gatehouse towers, the water-gate flanks and the corners no gatehouse or water-gate tower closes. A mid-wall tower only on a stretch between fixed towers longer than 8.5 wall heights, at its midpoint (6 wall heights gives 16 towers; 8.5 gives 14, the 12-14 target)."
+  },
+  "foot_decals": {
+   "seed": 17,
+   "step_px": 34,
+   "chance": 0.75,
+   "sprites": {
+    "tuft": [
+     "grass_tuft_a",
+     "grass_tuft_b",
+     "grass_tuft_tall_a",
+     "polish_tuft_a",
+     "polish_tuft_b",
+     "polish_tuft_c"
+    ],
+    "pebble": [
+     "decal_pebbles",
+     "decal_moss"
+    ],
+    "dirt": [
+     "decal_dirt_blend",
+     "ground_patch_dirt_dark_a",
+     "ground_patch_dirt_light_a"
+    ]
+   },
+   "mix": {
+    "tuft": 0.6,
+    "pebble": 0.25,
+    "dirt": 0.15
+   },
+   "scale": [
+    0.9,
+    1.1
+   ],
+   "note": "Round 15: grass tufts, pebbles and dirt patches (existing world ground art) scattered over the visible foot line of every wall run and round the front of every plinth, drawn over the wall bottom so grass grows over the base; dirt patches lie on the ground. Not on passages, roads or the river."
+  }
  },
  "greenery": {
   "note": "Approved map-base greenery (docs/pc-map-handoff 5edc29a3 docs/pc/look_target/crosshaven_city/work/green; pass --green <dir>). Painted at hero = 156 px, bottom-centre anchored.",
@@ -818,6 +942,43 @@
     ]
    ],
    "note": "Round 10 (Mauro): the spur from the S plaza toward the removed SE gate dead-ended at the wall; it goes back to grass."
+  },
+  {
+   "id": "s_plaza_to_old_bridge",
+   "polygon": [
+    [
+     2170,
+     1850
+    ],
+    [
+     2540,
+     1850
+    ],
+    [
+     2540,
+     2135
+    ],
+    [
+     2170,
+     2135
+    ]
+   ],
+   "note": "Round 15: the S plaza's tongue ran to the old bridge landing at the river; it goes back to grass (the plaza now leads to the moved bridge)."
+  }
+ ],
+ "move_bridges": {
+  "bridge_2": 10,
+  "bridge_0": 10
+ },
+ "move_bridges_note": "Round 15 (Mauro): the inner bridge behind the S gate landed on the gatehouse's right tower; both inner bridges slide 8 cells upstream (whole cells keep the decks on the lattice), so the S gate opens onto a small plaza and a short street to the bridge.",
+ "bridge_links": [
+  {
+   "bridge": "bridge_2",
+   "side": "se",
+   "from_gate": "S",
+   "width": 68,
+   "plazas": [],
+   "note": "Round 15: the S gate opens onto a small plaza (its road mouth) and a short street to the moved bridge's south stair."
   }
  ]
 }

@@ -70,8 +70,13 @@ class Module:
             ar = np.array(im)
             ar[int(by0):int(by1), int(bx0):int(bx1), 3] = 0
             im = Image.fromarray(ar, "RGBA")
+        self.feet_level_px = None
+        if "curtain_level" in spec:
+            im, self.feet_level_px = curtain_level(im, spec["curtain_level"])
         if "taper" in spec:
             im = taper(im, spec["taper"])
+        if "foot_ao" in spec:
+            im = foot_ao(im, spec["foot_ao"])
         if "recolor" in spec:
             im = lab_transfer(im, spec["recolor"], kit_dir)
         self.k = scale * float(spec.get("scale_mul", 1.0))
@@ -146,6 +151,68 @@ def lab_transfer(im, rc, kit_dir):
                                        "ref_chroma": round(rc_chroma, 2),
                                        "L": round(float(chk[:, 0].mean()), 2), "ref_L": round(float(rm[0]), 2)}
     return Image.fromarray((res * 255.0 + 0.5).astype(np.uint8), "RGBA")
+
+
+def curtain_level(im, c):
+    """Round 15: lift the curtain columns (between a gatehouse's plinths) so
+    the curtain's foot sits on the line through the two plinth bottoms (the
+    towers stood above the curtain and road). Column shifts only. Returns the
+    image and the largest remaining offset (art px)."""
+    a = np.array(im)
+    al = a[..., 3] > 128
+    x0, x1 = [int(v) for v in c["x"]]
+    e0, e1 = [int(v) for v in c.get("exclude", [0, 0])]
+    (fx0, fy0), (fx1, fy1) = c["feet"]
+    line = lambda x: fy0 + (fy1 - fy0) * (x - fx0) / float(fx1 - fx0)
+    xs, bs = [], []
+    for x in range(x0, x1):
+        if e0 <= x < e1:
+            continue
+        r = np.nonzero(al[:, x])[0]
+        if len(r):
+            xs.append(x)
+            bs.append(r.max())
+    if len(xs) < 4:
+        return im, None
+    fit = np.polyfit(xs, bs, 1)
+    out = a.copy()
+    H = a.shape[0]
+    for x in range(x0, x1):
+        d = int(round(np.polyval(fit, x) - line(x)))
+        if d > 0:
+            out[:H - d, x] = a[d:, x]
+            out[H - d:, x, 3] = 0
+        elif d < 0:
+            out[-d:, x] = a[:H + d, x]
+            out[:-d, x, 3] = 0
+    al2 = out[..., 3] > 128
+    res = []
+    for x in xs:
+        r = np.nonzero(al2[:, x])[0]
+        if len(r):
+            res.append(r.max() - line(x))
+    resid = float(np.polyval(np.polyfit(xs, res, 1), [x0, x1]).__abs__().max()) if res else None
+    return Image.fromarray(out, "RGBA"), resid
+
+
+def foot_ao(im, c):
+    """Round 15: darken the bottom of every column (the foot of a wall face or
+    a plinth) by up to c["dark"], fading to 0 over c["band_px"] (native px)."""
+    a = np.array(im).astype(np.float32)
+    al = a[..., 3] > 40
+    H, W = al.shape
+    band = float(c["band_px"])
+    dark = float(c.get("dark", 0.35))
+    rows = np.arange(H, dtype=np.float32)
+    for x in range(W):
+        r = np.nonzero(al[:, x])[0]
+        if not len(r):
+            continue
+        foot = float(r.max())
+        t = np.clip((rows - (foot - band)) / band, 0.0, 1.0)
+        k = 1.0 - dark * t * t
+        a[:, x, :3] *= k[:, None]
+    return Image.fromarray(np.clip(a, 0, 255).astype(np.uint8), "RGBA")
 
 
 def taper(im, t):
@@ -231,7 +298,7 @@ def _feat_ref(f, at, i):
     return {"kind": f["kind"], "at": [round(p[0], 1), round(p[1], 1)]}
 
 
-def _measure_end(strips, end, a, b, span=220):
+def _measure_end(strips, end, a, b, span=320):
     """Foot and merlon-tip lines at a run end (plate px, relative to the edge
     line): the drawn strips' foot (topmost bottom, between buttresses) and
     merlon tips over the last `span` px of the run, each fitted with a line
@@ -391,7 +458,7 @@ def assemble(layers, images, walk, river, old_poly, poly, cfg, kit_dir, hero_pla
                               "wall_join_left": [round(WL[0], 1), round(WL[1], 1)], "wall_join_right": [round(WR[0], 1), round(WR[1], 1)],
                               "u": u, "v": v, "half_span": half, "passage": [[round(p_[0], 1), round(p_[1], 1)] for p_ in passage],
                               "passage_half_width_px": round(hw, 1), "art": m.file, "wall_slope": round(sl, 3),
-                              "art_height_px": round(m.im.height, 1), "art_width_px": round(m.im.width, 1), "scale_mul": float(m.spec.get("scale_mul", 1.0)), "shear": round(sl - m.slope, 3),
+                              "art_height_px": round(m.im.height, 1), "art_width_px": round(m.im.width, 1), "feet_level_art_px": None if m.feet_level_px is None else round(m.feet_level_px, 1), "scale_mul": float(m.spec.get("scale_mul", 1.0)), "shear": round(sl - m.slope, 3),
                               "face_fit": round(fit, 3), "art_drop_px": round(drop, 1), "arch_open_px": round(arch_open, 1)})
             continue
         # split: the back side (behind a hero in the arch) and the front
@@ -427,7 +494,7 @@ def assemble(layers, images, walk, river, old_poly, poly, cfg, kit_dir, hero_pla
                           "wall_join_left": [round(WL[0], 1), round(WL[1], 1)], "wall_join_right": [round(WR[0], 1), round(WR[1], 1)],
                           "u": u, "v": v, "half_span": half, "passage": [[round(p_[0], 1), round(p_[1], 1)] for p_ in passage],
                           "passage_half_width_px": round(hw, 1), "art": m.file, "wall_slope": round(sl, 3),
-                          "art_height_px": round(m.im.height, 1), "art_width_px": round(m.im.width, 1), "scale_mul": float(m.spec.get("scale_mul", 1.0)), "shear": round(sl - m.slope, 3),
+                          "art_height_px": round(m.im.height, 1), "art_width_px": round(m.im.width, 1), "feet_level_art_px": None if m.feet_level_px is None else round(m.feet_level_px, 1), "scale_mul": float(m.spec.get("scale_mul", 1.0)), "shear": round(sl - m.slope, 3),
                           "face_fit": round(fit, 3),
                           "art_drop_px": round(drop, 1), "arch_open_px": round(arch_open, 1)})
     # ---- water gates where the river crosses
@@ -450,9 +517,42 @@ def assemble(layers, images, walk, river, old_poly, poly, cfg, kit_dir, hero_pla
         wl, wr = mp(m.p("wall_left")), mp(m.p("wall_right"))
         x0, y0 = q[0] - arch[0], q[1] - arch[1]
         half = math.dist(wl, wr) / 2.0
+        # round 15: the painted water keeps only to the river channel (no pool)
+        from skimage import color as _color
+        ar = np.array(im)
+        labw = _color.rgb2lab(ar[..., :3] / 255.0)
+        cool = (ar[..., 3] > 0) & (labw[..., 2] < 6.0)
+        hh_, ww_ = cool.shape
+        rd = ndi.binary_dilation(river, iterations=4)
+        yy_, xx_ = np.nonzero(cool)
+        px_ = (xx_ + int(round(x0))).clip(0, W_ - 1)
+        py_ = (yy_ + int(round(y0))).clip(0, H_ - 1)
+        off = ~rd[py_, px_]
+        ar[yy_[off], xx_[off], 3] = 0
+        im = Image.fromarray(ar, "RGBA")
         wrec = add(im, x0, y0, q[1] + 6.0, "watergate", {"module": m.file})
         feats[i].append({"kind": "water", "s": s, "half": half, "rec": wrec})
-        waters.append({"edge": i, "at": [round(q[0], 1), round(q[1], 1)], "art": m.file, "art_width_px": round(m.im.width, 1)})
+        # the channel's centreline either side of the wall vs the arch centre
+        u_n = iso_normal(a, b, (cx - q[0], cy - q[1]))
+        vv = ((b[0] - a[0]) / math.dist(a, b), (b[1] - a[1]) / math.dist(a, b))
+        cents = []
+        for dn in (-70.0, 70.0):
+            pts_ = []
+            for t_ in np.arange(-300.0, 300.0, 1.0):
+                px = q[0] + u_n[0] * dn + vv[0] * t_
+                py = q[1] + u_n[1] * dn + vv[1] * t_
+                if 0 <= int(py) < H_ and 0 <= int(px) < W_ and river[int(py), int(px)]:
+                    pts_.append((px, py))
+            if pts_:
+                cents.append((sum(p_[0] for p_ in pts_) / len(pts_), sum(p_[1] for p_ in pts_) / len(pts_)))
+        ch_off = None
+        if len(cents) == 2:
+            (ax_, ay_), (bx_, by_) = cents
+            ln_ = math.hypot(bx_ - ax_, by_ - ay_)
+            ch_off = abs((bx_ - ax_) * (ay_ - q[1]) - (by_ - ay_) * (ax_ - q[0])) / max(ln_, 1e-6)
+        waters.append({"edge": i, "at": [round(q[0], 1), round(q[1], 1)], "art": m.file, "art_width_px": round(m.im.width, 1),
+                       "channel_offset_px": None if ch_off is None else round(ch_off, 1),
+                       "channel_centres": [[round(c_[0], 1), round(c_[1], 1)] for c_ in cents]})
     # ---- towers (round 10, the GOAL): an even rhythm on every side. Fixed
     # anchors are the corners, the gatehouses' own towers and the water
     # gates' flanking towers; each stretch between anchors is divided evenly
@@ -547,7 +647,7 @@ def assemble(layers, images, walk, river, old_poly, poly, cfg, kit_dir, hero_pla
 
     # round 13: a water-gate tower may slide outward (its block end staying
     # inside the tower's footprint) so the side's rhythm comes out even
-    for i in range(ne):
+    for i in (range(ne) if (cfg.get("tower_rule") or {}).get("mode") != "midpoint" else []):
         movable = [(f, k) for f in feats[i] if f["kind"] == "water" and f.get("towers_s")
                    for k in range(2) if any(abs(w[1] - f["towers_s"][k]) < 0.01 and w[0] == i for w in water_towers)]
         if not movable:
@@ -582,7 +682,24 @@ def assemble(layers, images, walk, river, old_poly, poly, cfg, kit_dir, hero_pla
                 water_towers[:] = [(w[0], st) if (w[0] == i and abs(w[1] - old) < 0.01) else w for w in water_towers]
             anchors[i] = anc
             no_tower[i] = nt
-    for i in range(ne):
+    rule = cfg.get("tower_rule", {})
+    if rule.get("mode") == "midpoint":
+        min_len = float(rule.get("min_stretch_wall_heights", 6.0)) * wall_h
+        for i in range(ne):
+            L = math.dist(*edges[i])
+            xs = sorted(set([round(x, 3) for x in anchors[i]] + [0.0, L]))
+            ints = []
+            for x0_, x1_ in zip(xs, xs[1:]):
+                mid = (x0_ + x1_) / 2.0
+                if any(lo_ < mid < hi_ for lo_, hi_ in no_tower[i]) or x1_ - x0_ <= 1.0:
+                    continue
+                n_ = 2 if (x1_ - x0_) > min_len else 1
+                if n_ == 2:
+                    placed[i].append(mid)
+                ints.append([round(x0_, 1), round(x1_, 1), n_])
+            spacing_log.append({"edge": i, "rule": "midpoint", "min_len": round(min_len, 1), "intervals": ints,
+                                "gaps": [round((b_ - a_) / n_, 1) for a_, b_, n_ in ints]})
+    for i in (range(ne) if rule.get("mode") != "midpoint" else []):
         best = even_split(i, anchors[i], no_tower[i])
         if best is None:
             spacing_log.append({"edge": i, "gaps": []})
@@ -704,12 +821,19 @@ def assemble(layers, images, walk, river, old_poly, poly, cfg, kit_dir, hero_pla
             runs.append(run_rec)
             xa, xb = min(pa[0], pb[0]), max(pa[0], pb[0])
             x = xa
+            ex0 = min(a[0], b[0])
             while x < xb - 1:
-                w = min(u1 - u0, xb - x)
-                # window [u0, u0 + w] of the sheared image; its base line at column c:
+                # round 15: the tile phase follows the position along the edge,
+                # so the runs either side of a tower continue one coursing
+                tile = u1 - u0
+                ph = (x - ex0) % tile
+                if tile - ph < 8:
+                    ph = 0.0
+                w = min(tile - ph, xb - x)
+                # window [u0 + ph, u0 + ph + w] of the sheared image; its base line at column c:
                 # y = base0.y + sl * (c - base0.x)
-                c0 = int(round(u0))
-                c1 = int(round(u0 + w))
+                c0 = int(round(u0 + ph))
+                c1 = int(round(u0 + ph + w))
                 ox = x - c0
                 oy = line_y(a, b, x) - (base0[1] + sl * (c0 - base0[0]))
                 cuts = []

@@ -895,31 +895,124 @@ def outer_forest(layers, images, walk, streets, river, wall_poly, green, cfg, ga
 
 
 def contact_shadows(ground_np, layers, gates, poly, river, base_r, cfg):
-    """Round 13: soft contact shadows baked into the ground: an iso ellipse
-    under every tower (ring, corner, water gate, gatehouse towers) and a thin
-    feathered strip along every wall foot (not across the gate passages or
-    the river)."""
+    """Rounds 13 and 15: contact shadows baked into the ground. Wall feet: a
+    feathered band on both sides of the wall line, darkest at the foot, wider
+    on the shadow side (away from the painted art's upper-left light). Towers
+    and gatehouse towers: a tight shadow centred on the plinth, shifted only a
+    little toward the shadow side."""
     from scipy.ndimage import gaussian_filter
-    sh = np.zeros(ground_np.shape[:2], np.float32)
-    img = Image.new("L", (PLATE_W, PLATE_H), 0)
-    d = ImageDraw.Draw(img)
-    strip = int(cfg.get("wall_strip_px", 14))
-    d.line([tuple(p) for p in poly] + [tuple(poly[0])], fill=int(255 * float(cfg.get("wall_opacity", 0.28))), width=strip)
+    H_, W_ = ground_np.shape[:2]
+    sh = np.zeros((H_, W_), np.float32)
+    w_sh = float(cfg.get("wall_shadow_px", 40))
+    w_lit = float(cfg.get("wall_lit_px", 15))
+    op = float(cfg.get("wall_opacity", 0.45))
+    light = (1.0 / math.sqrt(2.0), 1.0 / math.sqrt(2.0))
+    for i in range(len(poly)):
+        a, b = poly[i], poly[(i + 1) % len(poly)]
+        L = math.dist(a, b)
+        vx, vy = (b[0] - a[0]) / L, (b[1] - a[1]) / L
+        nx, ny = -vy, vx
+        if nx * light[0] + ny * light[1] < 0:
+            nx, ny = -nx, -ny
+        x0, x1 = int(min(a[0], b[0]) - w_sh - 2), int(max(a[0], b[0]) + w_sh + 2)
+        y0, y1 = int(min(a[1], b[1]) - w_sh - 2), int(max(a[1], b[1]) + w_sh + 2)
+        x0, y0 = max(0, x0), max(0, y0)
+        x1, y1 = min(W_, x1), min(H_, y1)
+        yy, xx = np.mgrid[y0:y1, x0:x1].astype(np.float32)
+        t = (xx - a[0]) * vx + (yy - a[1]) * vy
+        dn = (xx - a[0]) * nx + (yy - a[1]) * ny
+        inside = (t >= 0) & (t <= L)
+        f = np.where(dn >= 0, np.clip(1.0 - dn / w_sh, 0, 1), np.clip(1.0 + dn / w_lit, 0, 1)) ** 1.6
+        f = f * inside * op
+        sh[y0:y1, x0:x1] = np.maximum(sh[y0:y1, x0:x1], f)
     feet = [l["wall_point"] for l in layers if l["tag"] == "tower" and l.get("wall_point")]
     for g in gates:
         feet += [g["wall_join_left"], g["wall_join_right"]]
-    rx = base_r * float(cfg.get("tower_scale", 1.2))
+    img = Image.new("L", (W_, H_), 0)
+    d = ImageDraw.Draw(img)
+    rx = base_r * float(cfg.get("tower_scale", 0.97))
+    shift = float(cfg.get("tower_shadow_shift", 0.06)) * base_r
     for x, y in feet:
-        # in front of the base, so the visible half lies on the grass
-        cy_ = y + rx * float(cfg.get("tower_forward", 0.3))
-        d.ellipse([x - rx, cy_ - rx * 0.5, x + rx, cy_ + rx * 0.5], fill=int(255 * float(cfg.get("tower_opacity", 0.32))))
-    sh = np.asarray(img).astype(np.float32) / 255.0
+        cx, cy = x + shift * light[0], y + shift * light[1] * 0.5
+        d.ellipse([cx - rx, cy - rx * 0.5, cx + rx, cy + rx * 0.5], fill=int(255 * float(cfg.get("tower_opacity", 0.45))))
+    sh = np.maximum(sh, np.asarray(img).astype(np.float32) / 255.0)
     for g in gates:
         sh[CG.poly_mask(g["passage"])] = 0.0
-    sh = gaussian_filter(sh, float(cfg.get("feather_px", 6.0)))
+    sh = gaussian_filter(sh, float(cfg.get("feather_px", 4.0)))
     sh[ndi_dilate(river, 2)] = 0.0
     ground_np[...] = np.clip(ground_np.astype(np.float32) * (1.0 - sh[..., None]), 0, 255).astype(np.uint8)
     return float(sh.max())
+
+
+def foot_decals(layers, images, gates, poly, river, streets, base_r, cfg, art_root):
+    """Round 15: grass tufts, pebbles and dirt patches over the visible foot
+    of every wall run and round the front of every plinth (existing world
+    ground art), so the grass grows over the base."""
+    import random
+    rng = random.Random(int(cfg.get("seed", 17)))
+    sprites = cfg["sprites"]
+    imgs = {}
+    for kind, names in sprites.items():
+        for n in names:
+            imgs[n] = Image.open(os.path.join(art_root, n + ".png")).convert("RGBA")
+    kinds = list(cfg["mix"].keys())
+    weights = [float(cfg["mix"][k]) for k in kinds]
+    pas = np.zeros(river.shape, bool)
+    for g in gates:
+        pas |= CG.poly_mask(g["passage"])
+    pas = ndi_dilate(pas, 20)
+    blocked = pas | ndi_dilate(river, 6) | streets
+    nid = 12000
+    out = []
+    plinth_pts = [l["wall_point"] for l in layers if l["tag"] == "tower" and l.get("wall_point")]
+    plinth_pts += [g[k] for g in gates for k in ("wall_join_left", "wall_join_right")]
+    tower_sort = {}
+    for l in layers:
+        if l["tag"] == "tower" and l.get("wall_point"):
+            tower_sort[tuple(l["wall_point"])] = float(l["sort_y"])
+    spots = []
+    step = float(cfg.get("step_px", 34))
+    for i in range(len(poly)):
+        a, b = poly[i], poly[(i + 1) % len(poly)]
+        L = math.dist(a, b)
+        vx, vy = (b[0] - a[0]) / L, (b[1] - a[1]) / L
+        nx, ny = -vy, vx
+        if ny < 0:
+            nx, ny = -nx, -ny     # the visible (lower) side of the wall
+        t = step * 0.5
+        while t < L:
+            if rng.random() < float(cfg.get("chance", 0.75)):
+                off = rng.uniform(2.0, 14.0)
+                x = a[0] + vx * t + nx * off + rng.uniform(-6, 6)
+                y = a[1] + vy * t + ny * off
+                if not any(math.hypot(x - p[0], (y - p[1]) * 2.0) < base_r * 0.95 for p in plinth_pts):
+                    spots.append((x, y, y + 34.0))
+            t += step * rng.uniform(0.7, 1.3)
+    for p in plinth_pts:
+        ts = tower_sort.get(tuple(p), p[1] + base_r * 0.5 + 2.0)
+        for k in range(9):
+            ang = math.pi * (0.08 + 0.84 * k / 8.0) + rng.uniform(-0.08, 0.08)
+            r = base_r * rng.uniform(0.95, 1.08)
+            x, y = p[0] + math.cos(ang) * r, p[1] + math.sin(ang) * r * 0.5
+            if rng.random() < 0.8:
+                spots.append((x, y, max(ts + 1.0, y + 2.0)))
+    for x, y, sy in spots:
+        ix, iy = int(x), int(y)
+        if not (0 <= ix < river.shape[1] and 0 <= iy < river.shape[0]) or blocked[iy, ix]:
+            continue
+        kind = rng.choices(kinds, weights)[0]
+        name = rng.choice(sprites[kind])
+        im = imgs[name]
+        sc = rng.uniform(*[float(v) for v in cfg.get("scale", [0.8, 1.15])])
+        rec = {"id": nid, "file": "decals/%s.png" % name, "art_file": "decals/%s.png" % name, "tag": "decal",
+               "x": int(round(x - im.width * sc / 2.0)), "y": int(round(y - im.height * sc * (0.5 if kind == "dirt" else 0.85))),
+               "sort_y": round(sy, 1), "under_everything": kind == "dirt", "fade": False,
+               "k": round(sc, 3), "flip": rng.random() < 0.5, "spot": "foot_decal", "plant": name}
+        images[nid] = im
+        layers.append(rec)
+        out.append(rec)
+        nid += 1
+    return out
 
 
 def join_audit(layers, images, gates, water_axes, base_r, poly, river_mask):
@@ -1019,6 +1112,71 @@ def join_audit(layers, images, gates, water_axes, base_r, poly, river_mask):
     return out, below
 
 
+def move_bridges(zones, layers, images, heights, walk, river, moves, sc, water_alpha=None):
+    """Round 15: slide bridges along the river by whole cells (one cell along
+    the river = (32, -16) world px / plate scale), so the deck stays on the
+    cell lattice. Moves the sprite, the record, the height stamp and the deck
+    walk pixels; the old crossing goes back to plain water and bank."""
+    done = []
+    for b in zones["bridges"]:
+        n = int(moves.get(b["id"], 0))
+        if not n:
+            continue
+        dx, dy = 32.0 * n / sc, -16.0 * n / sc
+        idx, idy = int(round(dx)), int(round(dy))
+
+        def sh(p):
+            return [p[0] + dx, p[1] + dy]
+        x0b, y0b, x1b, y1b = b["sprite_bbox"]
+        for l in layers:
+            if l["tag"] == "bridge" and abs(l["x"] - x0b) < 30 and abs(l["y"] - y0b) < 30:
+                l["x"] += idx
+                l["y"] += idy
+                if l.get("sort_y") is not None:
+                    l["sort_y"] = float(l["sort_y"]) + idy
+        pad = 40
+        ys0, ys1 = max(0, y0b - pad), min(heights.shape[0], y1b + pad)
+        xs0, xs1 = max(0, x0b - pad), min(heights.shape[1], x1b + pad)
+        hsub = heights[ys0:ys1, xs0:xs1].copy()
+        deck = hsub > 0
+        wsub = walk[ys0:ys1, xs0:xs1] & deck
+        heights[ys0:ys1, xs0:xs1][deck] = 0
+        walk[ys0:ys1, xs0:xs1] &= ~(deck & river[ys0:ys1, xs0:xs1])
+        ty0, tx0 = ys0 + idy, xs0 + idx
+        tgt = heights[ty0:ty0 + hsub.shape[0], tx0:tx0 + hsub.shape[1]]
+        tgt[deck] = hsub[deck]
+        walk[ty0:ty0 + hsub.shape[0], tx0:tx0 + hsub.shape[1]] |= wsub
+        for e in b["entries"]:
+            e["at"] = sh(e["at"])
+            e["approach"] = sh(e["approach"])
+        b["centreline"] = [sh(p) for p in b["centreline"]]
+        for st in b["stairs"]:
+            st["polygon"] = [sh(p) for p in st["polygon"]]
+            for k in ("top", "bottom"):
+                if k in st:
+                    st[k] = sh(st[k])
+        b["deck"]["polyline"] = [sh(p) for p in b["deck"]["polyline"]]
+        b["sprite_bbox"] = [x0b + idx, y0b + idy, x1b + idx, y1b + idy]
+        b["moved_cells"] = n
+        b["old_ends"] = [[e["at"][0] - dx, e["at"][1] - dy] for e in b["entries"]]
+        b["old_stairs"] = [[[p[0] - dx, p[1] - dy] for p in st["polygon"]] for st in b["stairs"]]
+        b["old_bbox"] = [x0b, y0b, x1b, y1b]
+        # the river under the old deck is water again (the Rosebud river mask
+        # left the deck out; the painted water base runs on under it)
+        if water_alpha is not None:
+            from scipy.ndimage import binary_closing
+            pad_ = 60
+            yA, yB = max(0, y0b - pad_), min(river.shape[0], y1b + pad_)
+            xA, xB = max(0, x0b - pad_), min(river.shape[1], x1b + pad_)
+            sub_ = river[yA:yB, xA:xB] | water_alpha[yA:yB, xA:xB]
+            # the channel runs on through the old crossing (deck gap and ford)
+            sub_ = binary_closing(sub_, structure=np.ones((3, 3), bool), iterations=40)
+            river[yA:yB, xA:xB] |= sub_
+            walk[yA:yB, xA:xB] &= ~sub_
+        done.append((b["id"], n, idx, idy))
+    return done
+
+
 def build_water(rb, river, art_dir):
     """Animated river (Mauro item 9): the Rosebud water package as shader inputs.
 
@@ -1056,7 +1214,7 @@ def build_water(rb, river, art_dir):
     }
 
 
-def retexture_ground(ground_np, river, cfg, tex_dir, drop=None, outside=None):
+def retexture_ground(ground_np, river, cfg, tex_dir, drop=None, outside=None, regrass=None):
     """Item 5/17: the new grass and cobble (top-down tiles) projected onto the
     plate's 2:1 ground. Ground coords per plate px: u = x/2 + y, v = y - x/2
     (a 64x32 cell is 32 x 32 units); a texture px covers 1/k units. Streets
@@ -1118,6 +1276,9 @@ def retexture_ground(ground_np, river, cfg, tex_dir, drop=None, outside=None):
     g = ground_np.astype(np.int16)
     sat = g.max(2) - g.min(2)
     bank = binary_dilation(river, iterations=int(cfg.get("bank_px", 22)))
+    if regrass is not None:
+        # round 15: a moved bridge's old abutments go back to grass
+        bank &= ~(regrass & ~river)
     street = (sat < 28) & (g.max(2) > 90) & ~bank
     street = binary_opening(binary_closing(street, iterations=3), iterations=2)
     if drop is not None:
@@ -1229,6 +1390,9 @@ def apply_ring_kit(layers, images, ground_np, walk, river, old_poly):
             if 1.0 < n_ < 3000:
                 tgt = (tgt[0] + dx_ / n_ * 45.0, tgt[1] + dy_ / n_ * 45.0)
             pts = [q, end, tgt]
+            if sign > 0 and g.get("road_in") == "stub":
+                # round 15: a short plaza mouth only; a bridge link carries on
+                pts = [q, (q[0] + u[0] * 110.0, q[1] + u[1] * 110.0)]
             if sign < 0:
                 road_ends[g["id"]] = [round(tgt[0], 1), round(tgt[1], 1)]
             # round 5: a wider mouth at the gate and a hand-laid edge, like the S gate's road
@@ -1254,6 +1418,8 @@ def apply_ring_kit(layers, images, ground_np, walk, river, old_poly):
                 hw0 = span_ * 0.5 * float(fcfg.get("mouth_width_mul", 1.15))
                 hw1 = CG.ROAD_W * 0.5
                 L_ = art_w_ * float(fcfg.get("length_mul", 1.0))
+                if sign > 0 and g.get("road_in") == "stub":
+                    L_ = min(L_, 120.0)
                 funnels.append(CG.funnel_poly(q, (u[0] * sign, u[1] * sign), v_, hw0, hw1, L_))
             roads |= CG.paint_road(ground_np, walk, sample, pts, mouths=mouths, wobble=float(rc.get("wobble", 0.0)),
                                    seed=7 + len(painted), funnels=funnels, join=keep_st | roads,
@@ -1433,6 +1599,11 @@ def main():
     for l in layers:
         images[l["id"]] = Image.open(os.path.join(rb, l["file"])).convert("RGBA")
 
+    river = river.copy()
+    water_alpha = np.asarray(Image.open(os.path.join(rb, "water", "water_base.png")))[..., 3] > 0
+    if LAYOUT.get("move_bridges"):
+        print("bridges moved", move_bridges(zones, layers, images, heights, walk, river, LAYOUT["move_bridges"],
+                                            float(LAYOUT.get("plate_scale", 1.0)), water_alpha))
     # ---- Mauro's change list: tower stubs (4), gates at every road-wall contact (1-3)
     street_drop = None
     if LAYOUT.get("ring_kit") and KIT_DIR:
@@ -1442,6 +1613,58 @@ def main():
     ground = Image.fromarray(ground_np)
     # Streets from the painted plate (before any retexture): plots, plants and
     # the cells read this mask; it also ships as data/streets.png (1/4 size).
+    # round 15: the streets that led to a moved bridge's old landings go back to
+    # grass, and every new landing is joined to the nearest street
+    moved_b = [b for b in zones["bridges"] if b.get("moved_cells")]
+    if moved_b:
+        st_now = CG.street_pixels(ground_np, river)
+        old_land = np.zeros_like(walk)
+        for b in moved_b:
+            for ox_, oy_ in b["old_ends"]:
+                sl, m = ellipse_mask(walk.shape, ox_, oy_, 210.0, 115.0)
+                old_land[sl] |= m
+        new_land = np.zeros_like(walk)
+        for b in moved_b:
+            for e in b["entries"]:
+                sl, m = ellipse_mask(walk.shape, e["at"][0], e["at"][1], 120.0, 70.0)
+                new_land[sl] |= m
+        if street_drop is not None:
+            street_drop |= st_now & old_land & ~new_land
+        auto = []
+        for b in moved_b:
+            for e in b["entries"]:
+                if any(l_.get("bridge") == b["id"] and l_.get("side") == e["side"] for l_ in LAYOUT.get("bridge_links", [])):
+                    continue
+                keep = st_now & ~old_land & ~new_land
+                ys_, xs_ = np.nonzero(keep)
+                if not len(xs_):
+                    continue
+                d2 = (xs_ - e["approach"][0]) ** 2 + (ys_ - e["approach"][1]) ** 2
+                j = int(np.argmin(d2))
+                if d2[j] < 450 ** 2:
+                    auto.append({"bridge": b["id"], "side": e["side"], "via": [[float(xs_[j]), float(ys_[j])]], "width": 60})
+        LAYOUT.setdefault("bridge_links_auto", auto)
+    for link in LAYOUT.get("bridge_links", []) + LAYOUT.get("bridge_links_auto", []):
+        # round 15: short streets from a gate road to a moved bridge's stair foot
+        b = next((b for b in zones["bridges"] if b["id"] == link["bridge"]), None)
+        if b is None:
+            continue
+        sampler = CG.cobble_sampler(ground_np, CG.street_pixels(ground_np, river))
+        for e in b["entries"]:
+            if e["side"] != link.get("side", e["side"]):
+                continue
+            pts = [tuple(p) for p in link.get("via", [])] + [tuple(e["approach"]), tuple(e["at"])]
+            if link.get("from_gate"):
+                g = next(g for g in gate_log["gates"] if g["id"] == link["from_gate"])
+                q, pas = g["arch"], g["passage"]
+                cy_ = min(p[1] for p in pas) + 20.0
+                pts = [(q[0], cy_), (q[0], cy_ - 90.0)] + pts
+            hard_ = CG.paint_road(ground_np, walk, sample=sampler, pts=pts, width=int(link.get("width", 68)),
+                                  mouths=[tuple(m) for m in link.get("plazas", [])], wobble=1.0, seed=31)
+            walk |= hard_ & ~river
+            if street_drop is not None:
+                street_drop &= ~hard_
+    ground = Image.fromarray(ground_np)
     streets_pre = street_mask(ground_np, walk | CG.street_pixels(ground_np, river))
     if street_drop is not None:
         streets_pre &= ~street_drop
@@ -1449,7 +1672,19 @@ def main():
     if tex_cfg and TEX_DIR and os.path.isdir(TEX_DIR):
         from scipy.ndimage import gaussian_filter as _gf
         outside_soft = _gf((np.asarray(_poly_img([tuple(p_) for p_ in wall_poly])) == 0).astype(np.float32), 30.0)
-        n_st = retexture_ground(ground_np, river, tex_cfg, TEX_DIR, street_drop, outside_soft)
+        regrass = None
+        if moved_b:
+            regrass = np.zeros_like(walk)
+            for b in moved_b:
+                for st in b.get("old_stairs", []):
+                    regrass |= CG.poly_mask([tuple(p_) for p_ in st])
+                # the old abutments on the banks (not the kerb next to the water)
+                x0o, y0o, x1o, y1o = b["old_bbox"]
+                box_ = np.zeros_like(walk)
+                box_[max(0, y0o):y1o, max(0, x0o):x1o] = True
+                regrass |= box_ & ~ndi_dilate(water_alpha, 14)
+            regrass = ndi_dilate(regrass, 12)
+        n_st = retexture_ground(ground_np, river, tex_cfg, TEX_DIR, street_drop, outside_soft, regrass)
         if LAYOUT.get("ring_kit", {}).get("contact_shadows") and gate_log.get("ring"):
             contact_shadows(ground_np, layers, gate_log["gates"], wall_poly, river,
                             float(gate_log.get("tower_base_radius_px", 98.0)), LAYOUT["ring_kit"]["contact_shadows"])
@@ -1584,10 +1819,16 @@ def main():
     from scipy.ndimage import distance_transform_edt
     edt = distance_transform_edt(~np.repeat(blockers, 2, axis=0))
 
+    river_front = ndi_dilate(river, 45)
+
     def clear_of(ax, ay):
         cx, cy, rx, ry = legendary_ellipse(ax, ay)
         iy, ix = int(round(cy * 2)), int(round(cx))
         if not (0 <= ix < PLATE_W and 0 <= iy < PLATE_H * 2):
+            return False
+        # the entrance in front of the anchor must not be on the river bank
+        fy = int(ay + 30)
+        if 0 <= fy < PLATE_H and river_front[fy, int(ax)]:
             return False
         return edt[iy, ix] > rx + 1
 
@@ -1734,6 +1975,11 @@ def main():
                                   gate_log.get("gates", []), zones["bridges"], gate_log.get("water_gates", []),
                                   float((LAYOUT["greenery"].get("gate_clear") or {}).get("width_mul", 0.0)))
             print("outer forest trees", len(forest))
+        if LAYOUT.get("ring_kit", {}).get("foot_decals") and gate_log.get("ring"):
+            dec = foot_decals(layers, images, gate_log["gates"], wall_poly, river, streets,
+                              float(gate_log.get("tower_base_radius_px", 98.0)), LAYOUT["ring_kit"]["foot_decals"],
+                              os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "art", "world", "crosshaven_city", "decals"))
+            print("foot decals", len(dec))
             # review 3: a soft dark blob under the clumps so the woods read as a mass
             shade_cfg = LAYOUT["greenery"]["outer_forest"].get("shade", {})
             if shade_cfg and forest:
@@ -1783,6 +2029,14 @@ def main():
         print("gate", g["id"], "passage walk fraction %.2f" % float(walk[pm_].mean()) if pm_.any() else "empty")
     if debug:
         Image.fromarray((walk * 255).astype(np.uint8)).save(os.path.join(debug, "walk_final.png"))
+    # round 15: tower plinths block, whatever was unblocked since (removed
+    # trees and props near a wall foot)
+    rb_ = float(gate_log.get("tower_base_radius_px", 0.0)) + 4.0
+    for px_, py_ in gate_log.get("plinths", []):
+        sl, m = ellipse_mask(walk.shape, px_, py_, rb_, rb_ * 0.5)
+        walk[sl] &= ~m
+    for g in gate_log.get("gates", []):
+        walk |= CG.poly_mask(g["passage"]) & ~river
     # ---- cells
     W, H = grid.w, grid.h
     inner_off = []
@@ -2204,6 +2458,7 @@ def main():
         "stone_chroma": gate_log.get("stone_chroma", {}),
         "join_audit": join_audit_out,
         "tower_plinths": gate_log.get("plinths", []),
+        "tower_base_radius_px": gate_log.get("tower_base_radius_px"),
         "block_below_tower_px": block_below,
         "gate_clear": dict(LAYOUT.get("greenery", {}).get("gate_clear", {})),
     }
