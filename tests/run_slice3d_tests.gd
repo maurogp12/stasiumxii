@@ -164,6 +164,10 @@ func _test_build() -> void:
 	_check(b.lamps.size() >= 40, "lamps light the streets (%d)" % b.lamps.size())
 	_check(int(b.stats.get("wall_sections", 0)) >= 40 or int(b.stats.get("wall_cells", 0)) > 1000, "the ring is built (%s)" % [b.stats])
 	_check(b.spinners.size() == 1, "the mill wheel turns")
+	var tc: Dictionary = b.stats.get("terrain_cells", {})
+	for mname in ["grass_short", "grass_lush", "dirt_path", "mud", "cobblestone", "plaza_flagstones", "riverbank_pebbles", "wall_base_gravel"]:
+		_check(int(tc.get(mname, 0)) > 0, "terrain uses %s (%d cells)" % [mname, int(tc.get(mname, 0))])
+	_check(int(tc.get("cobblestone", 0)) > int(tc.get("plaza_flagstones", 0)), "streets are mostly cobbles")
 	_check(int(b.stats.get("wind_surfaces", 0)) > 0, "kit trees with wind colours get the foliage wind shader")
 	_check(not b.lantern_mats.is_empty(), "the lamppost glass is registered for the night glow")
 	b.set_night(1.0)

@@ -46,6 +46,8 @@ func _go() -> void:
 			await _ironjaw()
 		"lineup":
 			await _lineup()
+		"terrain":
+			await _terraincheck()
 		"clip":
 			await _clip()
 		_:
@@ -277,3 +279,20 @@ func _lineup() -> void:
 	for k in 20:
 		await process_frame
 	await _grab("17_class_lineup.png")
+
+
+func _terraincheck() -> void:
+	m.env.set_hour(10.5)
+	_view(_piece("fountain") + Vector3(6, 0, 6), 45, 40, 26)
+	await _grab("t_plaza.png")
+	var sg := Vector3.ZERO
+	for g in m.builder.gate_doors:
+		if g["id"] == "S":
+			sg = g["center"]
+	_view(sg, 200, 40, 30)
+	await _grab("t_gate_outside.png")
+	var br: Vector2 = m.plan.bridges[0]["center"]
+	_view(Vector3(br.x, 0, br.y), 60, 42, 26)
+	await _grab("t_river.png")
+	_view(_piece("cathedral") + Vector3(0, 0, 14), 20, 50, 30)
+	await _grab("t_street.png")

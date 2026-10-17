@@ -18,6 +18,7 @@ const ModelLoader := preload("res://slice3d/city/model_loader.gd")
 const TERRAIN_SHADER := preload("res://slice3d/city/terrain.gdshader")
 const WATER_SHADER := preload("res://slice3d/city/water.gdshader")
 const WIND_SHADER := preload("res://slice3d/city/foliage_wind.gdshader")
+const TERRAIN_PBR := preload("res://slice3d/city/terrain_pbr.gdshader")
 const MODEL_DIR := "res://art/3d/"
 
 var plan: CityPlan
@@ -181,7 +182,8 @@ func _build_terrain() -> void:
 	var mi := MeshInstance3D.new()
 	mi.name = "Terrain"
 	mi.mesh = m
-	mi.material_override = terrain_mat
+	var pbr := _terrain_pbr_material()
+	mi.material_override = pbr if pbr != null else terrain_mat
 	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(mi)
 	# Skirt: fields to the horizon around the layout.
@@ -191,6 +193,14 @@ func _build_terrain() -> void:
 	var skirt_mat := StandardMaterial3D.new()
 	skirt_mat.albedo_color = Color(t0[0], t0[1], t0[2]) * 0.95
 	skirt_mat.roughness = 1.0
+	var tp: Dictionary = plan.city.get("terrain_pbr", {})
+	var lush := str(tp.get("dir", "")) + "ter_grass_lush_albedo.webp"
+	if not tp.is_empty() and FileAccess.file_exists(lush):
+		skirt_mat.albedo_color = Color(0.9, 0.9, 0.9)
+		skirt_mat.albedo_texture = ImageTexture.create_from_image(_load_img(lush, false))
+		skirt_mat.uv1_triplanar = true
+		skirt_mat.uv1_world_triplanar = true
+		skirt_mat.uv1_scale = Vector3.ONE * 0.5
 	for r in [Rect2(-far, -far, size.x + 2 * far, far), Rect2(-far, size.y, size.x + 2 * far, far),
 			Rect2(-far, 0, far, size.y), Rect2(size.x, 0, far, size.y)]:
 		var pm := PlaneMesh.new()
@@ -202,6 +212,130 @@ func _build_terrain() -> void:
 		s.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		add_child(s)
 	stats["terrain_verts"] = verts.size()
+
+
+func _load_img(path: String, linear: bool) -> Image:
+	var img := Image.load_from_file(path)
+	if img == null:
+		return null
+	if img.get_format() != Image.FORMAT_RGB8 and not linear:
+		img.convert(Image.FORMAT_RGB8)
+	if not img.has_mipmaps():
+		img.generate_mipmaps()
+	return img
+
+
+## Material id per layout cell, from the terrain rules (data: terrain_pbr).
+func terrain_ids() -> Image:
+	var tp: Dictionary = plan.city.get("terrain_pbr", {})
+	var mats: Array = tp.get("materials", [])
+	var r: Dictionary = tp.get("rules", {})
+	var idx := func(name: String) -> int: return maxi(0, mats.find(name))
+	var W: int = plan.width
+	var H: int = plan.height
+	var img := Image.create(W, H, false, Image.FORMAT_R8)
+	var noise := FastNoiseLite.new()
+	noise.seed = 31
+	noise.frequency = 0.06
+	var ring_r := 0.0
+	for p in plan.ring:
+		ring_r = maxf(ring_r, (p as Vector2).distance_to(plan.ring_center))
+	var near := func(c: Vector2i, rad: int, test: Callable) -> bool:
+		for dy in range(-rad, rad + 1):
+			for dx in range(-rad, rad + 1):
+				if test.call(c + Vector2i(dx, dy)):
+					return true
+		return false
+	var landmark := {}
+	for pc in plan.pieces:
+		if str(pc["kind"]) in ["castle", "cathedral", "townhall", "bank", "fountain", "gazebo"]:
+			for cc in pc["cells"]:
+				landmark[cc] = true
+	var mud_spots: Array = []
+	for g in plan.gates:
+		mud_spots.append([g["outside"], float(r.get("mud_gate_m", 9.0))])
+	for pc in plan.pieces:
+		if str(pc["kind"]) == "mill":
+			mud_spots.append([pc["center"], float(r.get("mud_mill_m", 7.0))])
+	var counts := {}
+	for y in H:
+		for x in W:
+			var c := Vector2i(x, y)
+			var ch: String = plan.terrain_char(c)
+			var wp: Vector2 = plan.cell_center(c)
+			var inside := wp.distance_to(plan.ring_center) < ring_r
+			var name := ""
+			if ch == "w" and not plan.walk_over.has(c):
+				name = str(r.get("w", "riverbank_pebbles"))
+			elif plan.wall_cells.has(c) or near.call(c, int(r.get("wall_base_cells", 1)), func(q): return plan.wall_cells.has(q)):
+				name = "wall_base_gravel"
+			elif ch == "c":
+				name = str(r.get("c", "cobblestone"))
+				if near.call(c, int(r.get("forecourt_cells", 3)), func(q): return landmark.has(q)):
+					name = str(r.get("p", "plaza_flagstones"))
+			elif ch == "p":
+				name = str(r.get("p", "plaza_flagstones"))
+			elif ch == "d":
+				name = str(r.get("d", "dirt_path"))
+			elif near.call(c, int(r.get("bank_cells", 1)), func(q): return plan.terrain_char(q) == "w" and not plan.walk_over.has(q)):
+				name = "riverbank_pebbles"
+			else:
+				var n := noise.get_noise_2d(x, y) * 0.5 + 0.5
+				if inside:
+					name = "grass_lush" if n > float(r.get("lush_patches", 0.58)) else str(r.get("g_inside", "grass_short"))
+				else:
+					name = "grass_short" if n < float(r.get("short_patches_outside", 0.3)) else str(r.get("g_outside", "grass_lush"))
+			if name in ["dirt_path", "grass_short", "grass_lush"]:
+				for ms in mud_spots:
+					if wp.distance_to(ms[0]) < float(ms[1]) * (0.7 + 0.3 * noise.get_noise_2d(x * 3, y * 3)):
+						name = "mud"
+			var id: int = idx.call(name)
+			counts[name] = counts.get(name, 0) + 1
+			img.set_pixel(x, y, Color(id / 255.0, 0, 0))
+	stats["terrain_cells"] = counts
+	return img
+
+
+func _terrain_pbr_material() -> ShaderMaterial:
+	var tp: Dictionary = plan.city.get("terrain_pbr", {})
+	if tp.is_empty():
+		return null
+	var dir := str(tp["dir"])
+	var mats: Array = tp.get("materials", [])
+	var sets := {"albedo": [], "normal": [], "orm": [], "height": []}
+	for m in mats:
+		for k in ["albedo", "normal", "orm"]:
+			var f := dir + "ter_%s_%s.webp" % [m, k]
+			if not FileAccess.file_exists(f):
+				return null
+			var im := _load_img(f, k != "albedo")
+			if k != "albedo":
+				im.clear_mipmaps()
+				im.convert(Image.FORMAT_RGB8)
+				im.generate_mipmaps()
+			sets[k].append(im)
+		var hf := dir + "ter_%s_height.png" % m
+		if not FileAccess.file_exists(hf):
+			return null
+		var hi := Image.load_from_file(hf)
+		hi.convert(Image.FORMAT_R8)
+		hi.generate_mipmaps()
+		sets["height"].append(hi)
+	var sm := ShaderMaterial.new()
+	sm.shader = TERRAIN_PBR
+	for k in sets.keys():
+		var arr := Texture2DArray.new()
+		arr.create_from_images(sets[k])
+		sm.set_shader_parameter(k + "_arr", arr)
+	sm.set_shader_parameter("id_map", ImageTexture.create_from_image(terrain_ids()))
+	sm.set_shader_parameter("map_cells", Vector2(plan.width, plan.height))
+	sm.set_shader_parameter("cell_m", cm)
+	sm.set_shader_parameter("contrast", float(tp.get("contrast", 0.15)))
+	sm.set_shader_parameter("outside_id", maxi(0, mats.find("grass_lush")))
+	var tiles := PackedFloat32Array(tp.get("tiles_m", [2, 2, 2, 2, 2, 2, 2, 2]))
+	sm.set_shader_parameter("tiles", tiles)
+	stats["terrain_pbr"] = mats.size()
+	return sm
 
 
 func _build_water() -> void:

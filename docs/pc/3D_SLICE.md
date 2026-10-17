@@ -71,6 +71,7 @@ City layout data goes in, a 3D scene comes out. Only Crosshaven is built for now
 | Gardens, gazebo, fountain, well, stalls, lamps, trees, bushes | Art kit. Trees (oak, birch, pine, cypress, a–c) use the foliage wind shader. The fountain water uses our water shader. Lamppost glass glows at night, plus a light. Hedges, flowerbeds and small flowers are still placeholders. |
 | Player plot fences | Art kit fence modules round each plot, with the gate on the door side |
 | Woods round the walls | Art kit tree impostors (2 crossed quads) |
+| Ground | Art kit terrain v2 (8 PBR sets, resized to 1024; heights 512). One material per layout cell, height-blended per pixel in `terrain_pbr.gdshader` (weight = max(0, h + splat − max + 0.15)). Rules in `crosshaven.json` `terrain_pbr`: cobbles on streets, flagstones on the plaza and landmark forecourts, dirt paths, pebbles on the river and its banks, gravel at the wall foot, mud at the gate approaches and the mill, short and lush grass mixed by noise. A second cobble variant can be added as a new material id. |
 | Day/night, lamps, city life | Done |
 | Walkable in 3D | Done: the hero reaches every gate, NPC, plot door and bridge (tests) |
 

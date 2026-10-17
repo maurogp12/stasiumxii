@@ -29,7 +29,7 @@ static func instance(path: String) -> Node3D:
 				add_missing_normals(node)
 				double_sided(node)
 				if "impostor" in path:
-					unshaded(node, 0.8)
+					unshaded(node, 1.0)
 	_cache[path] = node
 	return node.duplicate() if node != null else null
 
