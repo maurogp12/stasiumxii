@@ -199,7 +199,21 @@ def cobble_sampler(ground_np, street):
     return sample
 
 
-def paint_road(ground_np, walk, sample, pts, width=ROAD_W, feather=3, mouths=(), wobble=0.0, seed=7):
+def funnel_poly(q, u, v, hw0, hw1, length, steps=24):
+    """A gate road mouth: half-width hw0 at q (the arch), easing to hw1 over
+    `length` along u (smoothstep), both sides mirrored along v."""
+    left, right = [], []
+    for k in range(steps + 1):
+        t = k / float(steps)
+        e = t * t * (3.0 - 2.0 * t)
+        w = hw1 + (hw0 - hw1) * (1.0 - e)
+        c = (q[0] + u[0] * length * t, q[1] + u[1] * length * t)
+        left.append((c[0] - v[0] * w, c[1] - v[1] * w))
+        right.append((c[0] + v[0] * w, c[1] + v[1] * w))
+    return left + right[::-1]
+
+
+def paint_road(ground_np, walk, sample, pts, width=ROAD_W, feather=3, mouths=(), wobble=0.0, seed=7, funnels=()):
     """Paint a cobble strip along a polyline into the ground and open it in the walkmask.
 
     `mouths`: extra (cx, cy, rx, ry) ellipses that widen the road (a gate
@@ -212,6 +226,8 @@ def paint_road(ground_np, walk, sample, pts, width=ROAD_W, feather=3, mouths=(),
         ImageDraw.Draw(img).ellipse([p[0] - r, p[1] - r * 0.5, p[0] + r, p[1] + r * 0.5], fill=255)
     for cx, cy, rx, ry in mouths:
         ImageDraw.Draw(img).ellipse([cx - rx, cy - ry, cx + rx, cy + ry], fill=255)
+    for fp in funnels:
+        ImageDraw.Draw(img).polygon([tuple(p) for p in fp], fill=255)
     m = np.asarray(img).astype(np.float32) / 255.0
     if wobble > 0:
         # soften, add a coarse noise field, then re-harden: an uneven edge

@@ -1110,8 +1110,25 @@ def apply_ring_kit(layers, images, ground_np, walk, river, old_poly):
             if mouth_r > 0:
                 mc = (q[0] + u[0] * sign * mouth_r * 0.55, q[1] + u[1] * sign * mouth_r * 0.55)
                 mouths.append((mc[0], mc[1], mouth_r, mouth_r * 0.5))
+            funnels = []
+            fcfg = rc.get("funnel")
+            if fcfg:
+                # round 6: a funnel as wide as the arch and its towers at the
+                # gate, easing to the road width over about one gatehouse width
+                sl_ = 0.0 if abs(b[0] - a[0]) < 1e-6 else (b[1] - a[1]) / (b[0] - a[0])
+                key_ = "_flat" if abs(sl_) < 0.05 else ("_pos" if sl_ > 0 else "_neg")
+                spec_ = cfg["modules"].get("gatehouse" + key_) or cfg["modules"]["gatehouse_neg"]
+                kmod_ = hero_plate / float(cfg["hero_px_in_art"])
+                span_ = math.dist(spec_["wall_left"], spec_["wall_right"]) * kmod_
+                art_w_ = Image.open(os.path.join(KIT_DIR, spec_["file"])).size[0] * kmod_
+                lv = math.dist(a, b)
+                v_ = ((b[0] - a[0]) / lv, (b[1] - a[1]) / lv)
+                hw0 = span_ * 0.5 * float(fcfg.get("mouth_width_mul", 1.15))
+                hw1 = CG.ROAD_W * 0.5
+                L_ = art_w_ * float(fcfg.get("length_mul", 1.0))
+                funnels.append(CG.funnel_poly(q, (u[0] * sign, u[1] * sign), v_, hw0, hw1, L_))
             roads |= CG.paint_road(ground_np, walk, sample, pts, mouths=mouths, wobble=float(rc.get("wobble", 0.0)),
-                                   seed=7 + len(painted))
+                                   seed=7 + len(painted), funnels=funnels)
             painted.append([[round(p_[0], 1), round(p_[1], 1)] for p_ in pts])
     drop &= ~roads
     left = inside_old & ~inside_new
