@@ -964,12 +964,19 @@ def main():
         for lid in plot_plants[p["id"]]:
             moved[lid] = (ax - ox, ay - oy)
     out_layers = []
+    bush_src = next((q for q in layers if q["file"].endswith("_tn_bush.png")), None)
     for l in layers:
         lid = l["id"]
         if lid in dropped:
             continue
         im = images[lid]
         dx, dy = moved.get(lid, (0, 0))
+        if lid in moved and "planter" in l["file"] and bush_src is not None:
+            # A planter box reads as a bed: plots keep loose plants only (Luca).
+            cx_ = l["x"] + im.width / 2.0
+            l = dict(l, file=bush_src["file"], x=int(round(cx_ - images[bush_src["id"]].width / 2.0)),
+                     y=int(round(l["sort_y"] - images[bush_src["id"]].height)))
+            im = images[bush_src["id"]]
         name = os.path.basename(l["file"])
         if lid in gate_log["modified"]:
             images[lid].save(os.path.join(art_dir, "layers", name), optimize=True)

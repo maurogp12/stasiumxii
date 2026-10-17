@@ -182,6 +182,8 @@ var _zoom_tween: Tween
 ## `city_plate` draws it while the hero is inside.
 var city = null
 var city_plate: Node2D
+## Media only: the camera stays where a capture script put it.
+var camera_hold := false
 var _stub_marker: Node2D
 var _start_zone := ""
 ## Dev entry: this key warps to the walled city and back.
@@ -1542,7 +1544,8 @@ func _process(delta: float) -> void:
 			_lead = step.normalized() * LEAD_PX
 	else:
 		_lead = _lead.move_toward(Vector2.ZERO, delta * 60.0)
-	camera.position = aim + _lead
+	if not camera_hold:
+		camera.position = aim + _lead
 	var wz: int = walker.z_index
 	var covered := false
 	var npc_feet := _npc_cover_feet()

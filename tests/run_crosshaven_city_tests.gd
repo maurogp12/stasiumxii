@@ -104,6 +104,8 @@ func _test_data() -> void:
 	for rec in city.layers():
 		var tag := str(rec["tag"])
 		check(not ("garden" in tag or "bed" in tag or "fence" in tag), "no garden bed or fence layer (%s)" % tag)
+		if rec.get("plot_plant", false):
+			check(not ("planter" in str(rec["file"])), "plot plants are loose plants, not planter boxes (%s)" % rec["file"])
 	check(ResourceLoader.exists(city.art_path("ground.jpg")) or FileAccess.file_exists(city.art_path("ground.jpg")), "ground art exists")
 	for t in ["normal", "rare", "legendary"]:
 		check(FileAccess.file_exists(city.house_art(t)) or ResourceLoader.exists(city.house_art(t)), "house art for %s" % t)
