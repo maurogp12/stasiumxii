@@ -9,3 +9,4 @@ time,job,task_id,credits,note
 2026-10-17 17:47 ET,animation batch 3 ids [91, 127, 88, 466, 438],01a14bd5-d241-70b1-8927-16ca01b46c02,15,
 ,TOTAL,,140,balance 2150 -> 2010 (verified via /balance)
 2026-10-17 18:09 ET,grip fix v2 (Blender only),-,0,no Meshy jobs
+2026-10-17 18:25 ET,grip fix v3 (Blender only),-,0,no Meshy jobs

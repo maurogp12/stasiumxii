@@ -5,7 +5,7 @@
 - Model: Meshy multi-image (front/side/back crops) -> retexture -> auto-rig. 1.8 m, feet at y=0, front +Z, A-pose bind, 24 joints renamed to Godot humanoid names (map in JSON).
 - LOD0 21,050 tris (2048 WebP) with 25 clips; LOD1 10,525 (1024); LOD2 4,210 (512). Same skeleton on every LOD.
 - Axes: itm_ironjaw_axe_R/L_CONCEPTO_.glb (identical), 0.65 m, ~3k tris, origin = grip point 1/4 up the haft. Attach transforms (hand + back holster) are in the JSON under weapons.attach and weapons.holster.
-- Grip v2: closed fist sculpted into the bind mesh (the gauntlet has no separate fingers, so no finger bones). See previews/ironjaw_grip_before_after_CONCEPTO_.jpg and ironjaw_holster_back_CONCEPTO_.jpg.
+- Grip v3: diagonal hammer grip sculpted into the bind mesh, thumb over the haft, head on the thumb side. A constant wrist cock in the carry clips (idle, walk, run, turn_r, hit, dodge, jump, downed, death) makes the axes hang head-down along the legs. The per-clip axe_mode (in_hand / main_hand_only / holstered_back) and holster_offset are in the JSON. v2 is backed up in /workspace/ironjaw_grip/v2_backup/.
 - Credits: 140 (see credits_log.csv). Previews: previews/*.jpg (5 frames per clip, both axes attached).
 
 ## Clips and the off-hand axe
@@ -40,7 +40,7 @@
 
 ## Known weaknesses
 
-- Grip (v2): the fist is now a fixed sculpted shape. There are still no finger bones, so the hand can't open (no open hand for interact/climb; holster covers those). The thumb is part of the mitten and isn't wrapped separately.
+- Grip (v3): still a sculpted mitten-style fist with no finger bones. The left fist reads looser than the right; the thumb wrap is approximate (single gauntlet mesh); the wrist cock is baked only into the carry clips.
 - Single-axe bases (chop, axe stance, axe spin, ground slam, cast, victory, turn_l): the left arm was not authored for a weapon, so the second axe is passive. The custom tweaks are listed per clip.
 - Clipping: taunt (heads into chest), sit (thighs), block (hafts cross), climb (no ladder holster), death/downed (axes into floor).
 - In place: Hips horizontal motion flattened on all clips, but root ROTATION is kept, so the turns and some attacks end rotated. downed/death show a mid-air frame from the flattened fly-back.
