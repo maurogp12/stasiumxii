@@ -249,11 +249,9 @@ func _stills() -> void:
 		_place(Vector2i(int(c[0]), int(c[1])))
 		await _hold(city.plate_to_world(Vector2(float(g["arch"][0]), float(g["arch"][1]))) + Vector2(0, -60), 1.1, 30, "07_gate_%s" % g["id"])
 	# Towers after the stub cut.
-	var t_i := 0
 	for row in plate.rows:
-		if str(row["tag"]) in ["tower", "tower_g"] and t_i < 3:
+		if str(row["tag"]) in ["tower", "tower_g"] and int(row["id"]) in [382, 383, 392]:
 			await _hold((row["rect"] as Rect2).get_center() + Vector2(0, 40), 1.6, 25, "08_tower_%d" % int(row["id"]))
-			t_i += 1
 	# Night.
 	_w.weather.time_of_day = 22.5
 	_w.weather.settle()
@@ -311,16 +309,36 @@ func _scale_shots() -> void:
 
 func _walk_clip() -> void:
 	RenderingServer.frame_post_draw.connect(_grab)
+	var b0: Dictionary = city.bridges()[0]
 	var b2: Dictionary = city.bridges()[2]
 	var b1: Dictionary = city.bridges()[1]
+	var wg2 := _near_free(_cell_of_plate(Vector2(1900, 2130)))
 	var legs := [
-		[city.spawn(), Vector2i(int(b2["ends"][0][0]), int(b2["ends"][0][1])), "run", 15.0],
-		[Vector2i(int(b2["ends"][0][0]), int(b2["ends"][0][1])), Vector2i(int(b2["ends"][1][0]), int(b2["ends"][1][1])), "walk", 10.0],
-		[Vector2i(int(b1["ends"][0][0]), int(b1["ends"][0][1])), Vector2i(int(b1["ends"][1][0]), int(b1["ends"][1][1])), "walk", 11.0],
+		[city.spawn(), wg2, "walk", 12.0],
+		[wg2, _end(b2, 0), "run", 9.0],
+		[_end(b2, 0), _end(b2, 1), "walk", 8.0],
+		[_end(b0, 1), _end(b0, 0), "walk", 8.0],
+		[_end(b1, 0), _end(b1, 1), "walk", 8.0],
 	]
 	var behind := _behind_house()
 	if behind.x >= 0:
-		legs.append([_near_free(behind + Vector2i(3, 3)), behind, "walk", 9.0])
+		legs.append([_near_free(behind + Vector2i(3, 3)), behind, "walk", 6.0])
+	# In through the west gate, then the north gate.
+	for gid in ["gate_1", "gate_5"]:
+		for g in city.gates():
+			if str(g["id"]) == gid:
+				var cells: Array = g["cells"]
+				var outer := Vector2i(int(cells[0][0]), int(cells[0][1]))
+				var inner := Vector2i(int(cells[cells.size() - 1][0]), int(cells[cells.size() - 1][1]))
+				var poly := PackedVector2Array()
+				for q in city.doc["wall_polygon"]:
+					poly.append(Vector2(float(q[0]), float(q[1])))
+				if Geometry2D.is_point_in_polygon(city.world_to_plate(BoardVisualSort.cell_to_local(outer)), poly):
+					var t := outer
+					outer = inner
+					inner = t
+				var dir := inner - outer
+				legs.append([_near_free(outer - dir), _near_free(inner + dir * 2), "walk", 8.0])
 	_w.camera_hold = false
 	_w._zoom = 1.6
 	_w.camera.zoom = Vector2.ONE * 1.6
@@ -332,13 +350,21 @@ func _walk_clip() -> void:
 			await process_frame
 		_grabbing = true
 		var frames := int(float(leg[3]) * 30.0)
+		var still := 0
 		for i in frames:
 			if i == 3:
 				var r: Dictionary = _w.walk_to(leg[1], str(leg[2]))
 				print("LEG %s -> %s: %s" % [leg[0], leg[1], r.get("ok", false)])
 			await process_frame
+			still = still + 1 if (i > 6 and not _w.walker.is_moving()) else 0
+			if still > 24:
+				break
 		_grabbing = false
 	print("CLIP frames=%d" % _frame_i)
+
+
+func _end(b: Dictionary, i: int) -> Vector2i:
+	return Vector2i(int(b["ends"][i][0]), int(b["ends"][i][1]))
 
 
 func _grab() -> void:
