@@ -25,3 +25,4 @@ Crosshaven NPC houses v2 (4 slate/5 red, max 527 px) + workshops (c) + diagonal 
 Crosshaven diagonal gatehouse v5 fixes: v5 portcullis + arch surround, dark vaulted passage, old shaft strip covered - 🖼️ CONCEPTO
 Crosshaven tower v6 iso (607x990, plinth 605) + 3 gatehouses re-composited; alt short_v6b (792 tall) - 🖼️ CONCEPTO
 Crosshaven (d) props: 3 market stalls, fountain, well; short_v6b removed (v6 990 locked) - 🖼️ CONCEPTO
+Crosshaven (e) GOAL extras: gazebo, rowboat, quay, garden pieces, hedge tile, 4 boulders - 🖼️ CONCEPTO
