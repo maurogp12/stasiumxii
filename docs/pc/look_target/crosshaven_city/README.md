@@ -152,3 +152,6 @@ Reviewed on the base without buildings (`cxbase/base_walls.jpg`).
 
     Scale: a tower is about 4–5× hero height, and the wall is clearly taller than a house's eaves.
     - **Towers** (Mauro, on a crop: "ahí no está bien hecha, y ese muro que sale hay que removerlo"): no tower may be sunk into the wall with only its cone showing. Each one is a full round tower from footing to roof, with the wall joining into its sides. The stubs are removed everywhere.
+23. **Luca, 17 Oct:**
+    - `castle_native_v2` is for the **castle only**. The Legendary house stays as approved (fdcc2149).
+    - **Wall height** is open for Mauro. Luca wants walls 1.5× the big buildings (towers about 1030 px); Claude proposed 4–5× hero height (towers about 700 px). The north-side mock is coming in both versions.
