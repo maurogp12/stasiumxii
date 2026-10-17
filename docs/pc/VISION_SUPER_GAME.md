@@ -129,3 +129,5 @@ The player controls **one character**, not a company of mercenaries; groups are 
 - **Companions:** optional BG3-style story companions may come later, as NPC allies on specific quests.
 
 The slice shows 1 hero against bandits. The combat rules stay multi-unit, for groups and PvP.
+
+**Groups (Mauro, 17 Oct):** BG3 gives you 4 characters because it isn't online. Here, as in Wakfu and Dofus, **each player is one character, and other players join as a team**. Recommended group size: up to **6 players** (Wakfu-style) for dungeons and group fights. PvP arenas run 1v1 and 3v3.
