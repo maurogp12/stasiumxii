@@ -360,18 +360,42 @@ func _walk_clip() -> void:
 					o = c
 					n = d
 		var step := Vector2i(signi(n.x - o.x), signi(n.y - o.y))
-		legs.append([_beyond(o, -step, 4), _beyond(n, step, 6), "walk", 9.0, "gate %s" % g["id"]])
+		legs.append([_beyond(o, -step, 4), _beyond(n, step, 6), "walk", 7.5, "gate %s" % g["id"]])
 	for b in city.bridges():
 		var a := _end(b, 0)
 		var c := _end(b, 1)
 		if _w.zone.passable_at(a) and Geometry2D.is_point_in_polygon(city.world_to_plate(BoardVisualSort.cell_to_local(a)), poly):
 			legs.append([a, c, "walk", 8.0, "bridge %s" % b["id"]])
-	# Ring road: from the west gate's inside along the ring to the east side.
+	# Ring road round the centre plaza: street cells at four compass points,
+	# walked as two half rings; the second at night (lamps lit).
+	var centre := Vector2.ZERO
+	for q in poly:
+		centre += q
+	centre /= float(poly.size())
+	var marks: Array[Vector2i] = []
+	for dir in [Vector2(-1, 0), Vector2(0, -1), Vector2(1, 0), Vector2(0, 1)]:
+		var want: Vector2 = centre + Vector2(dir.x * 560.0, dir.y * 280.0)
+		var best := Vector2i(-1, -1)
+		var best_d := 1e12
+		for y in _w.zone.height:
+			for x in _w.zone.width:
+				var cc := Vector2i(x, y)
+				if _w.zone.terrain_at(cc) != "dirt_road" or not _w.zone.passable_at(cc):
+					continue
+				var d: float = (city.world_to_plate(BoardVisualSort.cell_to_local(cc)) as Vector2).distance_squared_to(want)
+				if d < best_d:
+					best_d = d
+					best = cc
+		marks.append(best)
+	legs.append([marks[0], marks[2], "walk", 10.0, "ring road west to east (day)"])
+	legs.append([marks[2], marks[0], "walk", 10.0, "ring road east to west (night)", 22.0])
 	_w.camera_hold = false
 	_w._zoom = 1.6
 	_w.camera.zoom = Vector2.ONE * 1.6
 	for leg in legs:
+		_w.weather.time_of_day = float(leg[5]) if leg.size() > 5 else 12.0
 		_place(leg[0])
+		_w._sync_city_life()
 		_w.camera.position = _w.walker.position
 		_w.camera.reset_smoothing()
 		for i in 15:
