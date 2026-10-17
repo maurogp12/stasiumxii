@@ -143,3 +143,11 @@ Reviewed on the base without buildings (`cxbase/base_walls.jpg`).
     - **Grok Bot / Scenario Art owns ALL Crosshaven art:** ground textures (grass and cobble may be repainted), walls, gates, buildings, trees, props and decoration, with the GOAL as the guide.
     - **Claude paints nothing for the city.** Claude and the build agent wire it into the game: scale, walkability, y-sort and fade, water, gates, plots and tests. Claude reviews every delivery before Mauro sees it and labels everything 🎮 or 🖼️.
     - **Mauro approves step by step:** map base, then buildings, then city life.
+21. **Landmarks use Grok's new native repaint** (Mauro chose the "right" castle, `castle_native_v2`, 8f60ac22): sharp and grander, with a slightly changed design. The same approach applies to the cathedral, townhall and bank.
+22. **Walls must be bigger and better** (Mauro: "las murallas tienen que ser más grandes y hay que mejorarlas"). Grok repaints the wall, towers and gates, keeping their style:
+    - taller and thicker;
+    - a visible walkway between the crenellations, as Mauro liked;
+    - more stone detail and variation, moss and a footing with a contact shadow;
+    - towers in proportion, not toy-sized against the bigger buildings.
+
+    Scale: a tower is about 4–5× hero height, and the wall is clearly taller than a house's eaves.
