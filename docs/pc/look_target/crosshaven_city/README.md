@@ -123,3 +123,4 @@ Reviewed on the base without buildings (`cxbase/base_walls.jpg`).
     - **Gates:** "asegúrate que el mono pase por ellas sin problemas". Every gate passage is at least 2 hero-widths wide, comfortably taller than the hero, with walkable cells straight through and no snagging on the towers.
     - A test walks the hero through every gate both ways.
     - **The straight wall is approved** (Mauro: "esta me gusta, cómo tiene el espacio en medio"). This is the Meshy straight curtain wall with a walkway between the crenellations (`wallstraight`, from `work/painted/../wall concept`). Keep that walkway visible in every facing.
+14. **Building size and roofs** (Mauro, on the house scale check d9760306): buildings are repainted natively at **3× hero height** (about 2.4× the `cx_built` width), with one factor for all buildings. **Roofs are a mix** of blue slate and red tile, as in the prototype.
