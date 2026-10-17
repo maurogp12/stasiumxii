@@ -60,7 +60,8 @@ These exist only as paintings or box-only work on Luca's computer. **None of it 
 | B9 | **Ironjaw draw/sheathe:** CLOSED. Luca chose **v6** as the final draw and sheathe (17 Oct), and the Meshy v2 improvement notes are dropped. | — | — | **DONE (v6)** |
 
 - **Scenario is OFF** (Mauro, 17 Oct: no credits; "just use the meshy"). No Scenario jobs from Claude or its agents until Mauro says so.
-- **Tool:** Meshy, used behind the scenes (3D blockout, then an iso camera render, then a Scenario paint-over to 2D). Nothing 3D ships.
+- **Meshy for Crosshaven art: OFF** (17 Oct). Mauro rejected the Meshy walls and prefers Grok Bot's painted castle, houses and cathedral. Grok Bot paints the city; Meshy is used only if Mauro asks.
+- **Tool (earlier plan):** Meshy, used behind the scenes (3D blockout, then an iso camera render, then a Scenario paint-over to 2D). Nothing 3D ships.
 - **Waiting on:** Luca's `docs/pc-map-handoff` package (the B1–B3 sources).
 - **Priority (Mauro, 16 Oct): finish Crosshaven first (B1)** ("hay que enfocarnos en acabar Crosshaven"). Then **improve Southbridge** ("y luego mejorar Southbridge"), the town and its swamp edge, which ties into B2. The others wait.
 

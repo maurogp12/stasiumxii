@@ -133,3 +133,8 @@ Reviewed on the base without buildings (`cxbase/base_walls.jpg`).
       - **Legendary** looks luxurious.
 16. **10 player plots, not 5** (Mauro: "quiero que haya 10 casas para jugadores"). Add P6–P10 in the bigger city. Every plot follows the plot rules: entrance cells reachable from a street, room for a Legendary footprint, clear of the wall and towers, and no gardens. The tier mix is set per plot in data, and each plot can be upgraded in place.
 17. **Order: finish the map before placing any houses or buildings** (Mauro: "antes de poner la casa, asegúrate de acabar el mapa"). The map base comes first: scaled city, grass and cobble, river and water motion, the Meshy wall kit with all gates, the tower stubs removed, trees cut down, bushes and flowers, and the plot and building footprints reserved (empty). It is captured 🎮 in game and approved by Mauro. Buildings, including the repainted Grok sprites, are placed only after that.
+18. **Walls: Grok Bot's painted walls, not Meshy** (Mauro, 17 Oct, on the Meshy ring preview: "esto está espantoso"; on the prototype: "me gusta mucho más el trabajo de Grok"). Item 13 is reversed: the Meshy wall kit is rejected. Keep the prototype's painted walls and towers, with these fixes:
+    - remove the tower stubs;
+    - add gates at the road–wall contacts (west, east, north, south-east), painted by Grok Bot in the style of the south gate.
+
+    **General lesson:** Grok Bot's painted art beats Meshy for this city every time. Meshy stays off the city art unless Mauro asks.
