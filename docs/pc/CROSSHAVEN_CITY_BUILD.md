@@ -51,6 +51,12 @@ Change list: `docs/pc/look_target/crosshaven_city/README.md` on `claude/pc-zones
   - **One stone.** The wall segments and water gates get a LAB colour transfer to the v5 stone (the tower body): lightness mean and spread, a*/b* mean only. Recolour only.
   - **Removed (Mauro).** The SE gate is gone, with its road, exit stub and the spur that led to it (`drop_streets`); the wall runs closed. The NE bridge outside the water gate is gone. That leaves 4 land gates, 2 water gates and 2 bridges.
 - **Round 11-12.** Stone colour statistics come from stone pixels only, with chroma clamped to the v5 tower body (within 5%, tested). The W and E gates use Grok's diagonal gatehouse v5 (73331b97). Its near tower is a v5 tower copy, scaled 1.1824 to the ring towers' size. It is anchored on both tower bases on the wall line (art_slope -0.263; the curtain itself slopes -0.364), so it needs no drop. No old-style tower art is left (tested).
+- **Round 13 (joins, Mauro's reference).**
+  - **Water-gate towers.** Each is placed from the block centre outward at the first spot where its whole base outline is on dry ground. It may slide further out, while the block end stays inside its footprint, so the side's tower rhythm stays even.
+  - **Block trim.** The block is trimmed to between the tower axes. Below a tower's base line (across the tower and 6 px beside it) it is cut over dry ground only, so the piers in the water stay. The low end wings are gone, and the tall piers meet the towers.
+  - **Near runs.** The near-side run starts 0.6 body radius from the tower axis, so its foot meets the curved base.
+  - **Contact shadows.** Baked into the ground under every tower and along every wall foot.
+  - **Audit.** The build composites every ring sprite and checks each tower's and gatehouse's sides for transparent pixels between it and an adjoining module (`join_audit` in city.json). It also counts block pixels left below a water-gate tower base. Both are tested at 0.
 - **Exits (review 7).** Every gate road runs on to the plate edge and ends in a gate stub (data,
   `gate_stubs`). The links follow the Crossroads road directions:
   - N goes to `crosshaven_road_north` (12,2), toward Northgate (proposed);

@@ -596,7 +596,8 @@
    "front_mul": 1.0,
    "back_mul": 0.5,
    "front_mode": "silhouette",
-   "note": "Round 10: the near-side run ends where its end meets the tower body's silhouette (horizontal offset = body radius) and draws in front of the tower; the far side tucks half a body radius under it and draws behind."
+   "note": "Rounds 10 and 13: the near-side run (drawn in front of the tower) starts 0.6 body radius from the axis, so its foot meets the tower's curved base with no sliver; the far side tucks half a body radius under the tower and draws behind it.",
+   "front_inset": 0.6
   },
   "snap_corner_tower_widths": 1.5,
   "gate_tower_width_art": 433,
@@ -610,7 +611,7 @@
   },
   "water_gate_towers": {
    "enabled": true,
-   "note": "Round 10: every water gate is flanked by two v5 towers at its wall joins, on the banks (slid outward along the wall until the base is off the water); the runs end under them."
+   "note": "Rounds 10 and 13: every water gate is flanked by two v5 towers placed from the block centre outward at the first spot where the whole tower base outline is on dry ground (a gatehouse tower or corner already there counts as the flank). The block is trimmed to between the tower axes and below the tower bases, so it ends inside the towers."
   },
   "stone_recolor": {
    "ref": "tower_v5_CONCEPTO.png",
@@ -634,7 +635,16 @@
    3.0
   ],
   "spacing_note": "Round 10 (GOAL): an even rhythm per side; one spacing per side, the most even split of every stretch between fixed towers (corners, gatehouse towers, water-gate towers), between 1.8 and 3 wall heights (preferring 2.5). A water-gate tower that lands on a gatehouse tower or corner is that tower.",
-  "tower_spacing_preferred": 2.5
+  "tower_spacing_preferred": 2.5,
+  "contact_shadows": {
+   "wall_strip_px": 20,
+   "wall_opacity": 0.32,
+   "tower_scale": 1.2,
+   "tower_opacity": 0.34,
+   "feather_px": 5.0,
+   "note": "Round 13: soft contact shadows baked into the ground: an iso ellipse (1.2 x the base radius, centred 0.3 radius in front of the base) under every tower and gatehouse tower, and a 20 px strip along every wall foot, feathered 5 px, about 30% opacity; not across gate passages or the river.",
+   "tower_forward": 0.3
+  }
  },
  "greenery": {
   "note": "Approved map-base greenery (docs/pc-map-handoff 5edc29a3 docs/pc/look_target/crosshaven_city/work/green; pass --green <dir>). Painted at hero = 156 px, bottom-centre anchored.",

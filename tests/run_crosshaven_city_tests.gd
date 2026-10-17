@@ -1031,6 +1031,26 @@ func _test_review_data() -> void:
 	for rec in city.layers():
 		var md := str(rec.get("module", ""))
 		check(not ("diag_v3" in md) and md != "tower_CONCEPTO.png", "layer %d uses no old-style tower art (%s)" % [int(rec["id"]), md])
+	# Round 13: joins. Every tower's base outline stands on ground, not water;
+	# no gap between a tower and an adjoining module (sampled on the composite
+	# of all ring sprites in the build); no water-gate block below a tower base.
+	var r_base: float = float(city.doc.get("tower_body_radius_px", 77.5)) * 239.0 / 188.0
+	for rec in city.layers():
+		if str(rec["tag"]) != "tower":
+			continue
+		var wp2 := _tower_foot(rec)
+		var wet := 0
+		for kq in 16:
+			var ang := TAU * float(kq) / 16.0
+			var bp := wp2 + Vector2(cos(ang) * r_base * 0.9, sin(ang) * r_base * 0.45)
+			if city.zone.terrain_at(_cell_at(city.plate_to_world(bp))) == "water":
+				wet += 1
+		check(wet == 0, "tower %d base outline stands on ground (%d points on water)" % [int(rec["id"]), wet])
+	var audit: Array = city.doc.get("join_audit", [])
+	check(audit.size() >= 15, "joins audited (%d)" % audit.size())
+	for j in audit:
+		check(int(j["gap_px"]) == 0, "join %s (%s) at %s has no gap (%d px)" % [j["id"], j["kind"], j["at"], int(j["gap_px"])])
+	check(int(city.doc.get("block_below_tower_px", -1)) == 0, "no water-gate block shows below a tower base (%d px)" % int(city.doc.get("block_below_tower_px", -1)))
 	# Round 11: the recoloured stone has the tower body's mean chroma (5%).
 	var chroma: Dictionary = city.doc.get("stone_chroma", {})
 	for want in ["segment_neg", "segment_pos", "segment_flat", "watergate_neg", "watergate_pos"]:

@@ -894,6 +894,131 @@ def outer_forest(layers, images, walk, streets, river, wall_poly, green, cfg, ga
     return placed
 
 
+def contact_shadows(ground_np, layers, gates, poly, river, base_r, cfg):
+    """Round 13: soft contact shadows baked into the ground: an iso ellipse
+    under every tower (ring, corner, water gate, gatehouse towers) and a thin
+    feathered strip along every wall foot (not across the gate passages or
+    the river)."""
+    from scipy.ndimage import gaussian_filter
+    sh = np.zeros(ground_np.shape[:2], np.float32)
+    img = Image.new("L", (PLATE_W, PLATE_H), 0)
+    d = ImageDraw.Draw(img)
+    strip = int(cfg.get("wall_strip_px", 14))
+    d.line([tuple(p) for p in poly] + [tuple(poly[0])], fill=int(255 * float(cfg.get("wall_opacity", 0.28))), width=strip)
+    feet = [l["wall_point"] for l in layers if l["tag"] == "tower" and l.get("wall_point")]
+    for g in gates:
+        feet += [g["wall_join_left"], g["wall_join_right"]]
+    rx = base_r * float(cfg.get("tower_scale", 1.2))
+    for x, y in feet:
+        # in front of the base, so the visible half lies on the grass
+        cy_ = y + rx * float(cfg.get("tower_forward", 0.3))
+        d.ellipse([x - rx, cy_ - rx * 0.5, x + rx, cy_ + rx * 0.5], fill=int(255 * float(cfg.get("tower_opacity", 0.32))))
+    sh = np.asarray(img).astype(np.float32) / 255.0
+    for g in gates:
+        sh[CG.poly_mask(g["passage"])] = 0.0
+    sh = gaussian_filter(sh, float(cfg.get("feather_px", 6.0)))
+    sh[ndi_dilate(river, 2)] = 0.0
+    ground_np[...] = np.clip(ground_np.astype(np.float32) * (1.0 - sh[..., None]), 0, 255).astype(np.uint8)
+    return float(sh.max())
+
+
+def join_audit(layers, images, gates, water_axes, base_r, poly, river_mask):
+    """Round 13: composite every wall-ring sprite's alpha on the plate and
+    look at each tower's sides: a transparent pixel between a tower's outline
+    and an adjoining module (within 6 px of the joint) is a gap. Also counts
+    water-gate block pixels left below a tower's base."""
+    ring_tags = ("wall", "tower", "gate_back", "lintel", "watergate")
+    union = np.zeros((PLATE_H, PLATE_W), bool)
+    block = np.zeros((PLATE_H, PLATE_W), bool)
+    for l in layers:
+        if l["tag"] not in ring_tags:
+            continue
+        a = np.asarray(images[l["id"]])[..., 3] > 128
+        if l["tag"] == "watergate":
+            # the portcullis holes are part of the gate, not a gap
+            from scipy.ndimage import binary_fill_holes
+            a = binary_fill_holes(a)
+        x0, y0 = int(l["x"]), int(l["y"])
+        ys0, xs0 = max(0, -y0), max(0, -x0)
+        y1, x1 = min(PLATE_H, y0 + a.shape[0]), min(PLATE_W, x0 + a.shape[1])
+        if y1 <= max(0, y0) or x1 <= max(0, x0):
+            continue
+        sub = a[ys0:ys0 + (y1 - max(0, y0)), xs0:xs0 + (x1 - max(0, x0))]
+        union[max(0, y0):y1, max(0, x0):x1] |= sub
+        if l["tag"] == "watergate":
+            block[max(0, y0):y1, max(0, x0):x1] |= sub
+    out = []
+    wet = river_mask
+
+    def foot_y(x, y):
+        best = None
+        for i in range(len(poly)):
+            a, b = poly[i], poly[(i + 1) % len(poly)]
+            if min(a[0], b[0]) - 1 <= x <= max(a[0], b[0]) + 1 and abs(b[0] - a[0]) > 1e-6:
+                ly = a[1] + (b[1] - a[1]) * (x - a[0]) / (b[0] - a[0])
+                if best is None or abs(ly - y) < abs(best - y):
+                    best = ly
+        return best if best is not None else y
+
+    def sides(own, x0, y0, label, kind, line_pt):
+        gaps = 0
+        rows = 0
+        for r in range(own.shape[0]):
+            cs = np.nonzero(own[r])[0]
+            if not len(cs):
+                continue
+            y = y0 + r
+            rows += 1
+            for edge, step in ((x0 + cs.min(), -1), (x0 + cs.max(), 1)):
+                # the wall body band beside this side: between the merlons and the foot
+                fy = foot_y(edge + step * 20, y)
+                if not (fy - 150 <= y <= fy - 30):
+                    continue
+                near = [edge + step * k for k in range(1, 7)]
+                far = [edge + step * k for k in range(7, 40)]
+                if not all(0 <= x < PLATE_W for x in near + far):
+                    continue
+                # a transparent pixel over the river is the water seen through an arch
+                if any(union[y, x] for x in far) and not all(union[y, x] or wet[y, x] for x in near):
+                    gaps += 1
+        out.append({"id": label, "kind": kind, "at": [round(line_pt[0], 1), round(line_pt[1], 1)], "gap_px": gaps, "rows": rows})
+
+    for l in layers:
+        if l["tag"] == "tower":
+            a = np.asarray(images[l["id"]])[..., 3] > 128
+            sides(a, int(l["x"]), int(l["y"]), l["id"], l.get("tower_kind", "wall"), l["wall_point"])
+    by_gate = {}
+    for l in layers:
+        if l["tag"] in ("gate_back", "lintel") and l.get("gate"):
+            by_gate.setdefault(l["gate"], []).append(l)
+    for g in gates:
+        parts = by_gate.get(g["id"], [])
+        if not parts:
+            continue
+        x0 = min(int(p["x"]) for p in parts)
+        y0 = min(int(p["y"]) for p in parts)
+        x1 = max(int(p["x"]) + images[p["id"]].width for p in parts)
+        y1 = max(int(p["y"]) + images[p["id"]].height for p in parts)
+        own = np.zeros((y1 - y0, x1 - x0), bool)
+        for p in parts:
+            a = np.asarray(images[p["id"]])[..., 3] > 128
+            own[int(p["y"]) - y0:int(p["y"]) - y0 + a.shape[0], int(p["x"]) - x0:int(p["x"]) - x0 + a.shape[1]] |= a
+        for key in ("wall_join_left", "wall_join_right"):
+            sides(own, x0, y0, "%s_%s" % (g["id"], key[10:]), "gatehouse", g[key])
+    # block pixels below a water-gate tower's base (the old dark wedge)
+    below = 0
+    for l in layers:
+        if l["tag"] == "tower" and l.get("tower_kind") == "water_gate":
+            a = np.asarray(images[l["id"]])[..., 3] > 40
+            yb = int(l["y"]) + int(np.nonzero(a.any(1))[0].max())
+            for c in range(a.shape[1]):
+                x = int(l["x"]) + c
+                if 0 <= x < PLATE_W:
+                    col = block[yb + 2:min(PLATE_H, yb + 60), x] & ~river_mask[yb + 2:min(PLATE_H, yb + 60), x]
+                    below += int(col.sum())
+    return out, below
+
+
 def build_water(rb, river, art_dir):
     """Animated river (Mauro item 9): the Rosebud water package as shader inputs.
 
@@ -1325,6 +1450,9 @@ def main():
         from scipy.ndimage import gaussian_filter as _gf
         outside_soft = _gf((np.asarray(_poly_img([tuple(p_) for p_ in wall_poly])) == 0).astype(np.float32), 30.0)
         n_st = retexture_ground(ground_np, river, tex_cfg, TEX_DIR, street_drop, outside_soft)
+        if LAYOUT.get("ring_kit", {}).get("contact_shadows") and gate_log.get("ring"):
+            contact_shadows(ground_np, layers, gate_log["gates"], wall_poly, river,
+                            float(gate_log.get("tower_base_radius_px", 98.0)), LAYOUT["ring_kit"]["contact_shadows"])
         ground = Image.fromarray(ground_np)
         print("ground retextured: %d street px" % n_st)
 
@@ -1993,6 +2121,11 @@ def main():
                      "cell": {"x": int(c[0]), "y": int(c[1])}, "facing": str(n.get("facing", "S")),
                      "night": "out" if n["name"] == "warden" else "indoors"})
 
+    join_audit_out, block_below = ([], 0)
+    if gate_log.get("ring"):
+        join_audit_out, block_below = join_audit(layers, images, gate_log["gates"], gate_log.get("water_gate_axes", []),
+                                                 float(gate_log.get("tower_base_radius_px", 98.0)), wall_poly, river)
+        print("join audit gaps", sum(j["gap_px"] for j in join_audit_out), "block below tower px", block_below)
     city = {
         "format": "stasium.plate_city",
         "format_version": 1,
@@ -2069,6 +2202,8 @@ def main():
         "gates_snapped": gate_log.get("gates_snapped", []),
         "tower_spacing": gate_log.get("tower_spacing", []),
         "stone_chroma": gate_log.get("stone_chroma", {}),
+        "join_audit": join_audit_out,
+        "block_below_tower_px": block_below,
         "gate_clear": dict(LAYOUT.get("greenery", {}).get("gate_clear", {})),
     }
     json.dump(city, open(os.path.join(data_dir, "city.json"), "w"), indent=1)

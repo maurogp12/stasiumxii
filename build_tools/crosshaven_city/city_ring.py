@@ -459,24 +459,26 @@ def assemble(layers, images, walk, river, old_poly, poly, cfg, kit_dir, hero_pla
     # water gates: a v5 tower at each wall join, slid out along the wall until
     # its base is off the water
     water_towers = []
+    river_d = river
     if (cfg.get("water_gate_towers") or {}).get("enabled"):
         for i in range(ne):
             for f in [f for f in feats[i] if f["kind"] == "water"]:
                 L = math.dist(*edges[i])
                 pair = []
                 for sign in (-1.0, 1.0):
-                    st = f["s"] + sign * f["half"]
-                    for _ in range(80):
-                        wet = False
-                        for dd in (-r_body, 0.0, r_body):
-                            qx, qy = at(i, st + dd)
-                            for oy in (-r_body * 0.25, 0.0, r_body * 0.25):
-                                ix, iy = int(qx), int(qy + oy)
-                                if 0 <= iy < H_ and 0 <= ix < W_ and river[iy, ix]:
-                                    wet = True
-                        if not wet:
+                    # round 13: from the block centre outward to the first spot
+                    # where the tower's whole base outline is on dry ground
+                    st = f["s"]
+                    for _ in range(400):
+                        qx, qy = at(i, st)
+                        y0b, y1b = int(qy - r_base * 0.5) - 1, int(qy + r_base * 0.5) + 2
+                        x0b, x1b = int(qx - r_base) - 1, int(qx + r_base) + 2
+                        sub = river[max(0, y0b):min(H_, y1b), max(0, x0b):min(W_, x1b)]
+                        yy_, xx_ = np.mgrid[max(0, y0b):min(H_, y1b), max(0, x0b):min(W_, x1b)]
+                        inside_e = ((xx_ - qx) / r_base) ** 2 + ((yy_ - qy) / (r_base * 0.5)) ** 2 <= 1.0
+                        if not (sub & inside_e).any():
                             break
-                        st += sign * 4.0
+                        st += sign * 2.0
                     st = min(max(st, 0.0), L)
                     pair.append(st)
                     # a gatehouse tower (or a corner) already standing there flanks it
@@ -499,13 +501,14 @@ def assemble(layers, images, walk, river, old_poly, poly, cfg, kit_dir, hero_pla
             anchors[j].append(Lj)
     placed = {i: [] for i in range(ne)}
     spacing_log = []
-    for i in range(ne):
+
+    def even_split(i, anc, nt):
         L = math.dist(*edges[i])
-        xs = sorted(set([round(x, 3) for x in anchors[i]] + [0.0, L]))
+        xs = sorted(set([round(x, 3) for x in anc] + [0.0, L]))
         segs = []
         for x0_, x1_ in zip(xs, xs[1:]):
             mid = (x0_ + x1_) / 2.0
-            if any(lo_ < mid < hi_ for lo_, hi_ in no_tower[i]):
+            if any(lo_ < mid < hi_ for lo_, hi_ in nt):
                 continue
             if x1_ - x0_ > 1.0:
                 segs.append((x0_, x1_))
@@ -519,11 +522,52 @@ def assemble(layers, images, walk, river, old_poly, poly, cfg, kit_dir, hero_pla
             # spread of the spacing on this side; prefer spacings near the middle
             score = max(gaps) / min(gaps) + 0.02 * abs(sp - sp_pref) / wall_h
             if best is None or score < best[0]:
-                best = (score, ns, gaps)
+                best = (score, ns, gaps, segs)
+        return best
+
+    # round 13: a water-gate tower may slide outward (its block end staying
+    # inside the tower's footprint) so the side's rhythm comes out even
+    for i in range(ne):
+        movable = [(f, k) for f in feats[i] if f["kind"] == "water" and f.get("towers_s")
+                   for k in range(2) if any(abs(w[1] - f["towers_s"][k]) < 0.01 and w[0] == i for w in water_towers)]
+        if not movable:
+            continue
+        opts = []
+        for f, k in movable:
+            sign = -1.0 if f["towers_s"][k] < f["s"] else 1.0
+            reach = f["s"] + sign * (f["half"] + r_body * 0.8)
+            span = max(0.0, (reach - f["towers_s"][k]) * sign)
+            opts.append([f["towers_s"][k] + sign * d for d in np.arange(0.0, span + 0.1, 4.0)])
+        base_anchors = [x for x in anchors[i] if not any(abs(x - f["towers_s"][k]) < 0.01 for f, k in movable)]
+        best = None
+        import itertools
+        for combo in itertools.product(*opts):
+            anc = base_anchors + list(combo)
+            nt = [t for t in no_tower[i] if not any(abs(t[0] - 1.0 - min(f["towers_s"])) < 0.01 for f, _ in movable)]
+            for f, k in movable:
+                pass
+            pairs = {}
+            for (f, k), st in zip(movable, combo):
+                pairs.setdefault(id(f), [f, list(f["towers_s"])])[1][k] = st
+            nt = [t for t in no_tower[i] if not any(abs(t[0] - 1.0 - min(f["towers_s"])) < 0.01 for f, _ in movable)]
+            nt += [(min(v[1]) + 1.0, max(v[1]) - 1.0) for v in pairs.values()]
+            r = even_split(i, anc, nt)
+            if r and (best is None or r[0] < best[0] - 1e-6):
+                best = (r[0], combo, anc, nt)
+        if best:
+            _, combo, anc, nt = best
+            for (f, k), st in zip(movable, combo):
+                old = f["towers_s"][k]
+                f["towers_s"][k] = st
+                water_towers[:] = [(w[0], st) if (w[0] == i and abs(w[1] - old) < 0.01) else w for w in water_towers]
+            anchors[i] = anc
+            no_tower[i] = nt
+    for i in range(ne):
+        best = even_split(i, anchors[i], no_tower[i])
         if best is None:
             spacing_log.append({"edge": i, "gaps": []})
             continue
-        _, ns, gaps = best
+        _, ns, gaps, segs = best
         for (x0_, x1_), n_ in zip(segs, ns):
             for kk in range(1, n_):
                 placed[i].append(x0_ + (x1_ - x0_) * kk / n_)
@@ -571,8 +615,35 @@ def assemble(layers, images, walk, river, old_poly, poly, cfg, kit_dir, hero_pla
                 ts_ = [t[2] for t in tower_sorts if any(math.dist((t[0], t[1]), at(i, st_)) < 1.0 for st_ in f["towers_s"])]
                 if ts_:
                     f["rec"]["sort_y"] = round(min(float(f["rec"]["sort_y"]), min(ts_) - 1.0), 1)
-                for k_, st_ in enumerate(f["towers_s"]):
-                    pass
+                # round 13: the block ends inside its towers: nothing of it beyond
+                # the tower axes, and nothing below a tower's base (no wedge)
+                rec_ = f["rec"]
+                im_ = images[rec_["id"]]
+                arr = np.array(im_)
+                hh_, ww_ = arr.shape[:2]
+                axes = sorted(at(i, st_)[0] for st_ in f["towers_s"])
+                cols = rec_["x"] + np.arange(ww_)
+                arr[:, (cols < axes[0]) | (cols > axes[1]), 3] = 0
+                ta = np.asarray(tm.im)[..., 3] > 40
+                tw_ = ta.shape[1]
+                t_bottom = np.array([np.nonzero(ta[:, c])[0].max() if ta[:, c].any() else -1 for c in range(tw_)])
+                for st_ in f["towers_s"]:
+                    tp = at(i, st_)
+                    tx0 = tp[0] - t_anchor[0]
+                    ty0 = tp[1] - t_anchor[1]
+                    # below the tower's base line, across the tower and 6 px beside it
+                    by = int(round(ty0 + t_bottom.max() - rec_["y"]))
+                    for c in range(-6, tw_ + 6):
+                        bx = int(round(tx0 + c - rec_["x"]))
+                        px_ = int(round(tx0 + c))
+                        if 0 <= bx < ww_ and 0 <= px_ < W_:
+                            for rr_ in range(max(0, by + 1), hh_):
+                                py_ = int(rec_["y"]) + rr_
+                                # over dry ground only: the block's piers in the water stay
+                                if 0 <= py_ < H_ and not river_d[py_, px_]:
+                                    arr[rr_, bx, 3] = 0
+                images[rec_["id"]] = Image.fromarray(arr, "RGBA")
+                f["axes"] = axes
     for i in range(ne):
         for f in feats[i]:
             f.pop("rec", None)
@@ -595,7 +666,8 @@ def assemble(layers, images, walk, river, old_poly, poly, cfg, kit_dir, hero_pla
         r_front = r_body * float(tuck.get("front_mul", 1.0))
         if tuck.get("front_mode") == "silhouette":
             # end where the run meets the tower body's silhouette (x offset = body radius)
-            r_front = r_body / max(0.2, abs(b[0] - a[0]) / L)
+            # round 13: start 20% inside the body so the foot meets the base curve
+            r_front = r_body * float(tuck.get("front_inset", 0.8)) / max(0.2, abs(b[0] - a[0]) / L)
         r_back = r_body * float(tuck.get("back_mul", 0.5))
 
         def tucks(f):
@@ -666,6 +738,8 @@ def assemble(layers, images, walk, river, old_poly, poly, cfg, kit_dir, hero_pla
         rr.pop("strips")
     log["wall_runs"] = runs
     log["tower_body_radius_px"] = round(r_body, 1)
+    log["tower_base_radius_px"] = round(r_base, 1)
+    log["water_gate_axes"] = [[round(x, 1) for x in f.get("axes", [])] for i in range(ne) for f in feats[i] if f["kind"] == "water"]
     # ---- walk: new band, towers, gate footprints, then the passages
     band = CG.line_mask(poly, int(cfg.get("band_px", 40)))
     walk &= ~band

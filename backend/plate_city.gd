@@ -15,7 +15,7 @@ const CITY_ID := "crosshaven_city"
 const KEYS: Array[String] = [
 	"format", "format_version", "zone_id", "region", "name", "status", "source", "plate",
 	"grid", "spawn", "exit_cell", "gate_cells", "bridges", "plots", "plot_rules", "pets",
-	"npcs", "day_hours", "gate_stubs", "layers", "gates", "wall_contacts", "towers_cleaned", "wall_polygon", "water", "trees_keep", "plants", "map_base_only", "building_footprints", "thatch_swapped", "wall_ring", "lights", "water_gates", "gate_clear", "wall_runs", "tower_body_radius_px", "gates_snapped", "tower_spacing", "stone_chroma",
+	"npcs", "day_hours", "gate_stubs", "layers", "gates", "wall_contacts", "towers_cleaned", "wall_polygon", "water", "trees_keep", "plants", "map_base_only", "building_footprints", "thatch_swapped", "wall_ring", "lights", "water_gates", "gate_clear", "wall_runs", "tower_body_radius_px", "gates_snapped", "tower_spacing", "stone_chroma", "join_audit", "block_below_tower_px",
 ]
 const TIERS: Array[String] = ["normal", "rare", "legendary"]
 ## Grid row symbol -> [terrain, walkable].

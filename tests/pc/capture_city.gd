@@ -67,6 +67,8 @@ func _go() -> void:
 		await _walk_clip()
 	elif _set == "towers":
 		await _tower_shots()
+	elif _set == "audit":
+		await _audit_shots()
 	elif _set == "round10":
 		await _round10_shots()
 		await _tower_shots()
@@ -609,5 +611,36 @@ func _round10_shots() -> void:
 	var zoom: float = minf(vp.x / span.x, vp.y / span.y)
 	await _hold((wlo + whi) * 0.5 + Vector2(0, -40), zoom, 40, "20_wide_ring_goal")
 	_w.walker.visible = true
+	_w.camera_hold = false
+	_w.npc_plates.visible = true
+
+
+## Round 13: every tower-to-wall and tower-to-gate join, from inside and
+## from outside, with the hero standing beside it for scale.
+func _audit_shots() -> void:
+	_w.camera_hold = true
+	_w.npc_plates.visible = false
+	var poly: Array = city.doc["wall_polygon"]
+	var centre := Vector2.ZERO
+	for q in poly:
+		centre += Vector2(float(q[0]), float(q[1]))
+	centre /= float(poly.size())
+	var spots: Array = []
+	for rec in city.layers():
+		if str(rec["tag"]) == "tower":
+			spots.append([_tower_foot(rec), "%s_%d" % [str(rec.get("tower_kind", "wall")), int(rec["id"])]])
+	for g in city.gates():
+		spots.append([Vector2(float(g["wall_join_left"][0]), float(g["wall_join_left"][1])), "gate_%s_left" % g["id"]])
+		spots.append([Vector2(float(g["wall_join_right"][0]), float(g["wall_join_right"][1])), "gate_%s_right" % g["id"]])
+	for sp in spots:
+		var p: Vector2 = sp[0]
+		var inward: Vector2 = (centre - p).normalized()
+		for view in [["in", 1.0], ["out", -1.0]]:
+			var side: float = view[1]
+			var hero_at: Vector2 = city.plate_to_world(p + inward * side * 95.0 + Vector2(70.0, 0.0))
+			_w.walker.position = hero_at
+			_w.walker.z_index = int(round(hero_at.y * 10.0 / 16.0)) + 4
+			_w.walker.visible = true
+			await _hold(city.plate_to_world(p + inward * side * 60.0) + Vector2(0, -120), 1.25, 12, "22_%s_%s" % [sp[1], view[0]])
 	_w.camera_hold = false
 	_w.npc_plates.visible = true
