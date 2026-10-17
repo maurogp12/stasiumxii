@@ -285,6 +285,23 @@ func _stills() -> void:
 	_w.weather.time_of_day = 12.0
 	_w.weather.settle()
 	_w._sync_city_life()
+	# Woods close-up: the densest clump outside the walls (round 3).
+	var feet: Array[Vector2] = []
+	for rec in city.layers():
+		if str(rec.get("spot", "")) == "outer_forest":
+			feet.append(Vector2(float(rec["x"]) + float(rec["w"]) * float(rec.get("k", 1.0)) * 0.5, float(rec["sort_y"])))
+	var best := Vector2.ZERO
+	var best_n := -1
+	for f in feet:
+		var n := 0
+		for g in feet:
+			if f.distance_to(g) < 320.0:
+				n += 1
+		if n > best_n:
+			best_n = n
+			best = f
+	if best_n > 0:
+		await _hold(city.plate_to_world(best + Vector2(0, -60)), 0.75, 40, "13_woods_close")
 
 
 func _behind_house() -> Vector2i:

@@ -447,17 +447,65 @@ func update_cover(feet: Vector2, lift: float, hero_z: int, delta: float) -> bool
 	for row in rows:
 		if not bool(row["fade"]):
 			continue
+		var local: bool = str(row["tag"]) in LOCAL_FADE_TAGS
+		var low: float = maxf(float(row["min_alpha"]), LOCAL_MIN_ALPHA) if local else float(row["min_alpha"])
 		var want := 1.0
 		if int(row["z"]) > hero_z and (row["rect"] as Rect2).intersects(body) and _mask_hits(row, body):
-			want = float(row["min_alpha"])
+			want = low
 			covered = true
 			_covering.append(row)
+			if local:
+				row["fade_at"] = body.get_center()
 		var a := float(row["alpha"])
 		if a != want:
-			a = move_toward(a, want, step * (1.0 - float(row["min_alpha"])) if not lite else 1.0)
+			a = move_toward(a, want, step * (1.0 - low) if not lite else 1.0)
 			row["alpha"] = a
-			(row["node"] as CanvasItem).modulate.a = a
+			if not local:
+				(row["node"] as CanvasItem).modulate.a = a
+		if local and (a < 1.0 or (row["node"] as CanvasItem).material != null):
+			_local_fade(row, a, low)
 	return covered
+
+
+## Round 3: walls, towers, gatehouses and houses fade only round the hero
+## (a soft ellipse at about 0.5 alpha, no tint), not the whole sprite.
+const LOCAL_FADE_TAGS := ["wall", "tower", "gate_back", "lintel", "watergate", "house", "stall"]
+const LOCAL_MIN_ALPHA := 0.5
+## Hole size round the hero's body centre, world px.
+const LOCAL_FADE_RADIUS := Vector2(58.0, 74.0)
+static var _fade_shader: Shader
+
+
+func _local_fade(row: Dictionary, a: float, low: float) -> void:
+	var s := row["node"] as Sprite2D
+	if a >= 1.0:
+		s.material = null
+		return
+	var mat := s.material as ShaderMaterial
+	if mat == null:
+		if _fade_shader == null:
+			_fade_shader = load("res://scenes/world/crosshaven/crosshaven_city_fade.gdshader")
+		mat = ShaderMaterial.new()
+		mat.shader = _fade_shader
+		s.material = mat
+	var sc := s.scale.x
+	var at: Vector2 = row.get("fade_at", s.position)
+	var local := (at - s.position) / sc
+	if s.flip_h and s.texture != null:
+		local.x = float(s.texture.get_width()) - local.x
+	mat.set_shader_parameter("centre_px", local)
+	mat.set_shader_parameter("radius_px", LOCAL_FADE_RADIUS / sc)
+	mat.set_shader_parameter("min_alpha", low)
+	mat.set_shader_parameter("fade", clampf((1.0 - a) / maxf(0.001, 1.0 - low), 0.0, 1.0))
+
+
+## What a row shows at the hero: its whole-sprite alpha, or the local fade.
+func alpha_seen(row: Dictionary) -> float:
+	var s := row["node"] as CanvasItem
+	if s.material is ShaderMaterial:
+		var m := s.material as ShaderMaterial
+		return lerpf(1.0, float(m.get_shader_parameter("min_alpha")), float(m.get_shader_parameter("fade")))
+	return s.modulate.a
 
 
 ## Tags whose art hides an NPC's name plate (coordinator review 4).

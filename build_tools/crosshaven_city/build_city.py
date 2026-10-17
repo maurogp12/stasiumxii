@@ -813,16 +813,19 @@ def outer_forest(layers, images, walk, streets, river, wall_poly, green, cfg, ga
     hi = int(cfg.get("max", 60))
     near_band = (d_wall < float(cfg.get("wall_foot_band_px", 300))) & ok
     far_band = (d_wall > float(cfg.get("woods_from_px", 450))) & ok
+    # Review 3: clumps of 5-15 with crowns overlapping, hugging the wall foot
+    # and thickening into woods toward the plate edges.
     centres = []
-    for band, n_c in ((near_band, int(cfg.get("wall_foot_clusters", 7))), (far_band, int(cfg.get("woods_clusters", 6)))):
+    for band, n_c, woods in ((near_band, int(cfg.get("wall_foot_clusters", 12)), False),
+                             (far_band, int(cfg.get("woods_clusters", 10)), True)):
         ys, xs = np.nonzero(band)
         order = list(range(len(xs)))
         rng.shuffle(order)
         got = 0
         for i in order:
             x, y = float(xs[i] * q), float(ys[i] * q)
-            if all(math.hypot(x - a, (y - b) * 2.0) > float(cfg.get("cluster_gap_px", 520)) for a, b, _ in centres):
-                centres.append((x, y, band is far_band))
+            if all(math.hypot(x - a_, (y - b_) * 2.0) > float(cfg.get("cluster_gap_px", 420)) for a_, b_, _ in centres):
+                centres.append((x, y, woods))
                 got += 1
                 if got >= n_c:
                     break
@@ -831,45 +834,49 @@ def outer_forest(layers, images, walk, streets, river, wall_poly, green, cfg, ga
     nid = max(nid, 9000)
     placed = []
     jit = cfg.get("scale_jitter", [0.9, 1.1])
-    rounds = 0
-    while len(placed) < target and rounds < 40:
-        rounds += 1
-        for cx_, cy_, woods in centres:
-            if len(placed) >= target:
+    lo_n, hi_n = cfg.get("clump_size", [5, 15])
+    gap = float(cfg.get("tree_gap_px", 52))
+    hi = min(hi, int(cfg.get("target", hi)))
+    for cx_, cy_, woods in centres:
+        if len(placed) >= hi:
+            break
+        want = rng.randint(int(lo_n), int(hi_n))
+        if woods:
+            want = max(want, rng.randint(9, int(hi_n)))
+        spread = float(cfg.get("clump_spread_px", 48)) * math.sqrt(want)
+        n_here = 0
+        for _try in range(want * 25):
+            if n_here >= want or len(placed) >= hi:
                 break
-            # woods clusters are denser and wider than the wall-foot ones
-            per = rng.randint(2, 3) if woods else rng.randint(1, 2)
-            for _ in range(per):
-                for _try in range(12):
-                    r = abs(rng.gauss(0, 150 if woods else 105))
-                    a = rng.uniform(0, 2 * math.pi)
-                    x, y = cx_ + r * math.cos(a), cy_ + 0.5 * r * math.sin(a)
-                    ix, iy = int(x) // q, int(y) // q
-                    if not (0 <= ix < ww and 0 <= iy < hh) or not ok[iy, ix]:
-                        continue
-                    if any(math.hypot(x - a_, (y - b_) * 1.7) < float(cfg.get("tree_gap_px", 62)) for a_, b_ in taken):
-                        continue
-                    break
-                else:
-                    continue
-                name = pool[rng.randrange(len(pool))] if woods else pool[(len(placed)) % len(pool)]
-                art = green["img"][name]
-                sc = round(rng.uniform(float(jit[0]), float(jit[1])), 3)
-                w_, h_ = art.width * sc, art.height * sc
-                rec = {"id": nid, "file": green["files"][name], "art_file": green["files"][name], "tag": "tree", "plant": name,
-                       "x": int(round(x - w_ / 2.0)), "y": int(round(y - h_)), "sort_y": round(y, 1),
-                       "under_everything": False, "fade": "occluding_only", "fade_min_alpha": 0.45,
-                       "spot": "outer_forest", "k": sc, "flip": rng.random() < 0.5}
-                images[nid] = art
-                layers.append(rec)
-                taken.append((x, y))
-                placed.append(rec)
-                nid += 1
-                # the trunk blocks, the crown does not
-                sl, mm = ellipse_mask(walk.shape, x, y - 5, w_ * 0.14, max(6.0, w_ * 0.06))
-                walk[sl] &= ~mm
-                if len(placed) >= min(target, hi):
-                    break
+            r = abs(rng.gauss(0, spread))
+            a = rng.uniform(0, 2 * math.pi)
+            x, y = cx_ + r * math.cos(a), cy_ + 0.5 * r * math.sin(a)
+            ix, iy = int(x) // q, int(y) // q
+            if not (0 <= ix < ww and 0 <= iy < hh) or not ok[iy, ix]:
+                continue
+            if any(math.hypot(x - a_, (y - b_) * 1.7) < gap for a_, b_ in taken):
+                continue
+            if woods:
+                name = pool[rng.randrange(len(pool))]
+            else:
+                # wall-foot clumps lean to oaks with a few cypresses
+                name = pool[rng.randrange(2)] if rng.random() < 0.7 else pool[2 + rng.randrange(len(pool) - 2)]
+            art = green["img"][name]
+            sc = round(rng.uniform(float(jit[0]), float(jit[1])), 3)
+            w_, h_ = art.width * sc, art.height * sc
+            rec = {"id": nid, "file": green["files"][name], "art_file": green["files"][name], "tag": "tree", "plant": name,
+                   "x": int(round(x - w_ / 2.0)), "y": int(round(y - h_)), "sort_y": round(y, 1),
+                   "under_everything": False, "fade": "occluding_only", "fade_min_alpha": 0.45,
+                   "spot": "outer_forest", "k": sc, "flip": rng.random() < 0.5}
+            images[nid] = art
+            layers.append(rec)
+            taken.append((x, y))
+            placed.append(rec)
+            nid += 1
+            n_here += 1
+            # the trunk blocks, the crown does not
+            sl, mm = ellipse_mask(walk.shape, x, y - 5, w_ * 0.14, max(6.0, w_ * 0.06))
+            walk[sl] &= ~mm
     return placed
 
 
@@ -910,7 +917,7 @@ def build_water(rb, river, art_dir):
     }
 
 
-def retexture_ground(ground_np, river, cfg, tex_dir, drop=None):
+def retexture_ground(ground_np, river, cfg, tex_dir, drop=None, outside=None):
     """Item 5/17: the new grass and cobble (top-down tiles) projected onto the
     plate's 2:1 ground. Ground coords per plate px: u = x/2 + y, v = y - x/2
     (a 64x32 cell is 32 x 32 units); a texture px covers 1/k units. Streets
@@ -949,6 +956,24 @@ def retexture_ground(ground_np, river, cfg, tex_dir, drop=None):
         lo, hi = g2cfg.get("blend", [0.35, 0.65])
         wmix = np.clip((noise - float(lo)) / max(1e-6, float(hi) - float(lo)), 0.0, 1.0)
         wmix = wmix * wmix * (3 - 2 * wmix)
+        # review 3: the second layer at lower contrast (pulled to its mean)
+        c2 = float(g2cfg.get("contrast", 1.0))
+        g2mean = g2tex.reshape(-1, 3).mean(0)
+        g2tex = g2mean + (g2tex - g2mean) * c2
+    tint_cfg = cfg.get("tint_patches")
+    if tint_cfg:
+        # very low frequency value and hue patches (about +-6%)
+        rs2 = np.random.RandomState(int(tint_cfg.get("seed", 11)))
+        cell2 = int(tint_cfg.get("patch_px", 1400))
+        Hn2, Wn2 = ground_np.shape[0] // cell2 + 3, ground_np.shape[1] // cell2 + 3
+
+        def soft_field():
+            c_ = gaussian_filter(rs2.rand(Hn2, Wn2).astype(np.float32), 0.9)
+            c_ = (c_ - c_.mean()) / max(1e-6, np.abs(c_ - c_.mean()).max())
+            return np.asarray(Image.fromarray(c_).resize((Wn2 * cell2, Hn2 * cell2), Image.BICUBIC))[:ground_np.shape[0], :ground_np.shape[1]]
+        t_val = soft_field() * float(tint_cfg.get("value", 0.06))
+        t_hue = soft_field() * float(tint_cfg.get("hue", 0.06))
+    out_cfg = cfg.get("outside_meadow", {})
     kg = float(cfg.get("grass_px_per_unit", 1.6))
     kc = float(cfg.get("cobble_px_per_unit", 2.2))
     g = ground_np.astype(np.int16)
@@ -973,8 +998,19 @@ def retexture_ground(ground_np, river, cfg, tex_dir, drop=None):
         if g2cfg:
             g2x = np.floor((u + g2off[0]) * kg * g2k).astype(np.int64) % g2tex.shape[1]
             g2y = np.floor((v + g2off[1]) * kg * g2k).astype(np.int64) % g2tex.shape[0]
-            wm = wmix[y0:y1, :, None]
+            wm = wmix[y0:y1, :, None] * float(g2cfg.get("weight", 1.0))
             grass = grass * (1 - wm) + g2tex[g2y, g2x] * wm
+        if tint_cfg:
+            tv = 1.0 + t_val[y0:y1, :, None]
+            th = t_hue[y0:y1, :, None]
+            grass = grass * tv * np.concatenate([1.0 + th * 0.6, np.ones_like(th), 1.0 - th], axis=2)
+        if outside is not None and out_cfg:
+            o_ = outside[y0:y1, :, None]
+            lum = grass.mean(2, keepdims=True)
+            sat_k = 1.0 - float(out_cfg.get("desaturate", 0.10))
+            dim = float(out_cfg.get("value", 0.95))
+            meadow = (lum + (grass - lum) * sat_k) * dim
+            grass = grass * (1 - o_) + meadow * o_
         cx_ = np.floor(u * kc).astype(np.int64) % ctex.shape[1]
         cy_ = np.floor(v * kc).astype(np.int64) % ctex.shape[0]
         aa = a[y0:y1, :, None]
@@ -1238,7 +1274,9 @@ def main():
         streets_pre &= ~street_drop
     tex_cfg = LAYOUT.get("ground_textures", {})
     if tex_cfg and TEX_DIR and os.path.isdir(TEX_DIR):
-        n_st = retexture_ground(ground_np, river, tex_cfg, TEX_DIR, street_drop)
+        from scipy.ndimage import gaussian_filter as _gf
+        outside_soft = _gf((np.asarray(_poly_img([tuple(p_) for p_ in wall_poly])) == 0).astype(np.float32), 30.0)
+        n_st = retexture_ground(ground_np, river, tex_cfg, TEX_DIR, street_drop, outside_soft)
         ground = Image.fromarray(ground_np)
         print("ground retextured: %d street px" % n_st)
 
@@ -1514,6 +1552,25 @@ def main():
             forest = outer_forest(layers, images, walk, streets, river, wall_poly, green, LAYOUT["greenery"]["outer_forest"],
                                   gate_log.get("gates", []), zones["bridges"])
             print("outer forest trees", len(forest))
+            # review 3: a soft dark blob under the clumps so the woods read as a mass
+            shade_cfg = LAYOUT["greenery"]["outer_forest"].get("shade", {})
+            if shade_cfg and forest:
+                from scipy.ndimage import gaussian_filter as _gf2
+                q_ = 4
+                acc = np.zeros((PLATE_H // q_ + 1, PLATE_W // q_ + 1), np.float32)
+                for rec in forest:
+                    art = images[rec["id"]]
+                    fx = rec["x"] + art.width * rec["k"] / 2.0
+                    fy = rec["sort_y"] - art.width * rec["k"] * 0.12
+                    acc[min(acc.shape[0] - 1, int(fy) // q_), min(acc.shape[1] - 1, int(fx) // q_)] += 1.0
+                rad = float(shade_cfg.get("radius_px", 70)) / q_
+                blob = _gf2(acc, (rad * 0.5, rad))
+                blob = np.clip(blob / max(1e-6, float(shade_cfg.get("full_at", 0.6)) * blob.max()), 0.0, 1.0)
+                big = np.asarray(Image.fromarray(blob).resize((PLATE_W, PLATE_H), Image.BILINEAR))
+                keep_clear = _gf2((streets | river).astype(np.float32), 6.0)
+                k_ = float(shade_cfg.get("strength", 0.38)) * big * (1.0 - np.clip(keep_clear * 2.0, 0, 1))
+                ground_np[...] = np.clip(ground_np.astype(np.float32) * (1.0 - k_[..., None]), 0, 255).astype(np.uint8)
+                ground = Image.fromarray(ground_np)
     print("bushes and flowers placed", len(planted))
 
     for g in gate_log["gates"]:

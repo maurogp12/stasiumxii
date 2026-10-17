@@ -638,7 +638,9 @@ func _test_fade(w: Node2D) -> void:
 	var feet: Vector2 = w.walker.position
 	var covered: bool = plate.update_cover(feet, 0.0, w.walker.z_index, 1.0)
 	check(covered, "hero behind an occluder is covered")
-	check(float(target["alpha"]) < 0.5 and (target["node"] as CanvasItem).modulate.a < 0.5, "the occluder fades to see-through (%.2f)" % float(target["alpha"]))
+	check(float(target["alpha"]) <= 0.5 and plate.alpha_seen(target) <= 0.5, "the occluder fades to see-through (%.2f)" % float(target["alpha"]))
+	if str(target["tag"]) in plate.LOCAL_FADE_TAGS:
+		check((target["node"] as CanvasItem).modulate == Color(1, 1, 1, 1), "a structure fades only round the hero: the sprite keeps a neutral modulate")
 	check(target in plate.covering(), "the house is listed as covering")
 	# Ramp: from opaque, one 0.1 s tick goes part way.
 	w.walker.place(w.zone, city.spawn())
@@ -660,7 +662,7 @@ func _test_fade(w: Node2D) -> void:
 			if c2.x >= 0:
 				w.walker.place(w.zone, c2)
 				plate.update_cover(w.walker.position, 0.0, w.walker.z_index, 1.0)
-				wall_ok = float(row["alpha"]) < 0.5
+				wall_ok = float(row["alpha"]) <= 0.5 and (row["node"] as CanvasItem).material is ShaderMaterial and (row["node"] as CanvasItem).modulate.a == 1.0
 				break
 	check(wall_ok, "a wall fades while the hero is behind it")
 	w.walker.place(w.zone, city.spawn())
@@ -727,7 +729,10 @@ func _test_performance(w: Node2D) -> void:
 	if not target.is_empty():
 		w.walker.place(w.zone, cell)
 		w.city_plate.update_cover(w.walker.position, 0.0, w.walker.z_index, 0.001)
-		check(is_equal_approx(float(target["alpha"]), float(target["min_alpha"])), "Performance mode fades at once")
+		var low := float(target["min_alpha"])
+		if str(target["tag"]) in w.city_plate.LOCAL_FADE_TAGS:
+			low = maxf(low, w.city_plate.LOCAL_MIN_ALPHA)
+		check(is_equal_approx(float(target["alpha"]), low), "Performance mode fades at once")
 	for n in w.npcs_root.get_children():
 		check(is_equal_approx(float(n.idle_rate), w.LITE_IDLE_RATE), "NPC %s idles at the lite rate" % n.name)
 	w.settings.set_performance(false)
@@ -835,7 +840,7 @@ func _test_review_data() -> void:
 		check(streets.get_pixel(sx, sy).r < 0.5, "outer tree %d is off the roads" % int(rec["id"]))
 		var cell: Vector2i = _cell_at(city.plate_to_world(foot))
 		check(city.zone.terrain_at(cell) != "water", "outer tree %d is off the river" % int(rec["id"]))
-	check(outer >= 40 and outer <= 60, "40-60 trees outside the walls (%d)" % outer)
+	check(outer >= 120 and outer <= 160, "120-160 trees outside the walls (%d)" % outer)
 	# 7: every gate road ends in an exit to a region road (data).
 	var stubs: Array = city.stubs_from(PlateCity.CITY_ID)
 	var plate: Vector2 = city.plate_size()

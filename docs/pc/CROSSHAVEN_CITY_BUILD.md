@@ -13,8 +13,10 @@ Change list: `docs/pc/look_target/crosshaven_city/README.md` on `claude/pc-zones
 - **Ground (review 1).** Grass and cobble come from the coordinator tiles, projected on the iso lattice.
   The cobble tile is drawn at 0.35x, so a stone reads a hero foot to shin across. The grass is at 0.7x.
   A second grass layer (rotated 90 degrees, offset, 1.13x) is blended in by low-frequency noise to
-  break the clover repeat (`ground_textures` in the layout). Tiles are resized seamlessly (3x3,
-  resize, keep the middle).
+  break the clover repeat (`ground_textures` in the layout). Round 3: that layer is at 0.6 contrast
+  and 0.8 weight. Very-low-frequency value and hue patches (about +-6%, about 1400 px) are added.
+  Outside the walls the meadow is 10% less saturated and 5% darker. Tiles are resized seamlessly
+  (3x3, resize, keep the middle).
 - **Walls: kit v2 ring.** The approved segments and tower from `work/walls/kit2` + `kit/tower`. The
   ring uses only the two iso diagonals plus horizontal N/S runs. Towers sit at the corners and every
   7 wall heights. **No ring tower stands within 1.3 wall heights of a gatehouse**, corners included
@@ -49,15 +51,21 @@ Change list: `docs/pc/look_target/crosshaven_city/README.md` on `claude/pc-zones
   walkable.
 - **Greenery.** Inside: 20 trees (oak, cypress, blossom) from `trees_keep_ring_v2.json`, on grass
   only; bushes block and flowers are walk-through; lamps, benches and planters sit at the plazas and
-  along the ring road. Outside (review 6): 50 oak and cypress trees in wall-foot clusters and woods
-  toward the plate edges (`greenery.outer_forest`, seeded). They keep clear of roads, the river, the
-  gate approaches and the bridges. The prototype has no river rock sprites, so no rocks are added.
+  along the ring road. Outside (reviews 6 and round 3): 140 oak and cypress trees in clumps of 5-15
+  with overlapping crowns, hugging the wall foot and thickening into woods toward the plate edges
+  (`greenery.outer_forest`, seeded). A soft dark multiply blob is baked into the ground under the
+  clumps so the woods read as a mass. They keep clear of roads, the river, the gate approaches and
+  the bridges. The prototype has no river rock sprites, so no rocks are added.
   Plants and props keep clear of each plot's entrance.
 - **Night (review 5).** Every `plaza_lamp_single` and `plaza_lamp_double` gets an additive halo on
   each lamp head and a light circle on the ground (the world lamp glow art). Outside Performance mode
   there is also a 2D point light that lifts the night tint. Lamps are lit from 16:00 to 07:00
   (`lights` in data). In Performance mode there is no point light and no flicker. Lit windows come
   later, with the buildings.
+- **Fade (round 3).** Walls, towers, gatehouses, water gates, houses and stalls fade only round the
+  hero: a soft ellipse about 58 x 74 world px at 0.5 alpha, with no tint
+  (`crosshaven_city_fade.gdshader`, a material set only while the row fades). The rest of the
+  sprite stays opaque and its modulate stays white. Trees still fade as a whole sprite.
 - **Name plates (review 4).** An NPC's name plate hides while a wall, tower, gate, house or stall
   covers the NPC (the fade's own rect and mask test, `occluded()`).
 - **Scale.** `plate.scale` is 1.15, one factor for the whole plate. Ratios to the hero: house 3.08,

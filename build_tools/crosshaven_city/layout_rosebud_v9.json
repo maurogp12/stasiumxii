@@ -202,9 +202,22 @@
    "blend": [
     0.35,
     0.65
-   ]
+   ],
+   "contrast": 0.6,
+   "weight": 0.8
   },
-  "scale_note": "Coordinator review 1: cobble tile at 0.35x (a stone is a hero foot to shin across), grass at 0.7x; a second grass layer (rotated 90 deg, offset, 1.13x) blended by low-frequency noise breaks the clover repeat."
+  "scale_note": "Coordinator review 1: cobble tile at 0.35x (a stone is a hero foot to shin across), grass at 0.7x; a second grass layer (rotated 90 deg, offset, 1.13x) blended by low-frequency noise breaks the clover repeat.",
+  "tint_patches": {
+   "seed": 11,
+   "patch_px": 1400,
+   "value": 0.06,
+   "hue": 0.06
+  },
+  "outside_meadow": {
+   "desaturate": 0.1,
+   "value": 0.95
+  },
+  "review3_note": "Coordinator round 3: second grass layer at 0.6 contrast and 0.8 weight; very-low-frequency value/hue patches (+-6%); outside the walls 10% less saturation and 5% darker."
  },
  "map_base_only": {
   "hide_tags": [
@@ -574,29 +587,39 @@
    "planter": "plaza_planter_stone"
   },
   "outer_forest": {
-   "note": "Coordinator review 6: clusters outside the walls (wall-foot clusters + woods toward the plate edges), approved oak and cypress only, roads/river/gate approaches/bridges clear.",
+   "note": "Coordinator rounds 2-3: dense clumps of 5-15 trees with overlapping crowns outside the walls (about 140), hugging the wall foot and thickening into woods toward the plate edges; a soft dark multiply blob under the clumps; approved oak and cypress only; roads/river/gate approaches/bridges clear.",
    "seed": 41,
-   "target": 50,
-   "max": 60,
+   "target": 140,
+   "max": 160,
    "pool": [
     "tree_oak_a",
     "tree_oak_b",
     "tree_cypress_a",
     "tree_cypress_b"
    ],
-   "wall_foot_clusters": 8,
-   "woods_clusters": 7,
-   "wall_foot_band_px": 300,
-   "woods_from_px": 450,
-   "cluster_gap_px": 520,
+   "wall_foot_clusters": 12,
+   "woods_clusters": 11,
+   "wall_foot_band_px": 320,
+   "woods_from_px": 420,
+   "cluster_gap_px": 420,
    "road_clear_px": 70,
    "river_clear_px": 50,
    "wall_clear_px": 70,
-   "tree_gap_px": 62,
+   "tree_gap_px": 52,
    "scale_jitter": [
     0.9,
     1.1
-   ]
+   ],
+   "clump_size": [
+    5,
+    15
+   ],
+   "clump_spread_px": 48,
+   "shade": {
+    "radius_px": 80,
+    "strength": 0.38,
+    "full_at": 0.55
+   }
   },
   "lights": {
    "note": "Coordinator review 5: warm lamp light at dusk and night. Head points are fractions of the lamp art (x from the left, y from the top). Halo and ground pool reuse the world lamp glow art, additive. Performance mode keeps them still (no flicker). Outside Performance mode each lamp also carries a 2D point light that lifts the night tint around it.",
