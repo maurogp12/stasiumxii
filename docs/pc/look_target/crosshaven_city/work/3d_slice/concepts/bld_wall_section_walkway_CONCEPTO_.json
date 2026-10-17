@@ -12,7 +12,7 @@
  ],
  "pivot": "footprint_centre_ground_y0",
  "front": "+Z",
- "tris_budget": "kit piece 5-20k (landmark band 20-60k for full gatehouse)",
+ "tris_budget": "kit piece 2-6k",
  "lod": [
   "LOD0",
   "LOD1 ~50%",
@@ -27,5 +27,11 @@
  "tool": "Scenario model_xai-grok-imagine-image-2-0 (see ../raw/generation_log.jsonl)",
  "length_m": 8,
  "grid_m": 1,
- "walkway": "inner side"
+ "walkway": "on top of solid wall, behind parapet",
+ "version": "v2",
+ "thickness_m": 2.5,
+ "parapet": "merlons on outer (+Z) edge",
+ "inner_lip_m": 0.4,
+ "face": "plain, no balcony/brackets",
+ "ends": "clean vertical, tile on 1 m grid"
 }

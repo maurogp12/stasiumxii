@@ -1,0 +1,24 @@
+{
+ "label": "🖼️ IMAGEN / CONCEPTO, TODAVÍA HAY QUE CONSTRUIRLO",
+ "name": "bld_gate_arch_stone_a",
+ "concept": "bld_gate_arch_stone_CONCEPTO_.png",
+ "height_m": 8.0,
+ "footprint_m": [
+  7.754,
+  5.027
+ ],
+ "pivot": "footprint centre on ground (y=0)",
+ "front": "+Z (assumed from concept 3/4, verify)",
+ "units": "metres, Y-up",
+ "tris": {
+  "LOD0": 10748,
+  "LOD1": 5373,
+  "LOD2": 2149
+ },
+ "budget": "kit piece 5-20k (landmark band 20-60k for full gatehouse)",
+ "collider": "bld_gate_arch_stone_a-col.glb (box)",
+ "textures": "Tripo PBR embedded (albedo+metal/rough+normal as delivered)",
+ "source_glb": "raw/bld_gate_arch_stone_HZ7gBY.glb",
+ "uniform_scale": 8.0,
+ "model_built": "preview only, not tested in game"
+}

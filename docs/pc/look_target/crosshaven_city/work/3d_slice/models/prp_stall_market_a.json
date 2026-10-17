@@ -1,0 +1,24 @@
+{
+ "label": "🖼️ IMAGEN / CONCEPTO, TODAVÍA HAY QUE CONSTRUIRLO",
+ "name": "prp_stall_market_a",
+ "concept": "prp_stall_market_CONCEPTO_.png",
+ "height_m": 2.6,
+ "footprint_m": [
+  2.549,
+  1.738
+ ],
+ "pivot": "foot centre on ground (y=0)",
+ "front": "+Z (assumed from concept 3/4, verify)",
+ "units": "metres, Y-up",
+ "tris": {
+  "LOD0": 2610,
+  "LOD1": 1304,
+  "LOD2": 520
+ },
+ "budget": "0.5-3k",
+ "collider": "prp_stall_market_a-col.glb (box)",
+ "textures": "Tripo PBR embedded (albedo+metal/rough+normal as delivered)",
+ "source_glb": "raw/prp_stall_market_TeMe5b.glb",
+ "uniform_scale": 2.6,
+ "model_built": "preview only, not tested in game"
+}

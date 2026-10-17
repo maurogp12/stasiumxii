@@ -1,0 +1,24 @@
+{
+ "label": "🖼️ IMAGEN / CONCEPTO, TODAVÍA HAY QUE CONSTRUIRLO",
+ "name": "bld_wall_section_walkway_a",
+ "concept": "bld_wall_section_walkway_CONCEPTO_.png",
+ "height_m": 6.0,
+ "footprint_m": [
+  8.0,
+  2.242
+ ],
+ "pivot": "footprint centre on ground (y=0)",
+ "front": "+Z (assumed from concept 3/4, verify)",
+ "units": "metres, Y-up",
+ "tris": {
+  "LOD0": 11090,
+  "LOD1": 5545,
+  "LOD2": 2216
+ },
+ "budget": "kit piece 2-6k",
+ "collider": "bld_wall_section_walkway_a-col.glb (box)",
+ "textures": "Tripo PBR embedded (albedo+metal/rough+normal as delivered)",
+ "source_glb": "raw/bld_wall_v2_Ec8yjW.glb",
+ "uniform_scale": 8.0,
+ "model_built": "preview only, not tested in game"
+}

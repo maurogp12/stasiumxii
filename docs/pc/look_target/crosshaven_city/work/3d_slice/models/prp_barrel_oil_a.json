@@ -1,0 +1,24 @@
+{
+ "label": "🖼️ IMAGEN / CONCEPTO, TODAVÍA HAY QUE CONSTRUIRLO",
+ "name": "prp_barrel_oil_a",
+ "concept": "prp_barrel_oil_CONCEPTO_.png",
+ "height_m": 1.0,
+ "footprint_m": [
+  0.886,
+  0.874
+ ],
+ "pivot": "foot centre on ground (y=0)",
+ "front": "+Z (assumed from concept 3/4, verify)",
+ "units": "metres, Y-up",
+ "tris": {
+  "LOD0": 2592,
+  "LOD1": 1296,
+  "LOD2": 518
+ },
+ "budget": "0.5-3k",
+ "collider": "prp_barrel_oil_a-col.glb (box)",
+ "textures": "Tripo PBR embedded (albedo+metal/rough+normal as delivered)",
+ "source_glb": "raw/prp_barrel_oil_Qdw5uH.glb",
+ "uniform_scale": 1.0,
+ "model_built": "preview only, not tested in game"
+}
