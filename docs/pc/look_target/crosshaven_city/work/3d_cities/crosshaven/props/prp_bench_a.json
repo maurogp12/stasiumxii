@@ -4,7 +4,7 @@
  "concept": "prp_bench_CONCEPTO_.png",
  "height_m": 0.9,
  "footprint_m": [
-  1.326,
+  1.8,
   0.607
  ],
  "pivot": "footprint centre on ground (y=0)",
@@ -24,5 +24,7 @@
   1.0,
   1.0
  ],
- "facing_note": "Main entrance faces +Z. Build agent rotates on import."
+ "facing_note": "Seat faces +Z (backrest at -Z). Verified from mesh: backrest geometry mean z=-0.21.",
+ "length_scale_x": 1.357,
+ "fix_v2": "lengthened along X only to 1.8 m (height/depth unchanged)"
 }

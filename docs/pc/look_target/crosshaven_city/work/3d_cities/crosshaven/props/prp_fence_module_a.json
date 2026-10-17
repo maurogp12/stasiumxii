@@ -1,0 +1,31 @@
+{
+ "module_length_m": 2.0,
+ "snap": "pieces join at x=±1.0; module owns the post at x=-1; finish a run with prp_fence_end_a at x=+1",
+ "facing_note": "Palings sit on the +Z (outside / road) face of the rails.",
+ "name": "prp_fence_module_a",
+ "label": "🖼️ IMAGEN / CONCEPTO, TODAVÍA HAY QUE CONSTRUIRLO — procedural build",
+ "tris": {
+  "LOD0": 168,
+  "LOD1": 168,
+  "LOD2": 168
+ },
+ "bounds_m": [
+  [
+   -1.09,
+   0.0,
+   -0.09
+  ],
+  [
+   1.0,
+   1.2,
+   0.09
+  ]
+ ],
+ "height_m": 1.2,
+ "units": "metres, Y-up",
+ "pivot": "ground (y=0)",
+ "front": "+Z",
+ "textures": "procedural wood 1024/512/256, iron 512/256/128 (0 CU)",
+ "collider": "prp_fence_module_a-col.glb (boxes)",
+ "status": "procedural, not tested in game"
+}

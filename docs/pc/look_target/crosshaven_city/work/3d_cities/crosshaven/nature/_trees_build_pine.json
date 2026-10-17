@@ -1,0 +1,59 @@
+{
+ "nat_pine_a": {
+  "tris": {
+   "LOD0": 7500,
+   "LOD1": 3000,
+   "LOD2": 800
+  },
+  "height_m": 12.16,
+  "crown_m": [
+   5.92,
+   6.05
+  ],
+  "collider": {
+   "file": "nat_pine_a-col.glb",
+   "shape": "capsule (trunk only, never canopy)",
+   "radius_m": 0.266,
+   "height_m": 4.4,
+   "center_y_m": 2.2
+  }
+ },
+ "nat_pine_b": {
+  "tris": {
+   "LOD0": 7500,
+   "LOD1": 3000,
+   "LOD2": 800
+  },
+  "height_m": 9.96,
+  "crown_m": [
+   5.52,
+   5.24
+  ],
+  "collider": {
+   "file": "nat_pine_b-col.glb",
+   "shape": "capsule (trunk only, never canopy)",
+   "radius_m": 0.218,
+   "height_m": 3.61,
+   "center_y_m": 1.8
+  }
+ },
+ "nat_pine_c": {
+  "tris": {
+   "LOD0": 7500,
+   "LOD1": 3000,
+   "LOD2": 800
+  },
+  "height_m": 14.35,
+  "crown_m": [
+   7.72,
+   7.1
+  ],
+  "collider": {
+   "file": "nat_pine_c-col.glb",
+   "shape": "capsule (trunk only, never canopy)",
+   "radius_m": 0.314,
+   "height_m": 5.19,
+   "center_y_m": 2.6
+  }
+ }
+}

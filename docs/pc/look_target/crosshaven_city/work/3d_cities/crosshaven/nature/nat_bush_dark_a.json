@@ -1,0 +1,26 @@
+{
+ "id": "nat_bush_dark_a",
+ "label": "🖼️ IMAGEN / CONCEPTO, TODAVÍA HAY QUE CONSTRUIRLO — procedural build",
+ "variant": "dark",
+ "height_m": 0.9,
+ "width_m": 0.99,
+ "tris": {
+  "LOD0": 548,
+  "LOD1": 236,
+  "LOD2": 104
+ },
+ "build": "low-poly core mesh + 3 alpha-cut leaf-card clumps (crossed quads), atlas textures/leaf_bush_* quadrant 2, alphaMode MASK",
+ "vertex_color_COLOR_0": {
+  "R": "sway",
+  "G": "per-clump phase",
+  "B": "flutter (1 cards, 0.3 core)"
+ },
+ "note_godot": "COLOR_0 is wind data, not tint",
+ "collider": {
+  "file": "nat_bush_dark_a-col.glb",
+  "shape": "8-sided cylinder r=0.27 h=0.63 (drop it if bushes are walk-through)"
+ },
+ "pivot": "ground centre",
+ "front": "+Z (radially symmetric)",
+ "up": "+Y"
+}

@@ -1,0 +1,59 @@
+{
+ "nat_cypress_a": {
+  "tris": {
+   "LOD0": 7500,
+   "LOD1": 3000,
+   "LOD2": 800
+  },
+  "height_m": 9.29,
+  "crown_m": [
+   3.34,
+   3.48
+  ],
+  "collider": {
+   "file": "nat_cypress_a-col.glb",
+   "shape": "capsule (trunk only, never canopy)",
+   "radius_m": 0.206,
+   "height_m": 3.4,
+   "center_y_m": 1.7
+  }
+ },
+ "nat_cypress_b": {
+  "tris": {
+   "LOD0": 7500,
+   "LOD1": 3000,
+   "LOD2": 800
+  },
+  "height_m": 7.71,
+  "crown_m": [
+   2.94,
+   2.84
+  ],
+  "collider": {
+   "file": "nat_cypress_b-col.glb",
+   "shape": "capsule (trunk only, never canopy)",
+   "radius_m": 0.169,
+   "height_m": 2.79,
+   "center_y_m": 1.39
+  }
+ },
+ "nat_cypress_c": {
+  "tris": {
+   "LOD0": 7500,
+   "LOD1": 2998,
+   "LOD2": 800
+  },
+  "height_m": 11.37,
+  "crown_m": [
+   3.76,
+   3.83
+  ],
+  "collider": {
+   "file": "nat_cypress_c-col.glb",
+   "shape": "capsule (trunk only, never canopy)",
+   "radius_m": 0.243,
+   "height_m": 4.01,
+   "center_y_m": 2.01
+  }
+ }
+}
