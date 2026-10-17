@@ -33,6 +33,7 @@ func _run() -> void:
 	_test_autotile()
 	_test_pieces()
 	_test_walk()
+	_test_plan()
 	await _test_view()
 	_finish()
 
@@ -118,7 +119,11 @@ func _test_pieces() -> void:
 				if owner.has(c):
 					overlaps += 1
 				owner[c] = i
-				if not (TileCity.kind_group(str(p["kind"])) in ["wall", "tower", "fountain", "stall", "well", "bench", "crate", "barrel", "lamp", "fence", "cart_hay", "signpost", "notice_board"]) and tc.terrain_char(c) in ["c", "p", "w", "d"]:
+				var dressing := false
+				for pre in ["wall", "tower", "fountain", "stall", "well", "bench", "crate", "barrel", "lamp", "fence", "cart_hay", "signpost", "notice_board", "flowerbed", "rowboat", "quay"]:
+					if str(p["kind"]).begins_with(pre):
+						dressing = true
+				if not dressing and tc.terrain_char(c) in ["c", "p", "w", "d"]:
 					on_road += 1
 		i += 1
 	check(overlaps == 0, "blocking footprints do not overlap (%d)" % overlaps)
@@ -182,6 +187,87 @@ func _test_walk() -> void:
 				leaks += 1
 	check(not inside.has(spawn) and leaks == 0, "no way out of the ring but the gates (%d)" % leaks)
 	check(inside.size() > 3000, "the inside is one area (%d tiles)" % inside.size())
+
+
+## Round M3: the planned town (streetplan.json).
+func _test_plan() -> void:
+	var big := ["castle", "cathedral", "townhall", "bank", "mill", "house", "workshop", "plot_normal", "plot_rare", "plot_legendary", "gazebo"]
+	var owner := {}
+	var idx := 0
+	var buildings: Array = []
+	for p in tc.pieces():
+		var kind := str(p["kind"])
+		if TileCity.kind_group(kind) in big or kind in big:
+			buildings.append(idx)
+			for c in tc.footprint(p):
+				owner[c] = idx
+		idx += 1
+	# a tile of grass between buildings: no other building's footprint touches one
+	var touching := 0
+	for i in buildings:
+		var p: Dictionary = tc.pieces()[i]
+		for c in tc.footprint(p):
+			for d in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+				var n: Vector2i = c + d
+				if owner.has(n) and int(owner[n]) != i:
+					touching += 1
+	check(touching == 0, "buildings keep a tile of grass between them (%d contacts)" % touching)
+	# landmarks have a clear paved forecourt at their door
+	for kind in ["castle", "cathedral", "townhall"]:
+		for p in tc.pieces():
+			if str(p["kind"]) == kind:
+				var d: Array = p.get("door_cell", [])
+				var dc := Vector2i(int(d[0]), int(d[1])) if not d.is_empty() else Vector2i(-1, -1)
+				check(tc.terrain_char(dc) in ["p", "c"] and tc.piece_index_at(dc) < 0, "the %s has a clear paved forecourt" % kind)
+	# no dirt inside the ring; streets paved
+	var inside_dirt := 0
+	var poly := PackedVector2Array()
+	for q in tc.doc["wall_polygon_plate"]:
+		poly.append(Vector2(float(q[0]), float(q[1])))
+	for y in range(0, tc.height, 2):
+		for x in range(0, tc.width, 2):
+			if tc.terrain_char(Vector2i(x, y)) == "d":
+				var w := tc.cell_to_world(Vector2(x, y))
+				# plate px = world / 1.15 + cell00 (the converter's frame)
+				if Geometry2D.is_point_in_polygon(w / 1.15 + Vector2(2537.61, -64.67), poly):
+					inside_dirt += 1
+	check(inside_dirt == 0, "no dirt inside the ring (%d)" % inside_dirt)
+	# the ring sits centred on the plate (even margins)
+	var lo := Vector2(1e9, 1e9)
+	var hi := Vector2(-1e9, -1e9)
+	for q in poly:
+		lo = lo.min(q)
+		hi = hi.max(q)
+	check(absf(lo.x - (5120.0 - hi.x)) < 60.0 and absf(lo.y - (2880.0 - hi.y)) < 60.0, "the ring is centred on the plate (%s .. %s)" % [lo, hi])
+	# every avenue reaches the plaza on paving from its gate
+	for g in tc.doc["gates"]:
+		var ins: Array = g["inside"]
+		var start := Vector2i(int(ins[ins.size() - 1][0]), int(ins[ins.size() - 1][1]))
+		var seen := {start: true}
+		var q: Array[Vector2i] = [start]
+		var hit := false
+		while not q.is_empty() and not hit:
+			var c: Vector2i = q.pop_front()
+			for d in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+				var n: Vector2i = c + d
+				if seen.has(n) or not tc.passable(n) or not (tc.terrain_char(n) in ["c", "p", "w"]):
+					continue
+				seen[n] = true
+				if tc.terrain_char(n) == "p":
+					hit = true
+				q.append(n)
+		check(hit, "the %s avenue reaches the plaza on paving" % g["id"])
+	# the river crosses the town; every road over it is a bridge
+	check((tc.doc["bridges"] as Array).size() >= 2, "bridges where the roads cross the river (%d)" % (tc.doc["bridges"] as Array).size())
+	check(_count("tunnel") == 2, "the river runs under the wall at both tunnels")
+	# the whole kit, no placeholders left in the town
+	var ph := 0
+	for p in tc.pieces():
+		if bool(tc.piece_spec(p).get("placeholder", false)):
+			ph += 1
+	check(ph == 0, "no placeholder pieces left (%d)" % ph)
+	for kind in ["tree_oak", "tree_cypress", "bush_green", "flowers_red_white", "gazebo", "rowboat", "smoke_chimney", "lamp_post", "fence_picket"]:
+		check(_count(kind) >= 1, "%s is placed" % kind)
 
 
 func _test_view() -> void:

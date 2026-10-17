@@ -627,6 +627,8 @@ const TILE_TAGS := {
 	"townhall": "townhall", "bank": "bank", "house": "house", "workshop": "workshop", "mill": "mill",
 	"stall": "stall", "fountain": "fountain", "well": "well", "lamp": "lamp", "bush": "plant",
 	"plot_normal": "plot_house", "plot_rare": "plot_house", "plot_legendary": "plot_house", "bridge": "bridge",
+	"tree_oak": "tree", "tree_elm": "tree", "tree_maple": "tree", "tree_cherry": "tree", "tree_cypress": "tree",
+	"smoke_chimney": "smoke", "gazebo": "house",
 }
 var tile_view: Node2D
 static var _mask_cache := {}
@@ -653,13 +655,13 @@ func _build_tile() -> void:
 			tag = "watergate"
 		if s.texture == null:
 			continue
-		var size: Vector2 = s.texture.get_size() * k / city.scale()
+		var tsize: Vector2 = s.region_rect.size if s.region_enabled else s.texture.get_size()
 		var foot: Vector2 = pn["foot"]
-		var fade: bool = s.texture.get_size().y * k >= 40.0 and not bool(p.get("under", false))
-		var mask := _tex_mask(s.texture) if fade else {}
+		var fade: bool = tsize.y * k >= 40.0 and not bool(p.get("under", false)) and not p.has("on")
+		var mask := _tex_mask(s.texture, tsize) if fade else {}
 		var row := {
 			"node": s, "tag": tag, "id": id, "kind": kind,
-			"rect": Rect2(s.position, s.texture.get_size() * k),
+			"rect": Rect2(s.position, tsize * k),
 			"sort_y": city.world_to_plate(foot).y, "z": s.z_index, "fade": fade,
 			"min_alpha": 0.45, "mask": mask, "alpha": 1.0, "k": k / city.scale(), "flip": s.flip_h,
 			"piece": p,
@@ -674,7 +676,7 @@ func _build_tile() -> void:
 
 
 ## Fade mask of a kit texture: 8 texture px per bit (cached per texture).
-func _tex_mask(t: Texture2D) -> Dictionary:
+func _tex_mask(t: Texture2D, size: Vector2 = Vector2.ZERO) -> Dictionary:
 	if _mask_cache.has(t):
 		return _mask_cache[t]
 	var img := t.get_image()
@@ -682,6 +684,9 @@ func _tex_mask(t: Texture2D) -> Dictionary:
 		return {}
 	if img.is_compressed():
 		img.decompress()
+	if size != Vector2.ZERO and Vector2(img.get_size()) != size:
+		# an animated strip: the first frame's mask
+		img = img.get_region(Rect2i(0, 0, int(size.x), int(size.y)))
 	var w := int(ceil(img.get_width() / 8.0))
 	var h := int(ceil(img.get_height() / 8.0))
 	var small := img.duplicate() as Image

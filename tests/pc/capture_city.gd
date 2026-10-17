@@ -297,6 +297,16 @@ func _kit_shots() -> void:
 			var at: Vector2 = spots[k]
 			_place(_near_free(_cell_at_world(at + Vector2(-50, 60))), "n")
 			await _hold(at + Vector2(0, float(names[k][2])), float(names[k][1]), 30, str(names[k][0]))
+	for p in city.tile.pieces():
+		if str(p.get("gate", "")) == "S":
+			var gfoot: Vector2 = city.tile.piece_foot(p)
+			_place(_near_free(_cell_at_world(gfoot + Vector2(0, 100))), "n")
+			await _hold(gfoot + (plaza - gfoot) * 0.35, 0.55, 30, "80_kit_gate_S_avenue")
+	var tn := 0
+	for p in city.tile.pieces():
+		if str(p["kind"]).begins_with("tunnel"):
+			await _hold(city.tile.piece_foot(p) + Vector2(0, -100), 0.9, 20, "81_kit_tunnel_%d" % tn)
+			tn += 1
 	_w.weather.time_of_day = 22.0
 	_w._sync_city_life()
 	_place(_near_free(_cell_at_world(plaza + Vector2(80, 60))), "n")

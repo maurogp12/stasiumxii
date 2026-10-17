@@ -397,6 +397,27 @@ func _read(d: Dictionary) -> Array:
 		d["grid"]["rows"] = rows
 		if tile.doc.has("wall_polygon_plate"):
 			d["wall_polygon"] = tile.doc["wall_polygon_plate"]
+		# round M3: the spawn, the exit and the region road exits are on the
+		# planned roads outside each gate
+		var old_of := func(tc: Array) -> Array:
+			var wc := tile.cell_to_world(Vector2(float(tc[0]), float(tc[1])))
+			return [roundi((wc.x / 32.0 + wc.y / 16.0) * 0.5), roundi((wc.y / 16.0 - wc.x / 32.0) * 0.5)]
+		if tile.doc.has("spawn"):
+			d["spawn"] = old_of.call(tile.doc["spawn"])
+		if tile.doc.has("exit"):
+			d["exit_cell"] = old_of.call(tile.doc["exit"])
+		var exits: Dictionary = tile.doc.get("exits", {})
+		for st in d.get("gate_stubs", []):
+			if str(st["id"]) == "crossroads_to_city":
+				st["to"]["x"] = d["spawn"][0]
+				st["to"]["y"] = d["spawn"][1]
+			elif str(st["id"]) == "city_to_crossroads":
+				st["from"]["x"] = d["exit_cell"][0]
+				st["from"]["y"] = d["exit_cell"][1]
+			elif exits.has(str(st.get("gate", ""))):
+				var e: Array = old_of.call(exits[str(st["gate"])])
+				st["from"]["x"] = e[0]
+				st["from"]["y"] = e[1]
 		doc = d
 		_move_onto_walk(d, w, h, rows)
 	zone = _build_zone(d, w, h, rows)

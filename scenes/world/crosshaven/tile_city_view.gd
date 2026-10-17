@@ -124,7 +124,7 @@ func tick(delta: float) -> void:
 	_anim_t += delta
 	for pn in _animated:
 		var a: Dictionary = pn["anim"]
-		var f := int(_anim_t * float(a.get("fps", 8.0))) % int(a.get("frames", 1))
+		var f := int((_anim_t + float(pn.get("phase", 0.0))) * float(a.get("fps", 8.0))) % int(a.get("frames", 1))
 		(pn["node"] as Sprite2D).region_rect = Rect2(float(f) * float(a["frame_w"]), 0, float(a["frame_w"]), float(a["frame_h"]))
 	if water == null or _water_terrain.is_empty():
 		return
@@ -147,18 +147,39 @@ func _build_pieces() -> void:
 		s.centered = false
 		s.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 		s.scale = Vector2.ONE * k
+		var foot_px := Vector2(float(spec["foot"][0]), float(spec["foot"][1]))
+		var width := float(s.texture.get_width()) if s.texture != null else 0.0
+		var anim: Dictionary = spec.get("anim", {})
+		if not anim.is_empty() and tex(str(anim["file"])) != null:
+			# an animated strip (sway, fountain, mill wheel, smoke) replaces the still
+			s.texture = tex(str(anim["file"]))
+			s.region_enabled = true
+			s.region_rect = Rect2(0, 0, float(anim["frame_w"]), float(anim["frame_h"]))
+			foot_px = Vector2(float(anim["foot"][0]), float(anim["foot"][1]))
+			width = float(anim["frame_w"])
 		var foot := city.piece_foot(p)
-		var fx := float(spec["foot"][0])
 		if bool(p.get("flip", false)) and s.texture != null:
 			s.flip_h = true
-			fx = float(s.texture.get_width()) - fx
+			foot_px.x = width - foot_px.x
 		# top-left placement (the plate view's fade and masks expect it)
-		s.position = foot - Vector2(fx, float(spec["foot"][1])) * k
+		s.position = foot - foot_px * k
 		s.z_as_relative = false
 		if bool(p.get("under", false)):
 			s.z_index = UNDER_Z + i % 50
 		else:
 			s.z_index = clampi(PlateCity.z_for_world_y(foot.y), -4096, 4096)
+		if p.has("on") and int(p["on"]) < piece_nodes.size():
+			# chimney smoke: its foot on the parent house's chimney top, drawn above it
+			var par: Dictionary = piece_nodes[int(p["on"])]
+			var ps: Sprite2D = par["node"]
+			var ch: Array = city.piece_spec(par["piece"]).get("chimney", [0, 0])
+			var cx := float(ch[0])
+			if ps.flip_h and ps.texture != null:
+				cx = float(ps.region_rect.size.x if ps.region_enabled else ps.texture.get_width()) - cx
+			var top := ps.position + Vector2(cx, float(ch[1])) * k
+			s.position = top - foot_px * k
+			s.z_index = clampi(ps.z_index + 2, -4096, 4096)
+			foot = (par["foot"] as Vector2)
 		s.name = "%s_%d" % [str(p["kind"]), i]
 		add_child(s)
 		var pn := {"node": s, "piece": p, "foot": foot}
@@ -183,16 +204,10 @@ func _build_pieces() -> void:
 			gs.name = "%s_glow" % s.name
 			add_child(gs)
 			pn["glow"] = gs
-		var anim: Dictionary = spec.get("anim", {})
-		if not anim.is_empty():
-			# an animated strip replaces the still (fountain, mill wheel, smoke)
-			var at := tex(str(anim["file"]))
-			if at != null:
-				s.texture = at
-				s.region_enabled = true
-				s.region_rect = Rect2(0, 0, float(anim["frame_w"]), float(anim["frame_h"]))
-				pn["anim"] = anim
-				_animated.append(pn)
+		if s.region_enabled and not door_nodes.has(str(p.get("gate", "-"))):
+			pn["anim"] = anim
+			pn["phase"] = float(i % 7) * 0.13
+			_animated.append(pn)
 		piece_nodes.append(pn)
 		var door: Dictionary = spec.get("door", {})
 		if not door.is_empty():

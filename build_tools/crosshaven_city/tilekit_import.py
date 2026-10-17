@@ -19,7 +19,7 @@ from PIL import Image
 TERRAINS = ["grass", "dirt", "cobble", "plaza", "water"]
 # game kind -> kit file stem (walls group)
 PIECES = {
-    "wall_h": "walls/wall_h", "wall_diag_se": "walls/wall_diag_se", "wall_diag_ne": "walls/wall_diag_ne",
+    "wall_h": "walls/wall_h", "wall_h_b": "walls/wall_h_b", "wall_h_c": "walls/wall_h_c", "wall_diag_se": "walls/wall_diag_se", "wall_diag_ne": "walls/wall_diag_ne",
     "tower": "walls/tower_round",
     "gate_h": "walls/gate_h", "gate_diag_se": "walls/gate_diag_se", "gate_diag_ne": "walls/gate_diag_ne",
     "tunnel_h": "walls/water_tunnel_h", "tunnel_diag_se": "walls/water_tunnel_diag_se", "tunnel_diag_ne": "walls/water_tunnel_diag_ne",
@@ -71,7 +71,7 @@ def main():
         rec = {k: meta[k] for k in ("foot", "footprint", "blocks", "height_px") if k in meta}
         rec["file"] = copy(stem + "_CONCEPTO.png")
         rec["size"] = list(Image.open(os.path.join(out, rec["file"])).size)
-        for k in ("orient", "tile_step_px", "walkable", "layer", "passage", "grate"):
+        for k in ("orient", "tile_step_px", "walkable", "layer", "passage", "grate", "gatehouse"):
             if k in meta:
                 rec[k] = meta[k]
         if meta.get("door"):
@@ -93,7 +93,8 @@ def main():
         return stem
 
     glows = []
-    for sub in ("buildings", "props"):
+    anims = []
+    for sub in ("buildings", "props", "nature", "extras"):
         bdir = os.path.join(src, sub)
         if not os.path.isdir(bdir):
             continue
@@ -105,15 +106,81 @@ def main():
             if meta.get("parent"):
                 glows.append((stem, meta, sub))
                 continue
+            if meta.get("frames") and (stem.endswith("_sway") or stem.endswith("_anim")):
+                anims.append((stem, meta, sub))
+                continue
             kind = kind_of(stem)
             rec = {k: meta[k] for k in ("foot", "footprint", "blocks", "height_px", "tier", "door_side", "orient", "note") if k in meta}
             rec["file"] = copy(sub + "/" + stem + "_CONCEPTO.png")
             rec["size"] = list(Image.open(os.path.join(out, rec["file"])).size)
+            if meta.get("frames") and meta.get("frame_w"):
+                # a strip with no still (chimney smoke): it animates itself
+                rec["anim"] = {"file": rec["file"], "frames": int(meta["frames"]), "fps": float(meta.get("fps", 8)),
+                               "frame_w": int(meta["frame_w"]), "frame_h": int(meta["frame_h"]), "foot": meta["foot"]}
+                rec["size"] = [int(meta["frame_w"]), int(meta["frame_h"])]
             if meta.get("anim"):
                 a_ = dict(meta["anim"])
                 a_["file"] = copy(sub + "/" + a_["file"])
                 rec["anim"] = a_
             kit["pieces"][kind] = rec
+    import numpy as np
+
+    def base_point(img):
+        a = np.asarray(img.convert("RGBA"))[..., 3] > 40
+        ys, xs = np.nonzero(a)
+        yb = ys.max()
+        return float(xs[ys >= yb - 3].mean()), float(yb)
+
+    for stem, meta, sub in anims:
+        base = stem[: -len("_sway")] if stem.endswith("_sway") else stem[: -len("_anim")]
+        kind = kind_of(base)
+        a_ = {"file": copy(sub + "/" + stem + "_CONCEPTO.png"), "frames": int(meta["frames"]), "fps": float(meta.get("fps", 8)),
+              "frame_w": int(meta["frame_w"]), "frame_h": int(meta["frame_h"])}
+        # the strip's own foot: the still's foot moved by the base point shift
+        strip = Image.open(os.path.join(out, a_["file"]))
+        f0 = strip.crop((0, 0, a_["frame_w"], a_["frame_h"]))
+        if kind in kit["pieces"]:
+            still = Image.open(os.path.join(out, kit["pieces"][kind]["file"]))
+            bs, bf = base_point(still), base_point(f0)
+            fx, fy = kit["pieces"][kind]["foot"]
+            a_["foot"] = [round(fx - bs[0] + bf[0], 1), round(fy - bs[1] + bf[1], 1)]
+            kit["pieces"][kind]["anim"] = a_
+        else:
+            rec = {k: meta[k] for k in ("foot", "footprint", "blocks", "height_px", "note") if k in meta}
+            a_["foot"] = meta["foot"]
+            rec["file"] = a_["file"]
+            rec["size"] = [a_["frame_w"], a_["frame_h"]]
+            rec["anim"] = a_
+            kit["pieces"][kind] = rec
+    # ring features: the opaque run along the foot line, and where the
+    # opening is (gates: the passage rect; tunnels: the dark grate)
+    for kind, rec in kit["pieces"].items():
+        if rec.get("placeholder") or not (kind.startswith("gate_") or kind.startswith("tunnel_") or kind.startswith("wall_")):
+            continue
+        im = np.asarray(Image.open(os.path.join(out, rec["file"])).convert("RGBA")).astype(int)
+        a = im[..., 3] > 100
+        fy = int(rec["foot"][1])
+        # the run's whole opaque width (a sheared diagonal's base band only
+        # holds part of it); the soft contact-shadow margin is 50 px each side
+        cols = np.where((a.sum(axis=0) > 8))[0]
+        rec["opaque_x"] = [int(cols.min()), int(cols.max())]
+        if rec.get("passage", {}).get("rect"):
+            r_ = rec["passage"]["rect"]
+            rec["arch_x"] = round(r_[0] + r_[2] / 2.0, 1)
+        elif kind.startswith("tunnel_"):
+            lum = im[..., :3].mean(axis=2)
+            dark = a & (lum < 70)
+            dark[: fy // 3] = False
+            ys, xs = np.nonzero(dark)
+            rec["arch_x"] = round(float(np.median(xs)), 1) if len(xs) else float(rec["foot"][0])
+    # chimney tops on the NPC houses (the highest narrow peak of the roof)
+    for kind, rec in kit["pieces"].items():
+        if kind.startswith("house_npc_"):
+            a = np.asarray(Image.open(os.path.join(out, rec["file"])).convert("RGBA"))[..., 3] > 100
+            cols = np.where(a.any(axis=0))[0]
+            tops = np.array([np.argmax(a[:, c]) for c in cols])
+            i = int(np.argmin(tops))
+            rec["chimney"] = [int(cols[i]), int(tops[i]) + 6]
     for stem, meta, sub in glows:
         parent = kind_of(meta["parent"].replace("_CONCEPTO", ""))
         if parent in kit["pieces"]:

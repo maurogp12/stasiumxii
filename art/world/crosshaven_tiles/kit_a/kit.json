@@ -79,12 +79,68 @@
    "tile_step_px": [
     206,
     0
+   ],
+   "opaque_x": [
+    50,
+    255
+   ]
+  },
+  "wall_h_b": {
+   "foot": [
+    153,
+    550
+   ],
+   "footprint": [
+    2,
+    1
+   ],
+   "blocks": true,
+   "height_px": 550,
+   "file": "wall_h_b.png",
+   "size": [
+    306,
+    600
+   ],
+   "orient": "screen-horizontal (runs along grid diagonal)",
+   "tile_step_px": [
+    206,
+    0
+   ],
+   "opaque_x": [
+    50,
+    255
+   ]
+  },
+  "wall_h_c": {
+   "foot": [
+    153,
+    550
+   ],
+   "footprint": [
+    2,
+    1
+   ],
+   "blocks": true,
+   "height_px": 550,
+   "file": "wall_h_c.png",
+   "size": [
+    306,
+    600
+   ],
+   "orient": "screen-horizontal (runs along grid diagonal)",
+   "tile_step_px": [
+    206,
+    0
+   ],
+   "opaque_x": [
+    50,
+    255
    ]
   },
   "wall_diag_se": {
    "foot": [
     153,
-    619
+    602
    ],
    "footprint": [
     2,
@@ -95,18 +151,22 @@
    "file": "wall_diag_se.png",
    "size": [
     306,
-    720
+    703
    ],
-   "orient": "se iso axis, 2:1 slope; painted iso pass; mirror pair",
+   "orient": "se iso axis, 2:1 slope; painted iso wall, tower-matched stone; mirror pair",
    "tile_step_px": [
     206,
     103
+   ],
+   "opaque_x": [
+    50,
+    255
    ]
   },
   "wall_diag_ne": {
    "foot": [
     152,
-    619
+    602
    ],
    "footprint": [
     2,
@@ -117,12 +177,16 @@
    "file": "wall_diag_ne.png",
    "size": [
     306,
-    720
+    703
    ],
-   "orient": "ne iso axis, 2:1 slope; painted iso pass (mirrored, 10% darker: faces away from sun)",
+   "orient": "ne iso axis, 2:1 slope (mirror of se, 10% darker)",
    "tile_step_px": [
     206,
     -103
+   ],
+   "opaque_x": [
+    50,
+    255
    ]
   },
   "tower": {
@@ -145,131 +209,173 @@
   "gate_h": {
    "foot": [
     661,
-    550
+    700
    ],
    "footprint": [
     8,
     1
    ],
    "blocks": true,
-   "height_px": 550,
+   "height_px": 700,
    "file": "gate_h.png",
    "size": [
     1323,
-    600
+    750
    ],
    "orient": "screen-horizontal",
    "passage": {
     "rect": [
-     544,
-     288,
-     236,
-     262
+     529,
+     245,
+     261,
+     455
     ],
     "walkable": true,
     "see_through": true,
-    "rim": "voussoir rim + shaded soffit band (~18px) kept, arch interior alpha 0"
+    "rim": "thin stone voussoir rim, arch interior alpha 0"
+   },
+   "gatehouse": {
+    "height_px": 700,
+    "width_px": 635,
+    "wall_height_px": 550
    },
    "door": {
     "file": "gate_door_h.png",
     "frames": 8,
     "fps": 12,
-    "frame_w": 236,
-    "frame_h": 262,
+    "frame_w": 261,
+    "frame_h": 455,
     "offset": [
-     544,
-     288
+     529,
+     245
     ],
     "open_inward": true,
     "hinge_left": {
      "top": [
-      544,
-      288
+      529,
+      245
      ],
      "bottom": [
-      544,
-      550
+      529,
+      700
      ]
     },
     "hinge_right": {
      "top": [
-      780,
-      288
+      790,
+      245
      ],
      "bottom": [
-      780,
-      550
+      790,
+      700
      ]
     }
-   }
+   },
+   "opaque_x": [
+    50,
+    1272
+   ],
+   "arch_x": 659.5
   },
   "gate_diag_se": {
    "foot": [
     661,
-    873
+    1006
    ],
    "footprint": [
     16,
     1
    ],
    "blocks": true,
-   "height_px": 550,
+   "height_px": 700,
    "file": "gate_diag_se.png",
    "size": [
     1323,
-    1229
+    1362
    ],
-   "orient": "se iso axis, 2:1 slope; painted iso pass; mirror pair",
+   "orient": "se iso axis, 2:1 slope; painted iso wall, tower-matched stone; mirror pair",
    "passage": {
+    "rect": [
+     529,
+     485,
+     261,
+     585
+    ],
     "walkable": true,
     "see_through": true
+   },
+   "gatehouse": {
+    "height_px": 700,
+    "width_px": 635,
+    "wall_height_px": 550
    },
    "door": {
     "file": "gate_door_diag_se.png",
     "frames": 8,
     "fps": 12,
-    "frame_w": 236,
-    "frame_h": 380,
+    "frame_w": 261,
+    "frame_h": 585,
     "offset": [
-     544,
-     552
+     529,
+     485
     ],
     "open_inward": true
-   }
+   },
+   "opaque_x": [
+    50,
+    1272
+   ],
+   "arch_x": 659.5
   },
   "gate_diag_ne": {
    "foot": [
     661,
-    873
+    1006
    ],
    "footprint": [
     16,
     1
    ],
    "blocks": true,
-   "height_px": 550,
+   "height_px": 700,
    "file": "gate_diag_ne.png",
    "size": [
     1323,
-    1229
+    1362
    ],
-   "orient": "ne iso axis, 2:1 slope; painted iso pass (mirrored, 10% darker: faces away from sun)",
+   "orient": "ne iso axis, 2:1 slope (mirror of se, 10% darker)",
    "passage": {
+    "rect": [
+     533,
+     485,
+     261,
+     585
+    ],
     "walkable": true,
     "see_through": true
+   },
+   "gatehouse": {
+    "height_px": 700,
+    "width_px": 635,
+    "wall_height_px": 550
    },
    "door": {
     "file": "gate_door_diag_ne.png",
     "frames": 8,
     "fps": 12,
-    "frame_w": 236,
-    "frame_h": 380,
+    "frame_w": 261,
+    "frame_h": 585,
     "offset": [
-     543,
-     552
+     533,
+     485
     ],
     "open_inward": true
-   }
+   },
+   "opaque_x": [
+    50,
+    1272
+   ],
+   "arch_x": 663.5
   },
   "tunnel_h": {
    "foot": [
@@ -288,12 +394,17 @@
     600
    ],
    "orient": "screen-horizontal",
-   "grate": true
+   "grate": true,
+   "opaque_x": [
+    50,
+    667
+   ],
+   "arch_x": 358.0
   },
   "tunnel_diag_se": {
    "foot": [
     359,
-    721
+    704
    ],
    "footprint": [
     8,
@@ -304,15 +415,20 @@
    "file": "water_tunnel_diag_se.png",
    "size": [
     718,
-    926
+    909
    ],
-   "orient": "se iso axis, 2:1 slope; painted iso pass; mirror pair",
-   "grate": true
+   "orient": "se iso axis, 2:1 slope; painted iso wall, tower-matched stone; mirror pair",
+   "grate": true,
+   "opaque_x": [
+    50,
+    667
+   ],
+   "arch_x": 366.0
   },
   "tunnel_diag_ne": {
    "foot": [
     358,
-    721
+    704
    ],
    "footprint": [
     8,
@@ -323,10 +439,15 @@
    "file": "water_tunnel_diag_ne.png",
    "size": [
     718,
-    926
+    909
    ],
-   "orient": "ne iso axis, 2:1 slope; painted iso pass (mirrored, 10% darker: faces away from sun)",
-   "grate": true
+   "orient": "ne iso axis, 2:1 slope (mirror of se, 10% darker)",
+   "grate": true,
+   "opaque_x": [
+    50,
+    667
+   ],
+   "arch_x": 349.0
   },
   "bridge": {
    "foot": [
@@ -385,6 +506,10 @@
    "size": [
     613,
     540
+   ],
+   "chimney": [
+    192,
+    6
    ]
   },
   "house_npc_halftimber_blue_a": {
@@ -404,6 +529,10 @@
    "size": [
     596,
     520
+   ],
+   "chimney": [
+    388,
+    6
    ]
   },
   "house_npc_halftimber_red_L": {
@@ -423,6 +552,10 @@
    "size": [
     695,
     500
+   ],
+   "chimney": [
+    334,
+    6
    ]
   },
   "house_npc_plaster_blue_2storey": {
@@ -442,6 +575,10 @@
    "size": [
     576,
     530
+   ],
+   "chimney": [
+    190,
+    6
    ]
   },
   "house_npc_plaster_red_a": {
@@ -461,6 +598,10 @@
    "size": [
     546,
     500
+   ],
+   "chimney": [
+    271,
+    6
    ]
   },
   "house_npc_plaster_red_pink": {
@@ -480,6 +621,10 @@
    "size": [
     580,
     510
+   ],
+   "chimney": [
+    403,
+    6
    ]
   },
   "house_npc_stone_blue_round": {
@@ -499,6 +644,10 @@
    "size": [
     553,
     490
+   ],
+   "chimney": [
+    273,
+    6
    ]
   },
   "house_npc_stone_red_a": {
@@ -518,6 +667,10 @@
    "size": [
     598,
     510
+   ],
+   "chimney": [
+    419,
+    6
    ]
   },
   "house_npc_workshop_red": {
@@ -537,6 +690,10 @@
    "size": [
     652,
     520
+   ],
+   "chimney": [
+    219,
+    7
    ]
   },
   "plot_legendary": {
@@ -725,7 +882,18 @@
    "size": [
     789,
     560
-   ]
+   ],
+   "anim": {
+    "file": "workshop_mill_anim.png",
+    "frames": 8,
+    "fps": 8.0,
+    "frame_w": 789,
+    "frame_h": 560,
+    "foot": [
+     394.0,
+     500.0
+    ]
+   }
   },
   "workshop_potter": {
    "foot": [
@@ -936,6 +1104,40 @@
     145
    ]
   },
+  "fence_picket_corner": {
+   "foot": [
+    67,
+    125
+   ],
+   "footprint": [
+    1,
+    1
+   ],
+   "blocks": true,
+   "height_px": 125,
+   "file": "fence_picket_corner.png",
+   "size": [
+    135,
+    155
+   ]
+  },
+  "fence_picket_end": {
+   "foot": [
+    57,
+    125
+   ],
+   "footprint": [
+    1,
+    1
+   ],
+   "blocks": true,
+   "height_px": 125,
+   "file": "fence_picket_end.png",
+   "size": [
+    115,
+    155
+   ]
+  },
   "fence_rail": {
    "foot": [
     103,
@@ -952,6 +1154,41 @@
    "size": [
     207,
     155
+   ]
+  },
+  "fence_rail_corner": {
+   "foot": [
+    77,
+    135
+   ],
+   "footprint": [
+    1,
+    1
+   ],
+   "blocks": true,
+   "height_px": 135,
+   "note": "corner/through post: rail stubs on both sides",
+   "file": "fence_rail_corner.png",
+   "size": [
+    154,
+    165
+   ]
+  },
+  "fence_rail_end": {
+   "foot": [
+    77,
+    135
+   ],
+   "footprint": [
+    1,
+    1
+   ],
+   "blocks": true,
+   "height_px": 135,
+   "file": "fence_rail_end.png",
+   "size": [
+    154,
+    165
    ]
   },
   "fence_stone": {
@@ -972,6 +1209,59 @@
     125
    ]
   },
+  "fence_stone_corner": {
+   "foot": [
+    60,
+    120
+   ],
+   "footprint": [
+    1,
+    1
+   ],
+   "blocks": true,
+   "height_px": 120,
+   "note": "corner pillar (square, same art as the end)",
+   "file": "fence_stone_corner.png",
+   "size": [
+    120,
+    150
+   ]
+  },
+  "fence_stone_end": {
+   "foot": [
+    60,
+    120
+   ],
+   "footprint": [
+    1,
+    1
+   ],
+   "blocks": true,
+   "height_px": 120,
+   "note": "end pillar",
+   "file": "fence_stone_end.png",
+   "size": [
+    120,
+    150
+   ]
+  },
+  "fence_stone_pillar": {
+   "foot": [
+    60,
+    120
+   ],
+   "footprint": [
+    1,
+    1
+   ],
+   "blocks": true,
+   "height_px": 120,
+   "file": "fence_stone_pillar.png",
+   "size": [
+    120,
+    150
+   ]
+  },
   "fountain": {
    "foot": [
     142,
@@ -987,7 +1277,18 @@
    "size": [
     285,
     290
-   ]
+   ],
+   "anim": {
+    "file": "fountain_anim.png",
+    "frames": 6,
+    "fps": 8.0,
+    "frame_w": 285,
+    "frame_h": 290,
+    "foot": [
+     142.0,
+     260.0
+    ]
+   }
   },
   "lamp_hanging": {
    "foot": [
@@ -1075,6 +1376,35 @@
     260
    ]
   },
+  "smoke_chimney": {
+   "foot": [
+    60,
+    212
+   ],
+   "footprint": [
+    0,
+    0
+   ],
+   "blocks": false,
+   "height_px": 220,
+   "note": "place foot on any chimney top; draw above the roof",
+   "file": "smoke_chimney.png",
+   "size": [
+    120,
+    220
+   ],
+   "anim": {
+    "file": "smoke_chimney.png",
+    "frames": 6,
+    "fps": 8.0,
+    "frame_w": 120,
+    "frame_h": 220,
+    "foot": [
+     60,
+     212
+    ]
+   }
+  },
   "stall_bakery": {
    "foot": [
     126,
@@ -1141,6 +1471,477 @@
    "size": [
     294,
     320
+   ]
+  },
+  "bush_green": {
+   "foot": [
+    89,
+    110
+   ],
+   "footprint": [
+    1,
+    1
+   ],
+   "blocks": true,
+   "height_px": 110,
+   "file": "bush_green.png",
+   "size": [
+    179,
+    140
+   ],
+   "anim": {
+    "file": "bush_green_sway.png",
+    "frames": 4,
+    "fps": 4.0,
+    "frame_w": 179,
+    "frame_h": 140,
+    "foot": [
+     89.0,
+     110.0
+    ]
+   }
+  },
+  "bush_pink": {
+   "foot": [
+    91,
+    110
+   ],
+   "footprint": [
+    1,
+    1
+   ],
+   "blocks": true,
+   "height_px": 110,
+   "file": "bush_pink.png",
+   "size": [
+    183,
+    140
+   ],
+   "anim": {
+    "file": "bush_pink_sway.png",
+    "frames": 4,
+    "fps": 4.0,
+    "frame_w": 183,
+    "frame_h": 140,
+    "foot": [
+     91.0,
+     110.0
+    ]
+   }
+  },
+  "bush_yellow": {
+   "foot": [
+    91,
+    110
+   ],
+   "footprint": [
+    1,
+    1
+   ],
+   "blocks": true,
+   "height_px": 110,
+   "file": "bush_yellow.png",
+   "size": [
+    183,
+    140
+   ],
+   "anim": {
+    "file": "bush_yellow_sway.png",
+    "frames": 4,
+    "fps": 4.0,
+    "frame_w": 183,
+    "frame_h": 140,
+    "foot": [
+     91.0,
+     110.0
+    ]
+   }
+  },
+  "flowers_blue_purple": {
+   "foot": [
+    74,
+    70
+   ],
+   "footprint": [
+    1,
+    1
+   ],
+   "blocks": false,
+   "height_px": 70,
+   "file": "flowers_blue_purple.png",
+   "size": [
+    149,
+    100
+   ],
+   "anim": {
+    "file": "flowers_blue_purple_sway.png",
+    "frames": 4,
+    "fps": 4.0,
+    "frame_w": 149,
+    "frame_h": 100,
+    "foot": [
+     74.0,
+     70.0
+    ]
+   }
+  },
+  "flowers_red_white": {
+   "foot": [
+    73,
+    70
+   ],
+   "footprint": [
+    1,
+    1
+   ],
+   "blocks": false,
+   "height_px": 70,
+   "file": "flowers_red_white.png",
+   "size": [
+    147,
+    100
+   ],
+   "anim": {
+    "file": "flowers_red_white_sway.png",
+    "frames": 4,
+    "fps": 4.0,
+    "frame_w": 147,
+    "frame_h": 100,
+    "foot": [
+     73.0,
+     70.0
+    ]
+   }
+  },
+  "hedge_corner": {
+   "foot": [
+    145,
+    151
+   ],
+   "footprint": [
+    2,
+    2
+   ],
+   "blocks": true,
+   "height_px": 184,
+   "orient": "true L: back corner block plus one arm down-right and one down-left; flip_h gives the same L, use rotations via flip_v-free placement of two arms",
+   "file": "hedge_corner.png",
+   "size": [
+    325,
+    195
+   ]
+  },
+  "hedge_end": {
+   "foot": [
+    79,
+    119
+   ],
+   "footprint": [
+    1,
+    1
+   ],
+   "blocks": true,
+   "height_px": 120,
+   "orient": "end: rounded cap on the left/outer side, flip_h for the other end",
+   "file": "hedge_end.png",
+   "size": [
+    195,
+    163
+   ]
+  },
+  "hedge_section": {
+   "foot": [
+    98,
+    120
+   ],
+   "footprint": [
+    2,
+    1
+   ],
+   "blocks": true,
+   "height_px": 120,
+   "orient": "ne axis; flip_h for se",
+   "file": "hedge_section.png",
+   "size": [
+    196,
+    150
+   ]
+  },
+  "rock_large": {
+   "foot": [
+    96,
+    120
+   ],
+   "footprint": [
+    2,
+    2
+   ],
+   "blocks": true,
+   "height_px": 120,
+   "file": "rock_large.png",
+   "size": [
+    193,
+    150
+   ]
+  },
+  "rocks_small": {
+   "foot": [
+    75,
+    75
+   ],
+   "footprint": [
+    1,
+    1
+   ],
+   "blocks": false,
+   "height_px": 75,
+   "file": "rocks_small.png",
+   "size": [
+    150,
+    105
+   ]
+  },
+  "tree_cherry": {
+   "foot": [
+    212,
+    400
+   ],
+   "footprint": [
+    2,
+    2
+   ],
+   "blocks": true,
+   "height_px": 400,
+   "file": "tree_cherry.png",
+   "size": [
+    425,
+    430
+   ],
+   "anim": {
+    "file": "tree_cherry_sway.png",
+    "frames": 4,
+    "fps": 4.0,
+    "frame_w": 425,
+    "frame_h": 430,
+    "foot": [
+     212.0,
+     400.0
+    ]
+   }
+  },
+  "tree_cypress": {
+   "foot": [
+    97,
+    430
+   ],
+   "footprint": [
+    1,
+    1
+   ],
+   "blocks": true,
+   "height_px": 430,
+   "file": "tree_cypress.png",
+   "size": [
+    194,
+    460
+   ],
+   "anim": {
+    "file": "tree_cypress_sway.png",
+    "frames": 4,
+    "fps": 4.0,
+    "frame_w": 194,
+    "frame_h": 460,
+    "foot": [
+     97.0,
+     430.0
+    ]
+   }
+  },
+  "tree_elm": {
+   "foot": [
+    165,
+    470
+   ],
+   "footprint": [
+    2,
+    2
+   ],
+   "blocks": true,
+   "height_px": 470,
+   "file": "tree_elm.png",
+   "size": [
+    330,
+    500
+   ],
+   "anim": {
+    "file": "tree_elm_sway.png",
+    "frames": 4,
+    "fps": 4.0,
+    "frame_w": 330,
+    "frame_h": 500,
+    "foot": [
+     165.0,
+     470.0
+    ]
+   }
+  },
+  "tree_maple": {
+   "foot": [
+    204,
+    410
+   ],
+   "footprint": [
+    2,
+    2
+   ],
+   "blocks": true,
+   "height_px": 410,
+   "file": "tree_maple.png",
+   "size": [
+    408,
+    440
+   ],
+   "anim": {
+    "file": "tree_maple_sway.png",
+    "frames": 4,
+    "fps": 4.0,
+    "frame_w": 408,
+    "frame_h": 440,
+    "foot": [
+     204.0,
+     410.0
+    ]
+   }
+  },
+  "tree_oak": {
+   "foot": [
+    209,
+    420
+   ],
+   "footprint": [
+    2,
+    2
+   ],
+   "blocks": true,
+   "height_px": 420,
+   "file": "tree_oak.png",
+   "size": [
+    418,
+    450
+   ],
+   "anim": {
+    "file": "tree_oak_sway.png",
+    "frames": 4,
+    "fps": 4.0,
+    "frame_w": 418,
+    "frame_h": 450,
+    "foot": [
+     209.0,
+     420.0
+    ]
+   }
+  },
+  "flowerbed_roses_round": {
+   "foot": [
+    110,
+    110
+   ],
+   "footprint": [
+    2,
+    2
+   ],
+   "blocks": true,
+   "height_px": 110,
+   "file": "flowerbed_roses_round.png",
+   "size": [
+    221,
+    140
+   ]
+  },
+  "flowerbed_tulips": {
+   "foot": [
+    125,
+    120
+   ],
+   "footprint": [
+    2,
+    2
+   ],
+   "blocks": true,
+   "height_px": 120,
+   "file": "flowerbed_tulips.png",
+   "size": [
+    250,
+    150
+   ]
+  },
+  "gazebo": {
+   "foot": [
+    160,
+    380
+   ],
+   "footprint": [
+    3,
+    3
+   ],
+   "blocks": true,
+   "height_px": 380,
+   "file": "gazebo.png",
+   "size": [
+    321,
+    410
+   ]
+  },
+  "quay_section": {
+   "foot": [
+    122,
+    170
+   ],
+   "footprint": [
+    3,
+    1
+   ],
+   "blocks": false,
+   "height_px": 170,
+   "orient": "ne axis; flip_h for se",
+   "file": "quay_section.png",
+   "size": [
+    245,
+    200
+   ]
+  },
+  "rose_arch": {
+   "foot": [
+    143,
+    300
+   ],
+   "footprint": [
+    2,
+    1
+   ],
+   "blocks": false,
+   "height_px": 300,
+   "file": "rose_arch.png",
+   "size": [
+    287,
+    330
+   ]
+  },
+  "rowboat": {
+   "foot": [
+    94,
+    110
+   ],
+   "footprint": [
+    2,
+    1
+   ],
+   "blocks": true,
+   "height_px": 110,
+   "file": "rowboat.png",
+   "size": [
+    189,
+    140
    ]
   },
   "wall": {

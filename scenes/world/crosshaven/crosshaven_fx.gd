@@ -143,9 +143,28 @@ func _on_post_fx(on: bool) -> void:
 		_grade.visible = on
 
 
-func _on_sway_shadows(on: bool) -> void:
+## Round M3: the modular city has no painted canopy under its trees, so the
+## drifting cloud-shadow sheet (it reads as ghost trees on clean grass) is off there.
+var modular_city := false
+
+
+func set_modular_city(on: bool) -> void:
+	modular_city = on
 	if _shadows != null:
-		_shadows.visible = on and not _still()
+		_shadows.visible = settings_shadows() and not _still() and not on
+
+
+func settings_shadows() -> bool:
+	return _shadows_on
+
+
+var _shadows_on := true
+
+
+func _on_sway_shadows(on: bool) -> void:
+	_shadows_on = on
+	if _shadows != null:
+		_shadows.visible = on and not _still() and not modular_city
 	if _contacts != null:
 		_contacts.visible = on
 
@@ -165,7 +184,7 @@ func _on_animations(on: bool) -> void:
 ## not hidden). Contact shadows stay: they are still drawings.
 func _on_performance(on: bool) -> void:
 	if _shadows != null:
-		_shadows.visible = not on and _settings != null and _settings.enabled("sway_shadows")
+		_shadows.visible = not on and _settings != null and _settings.enabled("sway_shadows") and not modular_city
 	if on and _critters != null:
 		for child in _critters.get_children():
 			child.free()

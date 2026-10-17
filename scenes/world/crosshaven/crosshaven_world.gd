@@ -569,6 +569,8 @@ func _draw_stub_marker() -> void:
 
 
 func _drop_city_plate() -> void:
+	if fx != null and fx.has_method("set_modular_city"):
+		fx.set_modular_city(false)
 	if city_life != null:
 		city_life.free()
 		city_life = null
@@ -2524,6 +2526,8 @@ func _mount_city_life() -> void:
 	if city_life != null:
 		city_life.queue_free()
 		city_life = null
+	if fx != null and fx.has_method("set_modular_city"):
+		fx.set_modular_city(in_city() and city.tile_mode())
 	if not in_city() or not city.tile_mode() or (settings != null and settings.performance):
 		return
 	city_life = CityLife.new()
