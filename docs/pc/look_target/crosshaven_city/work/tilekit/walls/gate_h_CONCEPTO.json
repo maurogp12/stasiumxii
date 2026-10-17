@@ -12,43 +12,43 @@
  "orient": "screen-horizontal",
  "passage": {
   "rect": [
-   534,
-   198,
-   244,
-   352
+   544,
+   288,
+   236,
+   262
   ],
   "walkable": true,
   "see_through": true,
-  "rim": "stone voussoir rim kept, arch interior alpha 0"
+  "rim": "voussoir rim + shaded soffit band (~18px) kept, arch interior alpha 0"
  },
  "door": {
   "file": "gate_door_h_CONCEPTO.png",
   "frames": 8,
   "fps": 12,
-  "frame_w": 244,
-  "frame_h": 352,
+  "frame_w": 236,
+  "frame_h": 262,
   "offset": [
-   534,
-   198
+   544,
+   288
   ],
   "open_inward": true,
   "hinge_left": {
    "top": [
-    534,
-    198
+    544,
+    288
    ],
    "bottom": [
-    534,
+    544,
     550
    ]
   },
   "hinge_right": {
    "top": [
-    778,
-    198
+    780,
+    288
    ],
    "bottom": [
-    778,
+    780,
     550
    ]
   }

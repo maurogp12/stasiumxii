@@ -46,3 +46,4 @@ Crosshaven style A concept (clean cartoon, Wakfu/Dofus-updated look) for Claude 
 Crosshaven modular kit group 1 (ground atlases + walls/gates/tunnels), style A, Claude format; CONCEPTO, not built
 Crosshaven kit group 2 houses (9 NPC + 3 player tiers) + wall_h 206px repeat fix; CONCEPTO, not built
 Crosshaven kit groups 3-5: landmarks, workshops, props; CONCEPTO, not built
+Crosshaven kit Group 1 v2: organic ground edges, wall depth, square merlons, painted diagonals; CONCEPTO, not built

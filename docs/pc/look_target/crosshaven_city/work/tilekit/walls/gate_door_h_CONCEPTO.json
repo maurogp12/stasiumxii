@@ -1,18 +1,18 @@
 {
  "foot": [
-  122,
-  352
+  118,
+  262
  ],
  "footprint": [
   0,
   0
  ],
  "blocks": false,
- "height_px": 352,
+ "height_px": 262,
  "frames": 8,
  "fps": 12,
- "frame_w": 244,
- "frame_h": 352,
+ "frame_w": 236,
+ "frame_h": 262,
  "parent": "gate_h_CONCEPTO",
  "f00": "closed",
  "f07": "open"

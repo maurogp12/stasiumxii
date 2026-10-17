@@ -1,7 +1,7 @@
 {
  "foot": [
-  359,
-  704
+  358,
+  721
  ],
  "footprint": [
   8,
@@ -9,6 +9,7 @@
  ],
  "blocks": true,
  "height_px": 550,
- "orient": "ne",
- "grate": true
+ "grate": true,
+ "water_passes": true,
+ "orient": "ne iso axis, 2:1 slope; painted iso pass (mirrored, 10% darker: faces away from sun)"
 }

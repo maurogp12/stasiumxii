@@ -1,17 +1,18 @@
 {
  "foot": [
   153,
-  601
+  619
  ],
  "footprint": [
-  3,
+  2,
   1
  ],
  "blocks": true,
  "height_px": 550,
- "orient": "se iso axis, 2:1 slope; mirror pair",
  "tile_step_px": [
   206,
   103
- ]
+ ],
+ "merlon_period_px": 206,
+ "orient": "se iso axis, 2:1 slope; painted iso pass; mirror pair"
 }
