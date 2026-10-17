@@ -655,6 +655,24 @@ func _sync_city_life() -> void:
 				(plate as CanvasItem).visible = show
 
 
+## Coordinator review 4: an NPC's name plate is drawn on a canvas layer over
+## the world, so it hides while a wall, tower, gate or house covers the NPC
+## (the fade's occlusion test).
+func _sync_city_labels() -> void:
+	if not in_city() or city_plate == null:
+		return
+	for node in npcs_root.get_children():
+		var body := node as Node2D
+		if body == null:
+			continue
+		var plate: Variant = body.get("_plate")
+		if plate == null or not is_instance_valid(plate):
+			continue
+		var show: bool = body.visible and not city_plate.occluded(body.position, body.z_index)
+		if (plate as CanvasItem).visible != show:
+			(plate as CanvasItem).visible = show
+
+
 ## Click-to-walk to a cell in the current chunk. Returns the WorldWalk result.
 func walk_to(target: Vector2i, pace: String = "auto") -> Dictionary:
 	if zone == null or _transitioning:
@@ -1556,8 +1574,11 @@ func _process(delta: float) -> void:
 		var lift := float(zone.height_at(walker.cell)) * BoardVisualSort.ELEVATION_PIXELS
 		covered = city_plate.update_cover(walker.position + Vector2(0, lift), lift, wz, delta) or covered
 		city_plate.tick_pets(delta)
+		city_plate.tick_lights(delta)
 		if Engine.get_process_frames() % 30 == 0:
 			_sync_city_life()
+		if Engine.get_process_frames() % 4 == 0:
+			_sync_city_labels()
 	covered = _cover_children(props_root, walker.position, wz, npc_feet) or covered
 	covered = _cover_children(decor_root, walker.position, wz, npc_feet) or covered
 	if neighbours != null:

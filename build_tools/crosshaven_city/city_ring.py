@@ -142,11 +142,32 @@ def assemble(layers, images, walk, river, old_poly, poly, cfg, kit_dir, hero_pla
         q = at(i, s)
         sl = edge_slope(a, b)
         m = pick(mods, "gatehouse", sl)
+        # Face fit (coordinator review 2): the gatehouse curtain's front face
+        # (front merlon top to foot) is scaled to the run's face on this edge and
+        # its foot is set on the wall line, so the parapet lines meet at the joins.
+        seg = pick(mods, "segment", sl)
+        fit = 1.0
+        if "face_px" in m.spec and "face_px" in seg.spec:
+            fit = float(seg.spec["face_px"]) / float(m.spec["face_px"])
+            m = Module(kit_dir, dict(m.spec, scale_mul=fit), scale)
         im, mp = m.sheared(sl)
         arch = mp(m.p("arch"))
         wl, wr = mp(m.p("wall_left")), mp(m.p("wall_right"))
         x0, y0 = q[0] - arch[0], q[1] - arch[1]
+        drop = 0.0
+        if "curtain_foot" in m.spec:
+            cf = mp(m.p("curtain_foot"))
+            y_new = line_y(a, b, cf[0] + x0) - cf[1]
+            drop = y_new - y0
+            y0 = y_new
+        # kit3: a small downward drop so the curtain parapet meets the runs'
+        drop_k = float(m.spec.get("drop_px", 0.0)) * m.k
+        y0 += drop_k
+        drop += drop_k
         WL, WR = (wl[0] + x0, wl[1] + y0), (wr[0] + x0, wr[1] + y0)
+        arch_open = 0.0
+        if "arch_open_x" in m.spec:
+            arch_open = (float(m.spec["arch_open_x"][1]) - float(m.spec["arch_open_x"][0])) * m.k
         inward = (cx - q[0], cy - q[1])
         u = iso_normal(a, b, inward)
         half = math.dist(WL, WR) / 2.0
@@ -155,6 +176,17 @@ def assemble(layers, images, walk, river, old_poly, poly, cfg, kit_dir, hero_pla
         depth = float(cfg.get("passage_depth_px", 120.0))
         v = ((b[0] - a[0]) / math.dist(a, b), (b[1] - a[1]) / math.dist(a, b))
         passage = CG.quad(q, u, v, -depth, depth, hw)
+        py_min = min(p_[1] for p_ in passage)
+        if "split" not in m.spec:
+            # flat facade (kit3 horizontal): one piece on the wall line
+            add(im, x0, y0, q[1] + 2.0, "gate_back", {"gate": g["id"], "module": m.file})
+            gates_geo.append({"id": g["id"], "why": g.get("why", "layout"), "edge": i, "arch": [round(q[0], 1), round(q[1], 1)],
+                              "wall_join_left": [round(WL[0], 1), round(WL[1], 1)], "wall_join_right": [round(WR[0], 1), round(WR[1], 1)],
+                              "u": u, "v": v, "half_span": half, "passage": [[round(p_[0], 1), round(p_[1], 1)] for p_ in passage],
+                              "passage_half_width_px": round(hw, 1), "art": m.file, "wall_slope": round(sl, 3),
+                              "art_height_px": round(m.im.height, 1), "shear": round(sl - m.slope, 3),
+                              "face_fit": round(fit, 3), "art_drop_px": round(drop, 1), "arch_open_px": round(arch_open, 1)})
+            continue
         # split: the back side (behind a hero in the arch) and the front
         split = mp((m.p("split")[0], 0))[0]
         back_left = m.spec.get("back_side", "left") == "left"
@@ -171,7 +203,6 @@ def assemble(layers, images, walk, river, old_poly, poly, cfg, kit_dir, hero_pla
             la[:, :cut, 3] = 0
             fa[:, cut:, 3] = 0
         lb, ff = Image.fromarray(la, "RGBA"), Image.fromarray(fa, "RGBA")
-        py_min = min(p_[1] for p_ in passage)
         fb = np.nonzero((fa[..., 3] > 40).any(1))[0]
         front_bottom = y0 + (fb.max() if len(fb) else im.height)
         add(lb, x0, y0, py_min - 10.0, "gate_back", {"gate": g["id"], "module": m.file})
@@ -180,7 +211,9 @@ def assemble(layers, images, walk, river, old_poly, poly, cfg, kit_dir, hero_pla
                           "wall_join_left": [round(WL[0], 1), round(WL[1], 1)], "wall_join_right": [round(WR[0], 1), round(WR[1], 1)],
                           "u": u, "v": v, "half_span": half, "passage": [[round(p_[0], 1), round(p_[1], 1)] for p_ in passage],
                           "passage_half_width_px": round(hw, 1), "art": m.file, "wall_slope": round(sl, 3),
-                          "art_height_px": round(m.im.height, 1), "shear": round(sl - m.slope, 3)})
+                          "art_height_px": round(m.im.height, 1), "shear": round(sl - m.slope, 3),
+                          "face_fit": round(fit, 3),
+                          "art_drop_px": round(drop, 1), "arch_open_px": round(arch_open, 1)})
     # ---- water gates where the river crosses
     xing = CG.line_mask(poly, 3) & river
     lab, n = ndi.label(ndi.binary_dilation(xing, iterations=10))
@@ -219,12 +252,19 @@ def assemble(layers, images, walk, river, old_poly, poly, cfg, kit_dir, hero_pla
         for kk in range(1, n_mid + 1):
             spots.append((i, L * kk / (n_mid + 1)))
     towers = []
+    # Coordinator review 3: no ring tower within about one wall height of a
+    # gatehouse (its own flanking towers are smaller); corners included.
+    gate_gap = float(cfg.get("no_tower_near_gate_wall_heights", 1.0)) * wall_h
+    dropped = []
     for i, s in spots:
         p = at(i, s)
         clash = False
+        near_gate = False
         for f in feats[i]:
             if abs(s - f["s"]) < f["half"] + t_half:
                 clash = True
+            if f["kind"] == "gate" and abs(s - f["s"]) < f["half"] + t_half + gate_gap:
+                near_gate = True
         # corner towers also count on the previous edge
         if s == 0.0:
             j = (i - 1) % len(edges)
@@ -232,6 +272,11 @@ def assemble(layers, images, walk, river, old_poly, poly, cfg, kit_dir, hero_pla
             for f in feats[j]:
                 if abs(Lj - f["s"]) < f["half"] + t_half:
                     clash = True
+                if f["kind"] == "gate" and abs(Lj - f["s"]) < f["half"] + t_half + gate_gap:
+                    near_gate = True
+        if near_gate:
+            dropped.append([round(p[0], 1), round(p[1], 1)])
+            continue
         if clash and s != 0.0:
             continue
         towers.append(p)
@@ -295,6 +340,7 @@ def assemble(layers, images, walk, river, old_poly, poly, cfg, kit_dir, hero_pla
         walk |= CG.poly_mask(gg["passage"]) & ~river
     log["ring_pieces"] = {"wall_strips": strips, "towers": len(towers), "gates": len(gates_geo), "water_gates": len(waters)}
     log["water_gates"] = waters
+    log["towers_dropped_near_gates"] = dropped
     for gg in gates_geo:
         gg.pop("u", None)
         gg.pop("v", None)

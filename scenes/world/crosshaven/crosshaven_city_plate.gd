@@ -32,6 +32,9 @@ var water: Sprite2D
 var _ground_lite := false
 var _covering: Array = []
 var footprints: Node2D
+## Lamp light (coordinator review 5): {halo, pool, base_a} per lamp head.
+var lights: Array = []
+var _light_t := 0.0
 static var _tex_cache: Dictionary = {}
 
 
@@ -65,6 +68,92 @@ func set_lite(on: bool) -> void:
 
 func set_hour(h: float) -> void:
 	hour = h
+	_sync_lights(0.0)
+
+
+## Lamps are lit at dusk and night (data: lights.on_from_hour / off_at_hour).
+func lamps_lit() -> bool:
+	var cfg: Dictionary = city.doc.get("lights", {}) if city != null else {}
+	if cfg.is_empty():
+		return false
+	return hour >= float(cfg.get("on_from_hour", 16.0)) or hour < float(cfg.get("off_at_hour", 7.0))
+
+
+## Shows or hides the lamp light; outside Performance mode the halo breathes a
+## little. Performance mode keeps it still (no per-frame change).
+func _sync_lights(delta: float) -> void:
+	if lights.is_empty():
+		return
+	var on := lamps_lit()
+	_light_t += delta
+	for i in lights.size():
+		var l: Dictionary = lights[i]
+		var halo: Sprite2D = l["halo"]
+		var pool: Sprite2D = l["pool"]
+		if halo.visible != on:
+			halo.visible = on
+		if pool != null and pool.visible != on:
+			pool.visible = on
+		if on and not lite and delta > 0.0:
+			var f := 0.92 + 0.08 * sin(_light_t * 5.3 + float(i) * 1.7) * sin(_light_t * 2.1 + float(i))
+			halo.modulate.a = float(l["base_a"]) * f
+		elif on:
+			halo.modulate.a = float(l["base_a"])
+
+
+func tick_lights(delta: float) -> void:
+	_sync_lights(delta)
+
+
+func _add_lamp_light(s: Sprite2D, rec: Dictionary, k: float) -> void:
+	var cfg: Dictionary = city.doc.get("lights", {})
+	var lamps: Dictionary = cfg.get("lamps", {})
+	var plant := str(rec.get("plant", ""))
+	if cfg.is_empty() or not lamps.has(plant):
+		return
+	var halo_tex := load_tex(str(cfg.get("halo", "")))
+	var pool_tex := load_tex(str(cfg.get("pool", "")))
+	if halo_tex == null:
+		return
+	var add := CanvasItemMaterial.new()
+	add.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
+	var col: Array = cfg.get("color", [1.0, 0.82, 0.55])
+	var tint := Color(float(col[0]), float(col[1]), float(col[2]))
+	var size: Vector2 = Vector2(float(rec["w"]), float(rec["h"])) * k * city.scale()
+	var first := true
+	for head in (lamps[plant] as Dictionary).get("heads", []):
+		var fx := float(head[0])
+		if s.flip_h:
+			fx = 1.0 - fx
+		var halo := Sprite2D.new()
+		halo.texture = halo_tex
+		halo.material = add
+		halo.position = s.position + Vector2(fx * size.x, float(head[1]) * size.y)
+		halo.scale = Vector2.ONE * float(cfg.get("halo_scale", 1.25)) * city.scale()
+		halo.z_as_relative = false
+		halo.z_index = clampi(s.z_index + 1, -4096, 4096)
+		halo.self_modulate = tint
+		halo.modulate.a = float(cfg.get("halo_alpha", 0.95))
+		halo.visible = false
+		halo.name = "%s_halo" % s.name
+		add_child(halo)
+		var pool: Sprite2D = null
+		if first and pool_tex != null:
+			# one light circle on the ground per lamp, under every sorted layer
+			pool = Sprite2D.new()
+			pool.texture = pool_tex
+			pool.material = add
+			pool.position = s.position + Vector2(size.x * 0.5, size.y - 2.0)
+			pool.scale = Vector2.ONE * float(cfg.get("pool_scale", 1.4)) * city.scale()
+			pool.z_as_relative = false
+			pool.z_index = UNDER_Z + 80
+			pool.self_modulate = tint
+			pool.modulate.a = float(cfg.get("pool_alpha", 0.85))
+			pool.visible = false
+			pool.name = "%s_pool" % s.name
+			add_child(pool)
+		first = false
+		lights.append({"halo": halo, "pool": pool, "base_a": float(cfg.get("halo_alpha", 0.95)), "plant": plant})
 
 
 func is_day() -> bool:
@@ -191,6 +280,7 @@ func _sort_z(plate_y: float) -> int:
 
 func _build_layers() -> void:
 	rows.clear()
+	lights.clear()
 	var under_i := 0
 	for rec in city.layers():
 		if bool(rec.get("hidden", false)):
@@ -212,6 +302,7 @@ func _build_layers() -> void:
 			bool(rec.get("fade", false)), float(rec.get("fade_min_alpha", 0.45)), rec.get("mask", {}), int(rec["id"]))
 		row["k"] = k
 		row["flip"] = s.flip_h
+		_add_lamp_light(s, rec, k)
 
 
 func _add_row(s: Sprite2D, tag: String, size: Vector2, sort_y: float, fade: bool, min_alpha: float, mask: Dictionary, id: int) -> Dictionary:
@@ -326,6 +417,22 @@ func update_cover(feet: Vector2, lift: float, hero_z: int, delta: float) -> bool
 			row["alpha"] = a
 			(row["node"] as CanvasItem).modulate.a = a
 	return covered
+
+
+## Tags whose art hides an NPC's name plate (coordinator review 4).
+const LABEL_OCCLUDERS := ["wall", "tower", "gate_back", "lintel", "watergate", "house", "stall"]
+
+
+## True when a solid obstacle drawn in front of a body at `feet` (sort z `z`)
+## covers it: the fade's own test (rect, then alpha mask), without fading.
+func occluded(feet: Vector2, z: int) -> bool:
+	var body := Rect2(feet.x - BODY_HALF_W, feet.y - BODY_TOP, BODY_HALF_W * 2.0, BODY_TOP - BODY_BOTTOM)
+	for row in rows:
+		if not (str(row.get("tag", "")) in LABEL_OCCLUDERS):
+			continue
+		if int(row["z"]) > z and (row["rect"] as Rect2).intersects(body) and _mask_hits(row, body):
+			return true
+	return false
 
 
 ## Rows fading over the hero on the last update.

@@ -777,6 +777,102 @@ def place_plaza_props(layers, images, walk, streets, river, solid, wall_poly, pl
     return placed
 
 
+def outer_forest(layers, images, walk, streets, river, wall_poly, green, cfg, gates, bridges):
+    """Coordinator review 6: tree clusters outside the walls, hugging the wall
+    foot and thickening into woods toward the plate edges. Approved oak and
+    cypress art only; roads, the river, the gate approaches and the bridges
+    stay clear. Seeded and data-driven (`greenery.outer_forest`)."""
+    import random
+    from scipy.ndimage import binary_dilation, distance_transform_edt
+    rng = random.Random(int(cfg.get("seed", 41)))
+    poly_img = Image.new("L", (PLATE_W, PLATE_H), 0)
+    ImageDraw.Draw(poly_img).polygon(wall_poly, fill=255)
+    inside = np.asarray(poly_img) > 0
+    # Work at 1/4 size for the masks.
+    q = 4
+    out_s = ~inside[::q, ::q]
+    st_s = binary_dilation(streets[::q, ::q], iterations=int(cfg.get("road_clear_px", 70)) // q)
+    rv_s = binary_dilation(river[::q, ::q], iterations=int(cfg.get("river_clear_px", 50)) // q)
+    d_wall = distance_transform_edt(~CG.line_mask(wall_poly, 2)[::q, ::q]) * q
+    ok = out_s & ~st_s & ~rv_s & (d_wall > float(cfg.get("wall_clear_px", 70)))
+    hh, ww = ok.shape
+    yy, xx = np.mgrid[0:hh, 0:ww]
+    for g in gates:
+        ax, ay = g["arch"]
+        ok &= ((xx * q - ax) / 330.0) ** 2 + ((yy * q - ay) / 200.0) ** 2 > 1.0
+    for b in bridges:
+        x0b, y0b, x1b, y1b = b["sprite_bbox"]
+        ok &= ~((xx * q > x0b - 80) & (xx * q < x1b + 80) & (yy * q > y0b - 60) & (yy * q < y1b + 80))
+    m = int(cfg.get("edge_margin_px", 50)) // q
+    ok[:max(1, int(cfg.get("top_margin_px", 140)) // q), :] = False
+    ok[-m:, :] = False
+    ok[:, :m] = False
+    ok[:, -m:] = False
+    pool = list(cfg.get("pool", ["tree_oak_a", "tree_oak_b", "tree_cypress_a", "tree_cypress_b"]))
+    target = int(cfg.get("target", 50))
+    hi = int(cfg.get("max", 60))
+    near_band = (d_wall < float(cfg.get("wall_foot_band_px", 300))) & ok
+    far_band = (d_wall > float(cfg.get("woods_from_px", 450))) & ok
+    centres = []
+    for band, n_c in ((near_band, int(cfg.get("wall_foot_clusters", 7))), (far_band, int(cfg.get("woods_clusters", 6)))):
+        ys, xs = np.nonzero(band)
+        order = list(range(len(xs)))
+        rng.shuffle(order)
+        got = 0
+        for i in order:
+            x, y = float(xs[i] * q), float(ys[i] * q)
+            if all(math.hypot(x - a, (y - b) * 2.0) > float(cfg.get("cluster_gap_px", 520)) for a, b, _ in centres):
+                centres.append((x, y, band is far_band))
+                got += 1
+                if got >= n_c:
+                    break
+    taken = [(l["x"] + images[l["id"]].width / 2.0, float(l["sort_y"])) for l in layers if l["tag"] in ("tree", "prop")]
+    nid = max([int(l["id"]) for l in layers] + [8999]) + 1
+    nid = max(nid, 9000)
+    placed = []
+    jit = cfg.get("scale_jitter", [0.9, 1.1])
+    rounds = 0
+    while len(placed) < target and rounds < 40:
+        rounds += 1
+        for cx_, cy_, woods in centres:
+            if len(placed) >= target:
+                break
+            # woods clusters are denser and wider than the wall-foot ones
+            per = rng.randint(2, 3) if woods else rng.randint(1, 2)
+            for _ in range(per):
+                for _try in range(12):
+                    r = abs(rng.gauss(0, 150 if woods else 105))
+                    a = rng.uniform(0, 2 * math.pi)
+                    x, y = cx_ + r * math.cos(a), cy_ + 0.5 * r * math.sin(a)
+                    ix, iy = int(x) // q, int(y) // q
+                    if not (0 <= ix < ww and 0 <= iy < hh) or not ok[iy, ix]:
+                        continue
+                    if any(math.hypot(x - a_, (y - b_) * 1.7) < float(cfg.get("tree_gap_px", 62)) for a_, b_ in taken):
+                        continue
+                    break
+                else:
+                    continue
+                name = pool[rng.randrange(len(pool))] if woods else pool[(len(placed)) % len(pool)]
+                art = green["img"][name]
+                sc = round(rng.uniform(float(jit[0]), float(jit[1])), 3)
+                w_, h_ = art.width * sc, art.height * sc
+                rec = {"id": nid, "file": green["files"][name], "art_file": green["files"][name], "tag": "tree", "plant": name,
+                       "x": int(round(x - w_ / 2.0)), "y": int(round(y - h_)), "sort_y": round(y, 1),
+                       "under_everything": False, "fade": "occluding_only", "fade_min_alpha": 0.45,
+                       "spot": "outer_forest", "k": sc, "flip": rng.random() < 0.5}
+                images[nid] = art
+                layers.append(rec)
+                taken.append((x, y))
+                placed.append(rec)
+                nid += 1
+                # the trunk blocks, the crown does not
+                sl, mm = ellipse_mask(walk.shape, x, y - 5, w_ * 0.14, max(6.0, w_ * 0.06))
+                walk[sl] &= ~mm
+                if len(placed) >= min(target, hi):
+                    break
+    return placed
+
+
 def build_water(rb, river, art_dir):
     """Animated river (Mauro item 9): the Rosebud water package as shader inputs.
 
@@ -822,8 +918,37 @@ def retexture_ground(ground_np, river, cfg, tex_dir, drop=None):
     keep the painted water; everything else is grass.
     """
     from scipy.ndimage import gaussian_filter, binary_closing, binary_opening, binary_dilation
-    gtex = np.asarray(Image.open(os.path.join(tex_dir, cfg["grass"])).convert("RGB")).astype(np.float32)
-    ctex = np.asarray(Image.open(os.path.join(tex_dir, cfg["cobble"])).convert("RGB")).astype(np.float32)
+    def tile_scaled(name, f):
+        # Seamless resize of a repeating tile: 3x3, resize, keep the middle.
+        im = Image.open(os.path.join(tex_dir, name)).convert("RGB")
+        if abs(f - 1.0) < 1e-3:
+            return np.asarray(im).astype(np.float32)
+        n_w, n_h = max(8, int(round(im.width * f))), max(8, int(round(im.height * f)))
+        big = Image.new("RGB", (im.width * 3, im.height * 3))
+        for ty in range(3):
+            for tx in range(3):
+                big.paste(im, (tx * im.width, ty * im.height))
+        big = big.resize((n_w * 3, n_h * 3), Image.LANCZOS)
+        return np.asarray(big.crop((n_w, n_h, n_w * 2, n_h * 2))).astype(np.float32)
+
+    # Review 1: stones a hero foot to shin across (0.35x), grass 0.7x.
+    gtex = tile_scaled(cfg["grass"], float(cfg.get("grass_scale", 1.0)))
+    ctex = tile_scaled(cfg["cobble"], float(cfg.get("cobble_scale", 1.0)))
+    g2cfg = cfg.get("grass_layer2")
+    if g2cfg:
+        g2tex = np.rot90(gtex, int(g2cfg.get("rot90", 1)) % 4).copy()
+        g2off = (float(g2cfg.get("offset_units", [137.0, 211.0])[0]), float(g2cfg.get("offset_units", [137.0, 211.0])[1]))
+        g2k = float(g2cfg.get("scale_mul", 1.13))
+        # low-frequency noise: a coarse random field, smoothed and upsampled
+        rs = np.random.RandomState(int(g2cfg.get("seed", 5)))
+        cell = int(g2cfg.get("noise_px", 640))
+        Hn, Wn = ground_np.shape[0] // cell + 3, ground_np.shape[1] // cell + 3
+        coarse = gaussian_filter(rs.rand(Hn, Wn).astype(np.float32), 0.8)
+        coarse = (coarse - coarse.min()) / max(1e-6, coarse.max() - coarse.min())
+        noise = np.asarray(Image.fromarray(coarse).resize((Wn * cell, Hn * cell), Image.BICUBIC))[:ground_np.shape[0], :ground_np.shape[1]]
+        lo, hi = g2cfg.get("blend", [0.35, 0.65])
+        wmix = np.clip((noise - float(lo)) / max(1e-6, float(hi) - float(lo)), 0.0, 1.0)
+        wmix = wmix * wmix * (3 - 2 * wmix)
     kg = float(cfg.get("grass_px_per_unit", 1.6))
     kc = float(cfg.get("cobble_px_per_unit", 2.2))
     g = ground_np.astype(np.int16)
@@ -844,11 +969,17 @@ def retexture_ground(ground_np, river, cfg, tex_dir, drop=None):
         v = yy - xx * 0.5
         gx = np.floor(u * kg).astype(np.int64) % gtex.shape[1]
         gy = np.floor(v * kg).astype(np.int64) % gtex.shape[0]
+        grass = gtex[gy, gx]
+        if g2cfg:
+            g2x = np.floor((u + g2off[0]) * kg * g2k).astype(np.int64) % g2tex.shape[1]
+            g2y = np.floor((v + g2off[1]) * kg * g2k).astype(np.int64) % g2tex.shape[0]
+            wm = wmix[y0:y1, :, None]
+            grass = grass * (1 - wm) + g2tex[g2y, g2x] * wm
         cx_ = np.floor(u * kc).astype(np.int64) % ctex.shape[1]
         cy_ = np.floor(v * kc).astype(np.int64) % ctex.shape[0]
         aa = a[y0:y1, :, None]
         rim = 1.0 - 0.22 * (4.0 * aa * (1.0 - aa))
-        out[y0:y1] = (gtex[gy, gx] * (1 - aa) + ctex[cy_, cx_] * aa) * rim
+        out[y0:y1] = (grass * (1 - aa) + ctex[cy_, cx_] * aa) * rim
     # keep the painted river and bank
     keep = gaussian_filter(bank.astype(np.float32), 2.0)[..., None]
     res = out * (1 - keep) + ground_np.astype(np.float32) * keep
@@ -887,6 +1018,7 @@ def apply_ring_kit(layers, images, ground_np, walk, river, old_poly):
     cx = sum(p[0] for p in poly) / len(poly)
     cy = sum(p[1] for p in poly) / len(poly)
     painted = []
+    road_ends = {}
     for g in cfg["gates"]:
         i = int(g["edge"])
         a, b = poly[i], poly[(i + 1) % len(poly)]
@@ -899,7 +1031,8 @@ def apply_ring_kit(layers, images, ground_np, walk, river, old_poly):
                 dd = (xs - end[0]) ** 2 + (ys - end[1]) ** 2
                 j = int(np.argmin(dd))
                 tgt = (float(xs[j]), float(ys[j]))
-                if sign < 0 and dd[j] > 700 ** 2:
+                if sign < 0 and (dd[j] > 700 ** 2 or g.get("road_out", "street") == "edge"):
+                    # review 7: the road runs on to the zone edge, not to a stub
                     tgt = None
             else:
                 tgt = None
@@ -918,6 +1051,8 @@ def apply_ring_kit(layers, images, ground_np, walk, river, old_poly):
             if 1.0 < n_ < 3000:
                 tgt = (tgt[0] + dx_ / n_ * 45.0, tgt[1] + dy_ / n_ * 45.0)
             pts = [q, end, tgt]
+            if sign < 0:
+                road_ends[g["id"]] = [round(tgt[0], 1), round(tgt[1], 1)]
             roads |= CG.paint_road(ground_np, walk, sample, pts)
             painted.append([[round(p_[0], 1), round(p_[1], 1)] for p_ in pts])
     drop &= ~roads
@@ -930,6 +1065,11 @@ def apply_ring_kit(layers, images, ground_np, walk, river, old_poly):
         layers.append(r)
     # Gate 0 is the south gate (gate cells and tests key on it).
     gates_geo.sort(key=lambda g: 0 if g["id"] == "S" else 1)
+    for gg in gates_geo:
+        src = next((g for g in cfg["gates"] if g["id"] == gg["id"]), {})
+        gg["road_out_end"] = road_ends.get(gg["id"])
+        if "exit" in src:
+            gg["exit"] = dict(src["exit"])
     log["gates"] = gates_geo
     log["roads_painted"] = painted
     log["streets_pulled_back_px"] = int(drop.sum())
@@ -1359,6 +1499,8 @@ def main():
 
     # ---- item 6: bushes and flowers on the grass (street edges, plazas, wall feet).
     plot_ells = [legendary_ellipse(ax, ay) for _, ax, ay in chosen]
+    # the entrance in front of each anchor stays clear of plants and props too
+    plot_ells += [(ax, ay + 34.0, 80.0, 34.0) for _, ax, ay in chosen]
     cleared = []
     for l in layers:
         if l["id"] in thinned:
@@ -1368,6 +1510,10 @@ def main():
     if green is not None:
         props_n = place_plaza_props(layers, images, walk, streets, river, wall_sprites | hard, wall_poly, plot_ells, thinned | removed, green, LAYOUT["greenery"])
         print("plaza props placed", props_n)
+        if LAYOUT["greenery"].get("outer_forest"):
+            forest = outer_forest(layers, images, walk, streets, river, wall_poly, green, LAYOUT["greenery"]["outer_forest"],
+                                  gate_log.get("gates", []), zones["bridges"])
+            print("outer forest trees", len(forest))
     print("bushes and flowers placed", len(planted))
 
     for g in gate_log["gates"]:
@@ -1510,6 +1656,24 @@ def main():
         rec = dict(g)
         rec["cells"] = cells
         gates_out.append(rec)
+    # Review 7: each gate road ends in a stub to a region road (data).
+    exit_stubs = []
+    for g in gate_log["gates"]:
+        ex = g.get("exit")
+        if not ex or "to" not in ex or not g.get("road_out_end"):
+            continue
+        ec = nearest(*g["road_out_end"])
+        exit_stubs.append({"id": "city_%s_to_%s" % (g["id"].lower(), ex["link"]),
+                           "from": {"zone_id": "crosshaven_city", "x": ec[0], "y": ec[1]},
+                           "to": {"zone_id": ex["link"], "x": int(ex["to"][0]), "y": int(ex["to"][1])},
+                           "label": ex.get("label", ""), "gate": g["id"], "status": ex.get("status", "proposed"),
+                           "enabled": True})
+        g["exit_cell"] = list(ec)
+    for rec in gates_out:
+        for g in gate_log["gates"]:
+            if g["id"] == rec["id"] and "exit_cell" in g:
+                rec["exit_cell"] = g["exit_cell"]
+    print("gate exits", [(e["gate"], e["from"]["x"], e["from"]["y"], e["to"]["zone_id"]) for e in exit_stubs])
     bridges = []
     for b in zones["bridges"]:
         ends = []
@@ -1616,7 +1780,7 @@ def main():
             rec["plot_plant"] = True
         if "plant" in l:
             rec["plant"] = l["plant"]
-        for key_ in ("module", "gate"):
+        for key_ in ("module", "gate", "spot"):
             if key_ in l:
                 rec[key_] = l[key_]
         if l["tag"] in hide_tags and lid in displaced:
@@ -1646,7 +1810,9 @@ def main():
         # The approved module sources ship beside their assembled pieces (2D only).
         os.makedirs(os.path.join(art_dir, "kit"), exist_ok=True)
         for spec in LAYOUT["ring_kit"]["modules"].values():
-            shutil.copyfile(os.path.join(KIT_DIR, spec["file"]), os.path.join(art_dir, "kit", spec["file"]))
+            src_f, dst_f = os.path.join(KIT_DIR, spec["file"]), os.path.join(art_dir, "kit", spec["file"])
+            if not (os.path.exists(dst_f) and os.path.samefile(src_f, dst_f)):
+                shutil.copyfile(src_f, dst_f)
     ground.save(os.path.join(art_dir, "ground.jpg"), quality=90)
     ground.resize((PLATE_W // 2, PLATE_H // 2), Image.LANCZOS).save(os.path.join(art_dir, "ground_lite.jpg"), quality=88)
 
@@ -1744,9 +1910,10 @@ def main():
             {"id": "city_to_crossroads", "from": {"zone_id": "crosshaven_city", "x": exit_cell[0], "y": exit_cell[1]},
              "to": {"zone_id": "crosshaven_crossroads", "x": LAYOUT["crossroads_stub"]["to"][0], "y": LAYOUT["crossroads_stub"]["to"][1]},
              "label": "To the Crossroads", "enabled": True},
-        ],
+        ] + exit_stubs,
         "layers": "layers.json",
         "water": water,
+        "lights": dict(LAYOUT.get("greenery", {}).get("lights", {})),
     }
     json.dump(city, open(os.path.join(data_dir, "city.json"), "w"), indent=1)
     Image.fromarray((streets * 255).astype(np.uint8)).resize((PLATE_W // 4, PLATE_H // 4), Image.BILINEAR).save(

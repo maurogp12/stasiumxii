@@ -43,6 +43,7 @@ func _run() -> void:
 	_test_walk()
 	_test_plots()
 	_test_gates()
+	_test_review_data()
 	_test_crossroads_untouched()
 	var w := _spawn()
 	await _test_world_entry(w)
@@ -51,6 +52,7 @@ func _run() -> void:
 	_test_life(w)
 	_test_performance(w)
 	_test_gate_walks(w)
+	_test_review_world(w)
 	await _test_gate_stub(w)
 	w.queue_free()
 	await process_frame
@@ -114,7 +116,7 @@ func _test_data() -> void:
 	var houses: Array = []
 	var jitter_ok := true
 	for rec in city.layers():
-		if str(rec["tag"]) == "tree":
+		if str(rec["tag"]) == "tree" and str(rec.get("spot", "")) != "outer_forest":
 			trees += 1
 			if not keep.has(int(rec["id"])):
 				stray_trees += 1
@@ -229,7 +231,7 @@ func _test_walk() -> void:
 			var cell := _cell_at(foot)
 			if not z.passable_at(cell):
 				blocked_under += 1
-	check(probes > 10 and blocked_under == probes, "towers and landmarks block their base (%d of %d)" % [blocked_under, probes])
+	check(probes >= 6 and blocked_under == probes, "towers and landmarks block their base (%d of %d)" % [blocked_under, probes])
 
 
 func _cell_at(world: Vector2) -> Vector2i:
@@ -515,10 +517,13 @@ func _test_world_entry(w: Node2D) -> void:
 		(hs[t] as Array).sort()
 	var house_r: float = float(hs["house"][hs["house"].size() / 2]) / hero_h
 	var gate_r: float = float(hs["gate_back"][0]) / hero_h
+	var gate_min := 1e9
 	for g in city.gates():
 		if g.has("art_height_px"):
-			# the kit's gatehouse height before the shear that fits it to the wall
-			gate_r = float(g["art_height_px"]) * city.scale() / hero_h
+			# the flat gatehouse (towers 1000 px in the art); the diagonal one adds its depth
+			gate_min = minf(gate_min, float(g["art_height_px"]) / float(g.get("face_fit", 1.0)) * city.scale() / hero_h)
+	if gate_min < 1e8:
+		gate_r = gate_min
 	var stall_r: float = float(hs["stall"][hs["stall"].size() / 2]) / hero_h
 	check(house_r > 2.6 and house_r < 3.6, "a house is about 3 hero heights (%.2f)" % house_r)
 	var ring: Dictionary = city.doc.get("wall_ring", {})
@@ -784,6 +789,165 @@ func _free_beyond(z: WorldZone, from: Vector2i, dir: Vector2i) -> Vector2i:
 		if z.passable_at(c):
 			best = c
 	return best
+
+
+# ------------------------------------------------- coordinator review (c80e4cab)
+
+func _test_review_data() -> void:
+	var ring: Dictionary = city.doc.get("wall_ring", {})
+	var hero_plate: float = float((ring.get("factors", {}) as Dictionary).get("hero_plate_px", 54.52))
+	var passage_px: float = 2.2 * 0.6 * hero_plate
+	var wall_h: float = 550.0 * float((ring.get("factors", {}) as Dictionary).get("module_scale", 0.3495))
+	# 2: the gatehouse curtain face matches the run's face; the arch stays wide.
+	for g in city.gates():
+		if str(g["id"]) in ["N", "S"]:
+			check(str(g["art"]) == "gatehouse_horizontal_CONCEPTO.png" and is_zero_approx(float(g["shear"])), "%s uses the horizontal gatehouse with no shear (%s %.3f)" % [g["id"], g["art"], float(g["shear"])])
+		else:
+			check(str(g["art"]).begins_with("gatehouse_diag_v3"), "%s uses the diagonal gatehouse (%s)" % [g["id"], g["art"]])
+			check(absf(absf(float(g["shear"])) - 0.1367) < 0.01, "%s parapet-matched shear (%.3f)" % [g["id"], float(g["shear"])])
+		check(float(g.get("art_drop_px", -1.0)) > 0.0, "%s parapet drop in data (%.1f)" % [g["id"], float(g.get("art_drop_px", -1.0))])
+		# hero width as the art team measures it: 48 px at a 156 px hero
+		var arch_min: float = 2.2 * (48.0 / 156.0) * hero_plate
+		check(float(g.get("arch_open_px", 0.0)) >= arch_min, "%s arch opening %.1f px >= 2.2 hero widths (%.1f)" % [g["id"], float(g.get("arch_open_px", 0.0)), arch_min])
+		check(float(g.get("passage_half_width_px", 0.0)) * 2.0 >= passage_px - 0.5, "%s passage is 2.2 hero widths" % g["id"])
+	# 3: no ring tower within about one wall height of a gatehouse.
+	for rec in city.layers():
+		if str(rec["tag"]) != "tower":
+			continue
+		var foot := Vector2(float(rec["x"]) + float(rec["w"]) * 0.5, float(rec["sort_y"]) - 10.0)
+		for g in city.gates():
+			var arch := Vector2(float(g["arch"][0]), float(g["arch"][1]))
+			var gap: float = foot.distance_to(arch) - float(g["half_span"]) - float(rec["w"]) * 0.42
+			check(gap >= wall_h * 0.95, "tower %d keeps a wall height from gate %s (%.0f px)" % [int(rec["id"]), g["id"], gap])
+	# 6: an outer ring of trees, outside the walls, off the roads and the river.
+	var outer := 0
+	var streets: Image = Image.load_from_file(ProjectSettings.globalize_path(city.path.get_base_dir().path_join("streets.png")))
+	for rec in city.layers():
+		if str(rec.get("spot", "")) != "outer_forest":
+			continue
+		outer += 1
+		var k := float(rec.get("k", 1.0))
+		var foot := Vector2(float(rec["x"]) + float(rec["w"]) * k * 0.5, float(rec["sort_y"]))
+		check(not _in_wall(foot), "outer tree %d stands outside the walls" % int(rec["id"]))
+		check(str(rec.get("plant", "")).begins_with("tree_oak") or str(rec.get("plant", "")).begins_with("tree_cypress"), "outer tree %d is approved oak or cypress art" % int(rec["id"]))
+		var sx := clampi(int(foot.x / 4.0), 0, streets.get_width() - 1)
+		var sy := clampi(int(foot.y / 4.0), 0, streets.get_height() - 1)
+		check(streets.get_pixel(sx, sy).r < 0.5, "outer tree %d is off the roads" % int(rec["id"]))
+		var cell: Vector2i = _cell_at(city.plate_to_world(foot))
+		check(city.zone.terrain_at(cell) != "water", "outer tree %d is off the river" % int(rec["id"]))
+	check(outer >= 40 and outer <= 60, "40-60 trees outside the walls (%d)" % outer)
+	# 7: every gate road ends in an exit to a region road (data).
+	var stubs: Array = city.stubs_from(PlateCity.CITY_ID)
+	var plate: Vector2 = city.plate_size()
+	var reach := _reach(city.spawn())
+	for g in city.gates():
+		if str(g["id"]) == "S":
+			check(not city.stub_at(PlateCity.CITY_ID, city.exit_cell()).is_empty(), "S road keeps the Crossroads exit")
+			continue
+		var stub: Dictionary = {}
+		for st in stubs:
+			if str(st.get("gate", "")) == str(g["id"]):
+				stub = st
+		check(not stub.is_empty(), "%s road ends in an exit stub" % g["id"])
+		if stub.is_empty():
+			continue
+		var end: Array = g["road_out_end"]
+		var at_edge: bool = float(end[0]) <= 60.0 or float(end[1]) <= 60.0 or float(end[0]) >= plate.x - 60.0 or float(end[1]) >= plate.y - 60.0
+		check(at_edge, "%s road runs to the zone edge (%s)" % [g["id"], end])
+		var from := Vector2i(int(stub["from"]["x"]), int(stub["from"]["y"]))
+		check(reach.has(from), "%s exit cell %s is walkable and joined" % [g["id"], from])
+		check(str(stub.get("status", "")) in ["proposed", "placeholder"], "%s exit link is marked proposed or placeholder" % g["id"])
+	# 1: tile scales in data.
+	var tex: Dictionary = (city.doc["plate"] as Dictionary).get("ground_textures", {})
+	if tex.is_empty():
+		tex = _layout().get("ground_textures", {})
+	check(is_equal_approx(float(tex.get("cobble_scale", 1.0)), 0.35), "cobble tile at 0.35x")
+	check(is_equal_approx(float(tex.get("grass_scale", 1.0)), 0.7), "grass tile at 0.7x")
+	check(tex.has("grass_layer2"), "a second grass layer breaks the repeat")
+
+
+func _layout() -> Dictionary:
+	var f := "res://build_tools/crosshaven_city/layout_rosebud_v9.json"
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(f))
+	return parsed if parsed is Dictionary else {}
+
+
+func _test_review_world(w: Node2D) -> void:
+	var cp = w.city_plate
+	# 4: name plates hide behind walls (the fade's occlusion test).
+	var wall_row: Dictionary = {}
+	for row in cp.rows:
+		if str(row["tag"]) == "wall" and (row["rect"] as Rect2).size.y > 120.0:
+			wall_row = row
+			break
+	check(not wall_row.is_empty(), "a wall strip to stand behind")
+	if not wall_row.is_empty():
+		var r: Rect2 = wall_row["rect"]
+		var behind := Vector2(r.position.x + r.size.x * 0.5, r.position.y + r.size.y * 0.55)
+		check(cp.occluded(behind, int(wall_row["z"]) - 20), "a body behind a wall is occluded")
+		check(not cp.occluded(behind + Vector2(0, r.size.y), int(wall_row["z"]) + 50), "a body in front of the wall is not")
+		var npc: Node2D = null
+		for node in w.npcs_root.get_children():
+			if node is Node2D and node.get("_plate") != null and (node as Node2D).visible:
+				npc = node
+				break
+		check(npc != null, "a city NPC with a name plate")
+		if npc != null:
+			var keep_pos := npc.position
+			var keep_z := npc.z_index
+			npc.position = behind
+			npc.z_index = int(wall_row["z"]) - 20
+			w._sync_city_labels()
+			check(not (npc.get("_plate") as CanvasItem).visible, "the name plate hides behind the wall")
+			npc.position = keep_pos
+			npc.z_index = keep_z
+			w._sync_city_labels()
+	# 5: lamps light at dusk and night, not by day; Performance mode keeps them still.
+	check(cp.lights.size() >= 10, "lamp lights built (%d)" % cp.lights.size())
+	cp.set_hour(12.0)
+	var lit := 0
+	for l in cp.lights:
+		if (l["halo"] as CanvasItem).visible:
+			lit += 1
+	check(lit == 0, "no lamp light at noon (%d)" % lit)
+	cp.set_hour(22.0)
+	lit = 0
+	var pools := 0
+	for l in cp.lights:
+		if (l["halo"] as CanvasItem).visible:
+			lit += 1
+		if l["pool"] != null and (l["pool"] as CanvasItem).visible:
+			pools += 1
+	check(lit == cp.lights.size(), "every lamp head glows at night (%d/%d)" % [lit, cp.lights.size()])
+	check(pools >= 10, "a light circle on the ground under each lamp (%d)" % pools)
+	for l in cp.lights:
+		check((l["halo"] as CanvasItem).material is CanvasItemMaterial and ((l["halo"] as CanvasItem).material as CanvasItemMaterial).blend_mode == CanvasItemMaterial.BLEND_MODE_ADD, "lamp halo is additive")
+		break
+	cp.set_hour(18.5)
+	check((cp.lights[0]["halo"] as CanvasItem).visible, "lamps are lit at dusk")
+	var was_lite: bool = cp.lite
+	cp.lite = true
+	var a0: float = (cp.lights[0]["halo"] as CanvasItem).modulate.a
+	cp.tick_lights(0.37)
+	cp.tick_lights(0.41)
+	check(is_equal_approx((cp.lights[0]["halo"] as CanvasItem).modulate.a, a0), "Performance mode: the lamp light stays still")
+	cp.lite = was_lite
+	cp.set_hour(12.0)
+	# 7: an exit stub takes the hero to its region road.
+	for st in city.stubs_from(PlateCity.CITY_ID):
+		if str(st.get("gate", "")) == "":
+			continue
+		var to: Dictionary = st["to"]
+		var f := "res://data/world/crosshaven/zones/%s.json" % str(to["zone_id"])
+		check(FileAccess.file_exists(f), "exit %s leads to a known zone (%s)" % [st["id"], to["zone_id"]])
+		if not FileAccess.file_exists(f):
+			continue
+		var zd: Variant = JSON.parse_string(FileAccess.get_file_as_string(f))
+		var ok := false
+		for t in (zd as Dictionary).get("tiles", []):
+			if int(t["x"]) == int(to["x"]) and int(t["y"]) == int(to["y"]):
+				ok = bool(t.get("walkable", false))
+		check(ok, "exit %s lands on a walkable cell" % st["id"])
 
 
 func _test_gate_stub(w: Node2D) -> void:
