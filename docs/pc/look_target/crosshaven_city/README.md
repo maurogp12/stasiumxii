@@ -162,3 +162,11 @@ Reviewed on the base without buildings (`cxbase/base_walls.jpg`).
     - **The castle sits on the north wall**, integrated into it, and is taller than the towers. The cathedral is the tallest building.
     - **Outside:** trees and grass hug the wall foot, and the river runs along with rocks.
     - **Height order:** house (3× hero) < wall (about 3–3.5× hero) < tower (about 6× hero) < castle and cathedral.
+25. **Wall look APPROVED by Mauro** (17 Oct: "me gusta lo que veo, sigue así"), from the north-side mock at be55ca38. Next, Grok Bot paints the native modular kit at the GOAL heights:
+    - wall body about 550 px;
+    - towers about 1000 px;
+    - gatehouse about 1000–1100 px;
+    - castle about 1200 px, on the north wall;
+    - water gates and corner towers.
+
+    The build agent assembles them in game. The final check is in game.
