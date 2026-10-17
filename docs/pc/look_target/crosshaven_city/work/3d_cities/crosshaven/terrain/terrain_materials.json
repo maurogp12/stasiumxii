@@ -1,0 +1,66 @@
+{
+ "label": "🖼️ IMAGEN / CONCEPTO, TODAVÍA HAY QUE CONSTRUIRLO — procedural 0 CU",
+ "resolution": 2048,
+ "files": "ter_<name>_albedo_height.webp (RGB albedo sRGB, A = height linear 0..1), ter_<name>_normal.webp (OpenGL +Y, tangent space; Godot default), ter_<name>_orm.webp (R=AO, G=roughness, B=metallic=0, linear)",
+ "tiling": "all maps generated periodic (FFT noise, periodic Voronoi, wrapped strokes); seam_edge_diff ~= interior_neighbour_diff on every map = seamless; see ter_<name>_tile2x2_preview.jpg",
+ "height_blend": "weight_i = max(0, height_i + splat_i - max_j(height_j + splat_j) + 0.15); suggested contrast 0.1-0.2. Height scale is comparable across materials: lush grass/cobble stones ~0.7-0.9 tops, mud ~0.2-0.4 so mud settles into joints and low ground.",
+ "lighting": "mild upper-left light and AO baked into albedo for the gritty read; lit at runtime as normal",
+ "materials": {
+  "cobblestone": {
+   "use": "city streets inside the wall",
+   "blend": "stones tall, joints low: dirt/mud height-blend into the joints first",
+   "tile_size_m": 3.0,
+   "seam_edge_diff": 6.96,
+   "interior_neighbour_diff": 6.86
+  },
+  "dirt_path": {
+   "use": "packed dirt roads and paths",
+   "blend": "low/medium height; grass edges bleed in by height+noise mask; mud fills its low areas",
+   "tile_size_m": 3.0,
+   "seam_edge_diff": 6.23,
+   "interior_neighbour_diff": 6.02
+  },
+  "grass_lush": {
+   "use": "meadows, outside the walls, riverbanks top",
+   "blend": "tallest material: wins height-blends against short grass/dirt; pair with grass card scatter",
+   "tile_size_m": 2.0,
+   "seam_edge_diff": 10.17,
+   "interior_neighbour_diff": 11.93
+  },
+  "grass_short": {
+   "use": "mown/trampled grass inside plots, verges",
+   "blend": "height-blend over dirt_path: bare soil patches (low alpha) give way first",
+   "tile_size_m": 2.0,
+   "seam_edge_diff": 8.65,
+   "interior_neighbour_diff": 10.13
+  },
+  "mud": {
+   "use": "wet low ground, near millrace, gate approach, livestock pens",
+   "blend": "lowest height: always sits under others; puddles = low roughness where height<0.3",
+   "tile_size_m": 3.0,
+   "seam_edge_diff": 2.97,
+   "interior_neighbour_diff": 2.99
+  },
+  "plaza_flagstones": {
+   "use": "central plaza, around fountain/gazebo, castle forecourt",
+   "blend": "slabs flat-high, joints low; grime/dirt blends into joints",
+   "tile_size_m": 4.0,
+   "seam_edge_diff": 2.37,
+   "interior_neighbour_diff": 2.45
+  },
+  "riverbank_pebbles": {
+   "use": "river edges, under the bridge, millrace banks",
+   "blend": "rounded pebbles high; sand low; wet darkening zones lower roughness - bias wet zone toward water side",
+   "tile_size_m": 2.0,
+   "seam_edge_diff": 5.47,
+   "interior_neighbour_diff": 5.28
+  },
+  "wall_base_gravel": {
+   "use": "1-2 m strip at the foot of the city wall, towers, gatehouse",
+   "blend": "angular gravel mid height; dirt patches low; weeds at wall line",
+   "tile_size_m": 2.0,
+   "seam_edge_diff": 6.61,
+   "interior_neighbour_diff": 6.41
+  }
+ }
+}

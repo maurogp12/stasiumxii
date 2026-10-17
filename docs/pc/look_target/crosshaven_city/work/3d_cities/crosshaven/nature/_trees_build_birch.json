@@ -3,12 +3,12 @@
   "tris": {
    "LOD0": 7000,
    "LOD1": 3000,
-   "LOD2": 800
+   "LOD2": 804
   },
-  "height_m": 8.62,
+  "height_m": 8.58,
   "crown_m": [
-   4.38,
-   5.15
+   5.15,
+   4.54
   ],
   "collider": {
    "file": "nat_birch_a-col.glb",
@@ -22,12 +22,12 @@
   "tris": {
    "LOD0": 7000,
    "LOD1": 3000,
-   "LOD2": 800
+   "LOD2": 804
   },
-  "height_m": 7.14,
+  "height_m": 7.06,
   "crown_m": [
-   4.17,
-   4.36
+   3.98,
+   4.06
   ],
   "collider": {
    "file": "nat_birch_b-col.glb",
@@ -41,12 +41,12 @@
   "tris": {
    "LOD0": 7000,
    "LOD1": 3000,
-   "LOD2": 800
+   "LOD2": 804
   },
-  "height_m": 10.14,
+  "height_m": 10.05,
   "crown_m": [
-   6.53,
-   6.53
+   5.5,
+   6.48
   ],
   "collider": {
    "file": "nat_birch_c-col.glb",

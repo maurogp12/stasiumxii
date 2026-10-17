@@ -3,12 +3,12 @@
  "label": "🖼️ IMAGEN / CONCEPTO, TODAVÍA HAY QUE CONSTRUIRLO — procedural Blender build",
  "species": "birch",
  "variant": "b",
- "height_m": 7.14,
- "crown_diameter_m": 4.76,
+ "height_m": 7.06,
+ "crown_diameter_m": 4.06,
  "tris": {
   "0": 7000,
   "1": 3000,
-  "2": 800
+  "2": 804
  },
  "impostor": {
   "file": "nat_birch_b_impostor.glb",
@@ -51,5 +51,6 @@
   ],
   "color0": true
  },
- "size_bytes": 1920324
+ "size_bytes": 1366688,
+ "fix_v2": "canopy filled: 22 golden-angle branches, tighter card placement (no floating cards)"
 }

@@ -28,5 +28,6 @@
  "facing_note": "Main entrance faces +Z. Build agent rotates on import.",
  "version": "v2",
  "note": "fused water wheel + frame removed (faces x>2.65 m, y<5.2 m in source frame); attach prp_waterwheel_a on the +X wall",
- "wheel_socket": "+X wall face, axle centre ~2.2 m above ground, wheel plane parallel to the wall (axle along X)"
+ "wheel_socket": "+X wall face, axle centre ~2.2 m above ground, wheel plane parallel to the wall (axle along X)",
+ "fix_v3": "ghost water wheel painted out of the +X wall texture (all LODs); masonry cloned from the adjacent wall strip, brightness-matched to surrounding wall"
 }

@@ -3,11 +3,11 @@
  "label": "🖼️ IMAGEN / CONCEPTO, TODAVÍA HAY QUE CONSTRUIRLO — procedural build",
  "variant": "green",
  "height_m": 1.1,
- "width_m": 1.28,
+ "width_m": 1.39,
  "tris": {
-  "LOD0": 544,
-  "LOD1": 228,
-  "LOD2": 100
+  "LOD0": 336,
+  "LOD1": 164,
+  "LOD2": 84
  },
  "build": "low-poly core mesh + 4 alpha-cut leaf-card clumps (crossed quads), atlas textures/leaf_bush_* quadrant 0, alphaMode MASK",
  "vertex_color_COLOR_0": {
@@ -22,5 +22,6 @@
  },
  "pivot": "ground centre",
  "front": "+Z (radially symmetric)",
- "up": "+Y"
+ "up": "+Y",
+ "fix_v2": "cards on an outer shell (less self-shadow), up-biased normals; dark atlas quadrant lifted to mean RGB 54/84/42"
 }
