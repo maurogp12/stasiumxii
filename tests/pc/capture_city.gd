@@ -404,6 +404,29 @@ func _walk_clip() -> void:
 					best_d = d
 					best = cc
 		marks.append(best)
+	# Outer woods: only the roads are walkable outside the ring, so the hero
+	# walks out along the west road, then the camera pans along the wall foot
+	# woods (NW, then NE edge).
+	for g in city.gates():
+		if str(g["id"]) == "W" and g.has("exit_cell"):
+			var ws: Array = g["cells"]
+			var from_c := Vector2i(int(ws[0][0]), int(ws[0][1]))
+			var ex := Vector2i(int(g["exit_cell"][0]), int(g["exit_cell"][1]))
+			# stop short of the exit stub (it would leave the city)
+			var back := Vector2i(signi(from_c.x - ex.x), signi(from_c.y - ex.y))
+			var stop := ex
+			for k in range(2, 6):
+				if _w.zone.passable_at(ex + back * k):
+					stop = ex + back * k
+					break
+			legs.append([from_c, stop, "walk", 7.0, "west road out past the woods"])
+	var n_poly := poly.size()
+	for pair in [[n_poly - 1, 0], [1, 2]]:
+		var pa: Vector2 = poly[pair[0]]
+		var pb: Vector2 = poly[pair[1]]
+		var out_a: Vector2 = pa + ((pa + pb) * 0.5 - centre).normalized() * 200.0
+		var out_b: Vector2 = pb + ((pa + pb) * 0.5 - centre).normalized() * 200.0
+		legs.append([city.plate_to_world(out_a.lerp(out_b, 0.12)), city.plate_to_world(out_a.lerp(out_b, 0.88)), "pan", 7.0, "outer woods pan"])
 	legs.append([marks[0], marks[2], "walk", 10.0, "ring road west to east (day)"])
 	legs.append([marks[2], marks[0], "walk", 10.0, "ring road east to west (night)", 22.0])
 	_w.camera_hold = false
@@ -411,6 +434,22 @@ func _walk_clip() -> void:
 	_w.camera.zoom = Vector2.ONE * 1.6
 	for leg in legs:
 		_w.weather.time_of_day = float(leg[5]) if leg.size() > 5 else 12.0
+		if str(leg[2]) == "pan":
+			_w.camera_hold = true
+			var n_pan := int(float(leg[3]) * 30.0)
+			for i in 10:
+				_cam(leg[0], 1.1)
+				await process_frame
+			_grabbing = true
+			for i in n_pan:
+				_cam((leg[0] as Vector2).lerp(leg[1], float(i) / float(n_pan - 1)), 1.1)
+				await process_frame
+			_grabbing = false
+			_w.camera_hold = false
+			_w._zoom = 1.6
+			_w.camera.zoom = Vector2.ONE * 1.6
+			print("LEG %s pan" % leg[4])
+			continue
 		_place(leg[0])
 		_w._sync_city_life()
 		_w.camera.position = _w.walker.position
