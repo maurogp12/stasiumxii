@@ -1,0 +1,47 @@
+{
+  "diag": {
+    "path": "/workspace/crosshaven_paint/walls/kit3/gatehouse_diag_v3_CONCEPTO.png",
+    "mirror_path": "/workspace/crosshaven_paint/walls/kit3/gatehouse_diag_v3_mirror_CONCEPTO.png",
+    "size": [
+      1085,
+      1000
+    ],
+    "curtain_parapet_h": 556,
+    "curtain_parapet_vs550_pct": 1.09,
+    "merlon_tip_h": 597,
+    "passage_width_px": 198,
+    "passage_mid_arch": 198,
+    "passage_ok": true,
+    "solid_y": 444,
+    "merlon_y": 403,
+    "scale_factor": 1.5244
+  },
+  "horizontal": {
+    "path": "/workspace/crosshaven_paint/walls/kit3/gatehouse_horizontal_CONCEPTO.png",
+    "size": [
+      1304,
+      1000
+    ],
+    "curtain_parapet_h": 538,
+    "curtain_parapet_vs550_pct": -2.18,
+    "merlon_tip_h": 569,
+    "passage_width_px": 302,
+    "passage_mid_arch": 302,
+    "passage_ok": true,
+    "solid_y": 462,
+    "merlon_y": 431,
+    "scale_factor": 1.4749
+  },
+  "sheet": "/workspace/crosshaven_paint/walls/kit3/gatehouse_v3_sheet_CONCEPTO.jpg",
+  "sheet_size": [
+    4833,
+    3618
+  ],
+  "targets": {
+    "tower_h": 1000,
+    "curtain_parapet": 550,
+    "min_passage": 96,
+    "hero_w": 48
+  },
+  "parapet_note": "curtain_parapet_h = height of continuous curtain body top (join line) above base; merlon tips sit above that. Off-by->5% would be reported without distorting; both within 5%."
+}
