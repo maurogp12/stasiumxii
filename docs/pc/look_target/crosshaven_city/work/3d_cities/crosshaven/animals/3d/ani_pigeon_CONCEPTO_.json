@@ -66,7 +66,14 @@
    "loop": true,
    "in_place": true,
    "source": "procedural keyframes (Blender)",
-   "note": "PLACEHOLDER: body lifts and wings rotate, but the folded-wing mesh does not visibly open; replace with a flight mesh variant or a fade-out flush"
+   "note": "wings open and flap (+-50 deg), legs tucked; loop"
+  },
+  "takeoff": {
+   "loop": false,
+   "in_place": true,
+   "source": "procedural keyframes (Blender)",
+   "frames_30fps": 18,
+   "note": "crouch 5 f, jump, wings open by f8, rises to fly height (0.6x body height) at f18; chain into fly"
   }
  },
  "move_speed_mps": {
@@ -76,7 +83,7 @@
  "move_speed_note": "root speed matching the planted foot of the in-place cycle; drive the animal at this speed to avoid skating",
  "behaviour": {
   "route_type": "square_flock",
-  "suggested_route": "flock of 4-8 in the cathedral square and market; peck, short walks, flush away (fly) when the player or a cart comes within 2.5 m, land 6-10 cells away",
+  "suggested_route": "flock of 4-8 in the cathedral square and market; peck, short walks, flush away (takeoff -> fly) when the player or a cart comes within 2.5 m, land 6-10 cells away",
   "role_idles": [
    "peck (main)",
    "fly = flush"
@@ -85,5 +92,16 @@
  },
  "concept": "concepts/ani_pigeon_CONCEPTO_.png",
  "mesh_source": "Scenario Tripo v3.1 image-to-3D (45 CU)",
- "textures": "baseColor + normal + ORM from Tripo, 1024/512/256 for LOD0/1/2"
+ "textures": "baseColor + normal + ORM from Tripo, 1024/512/256 for LOD0/1/2",
+ "wing_meshes": {
+  "objects": [
+   "ani_pigeon_wing_open_l",
+   "ani_pigeon_wing_open_r"
+  ],
+  "bones": [
+   "wing_open_l",
+   "wing_open_r"
+  ],
+  "note": "separate open-wing card meshes (40 tris, own 256x128 feather texture sampled from the wing colours, double-sided), skinned 100% to wing_open_*; bone scale 0.01 = hidden in all ground clips, 1.0 in takeoff/fly"
+ }
 }

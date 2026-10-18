@@ -12,3 +12,4 @@ timestamp_et,service,task,npc,task_id,status,credits,notes
 2026-10-17,scenario_tripo_i23d,image_to_3d,ani_horse,job_f1Soq79UxM8TtWfeWWPP21bt,success,45,Scenario CU
 2026-10-17,scenario_tripo_i23d,image_to_3d,ani_chicken,job_MLMK4EFJy9D23NCGaREutPBy,success,45,Scenario CU
 2026-10-17 ET,meshy,none,all,-,-,0,"Meshy auto-rig is humanoid-only (docs): animals rigged and animated in Blender, 0 Meshy credits"
+2026-10-17 20:45 ET,none,fix pass 3,-,-,-,0,"Blender-only fixes, 0 Meshy / 0 Scenario"

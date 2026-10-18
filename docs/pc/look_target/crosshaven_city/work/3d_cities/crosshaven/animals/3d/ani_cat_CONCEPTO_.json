@@ -66,7 +66,19 @@
    "frames_30fps": 120,
    "loop": true,
    "in_place": true,
-   "source": "procedural keyframes (Blender)"
+   "source": "procedural keyframes (Blender)",
+   "grounding": {
+    "method": "solver: front toes, hind hocks and hind toes placed on y=0",
+    "fit": {
+     "drop": 0.1061,
+     "hind_upper": -10,
+     "hind_lower": 100,
+     "hind_foot": -80,
+     "front_toe_z": 0.0,
+     "hind_ankle_z": 0.0109,
+     "hind_toe_z": 0.0016
+    }
+   }
   }
  },
  "move_speed_mps": {

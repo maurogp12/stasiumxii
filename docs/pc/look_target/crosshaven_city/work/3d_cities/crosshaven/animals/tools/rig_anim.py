@@ -1,4 +1,4 @@
-import bpy,sys,math,json,numpy as np
+import bpy,sys,math,json,os,numpy as np
 from mathutils import Vector,Matrix,Euler
 n=sys.argv[-1];D='/workspace/crosshaven_paint/work/3d_cities/crosshaven/animals/'
 QUAD=n in('ani_cat','ani_dog','ani_horse')
@@ -73,6 +73,10 @@ else:
       (f'leg_{side}_lower',Vector((p[0],p[1]+0.01*L,0.17*H)),Vector((p[0],p[1],0.03*H)),f'leg_{side}_upper'),
       (f'leg_{side}_foot',Vector((p[0],p[1],0.03*H)),Vector((p[0],p[1]-0.09*L,0.0)),f'leg_{side}_lower'),
       (f'wing_{side}',Vector((sgn*hw*0.8,J['chest'].y,J['chest'].z+0.08*H)),Vector((sgn*hw*0.9,J['tail0'].y,J['tail0'].z+0.04*H)),'chest')]
+if n=='ani_pigeon':
+  sh_z=J['chest'].z+0.10*H
+  for side,sgn in (('l',1),('r',-1)):
+    BONES.append((f'wing_open_{side}',Vector((sgn*hw*0.6,J['chest'].y+0.02*L,sh_z)),Vector((sgn*(hw+0.30),J['chest'].y+0.06*L,sh_z)),'chest'))
 # armature
 ad=bpy.data.armatures.new(n+'_rig');arm=bpy.data.objects.new(n+'_Armature',ad);sc.collection.objects.link(arm)
 bpy.context.view_layer.objects.active=arm;bpy.ops.object.mode_set(mode='EDIT')
@@ -108,18 +112,58 @@ for v in me.data.vertices:
   for (d,nm),wi in zip(ds[:2],w): me.vertex_groups[nm].add([v.index],wi/s,'REPLACE')
 print('UNWEIGHTED_FILLED',unw,len(me.data.vertices))
 if 'root' in me.vertex_groups: me.vertex_groups.remove(me.vertex_groups['root'])
+WINGS=[]
+if n=='ani_pigeon':
+  import bmesh
+  uvl=me.data.uv_layers.active.data;sel_uv=[]
+  for poly in me.data.polygons:
+    c=poly.center
+    if abs(c.x)>0.6*hw and c.z>0.45*H and J['chest'].y<c.y<J['tail0'].y:
+      for li in poly.loop_indices: sel_uv.append(tuple(uvl[li].uv))
+  img=[n_ for n_ in me.data.materials[0].node_tree.nodes if n_.type=='TEX_IMAGE' and 'olor' in (n_.image.name if n_.image else '')]
+  img=img[0].image if img else [n_ for n_ in me.data.materials[0].node_tree.nodes if n_.type=='TEX_IMAGE'][0].image
+  Wd,Hd=img.size;px=np.array(img.pixels[:]).reshape(Hd,Wd,4)
+  cols=np.array([px[min(Hd-1,int(v*Hd)),min(Wd-1,int(u*Wd)),:3] for u,v in sel_uv]);lum=cols@[0.3,0.59,0.11]
+  cl=np.median(cols[lum>np.percentile(lum,40)],0);cd=np.median(cols[lum<np.percentile(lum,15)],0);print('WINGCOL',cl.round(3),cd.round(3))
+  TW,TH_=256,128;uu,vv=np.meshgrid(np.linspace(0,1,TW),np.linspace(0,1,TH_))
+  k=np.clip((uu-0.55)/0.35,0,1)[...,None];T=cl*(1-k)+cd*k
+  fl=((uu*16+vv*3)%1<0.10)&(vv>0.45);T[fl]*=0.8
+  bar=((np.abs(vv-0.55)<0.05)|(np.abs(vv-0.72)<0.05))&(uu<0.45);T[bar]=cd*0.9
+  T=np.concatenate([T,np.ones((TH_,TW,1))],2)
+  wi=bpy.data.images.new('pigeon_wing_open_tex',TW,TH_);wi.pixels=T.ravel().tolist();wi.pack()
+  mat=bpy.data.materials.new('pigeon_wing_open');mat.use_nodes=True;mat.use_backface_culling=False
+  bsdf=mat.node_tree.nodes['Principled BSDF'];tx=mat.node_tree.nodes.new('ShaderNodeTexImage');tx.image=wi
+  mat.node_tree.links.new(tx.outputs['Color'],bsdf.inputs['Base Color']);bsdf.inputs['Roughness'].default_value=0.85
+  u0,v0,u1,v1=0,0,1,1
+  y0=J['chest'].y+0.0*L;sh_z=J['chest'].z+0.10*H
+  for side,sgn in (('l',1),('r',-1)):
+    P2=[(hw*0.6,y0),(hw*0.6+0.10,y0-0.012),(hw+0.20,y0+0.0),(hw+0.29,y0+0.04),(hw+0.33,y0+0.085),(hw+0.27,y0+0.10),(hw+0.22,y0+0.115),(hw+0.15,y0+0.125),(hw+0.08,y0+0.13),(hw*0.6,y0+0.12)]
+    bm=bmesh.new();vs=[bm.verts.new((sgn*x,y,sh_z)) for x,y in P2];cen=bm.verts.new((sgn*(hw*0.6+0.04),y0+0.06,sh_z))
+    for i in range(len(vs)-1): bm.faces.new((cen,vs[i],vs[i+1]) if sgn>0 else (cen,vs[i+1],vs[i]))
+    bm.faces.new((cen,vs[-1],vs[0]) if sgn>0 else (cen,vs[0],vs[-1]))
+    md=bpy.data.meshes.new(f'{n}_wing_{side}');bm.to_mesh(md);bm.free()
+    ob=bpy.data.objects.new(f'{n}_wing_open_{side}',md);sc.collection.objects.link(ob);md.materials.append(mat)
+    uv=md.uv_layers.new()
+    xs=[abs(v.co.x) for v in md.vertices];ys=[v.co.y for v in md.vertices]
+    for poly in md.polygons:
+      for li in poly.loop_indices:
+        v=md.vertices[md.loops[li].vertex_index].co
+        uv.data[li].uv=(u0+(u1-u0)*(abs(v.x)-min(xs))/(max(xs)-min(xs)),v0+(v1-v0)*(v.y-min(ys))/(max(ys)-min(ys)))
+    g=ob.vertex_groups.new(name=f'wing_open_{side}');g.add(list(range(len(md.vertices))),1.0,'REPLACE')
+    ob.parent=arm;m=ob.modifiers.new('Armature','ARMATURE');m.object=arm;WINGS.append(ob)
 # ---- procedural clips ----
 for pb in arm.pose.bones: pb.rotation_mode='XYZ'
 CL={}
-def mk(name,frames,fn):
+def mk(name,frames,fn,loop=True):
   ac=bpy.data.actions.new(name);arm.animation_data_create();arm.animation_data.action=ac
-  for f in range(0,frames+1,2):
-    t=(f%frames)/frames
-    for pb in arm.pose.bones: pb.rotation_euler=(0,0,0);pb.location=(0,0,0)
+  for f in range(0,frames+1,1 if not loop else 2):
+    t=(f%frames)/frames if loop else f/frames
+    for pb in arm.pose.bones: pb.rotation_euler=(0,0,0);pb.location=(0,0,0);pb.scale=(0.01,0.01,0.01) if pb.name.startswith('wing_open') else (1,1,1)
     fn(t)
     for pb in arm.pose.bones:
       pb.keyframe_insert('rotation_euler',frame=f)
       if pb.name in('root','hips'): pb.keyframe_insert('location',frame=f)
+      if pb.name.startswith('wing_open'): pb.keyframe_insert('scale',frame=f)
   CL[name]=(ac,frames)
 R=math.radians;S=lambda t,ph=0,k=1:math.sin(2*math.pi*(k*t+ph))
 P=lambda b:arm.pose.bones.get(b)
@@ -137,7 +181,7 @@ def lift(dz):
 def tail(t,amp=15,ph=0,k=1):
   for i,b in enumerate(['tail_1','tail_2','tail_3','tail']): rot(b,z=amp*S(t,ph-0.12*i,k))
 if QUAD:
-  SP={'ani_cat':(40,14,0.30),'ani_dog':(30,14,0.32),'ani_horse':(44,22,0.24)}[n]   # walk frames, run frames, (unused)
+  SP={'ani_cat':(40,14,0.30),'ani_dog':(30,14,0.32),'ani_horse':(64,22,0.24)}[n]   # walk frames, run frames, (unused)
   def legs(t,ph,A,K,run=False):
     for leg,off in ph.items():
       s=S(t,off);sw=max(0,S(t,off+0.25))   # swing lift when moving forward
@@ -156,17 +200,49 @@ if QUAD:
   mk('idle',120,idle);mk('walk',SP[0],walk);mk('run',SP[1],run)
   if n in('ani_cat','ani_dog'):
     hh=J['hips'].z;drop=0.55*hh;dd=(J['chest']-J['hips']).length;TH=math.degrees(math.asin(min(0.9,drop/dd)))
+    def wz(b,tail=False):
+      pb=arm.pose.bones[b];return (arm.matrix_world@(pb.tail if tail else pb.head))
+    def sitpose(A_,B_,C_,dr):
+      for pb in arm.pose.bones: pb.rotation_euler=(0,0,0);pb.location=(0,0,0)
+      rot('hips',x=-TH)
+      for s_ in 'lr':
+        rot(f'front_leg_{s_}_upper',x=TH);rot(f'hind_leg_{s_}_upper',x=A_);rot(f'hind_leg_{s_}_lower',x=B_);rot(f'hind_leg_{s_}_foot',x=C_)
+      lift(-dr);bpy.context.view_layer.update()
+    # 1) drop so front toes touch ground
+    dr=drop
+    for _ in range(4):
+      sitpose(TH-75,120,-55,dr);dr+=wz('front_leg_l_foot',True).z
+    # 2) hind leg search: hock (foot head) and toe on the ground, hock behind the hip
+    best=None;hip=wz('hind_leg_l_upper')
+    for A_ in range(-130,-9,5):
+      for B_ in range(20,171,5):
+        sitpose(A_,B_,0,dr);ank=wz('hind_leg_l_foot');knee=wz('hind_leg_l_lower')
+        e=(ank.z-0.03*H)**2*50+max(0,-knee.z)**2*50+max(0,ank.y-hip.y-0.25*L)**2+max(0,hip.y-ank.y)**2*5
+        if best is None or e<best[0]: best=(e,A_,B_)
+    _,SA,SB=best
+    bc=None
+    for C_ in range(-120,121,5):
+      sitpose(SA,SB,C_,dr);toe=wz('hind_leg_l_foot',True)
+      e=toe.z**2+ (0 if toe.y<wz('hind_leg_l_foot').y else 0.01)
+      if bc is None or e<bc[0]: bc=(e,C_)
+    SC=bc[1];sitpose(SA,SB,SC,dr)
+    SITFIT={'drop':round(dr,4),'hind_upper':SA,'hind_lower':SB,'hind_foot':SC,'front_toe_z':round(wz('front_leg_l_foot',True).z,4),'hind_ankle_z':round(wz('hind_leg_l_foot').z,4),'hind_toe_z':round(wz('hind_leg_l_foot',True).z,4)}
+    print('SITFIT',SITFIT)
     def sit(t):
       rot('hips',x=-TH);rot('neck',x=10+2*S(t,0,2),z=12*S(t,0,1));rot('head',x=TH*0.5,z=6*S(t,0.1,1))
       for s_ in 'lr':
-        rot(f'front_leg_{s_}_upper',x=TH);rot(f'hind_leg_{s_}_upper',x=TH-75);rot(f'hind_leg_{s_}_lower',x=120);rot(f'hind_leg_{s_}_foot',x=-55)
-      lift(-drop);rot('tail_1',x=TH*1.6);tail(t,14 if n=='ani_dog' else 5,0,3 if n=='ani_dog' else 1)
+        rot(f'front_leg_{s_}_upper',x=TH);rot(f'hind_leg_{s_}_upper',x=SA);rot(f'hind_leg_{s_}_lower',x=SB);rot(f'hind_leg_{s_}_foot',x=SC)
+      lift(-dr);rot('tail_1',x=TH*1.6);tail(t,14 if n=='ani_dog' else 5,0,3 if n=='ani_dog' else 1)
     mk('sit',120,sit)
   else:
     def graze(t):
       rot('neck',x=62+3*S(t,0,4));rot('head',x=18+4*S(t,0,4),z=5*S(t,0,1));rot('chest',x=4)
       rot('front_leg_l_upper',x=-4);rot('front_leg_r_upper',x=4);tail(t,10,0,2)
     mk('graze',120,graze)
+    def walk_cart(t):
+      legs(t,{'hind_leg_l':0,'front_leg_l':0.25,'hind_leg_r':0.5,'front_leg_r':0.75},18,24);lift(0.008*H*S(t,0,2))
+      rot('chest',x=4);rot('neck',x=14+3*S(t,0.1,2));rot('head',x=6-2*S(t,0.1,2));rot('hips',z=2*S(t,0,1));tail(t,6,0,1)
+    mk('walk_cart',int(os.environ.get('CARTF','72')),walk_cart)
 else:
   SP={'ani_chicken':(20,10),'ani_duck':(24,12),'ani_pigeon':(16,8)}[n]
   def blegs(t,A,K):
@@ -187,11 +263,24 @@ else:
     rot('hips',x=25*d);rot('chest',x=15*d);rot('neck',x=40*d+6*S(t,0,6)*d);rot('head',x=20*d,z=10*S(t,0,1)*(1-d));rot('tail',x=-15*d)
   mk('idle',90,idle);mk('walk',SP[0],walk);mk('run',SP[1],run);mk('peck',48,peck)
   if n=='ani_pigeon':
+    def wopen(k):
+      for s_ in 'lr': P(f'wing_open_{s_}').scale=(max(0.01,k),)*3
     def fly(t):
-      for s_ in 'lr': rot(f'wing_{s_}',y=(1 if s_=='l' else -1)*(-50-45*S(t,0)));
+      wopen(1)
+      for s_ in 'lr': rot(f'wing_open_{s_}',x=-10+50*S(t,0))
+      for s_ in 'lr': rot(f'wing_{s_}',y=(1 if s_=='l' else -1)*(-15))
       rot('hips',x=-8);lift(0.6*H+0.04*H*S(t,0.25));rot('tail',x=-10)
       for s_ in 'lr': rot(f'leg_{s_}_upper',x=40);rot(f'leg_{s_}_lower',x=-60)
     mk('fly',12,fly)
+    def takeoff(t):
+      f=t*18
+      if f<5: k=f/5;lift(-0.06*H*k);rot('hips',x=12*k);[rot(f'leg_{s_}_upper',x=-25*k) or rot(f'leg_{s_}_lower',x=40*k) for s_ in 'lr']
+      else:
+        k=min(1,(f-5)/13);lift(-0.06*H+(0.66*H)*(k**0.8));rot('hips',x=12-20*k)
+        wopen(min(1,(f-5)/3));ph=(f-5)/6
+        for s_ in 'lr': rot(f'wing_open_{s_}',x=-10+60*math.sin(2*math.pi*ph))
+        for s_ in 'lr': rot(f'leg_{s_}_upper',x=40*k);rot(f'leg_{s_}_lower',x=-60*k)
+    mk('takeoff',18,takeoff,loop=False)
 arm.animation_data.action=None
 for pb in arm.pose.bones: pb.rotation_euler=(0,0,0);pb.location=(0,0,0)
 for nm,(ac,fr) in CL.items():
@@ -211,10 +300,12 @@ def speed(nm):
   for t in arm.animation_data.nla_tracks: t.mute=False
   arm.animation_data.action=None
   return round(float(np.median(v)),3) if v else None
-info={'H':float(H),'L':float(L),'bones':[b[0] for b in BONES],'clips':{k:v[1] for k,v in CL.items()},'speed_mps':{k:speed(k) for k in CL if k in('walk','run')},'tris':{'LOD0':sum(len(p.vertices)-2 for p in me.data.polygons)}}
+info={'sitfit':globals().get('SITFIT'),'H':float(H),'L':float(L),'bones':[b[0] for b in BONES],'clips':{k:v[1] for k,v in CL.items()},'wing_meshes':[w.name for w in WINGS],'speed_mps':{k:speed(k) for k in CL if k in('walk','run','walk_cart')},'tris':{'LOD0':sum(len(p.vertices)-2 for p in me.data.polygons)}}
 bpy.ops.wm.save_as_mainfile(filepath=D+f'raw/{n}_work.blend')
 def sel():
-  bpy.ops.object.select_all(action='DESELECT');arm.select_set(True);me.select_set(True);bpy.context.view_layer.objects.active=me
+  bpy.ops.object.select_all(action='DESELECT');arm.select_set(True);me.select_set(True)
+  for w_ in WINGS: w_.select_set(True)
+  bpy.context.view_layer.objects.active=me
 def tex(sz):
   for i in bpy.data.images:
     if i.size[0]>sz: i.scale(sz,sz)

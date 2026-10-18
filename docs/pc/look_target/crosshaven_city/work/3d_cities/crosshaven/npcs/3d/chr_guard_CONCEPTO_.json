@@ -160,7 +160,7 @@
     "interact": "back_sling",
     "sit": "detached: lean the spear against the bench/wall 0.45 m to the right of the root, tilted 10 deg (not attached)"
    },
-   "grip": "right hand sculpted into a hammer-grip fist around a 1.6 cm-radius haft (Ironjaw grip v3 method, finger wrap compressed 0.55); measured wrap about 300 deg; permanent, so the right hand is also a fist in talk/interact"
+   "grip": "right-hand fist is a morph target \"fist\" on LOD0 (basis = open hand); each clip animates its weight: 1.0 in idle_spear and walk_spear, 0.0 in idle, walk, interact, sit, talk. LOD1/LOD2 have the fist baked in (no morphs)."
   }
  },
  "textures": {
@@ -177,5 +177,20 @@
   "walk": 0.539
  },
  "walk_speed_note": "root speed that matches the planted foot of the in-place walk; move the NPC at this speed (scale the clip speed with the move speed) to avoid foot skating",
- "default_idle": "idle_spear"
+ "default_idle": "idle_spear",
+ "hand_morph": {
+  "target": "fist",
+  "fist_clips": [
+   "idle_spear",
+   "walk_spear"
+  ],
+  "open_clips": [
+   "idle",
+   "walk",
+   "interact",
+   "sit",
+   "talk"
+  ],
+  "lod_note": "LOD1/2 = fist baked"
+ }
 }

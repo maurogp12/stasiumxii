@@ -51,10 +51,11 @@
    "source": "procedural keyframes (Blender)"
   },
   "walk": {
-   "frames_30fps": 44,
+   "frames_30fps": 64,
    "loop": true,
    "in_place": true,
-   "source": "procedural keyframes (Blender)"
+   "source": "procedural keyframes (Blender)",
+   "note": "cycle retimed 44->64 frames so the planted feet match ~1.5 m/s"
   },
   "run": {
    "frames_30fps": 22,
@@ -67,16 +68,24 @@
    "loop": true,
    "in_place": true,
    "source": "procedural keyframes (Blender)"
+  },
+  "walk_cart": {
+   "loop": true,
+   "in_place": true,
+   "source": "procedural keyframes (Blender)",
+   "frames_30fps": 72,
+   "note": "slower pulling walk, head low, chest forward; ~1.1 m/s; use when hitched to a cart"
   }
  },
  "move_speed_mps": {
-  "walk": 2.182,
-  "run": 5.232
+  "walk": 1.47,
+  "run": 5.232,
+  "walk_cart": 1.099
  },
  "move_speed_note": "root speed matching the planted foot of the in-place cycle; drive the animal at this speed to avoid skating",
  "behaviour": {
   "route_type": "cart_stand",
-  "suggested_route": "tied at the stable / cart rank; graze or idle in place and shift 1 cell; with a cart it walks the market road loop (walk only, no run in town)",
+  "suggested_route": "tied at the stable / cart rank; graze or idle in place and shift 1 cell; with a cart it walks the market road loop (walk_cart when hitched, walk otherwise, no run in town)",
   "role_idles": [
    "graze at the trough or hay pile (main)",
    "idle tail swish"
