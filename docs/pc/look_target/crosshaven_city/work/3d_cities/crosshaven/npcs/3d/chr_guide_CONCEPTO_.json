@@ -1,0 +1,72 @@
+{
+ "label": "🖼️ IMAGEN / CONCEPTO, TODAVÍA HAY QUE CONSTRUIRLO",
+ "id": "chr_guide",
+ "category": "story",
+ "height_m": 1.7,
+ "units": "metres, feet at y=0, faces +Z",
+ "files": {
+  "LOD0": "3d/chr_guide_LOD0.glb",
+  "LOD1": "3d/chr_guide_LOD1.glb",
+  "LOD2": "3d/chr_guide_LOD2.glb"
+ },
+ "tris": {
+  "LOD0": 9771,
+  "LOD1": 4885,
+  "LOD2": 1954
+ },
+ "note_lods": "LOD1/LOD2 are mesh + skin only; they share the LOD0 skeleton/clips. LOD1/2 tris are the decimate ratio targets.",
+ "skeleton": "Godot humanoid names (same bone map as Ironjaw), no finger bones",
+ "clips": {
+  "idle": {
+   "meshy_action_id": 0,
+   "source": "Idle",
+   "frames_30fps": 150.0,
+   "loop": true,
+   "in_place": true
+  },
+  "walk": {
+   "meshy_action_id": 613,
+   "source": "Casual Walk",
+   "frames_30fps": 155.0,
+   "loop": true,
+   "in_place": true
+  },
+  "interact": {
+   "meshy_action_id": 290,
+   "source": "Wave One Hand",
+   "frames_30fps": 153.8,
+   "loop": false,
+   "in_place": true
+  },
+  "sit": {
+   "meshy_action_id": 32,
+   "source": "Chair Sit Idle Female",
+   "frames_30fps": 425.0,
+   "loop": true,
+   "in_place": true
+  },
+  "talk": {
+   "meshy_action_id": 313,
+   "source": "Talk with Hands Open",
+   "frames_30fps": 148.8,
+   "loop": true,
+   "in_place": true
+  }
+ },
+ "behaviour": {
+  "route_type": "anchor_short",
+  "suggested_route": "stays at cell 24,18 facing S; walks a 2-cell loop and comes back",
+  "work_idles": [
+   "interact = wave one hand at the player (welcome)",
+   "talk = \"Welcome to Crosshaven. / Click the ground to walk. Gold arrows lead on.\""
+  ],
+  "rule": "must always move or do something; never stand still more than ~10 s"
+ },
+ "concept": "concepts/npc_guide_turnaround_CONCEPTO_.png",
+ "meshy": {
+  "rig_task": "01a14c49-d0ec-7467-908b-335320826ea4",
+  "animation_task": "01a14c4b-876d-7226-9458-513aa14f8a90",
+  "credits": 20
+ },
+ "mesh_source": "Scenario Tripo v3.1 image-to-3D from the front crop (45 CU)"
+}
