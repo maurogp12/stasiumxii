@@ -1,0 +1,307 @@
+{
+ "format": "rowanvale_animated_v1",
+ "status": "PROPOSED",
+ "scale_note": "1x files here, 2x masters in _2x/ (exactly 2x)",
+ "sheet_layout": "horizontal strip, frames left->right, frame_size each",
+ "animations": {
+  "tree_apple_orchard_sway": {
+   "file": "animated/tree_apple_orchard_sway.png",
+   "file_2x": "animated/_2x/tree_apple_orchard_sway.png",
+   "frame_size": [
+    132,
+    128
+   ],
+   "frame_size_2x": [
+    264,
+    256
+   ],
+   "frames": 16,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 2.0,
+   "pairs_with": "tree_apple_orchard",
+   "blend": "mix",
+   "anchor": "bottom-centre (same anchor as props/tree_apple_orchard.png; frame is 10px (1x) wider on each side so the canopy never clips)",
+   "note": "sway 16 f @ 8 fps, ~4.0 px canopy bend at 1x, base pinned below 42% height; randomise start frame + speed_scale (0.85-1.15)",
+   "sway_mask": "animated/sway_masks/tree_apple_orchard_swaymask.png",
+   "status": "PROPOSED"
+  },
+  "tree_apple_orchard_shadow_sway": {
+   "file": "animated/shadows/tree_apple_orchard_shadow_sway.png",
+   "file_2x": "animated/shadows/_2x/tree_apple_orchard_shadow_sway.png",
+   "frame_size": [
+    204,
+    168
+   ],
+   "frame_size_2x": [
+    408,
+    336
+   ],
+   "frames": 16,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 2.0,
+   "pairs_with": "tree_apple_orchard_sway",
+   "blend": "mix (alpha = shadow strength, colour #1a223c)",
+   "anchor": "frame top-left = top-left of the matching tree_apple_orchard_sway frame; draw on the ground layer under all props",
+   "note": "cast shadow that moves with the canopy: frame i is the projection of sway frame i (light from the top-left, shear 0.62, squash 0.30, soft 2.2 px)",
+   "status": "PROPOSED"
+  },
+  "tree_apple_orchard_fruiting_sway": {
+   "file": "animated/tree_apple_orchard_fruiting_sway.png",
+   "file_2x": "animated/_2x/tree_apple_orchard_fruiting_sway.png",
+   "frame_size": [
+    132,
+    128
+   ],
+   "frame_size_2x": [
+    264,
+    256
+   ],
+   "frames": 16,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 2.0,
+   "pairs_with": "tree_apple_orchard_fruiting",
+   "blend": "mix",
+   "anchor": "bottom-centre (same anchor as props/tree_apple_orchard_fruiting.png; frame is 10px (1x) wider on each side so the canopy never clips)",
+   "note": "sway 16 f @ 8 fps, ~4.0 px canopy bend at 1x, base pinned below 42% height; randomise start frame + speed_scale (0.85-1.15)",
+   "sway_mask": "animated/sway_masks/tree_apple_orchard_fruiting_swaymask.png",
+   "status": "PROPOSED"
+  },
+  "tree_apple_orchard_fruiting_shadow_sway": {
+   "file": "animated/shadows/tree_apple_orchard_fruiting_shadow_sway.png",
+   "file_2x": "animated/shadows/_2x/tree_apple_orchard_fruiting_shadow_sway.png",
+   "frame_size": [
+    204,
+    168
+   ],
+   "frame_size_2x": [
+    408,
+    336
+   ],
+   "frames": 16,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 2.0,
+   "pairs_with": "tree_apple_orchard_fruiting_sway",
+   "blend": "mix (alpha = shadow strength, colour #1a223c)",
+   "anchor": "frame top-left = top-left of the matching tree_apple_orchard_fruiting_sway frame; draw on the ground layer under all props",
+   "note": "cast shadow that moves with the canopy: frame i is the projection of sway frame i (light from the top-left, shear 0.62, squash 0.30, soft 2.2 px)",
+   "status": "PROPOSED"
+  },
+  "tree_pear_sway": {
+   "file": "animated/tree_pear_sway.png",
+   "file_2x": "animated/_2x/tree_pear_sway.png",
+   "frame_size": [
+    132,
+    128
+   ],
+   "frame_size_2x": [
+    264,
+    256
+   ],
+   "frames": 16,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 2.0,
+   "pairs_with": "tree_pear",
+   "blend": "mix",
+   "anchor": "bottom-centre (same anchor as props/tree_pear.png; frame is 10px (1x) wider on each side so the canopy never clips)",
+   "note": "sway 16 f @ 8 fps, ~4.0 px canopy bend at 1x, base pinned below 40% height; randomise start frame + speed_scale (0.85-1.15)",
+   "sway_mask": "animated/sway_masks/tree_pear_swaymask.png",
+   "status": "PROPOSED"
+  },
+  "tree_pear_shadow_sway": {
+   "file": "animated/shadows/tree_pear_shadow_sway.png",
+   "file_2x": "animated/shadows/_2x/tree_pear_shadow_sway.png",
+   "frame_size": [
+    208,
+    168
+   ],
+   "frame_size_2x": [
+    416,
+    336
+   ],
+   "frames": 16,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 2.0,
+   "pairs_with": "tree_pear_sway",
+   "blend": "mix (alpha = shadow strength, colour #1a223c)",
+   "anchor": "frame top-left = top-left of the matching tree_pear_sway frame; draw on the ground layer under all props",
+   "note": "cast shadow that moves with the canopy: frame i is the projection of sway frame i (light from the top-left, shear 0.62, squash 0.30, soft 2.2 px)",
+   "status": "PROPOSED"
+  },
+  "bush_flower_meadow_sway": {
+   "file": "animated/bush_flower_meadow_sway.png",
+   "file_2x": "animated/_2x/bush_flower_meadow_sway.png",
+   "frame_size": [
+    76,
+    64
+   ],
+   "frame_size_2x": [
+    152,
+    128
+   ],
+   "frames": 16,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 2.0,
+   "pairs_with": "bush_flower_meadow",
+   "blend": "mix",
+   "anchor": "bottom-centre (same anchor as props/bush_flower_meadow.png; frame is 6px (1x) wider on each side so the canopy never clips)",
+   "note": "sway 16 f @ 8 fps, ~2.0 px canopy bend at 1x, base pinned below 15% height; randomise start frame + speed_scale (0.85-1.15)",
+   "sway_mask": "animated/sway_masks/bush_flower_meadow_swaymask.png",
+   "status": "PROPOSED"
+  },
+  "bush_flower_meadow_shadow_sway": {
+   "file": "animated/shadows/bush_flower_meadow_shadow_sway.png",
+   "file_2x": "animated/shadows/_2x/bush_flower_meadow_shadow_sway.png",
+   "frame_size": [
+    112,
+    84
+   ],
+   "frame_size_2x": [
+    224,
+    168
+   ],
+   "frames": 16,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 2.0,
+   "pairs_with": "bush_flower_meadow_sway",
+   "blend": "mix (alpha = shadow strength, colour #1a223c)",
+   "anchor": "frame top-left = top-left of the matching bush_flower_meadow_sway frame; draw on the ground layer under all props",
+   "note": "cast shadow that moves with the canopy: frame i is the projection of sway frame i (light from the top-left, shear 0.62, squash 0.30, soft 2.2 px)",
+   "status": "PROPOSED"
+  },
+  "border_orchard_hedge_nwse_sway": {
+   "file": "animated/border_orchard_hedge_nwse_sway.png",
+   "file_2x": "animated/_2x/border_orchard_hedge_nwse_sway.png",
+   "frame_size": [
+    112,
+    128
+   ],
+   "frame_size_2x": [
+    224,
+    256
+   ],
+   "frames": 16,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 2.0,
+   "pairs_with": "border_orchard_hedge_nwse",
+   "blend": "mix",
+   "anchor": "bottom-centre (same anchor as props/border_orchard_hedge_nwse.png; frame is 8px (1x) wider on each side so the canopy never clips)",
+   "note": "sway 16 f @ 8 fps, ~1.5 px canopy bend at 1x, base pinned below 25% height; randomise start frame + speed_scale (0.85-1.15)",
+   "sway_mask": "animated/sway_masks/border_orchard_hedge_nwse_swaymask.png",
+   "status": "PROPOSED"
+  },
+  "border_orchard_hedge_nwse_shadow_sway": {
+   "file": "animated/shadows/border_orchard_hedge_nwse_shadow_sway.png",
+   "file_2x": "animated/shadows/_2x/border_orchard_hedge_nwse_shadow_sway.png",
+   "frame_size": [
+    136,
+    144
+   ],
+   "frame_size_2x": [
+    272,
+    288
+   ],
+   "frames": 16,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 2.0,
+   "pairs_with": "border_orchard_hedge_nwse_sway",
+   "blend": "mix (alpha = shadow strength, colour #1a223c)",
+   "anchor": "frame top-left = top-left of the matching border_orchard_hedge_nwse_sway frame; draw on the ground layer under all props",
+   "note": "cast shadow that moves with the canopy: frame i is the projection of sway frame i (light from the top-left, shear 0.62, squash 0.30, soft 2.2 px)",
+   "status": "PROPOSED"
+  },
+  "border_orchard_hedge_nesw_sway": {
+   "file": "animated/border_orchard_hedge_nesw_sway.png",
+   "file_2x": "animated/_2x/border_orchard_hedge_nesw_sway.png",
+   "frame_size": [
+    112,
+    128
+   ],
+   "frame_size_2x": [
+    224,
+    256
+   ],
+   "frames": 16,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 2.0,
+   "pairs_with": "border_orchard_hedge_nesw",
+   "blend": "mix",
+   "anchor": "bottom-centre (same anchor as props/border_orchard_hedge_nesw.png; frame is 8px (1x) wider on each side so the canopy never clips)",
+   "note": "sway 16 f @ 8 fps, ~1.5 px canopy bend at 1x, base pinned below 25% height; randomise start frame + speed_scale (0.85-1.15)",
+   "sway_mask": "animated/sway_masks/border_orchard_hedge_nesw_swaymask.png",
+   "status": "PROPOSED"
+  },
+  "border_orchard_hedge_nesw_shadow_sway": {
+   "file": "animated/shadows/border_orchard_hedge_nesw_shadow_sway.png",
+   "file_2x": "animated/shadows/_2x/border_orchard_hedge_nesw_shadow_sway.png",
+   "frame_size": [
+    136,
+    144
+   ],
+   "frame_size_2x": [
+    272,
+    288
+   ],
+   "frames": 16,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 2.0,
+   "pairs_with": "border_orchard_hedge_nesw_sway",
+   "blend": "mix (alpha = shadow strength, colour #1a223c)",
+   "anchor": "frame top-left = top-left of the matching border_orchard_hedge_nesw_sway frame; draw on the ground layer under all props",
+   "note": "cast shadow that moves with the canopy: frame i is the projection of sway frame i (light from the top-left, shear 0.62, squash 0.30, soft 2.2 px)",
+   "status": "PROPOSED"
+  },
+  "old_windmill_sails": {
+   "file": "animated/old_windmill_sails.png",
+   "file_2x": "animated/_2x/old_windmill_sails.png",
+   "frame_size": [
+    200,
+    200
+   ],
+   "frame_size_2x": [
+    400,
+    400
+   ],
+   "frames": 12,
+   "fps": 10.8,
+   "loop": true,
+   "duration_s": 1.111,
+   "anchor": "frame centre = sail hub; place the frame centre at (-39, -150) px (1x) from the old_windmill_body bottom-centre anchor ((-78, -300) at 2x), draw above the body",
+   "pairs_with": "old_windmill_body",
+   "blend": "mix",
+   "note": "90 deg per loop (4 symmetric sails), 7.5 deg per frame; one full turn every 4.44 s; 12 f @ 10.8 fps",
+   "status": "PROPOSED"
+  },
+  "old_windmill_sails_flat": {
+   "file": "animated/old_windmill_sails_flat.png",
+   "file_2x": "animated/_2x/old_windmill_sails_flat.png",
+   "frame_size": [
+    200,
+    200
+   ],
+   "frame_size_2x": [
+    400,
+    400
+   ],
+   "frames": 1,
+   "fps": 0,
+   "loop": true,
+   "anchor": "frame centre = sail hub (same placement as the strip)",
+   "pairs_with": "old_windmill_body",
+   "blend": "mix",
+   "note": "un-squashed sails at 0 deg for a rotation shader: rotate uv about the centre, then divide y by 0.9",
+   "status": "PROPOSED"
+  }
+ }
+}

@@ -1,0 +1,14 @@
+{
+ "foot": [
+  94,
+  110
+ ],
+ "footprint": [
+  2,
+  1
+ ],
+ "blocks": true,
+ "height_px": 110,
+ "width_px": 129,
+ "place_on": "water"
+}

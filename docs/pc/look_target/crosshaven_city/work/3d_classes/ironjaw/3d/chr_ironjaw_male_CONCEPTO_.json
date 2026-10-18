@@ -1,0 +1,872 @@
+{
+ "label": "🖼️ IMAGEN / CONCEPTO, TODAVÍA HAY QUE CONSTRUIRLO",
+ "in_game": false,
+ "class": "ironjaw",
+ "source_concept": "../chr_ironjaw_male_CONCEPTO_.png (front/side/back crops in 3d/src/)",
+ "files": {
+  "LOD0": "chr_ironjaw_male_LOD0.glb (rigged + 25 clips)",
+  "LOD1": "chr_ironjaw_male_LOD1.glb (rigged, same skeleton, no clips)",
+  "LOD2": "chr_ironjaw_male_LOD2.glb (rigged, same skeleton, no clips)",
+  "axe_R": "itm_ironjaw_axe_R_CONCEPTO_.glb",
+  "axe_L": "itm_ironjaw_axe_L_CONCEPTO_.glb"
+ },
+ "units": "metres",
+ "height_m": 1.8,
+ "pivot": "feet centre, y=0",
+ "front": "+Z (verified in renders)",
+ "up": "+Y",
+ "bind_pose": "A-pose (Meshy rig)",
+ "armature_node_scale": 0.01,
+ "armature_note": "Meshy armature node carries scale 0.01 (bones authored in cm); skinned mesh world height is 1.8 m. Godot import: keep, or apply root scale on import.",
+ "tris": {
+  "LOD0": 21050,
+  "LOD1": 10525,
+  "LOD2": 4210
+ },
+ "budget": "hero 15-25k (LOD0 21k OK)",
+ "textures": {
+  "LOD0": "2048 baseColor WebP q80",
+  "LOD1": "1024",
+  "LOD2": "512",
+  "note": "Rigged Meshy output only carries baseColor; normal/ORM from the retexture task were not carried through the rig."
+ },
+ "collider": {
+  "type": "capsule",
+  "radius_m": 0.3,
+  "height_m": 1.8,
+  "centre_y_m": 0.9
+ },
+ "skeleton": {
+  "type": "Meshy humanoid, 24 joints, no fingers",
+  "renamed_to_godot": true,
+  "bone_map_meshy_to_godot": {
+   "Hips": "Hips",
+   "Spine02": "Spine",
+   "Spine01": "Chest",
+   "Spine": "UpperChest",
+   "neck": "Neck",
+   "Head": "Head",
+   "head_end": "HeadTop_End (extra)",
+   "headfront": "HeadFront (extra)",
+   "LeftShoulder": "LeftShoulder",
+   "LeftArm": "LeftUpperArm",
+   "LeftForeArm": "LeftLowerArm",
+   "LeftHand": "LeftHand",
+   "LeftUpLeg": "LeftUpperLeg",
+   "LeftLeg": "LeftLowerLeg",
+   "LeftFoot": "LeftFoot",
+   "LeftToeBase": "LeftToes",
+   "Right*": "same as Left"
+  },
+  "missing_for_SkeletonProfileHumanoid": [
+   "Jaw",
+   "Eyes",
+   "all fingers"
+  ]
+ },
+ "weapons": {
+  "model": "double-bit axe, 0.65 m, ~3k tris, 1024 WebP, origin = grip point 1/4 up the haft, on the haft axis. Haft = axe +Y (glTF), blades = axe X.",
+  "mesh_origin": "grip centre",
+  "attach": {
+   "axe_R": {
+    "bone": "RightHand",
+    "position_m": [
+     -0.0214,
+     0.12,
+     -0.0651
+    ],
+    "rotation_quat_xyzw": [
+     0.0,
+     0.0,
+     0.5,
+     0.866
+    ],
+    "rotation_euler_deg_xyz": [
+     0.0,
+     0.0,
+     60.0
+    ]
+   },
+   "axe_L": {
+    "bone": "LeftHand",
+    "position_m": [
+     0.0401,
+     0.105,
+     -0.0526
+    ],
+    "rotation_quat_xyzw": [
+     0.5,
+     0.866,
+     -0.0,
+     -0.0
+    ],
+    "rotation_euler_deg_xyz": [
+     -180.0,
+     -0.0,
+     120.0
+    ]
+   }
+  },
+  "attach_note": "BoneAttachment3D(bone) -> axe transform in the glTF joint space with joint scale removed. Haft runs through the closed fist; head on the thumb side; blades along the forearm axis (forward in the stance, head up).",
+  "holster": {
+   "attach": {
+    "axe_R": {
+     "bone": "UpperChest",
+     "position_m": [
+      -0.11,
+      -0.0335,
+      -0.2122
+     ],
+     "rotation_quat_xyzw": [
+      0.9536,
+      -0.3007,
+      -0.0036,
+      -0.0115
+     ],
+     "rotation_euler_deg_xyz": [
+      -178.87,
+      0.79,
+      -34.99
+     ]
+    },
+    "axe_L": {
+     "bone": "UpperChest",
+     "position_m": [
+      0.11,
+      -0.0335,
+      -0.2122
+     ],
+     "rotation_quat_xyzw": [
+      0.9536,
+      0.3007,
+      0.0036,
+      -0.0115
+     ],
+     "rotation_euler_deg_xyz": [
+      -178.87,
+      -0.79,
+      34.99
+     ]
+    }
+   },
+   "note": "Axes crossed on the back, heads down. BoneAttachment on UpperChest."
+  }
+ },
+ "clips_standard": "lowercase snake_case, 30 fps (retimed from Meshy 24 fps), in place: Hips horizontal translation flattened (root rotation kept)",
+ "clips": [
+  {
+   "name": "idle",
+   "meshy_action_id": 335,
+   "meshy_action": "Axe_Breathe_and_Look_Around",
+   "frames_30fps": [
+    0,
+    422
+   ],
+   "loop": true,
+   "axe_hands_driving": "right",
+   "off_hand_axe": "Mirror: off-hand axe hangs head-down at left side; breathing reads fine with both. Base is Axe_Breathe (single axe).",
+   "meshy_preview": "https://cdn.meshy.ai/webapp-assets/feature-demo/animation/preview/biped/Axe_Breathe_and_Look_Around.gif",
+   "axe_mode": "in_hand",
+   "holster_offset": {
+    "position_m": [
+     0,
+     0,
+     0
+    ],
+    "rotation_euler_deg_xyz": [
+     0,
+     0,
+     0
+    ],
+    "space": "axe local (glTF), applied after the holster transform"
+   }
+  },
+  {
+   "name": "walk",
+   "meshy_action_id": 669,
+   "meshy_action": "Slow_Orc_Walk_inplace",
+   "frames_30fps": [
+    0,
+    206
+   ],
+   "loop": true,
+   "axe_hands_driving": "both",
+   "off_hand_axe": "Both axes hang head-down; Slow_Orc arm swing is symmetric, so the left axe already mirrors the right.",
+   "meshy_preview": "https://cdn.meshy.ai/webapp-assets/feature-demo/animation/preview/biped/Slow_Orc_Walk.gif",
+   "axe_mode": "in_hand",
+   "holster_offset": {
+    "position_m": [
+     0,
+     0,
+     0
+    ],
+    "rotation_euler_deg_xyz": [
+     0,
+     0,
+     0
+    ],
+    "space": "axe local (glTF), applied after the holster transform"
+   }
+  },
+  {
+   "name": "run",
+   "meshy_action_id": 673,
+   "meshy_action": "Standard_Forward_Charge_inplace",
+   "frames_30fps": [
+    0,
+    24
+   ],
+   "loop": true,
+   "axe_hands_driving": "both",
+   "off_hand_axe": "Both axes trail; charge arm pump is symmetric. Tweak: raise both heads off the thighs.",
+   "meshy_preview": "https://cdn.meshy.ai/webapp-assets/feature-demo/animation/preview/biped/Standard_Forward_Charge.gif",
+   "axe_mode": "in_hand",
+   "holster_offset": {
+    "position_m": [
+     0,
+     0,
+     0
+    ],
+    "rotation_euler_deg_xyz": [
+     0,
+     0,
+     0
+    ],
+    "space": "axe local (glTF), applied after the holster transform"
+   }
+  },
+  {
+   "name": "turn_l",
+   "meshy_action_id": 575,
+   "meshy_action": "Combat_Idle_Turn_Left",
+   "frames_30fps": [
+    0,
+    48
+   ],
+   "loop": false,
+   "axe_hands_driving": "right",
+   "off_hand_axe": "Left axe goes to the back holster (axe_mode main_hand_only); only the right axe swings.",
+   "meshy_preview": "https://cdn.meshy.ai/webapp-assets/feature-demo/animation/preview/biped/Combat_Idle_Turn_Left.gif",
+   "axe_mode": "main_hand_only",
+   "holster_offset": {
+    "position_m": [
+     0,
+     0,
+     0
+    ],
+    "rotation_euler_deg_xyz": [
+     0,
+     0,
+     0
+    ],
+    "space": "axe local (glTF), applied after the holster transform"
+   }
+  },
+  {
+   "name": "turn_r",
+   "meshy_action_id": 586,
+   "meshy_action": "Idle_Turn_Right",
+   "frames_30fps": [
+    0,
+    40
+   ],
+   "loop": false,
+   "axe_hands_driving": "both",
+   "off_hand_axe": "Idle turn, axes hang. Ends ~180 deg rotated (root rotation kept).",
+   "meshy_preview": "https://cdn.meshy.ai/webapp-assets/feature-demo/animation/preview/biped/Idle_Turn_Right.gif",
+   "axe_mode": "in_hand",
+   "holster_offset": {
+    "position_m": [
+     0,
+     0,
+     0
+    ],
+    "rotation_euler_deg_xyz": [
+     0,
+     0,
+     0
+    ],
+    "space": "axe local (glTF), applied after the holster transform"
+   }
+  },
+  {
+   "name": "attack_melee_1",
+   "meshy_action_id": 237,
+   "meshy_action": "Charged_Axe_Chop",
+   "frames_30fps": [
+    0,
+    288
+   ],
+   "loop": false,
+   "axe_hands_driving": "right",
+   "off_hand_axe": "Left axe goes to the back holster (axe_mode main_hand_only); only the right axe swings.",
+   "meshy_preview": "https://cdn.meshy.ai/webapp-assets/feature-demo/animation/preview/biped/Charged_Axe_Chop.gif",
+   "axe_mode": "main_hand_only",
+   "holster_offset": {
+    "position_m": [
+     0,
+     0,
+     0
+    ],
+    "rotation_euler_deg_xyz": [
+     0,
+     0,
+     0
+    ],
+    "space": "axe local (glTF), applied after the holster transform"
+   }
+  },
+  {
+   "name": "attack_melee_2",
+   "meshy_action_id": 92,
+   "meshy_action": "Double_Combo_Attack",
+   "frames_30fps": [
+    0,
+    106
+   ],
+   "loop": false,
+   "axe_hands_driving": "both",
+   "off_hand_axe": "Double_Combo_Attack: right then left strike; second axe mirrors the first. Best native dual-weapon clip.",
+   "meshy_preview": "https://cdn.meshy.ai/webapp-assets/feature-demo/animation/preview/biped/Double_Combo_Attack.gif",
+   "axe_mode": "in_hand",
+   "holster_offset": {
+    "position_m": [
+     0,
+     0,
+     0
+    ],
+    "rotation_euler_deg_xyz": [
+     0,
+     0,
+     0
+    ],
+    "space": "axe local (glTF), applied after the holster transform"
+   }
+  },
+  {
+   "name": "attack_ranged",
+   "meshy_action_id": 239,
+   "meshy_action": "Crouch_Pull_and_Throw",
+   "frames_30fps": [
+    0,
+    218
+   ],
+   "loop": false,
+   "axe_hands_driving": "right",
+   "off_hand_axe": "Crouch_Pull_and_Throw used as an axe throw: right axe is thrown (hide R axe at release, respawn on recovery); left stays in hand.",
+   "meshy_preview": "https://cdn.meshy.ai/webapp-assets/feature-demo/animation/preview/biped/Crouch_Pull_and_Throw.gif",
+   "axe_mode": "in_hand",
+   "holster_offset": {
+    "position_m": [
+     0,
+     0,
+     0
+    ],
+    "rotation_euler_deg_xyz": [
+     0,
+     0,
+     0
+    ],
+    "space": "axe local (glTF), applied after the holster transform"
+   }
+  },
+  {
+   "name": "cast",
+   "meshy_action_id": 101,
+   "meshy_action": "Sword_Shout",
+   "frames_30fps": [
+    0,
+    231
+   ],
+   "loop": false,
+   "axe_hands_driving": "right",
+   "off_hand_axe": "Left axe goes to the back holster (axe_mode main_hand_only); only the right axe swings.",
+   "meshy_preview": "https://cdn.meshy.ai/webapp-assets/feature-demo/animation/preview/biped/Sword_Shout.gif",
+   "axe_mode": "main_hand_only",
+   "holster_offset": {
+    "position_m": [
+     0,
+     0,
+     0
+    ],
+    "rotation_euler_deg_xyz": [
+     0,
+     0,
+     0
+    ],
+    "space": "axe local (glTF), applied after the holster transform"
+   }
+  },
+  {
+   "name": "hit",
+   "meshy_action_id": 178,
+   "meshy_action": "Hit_Reaction",
+   "frames_30fps": [
+    0,
+    61
+   ],
+   "loop": false,
+   "axe_hands_driving": "both",
+   "off_hand_axe": "Generic hit react; both axes flail with the arms.",
+   "meshy_preview": "https://cdn.meshy.ai/webapp-assets/feature-demo/animation/preview/biped/Hit_Reaction.gif",
+   "axe_mode": "in_hand",
+   "holster_offset": {
+    "position_m": [
+     0,
+     0,
+     0
+    ],
+    "rotation_euler_deg_xyz": [
+     0,
+     0,
+     0
+    ],
+    "space": "axe local (glTF), applied after the holster transform"
+   }
+  },
+  {
+   "name": "block",
+   "meshy_action_id": 149,
+   "meshy_action": "Two_Handed_Parry",
+   "frames_30fps": [
+    0,
+    49
+   ],
+   "loop": false,
+   "axe_hands_driving": "both",
+   "off_hand_axe": "Two_Handed_Parry: both fists meet overhead, so the two axes cross like an X block. Custom: separate the hands ~10 cm so the hafts do not intersect.",
+   "meshy_preview": "https://cdn.meshy.ai/webapp-assets/feature-demo/animation/preview/biped/Two_Handed_Parry.gif",
+   "axe_mode": "in_hand",
+   "holster_offset": {
+    "position_m": [
+     0,
+     0,
+     0
+    ],
+    "rotation_euler_deg_xyz": [
+     0,
+     0,
+     0
+    ],
+    "space": "axe local (glTF), applied after the holster transform"
+   }
+  },
+  {
+   "name": "push",
+   "meshy_action_id": 220,
+   "meshy_action": "Shield_Push_Left",
+   "frames_30fps": [
+    0,
+    89
+   ],
+   "loop": false,
+   "axe_hands_driving": "left",
+   "off_hand_axe": "Shield_Push_Left: left forearm shove; read as an off-hand axe-haft shove. Right axe low.",
+   "meshy_preview": "https://cdn.meshy.ai/webapp-assets/feature-demo/animation/preview/biped/Shield_Push_Left.gif",
+   "axe_mode": "in_hand",
+   "holster_offset": {
+    "position_m": [
+     0,
+     0,
+     0
+    ],
+    "rotation_euler_deg_xyz": [
+     0,
+     0,
+     0
+    ],
+    "space": "axe local (glTF), applied after the holster transform"
+   }
+  },
+  {
+   "name": "dodge",
+   "meshy_action_id": 156,
+   "meshy_action": "Stand_Dodge",
+   "frames_30fps": [
+    0,
+    52
+   ],
+   "loop": false,
+   "axe_hands_driving": "both",
+   "off_hand_axe": "Stand_Dodge sidestep; axes passive.",
+   "meshy_preview": "https://cdn.meshy.ai/webapp-assets/feature-demo/animation/preview/biped/Stand_Dodge.gif",
+   "axe_mode": "in_hand",
+   "holster_offset": {
+    "position_m": [
+     0,
+     0,
+     0
+    ],
+    "rotation_euler_deg_xyz": [
+     0,
+     0,
+     0
+    ],
+    "space": "axe local (glTF), applied after the holster transform"
+   }
+  },
+  {
+   "name": "downed",
+   "meshy_action_id": 187,
+   "meshy_action": "Knock_Down",
+   "frames_30fps": [
+    0,
+    94
+   ],
+   "loop": false,
+   "axe_hands_driving": "both",
+   "off_hand_axe": "Knock_Down; axes stay in hands while on the ground (detach/drop is optional in Godot).",
+   "meshy_preview": "https://cdn.meshy.ai/webapp-assets/feature-demo/animation/preview/biped/Knock_Down.gif",
+   "axe_mode": "in_hand",
+   "holster_offset": {
+    "position_m": [
+     0,
+     0,
+     0
+    ],
+    "rotation_euler_deg_xyz": [
+     0,
+     0,
+     0
+    ],
+    "space": "axe local (glTF), applied after the holster transform"
+   }
+  },
+  {
+   "name": "death",
+   "meshy_action_id": 189,
+   "meshy_action": "dying_backwards",
+   "frames_30fps": [
+    0,
+    82
+   ],
+   "loop": false,
+   "axe_hands_driving": "both",
+   "off_hand_axe": "dying_backwards; recommend detaching both axes on impact to avoid clipping into the floor.",
+   "meshy_preview": "https://cdn.meshy.ai/webapp-assets/feature-demo/animation/preview/biped/dying_backwards.gif",
+   "axe_mode": "in_hand",
+   "holster_offset": {
+    "position_m": [
+     0,
+     0,
+     0
+    ],
+    "rotation_euler_deg_xyz": [
+     0,
+     0,
+     0
+    ],
+    "space": "axe local (glTF), applied after the holster transform"
+   }
+  },
+  {
+   "name": "interact",
+   "meshy_action_id": 285,
+   "meshy_action": "open_door",
+   "frames_30fps": [
+    0,
+    195
+   ],
+   "loop": false,
+   "axe_hands_driving": "both",
+   "off_hand_axe": "open_door; right hand reaches with the axe still in it. Custom: hide R axe or tuck it in the belt during interact.",
+   "meshy_preview": "https://cdn.meshy.ai/webapp-assets/feature-demo/animation/preview/biped/open_door.gif",
+   "axe_mode": "holstered_back",
+   "holster_offset": {
+    "position_m": [
+     0,
+     0,
+     0
+    ],
+    "rotation_euler_deg_xyz": [
+     0,
+     0,
+     0
+    ],
+    "space": "axe local (glTF), applied after the holster transform"
+   }
+  },
+  {
+   "name": "sit",
+   "meshy_action_id": 33,
+   "meshy_action": "Chair_Sit_Idle_M",
+   "frames_30fps": [
+    0,
+    400
+   ],
+   "loop": true,
+   "axe_hands_driving": "both",
+   "off_hand_axe": "Chair_Sit_Idle_M; axes rest across the knees (clips into thighs). Custom: unequip for sit.",
+   "meshy_preview": "https://cdn.meshy.ai/webapp-assets/feature-demo/animation/preview/biped/Chair_Sit_Idle_M.gif",
+   "axe_mode": "holstered_back",
+   "holster_offset": {
+    "position_m": [
+     0,
+     0.06,
+     0
+    ],
+    "rotation_euler_deg_xyz": {
+     "axe_R": [
+      -25,
+      0,
+      30
+     ],
+     "axe_L": [
+      -25,
+      0,
+      -30
+     ]
+    },
+    "order": "translate, then Z, then X (intrinsic)",
+    "space": "axe local (glTF), applied after the holster transform",
+    "why": "tucks the hafts behind the shoulders in the hunched sit"
+   }
+  },
+  {
+   "name": "victory",
+   "meshy_action_id": 403,
+   "meshy_action": "Victory_Fist_Pump",
+   "frames_30fps": [
+    0,
+    56
+   ],
+   "loop": false,
+   "axe_hands_driving": "right",
+   "off_hand_axe": "Left axe goes to the back holster (axe_mode main_hand_only); only the right axe swings.",
+   "meshy_preview": "https://cdn.meshy.ai/webapp-assets/feature-demo/animation/preview/biped/Victory_Fist_Pump.gif",
+   "axe_mode": "main_hand_only",
+   "holster_offset": {
+    "position_m": [
+     0,
+     0,
+     0
+    ],
+    "rotation_euler_deg_xyz": [
+     0,
+     0,
+     0
+    ],
+    "space": "axe local (glTF), applied after the holster transform"
+   }
+  },
+  {
+   "name": "ironjaw_axe_stance",
+   "meshy_action_id": 85,
+   "meshy_action": "Axe_Stance",
+   "frames_30fps": [
+    0,
+    229
+   ],
+   "loop": false,
+   "axe_hands_driving": "right",
+   "off_hand_axe": "Left axe goes to the back holster (axe_mode main_hand_only); only the right axe swings.",
+   "meshy_preview": "https://cdn.meshy.ai/webapp-assets/feature-demo/animation/preview/biped/Axe_Stance.gif",
+   "axe_mode": "main_hand_only",
+   "holster_offset": {
+    "position_m": [
+     0,
+     0,
+     0
+    ],
+    "rotation_euler_deg_xyz": [
+     0,
+     0,
+     0
+    ],
+    "space": "axe local (glTF), applied after the holster transform"
+   }
+  },
+  {
+   "name": "ironjaw_axe_spin",
+   "meshy_action_id": 238,
+   "meshy_action": "Axe_Spin_Attack",
+   "frames_30fps": [
+    0,
+    94
+   ],
+   "loop": false,
+   "axe_hands_driving": "right",
+   "off_hand_axe": "Left axe goes to the back holster (axe_mode main_hand_only); only the right axe swings.",
+   "meshy_preview": "https://cdn.meshy.ai/webapp-assets/feature-demo/animation/preview/biped/Axe_Spin_Attack.gif",
+   "axe_mode": "main_hand_only",
+   "holster_offset": {
+    "position_m": [
+     0,
+     0,
+     0
+    ],
+    "rotation_euler_deg_xyz": [
+     0,
+     0,
+     0
+    ],
+    "space": "axe local (glTF), applied after the holster transform"
+   }
+  },
+  {
+   "name": "ironjaw_double_blade_spin",
+   "meshy_action_id": 91,
+   "meshy_action": "Double_Blade_Spin",
+   "frames_30fps": [
+    0,
+    212
+   ],
+   "loop": false,
+   "axe_hands_driving": "both",
+   "off_hand_axe": "Double_Blade_Spin: authored for two blades, both axes work as-is. Signature dual clip.",
+   "meshy_preview": "https://cdn.meshy.ai/webapp-assets/feature-demo/animation/preview/biped/Double_Blade_Spin.gif",
+   "axe_mode": "in_hand",
+   "holster_offset": {
+    "position_m": [
+     0,
+     0,
+     0
+    ],
+    "rotation_euler_deg_xyz": [
+     0,
+     0,
+     0
+    ],
+    "space": "axe local (glTF), applied after the holster transform"
+   }
+  },
+  {
+   "name": "ironjaw_ground_slam",
+   "meshy_action_id": 127,
+   "meshy_action": "Charged_Ground_Slam",
+   "frames_30fps": [
+    0,
+    112
+   ],
+   "loop": false,
+   "axe_hands_driving": "right",
+   "off_hand_axe": "Left axe goes to the back holster (axe_mode main_hand_only); only the right axe swings.",
+   "meshy_preview": "https://cdn.meshy.ai/webapp-assets/feature-demo/animation/preview/biped/Charged_Ground_Slam.gif",
+   "axe_mode": "main_hand_only",
+   "holster_offset": {
+    "position_m": [
+     0,
+     0,
+     0
+    ],
+    "rotation_euler_deg_xyz": [
+     0,
+     0,
+     0
+    ],
+    "space": "axe local (glTF), applied after the holster transform"
+   }
+  },
+  {
+   "name": "ironjaw_taunt",
+   "meshy_action_id": 88,
+   "meshy_action": "Chest_Pound_Taunt",
+   "frames_30fps": [
+    0,
+    181
+   ],
+   "loop": false,
+   "axe_hands_driving": "both",
+   "off_hand_axe": "Chest_Pound_Taunt: pounding with fists clips the axe heads into the chest. Custom: pound with haft butts, or hide axes.",
+   "meshy_preview": "https://cdn.meshy.ai/webapp-assets/feature-demo/animation/preview/biped/Chest_Pound_Taunt.gif",
+   "axe_mode": "in_hand",
+   "holster_offset": {
+    "position_m": [
+     0,
+     0,
+     0
+    ],
+    "rotation_euler_deg_xyz": [
+     0,
+     0,
+     0
+    ],
+    "space": "axe local (glTF), applied after the holster transform"
+   }
+  },
+  {
+   "name": "ironjaw_jump",
+   "meshy_action_id": 466,
+   "meshy_action": "Regular_Jump",
+   "frames_30fps": [
+    0,
+    69
+   ],
+   "loop": false,
+   "axe_hands_driving": "both",
+   "off_hand_axe": "Regular_Jump; axes passive. Custom: axes up on the landing for weight.",
+   "meshy_preview": "https://cdn.meshy.ai/webapp-assets/feature-demo/animation/preview/biped/Regular_Jump.gif",
+   "axe_mode": "in_hand",
+   "holster_offset": {
+    "position_m": [
+     0,
+     0,
+     0
+    ],
+    "rotation_euler_deg_xyz": [
+     0,
+     0,
+     0
+    ],
+    "space": "axe local (glTF), applied after the holster transform"
+   }
+  },
+  {
+   "name": "ironjaw_climb",
+   "meshy_action_id": 438,
+   "meshy_action": "Ladder_Climb_Loop",
+   "frames_30fps": [
+    0,
+    59
+   ],
+   "loop": true,
+   "axe_hands_driving": "both",
+   "off_hand_axe": "Ladder_Climb_Loop; axes would clip ladder rungs. Custom: holster both on the back while climbing.",
+   "meshy_preview": "https://cdn.meshy.ai/webapp-assets/feature-demo/animation/preview/biped/Ladder_Climb_Loop.gif",
+   "axe_mode": "holstered_back",
+   "holster_offset": {
+    "position_m": [
+     0,
+     0,
+     0
+    ],
+    "rotation_euler_deg_xyz": [
+     0,
+     0,
+     0
+    ],
+    "space": "axe local (glTF), applied after the holster transform"
+   }
+  }
+ ],
+ "meshy_tasks": "see credits_log.csv",
+ "grip": {
+  "version": "v3 hammer grip (2026-10-17 18:2x ET)",
+  "method": "Sculpted closed fist in the bind mesh (no finger bones). Haft crosses the palm diagonally (30 deg, head end toward the index knuckle) inside a 3.1 cm finger wrap of up to 270 deg; thumb verts rotated 80 deg over the haft. Head on the thumb side in every clip.",
+  "wrist_cock": {
+   "clips": [
+    "idle",
+    "walk",
+    "run",
+    "turn_r",
+    "hit",
+    "dodge",
+    "ironjaw_jump",
+    "downed",
+    "death"
+   ],
+   "deg_about_palm_normal": {
+    "RightHand": 28.9,
+    "LeftHand": -43.5
+   },
+   "note": "Constant additive Hand-bone rotation baked into these clips only so the axes hang head-down, close to vertical along the legs. Other clips are unchanged."
+  },
+  "finger_bones": false,
+  "previous_version_backup": "/workspace/ironjaw_grip/v2_backup/"
+ },
+ "axe_mode_values": {
+  "in_hand": "both axes in hand",
+  "main_hand_only": "right axe in hand, left axe on back holster (single-axe clips)",
+  "holstered_back": "both axes on back"
+ }
+}

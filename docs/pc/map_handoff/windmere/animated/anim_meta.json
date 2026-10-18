@@ -1,0 +1,266 @@
+{
+ "format": "windmere_animated_v1",
+ "status": "PROPOSED",
+ "scale_note": "1x files here, 2x masters in _2x/ (exactly 2x)",
+ "sheet_layout": "horizontal strip, frames left->right, frame_size each",
+ "animations": {
+  "tree_pine_snowy_a_sway": {
+   "file": "animated/tree_pine_snowy_a_sway.png",
+   "file_2x": "animated/_2x/tree_pine_snowy_a_sway.png",
+   "frame_size": [
+    116,
+    128
+   ],
+   "frame_size_2x": [
+    232,
+    256
+   ],
+   "frames": 16,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 2.0,
+   "pairs_with": "tree_pine_snowy_a",
+   "blend": "mix",
+   "anchor": "bottom-centre (same anchor as props/tree_pine_snowy_a.png; frame is 10px (1x) wider on each side so the canopy never clips)",
+   "note": "sway 16 f @ 8 fps, ~2.5 px canopy bend at 1x, base pinned below 30% height; randomise start frame + speed_scale (0.85-1.15)",
+   "sway_mask": "animated/sway_masks/tree_pine_snowy_a_swaymask.png",
+   "status": "PROPOSED"
+  },
+  "tree_pine_snowy_a_shadow_sway": {
+   "file": "animated/shadows/tree_pine_snowy_a_shadow_sway.png",
+   "file_2x": "animated/shadows/_2x/tree_pine_snowy_a_shadow_sway.png",
+   "frame_size": [
+    192,
+    168
+   ],
+   "frame_size_2x": [
+    384,
+    336
+   ],
+   "frames": 16,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 2.0,
+   "pairs_with": "tree_pine_snowy_a_sway",
+   "blend": "mix (alpha = shadow strength, colour #1a223c)",
+   "anchor": "frame top-left = top-left of the matching tree_pine_snowy_a_sway frame; draw on the ground layer under all props",
+   "note": "cast shadow that moves with the canopy: frame i is the projection of sway frame i (light from the top-left, shear 0.62, squash 0.30, soft 2.2 px)",
+   "status": "PROPOSED"
+  },
+  "tree_pine_snowy_b_sway": {
+   "file": "animated/tree_pine_snowy_b_sway.png",
+   "file_2x": "animated/_2x/tree_pine_snowy_b_sway.png",
+   "frame_size": [
+    116,
+    128
+   ],
+   "frame_size_2x": [
+    232,
+    256
+   ],
+   "frames": 16,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 2.0,
+   "pairs_with": "tree_pine_snowy_b",
+   "blend": "mix",
+   "anchor": "bottom-centre (same anchor as props/tree_pine_snowy_b.png; frame is 10px (1x) wider on each side so the canopy never clips)",
+   "note": "sway 16 f @ 8 fps, ~2.5 px canopy bend at 1x, base pinned below 30% height; randomise start frame + speed_scale (0.85-1.15)",
+   "sway_mask": "animated/sway_masks/tree_pine_snowy_b_swaymask.png",
+   "status": "PROPOSED"
+  },
+  "tree_pine_snowy_b_shadow_sway": {
+   "file": "animated/shadows/tree_pine_snowy_b_shadow_sway.png",
+   "file_2x": "animated/shadows/_2x/tree_pine_snowy_b_shadow_sway.png",
+   "frame_size": [
+    188,
+    168
+   ],
+   "frame_size_2x": [
+    376,
+    336
+   ],
+   "frames": 16,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 2.0,
+   "pairs_with": "tree_pine_snowy_b_sway",
+   "blend": "mix (alpha = shadow strength, colour #1a223c)",
+   "anchor": "frame top-left = top-left of the matching tree_pine_snowy_b_sway frame; draw on the ground layer under all props",
+   "note": "cast shadow that moves with the canopy: frame i is the projection of sway frame i (light from the top-left, shear 0.62, squash 0.30, soft 2.2 px)",
+   "status": "PROPOSED"
+  },
+  "tree_pine_frozen_blue_sway": {
+   "file": "animated/tree_pine_frozen_blue_sway.png",
+   "file_2x": "animated/_2x/tree_pine_frozen_blue_sway.png",
+   "frame_size": [
+    116,
+    128
+   ],
+   "frame_size_2x": [
+    232,
+    256
+   ],
+   "frames": 16,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 2.0,
+   "pairs_with": "tree_pine_frozen_blue",
+   "blend": "mix",
+   "anchor": "bottom-centre (same anchor as props/tree_pine_frozen_blue.png; frame is 10px (1x) wider on each side so the canopy never clips)",
+   "note": "sway 16 f @ 8 fps, ~2.5 px canopy bend at 1x, base pinned below 30% height; randomise start frame + speed_scale (0.85-1.15)",
+   "sway_mask": "animated/sway_masks/tree_pine_frozen_blue_swaymask.png",
+   "status": "PROPOSED"
+  },
+  "tree_pine_frozen_blue_shadow_sway": {
+   "file": "animated/shadows/tree_pine_frozen_blue_shadow_sway.png",
+   "file_2x": "animated/shadows/_2x/tree_pine_frozen_blue_shadow_sway.png",
+   "frame_size": [
+    188,
+    168
+   ],
+   "frame_size_2x": [
+    376,
+    336
+   ],
+   "frames": 16,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 2.0,
+   "pairs_with": "tree_pine_frozen_blue_sway",
+   "blend": "mix (alpha = shadow strength, colour #1a223c)",
+   "anchor": "frame top-left = top-left of the matching tree_pine_frozen_blue_sway frame; draw on the ground layer under all props",
+   "note": "cast shadow that moves with the canopy: frame i is the projection of sway frame i (light from the top-left, shear 0.62, squash 0.30, soft 2.2 px)",
+   "status": "PROPOSED"
+  },
+  "border_snowy_pine_wall_sway": {
+   "file": "animated/border_snowy_pine_wall_sway.png",
+   "file_2x": "animated/_2x/border_snowy_pine_wall_sway.png",
+   "frame_size": [
+    112,
+    128
+   ],
+   "frame_size_2x": [
+    224,
+    256
+   ],
+   "frames": 16,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 2.0,
+   "pairs_with": "border_snowy_pine_wall",
+   "blend": "mix",
+   "anchor": "bottom-centre (same anchor as props/border_snowy_pine_wall.png; frame is 8px (1x) wider on each side so the canopy never clips)",
+   "note": "sway 16 f @ 8 fps, ~2.0 px canopy bend at 1x, base pinned below 30% height; randomise start frame + speed_scale (0.85-1.15)",
+   "sway_mask": "animated/sway_masks/border_snowy_pine_wall_swaymask.png",
+   "status": "PROPOSED"
+  },
+  "border_snowy_pine_wall_shadow_sway": {
+   "file": "animated/shadows/border_snowy_pine_wall_shadow_sway.png",
+   "file_2x": "animated/shadows/_2x/border_snowy_pine_wall_shadow_sway.png",
+   "frame_size": [
+    188,
+    168
+   ],
+   "frame_size_2x": [
+    376,
+    336
+   ],
+   "frames": 16,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 2.0,
+   "pairs_with": "border_snowy_pine_wall_sway",
+   "blend": "mix (alpha = shadow strength, colour #1a223c)",
+   "anchor": "frame top-left = top-left of the matching border_snowy_pine_wall_sway frame; draw on the ground layer under all props",
+   "note": "cast shadow that moves with the canopy: frame i is the projection of sway frame i (light from the top-left, shear 0.62, squash 0.30, soft 2.2 px)",
+   "status": "PROPOSED"
+  },
+  "border_snowy_pine_wall_b_sway": {
+   "file": "animated/border_snowy_pine_wall_b_sway.png",
+   "file_2x": "animated/_2x/border_snowy_pine_wall_b_sway.png",
+   "frame_size": [
+    112,
+    128
+   ],
+   "frame_size_2x": [
+    224,
+    256
+   ],
+   "frames": 16,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 2.0,
+   "pairs_with": "border_snowy_pine_wall_b",
+   "blend": "mix",
+   "anchor": "bottom-centre (same anchor as props/border_snowy_pine_wall_b.png; frame is 8px (1x) wider on each side so the canopy never clips)",
+   "note": "sway 16 f @ 8 fps, ~2.0 px canopy bend at 1x, base pinned below 30% height; randomise start frame + speed_scale (0.85-1.15)",
+   "sway_mask": "animated/sway_masks/border_snowy_pine_wall_b_swaymask.png",
+   "status": "PROPOSED"
+  },
+  "border_snowy_pine_wall_b_shadow_sway": {
+   "file": "animated/shadows/border_snowy_pine_wall_b_shadow_sway.png",
+   "file_2x": "animated/shadows/_2x/border_snowy_pine_wall_b_shadow_sway.png",
+   "frame_size": [
+    188,
+    168
+   ],
+   "frame_size_2x": [
+    376,
+    336
+   ],
+   "frames": 16,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 2.0,
+   "pairs_with": "border_snowy_pine_wall_b_sway",
+   "blend": "mix (alpha = shadow strength, colour #1a223c)",
+   "anchor": "frame top-left = top-left of the matching border_snowy_pine_wall_b_sway frame; draw on the ground layer under all props",
+   "note": "cast shadow that moves with the canopy: frame i is the projection of sway frame i (light from the top-left, shear 0.62, squash 0.30, soft 2.2 px)",
+   "status": "PROPOSED"
+  },
+  "border_snowy_pine_wall_c_sway": {
+   "file": "animated/border_snowy_pine_wall_c_sway.png",
+   "file_2x": "animated/_2x/border_snowy_pine_wall_c_sway.png",
+   "frame_size": [
+    112,
+    128
+   ],
+   "frame_size_2x": [
+    224,
+    256
+   ],
+   "frames": 16,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 2.0,
+   "pairs_with": "border_snowy_pine_wall_c",
+   "blend": "mix",
+   "anchor": "bottom-centre (same anchor as props/border_snowy_pine_wall_c.png; frame is 8px (1x) wider on each side so the canopy never clips)",
+   "note": "sway 16 f @ 8 fps, ~2.0 px canopy bend at 1x, base pinned below 30% height; randomise start frame + speed_scale (0.85-1.15)",
+   "sway_mask": "animated/sway_masks/border_snowy_pine_wall_c_swaymask.png",
+   "status": "PROPOSED"
+  },
+  "border_snowy_pine_wall_c_shadow_sway": {
+   "file": "animated/shadows/border_snowy_pine_wall_c_shadow_sway.png",
+   "file_2x": "animated/shadows/_2x/border_snowy_pine_wall_c_shadow_sway.png",
+   "frame_size": [
+    172,
+    160
+   ],
+   "frame_size_2x": [
+    344,
+    320
+   ],
+   "frames": 16,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 2.0,
+   "pairs_with": "border_snowy_pine_wall_c_sway",
+   "blend": "mix (alpha = shadow strength, colour #1a223c)",
+   "anchor": "frame top-left = top-left of the matching border_snowy_pine_wall_c_sway frame; draw on the ground layer under all props",
+   "note": "cast shadow that moves with the canopy: frame i is the projection of sway frame i (light from the top-left, shear 0.62, squash 0.30, soft 2.2 px)",
+   "status": "PROPOSED"
+  }
+ }
+}

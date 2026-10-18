@@ -1,0 +1,27 @@
+{
+ "label": "🖼️ IMAGEN / CONCEPTO, TODAVÍA HAY QUE CONSTRUIRLO",
+ "name": "bld_tower_round_a",
+ "concept": "bld_tower_round_CONCEPTO_.png",
+ "height_m": 14.74,
+ "footprint_m": [
+  7.658,
+  7.306
+ ],
+ "pivot": "footprint centre on ground (y=0)",
+ "front": "+Z",
+ "units": "metres, Y-up",
+ "tris": {
+  "LOD0": 11144,
+  "LOD1": 5580,
+  "LOD2": 2239
+ },
+ "collider": "bld_tower_round_a-col.glb (convex hull)",
+ "textures": "embedded JPEG q82: LOD0 2048, LOD1 1024, LOD2 512",
+ "source_glb": "../raw/bld_tower_round_gjC1dg.glb",
+ "uniform_scale": 11.0,
+ "status": "preview mesh, not tested in game",
+ "facing_note": "Front (doors) faces +Z; for wall pieces +Z = outside. Build agent rotates on import.",
+ "crenellation_top_m": 11.0,
+ "roof": "procedural conical slate roof (separate mesh 'roof', own material), overhang 6%, matches key art",
+ "note": "roof added 0 credits; tower top 11 m to crenellation"
+}

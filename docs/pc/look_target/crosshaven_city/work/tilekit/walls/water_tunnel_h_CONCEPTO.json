@@ -1,0 +1,15 @@
+{
+ "foot": [
+  359,
+  550
+ ],
+ "footprint": [
+  6,
+  1
+ ],
+ "blocks": true,
+ "height_px": 550,
+ "orient": "screen-horizontal",
+ "grate": true,
+ "water_passes": true
+}

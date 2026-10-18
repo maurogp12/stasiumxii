@@ -1,0 +1,13 @@
+{
+ "label": "🖼️ IMAGEN / CONCEPTO, TODAVÍA HAY QUE CONSTRUIRLO",
+ "file": "itm_kestrel_weapons_CONCEPTO_.png",
+ "items": "bow + quiver",
+ "slot": "bow_2h + quiver_back",
+ "pivot": "grip_centre",
+ "front": "+Z",
+ "tris_budget": "prop 0.5-3k each",
+ "textures": "PBR 512-1024",
+ "collider": "box/convex -col",
+ "separate_from_body": true,
+ "model_built": false
+}

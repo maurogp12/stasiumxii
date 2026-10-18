@@ -1,0 +1,18 @@
+{
+ "tile_px": 256,
+ "flow_dir": [
+  -0.86,
+  0.51
+ ],
+ "speed_px_s": 24.0,
+ "second_layer": {
+  "flip": true,
+  "speed_mult": 0.7,
+  "offset": [
+   97,
+   41
+  ],
+  "alpha": 0.55
+ },
+ "note": "draw water_base under river.png, then the ripple tile scrolled by flow_dir*speed*t (wraps seamlessly), alpha x (0.45+0.55*depth); foam = noise tile x foam_zone. river_style.River.frame(t) is the reference implementation."
+}

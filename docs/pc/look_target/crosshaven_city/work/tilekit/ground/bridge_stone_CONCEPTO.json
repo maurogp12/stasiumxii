@@ -1,0 +1,15 @@
+{
+ "foot": [
+  370,
+  343
+ ],
+ "footprint": [
+  2,
+  5
+ ],
+ "blocks": false,
+ "walkable": true,
+ "height_px": 343,
+ "layer": "over water, under props/actors",
+ "orient": "ne axis; flip_h for se"
+}

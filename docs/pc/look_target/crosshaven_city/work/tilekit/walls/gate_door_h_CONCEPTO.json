@@ -1,0 +1,19 @@
+{
+ "foot": [
+  130,
+  455
+ ],
+ "footprint": [
+  0,
+  0
+ ],
+ "blocks": false,
+ "height_px": 455,
+ "frames": 8,
+ "fps": 12,
+ "frame_w": 261,
+ "frame_h": 455,
+ "parent": "gate_h_CONCEPTO",
+ "f00": "closed",
+ "f07": "open"
+}

@@ -1,0 +1,59 @@
+{
+ "nat_oak_a": {
+  "tris": {
+   "LOD0": 8000,
+   "LOD1": 3000,
+   "LOD2": 798
+  },
+  "height_m": 8.12,
+  "crown_m": [
+   9.29,
+   8.04
+  ],
+  "collider": {
+   "file": "nat_oak_a-col.glb",
+   "shape": "capsule (trunk only, never canopy)",
+   "radius_m": 0.317,
+   "height_m": 2.99,
+   "center_y_m": 1.5
+  }
+ },
+ "nat_oak_b": {
+  "tris": {
+   "LOD0": 8000,
+   "LOD1": 3000,
+   "LOD2": 798
+  },
+  "height_m": 6.24,
+  "crown_m": [
+   6.09,
+   7.21
+  ],
+  "collider": {
+   "file": "nat_oak_b-col.glb",
+   "shape": "capsule (trunk only, never canopy)",
+   "radius_m": 0.26,
+   "height_m": 2.27,
+   "center_y_m": 1.13
+  }
+ },
+ "nat_oak_c": {
+  "tris": {
+   "LOD0": 8000,
+   "LOD1": 3000,
+   "LOD2": 798
+  },
+  "height_m": 10.02,
+  "crown_m": [
+   9.23,
+   10.32
+  ],
+  "collider": {
+   "file": "nat_oak_c-col.glb",
+   "shape": "capsule (trunk only, never canopy)",
+   "radius_m": 0.374,
+   "height_m": 3.48,
+   "center_y_m": 1.74
+  }
+ }
+}

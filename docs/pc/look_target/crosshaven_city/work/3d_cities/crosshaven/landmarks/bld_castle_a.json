@@ -1,0 +1,30 @@
+{
+ "label": "🖼️ IMAGEN / CONCEPTO, TODAVÍA HAY QUE CONSTRUIRLO",
+ "name": "bld_castle_a",
+ "concept": "bld_castle_v2_CONCEPTO_.png",
+ "height_m": 20.0,
+ "footprint_m": [
+  28.0,
+  22.0
+ ],
+ "pivot": "footprint centre on ground (y=0)",
+ "front": "+Z",
+ "units": "metres, Y-up",
+ "tris": {
+  "LOD0": 25532,
+  "LOD1": 12766,
+  "LOD2": 5106
+ },
+ "collider": "bld_castle_a-col.glb (convex hull)",
+ "textures": "embedded JPEG q82: LOD0 2048, LOD1 1024, LOD2 512",
+ "source_glb": "../raw/_tmp_castle.glb",
+ "uniform_scale": 1.0,
+ "status": "preview mesh, not tested in game",
+ "version": "v2",
+ "xz_fit_scale": [
+  0.891,
+  0.871
+ ],
+ "facing_note": "Main entrance faces +Z. Build agent rotates on import.",
+ "design": "central keep tip 20 m (tallest piece in the kit); corner towers with cone roofs; banners painted flat on keep"
+}

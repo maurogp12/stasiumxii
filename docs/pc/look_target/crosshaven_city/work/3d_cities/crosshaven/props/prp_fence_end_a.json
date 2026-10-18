@@ -1,0 +1,30 @@
+{
+ "snap": "single closing post centred on origin; place at the open end of a module (x=+1 of the last module)",
+ "facing_note": "symmetric; +Z = outside",
+ "name": "prp_fence_end_a",
+ "label": "🖼️ IMAGEN / CONCEPTO, TODAVÍA HAY QUE CONSTRUIRLO — procedural build",
+ "tris": {
+  "LOD0": 24,
+  "LOD1": 24,
+  "LOD2": 24
+ },
+ "bounds_m": [
+  [
+   -0.09,
+   0.0,
+   -0.09
+  ],
+  [
+   0.09,
+   1.2,
+   0.09
+  ]
+ ],
+ "height_m": 1.2,
+ "units": "metres, Y-up",
+ "pivot": "ground (y=0)",
+ "front": "+Z",
+ "textures": "procedural weathered wood (grime/moss at base) 1024/512/256, iron 512/256/128 (0 CU); world-projected UV, 1 tile = 4 m",
+ "collider": "prp_fence_end_a-col.glb (boxes)",
+ "status": "procedural, not tested in game"
+}

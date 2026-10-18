@@ -1,0 +1,30 @@
+{
+ "label": "🖼️ IMAGEN / CONCEPTO, TODAVÍA HAY QUE CONSTRUIRLO",
+ "name": "bld_house_player_legendary_a",
+ "concept": "bld_house_player_legendary_v2_CONCEPTO_.png",
+ "height_m": 8.0,
+ "footprint_m": [
+  10.3,
+  8.4
+ ],
+ "pivot": "footprint centre on ground (y=0)",
+ "front": "+Z",
+ "units": "metres, Y-up",
+ "tris": {
+  "LOD0": 13536,
+  "LOD1": 6768,
+  "LOD2": 2707
+ },
+ "collider": "bld_house_player_legendary_a-col.glb (convex hull)",
+ "textures": "embedded JPEG q82: LOD0 1024, LOD1 1024, LOD2 512",
+ "source_glb": "../raw/bld_house_player_legendary_v2_N2PaUs.glb.tmp.glb",
+ "uniform_scale": 1.0,
+ "status": "preview mesh, not tested in game",
+ "version": "v2",
+ "design": "luxurious noble mansion: dressed stone, intact slate roof, glass windows, balcony, banners, small walled front garden with fountain",
+ "xz_fit_scale": [
+  0.915,
+  0.769
+ ],
+ "facing_note": "Main entrance faces +Z. Build agent rotates on import."
+}

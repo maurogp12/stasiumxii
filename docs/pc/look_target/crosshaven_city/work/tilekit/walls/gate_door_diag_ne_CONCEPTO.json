@@ -1,0 +1,17 @@
+{
+ "frames": 8,
+ "fps": 12,
+ "frame_w": 261,
+ "frame_h": 585,
+ "parent": "gate_diag_ne_CONCEPTO",
+ "foot": [
+  130,
+  585
+ ],
+ "footprint": [
+  0,
+  0
+ ],
+ "blocks": false,
+ "height_px": 585
+}

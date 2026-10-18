@@ -1,0 +1,150 @@
+{
+  "diag": {
+    "path": "/workspace/crosshaven_paint/walls/kit3/gatehouse_diag_v3_CONCEPTO.png",
+    "mirror_path": "/workspace/crosshaven_paint/walls/kit3/gatehouse_diag_v3_mirror_CONCEPTO.png",
+    "size": [
+      1500,
+      1324
+    ],
+    "curtain_parapet_h": 580,
+    "curtain_parapet_vs550_pct": 5.45,
+    "merlon_tip_h": 593,
+    "passage_width_px": 195,
+    "passage_mid_arch": 195,
+    "passage_ok": true,
+    "passage": {
+      "width": 195,
+      "y": 822,
+      "x0": 737,
+      "x1": 932,
+      "method": "hole_v2",
+      "n_cand": 236
+    },
+    "solid_y": 471,
+    "merlon_y": 458,
+    "base_y_center": 1050,
+    "scale_factor": 1.9531,
+    "near_tower": {
+      "tower_h": 1000,
+      "top_y": 316,
+      "base_y": 1314,
+      "method": "left38_p10top_p90bot_scaled"
+    },
+    "parapet_slope": {
+      "slope": -0.31714488536405605,
+      "intercept": 641.6223138025824,
+      "n": 900,
+      "x0": 300,
+      "x1": 1200
+    },
+    "pre_scale_size": [
+      768,
+      678
+    ],
+    "parapet_detail": {
+      "parapet_h": 580,
+      "merlon_tip_h": 593,
+      "solid_y": 471,
+      "merlon_y": 458,
+      "base_y": 1050,
+      "col_height_median": 590,
+      "col_height_p25": 572.0,
+      "col_height_p75": 603.0
+    }
+  },
+  "horizontal": {
+    "path": "/workspace/crosshaven_paint/walls/kit3/gatehouse_horizontal_CONCEPTO.png",
+    "size": [
+      1323,
+      1000
+    ],
+    "curtain_parapet_h": 556,
+    "curtain_parapet_vs550_pct": 1.09,
+    "merlon_tip_h": 560,
+    "passage_width_px": 296,
+    "passage_mid_arch": 296,
+    "passage_ok": true,
+    "passage": {
+      "width": 296,
+      "y": 707,
+      "x0": 501,
+      "x1": 797,
+      "method": "hole_v2",
+      "n_cand": 319
+    },
+    "solid_y": 432,
+    "merlon_y": 428,
+    "base_y_center": 987,
+    "scale_factor": 1.4663,
+    "parapet_slope": {
+      "slope": -0.017031584782113442,
+      "intercept": 448.27806265493035,
+      "n": 662,
+      "x0": 330,
+      "x1": 992
+    },
+    "pre_scale_size": [
+      902,
+      682
+    ],
+    "parapet_detail": {
+      "parapet_h": 556,
+      "merlon_tip_h": 560,
+      "solid_y": 432,
+      "merlon_y": 428,
+      "base_y": 987,
+      "col_height_median": 559,
+      "col_height_p25": 531.0,
+      "col_height_p75": 562.0
+    }
+  },
+  "join_mock": {
+    "path": "/workspace/crosshaven_paint/walls/kit3/gatehouse_diag_join_mock_CONCEPTO.jpg",
+    "size": [
+      5162,
+      3172
+    ],
+    "seg_parapet_slope": -0.38693407614073694,
+    "diag_parapet_slope": -0.31714488536405605,
+    "slope_delta": 0.06978919077668089,
+    "overlap_px": 180,
+    "placements": {
+      "left_seg": [
+        80,
+        945
+      ],
+      "diag": [
+        1831,
+        619
+      ],
+      "right_seg": [
+        3151,
+        80
+      ]
+    },
+    "join_parapet_y": {
+      "d_L": 424,
+      "d_R": 120,
+      "s_R": 98,
+      "s_L": 659
+    }
+  },
+  "sheet": "/workspace/crosshaven_paint/walls/kit3/gatehouse_v3_sheet_CONCEPTO.jpg",
+  "sheet_size": [
+    4852,
+    3966
+  ],
+  "targets": {
+    "tower_h": 1000,
+    "curtain_parapet": 550,
+    "min_passage": 96,
+    "hero_w": 48
+  },
+  "parapet_note": "curtain_parapet_h = median local curtain-column height (solid body top to local ground) in center 40% width \u2014 the join-line wall height. Diag scaled so NEAR (lower-left) tower finial-to-base = 1000px. Passage measured as dark/transparent arch hole (hole_v2).",
+  "slope_compare": {
+    "diag": -0.31714488536405605,
+    "segment_short": -0.38693407614073694,
+    "delta": 0.06978919077668089,
+    "note": "2:1 iso ideal \u2248 -0.50; segment_short \u2248 -0.39; diag less steep if delta > 0"
+  }
+}

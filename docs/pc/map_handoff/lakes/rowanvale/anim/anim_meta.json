@@ -1,0 +1,23 @@
+{
+ "lake_jump": {
+  "frames": 16,
+  "fps": 12,
+  "1x": {
+   "frame_w": 138,
+   "frame_h": 144,
+   "pivot": [
+    74.1,
+    107.4
+   ]
+  },
+  "_2x": {
+   "frame_w": 276,
+   "frame_h": 288,
+   "pivot": [
+    148.3,
+    214.8
+   ]
+  }
+ },
+ "note": "copied unchanged from map_polish_2/gamescale/anim"
+}

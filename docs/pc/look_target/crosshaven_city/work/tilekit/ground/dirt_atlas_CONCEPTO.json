@@ -1,0 +1,17 @@
+{
+ "tile": [
+  128,
+  64
+ ],
+ "layout": "4x4, index=mask, N=1 E=2 S=4 W=8, set corner = this terrain, unset = transparent",
+ "draw_priority": [
+  "grass",
+  "dirt",
+  "cobble",
+  "plaza",
+  "water"
+ ],
+ "terrain": "dirt",
+ "variants_file": "dirt_full_variants_CONCEPTO.png",
+ "variants": 3
+}

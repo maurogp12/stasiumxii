@@ -1,0 +1,18 @@
+{
+ "foot": [
+  152,
+  602
+ ],
+ "footprint": [
+  2,
+  1
+ ],
+ "blocks": true,
+ "height_px": 550,
+ "tile_step_px": [
+  206,
+  -103
+ ],
+ "merlon_period_px": 206,
+ "orient": "ne iso axis, 2:1 slope (mirror of se, 10% darker)"
+}

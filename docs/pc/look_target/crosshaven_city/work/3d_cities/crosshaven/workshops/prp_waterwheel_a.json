@@ -1,0 +1,21 @@
+{
+ "label": "🖼️ IMAGEN / CONCEPTO, TODAVÍA HAY QUE CONSTRUIRLO",
+ "name": "prp_waterwheel_a",
+ "concept": "prp_waterwheel_CONCEPTO_.png",
+ "diameter_m": 4.0,
+ "width_m": 0.6,
+ "pivot": "axle centre (origin = wheel centre), NOT at the ground",
+ "spin_axis": "local X (rotate around +X; positive = top moves toward +Z when the river flows to -Z)",
+ "front": "+Z",
+ "facing_note": "Wheel plane is YZ; axle along X. Mount on the mill's +X wall with the axle centre ~2.2 m above ground.",
+ "units": "metres, Y-up",
+ "tris": {
+  "LOD0": 3618,
+  "LOD1": 1809,
+  "LOD2": 723
+ },
+ "collider": "prp_waterwheel_a-col.glb (cylinder r 2 m, 0.6 m along X)",
+ "textures": "embedded JPEG q82: LOD0 1024, LOD1 1024, LOD2 512",
+ "status": "preview mesh, not tested in game",
+ "note": "thinned from 2.085 m to 0.6 m along X (non-uniform scale x0.288); pivot/axis unchanged"
+}

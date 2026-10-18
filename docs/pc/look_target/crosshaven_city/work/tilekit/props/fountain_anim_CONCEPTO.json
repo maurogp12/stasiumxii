@@ -1,0 +1,18 @@
+{
+ "foot": [
+  142,
+  260
+ ],
+ "footprint": [
+  3,
+  3
+ ],
+ "blocks": true,
+ "height_px": 260,
+ "width_px": 225,
+ "frames": 6,
+ "fps": 8,
+ "frame_w": 285,
+ "frame_h": 290,
+ "note": "replaces the static fountain; same foot"
+}

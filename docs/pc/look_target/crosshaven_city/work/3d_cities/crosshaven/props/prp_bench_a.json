@@ -1,0 +1,30 @@
+{
+ "label": "🖼️ IMAGEN / CONCEPTO, TODAVÍA HAY QUE CONSTRUIRLO",
+ "name": "prp_bench_a",
+ "concept": "prp_bench_CONCEPTO_.png",
+ "height_m": 0.9,
+ "footprint_m": [
+  1.8,
+  0.607
+ ],
+ "pivot": "footprint centre on ground (y=0)",
+ "front": "+Z",
+ "units": "metres, Y-up",
+ "tris": {
+  "LOD0": 2700,
+  "LOD1": 1350,
+  "LOD2": 538
+ },
+ "collider": "prp_bench_a-col.glb (convex hull)",
+ "textures": "embedded JPEG q82: LOD0 1024, LOD1 1024, LOD2 512",
+ "source_glb": "../raw/prp_bench_pcYPFE.glb.tmp.glb",
+ "uniform_scale": 1.0,
+ "status": "preview mesh, not tested in game",
+ "xz_fit_scale": [
+  1.0,
+  1.0
+ ],
+ "facing_note": "Seat faces +Z (backrest at -Z). Verified from mesh: backrest geometry mean z=-0.21.",
+ "length_scale_x": 1.357,
+ "fix_v2": "lengthened along X only to 1.8 m (height/depth unchanged)"
+}

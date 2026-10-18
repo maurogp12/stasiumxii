@@ -1,0 +1,1474 @@
+{
+ "theme": "westwatch",
+ "version": 1,
+ "date": "2026-10-03",
+ "grammar": {
+  "picker": "Crosshaven picker (crosshaven_art.gd pick_tile): g = sides nw,ne,se,sw (in that order) whose neighbour is in `against`; g empty -> interior by h(x,y); else <edge_prefix><g joined by _>; then <corner_prefix><c> decals for diagonal corners c whose two sides are not in g but whose diagonal neighbour is in `against`.",
+  "sides": {
+   "nw": "(x-1,y)",
+   "ne": "(x,y-1)",
+   "se": "(x+1,y)",
+   "sw": "(x,y+1)"
+  },
+  "corners": {
+   "n": "(x-1,y-1)",
+   "e": "(x+1,y-1)",
+   "s": "(x+1,y+1)",
+   "w": "(x-1,y+1)"
+  },
+  "families": {
+   "blight": {
+    "interiors": [
+     "blight_a",
+     "blight_b",
+     "blight_c",
+     "blight_d"
+    ],
+    "edge": "blight_edge_",
+    "corner": "blight_corner_",
+    "against": [
+     "golden_plains"
+    ]
+   },
+   "cracked": {
+    "interiors": [
+     "cracked_a",
+     "cracked_b",
+     "cracked_c",
+     "cracked_d"
+    ],
+    "edge": "cracked_edge_",
+    "corner": "cracked_corner_",
+    "against": [
+     "blight",
+     "golden_plains (no grass-to-clay piece: keep an ash ring between grass and cracked clay)"
+    ]
+   }
+  },
+  "note": "all 15 side combinations are shipped (Crosshaven grammar); the 4 single sides are the brief's <family>_edge_{nw,ne,se,sw}."
+ },
+ "count": 59,
+ "items": [
+  {
+   "id": "blight_a",
+   "file": "tiles/blight_a@2x.png",
+   "file_1x": "tiles/blight_a.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "tile",
+   "family": "blight",
+   "variant": "a"
+  },
+  {
+   "id": "blight_b",
+   "file": "tiles/blight_b@2x.png",
+   "file_1x": "tiles/blight_b.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "tile",
+   "family": "blight",
+   "variant": "b"
+  },
+  {
+   "id": "blight_c",
+   "file": "tiles/blight_c@2x.png",
+   "file_1x": "tiles/blight_c.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "tile",
+   "family": "blight",
+   "variant": "c"
+  },
+  {
+   "id": "blight_d",
+   "file": "tiles/blight_d@2x.png",
+   "file_1x": "tiles/blight_d.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "tile",
+   "family": "blight",
+   "variant": "d"
+  },
+  {
+   "id": "cracked_a",
+   "file": "tiles/cracked_a@2x.png",
+   "file_1x": "tiles/cracked_a.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "tile",
+   "family": "cracked",
+   "variant": "a"
+  },
+  {
+   "id": "cracked_b",
+   "file": "tiles/cracked_b@2x.png",
+   "file_1x": "tiles/cracked_b.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "tile",
+   "family": "cracked",
+   "variant": "b"
+  },
+  {
+   "id": "cracked_c",
+   "file": "tiles/cracked_c@2x.png",
+   "file_1x": "tiles/cracked_c.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "tile",
+   "family": "cracked",
+   "variant": "c"
+  },
+  {
+   "id": "cracked_d",
+   "file": "tiles/cracked_d@2x.png",
+   "file_1x": "tiles/cracked_d.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "tile",
+   "family": "cracked",
+   "variant": "d"
+  },
+  {
+   "id": "blight_edge_nw",
+   "file": "tiles/blight_edge_nw@2x.png",
+   "file_1x": "tiles/blight_edge_nw.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "blight",
+   "side": "nw",
+   "autotile": {
+    "family": "blight",
+    "against": "golden_plains",
+    "sides": [
+     "nw"
+    ]
+   }
+  },
+  {
+   "id": "blight_edge_ne",
+   "file": "tiles/blight_edge_ne@2x.png",
+   "file_1x": "tiles/blight_edge_ne.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "blight",
+   "side": "ne",
+   "autotile": {
+    "family": "blight",
+    "against": "golden_plains",
+    "sides": [
+     "ne"
+    ]
+   }
+  },
+  {
+   "id": "blight_edge_nw_ne",
+   "file": "tiles/blight_edge_nw_ne@2x.png",
+   "file_1x": "tiles/blight_edge_nw_ne.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "blight",
+   "side": "nw_ne",
+   "autotile": {
+    "family": "blight",
+    "against": "golden_plains",
+    "sides": [
+     "nw",
+     "ne"
+    ]
+   }
+  },
+  {
+   "id": "blight_edge_se",
+   "file": "tiles/blight_edge_se@2x.png",
+   "file_1x": "tiles/blight_edge_se.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "blight",
+   "side": "se",
+   "autotile": {
+    "family": "blight",
+    "against": "golden_plains",
+    "sides": [
+     "se"
+    ]
+   }
+  },
+  {
+   "id": "blight_edge_nw_se",
+   "file": "tiles/blight_edge_nw_se@2x.png",
+   "file_1x": "tiles/blight_edge_nw_se.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "blight",
+   "side": "nw_se",
+   "autotile": {
+    "family": "blight",
+    "against": "golden_plains",
+    "sides": [
+     "nw",
+     "se"
+    ]
+   }
+  },
+  {
+   "id": "blight_edge_ne_se",
+   "file": "tiles/blight_edge_ne_se@2x.png",
+   "file_1x": "tiles/blight_edge_ne_se.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "blight",
+   "side": "ne_se",
+   "autotile": {
+    "family": "blight",
+    "against": "golden_plains",
+    "sides": [
+     "ne",
+     "se"
+    ]
+   }
+  },
+  {
+   "id": "blight_edge_nw_ne_se",
+   "file": "tiles/blight_edge_nw_ne_se@2x.png",
+   "file_1x": "tiles/blight_edge_nw_ne_se.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "blight",
+   "side": "nw_ne_se",
+   "autotile": {
+    "family": "blight",
+    "against": "golden_plains",
+    "sides": [
+     "nw",
+     "ne",
+     "se"
+    ]
+   }
+  },
+  {
+   "id": "blight_edge_sw",
+   "file": "tiles/blight_edge_sw@2x.png",
+   "file_1x": "tiles/blight_edge_sw.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "blight",
+   "side": "sw",
+   "autotile": {
+    "family": "blight",
+    "against": "golden_plains",
+    "sides": [
+     "sw"
+    ]
+   }
+  },
+  {
+   "id": "blight_edge_nw_sw",
+   "file": "tiles/blight_edge_nw_sw@2x.png",
+   "file_1x": "tiles/blight_edge_nw_sw.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "blight",
+   "side": "nw_sw",
+   "autotile": {
+    "family": "blight",
+    "against": "golden_plains",
+    "sides": [
+     "nw",
+     "sw"
+    ]
+   }
+  },
+  {
+   "id": "blight_edge_ne_sw",
+   "file": "tiles/blight_edge_ne_sw@2x.png",
+   "file_1x": "tiles/blight_edge_ne_sw.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "blight",
+   "side": "ne_sw",
+   "autotile": {
+    "family": "blight",
+    "against": "golden_plains",
+    "sides": [
+     "ne",
+     "sw"
+    ]
+   }
+  },
+  {
+   "id": "blight_edge_nw_ne_sw",
+   "file": "tiles/blight_edge_nw_ne_sw@2x.png",
+   "file_1x": "tiles/blight_edge_nw_ne_sw.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "blight",
+   "side": "nw_ne_sw",
+   "autotile": {
+    "family": "blight",
+    "against": "golden_plains",
+    "sides": [
+     "nw",
+     "ne",
+     "sw"
+    ]
+   }
+  },
+  {
+   "id": "blight_edge_se_sw",
+   "file": "tiles/blight_edge_se_sw@2x.png",
+   "file_1x": "tiles/blight_edge_se_sw.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "blight",
+   "side": "se_sw",
+   "autotile": {
+    "family": "blight",
+    "against": "golden_plains",
+    "sides": [
+     "se",
+     "sw"
+    ]
+   }
+  },
+  {
+   "id": "blight_edge_nw_se_sw",
+   "file": "tiles/blight_edge_nw_se_sw@2x.png",
+   "file_1x": "tiles/blight_edge_nw_se_sw.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "blight",
+   "side": "nw_se_sw",
+   "autotile": {
+    "family": "blight",
+    "against": "golden_plains",
+    "sides": [
+     "nw",
+     "se",
+     "sw"
+    ]
+   }
+  },
+  {
+   "id": "blight_edge_ne_se_sw",
+   "file": "tiles/blight_edge_ne_se_sw@2x.png",
+   "file_1x": "tiles/blight_edge_ne_se_sw.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "blight",
+   "side": "ne_se_sw",
+   "autotile": {
+    "family": "blight",
+    "against": "golden_plains",
+    "sides": [
+     "ne",
+     "se",
+     "sw"
+    ]
+   }
+  },
+  {
+   "id": "blight_edge_nw_ne_se_sw",
+   "file": "tiles/blight_edge_nw_ne_se_sw@2x.png",
+   "file_1x": "tiles/blight_edge_nw_ne_se_sw.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "blight",
+   "side": "nw_ne_se_sw",
+   "autotile": {
+    "family": "blight",
+    "against": "golden_plains",
+    "sides": [
+     "nw",
+     "ne",
+     "se",
+     "sw"
+    ]
+   }
+  },
+  {
+   "id": "blight_corner_n",
+   "file": "tiles/blight_corner_n@2x.png",
+   "file_1x": "tiles/blight_corner_n.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "corner",
+   "family": "blight",
+   "side": "n",
+   "autotile": {
+    "family": "blight",
+    "against": "golden_plains",
+    "corner": "n"
+   }
+  },
+  {
+   "id": "blight_corner_e",
+   "file": "tiles/blight_corner_e@2x.png",
+   "file_1x": "tiles/blight_corner_e.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "corner",
+   "family": "blight",
+   "side": "e",
+   "autotile": {
+    "family": "blight",
+    "against": "golden_plains",
+    "corner": "e"
+   }
+  },
+  {
+   "id": "blight_corner_s",
+   "file": "tiles/blight_corner_s@2x.png",
+   "file_1x": "tiles/blight_corner_s.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "corner",
+   "family": "blight",
+   "side": "s",
+   "autotile": {
+    "family": "blight",
+    "against": "golden_plains",
+    "corner": "s"
+   }
+  },
+  {
+   "id": "blight_corner_w",
+   "file": "tiles/blight_corner_w@2x.png",
+   "file_1x": "tiles/blight_corner_w.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "corner",
+   "family": "blight",
+   "side": "w",
+   "autotile": {
+    "family": "blight",
+    "against": "golden_plains",
+    "corner": "w"
+   }
+  },
+  {
+   "id": "cracked_edge_nw",
+   "file": "tiles/cracked_edge_nw@2x.png",
+   "file_1x": "tiles/cracked_edge_nw.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "cracked",
+   "side": "nw",
+   "autotile": {
+    "family": "cracked",
+    "against": "blight",
+    "sides": [
+     "nw"
+    ]
+   }
+  },
+  {
+   "id": "cracked_edge_ne",
+   "file": "tiles/cracked_edge_ne@2x.png",
+   "file_1x": "tiles/cracked_edge_ne.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "cracked",
+   "side": "ne",
+   "autotile": {
+    "family": "cracked",
+    "against": "blight",
+    "sides": [
+     "ne"
+    ]
+   }
+  },
+  {
+   "id": "cracked_edge_nw_ne",
+   "file": "tiles/cracked_edge_nw_ne@2x.png",
+   "file_1x": "tiles/cracked_edge_nw_ne.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "cracked",
+   "side": "nw_ne",
+   "autotile": {
+    "family": "cracked",
+    "against": "blight",
+    "sides": [
+     "nw",
+     "ne"
+    ]
+   }
+  },
+  {
+   "id": "cracked_edge_se",
+   "file": "tiles/cracked_edge_se@2x.png",
+   "file_1x": "tiles/cracked_edge_se.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "cracked",
+   "side": "se",
+   "autotile": {
+    "family": "cracked",
+    "against": "blight",
+    "sides": [
+     "se"
+    ]
+   }
+  },
+  {
+   "id": "cracked_edge_nw_se",
+   "file": "tiles/cracked_edge_nw_se@2x.png",
+   "file_1x": "tiles/cracked_edge_nw_se.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "cracked",
+   "side": "nw_se",
+   "autotile": {
+    "family": "cracked",
+    "against": "blight",
+    "sides": [
+     "nw",
+     "se"
+    ]
+   }
+  },
+  {
+   "id": "cracked_edge_ne_se",
+   "file": "tiles/cracked_edge_ne_se@2x.png",
+   "file_1x": "tiles/cracked_edge_ne_se.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "cracked",
+   "side": "ne_se",
+   "autotile": {
+    "family": "cracked",
+    "against": "blight",
+    "sides": [
+     "ne",
+     "se"
+    ]
+   }
+  },
+  {
+   "id": "cracked_edge_nw_ne_se",
+   "file": "tiles/cracked_edge_nw_ne_se@2x.png",
+   "file_1x": "tiles/cracked_edge_nw_ne_se.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "cracked",
+   "side": "nw_ne_se",
+   "autotile": {
+    "family": "cracked",
+    "against": "blight",
+    "sides": [
+     "nw",
+     "ne",
+     "se"
+    ]
+   }
+  },
+  {
+   "id": "cracked_edge_sw",
+   "file": "tiles/cracked_edge_sw@2x.png",
+   "file_1x": "tiles/cracked_edge_sw.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "cracked",
+   "side": "sw",
+   "autotile": {
+    "family": "cracked",
+    "against": "blight",
+    "sides": [
+     "sw"
+    ]
+   }
+  },
+  {
+   "id": "cracked_edge_nw_sw",
+   "file": "tiles/cracked_edge_nw_sw@2x.png",
+   "file_1x": "tiles/cracked_edge_nw_sw.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "cracked",
+   "side": "nw_sw",
+   "autotile": {
+    "family": "cracked",
+    "against": "blight",
+    "sides": [
+     "nw",
+     "sw"
+    ]
+   }
+  },
+  {
+   "id": "cracked_edge_ne_sw",
+   "file": "tiles/cracked_edge_ne_sw@2x.png",
+   "file_1x": "tiles/cracked_edge_ne_sw.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "cracked",
+   "side": "ne_sw",
+   "autotile": {
+    "family": "cracked",
+    "against": "blight",
+    "sides": [
+     "ne",
+     "sw"
+    ]
+   }
+  },
+  {
+   "id": "cracked_edge_nw_ne_sw",
+   "file": "tiles/cracked_edge_nw_ne_sw@2x.png",
+   "file_1x": "tiles/cracked_edge_nw_ne_sw.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "cracked",
+   "side": "nw_ne_sw",
+   "autotile": {
+    "family": "cracked",
+    "against": "blight",
+    "sides": [
+     "nw",
+     "ne",
+     "sw"
+    ]
+   }
+  },
+  {
+   "id": "cracked_edge_se_sw",
+   "file": "tiles/cracked_edge_se_sw@2x.png",
+   "file_1x": "tiles/cracked_edge_se_sw.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "cracked",
+   "side": "se_sw",
+   "autotile": {
+    "family": "cracked",
+    "against": "blight",
+    "sides": [
+     "se",
+     "sw"
+    ]
+   }
+  },
+  {
+   "id": "cracked_edge_nw_se_sw",
+   "file": "tiles/cracked_edge_nw_se_sw@2x.png",
+   "file_1x": "tiles/cracked_edge_nw_se_sw.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "cracked",
+   "side": "nw_se_sw",
+   "autotile": {
+    "family": "cracked",
+    "against": "blight",
+    "sides": [
+     "nw",
+     "se",
+     "sw"
+    ]
+   }
+  },
+  {
+   "id": "cracked_edge_ne_se_sw",
+   "file": "tiles/cracked_edge_ne_se_sw@2x.png",
+   "file_1x": "tiles/cracked_edge_ne_se_sw.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "cracked",
+   "side": "ne_se_sw",
+   "autotile": {
+    "family": "cracked",
+    "against": "blight",
+    "sides": [
+     "ne",
+     "se",
+     "sw"
+    ]
+   }
+  },
+  {
+   "id": "cracked_edge_nw_ne_se_sw",
+   "file": "tiles/cracked_edge_nw_ne_se_sw@2x.png",
+   "file_1x": "tiles/cracked_edge_nw_ne_se_sw.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "edge",
+   "family": "cracked",
+   "side": "nw_ne_se_sw",
+   "autotile": {
+    "family": "cracked",
+    "against": "blight",
+    "sides": [
+     "nw",
+     "ne",
+     "se",
+     "sw"
+    ]
+   }
+  },
+  {
+   "id": "cracked_corner_n",
+   "file": "tiles/cracked_corner_n@2x.png",
+   "file_1x": "tiles/cracked_corner_n.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "corner",
+   "family": "cracked",
+   "side": "n",
+   "autotile": {
+    "family": "cracked",
+    "against": "blight",
+    "corner": "n"
+   }
+  },
+  {
+   "id": "cracked_corner_e",
+   "file": "tiles/cracked_corner_e@2x.png",
+   "file_1x": "tiles/cracked_corner_e.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "corner",
+   "family": "cracked",
+   "side": "e",
+   "autotile": {
+    "family": "cracked",
+    "against": "blight",
+    "corner": "e"
+   }
+  },
+  {
+   "id": "cracked_corner_s",
+   "file": "tiles/cracked_corner_s@2x.png",
+   "file_1x": "tiles/cracked_corner_s.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "corner",
+   "family": "cracked",
+   "side": "s",
+   "autotile": {
+    "family": "cracked",
+    "against": "blight",
+    "corner": "s"
+   }
+  },
+  {
+   "id": "cracked_corner_w",
+   "file": "tiles/cracked_corner_w@2x.png",
+   "file_1x": "tiles/cracked_corner_w.png",
+   "size": [
+    128,
+    64
+   ],
+   "size_1x": [
+    64,
+    32
+   ],
+   "anchor": "bottom-centre on the cell south tip",
+   "kind": "corner",
+   "family": "cracked",
+   "side": "w",
+   "autotile": {
+    "family": "cracked",
+    "against": "blight",
+    "corner": "w"
+   }
+  },
+  {
+   "id": "dead_tree_tall",
+   "file": "props/dead_tree_tall@2x.png",
+   "file_1x": "props/dead_tree_tall.png",
+   "size": [
+    224,
+    256
+   ],
+   "size_1x": [
+    112,
+    128
+   ],
+   "anchor": {
+    "px_2x": [
+     112,
+     256
+    ],
+    "rule": "image bottom-centre = south tip of the anchor cell (the south-most footprint cell)"
+   },
+   "kind": "prop",
+   "family": "westwatch",
+   "footprint": [
+    1,
+    1
+   ],
+   "prop_kind": "tree",
+   "sway_mask": "animated/sway_masks/dead_tree_tall_swaymask.png"
+  },
+  {
+   "id": "dead_tree_mid",
+   "file": "props/dead_tree_mid@2x.png",
+   "file_1x": "props/dead_tree_mid.png",
+   "size": [
+    128,
+    224
+   ],
+   "size_1x": [
+    64,
+    112
+   ],
+   "anchor": {
+    "px_2x": [
+     64,
+     224
+    ],
+    "rule": "image bottom-centre = south tip of the anchor cell (the south-most footprint cell)"
+   },
+   "kind": "prop",
+   "family": "westwatch",
+   "footprint": [
+    1,
+    1
+   ],
+   "prop_kind": "tree",
+   "sway_mask": "animated/sway_masks/dead_tree_mid_swaymask.png"
+  },
+  {
+   "id": "dead_tree_lean",
+   "file": "props/dead_tree_lean@2x.png",
+   "file_1x": "props/dead_tree_lean.png",
+   "size": [
+    224,
+    256
+   ],
+   "size_1x": [
+    112,
+    128
+   ],
+   "anchor": {
+    "px_2x": [
+     112,
+     256
+    ],
+    "rule": "image bottom-centre = south tip of the anchor cell (the south-most footprint cell)"
+   },
+   "kind": "prop",
+   "family": "westwatch",
+   "footprint": [
+    1,
+    1
+   ],
+   "prop_kind": "tree",
+   "sway_mask": "animated/sway_masks/dead_tree_lean_swaymask.png"
+  },
+  {
+   "id": "hollow_stump",
+   "file": "props/hollow_stump@2x.png",
+   "file_1x": "props/hollow_stump.png",
+   "size": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "anchor": {
+    "px_2x": [
+     64,
+     128
+    ],
+    "rule": "image bottom-centre = south tip of the anchor cell (the south-most footprint cell)"
+   },
+   "kind": "prop",
+   "family": "westwatch",
+   "footprint": [
+    1,
+    1
+   ],
+   "prop_kind": "decor_block"
+  },
+  {
+   "id": "thorn_brush_a",
+   "file": "props/thorn_brush_a@2x.png",
+   "file_1x": "props/thorn_brush_a.png",
+   "size": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "anchor": {
+    "px_2x": [
+     64,
+     128
+    ],
+    "rule": "image bottom-centre = south tip of the anchor cell (the south-most footprint cell)"
+   },
+   "kind": "prop",
+   "family": "westwatch",
+   "footprint": [
+    1,
+    1
+   ],
+   "prop_kind": "plant"
+  },
+  {
+   "id": "thorn_brush_b",
+   "file": "props/thorn_brush_b@2x.png",
+   "file_1x": "props/thorn_brush_b.png",
+   "size": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "anchor": {
+    "px_2x": [
+     64,
+     128
+    ],
+    "rule": "image bottom-centre = south tip of the anchor cell (the south-most footprint cell)"
+   },
+   "kind": "prop",
+   "family": "westwatch",
+   "footprint": [
+    1,
+    1
+   ],
+   "prop_kind": "plant"
+  },
+  {
+   "id": "thorn_brush_c",
+   "file": "props/thorn_brush_c@2x.png",
+   "file_1x": "props/thorn_brush_c.png",
+   "size": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "anchor": {
+    "px_2x": [
+     64,
+     128
+    ],
+    "rule": "image bottom-centre = south tip of the anchor cell (the south-most footprint cell)"
+   },
+   "kind": "prop",
+   "family": "westwatch",
+   "footprint": [
+    1,
+    1
+   ],
+   "prop_kind": "plant"
+  },
+  {
+   "id": "withered_reeds",
+   "file": "props/withered_reeds@2x.png",
+   "file_1x": "props/withered_reeds.png",
+   "size": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "anchor": {
+    "px_2x": [
+     64,
+     128
+    ],
+    "rule": "image bottom-centre = south tip of the anchor cell (the south-most footprint cell)"
+   },
+   "kind": "prop",
+   "family": "westwatch",
+   "footprint": [
+    1,
+    1
+   ],
+   "prop_kind": "plant",
+   "sway_mask": "animated/sway_masks/withered_reeds_swaymask.png"
+  },
+  {
+   "id": "skull_stone",
+   "file": "props/skull_stone@2x.png",
+   "file_1x": "props/skull_stone.png",
+   "size": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "anchor": {
+    "px_2x": [
+     64,
+     128
+    ],
+    "rule": "image bottom-centre = south tip of the anchor cell (the south-most footprint cell)"
+   },
+   "kind": "prop",
+   "family": "westwatch",
+   "footprint": [
+    1,
+    1
+   ],
+   "prop_kind": "decor"
+  },
+  {
+   "id": "broken_fence_cloth",
+   "file": "props/broken_fence_cloth@2x.png",
+   "file_1x": "props/broken_fence_cloth.png",
+   "size": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "anchor": {
+    "px_2x": [
+     64,
+     128
+    ],
+    "rule": "image bottom-centre = south tip of the anchor cell (the south-most footprint cell)"
+   },
+   "kind": "prop",
+   "family": "westwatch",
+   "footprint": [
+    1,
+    1
+   ],
+   "prop_kind": "decor_block"
+  },
+  {
+   "id": "haze_a",
+   "file": "overlays/haze_a@2x.png",
+   "file_1x": "overlays/haze_a.png",
+   "size": [
+    640,
+    160
+   ],
+   "size_1x": [
+    320,
+    80
+   ],
+   "anchor": [
+    320,
+    80
+   ],
+   "kind": "overlay",
+   "family": "westwatch",
+   "alpha_peak": 0.271,
+   "blend": "normal",
+   "tileable": false,
+   "scroll": [
+    4,
+    0
+   ],
+   "note": "wide soft ash haze band, ~5 cells wide; draw above props, normal blend (no add/screen = no glow)"
+  },
+  {
+   "id": "haze_b",
+   "file": "overlays/haze_b@2x.png",
+   "file_1x": "overlays/haze_b.png",
+   "size": [
+    640,
+    160
+   ],
+   "size_1x": [
+    320,
+    80
+   ],
+   "anchor": [
+    320,
+    80
+   ],
+   "kind": "overlay",
+   "family": "westwatch",
+   "alpha_peak": 0.231,
+   "blend": "normal",
+   "tileable": false,
+   "scroll": [
+    4,
+    0
+   ],
+   "note": "wide soft ash haze band, ~5 cells wide; draw above props, normal blend (no add/screen = no glow)"
+  },
+  {
+   "id": "haze_tile_swatch",
+   "file": "overlays/haze_tile_swatch@2x.png",
+   "file_1x": "overlays/haze_tile_swatch.png",
+   "size": [
+    512,
+    512
+   ],
+   "size_1x": [
+    256,
+    256
+   ],
+   "anchor": [
+    0,
+    0
+   ],
+   "kind": "overlay",
+   "family": "westwatch",
+   "alpha_peak": 0.2,
+   "blend": "normal",
+   "tileable": true,
+   "scroll": [
+    8,
+    2
+   ],
+   "note": "tileable low-alpha ash haze sheet (wraps on both axes) for a slow scrolling layer"
+  }
+ ]
+}

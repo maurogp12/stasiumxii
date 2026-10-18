@@ -1,0 +1,13 @@
+{
+ "foot": [
+  304,
+  989
+ ],
+ "footprint": [
+  3,
+  3
+ ],
+ "blocks": true,
+ "height_px": 990,
+ "note": "plinth hides wall ends; wall foot meets plinth centre ~60px above foot"
+}

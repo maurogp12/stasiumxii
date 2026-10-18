@@ -1,0 +1,423 @@
+{
+ "package": "wp10a_windmere",
+ "version": 1,
+ "note": "checker index (check_assets.py --package props); paths relative to this folder",
+ "props": [
+  {
+   "id": "tree_pine_snowy_a",
+   "file_2x": "props/_2x/tree_pine_snowy_a.png",
+   "file_1x": "props/tree_pine_snowy_a.png",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    96.0,
+    256
+   ],
+   "anchor_px_1x": [
+    48.0,
+    128
+   ],
+   "size_2x": [
+    192,
+    256
+   ],
+   "size_1x": [
+    96,
+    128
+   ],
+   "size_class": "tree_conifer",
+   "emissive": "no",
+   "art_x_from_anchor_2x": [
+    -69,
+    75
+   ],
+   "height_px_2x": 237
+  },
+  {
+   "id": "tree_pine_snowy_b",
+   "file_2x": "props/_2x/tree_pine_snowy_b.png",
+   "file_1x": "props/tree_pine_snowy_b.png",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    96.0,
+    256
+   ],
+   "anchor_px_1x": [
+    48.0,
+    128
+   ],
+   "size_2x": [
+    192,
+    256
+   ],
+   "size_1x": [
+    96,
+    128
+   ],
+   "size_class": "tree_conifer",
+   "emissive": "no",
+   "art_x_from_anchor_2x": [
+    -73,
+    79
+   ],
+   "height_px_2x": 223
+  },
+  {
+   "id": "tree_pine_frozen_blue",
+   "file_2x": "props/_2x/tree_pine_frozen_blue.png",
+   "file_1x": "props/tree_pine_frozen_blue.png",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    96.0,
+    256
+   ],
+   "anchor_px_1x": [
+    48.0,
+    128
+   ],
+   "size_2x": [
+    192,
+    256
+   ],
+   "size_1x": [
+    96,
+    128
+   ],
+   "size_class": "tree_conifer",
+   "emissive": "no",
+   "art_x_from_anchor_2x": [
+    -75,
+    79
+   ],
+   "height_px_2x": 229
+  },
+  {
+   "id": "ice_boulder",
+   "file_2x": "props/_2x/ice_boulder.png",
+   "file_1x": "props/ice_boulder.png",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64.0,
+    128
+   ],
+   "anchor_px_1x": [
+    32.0,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "size_class": "small",
+   "emissive": "no",
+   "art_x_from_anchor_2x": [
+    -44,
+    39
+   ],
+   "height_px_2x": 97
+  },
+  {
+   "id": "snow_drift",
+   "file_2x": "props/_2x/snow_drift.png",
+   "file_1x": "props/snow_drift.png",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64.0,
+    128
+   ],
+   "anchor_px_1x": [
+    32.0,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "size_class": "small",
+   "emissive": "no",
+   "art_x_from_anchor_2x": [
+    -53,
+    28
+   ],
+   "height_px_2x": 50
+  },
+  {
+   "id": "pillar_ruin_white",
+   "file_2x": "props/_2x/pillar_ruin_white.png",
+   "file_1x": "props/pillar_ruin_white.png",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64.0,
+    224
+   ],
+   "anchor_px_1x": [
+    32.0,
+    112
+   ],
+   "size_2x": [
+    128,
+    224
+   ],
+   "size_1x": [
+    64,
+    112
+   ],
+   "size_class": "tree",
+   "emissive": "no",
+   "art_x_from_anchor_2x": [
+    -62,
+    58
+   ],
+   "height_px_2x": 196
+  },
+  {
+   "id": "ice_crystal_cluster",
+   "file_2x": "props/_2x/ice_crystal_cluster.png",
+   "file_1x": "props/ice_crystal_cluster.png",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64.0,
+    128
+   ],
+   "anchor_px_1x": [
+    32.0,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "size_class": "small",
+   "emissive": "yes",
+   "art_x_from_anchor_2x": [
+    -51,
+    47
+   ],
+   "height_px_2x": 120
+  },
+  {
+   "id": "lantern_post_warm",
+   "file_2x": "props/_2x/lantern_post_warm.png",
+   "file_1x": "props/lantern_post_warm.png",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64.0,
+    224
+   ],
+   "anchor_px_1x": [
+    32.0,
+    112
+   ],
+   "size_2x": [
+    128,
+    224
+   ],
+   "size_1x": [
+    64,
+    112
+   ],
+   "size_class": "tree",
+   "emissive": "yes",
+   "art_x_from_anchor_2x": [
+    -34,
+    51
+   ],
+   "height_px_2x": 219
+  },
+  {
+   "id": "shrub_frozen",
+   "file_2x": "props/_2x/shrub_frozen.png",
+   "file_1x": "props/shrub_frozen.png",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64.0,
+    128
+   ],
+   "anchor_px_1x": [
+    32.0,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "size_class": "small",
+   "emissive": "no",
+   "art_x_from_anchor_2x": [
+    -39,
+    38
+   ],
+   "height_px_2x": 90
+  },
+  {
+   "id": "border_snowy_pine_wall",
+   "file_2x": "props/_2x/border_snowy_pine_wall.png",
+   "file_1x": "props/border_snowy_pine_wall.png",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    96.0,
+    256
+   ],
+   "anchor_px_1x": [
+    48.0,
+    128
+   ],
+   "size_2x": [
+    192,
+    256
+   ],
+   "size_1x": [
+    96,
+    128
+   ],
+   "size_class": "border_tall",
+   "emissive": "no",
+   "art_x_from_anchor_2x": [
+    -89,
+    93
+   ],
+   "height_px_2x": 214
+  },
+  {
+   "id": "border_snowy_pine_wall_b",
+   "file_2x": "props/_2x/border_snowy_pine_wall_b.png",
+   "file_1x": "props/border_snowy_pine_wall_b.png",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    96.0,
+    256
+   ],
+   "anchor_px_1x": [
+    48.0,
+    128
+   ],
+   "size_2x": [
+    192,
+    256
+   ],
+   "size_1x": [
+    96,
+    128
+   ],
+   "size_class": "border_tall",
+   "emissive": "no",
+   "art_x_from_anchor_2x": [
+    -94,
+    83
+   ],
+   "height_px_2x": 214
+  },
+  {
+   "id": "border_snowy_pine_wall_c",
+   "file_2x": "props/_2x/border_snowy_pine_wall_c.png",
+   "file_1x": "props/border_snowy_pine_wall_c.png",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    96.0,
+    256
+   ],
+   "anchor_px_1x": [
+    48.0,
+    128
+   ],
+   "size_2x": [
+    192,
+    256
+   ],
+   "size_1x": [
+    96,
+    128
+   ],
+   "size_class": "border_tall",
+   "emissive": "no",
+   "art_x_from_anchor_2x": [
+    -79,
+    94
+   ],
+   "height_px_2x": 162
+  },
+  {
+   "id": "frost_spire",
+   "file_2x": "props/_2x/frost_spire.png",
+   "file_1x": "props/frost_spire.png",
+   "footprint_cells": [
+    2,
+    2
+   ],
+   "anchor_px_2x": [
+    192.0,
+    512
+   ],
+   "anchor_px_1x": [
+    96.0,
+    256
+   ],
+   "size_2x": [
+    384,
+    512
+   ],
+   "size_1x": [
+    192,
+    256
+   ],
+   "size_class": "hero",
+   "emissive": "yes",
+   "art_x_from_anchor_2x": [
+    -137,
+    130
+   ],
+   "height_px_2x": 506
+  }
+ ]
+}

@@ -1,0 +1,14 @@
+{
+ "foot": [
+  60,
+  120
+ ],
+ "footprint": [
+  1,
+  1
+ ],
+ "blocks": true,
+ "height_px": 120,
+ "width_px": 60,
+ "note": "corner pillar (square, same art as the end)"
+}

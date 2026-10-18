@@ -1,0 +1,13 @@
+{
+ "label": "🖼️ IMAGEN / CONCEPTO, TODAVÍA HAY QUE CONSTRUIRLO",
+ "file": "itm_ironjaw_weapons_CONCEPTO_.png",
+ "items": "2x double-bit axe",
+ "slot": "main_hand + off_hand axe",
+ "pivot": "grip_centre",
+ "front": "+Z",
+ "tris_budget": "prop 0.5-3k each",
+ "textures": "PBR 512-1024",
+ "collider": "box/convex -col",
+ "separate_from_body": true,
+ "model_built": false
+}

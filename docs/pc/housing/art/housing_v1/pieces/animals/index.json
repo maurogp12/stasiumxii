@@ -1,0 +1,90 @@
+[
+ {
+  "name": "pet_cat",
+  "kind": "pet",
+  "file": "pet_cat.png",
+  "w": 234,
+  "h": 294,
+  "source_asset_id": "5618ec599159df5df1be3efe5c2b1dee4164f34ecce9856b7bb768d5512184ea.jpg",
+  "produces": null,
+  "bonus": "Open",
+  "animations": "Open"
+ },
+ {
+  "name": "pet_dog",
+  "kind": "pet",
+  "file": "pet_dog.png",
+  "w": 277,
+  "h": 291,
+  "source_asset_id": "5618ec599159df5df1be3efe5c2b1dee4164f34ecce9856b7bb768d5512184ea.jpg",
+  "produces": null,
+  "bonus": "Open",
+  "animations": "Open"
+ },
+ {
+  "name": "pet_rabbit",
+  "kind": "pet",
+  "file": "pet_rabbit.png",
+  "w": 203,
+  "h": 301,
+  "source_asset_id": "5618ec599159df5df1be3efe5c2b1dee4164f34ecce9856b7bb768d5512184ea.jpg",
+  "produces": null,
+  "bonus": "Open",
+  "animations": "Open"
+ },
+ {
+  "name": "pet_dragon",
+  "kind": "pet",
+  "file": "pet_dragon.png",
+  "w": 352,
+  "h": 284,
+  "source_asset_id": "5618ec599159df5df1be3efe5c2b1dee4164f34ecce9856b7bb768d5512184ea.jpg",
+  "produces": null,
+  "bonus": "Open",
+  "animations": "Open"
+ },
+ {
+  "name": "farm_hen",
+  "kind": "farm",
+  "file": "farm_hen.png",
+  "w": 235,
+  "h": 307,
+  "source_asset_id": "a3b4a2d397a06a2ba1c00b1a41304669e7e79aaa7ebc240ba73c004fe15f3940.jpg",
+  "produces": "eggs",
+  "bonus": "Open",
+  "animations": "Open"
+ },
+ {
+  "name": "farm_pig",
+  "kind": "farm",
+  "file": "farm_pig.png",
+  "w": 294,
+  "h": 291,
+  "source_asset_id": "a3b4a2d397a06a2ba1c00b1a41304669e7e79aaa7ebc240ba73c004fe15f3940.jpg",
+  "produces": "food",
+  "bonus": "Open",
+  "animations": "Open"
+ },
+ {
+  "name": "farm_sheep",
+  "kind": "farm",
+  "file": "farm_sheep.png",
+  "w": 288,
+  "h": 295,
+  "source_asset_id": "a3b4a2d397a06a2ba1c00b1a41304669e7e79aaa7ebc240ba73c004fe15f3940.jpg",
+  "produces": "wool",
+  "bonus": "Open",
+  "animations": "Open"
+ },
+ {
+  "name": "farm_cow",
+  "kind": "farm",
+  "file": "farm_cow.png",
+  "w": 367,
+  "h": 341,
+  "source_asset_id": "a3b4a2d397a06a2ba1c00b1a41304669e7e79aaa7ebc240ba73c004fe15f3940.jpg",
+  "produces": "milk",
+  "bonus": "Open",
+  "animations": "Open"
+ }
+]

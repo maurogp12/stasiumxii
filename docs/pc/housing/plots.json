@@ -1,0 +1,107 @@
+[
+ {
+  "plot": 1,
+  "house_tier": "rare",
+  "second_tier": "rare",
+  "ref_xy": [
+   668,
+   419.888
+  ],
+  "plate_xy": [
+   3340,
+   2099
+  ],
+  "sprite_wh": [
+   238,
+   185
+  ],
+  "blocking_footprint_wh": [
+   202,
+   61
+  ]
+ },
+ {
+  "plot": 2,
+  "house_tier": "legendary",
+  "second_tier": "legendary",
+  "ref_xy": [
+   752,
+   404.432
+  ],
+  "plate_xy": [
+   3760,
+   2022
+  ],
+  "sprite_wh": [
+   330,
+   233
+  ],
+  "blocking_footprint_wh": [
+   280,
+   77
+  ]
+ },
+ {
+  "plot": 3,
+  "house_tier": "rare",
+  "second_tier": "normal",
+  "ref_xy": [
+   530,
+   505.28
+  ],
+  "plate_xy": [
+   2650,
+   2526
+  ],
+  "sprite_wh": [
+   238,
+   185
+  ],
+  "blocking_footprint_wh": [
+   202,
+   61
+  ]
+ },
+ {
+  "plot": 4,
+  "house_tier": "normal",
+  "second_tier": "rare",
+  "ref_xy": [
+   612,
+   490.192
+  ],
+  "plate_xy": [
+   3060,
+   2451
+  ],
+  "sprite_wh": [
+   170,
+   194
+  ],
+  "blocking_footprint_wh": [
+   144,
+   64
+  ]
+ },
+ {
+  "plot": 5,
+  "house_tier": "normal",
+  "second_tier": "normal",
+  "ref_xy": [
+   700,
+   472.0
+  ],
+  "plate_xy": [
+   3500,
+   2360
+  ],
+  "sprite_wh": [
+   170,
+   194
+  ],
+  "blocking_footprint_wh": [
+   144,
+   64
+  ]
+ }
+]

@@ -1,0 +1,64 @@
+{
+ "foot": [
+  661,
+  700
+ ],
+ "footprint": [
+  8,
+  1
+ ],
+ "blocks": true,
+ "height_px": 700,
+ "orient": "screen-horizontal",
+ "gatehouse": {
+  "height_px": 700,
+  "width_px": 635,
+  "wall_height_px": 550
+ },
+ "passage": {
+  "rect": [
+   529,
+   245,
+   261,
+   455
+  ],
+  "walkable": true,
+  "see_through": true,
+  "rim": "thin stone voussoir rim, arch interior alpha 0"
+ },
+ "door": {
+  "file": "gate_door_h_CONCEPTO.png",
+  "frames": 8,
+  "fps": 12,
+  "frame_w": 261,
+  "frame_h": 455,
+  "offset": [
+   529,
+   245
+  ],
+  "open_inward": true,
+  "hinge_left": {
+   "top": [
+    529,
+    245
+   ],
+   "bottom": [
+    529,
+    700
+   ]
+  },
+  "hinge_right": {
+   "top": [
+    790,
+    245
+   ],
+   "bottom": [
+    790,
+    700
+   ]
+  }
+ },
+ "layer_order": "ground < door < gate curtain (rim/jambs) < actors in front",
+ "no_portcullis": true,
+ "no_dust": true
+}

@@ -1,0 +1,53 @@
+timestamp_et,service,task,npc,task_id,status,credits,notes
+2026-10-17,scenario_image,concept,child,job_SpvY1FKvWSmz8CxYNQTbRer7,success,16,Scenario CU (not Meshy)
+2026-10-17,scenario_image,concept,noble,job_dg4eTBonqeViQY3YEdGxwP3A,success,16,Scenario CU (not Meshy)
+2026-10-17,scenario_image,concept,elder,job_ERQewZQX82FsqstaZzNeGRfj,success,16,Scenario CU (not Meshy)
+2026-10-17,scenario_image,concept,banker,job_gqdfzhaKmTPajwcAQpHva2wa,success,16,Scenario CU (not Meshy)
+2026-10-17,scenario_image,concept,herald,job_LS5z7v69iHe84ZEPmnb5NHJY,success,16,Scenario CU (not Meshy)
+2026-10-17,scenario_image,concept,blacksmith,job_ACv9HHRU76HbfSJfdpce7Sbz,success,16,Scenario CU (not Meshy)
+2026-10-17,scenario_image,concept,merchant,job_h54vQ8946GvJNSNHoraEb1Hr,success,16,Scenario CU (not Meshy)
+2026-10-17,scenario_image,concept,peasant_man,job_R54Z6ZxkmoDeZ5wJ8zFkpSVc,success,16,Scenario CU (not Meshy)
+2026-10-17,scenario_image,concept,guide,job_oH34QSGwacZCUF6rD3Nq7ugw,success,16,Scenario CU (not Meshy)
+2026-10-17,scenario_image,concept,guard,job_anVokuXwnMrsycqL34F4vS6x,success,16,Scenario CU (not Meshy)
+2026-10-17,scenario_image,concept,priest,job_tbZy6o5fRAw1XoRdGuwi6iU5,success,16,Scenario CU (not Meshy)
+2026-10-17,scenario_image,concept,prp_spear_guard,job_umvfRjoMrzzYuUXzM5obYR5W,success,16,Scenario CU (not Meshy)
+2026-10-17,scenario_image,concept,peasant_woman,job_RzHCFzQAeWNTLBREADtJVYkf,success,16,Scenario CU (not Meshy)
+2026-10-17,scenario_tripo_i23d,image_to_3d,prp_spear_guard,job_NsEZHRnwNV3Wf4SCsJybkA9J,success,45,Scenario CU (not Meshy)
+2026-10-17,scenario_tripo_i23d,image_to_3d,child,job_RVRKjN7CUmoy935TH14pvsdB,success,45,Scenario CU (not Meshy)
+2026-10-17,scenario_tripo_i23d,image_to_3d,blacksmith,job_1kRjanW44VZHPnQihprqDR45,success,45,Scenario CU (not Meshy)
+2026-10-17,scenario_tripo_i23d,image_to_3d,banker,job_1UZPV8Hr6Vsnnom14ezNmeWa,success,45,Scenario CU (not Meshy)
+2026-10-17,scenario_tripo_i23d,image_to_3d,peasant_man,job_F6GEJJvqqWnYaa1exm7tYRDe,success,45,Scenario CU (not Meshy)
+2026-10-17,scenario_tripo_i23d,image_to_3d,herald,job_ak8gxMpmmjzGQBuidYvPw1Ri,success,45,Scenario CU (not Meshy)
+2026-10-17,scenario_tripo_i23d,image_to_3d,guard,job_NEdMnm3mk4oKTkgAgk1T22tN,success,45,Scenario CU (not Meshy)
+2026-10-17,scenario_tripo_i23d,image_to_3d,noble,job_J2159NMfPVyd75wECt5RYZWD,success,45,Scenario CU (not Meshy)
+2026-10-17,scenario_tripo_i23d,image_to_3d,priest,job_XscxsVbw6vUyt5YJbo1KwjcJ,success,45,Scenario CU (not Meshy)
+2026-10-17,scenario_tripo_i23d,image_to_3d,merchant,job_4g6wM5AvXiD5FfdaAjdF5JUw,success,45,Scenario CU (not Meshy)
+2026-10-17,scenario_tripo_i23d,image_to_3d,guide,job_1xaVmYJ71qWCcjxmJENbKR74,success,45,Scenario CU (not Meshy)
+2026-10-17,scenario_tripo_i23d,image_to_3d,elder,job_8zHmwEESM6FmLwfVXY8CgXPG,success,45,Scenario CU (not Meshy)
+2026-10-17,scenario_tripo_i23d,image_to_3d,peasant_woman,job_ScdRAsca63H4kY2a7TWEkAiP,success,45,Scenario CU (not Meshy)
+2026-10-17 19:54 ET,meshy,rigging,guard,01a14c49-39f7-73d5-bf29-7d58821e3e3a,SUCCEEDED,5,
+2026-10-17 19:54 ET,meshy,rigging,merchant,01a14c49-b165-7645-9030-f5220f30f470,SUCCEEDED,5,
+2026-10-17 19:54 ET,meshy,rigging,priest,01a14c49-b949-73dc-bd4b-f91bfe4a4c82,SUCCEEDED,5,
+2026-10-17 19:54 ET,meshy,rigging,blacksmith,01a14c49-b56d-73d9-b29a-2ff488b3af16,SUCCEEDED,5,
+2026-10-17 19:54 ET,meshy,rigging,peasant_man,01a14c49-c17d-730e-99e3-b25e5b9300af,SUCCEEDED,5,
+2026-10-17 19:54 ET,meshy,rigging,noble,01a14c49-bd8f-759e-9814-99e0360bf3e7,SUCCEEDED,5,
+2026-10-17 19:54 ET,meshy,rigging,peasant_woman,01a14c49-c545-716e-937a-7768f03e17b6,SUCCEEDED,5,
+2026-10-17 19:54 ET,meshy,rigging,child,01a14c49-c900-7205-90b6-dc560ecbcc6b,SUCCEEDED,5,
+2026-10-17 19:54 ET,meshy,rigging,banker,01a14c49-d4ca-76c6-bd97-9e447836e2b1,SUCCEEDED,5,
+2026-10-17 19:54 ET,meshy,rigging,herald,01a14c49-d898-76fe-b39b-288115e6696c,SUCCEEDED,5,
+2026-10-17 19:54 ET,meshy,rigging,guide,01a14c49-d0ec-7467-908b-335320826ea4,SUCCEEDED,5,
+2026-10-17 19:54 ET,meshy,rigging,elder,01a14c49-ccfb-7653-a3ef-ca8272132dbd,SUCCEEDED,5,
+2026-10-17 19:56 ET,meshy,animations x5,guard,01a14c4a-a2c8-71ab-99ba-43486d7843af,SUCCEEDED,15,actions 336 613 285 33 56
+2026-10-17 19:56 ET,meshy,animations x5,blacksmith,01a14c4b-6be3-711c-9936-41a1c3ea666c,SUCCEEDED,15,actions 0 613 128 33 56
+2026-10-17 19:56 ET,meshy,animations x5,merchant,01a14c4b-67f4-7001-855b-ee05f0e3482d,SUCCEEDED,15,actions 0 613 34 33 313
+2026-10-17 19:56 ET,meshy,animations x5,priest,01a14c4b-6fd0-74c2-9ef1-b9924892d240,SUCCEEDED,15,actions 0 613 41 33 313
+2026-10-17 19:56 ET,meshy,animations x5,peasant_man,01a14c4b-77d2-76e5-a9cf-f1f662b147d3,SUCCEEDED,15,actions 0 613 283 33 56
+2026-10-17 19:57 ET,meshy,animations x5,elder,01a14c4b-836d-7069-ab61-4787b83b111a,SUCCEEDED,15,actions 0 626 276 38 56
+2026-10-17 19:57 ET,meshy,animations x5,banker,01a14c4b-8b59-7320-8d47-affa2597d01c,SUCCEEDED,15,actions 0 613 34 33 56
+2026-10-17 19:57 ET,meshy,animations x5,noble,01a14c4b-73a7-7515-82a2-02c2974d55a3,SUCCEEDED,15,actions 0 613 315 33 309
+2026-10-17 19:57 ET,meshy,animations x5,peasant_woman,01a14c4b-7ba5-75eb-96e9-472aa47ba317,SUCCEEDED,15,actions 0 613 278 32 56
+2026-10-17 19:57 ET,meshy,animations x5,child,01a14c4b-7f8c-7499-812f-1887bd15566f,SUCCEEDED,15,actions 0 613 46 33 313
+2026-10-17 19:57 ET,meshy,animations x5,guide,01a14c4b-876d-7226-9458-513aa14f8a90,SUCCEEDED,15,actions 0 613 290 32 313
+2026-10-17 19:57 ET,meshy,animations x5,herald,01a14c4b-8f1d-76ac-92e6-6a6348b2e2c7,SUCCEEDED,15,actions 0 613 28 33 308
+2026-10-17 20:06 ET,meshy,animations x1,guard,01a14c54-cf3a-7340-8a41-57c3738ff086,SUCCEEDED,3,actions 672
+2026-10-17 20:45 ET,none,fix pass 3,-,-,-,0,"Blender-only fixes, 0 Meshy / 0 Scenario"

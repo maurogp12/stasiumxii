@@ -1,0 +1,70 @@
+{
+  "status": "Proposed",
+  "method": "single painted plate; LANCZOS upscale only; hand polygons; no paint-over/inpaint/composite on plate",
+  "video": "/workspace/swamp_map_v8_play.mp4",
+  "contact": "/workspace/share/swamp_v8_contact.jpg",
+  "mask_check": "/workspace/share/swamp_v8_mask_check.jpg",
+  "canvas": [
+    2240,
+    1260
+  ],
+  "scale": 1.75,
+  "stilt_over_ironjaw": 2.725,
+  "path_px": 4766,
+  "duration_s": 51.66,
+  "fps": 24,
+  "per_frame_feet_violations": 0,
+  "video_mb": 2.57,
+  "ladder": "skipped (stilts not clean enough for climb)",
+  "night": "6s color grade of same plate + soft pool glow overlays",
+  "bfs_reachable": {
+    "entry": true,
+    "NE": true,
+    "hamlet": true,
+    "SE": true,
+    "SW": true,
+    "NW": true,
+    "br_NE": true,
+    "br_SE": true,
+    "br_SW": true,
+    "br_NW": true
+  },
+  "qa": {
+    "checklist": {
+      "scale_stilt_over_IJ": 2.725,
+      "hand_polygons_only": true,
+      "no_paint_over_on_plate": true,
+      "bfs_all_zones": true,
+      "mask_overlay_per_zone": true,
+      "feet_violations": 0,
+      "enter_from_east": true,
+      "tour_NE_hamlet_SE_SW_NW_exit": true,
+      "ladder": "skipped",
+      "eased_follow_cam": true,
+      "4dir_walk": true,
+      "grounded_shadow": true,
+      "occluder_fade": true,
+      "overlays_water_frogs_fish_fog": true,
+      "night_6s_grade_same_plate": true,
+      "hero_visible_at_night": true,
+      "contact_16_inspected": true,
+      "encode": "960 H.264 baseline L3.0 yuv420p crf28 noaudio faststart",
+      "video_mb": 2.57
+    },
+    "weak_spots": [
+      "Walk polys are coarse vs painted shorelines \u2014 some mud near water is blocked, some narrow banks unused",
+      "Entry strip runs through rooty NE bank; visually dense, path hugs ferns",
+      "Ladder climb skipped \u2014 stilts/ladders not clean enough for snap/bob without float",
+      "Occluders are crude cutouts from plate (can leave soft halos when faded)",
+      "Night is a color grade of the day plate, not a second painted night plate \u2014 pools glow via overlay only",
+      "Water mask for shimmer is color-assisted (walk mask remains hand polygons only)",
+      "Not a live engine playtest \u2014 video + mask overlay QA only",
+      "Facing can flicker on short A* jogs between waypoints"
+    ],
+    "fixes_vs_v7b": [
+      "Abandoned paint-over/inpaint healing that blurred Luca plate",
+      "New single painted plate used as-is after clean 1.75x LANCZOS upscale",
+      "Same Ironjaw ratio as v3 (stilt/IJ=2.725)"
+    ]
+  }
+}

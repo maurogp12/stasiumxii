@@ -1,0 +1,98 @@
+{
+ "format": "stasium.anim_meta",
+ "note": "screen-space fog/haze overlays as 1-frame scroll layers",
+ "animations": {
+  "fog_low_a_drift": {
+   "file": "overlays/fog_low_a.png",
+   "file_2x": "overlays/fog_low_a@2x.png",
+   "frames": 1,
+   "fps": 0,
+   "frame_size": [
+    256,
+    96
+   ],
+   "frame_size_2x": [
+    512,
+    192
+   ],
+   "kind": "scroll_overlay",
+   "layer": "above_props",
+   "scroll_px_per_s_1x": [
+    6,
+    0
+   ],
+   "tileable": false,
+   "alpha_peak": 0.341,
+   "note": "static painted overlay; the engine drifts it (no frames). low swamp fog wisp, ~4 cells wide; draw above props, anchor = image centre on a cell centre; drift slowly along x"
+  },
+  "fog_low_b_drift": {
+   "file": "overlays/fog_low_b.png",
+   "file_2x": "overlays/fog_low_b@2x.png",
+   "frames": 1,
+   "fps": 0,
+   "frame_size": [
+    256,
+    96
+   ],
+   "frame_size_2x": [
+    512,
+    192
+   ],
+   "kind": "scroll_overlay",
+   "layer": "above_props",
+   "scroll_px_per_s_1x": [
+    6,
+    0
+   ],
+   "tileable": false,
+   "alpha_peak": 0.302,
+   "note": "static painted overlay; the engine drifts it (no frames). low swamp fog wisp, ~4 cells wide; draw above props, anchor = image centre on a cell centre; drift slowly along x"
+  },
+  "fog_low_c_drift": {
+   "file": "overlays/fog_low_c.png",
+   "file_2x": "overlays/fog_low_c@2x.png",
+   "frames": 1,
+   "fps": 0,
+   "frame_size": [
+    256,
+    96
+   ],
+   "frame_size_2x": [
+    512,
+    192
+   ],
+   "kind": "scroll_overlay",
+   "layer": "above_props",
+   "scroll_px_per_s_1x": [
+    6,
+    0
+   ],
+   "tileable": false,
+   "alpha_peak": 0.38,
+   "note": "static painted overlay; the engine drifts it (no frames). low swamp fog wisp, ~4 cells wide; draw above props, anchor = image centre on a cell centre; drift slowly along x"
+  },
+  "fog_tile_swatch_drift": {
+   "file": "overlays/fog_tile_swatch.png",
+   "file_2x": "overlays/fog_tile_swatch@2x.png",
+   "frames": 1,
+   "fps": 0,
+   "frame_size": [
+    256,
+    256
+   ],
+   "frame_size_2x": [
+    512,
+    512
+   ],
+   "kind": "scroll_overlay",
+   "layer": "above_props",
+   "scroll_px_per_s_1x": [
+    12,
+    3
+   ],
+   "tileable": true,
+   "alpha_peak": 0.224,
+   "note": "static painted overlay; the engine drifts it (no frames). tileable low-alpha fog sheet (wraps on both axes) for a slow scrolling screen-space layer"
+  }
+ }
+}

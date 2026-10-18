@@ -1,0 +1,3964 @@
+{
+ "format": "stasium.art_atlas",
+ "format_version": 1,
+ "region": "farm_kit",
+ "root": "res://art/world/farm_kit/",
+ "zone_data_ref": {
+  "spec": "Luca 3 Oct: gatherable farm around the Crosshaven farmer NPC",
+  "region_index": null,
+  "note": "dressing kit for Crosshaven farm plots; not in zone data yet"
+ },
+ "grid": {
+  "tile_w": 64,
+  "tile_h": 32,
+  "height_step_px": 10,
+  "cell_to_local": "((x-y)*32, (x+y)*16 - elev*10)",
+  "sides": {
+   "nw": [
+    -1,
+    0
+   ],
+   "ne": [
+    0,
+    -1
+   ],
+   "se": [
+    1,
+    0
+   ],
+   "sw": [
+    0,
+    1
+   ]
+  },
+  "corners": {
+   "n": [
+    -1,
+    -1
+   ],
+   "e": [
+    1,
+    -1
+   ],
+   "s": [
+    1,
+    1
+   ],
+   "w": [
+    -1,
+    1
+   ]
+  }
+ },
+ "files": {
+  "primary": "1x PNG at <kind>/<id>.png, drawn at scale 1",
+  "masters": "2x PNG at <kind>/_2x/<id>.png, draw at scale 0.5 (identical placement)",
+  "filter": "linear",
+  "mipmaps": false,
+  "premultiplied": false
+ },
+ "anchors": {
+  "tile": "image bottom-centre on the cell diamond SOUTH tip (board/tile.gd): draw at cell_to_local(cell, elev) + (-w/2, 16 - h). Floor/decal tiles are 64x32, so the image IS the diamond.",
+  "side_strip": "32x26 strip per height step k (0 = just under the top): left face top-left = south_tip + (-32, -16 + 10k), right face top-left = south_tip + (0, -16 + 10k); south_tip of the LIFTED tile. Optional upgrade over painted placeholder faces.",
+  "prop": "image bottom-centre on the SOUTH tip of the footprint's south-most cell (max x+y; for 2x2 = origin+(1,1)), lifted by that cell's height: draw at cell_to_local(south_cell, elev) + (0,16) + (-w/2, -h). NW origin only defines the covered cells.",
+  "prop_2x2_from_nw_center_1x": [
+   0,
+   48
+  ],
+  "y_sort": "sort by the footprint south-most cell (x+y). If you use a y-sort point instead, use image bottom - 16 px (centre of the south-most cell) and break ties in favour of characters."
+ },
+ "zone_id_map": {
+  "terrain": {
+   "tilled_soil": {
+    "file": "tiles/tilled_soil_a.png",
+    "default_variant": "tilled_soil_a",
+    "pieces": [
+     "tilled_soil_a",
+     "tilled_soil_b",
+     "tilled_soil_c",
+     "tilled_soil_edge_nw",
+     "tilled_soil_edge_ne",
+     "tilled_soil_edge_nw_ne",
+     "tilled_soil_edge_se",
+     "tilled_soil_edge_nw_se",
+     "tilled_soil_edge_ne_se",
+     "tilled_soil_edge_nw_ne_se",
+     "tilled_soil_edge_sw",
+     "tilled_soil_edge_nw_sw",
+     "tilled_soil_edge_ne_sw",
+     "tilled_soil_edge_nw_ne_sw",
+     "tilled_soil_edge_se_sw",
+     "tilled_soil_edge_nw_se_sw",
+     "tilled_soil_edge_ne_se_sw",
+     "tilled_soil_edge_nw_ne_se_sw",
+     "tilled_soil_corner_n",
+     "tilled_soil_corner_e",
+     "tilled_soil_corner_s",
+     "tilled_soil_corner_w"
+    ],
+    "note": "farm soil as a variant of ground; furrows along +y"
+   },
+   "tilled_soil_x": {
+    "file": "tiles/tilled_soil_x_a.png",
+    "default_variant": "tilled_soil_x_a",
+    "pieces": [
+     "tilled_soil_x_a",
+     "tilled_soil_x_b",
+     "tilled_soil_x_c",
+     "tilled_soil_x_edge_nw",
+     "tilled_soil_x_edge_ne",
+     "tilled_soil_x_edge_nw_ne",
+     "tilled_soil_x_edge_se",
+     "tilled_soil_x_edge_nw_se",
+     "tilled_soil_x_edge_ne_se",
+     "tilled_soil_x_edge_nw_ne_se",
+     "tilled_soil_x_edge_sw",
+     "tilled_soil_x_edge_nw_sw",
+     "tilled_soil_x_edge_ne_sw",
+     "tilled_soil_x_edge_nw_ne_sw",
+     "tilled_soil_x_edge_se_sw",
+     "tilled_soil_x_edge_nw_se_sw",
+     "tilled_soil_x_edge_ne_se_sw",
+     "tilled_soil_x_edge_nw_ne_se_sw",
+     "tilled_soil_x_corner_n",
+     "tilled_soil_x_corner_e",
+     "tilled_soil_x_corner_s",
+     "tilled_soil_x_corner_w"
+    ],
+    "note": "same soil, furrows along +x (pick per plot so rows follow the crop rows)"
+   }
+  },
+  "props": {
+   "fence": {
+    "file": "props/rail_fence_nwse.png",
+    "variants": [
+     "rail_fence_nesw",
+     "rail_fence_corner_n",
+     "rail_fence_corner_e",
+     "rail_fence_corner_s",
+     "rail_fence_corner_w",
+     "rail_fence_end_nw",
+     "rail_fence_end_ne",
+     "rail_fence_end_se",
+     "rail_fence_end_sw",
+     "rail_fence_post"
+    ]
+   },
+   "crop": {
+    "file": "props/cabbage_ripe.png",
+    "variants": [
+     "cabbage_young",
+     "cabbage_ripe_b",
+     "cabbage_harvested",
+     "wheat_young",
+     "wheat_ripe",
+     "wheat_ripe_b",
+     "wheat_harvested",
+     "pumpkin_young",
+     "pumpkin_ripe",
+     "pumpkin_ripe_b",
+     "pumpkin_harvested",
+     "carrot_young",
+     "carrot_ripe",
+     "carrot_ripe_b",
+     "carrot_harvested",
+     "crop_seedling"
+    ]
+   }
+  },
+  "autotile_rule": "same as Crosshaven dirt_road: edge_<grass sides> base piece, plus corner_<c> decals where both sides of corner c are soil but the diagonal is not",
+  "note": "placer picks variants per cell with the Crosshaven hash picker"
+ },
+ "fence_axis": {
+  "along_x": "rail_fence_nwse: rail runs along +x, screen up-left to down-right",
+  "along_y": "rail_fence_nesw: rail runs along +y, screen up-right to down-left",
+  "corners": "corner_<n/e/s/w> = the ring corner at that compass point; end_<side> = gate/gap post with one rail toward <side>; rail_fence_post = lone post"
+ },
+ "tiles": [
+  {
+   "id": "tilled_soil_a",
+   "base_terrain": "tilled_soil",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "file": "tiles/tilled_soil_a.png",
+   "file_2x": "tiles/_2x/tilled_soil_a.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "furrows": "rows run along +y (screen up-right to down-left)",
+   "variant": 0,
+   "note": "tilled farm soil, raked furrows, crests on the cell centre line (crop sprites sit on the crest)",
+   "generated_by": "scratch/farm_kit/fk_tiles.py (soil_swatch.png, periodic resample + grass lip)"
+  },
+  {
+   "id": "tilled_soil_b",
+   "base_terrain": "tilled_soil",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "file": "tiles/tilled_soil_b.png",
+   "file_2x": "tiles/_2x/tilled_soil_b.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "furrows": "rows run along +y (screen up-right to down-left)",
+   "variant": 1,
+   "note": "tilled farm soil, raked furrows, crests on the cell centre line (crop sprites sit on the crest)",
+   "generated_by": "scratch/farm_kit/fk_tiles.py (soil_swatch.png, periodic resample + grass lip)"
+  },
+  {
+   "id": "tilled_soil_c",
+   "base_terrain": "tilled_soil",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "file": "tiles/tilled_soil_c.png",
+   "file_2x": "tiles/_2x/tilled_soil_c.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "furrows": "rows run along +y (screen up-right to down-left)",
+   "variant": 2,
+   "note": "tilled farm soil, raked furrows, crests on the cell centre line (crop sprites sit on the crest)",
+   "generated_by": "scratch/farm_kit/fk_tiles.py (soil_swatch.png, periodic resample + grass lip)"
+  },
+  {
+   "id": "tilled_soil_edge_nw",
+   "base_terrain": "tilled_soil",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "file": "tiles/tilled_soil_edge_nw.png",
+   "file_2x": "tiles/_2x/tilled_soil_edge_nw.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "furrows": "rows run along +y (screen up-right to down-left)",
+   "sides": [
+    "nw"
+   ],
+   "note": "tilled soil with a ragged grass lip on the listed sides (against Crosshaven golden_plains)",
+   "generated_by": "scratch/farm_kit/fk_tiles.py (soil_swatch.png, periodic resample + grass lip)"
+  },
+  {
+   "id": "tilled_soil_edge_ne",
+   "base_terrain": "tilled_soil",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "file": "tiles/tilled_soil_edge_ne.png",
+   "file_2x": "tiles/_2x/tilled_soil_edge_ne.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "furrows": "rows run along +y (screen up-right to down-left)",
+   "sides": [
+    "ne"
+   ],
+   "note": "tilled soil with a ragged grass lip on the listed sides (against Crosshaven golden_plains)",
+   "generated_by": "scratch/farm_kit/fk_tiles.py (soil_swatch.png, periodic resample + grass lip)"
+  },
+  {
+   "id": "tilled_soil_edge_nw_ne",
+   "base_terrain": "tilled_soil",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "file": "tiles/tilled_soil_edge_nw_ne.png",
+   "file_2x": "tiles/_2x/tilled_soil_edge_nw_ne.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "furrows": "rows run along +y (screen up-right to down-left)",
+   "sides": [
+    "nw",
+    "ne"
+   ],
+   "note": "tilled soil with a ragged grass lip on the listed sides (against Crosshaven golden_plains)",
+   "generated_by": "scratch/farm_kit/fk_tiles.py (soil_swatch.png, periodic resample + grass lip)"
+  },
+  {
+   "id": "tilled_soil_edge_se",
+   "base_terrain": "tilled_soil",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "file": "tiles/tilled_soil_edge_se.png",
+   "file_2x": "tiles/_2x/tilled_soil_edge_se.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "furrows": "rows run along +y (screen up-right to down-left)",
+   "sides": [
+    "se"
+   ],
+   "note": "tilled soil with a ragged grass lip on the listed sides (against Crosshaven golden_plains)",
+   "generated_by": "scratch/farm_kit/fk_tiles.py (soil_swatch.png, periodic resample + grass lip)"
+  },
+  {
+   "id": "tilled_soil_edge_nw_se",
+   "base_terrain": "tilled_soil",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "file": "tiles/tilled_soil_edge_nw_se.png",
+   "file_2x": "tiles/_2x/tilled_soil_edge_nw_se.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "furrows": "rows run along +y (screen up-right to down-left)",
+   "sides": [
+    "nw",
+    "se"
+   ],
+   "note": "tilled soil with a ragged grass lip on the listed sides (against Crosshaven golden_plains)",
+   "generated_by": "scratch/farm_kit/fk_tiles.py (soil_swatch.png, periodic resample + grass lip)"
+  },
+  {
+   "id": "tilled_soil_edge_ne_se",
+   "base_terrain": "tilled_soil",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "file": "tiles/tilled_soil_edge_ne_se.png",
+   "file_2x": "tiles/_2x/tilled_soil_edge_ne_se.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "furrows": "rows run along +y (screen up-right to down-left)",
+   "sides": [
+    "ne",
+    "se"
+   ],
+   "note": "tilled soil with a ragged grass lip on the listed sides (against Crosshaven golden_plains)",
+   "generated_by": "scratch/farm_kit/fk_tiles.py (soil_swatch.png, periodic resample + grass lip)"
+  },
+  {
+   "id": "tilled_soil_edge_nw_ne_se",
+   "base_terrain": "tilled_soil",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "file": "tiles/tilled_soil_edge_nw_ne_se.png",
+   "file_2x": "tiles/_2x/tilled_soil_edge_nw_ne_se.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "furrows": "rows run along +y (screen up-right to down-left)",
+   "sides": [
+    "nw",
+    "ne",
+    "se"
+   ],
+   "note": "tilled soil with a ragged grass lip on the listed sides (against Crosshaven golden_plains)",
+   "generated_by": "scratch/farm_kit/fk_tiles.py (soil_swatch.png, periodic resample + grass lip)"
+  },
+  {
+   "id": "tilled_soil_edge_sw",
+   "base_terrain": "tilled_soil",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "file": "tiles/tilled_soil_edge_sw.png",
+   "file_2x": "tiles/_2x/tilled_soil_edge_sw.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "furrows": "rows run along +y (screen up-right to down-left)",
+   "sides": [
+    "sw"
+   ],
+   "note": "tilled soil with a ragged grass lip on the listed sides (against Crosshaven golden_plains)",
+   "generated_by": "scratch/farm_kit/fk_tiles.py (soil_swatch.png, periodic resample + grass lip)"
+  },
+  {
+   "id": "tilled_soil_edge_nw_sw",
+   "base_terrain": "tilled_soil",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "file": "tiles/tilled_soil_edge_nw_sw.png",
+   "file_2x": "tiles/_2x/tilled_soil_edge_nw_sw.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "furrows": "rows run along +y (screen up-right to down-left)",
+   "sides": [
+    "nw",
+    "sw"
+   ],
+   "note": "tilled soil with a ragged grass lip on the listed sides (against Crosshaven golden_plains)",
+   "generated_by": "scratch/farm_kit/fk_tiles.py (soil_swatch.png, periodic resample + grass lip)"
+  },
+  {
+   "id": "tilled_soil_edge_ne_sw",
+   "base_terrain": "tilled_soil",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "file": "tiles/tilled_soil_edge_ne_sw.png",
+   "file_2x": "tiles/_2x/tilled_soil_edge_ne_sw.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "furrows": "rows run along +y (screen up-right to down-left)",
+   "sides": [
+    "ne",
+    "sw"
+   ],
+   "note": "tilled soil with a ragged grass lip on the listed sides (against Crosshaven golden_plains)",
+   "generated_by": "scratch/farm_kit/fk_tiles.py (soil_swatch.png, periodic resample + grass lip)"
+  },
+  {
+   "id": "tilled_soil_edge_nw_ne_sw",
+   "base_terrain": "tilled_soil",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "file": "tiles/tilled_soil_edge_nw_ne_sw.png",
+   "file_2x": "tiles/_2x/tilled_soil_edge_nw_ne_sw.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "furrows": "rows run along +y (screen up-right to down-left)",
+   "sides": [
+    "nw",
+    "ne",
+    "sw"
+   ],
+   "note": "tilled soil with a ragged grass lip on the listed sides (against Crosshaven golden_plains)",
+   "generated_by": "scratch/farm_kit/fk_tiles.py (soil_swatch.png, periodic resample + grass lip)"
+  },
+  {
+   "id": "tilled_soil_edge_se_sw",
+   "base_terrain": "tilled_soil",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "file": "tiles/tilled_soil_edge_se_sw.png",
+   "file_2x": "tiles/_2x/tilled_soil_edge_se_sw.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "furrows": "rows run along +y (screen up-right to down-left)",
+   "sides": [
+    "se",
+    "sw"
+   ],
+   "note": "tilled soil with a ragged grass lip on the listed sides (against Crosshaven golden_plains)",
+   "generated_by": "scratch/farm_kit/fk_tiles.py (soil_swatch.png, periodic resample + grass lip)"
+  },
+  {
+   "id": "tilled_soil_edge_nw_se_sw",
+   "base_terrain": "tilled_soil",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "file": "tiles/tilled_soil_edge_nw_se_sw.png",
+   "file_2x": "tiles/_2x/tilled_soil_edge_nw_se_sw.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "furrows": "rows run along +y (screen up-right to down-left)",
+   "sides": [
+    "nw",
+    "se",
+    "sw"
+   ],
+   "note": "tilled soil with a ragged grass lip on the listed sides (against Crosshaven golden_plains)",
+   "generated_by": "scratch/farm_kit/fk_tiles.py (soil_swatch.png, periodic resample + grass lip)"
+  },
+  {
+   "id": "tilled_soil_edge_ne_se_sw",
+   "base_terrain": "tilled_soil",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "file": "tiles/tilled_soil_edge_ne_se_sw.png",
+   "file_2x": "tiles/_2x/tilled_soil_edge_ne_se_sw.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "furrows": "rows run along +y (screen up-right to down-left)",
+   "sides": [
+    "ne",
+    "se",
+    "sw"
+   ],
+   "note": "tilled soil with a ragged grass lip on the listed sides (against Crosshaven golden_plains)",
+   "generated_by": "scratch/farm_kit/fk_tiles.py (soil_swatch.png, periodic resample + grass lip)"
+  },
+  {
+   "id": "tilled_soil_edge_nw_ne_se_sw",
+   "base_terrain": "tilled_soil",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "file": "tiles/tilled_soil_edge_nw_ne_se_sw.png",
+   "file_2x": "tiles/_2x/tilled_soil_edge_nw_ne_se_sw.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "furrows": "rows run along +y (screen up-right to down-left)",
+   "sides": [
+    "nw",
+    "ne",
+    "se",
+    "sw"
+   ],
+   "note": "tilled soil with a ragged grass lip on the listed sides (against Crosshaven golden_plains)",
+   "generated_by": "scratch/farm_kit/fk_tiles.py (soil_swatch.png, periodic resample + grass lip)"
+  },
+  {
+   "id": "tilled_soil_corner_n",
+   "base_terrain": "tilled_soil",
+   "kind": "decal",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "file": "tiles/tilled_soil_corner_n.png",
+   "file_2x": "tiles/_2x/tilled_soil_corner_n.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "furrows": "rows run along +y (screen up-right to down-left)",
+   "corner": "n",
+   "note": "decal: draw over a soil tile whose diagonal corner n touches grass while both side neighbours are soil",
+   "generated_by": "scratch/farm_kit/fk_tiles.py (soil_swatch.png, periodic resample + grass lip)"
+  },
+  {
+   "id": "tilled_soil_corner_e",
+   "base_terrain": "tilled_soil",
+   "kind": "decal",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "file": "tiles/tilled_soil_corner_e.png",
+   "file_2x": "tiles/_2x/tilled_soil_corner_e.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "furrows": "rows run along +y (screen up-right to down-left)",
+   "corner": "e",
+   "note": "decal: draw over a soil tile whose diagonal corner e touches grass while both side neighbours are soil",
+   "generated_by": "scratch/farm_kit/fk_tiles.py (soil_swatch.png, periodic resample + grass lip)"
+  },
+  {
+   "id": "tilled_soil_corner_s",
+   "base_terrain": "tilled_soil",
+   "kind": "decal",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "file": "tiles/tilled_soil_corner_s.png",
+   "file_2x": "tiles/_2x/tilled_soil_corner_s.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "furrows": "rows run along +y (screen up-right to down-left)",
+   "corner": "s",
+   "note": "decal: draw over a soil tile whose diagonal corner s touches grass while both side neighbours are soil",
+   "generated_by": "scratch/farm_kit/fk_tiles.py (soil_swatch.png, periodic resample + grass lip)"
+  },
+  {
+   "id": "tilled_soil_corner_w",
+   "base_terrain": "tilled_soil",
+   "kind": "decal",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "file": "tiles/tilled_soil_corner_w.png",
+   "file_2x": "tiles/_2x/tilled_soil_corner_w.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "furrows": "rows run along +y (screen up-right to down-left)",
+   "corner": "w",
+   "note": "decal: draw over a soil tile whose diagonal corner w touches grass while both side neighbours are soil",
+   "generated_by": "scratch/farm_kit/fk_tiles.py (soil_swatch.png, periodic resample + grass lip)"
+  },
+  {
+   "id": "tilled_soil_x_a",
+   "base_terrain": "tilled_soil_x",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "file": "tiles/tilled_soil_x_a.png",
+   "file_2x": "tiles/_2x/tilled_soil_x_a.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "furrows": "rows run along +x (screen up-left to down-right)",
+   "variant": 0,
+   "note": "tilled farm soil, raked furrows, crests on the cell centre line (crop sprites sit on the crest)",
+   "generated_by": "scratch/farm_kit/fk_tiles.py (soil_swatch.png, periodic resample + grass lip)"
+  },
+  {
+   "id": "tilled_soil_x_b",
+   "base_terrain": "tilled_soil_x",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "file": "tiles/tilled_soil_x_b.png",
+   "file_2x": "tiles/_2x/tilled_soil_x_b.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "furrows": "rows run along +x (screen up-left to down-right)",
+   "variant": 1,
+   "note": "tilled farm soil, raked furrows, crests on the cell centre line (crop sprites sit on the crest)",
+   "generated_by": "scratch/farm_kit/fk_tiles.py (soil_swatch.png, periodic resample + grass lip)"
+  },
+  {
+   "id": "tilled_soil_x_c",
+   "base_terrain": "tilled_soil_x",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "file": "tiles/tilled_soil_x_c.png",
+   "file_2x": "tiles/_2x/tilled_soil_x_c.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "furrows": "rows run along +x (screen up-left to down-right)",
+   "variant": 2,
+   "note": "tilled farm soil, raked furrows, crests on the cell centre line (crop sprites sit on the crest)",
+   "generated_by": "scratch/farm_kit/fk_tiles.py (soil_swatch.png, periodic resample + grass lip)"
+  },
+  {
+   "id": "tilled_soil_x_edge_nw",
+   "base_terrain": "tilled_soil_x",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "file": "tiles/tilled_soil_x_edge_nw.png",
+   "file_2x": "tiles/_2x/tilled_soil_x_edge_nw.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "furrows": "rows run along +x (screen up-left to down-right)",
+   "sides": [
+    "nw"
+   ],
+   "note": "tilled soil with a ragged grass lip on the listed sides (against Crosshaven golden_plains)",
+   "generated_by": "scratch/farm_kit/fk_tiles.py (soil_swatch.png, periodic resample + grass lip)"
+  },
+  {
+   "id": "tilled_soil_x_edge_ne",
+   "base_terrain": "tilled_soil_x",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "file": "tiles/tilled_soil_x_edge_ne.png",
+   "file_2x": "tiles/_2x/tilled_soil_x_edge_ne.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "furrows": "rows run along +x (screen up-left to down-right)",
+   "sides": [
+    "ne"
+   ],
+   "note": "tilled soil with a ragged grass lip on the listed sides (against Crosshaven golden_plains)",
+   "generated_by": "scratch/farm_kit/fk_tiles.py (soil_swatch.png, periodic resample + grass lip)"
+  },
+  {
+   "id": "tilled_soil_x_edge_nw_ne",
+   "base_terrain": "tilled_soil_x",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "file": "tiles/tilled_soil_x_edge_nw_ne.png",
+   "file_2x": "tiles/_2x/tilled_soil_x_edge_nw_ne.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "furrows": "rows run along +x (screen up-left to down-right)",
+   "sides": [
+    "nw",
+    "ne"
+   ],
+   "note": "tilled soil with a ragged grass lip on the listed sides (against Crosshaven golden_plains)",
+   "generated_by": "scratch/farm_kit/fk_tiles.py (soil_swatch.png, periodic resample + grass lip)"
+  },
+  {
+   "id": "tilled_soil_x_edge_se",
+   "base_terrain": "tilled_soil_x",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "file": "tiles/tilled_soil_x_edge_se.png",
+   "file_2x": "tiles/_2x/tilled_soil_x_edge_se.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "furrows": "rows run along +x (screen up-left to down-right)",
+   "sides": [
+    "se"
+   ],
+   "note": "tilled soil with a ragged grass lip on the listed sides (against Crosshaven golden_plains)",
+   "generated_by": "scratch/farm_kit/fk_tiles.py (soil_swatch.png, periodic resample + grass lip)"
+  },
+  {
+   "id": "tilled_soil_x_edge_nw_se",
+   "base_terrain": "tilled_soil_x",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "file": "tiles/tilled_soil_x_edge_nw_se.png",
+   "file_2x": "tiles/_2x/tilled_soil_x_edge_nw_se.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "furrows": "rows run along +x (screen up-left to down-right)",
+   "sides": [
+    "nw",
+    "se"
+   ],
+   "note": "tilled soil with a ragged grass lip on the listed sides (against Crosshaven golden_plains)",
+   "generated_by": "scratch/farm_kit/fk_tiles.py (soil_swatch.png, periodic resample + grass lip)"
+  },
+  {
+   "id": "tilled_soil_x_edge_ne_se",
+   "base_terrain": "tilled_soil_x",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "file": "tiles/tilled_soil_x_edge_ne_se.png",
+   "file_2x": "tiles/_2x/tilled_soil_x_edge_ne_se.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "furrows": "rows run along +x (screen up-left to down-right)",
+   "sides": [
+    "ne",
+    "se"
+   ],
+   "note": "tilled soil with a ragged grass lip on the listed sides (against Crosshaven golden_plains)",
+   "generated_by": "scratch/farm_kit/fk_tiles.py (soil_swatch.png, periodic resample + grass lip)"
+  },
+  {
+   "id": "tilled_soil_x_edge_nw_ne_se",
+   "base_terrain": "tilled_soil_x",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "file": "tiles/tilled_soil_x_edge_nw_ne_se.png",
+   "file_2x": "tiles/_2x/tilled_soil_x_edge_nw_ne_se.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "furrows": "rows run along +x (screen up-left to down-right)",
+   "sides": [
+    "nw",
+    "ne",
+    "se"
+   ],
+   "note": "tilled soil with a ragged grass lip on the listed sides (against Crosshaven golden_plains)",
+   "generated_by": "scratch/farm_kit/fk_tiles.py (soil_swatch.png, periodic resample + grass lip)"
+  },
+  {
+   "id": "tilled_soil_x_edge_sw",
+   "base_terrain": "tilled_soil_x",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "file": "tiles/tilled_soil_x_edge_sw.png",
+   "file_2x": "tiles/_2x/tilled_soil_x_edge_sw.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "furrows": "rows run along +x (screen up-left to down-right)",
+   "sides": [
+    "sw"
+   ],
+   "note": "tilled soil with a ragged grass lip on the listed sides (against Crosshaven golden_plains)",
+   "generated_by": "scratch/farm_kit/fk_tiles.py (soil_swatch.png, periodic resample + grass lip)"
+  },
+  {
+   "id": "tilled_soil_x_edge_nw_sw",
+   "base_terrain": "tilled_soil_x",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "file": "tiles/tilled_soil_x_edge_nw_sw.png",
+   "file_2x": "tiles/_2x/tilled_soil_x_edge_nw_sw.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "furrows": "rows run along +x (screen up-left to down-right)",
+   "sides": [
+    "nw",
+    "sw"
+   ],
+   "note": "tilled soil with a ragged grass lip on the listed sides (against Crosshaven golden_plains)",
+   "generated_by": "scratch/farm_kit/fk_tiles.py (soil_swatch.png, periodic resample + grass lip)"
+  },
+  {
+   "id": "tilled_soil_x_edge_ne_sw",
+   "base_terrain": "tilled_soil_x",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "file": "tiles/tilled_soil_x_edge_ne_sw.png",
+   "file_2x": "tiles/_2x/tilled_soil_x_edge_ne_sw.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "furrows": "rows run along +x (screen up-left to down-right)",
+   "sides": [
+    "ne",
+    "sw"
+   ],
+   "note": "tilled soil with a ragged grass lip on the listed sides (against Crosshaven golden_plains)",
+   "generated_by": "scratch/farm_kit/fk_tiles.py (soil_swatch.png, periodic resample + grass lip)"
+  },
+  {
+   "id": "tilled_soil_x_edge_nw_ne_sw",
+   "base_terrain": "tilled_soil_x",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "file": "tiles/tilled_soil_x_edge_nw_ne_sw.png",
+   "file_2x": "tiles/_2x/tilled_soil_x_edge_nw_ne_sw.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "furrows": "rows run along +x (screen up-left to down-right)",
+   "sides": [
+    "nw",
+    "ne",
+    "sw"
+   ],
+   "note": "tilled soil with a ragged grass lip on the listed sides (against Crosshaven golden_plains)",
+   "generated_by": "scratch/farm_kit/fk_tiles.py (soil_swatch.png, periodic resample + grass lip)"
+  },
+  {
+   "id": "tilled_soil_x_edge_se_sw",
+   "base_terrain": "tilled_soil_x",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "file": "tiles/tilled_soil_x_edge_se_sw.png",
+   "file_2x": "tiles/_2x/tilled_soil_x_edge_se_sw.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "furrows": "rows run along +x (screen up-left to down-right)",
+   "sides": [
+    "se",
+    "sw"
+   ],
+   "note": "tilled soil with a ragged grass lip on the listed sides (against Crosshaven golden_plains)",
+   "generated_by": "scratch/farm_kit/fk_tiles.py (soil_swatch.png, periodic resample + grass lip)"
+  },
+  {
+   "id": "tilled_soil_x_edge_nw_se_sw",
+   "base_terrain": "tilled_soil_x",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "file": "tiles/tilled_soil_x_edge_nw_se_sw.png",
+   "file_2x": "tiles/_2x/tilled_soil_x_edge_nw_se_sw.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "furrows": "rows run along +x (screen up-left to down-right)",
+   "sides": [
+    "nw",
+    "se",
+    "sw"
+   ],
+   "note": "tilled soil with a ragged grass lip on the listed sides (against Crosshaven golden_plains)",
+   "generated_by": "scratch/farm_kit/fk_tiles.py (soil_swatch.png, periodic resample + grass lip)"
+  },
+  {
+   "id": "tilled_soil_x_edge_ne_se_sw",
+   "base_terrain": "tilled_soil_x",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "file": "tiles/tilled_soil_x_edge_ne_se_sw.png",
+   "file_2x": "tiles/_2x/tilled_soil_x_edge_ne_se_sw.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "furrows": "rows run along +x (screen up-left to down-right)",
+   "sides": [
+    "ne",
+    "se",
+    "sw"
+   ],
+   "note": "tilled soil with a ragged grass lip on the listed sides (against Crosshaven golden_plains)",
+   "generated_by": "scratch/farm_kit/fk_tiles.py (soil_swatch.png, periodic resample + grass lip)"
+  },
+  {
+   "id": "tilled_soil_x_edge_nw_ne_se_sw",
+   "base_terrain": "tilled_soil_x",
+   "kind": "floor",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "file": "tiles/tilled_soil_x_edge_nw_ne_se_sw.png",
+   "file_2x": "tiles/_2x/tilled_soil_x_edge_nw_ne_se_sw.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "furrows": "rows run along +x (screen up-left to down-right)",
+   "sides": [
+    "nw",
+    "ne",
+    "se",
+    "sw"
+   ],
+   "note": "tilled soil with a ragged grass lip on the listed sides (against Crosshaven golden_plains)",
+   "generated_by": "scratch/farm_kit/fk_tiles.py (soil_swatch.png, periodic resample + grass lip)"
+  },
+  {
+   "id": "tilled_soil_x_corner_n",
+   "base_terrain": "tilled_soil_x",
+   "kind": "decal",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "file": "tiles/tilled_soil_x_corner_n.png",
+   "file_2x": "tiles/_2x/tilled_soil_x_corner_n.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "furrows": "rows run along +x (screen up-left to down-right)",
+   "corner": "n",
+   "note": "decal: draw over a soil tile whose diagonal corner n touches grass while both side neighbours are soil",
+   "generated_by": "scratch/farm_kit/fk_tiles.py (soil_swatch.png, periodic resample + grass lip)"
+  },
+  {
+   "id": "tilled_soil_x_corner_e",
+   "base_terrain": "tilled_soil_x",
+   "kind": "decal",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "file": "tiles/tilled_soil_x_corner_e.png",
+   "file_2x": "tiles/_2x/tilled_soil_x_corner_e.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "furrows": "rows run along +x (screen up-left to down-right)",
+   "corner": "e",
+   "note": "decal: draw over a soil tile whose diagonal corner e touches grass while both side neighbours are soil",
+   "generated_by": "scratch/farm_kit/fk_tiles.py (soil_swatch.png, periodic resample + grass lip)"
+  },
+  {
+   "id": "tilled_soil_x_corner_s",
+   "base_terrain": "tilled_soil_x",
+   "kind": "decal",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "file": "tiles/tilled_soil_x_corner_s.png",
+   "file_2x": "tiles/_2x/tilled_soil_x_corner_s.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "furrows": "rows run along +x (screen up-left to down-right)",
+   "corner": "s",
+   "note": "decal: draw over a soil tile whose diagonal corner s touches grass while both side neighbours are soil",
+   "generated_by": "scratch/farm_kit/fk_tiles.py (soil_swatch.png, periodic resample + grass lip)"
+  },
+  {
+   "id": "tilled_soil_x_corner_w",
+   "base_terrain": "tilled_soil_x",
+   "kind": "decal",
+   "walkable": true,
+   "blocks": false,
+   "in_zone_data": false,
+   "file": "tiles/tilled_soil_x_corner_w.png",
+   "file_2x": "tiles/_2x/tilled_soil_x_corner_w.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor": "image bottom-centre (32,32) = diamond south tip; diamond centre = (32,16)",
+   "furrows": "rows run along +x (screen up-left to down-right)",
+   "corner": "w",
+   "note": "decal: draw over a soil tile whose diagonal corner w touches grass while both side neighbours are soil",
+   "generated_by": "scratch/farm_kit/fk_tiles.py (soil_swatch.png, periodic resample + grass lip)"
+  }
+ ],
+ "props": [
+  {
+   "id": "cabbage_young",
+   "base_id": null,
+   "in_zone_data": false,
+   "kind": "crop",
+   "layer": "props",
+   "walkable": true,
+   "blocks": false,
+   "file": "props/cabbage_young.png",
+   "file_2x": "props/_2x/cabbage_young.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "footprint_from_nw": [
+    [
+     0,
+     0
+    ]
+   ],
+   "anchor_cell_from_nw": [
+    0,
+    0
+   ],
+   "anchor": "image bottom-centre = south tip of cell origin+[0, 0]",
+   "bottom_centre_from_nw_centre_1x": [
+    0,
+    16
+   ],
+   "y_sort_origin_from_bottom_1x": [
+    0,
+    -16
+   ],
+   "note": "cabbage, young/growing state (not gatherable)",
+   "design_status": "PROPOSED (farm kit)",
+   "art_x_from_anchor_2x": [
+    -31,
+    29
+   ],
+   "art_height_2x": 67,
+   "size_class": "small",
+   "crop": "cabbage",
+   "state": "young",
+   "note_zone": "walkable dressing on a tilled_soil cell; the gather system swaps <crop>_young/_ripe/_harvested in place (same canvas, anchor, footprint)"
+  },
+  {
+   "id": "cabbage_ripe",
+   "base_id": null,
+   "in_zone_data": false,
+   "kind": "crop",
+   "layer": "props",
+   "walkable": true,
+   "blocks": false,
+   "file": "props/cabbage_ripe.png",
+   "file_2x": "props/_2x/cabbage_ripe.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "footprint_from_nw": [
+    [
+     0,
+     0
+    ]
+   ],
+   "anchor_cell_from_nw": [
+    0,
+    0
+   ],
+   "anchor": "image bottom-centre = south tip of cell origin+[0, 0]",
+   "bottom_centre_from_nw_centre_1x": [
+    0,
+    16
+   ],
+   "y_sort_origin_from_bottom_1x": [
+    0,
+    -16
+   ],
+   "note": "cabbage, RIPE state (gatherable; pair with crop_glint)",
+   "design_status": "PROPOSED (farm kit)",
+   "art_x_from_anchor_2x": [
+    -39,
+    38
+   ],
+   "art_height_2x": 78,
+   "size_class": "small",
+   "crop": "cabbage",
+   "state": "ripe",
+   "note_zone": "walkable dressing on a tilled_soil cell; the gather system swaps <crop>_young/_ripe/_harvested in place (same canvas, anchor, footprint)"
+  },
+  {
+   "id": "cabbage_ripe_b",
+   "base_id": null,
+   "in_zone_data": false,
+   "kind": "crop",
+   "layer": "props",
+   "walkable": true,
+   "blocks": false,
+   "file": "props/cabbage_ripe_b.png",
+   "file_2x": "props/_2x/cabbage_ripe_b.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "footprint_from_nw": [
+    [
+     0,
+     0
+    ]
+   ],
+   "anchor_cell_from_nw": [
+    0,
+    0
+   ],
+   "anchor": "image bottom-centre = south tip of cell origin+[0, 0]",
+   "bottom_centre_from_nw_centre_1x": [
+    0,
+    16
+   ],
+   "y_sort_origin_from_bottom_1x": [
+    0,
+    -16
+   ],
+   "note": "cabbage, ripe variant b (same state as cabbage_ripe, pick by cell hash)",
+   "design_status": "PROPOSED (farm kit)",
+   "art_x_from_anchor_2x": [
+    -42,
+    42
+   ],
+   "art_height_2x": 79,
+   "size_class": "small",
+   "crop": "cabbage",
+   "state": "ripe_b",
+   "note_zone": "walkable dressing on a tilled_soil cell; the gather system swaps <crop>_young/_ripe/_harvested in place (same canvas, anchor, footprint)"
+  },
+  {
+   "id": "cabbage_harvested",
+   "base_id": null,
+   "in_zone_data": false,
+   "kind": "crop",
+   "layer": "props",
+   "walkable": true,
+   "blocks": false,
+   "file": "props/cabbage_harvested.png",
+   "file_2x": "props/_2x/cabbage_harvested.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "footprint_from_nw": [
+    [
+     0,
+     0
+    ]
+   ],
+   "anchor_cell_from_nw": [
+    0,
+    0
+   ],
+   "anchor": "image bottom-centre = south tip of cell origin+[0, 0]",
+   "bottom_centre_from_nw_centre_1x": [
+    0,
+    16
+   ],
+   "y_sort_origin_from_bottom_1x": [
+    0,
+    -16
+   ],
+   "note": "cabbage, harvested state (stump/stubble left after gathering)",
+   "design_status": "PROPOSED (farm kit)",
+   "art_x_from_anchor_2x": [
+    -26,
+    24
+   ],
+   "art_height_2x": 58,
+   "size_class": "small",
+   "crop": "cabbage",
+   "state": "harvested",
+   "note_zone": "walkable dressing on a tilled_soil cell; the gather system swaps <crop>_young/_ripe/_harvested in place (same canvas, anchor, footprint)"
+  },
+  {
+   "id": "wheat_young",
+   "base_id": null,
+   "in_zone_data": false,
+   "kind": "crop",
+   "layer": "props",
+   "walkable": true,
+   "blocks": false,
+   "file": "props/wheat_young.png",
+   "file_2x": "props/_2x/wheat_young.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "footprint_from_nw": [
+    [
+     0,
+     0
+    ]
+   ],
+   "anchor_cell_from_nw": [
+    0,
+    0
+   ],
+   "anchor": "image bottom-centre = south tip of cell origin+[0, 0]",
+   "bottom_centre_from_nw_centre_1x": [
+    0,
+    16
+   ],
+   "y_sort_origin_from_bottom_1x": [
+    0,
+    -16
+   ],
+   "note": "wheat bunches, young/growing state (not gatherable)",
+   "design_status": "PROPOSED (farm kit)",
+   "art_x_from_anchor_2x": [
+    -43,
+    39
+   ],
+   "art_height_2x": 84,
+   "size_class": "small",
+   "crop": "wheat",
+   "state": "young",
+   "note_zone": "walkable dressing on a tilled_soil cell; the gather system swaps <crop>_young/_ripe/_harvested in place (same canvas, anchor, footprint)",
+   "sway_mask": "animated/sway_masks/wheat_young_swaymask.png",
+   "animated": [
+    "animated/wheat_young_sway.png"
+   ]
+  },
+  {
+   "id": "wheat_ripe",
+   "base_id": null,
+   "in_zone_data": false,
+   "kind": "crop",
+   "layer": "props",
+   "walkable": true,
+   "blocks": false,
+   "file": "props/wheat_ripe.png",
+   "file_2x": "props/_2x/wheat_ripe.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "footprint_from_nw": [
+    [
+     0,
+     0
+    ]
+   ],
+   "anchor_cell_from_nw": [
+    0,
+    0
+   ],
+   "anchor": "image bottom-centre = south tip of cell origin+[0, 0]",
+   "bottom_centre_from_nw_centre_1x": [
+    0,
+    16
+   ],
+   "y_sort_origin_from_bottom_1x": [
+    0,
+    -16
+   ],
+   "note": "wheat bunches, RIPE state (gatherable; pair with crop_glint)",
+   "design_status": "PROPOSED (farm kit)",
+   "art_x_from_anchor_2x": [
+    -49,
+    43
+   ],
+   "art_height_2x": 96,
+   "size_class": "small",
+   "crop": "wheat",
+   "state": "ripe",
+   "note_zone": "walkable dressing on a tilled_soil cell; the gather system swaps <crop>_young/_ripe/_harvested in place (same canvas, anchor, footprint)",
+   "sway_mask": "animated/sway_masks/wheat_ripe_swaymask.png",
+   "animated": [
+    "animated/wheat_ripe_sway.png"
+   ]
+  },
+  {
+   "id": "wheat_ripe_b",
+   "base_id": null,
+   "in_zone_data": false,
+   "kind": "crop",
+   "layer": "props",
+   "walkable": true,
+   "blocks": false,
+   "file": "props/wheat_ripe_b.png",
+   "file_2x": "props/_2x/wheat_ripe_b.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "footprint_from_nw": [
+    [
+     0,
+     0
+    ]
+   ],
+   "anchor_cell_from_nw": [
+    0,
+    0
+   ],
+   "anchor": "image bottom-centre = south tip of cell origin+[0, 0]",
+   "bottom_centre_from_nw_centre_1x": [
+    0,
+    16
+   ],
+   "y_sort_origin_from_bottom_1x": [
+    0,
+    -16
+   ],
+   "note": "wheat bunches, ripe variant b (same state as wheat_ripe, pick by cell hash)",
+   "design_status": "PROPOSED (farm kit)",
+   "art_x_from_anchor_2x": [
+    -41,
+    41
+   ],
+   "art_height_2x": 96,
+   "size_class": "small",
+   "crop": "wheat",
+   "state": "ripe_b",
+   "note_zone": "walkable dressing on a tilled_soil cell; the gather system swaps <crop>_young/_ripe/_harvested in place (same canvas, anchor, footprint)",
+   "sway_mask": "animated/sway_masks/wheat_ripe_b_swaymask.png",
+   "animated": [
+    "animated/wheat_ripe_b_sway.png"
+   ]
+  },
+  {
+   "id": "wheat_harvested",
+   "base_id": null,
+   "in_zone_data": false,
+   "kind": "crop",
+   "layer": "props",
+   "walkable": true,
+   "blocks": false,
+   "file": "props/wheat_harvested.png",
+   "file_2x": "props/_2x/wheat_harvested.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "footprint_from_nw": [
+    [
+     0,
+     0
+    ]
+   ],
+   "anchor_cell_from_nw": [
+    0,
+    0
+   ],
+   "anchor": "image bottom-centre = south tip of cell origin+[0, 0]",
+   "bottom_centre_from_nw_centre_1x": [
+    0,
+    16
+   ],
+   "y_sort_origin_from_bottom_1x": [
+    0,
+    -16
+   ],
+   "note": "wheat bunches, harvested state (stump/stubble left after gathering)",
+   "design_status": "PROPOSED (farm kit)",
+   "art_x_from_anchor_2x": [
+    -48,
+    44
+   ],
+   "art_height_2x": 63,
+   "size_class": "small",
+   "crop": "wheat",
+   "state": "harvested",
+   "note_zone": "walkable dressing on a tilled_soil cell; the gather system swaps <crop>_young/_ripe/_harvested in place (same canvas, anchor, footprint)"
+  },
+  {
+   "id": "pumpkin_young",
+   "base_id": null,
+   "in_zone_data": false,
+   "kind": "crop",
+   "layer": "props",
+   "walkable": true,
+   "blocks": false,
+   "file": "props/pumpkin_young.png",
+   "file_2x": "props/_2x/pumpkin_young.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "footprint_from_nw": [
+    [
+     0,
+     0
+    ]
+   ],
+   "anchor_cell_from_nw": [
+    0,
+    0
+   ],
+   "anchor": "image bottom-centre = south tip of cell origin+[0, 0]",
+   "bottom_centre_from_nw_centre_1x": [
+    0,
+    16
+   ],
+   "y_sort_origin_from_bottom_1x": [
+    0,
+    -16
+   ],
+   "note": "pumpkin on vine, young/growing state (not gatherable)",
+   "design_status": "PROPOSED (farm kit)",
+   "art_x_from_anchor_2x": [
+    -25,
+    23
+   ],
+   "art_height_2x": 70,
+   "size_class": "small",
+   "crop": "pumpkin",
+   "state": "young",
+   "note_zone": "walkable dressing on a tilled_soil cell; the gather system swaps <crop>_young/_ripe/_harvested in place (same canvas, anchor, footprint)"
+  },
+  {
+   "id": "pumpkin_ripe",
+   "base_id": null,
+   "in_zone_data": false,
+   "kind": "crop",
+   "layer": "props",
+   "walkable": true,
+   "blocks": false,
+   "file": "props/pumpkin_ripe.png",
+   "file_2x": "props/_2x/pumpkin_ripe.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "footprint_from_nw": [
+    [
+     0,
+     0
+    ]
+   ],
+   "anchor_cell_from_nw": [
+    0,
+    0
+   ],
+   "anchor": "image bottom-centre = south tip of cell origin+[0, 0]",
+   "bottom_centre_from_nw_centre_1x": [
+    0,
+    16
+   ],
+   "y_sort_origin_from_bottom_1x": [
+    0,
+    -16
+   ],
+   "note": "pumpkin on vine, RIPE state (gatherable; pair with crop_glint)",
+   "design_status": "PROPOSED (farm kit)",
+   "art_x_from_anchor_2x": [
+    -30,
+    29
+   ],
+   "art_height_2x": 80,
+   "size_class": "small",
+   "crop": "pumpkin",
+   "state": "ripe",
+   "note_zone": "walkable dressing on a tilled_soil cell; the gather system swaps <crop>_young/_ripe/_harvested in place (same canvas, anchor, footprint)"
+  },
+  {
+   "id": "pumpkin_ripe_b",
+   "base_id": null,
+   "in_zone_data": false,
+   "kind": "crop",
+   "layer": "props",
+   "walkable": true,
+   "blocks": false,
+   "file": "props/pumpkin_ripe_b.png",
+   "file_2x": "props/_2x/pumpkin_ripe_b.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "footprint_from_nw": [
+    [
+     0,
+     0
+    ]
+   ],
+   "anchor_cell_from_nw": [
+    0,
+    0
+   ],
+   "anchor": "image bottom-centre = south tip of cell origin+[0, 0]",
+   "bottom_centre_from_nw_centre_1x": [
+    0,
+    16
+   ],
+   "y_sort_origin_from_bottom_1x": [
+    0,
+    -16
+   ],
+   "note": "pumpkin on vine, ripe variant b (same state as pumpkin_ripe, pick by cell hash)",
+   "design_status": "PROPOSED (farm kit)",
+   "art_x_from_anchor_2x": [
+    -31,
+    30
+   ],
+   "art_height_2x": 80,
+   "size_class": "small",
+   "crop": "pumpkin",
+   "state": "ripe_b",
+   "note_zone": "walkable dressing on a tilled_soil cell; the gather system swaps <crop>_young/_ripe/_harvested in place (same canvas, anchor, footprint)"
+  },
+  {
+   "id": "pumpkin_harvested",
+   "base_id": null,
+   "in_zone_data": false,
+   "kind": "crop",
+   "layer": "props",
+   "walkable": true,
+   "blocks": false,
+   "file": "props/pumpkin_harvested.png",
+   "file_2x": "props/_2x/pumpkin_harvested.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "footprint_from_nw": [
+    [
+     0,
+     0
+    ]
+   ],
+   "anchor_cell_from_nw": [
+    0,
+    0
+   ],
+   "anchor": "image bottom-centre = south tip of cell origin+[0, 0]",
+   "bottom_centre_from_nw_centre_1x": [
+    0,
+    16
+   ],
+   "y_sort_origin_from_bottom_1x": [
+    0,
+    -16
+   ],
+   "note": "pumpkin on vine, harvested state (stump/stubble left after gathering)",
+   "design_status": "PROPOSED (farm kit)",
+   "art_x_from_anchor_2x": [
+    -23,
+    21
+   ],
+   "art_height_2x": 61,
+   "size_class": "small",
+   "crop": "pumpkin",
+   "state": "harvested",
+   "note_zone": "walkable dressing on a tilled_soil cell; the gather system swaps <crop>_young/_ripe/_harvested in place (same canvas, anchor, footprint)"
+  },
+  {
+   "id": "carrot_young",
+   "base_id": null,
+   "in_zone_data": false,
+   "kind": "crop",
+   "layer": "props",
+   "walkable": true,
+   "blocks": false,
+   "file": "props/carrot_young.png",
+   "file_2x": "props/_2x/carrot_young.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "footprint_from_nw": [
+    [
+     0,
+     0
+    ]
+   ],
+   "anchor_cell_from_nw": [
+    0,
+    0
+   ],
+   "anchor": "image bottom-centre = south tip of cell origin+[0, 0]",
+   "bottom_centre_from_nw_centre_1x": [
+    0,
+    16
+   ],
+   "y_sort_origin_from_bottom_1x": [
+    0,
+    -16
+   ],
+   "note": "carrot tops in a ridge, young/growing state (not gatherable)",
+   "design_status": "PROPOSED (farm kit)",
+   "art_x_from_anchor_2x": [
+    -33,
+    35
+   ],
+   "art_height_2x": 69,
+   "size_class": "small",
+   "crop": "carrot",
+   "state": "young",
+   "note_zone": "walkable dressing on a tilled_soil cell; the gather system swaps <crop>_young/_ripe/_harvested in place (same canvas, anchor, footprint)",
+   "sway_mask": "animated/sway_masks/carrot_young_swaymask.png",
+   "animated": [
+    "animated/carrot_young_sway.png"
+   ]
+  },
+  {
+   "id": "carrot_ripe",
+   "base_id": null,
+   "in_zone_data": false,
+   "kind": "crop",
+   "layer": "props",
+   "walkable": true,
+   "blocks": false,
+   "file": "props/carrot_ripe.png",
+   "file_2x": "props/_2x/carrot_ripe.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "footprint_from_nw": [
+    [
+     0,
+     0
+    ]
+   ],
+   "anchor_cell_from_nw": [
+    0,
+    0
+   ],
+   "anchor": "image bottom-centre = south tip of cell origin+[0, 0]",
+   "bottom_centre_from_nw_centre_1x": [
+    0,
+    16
+   ],
+   "y_sort_origin_from_bottom_1x": [
+    0,
+    -16
+   ],
+   "note": "carrot tops in a ridge, RIPE state (gatherable; pair with crop_glint)",
+   "design_status": "PROPOSED (farm kit)",
+   "art_x_from_anchor_2x": [
+    -40,
+    42
+   ],
+   "art_height_2x": 83,
+   "size_class": "small",
+   "crop": "carrot",
+   "state": "ripe",
+   "note_zone": "walkable dressing on a tilled_soil cell; the gather system swaps <crop>_young/_ripe/_harvested in place (same canvas, anchor, footprint)",
+   "sway_mask": "animated/sway_masks/carrot_ripe_swaymask.png",
+   "animated": [
+    "animated/carrot_ripe_sway.png"
+   ]
+  },
+  {
+   "id": "carrot_ripe_b",
+   "base_id": null,
+   "in_zone_data": false,
+   "kind": "crop",
+   "layer": "props",
+   "walkable": true,
+   "blocks": false,
+   "file": "props/carrot_ripe_b.png",
+   "file_2x": "props/_2x/carrot_ripe_b.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "footprint_from_nw": [
+    [
+     0,
+     0
+    ]
+   ],
+   "anchor_cell_from_nw": [
+    0,
+    0
+   ],
+   "anchor": "image bottom-centre = south tip of cell origin+[0, 0]",
+   "bottom_centre_from_nw_centre_1x": [
+    0,
+    16
+   ],
+   "y_sort_origin_from_bottom_1x": [
+    0,
+    -16
+   ],
+   "note": "carrot tops in a ridge, ripe variant b (same state as carrot_ripe, pick by cell hash)",
+   "design_status": "PROPOSED (farm kit)",
+   "art_x_from_anchor_2x": [
+    -45,
+    40
+   ],
+   "art_height_2x": 87,
+   "size_class": "small",
+   "crop": "carrot",
+   "state": "ripe_b",
+   "note_zone": "walkable dressing on a tilled_soil cell; the gather system swaps <crop>_young/_ripe/_harvested in place (same canvas, anchor, footprint)",
+   "sway_mask": "animated/sway_masks/carrot_ripe_b_swaymask.png",
+   "animated": [
+    "animated/carrot_ripe_b_sway.png"
+   ]
+  },
+  {
+   "id": "carrot_harvested",
+   "base_id": null,
+   "in_zone_data": false,
+   "kind": "crop",
+   "layer": "props",
+   "walkable": true,
+   "blocks": false,
+   "file": "props/carrot_harvested.png",
+   "file_2x": "props/_2x/carrot_harvested.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "footprint_from_nw": [
+    [
+     0,
+     0
+    ]
+   ],
+   "anchor_cell_from_nw": [
+    0,
+    0
+   ],
+   "anchor": "image bottom-centre = south tip of cell origin+[0, 0]",
+   "bottom_centre_from_nw_centre_1x": [
+    0,
+    16
+   ],
+   "y_sort_origin_from_bottom_1x": [
+    0,
+    -16
+   ],
+   "note": "carrot tops in a ridge, harvested state (stump/stubble left after gathering)",
+   "design_status": "PROPOSED (farm kit)",
+   "art_x_from_anchor_2x": [
+    -27,
+    29
+   ],
+   "art_height_2x": 53,
+   "size_class": "small",
+   "crop": "carrot",
+   "state": "harvested",
+   "note_zone": "walkable dressing on a tilled_soil cell; the gather system swaps <crop>_young/_ripe/_harvested in place (same canvas, anchor, footprint)"
+  },
+  {
+   "id": "crop_seedling",
+   "base_id": null,
+   "in_zone_data": false,
+   "kind": "crop",
+   "layer": "props",
+   "walkable": true,
+   "blocks": false,
+   "file": "props/crop_seedling.png",
+   "file_2x": "props/_2x/crop_seedling.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "footprint_from_nw": [
+    [
+     0,
+     0
+    ]
+   ],
+   "anchor_cell_from_nw": [
+    0,
+    0
+   ],
+   "anchor": "image bottom-centre = south tip of cell origin+[0, 0]",
+   "bottom_centre_from_nw_centre_1x": [
+    0,
+    16
+   ],
+   "y_sort_origin_from_bottom_1x": [
+    0,
+    -16
+   ],
+   "note": "generic seedling (just-planted state for any crop; optional)",
+   "design_status": "PROPOSED (farm kit)",
+   "art_x_from_anchor_2x": [
+    -28,
+    29
+   ],
+   "art_height_2x": 58,
+   "size_class": "small",
+   "crop": null,
+   "state": "seedling",
+   "note_zone": "walkable dressing on a tilled_soil cell; the gather system swaps <crop>_young/_ripe/_harvested in place (same canvas, anchor, footprint)"
+  },
+  {
+   "id": "farm_shed_2x2",
+   "base_id": null,
+   "in_zone_data": false,
+   "kind": "building",
+   "layer": "props",
+   "walkable": false,
+   "blocks": true,
+   "file": "props/farm_shed_2x2.png",
+   "file_2x": "props/_2x/farm_shed_2x2.png",
+   "size": [
+    128,
+    192
+   ],
+   "size_2x": [
+    256,
+    384
+   ],
+   "footprint_size": [
+    2,
+    2
+   ],
+   "footprint_from_nw": [
+    [
+     0,
+     0
+    ],
+    [
+     1,
+     0
+    ],
+    [
+     0,
+     1
+    ],
+    [
+     1,
+     1
+    ]
+   ],
+   "anchor_cell_from_nw": [
+    1,
+    1
+   ],
+   "anchor": "image bottom-centre = south tip of cell origin+[1, 1]",
+   "bottom_centre_from_nw_centre_1x": [
+    0,
+    48
+   ],
+   "y_sort_origin_from_bottom_1x": [
+    0,
+    -16
+   ],
+   "note": "thatched timber farm shed, door faces SW (+y); walls sit inside the 2x2",
+   "design_status": "PROPOSED (farm kit)",
+   "art_x_from_anchor_2x": [
+    -120,
+    116
+   ],
+   "art_height_2x": 226,
+   "size_class": "landmark",
+   "note_zone": "blocking art: the placer must mark every footprint cell blocked",
+   "wall_base_cells": {
+    "u": [
+     0.05,
+     1.95
+    ],
+    "v": [
+     0.333,
+     1.667
+    ]
+   },
+   "processing": {
+    "warp": "piecewise vertical-shear warp: raw 3/4 view base corners -> 2:1 iso rectangle 1.9x1.33 cells inside the 2x2",
+    "kL": 0.3158,
+    "kR": 0.3745,
+    "sy": 0.3452
+   }
+  },
+  {
+   "id": "hay_cart_2x2",
+   "base_id": null,
+   "in_zone_data": false,
+   "kind": "prop",
+   "layer": "props",
+   "walkable": false,
+   "blocks": true,
+   "file": "props/hay_cart_2x2.png",
+   "file_2x": "props/_2x/hay_cart_2x2.png",
+   "size": [
+    128,
+    192
+   ],
+   "size_2x": [
+    256,
+    384
+   ],
+   "footprint_size": [
+    2,
+    2
+   ],
+   "footprint_from_nw": [
+    [
+     0,
+     0
+    ],
+    [
+     1,
+     0
+    ],
+    [
+     0,
+     1
+    ],
+    [
+     1,
+     1
+    ]
+   ],
+   "anchor_cell_from_nw": [
+    1,
+    1
+   ],
+   "anchor": "image bottom-centre = south tip of cell origin+[1, 1]",
+   "bottom_centre_from_nw_centre_1x": [
+    0,
+    48
+   ],
+   "y_sort_origin_from_bottom_1x": [
+    0,
+    -16
+   ],
+   "note": "hay cart loaded with straw, shafts to the SW",
+   "design_status": "PROPOSED (farm kit)",
+   "art_x_from_anchor_2x": [
+    -69,
+    112
+   ],
+   "art_height_2x": 161,
+   "size_class": "landmark",
+   "note_zone": "blocking art: the placer must mark every footprint cell blocked",
+   "processing": {
+    "scale_raw_to_2x": 0.2534
+   }
+  },
+  {
+   "id": "scarecrow_farm",
+   "base_id": null,
+   "in_zone_data": false,
+   "kind": "prop",
+   "layer": "props",
+   "walkable": false,
+   "blocks": true,
+   "file": "props/scarecrow_farm.png",
+   "file_2x": "props/_2x/scarecrow_farm.png",
+   "size": [
+    64,
+    112
+   ],
+   "size_2x": [
+    128,
+    224
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "footprint_from_nw": [
+    [
+     0,
+     0
+    ]
+   ],
+   "anchor_cell_from_nw": [
+    0,
+    0
+   ],
+   "anchor": "image bottom-centre = south tip of cell origin+[0, 0]",
+   "bottom_centre_from_nw_centre_1x": [
+    0,
+    16
+   ],
+   "y_sort_origin_from_bottom_1x": [
+    0,
+    -16
+   ],
+   "note": "straw scarecrow with hat and red scarf",
+   "design_status": "PROPOSED (farm kit)",
+   "art_x_from_anchor_2x": [
+    -56,
+    54
+   ],
+   "art_height_2x": 170,
+   "size_class": "tree",
+   "note_zone": "blocking art: the placer must mark every footprint cell blocked",
+   "processing": {
+    "scale_raw_to_2x": 0.2085
+   }
+  },
+  {
+   "id": "water_barrel",
+   "base_id": null,
+   "in_zone_data": false,
+   "kind": "prop",
+   "layer": "props",
+   "walkable": false,
+   "blocks": true,
+   "file": "props/water_barrel.png",
+   "file_2x": "props/_2x/water_barrel.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "footprint_from_nw": [
+    [
+     0,
+     0
+    ]
+   ],
+   "anchor_cell_from_nw": [
+    0,
+    0
+   ],
+   "anchor": "image bottom-centre = south tip of cell origin+[0, 0]",
+   "bottom_centre_from_nw_centre_1x": [
+    0,
+    16
+   ],
+   "y_sort_origin_from_bottom_1x": [
+    0,
+    -16
+   ],
+   "note": "open water barrel",
+   "design_status": "PROPOSED (farm kit)",
+   "art_x_from_anchor_2x": [
+    -19,
+    18
+   ],
+   "art_height_2x": 74,
+   "size_class": "small",
+   "note_zone": "blocking art: the placer must mark every footprint cell blocked",
+   "processing": {
+    "scale_raw_to_2x": 0.2131
+   }
+  },
+  {
+   "id": "clay_pots",
+   "base_id": null,
+   "in_zone_data": false,
+   "kind": "prop",
+   "layer": "props",
+   "walkable": false,
+   "blocks": true,
+   "file": "props/clay_pots.png",
+   "file_2x": "props/_2x/clay_pots.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "footprint_from_nw": [
+    [
+     0,
+     0
+    ]
+   ],
+   "anchor_cell_from_nw": [
+    0,
+    0
+   ],
+   "anchor": "image bottom-centre = south tip of cell origin+[0, 0]",
+   "bottom_centre_from_nw_centre_1x": [
+    0,
+    16
+   ],
+   "y_sort_origin_from_bottom_1x": [
+    0,
+    -16
+   ],
+   "note": "three clay pots",
+   "design_status": "PROPOSED (farm kit)",
+   "art_x_from_anchor_2x": [
+    -18,
+    17
+   ],
+   "art_height_2x": 69,
+   "size_class": "small",
+   "note_zone": "blocking art: the placer must mark every footprint cell blocked",
+   "processing": {
+    "scale_raw_to_2x": 0.1951
+   }
+  },
+  {
+   "id": "hay_bale_square",
+   "base_id": null,
+   "in_zone_data": false,
+   "kind": "prop",
+   "layer": "props",
+   "walkable": false,
+   "blocks": true,
+   "file": "props/hay_bale_square.png",
+   "file_2x": "props/_2x/hay_bale_square.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "footprint_from_nw": [
+    [
+     0,
+     0
+    ]
+   ],
+   "anchor_cell_from_nw": [
+    0,
+    0
+   ],
+   "anchor": "image bottom-centre = south tip of cell origin+[0, 0]",
+   "bottom_centre_from_nw_centre_1x": [
+    0,
+    16
+   ],
+   "y_sort_origin_from_bottom_1x": [
+    0,
+    -16
+   ],
+   "note": "square hay bale",
+   "design_status": "PROPOSED (farm kit)",
+   "art_x_from_anchor_2x": [
+    -25,
+    23
+   ],
+   "art_height_2x": 71,
+   "size_class": "small",
+   "note_zone": "blocking art: the placer must mark every footprint cell blocked",
+   "processing": {
+    "scale_raw_to_2x": 0.2277
+   }
+  },
+  {
+   "id": "bucket",
+   "base_id": null,
+   "in_zone_data": false,
+   "kind": "prop",
+   "layer": "props",
+   "walkable": false,
+   "blocks": true,
+   "file": "props/bucket.png",
+   "file_2x": "props/_2x/bucket.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "footprint_from_nw": [
+    [
+     0,
+     0
+    ]
+   ],
+   "anchor_cell_from_nw": [
+    0,
+    0
+   ],
+   "anchor": "image bottom-centre = south tip of cell origin+[0, 0]",
+   "bottom_centre_from_nw_centre_1x": [
+    0,
+    16
+   ],
+   "y_sort_origin_from_bottom_1x": [
+    0,
+    -16
+   ],
+   "note": "wooden bucket",
+   "design_status": "PROPOSED (farm kit)",
+   "art_x_from_anchor_2x": [
+    -9,
+    8
+   ],
+   "art_height_2x": 51,
+   "size_class": "small",
+   "note_zone": "blocking art: the placer must mark every footprint cell blocked",
+   "processing": {
+    "scale_raw_to_2x": 0.1215
+   }
+  },
+  {
+   "id": "grain_sack",
+   "base_id": null,
+   "in_zone_data": false,
+   "kind": "prop",
+   "layer": "props",
+   "walkable": false,
+   "blocks": true,
+   "file": "props/grain_sack.png",
+   "file_2x": "props/_2x/grain_sack.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "footprint_from_nw": [
+    [
+     0,
+     0
+    ]
+   ],
+   "anchor_cell_from_nw": [
+    0,
+    0
+   ],
+   "anchor": "image bottom-centre = south tip of cell origin+[0, 0]",
+   "bottom_centre_from_nw_centre_1x": [
+    0,
+    16
+   ],
+   "y_sort_origin_from_bottom_1x": [
+    0,
+    -16
+   ],
+   "note": "tied grain sack",
+   "design_status": "PROPOSED (farm kit)",
+   "art_x_from_anchor_2x": [
+    -14,
+    13
+   ],
+   "art_height_2x": 61,
+   "size_class": "small",
+   "note_zone": "blocking art: the placer must mark every footprint cell blocked",
+   "processing": {
+    "scale_raw_to_2x": 0.1597
+   }
+  },
+  {
+   "id": "wheelbarrow",
+   "base_id": null,
+   "in_zone_data": false,
+   "kind": "prop",
+   "layer": "props",
+   "walkable": false,
+   "blocks": true,
+   "file": "props/wheelbarrow.png",
+   "file_2x": "props/_2x/wheelbarrow.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "footprint_from_nw": [
+    [
+     0,
+     0
+    ]
+   ],
+   "anchor_cell_from_nw": [
+    0,
+    0
+   ],
+   "anchor": "image bottom-centre = south tip of cell origin+[0, 0]",
+   "bottom_centre_from_nw_centre_1x": [
+    0,
+    16
+   ],
+   "y_sort_origin_from_bottom_1x": [
+    0,
+    -16
+   ],
+   "note": "wooden wheelbarrow",
+   "design_status": "PROPOSED (farm kit)",
+   "art_x_from_anchor_2x": [
+    -31,
+    30
+   ],
+   "art_height_2x": 78,
+   "size_class": "small",
+   "note_zone": "blocking art: the placer must mark every footprint cell blocked",
+   "processing": {
+    "scale_raw_to_2x": 0.2422
+   }
+  },
+  {
+   "id": "rail_fence_nwse",
+   "base_id": null,
+   "in_zone_data": false,
+   "kind": "fence",
+   "layer": "props",
+   "walkable": false,
+   "blocks": true,
+   "file": "props/rail_fence_nwse.png",
+   "file_2x": "props/_2x/rail_fence_nwse.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "footprint_from_nw": [
+    [
+     0,
+     0
+    ]
+   ],
+   "anchor_cell_from_nw": [
+    0,
+    0
+   ],
+   "anchor": "image bottom-centre = south tip of cell origin+[0, 0]",
+   "bottom_centre_from_nw_centre_1x": [
+    0,
+    16
+   ],
+   "y_sort_origin_from_bottom_1x": [
+    0,
+    -16
+   ],
+   "note": "rail fence nwse",
+   "design_status": "PROPOSED (farm kit)",
+   "art_x_from_anchor_2x": [
+    -33,
+    32
+   ],
+   "art_height_2x": 95,
+   "size_class": "small",
+   "note_zone": "blocking art: the placer must mark every footprint cell blocked",
+   "connects": [
+    "nw",
+    "se"
+   ],
+   "axis": "rail runs along +x: screen up-left to down-right"
+  },
+  {
+   "id": "rail_fence_nesw",
+   "base_id": null,
+   "in_zone_data": false,
+   "kind": "fence",
+   "layer": "props",
+   "walkable": false,
+   "blocks": true,
+   "file": "props/rail_fence_nesw.png",
+   "file_2x": "props/_2x/rail_fence_nesw.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "footprint_from_nw": [
+    [
+     0,
+     0
+    ]
+   ],
+   "anchor_cell_from_nw": [
+    0,
+    0
+   ],
+   "anchor": "image bottom-centre = south tip of cell origin+[0, 0]",
+   "bottom_centre_from_nw_centre_1x": [
+    0,
+    16
+   ],
+   "y_sort_origin_from_bottom_1x": [
+    0,
+    -16
+   ],
+   "note": "rail fence nesw",
+   "design_status": "PROPOSED (farm kit)",
+   "art_x_from_anchor_2x": [
+    -33,
+    32
+   ],
+   "art_height_2x": 94,
+   "size_class": "small",
+   "note_zone": "blocking art: the placer must mark every footprint cell blocked",
+   "connects": [
+    "ne",
+    "sw"
+   ],
+   "axis": "rail runs along +y: screen up-right to down-left"
+  },
+  {
+   "id": "rail_fence_corner_n",
+   "base_id": null,
+   "in_zone_data": false,
+   "kind": "fence",
+   "layer": "props",
+   "walkable": false,
+   "blocks": true,
+   "file": "props/rail_fence_corner_n.png",
+   "file_2x": "props/_2x/rail_fence_corner_n.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "footprint_from_nw": [
+    [
+     0,
+     0
+    ]
+   ],
+   "anchor_cell_from_nw": [
+    0,
+    0
+   ],
+   "anchor": "image bottom-centre = south tip of cell origin+[0, 0]",
+   "bottom_centre_from_nw_centre_1x": [
+    0,
+    16
+   ],
+   "y_sort_origin_from_bottom_1x": [
+    0,
+    -16
+   ],
+   "note": "rail fence corner n",
+   "design_status": "PROPOSED (farm kit)",
+   "art_x_from_anchor_2x": [
+    -33,
+    32
+   ],
+   "art_height_2x": 90,
+   "size_class": "small",
+   "note_zone": "blocking art: the placer must mark every footprint cell blocked",
+   "connects": [
+    "se",
+    "sw"
+   ],
+   "axis": "post at the cell centre, rails to the listed side midpoints so cells chain"
+  },
+  {
+   "id": "rail_fence_corner_e",
+   "base_id": null,
+   "in_zone_data": false,
+   "kind": "fence",
+   "layer": "props",
+   "walkable": false,
+   "blocks": true,
+   "file": "props/rail_fence_corner_e.png",
+   "file_2x": "props/_2x/rail_fence_corner_e.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "footprint_from_nw": [
+    [
+     0,
+     0
+    ]
+   ],
+   "anchor_cell_from_nw": [
+    0,
+    0
+   ],
+   "anchor": "image bottom-centre = south tip of cell origin+[0, 0]",
+   "bottom_centre_from_nw_centre_1x": [
+    0,
+    16
+   ],
+   "y_sort_origin_from_bottom_1x": [
+    0,
+    -16
+   ],
+   "note": "rail fence corner e",
+   "design_status": "PROPOSED (farm kit)",
+   "art_x_from_anchor_2x": [
+    -33,
+    7
+   ],
+   "art_height_2x": 95,
+   "size_class": "small",
+   "note_zone": "blocking art: the placer must mark every footprint cell blocked",
+   "connects": [
+    "nw",
+    "sw"
+   ],
+   "axis": "post at the cell centre, rails to the listed side midpoints so cells chain"
+  },
+  {
+   "id": "rail_fence_corner_s",
+   "base_id": null,
+   "in_zone_data": false,
+   "kind": "fence",
+   "layer": "props",
+   "walkable": false,
+   "blocks": true,
+   "file": "props/rail_fence_corner_s.png",
+   "file_2x": "props/_2x/rail_fence_corner_s.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "footprint_from_nw": [
+    [
+     0,
+     0
+    ]
+   ],
+   "anchor_cell_from_nw": [
+    0,
+    0
+   ],
+   "anchor": "image bottom-centre = south tip of cell origin+[0, 0]",
+   "bottom_centre_from_nw_centre_1x": [
+    0,
+    16
+   ],
+   "y_sort_origin_from_bottom_1x": [
+    0,
+    -16
+   ],
+   "note": "rail fence corner s",
+   "design_status": "PROPOSED (farm kit)",
+   "art_x_from_anchor_2x": [
+    -33,
+    32
+   ],
+   "art_height_2x": 95,
+   "size_class": "small",
+   "note_zone": "blocking art: the placer must mark every footprint cell blocked",
+   "connects": [
+    "nw",
+    "ne"
+   ],
+   "axis": "post at the cell centre, rails to the listed side midpoints so cells chain"
+  },
+  {
+   "id": "rail_fence_corner_w",
+   "base_id": null,
+   "in_zone_data": false,
+   "kind": "fence",
+   "layer": "props",
+   "walkable": false,
+   "blocks": true,
+   "file": "props/rail_fence_corner_w.png",
+   "file_2x": "props/_2x/rail_fence_corner_w.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "footprint_from_nw": [
+    [
+     0,
+     0
+    ]
+   ],
+   "anchor_cell_from_nw": [
+    0,
+    0
+   ],
+   "anchor": "image bottom-centre = south tip of cell origin+[0, 0]",
+   "bottom_centre_from_nw_centre_1x": [
+    0,
+    16
+   ],
+   "y_sort_origin_from_bottom_1x": [
+    0,
+    -16
+   ],
+   "note": "rail fence corner w",
+   "design_status": "PROPOSED (farm kit)",
+   "art_x_from_anchor_2x": [
+    -8,
+    32
+   ],
+   "art_height_2x": 94,
+   "size_class": "small",
+   "note_zone": "blocking art: the placer must mark every footprint cell blocked",
+   "connects": [
+    "ne",
+    "se"
+   ],
+   "axis": "post at the cell centre, rails to the listed side midpoints so cells chain"
+  },
+  {
+   "id": "rail_fence_end_nw",
+   "base_id": null,
+   "in_zone_data": false,
+   "kind": "fence",
+   "layer": "props",
+   "walkable": false,
+   "blocks": true,
+   "file": "props/rail_fence_end_nw.png",
+   "file_2x": "props/_2x/rail_fence_end_nw.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "footprint_from_nw": [
+    [
+     0,
+     0
+    ]
+   ],
+   "anchor_cell_from_nw": [
+    0,
+    0
+   ],
+   "anchor": "image bottom-centre = south tip of cell origin+[0, 0]",
+   "bottom_centre_from_nw_centre_1x": [
+    0,
+    16
+   ],
+   "y_sort_origin_from_bottom_1x": [
+    0,
+    -16
+   ],
+   "note": "rail fence end nw",
+   "design_status": "PROPOSED (farm kit)",
+   "art_x_from_anchor_2x": [
+    -33,
+    7
+   ],
+   "art_height_2x": 95,
+   "size_class": "small",
+   "note_zone": "blocking art: the placer must mark every footprint cell blocked",
+   "connects": [
+    "nw"
+   ],
+   "axis": "post at the cell centre, rails to the listed side midpoints so cells chain"
+  },
+  {
+   "id": "rail_fence_end_ne",
+   "base_id": null,
+   "in_zone_data": false,
+   "kind": "fence",
+   "layer": "props",
+   "walkable": false,
+   "blocks": true,
+   "file": "props/rail_fence_end_ne.png",
+   "file_2x": "props/_2x/rail_fence_end_ne.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "footprint_from_nw": [
+    [
+     0,
+     0
+    ]
+   ],
+   "anchor_cell_from_nw": [
+    0,
+    0
+   ],
+   "anchor": "image bottom-centre = south tip of cell origin+[0, 0]",
+   "bottom_centre_from_nw_centre_1x": [
+    0,
+    16
+   ],
+   "y_sort_origin_from_bottom_1x": [
+    0,
+    -16
+   ],
+   "note": "rail fence end ne",
+   "design_status": "PROPOSED (farm kit)",
+   "art_x_from_anchor_2x": [
+    -8,
+    32
+   ],
+   "art_height_2x": 94,
+   "size_class": "small",
+   "note_zone": "blocking art: the placer must mark every footprint cell blocked",
+   "connects": [
+    "ne"
+   ],
+   "axis": "post at the cell centre, rails to the listed side midpoints so cells chain"
+  },
+  {
+   "id": "rail_fence_end_se",
+   "base_id": null,
+   "in_zone_data": false,
+   "kind": "fence",
+   "layer": "props",
+   "walkable": false,
+   "blocks": true,
+   "file": "props/rail_fence_end_se.png",
+   "file_2x": "props/_2x/rail_fence_end_se.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "footprint_from_nw": [
+    [
+     0,
+     0
+    ]
+   ],
+   "anchor_cell_from_nw": [
+    0,
+    0
+   ],
+   "anchor": "image bottom-centre = south tip of cell origin+[0, 0]",
+   "bottom_centre_from_nw_centre_1x": [
+    0,
+    16
+   ],
+   "y_sort_origin_from_bottom_1x": [
+    0,
+    -16
+   ],
+   "note": "rail fence end se",
+   "design_status": "PROPOSED (farm kit)",
+   "art_x_from_anchor_2x": [
+    -8,
+    32
+   ],
+   "art_height_2x": 93,
+   "size_class": "small",
+   "note_zone": "blocking art: the placer must mark every footprint cell blocked",
+   "connects": [
+    "se"
+   ],
+   "axis": "post at the cell centre, rails to the listed side midpoints so cells chain"
+  },
+  {
+   "id": "rail_fence_end_sw",
+   "base_id": null,
+   "in_zone_data": false,
+   "kind": "fence",
+   "layer": "props",
+   "walkable": false,
+   "blocks": true,
+   "file": "props/rail_fence_end_sw.png",
+   "file_2x": "props/_2x/rail_fence_end_sw.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "footprint_from_nw": [
+    [
+     0,
+     0
+    ]
+   ],
+   "anchor_cell_from_nw": [
+    0,
+    0
+   ],
+   "anchor": "image bottom-centre = south tip of cell origin+[0, 0]",
+   "bottom_centre_from_nw_centre_1x": [
+    0,
+    16
+   ],
+   "y_sort_origin_from_bottom_1x": [
+    0,
+    -16
+   ],
+   "note": "rail fence end sw",
+   "design_status": "PROPOSED (farm kit)",
+   "art_x_from_anchor_2x": [
+    -33,
+    7
+   ],
+   "art_height_2x": 94,
+   "size_class": "small",
+   "note_zone": "blocking art: the placer must mark every footprint cell blocked",
+   "connects": [
+    "sw"
+   ],
+   "axis": "post at the cell centre, rails to the listed side midpoints so cells chain"
+  },
+  {
+   "id": "rail_fence_post",
+   "base_id": null,
+   "in_zone_data": false,
+   "kind": "fence",
+   "layer": "props",
+   "walkable": false,
+   "blocks": true,
+   "file": "props/rail_fence_post.png",
+   "file_2x": "props/_2x/rail_fence_post.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "footprint_from_nw": [
+    [
+     0,
+     0
+    ]
+   ],
+   "anchor_cell_from_nw": [
+    0,
+    0
+   ],
+   "anchor": "image bottom-centre = south tip of cell origin+[0, 0]",
+   "bottom_centre_from_nw_centre_1x": [
+    0,
+    16
+   ],
+   "y_sort_origin_from_bottom_1x": [
+    0,
+    -16
+   ],
+   "note": "rail fence post",
+   "design_status": "PROPOSED (farm kit)",
+   "art_x_from_anchor_2x": [
+    -8,
+    7
+   ],
+   "art_height_2x": 90,
+   "size_class": "small",
+   "note_zone": "blocking art: the placer must mark every footprint cell blocked",
+   "connects": [],
+   "axis": "post at the cell centre, rails to the listed side midpoints so cells chain"
+  },
+  {
+   "id": "grass_tuft_meadow_a",
+   "base_id": null,
+   "in_zone_data": false,
+   "kind": "decor",
+   "layer": "props",
+   "walkable": true,
+   "blocks": false,
+   "file": "props/grass_tuft_meadow_a.png",
+   "file_2x": "props/_2x/grass_tuft_meadow_a.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "footprint_from_nw": [
+    [
+     0,
+     0
+    ]
+   ],
+   "anchor_cell_from_nw": [
+    0,
+    0
+   ],
+   "anchor": "image bottom-centre = south tip of cell origin+[0, 0]",
+   "bottom_centre_from_nw_centre_1x": [
+    0,
+    16
+   ],
+   "y_sort_origin_from_bottom_1x": [
+    0,
+    -16
+   ],
+   "note": "grass tuft meadow a",
+   "design_status": "PROPOSED (farm kit)",
+   "art_x_from_anchor_2x": [
+    -32,
+    35
+   ],
+   "art_height_2x": 56,
+   "size_class": "small",
+   "note_zone": "walkable ground dressing (meadow tuft / wildflower clump), Crosshaven grass palette"
+  },
+  {
+   "id": "grass_tuft_meadow_b",
+   "base_id": null,
+   "in_zone_data": false,
+   "kind": "decor",
+   "layer": "props",
+   "walkable": true,
+   "blocks": false,
+   "file": "props/grass_tuft_meadow_b.png",
+   "file_2x": "props/_2x/grass_tuft_meadow_b.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "footprint_from_nw": [
+    [
+     0,
+     0
+    ]
+   ],
+   "anchor_cell_from_nw": [
+    0,
+    0
+   ],
+   "anchor": "image bottom-centre = south tip of cell origin+[0, 0]",
+   "bottom_centre_from_nw_centre_1x": [
+    0,
+    16
+   ],
+   "y_sort_origin_from_bottom_1x": [
+    0,
+    -16
+   ],
+   "note": "grass tuft meadow b",
+   "design_status": "PROPOSED (farm kit)",
+   "art_x_from_anchor_2x": [
+    -21,
+    22
+   ],
+   "art_height_2x": 47,
+   "size_class": "small",
+   "note_zone": "walkable ground dressing (meadow tuft / wildflower clump), Crosshaven grass palette"
+  },
+  {
+   "id": "wildflowers_a",
+   "base_id": null,
+   "in_zone_data": false,
+   "kind": "decor",
+   "layer": "props",
+   "walkable": true,
+   "blocks": false,
+   "file": "props/wildflowers_a.png",
+   "file_2x": "props/_2x/wildflowers_a.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "footprint_from_nw": [
+    [
+     0,
+     0
+    ]
+   ],
+   "anchor_cell_from_nw": [
+    0,
+    0
+   ],
+   "anchor": "image bottom-centre = south tip of cell origin+[0, 0]",
+   "bottom_centre_from_nw_centre_1x": [
+    0,
+    16
+   ],
+   "y_sort_origin_from_bottom_1x": [
+    0,
+    -16
+   ],
+   "note": "wildflowers a",
+   "design_status": "PROPOSED (farm kit)",
+   "art_x_from_anchor_2x": [
+    -31,
+    34
+   ],
+   "art_height_2x": 52,
+   "size_class": "small",
+   "note_zone": "walkable ground dressing (meadow tuft / wildflower clump), Crosshaven grass palette"
+  },
+  {
+   "id": "wildflowers_b",
+   "base_id": null,
+   "in_zone_data": false,
+   "kind": "decor",
+   "layer": "props",
+   "walkable": true,
+   "blocks": false,
+   "file": "props/wildflowers_b.png",
+   "file_2x": "props/_2x/wildflowers_b.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "footprint_from_nw": [
+    [
+     0,
+     0
+    ]
+   ],
+   "anchor_cell_from_nw": [
+    0,
+    0
+   ],
+   "anchor": "image bottom-centre = south tip of cell origin+[0, 0]",
+   "bottom_centre_from_nw_centre_1x": [
+    0,
+    16
+   ],
+   "y_sort_origin_from_bottom_1x": [
+    0,
+    -16
+   ],
+   "note": "wildflowers b",
+   "design_status": "PROPOSED (farm kit)",
+   "art_x_from_anchor_2x": [
+    -31,
+    23
+   ],
+   "art_height_2x": 49,
+   "size_class": "small",
+   "note_zone": "walkable ground dressing (meadow tuft / wildflower clump), Crosshaven grass palette"
+  },
+  {
+   "id": "wildflowers_c",
+   "base_id": null,
+   "in_zone_data": false,
+   "kind": "decor",
+   "layer": "props",
+   "walkable": true,
+   "blocks": false,
+   "file": "props/wildflowers_c.png",
+   "file_2x": "props/_2x/wildflowers_c.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "footprint_from_nw": [
+    [
+     0,
+     0
+    ]
+   ],
+   "anchor_cell_from_nw": [
+    0,
+    0
+   ],
+   "anchor": "image bottom-centre = south tip of cell origin+[0, 0]",
+   "bottom_centre_from_nw_centre_1x": [
+    0,
+    16
+   ],
+   "y_sort_origin_from_bottom_1x": [
+    0,
+    -16
+   ],
+   "note": "wildflowers c",
+   "design_status": "PROPOSED (farm kit)",
+   "art_x_from_anchor_2x": [
+    -20,
+    28
+   ],
+   "art_height_2x": 47,
+   "size_class": "small",
+   "note_zone": "walkable ground dressing (meadow tuft / wildflower clump), Crosshaven grass palette"
+  },
+  {
+   "id": "wildflowers_d",
+   "base_id": null,
+   "in_zone_data": false,
+   "kind": "decor",
+   "layer": "props",
+   "walkable": true,
+   "blocks": false,
+   "file": "props/wildflowers_d.png",
+   "file_2x": "props/_2x/wildflowers_d.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "footprint_from_nw": [
+    [
+     0,
+     0
+    ]
+   ],
+   "anchor_cell_from_nw": [
+    0,
+    0
+   ],
+   "anchor": "image bottom-centre = south tip of cell origin+[0, 0]",
+   "bottom_centre_from_nw_centre_1x": [
+    0,
+    16
+   ],
+   "y_sort_origin_from_bottom_1x": [
+    0,
+    -16
+   ],
+   "note": "wildflowers d",
+   "design_status": "PROPOSED (farm kit)",
+   "art_x_from_anchor_2x": [
+    -37,
+    29
+   ],
+   "art_height_2x": 51,
+   "size_class": "small",
+   "note_zone": "walkable ground dressing (meadow tuft / wildflower clump), Crosshaven grass palette"
+  }
+ ],
+ "palette": {
+  "grass": "#a6bd36",
+  "grass_lo": "#7c9a2a",
+  "grass_dk": "#4f7a2c",
+  "grass_hi": "#dcd65a",
+  "grass_light": "#bdcb44",
+  "grass_gold": "#e0bf4a",
+  "grass_dry": "#d4b955",
+  "tuft": "#6f8c26",
+  "tuft_dk": "#3e5f22",
+  "flower_w": "#fff6e0",
+  "flower_y": "#ffd23a",
+  "flower_r": "#e4553e",
+  "flower_b": "#7fb0ea",
+  "flower_p": "#ec92c2",
+  "flower_c": "#c9561f",
+  "wheat": "#e6bf52",
+  "wheat_lo": "#c59433",
+  "wheat_hi": "#f7de86",
+  "wheat_dk": "#9c6f22",
+  "road": "#d6a96a",
+  "road_lo": "#b4844e",
+  "road_hi": "#ecd09a",
+  "road_dk": "#8a5c36",
+  "pebble": "#f4e8c8",
+  "lip": "#7d5a34",
+  "cobble": "#cdc2a8",
+  "cobble_b": "#b7aa8f",
+  "cobble_hi": "#e5dbc3",
+  "cobble_c": "#c4b18c",
+  "grout": "#857660",
+  "sand": "#f0d99c",
+  "sand_lo": "#dcc082",
+  "sand_hi": "#fbefc9",
+  "sand_wet": "#c7ab74",
+  "water": "#35b7c0",
+  "water_deep": "#1f7fa3",
+  "water_hi": "#b8f6ea",
+  "foam": "#f2fff8",
+  "water_sh": "#7fdccb",
+  "bank": "#8a6340",
+  "bank_dk": "#5a3d24",
+  "bank_stone": "#b7a58a",
+  "cliff_hi": "#f0d49a",
+  "cliff_l": "#d9ae6e",
+  "cliff_m": "#b98a55",
+  "cliff_r": "#94693f",
+  "cliff_dk": "#6a4528",
+  "cliff_line": "#3c2414",
+  "earth": "#9a6c44",
+  "earth_lo": "#6c4a2c",
+  "root": "#4a3220",
+  "wood": "#a9733d",
+  "wood_lo": "#7b4f27",
+  "wood_hi": "#cf9a5c",
+  "wood_dk": "#56361a",
+  "stone": "#a7a6a2",
+  "stone_lo": "#7f7f80",
+  "stone_hi": "#cfcdc6",
+  "stone_dk": "#5d5d63",
+  "slate": "#5e6a80",
+  "slate_lo": "#475268",
+  "slate_hi": "#7d8aa0",
+  "plaster": "#f1e2c0",
+  "plaster_lo": "#d9c49c",
+  "roof": "#c9432e",
+  "roof_lo": "#9a2e22",
+  "roof_hi": "#e2643f",
+  "roof_dk": "#6e1f18",
+  "timber": "#6f4426",
+  "outline": "#2a1c12",
+  "leaf": "#7fae2c",
+  "leaf_lo": "#55821f",
+  "leaf_hi": "#b4d24a",
+  "gold": "#e9b83c",
+  "banner_r": "#c23a2e",
+  "banner_b": "#3a6fc2",
+  "banner_g": "#3f9a4a",
+  "banner_y": "#e2b23a",
+  "banner_p": "#7b4fb0"
+ },
+ "lighting": "top-left warm key #fff0c8, cool shade #5a6fa0 (SW faces lit, SE faces in shade); no baked cast shadows; soft contact AO only at bases (Crosshaven v2 rule)",
+ "animated": {
+  "meta": "animated/anim_meta.json",
+  "status": "PROPOSED",
+  "count": 11,
+  "groups": {
+   "sway": [
+    "wheat_young_sway",
+    "wheat_ripe_sway",
+    "wheat_ripe_b_sway",
+    "carrot_young_sway",
+    "carrot_ripe_sway",
+    "carrot_ripe_b_sway"
+   ],
+   "fx": [
+    "crop_glint",
+    "harvest_pop_cabbage",
+    "harvest_pop_wheat",
+    "harvest_pop_pumpkin",
+    "harvest_pop_carrot"
+   ]
+  }
+ },
+ "icons": {
+  "note": "pickup icons (UI, not world sprites): 64x64 1x / 128x128 2x, straight alpha; not checked by the world gate",
+  "items": {
+   "cabbage": {
+    "file": "icons/pickup_cabbage.png",
+    "file_2x": "icons/_2x/pickup_cabbage.png",
+    "size": [
+     64,
+     64
+    ],
+    "size_2x": [
+     128,
+     128
+    ],
+    "source": "props/_2x/cabbage_ripe.png (ripe art, re-framed, thin dark outline)",
+    "anchor": "centre (UI icon)"
+   },
+   "wheat": {
+    "file": "icons/pickup_wheat.png",
+    "file_2x": "icons/_2x/pickup_wheat.png",
+    "size": [
+     64,
+     64
+    ],
+    "size_2x": [
+     128,
+     128
+    ],
+    "source": "props/_2x/wheat_ripe.png (ripe art, re-framed, thin dark outline)",
+    "anchor": "centre (UI icon)"
+   },
+   "pumpkin": {
+    "file": "icons/pickup_pumpkin.png",
+    "file_2x": "icons/_2x/pickup_pumpkin.png",
+    "size": [
+     64,
+     64
+    ],
+    "size_2x": [
+     128,
+     128
+    ],
+    "source": "props/_2x/pumpkin_ripe.png (ripe art, re-framed, thin dark outline)",
+    "anchor": "centre (UI icon)"
+   },
+   "carrot": {
+    "file": "icons/pickup_carrot.png",
+    "file_2x": "icons/_2x/pickup_carrot.png",
+    "size": [
+     64,
+     64
+    ],
+    "size_2x": [
+     128,
+     128
+    ],
+    "source": "props/_2x/carrot_ripe.png (ripe art, re-framed, thin dark outline)",
+    "anchor": "centre (UI icon)"
+   }
+  }
+ },
+ "gather": {
+  "status": "PROPOSED art hooks; gameplay numbers are TODO for Stasium Bot",
+  "swap_rule": "all states of a crop share canvas 64x64 (1x), anchor bottom-centre = south tip, footprint 1x1: swap the texture in place",
+  "crops": {
+   "cabbage": {
+    "states": {
+     "young": "cabbage_young",
+     "ripe": [
+      "cabbage_ripe",
+      "cabbage_ripe_b"
+     ],
+     "harvested": "cabbage_harvested",
+     "seedling_optional": "crop_seedling"
+    },
+    "ripe_marker": "crop_glint",
+    "on_gather": "harvest_pop_cabbage",
+    "pickup_icon": "icons/pickup_cabbage.png",
+    "item_id": "TODO(Stasium Bot)",
+    "yield_per_gather": "TODO(Stasium Bot)",
+    "regrow_time_s": "TODO(Stasium Bot)",
+    "growth_time_young_to_ripe_s": "TODO(Stasium Bot)",
+    "harvested_resets_to": "TODO(Stasium Bot)",
+    "gather_range_cells": "TODO(Stasium Bot)",
+    "tool_required": "TODO(Stasium Bot)"
+   },
+   "wheat": {
+    "states": {
+     "young": "wheat_young",
+     "ripe": [
+      "wheat_ripe",
+      "wheat_ripe_b"
+     ],
+     "harvested": "wheat_harvested",
+     "seedling_optional": "crop_seedling"
+    },
+    "ripe_marker": "crop_glint",
+    "on_gather": "harvest_pop_wheat",
+    "pickup_icon": "icons/pickup_wheat.png",
+    "item_id": "TODO(Stasium Bot)",
+    "yield_per_gather": "TODO(Stasium Bot)",
+    "regrow_time_s": "TODO(Stasium Bot)",
+    "growth_time_young_to_ripe_s": "TODO(Stasium Bot)",
+    "harvested_resets_to": "TODO(Stasium Bot)",
+    "gather_range_cells": "TODO(Stasium Bot)",
+    "tool_required": "TODO(Stasium Bot)"
+   },
+   "pumpkin": {
+    "states": {
+     "young": "pumpkin_young",
+     "ripe": [
+      "pumpkin_ripe",
+      "pumpkin_ripe_b"
+     ],
+     "harvested": "pumpkin_harvested",
+     "seedling_optional": "crop_seedling"
+    },
+    "ripe_marker": "crop_glint",
+    "on_gather": "harvest_pop_pumpkin",
+    "pickup_icon": "icons/pickup_pumpkin.png",
+    "item_id": "TODO(Stasium Bot)",
+    "yield_per_gather": "TODO(Stasium Bot)",
+    "regrow_time_s": "TODO(Stasium Bot)",
+    "growth_time_young_to_ripe_s": "TODO(Stasium Bot)",
+    "harvested_resets_to": "TODO(Stasium Bot)",
+    "gather_range_cells": "TODO(Stasium Bot)",
+    "tool_required": "TODO(Stasium Bot)"
+   },
+   "carrot": {
+    "states": {
+     "young": "carrot_young",
+     "ripe": [
+      "carrot_ripe",
+      "carrot_ripe_b"
+     ],
+     "harvested": "carrot_harvested",
+     "seedling_optional": "crop_seedling"
+    },
+    "ripe_marker": "crop_glint",
+    "on_gather": "harvest_pop_carrot",
+    "pickup_icon": "icons/pickup_carrot.png",
+    "item_id": "TODO(Stasium Bot)",
+    "yield_per_gather": "TODO(Stasium Bot)",
+    "regrow_time_s": "TODO(Stasium Bot)",
+    "growth_time_young_to_ripe_s": "TODO(Stasium Bot)",
+    "harvested_resets_to": "TODO(Stasium Bot)",
+    "gather_range_cells": "TODO(Stasium Bot)",
+    "tool_required": "TODO(Stasium Bot)"
+   }
+  }
+ },
+ "farm_kit": {
+  "generated": "2026-10-03",
+  "raws": "raw/farm_kit/ (farm_target_mock.png look target; shed, hay_cart, scarecrow, crops_sheet, crop_stages_sheet, yard_sheet, soil_swatch)",
+  "pipeline": "scratch/farm_kit: fk_cutall.py (white-bg matte + painted-shadow removal), fk_tiles.py, fk_props.py, fk_fx.py, fk_meta.py; mocks fk_mock.py, fk_gather.py",
+  "scale_ref": "farmer NPC 256 px frame @2x, pivot (128,240), body ~120 px tall @2x; crops 40-84 px tall (below his waist), shed ridge ~220 px",
+  "reused_from_rowanvale": "schema only; tilled_rows and fence_orchard not reused (target wants darker loamy furrows and a weathered split-rail fence with a road gap)"
+ },
+ "ui": {
+  "note": "UI art (screen space, not y-sorted, not graded by the world light); not checked by the world gate",
+  "nameplate_farmer": {
+   "file": "ui/nameplate_farmer.png",
+   "file_2x": "ui/_2x/nameplate_farmer.png",
+   "size": [
+    65,
+    23
+   ],
+   "size_2x": [
+    130,
+    46
+   ],
+   "text": "Farmer",
+   "name_source": "no proper name in docs/pc/ZONES_BUILD_SPEC.md or npc data; spec names NPCs by role (e.g. 'Guide')",
+   "anchor": "bottom-centre of the plate body = 3 px (1x) above the image bottom; place it 5 px (1x) above the NPC head top (head top = pivot - 60 px at 1x for the farmer)"
+  },
+  "nameplate_blank": {
+   "file": "ui/nameplate_blank.png",
+   "file_2x": "ui/_2x/nameplate_blank.png",
+   "size": [
+    54,
+    23
+   ],
+   "size_2x": [
+    108,
+    46
+   ],
+   "nine_slice_1x": {
+    "left": 11,
+    "right": 11,
+    "top": 8,
+    "bottom": 8
+   },
+   "nine_slice_2x": {
+    "left": 22,
+    "right": 22,
+    "top": 16,
+    "bottom": 16
+   },
+   "stretch": "horizontal only (fixed height); the wood grain runs along x so the centre band stretches cleanly",
+   "text_style": {
+    "font": "Alegreya SC Bold (SIL OFL)",
+    "size_px_1x": 11.5,
+    "size_px_2x": 23,
+    "color": "#f5e3bd",
+    "outline": "#170d08 ~1 px@1x, nudged 0.5 px down",
+    "pad_x_1x": 12
+   }
+  },
+  "style": "dark wood strip #372415, thin gold edge #cc9e4c (hi #edcc80, low #805a24), umber inner line, gold rivets in the caps, cool soft drop shadow; no neon"
+ }
+}

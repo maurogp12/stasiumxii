@@ -1,0 +1,59 @@
+{
+ "nat_birch_a": {
+  "tris": {
+   "LOD0": 7000,
+   "LOD1": 3000,
+   "LOD2": 804
+  },
+  "height_m": 8.58,
+  "crown_m": [
+   5.15,
+   4.54
+  ],
+  "collider": {
+   "file": "nat_birch_a-col.glb",
+   "shape": "capsule (trunk only, never canopy)",
+   "radius_m": 0.158,
+   "height_m": 3.2,
+   "center_y_m": 1.6
+  }
+ },
+ "nat_birch_b": {
+  "tris": {
+   "LOD0": 7000,
+   "LOD1": 3000,
+   "LOD2": 804
+  },
+  "height_m": 7.06,
+  "crown_m": [
+   3.98,
+   4.06
+  ],
+  "collider": {
+   "file": "nat_birch_b-col.glb",
+   "shape": "capsule (trunk only, never canopy)",
+   "radius_m": 0.13,
+   "height_m": 2.62,
+   "center_y_m": 1.31
+  }
+ },
+ "nat_birch_c": {
+  "tris": {
+   "LOD0": 7000,
+   "LOD1": 3000,
+   "LOD2": 804
+  },
+  "height_m": 10.05,
+  "crown_m": [
+   5.5,
+   6.48
+  ],
+  "collider": {
+   "file": "nat_birch_c-col.glb",
+   "shape": "capsule (trunk only, never canopy)",
+   "radius_m": 0.187,
+   "height_m": 3.78,
+   "center_y_m": 1.89
+  }
+ }
+}

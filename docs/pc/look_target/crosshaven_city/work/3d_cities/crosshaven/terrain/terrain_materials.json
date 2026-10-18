@@ -1,0 +1,83 @@
+{
+ "label": "🖼️ IMAGEN / CONCEPTO, TODAVÍA HAY QUE CONSTRUIRLO — terrain v2, procedural 0 CU",
+ "version": 2,
+ "resolution": 2048,
+ "file_layout": {
+  "albedo": "ter_<name>_albedo.webp — RGB sRGB, no alpha (v1 ter_<name>_albedo_height.webp is retired)",
+  "height": "ter_<name>_height.png — lossless 8-bit grayscale PNG, linear 0..1, 1024x1024 (same UV tile as the 2048 maps; bilinear upsample is fine for height-blend). Fine relief detail lives in the 2048 normal map.",
+  "normal": "ter_<name>_normal.webp — tangent space, OpenGL +Y (Godot default), baked from height with real relief",
+  "orm": "ter_<name>_orm.webp — R=AO, G=roughness, B=metallic(0), linear"
+ },
+ "tiling": "all maps periodic; seam_edge_diff ~= interior_neighbour_diff for every material; previews ter_<name>_tile2x2_preview.jpg",
+ "height_blend": "weight_i = max(0, height_i + splat_i - max_j(height_j + splat_j) + 0.15); contrast 0.1-0.2. Mud lowest, cobble domes / slabs / grass tops highest.",
+ "sheets": [
+  "terrain_contact_sheet_CONCEPTO_.jpg (albedo 2x2)",
+  "terrain_normal_sheet_CONCEPTO_.jpg (normals 2x2)"
+ ],
+ "materials": {
+  "cobblestone": {
+   "use": "city streets inside the wall",
+   "blend": "domed cobbles ~12-18 cm (13 per 2 m tile), deep dark joints with mud in places; dirt/mud height-blend into the joints first",
+   "tile_size_m": 2.0,
+   "seam_edge_diff": 5.24,
+   "interior_neighbour_diff": 5.35
+  },
+  "dirt_path": {
+   "use": "packed dirt roads and paths",
+   "blend": "low/medium height; grass edges bleed in by height+noise mask; mud fills its low areas",
+   "tile_size_m": 3.0,
+   "seam_edge_diff": 5.62,
+   "interior_neighbour_diff": 5.46
+  },
+  "grass_lush": {
+   "use": "meadows, outside the walls, riverbanks top",
+   "blend": "tallest material: wins height-blends against short grass/dirt; pair with grass card scatter; v2: low-frequency macro patches (yellow-green / dark-green, ~1 per tile)",
+   "tile_size_m": 2.0,
+   "seam_edge_diff": 8.86,
+   "interior_neighbour_diff": 10.69
+  },
+  "grass_short": {
+   "use": "mown/trampled grass inside plots, verges",
+   "blend": "height-blend over dirt_path: bare soil patches (low alpha) give way first; v2: low-frequency macro patches (yellow-green / dark-green, ~1 per tile)",
+   "tile_size_m": 2.0,
+   "seam_edge_diff": 7.69,
+   "interior_neighbour_diff": 9.01
+  },
+  "mud": {
+   "use": "wet low ground, near millrace, gate approach, livestock pens",
+   "blend": "lowest height: always sits under others; puddles = low roughness where height<0.3; v2: roughness 0.08-0.40 (wet), AO smoothed (no speckles)",
+   "tile_size_m": 3.0,
+   "seam_edge_diff": 2.78,
+   "interior_neighbour_diff": 2.78
+  },
+  "plaza_flagstones": {
+   "use": "central plaza, around fountain/gazebo, castle forecourt",
+   "blend": "irregular worn slabs of mixed size (recursive split + noise warp, no grid), chipped edges, moss in some joints; dirt blends into joints",
+   "tile_size_m": 4.0,
+   "seam_edge_diff": 6.19,
+   "interior_neighbour_diff": 6.3
+  },
+  "riverbank_pebbles": {
+   "use": "river edges, under the bridge, millrace banks",
+   "blend": "rounded pebbles high; sand low; wet darkening zones lower roughness - bias wet zone toward water side",
+   "tile_size_m": 2.0,
+   "seam_edge_diff": 5.18,
+   "interior_neighbour_diff": 4.96
+  },
+  "wall_base_gravel": {
+   "use": "1-2 m strip at the foot of the city wall, towers, gatehouse",
+   "blend": "loose angular gravel in 3 overlapping layers on dirt (not a mosaic); dirt shows between; weeds at wall line",
+   "tile_size_m": 2.0,
+   "seam_edge_diff": 6.74,
+   "interior_neighbour_diff": 6.52
+  },
+  "cobblestone_b": {
+   "use": "variant b of cobblestone (different seed/joint pattern); noise-mix with variant a to break the repeat",
+   "blend": "domed cobbles ~12-18 cm (13 per 2 m tile), deep dark joints with mud in places; dirt/mud height-blend into the joints first",
+   "tile_size_m": 2.0,
+   "seam_edge_diff": 5.19,
+   "interior_neighbour_diff": 5.55
+  }
+ },
+ "cobble_mix": "Mix ter_cobblestone (a) and ter_cobblestone_b with low-frequency world-space noise n (period ~6-10 m) through a sharp height-blend so whole cobbles switch (no ghosting): d=(h_a+1.6*(1-n))-(h_b+1.6*n); w_a=clamp(d/0.08+0.5). Same 2 m tile and scale. Preview: ter_cobblestone_ab_mix_preview_CONCEPTO_.jpg (8x8 m)."
+}

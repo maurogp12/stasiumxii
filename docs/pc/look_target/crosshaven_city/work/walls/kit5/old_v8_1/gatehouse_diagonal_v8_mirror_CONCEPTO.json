@@ -1,0 +1,28 @@
+{
+ "left_foot": [
+  0,
+  555
+ ],
+ "right_foot": [
+  2186,
+  1349.2
+ ],
+ "slope": 0.3633,
+ "raw_slope": 0.3379,
+ "scale": 2.1073,
+ "body_px": 551,
+ "course_px": 33.7,
+ "removed_courses": 2,
+ "arch_opening_x": [
+  868,
+  1163
+ ],
+ "arch_width_px": 295,
+ "source": "gatehouse_diag_v4match_raw.jpg",
+ "stone_lab_after": [
+  38.9,
+  1.2,
+  19.0
+ ],
+ "colour_target": "v4 approved ring stone LAB [38.8, 1.1, 19.0]"
+}

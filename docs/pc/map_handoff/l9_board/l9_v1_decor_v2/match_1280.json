@@ -1,0 +1,784 @@
+{
+ "transform": {
+  "mock_to_game": "xg = 0.90141*xm + 63.098; yg = 0.901224*ym + 35.589",
+  "mock_frame_in_game": [
+   63.1,
+   35.6,
+   1216.9,
+   684.5
+  ]
+ },
+ "board_footprint": {
+  "shift_px": [
+   -0.03,
+   -0.11
+  ],
+  "iou": 0.9938
+ },
+ "leaves": {
+  "top": {
+   "shift_px": [
+    0.09,
+    -0.28
+   ],
+   "centroid_delta_px": [
+    1.09,
+    0.31
+   ],
+   "iou_in_mock_frame_above_hud": 0.9823,
+   "game_px": 127574,
+   "mock_px": 125333,
+   "bleed_px_outside_mock_frame": 55724
+  },
+  "bottom": {
+   "shift_px": [
+    0.11,
+    0.35
+   ],
+   "centroid_delta_px": [
+    -0.42,
+    -0.14
+   ],
+   "iou_in_mock_frame_above_hud": 0.9537,
+   "game_px": 3043,
+   "mock_px": 2902,
+   "bleed_px_outside_mock_frame": 365,
+   "mock_px_total_in_frame": 92623,
+   "mock_share_under_hud_line_pct": 96.9
+  },
+  "left": {
+   "shift_px": [
+    -0.44,
+    0.08
+   ],
+   "centroid_delta_px": [
+    0.44,
+    -0.02
+   ],
+   "iou_in_mock_frame_above_hud": 0.9926,
+   "game_px": 86537,
+   "mock_px": 85900,
+   "bleed_px_outside_mock_frame": 40194
+  },
+  "right": {
+   "shift_px": [
+    0.2,
+    0.08
+   ],
+   "centroid_delta_px": [
+    -0.69,
+    -0.07
+   ],
+   "iou_in_mock_frame_above_hud": 0.9878,
+   "game_px": 85627,
+   "mock_px": 84592,
+   "bleed_px_outside_mock_frame": 36935
+  }
+ },
+ "hud": {
+  "leaf_px_at_or_below_y545": 0,
+  "leaf_px_at_or_below_y572": 0,
+  "lowest_leaf_row": 544,
+  "mock_leaf_px_below_y545_cut_in_game": 123149
+ },
+ "plate": {
+  "shift_px": [
+   0.0,
+   0.02
+  ],
+  "response": 0.962,
+  "mean_abs_rgb_diff_outside_board": 1.7
+ },
+ "props_global": {
+  "shift_px": [
+   -0.04,
+   -0.02
+  ],
+  "iou": 0.9297
+ },
+ "props": [
+  {
+   "id": "standing_stone",
+   "cell": [
+    0,
+    0
+   ],
+   "delta_px": [
+    0.38,
+    1.26
+   ],
+   "game_px": 1274,
+   "mock_px": 1420
+  },
+  {
+   "id": "ruined_wall_short",
+   "cell": [
+    1,
+    0
+   ],
+   "delta_px": [
+    -0.56,
+    0.35
+   ],
+   "game_px": 898,
+   "mock_px": 962
+  },
+  {
+   "id": "lilac_shrub",
+   "cell": [
+    6,
+    0
+   ],
+   "delta_px": [
+    -0.17,
+    0.65
+   ],
+   "game_px": 476,
+   "mock_px": 503
+  },
+  {
+   "id": "standing_stone",
+   "cell": [
+    14,
+    0
+   ],
+   "delta_px": [
+    -0.11,
+    1.09
+   ],
+   "game_px": 1010,
+   "mock_px": 1103
+  },
+  {
+   "id": "boulder_small",
+   "cell": [
+    9,
+    1
+   ],
+   "delta_px": [
+    -0.08,
+    -0.01
+   ],
+   "game_px": 662,
+   "mock_px": 673
+  },
+  {
+   "id": "boulder_small",
+   "cell": [
+    12,
+    1
+   ],
+   "delta_px": [
+    -0.12,
+    -0.08
+   ],
+   "game_px": 307,
+   "mock_px": 305
+  },
+  {
+   "id": "boulder_small",
+   "cell": [
+    3,
+    3
+   ],
+   "delta_px": [
+    -0.02,
+    0.1
+   ],
+   "game_px": 352,
+   "mock_px": 352
+  },
+  {
+   "id": "lilac_shrub",
+   "cell": [
+    11,
+    3
+   ],
+   "delta_px": [
+    -0.07,
+    0.18
+   ],
+   "game_px": 831,
+   "mock_px": 842
+  },
+  {
+   "id": "boulder_cluster",
+   "cell": [
+    14,
+    4
+   ],
+   "delta_px": [
+    -0.0,
+    -0.03
+   ],
+   "game_px": 667,
+   "mock_px": 669
+  },
+  {
+   "id": "lilac_shrub",
+   "cell": [
+    0,
+    6
+   ],
+   "delta_px": [
+    0.27,
+    0.55
+   ],
+   "game_px": 616,
+   "mock_px": 643
+  },
+  {
+   "id": "lilac_shrub",
+   "cell": [
+    1,
+    7
+   ],
+   "delta_px": [
+    0.17,
+    0.17
+   ],
+   "game_px": 1069,
+   "mock_px": 1074
+  },
+  {
+   "id": "stone_well",
+   "cell": [
+    14,
+    7
+   ],
+   "delta_px": [
+    -0.01,
+    -0.15
+   ],
+   "game_px": 1047,
+   "mock_px": 1049
+  },
+  {
+   "id": "boulder_small",
+   "cell": [
+    13,
+    8
+   ],
+   "delta_px": [
+    0.25,
+    -0.01
+   ],
+   "game_px": 457,
+   "mock_px": 459
+  },
+  {
+   "id": "boulder_cluster",
+   "cell": [
+    0,
+    10
+   ],
+   "delta_px": [
+    0.49,
+    0.85
+   ],
+   "game_px": 659,
+   "mock_px": 725
+  },
+  {
+   "id": "standing_stone",
+   "cell": [
+    2,
+    10
+   ],
+   "delta_px": [
+    -0.03,
+    0.07
+   ],
+   "game_px": 1070,
+   "mock_px": 1080
+  },
+  {
+   "id": "boulder_small",
+   "cell": [
+    12,
+    10
+   ],
+   "delta_px": [
+    -0.02,
+    -0.26
+   ],
+   "game_px": 438,
+   "mock_px": 434
+  },
+  {
+   "id": "ruined_wall_short",
+   "cell": [
+    3,
+    12
+   ],
+   "delta_px": [
+    0.01,
+    0.26
+   ],
+   "game_px": 984,
+   "mock_px": 977
+  },
+  {
+   "id": "boulder_cluster",
+   "cell": [
+    10,
+    12
+   ],
+   "delta_px": [
+    0.12,
+    0.52
+   ],
+   "game_px": 950,
+   "mock_px": 949
+  },
+  {
+   "id": "boulder_small",
+   "cell": [
+    2,
+    13
+   ],
+   "delta_px": [
+    -0.11,
+    -0.1
+   ],
+   "game_px": 574,
+   "mock_px": 570
+  },
+  {
+   "id": "fallen_log_short",
+   "cell": [
+    5,
+    13
+   ],
+   "delta_px": [
+    -0.18,
+    -0.33
+   ],
+   "game_px": 860,
+   "mock_px": 852
+  },
+  {
+   "id": "lilac_shrub",
+   "cell": [
+    6,
+    13
+   ],
+   "delta_px": [
+    0.18,
+    -0.0
+   ],
+   "game_px": 725,
+   "mock_px": 728
+  },
+  {
+   "id": "standing_stone",
+   "cell": [
+    0,
+    14
+   ],
+   "delta_px": [
+    0.29,
+    1.14
+   ],
+   "game_px": 1002,
+   "mock_px": 1117
+  },
+  {
+   "id": "standing_stone",
+   "cell": [
+    4,
+    14
+   ],
+   "delta_px": [
+    -0.01,
+    0.01
+   ],
+   "game_px": 1772,
+   "mock_px": 1769
+  },
+  {
+   "id": "fallen_log_short",
+   "cell": [
+    8,
+    14
+   ],
+   "delta_px": [
+    -0.05,
+    -0.44
+   ],
+   "game_px": 510,
+   "mock_px": 521
+  },
+  {
+   "id": "ruined_wall_short",
+   "cell": [
+    13,
+    14
+   ],
+   "delta_px": [
+    0.09,
+    0.06
+   ],
+   "game_px": 593,
+   "mock_px": 587
+  },
+  {
+   "id": "boulder_small",
+   "cell": [
+    14,
+    14
+   ],
+   "delta_px": [
+    0.12,
+    0.02
+   ],
+   "game_px": 627,
+   "mock_px": 621
+  },
+  {
+   "id": "lilac_bush",
+   "cell": [
+    2,
+    8
+   ],
+   "delta_px": [
+    0.06,
+    -0.17
+   ],
+   "game_px": 813,
+   "mock_px": 819
+  },
+  {
+   "id": "flower_tuft",
+   "cell": [
+    3,
+    7
+   ],
+   "delta_px": [
+    0.03,
+    -0.07
+   ],
+   "game_px": 204,
+   "mock_px": 203
+  },
+  {
+   "id": "lilac_tuft",
+   "cell": [
+    4,
+    3
+   ],
+   "delta_px": [
+    -0.08,
+    0.06
+   ],
+   "game_px": 272,
+   "mock_px": 270
+  },
+  {
+   "id": "fern",
+   "cell": [
+    5,
+    5
+   ],
+   "delta_px": [
+    -0.14,
+    -0.47
+   ],
+   "game_px": 308,
+   "mock_px": 316
+  },
+  {
+   "id": "flower_tuft",
+   "cell": [
+    5,
+    9
+   ],
+   "delta_px": [
+    -0.05,
+    -0.13
+   ],
+   "game_px": 209,
+   "mock_px": 203
+  },
+  {
+   "id": "lilac_bush",
+   "cell": [
+    7,
+    3
+   ],
+   "delta_px": [
+    0.04,
+    -0.03
+   ],
+   "game_px": 340,
+   "mock_px": 345
+  },
+  {
+   "id": "lilac_tuft",
+   "cell": [
+    7,
+    7
+   ],
+   "delta_px": [
+    -0.09,
+    -0.12
+   ],
+   "game_px": 149,
+   "mock_px": 144
+  },
+  {
+   "id": "lilac_bush",
+   "cell": [
+    7,
+    9
+   ],
+   "delta_px": [
+    0.24,
+    -0.26
+   ],
+   "game_px": 472,
+   "mock_px": 472
+  },
+  {
+   "id": "fern",
+   "cell": [
+    7,
+    10
+   ],
+   "delta_px": [
+    0.27,
+    -0.22
+   ],
+   "game_px": 692,
+   "mock_px": 692
+  },
+  {
+   "id": "flower_tuft",
+   "cell": [
+    7,
+    11
+   ],
+   "delta_px": [
+    -0.23,
+    -0.07
+   ],
+   "game_px": 560,
+   "mock_px": 576
+  },
+  {
+   "id": "lilac_bush",
+   "cell": [
+    8,
+    11
+   ],
+   "delta_px": [
+    0.07,
+    -0.12
+   ],
+   "game_px": 731,
+   "mock_px": 751
+  },
+  {
+   "id": "lilac_tuft",
+   "cell": [
+    9,
+    9
+   ],
+   "delta_px": [
+    -0.15,
+    -0.14
+   ],
+   "game_px": 152,
+   "mock_px": 148
+  },
+  {
+   "id": "lilac_bush",
+   "cell": [
+    10,
+    3
+   ],
+   "delta_px": [
+    -0.05,
+    0.04
+   ],
+   "game_px": 752,
+   "mock_px": 758
+  },
+  {
+   "id": "fern",
+   "cell": [
+    10,
+    11
+   ],
+   "delta_px": [
+    -0.06,
+    0.09
+   ],
+   "game_px": 537,
+   "mock_px": 536
+  },
+  {
+   "id": "flower_tuft",
+   "cell": [
+    11,
+    7
+   ],
+   "delta_px": [
+    0.13,
+    0.06
+   ],
+   "game_px": 396,
+   "mock_px": 395
+  },
+  {
+   "id": "clover_patch",
+   "cell": [
+    7,
+    13
+   ],
+   "delta_px": [
+    0.06,
+    -0.14
+   ],
+   "game_px": 502,
+   "mock_px": 504
+  },
+  {
+   "id": "fern",
+   "cell": [
+    14,
+    9
+   ],
+   "delta_px": [
+    0.16,
+    0.29
+   ],
+   "game_px": 454,
+   "mock_px": 449
+  },
+  {
+   "id": "flower_tuft",
+   "cell": [
+    10,
+    1
+   ],
+   "delta_px": [
+    0.01,
+    -0.01
+   ],
+   "game_px": 572,
+   "mock_px": 574
+  },
+  {
+   "id": "clover_patch",
+   "cell": [
+    11,
+    9
+   ],
+   "delta_px": [
+    -0.12,
+    0.24
+   ],
+   "game_px": 151,
+   "mock_px": 141
+  },
+  {
+   "id": "lilac_tuft",
+   "cell": [
+    9,
+    0
+   ],
+   "delta_px": [
+    0.0,
+    0.06
+   ],
+   "game_px": 399,
+   "mock_px": 397
+  },
+  {
+   "id": "flower_tuft",
+   "cell": [
+    10,
+    6
+   ],
+   "delta_px": [
+    0.13,
+    0.11
+   ],
+   "game_px": 374,
+   "mock_px": 372
+  },
+  {
+   "id": "clover_patch",
+   "cell": [
+    5,
+    14
+   ],
+   "delta_px": [
+    -0.02,
+    -0.05
+   ],
+   "game_px": 977,
+   "mock_px": 978
+  },
+  {
+   "id": "pebbles_moss",
+   "cell": [
+    12,
+    6
+   ],
+   "delta_px": [
+    -0.01,
+    0.01
+   ],
+   "game_px": 306,
+   "mock_px": 308
+  },
+  {
+   "id": "flower_tuft",
+   "cell": [
+    10,
+    13
+   ],
+   "delta_px": [
+    0.13,
+    0.21
+   ],
+   "game_px": 674,
+   "mock_px": 665
+  },
+  {
+   "id": "clover_patch",
+   "cell": [
+    4,
+    13
+   ],
+   "delta_px": [
+    0.1,
+    -0.03
+   ],
+   "game_px": 1340,
+   "mock_px": 1322
+  }
+ ],
+ "props_summary": {
+  "n": 51,
+  "measured": 51,
+  "max_delta_px": 1.32,
+  "mean_delta_px": 0.28
+ },
+ "nontile_diff": {
+  "mean_abs": 9.97,
+  "median_abs": 1.53,
+  "pct_px_over_24": 16.17,
+  "above_hud_mean_abs": 3.5,
+  "above_hud_median_abs": 1.11,
+  "above_hud_pct_px_over_24": 2.75,
+  "hud_band_pct_px_over_24": 57.99,
+  "note": "HUD band y>=545: the game cuts leaves there (HUD rule) and the HUD itself covers it; grade off in game; mock has its own canopy/shadow grade, so colour differs a little everywhere; structure is what matters"
+ },
+ "nontile_structure_shift_px": [
+  0.01,
+  0.01
+ ]
+}

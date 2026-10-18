@@ -1,0 +1,2881 @@
+{
+ "package": "outskirts_themes/northgate",
+ "date": "2026-10-03",
+ "layout": "world kit (<kind>/<id>.png 1x + <kind>/_2x/<id>.png 2x); see README",
+ "kinds": "tile|edge|corner|cliff_face|overlay|prop|roof_cap",
+ "count": 134,
+ "ids": [
+  {
+   "id": "crag_a",
+   "kind": "tile",
+   "family": "crag",
+   "side": null,
+   "variant": "a",
+   "file_2x": "tiles/_2x/crag_a.png",
+   "file_1x": "tiles/crag_a.png",
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor_px_2x": [
+    64,
+    64
+   ],
+   "footprint": [
+    1,
+    1
+   ]
+  },
+  {
+   "id": "crag_b",
+   "kind": "tile",
+   "family": "crag",
+   "side": null,
+   "variant": "b",
+   "file_2x": "tiles/_2x/crag_b.png",
+   "file_1x": "tiles/crag_b.png",
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor_px_2x": [
+    64,
+    64
+   ],
+   "footprint": [
+    1,
+    1
+   ]
+  },
+  {
+   "id": "crag_c",
+   "kind": "tile",
+   "family": "crag",
+   "side": null,
+   "variant": "c",
+   "file_2x": "tiles/_2x/crag_c.png",
+   "file_1x": "tiles/crag_c.png",
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor_px_2x": [
+    64,
+    64
+   ],
+   "footprint": [
+    1,
+    1
+   ]
+  },
+  {
+   "id": "crag_cliff_left_h1",
+   "kind": "cliff_face",
+   "family": "crag",
+   "side": "left",
+   "height_steps": 1,
+   "file_2x": "tiles/_2x/crag_cliff_left_h1.png",
+   "file_1x": "tiles/crag_cliff_left_h1.png",
+   "size_2x": [
+    64,
+    52
+   ],
+   "anchor_px_2x": null,
+   "offset_2x": [
+    -64,
+    0
+   ]
+  },
+  {
+   "id": "crag_cliff_left_h2",
+   "kind": "cliff_face",
+   "family": "crag",
+   "side": "left",
+   "height_steps": 2,
+   "file_2x": "tiles/_2x/crag_cliff_left_h2.png",
+   "file_1x": "tiles/crag_cliff_left_h2.png",
+   "size_2x": [
+    64,
+    72
+   ],
+   "anchor_px_2x": null,
+   "offset_2x": [
+    -64,
+    0
+   ]
+  },
+  {
+   "id": "crag_cliff_left_h3",
+   "kind": "cliff_face",
+   "family": "crag",
+   "side": "left",
+   "height_steps": 3,
+   "file_2x": "tiles/_2x/crag_cliff_left_h3.png",
+   "file_1x": "tiles/crag_cliff_left_h3.png",
+   "size_2x": [
+    64,
+    92
+   ],
+   "anchor_px_2x": null,
+   "offset_2x": [
+    -64,
+    0
+   ]
+  },
+  {
+   "id": "crag_cliff_right_h1",
+   "kind": "cliff_face",
+   "family": "crag",
+   "side": "right",
+   "height_steps": 1,
+   "file_2x": "tiles/_2x/crag_cliff_right_h1.png",
+   "file_1x": "tiles/crag_cliff_right_h1.png",
+   "size_2x": [
+    64,
+    52
+   ],
+   "anchor_px_2x": null,
+   "offset_2x": [
+    0,
+    0
+   ]
+  },
+  {
+   "id": "crag_cliff_right_h2",
+   "kind": "cliff_face",
+   "family": "crag",
+   "side": "right",
+   "height_steps": 2,
+   "file_2x": "tiles/_2x/crag_cliff_right_h2.png",
+   "file_1x": "tiles/crag_cliff_right_h2.png",
+   "size_2x": [
+    64,
+    72
+   ],
+   "anchor_px_2x": null,
+   "offset_2x": [
+    0,
+    0
+   ]
+  },
+  {
+   "id": "crag_cliff_right_h3",
+   "kind": "cliff_face",
+   "family": "crag",
+   "side": "right",
+   "height_steps": 3,
+   "file_2x": "tiles/_2x/crag_cliff_right_h3.png",
+   "file_1x": "tiles/crag_cliff_right_h3.png",
+   "size_2x": [
+    64,
+    92
+   ],
+   "anchor_px_2x": null,
+   "offset_2x": [
+    0,
+    0
+   ]
+  },
+  {
+   "id": "crag_corner_e",
+   "kind": "corner",
+   "family": "crag",
+   "side": "e",
+   "meets": "snow (cornice / cliff drop)",
+   "file_2x": "tiles/_2x/crag_corner_e.png",
+   "file_1x": "tiles/crag_corner_e.png",
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor_px_2x": [
+    64,
+    64
+   ],
+   "footprint": [
+    1,
+    1
+   ]
+  },
+  {
+   "id": "crag_corner_n",
+   "kind": "corner",
+   "family": "crag",
+   "side": "n",
+   "meets": "snow (cornice / cliff drop)",
+   "file_2x": "tiles/_2x/crag_corner_n.png",
+   "file_1x": "tiles/crag_corner_n.png",
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor_px_2x": [
+    64,
+    64
+   ],
+   "footprint": [
+    1,
+    1
+   ]
+  },
+  {
+   "id": "crag_corner_s",
+   "kind": "corner",
+   "family": "crag",
+   "side": "s",
+   "meets": "snow (cornice / cliff drop)",
+   "file_2x": "tiles/_2x/crag_corner_s.png",
+   "file_1x": "tiles/crag_corner_s.png",
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor_px_2x": [
+    64,
+    64
+   ],
+   "footprint": [
+    1,
+    1
+   ]
+  },
+  {
+   "id": "crag_corner_w",
+   "kind": "corner",
+   "family": "crag",
+   "side": "w",
+   "meets": "snow (cornice / cliff drop)",
+   "file_2x": "tiles/_2x/crag_corner_w.png",
+   "file_1x": "tiles/crag_corner_w.png",
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor_px_2x": [
+    64,
+    64
+   ],
+   "footprint": [
+    1,
+    1
+   ]
+  },
+  {
+   "id": "crag_edge_ne",
+   "kind": "edge",
+   "family": "crag",
+   "side": [
+    "ne"
+   ],
+   "meets": "snow (cornice / cliff drop)",
+   "file_2x": "tiles/_2x/crag_edge_ne.png",
+   "file_1x": "tiles/crag_edge_ne.png",
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor_px_2x": [
+    64,
+    64
+   ],
+   "footprint": [
+    1,
+    1
+   ]
+  },
+  {
+   "id": "crag_edge_ne_se",
+   "kind": "edge",
+   "family": "crag",
+   "side": [
+    "ne",
+    "se"
+   ],
+   "meets": "snow (cornice / cliff drop)",
+   "file_2x": "tiles/_2x/crag_edge_ne_se.png",
+   "file_1x": "tiles/crag_edge_ne_se.png",
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor_px_2x": [
+    64,
+    64
+   ],
+   "footprint": [
+    1,
+    1
+   ]
+  },
+  {
+   "id": "crag_edge_ne_se_sw",
+   "kind": "edge",
+   "family": "crag",
+   "side": [
+    "ne",
+    "se",
+    "sw"
+   ],
+   "meets": "snow (cornice / cliff drop)",
+   "file_2x": "tiles/_2x/crag_edge_ne_se_sw.png",
+   "file_1x": "tiles/crag_edge_ne_se_sw.png",
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor_px_2x": [
+    64,
+    64
+   ],
+   "footprint": [
+    1,
+    1
+   ]
+  },
+  {
+   "id": "crag_edge_ne_sw",
+   "kind": "edge",
+   "family": "crag",
+   "side": [
+    "ne",
+    "sw"
+   ],
+   "meets": "snow (cornice / cliff drop)",
+   "file_2x": "tiles/_2x/crag_edge_ne_sw.png",
+   "file_1x": "tiles/crag_edge_ne_sw.png",
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor_px_2x": [
+    64,
+    64
+   ],
+   "footprint": [
+    1,
+    1
+   ]
+  },
+  {
+   "id": "crag_edge_nw",
+   "kind": "edge",
+   "family": "crag",
+   "side": [
+    "nw"
+   ],
+   "meets": "snow (cornice / cliff drop)",
+   "file_2x": "tiles/_2x/crag_edge_nw.png",
+   "file_1x": "tiles/crag_edge_nw.png",
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor_px_2x": [
+    64,
+    64
+   ],
+   "footprint": [
+    1,
+    1
+   ]
+  },
+  {
+   "id": "crag_edge_nw_ne",
+   "kind": "edge",
+   "family": "crag",
+   "side": [
+    "nw",
+    "ne"
+   ],
+   "meets": "snow (cornice / cliff drop)",
+   "file_2x": "tiles/_2x/crag_edge_nw_ne.png",
+   "file_1x": "tiles/crag_edge_nw_ne.png",
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor_px_2x": [
+    64,
+    64
+   ],
+   "footprint": [
+    1,
+    1
+   ]
+  },
+  {
+   "id": "crag_edge_nw_ne_se",
+   "kind": "edge",
+   "family": "crag",
+   "side": [
+    "nw",
+    "ne",
+    "se"
+   ],
+   "meets": "snow (cornice / cliff drop)",
+   "file_2x": "tiles/_2x/crag_edge_nw_ne_se.png",
+   "file_1x": "tiles/crag_edge_nw_ne_se.png",
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor_px_2x": [
+    64,
+    64
+   ],
+   "footprint": [
+    1,
+    1
+   ]
+  },
+  {
+   "id": "crag_edge_nw_ne_se_sw",
+   "kind": "edge",
+   "family": "crag",
+   "side": [
+    "nw",
+    "ne",
+    "se",
+    "sw"
+   ],
+   "meets": "snow (cornice / cliff drop)",
+   "file_2x": "tiles/_2x/crag_edge_nw_ne_se_sw.png",
+   "file_1x": "tiles/crag_edge_nw_ne_se_sw.png",
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor_px_2x": [
+    64,
+    64
+   ],
+   "footprint": [
+    1,
+    1
+   ]
+  },
+  {
+   "id": "crag_edge_nw_ne_sw",
+   "kind": "edge",
+   "family": "crag",
+   "side": [
+    "nw",
+    "ne",
+    "sw"
+   ],
+   "meets": "snow (cornice / cliff drop)",
+   "file_2x": "tiles/_2x/crag_edge_nw_ne_sw.png",
+   "file_1x": "tiles/crag_edge_nw_ne_sw.png",
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor_px_2x": [
+    64,
+    64
+   ],
+   "footprint": [
+    1,
+    1
+   ]
+  },
+  {
+   "id": "crag_edge_nw_se",
+   "kind": "edge",
+   "family": "crag",
+   "side": [
+    "nw",
+    "se"
+   ],
+   "meets": "snow (cornice / cliff drop)",
+   "file_2x": "tiles/_2x/crag_edge_nw_se.png",
+   "file_1x": "tiles/crag_edge_nw_se.png",
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor_px_2x": [
+    64,
+    64
+   ],
+   "footprint": [
+    1,
+    1
+   ]
+  },
+  {
+   "id": "crag_edge_nw_se_sw",
+   "kind": "edge",
+   "family": "crag",
+   "side": [
+    "nw",
+    "se",
+    "sw"
+   ],
+   "meets": "snow (cornice / cliff drop)",
+   "file_2x": "tiles/_2x/crag_edge_nw_se_sw.png",
+   "file_1x": "tiles/crag_edge_nw_se_sw.png",
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor_px_2x": [
+    64,
+    64
+   ],
+   "footprint": [
+    1,
+    1
+   ]
+  },
+  {
+   "id": "crag_edge_nw_sw",
+   "kind": "edge",
+   "family": "crag",
+   "side": [
+    "nw",
+    "sw"
+   ],
+   "meets": "snow (cornice / cliff drop)",
+   "file_2x": "tiles/_2x/crag_edge_nw_sw.png",
+   "file_1x": "tiles/crag_edge_nw_sw.png",
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor_px_2x": [
+    64,
+    64
+   ],
+   "footprint": [
+    1,
+    1
+   ]
+  },
+  {
+   "id": "crag_edge_se",
+   "kind": "edge",
+   "family": "crag",
+   "side": [
+    "se"
+   ],
+   "meets": "snow (cornice / cliff drop)",
+   "file_2x": "tiles/_2x/crag_edge_se.png",
+   "file_1x": "tiles/crag_edge_se.png",
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor_px_2x": [
+    64,
+    64
+   ],
+   "footprint": [
+    1,
+    1
+   ]
+  },
+  {
+   "id": "crag_edge_se_sw",
+   "kind": "edge",
+   "family": "crag",
+   "side": [
+    "se",
+    "sw"
+   ],
+   "meets": "snow (cornice / cliff drop)",
+   "file_2x": "tiles/_2x/crag_edge_se_sw.png",
+   "file_1x": "tiles/crag_edge_se_sw.png",
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor_px_2x": [
+    64,
+    64
+   ],
+   "footprint": [
+    1,
+    1
+   ]
+  },
+  {
+   "id": "crag_edge_sw",
+   "kind": "edge",
+   "family": "crag",
+   "side": [
+    "sw"
+   ],
+   "meets": "snow (cornice / cliff drop)",
+   "file_2x": "tiles/_2x/crag_edge_sw.png",
+   "file_1x": "tiles/crag_edge_sw.png",
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor_px_2x": [
+    64,
+    64
+   ],
+   "footprint": [
+    1,
+    1
+   ]
+  },
+  {
+   "id": "crag_lip_corner_front",
+   "kind": "overlay",
+   "family": "crag",
+   "side": "front",
+   "role": "cliff_lip_corner",
+   "file_2x": "tiles/_2x/crag_lip_corner_front.png",
+   "file_1x": "tiles/crag_lip_corner_front.png",
+   "size_2x": [
+    40,
+    40
+   ],
+   "anchor_px_2x": null,
+   "offset_2x": [
+    -20,
+    20
+   ]
+  },
+  {
+   "id": "crag_lip_corner_left",
+   "kind": "overlay",
+   "family": "crag",
+   "side": "left",
+   "role": "cliff_lip_corner",
+   "file_2x": "tiles/_2x/crag_lip_corner_left.png",
+   "file_1x": "tiles/crag_lip_corner_left.png",
+   "size_2x": [
+    40,
+    40
+   ],
+   "anchor_px_2x": null,
+   "offset_2x": [
+    -84,
+    -12
+   ]
+  },
+  {
+   "id": "crag_lip_corner_right",
+   "kind": "overlay",
+   "family": "crag",
+   "side": "right",
+   "role": "cliff_lip_corner",
+   "file_2x": "tiles/_2x/crag_lip_corner_right.png",
+   "file_1x": "tiles/crag_lip_corner_right.png",
+   "size_2x": [
+    40,
+    40
+   ],
+   "anchor_px_2x": null,
+   "offset_2x": [
+    44,
+    -12
+   ]
+  },
+  {
+   "id": "crag_lip_left",
+   "kind": "overlay",
+   "family": "crag",
+   "side": "left",
+   "role": "cliff_lip",
+   "file_2x": "tiles/_2x/crag_lip_left.png",
+   "file_1x": "tiles/crag_lip_left.png",
+   "size_2x": [
+    64,
+    52
+   ],
+   "anchor_px_2x": null,
+   "offset_2x": [
+    -64,
+    -8
+   ]
+  },
+  {
+   "id": "crag_lip_right",
+   "kind": "overlay",
+   "family": "crag",
+   "side": "right",
+   "role": "cliff_lip",
+   "file_2x": "tiles/_2x/crag_lip_right.png",
+   "file_1x": "tiles/crag_lip_right.png",
+   "size_2x": [
+    64,
+    52
+   ],
+   "anchor_px_2x": null,
+   "offset_2x": [
+    0,
+    -8
+   ]
+  },
+  {
+   "id": "crag_side_left_a",
+   "kind": "cliff_face",
+   "family": "crag",
+   "side": "left",
+   "height_steps": 1,
+   "strip": "a",
+   "file_2x": "tiles/_2x/crag_side_left_a.png",
+   "file_1x": "tiles/crag_side_left_a.png",
+   "size_2x": [
+    64,
+    52
+   ],
+   "anchor_px_2x": null,
+   "offset_2x": [
+    -64,
+    0
+   ]
+  },
+  {
+   "id": "crag_side_left_b",
+   "kind": "cliff_face",
+   "family": "crag",
+   "side": "left",
+   "height_steps": 1,
+   "strip": "b",
+   "file_2x": "tiles/_2x/crag_side_left_b.png",
+   "file_1x": "tiles/crag_side_left_b.png",
+   "size_2x": [
+    64,
+    52
+   ],
+   "anchor_px_2x": null,
+   "offset_2x": [
+    -64,
+    0
+   ]
+  },
+  {
+   "id": "crag_side_left_base_ground",
+   "kind": "cliff_face",
+   "family": "crag",
+   "side": "left",
+   "height_steps": 1,
+   "strip": "base_ground",
+   "file_2x": "tiles/_2x/crag_side_left_base_ground.png",
+   "file_1x": "tiles/crag_side_left_base_ground.png",
+   "size_2x": [
+    64,
+    52
+   ],
+   "anchor_px_2x": null,
+   "offset_2x": [
+    -64,
+    0
+   ]
+  },
+  {
+   "id": "crag_side_left_top",
+   "kind": "cliff_face",
+   "family": "crag",
+   "side": "left",
+   "height_steps": 1,
+   "strip": "top",
+   "file_2x": "tiles/_2x/crag_side_left_top.png",
+   "file_1x": "tiles/crag_side_left_top.png",
+   "size_2x": [
+    64,
+    52
+   ],
+   "anchor_px_2x": null,
+   "offset_2x": [
+    -64,
+    0
+   ]
+  },
+  {
+   "id": "crag_side_right_a",
+   "kind": "cliff_face",
+   "family": "crag",
+   "side": "right",
+   "height_steps": 1,
+   "strip": "a",
+   "file_2x": "tiles/_2x/crag_side_right_a.png",
+   "file_1x": "tiles/crag_side_right_a.png",
+   "size_2x": [
+    64,
+    52
+   ],
+   "anchor_px_2x": null,
+   "offset_2x": [
+    0,
+    0
+   ]
+  },
+  {
+   "id": "crag_side_right_b",
+   "kind": "cliff_face",
+   "family": "crag",
+   "side": "right",
+   "height_steps": 1,
+   "strip": "b",
+   "file_2x": "tiles/_2x/crag_side_right_b.png",
+   "file_1x": "tiles/crag_side_right_b.png",
+   "size_2x": [
+    64,
+    52
+   ],
+   "anchor_px_2x": null,
+   "offset_2x": [
+    0,
+    0
+   ]
+  },
+  {
+   "id": "crag_side_right_base_ground",
+   "kind": "cliff_face",
+   "family": "crag",
+   "side": "right",
+   "height_steps": 1,
+   "strip": "base_ground",
+   "file_2x": "tiles/_2x/crag_side_right_base_ground.png",
+   "file_1x": "tiles/crag_side_right_base_ground.png",
+   "size_2x": [
+    64,
+    52
+   ],
+   "anchor_px_2x": null,
+   "offset_2x": [
+    0,
+    0
+   ]
+  },
+  {
+   "id": "crag_side_right_top",
+   "kind": "cliff_face",
+   "family": "crag",
+   "side": "right",
+   "height_steps": 1,
+   "strip": "top",
+   "file_2x": "tiles/_2x/crag_side_right_top.png",
+   "file_1x": "tiles/crag_side_right_top.png",
+   "size_2x": [
+    64,
+    52
+   ],
+   "anchor_px_2x": null,
+   "offset_2x": [
+    0,
+    0
+   ]
+  },
+  {
+   "id": "frost_grass_a",
+   "kind": "tile",
+   "family": "frost_grass",
+   "side": null,
+   "variant": "a",
+   "file_2x": "tiles/_2x/frost_grass_a.png",
+   "file_1x": "tiles/frost_grass_a.png",
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor_px_2x": [
+    64,
+    64
+   ],
+   "footprint": [
+    1,
+    1
+   ]
+  },
+  {
+   "id": "frost_grass_b",
+   "kind": "tile",
+   "family": "frost_grass",
+   "side": null,
+   "variant": "b",
+   "file_2x": "tiles/_2x/frost_grass_b.png",
+   "file_1x": "tiles/frost_grass_b.png",
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor_px_2x": [
+    64,
+    64
+   ],
+   "footprint": [
+    1,
+    1
+   ]
+  },
+  {
+   "id": "frost_grass_c",
+   "kind": "tile",
+   "family": "frost_grass",
+   "side": null,
+   "variant": "c",
+   "file_2x": "tiles/_2x/frost_grass_c.png",
+   "file_1x": "tiles/frost_grass_c.png",
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor_px_2x": [
+    64,
+    64
+   ],
+   "footprint": [
+    1,
+    1
+   ]
+  },
+  {
+   "id": "frost_grass_corner_e",
+   "kind": "corner",
+   "family": "frost_grass",
+   "side": "e",
+   "meets": "golden_plains",
+   "file_2x": "tiles/_2x/frost_grass_corner_e.png",
+   "file_1x": "tiles/frost_grass_corner_e.png",
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor_px_2x": [
+    64,
+    64
+   ],
+   "footprint": [
+    1,
+    1
+   ]
+  },
+  {
+   "id": "frost_grass_corner_n",
+   "kind": "corner",
+   "family": "frost_grass",
+   "side": "n",
+   "meets": "golden_plains",
+   "file_2x": "tiles/_2x/frost_grass_corner_n.png",
+   "file_1x": "tiles/frost_grass_corner_n.png",
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor_px_2x": [
+    64,
+    64
+   ],
+   "footprint": [
+    1,
+    1
+   ]
+  },
+  {
+   "id": "frost_grass_corner_s",
+   "kind": "corner",
+   "family": "frost_grass",
+   "side": "s",
+   "meets": "golden_plains",
+   "file_2x": "tiles/_2x/frost_grass_corner_s.png",
+   "file_1x": "tiles/frost_grass_corner_s.png",
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor_px_2x": [
+    64,
+    64
+   ],
+   "footprint": [
+    1,
+    1
+   ]
+  },
+  {
+   "id": "frost_grass_corner_w",
+   "kind": "corner",
+   "family": "frost_grass",
+   "side": "w",
+   "meets": "golden_plains",
+   "file_2x": "tiles/_2x/frost_grass_corner_w.png",
+   "file_1x": "tiles/frost_grass_corner_w.png",
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor_px_2x": [
+    64,
+    64
+   ],
+   "footprint": [
+    1,
+    1
+   ]
+  },
+  {
+   "id": "frost_grass_d",
+   "kind": "tile",
+   "family": "frost_grass",
+   "side": null,
+   "variant": "d",
+   "file_2x": "tiles/_2x/frost_grass_d.png",
+   "file_1x": "tiles/frost_grass_d.png",
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor_px_2x": [
+    64,
+    64
+   ],
+   "footprint": [
+    1,
+    1
+   ]
+  },
+  {
+   "id": "frost_grass_edge_ne",
+   "kind": "edge",
+   "family": "frost_grass",
+   "side": [
+    "ne"
+   ],
+   "meets": "golden_plains",
+   "file_2x": "tiles/_2x/frost_grass_edge_ne.png",
+   "file_1x": "tiles/frost_grass_edge_ne.png",
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor_px_2x": [
+    64,
+    64
+   ],
+   "footprint": [
+    1,
+    1
+   ]
+  },
+  {
+   "id": "frost_grass_edge_ne_se",
+   "kind": "edge",
+   "family": "frost_grass",
+   "side": [
+    "ne",
+    "se"
+   ],
+   "meets": "golden_plains",
+   "file_2x": "tiles/_2x/frost_grass_edge_ne_se.png",
+   "file_1x": "tiles/frost_grass_edge_ne_se.png",
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor_px_2x": [
+    64,
+    64
+   ],
+   "footprint": [
+    1,
+    1
+   ]
+  },
+  {
+   "id": "frost_grass_edge_ne_se_sw",
+   "kind": "edge",
+   "family": "frost_grass",
+   "side": [
+    "ne",
+    "se",
+    "sw"
+   ],
+   "meets": "golden_plains",
+   "file_2x": "tiles/_2x/frost_grass_edge_ne_se_sw.png",
+   "file_1x": "tiles/frost_grass_edge_ne_se_sw.png",
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor_px_2x": [
+    64,
+    64
+   ],
+   "footprint": [
+    1,
+    1
+   ]
+  },
+  {
+   "id": "frost_grass_edge_ne_sw",
+   "kind": "edge",
+   "family": "frost_grass",
+   "side": [
+    "ne",
+    "sw"
+   ],
+   "meets": "golden_plains",
+   "file_2x": "tiles/_2x/frost_grass_edge_ne_sw.png",
+   "file_1x": "tiles/frost_grass_edge_ne_sw.png",
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor_px_2x": [
+    64,
+    64
+   ],
+   "footprint": [
+    1,
+    1
+   ]
+  },
+  {
+   "id": "frost_grass_edge_nw",
+   "kind": "edge",
+   "family": "frost_grass",
+   "side": [
+    "nw"
+   ],
+   "meets": "golden_plains",
+   "file_2x": "tiles/_2x/frost_grass_edge_nw.png",
+   "file_1x": "tiles/frost_grass_edge_nw.png",
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor_px_2x": [
+    64,
+    64
+   ],
+   "footprint": [
+    1,
+    1
+   ]
+  },
+  {
+   "id": "frost_grass_edge_nw_ne",
+   "kind": "edge",
+   "family": "frost_grass",
+   "side": [
+    "nw",
+    "ne"
+   ],
+   "meets": "golden_plains",
+   "file_2x": "tiles/_2x/frost_grass_edge_nw_ne.png",
+   "file_1x": "tiles/frost_grass_edge_nw_ne.png",
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor_px_2x": [
+    64,
+    64
+   ],
+   "footprint": [
+    1,
+    1
+   ]
+  },
+  {
+   "id": "frost_grass_edge_nw_ne_se",
+   "kind": "edge",
+   "family": "frost_grass",
+   "side": [
+    "nw",
+    "ne",
+    "se"
+   ],
+   "meets": "golden_plains",
+   "file_2x": "tiles/_2x/frost_grass_edge_nw_ne_se.png",
+   "file_1x": "tiles/frost_grass_edge_nw_ne_se.png",
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor_px_2x": [
+    64,
+    64
+   ],
+   "footprint": [
+    1,
+    1
+   ]
+  },
+  {
+   "id": "frost_grass_edge_nw_ne_se_sw",
+   "kind": "edge",
+   "family": "frost_grass",
+   "side": [
+    "nw",
+    "ne",
+    "se",
+    "sw"
+   ],
+   "meets": "golden_plains",
+   "file_2x": "tiles/_2x/frost_grass_edge_nw_ne_se_sw.png",
+   "file_1x": "tiles/frost_grass_edge_nw_ne_se_sw.png",
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor_px_2x": [
+    64,
+    64
+   ],
+   "footprint": [
+    1,
+    1
+   ]
+  },
+  {
+   "id": "frost_grass_edge_nw_ne_sw",
+   "kind": "edge",
+   "family": "frost_grass",
+   "side": [
+    "nw",
+    "ne",
+    "sw"
+   ],
+   "meets": "golden_plains",
+   "file_2x": "tiles/_2x/frost_grass_edge_nw_ne_sw.png",
+   "file_1x": "tiles/frost_grass_edge_nw_ne_sw.png",
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor_px_2x": [
+    64,
+    64
+   ],
+   "footprint": [
+    1,
+    1
+   ]
+  },
+  {
+   "id": "frost_grass_edge_nw_se",
+   "kind": "edge",
+   "family": "frost_grass",
+   "side": [
+    "nw",
+    "se"
+   ],
+   "meets": "golden_plains",
+   "file_2x": "tiles/_2x/frost_grass_edge_nw_se.png",
+   "file_1x": "tiles/frost_grass_edge_nw_se.png",
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor_px_2x": [
+    64,
+    64
+   ],
+   "footprint": [
+    1,
+    1
+   ]
+  },
+  {
+   "id": "frost_grass_edge_nw_se_sw",
+   "kind": "edge",
+   "family": "frost_grass",
+   "side": [
+    "nw",
+    "se",
+    "sw"
+   ],
+   "meets": "golden_plains",
+   "file_2x": "tiles/_2x/frost_grass_edge_nw_se_sw.png",
+   "file_1x": "tiles/frost_grass_edge_nw_se_sw.png",
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor_px_2x": [
+    64,
+    64
+   ],
+   "footprint": [
+    1,
+    1
+   ]
+  },
+  {
+   "id": "frost_grass_edge_nw_sw",
+   "kind": "edge",
+   "family": "frost_grass",
+   "side": [
+    "nw",
+    "sw"
+   ],
+   "meets": "golden_plains",
+   "file_2x": "tiles/_2x/frost_grass_edge_nw_sw.png",
+   "file_1x": "tiles/frost_grass_edge_nw_sw.png",
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor_px_2x": [
+    64,
+    64
+   ],
+   "footprint": [
+    1,
+    1
+   ]
+  },
+  {
+   "id": "frost_grass_edge_se",
+   "kind": "edge",
+   "family": "frost_grass",
+   "side": [
+    "se"
+   ],
+   "meets": "golden_plains",
+   "file_2x": "tiles/_2x/frost_grass_edge_se.png",
+   "file_1x": "tiles/frost_grass_edge_se.png",
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor_px_2x": [
+    64,
+    64
+   ],
+   "footprint": [
+    1,
+    1
+   ]
+  },
+  {
+   "id": "frost_grass_edge_se_sw",
+   "kind": "edge",
+   "family": "frost_grass",
+   "side": [
+    "se",
+    "sw"
+   ],
+   "meets": "golden_plains",
+   "file_2x": "tiles/_2x/frost_grass_edge_se_sw.png",
+   "file_1x": "tiles/frost_grass_edge_se_sw.png",
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor_px_2x": [
+    64,
+    64
+   ],
+   "footprint": [
+    1,
+    1
+   ]
+  },
+  {
+   "id": "frost_grass_edge_sw",
+   "kind": "edge",
+   "family": "frost_grass",
+   "side": [
+    "sw"
+   ],
+   "meets": "golden_plains",
+   "file_2x": "tiles/_2x/frost_grass_edge_sw.png",
+   "file_1x": "tiles/frost_grass_edge_sw.png",
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor_px_2x": [
+    64,
+    64
+   ],
+   "footprint": [
+    1,
+    1
+   ]
+  },
+  {
+   "id": "frost_overlay_a",
+   "kind": "overlay",
+   "family": "frost_overlay",
+   "side": null,
+   "role": "interior",
+   "file_2x": "tiles/_2x/frost_overlay_a.png",
+   "file_1x": "tiles/frost_overlay_a.png",
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor_px_2x": [
+    64,
+    64
+   ],
+   "footprint": [
+    1,
+    1
+   ]
+  },
+  {
+   "id": "frost_overlay_b",
+   "kind": "overlay",
+   "family": "frost_overlay",
+   "side": null,
+   "role": "interior",
+   "file_2x": "tiles/_2x/frost_overlay_b.png",
+   "file_1x": "tiles/frost_overlay_b.png",
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor_px_2x": [
+    64,
+    64
+   ],
+   "footprint": [
+    1,
+    1
+   ]
+  },
+  {
+   "id": "snow_a",
+   "kind": "tile",
+   "family": "snow",
+   "side": null,
+   "variant": "a",
+   "file_2x": "tiles/_2x/snow_a.png",
+   "file_1x": "tiles/snow_a.png",
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor_px_2x": [
+    64,
+    64
+   ],
+   "footprint": [
+    1,
+    1
+   ]
+  },
+  {
+   "id": "snow_b",
+   "kind": "tile",
+   "family": "snow",
+   "side": null,
+   "variant": "b",
+   "file_2x": "tiles/_2x/snow_b.png",
+   "file_1x": "tiles/snow_b.png",
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor_px_2x": [
+    64,
+    64
+   ],
+   "footprint": [
+    1,
+    1
+   ]
+  },
+  {
+   "id": "snow_c",
+   "kind": "tile",
+   "family": "snow",
+   "side": null,
+   "variant": "c",
+   "file_2x": "tiles/_2x/snow_c.png",
+   "file_1x": "tiles/snow_c.png",
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor_px_2x": [
+    64,
+    64
+   ],
+   "footprint": [
+    1,
+    1
+   ]
+  },
+  {
+   "id": "snow_corner_e",
+   "kind": "corner",
+   "family": "snow",
+   "side": "e",
+   "meets": "frost_grass",
+   "file_2x": "tiles/_2x/snow_corner_e.png",
+   "file_1x": "tiles/snow_corner_e.png",
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor_px_2x": [
+    64,
+    64
+   ],
+   "footprint": [
+    1,
+    1
+   ]
+  },
+  {
+   "id": "snow_corner_n",
+   "kind": "corner",
+   "family": "snow",
+   "side": "n",
+   "meets": "frost_grass",
+   "file_2x": "tiles/_2x/snow_corner_n.png",
+   "file_1x": "tiles/snow_corner_n.png",
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor_px_2x": [
+    64,
+    64
+   ],
+   "footprint": [
+    1,
+    1
+   ]
+  },
+  {
+   "id": "snow_corner_s",
+   "kind": "corner",
+   "family": "snow",
+   "side": "s",
+   "meets": "frost_grass",
+   "file_2x": "tiles/_2x/snow_corner_s.png",
+   "file_1x": "tiles/snow_corner_s.png",
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor_px_2x": [
+    64,
+    64
+   ],
+   "footprint": [
+    1,
+    1
+   ]
+  },
+  {
+   "id": "snow_corner_w",
+   "kind": "corner",
+   "family": "snow",
+   "side": "w",
+   "meets": "frost_grass",
+   "file_2x": "tiles/_2x/snow_corner_w.png",
+   "file_1x": "tiles/snow_corner_w.png",
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor_px_2x": [
+    64,
+    64
+   ],
+   "footprint": [
+    1,
+    1
+   ]
+  },
+  {
+   "id": "snow_d",
+   "kind": "tile",
+   "family": "snow",
+   "side": null,
+   "variant": "d",
+   "file_2x": "tiles/_2x/snow_d.png",
+   "file_1x": "tiles/snow_d.png",
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor_px_2x": [
+    64,
+    64
+   ],
+   "footprint": [
+    1,
+    1
+   ]
+  },
+  {
+   "id": "snow_edge_ne",
+   "kind": "edge",
+   "family": "snow",
+   "side": [
+    "ne"
+   ],
+   "meets": "frost_grass",
+   "file_2x": "tiles/_2x/snow_edge_ne.png",
+   "file_1x": "tiles/snow_edge_ne.png",
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor_px_2x": [
+    64,
+    64
+   ],
+   "footprint": [
+    1,
+    1
+   ]
+  },
+  {
+   "id": "snow_edge_ne_se",
+   "kind": "edge",
+   "family": "snow",
+   "side": [
+    "ne",
+    "se"
+   ],
+   "meets": "frost_grass",
+   "file_2x": "tiles/_2x/snow_edge_ne_se.png",
+   "file_1x": "tiles/snow_edge_ne_se.png",
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor_px_2x": [
+    64,
+    64
+   ],
+   "footprint": [
+    1,
+    1
+   ]
+  },
+  {
+   "id": "snow_edge_ne_se_sw",
+   "kind": "edge",
+   "family": "snow",
+   "side": [
+    "ne",
+    "se",
+    "sw"
+   ],
+   "meets": "frost_grass",
+   "file_2x": "tiles/_2x/snow_edge_ne_se_sw.png",
+   "file_1x": "tiles/snow_edge_ne_se_sw.png",
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor_px_2x": [
+    64,
+    64
+   ],
+   "footprint": [
+    1,
+    1
+   ]
+  },
+  {
+   "id": "snow_edge_ne_sw",
+   "kind": "edge",
+   "family": "snow",
+   "side": [
+    "ne",
+    "sw"
+   ],
+   "meets": "frost_grass",
+   "file_2x": "tiles/_2x/snow_edge_ne_sw.png",
+   "file_1x": "tiles/snow_edge_ne_sw.png",
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor_px_2x": [
+    64,
+    64
+   ],
+   "footprint": [
+    1,
+    1
+   ]
+  },
+  {
+   "id": "snow_edge_nw",
+   "kind": "edge",
+   "family": "snow",
+   "side": [
+    "nw"
+   ],
+   "meets": "frost_grass",
+   "file_2x": "tiles/_2x/snow_edge_nw.png",
+   "file_1x": "tiles/snow_edge_nw.png",
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor_px_2x": [
+    64,
+    64
+   ],
+   "footprint": [
+    1,
+    1
+   ]
+  },
+  {
+   "id": "snow_edge_nw_ne",
+   "kind": "edge",
+   "family": "snow",
+   "side": [
+    "nw",
+    "ne"
+   ],
+   "meets": "frost_grass",
+   "file_2x": "tiles/_2x/snow_edge_nw_ne.png",
+   "file_1x": "tiles/snow_edge_nw_ne.png",
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor_px_2x": [
+    64,
+    64
+   ],
+   "footprint": [
+    1,
+    1
+   ]
+  },
+  {
+   "id": "snow_edge_nw_ne_se",
+   "kind": "edge",
+   "family": "snow",
+   "side": [
+    "nw",
+    "ne",
+    "se"
+   ],
+   "meets": "frost_grass",
+   "file_2x": "tiles/_2x/snow_edge_nw_ne_se.png",
+   "file_1x": "tiles/snow_edge_nw_ne_se.png",
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor_px_2x": [
+    64,
+    64
+   ],
+   "footprint": [
+    1,
+    1
+   ]
+  },
+  {
+   "id": "snow_edge_nw_ne_se_sw",
+   "kind": "edge",
+   "family": "snow",
+   "side": [
+    "nw",
+    "ne",
+    "se",
+    "sw"
+   ],
+   "meets": "frost_grass",
+   "file_2x": "tiles/_2x/snow_edge_nw_ne_se_sw.png",
+   "file_1x": "tiles/snow_edge_nw_ne_se_sw.png",
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor_px_2x": [
+    64,
+    64
+   ],
+   "footprint": [
+    1,
+    1
+   ]
+  },
+  {
+   "id": "snow_edge_nw_ne_sw",
+   "kind": "edge",
+   "family": "snow",
+   "side": [
+    "nw",
+    "ne",
+    "sw"
+   ],
+   "meets": "frost_grass",
+   "file_2x": "tiles/_2x/snow_edge_nw_ne_sw.png",
+   "file_1x": "tiles/snow_edge_nw_ne_sw.png",
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor_px_2x": [
+    64,
+    64
+   ],
+   "footprint": [
+    1,
+    1
+   ]
+  },
+  {
+   "id": "snow_edge_nw_se",
+   "kind": "edge",
+   "family": "snow",
+   "side": [
+    "nw",
+    "se"
+   ],
+   "meets": "frost_grass",
+   "file_2x": "tiles/_2x/snow_edge_nw_se.png",
+   "file_1x": "tiles/snow_edge_nw_se.png",
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor_px_2x": [
+    64,
+    64
+   ],
+   "footprint": [
+    1,
+    1
+   ]
+  },
+  {
+   "id": "snow_edge_nw_se_sw",
+   "kind": "edge",
+   "family": "snow",
+   "side": [
+    "nw",
+    "se",
+    "sw"
+   ],
+   "meets": "frost_grass",
+   "file_2x": "tiles/_2x/snow_edge_nw_se_sw.png",
+   "file_1x": "tiles/snow_edge_nw_se_sw.png",
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor_px_2x": [
+    64,
+    64
+   ],
+   "footprint": [
+    1,
+    1
+   ]
+  },
+  {
+   "id": "snow_edge_nw_sw",
+   "kind": "edge",
+   "family": "snow",
+   "side": [
+    "nw",
+    "sw"
+   ],
+   "meets": "frost_grass",
+   "file_2x": "tiles/_2x/snow_edge_nw_sw.png",
+   "file_1x": "tiles/snow_edge_nw_sw.png",
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor_px_2x": [
+    64,
+    64
+   ],
+   "footprint": [
+    1,
+    1
+   ]
+  },
+  {
+   "id": "snow_edge_se",
+   "kind": "edge",
+   "family": "snow",
+   "side": [
+    "se"
+   ],
+   "meets": "frost_grass",
+   "file_2x": "tiles/_2x/snow_edge_se.png",
+   "file_1x": "tiles/snow_edge_se.png",
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor_px_2x": [
+    64,
+    64
+   ],
+   "footprint": [
+    1,
+    1
+   ]
+  },
+  {
+   "id": "snow_edge_se_sw",
+   "kind": "edge",
+   "family": "snow",
+   "side": [
+    "se",
+    "sw"
+   ],
+   "meets": "frost_grass",
+   "file_2x": "tiles/_2x/snow_edge_se_sw.png",
+   "file_1x": "tiles/snow_edge_se_sw.png",
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor_px_2x": [
+    64,
+    64
+   ],
+   "footprint": [
+    1,
+    1
+   ]
+  },
+  {
+   "id": "snow_edge_sw",
+   "kind": "edge",
+   "family": "snow",
+   "side": [
+    "sw"
+   ],
+   "meets": "frost_grass",
+   "file_2x": "tiles/_2x/snow_edge_sw.png",
+   "file_1x": "tiles/snow_edge_sw.png",
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor_px_2x": [
+    64,
+    64
+   ],
+   "footprint": [
+    1,
+    1
+   ]
+  },
+  {
+   "id": "snow_patch_a",
+   "kind": "tile",
+   "family": "frost_grass/snow_patch",
+   "side": null,
+   "variant": "a",
+   "file_2x": "tiles/_2x/snow_patch_a.png",
+   "file_1x": "tiles/snow_patch_a.png",
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor_px_2x": [
+    64,
+    64
+   ],
+   "footprint": [
+    1,
+    1
+   ]
+  },
+  {
+   "id": "snow_patch_b",
+   "kind": "tile",
+   "family": "frost_grass/snow_patch",
+   "side": null,
+   "variant": "b",
+   "file_2x": "tiles/_2x/snow_patch_b.png",
+   "file_1x": "tiles/snow_patch_b.png",
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor_px_2x": [
+    64,
+    64
+   ],
+   "footprint": [
+    1,
+    1
+   ]
+  },
+  {
+   "id": "snow_patch_c",
+   "kind": "tile",
+   "family": "frost_grass/snow_patch",
+   "side": null,
+   "variant": "c",
+   "file_2x": "tiles/_2x/snow_patch_c.png",
+   "file_1x": "tiles/snow_patch_c.png",
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor_px_2x": [
+    64,
+    64
+   ],
+   "footprint": [
+    1,
+    1
+   ]
+  },
+  {
+   "id": "snow_patch_d",
+   "kind": "tile",
+   "family": "frost_grass/snow_patch",
+   "side": null,
+   "variant": "d",
+   "file_2x": "tiles/_2x/snow_patch_d.png",
+   "file_1x": "tiles/snow_patch_d.png",
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor_px_2x": [
+    64,
+    64
+   ],
+   "footprint": [
+    1,
+    1
+   ]
+  },
+  {
+   "id": "snow_rock_a",
+   "kind": "tile",
+   "family": "snow",
+   "side": null,
+   "variant": "a",
+   "file_2x": "tiles/_2x/snow_rock_a.png",
+   "file_1x": "tiles/snow_rock_a.png",
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor_px_2x": [
+    64,
+    64
+   ],
+   "footprint": [
+    1,
+    1
+   ]
+  },
+  {
+   "id": "snow_rock_b",
+   "kind": "tile",
+   "family": "snow",
+   "side": null,
+   "variant": "b",
+   "file_2x": "tiles/_2x/snow_rock_b.png",
+   "file_1x": "tiles/snow_rock_b.png",
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor_px_2x": [
+    64,
+    64
+   ],
+   "footprint": [
+    1,
+    1
+   ]
+  },
+  {
+   "id": "water_ice_a",
+   "kind": "overlay",
+   "family": "water_ice",
+   "side": null,
+   "role": "interior",
+   "file_2x": "tiles/_2x/water_ice_a.png",
+   "file_1x": "tiles/water_ice_a.png",
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor_px_2x": [
+    64,
+    64
+   ],
+   "footprint": [
+    1,
+    1
+   ]
+  },
+  {
+   "id": "water_ice_b",
+   "kind": "overlay",
+   "family": "water_ice",
+   "side": null,
+   "role": "interior",
+   "file_2x": "tiles/_2x/water_ice_b.png",
+   "file_1x": "tiles/water_ice_b.png",
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor_px_2x": [
+    64,
+    64
+   ],
+   "footprint": [
+    1,
+    1
+   ]
+  },
+  {
+   "id": "water_ice_corner_e",
+   "kind": "overlay",
+   "family": "water_ice",
+   "side": "e",
+   "role": "corner",
+   "file_2x": "tiles/_2x/water_ice_corner_e.png",
+   "file_1x": "tiles/water_ice_corner_e.png",
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor_px_2x": [
+    64,
+    64
+   ],
+   "footprint": [
+    1,
+    1
+   ]
+  },
+  {
+   "id": "water_ice_corner_n",
+   "kind": "overlay",
+   "family": "water_ice",
+   "side": "n",
+   "role": "corner",
+   "file_2x": "tiles/_2x/water_ice_corner_n.png",
+   "file_1x": "tiles/water_ice_corner_n.png",
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor_px_2x": [
+    64,
+    64
+   ],
+   "footprint": [
+    1,
+    1
+   ]
+  },
+  {
+   "id": "water_ice_corner_s",
+   "kind": "overlay",
+   "family": "water_ice",
+   "side": "s",
+   "role": "corner",
+   "file_2x": "tiles/_2x/water_ice_corner_s.png",
+   "file_1x": "tiles/water_ice_corner_s.png",
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor_px_2x": [
+    64,
+    64
+   ],
+   "footprint": [
+    1,
+    1
+   ]
+  },
+  {
+   "id": "water_ice_corner_w",
+   "kind": "overlay",
+   "family": "water_ice",
+   "side": "w",
+   "role": "corner",
+   "file_2x": "tiles/_2x/water_ice_corner_w.png",
+   "file_1x": "tiles/water_ice_corner_w.png",
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor_px_2x": [
+    64,
+    64
+   ],
+   "footprint": [
+    1,
+    1
+   ]
+  },
+  {
+   "id": "water_ice_edge_ne",
+   "kind": "overlay",
+   "family": "water_ice",
+   "side": "ne",
+   "role": "edge",
+   "file_2x": "tiles/_2x/water_ice_edge_ne.png",
+   "file_1x": "tiles/water_ice_edge_ne.png",
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor_px_2x": [
+    64,
+    64
+   ],
+   "footprint": [
+    1,
+    1
+   ]
+  },
+  {
+   "id": "water_ice_edge_nw",
+   "kind": "overlay",
+   "family": "water_ice",
+   "side": "nw",
+   "role": "edge",
+   "file_2x": "tiles/_2x/water_ice_edge_nw.png",
+   "file_1x": "tiles/water_ice_edge_nw.png",
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor_px_2x": [
+    64,
+    64
+   ],
+   "footprint": [
+    1,
+    1
+   ]
+  },
+  {
+   "id": "water_ice_edge_se",
+   "kind": "overlay",
+   "family": "water_ice",
+   "side": "se",
+   "role": "edge",
+   "file_2x": "tiles/_2x/water_ice_edge_se.png",
+   "file_1x": "tiles/water_ice_edge_se.png",
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor_px_2x": [
+    64,
+    64
+   ],
+   "footprint": [
+    1,
+    1
+   ]
+  },
+  {
+   "id": "water_ice_edge_sw",
+   "kind": "overlay",
+   "family": "water_ice",
+   "side": "sw",
+   "role": "edge",
+   "file_2x": "tiles/_2x/water_ice_edge_sw.png",
+   "file_1x": "tiles/water_ice_edge_sw.png",
+   "size_2x": [
+    128,
+    64
+   ],
+   "anchor_px_2x": [
+    64,
+    64
+   ],
+   "footprint": [
+    1,
+    1
+   ]
+  },
+  {
+   "id": "crag_spire_a",
+   "kind": "prop",
+   "family": "crag_rock",
+   "side": null,
+   "file_2x": "props/_2x/crag_spire_a.png",
+   "file_1x": "props/crag_spire_a.png",
+   "size_2x": [
+    256,
+    384
+   ],
+   "anchor_px_2x": [
+    128,
+    384
+   ],
+   "footprint": [
+    2,
+    2
+   ],
+   "height_px_2x": 243,
+   "layer": "prop"
+  },
+  {
+   "id": "crag_outcrop_a",
+   "kind": "prop",
+   "family": "crag_rock",
+   "side": null,
+   "file_2x": "props/_2x/crag_outcrop_a.png",
+   "file_1x": "props/crag_outcrop_a.png",
+   "size_2x": [
+    256,
+    384
+   ],
+   "anchor_px_2x": [
+    128,
+    384
+   ],
+   "footprint": [
+    2,
+    2
+   ],
+   "height_px_2x": 222,
+   "layer": "prop"
+  },
+  {
+   "id": "crag_outcrop_b",
+   "kind": "prop",
+   "family": "crag_rock",
+   "side": null,
+   "file_2x": "props/_2x/crag_outcrop_b.png",
+   "file_1x": "props/crag_outcrop_b.png",
+   "size_2x": [
+    256,
+    384
+   ],
+   "anchor_px_2x": [
+    128,
+    384
+   ],
+   "footprint": [
+    2,
+    2
+   ],
+   "height_px_2x": 216,
+   "layer": "prop"
+  },
+  {
+   "id": "crag_spire_b",
+   "kind": "prop",
+   "family": "crag_rock",
+   "side": null,
+   "file_2x": "props/_2x/crag_spire_b.png",
+   "file_1x": "props/crag_spire_b.png",
+   "size_2x": [
+    256,
+    384
+   ],
+   "anchor_px_2x": [
+    128,
+    384
+   ],
+   "footprint": [
+    2,
+    2
+   ],
+   "height_px_2x": 239,
+   "layer": "prop"
+  },
+  {
+   "id": "crag_boulders_a",
+   "kind": "prop",
+   "family": "crag_rock",
+   "side": null,
+   "file_2x": "props/_2x/crag_boulders_a.png",
+   "file_1x": "props/crag_boulders_a.png",
+   "size_2x": [
+    128,
+    128
+   ],
+   "anchor_px_2x": [
+    64,
+    128
+   ],
+   "footprint": [
+    1,
+    1
+   ],
+   "height_px_2x": 87,
+   "layer": "prop"
+  },
+  {
+   "id": "crag_boulders_b",
+   "kind": "prop",
+   "family": "crag_rock",
+   "side": null,
+   "file_2x": "props/_2x/crag_boulders_b.png",
+   "file_1x": "props/crag_boulders_b.png",
+   "size_2x": [
+    128,
+    128
+   ],
+   "anchor_px_2x": [
+    64,
+    128
+   ],
+   "footprint": [
+    1,
+    1
+   ],
+   "height_px_2x": 93,
+   "layer": "prop"
+  },
+  {
+   "id": "crag_outcrop_c",
+   "kind": "prop",
+   "family": "crag_rock",
+   "side": null,
+   "file_2x": "props/_2x/crag_outcrop_c.png",
+   "file_1x": "props/crag_outcrop_c.png",
+   "size_2x": [
+    128,
+    128
+   ],
+   "anchor_px_2x": [
+    64,
+    128
+   ],
+   "footprint": [
+    1,
+    1
+   ],
+   "height_px_2x": 101,
+   "layer": "prop"
+  },
+  {
+   "id": "crag_boulders_c",
+   "kind": "prop",
+   "family": "crag_rock",
+   "side": null,
+   "file_2x": "props/_2x/crag_boulders_c.png",
+   "file_1x": "props/crag_boulders_c.png",
+   "size_2x": [
+    128,
+    128
+   ],
+   "anchor_px_2x": [
+    64,
+    128
+   ],
+   "footprint": [
+    1,
+    1
+   ],
+   "height_px_2x": 92,
+   "layer": "prop"
+  },
+  {
+   "id": "crag_boulders_d",
+   "kind": "prop",
+   "family": "crag_rock",
+   "side": null,
+   "file_2x": "props/_2x/crag_boulders_d.png",
+   "file_1x": "props/crag_boulders_d.png",
+   "size_2x": [
+    128,
+    128
+   ],
+   "anchor_px_2x": [
+    64,
+    128
+   ],
+   "footprint": [
+    1,
+    1
+   ],
+   "height_px_2x": 90,
+   "layer": "prop"
+  },
+  {
+   "id": "crag_split_shrub",
+   "kind": "prop",
+   "family": "crag_rock",
+   "side": null,
+   "file_2x": "props/_2x/crag_split_shrub.png",
+   "file_1x": "props/crag_split_shrub.png",
+   "size_2x": [
+    128,
+    128
+   ],
+   "anchor_px_2x": [
+    64,
+    128
+   ],
+   "footprint": [
+    1,
+    1
+   ],
+   "height_px_2x": 113,
+   "layer": "prop"
+  },
+  {
+   "id": "crag_outcrop_d",
+   "kind": "prop",
+   "family": "crag_rock",
+   "side": null,
+   "file_2x": "props/_2x/crag_outcrop_d.png",
+   "file_1x": "props/crag_outcrop_d.png",
+   "size_2x": [
+    128,
+    128
+   ],
+   "anchor_px_2x": [
+    64,
+    128
+   ],
+   "footprint": [
+    1,
+    1
+   ],
+   "height_px_2x": 101,
+   "layer": "prop"
+  },
+  {
+   "id": "crag_cairn_flag",
+   "kind": "prop",
+   "family": "crag_rock",
+   "side": null,
+   "file_2x": "props/_2x/crag_cairn_flag.png",
+   "file_1x": "props/crag_cairn_flag.png",
+   "size_2x": [
+    128,
+    224
+   ],
+   "anchor_px_2x": [
+    64,
+    224
+   ],
+   "footprint": [
+    1,
+    1
+   ],
+   "height_px_2x": 129,
+   "layer": "prop"
+  },
+  {
+   "id": "drift_wall_long_a",
+   "kind": "prop",
+   "family": "drift",
+   "side": "+x (flip_h for +y)",
+   "file_2x": "props/_2x/drift_wall_long_a.png",
+   "file_1x": "props/drift_wall_long_a.png",
+   "size_2x": [
+    192,
+    160
+   ],
+   "anchor_px_2x": [
+    96,
+    160
+   ],
+   "footprint": [
+    2,
+    1
+   ],
+   "height_px_2x": 81,
+   "layer": "ground_overlay"
+  },
+  {
+   "id": "drift_wall_long_b",
+   "kind": "prop",
+   "family": "drift",
+   "side": "+x (flip_h for +y)",
+   "file_2x": "props/_2x/drift_wall_long_b.png",
+   "file_1x": "props/drift_wall_long_b.png",
+   "size_2x": [
+    192,
+    160
+   ],
+   "anchor_px_2x": [
+    96,
+    160
+   ],
+   "footprint": [
+    2,
+    1
+   ],
+   "height_px_2x": 81,
+   "layer": "ground_overlay"
+  },
+  {
+   "id": "drift_wall_long_c",
+   "kind": "prop",
+   "family": "drift",
+   "side": "+x (flip_h for +y)",
+   "file_2x": "props/_2x/drift_wall_long_c.png",
+   "file_1x": "props/drift_wall_long_c.png",
+   "size_2x": [
+    192,
+    160
+   ],
+   "anchor_px_2x": [
+    96,
+    160
+   ],
+   "footprint": [
+    2,
+    1
+   ],
+   "height_px_2x": 83,
+   "layer": "ground_overlay"
+  },
+  {
+   "id": "drift_fence_a",
+   "kind": "prop",
+   "family": "drift",
+   "side": "+x (flip_h for +y)",
+   "file_2x": "props/_2x/drift_fence_a.png",
+   "file_1x": "props/drift_fence_a.png",
+   "size_2x": [
+    128,
+    128
+   ],
+   "anchor_px_2x": [
+    64,
+    128
+   ],
+   "footprint": [
+    1,
+    1
+   ],
+   "height_px_2x": 54,
+   "layer": "ground_overlay"
+  },
+  {
+   "id": "drift_tree_ring_a",
+   "kind": "prop",
+   "family": "drift",
+   "side": "none",
+   "file_2x": "props/_2x/drift_tree_ring_a.png",
+   "file_1x": "props/drift_tree_ring_a.png",
+   "size_2x": [
+    128,
+    128
+   ],
+   "anchor_px_2x": [
+    64,
+    128
+   ],
+   "footprint": [
+    1,
+    1
+   ],
+   "height_px_2x": 48,
+   "layer": "ground_overlay"
+  },
+  {
+   "id": "drift_tree_ring_b",
+   "kind": "prop",
+   "family": "drift",
+   "side": "none",
+   "file_2x": "props/_2x/drift_tree_ring_b.png",
+   "file_1x": "props/drift_tree_ring_b.png",
+   "size_2x": [
+    128,
+    128
+   ],
+   "anchor_px_2x": [
+    64,
+    128
+   ],
+   "footprint": [
+    1,
+    1
+   ],
+   "height_px_2x": 47,
+   "layer": "ground_overlay"
+  },
+  {
+   "id": "drift_patch_a",
+   "kind": "prop",
+   "family": "drift",
+   "side": "none",
+   "file_2x": "props/_2x/drift_patch_a.png",
+   "file_1x": "props/drift_patch_a.png",
+   "size_2x": [
+    128,
+    128
+   ],
+   "anchor_px_2x": [
+    64,
+    128
+   ],
+   "footprint": [
+    1,
+    1
+   ],
+   "height_px_2x": 46,
+   "layer": "ground_overlay"
+  },
+  {
+   "id": "drift_patch_b",
+   "kind": "prop",
+   "family": "drift",
+   "side": "none",
+   "file_2x": "props/_2x/drift_patch_b.png",
+   "file_1x": "props/drift_patch_b.png",
+   "size_2x": [
+    128,
+    128
+   ],
+   "anchor_px_2x": [
+    64,
+    128
+   ],
+   "footprint": [
+    1,
+    1
+   ],
+   "height_px_2x": 48,
+   "layer": "ground_overlay"
+  },
+  {
+   "id": "roof_snow_full_a",
+   "kind": "roof_cap",
+   "family": "roof_snow",
+   "side": null,
+   "file_2x": "roof/_2x/roof_snow_full_a.png",
+   "file_1x": "roof/roof_snow_full_a.png",
+   "size_2x": [
+    640,
+    86
+   ],
+   "anchor_px_2x": null,
+   "footprint": null,
+   "lip_px_2x": 16
+  },
+  {
+   "id": "roof_snow_full_b",
+   "kind": "roof_cap",
+   "family": "roof_snow",
+   "side": null,
+   "file_2x": "roof/_2x/roof_snow_full_b.png",
+   "file_1x": "roof/roof_snow_full_b.png",
+   "size_2x": [
+    640,
+    82
+   ],
+   "anchor_px_2x": null,
+   "footprint": null,
+   "lip_px_2x": 16
+  },
+  {
+   "id": "roof_snow_patchy_a",
+   "kind": "roof_cap",
+   "family": "roof_snow",
+   "side": null,
+   "file_2x": "roof/_2x/roof_snow_patchy_a.png",
+   "file_1x": "roof/roof_snow_patchy_a.png",
+   "size_2x": [
+    640,
+    68
+   ],
+   "anchor_px_2x": null,
+   "footprint": null,
+   "lip_px_2x": 14
+  },
+  {
+   "id": "roof_snow_dust_a",
+   "kind": "roof_cap",
+   "family": "roof_snow",
+   "side": null,
+   "file_2x": "roof/_2x/roof_snow_dust_a.png",
+   "file_1x": "roof/roof_snow_dust_a.png",
+   "size_2x": [
+    640,
+    58
+   ],
+   "anchor_px_2x": null,
+   "footprint": null,
+   "lip_px_2x": 9
+  },
+  {
+   "id": "roof_snow_left_a",
+   "kind": "roof_cap",
+   "family": "roof_snow",
+   "side": "left",
+   "file_2x": "roof/_2x/roof_snow_left_a.png",
+   "file_1x": "roof/roof_snow_left_a.png",
+   "size_2x": [
+    640,
+    392
+   ],
+   "anchor_px_2x": null,
+   "footprint": null,
+   "lip_px_2x": 16
+  },
+  {
+   "id": "roof_snow_right_a",
+   "kind": "roof_cap",
+   "family": "roof_snow",
+   "side": "right",
+   "file_2x": "roof/_2x/roof_snow_right_a.png",
+   "file_1x": "roof/roof_snow_right_a.png",
+   "size_2x": [
+    640,
+    396
+   ],
+   "anchor_px_2x": null,
+   "footprint": null,
+   "lip_px_2x": 16
+  },
+  {
+   "id": "roof_snow_left_b",
+   "kind": "roof_cap",
+   "family": "roof_snow",
+   "side": "left",
+   "file_2x": "roof/_2x/roof_snow_left_b.png",
+   "file_1x": "roof/roof_snow_left_b.png",
+   "size_2x": [
+    640,
+    390
+   ],
+   "anchor_px_2x": null,
+   "footprint": null,
+   "lip_px_2x": 16
+  },
+  {
+   "id": "roof_snow_right_b",
+   "kind": "roof_cap",
+   "family": "roof_snow",
+   "side": "right",
+   "file_2x": "roof/_2x/roof_snow_right_b.png",
+   "file_1x": "roof/roof_snow_right_b.png",
+   "size_2x": [
+    640,
+    392
+   ],
+   "anchor_px_2x": null,
+   "footprint": null,
+   "lip_px_2x": 16
+  },
+  {
+   "id": "frost_tint_swatch",
+   "kind": "overlay",
+   "family": "frost_overlay",
+   "side": null,
+   "file_2x": "overlays/_2x/frost_tint_swatch.png",
+   "file_1x": "overlays/frost_tint_swatch.png",
+   "size_2x": [
+    512,
+    512
+   ],
+   "anchor_px_2x": null,
+   "footprint": null,
+   "role": "tileable_swatch"
+  }
+ ]
+}

@@ -1,0 +1,27 @@
+{
+ "left_foot": [
+  0,
+  698.8
+ ],
+ "right_foot": [
+  404,
+  552
+ ],
+ "slope": -0.3633,
+ "scale": 1.6667,
+ "body_px": 550,
+ "course_px": 45.0,
+ "inserted_courses": 2,
+ "tile_seam_err": 8.3,
+ "source": "segment_diag_v4match_raw.jpg",
+ "stone_lab_after": [
+  50.5,
+  2.8,
+  21.0
+ ],
+ "colour_target": "v8.3 by-eye v4 look: L50 sd13, a2.8 b21, pale mortar, highlight lift",
+ "size": [
+  405,
+  705
+ ]
+}

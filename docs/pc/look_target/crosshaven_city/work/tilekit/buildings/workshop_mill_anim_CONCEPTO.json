@@ -1,0 +1,24 @@
+{
+ "foot": [
+  394,
+  500
+ ],
+ "footprint": [
+  5,
+  4
+ ],
+ "blocks": true,
+ "height_px": 500,
+ "width_px": 669,
+ "tier": "workshop",
+ "note": "v2: full-building frames; procedural round wheel in perspective (ellipse projection, 8 spokes, 16 paddles), turns 45 deg per 8-frame loop, no edge clipping",
+ "frames": 8,
+ "fps": 8,
+ "frame_w": 789,
+ "frame_h": 560,
+ "wheel_center": [
+  652,
+  350
+ ],
+ "wheel_radius": 118
+}

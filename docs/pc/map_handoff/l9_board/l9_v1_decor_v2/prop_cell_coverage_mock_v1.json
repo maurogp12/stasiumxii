@@ -1,0 +1,1898 @@
+[
+ {
+  "id": "standing_stone",
+  "kind": "prop",
+  "cell": [
+   0,
+   0
+  ],
+  "covers": [
+   {
+    "cell": [
+     0,
+     0
+    ],
+    "pct": 80.2,
+    "host": true,
+    "edge": true,
+    "terrain": "ground",
+    "height": 0
+   }
+  ]
+ },
+ {
+  "id": "ruined_wall_short",
+  "kind": "prop",
+  "cell": [
+   1,
+   0
+  ],
+  "covers": [
+   {
+    "cell": [
+     1,
+     0
+    ],
+    "pct": 38.5,
+    "host": true,
+    "edge": true,
+    "terrain": "ground",
+    "height": 0
+   },
+   {
+    "cell": [
+     0,
+     0
+    ],
+    "pct": 10.4,
+    "host": false,
+    "edge": true,
+    "terrain": "ground",
+    "height": 0
+   }
+  ]
+ },
+ {
+  "id": "lilac_shrub",
+  "kind": "prop",
+  "cell": [
+   6,
+   0
+  ],
+  "covers": [
+   {
+    "cell": [
+     6,
+     0
+    ],
+    "pct": 70.0,
+    "host": true,
+    "edge": true,
+    "terrain": "ground",
+    "height": 0
+   },
+   {
+    "cell": [
+     5,
+     0
+    ],
+    "pct": 12.6,
+    "host": false,
+    "edge": true,
+    "terrain": "ground",
+    "height": 0
+   }
+  ]
+ },
+ {
+  "id": "standing_stone",
+  "kind": "prop",
+  "cell": [
+   14,
+   0
+  ],
+  "covers": [
+   {
+    "cell": [
+     14,
+     0
+    ],
+    "pct": 80.2,
+    "host": true,
+    "edge": true,
+    "terrain": "ground",
+    "height": 0
+   },
+   {
+    "cell": [
+     13,
+     0
+    ],
+    "pct": 22.9,
+    "host": false,
+    "edge": true,
+    "terrain": "ground",
+    "height": 0
+   }
+  ]
+ },
+ {
+  "id": "boulder_small",
+  "kind": "prop",
+  "cell": [
+   9,
+   1
+  ],
+  "covers": [
+   {
+    "cell": [
+     9,
+     1
+    ],
+    "pct": 65.3,
+    "host": true,
+    "edge": false,
+    "terrain": "ground",
+    "height": 0
+   }
+  ]
+ },
+ {
+  "id": "boulder_small",
+  "kind": "prop",
+  "cell": [
+   12,
+   1
+  ],
+  "covers": [
+   {
+    "cell": [
+     12,
+     1
+    ],
+    "pct": 64.4,
+    "host": true,
+    "edge": false,
+    "terrain": "mud",
+    "height": 0
+   }
+  ]
+ },
+ {
+  "id": "boulder_small",
+  "kind": "prop",
+  "cell": [
+   3,
+   3
+  ],
+  "covers": [
+   {
+    "cell": [
+     3,
+     3
+    ],
+    "pct": 47.1,
+    "host": true,
+    "edge": false,
+    "terrain": "ground",
+    "height": 0
+   }
+  ]
+ },
+ {
+  "id": "lilac_shrub",
+  "kind": "prop",
+  "cell": [
+   11,
+   3
+  ],
+  "covers": [
+   {
+    "cell": [
+     11,
+     3
+    ],
+    "pct": 68.4,
+    "host": true,
+    "edge": false,
+    "terrain": "ground",
+    "height": 0
+   },
+   {
+    "cell": [
+     10,
+     2
+    ],
+    "pct": 13.9,
+    "host": false,
+    "edge": false,
+    "terrain": "ground",
+    "height": 0
+   },
+   {
+    "cell": [
+     11,
+     2
+    ],
+    "pct": 10.8,
+    "host": false,
+    "edge": false,
+    "terrain": "ground",
+    "height": 0
+   }
+  ]
+ },
+ {
+  "id": "boulder_cluster",
+  "kind": "prop",
+  "cell": [
+   14,
+   4
+  ],
+  "covers": [
+   {
+    "cell": [
+     14,
+     4
+    ],
+    "pct": 79.2,
+    "host": true,
+    "edge": true,
+    "terrain": "ground",
+    "height": 0
+   },
+   {
+    "cell": [
+     13,
+     3
+    ],
+    "pct": 39.6,
+    "host": false,
+    "edge": false,
+    "terrain": "ground",
+    "height": 0
+   },
+   {
+    "cell": [
+     13,
+     4
+    ],
+    "pct": 16.7,
+    "host": false,
+    "edge": false,
+    "terrain": "ground",
+    "height": 0
+   },
+   {
+    "cell": [
+     14,
+     3
+    ],
+    "pct": 15.7,
+    "host": false,
+    "edge": true,
+    "terrain": "ground",
+    "height": 0
+   }
+  ]
+ },
+ {
+  "id": "lilac_shrub",
+  "kind": "prop",
+  "cell": [
+   0,
+   6
+  ],
+  "covers": [
+   {
+    "cell": [
+     0,
+     6
+    ],
+    "pct": 69.0,
+    "host": true,
+    "edge": true,
+    "terrain": "ground",
+    "height": 0
+   },
+   {
+    "cell": [
+     0,
+     5
+    ],
+    "pct": 11.0,
+    "host": false,
+    "edge": true,
+    "terrain": "water",
+    "height": 0
+   }
+  ]
+ },
+ {
+  "id": "lilac_shrub",
+  "kind": "prop",
+  "cell": [
+   1,
+   7
+  ],
+  "covers": [
+   {
+    "cell": [
+     1,
+     7
+    ],
+    "pct": 70.0,
+    "host": true,
+    "edge": false,
+    "terrain": "ground",
+    "height": 0
+   },
+   {
+    "cell": [
+     0,
+     6
+    ],
+    "pct": 14.5,
+    "host": false,
+    "edge": true,
+    "terrain": "ground",
+    "height": 0
+   },
+   {
+    "cell": [
+     0,
+     7
+    ],
+    "pct": 12.5,
+    "host": false,
+    "edge": true,
+    "terrain": "ground",
+    "height": 0
+   },
+   {
+    "cell": [
+     1,
+     6
+    ],
+    "pct": 10.5,
+    "host": false,
+    "edge": false,
+    "terrain": "ground",
+    "height": 0
+   }
+  ]
+ },
+ {
+  "id": "stone_well",
+  "kind": "prop",
+  "cell": [
+   14,
+   7
+  ],
+  "covers": [
+   {
+    "cell": [
+     14,
+     7
+    ],
+    "pct": 77.3,
+    "host": true,
+    "edge": true,
+    "terrain": "ground",
+    "height": 0
+   },
+   {
+    "cell": [
+     13,
+     6
+    ],
+    "pct": 67.0,
+    "host": false,
+    "edge": false,
+    "terrain": "mud",
+    "height": 0
+   },
+   {
+    "cell": [
+     13,
+     7
+    ],
+    "pct": 29.7,
+    "host": false,
+    "edge": false,
+    "terrain": "water",
+    "height": 0
+   },
+   {
+    "cell": [
+     14,
+     6
+    ],
+    "pct": 26.3,
+    "host": false,
+    "edge": true,
+    "terrain": "ground",
+    "height": 0
+   },
+   {
+    "cell": [
+     12,
+     6
+    ],
+    "pct": 9.3,
+    "host": false,
+    "edge": false,
+    "terrain": "ground",
+    "height": 0
+   }
+  ]
+ },
+ {
+  "id": "boulder_small",
+  "kind": "prop",
+  "cell": [
+   13,
+   8
+  ],
+  "covers": [
+   {
+    "cell": [
+     13,
+     8
+    ],
+    "pct": 66.7,
+    "host": true,
+    "edge": false,
+    "terrain": "ground",
+    "height": 0
+   }
+  ]
+ },
+ {
+  "id": "boulder_cluster",
+  "kind": "prop",
+  "cell": [
+   0,
+   10
+  ],
+  "covers": [
+   {
+    "cell": [
+     0,
+     10
+    ],
+    "pct": 76.7,
+    "host": true,
+    "edge": true,
+    "terrain": "ground",
+    "height": 0
+   },
+   {
+    "cell": [
+     0,
+     9
+    ],
+    "pct": 15.1,
+    "host": false,
+    "edge": true,
+    "terrain": "mud",
+    "height": 0
+   }
+  ]
+ },
+ {
+  "id": "standing_stone",
+  "kind": "prop",
+  "cell": [
+   2,
+   10
+  ],
+  "covers": [
+   {
+    "cell": [
+     2,
+     10
+    ],
+    "pct": 82.7,
+    "host": true,
+    "edge": false,
+    "terrain": "ground",
+    "height": 0
+   },
+   {
+    "cell": [
+     1,
+     9
+    ],
+    "pct": 71.3,
+    "host": false,
+    "edge": false,
+    "terrain": "ground",
+    "height": 0
+   },
+   {
+    "cell": [
+     1,
+     10
+    ],
+    "pct": 23.5,
+    "host": false,
+    "edge": false,
+    "terrain": "ground",
+    "height": 0
+   },
+   {
+    "cell": [
+     0,
+     8
+    ],
+    "pct": 21.3,
+    "host": false,
+    "edge": true,
+    "terrain": "ground",
+    "height": 0
+   },
+   {
+    "cell": [
+     2,
+     9
+    ],
+    "pct": 21.1,
+    "host": false,
+    "edge": false,
+    "terrain": "ground",
+    "height": 0
+   },
+   {
+    "cell": [
+     1,
+     8
+    ],
+    "pct": 14.6,
+    "host": false,
+    "edge": false,
+    "terrain": "ground",
+    "height": 0
+   }
+  ]
+ },
+ {
+  "id": "boulder_small",
+  "kind": "prop",
+  "cell": [
+   12,
+   10
+  ],
+  "covers": [
+   {
+    "cell": [
+     12,
+     10
+    ],
+    "pct": 66.2,
+    "host": true,
+    "edge": false,
+    "terrain": "ground",
+    "height": 0
+   }
+  ]
+ },
+ {
+  "id": "ruined_wall_short",
+  "kind": "prop",
+  "cell": [
+   3,
+   12
+  ],
+  "covers": [
+   {
+    "cell": [
+     3,
+     12
+    ],
+    "pct": 38.2,
+    "host": true,
+    "edge": false,
+    "terrain": "ground",
+    "height": 0
+   },
+   {
+    "cell": [
+     2,
+     11
+    ],
+    "pct": 29.3,
+    "host": false,
+    "edge": false,
+    "terrain": "ground",
+    "height": 0
+   },
+   {
+    "cell": [
+     2,
+     12
+    ],
+    "pct": 10.6,
+    "host": false,
+    "edge": false,
+    "terrain": "mud",
+    "height": 0
+   },
+   {
+    "cell": [
+     3,
+     11
+    ],
+    "pct": 6.5,
+    "host": false,
+    "edge": false,
+    "terrain": "ground",
+    "height": 0
+   }
+  ]
+ },
+ {
+  "id": "boulder_cluster",
+  "kind": "prop",
+  "cell": [
+   10,
+   12
+  ],
+  "covers": [
+   {
+    "cell": [
+     10,
+     12
+    ],
+    "pct": 78.8,
+    "host": true,
+    "edge": false,
+    "terrain": "ground",
+    "height": 0
+   },
+   {
+    "cell": [
+     9,
+     11
+    ],
+    "pct": 40.9,
+    "host": false,
+    "edge": false,
+    "terrain": "ground",
+    "height": 0
+   },
+   {
+    "cell": [
+     9,
+     12
+    ],
+    "pct": 17.1,
+    "host": false,
+    "edge": false,
+    "terrain": "ground",
+    "height": 0
+   },
+   {
+    "cell": [
+     10,
+     11
+    ],
+    "pct": 8.8,
+    "host": false,
+    "edge": false,
+    "terrain": "ground",
+    "height": 1
+   }
+  ]
+ },
+ {
+  "id": "boulder_small",
+  "kind": "prop",
+  "cell": [
+   2,
+   13
+  ],
+  "covers": [
+   {
+    "cell": [
+     2,
+     13
+    ],
+    "pct": 67.1,
+    "host": true,
+    "edge": false,
+    "terrain": "ground",
+    "height": 0
+   }
+  ]
+ },
+ {
+  "id": "fallen_log_short",
+  "kind": "prop",
+  "cell": [
+   5,
+   13
+  ],
+  "covers": [
+   {
+    "cell": [
+     5,
+     13
+    ],
+    "pct": 41.3,
+    "host": true,
+    "edge": false,
+    "terrain": "ground",
+    "height": 0
+   }
+  ]
+ },
+ {
+  "id": "lilac_shrub",
+  "kind": "prop",
+  "cell": [
+   6,
+   13
+  ],
+  "covers": [
+   {
+    "cell": [
+     6,
+     13
+    ],
+    "pct": 69.0,
+    "host": true,
+    "edge": false,
+    "terrain": "ground",
+    "height": 0
+   },
+   {
+    "cell": [
+     5,
+     12
+    ],
+    "pct": 14.0,
+    "host": false,
+    "edge": false,
+    "terrain": "ground",
+    "height": 0
+   },
+   {
+    "cell": [
+     5,
+     13
+    ],
+    "pct": 12.6,
+    "host": false,
+    "edge": false,
+    "terrain": "ground",
+    "height": 0
+   },
+   {
+    "cell": [
+     6,
+     12
+    ],
+    "pct": 10.4,
+    "host": false,
+    "edge": false,
+    "terrain": "ground",
+    "height": 0
+   }
+  ]
+ },
+ {
+  "id": "standing_stone",
+  "kind": "prop",
+  "cell": [
+   0,
+   14
+  ],
+  "covers": [
+   {
+    "cell": [
+     0,
+     14
+    ],
+    "pct": 80.3,
+    "host": true,
+    "edge": true,
+    "terrain": "ground",
+    "height": 0
+   },
+   {
+    "cell": [
+     0,
+     13
+    ],
+    "pct": 20.5,
+    "host": false,
+    "edge": true,
+    "terrain": "ground",
+    "height": 0
+   }
+  ]
+ },
+ {
+  "id": "standing_stone",
+  "kind": "prop",
+  "cell": [
+   4,
+   14
+  ],
+  "covers": [
+   {
+    "cell": [
+     4,
+     14
+    ],
+    "pct": 82.4,
+    "host": true,
+    "edge": true,
+    "terrain": "ground",
+    "height": 0
+   },
+   {
+    "cell": [
+     3,
+     13
+    ],
+    "pct": 69.4,
+    "host": false,
+    "edge": false,
+    "terrain": "ground",
+    "height": 0
+   },
+   {
+    "cell": [
+     3,
+     14
+    ],
+    "pct": 23.1,
+    "host": false,
+    "edge": true,
+    "terrain": "ground",
+    "height": 0
+   },
+   {
+    "cell": [
+     2,
+     12
+    ],
+    "pct": 21.8,
+    "host": false,
+    "edge": false,
+    "terrain": "mud",
+    "height": 0
+   },
+   {
+    "cell": [
+     4,
+     13
+    ],
+    "pct": 20.1,
+    "host": false,
+    "edge": false,
+    "terrain": "ground",
+    "height": 0
+   },
+   {
+    "cell": [
+     3,
+     12
+    ],
+    "pct": 13.5,
+    "host": false,
+    "edge": false,
+    "terrain": "ground",
+    "height": 0
+   }
+  ]
+ },
+ {
+  "id": "fallen_log_short",
+  "kind": "prop",
+  "cell": [
+   8,
+   14
+  ],
+  "covers": [
+   {
+    "cell": [
+     8,
+     14
+    ],
+    "pct": 39.1,
+    "host": true,
+    "edge": true,
+    "terrain": "water",
+    "height": 0
+   }
+  ]
+ },
+ {
+  "id": "ruined_wall_short",
+  "kind": "prop",
+  "cell": [
+   13,
+   14
+  ],
+  "covers": [
+   {
+    "cell": [
+     13,
+     14
+    ],
+    "pct": 38.3,
+    "host": true,
+    "edge": true,
+    "terrain": "ground",
+    "height": 0
+   },
+   {
+    "cell": [
+     12,
+     13
+    ],
+    "pct": 30.2,
+    "host": false,
+    "edge": false,
+    "terrain": "mud",
+    "height": 0
+   },
+   {
+    "cell": [
+     12,
+     14
+    ],
+    "pct": 10.5,
+    "host": false,
+    "edge": true,
+    "terrain": "ground",
+    "height": 0
+   },
+   {
+    "cell": [
+     13,
+     13
+    ],
+    "pct": 6.7,
+    "host": false,
+    "edge": false,
+    "terrain": "ground",
+    "height": 0
+   }
+  ]
+ },
+ {
+  "id": "boulder_small",
+  "kind": "prop",
+  "cell": [
+   14,
+   14
+  ],
+  "covers": [
+   {
+    "cell": [
+     14,
+     14
+    ],
+    "pct": 64.1,
+    "host": true,
+    "edge": true,
+    "terrain": "ground",
+    "height": 0
+   }
+  ]
+ },
+ {
+  "id": "lilac_bush",
+  "kind": "plant",
+  "cell": [
+   2,
+   8
+  ],
+  "covers": [
+   {
+    "cell": [
+     2,
+     8
+    ],
+    "pct": 44.8,
+    "host": true,
+    "edge": false,
+    "terrain": "ground",
+    "height": 1
+   },
+   {
+    "cell": [
+     1,
+     7
+    ],
+    "pct": 34.1,
+    "host": false,
+    "edge": false,
+    "terrain": "ground",
+    "height": 0
+   },
+   {
+    "cell": [
+     1,
+     8
+    ],
+    "pct": 14.1,
+    "host": false,
+    "edge": false,
+    "terrain": "ground",
+    "height": 0
+   },
+   {
+    "cell": [
+     2,
+     7
+    ],
+    "pct": 12.2,
+    "host": false,
+    "edge": false,
+    "terrain": "ground",
+    "height": 0
+   }
+  ]
+ },
+ {
+  "id": "flower_tuft",
+  "kind": "plant",
+  "cell": [
+   3,
+   7
+  ],
+  "covers": [
+   {
+    "cell": [
+     3,
+     7
+    ],
+    "pct": 34.6,
+    "host": true,
+    "edge": false,
+    "terrain": "ground",
+    "height": 1
+   },
+   {
+    "cell": [
+     2,
+     6
+    ],
+    "pct": 12.5,
+    "host": false,
+    "edge": false,
+    "terrain": "mud",
+    "height": 0
+   },
+   {
+    "cell": [
+     2,
+     7
+    ],
+    "pct": 7.8,
+    "host": false,
+    "edge": false,
+    "terrain": "ground",
+    "height": 0
+   },
+   {
+    "cell": [
+     3,
+     6
+    ],
+    "pct": 7.2,
+    "host": false,
+    "edge": false,
+    "terrain": "mud",
+    "height": 0
+   }
+  ]
+ },
+ {
+  "id": "lilac_tuft",
+  "kind": "plant",
+  "cell": [
+   4,
+   3
+  ],
+  "covers": [
+   {
+    "cell": [
+     4,
+     3
+    ],
+    "pct": 28.2,
+    "host": true,
+    "edge": false,
+    "terrain": "ground",
+    "height": 1
+   },
+   {
+    "cell": [
+     3,
+     2
+    ],
+    "pct": 7.1,
+    "host": false,
+    "edge": false,
+    "terrain": "mud",
+    "height": 0
+   },
+   {
+    "cell": [
+     3,
+     3
+    ],
+    "pct": 6.1,
+    "host": false,
+    "edge": false,
+    "terrain": "ground",
+    "height": 0
+   }
+  ]
+ },
+ {
+  "id": "fern",
+  "kind": "plant",
+  "cell": [
+   5,
+   5
+  ],
+  "covers": [
+   {
+    "cell": [
+     5,
+     5
+    ],
+    "pct": 21.2,
+    "host": true,
+    "edge": false,
+    "terrain": "ground",
+    "height": 1
+   },
+   {
+    "cell": [
+     4,
+     4
+    ],
+    "pct": 12.4,
+    "host": false,
+    "edge": false,
+    "terrain": "ground",
+    "height": 0
+   }
+  ]
+ },
+ {
+  "id": "flower_tuft",
+  "kind": "plant",
+  "cell": [
+   5,
+   9
+  ],
+  "covers": [
+   {
+    "cell": [
+     5,
+     9
+    ],
+    "pct": 35.4,
+    "host": true,
+    "edge": false,
+    "terrain": "ground",
+    "height": 1
+   },
+   {
+    "cell": [
+     4,
+     8
+    ],
+    "pct": 12.4,
+    "host": false,
+    "edge": false,
+    "terrain": "water",
+    "height": 0
+   },
+   {
+    "cell": [
+     4,
+     9
+    ],
+    "pct": 7.4,
+    "host": false,
+    "edge": false,
+    "terrain": "ground",
+    "height": 0
+   },
+   {
+    "cell": [
+     5,
+     8
+    ],
+    "pct": 7.3,
+    "host": false,
+    "edge": false,
+    "terrain": "ground",
+    "height": 0
+   }
+  ]
+ },
+ {
+  "id": "lilac_bush",
+  "kind": "plant",
+  "cell": [
+   7,
+   3
+  ],
+  "covers": [
+   {
+    "cell": [
+     7,
+     3
+    ],
+    "pct": 42.7,
+    "host": true,
+    "edge": false,
+    "terrain": "ground",
+    "height": 1
+   },
+   {
+    "cell": [
+     6,
+     2
+    ],
+    "pct": 34.0,
+    "host": false,
+    "edge": false,
+    "terrain": "mud",
+    "height": 0
+   },
+   {
+    "cell": [
+     6,
+     3
+    ],
+    "pct": 13.2,
+    "host": false,
+    "edge": false,
+    "terrain": "mud",
+    "height": 0
+   },
+   {
+    "cell": [
+     7,
+     2
+    ],
+    "pct": 12.2,
+    "host": false,
+    "edge": false,
+    "terrain": "ground",
+    "height": 0
+   }
+  ]
+ },
+ {
+  "id": "lilac_tuft",
+  "kind": "plant",
+  "cell": [
+   7,
+   7
+  ],
+  "covers": [
+   {
+    "cell": [
+     7,
+     7
+    ],
+    "pct": 28.2,
+    "host": true,
+    "edge": false,
+    "terrain": "ground",
+    "height": 1
+   },
+   {
+    "cell": [
+     6,
+     6
+    ],
+    "pct": 6.9,
+    "host": false,
+    "edge": false,
+    "terrain": "ground",
+    "height": 0
+   },
+   {
+    "cell": [
+     6,
+     7
+    ],
+    "pct": 5.7,
+    "host": false,
+    "edge": false,
+    "terrain": "ground",
+    "height": 0
+   }
+  ]
+ },
+ {
+  "id": "lilac_bush",
+  "kind": "plant",
+  "cell": [
+   7,
+   9
+  ],
+  "covers": [
+   {
+    "cell": [
+     7,
+     9
+    ],
+    "pct": 43.3,
+    "host": true,
+    "edge": false,
+    "terrain": "ground",
+    "height": 1
+   },
+   {
+    "cell": [
+     6,
+     8
+    ],
+    "pct": 34.5,
+    "host": false,
+    "edge": false,
+    "terrain": "ground",
+    "height": 0
+   },
+   {
+    "cell": [
+     6,
+     9
+    ],
+    "pct": 13.3,
+    "host": false,
+    "edge": false,
+    "terrain": "ground",
+    "height": 0
+   },
+   {
+    "cell": [
+     7,
+     8
+    ],
+    "pct": 11.7,
+    "host": false,
+    "edge": false,
+    "terrain": "ground",
+    "height": 0
+   }
+  ]
+ },
+ {
+  "id": "fern",
+  "kind": "plant",
+  "cell": [
+   7,
+   10
+  ],
+  "covers": [
+   {
+    "cell": [
+     7,
+     10
+    ],
+    "pct": 21.7,
+    "host": true,
+    "edge": false,
+    "terrain": "ground",
+    "height": 2
+   },
+   {
+    "cell": [
+     6,
+     9
+    ],
+    "pct": 25.6,
+    "host": false,
+    "edge": false,
+    "terrain": "ground",
+    "height": 0
+   }
+  ]
+ },
+ {
+  "id": "flower_tuft",
+  "kind": "plant",
+  "cell": [
+   7,
+   11
+  ],
+  "covers": [
+   {
+    "cell": [
+     7,
+     11
+    ],
+    "pct": 35.3,
+    "host": true,
+    "edge": false,
+    "terrain": "ground",
+    "height": 1
+   },
+   {
+    "cell": [
+     6,
+     10
+    ],
+    "pct": 12.9,
+    "host": false,
+    "edge": false,
+    "terrain": "mud",
+    "height": 0
+   },
+   {
+    "cell": [
+     6,
+     11
+    ],
+    "pct": 7.7,
+    "host": false,
+    "edge": false,
+    "terrain": "mud",
+    "height": 0
+   }
+  ]
+ },
+ {
+  "id": "lilac_bush",
+  "kind": "plant",
+  "cell": [
+   8,
+   11
+  ],
+  "covers": [
+   {
+    "cell": [
+     8,
+     11
+    ],
+    "pct": 46.0,
+    "host": true,
+    "edge": false,
+    "terrain": "ground",
+    "height": 1
+   },
+   {
+    "cell": [
+     8,
+     10
+    ],
+    "pct": 11.8,
+    "host": false,
+    "edge": false,
+    "terrain": "ground",
+    "height": 0
+   },
+   {
+    "cell": [
+     7,
+     11
+    ],
+    "pct": 11.4,
+    "host": false,
+    "edge": false,
+    "terrain": "ground",
+    "height": 1
+   }
+  ]
+ },
+ {
+  "id": "lilac_tuft",
+  "kind": "plant",
+  "cell": [
+   9,
+   9
+  ],
+  "covers": [
+   {
+    "cell": [
+     9,
+     9
+    ],
+    "pct": 27.3,
+    "host": true,
+    "edge": false,
+    "terrain": "ground",
+    "height": 1
+   },
+   {
+    "cell": [
+     8,
+     8
+    ],
+    "pct": 6.7,
+    "host": false,
+    "edge": false,
+    "terrain": "ground",
+    "height": 0
+   },
+   {
+    "cell": [
+     8,
+     9
+    ],
+    "pct": 5.8,
+    "host": false,
+    "edge": false,
+    "terrain": "ground",
+    "height": 0
+   }
+  ]
+ },
+ {
+  "id": "lilac_bush",
+  "kind": "plant",
+  "cell": [
+   10,
+   3
+  ],
+  "covers": [
+   {
+    "cell": [
+     10,
+     3
+    ],
+    "pct": 44.9,
+    "host": true,
+    "edge": false,
+    "terrain": "ground",
+    "height": 1
+   },
+   {
+    "cell": [
+     9,
+     2
+    ],
+    "pct": 34.6,
+    "host": false,
+    "edge": false,
+    "terrain": "ground",
+    "height": 0
+   },
+   {
+    "cell": [
+     9,
+     3
+    ],
+    "pct": 13.6,
+    "host": false,
+    "edge": false,
+    "terrain": "ground",
+    "height": 0
+   },
+   {
+    "cell": [
+     10,
+     2
+    ],
+    "pct": 12.0,
+    "host": false,
+    "edge": false,
+    "terrain": "ground",
+    "height": 0
+   }
+  ]
+ },
+ {
+  "id": "fern",
+  "kind": "plant",
+  "cell": [
+   10,
+   11
+  ],
+  "covers": [
+   {
+    "cell": [
+     10,
+     11
+    ],
+    "pct": 21.2,
+    "host": true,
+    "edge": false,
+    "terrain": "ground",
+    "height": 1
+   },
+   {
+    "cell": [
+     9,
+     10
+    ],
+    "pct": 13.0,
+    "host": false,
+    "edge": false,
+    "terrain": "ground",
+    "height": 0
+   }
+  ]
+ },
+ {
+  "id": "flower_tuft",
+  "kind": "plant",
+  "cell": [
+   11,
+   7
+  ],
+  "covers": [
+   {
+    "cell": [
+     11,
+     7
+    ],
+    "pct": 34.8,
+    "host": true,
+    "edge": false,
+    "terrain": "ground",
+    "height": 1
+   },
+   {
+    "cell": [
+     10,
+     6
+    ],
+    "pct": 12.5,
+    "host": false,
+    "edge": false,
+    "terrain": "ground",
+    "height": 0
+   },
+   {
+    "cell": [
+     10,
+     7
+    ],
+    "pct": 7.5,
+    "host": false,
+    "edge": false,
+    "terrain": "ground",
+    "height": 0
+   },
+   {
+    "cell": [
+     11,
+     6
+    ],
+    "pct": 6.9,
+    "host": false,
+    "edge": false,
+    "terrain": "ground",
+    "height": 0
+   }
+  ]
+ },
+ {
+  "id": "clover_patch",
+  "kind": "plant",
+  "cell": [
+   7,
+   13
+  ],
+  "covers": [
+   {
+    "cell": [
+     7,
+     13
+    ],
+    "pct": 24.7,
+    "host": true,
+    "edge": false,
+    "terrain": "ground",
+    "height": 0
+   }
+  ]
+ },
+ {
+  "id": "fern",
+  "kind": "plant",
+  "cell": [
+   14,
+   9
+  ],
+  "covers": [
+   {
+    "cell": [
+     14,
+     9
+    ],
+    "pct": 21.7,
+    "host": true,
+    "edge": true,
+    "terrain": "ground",
+    "height": 0
+   },
+   {
+    "cell": [
+     14,
+     8
+    ],
+    "pct": 6.0,
+    "host": false,
+    "edge": true,
+    "terrain": "ground",
+    "height": 0
+   }
+  ]
+ },
+ {
+  "id": "flower_tuft",
+  "kind": "plant",
+  "cell": [
+   10,
+   1
+  ],
+  "covers": [
+   {
+    "cell": [
+     10,
+     1
+    ],
+    "pct": 34.9,
+    "host": true,
+    "edge": false,
+    "terrain": "ground",
+    "height": 0
+   }
+  ]
+ },
+ {
+  "id": "clover_patch",
+  "kind": "plant",
+  "cell": [
+   11,
+   9
+  ],
+  "covers": [
+   {
+    "cell": [
+     11,
+     9
+    ],
+    "pct": 25.2,
+    "host": true,
+    "edge": false,
+    "terrain": "ground",
+    "height": 0
+   }
+  ]
+ },
+ {
+  "id": "lilac_tuft",
+  "kind": "plant",
+  "cell": [
+   9,
+   0
+  ],
+  "covers": [
+   {
+    "cell": [
+     9,
+     0
+    ],
+    "pct": 29.1,
+    "host": true,
+    "edge": true,
+    "terrain": "ground",
+    "height": 0
+   }
+  ]
+ },
+ {
+  "id": "flower_tuft",
+  "kind": "plant",
+  "cell": [
+   10,
+   6
+  ],
+  "covers": [
+   {
+    "cell": [
+     10,
+     6
+    ],
+    "pct": 34.9,
+    "host": true,
+    "edge": false,
+    "terrain": "ground",
+    "height": 0
+   }
+  ]
+ },
+ {
+  "id": "clover_patch",
+  "kind": "plant",
+  "cell": [
+   5,
+   14
+  ],
+  "covers": [
+   {
+    "cell": [
+     5,
+     14
+    ],
+    "pct": 24.8,
+    "host": true,
+    "edge": true,
+    "terrain": "ground",
+    "height": 0
+   }
+  ]
+ },
+ {
+  "id": "pebbles_moss",
+  "kind": "plant",
+  "cell": [
+   12,
+   6
+  ],
+  "covers": [
+   {
+    "cell": [
+     12,
+     6
+    ],
+    "pct": 25.3,
+    "host": true,
+    "edge": false,
+    "terrain": "ground",
+    "height": 0
+   }
+  ]
+ },
+ {
+  "id": "flower_tuft",
+  "kind": "plant",
+  "cell": [
+   10,
+   13
+  ],
+  "covers": [
+   {
+    "cell": [
+     10,
+     13
+    ],
+    "pct": 34.9,
+    "host": true,
+    "edge": false,
+    "terrain": "ground",
+    "height": 0
+   }
+  ]
+ },
+ {
+  "id": "clover_patch",
+  "kind": "plant",
+  "cell": [
+   4,
+   13
+  ],
+  "covers": [
+   {
+    "cell": [
+     4,
+     13
+    ],
+    "pct": 24.8,
+    "host": true,
+    "edge": false,
+    "terrain": "ground",
+    "height": 0
+   }
+  ]
+ }
+]

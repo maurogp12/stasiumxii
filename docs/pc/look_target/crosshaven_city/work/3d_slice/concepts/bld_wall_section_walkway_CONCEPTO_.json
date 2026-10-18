@@ -1,0 +1,37 @@
+{
+ "label": "🖼️ IMAGEN / CONCEPTO, TODAVÍA HAY QUE CONSTRUIRLO",
+ "file": "bld_wall_section_walkway_CONCEPTO_.png",
+ "px": [
+  2816,
+  1584
+ ],
+ "height_m": 6.0,
+ "footprint_m": [
+  8,
+  2.5
+ ],
+ "pivot": "footprint_centre_ground_y0",
+ "front": "+Z",
+ "tris_budget": "kit piece 2-6k",
+ "lod": [
+  "LOD0",
+  "LOD1 ~50%",
+  "LOD2 ~20%",
+  "impostor"
+ ],
+ "textures": "PBR albedo/normal/ORM 512 px/m trim + tiling",
+ "collider": "box/convex -col",
+ "slot": null,
+ "glb_name": "bld_wall_section_walkway_a_LOD0.glb",
+ "model_built": false,
+ "tool": "Scenario model_xai-grok-imagine-image-2-0 (see ../raw/generation_log.jsonl)",
+ "length_m": 8,
+ "grid_m": 1,
+ "walkway": "on top of solid wall, behind parapet",
+ "version": "v2",
+ "thickness_m": 2.5,
+ "parapet": "merlons on outer (+Z) edge",
+ "inner_lip_m": 0.4,
+ "face": "plain, no balcony/brackets",
+ "ends": "clean vertical, tile on 1 m grid"
+}

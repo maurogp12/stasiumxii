@@ -1,0 +1,2436 @@
+[
+ {
+  "name": "chest",
+  "file": "bedroom_normal_chest.png",
+  "room": "bedroom",
+  "tier": "normal",
+  "size_px": [
+   167,
+   149
+  ],
+  "footprint_tiles": "1x1",
+  "source": "rooms/bedroom_normal.jpg",
+  "source_bbox": [
+   238,
+   315,
+   405,
+   464
+  ],
+  "low_res": false,
+  "needs_paintover": false
+ },
+ {
+  "name": "nightstand",
+  "file": "bedroom_normal_nightstand.png",
+  "room": "bedroom",
+  "tier": "normal",
+  "size_px": [
+   110,
+   137
+  ],
+  "footprint_tiles": "1x1",
+  "source": "rooms/bedroom_normal.jpg",
+  "source_bbox": [
+   478,
+   228,
+   588,
+   365
+  ],
+  "low_res": false,
+  "needs_paintover": false
+ },
+ {
+  "name": "bed",
+  "file": "bedroom_normal_bed.png",
+  "room": "bedroom",
+  "tier": "normal",
+  "size_px": [
+   420,
+   347
+  ],
+  "footprint_tiles": "2x3",
+  "source": "rooms/bedroom_normal.jpg",
+  "source_bbox": [
+   570,
+   130,
+   990,
+   477
+  ],
+  "low_res": false,
+  "needs_paintover": false
+ },
+ {
+  "name": "rug",
+  "file": "bedroom_normal_rug.png",
+  "room": "bedroom",
+  "tier": "normal",
+  "size_px": [
+   357,
+   228
+  ],
+  "footprint_tiles": "2x3",
+  "source": "rooms/bedroom_normal.jpg",
+  "source_bbox": [
+   429,
+   380,
+   786,
+   608
+  ],
+  "low_res": false,
+  "needs_paintover": false
+ },
+ {
+  "name": "wall_lamp",
+  "file": "bedroom_rare_wall_lamp.png",
+  "room": "bedroom",
+  "tier": "rare",
+  "size_px": [
+   55,
+   106
+  ],
+  "footprint_tiles": "wall",
+  "source": "rooms/bedroom_rare.jpg",
+  "source_bbox": [
+   242,
+   190,
+   297,
+   296
+  ],
+  "low_res": false,
+  "needs_paintover": false
+ },
+ {
+  "name": "chest",
+  "file": "bedroom_rare_chest.png",
+  "room": "bedroom",
+  "tier": "rare",
+  "size_px": [
+   173,
+   162
+  ],
+  "footprint_tiles": "1x1",
+  "source": "rooms/bedroom_rare.jpg",
+  "source_bbox": [
+   227,
+   323,
+   400,
+   485
+  ],
+  "low_res": false,
+  "needs_paintover": false
+ },
+ {
+  "name": "nightstand_lamp",
+  "file": "bedroom_rare_nightstand_lamp.png",
+  "room": "bedroom",
+  "tier": "rare",
+  "size_px": [
+   103,
+   169
+  ],
+  "footprint_tiles": "1x1",
+  "source": "rooms/bedroom_rare.jpg",
+  "source_bbox": [
+   447,
+   216,
+   550,
+   385
+  ],
+  "low_res": false,
+  "needs_paintover": false
+ },
+ {
+  "name": "wardrobe",
+  "file": "bedroom_rare_wardrobe.png",
+  "room": "bedroom",
+  "tier": "rare",
+  "size_px": [
+   172,
+   299
+  ],
+  "footprint_tiles": "1x2",
+  "source": "rooms/bedroom_rare.jpg",
+  "source_bbox": [
+   518,
+   62,
+   690,
+   361
+  ],
+  "low_res": false,
+  "needs_paintover": false
+ },
+ {
+  "name": "bed_canopy",
+  "file": "bedroom_rare_bed_canopy.png",
+  "room": "bedroom",
+  "tier": "rare",
+  "size_px": [
+   431,
+   483
+  ],
+  "footprint_tiles": "2x3",
+  "source": "rooms/bedroom_rare.jpg",
+  "source_bbox": [
+   623,
+   103,
+   1054,
+   586
+  ],
+  "low_res": false,
+  "needs_paintover": false
+ },
+ {
+  "name": "rug",
+  "file": "bedroom_rare_rug.png",
+  "room": "bedroom",
+  "tier": "rare",
+  "size_px": [
+   384,
+   245
+  ],
+  "footprint_tiles": "2x3",
+  "source": "rooms/bedroom_rare.jpg",
+  "source_bbox": [
+   397,
+   425,
+   781,
+   670
+  ],
+  "low_res": false,
+  "needs_paintover": false
+ },
+ {
+  "name": "wardrobe",
+  "file": "bedroom_legendary_wardrobe.png",
+  "room": "bedroom",
+  "tier": "legendary",
+  "size_px": [
+   125,
+   242
+  ],
+  "footprint_tiles": "1x2",
+  "source": "rooms/bedroom_legendary.jpg",
+  "source_bbox": [
+   210,
+   233,
+   335,
+   475
+  ],
+  "low_res": false,
+  "needs_paintover": false
+ },
+ {
+  "name": "mannequin_gold",
+  "file": "bedroom_legendary_mannequin_gold.png",
+  "room": "bedroom",
+  "tier": "legendary",
+  "size_px": [
+   72,
+   215
+  ],
+  "footprint_tiles": "1x1",
+  "source": "rooms/bedroom_legendary.jpg",
+  "source_bbox": [
+   348,
+   215,
+   420,
+   430
+  ],
+  "low_res": false,
+  "needs_paintover": false
+ },
+ {
+  "name": "mannequin_red",
+  "file": "bedroom_legendary_mannequin_red.png",
+  "room": "bedroom",
+  "tier": "legendary",
+  "size_px": [
+   64,
+   199
+  ],
+  "footprint_tiles": "1x1",
+  "source": "rooms/bedroom_legendary.jpg",
+  "source_bbox": [
+   416,
+   186,
+   480,
+   385
+  ],
+  "low_res": false,
+  "needs_paintover": false
+ },
+ {
+  "name": "mannequin_green",
+  "file": "bedroom_legendary_mannequin_green.png",
+  "room": "bedroom",
+  "tier": "legendary",
+  "size_px": [
+   74,
+   190
+  ],
+  "footprint_tiles": "1x1",
+  "source": "rooms/bedroom_legendary.jpg",
+  "source_bbox": [
+   478,
+   160,
+   552,
+   350
+  ],
+  "low_res": false,
+  "needs_paintover": false
+ },
+ {
+  "name": "vanity",
+  "file": "bedroom_legendary_vanity.png",
+  "room": "bedroom",
+  "tier": "legendary",
+  "size_px": [
+   98,
+   106
+  ],
+  "footprint_tiles": "1x2",
+  "source": "rooms/bedroom_legendary.jpg",
+  "source_bbox": [
+   555,
+   239,
+   653,
+   345
+  ],
+  "low_res": false,
+  "needs_paintover": false
+ },
+ {
+  "name": "chandelier",
+  "file": "bedroom_legendary_chandelier.png",
+  "room": "bedroom",
+  "tier": "legendary",
+  "size_px": [
+   104,
+   163
+  ],
+  "footprint_tiles": "ceiling",
+  "source": "rooms/bedroom_legendary.jpg",
+  "source_bbox": [
+   587,
+   0,
+   691,
+   163
+  ],
+  "low_res": false,
+  "needs_paintover": false
+ },
+ {
+  "name": "bed_canopy",
+  "file": "bedroom_legendary_bed_canopy.png",
+  "room": "bedroom",
+  "tier": "legendary",
+  "size_px": [
+   349,
+   426
+  ],
+  "footprint_tiles": "2x3",
+  "source": "rooms/bedroom_legendary.jpg",
+  "source_bbox": [
+   661,
+   85,
+   1010,
+   511
+  ],
+  "low_res": false,
+  "needs_paintover": false
+ },
+ {
+  "name": "nightstand",
+  "file": "bedroom_legendary_nightstand.png",
+  "room": "bedroom",
+  "tier": "legendary",
+  "size_px": [
+   58,
+   150
+  ],
+  "footprint_tiles": "1x1",
+  "source": "rooms/bedroom_legendary.jpg",
+  "source_bbox": [
+   1010,
+   328,
+   1068,
+   478
+  ],
+  "low_res": false,
+  "needs_paintover": false
+ },
+ {
+  "name": "rug",
+  "file": "bedroom_legendary_rug.png",
+  "room": "bedroom",
+  "tier": "legendary",
+  "size_px": [
+   507,
+   309
+  ],
+  "footprint_tiles": "3x3",
+  "source": "rooms/bedroom_legendary.jpg",
+  "source_bbox": [
+   412,
+   386,
+   919,
+   695
+  ],
+  "low_res": false,
+  "needs_paintover": false
+ },
+ {
+  "name": "table",
+  "file": "kitchen_normal_table.png",
+  "room": "kitchen",
+  "tier": "normal",
+  "size_px": [
+   261,
+   217
+  ],
+  "footprint_tiles": "2x2",
+  "source": "rooms/kitchen_normal.jpg",
+  "source_bbox": [
+   511,
+   353,
+   772,
+   570
+  ],
+  "low_res": false,
+  "needs_paintover": false
+ },
+ {
+  "name": "barrel",
+  "file": "kitchen_normal_barrel.png",
+  "room": "kitchen",
+  "tier": "normal",
+  "size_px": [
+   50,
+   63
+  ],
+  "footprint_tiles": "1x1",
+  "source": "rooms/kitchen_normal.jpg",
+  "source_bbox": [
+   899,
+   410,
+   949,
+   473
+  ],
+  "low_res": false,
+  "needs_paintover": false
+ },
+ {
+  "name": "broom",
+  "file": "kitchen_normal_broom.png",
+  "room": "kitchen",
+  "tier": "normal",
+  "size_px": [
+   57,
+   124
+  ],
+  "footprint_tiles": "wall",
+  "source": "rooms/kitchen_normal.jpg",
+  "source_bbox": [
+   1017,
+   348,
+   1074,
+   472
+  ],
+  "low_res": false,
+  "needs_paintover": false
+ },
+ {
+  "name": "firewood",
+  "file": "kitchen_rare_firewood.png",
+  "room": "kitchen",
+  "tier": "rare",
+  "size_px": [
+   119,
+   95
+  ],
+  "footprint_tiles": "1x1",
+  "source": "rooms/kitchen_rare.jpg",
+  "source_bbox": [
+   325,
+   305,
+   444,
+   400
+  ],
+  "low_res": false,
+  "needs_paintover": false
+ },
+ {
+  "name": "island",
+  "file": "kitchen_rare_island.png",
+  "room": "kitchen",
+  "tier": "rare",
+  "size_px": [
+   238,
+   254
+  ],
+  "footprint_tiles": "2x3",
+  "source": "rooms/kitchen_rare.jpg",
+  "source_bbox": [
+   560,
+   316,
+   798,
+   570
+  ],
+  "low_res": false,
+  "needs_paintover": false
+ },
+ {
+  "name": "stools",
+  "file": "kitchen_rare_stools.png",
+  "room": "kitchen",
+  "tier": "rare",
+  "size_px": [
+   173,
+   169
+  ],
+  "footprint_tiles": "1x2",
+  "source": "rooms/kitchen_rare.jpg",
+  "source_bbox": [
+   472,
+   396,
+   645,
+   565
+  ],
+  "low_res": false,
+  "needs_paintover": false
+ },
+ {
+  "name": "rug",
+  "file": "kitchen_rare_rug.png",
+  "room": "kitchen",
+  "tier": "rare",
+  "size_px": [
+   298,
+   179
+  ],
+  "footprint_tiles": "2x2",
+  "source": "rooms/kitchen_rare.jpg",
+  "source_bbox": [
+   374,
+   446,
+   672,
+   625
+  ],
+  "low_res": false,
+  "needs_paintover": true
+ },
+ {
+  "name": "pot_rack",
+  "file": "kitchen_rare_pot_rack.png",
+  "room": "kitchen",
+  "tier": "rare",
+  "size_px": [
+   164,
+   155
+  ],
+  "footprint_tiles": "ceiling",
+  "source": "rooms/kitchen_rare.jpg",
+  "source_bbox": [
+   566,
+   125,
+   730,
+   280
+  ],
+  "low_res": false,
+  "needs_paintover": false
+ },
+ {
+  "name": "stove",
+  "file": "kitchen_rare_stove.png",
+  "room": "kitchen",
+  "tier": "rare",
+  "size_px": [
+   121,
+   143
+  ],
+  "footprint_tiles": "1x1",
+  "source": "rooms/kitchen_rare.jpg",
+  "source_bbox": [
+   720,
+   241,
+   841,
+   384
+  ],
+  "low_res": false,
+  "needs_paintover": false
+ },
+ {
+  "name": "fruit_basket",
+  "file": "kitchen_rare_fruit_basket.png",
+  "room": "kitchen",
+  "tier": "rare",
+  "size_px": [
+   57,
+   63
+  ],
+  "footprint_tiles": "small",
+  "source": "rooms/kitchen_rare.jpg",
+  "source_bbox": [
+   1009,
+   330,
+   1066,
+   393
+  ],
+  "low_res": false,
+  "needs_paintover": false
+ },
+ {
+  "name": "stove",
+  "file": "kitchen_legendary_stove.png",
+  "room": "kitchen",
+  "tier": "legendary",
+  "size_px": [
+   79,
+   115
+  ],
+  "footprint_tiles": "1x1",
+  "source": "rooms/kitchen_legendary.jpg",
+  "source_bbox": [
+   475,
+   240,
+   554,
+   355
+  ],
+  "low_res": false,
+  "needs_paintover": false
+ },
+ {
+  "name": "table_stools",
+  "file": "kitchen_legendary_table_stools.png",
+  "room": "kitchen",
+  "tier": "legendary",
+  "size_px": [
+   257,
+   220
+  ],
+  "footprint_tiles": "2x3",
+  "source": "rooms/kitchen_legendary.jpg",
+  "source_bbox": [
+   513,
+   345,
+   770,
+   565
+  ],
+  "low_res": false,
+  "needs_paintover": false
+ },
+ {
+  "name": "workbench",
+  "file": "cellar_normal_workbench.png",
+  "room": "cellar",
+  "tier": "normal",
+  "size_px": [
+   271,
+   146
+  ],
+  "footprint_tiles": "1x2",
+  "source": "rooms/cellar_normal.jpg",
+  "source_bbox": [
+   265,
+   271,
+   536,
+   417
+  ],
+  "low_res": false,
+  "needs_paintover": false
+ },
+ {
+  "name": "anvil",
+  "file": "cellar_normal_anvil.png",
+  "room": "cellar",
+  "tier": "normal",
+  "size_px": [
+   102,
+   108
+  ],
+  "footprint_tiles": "1x1",
+  "source": "rooms/cellar_normal.jpg",
+  "source_bbox": [
+   518,
+   262,
+   620,
+   370
+  ],
+  "low_res": false,
+  "needs_paintover": false
+ },
+ {
+  "name": "crate",
+  "file": "cellar_normal_crate.png",
+  "room": "cellar",
+  "tier": "normal",
+  "size_px": [
+   129,
+   134
+  ],
+  "footprint_tiles": "1x1",
+  "source": "rooms/cellar_normal.jpg",
+  "source_bbox": [
+   216,
+   391,
+   345,
+   525
+  ],
+  "low_res": false,
+  "needs_paintover": false
+ },
+ {
+  "name": "tanning_table",
+  "file": "cellar_normal_tanning_table.png",
+  "room": "cellar",
+  "tier": "normal",
+  "size_px": [
+   251,
+   148
+  ],
+  "footprint_tiles": "1x2",
+  "source": "rooms/cellar_normal.jpg",
+  "source_bbox": [
+   724,
+   280,
+   975,
+   428
+  ],
+  "low_res": false,
+  "needs_paintover": false
+ },
+ {
+  "name": "barrels",
+  "file": "cellar_normal_barrels.png",
+  "room": "cellar",
+  "tier": "normal",
+  "size_px": [
+   149,
+   181
+  ],
+  "footprint_tiles": "1x2",
+  "source": "rooms/cellar_normal.jpg",
+  "source_bbox": [
+   896,
+   364,
+   1045,
+   545
+  ],
+  "low_res": false,
+  "needs_paintover": false
+ },
+ {
+  "name": "lantern",
+  "file": "cellar_normal_lantern.png",
+  "room": "cellar",
+  "tier": "normal",
+  "size_px": [
+   47,
+   187
+  ],
+  "footprint_tiles": "ceiling",
+  "source": "rooms/cellar_normal.jpg",
+  "source_bbox": [
+   740,
+   48,
+   787,
+   235
+  ],
+  "low_res": false,
+  "needs_paintover": false
+ },
+ {
+  "name": "wine_rack",
+  "file": "cellar_rare_wine_rack.png",
+  "room": "cellar",
+  "tier": "rare",
+  "size_px": [
+   159,
+   257
+  ],
+  "footprint_tiles": "1x2",
+  "source": "rooms/cellar_rare.jpg",
+  "source_bbox": [
+   581,
+   43,
+   740,
+   300
+  ],
+  "low_res": false,
+  "needs_paintover": false
+ },
+ {
+  "name": "potion_shelf",
+  "file": "cellar_rare_potion_shelf.png",
+  "room": "cellar",
+  "tier": "rare",
+  "size_px": [
+   277,
+   129
+  ],
+  "footprint_tiles": "wall",
+  "source": "rooms/cellar_rare.jpg",
+  "source_bbox": [
+   733,
+   97,
+   1010,
+   226
+  ],
+  "low_res": false,
+  "needs_paintover": true
+ },
+ {
+  "name": "workbench_tools",
+  "file": "cellar_rare_workbench_tools.png",
+  "room": "cellar",
+  "tier": "rare",
+  "size_px": [
+   195,
+   108
+  ],
+  "footprint_tiles": "1x2",
+  "source": "rooms/cellar_rare.jpg",
+  "source_bbox": [
+   442,
+   262,
+   637,
+   370
+  ],
+  "low_res": false,
+  "needs_paintover": false
+ },
+ {
+  "name": "loom",
+  "file": "cellar_rare_loom.png",
+  "room": "cellar",
+  "tier": "rare",
+  "size_px": [
+   319,
+   286
+  ],
+  "footprint_tiles": "2x2",
+  "source": "rooms/cellar_rare.jpg",
+  "source_bbox": [
+   691,
+   150,
+   1010,
+   436
+  ],
+  "low_res": false,
+  "needs_paintover": true
+ },
+ {
+  "name": "chest_left",
+  "file": "cellar_rare_chest_left.png",
+  "room": "cellar",
+  "tier": "rare",
+  "size_px": [
+   135,
+   147
+  ],
+  "footprint_tiles": "1x1",
+  "source": "rooms/cellar_rare.jpg",
+  "source_bbox": [
+   211,
+   371,
+   346,
+   518
+  ],
+  "low_res": false,
+  "needs_paintover": false
+ },
+ {
+  "name": "anvil",
+  "file": "cellar_rare_anvil.png",
+  "room": "cellar",
+  "tier": "rare",
+  "size_px": [
+   123,
+   147
+  ],
+  "footprint_tiles": "1x1",
+  "source": "rooms/cellar_rare.jpg",
+  "source_bbox": [
+   477,
+   402,
+   600,
+   549
+  ],
+  "low_res": false,
+  "needs_paintover": false
+ },
+ {
+  "name": "alchemy_table",
+  "file": "cellar_rare_alchemy_table.png",
+  "room": "cellar",
+  "tier": "rare",
+  "size_px": [
+   305,
+   269
+  ],
+  "footprint_tiles": "2x2",
+  "source": "rooms/cellar_rare.jpg",
+  "source_bbox": [
+   600,
+   431,
+   905,
+   700
+  ],
+  "low_res": false,
+  "needs_paintover": false
+ },
+ {
+  "name": "crate",
+  "file": "cellar_rare_crate.png",
+  "room": "cellar",
+  "tier": "rare",
+  "size_px": [
+   151,
+   156
+  ],
+  "footprint_tiles": "1x1",
+  "source": "rooms/cellar_rare.jpg",
+  "source_bbox": [
+   358,
+   484,
+   509,
+   640
+  ],
+  "low_res": false,
+  "needs_paintover": false
+ },
+ {
+  "name": "chest_right",
+  "file": "cellar_rare_chest_right.png",
+  "room": "cellar",
+  "tier": "rare",
+  "size_px": [
+   125,
+   138
+  ],
+  "footprint_tiles": "1x1",
+  "source": "rooms/cellar_rare.jpg",
+  "source_bbox": [
+   955,
+   391,
+   1080,
+   529
+  ],
+  "low_res": false,
+  "needs_paintover": false
+ },
+ {
+  "name": "rune_bench",
+  "file": "cellar_legendary_rune_bench.png",
+  "room": "cellar",
+  "tier": "legendary",
+  "size_px": [
+   190,
+   166
+  ],
+  "footprint_tiles": "1x2",
+  "source": "rooms/cellar_legendary.jpg",
+  "source_bbox": [
+   410,
+   199,
+   600,
+   365
+  ],
+  "low_res": false,
+  "needs_paintover": false
+ },
+ {
+  "name": "copper_still",
+  "file": "cellar_legendary_copper_still.png",
+  "room": "cellar",
+  "tier": "legendary",
+  "size_px": [
+   124,
+   189
+  ],
+  "footprint_tiles": "1x1",
+  "source": "rooms/cellar_legendary.jpg",
+  "source_bbox": [
+   720,
+   160,
+   844,
+   349
+  ],
+  "low_res": false,
+  "needs_paintover": false
+ },
+ {
+  "name": "weapon_rack",
+  "file": "cellar_legendary_weapon_rack.png",
+  "room": "cellar",
+  "tier": "legendary",
+  "size_px": [
+   197,
+   294
+  ],
+  "footprint_tiles": "1x2",
+  "source": "rooms/cellar_legendary.jpg",
+  "source_bbox": [
+   839,
+   156,
+   1036,
+   450
+  ],
+  "low_res": false,
+  "needs_paintover": false
+ },
+ {
+  "name": "anvil_gold",
+  "file": "cellar_legendary_anvil_gold.png",
+  "room": "cellar",
+  "tier": "legendary",
+  "size_px": [
+   120,
+   120
+  ],
+  "footprint_tiles": "1x1",
+  "source": "rooms/cellar_legendary.jpg",
+  "source_bbox": [
+   334,
+   378,
+   454,
+   498
+  ],
+  "low_res": false,
+  "needs_paintover": false
+ },
+ {
+  "name": "chest_left",
+  "file": "cellar_legendary_chest_left.png",
+  "room": "cellar",
+  "tier": "legendary",
+  "size_px": [
+   120,
+   117
+  ],
+  "footprint_tiles": "1x1",
+  "source": "rooms/cellar_legendary.jpg",
+  "source_bbox": [
+   204,
+   433,
+   324,
+   550
+  ],
+  "low_res": false,
+  "needs_paintover": false
+ },
+ {
+  "name": "gold_bench",
+  "file": "cellar_legendary_gold_bench.png",
+  "room": "cellar",
+  "tier": "legendary",
+  "size_px": [
+   236,
+   218
+  ],
+  "footprint_tiles": "1x2",
+  "source": "rooms/cellar_legendary.jpg",
+  "source_bbox": [
+   328,
+   468,
+   564,
+   686
+  ],
+  "low_res": false,
+  "needs_paintover": false
+ },
+ {
+  "name": "chest_small",
+  "file": "cellar_legendary_chest_small.png",
+  "room": "cellar",
+  "tier": "legendary",
+  "size_px": [
+   144,
+   120
+  ],
+  "footprint_tiles": "1x1",
+  "source": "rooms/cellar_legendary.jpg",
+  "source_bbox": [
+   456,
+   580,
+   600,
+   700
+  ],
+  "low_res": false,
+  "needs_paintover": false
+ },
+ {
+  "name": "jewel_bench",
+  "file": "cellar_legendary_jewel_bench.png",
+  "room": "cellar",
+  "tier": "legendary",
+  "size_px": [
+   280,
+   250
+  ],
+  "footprint_tiles": "1x2",
+  "source": "rooms/cellar_legendary.jpg",
+  "source_bbox": [
+   720,
+   450,
+   1000,
+   700
+  ],
+  "low_res": false,
+  "needs_paintover": false
+ },
+ {
+  "name": "brazier_left",
+  "file": "cellar_legendary_brazier_left.png",
+  "room": "cellar",
+  "tier": "legendary",
+  "size_px": [
+   51,
+   87
+  ],
+  "footprint_tiles": "1x1",
+  "source": "rooms/cellar_legendary.jpg",
+  "source_bbox": [
+   197,
+   370,
+   248,
+   457
+  ],
+  "low_res": false,
+  "needs_paintover": false
+ },
+ {
+  "name": "brazier_right",
+  "file": "cellar_legendary_brazier_right.png",
+  "room": "cellar",
+  "tier": "legendary",
+  "size_px": [
+   64,
+   134
+  ],
+  "footprint_tiles": "1x1",
+  "source": "rooms/cellar_legendary.jpg",
+  "source_bbox": [
+   1010,
+   366,
+   1074,
+   500
+  ],
+  "low_res": false,
+  "needs_paintover": false
+ },
+ {
+  "name": "tree",
+  "file": "garden_normal_tree.png",
+  "room": "garden",
+  "tier": "normal",
+  "size_px": [
+   180,
+   255
+  ],
+  "footprint_tiles": "2x2",
+  "source": "rooms/garden_normal.jpg",
+  "source_bbox": [
+   545,
+   65,
+   725,
+   320
+  ],
+  "low_res": false,
+  "needs_paintover": false
+ },
+ {
+  "name": "pet_bed_dog",
+  "file": "garden_normal_pet_bed_dog.png",
+  "room": "garden",
+  "tier": "normal",
+  "size_px": [
+   240,
+   179
+  ],
+  "footprint_tiles": "1x2",
+  "source": "rooms/garden_normal.jpg",
+  "source_bbox": [
+   240,
+   301,
+   480,
+   480
+  ],
+  "low_res": false,
+  "needs_paintover": false
+ },
+ {
+  "name": "shrub",
+  "file": "garden_normal_shrub.png",
+  "room": "garden",
+  "tier": "normal",
+  "size_px": [
+   100,
+   75
+  ],
+  "footprint_tiles": "1x1",
+  "source": "rooms/garden_normal.jpg",
+  "source_bbox": [
+   460,
+   253,
+   560,
+   328
+  ],
+  "low_res": false,
+  "needs_paintover": false
+ },
+ {
+  "name": "pot_big",
+  "file": "garden_normal_pot_big.png",
+  "room": "garden",
+  "tier": "normal",
+  "size_px": [
+   103,
+   154
+  ],
+  "footprint_tiles": "1x1",
+  "source": "rooms/garden_normal.jpg",
+  "source_bbox": [
+   925,
+   288,
+   1028,
+   442
+  ],
+  "low_res": false,
+  "needs_paintover": false
+ },
+ {
+  "name": "watering_can",
+  "file": "garden_normal_watering_can.png",
+  "room": "garden",
+  "tier": "normal",
+  "size_px": [
+   112,
+   92
+  ],
+  "footprint_tiles": "small",
+  "source": "rooms/garden_normal.jpg",
+  "source_bbox": [
+   853,
+   400,
+   965,
+   492
+  ],
+  "low_res": false,
+  "needs_paintover": false
+ },
+ {
+  "name": "pot_herb",
+  "file": "garden_normal_pot_herb.png",
+  "room": "garden",
+  "tier": "normal",
+  "size_px": [
+   81,
+   100
+  ],
+  "footprint_tiles": "1x1",
+  "source": "rooms/garden_normal.jpg",
+  "source_bbox": [
+   437,
+   460,
+   518,
+   560
+  ],
+  "low_res": false,
+  "needs_paintover": false
+ },
+ {
+  "name": "pot_flower",
+  "file": "garden_normal_pot_flower.png",
+  "room": "garden",
+  "tier": "normal",
+  "size_px": [
+   76,
+   107
+  ],
+  "footprint_tiles": "1x1",
+  "source": "rooms/garden_normal.jpg",
+  "source_bbox": [
+   523,
+   515,
+   599,
+   622
+  ],
+  "low_res": false,
+  "needs_paintover": false
+ },
+ {
+  "name": "tree_maple",
+  "file": "garden_rare_tree_maple.png",
+  "room": "garden",
+  "tier": "rare",
+  "size_px": [
+   547,
+   300
+  ],
+  "footprint_tiles": "3x3",
+  "source": "rooms/garden_rare.jpg",
+  "source_bbox": [
+   318,
+   0,
+   865,
+   300
+  ],
+  "low_res": false,
+  "needs_paintover": false
+ },
+ {
+  "name": "bench",
+  "file": "garden_rare_bench.png",
+  "room": "garden",
+  "tier": "rare",
+  "size_px": [
+   136,
+   119
+  ],
+  "footprint_tiles": "1x2",
+  "source": "rooms/garden_rare.jpg",
+  "source_bbox": [
+   632,
+   266,
+   768,
+   385
+  ],
+  "low_res": false,
+  "needs_paintover": false
+ },
+ {
+  "name": "fountain",
+  "file": "garden_rare_fountain.png",
+  "room": "garden",
+  "tier": "rare",
+  "size_px": [
+   135,
+   178
+  ],
+  "footprint_tiles": "2x2",
+  "source": "rooms/garden_rare.jpg",
+  "source_bbox": [
+   486,
+   321,
+   621,
+   499
+  ],
+  "low_res": false,
+  "needs_paintover": false
+ },
+ {
+  "name": "cat_bed",
+  "file": "garden_rare_cat_bed.png",
+  "room": "garden",
+  "tier": "rare",
+  "size_px": [
+   125,
+   87
+  ],
+  "footprint_tiles": "1x1",
+  "source": "rooms/garden_rare.jpg",
+  "source_bbox": [
+   730,
+   388,
+   855,
+   475
+  ],
+  "low_res": false,
+  "needs_paintover": false
+ },
+ {
+  "name": "rabbit_hutch",
+  "file": "garden_rare_rabbit_hutch.png",
+  "room": "garden",
+  "tier": "rare",
+  "size_px": [
+   174,
+   165
+  ],
+  "footprint_tiles": "1x2",
+  "source": "rooms/garden_rare.jpg",
+  "source_bbox": [
+   826,
+   265,
+   1000,
+   430
+  ],
+  "low_res": false,
+  "needs_paintover": false
+ },
+ {
+  "name": "tree_blossom",
+  "file": "garden_legendary_tree_blossom.png",
+  "room": "garden",
+  "tier": "legendary",
+  "size_px": [
+   616,
+   300
+  ],
+  "footprint_tiles": "3x3",
+  "source": "rooms/garden_legendary.jpg",
+  "source_bbox": [
+   304,
+   0,
+   920,
+   300
+  ],
+  "low_res": false,
+  "needs_paintover": false
+ },
+ {
+  "name": "fountain_koi",
+  "file": "garden_legendary_fountain_koi.png",
+  "room": "garden",
+  "tier": "legendary",
+  "size_px": [
+   228,
+   240
+  ],
+  "footprint_tiles": "3x3",
+  "source": "rooms/garden_legendary.jpg",
+  "source_bbox": [
+   480,
+   310,
+   708,
+   550
+  ],
+  "low_res": false,
+  "needs_paintover": true
+ },
+ {
+  "name": "fox_cushion",
+  "file": "garden_legendary_fox_cushion.png",
+  "room": "garden",
+  "tier": "legendary",
+  "size_px": [
+   150,
+   105
+  ],
+  "footprint_tiles": "1x1",
+  "source": "rooms/garden_legendary.jpg",
+  "source_bbox": [
+   710,
+   422,
+   860,
+   527
+  ],
+  "low_res": false,
+  "needs_paintover": false
+ },
+ {
+  "name": "statue",
+  "file": "garden_legendary_statue.png",
+  "room": "garden",
+  "tier": "legendary",
+  "size_px": [
+   85,
+   215
+  ],
+  "footprint_tiles": "1x1",
+  "source": "rooms/garden_legendary.jpg",
+  "source_bbox": [
+   905,
+   275,
+   990,
+   490
+  ],
+  "low_res": false,
+  "needs_paintover": false
+ },
+ {
+  "name": "birdcage",
+  "file": "garden_legendary_birdcage.png",
+  "room": "garden",
+  "tier": "legendary",
+  "size_px": [
+   84,
+   123
+  ],
+  "footprint_tiles": "ceiling",
+  "source": "rooms/garden_legendary.jpg",
+  "source_bbox": [
+   526,
+   196,
+   610,
+   319
+  ],
+  "low_res": false,
+  "needs_paintover": false
+ },
+ {
+  "name": "rose_bush",
+  "file": "garden_legendary_rose_bush.png",
+  "room": "garden",
+  "tier": "legendary",
+  "size_px": [
+   190,
+   249
+  ],
+  "footprint_tiles": "1x1",
+  "source": "rooms/garden_legendary.jpg",
+  "source_bbox": [
+   770,
+   150,
+   960,
+   399
+  ],
+  "low_res": false,
+  "needs_paintover": false
+ },
+ {
+  "name": "lantern",
+  "file": "garden_legendary_lantern.png",
+  "room": "garden",
+  "tier": "legendary",
+  "size_px": [
+   44,
+   91
+  ],
+  "footprint_tiles": "small",
+  "source": "rooms/garden_legendary.jpg",
+  "source_bbox": [
+   1016,
+   450,
+   1060,
+   541
+  ],
+  "low_res": false,
+  "needs_paintover": false
+ },
+ {
+  "name": "chandelier",
+  "file": "sala_legendary_chandelier.png",
+  "room": "sala",
+  "tier": "legendary",
+  "size_px": [
+   185,
+   174
+  ],
+  "footprint_tiles": "ceiling",
+  "source": "rooms/sala_legendaria_estatuas.png",
+  "source_bbox": [
+   550,
+   60,
+   735,
+   234
+  ],
+  "low_res": false,
+  "needs_paintover": false
+ },
+ {
+  "name": "statue_left",
+  "file": "sala_legendary_statue_left.png",
+  "room": "sala",
+  "tier": "legendary",
+  "size_px": [
+   85,
+   224
+  ],
+  "footprint_tiles": "1x1",
+  "source": "rooms/sala_legendaria_estatuas.png",
+  "source_bbox": [
+   280,
+   226,
+   365,
+   450
+  ],
+  "low_res": false,
+  "needs_paintover": false
+ },
+ {
+  "name": "statue_right",
+  "file": "sala_legendary_statue_right.png",
+  "room": "sala",
+  "tier": "legendary",
+  "size_px": [
+   92,
+   210
+  ],
+  "footprint_tiles": "1x1",
+  "source": "rooms/sala_legendaria_estatuas.png",
+  "source_bbox": [
+   965,
+   241,
+   1057,
+   451
+  ],
+  "low_res": false,
+  "needs_paintover": false
+ },
+ {
+  "name": "dragon_cabinet",
+  "file": "sala_legendary_dragon_cabinet.png",
+  "room": "sala",
+  "tier": "legendary",
+  "size_px": [
+   103,
+   181
+  ],
+  "footprint_tiles": "1x1",
+  "source": "rooms/sala_legendaria_estatuas.png",
+  "source_bbox": [
+   167,
+   329,
+   270,
+   510
+  ],
+  "low_res": false,
+  "needs_paintover": false
+ },
+ {
+  "name": "sofa",
+  "file": "sala_legendary_sofa.png",
+  "room": "sala",
+  "tier": "legendary",
+  "size_px": [
+   324,
+   258
+  ],
+  "footprint_tiles": "1x3",
+  "source": "rooms/sala_legendaria_estatuas.png",
+  "source_bbox": [
+   593,
+   242,
+   917,
+   500
+  ],
+  "low_res": false,
+  "needs_paintover": false
+ },
+ {
+  "name": "coffee_table",
+  "file": "sala_legendary_coffee_table.png",
+  "room": "sala",
+  "tier": "legendary",
+  "size_px": [
+   254,
+   188
+  ],
+  "footprint_tiles": "2x2",
+  "source": "rooms/sala_legendaria_estatuas.png",
+  "source_bbox": [
+   493,
+   382,
+   747,
+   570
+  ],
+  "low_res": false,
+  "needs_paintover": false
+ },
+ {
+  "name": "treasure_chest",
+  "file": "sala_legendary_treasure_chest.png",
+  "room": "sala",
+  "tier": "legendary",
+  "size_px": [
+   130,
+   153
+  ],
+  "footprint_tiles": "1x1",
+  "source": "rooms/sala_legendaria_estatuas.png",
+  "source_bbox": [
+   950,
+   422,
+   1080,
+   575
+  ],
+  "low_res": false,
+  "needs_paintover": false
+ },
+ {
+  "name": "rug",
+  "file": "sala_legendary_rug.png",
+  "room": "sala",
+  "tier": "legendary",
+  "size_px": [
+   658,
+   312
+  ],
+  "footprint_tiles": "4x4",
+  "source": "rooms/sala_legendaria_estatuas.png",
+  "source_bbox": [
+   290,
+   370,
+   948,
+   682
+  ],
+  "low_res": false,
+  "needs_paintover": true
+ },
+ {
+  "name": "bookshelf",
+  "file": "sala_normal_bookshelf.png",
+  "room": "sala",
+  "tier": "normal",
+  "size_px": [
+   136,
+   141
+  ],
+  "footprint_tiles": "1x1",
+  "source": "rooms/sala_tiers_1280x720_p1.png (crop, upscaled x4.1)",
+  "source_bbox": [
+   269,
+   289,
+   405,
+   430
+  ],
+  "low_res": true,
+  "needs_paintover": true
+ },
+ {
+  "name": "floor_lamp",
+  "file": "sala_normal_floor_lamp.png",
+  "room": "sala",
+  "tier": "normal",
+  "size_px": [
+   51,
+   125
+  ],
+  "footprint_tiles": "1x1",
+  "source": "rooms/sala_tiers_1280x720_p1.png (crop, upscaled x4.1)",
+  "source_bbox": [
+   615,
+   158,
+   666,
+   283
+  ],
+  "low_res": true,
+  "needs_paintover": true
+ },
+ {
+  "name": "sofa",
+  "file": "sala_normal_sofa.png",
+  "room": "sala",
+  "tier": "normal",
+  "size_px": [
+   310,
+   258
+  ],
+  "footprint_tiles": "1x3",
+  "source": "rooms/sala_tiers_1280x720_p1.png (crop, upscaled x4.1)",
+  "source_bbox": [
+   602,
+   258,
+   912,
+   516
+  ],
+  "low_res": true,
+  "needs_paintover": true
+ },
+ {
+  "name": "coffee_table",
+  "file": "sala_normal_coffee_table.png",
+  "room": "sala",
+  "tier": "normal",
+  "size_px": [
+   216,
+   180
+  ],
+  "footprint_tiles": "2x2",
+  "source": "rooms/sala_tiers_1280x720_p1.png (crop, upscaled x4.1)",
+  "source_bbox": [
+   500,
+   397,
+   716,
+   577
+  ],
+  "low_res": true,
+  "needs_paintover": true
+ },
+ {
+  "name": "rug",
+  "file": "sala_normal_rug.png",
+  "room": "sala",
+  "tier": "normal",
+  "size_px": [
+   553,
+   260
+  ],
+  "footprint_tiles": "3x3",
+  "source": "rooms/sala_tiers_1280x720_p1.png (crop, upscaled x4.1)",
+  "source_bbox": [
+   364,
+   355,
+   917,
+   615
+  ],
+  "low_res": true,
+  "needs_paintover": true
+ },
+ {
+  "name": "bookshelf",
+  "file": "sala_rare_bookshelf.png",
+  "room": "sala",
+  "tier": "rare",
+  "size_px": [
+   150,
+   240
+  ],
+  "footprint_tiles": "1x2",
+  "source": "rooms/sala_tiers_1280x720_p1.png (crop, upscaled x4.1)",
+  "source_bbox": [
+   540,
+   40,
+   690,
+   280
+  ],
+  "low_res": true,
+  "needs_paintover": true
+ },
+ {
+  "name": "armchair_left",
+  "file": "sala_rare_armchair_left.png",
+  "room": "sala",
+  "tier": "rare",
+  "size_px": [
+   148,
+   166
+  ],
+  "footprint_tiles": "1x1",
+  "source": "rooms/sala_tiers_1280x720_p1.png (crop, upscaled x4.1)",
+  "source_bbox": [
+   380,
+   409,
+   528,
+   575
+  ],
+  "low_res": true,
+  "needs_paintover": true
+ },
+ {
+  "name": "armchair_right",
+  "file": "sala_rare_armchair_right.png",
+  "room": "sala",
+  "tier": "rare",
+  "size_px": [
+   161,
+   165
+  ],
+  "footprint_tiles": "1x1",
+  "source": "rooms/sala_tiers_1280x720_p1.png (crop, upscaled x4.1)",
+  "source_bbox": [
+   718,
+   445,
+   879,
+   610
+  ],
+  "low_res": true,
+  "needs_paintover": true
+ },
+ {
+  "name": "sofa",
+  "file": "sala_rare_sofa.png",
+  "room": "sala",
+  "tier": "rare",
+  "size_px": [
+   234,
+   194
+  ],
+  "footprint_tiles": "1x3",
+  "source": "rooms/sala_tiers_1280x720_p1.png (crop, upscaled x4.1)",
+  "source_bbox": [
+   646,
+   256,
+   880,
+   450
+  ],
+  "low_res": true,
+  "needs_paintover": true
+ },
+ {
+  "name": "coffee_table",
+  "file": "sala_rare_coffee_table.png",
+  "room": "sala",
+  "tier": "rare",
+  "size_px": [
+   196,
+   155
+  ],
+  "footprint_tiles": "2x2",
+  "source": "rooms/sala_tiers_1280x720_p1.png (crop, upscaled x4.1)",
+  "source_bbox": [
+   529,
+   380,
+   725,
+   535
+  ],
+  "low_res": true,
+  "needs_paintover": true
+ },
+ {
+  "name": "rug",
+  "file": "sala_rare_rug.png",
+  "room": "sala",
+  "tier": "rare",
+  "size_px": [
+   388,
+   154
+  ],
+  "footprint_tiles": "4x4",
+  "source": "rooms/sala_tiers_1280x720_p1.png (crop, upscaled x4.1)",
+  "source_bbox": [
+   391,
+   461,
+   779,
+   615
+  ],
+  "low_res": true,
+  "needs_paintover": true
+ },
+ {
+  "name": "sofa",
+  "tier": "legendary",
+  "room": "sala",
+  "file": "painted/sofa_legendary.png",
+  "w": 806,
+  "h": 689,
+  "source_asset_id": "7f28aec53e5879204d403b22bfa166039e5e55bebfb6cf3d56ec3e81e43b61d5.jpg",
+  "painted": true,
+  "replaces": "earlier cropped sala sofa pieces (legendary) from rooms/*.jpg"
+ },
+ {
+  "name": "sofa",
+  "tier": "rare",
+  "room": "sala",
+  "file": "painted/sofa_rare.png",
+  "w": 833,
+  "h": 684,
+  "source_asset_id": "5bb3e422e7dbb2aaa91f4366cf166a0f4b0f77273c24226481fd57caa227b46e.jpg",
+  "painted": true,
+  "replaces": "earlier cropped sala sofa pieces (rare) from rooms/*.jpg"
+ },
+ {
+  "name": "sofa",
+  "tier": "normal",
+  "room": "sala",
+  "file": "painted/sofa_normal.png",
+  "w": 743,
+  "h": 609,
+  "source_asset_id": "ef169c03a4c2499393d24c90cead0d900ea43c27272bb09581df91b9af9c7867.jpg",
+  "painted": true,
+  "replaces": "earlier cropped sala sofa pieces (normal) from rooms/*.jpg"
+ },
+ {
+  "name": "table",
+  "tier": "legendary",
+  "room": "sala",
+  "file": "painted/table_legendary.png",
+  "w": 893,
+  "h": 605,
+  "source_asset_id": "3926cce5eb3c6d29c312c657dfafe76b9999929be22e33db335b7b5a4888c391.jpg",
+  "painted": true,
+  "replaces": "earlier cropped sala table pieces (legendary) from rooms/*.jpg"
+ },
+ {
+  "name": "table",
+  "tier": "rare",
+  "room": "sala",
+  "file": "painted/table_rare.png",
+  "w": 796,
+  "h": 645,
+  "source_asset_id": "63ae5838f75dff6e071b36f384bfe359ac1f5c208a39d9382aa171c80863fc16.jpg",
+  "painted": true,
+  "replaces": "earlier cropped sala table pieces (rare) from rooms/*.jpg"
+ },
+ {
+  "name": "table",
+  "tier": "normal",
+  "room": "sala",
+  "file": "painted/table_normal.png",
+  "w": 852,
+  "h": 597,
+  "source_asset_id": "94d45a50bd2d76441caaf611c0b7fac820b95cdf40aa26e4d45ce3473b799a03.jpg",
+  "painted": true,
+  "replaces": "earlier cropped sala table pieces (normal) from rooms/*.jpg"
+ },
+ {
+  "name": "bed",
+  "tier": "legendary",
+  "room": "bedroom",
+  "file": "painted/bed_legendary.png",
+  "w": 688,
+  "h": 701,
+  "source_asset_id": "c4fe1dff6a1ca2bb38ac0dbfb155c3a76a6fcef3862af12a5d66ca9a349ddf28.jpg",
+  "painted": true,
+  "replaces": "earlier cropped bedroom bed pieces (legendary) from rooms/*.jpg"
+ },
+ {
+  "name": "bed",
+  "tier": "rare",
+  "room": "bedroom",
+  "file": "painted/bed_rare.png",
+  "w": 800,
+  "h": 712,
+  "source_asset_id": "bb34d4dc54a27e600ef98f0735ba48bf9409a209ecb2685d69fc5a8a539c2160.jpg",
+  "painted": true,
+  "replaces": "earlier cropped bedroom bed pieces (rare) from rooms/*.jpg"
+ },
+ {
+  "name": "bed",
+  "tier": "normal",
+  "room": "bedroom",
+  "file": "painted/bed_normal.png",
+  "w": 853,
+  "h": 719,
+  "source_asset_id": "d0ceec3f09beae53b224a9d0923636fdf43c6bb2d86794bc612c283a652efc56.jpg",
+  "painted": true,
+  "replaces": "earlier cropped bedroom bed pieces (normal) from rooms/*.jpg"
+ },
+ {
+  "name": "wardrobe",
+  "tier": "legendary",
+  "room": "bedroom",
+  "file": "painted/wardrobe_legendary.png",
+  "w": 500,
+  "h": 720,
+  "source_asset_id": "869a96174d40ca74fd8703391e1f3bf54747ec79f8be88a56e3a89cbff22d548.jpg",
+  "painted": true,
+  "replaces": "earlier cropped bedroom wardrobe pieces (legendary) from rooms/*.jpg"
+ },
+ {
+  "name": "wardrobe",
+  "tier": "rare",
+  "room": "bedroom",
+  "file": "painted/wardrobe_rare.png",
+  "w": 601,
+  "h": 718,
+  "source_asset_id": "13c65c0480c230ae55458ff8ba14425a541aa128bf04ec7e5d6ce5cc4743571d.jpg",
+  "painted": true,
+  "replaces": "earlier cropped bedroom wardrobe pieces (rare) from rooms/*.jpg"
+ },
+ {
+  "name": "wardrobe",
+  "tier": "normal",
+  "room": "bedroom",
+  "file": "painted/wardrobe_normal.png",
+  "w": 542,
+  "h": 705,
+  "source_asset_id": "d666917af11085402cd40ac44d14bf3abf790e276221d79d4eef026b7cad68e4.jpg",
+  "painted": true,
+  "replaces": "earlier cropped bedroom wardrobe pieces (normal) from rooms/*.jpg"
+ },
+ {
+  "name": "chandelier",
+  "tier": "legendary",
+  "room": "sala",
+  "file": "painted/chandelier_legendary.png",
+  "w": 626,
+  "h": 695,
+  "source_asset_id": "9c88b84b5faefd84df547b664da3e5909f0817b452cb3573065e5e10f23a502e.jpg",
+  "painted": true,
+  "replaces": "earlier cropped sala chandelier pieces (legendary) from rooms/*.jpg"
+ },
+ {
+  "name": "chandelier",
+  "tier": "rare",
+  "room": "sala",
+  "file": "painted/chandelier_rare.png",
+  "w": 644,
+  "h": 674,
+  "source_asset_id": "a17b83e17570f15acd6836abf9eb836add793bfcb4fed79c2ebc4243d215e149.jpg",
+  "painted": true,
+  "replaces": "earlier cropped sala chandelier pieces (rare) from rooms/*.jpg"
+ },
+ {
+  "name": "chandelier",
+  "tier": "normal",
+  "room": "sala",
+  "file": "painted/chandelier_normal.png",
+  "w": 646,
+  "h": 651,
+  "source_asset_id": "da9cd1c62fee0d48e261bdd00841ee33d577e345182cde8a47663fda68465507.jpg",
+  "painted": true,
+  "replaces": "earlier cropped sala chandelier pieces (normal) from rooms/*.jpg"
+ },
+ {
+  "name": "rug",
+  "tier": "legendary",
+  "room": "sala",
+  "file": "painted/rug_legendary.png",
+  "w": 1204,
+  "h": 711,
+  "source_asset_id": "782f4019c63804587ec8e942d51f8a79d46f20c557a61b0d1975aa190887ee3d.jpg",
+  "painted": true,
+  "replaces": "earlier cropped sala rug pieces (legendary) from rooms/*.jpg"
+ },
+ {
+  "name": "rug",
+  "tier": "rare",
+  "room": "sala",
+  "file": "painted/rug_rare.png",
+  "w": 1016,
+  "h": 649,
+  "source_asset_id": "6a836a6ffb2f356fa96bcdb2d9ddef8b2dfafab8e4a331b88732de0885f4e74d.jpg",
+  "painted": true,
+  "replaces": "earlier cropped sala rug pieces (rare) from rooms/*.jpg"
+ },
+ {
+  "name": "rug",
+  "tier": "normal",
+  "room": "sala",
+  "file": "painted/rug_normal.png",
+  "w": 898,
+  "h": 563,
+  "source_asset_id": "6c89cbafc6307930c8cabfadd4d45e1b24e38d737d8d1e676d00dfec38e069c1.jpg",
+  "painted": true,
+  "replaces": "earlier cropped sala rug pieces (normal) from rooms/*.jpg"
+ },
+ {
+  "name": "mannequin",
+  "tier": "legendary",
+  "room": "bedroom",
+  "file": "painted/mannequin_legendary.png",
+  "w": 400,
+  "h": 720,
+  "source_asset_id": "33fbcdb29f20f276a20e2e1b1924b975e7a368bd54e4f116fdf05830d2533c4c.jpg",
+  "painted": true,
+  "replaces": "earlier cropped bedroom mannequin pieces (legendary) from rooms/*.jpg"
+ },
+ {
+  "name": "mannequin",
+  "tier": "rare",
+  "room": "bedroom",
+  "file": "painted/mannequin_rare.png",
+  "w": 411,
+  "h": 714,
+  "source_asset_id": "24bb3d5134f9bfd42ca582473ce28e5be68931460da8e8b4638fe9adc7057174.jpg",
+  "painted": true,
+  "replaces": "earlier cropped bedroom mannequin pieces (rare) from rooms/*.jpg"
+ },
+ {
+  "name": "mannequin",
+  "tier": "normal",
+  "room": "bedroom",
+  "file": "painted/mannequin_normal.png",
+  "w": 463,
+  "h": 671,
+  "source_asset_id": "2f5cd9ab2698c7f913ed385076282f5165c001ec6551efdd118d2a2f013c8574.jpg",
+  "painted": true,
+  "replaces": "earlier cropped bedroom mannequin pieces (normal) from rooms/*.jpg"
+ },
+ {
+  "name": "statue_low",
+  "tier": "legendary",
+  "room": "sala",
+  "file": "painted/statue_low_legendary.png",
+  "w": 598,
+  "h": 696,
+  "source_asset_id": "27ba64d0669b962f26282d5c4a215d7a3f3e30fc12be2418bb60ac8d9f27ed87.jpg",
+  "painted": true,
+  "replaces": "earlier cropped sala statue_low pieces (legendary) from rooms/*.jpg"
+ },
+ {
+  "name": "stove",
+  "tier": "normal",
+  "room": "kitchen",
+  "file": "painted/stove_normal.png",
+  "w": 726,
+  "h": 702,
+  "source_asset_id": "16bdafa46f8e967b9e7fb095c31f9e32affd406aec508b300f83e944e7eabc92.jpg",
+  "painted": true,
+  "replaces": "earlier cropped kitchen stove pieces (normal) from rooms/*.jpg"
+ },
+ {
+  "name": "stove",
+  "tier": "rare",
+  "room": "kitchen",
+  "file": "painted/stove_rare.png",
+  "w": 530,
+  "h": 716,
+  "source_asset_id": "10632e224fdb4c62b44884705a0fc750846f177d726fcf055147c4c4be1b96aa.jpg",
+  "painted": true,
+  "replaces": "earlier cropped kitchen stove pieces (rare) from rooms/*.jpg"
+ },
+ {
+  "name": "stove",
+  "tier": "legendary",
+  "room": "kitchen",
+  "file": "painted/stove_legendary.png",
+  "w": 664,
+  "h": 720,
+  "source_asset_id": "b07a1333dccce898f4c165ccf4d4d490f0b520f382a5a0ed334ced3a886755ef.jpg",
+  "painted": true,
+  "replaces": "earlier cropped kitchen stove pieces (legendary) from rooms/*.jpg"
+ },
+ {
+  "name": "worktable",
+  "tier": "normal",
+  "room": "kitchen",
+  "file": "painted/worktable_normal.png",
+  "w": 411,
+  "h": 321,
+  "source_asset_id": "491c08e4e6e68bc7741891ad6315d266aabc3b1673c009f40e9a1eb52615563a.jpg",
+  "painted": true,
+  "replaces": "earlier cropped kitchen worktable pieces (normal) from rooms/*.jpg"
+ },
+ {
+  "name": "worktable",
+  "tier": "rare",
+  "room": "kitchen",
+  "file": "painted/worktable_rare.png",
+  "w": 407,
+  "h": 392,
+  "source_asset_id": "491c08e4e6e68bc7741891ad6315d266aabc3b1673c009f40e9a1eb52615563a.jpg",
+  "painted": true,
+  "replaces": "earlier cropped kitchen worktable pieces (rare) from rooms/*.jpg"
+ },
+ {
+  "name": "worktable",
+  "tier": "legendary",
+  "room": "kitchen",
+  "file": "painted/worktable_legendary.png",
+  "w": 426,
+  "h": 406,
+  "source_asset_id": "491c08e4e6e68bc7741891ad6315d266aabc3b1673c009f40e9a1eb52615563a.jpg",
+  "painted": true,
+  "replaces": "earlier cropped kitchen worktable pieces (legendary) from rooms/*.jpg"
+ },
+ {
+  "name": "pantry",
+  "tier": "normal",
+  "room": "kitchen",
+  "file": "painted/pantry_normal.png",
+  "w": 332,
+  "h": 548,
+  "source_asset_id": "2fba2f6861f1691dee3e53c26603f91206c70c533a1cb6b8744434cb520ab5ec.jpg",
+  "painted": true,
+  "replaces": "earlier cropped kitchen pantry pieces (normal) from rooms/*.jpg"
+ },
+ {
+  "name": "pantry",
+  "tier": "rare",
+  "room": "kitchen",
+  "file": "painted/pantry_rare.png",
+  "w": 342,
+  "h": 570,
+  "source_asset_id": "2fba2f6861f1691dee3e53c26603f91206c70c533a1cb6b8744434cb520ab5ec.jpg",
+  "painted": true,
+  "replaces": "earlier cropped kitchen pantry pieces (rare) from rooms/*.jpg"
+ },
+ {
+  "name": "pantry",
+  "tier": "legendary",
+  "room": "kitchen",
+  "file": "painted/pantry_legendary.png",
+  "w": 422,
+  "h": 696,
+  "source_asset_id": "2fba2f6861f1691dee3e53c26603f91206c70c533a1cb6b8744434cb520ab5ec.jpg",
+  "painted": true,
+  "replaces": "earlier cropped kitchen pantry pieces (legendary) from rooms/*.jpg"
+ },
+ {
+  "name": "barrels",
+  "tier": "normal",
+  "room": "kitchen",
+  "file": "painted/barrels_normal.png",
+  "w": 226,
+  "h": 299,
+  "source_asset_id": "c5f366244f3099a1e67aaa0c90712a7abe26fb059c70edbae5effe9f5223e7a0.jpg",
+  "painted": true,
+  "replaces": "earlier cropped kitchen barrels pieces (normal) from rooms/*.jpg"
+ },
+ {
+  "name": "barrels",
+  "tier": "rare",
+  "room": "kitchen",
+  "file": "painted/barrels_rare.png",
+  "w": 359,
+  "h": 329,
+  "source_asset_id": "c5f366244f3099a1e67aaa0c90712a7abe26fb059c70edbae5effe9f5223e7a0.jpg",
+  "painted": true,
+  "replaces": "earlier cropped kitchen barrels pieces (rare) from rooms/*.jpg"
+ },
+ {
+  "name": "barrels",
+  "tier": "legendary",
+  "room": "kitchen",
+  "file": "painted/barrels_legendary.png",
+  "w": 477,
+  "h": 432,
+  "source_asset_id": "c5f366244f3099a1e67aaa0c90712a7abe26fb059c70edbae5effe9f5223e7a0.jpg",
+  "painted": true,
+  "replaces": "earlier cropped kitchen barrels pieces (legendary) from rooms/*.jpg"
+ },
+ {
+  "name": "craftbench",
+  "tier": "normal",
+  "room": "cellar",
+  "utility": "carpentry",
+  "file": "painted/craftbench_normal.png",
+  "w": 906,
+  "h": 610,
+  "source_asset_id": "024afed9138fb091ff41d07375fef16c3b1a71bf8edcba052b89fafe94ef49cd.jpg",
+  "painted": true,
+  "replaces": "earlier cropped cellar craftbench pieces (normal) from rooms/*.jpg"
+ },
+ {
+  "name": "craftbench",
+  "tier": "rare",
+  "room": "cellar",
+  "utility": "smithing",
+  "file": "painted/craftbench_rare.png",
+  "w": 360,
+  "h": 461,
+  "source_asset_id": "367019dae9850936de5eff14219e4a69af24548e75861f7427cb86f010441723.jpg",
+  "painted": true,
+  "replaces": "earlier cropped cellar craftbench pieces (rare) from rooms/*.jpg"
+ },
+ {
+  "name": "craftbench",
+  "tier": "legendary",
+  "room": "cellar",
+  "utility": "alchemy_enchanting",
+  "file": "painted/craftbench_legendary.png",
+  "w": 494,
+  "h": 606,
+  "source_asset_id": "367019dae9850936de5eff14219e4a69af24548e75861f7427cb86f010441723.jpg",
+  "painted": true,
+  "replaces": "earlier cropped cellar craftbench pieces (legendary) from rooms/*.jpg"
+ },
+ {
+  "name": "chest",
+  "tier": "normal",
+  "room": "cellar",
+  "utility": "storage",
+  "file": "painted/chest_normal.png",
+  "w": 372,
+  "h": 315,
+  "source_asset_id": "332e17bc949aac78c8238dcf4dc6e2fe573ac37f0c342d5e78c747d0ffc13a14.jpg",
+  "painted": true,
+  "replaces": "earlier cropped cellar chest pieces (normal) from rooms/*.jpg"
+ },
+ {
+  "name": "chest",
+  "tier": "rare",
+  "room": "cellar",
+  "utility": "storage",
+  "file": "painted/chest_rare.png",
+  "w": 380,
+  "h": 331,
+  "source_asset_id": "332e17bc949aac78c8238dcf4dc6e2fe573ac37f0c342d5e78c747d0ffc13a14.jpg",
+  "painted": true,
+  "replaces": "earlier cropped cellar chest pieces (rare) from rooms/*.jpg"
+ },
+ {
+  "name": "chest",
+  "tier": "legendary",
+  "room": "cellar",
+  "utility": "storage",
+  "file": "painted/chest_legendary.png",
+  "w": 409,
+  "h": 361,
+  "source_asset_id": "332e17bc949aac78c8238dcf4dc6e2fe573ac37f0c342d5e78c747d0ffc13a14.jpg",
+  "painted": true,
+  "replaces": "earlier cropped cellar chest pieces (legendary) from rooms/*.jpg"
+ },
+ {
+  "name": "planter",
+  "tier": "normal",
+  "room": "garden",
+  "utility": "plants",
+  "file": "painted/planter_normal.png",
+  "w": 370,
+  "h": 351,
+  "source_asset_id": "93cc59202a1e17ff4ab543b8a1ea4768de3b12976471fe7fd0f2cd35a6be84e6.jpg",
+  "painted": true,
+  "replaces": "earlier cropped garden pieces (normal) from rooms/*.jpg"
+ },
+ {
+  "name": "planter",
+  "tier": "rare",
+  "room": "garden",
+  "utility": "plants",
+  "file": "painted/planter_rare.png",
+  "w": 423,
+  "h": 309,
+  "source_asset_id": "93cc59202a1e17ff4ab543b8a1ea4768de3b12976471fe7fd0f2cd35a6be84e6.jpg",
+  "painted": true,
+  "replaces": "earlier cropped garden pieces (rare) from rooms/*.jpg"
+ },
+ {
+  "name": "planter",
+  "tier": "legendary",
+  "room": "garden",
+  "utility": "plants",
+  "file": "painted/planter_legendary.png",
+  "w": 438,
+  "h": 467,
+  "source_asset_id": "93cc59202a1e17ff4ab543b8a1ea4768de3b12976471fe7fd0f2cd35a6be84e6.jpg",
+  "painted": true,
+  "replaces": "earlier cropped garden pieces (legendary) from rooms/*.jpg"
+ },
+ {
+  "name": "petbed",
+  "tier": "normal",
+  "room": "garden",
+  "utility": "pets",
+  "file": "painted/petbed_normal.png",
+  "w": 344,
+  "h": 257,
+  "source_asset_id": "e32b0ee069fad64357c0db9f696bca2776ef735f3d78cc4e04bc04e7073575aa.jpg",
+  "painted": true,
+  "replaces": "earlier cropped garden pieces (normal) from rooms/*.jpg"
+ },
+ {
+  "name": "petbed",
+  "tier": "rare",
+  "room": "garden",
+  "utility": "pets",
+  "file": "painted/petbed_rare.png",
+  "w": 386,
+  "h": 401,
+  "source_asset_id": "e32b0ee069fad64357c0db9f696bca2776ef735f3d78cc4e04bc04e7073575aa.jpg",
+  "painted": true,
+  "replaces": "earlier cropped garden pieces (rare) from rooms/*.jpg"
+ },
+ {
+  "name": "petbed",
+  "tier": "legendary",
+  "room": "garden",
+  "utility": "pets",
+  "file": "painted/petbed_legendary.png",
+  "w": 444,
+  "h": 541,
+  "source_asset_id": "e32b0ee069fad64357c0db9f696bca2776ef735f3d78cc4e04bc04e7073575aa.jpg",
+  "painted": true,
+  "replaces": "earlier cropped garden pieces (legendary) from rooms/*.jpg"
+ },
+ {
+  "name": "pottedtree",
+  "tier": "normal",
+  "room": "garden",
+  "utility": "trees",
+  "file": "painted/pottedtree_normal.png",
+  "w": 216,
+  "h": 443,
+  "source_asset_id": "aa599b6ec745fc0f3f77ea50ca78a58e4d6b36fcf71e06410b8eda131956ebf9.jpg",
+  "painted": true,
+  "replaces": "earlier cropped garden pieces (normal) from rooms/*.jpg"
+ },
+ {
+  "name": "pottedtree",
+  "tier": "rare",
+  "room": "garden",
+  "utility": "trees",
+  "file": "painted/pottedtree_rare.png",
+  "w": 382,
+  "h": 567,
+  "source_asset_id": "aa599b6ec745fc0f3f77ea50ca78a58e4d6b36fcf71e06410b8eda131956ebf9.jpg",
+  "painted": true,
+  "replaces": "earlier cropped garden pieces (rare) from rooms/*.jpg"
+ },
+ {
+  "name": "pottedtree",
+  "tier": "legendary",
+  "room": "garden",
+  "utility": "trees",
+  "file": "painted/pottedtree_legendary.png",
+  "w": 428,
+  "h": 563,
+  "source_asset_id": "aa599b6ec745fc0f3f77ea50ca78a58e4d6b36fcf71e06410b8eda131956ebf9.jpg",
+  "painted": true,
+  "replaces": "earlier cropped garden pieces (legendary) from rooms/*.jpg"
+ }
+]

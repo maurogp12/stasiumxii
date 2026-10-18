@@ -1,0 +1,15 @@
+{
+ "foot": [
+  359,
+  704
+ ],
+ "footprint": [
+  8,
+  1
+ ],
+ "blocks": true,
+ "height_px": 550,
+ "grate": true,
+ "water_passes": true,
+ "orient": "se iso axis, 2:1 slope; painted iso wall, tower-matched stone; mirror pair"
+}

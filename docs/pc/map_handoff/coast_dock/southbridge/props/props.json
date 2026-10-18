@@ -1,0 +1,324 @@
+{
+ "package": "outskirts_themes/southbridge/props",
+ "version": 1,
+ "date": "2026-10-03",
+ "scale": "2:1 iso, cell top face 128x64 at 2x; fighter ~124 px tall at 2x",
+ "anchor": "canvas px of the footprint south tip; 2x1 props: anchor cell is the FRONT cell, footprint runs back to (x-1,y)",
+ "props": [
+  {
+   "id": "reeds_a",
+   "file_2x": "reeds_a@2x.png",
+   "file_1x": "reeds_a.png",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64,
+    128
+   ],
+   "anchor_px_1x": [
+    32,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "emissive": "no",
+   "art_height_px_2x": 113,
+   "art_x_from_anchor_2x": [
+    -31,
+    32
+   ],
+   "lowest_opaque_gap_px_2x": 2,
+   "kind": "plant",
+   "layer": "prop",
+   "anchor_method": "canvas bottom-centre = footprint south tip (anchor cell = the south-most cell)"
+  },
+  {
+   "id": "reeds_b",
+   "file_2x": "reeds_b@2x.png",
+   "file_1x": "reeds_b.png",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64,
+    128
+   ],
+   "anchor_px_1x": [
+    32,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "emissive": "no",
+   "art_height_px_2x": 116,
+   "art_x_from_anchor_2x": [
+    -37,
+    40
+   ],
+   "lowest_opaque_gap_px_2x": 2,
+   "kind": "plant",
+   "layer": "prop",
+   "anchor_method": "canvas bottom-centre = footprint south tip (anchor cell = the south-most cell)"
+  },
+  {
+   "id": "reeds_c",
+   "file_2x": "reeds_c@2x.png",
+   "file_1x": "reeds_c.png",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64,
+    128
+   ],
+   "anchor_px_1x": [
+    32,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "emissive": "no",
+   "art_height_px_2x": 102,
+   "art_x_from_anchor_2x": [
+    -30,
+    28
+   ],
+   "lowest_opaque_gap_px_2x": 2,
+   "kind": "plant",
+   "layer": "prop",
+   "anchor_method": "canvas bottom-centre = footprint south tip (anchor cell = the south-most cell)"
+  },
+  {
+   "id": "dead_trunk_tall",
+   "file_2x": "dead_trunk_tall@2x.png",
+   "file_1x": "dead_trunk_tall.png",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64,
+    224
+   ],
+   "anchor_px_1x": [
+    32,
+    112
+   ],
+   "size_2x": [
+    128,
+    224
+   ],
+   "size_1x": [
+    64,
+    112
+   ],
+   "emissive": "no",
+   "art_height_px_2x": 188,
+   "art_x_from_anchor_2x": [
+    -64,
+    63
+   ],
+   "lowest_opaque_gap_px_2x": 4,
+   "kind": "tree",
+   "layer": "prop",
+   "anchor_method": "canvas bottom-centre = footprint south tip (anchor cell = the south-most cell)"
+  },
+  {
+   "id": "dead_stump",
+   "file_2x": "dead_stump@2x.png",
+   "file_1x": "dead_stump.png",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64,
+    128
+   ],
+   "anchor_px_1x": [
+    32,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "emissive": "no",
+   "art_height_px_2x": 126,
+   "art_x_from_anchor_2x": [
+    -41,
+    44
+   ],
+   "lowest_opaque_gap_px_2x": 3,
+   "kind": "decor_block",
+   "layer": "prop",
+   "anchor_method": "canvas bottom-centre = footprint south tip (anchor cell = the south-most cell)"
+  },
+  {
+   "id": "rotten_log",
+   "file_2x": "rotten_log@2x.png",
+   "file_1x": "rotten_log.png",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64,
+    128
+   ],
+   "anchor_px_1x": [
+    32,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "emissive": "no",
+   "art_height_px_2x": 71,
+   "art_x_from_anchor_2x": [
+    -63,
+    24
+   ],
+   "lowest_opaque_gap_px_2x": 2,
+   "kind": "decor_block",
+   "layer": "prop",
+   "anchor_method": "canvas bottom-centre = footprint south tip (anchor cell = the south-most cell)"
+  },
+  {
+   "id": "stepping_stones",
+   "file_2x": "stepping_stones@2x.png",
+   "file_1x": "stepping_stones.png",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64,
+    128
+   ],
+   "anchor_px_1x": [
+    32,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "emissive": "no",
+   "art_height_px_2x": 65,
+   "art_x_from_anchor_2x": [
+    -64,
+    26
+   ],
+   "lowest_opaque_gap_px_2x": 2,
+   "kind": "decor_flat",
+   "layer": "prop",
+   "anchor_method": "canvas bottom-centre = footprint south tip (anchor cell = the south-most cell)"
+  },
+  {
+   "id": "marker_lantern_post",
+   "file_2x": "marker_lantern_post@2x.png",
+   "file_1x": "marker_lantern_post.png",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64,
+    224
+   ],
+   "anchor_px_1x": [
+    32,
+    112
+   ],
+   "size_2x": [
+    128,
+    224
+   ],
+   "size_1x": [
+    64,
+    112
+   ],
+   "emissive": "no",
+   "art_height_px_2x": 177,
+   "art_x_from_anchor_2x": [
+    -44,
+    52
+   ],
+   "lowest_opaque_gap_px_2x": 2,
+   "kind": "tall",
+   "layer": "prop",
+   "anchor_method": "canvas bottom-centre = footprint south tip (anchor cell = the south-most cell)"
+  },
+  {
+   "id": "root_tangle",
+   "file_2x": "root_tangle@2x.png",
+   "file_1x": "root_tangle.png",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64,
+    128
+   ],
+   "anchor_px_1x": [
+    32,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "size_1x": [
+    64,
+    64
+   ],
+   "emissive": "no",
+   "art_height_px_2x": 82,
+   "art_x_from_anchor_2x": [
+    -44,
+    43
+   ],
+   "lowest_opaque_gap_px_2x": 4,
+   "kind": "decor_block",
+   "layer": "prop",
+   "anchor_method": "canvas bottom-centre = footprint south tip (anchor cell = the south-most cell)"
+  }
+ ]
+}

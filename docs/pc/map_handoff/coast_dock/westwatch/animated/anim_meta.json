@@ -1,0 +1,75 @@
+{
+ "format": "stasium.anim_meta",
+ "note": "screen-space fog/haze overlays as 1-frame scroll layers",
+ "animations": {
+  "haze_a_drift": {
+   "file": "overlays/haze_a.png",
+   "file_2x": "overlays/haze_a@2x.png",
+   "frames": 1,
+   "fps": 0,
+   "frame_size": [
+    320,
+    80
+   ],
+   "frame_size_2x": [
+    640,
+    160
+   ],
+   "kind": "scroll_overlay",
+   "layer": "above_props",
+   "scroll_px_per_s_1x": [
+    4,
+    0
+   ],
+   "tileable": false,
+   "alpha_peak": 0.271,
+   "note": "static painted overlay; the engine drifts it (no frames). wide soft ash haze band, ~5 cells wide; draw above props, normal blend (no add/screen = no glow)"
+  },
+  "haze_b_drift": {
+   "file": "overlays/haze_b.png",
+   "file_2x": "overlays/haze_b@2x.png",
+   "frames": 1,
+   "fps": 0,
+   "frame_size": [
+    320,
+    80
+   ],
+   "frame_size_2x": [
+    640,
+    160
+   ],
+   "kind": "scroll_overlay",
+   "layer": "above_props",
+   "scroll_px_per_s_1x": [
+    4,
+    0
+   ],
+   "tileable": false,
+   "alpha_peak": 0.231,
+   "note": "static painted overlay; the engine drifts it (no frames). wide soft ash haze band, ~5 cells wide; draw above props, normal blend (no add/screen = no glow)"
+  },
+  "haze_tile_swatch_drift": {
+   "file": "overlays/haze_tile_swatch.png",
+   "file_2x": "overlays/haze_tile_swatch@2x.png",
+   "frames": 1,
+   "fps": 0,
+   "frame_size": [
+    256,
+    256
+   ],
+   "frame_size_2x": [
+    512,
+    512
+   ],
+   "kind": "scroll_overlay",
+   "layer": "above_props",
+   "scroll_px_per_s_1x": [
+    8,
+    2
+   ],
+   "tileable": true,
+   "alpha_peak": 0.2,
+   "note": "static painted overlay; the engine drifts it (no frames). tileable low-alpha ash haze sheet (wraps on both axes) for a slow scrolling layer"
+  }
+ }
+}

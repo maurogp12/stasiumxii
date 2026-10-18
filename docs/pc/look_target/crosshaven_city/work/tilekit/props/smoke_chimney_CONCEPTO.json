@@ -1,0 +1,17 @@
+{
+ "foot": [
+  60,
+  212
+ ],
+ "footprint": [
+  0,
+  0
+ ],
+ "blocks": false,
+ "height_px": 220,
+ "frames": 6,
+ "fps": 8,
+ "frame_w": 120,
+ "frame_h": 220,
+ "note": "place foot on any chimney top; draw above the roof"
+}

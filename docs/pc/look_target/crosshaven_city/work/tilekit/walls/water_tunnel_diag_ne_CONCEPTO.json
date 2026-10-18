@@ -1,0 +1,15 @@
+{
+ "foot": [
+  358,
+  704
+ ],
+ "footprint": [
+  8,
+  1
+ ],
+ "blocks": true,
+ "height_px": 550,
+ "grate": true,
+ "water_passes": true,
+ "orient": "ne iso axis, 2:1 slope (mirror of se, 10% darker)"
+}

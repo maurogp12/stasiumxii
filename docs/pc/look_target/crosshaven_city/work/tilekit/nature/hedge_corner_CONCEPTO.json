@@ -1,0 +1,14 @@
+{
+ "foot": [
+  145,
+  151
+ ],
+ "footprint": [
+  2,
+  2
+ ],
+ "blocks": true,
+ "height_px": 184,
+ "width_px": 264,
+ "orient": "true L: back corner block plus one arm down-right and one down-left; flip_h gives the same L, use rotations via flip_v-free placement of two arms"
+}

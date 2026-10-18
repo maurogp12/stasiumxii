@@ -1,0 +1,5 @@
+path px 4696 walk s 49.4 frames 1222 HERO bad 0 min edge 19.4
+npcs 13 ['smith', 'forge_master', 'trader', 'herald', 'archivist', 'door_keeper', 'banker', 'warden', 'farmer', 'elder', 'guide', 'fisher', 'woodcutter']
+NPC mask ok; per-NPC min sep {'smith': (394.6, np.float64(22.5)), 'forge_master': (334.1, np.float64(22.5)), 'trader': (64.0, np.float64(24.0)), 'herald': (58.0, np.float64(26.0)), 'archivist': (66.3, np.float64(27.8)), 'door_keeper': (95.4, np.float64(28.0)), 'banker': (180.0, np.float64(45.3)), 'warden': (158.8, np.float64(3.4)), 'farmer': (243.2, np.float64(43.6)), 'elder': (413.1, np.float64(22.5)), 'guide': (810.0, np.float64(43.6)), 'fisher': (370.9, np.float64(45.0)), 'woodcutter': (628.7, np.float64(29.2))}
+hero min dist to open water px 33.0
+done 1222 fades 1421

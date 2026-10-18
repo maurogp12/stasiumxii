@@ -1,0 +1,9 @@
+{
+ "anchor": "bottom-center of house sprite = plot point (same for all tiers)",
+ "plot_clearance_px": {
+  "normal": 200,
+  "rare": 260,
+  "legendary": 350
+ },
+ "note": "No lots, fences, dirt or garden beds. Swap house_normal/rare/legendary in place at the plot point; plants are separate props on grass."
+}

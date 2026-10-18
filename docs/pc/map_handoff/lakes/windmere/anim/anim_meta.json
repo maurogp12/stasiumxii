@@ -1,0 +1,23 @@
+{
+ "ice_bob": {
+  "frames": 12,
+  "fps": 10,
+  "1x": {
+   "frame_w": 48,
+   "frame_h": 80,
+   "pivot": [
+    32,
+    60
+   ]
+  },
+  "_2x": {
+   "frame_w": 96,
+   "frame_h": 160,
+   "pivot": [
+    64,
+    120
+   ]
+  },
+  "note": "pivot = bobber rest point; put it at the ice_hole centre. Stick stands on the snow/ice to the left."
+ }
+}

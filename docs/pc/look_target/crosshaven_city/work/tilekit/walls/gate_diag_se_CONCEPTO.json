@@ -1,0 +1,43 @@
+{
+ "foot": [
+  661,
+  1006
+ ],
+ "footprint": [
+  16,
+  1
+ ],
+ "blocks": true,
+ "height_px": 700,
+ "gatehouse": {
+  "height_px": 700,
+  "width_px": 635,
+  "wall_height_px": 550
+ },
+ "passage": {
+  "rect": [
+   529,
+   485,
+   261,
+   585
+  ],
+  "walkable": true,
+  "see_through": true
+ },
+ "door": {
+  "file": "gate_door_diag_se_CONCEPTO.png",
+  "frames": 8,
+  "fps": 12,
+  "frame_w": 261,
+  "frame_h": 585,
+  "offset": [
+   529,
+   485
+  ],
+  "open_inward": true
+ },
+ "layer_order": "ground < door < gate curtain < actors",
+ "no_portcullis": true,
+ "no_dust": true,
+ "orient": "se iso axis, 2:1 slope; painted iso wall, tower-matched stone; mirror pair"
+}

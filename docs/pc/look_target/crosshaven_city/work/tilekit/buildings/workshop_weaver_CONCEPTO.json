@@ -1,0 +1,14 @@
+{
+ "foot": [
+  309,
+  480
+ ],
+ "footprint": [
+  4,
+  3
+ ],
+ "blocks": true,
+ "height_px": 480,
+ "width_px": 498,
+ "tier": "workshop"
+}

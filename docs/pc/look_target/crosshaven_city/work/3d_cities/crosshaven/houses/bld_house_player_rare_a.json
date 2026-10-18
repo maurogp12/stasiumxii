@@ -1,0 +1,24 @@
+{
+ "label": "🖼️ IMAGEN / CONCEPTO, TODAVÍA HAY QUE CONSTRUIRLO",
+ "name": "bld_house_player_rare_a",
+ "concept": "bld_house_player_rare_CONCEPTO_.png",
+ "height_m": 6.5,
+ "footprint_m": [
+  6.307,
+  5.298
+ ],
+ "pivot": "footprint centre on ground (y=0)",
+ "front": "+Z",
+ "units": "metres, Y-up",
+ "tris": {
+  "LOD0": 10208,
+  "LOD1": 5104,
+  "LOD2": 2040
+ },
+ "collider": "bld_house_player_rare_a-col.glb (convex hull)",
+ "textures": "embedded JPEG q82: LOD0 1024, LOD1 1024, LOD2 512",
+ "source_glb": "../raw/bld_house_player_rare_fjCUsL.glb",
+ "uniform_scale": 6.5,
+ "status": "preview mesh, not tested in game",
+ "facing_note": "Front door faces +Z. Build agent rotates on import."
+}

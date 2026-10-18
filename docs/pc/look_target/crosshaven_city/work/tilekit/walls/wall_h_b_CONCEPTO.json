@@ -1,0 +1,24 @@
+{
+ "foot": [
+  153,
+  550
+ ],
+ "footprint": [
+  2,
+  1
+ ],
+ "blocks": true,
+ "height_px": 550,
+ "orient": "screen-horizontal (runs along grid diagonal)",
+ "tile_step_px": [
+  206,
+  0
+ ],
+ "merlon_period_px": 206,
+ "variants": [
+  "wall_h_CONCEPTO",
+  "wall_h_b_CONCEPTO",
+  "wall_h_c_CONCEPTO"
+ ],
+ "note": "variants share edges; mix freely"
+}

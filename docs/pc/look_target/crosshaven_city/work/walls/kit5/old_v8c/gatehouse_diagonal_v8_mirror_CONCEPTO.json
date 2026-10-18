@@ -1,0 +1,34 @@
+{
+ "left_foot": [
+  0,
+  553
+ ],
+ "right_foot": [
+  1542,
+  1113.2
+ ],
+ "slope": 0.3633,
+ "raw_slope": 0.3746,
+ "scale": 1.491,
+ "arch_opening_x": [
+  440,
+  648
+ ],
+ "arch_width_px": 209,
+ "stone_lab_after": [
+  50.2,
+  3.3,
+  31.9
+ ],
+ "size": [
+  1543,
+  1117
+ ],
+ "cornice": "band from segment_horizontal_v8 rows 148-206, 200 px below piece top (unsheared)",
+ "walkway": "red wood regraded to stone colour",
+ "stone_lab_before": [
+  53.400001525878906,
+  2.799999952316284,
+  32.0
+ ]
+}

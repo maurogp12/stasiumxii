@@ -1,0 +1,245 @@
+{
+ "format": "farm_kit_animated_v1",
+ "status": "PROPOSED - art suggestion, nothing wired in-engine",
+ "scale_note": "1x files here, 2x masters in _2x/ (exactly 2x)",
+ "sheet_layout": "horizontal strip, frames left->right, frame_size each",
+ "animations": {
+  "wheat_young_sway": {
+   "file": "animated/wheat_young_sway.png",
+   "file_2x": "animated/_2x/wheat_young_sway.png",
+   "frame_size": [
+    76,
+    64
+   ],
+   "frame_size_2x": [
+    152,
+    128
+   ],
+   "frames": 16,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 2.0,
+   "anchor": "bottom-centre (same anchor as props/wheat_young.png; frame is 12 px (2x) / 6 px (1x) wider on each side so tops never clip)",
+   "pairs_with": "wheat_young",
+   "blend": "mix",
+   "sway_mask": "animated/sway_masks/wheat_young_swaymask.png",
+   "note": "Crosshaven grass sway method: 16 f @ 8 fps (2 s loop), per-plant phase offsets, bend grows with height above the soil, base pinned; ~2.5 px top bend at 1x. Randomise start frame + speed_scale (0.85-1.15) per instance",
+   "status": "PROPOSED"
+  },
+  "wheat_ripe_sway": {
+   "file": "animated/wheat_ripe_sway.png",
+   "file_2x": "animated/_2x/wheat_ripe_sway.png",
+   "frame_size": [
+    76,
+    64
+   ],
+   "frame_size_2x": [
+    152,
+    128
+   ],
+   "frames": 16,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 2.0,
+   "anchor": "bottom-centre (same anchor as props/wheat_ripe.png; frame is 12 px (2x) / 6 px (1x) wider on each side so tops never clip)",
+   "pairs_with": "wheat_ripe",
+   "blend": "mix",
+   "sway_mask": "animated/sway_masks/wheat_ripe_swaymask.png",
+   "note": "Crosshaven grass sway method: 16 f @ 8 fps (2 s loop), per-plant phase offsets, bend grows with height above the soil, base pinned; ~3.0 px top bend at 1x. Randomise start frame + speed_scale (0.85-1.15) per instance",
+   "status": "PROPOSED"
+  },
+  "wheat_ripe_b_sway": {
+   "file": "animated/wheat_ripe_b_sway.png",
+   "file_2x": "animated/_2x/wheat_ripe_b_sway.png",
+   "frame_size": [
+    76,
+    64
+   ],
+   "frame_size_2x": [
+    152,
+    128
+   ],
+   "frames": 16,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 2.0,
+   "anchor": "bottom-centre (same anchor as props/wheat_ripe_b.png; frame is 12 px (2x) / 6 px (1x) wider on each side so tops never clip)",
+   "pairs_with": "wheat_ripe_b",
+   "blend": "mix",
+   "sway_mask": "animated/sway_masks/wheat_ripe_b_swaymask.png",
+   "note": "Crosshaven grass sway method: 16 f @ 8 fps (2 s loop), per-plant phase offsets, bend grows with height above the soil, base pinned; ~3.0 px top bend at 1x. Randomise start frame + speed_scale (0.85-1.15) per instance",
+   "status": "PROPOSED"
+  },
+  "carrot_young_sway": {
+   "file": "animated/carrot_young_sway.png",
+   "file_2x": "animated/_2x/carrot_young_sway.png",
+   "frame_size": [
+    76,
+    64
+   ],
+   "frame_size_2x": [
+    152,
+    128
+   ],
+   "frames": 16,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 2.0,
+   "anchor": "bottom-centre (same anchor as props/carrot_young.png; frame is 12 px (2x) / 6 px (1x) wider on each side so tops never clip)",
+   "pairs_with": "carrot_young",
+   "blend": "mix",
+   "sway_mask": "animated/sway_masks/carrot_young_swaymask.png",
+   "note": "Crosshaven grass sway method: 16 f @ 8 fps (2 s loop), per-plant phase offsets, bend grows with height above the soil, base pinned; ~1.6 px top bend at 1x. Randomise start frame + speed_scale (0.85-1.15) per instance",
+   "status": "PROPOSED"
+  },
+  "carrot_ripe_sway": {
+   "file": "animated/carrot_ripe_sway.png",
+   "file_2x": "animated/_2x/carrot_ripe_sway.png",
+   "frame_size": [
+    76,
+    64
+   ],
+   "frame_size_2x": [
+    152,
+    128
+   ],
+   "frames": 16,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 2.0,
+   "anchor": "bottom-centre (same anchor as props/carrot_ripe.png; frame is 12 px (2x) / 6 px (1x) wider on each side so tops never clip)",
+   "pairs_with": "carrot_ripe",
+   "blend": "mix",
+   "sway_mask": "animated/sway_masks/carrot_ripe_swaymask.png",
+   "note": "Crosshaven grass sway method: 16 f @ 8 fps (2 s loop), per-plant phase offsets, bend grows with height above the soil, base pinned; ~1.8 px top bend at 1x. Randomise start frame + speed_scale (0.85-1.15) per instance",
+   "status": "PROPOSED"
+  },
+  "carrot_ripe_b_sway": {
+   "file": "animated/carrot_ripe_b_sway.png",
+   "file_2x": "animated/_2x/carrot_ripe_b_sway.png",
+   "frame_size": [
+    76,
+    64
+   ],
+   "frame_size_2x": [
+    152,
+    128
+   ],
+   "frames": 16,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 2.0,
+   "anchor": "bottom-centre (same anchor as props/carrot_ripe_b.png; frame is 12 px (2x) / 6 px (1x) wider on each side so tops never clip)",
+   "pairs_with": "carrot_ripe_b",
+   "blend": "mix",
+   "sway_mask": "animated/sway_masks/carrot_ripe_b_swaymask.png",
+   "note": "Crosshaven grass sway method: 16 f @ 8 fps (2 s loop), per-plant phase offsets, bend grows with height above the soil, base pinned; ~1.8 px top bend at 1x. Randomise start frame + speed_scale (0.85-1.15) per instance",
+   "status": "PROPOSED"
+  },
+  "crop_glint": {
+   "file": "animated/crop_glint.png",
+   "file_2x": "animated/_2x/crop_glint.png",
+   "frame_size": [
+    64,
+    64
+   ],
+   "frame_size_2x": [
+    128,
+    128
+   ],
+   "frames": 8,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 1.0,
+   "anchor": "bottom-centre = south tip of the crop cell (same canvas + anchor as the crop props); draw just above the ripe crop",
+   "pairs_with": null,
+   "blend": "mix",
+   "note": "gatherable marker for *_ripe crops: soft warm sparkles (#fff0c8 / honey) twinkling over the crop plus a faint warm ground halo; painted, no neon. Desync per cell (random start frame). Hide when the crop is harvested",
+   "status": "PROPOSED"
+  },
+  "harvest_pop_cabbage": {
+   "file": "animated/harvest_pop_cabbage.png",
+   "file_2x": "animated/_2x/harvest_pop_cabbage.png",
+   "frame_size": [
+    64,
+    96
+   ],
+   "frame_size_2x": [
+    128,
+    192
+   ],
+   "frames": 8,
+   "fps": 12,
+   "loop": false,
+   "duration_s": 0.667,
+   "anchor": "bottom-centre = south tip of the gathered cell (frame is 64 px (2x) taller than the crop canvas so the item can rise)",
+   "pairs_with": "cabbage_harvested",
+   "blend": "mix",
+   "note": "one-shot on gather: leaf burst + dust puff from the plant, the cabbage pickup icon (44 px@2x) rises ~88 px@2x and fades by frame 8. Swap cabbage_ripe -> cabbage_harvested on frame 0; give the item to the bag when the strip ends",
+   "status": "PROPOSED"
+  },
+  "harvest_pop_wheat": {
+   "file": "animated/harvest_pop_wheat.png",
+   "file_2x": "animated/_2x/harvest_pop_wheat.png",
+   "frame_size": [
+    64,
+    96
+   ],
+   "frame_size_2x": [
+    128,
+    192
+   ],
+   "frames": 8,
+   "fps": 12,
+   "loop": false,
+   "duration_s": 0.667,
+   "anchor": "bottom-centre = south tip of the gathered cell (frame is 64 px (2x) taller than the crop canvas so the item can rise)",
+   "pairs_with": "wheat_harvested",
+   "blend": "mix",
+   "note": "one-shot on gather: straw burst + dust puff from the plant, the wheat pickup icon (44 px@2x) rises ~88 px@2x and fades by frame 8. Swap wheat_ripe -> wheat_harvested on frame 0; give the item to the bag when the strip ends",
+   "status": "PROPOSED"
+  },
+  "harvest_pop_pumpkin": {
+   "file": "animated/harvest_pop_pumpkin.png",
+   "file_2x": "animated/_2x/harvest_pop_pumpkin.png",
+   "frame_size": [
+    64,
+    96
+   ],
+   "frame_size_2x": [
+    128,
+    192
+   ],
+   "frames": 8,
+   "fps": 12,
+   "loop": false,
+   "duration_s": 0.667,
+   "anchor": "bottom-centre = south tip of the gathered cell (frame is 64 px (2x) taller than the crop canvas so the item can rise)",
+   "pairs_with": "pumpkin_harvested",
+   "blend": "mix",
+   "note": "one-shot on gather: leaf burst + dust puff from the plant, the pumpkin pickup icon (44 px@2x) rises ~88 px@2x and fades by frame 8. Swap pumpkin_ripe -> pumpkin_harvested on frame 0; give the item to the bag when the strip ends",
+   "status": "PROPOSED"
+  },
+  "harvest_pop_carrot": {
+   "file": "animated/harvest_pop_carrot.png",
+   "file_2x": "animated/_2x/harvest_pop_carrot.png",
+   "frame_size": [
+    64,
+    96
+   ],
+   "frame_size_2x": [
+    128,
+    192
+   ],
+   "frames": 8,
+   "fps": 12,
+   "loop": false,
+   "duration_s": 0.667,
+   "anchor": "bottom-centre = south tip of the gathered cell (frame is 64 px (2x) taller than the crop canvas so the item can rise)",
+   "pairs_with": "carrot_harvested",
+   "blend": "mix",
+   "note": "one-shot on gather: leaf burst + dust puff from the plant, the carrot pickup icon (44 px@2x) rises ~88 px@2x and fades by frame 8. Swap carrot_ripe -> carrot_harvested on frame 0; give the item to the bag when the strip ends",
+   "status": "PROPOSED"
+  }
+ }
+}

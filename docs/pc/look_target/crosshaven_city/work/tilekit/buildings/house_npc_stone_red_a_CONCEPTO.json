@@ -1,0 +1,15 @@
+{
+ "foot": [
+  299,
+  450
+ ],
+ "footprint": [
+  3,
+  3
+ ],
+ "blocks": true,
+ "height_px": 450,
+ "width_px": 478,
+ "tier": "npc",
+ "door_side": "front-left (SW face)"
+}

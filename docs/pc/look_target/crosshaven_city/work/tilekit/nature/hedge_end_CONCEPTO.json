@@ -1,0 +1,14 @@
+{
+ "foot": [
+  79,
+  119
+ ],
+ "footprint": [
+  1,
+  1
+ ],
+ "blocks": true,
+ "height_px": 120,
+ "width_px": 136,
+ "orient": "end: rounded cap on the left/outer side, flip_h for the other end"
+}

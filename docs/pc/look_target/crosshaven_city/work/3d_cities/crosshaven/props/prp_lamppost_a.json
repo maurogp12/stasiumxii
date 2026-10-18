@@ -1,0 +1,31 @@
+{
+ "lantern_material": "lantern_glass_emissive (emissive warm 1.0/0.62/0.25; build agent toggles energy for night)",
+ "facing_note": "Lantern door plate on the +Z face; pole is round so facing only matters for the door.",
+ "fix_v2": "rebuilt slim: 0.12 m pole, 3.2 m to cap tip",
+ "name": "prp_lamppost_a",
+ "label": "🖼️ IMAGEN / CONCEPTO, TODAVÍA HAY QUE CONSTRUIRLO — procedural build",
+ "tris": {
+  "LOD0": 208,
+  "LOD1": 192,
+  "LOD2": 176
+ },
+ "bounds_m": [
+  [
+   -0.21,
+   0.0,
+   -0.21
+  ],
+  [
+   0.21,
+   3.2,
+   0.21
+  ]
+ ],
+ "height_m": 3.2,
+ "units": "metres, Y-up",
+ "pivot": "ground (y=0)",
+ "front": "+Z",
+ "textures": "procedural weathered wood (grime/moss at base) 1024/512/256, iron 512/256/128 (0 CU); world-projected UV, 1 tile = 4 m",
+ "collider": "prp_lamppost_a-col.glb (boxes)",
+ "status": "procedural, not tested in game"
+}

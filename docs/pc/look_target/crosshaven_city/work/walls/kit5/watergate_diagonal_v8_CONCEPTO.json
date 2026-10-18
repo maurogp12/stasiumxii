@@ -1,0 +1,32 @@
+{
+ "left_foot": [
+  0,
+  1078.3
+ ],
+ "right_foot": [
+  1446,
+  553
+ ],
+ "slope": -0.3633,
+ "raw_slope": -0.0622,
+ "scale": 1.2222,
+ "body_px": 551,
+ "course_px": 48.8,
+ "courses_removed": 0,
+ "arch_opening_x": [
+  522,
+  914
+ ],
+ "arch_width_px": 392,
+ "source": "wg_v83_raw.jpg",
+ "size": [
+  1447,
+  1082
+ ],
+ "stone_lab_after": [
+  50.9,
+  2.8,
+  20.9
+ ],
+ "colour_target": "v8.3 by-eye v4 look: L50 sd13, a2.8 b21, pale mortar, highlight lift"
+}

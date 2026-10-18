@@ -1,0 +1,81 @@
+{
+  "status": "Proposed",
+  "variant": "v8d",
+  "method": "v8d: outer bank + mid south ledge blocked (fence\u2192water); yard south at fence y\u2248385; SE\u2194SW via corner gates through yard; mud+bridges only",
+  "video": "/workspace/swamp_map_v8d_play.mp4",
+  "contact": "/workspace/share/swamp_v8d_contact.jpg",
+  "contact_1fps": "/workspace/share/swamp_v8d_1fps.jpg",
+  "night_contact": "/workspace/share/swamp_v8d_night_contact.jpg",
+  "mask_check": "/workspace/share/swamp_v8d_mask_check.jpg",
+  "canvas": [
+    2240,
+    1260
+  ],
+  "scale": 1.75,
+  "stilt_over_ironjaw": 2.725,
+  "path_px": 5976,
+  "duration_s": 58.33,
+  "fps": 24,
+  "per_frame_feet_violations": 0,
+  "1fps_bad_feet_secs": 1,
+  "video_mb": 3.12,
+  "ladder": "skipped",
+  "night": "uniform full-canvas grade + soft elliptical vignette + soft-edge fog; feathered night-matched occluders; no rect grade bounds",
+  "facing_hold_frames": 6,
+  "layout": {
+    "walkable_pct": 38.93,
+    "path_px": 5976,
+    "waypoints": [
+      "entry",
+      "NE",
+      "br_NE",
+      "gate_NE",
+      "hamlet",
+      "hamlet_E",
+      "gate_SE",
+      "br_SE",
+      "SE",
+      "br_SE2",
+      "gate_SE2",
+      "hamlet2",
+      "hamlet_W",
+      "gate_SW",
+      "br_SW",
+      "SW",
+      "west",
+      "br_NW",
+      "NW",
+      "exit"
+    ],
+    "method": "v8d: yard@fence y385; mid-ledge blocked; corner gates"
+  },
+  "2s_bad_count": 0,
+  "contact_2s_480": "/workspace/share/swamp_v8d_2s_480.jpg",
+  "2s_feet_qa": "/workspace/share/swamp_v8d_2s_feet_qa.json",
+  "files_touched": {
+    "scripts": [
+      "/workspace/stasium-pc-look/ship/west_southbridge_v1/src/build_swamp_mask_v8d.py",
+      "/workspace/stasium-pc-look/ship/west_southbridge_v1/src/life_swamp_map_v8d.py"
+    ],
+    "masks": [
+      "map_v8/masks/walk.png \u2014 mud+decks+yard+corner gates; mid-ledge removed",
+      "map_v8/masks/blocked.png \u2014 props + fence + outer bank",
+      "map_v8/masks/outer_bank.png \u2014 NEW: fence exterior\u2192cliff/water ring + mid south ledge",
+      "map_v8/masks/decks.png \u2014 bridge decks + pads",
+      "map_v8/masks/water.png, water_buf.png, root_islands.png, mud.png"
+    ],
+    "path": "map_v8/path.npy \u2014 forced gate_NE\u2192yard\u2192gate_SE\u2192SE\u2192gate_SE\u2192yard\u2192gate_SW\u2192SW",
+    "meta": [
+      "map_v8/meta.json",
+      "map_v8/layout_v8d.json",
+      "map_v8/report_v8d.json"
+    ],
+    "outputs": [
+      "/workspace/swamp_map_v8d_play.mp4 (3.12MB)",
+      "share/swamp_map_v8d_play.mp4",
+      "share/swamp_v8d_2s_480.jpg + share/swamp_v8d_2s_frames/tXX.jpg",
+      "share/swamp_v8d_{contact,1fps,night_contact,mask_check,path_hamlet}.jpg",
+      "share/swamp_v8d_2s_feet_qa.json, layout.json, report.json, walkmask.png"
+    ]
+  }
+}

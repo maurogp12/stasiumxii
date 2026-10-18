@@ -1,0 +1,28 @@
+{
+ "label": "🖼️ IMAGEN / CONCEPTO, TODAVÍA HAY QUE CONSTRUIRLO",
+ "name": "prp_bannerpole_a",
+ "concept": "prp_bannerpole_CONCEPTO_.png",
+ "height_m": 4.0,
+ "footprint_m": [
+  1.347,
+  0.69
+ ],
+ "pivot": "footprint centre on ground (y=0)",
+ "front": "+Z",
+ "units": "metres, Y-up",
+ "tris": {
+  "LOD0": 2935,
+  "LOD1": 1467,
+  "LOD2": 585
+ },
+ "collider": "prp_bannerpole_a-col.glb (convex hull)",
+ "textures": "embedded JPEG q82: LOD0 1024, LOD1 1024, LOD2 512",
+ "source_glb": "../raw/prp_bannerpole_MCfN7c.glb.tmp.glb",
+ "uniform_scale": 1.0,
+ "status": "preview mesh, not tested in game",
+ "xz_fit_scale": [
+  1.0,
+  1.0
+ ],
+ "facing_note": "Main entrance faces +Z. Build agent rotates on import."
+}

@@ -1,0 +1,18 @@
+{
+ "foot": [
+  153,
+  602
+ ],
+ "footprint": [
+  2,
+  1
+ ],
+ "blocks": true,
+ "height_px": 550,
+ "tile_step_px": [
+  206,
+  103
+ ],
+ "merlon_period_px": 206,
+ "orient": "se iso axis, 2:1 slope; painted iso wall, tower-matched stone; mirror pair"
+}

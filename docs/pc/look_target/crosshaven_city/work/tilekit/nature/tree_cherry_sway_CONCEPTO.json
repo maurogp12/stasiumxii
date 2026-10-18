@@ -1,0 +1,19 @@
+{
+ "foot": [
+  212,
+  400
+ ],
+ "footprint": [
+  2,
+  2
+ ],
+ "blocks": true,
+ "height_px": 400,
+ "width_px": 365,
+ "see_through_when_behind": true,
+ "frames": 4,
+ "fps": 4,
+ "frame_w": 425,
+ "frame_h": 430,
+ "note": "gentle wind sway, foot fixed; or use a vertex-shear shader on the static sprite"
+}

@@ -1,0 +1,42 @@
+{
+ "label": "🖼️ IMAGEN / CONCEPTO, TODAVÍA HAY QUE CONSTRUIRLO",
+ "file": "chr_kestrel_male_CONCEPTO_.png",
+ "class": "kestrel",
+ "identity": "Forest-green cloak ranger archer, leather, brass pauldrons",
+ "px": [
+  3641,
+  2048
+ ],
+ "view": "A-pose turnaround front/side/back",
+ "height_m": 1.8,
+ "footprint_m": [
+  0.6,
+  0.4
+ ],
+ "pivot": "foot_centre_ground_y0",
+ "front": "+Z",
+ "skeleton": "shared_humanoid",
+ "tris_budget": "hero 15-25k",
+ "lod": [
+  "LOD0",
+  "LOD1 ~50%",
+  "LOD2 ~20%"
+ ],
+ "textures": "PBR albedo/normal/ORM 2048",
+ "collider": "capsule",
+ "slot": "class_kestrel_male",
+ "gear_slots": [
+  "head",
+  "chest",
+  "hands",
+  "legs",
+  "feet",
+  "cloak",
+  "main_hand",
+  "off_hand"
+ ],
+ "weapons_file": "itm_kestrel_weapons_CONCEPTO_.png",
+ "glb_name": "chr_kestrel_male_LOD0.glb",
+ "model_built": false,
+ "tool": "Scenario model_xai-grok-imagine-image-2-0 2k, upscaled 1584->2048 Lanczos (see ../raw/generation_log.jsonl)"
+}
