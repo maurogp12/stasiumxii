@@ -1,0 +1,14 @@
+timestamp_et,service,task,npc,task_id,status,credits,notes
+2026-10-17,scenario_image,concept,ani_chicken,job_VSpsyY2YSkXEhUfoCfCbjUqp,success,16,Scenario CU
+2026-10-17,scenario_image,concept,ani_pigeon,job_3oBJpWT4Ayg4vC4ddRVHmQ2N,success,16,Scenario CU
+2026-10-17,scenario_image,concept,ani_cat,job_CE6gGgiU736FsZf6CdmUWsxk,success,16,Scenario CU
+2026-10-17,scenario_image,concept,ani_duck,job_LHepjKXze525Lp4QcjWFxkQs,success,16,Scenario CU
+2026-10-17,scenario_image,concept,ani_horse,job_FthYQabVhgma1CWbG6NDSCMr,success,16,Scenario CU
+2026-10-17,scenario_image,concept,ani_dog,job_yi6M84sYhMTnkZfof1Tvmjbv,success,16,Scenario CU
+2026-10-17,scenario_tripo_i23d,image_to_3d,ani_cat,job_hktRUHJS8viZePPgA5GcJANX,success,45,Scenario CU
+2026-10-17,scenario_tripo_i23d,image_to_3d,ani_dog,job_eyANzzGJAaLdVCzzJBPmuhKW,success,45,Scenario CU
+2026-10-17,scenario_tripo_i23d,image_to_3d,ani_duck,job_2SBrzsEWwkz9u2NXo7zoguSo,success,45,Scenario CU
+2026-10-17,scenario_tripo_i23d,image_to_3d,ani_pigeon,job_5bfPw9b1cSg3uaNnLcmUX95W,success,45,Scenario CU
+2026-10-17,scenario_tripo_i23d,image_to_3d,ani_horse,job_f1Soq79UxM8TtWfeWWPP21bt,success,45,Scenario CU
+2026-10-17,scenario_tripo_i23d,image_to_3d,ani_chicken,job_MLMK4EFJy9D23NCGaREutPBy,success,45,Scenario CU
+2026-10-17 ET,meshy,none,all,-,-,0,"Meshy auto-rig is humanoid-only (docs): animals rigged and animated in Blender, 0 Meshy credits"

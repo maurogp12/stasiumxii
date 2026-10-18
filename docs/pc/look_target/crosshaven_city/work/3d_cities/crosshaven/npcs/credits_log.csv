@@ -49,3 +49,4 @@ timestamp_et,service,task,npc,task_id,status,credits,notes
 2026-10-17 19:57 ET,meshy,animations x5,child,01a14c4b-7f8c-7499-812f-1887bd15566f,SUCCEEDED,15,actions 0 613 46 33 313
 2026-10-17 19:57 ET,meshy,animations x5,guide,01a14c4b-876d-7226-9458-513aa14f8a90,SUCCEEDED,15,actions 0 613 290 32 313
 2026-10-17 19:57 ET,meshy,animations x5,herald,01a14c4b-8f1d-76ac-92e6-6a6348b2e2c7,SUCCEEDED,15,actions 0 613 28 33 308
+2026-10-17 20:06 ET,meshy,animations x1,guard,01a14c54-cf3a-7340-8a41-57c3738ff086,SUCCEEDED,3,actions 672

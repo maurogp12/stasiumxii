@@ -1,0 +1,81 @@
+{
+ "label": "🖼️ IMAGEN / CONCEPTO, TODAVÍA HAY QUE CONSTRUIRLO",
+ "id": "ani_duck",
+ "files": {
+  "LOD0": "3d/ani_duck_LOD0.glb",
+  "LOD1": "3d/ani_duck_LOD1.glb",
+  "LOD2": "3d/ani_duck_LOD2.glb"
+ },
+ "tris": {
+  "LOD0": 2364,
+  "LOD1": 1181,
+  "LOD2": 472
+ },
+ "size_m": {
+  "height": 0.4,
+  "length": 0.499
+ },
+ "units": "metres, feet at y=0, faces +Z",
+ "skeleton": {
+  "type": "custom Blender armature (Meshy auto-rig is humanoid only)",
+  "bones": [
+   "root",
+   "hips",
+   "chest",
+   "neck",
+   "head",
+   "tail",
+   "leg_l_upper",
+   "leg_l_lower",
+   "leg_l_foot",
+   "wing_l",
+   "leg_r_upper",
+   "leg_r_lower",
+   "leg_r_foot",
+   "wing_r"
+  ]
+ },
+ "skin": "Blender bone-heat weights, fallback nearest-bone distance weights for any unweighted vertex",
+ "clips": {
+  "idle": {
+   "frames_30fps": 90,
+   "loop": true,
+   "in_place": true,
+   "source": "procedural keyframes (Blender)"
+  },
+  "walk": {
+   "frames_30fps": 24,
+   "loop": true,
+   "in_place": true,
+   "source": "procedural keyframes (Blender)"
+  },
+  "run": {
+   "frames_30fps": 12,
+   "loop": true,
+   "in_place": true,
+   "source": "procedural keyframes (Blender)"
+  },
+  "peck": {
+   "frames_30fps": 48,
+   "loop": true,
+   "in_place": true,
+   "source": "procedural keyframes (Blender)"
+  }
+ },
+ "move_speed_mps": {
+  "walk": 0.278,
+  "run": 1.574
+ },
+ "move_speed_note": "root speed matching the planted foot of the in-place cycle; drive the animal at this speed to avoid skating",
+ "behaviour": {
+  "route_type": "pond_waddle",
+  "suggested_route": "around the well / horse trough / pond edge; waddle in a line of 2-4, peck the ground, waddle on",
+  "role_idles": [
+   "peck/dabble at the water edge"
+  ],
+  "rule": "always moving or doing something; never idle in place more than ~15 s"
+ },
+ "concept": "concepts/ani_duck_CONCEPTO_.png",
+ "mesh_source": "Scenario Tripo v3.1 image-to-3D (45 CU)",
+ "textures": "baseColor + normal + ORM from Tripo, 1024/512/256 for LOD0/1/2"
+}

@@ -42,3 +42,24 @@ Nothing here is in-game yet. Status: concept assets, rigged and animated, not in
   - elder: the shaky walk is used, but the idle is the generic one.
 - Routes are tags and text suggestions. Story NPCs use the npcs.json cells. The other NPCs are named spots with no exact map coordinates.
 - The LOD1/2 triangle counts in the JSONs are ratio targets, not measured.
+
+## Fix pass 2 (drop-in, same filenames; v1 kept in backup_v1/). 🖼️ IMAGEN / CONCEPTO, TODAVÍA HAY QUE CONSTRUIRLO
+
+**1. Textures.** Every NPC LOD0/1/2 now has baseColor, NormalGL and ORM, with occlusionTexture wired to ORM.R.
+- The maps were restored from the Tripo PBR set, which the Meshy rigged glb still had (same mesh and UVs). Meshy's animation glb had dropped them.
+- Sizes are 2048/1024/512.
+- Preview: `previews/npc_textures_before_after_CONCEPTO_.jpg`.
+
+**2. Guard spear.**
+- Right hand sculpted into a hammer-grip fist (Ironjaw v3 method). Measured wrap is about 300° around a 1.6 cm-radius haft.
+- New clips:
+  - `idle_spear`: Blender arm edit of idle; spear upright, butt on the ground. This is now the default idle.
+  - `walk_spear`: Meshy 672 Spear Walk inplace, 3 credits.
+- Attach transforms (`in_hand`, `in_hand_reversed`, `back_sling`) are in the guard JSON, in glTF joint space, metres. They were verified by placing the spear from the JSON numbers alone on a re-import of the exported LOD0.
+- The spear glb shaft was slimmed to 3.5 cm.
+- Previews: `npc_guard_spear_check_CONCEPTO_.jpg`, `npc_guard_fist_closeup_CONCEPTO_.jpg`.
+
+**3. Child walk.**
+- Changes: leg swing ×0.8, arm swing ×0.85, hip bob ×0.8, cadence ×1.15. The idle cadence is also ×1.15.
+- Every NPC JSON now has `walk_speed_mps`, the planted-foot speed. Moving the NPC at that speed avoids skating.
+- Preview: `npc_child_walk_before_after_CONCEPTO_.jpg`.

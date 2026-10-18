@@ -11,10 +11,10 @@
  },
  "tris": {
   "LOD0": 9944,
-  "LOD1": 4972,
+  "LOD1": 4971,
   "LOD2": 1988
  },
- "note_lods": "LOD1/LOD2 are mesh + skin only; they share the LOD0 skeleton/clips. LOD1/2 tris are the decimate ratio targets.",
+ "note_lods": "LOD1/LOD2 are mesh + skin only (share the LOD0 skeleton/clips); tris measured after decimate.",
  "skeleton": "Godot humanoid names (same bone map as Ironjaw), no finger bones",
  "clips": {
   "idle": {
@@ -69,5 +69,18 @@
   "animation_task": "01a14c4b-77d2-76e5-a9cf-f1f662b147d3",
   "credits": 20
  },
- "mesh_source": "Scenario Tripo v3.1 image-to-3D from the front crop (45 CU)"
+ "mesh_source": "Scenario Tripo v3.1 image-to-3D from the front crop (45 CU)",
+ "textures": {
+  "set": "baseColor + NormalGL + ORM (R=occlusion, G=roughness, B=metallic), restored from the Tripo PBR output on all LODs",
+  "sizes_px": {
+   "LOD0": 2048,
+   "LOD1": 1024,
+   "LOD2": 512
+  },
+  "format": "WebP q80"
+ },
+ "walk_speed_mps": {
+  "walk": 0.565
+ },
+ "walk_speed_note": "root speed that matches the planted foot of the in-place walk; move the NPC at this speed (scale the clip speed with the move speed) to avoid foot skating"
 }
