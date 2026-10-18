@@ -869,7 +869,8 @@
    "cobblestone",
    "plaza_flagstones",
    "riverbank_pebbles",
-   "wall_base_gravel"
+   "wall_base_gravel",
+   "cobblestone_b"
   ],
   "tiles_m": [
    2.0,
@@ -878,6 +879,7 @@
    3.0,
    2.0,
    4.0,
+   2.0,
    2.0,
    2.0
   ],
@@ -897,6 +899,13 @@
    "mud_gate_m": 9.0,
    "mud_mill_m": 7.0
   },
-  "note": "Art kit terrain sets (resized to 1024; heights 512). Material per cell from the layout; height-blended in terrain_pbr.gdshader."
+  "note": "Art kit terrain sets (resized to 1024; heights 512). Material per cell from the layout; height-blended in terrain_pbr.gdshader.",
+  "cobble_mix": {
+   "a": "cobblestone",
+   "b": "cobblestone_b",
+   "period_m": 8.0,
+   "cut": 0.08,
+   "joint_dark": 0.3
+  }
  }
 }

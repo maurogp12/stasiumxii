@@ -332,8 +332,17 @@ func _terrain_pbr_material() -> ShaderMaterial:
 	sm.set_shader_parameter("cell_m", cm)
 	sm.set_shader_parameter("contrast", float(tp.get("contrast", 0.15)))
 	sm.set_shader_parameter("outside_id", maxi(0, mats.find("grass_lush")))
-	var tiles := PackedFloat32Array(tp.get("tiles_m", [2, 2, 2, 2, 2, 2, 2, 2]))
-	sm.set_shader_parameter("tiles", tiles)
+	var tl: Array = tp.get("tiles_m", [])
+	while tl.size() < 9:
+		tl.append(2.0)
+	sm.set_shader_parameter("tiles", PackedFloat32Array(tl.slice(0, 9)))
+	var cmx: Dictionary = tp.get("cobble_mix", {})
+	if not cmx.is_empty():
+		sm.set_shader_parameter("cobble_a", mats.find(str(cmx.get("a", ""))))
+		sm.set_shader_parameter("cobble_b", mats.find(str(cmx.get("b", ""))))
+		sm.set_shader_parameter("mix_period", float(cmx.get("period_m", 8.0)))
+		sm.set_shader_parameter("mix_cut", float(cmx.get("cut", 0.08)))
+		sm.set_shader_parameter("joint_dark", float(cmx.get("joint_dark", 0.3)))
 	stats["terrain_pbr"] = mats.size()
 	return sm
 
