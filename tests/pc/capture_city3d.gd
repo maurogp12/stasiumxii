@@ -48,6 +48,8 @@ func _go() -> void:
 			await _lineup()
 		"terrain":
 			await _terraincheck()
+		"npcs":
+			await _npccheck()
 		"clip":
 			await _clip()
 		_:
@@ -296,3 +298,27 @@ func _terraincheck() -> void:
 	await _grab("t_river.png")
 	_view(_piece("cathedral") + Vector3(0, 0, 14), 20, 50, 30)
 	await _grab("t_street.png")
+
+
+func _npccheck() -> void:
+	m.env.set_hour(11.0)
+	for i in 240:
+		await process_frame
+	var smith := _piece("workshop_smithy")
+	_view(smith + Vector3(3, 0, 3), 45, 42, 24)
+	await _grab("18_npc_smithy.png")
+	var sg := Vector3.ZERO
+	for g in m.builder.gate_doors:
+		if g["id"] == "S":
+			sg = g["center"]
+	var gd: Vector2 = Vector2.ZERO
+	for g in m.plan.gates:
+		if g["id"] == "S":
+			gd = g["dir"]
+	_view(sg + Vector3(gd.x, 0, gd.y) * 6.0, rad_to_deg(atan2(gd.x, gd.y)), 28, 14)
+	await _grab("19_npc_gate_guard.png")
+	m.env.set_hour(12.4)
+	for i in 600:
+		await process_frame
+	_view(_piece("fountain"), 45, 35, 22)
+	await _grab("20_npc_plaza_noon.png")

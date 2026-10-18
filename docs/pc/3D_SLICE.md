@@ -72,7 +72,7 @@ City layout data goes in, a 3D scene comes out. Only Crosshaven is built for now
 | Player plot fences | Art kit fence modules round each plot, with the gate on the door side |
 | Woods round the walls | Art kit tree impostors (2 crossed quads) |
 | Ground | Art kit terrain v2 (8 PBR sets, resized to 1024; heights 512). One material per layout cell, height-blended per pixel in `terrain_pbr.gdshader` (weight = max(0, h + splat − max + 0.15)). Rules in `crosshaven.json` `terrain_pbr`: cobbles on streets, flagstones on the plaza and landmark forecourts, dirt paths, pebbles on the river and its banks, gravel at the wall foot, mud at the gate approaches and the mill, short and lush grass mixed by noise. A second cobble variant can be added as a new material id. |
-| Day/night, lamps, city life | Done |
+| Day/night, lamps, city life | Done. City NPCs and role NPCs wear the art kit's 12 NPC bodies (data: `npcs3d.json`): story NPCs at their city posts, the blacksmith at the smithy, the merchant at the stalls, the priest at the cathedral, and a guard at each gate. Each NPC walks a work loop; the route text in its JSON becomes waypoints round its post, with its work idles in between, and it never stands still more than about 10 s. They keep the 2D day (plaza at noon, home at night). Townsfolk (peasants, child, elder, noble, merchant) stroll the streets. The guard's spear waits for its attach offsets. |
 | Walkable in 3D | Done: the hero reaches every gate, NPC, plot door and bridge (tests) |
 
 **Scale:** 1 layout cell = **1.5 m**, so the approved street plan's 3×3-cell houses fit the house kit's 3–5 m footprints and streets come out 3–6 m wide. The hero is 1.8 m. Heights follow `docs/pc/skills/3D_ART_SKILL.md` §3.
@@ -138,6 +138,7 @@ City layout data goes in, a 3D scene comes out. Only Crosshaven is built for now
   - sit: crossed on the back with the `holster_offset`.
   - No offset corrections from us yet.
 - **WebP textures:** kept as WebP when we resize them (EXT_texture_webp), because Godot reads them natively.
+- **NPC story cells:** Guide 24,18, Banker 20,20 and Herald 17,19 are Crossroads cells in `npcs.json`. Inside the walled city these NPCs keep their `city.json` posts.
 - **Bridges:** we arch the walk height in data (`kit.bridge.deck_peak`) until the ramp collider is used.
 
 ## 7. Proposed for later (needs Mauro's approval; not in the rules)

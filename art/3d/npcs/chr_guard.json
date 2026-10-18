@@ -1,0 +1,82 @@
+{
+ "label": "🖼️ IMAGEN / CONCEPTO, TODAVÍA HAY QUE CONSTRUIRLO",
+ "id": "chr_guard",
+ "category": "named",
+ "height_m": 1.8,
+ "units": "metres, feet at y=0, faces +Z",
+ "files": {
+  "LOD0": "3d/chr_guard_LOD0.glb",
+  "LOD1": "3d/chr_guard_LOD1.glb",
+  "LOD2": "3d/chr_guard_LOD2.glb"
+ },
+ "tris": {
+  "LOD0": 9882,
+  "LOD1": 4941,
+  "LOD2": 1976
+ },
+ "note_lods": "LOD1/LOD2 are mesh + skin only; they share the LOD0 skeleton/clips. LOD1/2 tris are the decimate ratio targets.",
+ "skeleton": "Godot humanoid names (same bone map as Ironjaw), no finger bones",
+ "clips": {
+  "idle": {
+   "meshy_action_id": 336,
+   "source": "Long Breathe and Look Around",
+   "frames_30fps": 422.5,
+   "loop": true,
+   "in_place": true
+  },
+  "walk": {
+   "meshy_action_id": 613,
+   "source": "Casual Walk",
+   "frames_30fps": 155.0,
+   "loop": true,
+   "in_place": true
+  },
+  "interact": {
+   "meshy_action_id": 285,
+   "source": "Open Door",
+   "frames_30fps": 195.0,
+   "loop": false,
+   "in_place": true
+  },
+  "sit": {
+   "meshy_action_id": 33,
+   "source": "Chair Sit Idle Male",
+   "frames_30fps": 400.0,
+   "loop": true,
+   "in_place": true
+  },
+  "talk": {
+   "meshy_action_id": 56,
+   "source": "Stand and Chat",
+   "frames_30fps": 193.8,
+   "loop": true,
+   "in_place": true
+  }
+ },
+ "behaviour": {
+  "route_type": "patrol",
+  "suggested_route": "gate -> market square -> cathedral steps -> gate (loop, stop 6-10 s at each point, play idle = look around)",
+  "work_idles": [
+   "idle (look around) at patrol stops",
+   "interact = open_door at the gatehouse",
+   "talk to the player when stopped"
+  ],
+  "rule": "must always move or do something; never stand still more than ~10 s"
+ },
+ "concept": "concepts/npc_guard_turnaround_CONCEPTO_.png",
+ "meshy": {
+  "rig_task": "01a14c49-39f7-73d5-bf29-7d58821e3e3a",
+  "animation_task": "01a14c4a-a2c8-71ab-99ba-43486d7843af",
+  "credits": 20
+ },
+ "mesh_source": "Scenario Tripo v3.1 image-to-3D from the front crop (45 CU)",
+ "props": {
+  "spear": {
+   "file": "3d/itm_guard_spear_CONCEPTO_.glb",
+   "length_m": 2.2,
+   "attach_bone": "RightHand",
+   "holster": "none (always carried)",
+   "note": "attach transform NOT tuned yet; the hand is an open Meshy hand, no fist sculpt"
+  }
+ }
+}

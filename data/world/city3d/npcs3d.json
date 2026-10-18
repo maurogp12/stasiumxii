@@ -1,0 +1,23 @@
+{
+ "format": "stasium.npcs3d",
+ "format_version": 1,
+ "status": "proposed",
+ "note": "3D bodies for Crosshaven's NPCs (art kit, art/3d/npcs/chr_<model>). city: the city.json NPC id -> model. extra: role NPCs added by the 3D city (post = a place name from city_life3d). folk: models for the strolling townsfolk. Each model's JSON gives its clips and behaviour (route text -> waypoints round its post, work idles). The kit's story-NPC cells (Guide 24,18; Banker 20,20; Herald 17,19) are Crossroads cells in npcs.json; inside the walled city the story NPCs keep their city.json posts.",
+ "dir": "res://art/3d/npcs/",
+ "city": {
+  "city_guide": "guide", "city_banker": "banker", "city_herald": "herald",
+  "city_smith": "blacksmith", "city_forge_master": "blacksmith", "city_trader": "merchant",
+  "city_farmer": "peasant_woman", "city_archivist": "noble", "city_elder": "elder",
+  "city_door_keeper": "guard", "city_warden": "guard", "city_fisher": "peasant_man",
+  "city_woodcutter": "peasant_man"
+ },
+ "extra": [
+  {"id": "city_priest", "name": "Priest", "model": "priest", "post": "cathedral", "night": "indoors"},
+  {"id": "gate_guard_n", "name": "Guard", "model": "guard", "post": "gate:N", "night": "out"},
+  {"id": "gate_guard_s", "name": "Guard", "model": "guard", "post": "gate:S", "night": "out"},
+  {"id": "gate_guard_e", "name": "Guard", "model": "guard", "post": "gate:E", "night": "out"},
+  {"id": "gate_guard_w", "name": "Guard", "model": "guard", "post": "gate:W", "night": "out"}
+ ],
+ "folk": ["peasant_man", "peasant_woman", "child", "elder", "noble", "merchant", "peasant_woman", "peasant_man"],
+ "folk_count": 24
+}

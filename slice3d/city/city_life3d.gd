@@ -1,49 +1,151 @@
 extends Node3D
 
-## City life in 3D: the city's NPCs at their posts with names (and a "!" when
-## they give a mission), keeping the same day as the 2D city
-## (scenes/world/crosshaven/city_life.gd: home, work, plaza at noon, work,
-## evening by the town hall, home), plus townsfolk who stroll the streets by
-## day. Everyone walks the same nav grid as the hero.
-## Placeholder bodies (capsule figures) until NPC models arrive.
+## City life in 3D.
+## - Story and role NPCs (city.json, plus the role NPCs of npcs3d.json:
+##   the priest, a guard at each gate) wear the art kit's bodies, keep the
+##   2D city's day (scenes/world/crosshaven/city_life.gd: home, work, plaza
+##   at noon, work, evening by the town hall, home) and, at their post, work
+##   a loop: each model's route text becomes waypoints round the post on the
+##   walk grid, with its work idles (interact, talk, idle, sit) in between.
+##   Never idle more than ~10 s. "!" over mission givers.
+## - Townsfolk stroll the streets by day.
+## Everyone walks the same nav grid as the hero.
 
 const CityLife2D := preload("res://scenes/world/crosshaven/city_life.gd")
+const Body := preload("res://slice3d/city/npc_body.gd")
 const MISSIONS := "res://data/world/missions.json"
+const NPCS3D := "res://data/world/city3d/npcs3d.json"
+const CLIP_WORDS := ["interact", "talk", "idle", "sit"]
 
 var plan
 var nav
+var cfg: Dictionary = {}
 var places := {}       ## place name -> Array of Vector2 (world m)
-var npcs: Array = []   ## {node, data, path:[], post:Vector2, phase}
+var npcs: Array = []   ## agents (see _agent)
 var folk: Array = []
 var hour := 10.0
 var _phase := ""
 var _rng := RandomNumberGenerator.new()
 var _street_cells: Array = []
 var _givers := {}
+var bodies_loaded := 0
 
 
-func setup(p, n, folk_count := 28) -> void:
+func setup(p, n, folk_count := -1) -> void:
 	plan = p
 	nav = n
 	_rng.seed = 25
+	var v: Variant = JSON.parse_string(FileAccess.get_file_as_string(NPCS3D)) if FileAccess.file_exists(NPCS3D) else {}
+	cfg = v if v is Dictionary else {}
 	_find_places()
 	_load_givers()
+	var models: Dictionary = cfg.get("city", {})
 	for d in plan.npcs:
 		var post := _post_for(d)
-		var node := _figure(_npc_colors(str(d["role"])), str(d["name"]), _givers.has(str(d["id"])))
-		add_child(node)
-		node.position = Vector3(post.x, 0, post.y)
-		npcs.append({"node": node, "data": d, "path": [], "post": post, "speed": 2.4})
-	for i in folk_count:
+		npcs.append(_agent(d, str(models.get(str(d["id"]), "")), post, true))
+	for e in cfg.get("extra", []):
+		var ed: Dictionary = (e as Dictionary).duplicate()
+		ed["role"] = str(ed.get("post", ""))
+		var post := _place_point(str(e.get("post", "plaza")))
+		npcs.append(_agent(ed, str(e.get("model", "")), post, true))
+	var n_folk := folk_count if folk_count >= 0 else int(cfg.get("folk_count", 24))
+	var fm: Array = cfg.get("folk", ["peasant_man"])
+	for i in n_folk:
 		if _street_cells.is_empty():
 			break
 		var c: Vector2i = _street_cells[_rng.randi() % _street_cells.size()]
-		var tint := Color.from_hsv(_rng.randf(), 0.35, 0.45 + _rng.randf() * 0.2)
-		var node := _figure([tint, tint.darkened(0.3), Color(0.7, 0.55, 0.45)], "", false)
-		add_child(node)
-		var p0: Vector2 = plan.cell_center(c)
-		node.position = Vector3(p0.x, 0, p0.y)
-		folk.append({"node": node, "path": [], "speed": 1.3 + _rng.randf() * 0.6, "wait": _rng.randf() * 4.0})
+		var a := _agent({"id": "folk_%d" % i, "name": ""}, str(fm[i % fm.size()]), plan.cell_center(c), false)
+		a["speed"] = 1.2 + _rng.randf() * 0.5
+		a["wait"] = _rng.randf() * 4.0
+		folk.append(a)
+
+
+# ---------------------------------------------------------------- agents
+
+func _agent(d: Dictionary, model: String, post: Vector2, labelled: bool) -> Dictionary:
+	var root := Node3D.new()
+	add_child(root)
+	root.position = Vector3(post.x, 0, post.y)
+	var body = null
+	if model != "":
+		body = Body.new()
+		root.add_child(body)
+		if body.setup(str(cfg.get("dir", "res://art/3d/npcs/")), model):
+			bodies_loaded += 1
+		else:
+			body.queue_free()
+			body = null
+	if body == null:
+		root.add_child(_figure(_npc_colors(str(d.get("role", "")))))
+	if labelled and str(d.get("name", "")) != "":
+		var l := Label3D.new()
+		l.text = str(d["name"])
+		l.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+		l.position.y = 2.2
+		l.font_size = 48
+		l.pixel_size = 0.012
+		l.outline_size = 10
+		l.modulate = Color(1, 0.95, 0.85)
+		l.visibility_range_end = 40.0
+		root.add_child(l)
+		if _givers.has(str(d.get("id", ""))):
+			var g := Label3D.new()
+			g.text = "!"
+			g.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+			g.position.y = 2.65
+			g.font_size = 96
+			g.pixel_size = 0.012
+			g.outline_size = 16
+			g.modulate = Color(1.0, 0.82, 0.25)
+			g.visibility_range_end = 60.0
+			root.add_child(g)
+	var a := {"node": root, "body": body, "data": d, "post": post, "anchor": post, "path": [],
+		"speed": 1.6, "timer": _rng.randf_range(1.0, 4.0), "wp": [], "wp_i": 0, "work": ["interact", "idle", "talk"]}
+	if body != null:
+		a["work"] = _work_clips(body)
+		a["wp"] = _waypoints(post, body.behaviour(), str(d.get("id", "")))
+	else:
+		a["wp"] = _waypoints(post, {}, str(d.get("id", "")))
+	return a
+
+
+## Work idles from the model's behaviour text, as clip names it has.
+func _work_clips(body) -> Array:
+	var out: Array = []
+	for line in (body.behaviour().get("work_idles", []) as Array):
+		var low := str(line).to_lower()
+		for w in CLIP_WORDS:
+			if low.begins_with(w) or low.contains(w + " ") or low.contains(" " + w):
+				if body.clips.has(w):
+					out.append(w)
+				break
+	if out.is_empty():
+		for w in ["interact", "idle", "talk"]:
+			if body.clips.has(w):
+				out.append(w)
+	return out
+
+
+## The route text ("anvil <-> water trough <-> wood pile") becomes one
+## waypoint per stop, spread round the post on walkable, reachable cells.
+func _waypoints(post: Vector2, beh: Dictionary, seed_id: String) -> Array:
+	var text := str(beh.get("suggested_route", ""))
+	var stops := 3
+	if text != "":
+		var t := text.replace("<->", "|").replace("->", "|").replace(",", "|").replace(";", "|")
+		stops = clampi(t.split("|", false).size(), 2, 5)
+	var out: Array = []
+	var base := float(absi(hash(seed_id)) % 360) / 360.0 * TAU
+	for i in stops:
+		var a := base + TAU * i / stops
+		var r := 2.5 + float((absi(hash(seed_id + str(i))) % 100)) / 100.0 * 3.0
+		var c: Vector2i = plan.nearest_passable(plan.world_to_cell(post + Vector2(cos(a), sin(a)) * r), 4)
+		var p: Vector2 = plan.cell_center(c)
+		if not nav.world_path(post, p).is_empty() or p.distance_to(post) < 0.5:
+			out.append(p)
+	if out.is_empty():
+		out.append(post)
+	return out
 
 
 func _load_givers() -> void:
@@ -76,11 +178,19 @@ func _find_places() -> void:
 			add.call("river", plan.cell_center(plan.nearest_passable(plan.world_to_cell(pc["center"]), 6)))
 	for g in plan.gates:
 		add.call("gate", g["inside"])
+		add.call("gate:" + str(g["id"]), g["inside"] + (g["dir"] as Vector2).orthogonal() * 2.5)
 	for y in plan.height:
 		for x in plan.width:
 			var ch: String = plan.terrain_char(Vector2i(x, y))
 			if (ch == "c" or ch == "p") and nav.walkable(Vector2i(x, y)) and (x + y * 3) % 5 == 0:
 				_street_cells.append(Vector2i(x, y))
+
+
+func _place_point(place: String) -> Vector2:
+	var list: Array = places.get(place, [])
+	if list.is_empty():
+		list = places.get("plaza", [plan.cell_center(plan.spawn)])
+	return plan.cell_center(plan.nearest_passable(plan.world_to_cell(list[0]), 6))
 
 
 func _post_for(d: Dictionary) -> Vector2:
@@ -96,15 +206,12 @@ func _post_for(d: Dictionary) -> Vector2:
 
 
 func _npc_colors(role: String) -> Array:
-	var c: Color = {"smith": Color(0.3, 0.25, 0.2), "forge_master": Color(0.35, 0.2, 0.15), "trader": Color(0.55, 0.4, 0.2),
-		"herald": Color(0.6, 0.15, 0.15), "banker": Color(0.2, 0.25, 0.4), "archivist": Color(0.3, 0.3, 0.45),
-		"door_keeper": Color(0.3, 0.32, 0.36), "warden": Color(0.25, 0.3, 0.38), "farmer": Color(0.45, 0.42, 0.25),
-		"elder": Color(0.45, 0.4, 0.5), "guide": Color(0.25, 0.45, 0.35), "fisher": Color(0.25, 0.35, 0.45),
-		"woodcutter": Color(0.35, 0.3, 0.18)}.get(role, Color(0.4, 0.4, 0.4))
+	var c: Color = {"smith": Color(0.3, 0.25, 0.2), "trader": Color(0.55, 0.4, 0.2), "herald": Color(0.6, 0.15, 0.15),
+		"banker": Color(0.2, 0.25, 0.4), "warden": Color(0.25, 0.3, 0.38), "guide": Color(0.25, 0.45, 0.35)}.get(role, Color(0.4, 0.4, 0.4))
 	return [c, c.darkened(0.35), Color(0.72, 0.56, 0.45)]
 
 
-func _figure(cols: Array, label: String, giver: bool) -> Node3D:
+func _figure(cols: Array) -> Node3D:
 	var root := Node3D.new()
 	var body := MeshInstance3D.new()
 	var cap := CapsuleMesh.new()
@@ -113,19 +220,9 @@ func _figure(cols: Array, label: String, giver: bool) -> Node3D:
 	body.mesh = cap
 	var m := StandardMaterial3D.new()
 	m.albedo_color = cols[0]
-	m.roughness = 0.95
 	body.material_override = m
 	body.position.y = 0.72
 	root.add_child(body)
-	var legs := MeshInstance3D.new()
-	var lb := BoxMesh.new()
-	lb.size = Vector3(0.36, 0.5, 0.26)
-	legs.mesh = lb
-	var lm := StandardMaterial3D.new()
-	lm.albedo_color = cols[1]
-	legs.material_override = lm
-	legs.position.y = 0.25
-	root.add_child(legs)
 	var head := MeshInstance3D.new()
 	var hs := SphereMesh.new()
 	hs.radius = 0.12
@@ -136,30 +233,10 @@ func _figure(cols: Array, label: String, giver: bool) -> Node3D:
 	head.material_override = hm
 	head.position.y = 1.55
 	root.add_child(head)
-	if label != "":
-		var l := Label3D.new()
-		l.text = label
-		l.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-		l.position.y = 2.15
-		l.font_size = 48
-		l.pixel_size = 0.012
-		l.outline_size = 10
-		l.modulate = Color(1, 0.95, 0.85)
-		l.visibility_range_end = 40.0
-		root.add_child(l)
-	if giver:
-		var g := Label3D.new()
-		g.text = "!"
-		g.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-		g.position.y = 2.6
-		g.font_size = 96
-		g.pixel_size = 0.012
-		g.outline_size = 16
-		g.modulate = Color(1.0, 0.82, 0.25)
-		g.visibility_range_end = 60.0
-		root.add_child(g)
 	return root
 
+
+# ---------------------------------------------------------------- the day
 
 func set_hour(h: float) -> void:
 	hour = h
@@ -170,19 +247,24 @@ func set_hour(h: float) -> void:
 	if phase == _phase:
 		return
 	_phase = phase
-	for n in npcs:
-		var d: Dictionary = n["data"]
+	for a in npcs:
+		var d: Dictionary = a["data"]
 		var night_in := phase == "home" and str(d.get("night", "")) == "indoors"
-		var goal: Vector2 = n["post"]
-		if phase == "plaza":
-			goal = _pick("plaza", goal)
-		elif phase == "tavern":
-			goal = _pick("townhall", goal)
-		elif phase == "home":
-			goal = _pick("home", goal) if night_in else _pick("gate", goal)
-		n["path"] = _route(n["node"], goal)
-		n["hide_on_arrival"] = night_in
-		(n["node"] as Node3D).visible = true
+		var anchor: Vector2 = a["post"]
+		var guard := str(d.get("role", "")).begins_with("gate") or str(d.get("role", "")) in ["warden", "door_keeper"]
+		if not guard:
+			if phase == "plaza":
+				anchor = _pick("plaza", anchor)
+			elif phase == "tavern":
+				anchor = _pick("townhall", anchor)
+			elif night_in:
+				anchor = _pick("home", anchor)
+		a["anchor"] = anchor
+		a["wp"] = _waypoints(anchor, a["body"].behaviour() if a["body"] != null else {}, str(d.get("id", "")) + phase)
+		a["wp_i"] = 0
+		a["path"] = _route(a["node"], anchor)
+		a["hide_on_arrival"] = night_in
+		(a["node"] as Node3D).visible = true
 	for f in folk:
 		(f["node"] as Node3D).visible = phase != "home" or _rng.randf() < 0.15
 
@@ -201,24 +283,59 @@ func _route(node: Node3D, goal: Vector2) -> Array:
 	return r
 
 
+# ---------------------------------------------------------------- tick
+
 func _process(delta: float) -> void:
-	for n in npcs:
-		if _walk(n, delta) and n.get("hide_on_arrival", false):
-			(n["node"] as Node3D).visible = false
-			n["hide_on_arrival"] = false
+	for a in npcs:
+		_tick_worker(a, delta)
 	for f in folk:
-		if not (f["node"] as Node3D).visible:
-			continue
-		if (f["path"] as Array).is_empty():
-			f["wait"] -= delta
-			if f["wait"] <= 0.0 and not _street_cells.is_empty():
-				var c: Vector2i = _street_cells[_rng.randi() % _street_cells.size()]
-				var here := Vector2(f["node"].position.x, f["node"].position.z)
-				if here.distance_to(plan.cell_center(c)) < 60.0:
-					f["path"] = _route(f["node"], plan.cell_center(c))
-				f["wait"] = 2.0 + _rng.randf() * 6.0
-		else:
-			_walk(f, delta)
+		if (f["node"] as Node3D).visible:
+			_tick_folk(f, delta)
+
+
+func _tick_worker(a: Dictionary, delta: float) -> void:
+	if not (a["node"] as Node3D).visible:
+		return
+	if not (a["path"] as Array).is_empty():
+		if _walk(a, delta):
+			if a.get("hide_on_arrival", false):
+				(a["node"] as Node3D).visible = false
+				a["hide_on_arrival"] = false
+				return
+			_start_work(a)
+		return
+	a["timer"] -= delta
+	if a["timer"] <= 0.0:
+		var wps: Array = a["wp"]
+		a["wp_i"] = (int(a["wp_i"]) + 1) % wps.size()
+		a["path"] = _route(a["node"], wps[a["wp_i"]])
+		if (a["path"] as Array).is_empty():
+			_start_work(a)
+
+
+## At a waypoint: a work idle for a few seconds (never longer than ~10 s).
+func _start_work(a: Dictionary) -> void:
+	var work: Array = a["work"]
+	var clip := str(work[_rng.randi() % work.size()]) if not work.is_empty() else "idle"
+	if a["body"] != null:
+		a["body"].play(clip)
+	a["timer"] = _rng.randf_range(3.0, 8.0)
+
+
+func _tick_folk(f: Dictionary, delta: float) -> void:
+	if (f["path"] as Array).is_empty():
+		f["wait"] -= delta
+		if f["body"] != null:
+			f["body"].play("talk" if int(f.get("mood", 0)) == 1 else "idle")
+		if f["wait"] <= 0.0 and not _street_cells.is_empty():
+			var c: Vector2i = _street_cells[_rng.randi() % _street_cells.size()]
+			var here := Vector2(f["node"].position.x, f["node"].position.z)
+			if here.distance_to(plan.cell_center(c)) < 60.0:
+				f["path"] = _route(f["node"], plan.cell_center(c))
+			f["wait"] = 2.0 + _rng.randf() * 6.0
+			f["mood"] = _rng.randi() % 2
+	else:
+		_walk(f, delta)
 
 
 ## Moves along the path; returns true on the frame it arrives.
@@ -226,6 +343,8 @@ func _walk(w: Dictionary, delta: float) -> bool:
 	var path: Array = w["path"]
 	if path.is_empty():
 		return false
+	if w["body"] != null:
+		w["body"].play("walk")
 	var node: Node3D = w["node"]
 	var here := Vector2(node.position.x, node.position.z)
 	var tgt: Vector2 = path[0]

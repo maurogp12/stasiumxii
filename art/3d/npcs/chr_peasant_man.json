@@ -1,0 +1,73 @@
+{
+ "label": "🖼️ IMAGEN / CONCEPTO, TODAVÍA HAY QUE CONSTRUIRLO",
+ "id": "chr_peasant_man",
+ "category": "townsfolk",
+ "height_m": 1.8,
+ "units": "metres, feet at y=0, faces +Z",
+ "files": {
+  "LOD0": "3d/chr_peasant_man_LOD0.glb",
+  "LOD1": "3d/chr_peasant_man_LOD1.glb",
+  "LOD2": "3d/chr_peasant_man_LOD2.glb"
+ },
+ "tris": {
+  "LOD0": 9944,
+  "LOD1": 4972,
+  "LOD2": 1988
+ },
+ "note_lods": "LOD1/LOD2 are mesh + skin only; they share the LOD0 skeleton/clips. LOD1/2 tris are the decimate ratio targets.",
+ "skeleton": "Godot humanoid names (same bone map as Ironjaw), no finger bones",
+ "clips": {
+  "idle": {
+   "meshy_action_id": 0,
+   "source": "Idle",
+   "frames_30fps": 150.0,
+   "loop": true,
+   "in_place": true
+  },
+  "walk": {
+   "meshy_action_id": 613,
+   "source": "Casual Walk",
+   "frames_30fps": 155.0,
+   "loop": true,
+   "in_place": true
+  },
+  "interact": {
+   "meshy_action_id": 283,
+   "source": "Pull Radish",
+   "frames_30fps": 176.2,
+   "loop": false,
+   "in_place": true
+  },
+  "sit": {
+   "meshy_action_id": 33,
+   "source": "Chair Sit Idle Male",
+   "frames_30fps": 400.0,
+   "loop": true,
+   "in_place": true
+  },
+  "talk": {
+   "meshy_action_id": 56,
+   "source": "Stand and Chat",
+   "frames_30fps": 193.8,
+   "loop": true,
+   "in_place": true
+  }
+ },
+ "behaviour": {
+  "route_type": "field_loop",
+  "suggested_route": "city garden plot <-> well <-> tavern",
+  "work_idles": [
+   "interact = pull radish in the garden plot",
+   "sit at the tavern",
+   "talk at the well"
+  ],
+  "rule": "must always move or do something; never stand still more than ~10 s"
+ },
+ "concept": "concepts/npc_peasant_man_turnaround_CONCEPTO_.png",
+ "meshy": {
+  "rig_task": "01a14c49-c17d-730e-99e3-b25e5b9300af",
+  "animation_task": "01a14c4b-77d2-76e5-a9cf-f1f662b147d3",
+  "credits": 20
+ },
+ "mesh_source": "Scenario Tripo v3.1 image-to-3D from the front crop (45 CU)"
+}

@@ -50,6 +50,7 @@ func _run() -> void:
 	_test_day_night()
 	await _test_hero_walk()
 	_test_retarget()
+	await _test_life()
 	_done()
 
 
@@ -220,6 +221,33 @@ func _test_hero_walk() -> void:
 	_check(h.ground_pos().distance_to(goal) < plan.cell_m * 1.5, "the hero stops at the target")
 	_check(off_grid == 0, "the hero never stands on a blocked cell (%d)" % off_grid)
 	h.queue_free()
+	await process_frame
+
+
+func _test_life() -> void:
+	var Life = load("res://slice3d/city/city_life3d.gd")
+	var life = Life.new()
+	root.add_child(life)
+	life.setup(plan, nav, 6)
+	_check(life.npcs.size() == plan.npcs.size() + 5, "story and role NPCs plus the priest and 4 gate guards (%d)" % life.npcs.size())
+	_check(life.bodies_loaded >= life.npcs.size(), "every NPC wears an art kit body (%d)" % life.bodies_loaded)
+	var guards := 0
+	for a in life.npcs:
+		if str(a["data"].get("id", "")).begins_with("gate_guard"):
+			guards += 1
+			_check((a["wp"] as Array).size() >= 2, "guard %s has a route" % a["data"]["id"])
+		if a["body"] != null:
+			_check(a["body"].clips.has("walk") and a["body"].clips.has("idle"), "%s has walk and idle" % a["data"]["id"])
+	_check(guards == 4, "a guard at each gate")
+	life.set_hour(12.5)
+	for i in 120:
+		life._process(1.0 / 30.0)
+	var moving := 0
+	for a in life.npcs:
+		if not (a["path"] as Array).is_empty():
+			moving += 1
+	_check(moving > 0, "at noon NPCs walk to the plaza (%d)" % moving)
+	life.queue_free()
 	await process_frame
 
 
