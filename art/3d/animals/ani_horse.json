@@ -1,0 +1,98 @@
+{
+ "label": "🖼️ IMAGEN / CONCEPTO, TODAVÍA HAY QUE CONSTRUIRLO",
+ "id": "ani_horse",
+ "files": {
+  "LOD0": "3d/ani_horse_LOD0.glb",
+  "LOD1": "3d/ani_horse_LOD1.glb",
+  "LOD2": "3d/ani_horse_LOD2.glb"
+ },
+ "tris": {
+  "LOD0": 7887,
+  "LOD1": 3943,
+  "LOD2": 1577
+ },
+ "size_m": {
+  "height": 2.05,
+  "length": 2.808
+ },
+ "units": "metres, feet at y=0, faces +Z",
+ "skeleton": {
+  "type": "custom Blender armature (Meshy auto-rig is humanoid only)",
+  "bones": [
+   "root",
+   "hips",
+   "spine",
+   "chest",
+   "neck",
+   "head",
+   "tail_1",
+   "tail_2",
+   "tail_3",
+   "front_leg_l_upper",
+   "front_leg_l_lower",
+   "front_leg_l_foot",
+   "front_leg_r_upper",
+   "front_leg_r_lower",
+   "front_leg_r_foot",
+   "hind_leg_l_upper",
+   "hind_leg_l_lower",
+   "hind_leg_l_foot",
+   "hind_leg_r_upper",
+   "hind_leg_r_lower",
+   "hind_leg_r_foot"
+  ]
+ },
+ "skin": "Blender bone-heat weights, fallback nearest-bone distance weights for any unweighted vertex",
+ "clips": {
+  "idle": {
+   "frames_30fps": 120,
+   "loop": true,
+   "in_place": true,
+   "source": "procedural keyframes (Blender)"
+  },
+  "walk": {
+   "frames_30fps": 64,
+   "loop": true,
+   "in_place": true,
+   "source": "procedural keyframes (Blender)",
+   "note": "cycle retimed 44->64 frames so the planted feet match ~1.5 m/s"
+  },
+  "run": {
+   "frames_30fps": 22,
+   "loop": true,
+   "in_place": true,
+   "source": "procedural keyframes (Blender)"
+  },
+  "graze": {
+   "frames_30fps": 120,
+   "loop": true,
+   "in_place": true,
+   "source": "procedural keyframes (Blender)"
+  },
+  "walk_cart": {
+   "loop": true,
+   "in_place": true,
+   "source": "procedural keyframes (Blender)",
+   "frames_30fps": 72,
+   "note": "slower pulling walk, head low, chest forward; ~1.1 m/s; use when hitched to a cart"
+  }
+ },
+ "move_speed_mps": {
+  "walk": 1.47,
+  "run": 5.232,
+  "walk_cart": 1.099
+ },
+ "move_speed_note": "root speed matching the planted foot of the in-place cycle; drive the animal at this speed to avoid skating",
+ "behaviour": {
+  "route_type": "cart_stand",
+  "suggested_route": "tied at the stable / cart rank; graze or idle in place and shift 1 cell; with a cart it walks the market road loop (walk_cart when hitched, walk otherwise, no run in town)",
+  "role_idles": [
+   "graze at the trough or hay pile (main)",
+   "idle tail swish"
+  ],
+  "rule": "always moving or doing something; never idle in place more than ~15 s"
+ },
+ "concept": "concepts/ani_horse_CONCEPTO_.png",
+ "mesh_source": "Scenario Tripo v3.1 image-to-3D (45 CU)",
+ "textures": "baseColor + normal + ORM from Tripo, 1024/512/256 for LOD0/1/2"
+}

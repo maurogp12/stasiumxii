@@ -1,0 +1,101 @@
+{
+ "label": "🖼️ IMAGEN / CONCEPTO, TODAVÍA HAY QUE CONSTRUIRLO",
+ "id": "ani_dog",
+ "files": {
+  "LOD0": "3d/ani_dog_LOD0.glb",
+  "LOD1": "3d/ani_dog_LOD1.glb",
+  "LOD2": "3d/ani_dog_LOD2.glb"
+ },
+ "tris": {
+  "LOD0": 4818,
+  "LOD1": 2408,
+  "LOD2": 963
+ },
+ "size_m": {
+  "height": 0.62,
+  "length": 1.001
+ },
+ "units": "metres, feet at y=0, faces +Z",
+ "skeleton": {
+  "type": "custom Blender armature (Meshy auto-rig is humanoid only)",
+  "bones": [
+   "root",
+   "hips",
+   "spine",
+   "chest",
+   "neck",
+   "head",
+   "tail_1",
+   "tail_2",
+   "tail_3",
+   "front_leg_l_upper",
+   "front_leg_l_lower",
+   "front_leg_l_foot",
+   "front_leg_r_upper",
+   "front_leg_r_lower",
+   "front_leg_r_foot",
+   "hind_leg_l_upper",
+   "hind_leg_l_lower",
+   "hind_leg_l_foot",
+   "hind_leg_r_upper",
+   "hind_leg_r_lower",
+   "hind_leg_r_foot"
+  ]
+ },
+ "skin": "Blender bone-heat weights, fallback nearest-bone distance weights for any unweighted vertex",
+ "clips": {
+  "idle": {
+   "frames_30fps": 120,
+   "loop": true,
+   "in_place": true,
+   "source": "procedural keyframes (Blender)"
+  },
+  "walk": {
+   "frames_30fps": 30,
+   "loop": true,
+   "in_place": true,
+   "source": "procedural keyframes (Blender)"
+  },
+  "run": {
+   "frames_30fps": 14,
+   "loop": true,
+   "in_place": true,
+   "source": "procedural keyframes (Blender)"
+  },
+  "sit": {
+   "frames_30fps": 120,
+   "loop": true,
+   "in_place": true,
+   "source": "procedural keyframes (Blender)",
+   "grounding": {
+    "method": "solver: front toes, hind hocks and hind toes placed on y=0",
+    "fit": {
+     "drop": 0.2207,
+     "hind_upper": -10,
+     "hind_lower": 105,
+     "hind_foot": -85,
+     "front_toe_z": 0.0,
+     "hind_ankle_z": 0.021,
+     "hind_toe_z": -0.0022
+    }
+   }
+  }
+ },
+ "move_speed_mps": {
+  "walk": 1.036,
+  "run": 2.525
+ },
+ "move_speed_note": "root speed matching the planted foot of the in-place cycle; drive the animal at this speed to avoid skating",
+ "behaviour": {
+  "route_type": "street_follow",
+  "suggested_route": "trots between the tavern, the butcher and the gate; may follow the player for 6-10 cells, then sits; never stays still more than ~15 s",
+  "role_idles": [
+   "sit near the tavern door",
+   "idle sniff/look"
+  ],
+  "rule": "always moving or doing something; never idle in place more than ~15 s"
+ },
+ "concept": "concepts/ani_dog_CONCEPTO_.png",
+ "mesh_source": "Scenario Tripo v3.1 image-to-3D (45 CU)",
+ "textures": "baseColor + normal + ORM from Tripo, 1024/512/256 for LOD0/1/2"
+}

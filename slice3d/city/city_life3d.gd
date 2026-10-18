@@ -55,7 +55,8 @@ func setup(p, n, folk_count := -1) -> void:
 			break
 		var c: Vector2i = _street_cells[_rng.randi() % _street_cells.size()]
 		var a := _agent({"id": "folk_%d" % i, "name": ""}, str(fm[i % fm.size()]), plan.cell_center(c), false)
-		a["speed"] = 1.2 + _rng.randf() * 0.5
+		if a["body"] == null:
+			a["speed"] = 1.2 + _rng.randf() * 0.5
 		a["wait"] = _rng.randf() * 4.0
 		folk.append(a)
 
@@ -102,6 +103,7 @@ func _agent(d: Dictionary, model: String, post: Vector2, labelled: bool) -> Dict
 	var a := {"node": root, "body": body, "data": d, "post": post, "anchor": post, "path": [],
 		"speed": 1.6, "timer": _rng.randf_range(1.0, 4.0), "wp": [], "wp_i": 0, "work": ["interact", "idle", "talk"]}
 	if body != null:
+		a["speed"] = body.walk_speed(1.4)
 		a["work"] = _work_clips(body)
 		a["wp"] = _waypoints(post, body.behaviour(), str(d.get("id", "")))
 	else:
@@ -317,6 +319,8 @@ func _tick_worker(a: Dictionary, delta: float) -> void:
 func _start_work(a: Dictionary) -> void:
 	var work: Array = a["work"]
 	var clip := str(work[_rng.randi() % work.size()]) if not work.is_empty() else "idle"
+	if clip == "idle" and a["body"] != null:
+		clip = a["body"].idle_clip()
 	if a["body"] != null:
 		a["body"].play(clip)
 	a["timer"] = _rng.randf_range(3.0, 8.0)
@@ -326,7 +330,7 @@ func _tick_folk(f: Dictionary, delta: float) -> void:
 	if (f["path"] as Array).is_empty():
 		f["wait"] -= delta
 		if f["body"] != null:
-			f["body"].play("talk" if int(f.get("mood", 0)) == 1 else "idle")
+			f["body"].play("talk" if int(f.get("mood", 0)) == 1 else f["body"].idle_clip())
 		if f["wait"] <= 0.0 and not _street_cells.is_empty():
 			var c: Vector2i = _street_cells[_rng.randi() % _street_cells.size()]
 			var here := Vector2(f["node"].position.x, f["node"].position.z)
@@ -344,7 +348,7 @@ func _walk(w: Dictionary, delta: float) -> bool:
 	if path.is_empty():
 		return false
 	if w["body"] != null:
-		w["body"].play("walk")
+		w["body"].play(w["body"].walk_clip())
 	var node: Node3D = w["node"]
 	var here := Vector2(node.position.x, node.position.z)
 	var tgt: Vector2 = path[0]

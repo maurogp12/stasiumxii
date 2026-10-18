@@ -14,7 +14,7 @@
   "LOD1": 4941,
   "LOD2": 1976
  },
- "note_lods": "LOD1/LOD2 are mesh + skin only; they share the LOD0 skeleton/clips. LOD1/2 tris are the decimate ratio targets.",
+ "note_lods": "LOD1/LOD2 are mesh + skin only (share the LOD0 skeleton/clips); tris measured after decimate.",
  "skeleton": "Godot humanoid names (same bone map as Ironjaw), no finger bones",
  "clips": {
   "idle": {
@@ -51,13 +51,27 @@
    "frames_30fps": 193.8,
    "loop": true,
    "in_place": true
+  },
+  "walk_spear": {
+   "meshy_action_id": 672,
+   "source": "Spear Walk (inplace)",
+   "frames_30fps": 41.2,
+   "loop": true,
+   "in_place": true
+  },
+  "idle_spear": {
+   "meshy_action_id": null,
+   "source": "Blender arm edit of idle (336): RightUpperArm/LowerArm/Hand fixed, forearm forward, haft vertical, butt on the ground",
+   "frames_30fps": 422.5,
+   "loop": true,
+   "in_place": true
   }
  },
  "behaviour": {
   "route_type": "patrol",
   "suggested_route": "gate -> market square -> cathedral steps -> gate (loop, stop 6-10 s at each point, play idle = look around)",
   "work_idles": [
-   "idle (look around) at patrol stops",
+   "idle_spear at the patrol stops (default idle), look-around idle with the spear slung",
    "interact = open_door at the gatehouse",
    "talk to the player when stopped"
   ],
@@ -74,9 +88,109 @@
   "spear": {
    "file": "3d/itm_guard_spear_CONCEPTO_.glb",
    "length_m": 2.2,
-   "attach_bone": "RightHand",
-   "holster": "none (always carried)",
-   "note": "attach transform NOT tuned yet; the hand is an open Meshy hand, no fist sculpt"
+   "shaft_diameter_m": 0.035,
+   "mesh_origin": "butt end, haft = spear +Y (glTF)",
+   "attach": {
+    "in_hand": {
+     "bone": "RightHand",
+     "position_m": [
+      1.0461,
+      0.12,
+      -0.0554
+     ],
+     "rotation_quat_xyzw": [
+      -0.5,
+      -0.5,
+      0.5,
+      0.5
+     ],
+     "rotation_euler_deg_xyz": [
+      -90.0,
+      -0.0,
+      90.0
+     ]
+    },
+    "in_hand_reversed": {
+     "bone": "RightHand",
+     "position_m": [
+      -0.7632,
+      0.12,
+      -0.0554
+     ],
+     "rotation_quat_xyzw": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+     ],
+     "rotation_euler_deg_xyz": [
+      90.0,
+      -0.0,
+      90.0
+     ],
+     "note": "same fist, spear flipped end-for-end, grip 0.75 m from the butt"
+    },
+    "back_sling": {
+     "bone": "UpperChest",
+     "position_m": [
+      0.3779,
+      -1.1355,
+      -0.1034
+     ],
+     "rotation_quat_xyzw": [
+      -0.7166,
+      -0.1115,
+      0.1351,
+      0.6752
+     ],
+     "rotation_euler_deg_xyz": [
+      -92.97,
+      2.46,
+      20.04
+     ]
+    }
+   },
+   "attach_note": "BoneAttachment3D(bone) -> spear node with this transform, in glTF joint space with the joint scale removed (metres). Same scheme as Ironjaw. Verified by re-importing the exported LOD0 and placing the spear from these numbers only.",
+   "per_clip": {
+    "idle_spear": "in_hand",
+    "walk_spear": "in_hand_reversed",
+    "idle": "back_sling",
+    "walk": "back_sling",
+    "talk": "back_sling",
+    "interact": "back_sling",
+    "sit": "detached: lean the spear against the bench/wall 0.45 m to the right of the root, tilted 10 deg (not attached)"
+   },
+   "grip": "right-hand fist is a morph target \"fist\" on LOD0 (basis = open hand); each clip animates its weight: 1.0 in idle_spear and walk_spear, 0.0 in idle, walk, interact, sit, talk. LOD1/LOD2 have the fist baked in (no morphs)."
   }
+ },
+ "textures": {
+  "set": "baseColor + NormalGL + ORM (R=occlusion, G=roughness, B=metallic), restored from the Tripo PBR output on all LODs",
+  "sizes_px": {
+   "LOD0": 2048,
+   "LOD1": 1024,
+   "LOD2": 512
+  },
+  "format": "WebP q80"
+ },
+ "walk_speed_mps": {
+  "walk_spear": 0.934,
+  "walk": 0.539
+ },
+ "walk_speed_note": "root speed that matches the planted foot of the in-place walk; move the NPC at this speed (scale the clip speed with the move speed) to avoid foot skating",
+ "default_idle": "idle_spear",
+ "hand_morph": {
+  "target": "fist",
+  "fist_clips": [
+   "idle_spear",
+   "walk_spear"
+  ],
+  "open_clips": [
+   "idle",
+   "walk",
+   "interact",
+   "sit",
+   "talk"
+  ],
+  "lod_note": "LOD1/2 = fist baked"
  }
 }

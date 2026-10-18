@@ -247,7 +247,38 @@ func _test_life() -> void:
 		if not (a["path"] as Array).is_empty():
 			moving += 1
 	_check(moving > 0, "at noon NPCs walk to the plaza (%d)" % moving)
+	var guard_body = null
+	for a in life.npcs:
+		if str(a["data"].get("id", "")).begins_with("gate_guard") and a["body"] != null:
+			guard_body = a["body"]
+	if guard_body != null:
+		_check(guard_body.spear != null, "the gate guard carries his spear")
+		_check(guard_body.walk_clip() == "walk_spear" and guard_body.idle_clip() == "idle_spear", "guards use the spear clips")
+		_check(absf(guard_body.walk_speed() - 0.934) < 0.01, "walk speed comes from the model (walk_spear 0.934 m/s)")
 	life.queue_free()
+	var Animals = load("res://slice3d/city/animals3d.gd")
+	var h := Node3D.new()
+	root.add_child(h)
+	var an = Animals.new()
+	root.add_child(an)
+	an.setup(plan, nav, h)
+	var kinds := {}
+	for a in an.animals:
+		if not a.is_empty():
+			kinds[a["kind"]] = kinds.get(a["kind"], 0) + 1
+	for k in ["cat", "dog", "chicken", "duck", "pigeon", "horse"]:
+		_check(kinds.has(k), "the city has %s (%d)" % [k, kinds.get(k, 0)])
+	_check(an.cart != null and an.ring_route.size() >= 3, "the horse pulls the supply cart round the ring road")
+	var pig: Dictionary = {}
+	for a in an.animals:
+		if not a.is_empty() and a["kind"] == "pigeon":
+			pig = a
+			break
+	h.position = pig["node"].position
+	an._process(0.1)
+	_check(pig["state"] == "fly", "pigeons take off when the hero comes close")
+	an.queue_free()
+	h.queue_free()
 	await process_frame
 
 

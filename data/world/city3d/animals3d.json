@@ -1,0 +1,13 @@
+{
+ "format": "stasium.animals3d",
+ "format_version": 1,
+ "status": "proposed",
+ "note": "Crosshaven's animals (art kit). Cats and dogs by house doors (cats run off within 2 m), chickens in pairs behind houses, ducks on the river inside the walls, pigeons on the plaza (take off when the hero comes within pigeon_scatter_m, land again after pigeon_return_s), one horse pulling the supply cart round a loop cart_inset_m inside the walls (walk_cart).",
+ "dir": "res://art/3d/animals/",
+ "counts": {"cat": 6, "dog": 4, "chicken": 6, "duck": 6, "pigeon": 12, "horse_cart": 1},
+ "pigeon_scatter_m": 4.0,
+ "pigeon_return_s": 18.0,
+ "cart_inset_m": 16.0,
+ "cart_glb": "res://art/3d/crosshaven/prp_cart_supply_a_LOD1.glb",
+ "cart_offset_m": 3.0
+}

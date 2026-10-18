@@ -13,6 +13,7 @@ const Hero := preload("res://slice3d/city/hero3d.gd")
 const Rig := preload("res://slice3d/city/camera_rig.gd")
 const Life := preload("res://slice3d/city/city_life3d.gd")
 const Hud := preload("res://slice3d/ui/city_hud.gd")
+const Animals := preload("res://slice3d/city/animals3d.gd")
 
 var city_path := "res://data/world/city3d/crosshaven.json"
 var plan
@@ -23,6 +24,7 @@ var hero
 var rig
 var life
 var hud
+var animals
 var start_hour := 10.0
 var start_class := "bastion"
 var build_ms := 0
@@ -62,6 +64,10 @@ func _ready() -> void:
 	add_child(hero)
 	hero.setup(plan, nav)
 	hero.place(plan.cell_center(plan.spawn), plan.spawn_facing)
+	animals = Animals.new()
+	animals.name = "Animals"
+	add_child(animals)
+	animals.setup(plan, nav, hero)
 	rig = Rig.new()
 	rig.name = "CameraRig"
 	add_child(rig)

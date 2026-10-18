@@ -1,0 +1,101 @@
+{
+ "label": "🖼️ IMAGEN / CONCEPTO, TODAVÍA HAY QUE CONSTRUIRLO",
+ "id": "ani_cat",
+ "files": {
+  "LOD0": "3d/ani_cat_LOD0.glb",
+  "LOD1": "3d/ani_cat_LOD1.glb",
+  "LOD2": "3d/ani_cat_LOD2.glb"
+ },
+ "tris": {
+  "LOD0": 3885,
+  "LOD1": 1942,
+  "LOD2": 777
+ },
+ "size_m": {
+  "height": 0.32,
+  "length": 0.524
+ },
+ "units": "metres, feet at y=0, faces +Z",
+ "skeleton": {
+  "type": "custom Blender armature (Meshy auto-rig is humanoid only)",
+  "bones": [
+   "root",
+   "hips",
+   "spine",
+   "chest",
+   "neck",
+   "head",
+   "tail_1",
+   "tail_2",
+   "tail_3",
+   "front_leg_l_upper",
+   "front_leg_l_lower",
+   "front_leg_l_foot",
+   "front_leg_r_upper",
+   "front_leg_r_lower",
+   "front_leg_r_foot",
+   "hind_leg_l_upper",
+   "hind_leg_l_lower",
+   "hind_leg_l_foot",
+   "hind_leg_r_upper",
+   "hind_leg_r_lower",
+   "hind_leg_r_foot"
+  ]
+ },
+ "skin": "Blender bone-heat weights, fallback nearest-bone distance weights for any unweighted vertex",
+ "clips": {
+  "idle": {
+   "frames_30fps": 120,
+   "loop": true,
+   "in_place": true,
+   "source": "procedural keyframes (Blender)"
+  },
+  "walk": {
+   "frames_30fps": 40,
+   "loop": true,
+   "in_place": true,
+   "source": "procedural keyframes (Blender)"
+  },
+  "run": {
+   "frames_30fps": 14,
+   "loop": true,
+   "in_place": true,
+   "source": "procedural keyframes (Blender)"
+  },
+  "sit": {
+   "frames_30fps": 120,
+   "loop": true,
+   "in_place": true,
+   "source": "procedural keyframes (Blender)",
+   "grounding": {
+    "method": "solver: front toes, hind hocks and hind toes placed on y=0",
+    "fit": {
+     "drop": 0.1061,
+     "hind_upper": -10,
+     "hind_lower": 100,
+     "hind_foot": -80,
+     "front_toe_z": 0.0,
+     "hind_ankle_z": 0.0109,
+     "hind_toe_z": 0.0016
+    }
+   }
+  }
+ },
+ "move_speed_mps": {
+  "walk": 0.366,
+  "run": 1.492
+ },
+ "move_speed_note": "root speed matching the planted foot of the in-place cycle; drive the animal at this speed to avoid skating",
+ "behaviour": {
+  "route_type": "alley_wander",
+  "suggested_route": "rooftop edges, alley mouths and the market fish stall; wander 4-8 cells, sit 10-25 s in a sunny spot, then move on; runs off (run) if the player comes within 2 m",
+  "role_idles": [
+   "sit in doorways and on crates",
+   "idle look-around at alley mouths"
+  ],
+  "rule": "always moving or doing something; never idle in place more than ~15 s"
+ },
+ "concept": "concepts/ani_cat_CONCEPTO_.png",
+ "mesh_source": "Scenario Tripo v3.1 image-to-3D (45 CU)",
+ "textures": "baseColor + normal + ORM from Tripo, 1024/512/256 for LOD0/1/2"
+}

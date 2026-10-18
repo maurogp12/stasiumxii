@@ -1,0 +1,107 @@
+{
+ "label": "🖼️ IMAGEN / CONCEPTO, TODAVÍA HAY QUE CONSTRUIRLO",
+ "id": "ani_pigeon",
+ "files": {
+  "LOD0": "3d/ani_pigeon_LOD0.glb",
+  "LOD1": "3d/ani_pigeon_LOD1.glb",
+  "LOD2": "3d/ani_pigeon_LOD2.glb"
+ },
+ "tris": {
+  "LOD0": 1842,
+  "LOD1": 921,
+  "LOD2": 368
+ },
+ "size_m": {
+  "height": 0.26,
+  "length": 0.323
+ },
+ "units": "metres, feet at y=0, faces +Z",
+ "skeleton": {
+  "type": "custom Blender armature (Meshy auto-rig is humanoid only)",
+  "bones": [
+   "root",
+   "hips",
+   "chest",
+   "neck",
+   "head",
+   "tail",
+   "leg_l_upper",
+   "leg_l_lower",
+   "leg_l_foot",
+   "wing_l",
+   "leg_r_upper",
+   "leg_r_lower",
+   "leg_r_foot",
+   "wing_r"
+  ]
+ },
+ "skin": "Blender bone-heat weights, fallback nearest-bone distance weights for any unweighted vertex",
+ "clips": {
+  "idle": {
+   "frames_30fps": 90,
+   "loop": true,
+   "in_place": true,
+   "source": "procedural keyframes (Blender)"
+  },
+  "walk": {
+   "frames_30fps": 16,
+   "loop": true,
+   "in_place": true,
+   "source": "procedural keyframes (Blender)"
+  },
+  "run": {
+   "frames_30fps": 8,
+   "loop": true,
+   "in_place": true,
+   "source": "procedural keyframes (Blender)"
+  },
+  "peck": {
+   "frames_30fps": 48,
+   "loop": true,
+   "in_place": true,
+   "source": "procedural keyframes (Blender)"
+  },
+  "fly": {
+   "frames_30fps": 12,
+   "loop": true,
+   "in_place": true,
+   "source": "procedural keyframes (Blender)",
+   "note": "wings open and flap (+-50 deg), legs tucked; loop"
+  },
+  "takeoff": {
+   "loop": false,
+   "in_place": true,
+   "source": "procedural keyframes (Blender)",
+   "frames_30fps": 18,
+   "note": "crouch 5 f, jump, wings open by f8, rises to fly height (0.6x body height) at f18; chain into fly"
+  }
+ },
+ "move_speed_mps": {
+  "walk": 0.181,
+  "run": 1.215
+ },
+ "move_speed_note": "root speed matching the planted foot of the in-place cycle; drive the animal at this speed to avoid skating",
+ "behaviour": {
+  "route_type": "square_flock",
+  "suggested_route": "flock of 4-8 in the cathedral square and market; peck, short walks, flush away (takeoff -> fly) when the player or a cart comes within 2.5 m, land 6-10 cells away",
+  "role_idles": [
+   "peck (main)",
+   "fly = flush"
+  ],
+  "rule": "always moving or doing something; never idle in place more than ~15 s"
+ },
+ "concept": "concepts/ani_pigeon_CONCEPTO_.png",
+ "mesh_source": "Scenario Tripo v3.1 image-to-3D (45 CU)",
+ "textures": "baseColor + normal + ORM from Tripo, 1024/512/256 for LOD0/1/2",
+ "wing_meshes": {
+  "objects": [
+   "ani_pigeon_wing_open_l",
+   "ani_pigeon_wing_open_r"
+  ],
+  "bones": [
+   "wing_open_l",
+   "wing_open_r"
+  ],
+  "note": "separate open-wing card meshes (40 tris, own 256x128 feather texture sampled from the wing colours, double-sided), skinned 100% to wing_open_*; bone scale 0.01 = hidden in all ground clips, 1.0 in takeoff/fly"
+ }
+}
